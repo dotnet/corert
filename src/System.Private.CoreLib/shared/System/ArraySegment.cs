@@ -32,14 +32,14 @@ namespace System
         // instantiating another generic type in addition to ArraySegment<T> for new type parameters.
         public static ArraySegment<T> Empty { get; } = new ArraySegment<T>(new T[0]);
 
-        private readonly T[] _array; // Do not rename (binary serialization) 
+        private readonly T[] _array; // Do not rename (binary serialization)
         private readonly int _offset; // Do not rename (binary serialization)
         private readonly int _count; // Do not rename (binary serialization)
 
         public ArraySegment(T[] array)
         {
             if (array == null)
-                throw new ArgumentNullException(nameof(array));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
             _array = array;
             _offset = 0;
@@ -48,14 +48,11 @@ namespace System
 
         public ArraySegment(T[] array, int offset, int count)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (array.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
+            // Validate arguments, check is minimal instructions with reduced branching for inlinable fast-path
+            // Negative values discovered though conversion to high values when converted to unsigned
+            // Failure should be rare and location determination and message is delegated to failure functions
+            if (array == null || (uint)offset > (uint)array.Length || (uint)count > (uint)(array.Length - offset))
+                ThrowHelper.ThrowArraySegmentCtorValidationFailedExceptions(array, offset, count);
 
             _array = array;
             _offset = offset;
@@ -74,7 +71,7 @@ namespace System
             {
                 if ((uint)index >= (uint)_count)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(index));
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
                 }
 
                 return _array[_offset + index];
@@ -83,7 +80,7 @@ namespace System
             {
                 if ((uint)index >= (uint)_count)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(index));
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
                 }
 
                 _array[_offset + index] = value;
@@ -153,7 +150,7 @@ namespace System
             
             if ((uint)index > (uint)_count)
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
             return new ArraySegment<T>(_array, _offset + index, _count - index);
@@ -165,7 +162,7 @@ namespace System
 
             if ((uint)index > (uint)_count || (uint)count > (uint)(_count - index))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
             return new ArraySegment<T>(_array, _offset + index, count);
@@ -204,15 +201,16 @@ namespace System
             {
                 ThrowInvalidOperationIfDefault();
                 if (index < 0 || index >= _count)
-                    throw new ArgumentOutOfRangeException(nameof(index));
+                    ThrowHelper.ThrowArgumentOutOfRange_IndexException();
 
                 return _array[_offset + index];
             }
+
             set
             {
                 ThrowInvalidOperationIfDefault();
                 if (index < 0 || index >= _count)
-                    throw new ArgumentOutOfRangeException(nameof(index));
+                    ThrowHelper.ThrowArgumentOutOfRange_IndexException();
 
                 _array[_offset + index] = value;
             }
@@ -232,12 +230,12 @@ namespace System
 
         void IList<T>.Insert(int index, T item)
         {
-            throw new NotSupportedException();
+            ThrowHelper.ThrowNotSupportedException();
         }
 
         void IList<T>.RemoveAt(int index)
         {
-            throw new NotSupportedException();
+            ThrowHelper.ThrowNotSupportedException();
         }
         #endregion
 
@@ -248,7 +246,7 @@ namespace System
             {
                 ThrowInvalidOperationIfDefault();
                 if (index < 0 || index >= _count)
-                    throw new ArgumentOutOfRangeException(nameof(index));
+                    ThrowHelper.ThrowArgumentOutOfRange_IndexException();
 
                 return _array[_offset + index];
             }
@@ -268,12 +266,12 @@ namespace System
 
         void ICollection<T>.Add(T item)
         {
-            throw new NotSupportedException();
+            ThrowHelper.ThrowNotSupportedException();
         }
 
         void ICollection<T>.Clear()
         {
-            throw new NotSupportedException();
+            ThrowHelper.ThrowNotSupportedException();
         }
 
         bool ICollection<T>.Contains(T item)
@@ -288,23 +286,20 @@ namespace System
             return index >= 0;
         }
 
-        void ICollection<T>.CopyTo(T[] array, int arrayIndex)
-        {
-            ThrowInvalidOperationIfDefault();
-            System.Array.Copy(_array, _offset, array, arrayIndex, _count);
-        }
-
         bool ICollection<T>.Remove(T item)
         {
-            throw new NotSupportedException();
+            ThrowHelper.ThrowNotSupportedException();
+            return default(bool);
         }
         #endregion
 
         #region IEnumerable<T>
+
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
         #endregion
 
         #region IEnumerable
+
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         #endregion
 
@@ -312,7 +307,7 @@ namespace System
         {
             if (_array == null)
             {
-                throw new InvalidOperationException(SR.InvalidOperation_NullArray);
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NullArray);
             }
         }
 
@@ -330,10 +325,10 @@ namespace System
                 Debug.Assert(arraySegment.Count >= 0);
                 Debug.Assert(arraySegment.Offset + arraySegment.Count <= arraySegment.Array.Length);
 
-                _array = arraySegment._array;
-                _start = arraySegment._offset;
-                _end = _start + arraySegment._count;
-                _current = _start - 1;
+                _array = arraySegment.Array;
+                _start = arraySegment.Offset;
+                _end = arraySegment.Offset + arraySegment.Count;
+                _current = arraySegment.Offset - 1;
             }
 
             public bool MoveNext()
@@ -351,9 +346,9 @@ namespace System
                 get
                 {
                     if (_current < _start)
-                        throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
+                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumNotStarted();
                     if (_current >= _end)
-                        throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
+                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();
                     return _array[_current];
                 }
             }

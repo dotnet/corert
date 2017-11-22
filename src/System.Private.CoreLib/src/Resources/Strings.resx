@@ -2644,6 +2644,21 @@
   <data name="Argument_HasToBeArrayClass" xml:space="preserve">
     <value>Must be an array type.</value>
   </data>
+  <data name="Argument_IdnBadBidi" xml:space="preserve">
+    <value>Left to right characters may not be mixed with right to left characters in IDN labels.</value>
+  </data>
+  <data name="Argument_IdnBadLabelSize" xml:space="preserve">
+    <value>IDN labels must be between 1 and 63 characters long.</value>
+  </data>
+  <data name="Argument_IdnBadNameSize" xml:space="preserve">
+    <value>IDN names must be between 1 and {0} characters long.</value>
+  </data>
+  <data name="Argument_IdnBadPunycode" xml:space="preserve">
+    <value>Invalid IDN encoded string.</value>
+  </data>
+  <data name="Argument_IdnBadStd3" xml:space="preserve">
+    <value>Label contains character '{0}' not allowed with UseStd3AsciiRules</value>
+  </data>
   <data name="InvalidOperation_NotGenericType" xml:space="preserve">
     <value>This operation is only valid on generic types.</value>
   </data>

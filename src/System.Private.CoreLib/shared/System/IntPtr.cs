@@ -7,12 +7,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 
+#if BIT64
+using nint = System.Int64;
+#else
+using nint = System.Int32;
+#endif
+
 namespace System
 {
-    // CONTRACT with Runtime
-    // The IntPtr type is one of the primitives understood by the compilers and runtime
-    // Data Contract: Single field of type void *
-
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public struct IntPtr : IEquatable<IntPtr>, ISerializable
@@ -21,7 +23,7 @@ namespace System
         // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details. 
         // Please do not change the type, the name, or the semantic usage of this member without understanding the implication for tools. 
         // Get in touch with the diagnostics team if you have questions.
-        unsafe private void* _value; // The compiler treats void* closest to uint hence explicit casts are required to preserve int behavior. Do not rename (binary serialization)
+        unsafe private void* _value; // Do not rename (binary serialization)
 
         [Intrinsic]
         public static readonly IntPtr Zero;
@@ -30,11 +32,7 @@ namespace System
         [NonVersionable]
         public unsafe IntPtr(int value)
         {
-#if BIT64
-            _value = (void*)(long)value;
-#else
             _value = (void*)value;
-#endif
         }
 
         [Intrinsic]
@@ -71,19 +69,31 @@ namespace System
             if (info == null)
                 throw new ArgumentNullException(nameof(info));
 
-#if BIT64
-            info.AddValue("value", (long)(_value));
-#else // !BIT64 (32)
-            info.AddValue("value", (long)((int)_value));
-#endif
+            info.AddValue("value", ToInt64());
         }
 
-        [CLSCompliant(false)]
-        [Intrinsic]
-        [NonVersionable]
-        public unsafe void* ToPointer()
+        public unsafe override bool Equals(Object obj)
         {
-            return _value;
+            if (obj is IntPtr)
+            {
+                return (_value == ((IntPtr)obj)._value);
+            }
+            return false;
+        }
+
+        unsafe bool IEquatable<IntPtr>.Equals(IntPtr value)
+        {
+            return _value == value._value;
+        }
+
+        public unsafe override int GetHashCode()
+        {
+#if BIT64
+            long l = (long)_value;
+            return (unchecked((int)l) ^ (int)(l >> 32));
+#else
+            return unchecked((int)_value);
+#endif
         }
 
         [Intrinsic]
@@ -102,11 +112,7 @@ namespace System
         [NonVersionable]
         public unsafe long ToInt64()
         {
-#if BIT64
-            return (long)_value;
-#else
-            return (long)(int)_value;
-#endif
+            return (nint)_value;
         }
 
         [Intrinsic]
@@ -155,16 +161,7 @@ namespace System
         [NonVersionable]
         public static unsafe explicit operator long(IntPtr value)
         {
-#if BIT64
-            return (long)value._value;
-#else
-            return (long)(int)value._value;
-#endif
-        }
-
-        unsafe bool IEquatable<IntPtr>.Equals(IntPtr value)
-        {
-            return _value == value._value;
+            return (nint)value._value;
         }
 
         [Intrinsic]
@@ -181,11 +178,6 @@ namespace System
             return value1._value != value2._value;
         }
 
-        internal unsafe bool IsNull()
-        {
-            return (_value == null);
-        }
-
         [NonVersionable]
         public static IntPtr Add(IntPtr pointer, int offset)
         {
@@ -196,11 +188,7 @@ namespace System
         [NonVersionable]
         public static unsafe IntPtr operator +(IntPtr pointer, int offset)
         {
-#if BIT64
-            return new IntPtr((long)pointer._value + offset);
-#else
-            return new IntPtr((int)pointer._value + offset);
-#endif
+            return new IntPtr((nint)pointer._value + offset);
         }
 
         [NonVersionable]
@@ -213,62 +201,35 @@ namespace System
         [NonVersionable]
         public static unsafe IntPtr operator -(IntPtr pointer, int offset)
         {
-#if BIT64
-            return new IntPtr((long)pointer._value - offset);
-#else
-            return new IntPtr((int)pointer._value - offset);
-#endif
+            return new IntPtr((nint)pointer._value - offset);
         }
 
-        public static unsafe int Size
+        public static int Size
         {
             [Intrinsic]
             [NonVersionable]
             get
             {
-#if BIT64
-                return 8;
-#else
-                return 4;
-#endif
+                return sizeof(nint);
             }
+        }
+
+        [CLSCompliant(false)]
+        [Intrinsic]
+        [NonVersionable]
+        public unsafe void* ToPointer()
+        {
+            return _value;
         }
 
         public unsafe override String ToString()
         {
-#if BIT64
-            return ((long)_value).ToString(CultureInfo.InvariantCulture);
-#else
-            return ((int)_value).ToString(CultureInfo.InvariantCulture);
-#endif
+            return ((nint)_value).ToString(CultureInfo.InvariantCulture);
         }
 
         public unsafe String ToString(String format)
         {
-#if BIT64
-            return ((long)_value).ToString(format, CultureInfo.InvariantCulture);
-#else
-            return ((int)_value).ToString(format, CultureInfo.InvariantCulture);
-#endif
-        }
-
-        public unsafe override bool Equals(Object obj)
-        {
-            if (obj is IntPtr)
-            {
-                return (_value == ((IntPtr)obj)._value);
-            }
-            return false;
-        }
-
-        public unsafe override int GetHashCode()
-        {
-#if BIT64
-            long l = (long)_value;
-            return (unchecked((int)l) ^ (int)(l >> 32));
-#else
-            return unchecked((int)_value);
-#endif
+            return ((nint)_value).ToString(format, CultureInfo.InvariantCulture);
         }
     }
 }

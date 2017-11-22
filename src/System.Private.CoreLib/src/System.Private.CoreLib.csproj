@@ -186,7 +186,6 @@
     <Compile Include="System\AppContext.cs" />
     <Compile Include="System\AppContextConfigHelper.cs" />
     <Compile Include="System\AppContextDefaultValues.cs" />
-    <Compile Include="System\ArraySegment.cs" />
     <Compile Include="System\Buffer.cs" />
     <Compile Include="System\ByReference.cs" />
     <Compile Include="System\Collections\Concurrent\LowLevelConcurrentQueue.cs" />
@@ -200,12 +199,10 @@
     <Compile Include="System\Decimal.DecCalc.cs" />
     <Compile Include="System\DefaultBinder.CanConvert.cs" />
     <Compile Include="System\Diagnostics\Contracts\ContractsBCL.cs" />
-    <Compile Include="System\Empty.cs" />
     <Compile Include="System\Globalization\CharUnicodeInfoData.cs" />
     <Compile Include="System\Globalization\GlobalizationMode.cs" />
     <Compile Include="System\Globalization\GlobalizationMode.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
     <Compile Include="System\Globalization\GlobalizationMode.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
-    <Compile Include="System\Globalization\RegionInfo.cs" />
     <Compile Include="System\Guid.CoreRT.cs" />
     <Compile Include="System\InvokeUtils.cs" />
     <Compile Include="System\IO\BinaryReader.cs" />
@@ -231,16 +228,13 @@
     <Compile Include="System\Enum.cs" />
     <Compile Include="System\Environment.cs" />
     <Compile Include="System\GC.cs" />
-    <Compile Include="System\Globalization\CharUnicodeInfo.cs" />
     <Compile Include="System\Globalization\CultureData.cs" />
     <Compile Include="System\Globalization\CultureInfo.cs" />
-    <Compile Include="System\Globalization\IdnMapping.cs" />
     <Compile Include="System\Globalization\TextInfo.cs" />
     <Compile Include="System\Guid.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
     <Compile Include="System\Guid.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
     <Compile Include="System\Helpers.cs" />
     <Compile Include="System\InsufficientMemoryException.cs" />
-    <Compile Include="System\IntPtr.cs" />
     <Compile Include="System\Marvin.cs" />
     <Compile Include="System\Math.CoreRT.cs" />
     <Compile Include="System\MathF.CoreRT.cs" />
@@ -372,7 +366,6 @@
     <Compile Include="System\TypeUnificationKey.cs" />
     <Compile Include="System\TypeLoadException.cs" />
     <Compile Include="System\TypeLoadException.CoreRT.cs" />
-    <Compile Include="System\UIntPtr.cs" />
     <Compile Include="System\ValueType.cs" />
     <Compile Include="System\Runtime\RuntimeExportAttribute.cs" />
     <Compile Include="System\Runtime\RuntimeImportAttribute.cs" />
@@ -546,7 +539,6 @@
     <Compile Include="System\Globalization\CompareInfo.Windows.cs" />
     <Compile Include="System\Globalization\CultureData.Windows.cs" />
     <Compile Include="System\Globalization\TextInfo.Windows.cs" />
-    <Compile Include="System\Globalization\CalendarData.Windows.cs" />
     <Compile Include="System\Globalization\IdnMapping.Windows.cs" />
     <Compile Include="System\Text\Normalization.Windows.cs" />
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Idna.cs">
