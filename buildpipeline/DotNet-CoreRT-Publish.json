@@ -94,7 +94,7 @@
         "scriptType": "inlineScript",
         "scriptName": "",
         "arguments": "",
-        "inlineScript": "if ($env:Configuration -ne \"Release\") { exit }\n\n& $env:Build_SourcesDirectory\\scripts\\DotNet-Trusted-Publish\\Embed-Index.ps1 `\n  $env:Pipeline_SourcesDirectory\\packages\\AzureTransfer\\Windows_NT.x64.$env:Configuration\\Microsoft.TargetingPack.Private.CoreRT\\$env:AzureContainerSymbolPackageGlob `\n  $env:Build_StagingDirectory\\IndexedSymbolPackages",
+        "inlineScript": "if ($env:Configuration -ne \"Release\") { exit }\n\n& $env:Build_SourcesDirectory\\scripts\\DotNet-Trusted-Publish\\Embed-Index.ps1 `\n  $env:Pipeline_SourcesDirectory\\packages\\AzureTransfer\\Windows_NT.x64.$env:Configuration\\$env:AzureContainerSymbolPackageGlob `\n  $env:Build_StagingDirectory\\IndexedSymbolPackages",
         "workingFolder": "",
         "failOnStandardError": "true"
       }
@@ -152,7 +152,7 @@
         "scriptType": "inlineScript",
         "scriptName": "",
         "arguments": "$(MyGetApiKey)",
-        "inlineScript": "param($ApiKey)\nif ($env:Configuration -ne \"Release\") { exit }\n& $env:CustomNuGetPath push $env:Pipeline_SourcesDirectory\\packages\\AzureTransfer\\Windows_NT.x64.$env:Configuration\\Microsoft.TargetingPack.Private.CoreRT\\$env:AzureContainerPackageGlob $ApiKey -Source $env:MyGetFeedUrl -Timeout 3600",
+        "inlineScript": "param($ApiKey)\nif ($env:Configuration -ne \"Release\") { exit }\n& $env:CustomNuGetPath push $env:Pipeline_SourcesDirectory\\packages\\AzureTransfer\\Windows_NT.x64.$env:Configuration\\$env:AzureContainerPackageGlob $ApiKey -Source $env:MyGetFeedUrl -Timeout 3600",
         "workingFolder": "",
         "failOnStandardError": "true"
       }
@@ -192,7 +192,7 @@
         "scriptType": "inlineScript",
         "scriptName": "",
         "arguments": "-gitHubAuthToken $(UpdatePublishedVersions.AuthToken) -root $(Pipeline.SourcesDirectory)",
-        "inlineScript": "param($gitHubAuthToken, $root)\nif ($env:Configuration -ne \"Release\") { exit }\ncd $root\n. $root\\buildscripts\\UpdatePublishedVersions.ps1 `\n  -gitHubUser dotnet-build-bot -gitHubEmail dotnet-build-bot@microsoft.com `\n  -gitHubAuthToken $gitHubAuthToken `\n  -versionsRepoOwner $env:VersionsRepoOwner -versionsRepo $env:VersionsRepo `\n  -versionsRepoPath build-info/dotnet/$env:GitHubRepositoryName/$env:SourceBranch `\n  -nupkgPath $root\\packages\\AzureTransfer\\Windows_NT.x64.$env:Configuration\\Microsoft.TargetingPack.Private.CoreRT\\$env:AzureContainerPackageGlob",
+        "inlineScript": "param($gitHubAuthToken, $root)\nif ($env:Configuration -ne \"Release\") { exit }\ncd $root\n. $root\\buildscripts\\UpdatePublishedVersions.ps1 `\n  -gitHubUser dotnet-build-bot -gitHubEmail dotnet-build-bot@microsoft.com `\n  -gitHubAuthToken $gitHubAuthToken `\n  -versionsRepoOwner $env:VersionsRepoOwner -versionsRepo $env:VersionsRepo `\n  -versionsRepoPath build-info/dotnet/$env:GitHubRepositoryName/$env:SourceBranch `\n  -nupkgPath $root\\packages\\AzureTransfer\\Windows_NT.x64.$env:Configuration\\$env:AzureContainerPackageGlob",
         "workingFolder": "",
         "failOnStandardError": "true"
       }

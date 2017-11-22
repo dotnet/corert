@@ -1,37 +1,31 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <PackageTargetRuntime/>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <BaseLinePackageDependencies>false</BaseLinePackageDependencies>
     <PackagePlatforms>x64;</PackagePlatforms>
     <PreventImplementationReference>true</PreventImplementationReference>
     <SkipValidatePackage>true</SkipValidatePackage>
 
+    <!-- Override this property so that the package name won't look like runtime.[RID].[TFM].[ID] -->
+    <PackageTargetRuntime></PackageTargetRuntime>
   </PropertyGroup>
-
   <ItemGroup>
-    <ProjectReference Include="$(PackageSourceDirectory)ILCompiler\src\ILCompiler.csproj"/>
-    <ProjectReference Include="$(PackageSourceDirectory)ILCompiler.Compiler\src\ILCompiler.Compiler.csproj"/>
-    <ProjectReference Include="$(PackageSourceDirectory)ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj"/>
-    <ProjectReference Include="$(PackageSourceDirectory)ILCompiler.MetadataTransform\src\ILCompiler.MetadataTransform.csproj"/>
-    <ProjectReference Include="$(PackageSourceDirectory)ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj"/>
-    <ProjectReference Include="$(PackageSourceDirectory)ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj"/>
-
-    <Dependency Include="Microsoft.DotNet.ObjectWriter">
-      <Version>1.0.13-prerelease-00001</Version>
-    </Dependency>
-    <Dependency Include="Microsoft.NetCore.Jit">
-      <Version>1.2.0-beta-24815-03</Version>
-    </Dependency>
-    <Dependency Include="System.Collections.Immutable">
-      <Version>1.2.0</Version>
-    </Dependency>
-
-
+    <File Include="$(MSBuildThisFileDirectory)\Microsoft.DotNet.ILCompiler.targets" >
+      <TargetPath>build</TargetPath>
+    </File>
+    <File Include="$(PackageSourceDirectory)\BuildIntegration\*">
+      <TargetPath>targets</TargetPath>
+    </File>
+    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\tools\*" Exclude="$(BaseOutputPath)\$(OSPlatformConfig)\tools\*.pdb">
+      <TargetPath>tools</TargetPath>
+    </File>
+    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\*" Exclude="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\*.pdb">
+      <TargetPath>sdk</TargetPath>
+    </File>
+    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\framework\*.dll">
+      <TargetPath>framework</TargetPath>
+    </File>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\src\dir.targets" />
