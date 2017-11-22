@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System
@@ -30,7 +31,7 @@ namespace System
 
         internal bool IsNegative
         {
-            get { return (uflags & SignMask) != 0; }
+            get { return flags < 0; }
             set { uflags = (uflags & ~SignMask) | (value ? SignMask : 0); }
         }
 
@@ -167,15 +168,6 @@ namespace System
                 return (uint)(*(ulong*)&d >> 52) & 0x7FFu;
             }
 
-            private static ulong DivMod64by32(ulong num, uint den)
-            {
-                Split64 sdl = new Split64();
-
-                sdl.Low32 = (uint)(num / den);
-                sdl.High32 = (uint)(num % den);
-                return sdl.int64;
-            }
-
             private static ulong UInt32x32To64(uint a, uint b)
             {
                 return (ulong)a * (ulong)b;
@@ -229,12 +221,16 @@ namespace System
                     div = tmp / ulDen;
                     bufNum.High64 = div;
                     tmp = ((tmp - div * ulDen) << 32) | bufNum.U0;
+                    if (tmp == 0)
+                        return 0;
                     uint div32 = (uint)(tmp / ulDen);
                     bufNum.U0 = div32;
                     return (uint)tmp - div32 * ulDen;
                 }
 
                 tmp = bufNum.Low64;
+                if (tmp == 0)
+                    return 0;
                 div = tmp / ulDen;
                 bufNum.Low64 = div;
                 return (uint)(tmp - div * ulDen);
@@ -544,31 +540,7 @@ PosRem:
                 if (iHiRes > 2)
                 {
                     iNewScale = (int)iHiRes * 32 - 64 - 1;
-                    // Find the MSB.
-                    //
-                    uint ulTmp = rgulRes[iHiRes];
-                    iNewScale--;
-                    if ((ulTmp & 0xFFFF0000) == 0)
-                    {
-                        ulTmp <<= 16;
-                        iNewScale -= 16;
-                    }
-                    if ((ulTmp & 0xFF000000) == 0)
-                    {
-                        ulTmp <<= 8;
-                        iNewScale -= 8;
-                    }
-                    if ((ulTmp & 0xF0000000) == 0)
-                    {
-                        ulTmp <<= 4;
-                        iNewScale -= 4;
-                    }
-                    if ((ulTmp & 0xC0000000) == 0)
-                    {
-                        ulTmp <<= 2;
-                        iNewScale -= 2;
-                    }
-                    iNewScale -= (int)ulTmp >> 31;
+                    iNewScale -= LeadingZeroCount(rgulRes[iHiRes]);
 
                     // Multiply bit position by log10(2) to figure it's power of 10.
                     // We scale the log by 256.  log(2) = .30103, * 256 = 77.  Doing this 
@@ -784,6 +756,33 @@ ThrowOverflow:
                 throw new OverflowException(SR.Overflow_Decimal);
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static int LeadingZeroCount(uint value)
+            {
+                int c = 1;
+                if ((value & 0xFFFF0000) == 0)
+                {
+                    value <<= 16;
+                    c += 16;
+                }
+                if ((value & 0xFF000000) == 0)
+                {
+                    value <<= 8;
+                    c += 8;
+                }
+                if ((value & 0xF0000000) == 0)
+                {
+                    value <<= 4;
+                    c += 4;
+                }
+                if ((value & 0xC0000000) == 0)
+                {
+                    value <<= 2;
+                    c += 2;
+                }
+                return c + ((int)value >> 31);
+            }
+
             // Adjust the quotient to deal with an overflow. We need to divide by 10, 
             // feed in the high bit to undo the overflow and then round as required, 
             private static int OverflowUnscale(ref Buf12 bufQuo, int iScale, bool fRemainder)
@@ -791,21 +790,20 @@ ThrowOverflow:
                 if (--iScale < 0)
                     throw new OverflowException(SR.Overflow_Decimal);
 
-                Split64 sdlTmp = new Split64();
+                Debug.Assert(bufQuo.U2 == 0);
 
                 // We have overflown, so load the high bit with a one.
-                sdlTmp.High32 = 1;
-                sdlTmp.Low32 = bufQuo.U2;
-                sdlTmp.int64 = DivMod64by32(sdlTmp.int64, 10);
-                bufQuo.U2 = sdlTmp.Low32;
-                sdlTmp.Low32 = bufQuo.U1;
-                sdlTmp.int64 = DivMod64by32(sdlTmp.int64, 10);
-                bufQuo.U1 = sdlTmp.Low32;
-                sdlTmp.Low32 = bufQuo.U0;
-                sdlTmp.int64 = DivMod64by32(sdlTmp.int64, 10);
-                bufQuo.U0 = sdlTmp.Low32;
+                const ulong highbit = 1UL << 32;
+                bufQuo.U2 = (uint)(highbit / 10);
+                ulong tmp = ((highbit % 10) << 32) + bufQuo.U1;
+                uint div = (uint)(tmp / 10);
+                bufQuo.U1 = div;
+                tmp = ((tmp - div * 10) << 32) + bufQuo.U0;
+                div = (uint)(tmp / 10);
+                bufQuo.U0 = div;
+                uint remainder = (uint)(tmp - div * 10);
                 // The remainder is the last digit that does not fit, so we can use it to work out if we need to round up
-                if ((sdlTmp.High32 > 5) || ((sdlTmp.High32 == 5) && (fRemainder || (bufQuo.U0 & 1) != 0)))
+                if (remainder > 5 || remainder == 5 && (fRemainder || (bufQuo.U0 & 1) != 0))
                     Add32To96(ref bufQuo, 1);
                 return iScale;
             }
@@ -1246,15 +1244,6 @@ ReturnResult:
                 return;
             }
 
-            // Returns the absolute value of the given Decimal. If d is
-            // positive, the result is d. If d is negative, the result
-            // is -d.
-            //
-            private static Decimal Abs(Decimal d)
-            {
-                return new Decimal(d.lo, d.mid, d.hi, (int)(d.uflags & ~SignMask));
-            }
-
             #endregion
 
             //**********************************************************************
@@ -1331,6 +1320,9 @@ ThrowOverflow:
                 ulong low64 = d1.Low64;
                 uint high = d1.High;
 
+                ulong d2Low64 = d2.Low64;
+                uint d2High = d2.High;
+
                 if (iScale != 0)
                 {
                     iScale >>= ScaleShift;
@@ -1342,9 +1334,14 @@ ThrowOverflow:
                         // Guessed scale factor wrong. Swap operands.
                         iScale = -iScale;
                         sign = -sign;
-                        low64 = d2.Low64;
-                        high = d2.High;
-                        d2 = d1;
+
+                        ulong tmp64 = low64;
+                        low64 = d2Low64;
+                        d2Low64 = tmp64;
+
+                        uint tmp = high;
+                        high = d2High;
+                        d2High = tmp;
                     }
 
                     // d1 will need to be multiplied by 10^iScale so it will have the same scale as d2.
@@ -1364,7 +1361,7 @@ ThrowOverflow:
                     } while ((iScale -= MaxInt32Scale) > 0);
                 }
 
-                uint cmpHigh = high - d2.High;
+                uint cmpHigh = high - d2High;
                 if (cmpHigh != 0)
                 {
                     // check for overflow
@@ -1373,7 +1370,7 @@ ThrowOverflow:
                     return sign;
                 }
 
-                ulong cmpLow64 = low64 - d2.Low64;
+                ulong cmpLow64 = low64 - d2Low64;
                 if (cmpLow64 == 0)
                     sign = 0;
                 // check for overflow
@@ -1894,7 +1891,7 @@ ThrowOverflow:
                 const double ds2to64 = 1.8446744073709552e+019;
 
                 double dbl = ((double)pdecIn.Low64 +
-                      (double)pdecIn.High * ds2to64) / s_doublePowers10[pdecIn.Scale];
+                    (double)pdecIn.High * ds2to64) / s_doublePowers10[pdecIn.Scale];
 
                 if (pdecIn.IsNegative)
                     dbl = -dbl;
@@ -2019,28 +2016,7 @@ ThrowOverflow:
                     if (ulTmp == 0)
                         ulTmp = d2.Mid;
 
-                    iCurScale = 1;
-                    if ((ulTmp & 0xFFFF0000) == 0)
-                    {
-                        ulTmp <<= 16;
-                        iCurScale += 16;
-                    }
-                    if ((ulTmp & 0xFF000000) == 0)
-                    {
-                        ulTmp <<= 8;
-                        iCurScale += 8;
-                    }
-                    if ((ulTmp & 0xF0000000) == 0)
-                    {
-                        ulTmp <<= 4;
-                        iCurScale += 4;
-                    }
-                    if ((ulTmp & 0xC0000000) == 0)
-                    {
-                        ulTmp <<= 2;
-                        iCurScale += 2;
-                    }
-                    iCurScale += (int)ulTmp >> 31;
+                    iCurScale = LeadingZeroCount(ulTmp);
 
                     // Shift both dividend and divisor left by iCurScale.
                     // 
@@ -2194,7 +2170,7 @@ Unscale:
                     // we can extract.  We use this as a quick test on whether to try a
                     // given power.
                     // 
-                    while (((uint)low64 & 0xFF) == 0 && iScale >= 8)
+                    while ((byte)low64 == 0 && iScale >= 8)
                     {
                         if (Div96ByConst100000000(ref bufQuo) == 0)
                         {
@@ -2255,12 +2231,9 @@ Unscale:
 
 RoundUp:
                 {
-                    if (++bufQuo.Low64 == 0)
+                    if (++bufQuo.Low64 == 0 && ++bufQuo.U2 == 0)
                     {
-                        if (++bufQuo.U2 == 0)
-                        {
-                            iScale = OverflowUnscale(ref bufQuo, iScale, true);
-                        }
+                        iScale = OverflowUnscale(ref bufQuo, iScale, true);
                     }
                     goto Unscale;
                 }
@@ -2283,7 +2256,7 @@ ThrowOverflow:
                 // This piece of code is to work around the fact that Dividing a decimal with 28 digits number by decimal which causes
                 // causes the result to be 28 digits, can cause to be incorrectly rounded up.
                 // eg. Decimal.MaxValue / 2 * Decimal.MaxValue will overflow since the division by 2 was rounded instead of being truncked.
-                if (Abs(d1) < Abs(d2))
+                if (Math.Abs(d1) < Math.Abs(d2))
                 {
                     return d1;
                 }
@@ -2517,28 +2490,6 @@ done:
             }
 
             #endregion
-
-            private struct Split64
-            {
-                internal ulong int64;
-
-                public Split64(ulong value)
-                {
-                    int64 = value;
-                }
-
-                public uint Low32
-                {
-                    get { return (uint)int64; }
-                    set { int64 = (int64 & 0xffffffff00000000) | value; }
-                }
-
-                public uint High32
-                {
-                    get { return (uint)(int64 >> 32); }
-                    set { int64 = (int64 & 0x00000000ffffffff) | ((ulong)value << 32); }
-                }
-            }
 
             struct PowerOvfl
             {
