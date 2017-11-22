@@ -119,7 +119,7 @@ namespace System
                     if (nullableEEType.IsNullable)
                     {
                         EETypePtr underlyingEEType = nullableEEType.NullableType;
-                        result = ReflectionCoreNonPortable.GetRuntimeTypeForEEType(underlyingEEType);
+                        result = RuntimeTypeUnifier.GetRuntimeTypeForEEType(underlyingEEType);
                     }
                 }
             }

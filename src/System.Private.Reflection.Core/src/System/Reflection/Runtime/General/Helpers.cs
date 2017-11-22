@@ -15,8 +15,8 @@ using System.Reflection.Runtime.MethodInfos;
 
 using Internal.LowLevelLinq;
 using Internal.Runtime.Augments;
+using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
-using Internal.Reflection.Core.NonPortable;
 using Internal.Reflection.Extensions.NonPortable;
 
 namespace System.Reflection.Runtime.General
@@ -123,7 +123,7 @@ namespace System.Reflection.Runtime.General
         public static TypeLoadException CreateTypeLoadException(string typeName, string assemblyName)
         {
             string message = SR.Format(SR.TypeLoad_TypeNotFoundInAssembly, typeName, assemblyName);
-            return ReflectionCoreNonPortable.CreateTypeLoadException(message, typeName);
+            return ReflectionAugments.CreateTypeLoadException(message, typeName);
         }
 
         // Escape identifiers as described in "Specifying Fully Qualified Type Names" on msdn.

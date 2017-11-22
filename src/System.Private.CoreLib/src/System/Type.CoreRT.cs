@@ -17,7 +17,7 @@ namespace System
         public bool IsInterface => (GetAttributeFlagsImpl() & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface;
 
         [Intrinsic]
-        public static Type GetTypeFromHandle(RuntimeTypeHandle handle) => ReflectionCoreNonPortable.GetTypeForRuntimeTypeHandle(handle);
+        public static Type GetTypeFromHandle(RuntimeTypeHandle handle) => RuntimeTypeUnifier.GetTypeForRuntimeTypeHandle(handle);
 
         [Intrinsic]
         public static Type GetType(string typeName) => GetType(typeName, throwOnError: false, ignoreCase: false);
