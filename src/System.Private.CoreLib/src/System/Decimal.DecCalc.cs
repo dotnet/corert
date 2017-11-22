@@ -2442,61 +2442,6 @@ ThrowOverflow:
             }
 
             //**********************************************************************
-            // VarDecRound - Decimal Round
-            //**********************************************************************
-            internal static unsafe void VarDecRound(ref Decimal input, int decimals, ref Decimal result)
-            {
-                Buf12 bufNum;
-                _ = &bufNum; // workaround for CS0165
-                uint remainder;
-                uint sticky;
-                uint power;
-                int scale;
-
-                System.Diagnostics.Debug.Assert(decimals >= 0);
-
-                scale = input.Scale - decimals;
-                if (scale > 0)
-                {
-                    bufNum.U0 = input.ulo;
-                    bufNum.U1 = input.umid;
-                    bufNum.U2 = input.uhi;
-                    result.IsNegative = input.IsNegative;
-                    remainder = sticky = 0;
-
-                    do
-                    {
-                        sticky |= remainder;
-                        if (scale > MaxInt32Scale)
-                            power = TenToPowerNine;
-                        else
-                            power = s_powers10[scale];
-
-                        remainder = Div96By32(ref bufNum, power);
-                        scale -= MaxInt32Scale;
-                    } while (scale > 0);
-
-                    // Now round.  ulRem has last remainder, ulSticky has sticky bits.        
-                    // To do IEEE rounding, we add LSB of result to sticky bits so        
-                    // either causes round up if remainder * 2 == last divisor.        
-                    sticky |= bufNum.U0 & 1;
-                    remainder = (remainder << 1) + (uint)(sticky != 0 ? 1 : 0);
-                    if (power < remainder
-                        && ++bufNum.U0 == 0
-                        && ++bufNum.U1 == 0)
-                        ++bufNum.U2;
-
-                    result.ulo = bufNum.U0;
-                    result.umid = bufNum.U1;
-                    result.uhi = bufNum.U2;
-                    result.Scale = decimals;
-                    return;
-                }
-
-                result = input;
-            }
-
-            //**********************************************************************
             // VarDecMod - Computes the remainder between two decimals
             //**********************************************************************
             internal static Decimal VarDecMod(ref Decimal d1, ref Decimal d2)
@@ -2547,88 +2492,134 @@ ThrowOverflow:
                 return result;
             }
 
-
-            // This method does a 'raw' and 'unchecked' addition of a UInt32 to a Decimal in place. 
-            // 'raw' means that it operates on the internal 96-bit unsigned integer value and 
-            // ingores the sign and scale. This means that it is not equivalent to just adding
-            // that number, as the sign and scale are effectively applied to the UInt32 value also.
-            // 'unchecked' means that it does not fail if you overflow the 96 bit value.
-            private static void InternalAddUInt32RawUnchecked(ref Decimal value, UInt32 i)
+            internal enum RoundingMode
             {
-                UInt32 v;
-                UInt32 sum;
-                v = value.ulo;
-                sum = v + i;
-                value.ulo = sum;
-                if (sum < v || sum < i)
+                ToEven = 0,
+                AwayFromZero = 1,
+                Truncate = 2,
+                Floor = 3,
+                Ceiling = 4,
+            }
+
+            // Does an in-place round by the specified scale
+            internal static void InternalRound(ref Decimal d, uint scale, RoundingMode mode)
+            {
+                // the scale becomes the desired decimal count
+                d.uflags -= scale << ScaleShift;
+
+                uint remainder, sticky = 0, power;
+                // First divide the value by constant 10^9 up to three times
+                while (scale >= MaxInt32Scale)
                 {
-                    v = value.umid;
-                    sum = v + 1;
-                    value.umid = sum;
-                    if (sum < v || sum < 1)
+                    scale -= MaxInt32Scale;
+
+                    const uint divisor = TenToPowerNine;
+                    uint n = d.uhi;
+                    if (n == 0)
                     {
-                        value.uhi = value.uhi + 1;
+                        ulong tmp = d.Low64;
+                        ulong div = tmp / divisor;
+                        d.Low64 = div;
+                        remainder = (uint)(tmp - div * divisor);
+                    }
+                    else
+                    {
+                        uint q;
+                        d.uhi = q = n / divisor;
+                        remainder = n - q * divisor;
+                        n = d.umid;
+                        if ((n | remainder) != 0)
+                        {
+                            d.umid = q = (uint)((((ulong)remainder << 32) | n) / divisor);
+                            remainder = n - q * divisor;
+                        }
+                        n = d.ulo;
+                        if ((n | remainder) != 0)
+                        {
+                            d.ulo = q = (uint)((((ulong)remainder << 32) | n) / divisor);
+                            remainder = n - q * divisor;
+                        }
+                    }
+                    power = divisor;
+                    if (scale == 0)
+                        goto checkRemainder;
+                    sticky |= remainder;
+                }
+
+                {
+                    power = s_powers10[scale];
+                    // TODO: https://github.com/dotnet/coreclr/issues/3439
+                    uint n = d.uhi;
+                    if (n == 0)
+                    {
+                        ulong tmp = d.Low64;
+                        if (tmp == 0)
+                        {
+                            if (mode <= RoundingMode.Truncate)
+                                goto done;
+                            remainder = 0;
+                            goto checkRemainder;
+                        }
+                        ulong div = tmp / power;
+                        d.Low64 = div;
+                        remainder = (uint)(tmp - div * power);
+                    }
+                    else
+                    {
+                        uint q;
+                        d.uhi = q = n / power;
+                        remainder = n - q * power;
+                        n = d.umid;
+                        if ((n | remainder) != 0)
+                        {
+                            d.umid = q = (uint)((((ulong)remainder << 32) | n) / power);
+                            remainder = n - q * power;
+                        }
+                        n = d.ulo;
+                        if ((n | remainder) != 0)
+                        {
+                            d.ulo = q = (uint)((((ulong)remainder << 32) | n) / power);
+                            remainder = n - q * power;
+                        }
                     }
                 }
-            }
 
-            // This method does an in-place division of a decimal by a UInt32, returning the remainder. 
-            // Although it does not operate on the sign or scale, this does not result in any 
-            // caveat for the result. It is equivalent to dividing by that number.
-            private static UInt32 InternalDivRemUInt32(ref Decimal value, UInt32 divisor)
-            {
-                UInt32 remainder = 0;
-                UInt64 n;
-                if (value.uhi != 0)
+checkRemainder:
+                if (mode == RoundingMode.Truncate)
+                    goto done;
+                else if (mode == RoundingMode.ToEven)
                 {
-                    n = value.uhi;
-                    value.uhi = (UInt32)(n / divisor);
-                    remainder = (UInt32)(n % divisor);
+                    // To do IEEE rounding, we add LSB of result to sticky bits so either causes round up if remainder * 2 == last divisor.
+                    remainder <<= 1;
+                    if ((sticky | d.ulo & 1) != 0)
+                        remainder++;
+                    if (power >= remainder)
+                        goto done;
                 }
-                if (value.umid != 0 || remainder != 0)
+                else if (mode == RoundingMode.AwayFromZero)
                 {
-                    n = ((UInt64)remainder << 32) | value.umid;
-                    value.umid = (UInt32)(n / divisor);
-                    remainder = (UInt32)(n % divisor);
+                    // Round away from zero at the mid point.
+                    remainder <<= 1;
+                    if (power > remainder)
+                        goto done;
                 }
-                if (value.ulo != 0 || remainder != 0)
+                else if (mode == RoundingMode.Floor)
                 {
-                    n = ((UInt64)remainder << 32) | value.ulo;
-                    value.ulo = (UInt32)(n / divisor);
-                    remainder = (UInt32)(n % divisor);
+                    // Round toward -infinity if we have chopped off a non-zero amount from a negative value.
+                    if ((remainder | sticky) == 0 || !d.IsNegative)
+                        goto done;
                 }
-                return remainder;
-            }
-
-            // Does an in-place round the specified number of digits, rounding mid-point values
-            // away from zero
-            internal static void InternalRoundFromZero(ref Decimal d, int decimalCount)
-            {
-                Int32 scale = d.Scale;
-                Int32 scaleDifference = scale - decimalCount;
-                if (scaleDifference <= 0)
+                else
                 {
-                    return;
+                    Debug.Assert(mode == RoundingMode.Ceiling);
+                    // Round toward infinity if we have chopped off a non-zero amount from a positive value.
+                    if ((remainder | sticky) == 0 || d.IsNegative)
+                        goto done;
                 }
-                // Divide the value by 10^scaleDifference
-                UInt32 lastRemainder;
-                UInt32 lastDivisor;
-                do
-                {
-                    Int32 diffChunk = (scaleDifference > MaxInt32Scale) ? MaxInt32Scale : scaleDifference;
-                    lastDivisor = s_powers10[diffChunk];
-                    lastRemainder = InternalDivRemUInt32(ref d, lastDivisor);
-                    scaleDifference -= diffChunk;
-                } while (scaleDifference > 0);
-
-                // Round away from zero at the mid point
-                if (lastRemainder >= (lastDivisor >> 1))
-                {
-                    InternalAddUInt32RawUnchecked(ref d, 1);
-                }
-
-                // the scale becomes the desired decimal count
-                d.Scale = decimalCount;
+                if (++d.Low64 == 0)
+                    d.uhi++;
+done:
+                return;
             }
 
             #region Number Formatting helpers
