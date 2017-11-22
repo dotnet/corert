@@ -37,7 +37,6 @@ namespace ILCompiler
         protected readonly CompilationModuleGroup _compilationModuleGroup;
         protected readonly CompilerTypeSystemContext _typeSystemContext;
         protected readonly MetadataBlockingPolicy _blockingPolicy;
-        protected readonly StackTraceEmissionPolicy _stackTraceEmissionPolicy;
 
         private List<NonGCStaticsNode> _cctorContextsGenerated = new List<NonGCStaticsNode>();
         private HashSet<TypeDesc> _typesWithEETypesGenerated = new HashSet<TypeDesc>();
@@ -53,12 +52,11 @@ namespace ILCompiler
         internal DynamicInvokeTemplateDataNode DynamicInvokeTemplateData { get; private set; }
         public virtual bool SupportsReflection => true;
 
-        public MetadataManager(CompilationModuleGroup compilationModuleGroup, CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy, StackTraceEmissionPolicy stackTraceEmissionPolicy)
+        public MetadataManager(CompilationModuleGroup compilationModuleGroup, CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy)
         {
             _compilationModuleGroup = compilationModuleGroup;
             _typeSystemContext = typeSystemContext;
             _blockingPolicy = blockingPolicy;
-            _stackTraceEmissionPolicy = stackTraceEmissionPolicy;
         }
 
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
@@ -145,10 +143,10 @@ namespace ILCompiler
 #if !CORERT
             var stackTraceEmbeddedMetadataNode = new StackTraceEmbeddedMetadataNode();
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdStackTraceEmbeddedMetadata), stackTraceEmbeddedMetadataNode, stackTraceEmbeddedMetadataNode, stackTraceEmbeddedMetadataNode.EndSymbol);
+#endif
 
             var stackTraceMethodMappingNode = new StackTraceMethodMappingNode();
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdStackTraceMethodRvaToTokenMapping), stackTraceMethodMappingNode, stackTraceMethodMappingNode, stackTraceMethodMappingNode.EndSymbol);
-#endif
             
             // The external references tables should go last
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable), commonFixupsTableNode, commonFixupsTableNode, commonFixupsTableNode.EndSymbol);

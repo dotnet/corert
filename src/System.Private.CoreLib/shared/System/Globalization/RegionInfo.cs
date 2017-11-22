@@ -15,7 +15,6 @@
 ////////////////////////////////////////////////////////////////////////////
 
 using System.Diagnostics;
-using System.Runtime.Serialization;
 
 namespace System.Globalization
 {
@@ -65,6 +64,7 @@ namespace System.Globalization
                 throw new ArgumentException(SR.Argument_NoRegionInvariantCulture, nameof(name));
             }
 
+
             //
             // For CoreCLR we only want the region names that are full culture names
             //
@@ -86,7 +86,7 @@ namespace System.Globalization
         public RegionInfo(int culture)
         {
             if (culture == CultureInfo.LOCALE_INVARIANT) //The InvariantCulture has no matching region
-            {
+            { 
                 throw new ArgumentException(SR.Argument_NoRegionInvariantCulture);
             }
 
@@ -101,7 +101,7 @@ namespace System.Globalization
                 // Not supposed to be neutral
                 throw new ArgumentException(SR.Format(SR.Argument_CustomCultureCannotBePassedByNumber, culture), nameof(culture));
             }
-
+            
             _cultureData = CultureData.GetCultureData(culture, true);
             _name = _cultureData.SREGIONNAME;
 
@@ -120,11 +120,8 @@ namespace System.Globalization
 
         private void SetName(string name)
         {
-            // when creating region by culture name, we keep the region name as the culture name so regions
-            // created by custom culture names can be differentiated from built in regions.
-            this._name = name.Equals(_cultureData.SREGIONNAME, StringComparison.OrdinalIgnoreCase) ?
-                                _cultureData.SREGIONNAME :
-                                _cultureData.CultureName;
+            // Use the name of the region we found
+            _name = _cultureData.SREGIONNAME;
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -281,7 +278,7 @@ namespace System.Globalization
             }
         }
 
-        public virtual int GeoId
+        public virtual int GeoId 
         {
             get
             {

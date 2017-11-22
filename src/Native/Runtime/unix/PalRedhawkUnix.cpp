@@ -1205,8 +1205,6 @@ REDHAWK_PALEXPORT bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out
     return true;
 }
 
-extern "C" int main(int argc, char** argv);
-
 // retrieves the full path to the specified module, if moduleBase is NULL retreieves the full path to the
 // executable module of the current process.
 //
@@ -1214,13 +1212,6 @@ extern "C" int main(int argc, char** argv);
 //
 REDHAWK_PALEXPORT Int32 PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase)
 {
-    if (moduleBase == NULL)
-    {
-        // Get an address of the "main" function, which causes the dladdr to return
-        // path of the main executable
-        moduleBase = (HANDLE)&main;
-    }
-
     Dl_info dl;
     if (dladdr(moduleBase, &dl) == 0)
     {

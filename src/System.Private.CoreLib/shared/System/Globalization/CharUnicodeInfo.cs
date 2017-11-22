@@ -33,8 +33,6 @@ namespace System.Globalization
         internal const int UNICODE_CATEGORY_OFFSET = 0;
         internal const int BIDI_CATEGORY_OFFSET = 1;
 
-
-
         // The starting codepoint for Unicode plane 1.  Plane 1 contains 0x010000 ~ 0x01ffff.
         internal const int UNICODE_PLANE01_START = 0x10000;
 
@@ -177,7 +175,7 @@ namespace System.Globalization
             fixed (ushort* pUshortPtr = &(s_pNumericLevel1Index[index]))
             {
                 byte* pBytePtr = (byte*)pUshortPtr;
-                fixed (byte* pByteNum = &s_pNumericValues[0])
+                fixed (byte* pByteNum = s_pNumericValues)
                 {
                     double* pDouble = (double*)pByteNum;
                     return pDouble[pBytePtr[(ch & 0x000f)]];
@@ -355,6 +353,19 @@ namespace System.Globalization
             Debug.Assert(index < value.Length, "index < value.Length");
 
             return (InternalGetUnicodeCategory(InternalConvertToUtf32(value, index)));
+        }
+
+        internal static BidiCategory GetBidiCategory(String s, int index)
+        {
+            if (s == null)
+                throw new ArgumentNullException(nameof(s));
+
+            if (((uint)index) >= ((uint)s.Length))
+            {
+                throw new ArgumentOutOfRangeException(nameof(index));
+            }
+
+            return ((BidiCategory) InternalGetCategoryValue(InternalConvertToUtf32(s, index), BIDI_CATEGORY_OFFSET));
         }
 
         ////////////////////////////////////////////////////////////////////////

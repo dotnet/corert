@@ -2,11 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+// Helper methods for using Tasks to implement the APM pattern.
 //
-// Code is duplicated from CoreFX repo. Please keep it in sync
+// Example usage, wrapping a Task<int>-returning FooAsync method with Begin/EndFoo methods:
+//
+//     public IAsyncResult BeginFoo(..., AsyncCallback callback, object state)
+//     {
+//         Task<int> t = FooAsync(...);
+//         return TaskToApm.Begin(t, callback, state);
+//     }
+//     public int EndFoo(IAsyncResult asyncResult)
+//     {
+//         return TaskToApm.End<int>(asyncResult);
+//     }
 
 using System.Diagnostics;
-using System.IO;
 
 namespace System.Threading.Tasks
 {
@@ -34,10 +44,7 @@ namespace System.Threading.Tasks
             {
                 // Synchronous completion.
                 asyncResult = new TaskWrapperAsyncResult(task, state, completedSynchronously: true);
-                if (callback != null)
-                {
-                    callback(asyncResult);
-                }
+                callback?.Invoke(asyncResult);
             }
             else
             {

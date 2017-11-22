@@ -21,4 +21,16 @@ namespace ILCompiler
             return false;
         }
     }
+
+    /// <summary>
+    /// Stack trace emission policy that ensures presence of stack trace metadata for all
+    /// <see cref="Internal.TypeSystem.Ecma.EcmaMethod"/>-based methods.
+    /// </summary>
+    public class EcmaMethodStackTraceEmissionPolicy : StackTraceEmissionPolicy
+    {
+        public override bool ShouldIncludeMethod(MethodDesc method)
+        {
+            return method.GetTypicalMethodDefinition() is Internal.TypeSystem.Ecma.EcmaMethod;
+        }
+    }
 }

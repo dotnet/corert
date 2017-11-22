@@ -138,7 +138,10 @@ namespace Internal.IL
                     break;
                 case "EqualityComparerHelpers":
                     {
-                        if (methodName == "EnumOnlyEquals" && owningType.Namespace == "Internal.IntrinsicSupport")
+                        if (owningType.Namespace != "Internal.IntrinsicSupport")
+                            return null;
+
+                        if (methodName == "EnumOnlyEquals")
                         {
                             // EnumOnlyEquals would basically like to do this:
                             // static bool EnumOnlyEquals<T>(T x, T y) where T: struct => x == y;
@@ -173,8 +176,61 @@ namespace Internal.IL
                             },
                             Array.Empty<LocalVariableDefinition>(), null);
                         }
-                        break;
+                        else if (methodName == "GetComparerForReferenceTypesOnly")
+                        {
+                            TypeDesc elementType = method.Instantiation[0];
+                            if (!elementType.IsRuntimeDeterminedSubtype
+                                && !elementType.IsCanonicalSubtype(CanonicalFormKind.Any)
+                                && !elementType.IsGCPointer)
+                            {
+                                return new ILStubMethodIL(method, new byte[] {
+                                    (byte)ILOpcode.ldnull,
+                                    (byte)ILOpcode.ret
+                                },
+                                Array.Empty<LocalVariableDefinition>(), null);
+                            }
+                        }
+                        else if (methodName == "StructOnlyEquals")
+                        {
+                            TypeDesc elementType = method.Instantiation[0];
+                            if (!elementType.IsRuntimeDeterminedSubtype
+                                && !elementType.IsCanonicalSubtype(CanonicalFormKind.Any)
+                                && !elementType.IsGCPointer)
+                            {
+                                Debug.Assert(elementType.IsValueType);
+
+                                TypeSystemContext context = elementType.Context;
+                                MetadataType helperType = context.SystemModule.GetKnownType("Internal.IntrinsicSupport", "EqualityComparerHelpers");
+
+                                MethodDesc methodToCall = null;
+                                if (elementType.IsEnum)
+                                {
+                                    methodToCall = helperType.GetKnownMethod("EnumOnlyEquals", null).MakeInstantiatedMethod(elementType);
+                                }
+                                else if (elementType.IsNullable && ComparerIntrinsics.ImplementsIEquatable(elementType.Instantiation[0]))
+                                {
+                                    methodToCall = helperType.GetKnownMethod("StructOnlyEqualsNullable", null).MakeInstantiatedMethod(elementType.Instantiation[0]);
+                                }
+                                else if (ComparerIntrinsics.ImplementsIEquatable(elementType))
+                                {
+                                    methodToCall = helperType.GetKnownMethod("StructOnlyEqualsIEquatable", null).MakeInstantiatedMethod(elementType);
+                                }
+
+                                if (methodToCall != null)
+                                {
+                                    return new ILStubMethodIL(method, new byte[]
+                                    {
+                                        (byte)ILOpcode.ldarg_0,
+                                        (byte)ILOpcode.ldarg_1,
+                                        (byte)ILOpcode.call, 1, 0, 0, 0,
+                                        (byte)ILOpcode.ret
+                                    },
+                                    Array.Empty<LocalVariableDefinition>(), new object[] { methodToCall });
+                                }
+                            }
+                        }
                     }
+                    break;
             }
 
             return null;

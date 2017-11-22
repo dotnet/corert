@@ -192,6 +192,9 @@ namespace Internal.IL.Stubs
             };
         }
 
+        public static bool ImplementsIEquatable(TypeDesc type)
+            => ImplementsInterfaceOfSelf(type, "IEquatable`1");
+
         private static bool ImplementsInterfaceOfSelf(TypeDesc type, string interfaceName)
         {
             MetadataType interfaceType = null;

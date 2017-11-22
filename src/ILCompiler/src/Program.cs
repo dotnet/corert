@@ -39,9 +39,11 @@ namespace ILCompiler
         private string _ilDump;
         private string _systemModuleName = "System.Private.CoreLib";
         private bool _multiFile;
+        private bool _nativeLib;
         private bool _useSharedGenerics;
         private bool _useScanner;
         private bool _noScanner;
+        private bool _emitStackTraceData;
         private string _mapFileName;
         private string _metadataLogFileName;
 
@@ -131,6 +133,7 @@ namespace ILCompiler
                 syntax.DefineOption("g", ref _enableDebugInfo, "Emit debugging information");
                 syntax.DefineOption("cpp", ref _isCppCodegen, "Compile for C++ code-generation");
                 syntax.DefineOption("wasm", ref _isWasmCodegen, "Compile for WebAssembly code-generation");
+                syntax.DefineOption("nativelib", ref _nativeLib, "Compile as static or shared library");
                 syntax.DefineOption("dgmllog", ref _dgmlLogFileName, "Save result of dependency analysis as DGML");
                 syntax.DefineOption("fulllog", ref _generateFullDgmlLog, "Save detailed log of dependency analysis");
                 syntax.DefineOption("scandgmllog", ref _scanDgmlLogFileName, "Save result of scanner dependency analysis as DGML");
@@ -147,6 +150,7 @@ namespace ILCompiler
                 syntax.DefineOption("scan", ref _useScanner, "Use IL scanner to generate optimized code (implied by -O)");
                 syntax.DefineOption("noscan", ref _noScanner, "Do not use IL scanner to generate optimized code");
                 syntax.DefineOption("ildump", ref _ilDump, "Dump IL assembly listing for compiler-generated IL");
+                syntax.DefineOption("stacktracedata", ref _emitStackTraceData, "Emit data to support generating stack trace strings at runtime");
 
                 syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
                 syntax.DefineOption("targetos", ref _targetOSStr, "Target OS for cross compilation");
@@ -314,6 +318,12 @@ namespace ILCompiler
                         compilationRoots.Add(new RawMainMethodRootProvider(entrypointModule));
                     }
                 }
+                else if (_nativeLib)
+                {
+                    EcmaModule module = (EcmaModule)typeSystemContext.SystemModule;
+                    LibraryInitializers libraryInitializers = new LibraryInitializers(typeSystemContext, _isCppCodegen);
+                    compilationRoots.Add(new NativeLibraryInitializerRootProvider(module, libraryInitializers.LibraryInitializerMethods));
+                }
 
                 if (_multiFile)
                 {
@@ -335,7 +345,7 @@ namespace ILCompiler
                 }
                 else
                 {
-                    if (entrypointModule == null)
+                    if (entrypointModule == null && !_nativeLib)
                         throw new Exception("No entrypoint module");
 
                     // TODO: Wasm fails to compile some of the xported methods due to missing opcodes
@@ -398,7 +408,14 @@ namespace ILCompiler
             DependencyTrackingLevel trackingLevel = _dgmlLogFileName == null ?
                 DependencyTrackingLevel.None : (_generateFullDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
 
-            CompilerGeneratedMetadataManager metadataManager = new CompilerGeneratedMetadataManager(compilationGroup, typeSystemContext, _metadataLogFileName);
+            var stackTracePolicy = _emitStackTraceData ?
+                (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
+
+            CompilerGeneratedMetadataManager metadataManager = new CompilerGeneratedMetadataManager(
+                compilationGroup,
+                typeSystemContext,
+                _metadataLogFileName,
+                stackTracePolicy);
 
             builder
                 .UseBackendOptions(_codegenOptions)

@@ -50,9 +50,6 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\ExceptionStringID.cs">
       <Link>ExceptionStringID.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Threading\Tasks\TaskToApm.cs">
-      <Link>System\Threading\Tasks</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\Diagnostics\ExceptionExtensions.cs" />
@@ -189,7 +186,6 @@
     <Compile Include="System\AppContext.cs" />
     <Compile Include="System\AppContextConfigHelper.cs" />
     <Compile Include="System\AppContextDefaultValues.cs" />
-    <Compile Include="System\ArraySegment.cs" />
     <Compile Include="System\Buffer.cs" />
     <Compile Include="System\ByReference.cs" />
     <Compile Include="System\Collections\Concurrent\LowLevelConcurrentQueue.cs" />
@@ -203,12 +199,10 @@
     <Compile Include="System\Decimal.DecCalc.cs" />
     <Compile Include="System\DefaultBinder.CanConvert.cs" />
     <Compile Include="System\Diagnostics\Contracts\ContractsBCL.cs" />
-    <Compile Include="System\Empty.cs" />
     <Compile Include="System\Globalization\CharUnicodeInfoData.cs" />
     <Compile Include="System\Globalization\GlobalizationMode.cs" />
     <Compile Include="System\Globalization\GlobalizationMode.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
     <Compile Include="System\Globalization\GlobalizationMode.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
-    <Compile Include="System\Globalization\RegionInfo.cs" />
     <Compile Include="System\Guid.CoreRT.cs" />
     <Compile Include="System\InvokeUtils.cs" />
     <Compile Include="System\IO\BinaryReader.cs" />
@@ -216,9 +210,7 @@
     <Compile Include="System\IO\InternalFile.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
     <Compile Include="System\IO\InternalFile.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
     <Compile Include="System\IO\FileLoadException.CoreRT.cs" />
-    <Compile Include="System\IO\MemoryStream.cs" />
     <Compile Include="System\IO\Stream.cs" />
-    <Compile Include="System\IO\UnmanagedMemoryAccessor.cs" />
     <Compile Include="System\RuntimeMethodHandle.cs" />
     <Compile Include="System\Decimal.cs" />
     <Compile Include="System\Diagnostics\Contracts\Contracts.cs" />
@@ -236,16 +228,13 @@
     <Compile Include="System\Enum.cs" />
     <Compile Include="System\Environment.cs" />
     <Compile Include="System\GC.cs" />
-    <Compile Include="System\Globalization\CharUnicodeInfo.cs" />
     <Compile Include="System\Globalization\CultureData.cs" />
     <Compile Include="System\Globalization\CultureInfo.cs" />
-    <Compile Include="System\Globalization\IdnMapping.cs" />
     <Compile Include="System\Globalization\TextInfo.cs" />
     <Compile Include="System\Guid.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
     <Compile Include="System\Guid.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
     <Compile Include="System\Helpers.cs" />
     <Compile Include="System\InsufficientMemoryException.cs" />
-    <Compile Include="System\IntPtr.cs" />
     <Compile Include="System\Marvin.cs" />
     <Compile Include="System\Math.CoreRT.cs" />
     <Compile Include="System\MathF.CoreRT.cs" />
@@ -278,18 +267,15 @@
     <Compile Include="System\Runtime\ConstrainedExecution\CriticalFinalizerObject.cs" />
     <Compile Include="System\Runtime\ExceptionIDs.cs" />
     <Compile Include="System\Runtime\ExceptionServices\ExceptionDispatchInfo.cs" />
-    <Compile Include="System\Runtime\ExceptionServices\ExceptionNotification.cs" />
     <Compile Include="System\Runtime\GcSettings.cs" />
     <Compile Include="System\Runtime\TypeLoaderExports.cs" />
     <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />
     <Compile Include="System\Runtime\InteropServices\GCHandle.cs" />
     <Compile Include="System\Runtime\InteropServices\GCHandleType.cs" />
     <Compile Include="System\Runtime\InteropServices\InteropExtensions.cs" />
-    <Compile Include="System\Runtime\InteropServices\MarshalDirectiveException.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeCallableAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal.cs" />
-    <Compile Include="System\Runtime\InteropServices\SafeBuffer.cs" />
     <Compile Include="System\Runtime\InteropServices\SafeHandle.cs" />
     <Compile Include="System\Runtime\InteropServices\UnsafeGCHandle.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
@@ -353,7 +339,6 @@
     <Compile Include="System\Threading\Tasks\FutureFactory.cs" />
     <Compile Include="System\Threading\Tasks\ProducerConsumerQueues.cs" />
     <Compile Include="System\Threading\Tasks\Task.cs" />
-    <Compile Include="System\Threading\Tasks\TaskCompletionSource.cs" />
     <Compile Include="System\Threading\Tasks\TaskContinuation.cs" />
     <Compile Include="System\Threading\Tasks\TaskExceptionHolder.cs" />
     <Compile Include="System\Threading\Tasks\TaskFactory.cs" />
@@ -381,7 +366,6 @@
     <Compile Include="System\TypeUnificationKey.cs" />
     <Compile Include="System\TypeLoadException.cs" />
     <Compile Include="System\TypeLoadException.CoreRT.cs" />
-    <Compile Include="System\UIntPtr.cs" />
     <Compile Include="System\ValueType.cs" />
     <Compile Include="System\Runtime\RuntimeExportAttribute.cs" />
     <Compile Include="System\Runtime\RuntimeImportAttribute.cs" />
@@ -555,7 +539,6 @@
     <Compile Include="System\Globalization\CompareInfo.Windows.cs" />
     <Compile Include="System\Globalization\CultureData.Windows.cs" />
     <Compile Include="System\Globalization\TextInfo.Windows.cs" />
-    <Compile Include="System\Globalization\CalendarData.Windows.cs" />
     <Compile Include="System\Globalization\IdnMapping.Windows.cs" />
     <Compile Include="System\Text\Normalization.Windows.cs" />
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Idna.cs">
@@ -624,7 +607,6 @@
     <Compile Include="System\Globalization\CultureInfo.Unix.cs" />
     <Compile Include="System\Globalization\CompareInfo.Unix.cs" />
     <Compile Include="System\Globalization\TextInfo.Unix.cs" />
-    <Compile Include="System\Text\Normalization.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.Unix.cs" />

@@ -1894,7 +1894,7 @@
   <data name="ArgumentOutOfRange_AddressSpace" xml:space="preserve">
     <value>The number of bytes cannot exceed the virtual address space on a 32 bit machine.</value>
   </data>
-  <data name="ArgumentOutOfRange_UIntPtrMaxMinusOne" xml:space="preserve">
+  <data name="ArgumentOutOfRange_UIntPtrMax" xml:space="preserve">
     <value>The length of the buffer must be less than the maximum UIntPtr value for your platform.</value>
   </data>
   <data name="Arg_BufferTooSmall" xml:space="preserve">
@@ -2095,22 +2095,16 @@
   <data name="NotSupported_ValueCollectionSet" xml:space="preserve">
     <value>Mutating a value collection derived from a dictionary is not allowed.</value>
   </data>
-  <data name="IO_IO_StreamTooLong" xml:space="preserve">
-    <value>Stream was too long.</value>
-  </data>
   <data name="UnauthorizedAccess_MemStreamBuffer" xml:space="preserve">
     <value>MemoryStream's internal buffer cannot be accessed.</value>
   </data>
   <data name="NotSupported_MemStreamNotExpandable" xml:space="preserve">
     <value>Memory stream is not expandable.</value>
   </data>
-  <data name="IO_IO_SeekBeforeBegin" xml:space="preserve">
-    <value>An attempt was made to move the position before the beginning of the stream.</value>
-  </data>
   <data name="ArgumentNull_Stream" xml:space="preserve">
     <value>Stream cannot be null.</value>
   </data>
-  <data name="IO_IO_InvalidStringLen_Len" xml:space="preserve">
+  <data name="IO_InvalidStringLen_Len" xml:space="preserve">
     <value>BinaryReader encountered an invalid string length of {0} characters.</value>
   </data>
   <data name="ArgumentOutOfRange_BinaryReaderFillBuffer" xml:space="preserve">
@@ -2649,6 +2643,21 @@
   </data>
   <data name="Argument_HasToBeArrayClass" xml:space="preserve">
     <value>Must be an array type.</value>
+  </data>
+  <data name="Argument_IdnBadBidi" xml:space="preserve">
+    <value>Left to right characters may not be mixed with right to left characters in IDN labels.</value>
+  </data>
+  <data name="Argument_IdnBadLabelSize" xml:space="preserve">
+    <value>IDN labels must be between 1 and 63 characters long.</value>
+  </data>
+  <data name="Argument_IdnBadNameSize" xml:space="preserve">
+    <value>IDN names must be between 1 and {0} characters long.</value>
+  </data>
+  <data name="Argument_IdnBadPunycode" xml:space="preserve">
+    <value>Invalid IDN encoded string.</value>
+  </data>
+  <data name="Argument_IdnBadStd3" xml:space="preserve">
+    <value>Label contains character '{0}' not allowed with UseStd3AsciiRules</value>
   </data>
   <data name="InvalidOperation_NotGenericType" xml:space="preserve">
     <value>This operation is only valid on generic types.</value>

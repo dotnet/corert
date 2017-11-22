@@ -59,7 +59,7 @@
 
 // Implementation notes:
 // *) The Initialize method must be called before you use any instance of
-// a SafeBuffer.  To avoid races when storing SafeBuffers in statics,
+// a SafeBuffer.  To avoid race conditions when storing SafeBuffers in statics,
 // you either need to take a lock when publishing the SafeBuffer, or you
 // need to create a local, initialize the SafeBuffer, then assign to the
 // static variable (perhaps using Interlocked.CompareExchange).  Of course,
@@ -68,7 +68,6 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Runtime.InteropServices
@@ -86,19 +85,6 @@ namespace System.Runtime.InteropServices
             _numBytes = Uninitialized;
         }
 
-        // On the desktop CLR, SafeBuffer has access to the internal handle field since they're both in
-        // mscorlib.  For this refactoring, we'll keep the name the same to minimize deltas, but shim
-        // through to DangerousGetHandle
-        private new IntPtr handle
-        {
-            get { return DangerousGetHandle(); }
-        }
-
-        public override bool IsInvalid
-        {
-            get { return DangerousGetHandle() == IntPtr.Zero || DangerousGetHandle() == new IntPtr(-1); }
-        }
-
         /// <summary>
         /// Specifies the size of the region of memory, in bytes.  Must be
         /// called before using the SafeBuffer.
@@ -107,40 +93,33 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public void Initialize(ulong numBytes)
         {
-            if (numBytes < 0)
-                throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (IntPtr.Size == 4 && numBytes > UInt32.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_AddressSpace);
 
             if (numBytes >= (ulong)Uninitialized)
-                throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_UIntPtrMaxMinusOne);
+                throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_UIntPtrMax);
 
             _numBytes = (UIntPtr)numBytes;
         }
 
         /// <summary>
-        /// Specifies the the size of the region in memory, as the number of
+        /// Specifies the size of the region in memory, as the number of
         /// elements in an array.  Must be called before using the SafeBuffer.
         /// </summary>
         [CLSCompliant(false)]
         public void Initialize(uint numElements, uint sizeOfEachElement)
         {
-            if (numElements < 0)
-                throw new ArgumentOutOfRangeException(nameof(numElements), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (sizeOfEachElement < 0)
-                throw new ArgumentOutOfRangeException(nameof(sizeOfEachElement), SR.ArgumentOutOfRange_NeedNonNegNum);
-
             if (IntPtr.Size == 4 && numElements * sizeOfEachElement > UInt32.MaxValue)
                 throw new ArgumentOutOfRangeException("numBytes", SR.ArgumentOutOfRange_AddressSpace);
 
             if (numElements * sizeOfEachElement >= (ulong)Uninitialized)
-                throw new ArgumentOutOfRangeException(nameof(numElements), SR.ArgumentOutOfRange_UIntPtrMaxMinusOne);
+                throw new ArgumentOutOfRangeException(nameof(numElements), SR.ArgumentOutOfRange_UIntPtrMax);
 
             _numBytes = checked((UIntPtr)(numElements * sizeOfEachElement));
         }
 
         /// <summary>
-        /// Specifies the the size of the region in memory, as the number of
+        /// Specifies the size of the region in memory, as the number of
         /// elements in an array.  Must be called before using the SafeBuffer.
         /// </summary>
         [CLSCompliant(false)]
@@ -151,12 +130,11 @@ namespace System.Runtime.InteropServices
 
         // Callers should ensure that they check whether the pointer ref param
         // is null when AcquirePointer returns.  If it is not null, they must
-        // call ReleasePointer in a CER.  This method calls DangerousAddRef
+        // call ReleasePointer.  This method calls DangerousAddRef
         // & exposes the pointer. Unlike Read, it does not alter the "current
         // position" of the pointer.  Here's how to use it:
         //
         // byte* pointer = null;
-        // RuntimeHelpers.PrepareConstrainedRegions();
         // try {
         //     safeBuffer.AcquirePointer(ref pointer);
         //     // Use pointer here, with your own bounds checking
@@ -172,9 +150,9 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Obtain the pointer from a SafeBuffer for a block of code,
         /// with the express responsibility for bounds checking and calling
-        /// ReleasePointer later within a CER to ensure the pointer can be
-        /// freed later.  This method either completes successfully or
-        /// throws an exception and returns with pointer set to null.
+        /// ReleasePointer later to ensure the pointer can be freed later.
+        /// This method either completes successfully or throws an exception 
+        /// and returns with pointer set to null.
         /// </summary>
         /// <param name="pointer">A byte*, passed by reference, to receive
         /// the pointer from within the SafeBuffer.  You must set
@@ -186,15 +164,10 @@ namespace System.Runtime.InteropServices
                 throw NotInitialized();
 
             pointer = null;
-            try
-            {
-            }
-            finally
-            {
-                bool junk = false;
-                DangerousAddRef(ref junk);
-                pointer = (byte*)handle;
-            }
+
+            bool junk = false;
+            DangerousAddRef(ref junk);
+            pointer = (byte*)handle;
         }
 
         public void ReleasePointer()
@@ -398,15 +371,13 @@ namespace System.Runtime.InteropServices
 
         private static InvalidOperationException NotInitialized()
         {
-            Debug.Fail("Uninitialized SafeBuffer!  Someone needs to call Initialize before using this instance!");
             return new InvalidOperationException(SR.InvalidOperation_MustCallInitialize);
         }
 
-        #region "SizeOf Helpers"
         /// <summary>
         /// Returns the size that SafeBuffer (and hence, UnmanagedMemoryAccessor) reserves in the unmanaged buffer for each element of an array of T. This is not the same
         /// value that sizeof(T) returns! Since the primary use case is to parse memory mapped files, we cannot change this algorithm as this defines a de-facto serialization format.
-        /// Throws if T is not blittable.
+        /// Throws if T contains GC references.
         /// </summary>
         internal static uint AlignedSizeOf<T>() where T : struct
         {
@@ -420,16 +391,14 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Returns same value as sizeof(T) but throws if T is not blittable.
+        /// Returns same value as sizeof(T) but throws if T contains GC references.
         /// </summary>
         internal static uint SizeOf<T>() where T : struct
         {
-            RuntimeTypeHandle structureTypeHandle = typeof(T).TypeHandle;
-            if (!structureTypeHandle.IsBlittable())
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                 throw new ArgumentException(SR.Argument_NeedStructWithNoRefs);
 
             return (uint)Unsafe.SizeOf<T>();
         }
-        #endregion
     }
 }

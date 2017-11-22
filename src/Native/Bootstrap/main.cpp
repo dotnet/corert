@@ -8,7 +8,7 @@
 #include "gcenv.structs.h"
 #include "gcenv.base.h"
 
-#include <stdlib.h> 
+#include <stdlib.h>
 
 #ifndef CPPCODEGEN
 
@@ -262,6 +262,7 @@ extern "C" void __fail_fast()
 extern "C" bool RhInitialize();
 extern "C" void RhpEnableConservativeStackReporting();
 extern "C" void RhpShutdown();
+extern "C" void RhSetRuntimeInitializationCallback(int (*fPtr)());
 
 #ifndef CPPCODEGEN
 
@@ -294,13 +295,19 @@ static const pfn c_classlibFunctions[] = {
 
 extern "C" void InitializeModules(void* osModule, void ** modules, int count, void ** pClasslibFunctions, int nClasslibFunctions);
 
+#ifndef CORERT_DLL
+#define CORERT_ENTRYPOINT __managed__Main
 #if defined(_WIN32)
 extern "C" int __managed__Main(int argc, wchar_t* argv[]);
-int __cdecl wmain(int argc, wchar_t* argv[])
 #else
 extern "C" int __managed__Main(int argc, char* argv[]);
-int main(int argc, char* argv[])
 #endif
+#else
+#define CORERT_ENTRYPOINT __managed__Startup
+extern "C" void __managed__Startup();
+#endif // !CORERT_DLL
+
+static int InitializeRuntime()
 {
     if (!RhInitialize())
         return -1;
@@ -310,7 +317,7 @@ int main(int argc, char* argv[])
 #endif // CPPCODEGEN
 
 #ifndef CPPCODEGEN
-    void * osModule = PalGetModuleHandleFromPointer((void*)&__managed__Main);
+    void * osModule = PalGetModuleHandleFromPointer((void*)&CORERT_ENTRYPOINT);
     // TODO: pass struct with parameters instead of the large signature of RhRegisterOSModule
     if (!RhRegisterOSModule(
         osModule,
@@ -327,6 +334,25 @@ int main(int argc, char* argv[])
 #else // !CPPCODEGEN
     InitializeModules(nullptr, (void**)RtRHeaderWrapper(), 2, nullptr, 0);
 #endif // !CPPCODEGEN
+
+#ifdef CORERT_DLL
+    // Run startup method immediately for a native library
+    __managed__Startup();
+#endif // CORERT_DLL
+
+    return 0;
+}
+
+#ifndef CORERT_DLL
+#if defined(_WIN32)
+int __cdecl wmain(int argc, wchar_t* argv[])
+#else
+int main(int argc, char* argv[])
+#endif
+{
+    int initval = InitializeRuntime();
+    if (initval != 0)
+        return initval;
 
     int retval;
 #ifdef CPPCODEGEN
@@ -348,3 +374,14 @@ int main(int argc, char* argv[])
 
     return retval;
 }
+#endif // !CORERT_DLL
+
+#ifdef CORERT_DLL
+static struct InitializeRuntimePointerHelper
+{
+    InitializeRuntimePointerHelper()
+    {
+        RhSetRuntimeInitializationCallback(&InitializeRuntime);
+    }
+} initializeRuntimePointerHelper;
+#endif // CORERT_DLL
