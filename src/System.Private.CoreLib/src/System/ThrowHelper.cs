@@ -152,7 +152,7 @@ namespace System
 
         internal static void ThrowArgumentException_Argument_InvalidArrayType()
         {
-            throw new ArgumentException(GetResourceString(ExceptionResource.Argument_InvalidArrayType));
+            throw new ArgumentException(SR.Argument_InvalidArrayType);
         }
 
         internal static void ThrowArgumentNullException(ExceptionArgument argument)
@@ -172,12 +172,22 @@ namespace System
 
         internal static void ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion()
         {
-            throw new InvalidOperationException(GetResourceString(ExceptionResource.InvalidOperation_EnumFailedVersion));
+            throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
         }
 
         internal static void ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen()
         {
-            throw new InvalidOperationException(GetResourceString(ExceptionResource.InvalidOperation_EnumOpCantHappen));
+            throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
+        }
+
+        internal static void ThrowInvalidOperationException_InvalidOperation_EnumNotStarted()
+        {
+            throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
+        }
+
+        internal static void ThrowInvalidOperationException_InvalidOperation_EnumEnded()
+        {
+            throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
         }
 
         internal static void ThrowSerializationException(ExceptionResource resource)
@@ -185,9 +195,31 @@ namespace System
             throw new SerializationException(GetResourceString(resource));
         }
 
+        internal static void ThrowNotSupportedException()
+        {
+            throw new NotSupportedException();
+        }
+
         internal static void ThrowNotSupportedException(ExceptionResource resource)
         {
             throw new NotSupportedException(GetResourceString(resource));
+        }
+
+        private static Exception GetArraySegmentCtorValidationFailedException(Array array, int offset, int count)
+        {
+            if (array == null)
+                return new ArgumentNullException(nameof(array));
+            if (offset < 0)
+                return new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (count < 0)
+                return new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+
+            Debug.Assert(array.Length - offset < count);
+            return new ArgumentException(SR.Argument_InvalidOffLen);
+        }
+        internal static void ThrowArraySegmentCtorValidationFailedExceptions(Array array, int offset, int count)
+        {
+            throw GetArraySegmentCtorValidationFailedException(array, offset, count);
         }
 
         // Allow nulls for reference types and Nullable<U>, but not for value types.
@@ -284,8 +316,6 @@ namespace System
                     return SR.Arg_NonZeroLowerBound;
                 case ExceptionResource.ArgumentOutOfRange_ListInsert:
                     return SR.ArgumentOutOfRange_ListInsert;
-                case ExceptionResource.Argument_InvalidArrayType:
-                    return SR.Argument_InvalidArrayType;
                 case ExceptionResource.ArgumentOutOfRange_NeedNonNegNum:
                     return SR.ArgumentOutOfRange_NeedNonNegNum;
                 case ExceptionResource.ArgumentOutOfRange_SmallCapacity:
@@ -294,10 +324,6 @@ namespace System
                     return SR.Argument_InvalidOffLen;
                 case ExceptionResource.ArgumentOutOfRange_BiggerThanCollection:
                     return SR.ArgumentOutOfRange_BiggerThanCollection;
-                case ExceptionResource.InvalidOperation_EnumFailedVersion:
-                    return SR.InvalidOperation_EnumFailedVersion;
-                case ExceptionResource.InvalidOperation_EnumOpCantHappen:
-                    return SR.InvalidOperation_EnumOpCantHappen;
                 case ExceptionResource.Serialization_MissingKeys:
                     return SR.Serialization_MissingKeys;
                 case ExceptionResource.Serialization_NullKey:
@@ -306,6 +332,8 @@ namespace System
                     return SR.NotSupported_KeyCollectionSet;
                 case ExceptionResource.NotSupported_ValueCollectionSet:
                     return SR.NotSupported_ValueCollectionSet;
+                case ExceptionResource.InvalidOperation_NullArray:
+                    return SR.InvalidOperation_NullArray;
                 case ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted:
                     return SR.TaskT_TransitionToFinal_AlreadyCompleted;
                 case ExceptionResource.TaskCompletionSourceT_TrySetException_NullException:
@@ -370,17 +398,15 @@ namespace System
         Arg_RankMultiDimNotSupported,
         Arg_NonZeroLowerBound,
         ArgumentOutOfRange_ListInsert,
-        Argument_InvalidArrayType,
         ArgumentOutOfRange_NeedNonNegNum,
         ArgumentOutOfRange_SmallCapacity,
         Argument_InvalidOffLen,
         ArgumentOutOfRange_BiggerThanCollection,
-        InvalidOperation_EnumFailedVersion,
-        InvalidOperation_EnumOpCantHappen,
         Serialization_MissingKeys,
         Serialization_NullKey,
         NotSupported_KeyCollectionSet,
         NotSupported_ValueCollectionSet,
+        InvalidOperation_NullArray,
         TaskT_TransitionToFinal_AlreadyCompleted,
         TaskCompletionSourceT_TrySetException_NullException,
         TaskCompletionSourceT_TrySetException_NoExceptions,

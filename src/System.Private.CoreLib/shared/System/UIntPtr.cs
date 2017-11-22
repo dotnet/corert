@@ -7,11 +7,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 
+#if BIT64
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
+
 namespace System
 {
-    // CONTRACT with Runtime
-    // The UIntPtr type is one of the primitives understood by the compilers and runtime
-    // Data Contract: Single field of type void *
     [Serializable]
     [CLSCompliant(false)]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
@@ -65,11 +68,28 @@ namespace System
             info.AddValue("value", (ulong)_value);
         }
 
-        [Intrinsic]
-        [NonVersionable]
-        public unsafe void* ToPointer()
+        public unsafe override bool Equals(Object obj)
         {
-            return _value;
+            if (obj is UIntPtr)
+            {
+                return (_value == ((UIntPtr)obj)._value);
+            }
+            return false;
+        }
+
+        unsafe bool IEquatable<UIntPtr>.Equals(UIntPtr value)
+        {
+            return _value == value._value;
+        }
+
+        public unsafe override int GetHashCode()
+        {
+#if BIT64
+            ulong l = (ulong)_value;
+            return (unchecked((int)l) ^ (int)(l >> 32));
+#else
+            return unchecked((int)_value);
+#endif
         }
 
         [Intrinsic]
@@ -136,11 +156,6 @@ namespace System
             return (ulong)value._value;
         }
 
-        unsafe bool IEquatable<UIntPtr>.Equals(UIntPtr value)
-        {
-            return _value == value._value;
-        }
-
         [Intrinsic]
         [NonVersionable]
         public static unsafe bool operator ==(UIntPtr value1, UIntPtr value2)
@@ -155,48 +170,6 @@ namespace System
             return value1._value != value2._value;
         }
 
-        public static unsafe int Size
-        {
-            [Intrinsic]
-            [NonVersionable]
-            get
-            {
-#if BIT64
-                return 8;
-#else
-                return 4;
-#endif
-            }
-        }
-
-        public unsafe override String ToString()
-        {
-#if BIT64
-            return ((ulong)_value).ToString(CultureInfo.InvariantCulture);
-#else
-            return ((uint)_value).ToString(CultureInfo.InvariantCulture);
-#endif
-        }
-
-        public unsafe override bool Equals(Object obj)
-        {
-            if (obj is UIntPtr)
-            {
-                return (_value == ((UIntPtr)obj)._value);
-            }
-            return false;
-        }
-
-        public unsafe override int GetHashCode()
-        {
-#if BIT64
-            ulong l = (ulong)_value;
-            return (unchecked((int)l) ^ (int)(l >> 32));
-#else
-            return unchecked((int)_value);
-#endif
-        }
-
         [NonVersionable]
         public static UIntPtr Add(UIntPtr pointer, int offset)
         {
@@ -205,13 +178,9 @@ namespace System
 
         [Intrinsic]
         [NonVersionable]
-        public static UIntPtr operator +(UIntPtr pointer, int offset)
+        public static unsafe UIntPtr operator +(UIntPtr pointer, int offset)
         {
-#if BIT64
-            return new UIntPtr(pointer.ToUInt64() + (ulong)offset);
-#else
-            return new UIntPtr(pointer.ToUInt32() + (uint)offset);
-#endif
+            return new UIntPtr((nuint)pointer._value + (nuint)offset);
         }
 
         [NonVersionable]
@@ -222,15 +191,31 @@ namespace System
 
         [Intrinsic]
         [NonVersionable]
-        public static UIntPtr operator -(UIntPtr pointer, int offset)
+        public static unsafe UIntPtr operator -(UIntPtr pointer, int offset)
         {
-#if BIT64
-            return new UIntPtr(pointer.ToUInt64() - (ulong)offset);
-#else
-            return new UIntPtr(pointer.ToUInt32() - (uint)offset);
-#endif
+            return new UIntPtr((nuint)pointer._value - (nuint)offset);
+        }
+
+        public static unsafe int Size
+        {
+            [Intrinsic]
+            [NonVersionable]
+            get
+            {
+                return sizeof(nuint);
+            }
+        }
+
+        [Intrinsic]
+        [NonVersionable]
+        public unsafe void* ToPointer()
+        {
+            return _value;
+        }
+
+        public unsafe override String ToString()
+        {
+            return ((nuint)_value).ToString(CultureInfo.InvariantCulture);
         }
     }
 }
-
-
