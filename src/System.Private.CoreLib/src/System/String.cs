@@ -434,6 +434,9 @@ namespace System
             throw new ArgumentOutOfRangeException(nameof(length));
         }
 
+        public static implicit operator ReadOnlySpan<char>(string value) =>
+            value != null ? new ReadOnlySpan<char>(ref value.GetRawStringData(), value.Length) : default;
+
         public object Clone()
         {
             return this;
