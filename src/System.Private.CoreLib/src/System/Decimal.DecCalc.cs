@@ -1282,62 +1282,6 @@ ReturnResult:
                 return new Decimal(d.lo, d.mid, d.hi, (int)(d.uflags & ~SignMask));
             }
 
-            /***
-* DecFixInt
-*
-*   input - Pointer to Decimal operand
-*   result  - Pointer to Decimal result location
-*   
-* Purpose:
-*   Chop the value to integer.    Return remainder so Int() function
-*   can round down if non-zero.
-*
-* Exit:
-*   Returns remainder.
-*
-* Exceptions:
-*   None.
-*
-***********************************************************************/
-            private static unsafe uint DecFixInt(ref Decimal input, ref Decimal result)
-            {
-                Buf12 bufNum;
-                _ = &bufNum; // workaround for CS0165
-                uint remainder;
-                uint power;
-                int scale;
-
-                if (input.Scale > 0)
-                {
-                    bufNum.U0 = input.ulo;
-                    bufNum.U1 = input.umid;
-                    bufNum.U2 = input.uhi;
-                    scale = input.Scale;
-                    result.IsNegative = input.IsNegative;
-                    remainder = 0;
-
-                    do
-                    {
-                        if (scale > MaxInt32Scale)
-                            power = TenToPowerNine;
-                        else
-                            power = s_powers10[scale];
-
-                        remainder |= Div96By32(ref bufNum, power);
-                        scale -= MaxInt32Scale;
-                    } while (scale > 0);
-
-                    result.ulo = bufNum.U0;
-                    result.umid = bufNum.U1;
-                    result.uhi = bufNum.U2;
-                    result.Scale = 0;
-
-                    return remainder;
-                }
-                result = input;
-                return 0;
-            }
-
             #endregion
 
             //**********************************************************************
@@ -2409,36 +2353,6 @@ RoundUp:
 
 ThrowOverflow:
                 throw new OverflowException(SR.Overflow_Decimal);
-            }
-
-            //**********************************************************************
-            // VarDecInt - Decimal Int (round down to integer)
-            //**********************************************************************
-            internal static void VarDecInt(ref Decimal d)
-            {
-                Decimal result = new Decimal();
-
-                if (DecCalc.DecFixInt(ref d, ref result) != 0 && result.IsNegative)
-                    // We have chopped off a non-zero amount from a negative value.  Since
-                    // we round toward -infinity, we must increase the integer result by
-                    // 1 to make it more negative.  This will never overflow because
-                    // in order to have a remainder, we must have had a non-zero scale factor.
-                    // Our scale factor is back to zero now.
-                    // 
-                    if (++result.Low64 == 0)
-                        result.High++;
-
-                d = result;
-            }
-
-            //**********************************************************************
-            // VarDecFix - Decimal Fix (chop to integer)
-            //**********************************************************************
-            internal static void VarDecFix(ref Decimal d)
-            {
-                Decimal result = new Decimal();
-                DecFixInt(ref d, ref result);
-                d = result;
             }
 
             //**********************************************************************

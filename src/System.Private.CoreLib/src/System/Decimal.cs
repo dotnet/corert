@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
@@ -362,7 +363,10 @@ namespace System
         // towards positive infinity.
         public static Decimal Ceiling(Decimal d)
         {
-            return (-(Decimal.Floor(-d)));
+            uint flags = d.uflags;
+            if ((flags & ScaleMask) != 0)
+                DecCalc.InternalRound(ref d, (byte)(flags >> ScaleShift), DecCalc.RoundingMode.Ceiling);
+            return d;
         }
 
         // Compares two Decimal values, returning an integer that indicates their
@@ -457,7 +461,9 @@ namespace System
         //
         public static Decimal Floor(Decimal d)
         {
-            DecCalc.VarDecInt(ref d);
+            uint flags = d.uflags;
+            if ((flags & ScaleMask) != 0)
+                DecCalc.InternalRound(ref d, (byte)(flags >> ScaleShift), DecCalc.RoundingMode.Floor);
             return d;
         }
 
@@ -766,8 +772,8 @@ namespace System
         //
         public static int ToInt32(Decimal d)
         {
-            if (d.Scale != 0) DecCalc.VarDecFix(ref d);
-            if (d.hi == 0 && d.mid == 0)
+            Truncate(ref d);
+            if ((d.hi | d.mid) == 0)
             {
                 int i = d.lo;
                 if (!d.IsNegative)
@@ -789,10 +795,10 @@ namespace System
         //
         public static long ToInt64(Decimal d)
         {
-            if (d.Scale != 0) DecCalc.VarDecFix(ref d);
+            Truncate(ref d);
             if (d.uhi == 0)
             {
-                long l = d.ulo | (long)(int)d.umid << 32;
+                long l = (long)d.Low64;
                 if (!d.IsNegative)
                 {
                     if (l >= 0) return l;
@@ -833,11 +839,12 @@ namespace System
         [CLSCompliant(false)]
         public static uint ToUInt32(Decimal d)
         {
-            if (d.Scale != 0) DecCalc.VarDecFix(ref d);
-            if (d.uhi == 0 && d.umid == 0)
+            Truncate(ref d);
+            if ((d.uhi | d.umid) == 0)
             {
-                if (!d.IsNegative || d.ulo == 0)
-                    return d.ulo;
+                uint i = d.ulo;
+                if (!d.IsNegative || i == 0)
+                    return i;
             }
             throw new OverflowException(SR.Overflow_UInt32);
         }
@@ -849,10 +856,10 @@ namespace System
         [CLSCompliant(false)]
         public static ulong ToUInt64(Decimal d)
         {
-            if (d.Scale != 0) DecCalc.VarDecFix(ref d);
+            Truncate(ref d);
             if (d.uhi == 0)
             {
-                ulong l = (ulong)d.ulo | ((ulong)d.umid << 32);
+                ulong l = d.Low64;
                 if (!d.IsNegative || l == 0)
                     return l;
             }
@@ -873,8 +880,16 @@ namespace System
         //
         public static Decimal Truncate(Decimal d)
         {
-            DecCalc.VarDecFix(ref d);
+            Truncate(ref d);
             return d;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void Truncate(ref Decimal d)
+        {
+            uint flags = d.uflags;
+            if ((flags & ScaleMask) != 0)
+                DecCalc.InternalRound(ref d, (byte)(flags >> ScaleShift), DecCalc.RoundingMode.Truncate);
         }
 
         public static implicit operator Decimal(byte value)
