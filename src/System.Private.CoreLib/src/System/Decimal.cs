@@ -666,46 +666,21 @@ namespace System
         // By default a mid-point value is rounded to the nearest even number. If the mode is
         // passed in, it can also round away from zero.
 
-        public static Decimal Round(Decimal d)
-        {
-            return Round(d, 0);
-        }
+        public static Decimal Round(Decimal d) => Round(ref d, 0, MidpointRounding.ToEven);
+        public static Decimal Round(Decimal d, int decimals) => Round(ref d, decimals, MidpointRounding.ToEven);
+        public static Decimal Round(Decimal d, MidpointRounding mode) => Round(ref d, 0, mode);
+        public static Decimal Round(Decimal d, int decimals, MidpointRounding mode) => Round(ref d, decimals, mode);
 
-        public static Decimal Round(Decimal d, int decimals)
+        static Decimal Round(ref Decimal d, int decimals, MidpointRounding mode)
         {
-            Decimal result = new Decimal();
-
-            if (decimals < 0 || decimals > 28)
+            if ((uint)decimals > 28)
                 throw new ArgumentOutOfRangeException(nameof(decimals), SR.ArgumentOutOfRange_DecimalRound);
+            if ((uint)mode > (uint)MidpointRounding.AwayFromZero)
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, nameof(MidpointRounding)), nameof(mode));
 
-            DecCalc.VarDecRound(ref d, decimals, ref result);
-
-            d = result;
-            return d;
-        }
-
-        public static Decimal Round(Decimal d, MidpointRounding mode)
-        {
-            return Round(d, 0, mode);
-        }
-
-        public static Decimal Round(Decimal d, int decimals, MidpointRounding mode)
-        {
-            if (decimals < 0 || decimals > 28)
-                throw new ArgumentOutOfRangeException(nameof(decimals), SR.ArgumentOutOfRange_DecimalRound);
-            if (mode < MidpointRounding.ToEven || mode > MidpointRounding.AwayFromZero)
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, "MidpointRounding"), nameof(mode));
-
-            if (mode == MidpointRounding.ToEven)
-            {
-                Decimal result = new Decimal();
-                DecCalc.VarDecRound(ref d, decimals, ref result);
-                d = result;
-            }
-            else
-            {
-                DecCalc.InternalRoundFromZero(ref d, decimals);
-            }
+            int scale = d.Scale - decimals;
+            if (scale > 0)
+                DecCalc.InternalRound(ref d, (uint)scale, (DecCalc.RoundingMode)mode);
             return d;
         }
 
