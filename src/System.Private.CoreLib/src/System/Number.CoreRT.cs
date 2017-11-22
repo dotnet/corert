@@ -289,32 +289,6 @@ namespace System
 
         private const int _CVTBUFSIZE = 349;
 
-        public static String FormatDecimal(Decimal value, String format, IFormatProvider provider)
-        {
-            NumberFormatInfo info = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
-
-            NumberBuffer number = new NumberBuffer();
-            DecimalToNumber(value, ref number);
-
-            int digits;
-            char fmt = ParseFormatSpecifier(format, out digits);
-            ValueStringBuilder sb;
-            unsafe
-            {
-                char* stackPtr = stackalloc char[CharStackBufferSize];
-                sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
-            }
-            if (fmt != 0)
-            {
-                NumberToString(ref sb, ref number, fmt, digits, info, true);
-            }
-            else
-            {
-                NumberToStringFormat(ref sb, ref number, format, info);
-            }
-            return sb.GetString();
-        }
-
         public static String FormatDouble(double value, String format, IFormatProvider provider)
         {
             NumberFormatInfo info = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
@@ -583,33 +557,6 @@ namespace System
 
             value = d;
             return true;
-        }
-
-#if PROJECTN
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoOptimization)]
-#endif
-        private static unsafe void DecimalToNumber(Decimal value, ref Number.NumberBuffer number)
-        {
-            Decimal d = value;
-
-            char* buffer = number.digits;
-            number.precision = DecimalPrecision;
-            number.sign = d.IsNegative;
-
-            char* p = buffer + DecimalPrecision;
-            while (d.Mid != 0 | d.High != 0)
-            {
-                p = Number.UInt32ToDecChars(p, Decimal.DecDivMod1E9(ref d), 9);
-            }
-            p = Number.UInt32ToDecChars(p, d.Low, 0);
-
-            int i = (int)(buffer + DecimalPrecision - p);
-            number.scale = i - d.Scale;
-
-            char* dst = number.digits;
-            while (--i >= 0)
-                *dst++ = *p++;
-            *dst = '\0';
         }
 
         #endregion
