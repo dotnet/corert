@@ -206,7 +206,6 @@ public static System.IntPtr System.IntPtr.operator +(System.IntPtr pointer, int 
 public static bool System.IntPtr.operator ==(System.IntPtr value1, System.IntPtr value2)
 public static int System.IntPtr.Size.get
 public static System.IntPtr System.IntPtr.Subtract(System.IntPtr pointer, int offset)
-internal bool System.IntPtr.IsNull()
 public int System.IntPtr.ToInt32()
 public long System.IntPtr.ToInt64()
 public void* System.IntPtr.ToPointer()
