@@ -274,11 +274,6 @@ namespace System
         //
         public Decimal(int[] bits)
         {
-            SetBits(bits);
-        }
-
-        private void SetBits(int[] bits)
-        {
             if (bits == null)
                 throw new ArgumentNullException(nameof(bits));
             if (bits.Length == 4)
@@ -314,37 +309,25 @@ namespace System
         {
             // OnDeserialization is called after each instance of this class is deserialized.
             // This callback method performs decimal validation after being deserialized.
-            try
-            {
-                SetBits(GetBits(this));
-            }
-            catch (ArgumentException e)
-            {
-                throw new SerializationException(SR.Overflow_Decimal, e);
-            }
+            if (!IsValid(uflags))
+                throw new SerializationException(SR.Overflow_Decimal);
         }
 
         // Constructs a Decimal from its constituent parts.
-        private Decimal(int lo, int mid, int hi, int flags)
+        private Decimal(ulong ulomidLE, uint hi, uint flags)
         {
-            if ((flags & ~(SignMask | ScaleMask)) == 0 && (flags & ScaleMask) <= (28 << 16))
-            {
-                this.lo = lo;
-                this.mid = mid;
-                this.hi = hi;
-                this.flags = flags;
-                return;
-            }
-            throw new ArgumentException(SR.Arg_DecBitCtor);
+            this.ulomidLE = ulomidLE;
+            this.uhi = hi;
+            this.uflags = flags;
         }
 
         // Returns the absolute value of the given Decimal. If d is
         // positive, the result is d. If d is negative, the result
         // is -d.
         //
-        internal static Decimal Abs(Decimal d)
+        internal static Decimal Abs(ref Decimal d)
         {
-            return new Decimal(d.lo, d.mid, d.hi, (int)(d.uflags & ~SignMask));
+            return new Decimal(d.ulomidLE, d.uhi, d.uflags & ~SignMask);
         }
 
 
@@ -628,16 +611,16 @@ namespace System
 
         // Returns the larger of two Decimal values.
         //
-        internal static Decimal Max(Decimal d1, Decimal d2)
+        internal static ref Decimal Max(ref Decimal d1, ref Decimal d2)
         {
-            return Compare(d1, d2) >= 0 ? d1 : d2;
+            return ref DecCalc.VarDecCmp(ref d1, ref d2) >= 0 ? ref d1 : ref d2;
         }
 
         // Returns the smaller of two Decimal values.
         //
-        internal static Decimal Min(Decimal d1, Decimal d2)
+        internal static ref Decimal Min(ref Decimal d1, ref Decimal d2)
         {
-            return Compare(d1, d2) < 0 ? d1 : d2;
+            return ref DecCalc.VarDecCmp(ref d1, ref d2) < 0 ? ref d1 : ref d2;
         }
 
 
@@ -659,7 +642,7 @@ namespace System
         //
         public static Decimal Negate(Decimal d)
         {
-            return new Decimal(d.lo, d.mid, d.hi, (int)(d.uflags ^ SignMask));
+            return new Decimal(d.ulomidLE, d.uhi, d.uflags ^ SignMask);
         }
 
         // Rounds a Decimal value to a given number of decimal places. The value
