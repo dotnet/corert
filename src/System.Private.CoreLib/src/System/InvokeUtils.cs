@@ -220,7 +220,7 @@ namespace System
 
             if (dstEEType.IsEnum)
             {
-                Type dstType = ReflectionCoreNonPortable.GetRuntimeTypeForEEType(dstEEType);
+                Type dstType = RuntimeTypeUnifier.GetRuntimeTypeForEEType(dstEEType);
                 dstObject = Enum.ToObject(dstType, dstObject);
             }
 

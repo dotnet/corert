@@ -76,7 +76,7 @@ namespace System
         [Intrinsic]
         public Type GetType()
         {
-            return ReflectionCoreNonPortable.GetRuntimeTypeForEEType(EETypePtr);
+            return RuntimeTypeUnifier.GetRuntimeTypeForEEType(EETypePtr);
         }
 
         public virtual String ToString()
