@@ -52,6 +52,7 @@
 
   <ItemGroup>
     <IlcArg Include="--targetarch=$(Platform)" />
+    <IlcArg Include="--stacktracedata" />
   </ItemGroup>
 
 </Project>
