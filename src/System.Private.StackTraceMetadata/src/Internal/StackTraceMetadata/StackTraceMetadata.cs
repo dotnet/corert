@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime;
-using System.Text;
 
 using Internal.Metadata.NativeFormat;
 using Internal.Runtime;
@@ -13,7 +12,7 @@ using Internal.Runtime.Augments;
 using Internal.Runtime.TypeLoader;
 using Internal.TypeSystem;
 
-using MethodSignature = Internal.Metadata.NativeFormat.MethodSignature;
+using ReflectionExecution = Internal.Reflection.Execution.ReflectionExecution;
 
 #if BIT64
 using nint = System.Int64;
@@ -63,6 +62,15 @@ namespace Internal.StackTraceMetadata
                     if (name != null)
                         return name;
                 }
+            }
+
+            // We haven't found information in the stack trace metadata tables, but maybe reflection will have this
+            if (ReflectionExecution.TryGetMethodMetadataFromStartAddress(methodStartAddress,
+                out MetadataReader reader,
+                out TypeDefinitionHandle typeHandle,
+                out MethodHandle methodHandle))
+            {
+                return MethodNameFormatter.FormatMethodName(reader, typeHandle, methodHandle);
             }
 
             return null;
