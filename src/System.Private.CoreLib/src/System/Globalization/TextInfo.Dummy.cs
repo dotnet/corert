@@ -6,14 +6,7 @@ namespace System.Globalization
 {
     public partial class TextInfo
     {
-        internal unsafe TextInfo(CultureData cultureData)
-        {
-            _cultureData = cultureData;
-            _cultureName = _cultureData.CultureName;
-            _textInfoName = _cultureData.STEXTINFO;
-        }
-
-        private unsafe void FinishInitialization(string textInfoName)
+        private unsafe void FinishInitialization()
         {
         }
 
