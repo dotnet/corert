@@ -207,7 +207,7 @@ namespace System.Reflection.Runtime.General
                     {
                         foreach (CustomAttributeNamedArgument namedArgument in cad.NamedArguments)
                         {
-                            if (namedArgument.MemberInfo.Name.Equals("Value"))
+                            if (namedArgument.MemberName.Equals("Value"))
                             {
                                 defaultValue = namedArgument.TypedValue.Value;
                                 return true;
