@@ -39,6 +39,13 @@ namespace Internal.StackTraceMetadata
             return formatter._outputBuilder.ToString();
         }
 
+        public static string FormatMethodName(MetadataReader metadataReader, TypeDefinitionHandle enclosingTypeHandle, MethodHandle methodHandle)
+        {
+            MethodNameFormatter formatter = new MethodNameFormatter(metadataReader);
+            formatter.EmitMethodDefinitionName(enclosingTypeHandle, methodHandle);
+            return formatter._outputBuilder.ToString();
+        }
+
         /// <summary>
         /// Emit a given method signature to a specified string builder.
         /// </summary>
@@ -96,11 +103,16 @@ namespace Internal.StackTraceMetadata
         private void EmitMethodDefinitionName(QualifiedMethodHandle qualifiedMethodHandle)
         {
             QualifiedMethod qualifiedMethod = _metadataReader.GetQualifiedMethod(qualifiedMethodHandle);
-            Method method = _metadataReader.GetMethod(qualifiedMethod.Method);
+            EmitMethodDefinitionName(qualifiedMethod.EnclosingType, qualifiedMethod.Method);
+        }
+
+        private void EmitMethodDefinitionName(TypeDefinitionHandle enclosingTypeHandle, MethodHandle methodHandle)
+        {
+            Method method = _metadataReader.GetMethod(methodHandle);
             MethodSignature methodSignature = _metadataReader.GetMethodSignature(method.Signature);
             EmitTypeName(methodSignature.ReturnType, namespaceQualified: false);
             _outputBuilder.Append(' ');
-            EmitTypeName(qualifiedMethod.EnclosingType, namespaceQualified: true);
+            EmitTypeName(enclosingTypeHandle, namespaceQualified: true);
             _outputBuilder.Append('.');
             EmitString(method.Name);
             EmitMethodParameters(methodSignature);

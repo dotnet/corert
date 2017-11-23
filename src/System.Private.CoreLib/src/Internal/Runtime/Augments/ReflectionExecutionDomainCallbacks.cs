@@ -48,7 +48,6 @@ namespace Internal.Runtime.Augments
 
         public abstract String GetBetterDiagnosticInfoIfAvailable(RuntimeTypeHandle runtimeTypeHandle);
         public abstract MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress);
-        public abstract String GetMethodNameFromStartAddressIfAvailable(IntPtr methodStartAddress);
         public abstract int ValueTypeGetHashCodeUsingReflection(object valueType);
         public abstract bool ValueTypeEqualsUsingReflection(object left, object right);
 
