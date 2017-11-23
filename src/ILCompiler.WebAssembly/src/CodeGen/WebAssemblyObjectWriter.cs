@@ -203,11 +203,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public static LLVMValueRef EmitGlobal(LLVMModuleRef module, FieldDesc field, NameMangler nameMangler)
         {
-            if (field.IsThreadStatic)
-            {
-                throw new NotImplementedException("thread static field");
-            }
-            else if (field.IsStatic)
+            if (field.IsStatic)
             {
                 if (s_staticFieldMapping.TryGetValue(field, out LLVMValueRef existingValue))
                     return existingValue;
@@ -217,6 +213,10 @@ namespace ILCompiler.DependencyAnalysis
                     var llvmValue = LLVM.AddGlobal(module, valueType, nameMangler.GetMangledFieldName(field).ToString());
                     LLVM.SetLinkage(llvmValue, LLVMLinkage.LLVMInternalLinkage);
                     LLVM.SetInitializer(llvmValue, GetConstZeroArray(field.FieldType.GetElementSize().AsInt));
+                    if (field.IsThreadStatic)
+                    {
+                        LLVM.SetThreadLocal(llvmValue, LLVMMisc.True);
+                    }
                     s_staticFieldMapping.Add(field, llvmValue);
                     return llvmValue;
                 }
@@ -718,7 +718,6 @@ namespace ILCompiler.DependencyAnalysis
                             LLVM.SetGlobalConstant(slot, LLVMMisc.True);
                             iSlot++;
                         }
-                        
                     }
 
                     objectWriter.StartObjectNode(node);
