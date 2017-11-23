@@ -52,7 +52,9 @@
 
   <ItemGroup>
     <IlcArg Include="--targetarch=$(Platform)" />
-    <IlcArg Include="--stacktracedata" />
+    
+    <!-- Broken on wasm: https://github.com/dotnet/corert/issues/5005 -->
+    <IlcArg Condition="$(NativeCodeGen) != 'wasm'" Include="--stacktracedata" />
   </ItemGroup>
 
 </Project>
