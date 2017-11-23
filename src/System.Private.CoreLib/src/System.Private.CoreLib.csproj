@@ -227,7 +227,6 @@
     <Compile Include="System\GC.cs" />
     <Compile Include="System\Globalization\CultureData.cs" />
     <Compile Include="System\Globalization\CultureInfo.cs" />
-    <Compile Include="System\Globalization\TextInfo.cs" />
     <Compile Include="System\Guid.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
     <Compile Include="System\Guid.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
     <Compile Include="System\Helpers.cs" />
@@ -534,7 +533,6 @@
     <Compile Include="System\Globalization\CultureInfo.Windows.cs" />
     <Compile Include="System\Globalization\CompareInfo.Windows.cs" />
     <Compile Include="System\Globalization\CultureData.Windows.cs" />
-    <Compile Include="System\Globalization\TextInfo.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeaturePortableThreadPool)' == 'true'">
     <Compile Include="System\Threading\ThreadPool.Portable.cs" />
@@ -594,7 +592,6 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' And '$(EnableDummyGlobalizationImplementation)' != 'true'">
     <Compile Include="System\Globalization\CultureInfo.Unix.cs" />
     <Compile Include="System\Globalization\CompareInfo.Unix.cs" />
-    <Compile Include="System\Globalization\TextInfo.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.Unix.cs" />
