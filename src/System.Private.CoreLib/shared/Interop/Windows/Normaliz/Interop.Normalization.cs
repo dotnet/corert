@@ -7,24 +7,12 @@ using System.Runtime.InteropServices;
 
 internal partial class Interop
 {
-    // These are error codes we get back from the Normalization DLL
-    internal const int ERROR_SUCCESS = 0;
-    internal const int ERROR_NOT_ENOUGH_MEMORY = 8;
-    internal const int ERROR_INVALID_PARAMETER = 87;
-    internal const int ERROR_INSUFFICIENT_BUFFER = 122;
-    internal const int ERROR_INVALID_NAME = 123;
-    internal const int ERROR_NO_UNICODE_TRANSLATION = 1113;
-
-    internal partial class mincore
+    internal partial class Normaliz
     {
-        //
-        //  Normalization APIs
-        //
-
-        [DllImport("api-ms-win-core-normalization-l1-1-0.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport("Normaliz.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool IsNormalizedString(int normForm, string source, int length);
 
-        [DllImport("api-ms-win-core-normalization-l1-1-0.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport("Normaliz.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern int NormalizeString(
                                         int normForm,
                                         string source,

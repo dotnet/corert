@@ -4,21 +4,27 @@
 
 using System;
 using System.Globalization;
+using System.Reflection;
 using System.Collections.Generic;
 using System.Runtime;
+using System.Runtime.Versioning;
 using System.Runtime.CompilerServices;
-using Internal.Reflection.Core.NonPortable;
 
 namespace System
 {
+    // Also, because we have special type system support that says a a boxed Nullable<T>
+    // can be used where a boxed<T> is use, Nullable<T> can not implement any intefaces
+    // at all (since T may not).   Do NOT add any interfaces to Nullable!
+    // 
     [Serializable]
+    [NonVersionable] // This only applies to field layout
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly struct Nullable<T> where T : struct
     {
-        // Changing the name of this field will break MDbg and Debugger tests
         private readonly bool hasValue; // Do not rename (binary serialization)
         internal readonly T value; // Do not rename (binary serialization)
 
+        [NonVersionable]
         public Nullable(T value)
         {
             this.value = value;
@@ -27,51 +33,61 @@ namespace System
 
         public bool HasValue
         {
-            get { return hasValue; }
+            [NonVersionable]
+            get
+            {
+                return hasValue;
+            }
         }
 
         public T Value
         {
             get
             {
-                if (!HasValue)
-                    throw new InvalidOperationException(SR.InvalidOperation_NoValue);
+                if (!hasValue)
+                {
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NoValue);
+                }
                 return value;
             }
         }
 
+        [NonVersionable]
         public T GetValueOrDefault()
         {
             return value;
         }
 
+        [NonVersionable]
         public T GetValueOrDefault(T defaultValue)
         {
-            return HasValue ? value : defaultValue;
+            return hasValue ? value : defaultValue;
         }
 
         public override bool Equals(object other)
         {
-            if (!HasValue) return other == null;
+            if (!hasValue) return other == null;
             if (other == null) return false;
             return value.Equals(other);
         }
 
         public override int GetHashCode()
         {
-            return HasValue ? value.GetHashCode() : 0;
+            return hasValue ? value.GetHashCode() : 0;
         }
 
         public override string ToString()
         {
-            return HasValue ? value.ToString() : "";
+            return hasValue ? value.ToString() : "";
         }
 
+        [NonVersionable]
         public static implicit operator Nullable<T>(T value)
         {
             return new Nullable<T>(value);
         }
 
+        [NonVersionable]
         public static explicit operator T(Nullable<T> value)
         {
             return value.Value;
@@ -102,6 +118,8 @@ namespace System
             return true;
         }
 
+        // If the type provided is not a Nullable Type, return null.
+        // Otherwise, returns the underlying type of the Nullable type
         public static Type GetUnderlyingType(Type nullableType)
         {
             if ((object)nullableType == null)
@@ -109,28 +127,31 @@ namespace System
                 throw new ArgumentNullException(nameof(nullableType));
             }
 
-            Type result = null;
-
-            EETypePtr nullableEEType;
-            if (nullableType.TryGetEEType(out nullableEEType))
+#if CORERT
+            // This is necessary to handle types without reflection metadata
+            if (nullableType.TryGetEEType(out EETypePtr nullableEEType))
             {
                 if (nullableEEType.IsGeneric)
                 {
                     if (nullableEEType.IsNullable)
                     {
-                        EETypePtr underlyingEEType = nullableEEType.NullableType;
-                        result = RuntimeTypeUnifier.GetRuntimeTypeForEEType(underlyingEEType);
+                        return Internal.Reflection.Core.NonPortable.RuntimeTypeUnifier.GetRuntimeTypeForEEType(nullableEEType.NullableType);
                     }
                 }
+                return null;
             }
-            else
+#endif
+
+            if (nullableType.IsGenericType && !nullableType.IsGenericTypeDefinition)
             {
-                // If we got here, the type was not statically bound in the image. However, it may still be a browsable metadata-based type.
-                // Fall back to using Reflection for these.
-                if (nullableType.IsConstructedGenericType && nullableType.GetGenericTypeDefinition() == typeof(Nullable<>))
-                    result = nullableType.GenericTypeArguments[0];
+                // instantiated generic type only                
+                Type genericType = nullableType.GetGenericTypeDefinition();
+                if (Object.ReferenceEquals(genericType, typeof(Nullable<>)))
+                {
+                    return nullableType.GetGenericArguments()[0];
+                }
             }
-            return result;
+            return null;
         }
     }
 }

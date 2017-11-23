@@ -2,25 +2,67 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Security;
 using System.Text;
+using System.Globalization;
 
 namespace System.Text
 {
-    static partial class Normalization
+    internal static partial class Normalization
     {
-        public static bool IsNormalized(this string strInput, NormalizationForm normalizationForm)
+        internal static bool IsNormalized(string strInput, NormalizationForm normalizationForm)
         {
+            if (GlobalizationMode.Invariant)
+            {
+                // In Invariant mode we assume all characters are normalized. 
+                // This is because we don't support any linguistic operation on the strings
+                return true;
+            }
+
             ValidateArguments(strInput, normalizationForm);
 
-            return true;
+            int ret = Interop.GlobalizationInterop.IsNormalized(normalizationForm, strInput, strInput.Length);
+
+            if (ret == -1)
+            {
+                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
+            }
+
+            return ret == 1;
         }
 
-        public static string Normalize(this string strInput, NormalizationForm normalizationForm)
+        internal static string Normalize(string strInput, NormalizationForm normalizationForm)
         {
+            if (GlobalizationMode.Invariant)
+            {
+                // In Invariant mode we assume all characters are normalized. 
+                // This is because we don't support any linguistic operation on the strings
+                return strInput;
+            }
+
             ValidateArguments(strInput, normalizationForm);
 
-            return strInput;
+            char[] buf = new char[strInput.Length];
+
+            for (int attempts = 2; attempts > 0; attempts--)
+            {
+                int realLen = Interop.GlobalizationInterop.NormalizeString(normalizationForm, strInput, strInput.Length, buf, buf.Length);
+
+                if (realLen == -1)
+                {
+                    throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
+                }
+
+                if (realLen <= buf.Length)
+                {
+                    return new string(buf, 0, realLen);
+                }
+
+                buf = new char[realLen];
+            }
+
+            throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
         }
 
         // -----------------------------
@@ -29,10 +71,7 @@ namespace System.Text
 
         private static void ValidateArguments(string strInput, NormalizationForm normalizationForm)
         {
-            if (strInput == null)
-            {
-                throw new ArgumentNullException(nameof(strInput));
-            }
+            Debug.Assert(strInput != null);
 
             if (normalizationForm != NormalizationForm.FormC && normalizationForm != NormalizationForm.FormD &&
                 normalizationForm != NormalizationForm.FormKC && normalizationForm != NormalizationForm.FormKD)
