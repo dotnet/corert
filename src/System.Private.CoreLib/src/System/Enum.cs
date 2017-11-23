@@ -715,12 +715,16 @@ namespace System
                 throw new InvalidOperationException(SR.Format(SR.Arg_OpenType, enumType.ToString()));
 
             EETypePtr enumEEType = enumType.TypeHandle.ToEETypePtr();
-            unsafe
-            {
-                byte* pValue = (byte*)&value;
-                AdjustForEndianness(ref pValue, enumEEType);
-                return RuntimeImports.RhBox(enumEEType, pValue);
-            }
+            return ToObject(enumEEType, value);
+        }
+
+        internal unsafe static object ToObject(EETypePtr enumEEType, long value)
+        {
+            Debug.Assert(enumEEType.IsEnum);
+
+            byte* pValue = (byte*)&value;
+            AdjustForEndianness(ref pValue, enumEEType);
+            return RuntimeImports.RhBox(enumEEType, pValue);
         }
 
         public static Object ToObject(Type enumType, Object value)
@@ -1265,61 +1269,34 @@ namespace System
         #region IConvertible
         public TypeCode GetTypeCode()
         {
-            Type enumType = this.GetType();
-            Type underlyingType = GetUnderlyingType(enumType);
+            RuntimeImports.RhCorElementType corElementType = this.EETypePtr.CorElementType;
 
-            if (underlyingType == typeof(Int32))
+            switch (corElementType)
             {
-                return TypeCode.Int32;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
+                    return TypeCode.Int32;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
+                    return TypeCode.SByte;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
+                    return TypeCode.Int16;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
+                    return TypeCode.Int64;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
+                    return TypeCode.UInt32;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
+                    return TypeCode.Byte;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
+                    return TypeCode.UInt16;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
+                    return TypeCode.UInt64;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
+                    return TypeCode.Boolean;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
+                    return TypeCode.Char;
+                default:
+                    Debug.Fail("Unknown underlying type.");
+                    throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
             }
-
-            if (underlyingType == typeof(sbyte))
-            {
-                return TypeCode.SByte;
-            }
-
-            if (underlyingType == typeof(Int16))
-            {
-                return TypeCode.Int16;
-            }
-
-            if (underlyingType == typeof(Int64))
-            {
-                return TypeCode.Int64;
-            }
-
-            if (underlyingType == typeof(UInt32))
-            {
-                return TypeCode.UInt32;
-            }
-
-            if (underlyingType == typeof(byte))
-            {
-                return TypeCode.Byte;
-            }
-
-            if (underlyingType == typeof(UInt16))
-            {
-                return TypeCode.UInt16;
-            }
-
-            if (underlyingType == typeof(UInt64))
-            {
-                return TypeCode.UInt64;
-            }
-
-            if (underlyingType == typeof(Boolean))
-            {
-                return TypeCode.Boolean;
-            }
-
-            if (underlyingType == typeof(Char))
-            {
-                return TypeCode.Char;
-            }
-
-            Debug.Fail("Unknown underlying type.");
-            throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
         }
 
         bool IConvertible.ToBoolean(IFormatProvider provider)
