@@ -406,6 +406,12 @@ namespace Internal.IL
 
             TypeDesc exactType = method.OwningType;
 
+            if ((method.Signature.IsStatic && reason == "callvirt")
+                || (method.IsNativeCallable && (reason != "ldftn" && reason != "ldvirtftn")))
+            {
+                ThrowHelper.ThrowBadImageFormatException();
+            }
+
             bool resolvedConstraint = false;
             bool forceUseRuntimeLookup = false;
 
