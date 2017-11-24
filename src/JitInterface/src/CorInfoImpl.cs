@@ -2930,8 +2930,15 @@ namespace Internal.JitInterface
             // Spec says that a callvirt lookup ignores static methods. Since static methods
             // can't have the exact same signature as instance methods, a lookup that found
             // a static method would have never found an instance method.
-            if ((method.Signature.IsStatic && (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0)
-                || (method.IsNativeCallable && (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0))
+            if (method.Signature.IsStatic && (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0)
+            {
+                throw new BadImageFormatException();
+            }
+
+            // This blocks enforces the rule that methods with [NativeCallable] attribute
+            // can only be called from unmanaged code. The call from managed code is replaced
+            // with a stub that throws a BadImageFormatException
+            if (method.IsNativeCallable && (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0)
             {
                 ThrowHelper.ThrowBadImageFormatException();
             }
