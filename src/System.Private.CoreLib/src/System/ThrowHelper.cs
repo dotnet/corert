@@ -131,9 +131,13 @@ namespace System
             throw GetAddingDuplicateWithKeyArgumentException(key);
         }
 
-        internal static void ThrowKeyNotFoundException()
+        private static KeyNotFoundException GetKeyNotFoundException(object key)
         {
-            throw new KeyNotFoundException();
+            throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
+        }
+        internal static void ThrowKeyNotFoundException(object key)
+        {
+            throw GetKeyNotFoundException(key);
         }
 
         internal static void ThrowArgumentException(ExceptionResource resource)
