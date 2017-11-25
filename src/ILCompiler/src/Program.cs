@@ -357,6 +357,8 @@ namespace ILCompiler
                     compilationGroup = new SingleFileCompilationModuleGroup(typeSystemContext);
                 }
 
+                if (_rdXmlFilePaths.Count > 0)
+                    Console.WriteLine("Warning: RD.XML processing will change before release (https://github.com/dotnet/corert/issues/5001)");
                 foreach (var rdXmlFilePath in _rdXmlFilePaths)
                 {
                     compilationRoots.Add(new RdXmlRootProvider(typeSystemContext, rdXmlFilePath));

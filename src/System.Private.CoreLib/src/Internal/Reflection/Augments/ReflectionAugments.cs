@@ -100,6 +100,11 @@ namespace Internal.Reflection.Augments
             return new SignatureConstructedGenericType(genericTypeDefinition, genericTypeArguments);
         }
 
+        public static TypeLoadException CreateTypeLoadException(string message, string typeName)
+        {
+            return new TypeLoadException(message, typeName);
+        }
+
         internal static ReflectionCoreCallbacks ReflectionCoreCallbacks
         {
             get

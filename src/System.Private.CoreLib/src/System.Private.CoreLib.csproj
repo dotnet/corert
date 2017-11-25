@@ -134,10 +134,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\Reflection\Core\NonPortable\IRuntimeImplementedType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RawRuntimeTypeHandleKey.cs" />
     <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeTypeUnifier.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeTypeUnifier.Internals.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\ReflectionCoreNonPortable.cs" />
     <Compile Include="Internal\Reflection\Extensions\NonPortable\CustomAttributeInheritanceRules.cs" />
     <Compile Include="Internal\Reflection\Extensions\NonPortable\CustomAttributeInstantiator.cs" />
     <Compile Include="Internal\Reflection\Extensions\NonPortable\CustomAttributeSearcher.cs" />
@@ -230,7 +227,6 @@
     <Compile Include="System\GC.cs" />
     <Compile Include="System\Globalization\CultureData.cs" />
     <Compile Include="System\Globalization\CultureInfo.cs" />
-    <Compile Include="System\Globalization\TextInfo.cs" />
     <Compile Include="System\Guid.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
     <Compile Include="System\Guid.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
     <Compile Include="System\Helpers.cs" />
@@ -241,7 +237,6 @@
     <Compile Include="System\MissingFieldException.cs" />
     <Compile Include="System\MissingMemberException.cs" />
     <Compile Include="System\MulticastDelegate.cs" />
-    <Compile Include="System\Nullable.cs" />
     <Compile Include="System\Number.CoreRT.cs" />
     <Compile Include="System\Object.cs" />
     <Compile Include="System\OutOfMemoryException.cs" />
@@ -538,15 +533,6 @@
     <Compile Include="System\Globalization\CultureInfo.Windows.cs" />
     <Compile Include="System\Globalization\CompareInfo.Windows.cs" />
     <Compile Include="System\Globalization\CultureData.Windows.cs" />
-    <Compile Include="System\Globalization\TextInfo.Windows.cs" />
-    <Compile Include="System\Globalization\IdnMapping.Windows.cs" />
-    <Compile Include="System\Text\Normalization.Windows.cs" />
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Idna.cs">
-      <Link>Interop\Windows\mincore\Interop.Idna.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Normalization.cs">
-      <Link>Interop\Windows\mincore\Interop.Normalization.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(FeaturePortableThreadPool)' == 'true'">
     <Compile Include="System\Threading\ThreadPool.Portable.cs" />
@@ -601,12 +587,11 @@
     <Compile Include="System\Globalization\TextInfo.Dummy.cs" />
     <Compile Include="System\Globalization\CalendarData.Dummy.cs" />
     <Compile Include="System\Globalization\IdnMapping.Dummy.cs" />
-    <Compile Include="System\Text\Normalization.Dummy.cs" />
+    <Compile Include="System\Globalization\Normalization.Dummy.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' And '$(EnableDummyGlobalizationImplementation)' != 'true'">
     <Compile Include="System\Globalization\CultureInfo.Unix.cs" />
     <Compile Include="System\Globalization\CompareInfo.Unix.cs" />
-    <Compile Include="System\Globalization\TextInfo.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.Unix.cs" />

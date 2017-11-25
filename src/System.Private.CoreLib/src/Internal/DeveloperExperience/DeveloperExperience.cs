@@ -41,29 +41,9 @@ namespace Internal.DeveloperExperience
                 }
             }
 
-            ReflectionExecutionDomainCallbacks reflectionCallbacks = RuntimeAugments.CallbacksIfAvailable;
-            String moduleFullFileName = null;
-
-            if (reflectionCallbacks != null)
-            {
-                IntPtr methodStart = RuntimeImports.RhFindMethodStartAddress(ip);
-                if (methodStart != IntPtr.Zero)
-                {
-                    string methodName = string.Empty;
-                    try
-                    {
-                        methodName = reflectionCallbacks.GetMethodNameFromStartAddressIfAvailable(methodStart);
-                    }
-                    catch { }
-
-                    if (!string.IsNullOrEmpty(methodName))
-                        return methodName;
-                }
-
-                // If we don't have precise information, try to map it at least back to the right module.
-                IntPtr moduleBase = RuntimeImports.RhGetOSModuleFromPointer(ip);
-                moduleFullFileName = RuntimeAugments.TryGetFullPathToApplicationModule(moduleBase);
-            }
+            // If we don't have precise information, try to map it at least back to the right module.
+            IntPtr moduleBase = RuntimeImports.RhGetOSModuleFromPointer(ip);
+            string moduleFullFileName = RuntimeAugments.TryGetFullPathToApplicationModule(moduleBase);
 
             // Without any callbacks or the ability to map ip correctly we better admit that we don't know
             if (string.IsNullOrEmpty(moduleFullFileName))

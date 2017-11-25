@@ -7,28 +7,26 @@ using System.Runtime.InteropServices;
 
 internal partial class Interop
 {
-    internal partial class mincore
+    internal partial class Normaliz
     {
         //
         //  Idn APIs
         //
 
-        [DllImport("api-ms-win-core-localization-l1-2-0.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern int IdnToAscii(
+        [DllImport("Normaliz.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern unsafe int IdnToAscii(
                                         uint dwFlags,
-                                        IntPtr lpUnicodeCharStr,
+                                        char* lpUnicodeCharStr,
                                         int cchUnicodeChar,
-                                        [System.Runtime.InteropServices.OutAttribute()]
-                                        IntPtr lpASCIICharStr,
+                                        char* lpASCIICharStr,
                                         int cchASCIIChar);
 
-        [DllImport("api-ms-win-core-localization-l1-2-0.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern int IdnToUnicode(
+        [DllImport("Normaliz.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern unsafe int IdnToUnicode(
                                         uint dwFlags,
-                                        IntPtr lpASCIICharStr,
+                                        char* lpASCIICharStr,
                                         int cchASCIIChar,
-                                        [System.Runtime.InteropServices.OutAttribute()]
-                                        IntPtr lpUnicodeCharStr,
+                                        char* lpUnicodeCharStr,
                                         int cchUnicodeChar);
 
         internal const int IDN_ALLOW_UNASSIGNED = 0x1;
