@@ -2940,7 +2940,7 @@ namespace Internal.JitInterface
             // with a stub that throws a BadImageFormatException
             if (method.IsNativeCallable && (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0)
             {
-                ThrowHelper.ThrowBadImageFormatException();
+                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNativeCallable, method);
             }
 
             TypeDesc exactType = HandleToObject(pResolvedToken.hClass);

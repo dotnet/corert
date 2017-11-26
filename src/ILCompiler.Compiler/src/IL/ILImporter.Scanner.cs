@@ -406,10 +406,9 @@ namespace Internal.IL
 
             TypeDesc exactType = method.OwningType;
 
-            if ((method.Signature.IsStatic && opcode == ILOpcode.callvirt)
-                || (method.IsNativeCallable && (opcode != ILOpcode.ldftn && opcode != ILOpcode.ldvirtftn)))
+            if (method.IsNativeCallable && (opcode != ILOpcode.ldftn && opcode != ILOpcode.ldvirtftn))
             {
-                ThrowHelper.ThrowBadImageFormatException();
+                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNativeCallable, method);
             }
 
             bool resolvedConstraint = false;
