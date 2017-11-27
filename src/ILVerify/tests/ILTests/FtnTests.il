@@ -124,6 +124,13 @@
         ret
     }
 
+    .method public hidebysig static valuetype ByteEnum ByteEnumReturnMethod() cil managed
+    {
+        ldc.i4.0
+        box     ByteEnum
+        ret
+    }
+
     .method public hidebysig static int32 IntReturnMethod() cil managed
     {
         ldc.i4.0
@@ -141,6 +148,24 @@
         ldnull
         ret
     }
+
+    .method public hidebysig static void ByteParamMethod(uint8 param) cil managed
+    {
+        ret
+    }
+
+    .method public hidebysig static void ByteEnumParamMethod(valuetype ByteEnum param) cil managed
+    {
+        ret
+    }
+}
+
+.class public auto ansi sealed ByteEnum
+       extends [System.Runtime]System.Enum
+{
+    .field public specialname rtspecialname uint8 value__
+    .field public static literal valuetype ByteEnum A = uint8(0)
+    .field public static literal valuetype ByteEnum B = uint8(0)
 }
 
 .class public auto ansi beforefieldinit FtnTestsType
@@ -437,6 +462,36 @@
         ldnull
         ldftn   uint8 TestMethodsType::ByteReturnMethod()
         newobj  instance void class [System.Runtime]System.Func`1<int32>::.ctor(object, native int)
+        pop
+        ret
+    }
+
+    // creating a Func<byte> from a ByteEnum return method is invalid
+    .method private hidebysig instance void IntFuncFromByteEnumMethod_Invalid_DelegateCtor() cil managed
+    {
+        ldnull
+        ldftn   valuetype ByteEnum TestMethodsType::ByteEnumReturnMethod()
+        newobj  instance void class [System.Runtime]System.Func`1<int32>::.ctor(object, native int)
+        pop
+        ret
+    }
+
+    // creating an Action<int> from a method with byte parameter is invalid
+    .method private hidebysig instance void IntActionFromByteMethod_Invalid_DelegateCtor() cil managed
+    {
+        ldnull
+        ldftn   void TestMethodsType::ByteParamMethod(uint8)
+        newobj  instance void class [System.Runtime]System.Action`1<int32>::.ctor(object, native int)
+        pop
+        ret
+    }
+
+    // creating an Action<byte> from a method with an enum (with underlying type byte) as parameter is invalid
+    .method private hidebysig instance void ByteActionFromByteEnum_Invalid_DelegateCtor() cil managed
+    {
+        ldnull
+        ldftn   void TestMethodsType::ByteEnumParamMethod(valuetype ByteEnum)
+        newobj  instance void class [System.Runtime]System.Action`1<uint8>::.ctor(object, native int)
         pop
         ret
     }
