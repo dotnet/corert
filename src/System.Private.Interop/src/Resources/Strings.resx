@@ -366,4 +366,7 @@
   <data name="TypeNotDelegate" xml:space="preserve">
     <value>'Type '{0}' is not a delegate type.  EventTokenTable may only be used with delegate types.'</value>
   </data>
+  <data name="Arg_KeyNotFoundWithKey" xml:space="preserve">
+    <value>The given key '{0}' was not present in the dictionary.</value>
+  </data>
 </root>
