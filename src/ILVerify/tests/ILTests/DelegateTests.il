@@ -10,7 +10,15 @@
 {
 }
 
-.class private auto ansi beforefieldinit C
+.class public auto ansi sealed ByteEnum
+       extends [System.Runtime]System.Enum
+{
+    .field public specialname rtspecialname uint8 value__
+    .field public static literal valuetype ByteEnum A = uint8(0)
+    .field public static literal valuetype ByteEnum B = uint8(0)
+}
+
+.class private auto ansi beforefieldinit DelegateTestsType
        extends [System.Runtime]System.Object
 {
     // assignment from Func<int, string> to Func<int, object> is valid
@@ -40,6 +48,46 @@
     // assignment from Func<int, object> to Func<int, string> is invalid
     .method private hidebysig instance class [System.Runtime]System.Func`2<int32,string>
           DelegateAssignment_Invalid_StackUnexpected(class [System.Runtime]System.Func`2<int32,object> input) cil managed
+    {
+        ldarg.1
+        ret
+    }
+
+    // assignment from Func<int> to Func<byte> is invalid
+    .method private hidebysig instance class [System.Runtime]System.Func`1<uint8>
+          AssignIntFuncToByteFunc_Invalid_StackUnexpected(class [System.Runtime]System.Func`2<int32> input) cil managed
+    {
+        ldarg.1
+        ret
+    }
+
+    // assignment from Func<byte> to Func<int> is invalid
+    .method private hidebysig instance class [System.Runtime]System.Func`1<int32>
+          AssignByteFuncToIntFunc_Invalid_StackUnexpected(class [System.Runtime]System.Func`1<uint8> input) cil managed
+    {
+        ldarg.1
+        ret
+    }
+
+    // assignment from Func<ByteEnum> to Func<byte> is invalid
+    .method private hidebysig instance class [System.Runtime]System.Func`1<uint8>
+          AssignByteActionToIntAction_Invalid_StackUnexpected(class [System.Runtime]System.Func`1<valuetype ByteEnum> input) cil managed
+    {
+        ldarg.1
+        ret
+    }
+
+    // assignment from Action<byte> to Action<int> is invalid
+    .method private hidebysig instance class [System.Runtime]System.Action`1<int32>
+          AssignByteActionToIntAction_Invalid_StackUnexpected(class [System.Runtime]System.Action`1<uint8> input) cil managed
+    {
+        ldarg.1
+        ret
+    }
+
+    // assignment from Action<ByteEnum> to Action<byte> is invalid
+    .method private hidebysig instance class [System.Runtime]System.Action`1<uint8>
+          AssignByteActionToByteEnumAction_Invalid_StackUnexpected(class [System.Runtime]System.Action`1<valuetype ByteEnum> input) cil managed
     {
         ldarg.1
         ret
