@@ -406,6 +406,11 @@ namespace Internal.IL
 
             TypeDesc exactType = method.OwningType;
 
+            if (method.IsNativeCallable && (opcode != ILOpcode.ldftn && opcode != ILOpcode.ldvirtftn))
+            {
+                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNativeCallable, method);
+            }
+
             bool resolvedConstraint = false;
             bool forceUseRuntimeLookup = false;
 
