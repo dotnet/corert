@@ -10,7 +10,7 @@
 {
 }
 
-.class private auto ansi beforefieldinit C
+.class private auto ansi beforefieldinit DelegateTestsType
        extends [System.Runtime]System.Object
 {
     // assignment from Func<int, string> to Func<int, object> is valid
@@ -40,6 +40,22 @@
     // assignment from Func<int, object> to Func<int, string> is invalid
     .method private hidebysig instance class [System.Runtime]System.Func`2<int32,string>
           DelegateAssignment_Invalid_StackUnexpected(class [System.Runtime]System.Func`2<int32,object> input) cil managed
+    {
+        ldarg.1
+        ret
+    }
+
+    // assignment from Func<int> to Func<byte> is invalid
+    .method private hidebysig instance class [System.Runtime]System.Func`1<uint8>
+          AssignIntFuncToByteFunc_Invalid_StackUnexpected(class [System.Runtime]System.Func`2<int32> input) cil managed
+    {
+        ldarg.1
+        ret
+    }
+
+    // assignment from Func<byte> to Func<int> is invalid
+    .method private hidebysig instance class [System.Runtime]System.Func`1<int32>
+          AssignByteFuncToIntFunc_Invalid_StackUnexpected(class [System.Runtime]System.Func`1<uint8> input) cil managed
     {
         ldarg.1
         ret
