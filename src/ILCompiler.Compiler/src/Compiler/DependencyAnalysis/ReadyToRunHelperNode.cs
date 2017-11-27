@@ -36,7 +36,7 @@ namespace ILCompiler.DependencyAnalysis
         DefaultConstructor,
     }
 
-    public partial class ReadyToRunHelperNode : AssemblyStubNode
+    public partial class ReadyToRunHelperNode : AssemblyStubNode, INodeWithDebugInfo
     {
         private ReadyToRunHelperId _id;
         private Object _target;
@@ -187,6 +187,43 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return null;
+        }
+
+        DebugLocInfo[] INodeWithDebugInfo.DebugLocInfos
+        {
+            get
+            {
+                if (_id == ReadyToRunHelperId.VirtualCall)
+                {
+                    // Generate debug information that lets debuggers step into the virtual calls.
+                    TargetDetails target = ((MethodDesc)_target).Context.Target;
+                    int offset = -1;
+                    switch (target.Architecture)
+                    {
+                        case TargetArchitecture.X64:
+                            offset = 3;
+                            break;
+                    }
+                    if (offset != -1)
+                    {
+                        return new DebugLocInfo[]
+                        {
+                            new DebugLocInfo(0, String.Empty, WellKnownLineNumber.DebuggerStepThrough),
+                            new DebugLocInfo(offset, String.Empty, WellKnownLineNumber.DebuggerStepIn)
+                        };
+                    }
+                }
+
+                return Array.Empty<DebugLocInfo>();
+            }
+        }
+
+        DebugVarInfo[] INodeWithDebugInfo.DebugVarInfos
+        {
+            get
+            {
+                return Array.Empty<DebugVarInfo>();
+            }
         }
 
 #if !SUPPORT_JIT
