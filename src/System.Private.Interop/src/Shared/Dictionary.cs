@@ -152,7 +152,7 @@ namespace System.Collections.Generic.Internal
                     return valueArray[i];
                 }
 
-                throw new KeyNotFoundException();
+                throw new KeyNotFoundException(string.Format(SR.Arg_KeyNotFoundWithKey, key.ToString())); 
             }
             set
             {
