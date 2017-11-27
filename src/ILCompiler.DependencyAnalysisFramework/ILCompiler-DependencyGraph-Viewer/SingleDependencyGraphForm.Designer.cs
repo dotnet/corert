@@ -72,6 +72,7 @@ namespace DependencyLogViewer
             this.filteredNodes.Name = "filteredNodes";
             this.filteredNodes.Size = new System.Drawing.Size(920, 359);
             this.filteredNodes.TabIndex = 0;
+            this.filteredNodes.DoubleClick += new System.EventHandler(this.exploreNode_Click);
             // 
             // tableLayoutPanel1
             // 
