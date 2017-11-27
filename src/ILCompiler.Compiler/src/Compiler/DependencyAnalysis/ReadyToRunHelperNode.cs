@@ -196,20 +196,22 @@ namespace ILCompiler.DependencyAnalysis
                 if (_id == ReadyToRunHelperId.VirtualCall)
                 {
                     // Generate debug information that lets debuggers step into the virtual calls.
+                    // We generate a step into sequence point at the point where the helper jumps to
+                    // the target of the virtual call.
                     TargetDetails target = ((MethodDesc)_target).Context.Target;
-                    int offset = -1;
+                    int debuggerStepInOffset = -1;
                     switch (target.Architecture)
                     {
                         case TargetArchitecture.X64:
-                            offset = 3;
+                            debuggerStepInOffset = 3;
                             break;
                     }
-                    if (offset != -1)
+                    if (debuggerStepInOffset != -1)
                     {
                         return new DebugLocInfo[]
                         {
                             new DebugLocInfo(0, String.Empty, WellKnownLineNumber.DebuggerStepThrough),
-                            new DebugLocInfo(offset, String.Empty, WellKnownLineNumber.DebuggerStepIn)
+                            new DebugLocInfo(debuggerStepInOffset, String.Empty, WellKnownLineNumber.DebuggerStepIn)
                         };
                     }
                 }
