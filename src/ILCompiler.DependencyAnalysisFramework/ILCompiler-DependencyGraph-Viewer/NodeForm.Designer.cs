@@ -68,8 +68,8 @@ namespace DependencyLogViewer
             // 
             // splitContainer1.Panel2
             // 
-            this.splitContainer1.Panel2.Controls.Add(this.exploreDependee);
             this.splitContainer1.Panel2.Controls.Add(this.dependeesListBox);
+            this.splitContainer1.Panel2.Controls.Add(this.exploreDependee);
             this.splitContainer1.Size = new System.Drawing.Size(1497, 892);
             this.splitContainer1.SplitterDistance = 464;
             this.splitContainer1.TabIndex = 1;
