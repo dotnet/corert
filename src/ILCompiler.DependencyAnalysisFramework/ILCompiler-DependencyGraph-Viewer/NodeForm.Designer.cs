@@ -68,8 +68,8 @@ namespace DependencyLogViewer
             // 
             // splitContainer1.Panel2
             // 
-            this.splitContainer1.Panel2.Controls.Add(this.exploreDependee);
             this.splitContainer1.Panel2.Controls.Add(this.dependeesListBox);
+            this.splitContainer1.Panel2.Controls.Add(this.exploreDependee);
             this.splitContainer1.Size = new System.Drawing.Size(1497, 892);
             this.splitContainer1.SplitterDistance = 464;
             this.splitContainer1.TabIndex = 1;
@@ -94,6 +94,7 @@ namespace DependencyLogViewer
             this.dependeesListBox.Name = "dependeesListBox";
             this.dependeesListBox.Size = new System.Drawing.Size(1497, 424);
             this.dependeesListBox.TabIndex = 0;
+            this.dependeesListBox.DoubleClick += new System.EventHandler(this.exploreDependee_Click);
             // 
             // exploreDependent
             // 
@@ -115,6 +116,7 @@ namespace DependencyLogViewer
             this.dependentsListBox.Name = "dependentsListBox";
             this.dependentsListBox.Size = new System.Drawing.Size(1497, 425);
             this.dependentsListBox.TabIndex = 0;
+            this.dependentsListBox.DoubleClick += new System.EventHandler(this.exploreDependent_Click);
             // 
             // NodeForm
             // 
