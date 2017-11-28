@@ -300,9 +300,10 @@ namespace System
                     return "pointer";
                 case ExceptionArgument.start:
                     return "start";
+                case ExceptionArgument.format:
+                    return "format";
                 default:
-                    Debug.Assert(false,
-                        "The enum value is not defined, please check the ExceptionArgument Enum.");
+                    Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
             }
         }
@@ -392,7 +393,8 @@ namespace System
         exceptions,
         exception,
         pointer,
-        start
+        start,
+        format
     }
 
     //
