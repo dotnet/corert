@@ -847,7 +847,7 @@ namespace Internal.IL
 
         private LLVMValueRef GetOrCreateMethodSlot(MethodDesc method)
         {
-            var vtableSlotSymbol = ((WebAssemblyCodegenNodeFactory)_compilation.NodeFactory).VTableSlot(method);
+            var vtableSlotSymbol = _compilation.NodeFactory.VTableSlot(method);
             _dependencies.Add(vtableSlotSymbol);
             LLVMValueRef slot = LoadAddressOfSymbolNode(vtableSlotSymbol);
             return LLVM.BuildLoad(_builder, slot, string.Empty);
