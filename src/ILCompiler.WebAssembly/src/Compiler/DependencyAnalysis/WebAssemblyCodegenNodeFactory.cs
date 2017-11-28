@@ -10,10 +10,16 @@ namespace ILCompiler.DependencyAnalysis
 {
     public sealed class WebAssemblyCodegenNodeFactory : NodeFactory
     {
+        private NodeCache<MethodKey, WebAssemblyVTableSlotNode> _vTableSlotNodes;
+
         public WebAssemblyCodegenNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager,
             InteropStubManager interopStubManager, NameMangler nameMangler, VTableSliceProvider vtableSliceProvider, DictionaryLayoutProvider dictionaryLayoutProvider)
             : base(context, compilationModuleGroup, metadataManager, interopStubManager, nameMangler, new LazyGenericsDisabledPolicy(), vtableSliceProvider, dictionaryLayoutProvider)
         {
+            _vTableSlotNodes = new NodeCache<MethodKey, WebAssemblyVTableSlotNode>(methodKey =>
+            {
+                return new WebAssemblyVTableSlotNode(methodKey.Method);
+            });
         }
 
         public override bool IsCppCodegenTemporaryWorkaround => true;
@@ -28,6 +34,11 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new ExternMethodSymbolNode(this, method);
             }
+        }
+
+        public WebAssemblyVTableSlotNode VTableSlot(MethodDesc method)
+        {
+            return _vTableSlotNodes.GetOrAdd(new MethodKey(method, false));
         }
 
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)

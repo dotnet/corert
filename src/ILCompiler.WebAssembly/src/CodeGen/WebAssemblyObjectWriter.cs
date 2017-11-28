@@ -699,27 +699,6 @@ namespace ILCompiler.DependencyAnalysis
                     if (node.ShouldSkipEmittingObjectNode(factory))
                         continue;
 
-                    if (node is EETypeNode)
-                    {
-                        DefType t = ((EETypeNode)node).Type.GetClosestDefType();
-                        int iSlot = GetVTableSlotsCount(factory, t.BaseType);
-                        var pointerSize = factory.Target.PointerSize;
-                        foreach (MethodDesc m in factory.VTable(t).Slots)
-                        {
-                            // set _getslot variable to sizeof(EEType) + iSlot * pointer size
-                            string realSymbolName = factory.NameMangler.GetMangledMethodName(m).ToString();
-                            var globalRefName = "__getslot__" + realSymbolName;
-                            LLVMValueRef slot = LLVM.GetNamedGlobal(compilation.Module, globalRefName);
-                            if (slot.Pointer == IntPtr.Zero)
-                            {
-                                slot = LLVM.AddGlobal(compilation.Module, LLVM.Int32Type(), globalRefName);
-                            }
-                            LLVM.SetInitializer(slot, LLVM.ConstInt(LLVM.Int32Type(), (ulong)((EETypeNode.GetVTableOffset(pointerSize) / pointerSize) + iSlot), LLVMMisc.False));
-                            LLVM.SetGlobalConstant(slot, LLVMMisc.True);
-                            iSlot++;
-                        }
-                    }
-
                     objectWriter.StartObjectNode(node);
                     ObjectData nodeContents = node.GetData(factory);
 

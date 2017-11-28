@@ -837,11 +837,6 @@ namespace Internal.IL
                 if (callee.OwningType.IsInterface)
                     throw new NotImplementedException();
 
-                //This appears to be needed at least for virtual method calls off System.Type its not clear why
-                var node = _compilation.NodeFactory.NecessaryTypeSymbol(callee.OwningType);
-                if (!_dependencies.Contains(node))
-                    _dependencies.Add(node);
-
                 return GetCallableVirtualMethod(thisPointer.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), callee);
             }
             else
@@ -852,12 +847,9 @@ namespace Internal.IL
 
         private LLVMValueRef GetOrCreateMethodSlot(MethodDesc method)
         {
-            var globalRefName = "__getslot__" + _compilation.NameMangler.GetMangledMethodName(method);
-            LLVMValueRef slot = LLVM.GetNamedGlobal(Module, globalRefName);
-            if(slot.Pointer == IntPtr.Zero)
-            {
-                slot = LLVM.AddGlobal(Module, LLVM.Int32Type(), globalRefName);
-            }
+            var vtableSlotSymbol = ((WebAssemblyCodegenNodeFactory)_compilation.NodeFactory).VTableSlot(method);
+            _dependencies.Add(vtableSlotSymbol);
+            LLVMValueRef slot = LoadAddressOfSymbolNode(vtableSlotSymbol);
             return LLVM.BuildLoad(_builder, slot, string.Empty);
         }
 
