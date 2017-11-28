@@ -486,7 +486,11 @@ namespace System
             return Number.FormatDecimal(this, format, NumberFormatInfo.GetInstance(provider));
         }
 
-        public bool TryFormat(Span<char> destination, out int charsWritten, string format = null, IFormatProvider provider = null)
+        // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
+        public bool TryFormat(Span<char> destination, out int charsWritten, string format, IFormatProvider provider) =>
+            TryFormat(destination, out charsWritten, (ReadOnlySpan<char>)format, provider);
+
+        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider provider = null)
         {
             return Number.TryFormatDecimal(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
         }
@@ -502,7 +506,7 @@ namespace System
         public static Decimal Parse(String s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseDecimal(s.AsReadOnlySpan(), NumberStyles.Number, NumberFormatInfo.CurrentInfo);
+            return Number.ParseDecimal(s, NumberStyles.Number, NumberFormatInfo.CurrentInfo);
         }
 
         internal const NumberStyles InvalidNumberStyles = ~(NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite
@@ -528,20 +532,20 @@ namespace System
         {
             ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseDecimal(s.AsReadOnlySpan(), style, NumberFormatInfo.CurrentInfo);
+            return Number.ParseDecimal(s, style, NumberFormatInfo.CurrentInfo);
         }
 
         public static Decimal Parse(String s, IFormatProvider provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseDecimal(s.AsReadOnlySpan(), NumberStyles.Number, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseDecimal(s, NumberStyles.Number, NumberFormatInfo.GetInstance(provider));
         }
 
         public static Decimal Parse(String s, NumberStyles style, IFormatProvider provider)
         {
             ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseDecimal(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseDecimal(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static Decimal Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider)
@@ -558,7 +562,7 @@ namespace System
                 return false;
             }
 
-            return Number.TryParseDecimal(s.AsReadOnlySpan(), NumberStyles.Number, NumberFormatInfo.CurrentInfo, out result);
+            return Number.TryParseDecimal(s, NumberStyles.Number, NumberFormatInfo.CurrentInfo, out result);
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, out decimal result)
@@ -574,7 +578,7 @@ namespace System
                 result = 0;
                 return false;
             }
-            return Number.TryParseDecimal(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseDecimal(s, style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out decimal result)
