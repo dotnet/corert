@@ -48,7 +48,34 @@ namespace Internal.StackTraceMetadata
         public static string FormatMethodName(MetadataReader metadataReader, TypeDefinitionHandle enclosingTypeHandle, MethodHandle methodHandle)
         {
             MethodNameFormatter formatter = new MethodNameFormatter(metadataReader, SigTypeContext.FromMethod(metadataReader, enclosingTypeHandle, methodHandle));
-            formatter.EmitMethodDefinitionName(enclosingTypeHandle, methodHandle);
+
+            Method method = metadataReader.GetMethod(methodHandle);
+            MethodSignature methodSignature = metadataReader.GetMethodSignature(method.Signature);
+            formatter.EmitTypeName(enclosingTypeHandle, namespaceQualified: true);
+            formatter._outputBuilder.Append('.');
+            formatter.EmitString(method.Name);
+
+            bool first = true;
+            foreach (GenericParameterHandle handle in method.GenericParameters)
+            {
+                if (first)
+                {
+                    first = false;
+                    formatter._outputBuilder.Append('[');
+                }
+                else
+                {
+                    formatter._outputBuilder.Append(", ");
+                }
+                formatter.EmitTypeName(handle, namespaceQualified: false);
+            }
+            if (!first)
+            {
+                formatter._outputBuilder.Append(']');
+            }
+
+            formatter.EmitMethodParameters(methodSignature);
+
             return formatter._outputBuilder.ToString();
         }
 
@@ -87,7 +114,7 @@ namespace Internal.StackTraceMetadata
         {
             MemberReference methodRef = _metadataReader.GetMemberReference(memberRefHandle);
             MethodSignature methodSignature;
-            EmitReturnTypeContainingTypeAndMethodName(methodRef, out methodSignature);
+            EmitContainingTypeAndMethodName(methodRef, out methodSignature);
             EmitMethodParameters(methodSignature);
         }
     
@@ -101,7 +128,7 @@ namespace Internal.StackTraceMetadata
             MemberReferenceHandle methodRefHandle = methodInst.Method.ToMemberReferenceHandle(_metadataReader);
             MemberReference methodRef = methodRefHandle.GetMemberReference(_metadataReader);
             MethodSignature methodSignature;
-            EmitReturnTypeContainingTypeAndMethodName(methodRef, out methodSignature);
+            EmitContainingTypeAndMethodName(methodRef, out methodSignature);
             EmitGenericArguments(methodInst.GenericTypeArguments);
             EmitMethodParameters(methodSignature);
         }
@@ -109,16 +136,9 @@ namespace Internal.StackTraceMetadata
         private void EmitMethodDefinitionName(QualifiedMethodHandle qualifiedMethodHandle)
         {
             QualifiedMethod qualifiedMethod = _metadataReader.GetQualifiedMethod(qualifiedMethodHandle);
-            EmitMethodDefinitionName(qualifiedMethod.EnclosingType, qualifiedMethod.Method);
-        }
-
-        private void EmitMethodDefinitionName(TypeDefinitionHandle enclosingTypeHandle, MethodHandle methodHandle)
-        {
-            Method method = _metadataReader.GetMethod(methodHandle);
+            Method method = _metadataReader.GetMethod(qualifiedMethod.Method);
             MethodSignature methodSignature = _metadataReader.GetMethodSignature(method.Signature);
-            EmitTypeName(methodSignature.ReturnType, namespaceQualified: false);
-            _outputBuilder.Append(' ');
-            EmitTypeName(enclosingTypeHandle, namespaceQualified: true);
+            EmitTypeName(qualifiedMethod.EnclosingType, namespaceQualified: true);
             _outputBuilder.Append('.');
             EmitString(method.Name);
             EmitMethodParameters(methodSignature);
@@ -129,11 +149,9 @@ namespace Internal.StackTraceMetadata
         /// </summary>
         /// <param name="methodRef">Method reference to format</param>
         /// <param name="methodSignature">Output method signature</param>
-        private void EmitReturnTypeContainingTypeAndMethodName(MemberReference methodRef, out MethodSignature methodSignature)
+        private void EmitContainingTypeAndMethodName(MemberReference methodRef, out MethodSignature methodSignature)
         {
             methodSignature = _metadataReader.GetMethodSignature(methodRef.Signature.ToMethodSignatureHandle(_metadataReader));
-            EmitTypeName(methodSignature.ReturnType, namespaceQualified: false);
-            _outputBuilder.Append(" ");
             EmitTypeName(methodRef.Parent, namespaceQualified: true);
             _outputBuilder.Append(".");
             EmitString(methodRef.Name);
@@ -217,7 +235,7 @@ namespace Internal.StackTraceMetadata
                     break;
 
                 case HandleType.MethodTypeVariableSignature:
-                    EmitTypeName(_typeContext.GetMethodVariable(typeHandle.ToTypeVariableSignatureHandle(_metadataReader).GetTypeVariableSignature(_metadataReader).Number), namespaceQualified);
+                    EmitTypeName(_typeContext.GetMethodVariable(typeHandle.ToMethodTypeVariableSignatureHandle(_metadataReader).GetMethodTypeVariableSignature(_metadataReader).Number), namespaceQualified);
                     break;
 
                 case HandleType.GenericParameter:
@@ -277,7 +295,7 @@ namespace Internal.StackTraceMetadata
                 {
                     // Nested type
                     EmitTypeName(typeRef.ParentNamespaceOrType, namespaceQualified);
-                    _outputBuilder.Append('+');
+                    _outputBuilder.Append('.');
                 }
                 else if (namespaceQualified)
                 {
@@ -297,7 +315,7 @@ namespace Internal.StackTraceMetadata
             {
                 // Nested type
                 EmitTypeName(typeDef.EnclosingType, namespaceQualified);
-                _outputBuilder.Append('+');
+                _outputBuilder.Append('.');
             }
             else if (namespaceQualified)
             {
