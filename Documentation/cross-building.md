@@ -63,8 +63,7 @@ sudo ./cross/build-rootfs.sh x86 xenial
 2. Build CoreFX (`Debug` version)
 3. Build CoreRT for armel, x64, x86
 ```
-sudo ./cross/build-rootfs.sh armel tizen
-sudo ./cross/build-rootfs.sh x86 xenial
+sudo ./cross/build-rootfs.sh armel tizen cross
 ./build.sh clang3.9 armel debug verbose cross
 ./build.sh debug verbose skiptests
 ./build.sh clang3.9 x86 debug verbose cross skiptests
