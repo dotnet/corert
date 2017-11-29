@@ -71,7 +71,9 @@ namespace Internal.TypeSystem
 
         public override bool IsExplicitLayout => false;
 
-        public override ModuleDesc Module => _context.SystemModule;
+        public override ModuleDesc Module => _context.CanonTypesModule;
+
+        public override bool IsModuleType => false;
 
         public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(string name)
         {

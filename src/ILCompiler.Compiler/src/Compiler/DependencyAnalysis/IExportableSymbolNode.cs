@@ -11,9 +11,10 @@ namespace ILCompiler.DependencyAnalysis
     public interface IExportableSymbolNode : ISymbolDefinitionNode
     {
         /// <summary>
-        /// Set the return value of this property to true to indicate that this symbol
-        /// is exported and will be referenced by external modules.
+        /// Set the return value of this property to non-ExportForm.None to indicate that this symbol
+        /// is exported and will be referenced by external modules. The values of the enum indicate what form
+        /// of export is to be used.
         /// </summary>
-        bool IsExported(NodeFactory factory);
+        ExportForm GetExportForm(NodeFactory factory);
     }
 }

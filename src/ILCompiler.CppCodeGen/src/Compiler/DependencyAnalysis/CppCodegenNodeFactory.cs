@@ -12,7 +12,15 @@ namespace ILCompiler.DependencyAnalysis
     {
         public CppCodegenNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager,
             InteropStubManager interopStubManager, NameMangler nameMangler, VTableSliceProvider vtableSliceProvider, DictionaryLayoutProvider dictionaryLayoutProvider)
-            : base(context, compilationModuleGroup, metadataManager, interopStubManager, nameMangler, new LazyGenericsDisabledPolicy(), vtableSliceProvider, dictionaryLayoutProvider)
+            : base(context, 
+                  compilationModuleGroup, 
+                  metadataManager, 
+                  interopStubManager, 
+                  nameMangler, 
+                  new LazyGenericsDisabledPolicy(), 
+                  vtableSliceProvider, 
+                  dictionaryLayoutProvider, 
+                  new ImportedNodeProviderThrowing())
         {
         }
 
@@ -20,7 +28,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
         {
-            if (CompilationModuleGroup.ContainsMethodBody(method))
+            if (CompilationModuleGroup.ContainsMethodBody(method, false))
             {
                 return new CppMethodCodeNode(method);
             }

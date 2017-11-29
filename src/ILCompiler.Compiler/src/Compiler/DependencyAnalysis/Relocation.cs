@@ -21,6 +21,10 @@ namespace ILCompiler.DependencyAnalysis
                                                     // for relative pointer (used to make NGen relocation 
                                                     // section smaller)    
         IMAGE_REL_SECREL                = 0x80,     // 32 bit offset from base of section containing target
+
+        IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 = 0x81,   // ADRP
+        IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A = 0x82,   // ADD/ADDS (immediate) with zero shift, for page offset
+        IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L = 0x83,   // LDR (indexed, unsigned immediate), for page offset
     }
 
     public struct Relocation

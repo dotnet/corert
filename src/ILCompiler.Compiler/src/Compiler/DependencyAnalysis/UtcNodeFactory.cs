@@ -85,8 +85,17 @@ namespace ILCompiler
             string outputFile, 
             UTCNameMangler nameMangler, 
             bool buildMRT, 
-            DictionaryLayoutProvider dictionaryLayoutProvider) 
-            : base(context, compilationModuleGroup, PickMetadataManager(context, compilationModuleGroup, inputModules, inputMetadataOnlyAssemblies, metadataFile), NewEmptyInteropStubManager(context, compilationModuleGroup), nameMangler, new AttributeDrivenLazyGenericsPolicy(), null, dictionaryLayoutProvider)
+            DictionaryLayoutProvider dictionaryLayoutProvider,
+            ImportedNodeProvider importedNodeProvider) 
+            : base(context, 
+                  compilationModuleGroup, 
+                  PickMetadataManager(context, compilationModuleGroup, inputModules, inputMetadataOnlyAssemblies, metadataFile), 
+                  NewEmptyInteropStubManager(context, compilationModuleGroup), 
+                  nameMangler, 
+                  new AttributeDrivenLazyGenericsPolicy(), 
+                  null, 
+                  dictionaryLayoutProvider,
+                  importedNodeProvider)
         {
             CreateHostedNodeCaches();
             CompilationUnitPrefix = nameMangler.CompilationUnitPrefix;
@@ -113,17 +122,13 @@ namespace ILCompiler
 
             _threadStaticsOffset = new NodeCache<MetadataType, ISortableSymbolNode>((MetadataType type) =>
             {
-                if (CompilationModuleGroup.ContainsType(type))
+                if (CompilationModuleGroup.ContainsType(type) && !(CompilationModuleGroup.ShouldReferenceThroughImportTable(type)))
                 {
                     return new ThreadStaticsOffsetNode(type, this);
                 }
-                else if (CompilationModuleGroup.ShouldReferenceThroughImportTable(type))
-                {
-                    return new ImportedThreadStaticsOffsetNode(type, this);
-                }
                 else
                 {
-                    return new ExternSymbolNode(ThreadStaticsOffsetNode.GetMangledName(NameMangler, type));
+                    return _importedNodeProvider.ImportedThreadStaticOffsetNode(this, type);
                 }
             });
 
@@ -158,6 +163,9 @@ namespace ILCompiler
             graph.AddRoot(GCStaticDescRegion, "GC Static Desc is always generated");
             graph.AddRoot(ThreadStaticsOffsetRegion, "Thread Statics Offset Region is always generated");
             graph.AddRoot(ThreadStaticGCDescRegion, "Thread Statics GC Desc Region is always generated");
+            graph.AddRoot(ImportAddressTablesTable, "Import address tables region");
+
+
             if (Target.IsWindows)
             {
                 // We need 2 delimiter symbols to bound the unboxing stubs region on Windows platforms (these symbols are
@@ -184,11 +192,13 @@ namespace ILCompiler
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticOffsetRegion, ThreadStaticsOffsetRegion, ThreadStaticsOffsetRegion.StartSymbol, ThreadStaticsOffsetRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticGCDescRegion, ThreadStaticGCDescRegion, ThreadStaticGCDescRegion.StartSymbol, ThreadStaticGCDescRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.LoopHijackFlag, LoopHijackFlag, LoopHijackFlag);
+            ReadyToRunHeader.Add(ReadyToRunSectionType.ImportAddressTables, ImportAddressTablesTable, ImportAddressTablesTable.StartSymbol, ImportAddressTablesTable.EndSymbol);
 
             if (!buildMRT)
             {
                 ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticIndex, ThreadStaticsIndex, ThreadStaticsIndex);
             }
+
 
             var commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable", this);
             InteropStubManager.AddToReadyToRunHeader(ReadyToRunHeader, this, commonFixupsTableNode);
@@ -203,12 +213,12 @@ namespace ILCompiler
                 return new RuntimeImportMethodNode(method);
             }
 
-            if (CompilationModuleGroup.ContainsMethodBody(method))
+            if (CompilationModuleGroup.ContainsMethodBody(method, false))
             {
                 return NonExternMethodSymbol(method, false);
             }
 
-            return new ExternMethodSymbolNode(this, method);
+            return _importedNodeProvider.ImportedMethodCodeNode(this, method, false);
         }
 
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)
@@ -218,12 +228,12 @@ namespace ILCompiler
                 // Unboxing stubs to canonical instance methods need a special unboxing instantiating stub that unboxes
                 // 'this' and also provides an instantiation argument (we do a calling convention conversion).
                 // The unboxing instantiating stub is emitted by UTC.
-                if (CompilationModuleGroup.ContainsMethodBody(method))
+                if (CompilationModuleGroup.ContainsMethodBody(method, true))
                 {
                     return NonExternMethodSymbol(method, true);
                 }
 
-                return new ExternMethodSymbolNode(this, method, true);
+                return _importedNodeProvider.ImportedMethodCodeNode(this, method, true);
             }
             else
             {
@@ -303,19 +313,15 @@ namespace ILCompiler
 
         private NodeCache<MetadataType, ImportedThreadStaticsIndexNode> _importedThreadStaticsIndices;
 
-        public ISortableSymbolNode TypeThreadStaticsIndexSymbol(TypeDesc type)
+        public ISortableSymbolNode TypeThreadStaticsIndexSymbol(MetadataType type)
         {
-            if (CompilationModuleGroup.ContainsType(type))
+            if (CompilationModuleGroup.ContainsType(type) && !CompilationModuleGroup.ShouldReferenceThroughImportTable(type))
             {
                 return ThreadStaticsIndex;
             }
-            else if (CompilationModuleGroup.ShouldReferenceThroughImportTable(type))
-            {
-                return _importedThreadStaticsIndices.GetOrAdd((MetadataType)type);
-            }
             else
             {
-                return ExternSymbol(ThreadStaticsIndexNode.GetMangledName((NameMangler as UTCNameMangler).GetImportedTlsIndexPrefix()));
+                return _importedNodeProvider.ImportedThreadStaticIndexNode(this, type);
             }
         }
 

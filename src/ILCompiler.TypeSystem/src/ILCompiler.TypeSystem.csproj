@@ -619,6 +619,7 @@
     <Compile Include="..\..\Common\src\TypeSystem\Sorting\TypeSystemComparer.cs">
       <Link>TypeSystem\Sorting\TypeSystemComparer.cs</Link>
     </Compile>
+    <Compile Include="Utilities\UniqueTypeNameFormatter.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" Condition="'$(IsProjectNLibrary)' != 'true'" />
 </Project>

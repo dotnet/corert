@@ -25,6 +25,7 @@ namespace ILCompiler.DependencyAnalysis
         private CompilationModuleGroup _compilationModuleGroup;
         private VTableSliceProvider _vtableSliceProvider;
         private DictionaryLayoutProvider _dictionaryLayoutProvider;
+        protected readonly ImportedNodeProvider _importedNodeProvider;
         private bool _markingComplete;
 
         public NodeFactory(
@@ -35,7 +36,8 @@ namespace ILCompiler.DependencyAnalysis
             NameMangler nameMangler,
             LazyGenericsPolicy lazyGenericsPolicy,
             VTableSliceProvider vtableSliceProvider,
-            DictionaryLayoutProvider dictionaryLayoutProvider)
+            DictionaryLayoutProvider dictionaryLayoutProvider,
+            ImportedNodeProvider importedNodeProvider)
         {
             _target = context.Target;
             _context = context;
@@ -47,6 +49,7 @@ namespace ILCompiler.DependencyAnalysis
             CreateNodeCaches();
             MetadataManager = metadataManager;
             LazyGenericsPolicy = lazyGenericsPolicy;
+            _importedNodeProvider = importedNodeProvider;
         }
 
         public void SetMarkingComplete()
@@ -211,38 +214,30 @@ namespace ILCompiler.DependencyAnalysis
             _importedTypeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
             {
                 Debug.Assert(_compilationModuleGroup.ShouldReferenceThroughImportTable(type));
-                return new ImportedEETypeSymbolNode(this, type);
+                return _importedNodeProvider.ImportedEETypeNode(this, type);
             });
 
             _nonGCStatics = new NodeCache<MetadataType, ISortableSymbolNode>((MetadataType type) =>
             {
-                if (_compilationModuleGroup.ContainsType(type))
+                if (_compilationModuleGroup.ContainsType(type) && !_compilationModuleGroup.ShouldReferenceThroughImportTable(type))
                 {
                     return new NonGCStaticsNode(type, this);
                 }
-                else if (_compilationModuleGroup.ShouldReferenceThroughImportTable(type))
-                {
-                    return new ImportedNonGCStaticsNode(this, type);
-                }
                 else
                 {
-                    return new ExternSymbolNode(NonGCStaticsNode.GetMangledName(type, NameMangler));
+                    return _importedNodeProvider.ImportedNonGCStaticNode(this, type);
                 }
             });
 
             _GCStatics = new NodeCache<MetadataType, ISortableSymbolNode>((MetadataType type) =>
             {
-                if (_compilationModuleGroup.ContainsType(type))
+                if (_compilationModuleGroup.ContainsType(type) && !_compilationModuleGroup.ShouldReferenceThroughImportTable(type))
                 {
                     return new GCStaticsNode(type);
                 }
-                else if (_compilationModuleGroup.ShouldReferenceThroughImportTable(type))
-                {
-                    return new ImportedGCStaticsNode(this, type);
-                }
                 else
                 {
-                    return new ExternSymbolNode(GCStaticsNode.GetMangledName(type, NameMangler));
+                    return _importedNodeProvider.ImportedGCStaticNode(this, type);
                 }
             });
 
@@ -435,20 +430,20 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 else
                 {
-                    return new ImportedMethodGenericDictionaryNode(this, method);
+                    return _importedNodeProvider.ImportedMethodDictionaryNode(this, method);
                 }
             });
 
             _typeGenericDictionaries = new NodeCache<TypeDesc, ISortableSymbolNode>(type =>
             {
-                if (CompilationModuleGroup.ContainsType(type))
+                if (CompilationModuleGroup.ContainsTypeDictionary(type))
                 {
                     Debug.Assert(!this.LazyGenericsPolicy.UsesLazyGenerics(type));
                     return new TypeGenericDictionaryNode(type, this);
                 }
                 else
                 {
-                    return new ImportedTypeGenericDictionaryNode(this, type);
+                    return _importedNodeProvider.ImportedTypeDictionaryNode(this, type);
                 }
             });
 
@@ -1015,6 +1010,11 @@ namespace ILCompiler.DependencyAnalysis
             "__FrozenSegmentRegionStart",
             "__FrozenSegmentRegionEnd",
             new SortableDependencyNode.EmbeddedObjectNodeComparer(new CompilerComparer()));
+
+        public ArrayOfEmbeddedPointersNode<MrtProcessedImportAddressTableNode> ImportAddressTablesTable = new ArrayOfEmbeddedPointersNode<MrtProcessedImportAddressTableNode>(
+            "__ImportTablesTableStart",
+            "__ImportTablesTableEnd",
+            new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer()));
 
         public ReadyToRunHeaderNode ReadyToRunHeader;
 
