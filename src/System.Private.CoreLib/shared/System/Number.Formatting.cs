@@ -573,10 +573,16 @@ namespace System
             return false;
         }
 
-        public static string FormatInt32(int value, ReadOnlySpan<char> format, NumberFormatInfo info)
+        public static string FormatInt32(int value, ReadOnlySpan<char> format, IFormatProvider provider)
         {
-            int digits;
-            char fmt = ParseFormatSpecifier(format, out digits);
+            // Fast path for default format with a non-negative value
+            if (value >= 0 && format.Length == 0)
+            {
+                return UInt32ToDecStr((uint)value, digits: -1);
+            }
+
+            char fmt = ParseFormatSpecifier(format, out int digits);
+            NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
 
             char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
             if ((fmtUpper == 'G' && digits < 1) || fmtUpper == 'D')
@@ -613,10 +619,16 @@ namespace System
             }
         }
 
-        public static bool TryFormatInt32(int value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
+        public static bool TryFormatInt32(int value, ReadOnlySpan<char> format, IFormatProvider provider, Span<char> destination, out int charsWritten)
         {
-            int digits;
-            char fmt = ParseFormatSpecifier(format, out digits);
+            // Fast path for default format with a non-negative value
+            if (value >= 0 && format.Length == 0)
+            {
+                return TryUInt32ToDecStr((uint)value, digits: -1, destination, out charsWritten);
+            }
+
+            char fmt = ParseFormatSpecifier(format, out int digits);
+            NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
 
             char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
             if ((fmtUpper == 'G' && digits < 1) || fmtUpper == 'D')
@@ -653,10 +665,16 @@ namespace System
             }
         }
 
-        public static string FormatUInt32(uint value, ReadOnlySpan<char> format, NumberFormatInfo info)
+        public static string FormatUInt32(uint value, ReadOnlySpan<char> format, IFormatProvider provider)
         {
-            int digits;
-            char fmt = ParseFormatSpecifier(format, out digits);
+            // Fast path for default format
+            if (format.Length == 0)
+            {
+                return UInt32ToDecStr(value, digits: -1);
+            }
+
+            char fmt = ParseFormatSpecifier(format, out int digits);
+            NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
 
             char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
             if ((fmtUpper == 'G' && digits < 1) || fmtUpper == 'D')
@@ -691,10 +709,16 @@ namespace System
             }
         }
 
-        public static bool TryFormatUInt32(uint value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
+        public static bool TryFormatUInt32(uint value, ReadOnlySpan<char> format, IFormatProvider provider, Span<char> destination, out int charsWritten)
         {
-            int digits;
-            char fmt = ParseFormatSpecifier(format, out digits);
+            // Fast path for default format
+            if (format.Length == 0)
+            {
+                return TryUInt32ToDecStr(value, digits: -1, destination, out charsWritten);
+            }
+
+            char fmt = ParseFormatSpecifier(format, out int digits);
+            NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
 
             char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
             if ((fmtUpper == 'G' && digits < 1) || fmtUpper == 'D')
@@ -729,10 +753,16 @@ namespace System
             }
         }
 
-        public static string FormatInt64(long value, ReadOnlySpan<char> format, NumberFormatInfo info)
+        public static string FormatInt64(long value, ReadOnlySpan<char> format, IFormatProvider provider)
         {
-            int digits;
-            char fmt = ParseFormatSpecifier(format, out digits);
+            // Fast path for default format with a non-negative value
+            if (value >= 0 && format.Length == 0)
+            {
+                return UInt64ToDecStr((ulong)value, digits: -1);
+            }
+
+            char fmt = ParseFormatSpecifier(format, out int digits);
+            NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
 
             char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
             if ((fmtUpper == 'G' && digits < 1) || fmtUpper == 'D')
@@ -770,10 +800,16 @@ namespace System
             }
         }
 
-        public static bool TryFormatInt64(long value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
+        public static bool TryFormatInt64(long value, ReadOnlySpan<char> format, IFormatProvider provider, Span<char> destination, out int charsWritten)
         {
-            int digits;
-            char fmt = ParseFormatSpecifier(format, out digits);
+            // Fast path for default format with a non-negative value
+            if (value >= 0 && format.Length == 0)
+            {
+                return TryUInt64ToDecStr((ulong)value, digits: -1, destination, out charsWritten);
+            }
+
+            char fmt = ParseFormatSpecifier(format, out int digits);
+            NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
 
             char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
             if ((fmtUpper == 'G' && digits < 1) || fmtUpper == 'D')
@@ -811,10 +847,16 @@ namespace System
             }
         }
 
-        public static string FormatUInt64(ulong value, ReadOnlySpan<char> format, NumberFormatInfo info)
+        public static string FormatUInt64(ulong value, ReadOnlySpan<char> format, IFormatProvider provider)
         {
-            int digits;
-            char fmt = ParseFormatSpecifier(format, out digits);
+            // Fast path for default format
+            if (format.Length == 0)
+            {
+                return UInt64ToDecStr(value, digits: -1);
+            }
+
+            char fmt = ParseFormatSpecifier(format, out int digits);
+            NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
 
             char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
             if ((fmtUpper == 'G' && digits < 1) || fmtUpper == 'D')
@@ -850,10 +892,16 @@ namespace System
             }
         }
 
-        public static bool TryFormatUInt64(ulong value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
+        public static bool TryFormatUInt64(ulong value, ReadOnlySpan<char> format, IFormatProvider provider, Span<char> destination, out int charsWritten)
         {
-            int digits;
-            char fmt = ParseFormatSpecifier(format, out digits);
+            // Fast path for default format
+            if (format.Length == 0)
+            {
+                return TryUInt64ToDecStr(value, digits: -1, destination, out charsWritten);
+            }
+
+            char fmt = ParseFormatSpecifier(format, out int digits);
+            NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
 
             char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
             if ((fmtUpper == 'G' && digits < 1) || fmtUpper == 'D')
