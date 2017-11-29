@@ -73,9 +73,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public MetadataType Type => _type;
 
-        public virtual bool IsExported(NodeFactory factory)
+        public virtual ExportForm GetExportForm(NodeFactory factory)
         {
-            return factory.CompilationModuleGroup.ExportsType(Type);
+            return factory.CompilationModuleGroup.GetExportTypeForm(Type);
         }
 
         private static int GetClassConstructorContextSize(TargetDetails target)

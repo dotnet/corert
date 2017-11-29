@@ -1147,10 +1147,9 @@ namespace Internal.Runtime.TypeLoader
 
                 cell = ParseAndCreateCell(nativeLayoutInfoLoadContext, ref parser);
 
-                if (i == pointerToCell.OtherDictionarySlot)
+                if ((i == pointerToCell.OtherDictionarySlot) && (cell is IntPtrCell))
                 {
                     // The first cell in the floating portion should always be the version number
-                    Debug.Assert(cell is IntPtrCell);
                     floatingVersionInLayout = (int)((IntPtrCell)cell).Value;
                 }
 

@@ -39,7 +39,7 @@ namespace ILCompiler.DependencyAnalysis
             return nameMangler.NodeMangler.GCStatics(type);
         }
 
-        public virtual bool IsExported(NodeFactory factory) => factory.CompilationModuleGroup.ExportsType(Type);
+        public virtual ExportForm GetExportForm(NodeFactory factory) => factory.CompilationModuleGroup.GetExportTypeForm(Type);
 
         private ISymbolNode GetGCStaticEETypeNode(NodeFactory factory)
         {

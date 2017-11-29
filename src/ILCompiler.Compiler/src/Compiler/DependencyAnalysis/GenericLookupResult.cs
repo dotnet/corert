@@ -56,6 +56,8 @@ namespace ILCompiler.DependencyAnalysis
         VtableOffset,       // Offset of a virtual method into the type's vtable
         Constrained,        // ConstrainedCallDesc
         ConstrainedDirect,  // Direct ConstrainedCallDesc
+        Integer,            // Integer
+        UnboxingMethod,     // UnboxingMethod
     }
 
     public interface IGenericLookupResultTocWriter
@@ -725,7 +727,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
         {
-            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.Method, _method);
+            LookupResultType lookupResult = LookupResultType.Method;
+            if (_isUnboxingThunk && ProjectNDependencyBehavior.EnableFullAnalysis)
+                lookupResult = LookupResultType.UnboxingMethod;
+
+            writer.WriteData(LookupResultReferenceType(factory), lookupResult, _method);
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -1253,7 +1259,7 @@ namespace ILCompiler.DependencyAnalysis
             UtcNodeFactory utcNodeFactory = factory as UtcNodeFactory;
             Debug.Assert(utcNodeFactory != null);
             TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
-            return utcNodeFactory.TypeThreadStaticsIndexSymbol(instantiatedType);
+            return utcNodeFactory.TypeThreadStaticsIndexSymbol((MetadataType)instantiatedType);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

@@ -36,7 +36,7 @@ namespace ILCompiler.DependencyAnalysis
 
         int ISymbolNode.Offset => 0;
 
-        public abstract bool IsExported(NodeFactory factory);
+        public abstract ExportForm GetExportForm(NodeFactory factory);
 
         public abstract void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb);
 
@@ -108,7 +108,7 @@ namespace ILCompiler.DependencyAnalysis
         public override Instantiation MethodInstantiation => new Instantiation();
         protected override TypeSystemContext Context => _owningType.Context;
         public override TypeSystemEntity OwningEntity => _owningType;
-        public override bool IsExported(NodeFactory factory) => factory.CompilationModuleGroup.ExportsType(OwningType);
+        public override ExportForm GetExportForm(NodeFactory factory) => factory.CompilationModuleGroup.GetExportTypeFormDictionary(OwningType);
         public TypeDesc OwningType => _owningType;
 
         public override DictionaryLayoutNode GetDictionaryLayout(NodeFactory factory)
@@ -118,45 +118,15 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool HasConditionalStaticDependencies => true;
 
-        private static bool ContributesToDictionaryLayout(MethodDesc method)
-        {
-            // Generic methods have their own generic dictionaries
-            if (method.HasInstantiation)
-                return false;
-
-            // Abstract methods don't have a body
-            if (method.IsAbstract)
-                return false;
-
-            // PInvoke methods, runtime imports, etc. are not permitted on generic types,
-            // but let's not crash the compilation because of that.
-            if (method.IsPInvoke || method.IsRuntimeImplemented)
-                return false;
-
-            return true;
-        }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList result = new DependencyList();
 
-            result.Add(GetDictionaryLayout(factory), "Layout");
-
-            if (factory.CompilationModuleGroup.ShouldPromoteToFullType(_owningType))
-            {
-                // If the compilation group wants this type to be fully promoted, it means the EEType is going to be
-                // COMDAT folded with other EETypes generated in a different object file. This means their generic
-                // dictionaries need to have identical contents. The only way to achieve that is by generating
-                // the entries for all methods that contribute to the dictionary, and sorting the dictionaries.
-                foreach (var method in _owningType.GetAllMethods())
-                {
-                    if (!ContributesToDictionaryLayout(method))
-                        continue;
-
-                    result.Add(factory.MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)),
-                        "Cross-objectfile equivalent dictionary");
-                }
-            }
+            // Include the layout as a dependency if the canonical type isn't imported
+            TypeDesc canonicalOwningType = _owningType.ConvertToCanonForm(CanonicalFormKind.Specific);
+            if (factory.CompilationModuleGroup.ContainsType(canonicalOwningType) || !factory.CompilationModuleGroup.ShouldReferenceThroughImportTable(canonicalOwningType))
+                result.Add(GetDictionaryLayout(factory), "Layout");
 
             // Lazy generic use of the Activator.CreateInstance<T> heuristic requires tracking type parameters that are used in lazy generics.
             if (factory.LazyGenericsPolicy.UsesLazyGenerics(_owningType))
@@ -183,7 +153,7 @@ namespace ILCompiler.DependencyAnalysis
             // that use the same dictionary layout.
             foreach (var method in _owningType.GetAllMethods())
             {
-                if (!ContributesToDictionaryLayout(method))
+                if (!EETypeNode.MethodHasNonGenericILMethodBody(method))
                     continue;
 
                 // If a canonical method body was compiled, we need to track the dictionary
@@ -227,14 +197,16 @@ namespace ILCompiler.DependencyAnalysis
         public override Instantiation MethodInstantiation => _owningMethod.Instantiation;
         protected override TypeSystemContext Context => _owningMethod.Context;
         public override TypeSystemEntity OwningEntity => _owningMethod;
-        public override bool IsExported(NodeFactory factory) => factory.CompilationModuleGroup.ExportsMethodDictionary(OwningMethod);
+        public override ExportForm GetExportForm(NodeFactory factory) => factory.CompilationModuleGroup.GetExportMethodDictionaryForm(OwningMethod);
         public MethodDesc OwningMethod => _owningMethod;
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencies = new DependencyList();
 
-            dependencies.Add(GetDictionaryLayout(factory), "Layout");
+            MethodDesc canonicalTarget = _owningMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            if (factory.CompilationModuleGroup.ContainsMethodBody(canonicalTarget, false))
+                dependencies.Add(GetDictionaryLayout(factory), "Layout");
 
             GenericMethodsHashtableNode.GetGenericMethodsHashtableDependenciesForMethod(ref dependencies, factory, _owningMethod);
 

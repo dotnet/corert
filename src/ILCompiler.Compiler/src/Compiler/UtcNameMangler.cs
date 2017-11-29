@@ -22,7 +22,11 @@ namespace ILCompiler
         public bool isImport;
         public uint tlsIndexOrdinal;
         public ReadOnlyDictionary<TypeDesc, uint> typeOrdinals;
+        public ReadOnlyDictionary<TypeDesc, uint> nonGcStaticOrdinals;
+        public ReadOnlyDictionary<TypeDesc, uint> gcStaticOrdinals;
+        public ReadOnlyDictionary<TypeDesc, uint> tlsStaticOrdinals;
         public ReadOnlyDictionary<MethodDesc, uint> methodOrdinals;
+        public ReadOnlyDictionary<MethodDesc, uint> unboxingStubMethodOrdinals;
         public ReadOnlyDictionary<MethodDesc, uint> methodDictionaryOrdinals;
     }
 
