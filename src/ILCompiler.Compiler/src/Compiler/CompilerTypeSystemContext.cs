@@ -351,17 +351,19 @@ namespace ILCompiler
 
         protected virtual IEnumerable<MethodDesc> GetAllMethodsForDelegate(TypeDesc type)
         {
-            // Inject the synthetic GetThunk virtual override
+            // Inject the synthetic methods that support the implementation of the delegate.
             InstantiatedType instantiatedType = type as InstantiatedType;
             if (instantiatedType != null)
             {
                 DelegateInfo info = GetDelegateInfo(type.GetTypeDefinition());
-                yield return GetMethodForInstantiatedType(info.GetThunkMethod, instantiatedType);
+                foreach (MethodDesc syntheticMethod in info.Methods)
+                    yield return GetMethodForInstantiatedType(syntheticMethod, instantiatedType);
             }
             else
             {
                 DelegateInfo info = GetDelegateInfo(type);
-                yield return info.GetThunkMethod;
+                foreach (MethodDesc syntheticMethod in info.Methods)
+                    yield return syntheticMethod;
             }
 
             // Append all the methods defined in metadata
