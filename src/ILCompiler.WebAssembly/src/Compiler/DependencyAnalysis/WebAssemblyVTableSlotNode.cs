@@ -54,7 +54,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-
+            Debug.Assert((EETypeNode.GetVTableOffset(factory.Target.PointerSize) % factory.Target.PointerSize) == 0, "vtable offset must be aligned");
             ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
 
             objData.AddSymbol(this);

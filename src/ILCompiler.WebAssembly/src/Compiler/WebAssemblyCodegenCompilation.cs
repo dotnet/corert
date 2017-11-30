@@ -16,7 +16,7 @@ namespace ILCompiler
     {
         internal WebAssemblyCodegenConfigProvider Options { get; }
         internal LLVMModuleRef Module { get; }
-        public new WebAssemblyCodegenNodeFactory NodeFactory { get; private set; }
+        public new WebAssemblyCodegenNodeFactory NodeFactory { get; }
         internal WebAssemblyCodegenCompilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             WebAssemblyCodegenNodeFactory nodeFactory,

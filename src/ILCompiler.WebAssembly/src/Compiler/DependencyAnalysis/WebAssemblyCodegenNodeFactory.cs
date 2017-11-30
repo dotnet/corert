@@ -10,15 +10,15 @@ namespace ILCompiler.DependencyAnalysis
 {
     public sealed class WebAssemblyCodegenNodeFactory : NodeFactory
     {
-        private NodeCache<MethodKey, WebAssemblyVTableSlotNode> _vTableSlotNodes;
+        private NodeCache<MethodDesc, WebAssemblyVTableSlotNode> _vTableSlotNodes;
 
         public WebAssemblyCodegenNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager,
             InteropStubManager interopStubManager, NameMangler nameMangler, VTableSliceProvider vtableSliceProvider, DictionaryLayoutProvider dictionaryLayoutProvider)
             : base(context, compilationModuleGroup, metadataManager, interopStubManager, nameMangler, new LazyGenericsDisabledPolicy(), vtableSliceProvider, dictionaryLayoutProvider)
         {
-            _vTableSlotNodes = new NodeCache<MethodKey, WebAssemblyVTableSlotNode>(methodKey =>
+            _vTableSlotNodes = new NodeCache<MethodDesc, WebAssemblyVTableSlotNode>(methodKey =>
             {
-                return new WebAssemblyVTableSlotNode(methodKey.Method);
+                return new WebAssemblyVTableSlotNode(methodKey);
             });
         }
 
@@ -38,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public WebAssemblyVTableSlotNode VTableSlot(MethodDesc method)
         {
-            return _vTableSlotNodes.GetOrAdd(new MethodKey(method, false));
+            return _vTableSlotNodes.GetOrAdd(method);
         }
 
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)
