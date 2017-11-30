@@ -41,6 +41,11 @@ internal static class Program
             PrintLine("static int field test: Ok.");
         }
 
+        if(threadStaticInt == 0)
+        {
+            PrintLine("thread static int initial value field test: Ok.");
+        }
+
         threadStaticInt = 9;
         if(threadStaticInt == 9)
         {
