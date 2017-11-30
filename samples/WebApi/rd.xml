@@ -1,0 +1,164 @@
+<Directives>
+    <Application>
+        <Assembly Name="SampleWebApi" Dynamic="Required All" />
+        <Assembly Name="System.Private.CoreLib">
+            <Type Name="System.Runtime.CompilerServices.CompilationRelaxationsAttribute" Dynamic="Required All" />
+            <Type Name="System.Runtime.CompilerServices.RuntimeCompatibilityAttribute" Dynamic="Required All" />
+            <Type Name="System.Runtime.CompilerServices.ExtensionAttribute" Dynamic="Required All" />
+            <Type Name="System.Runtime.CompilerServices.IntrinsicAttribute" Dynamic="Required All" />
+            <Type Name="System.Diagnostics.DebuggableAttribute" Dynamic="Required All" />
+            <Type Name="System.Diagnostics.StackTrace" Dynamic="Required All" />            
+            <Type Name="System.Reflection.AssemblyInformationalVersionAttribute" Dynamic="Required All" />
+            <Type Name="System.Reflection.AssemblyTitleAttribute" Dynamic="Required All" />
+            <Type Name="System.Reflection.AssemblyFileVersionAttribute" Dynamic="Required All" />
+            <Type Name="System.Reflection.AssemblyDescriptionAttribute" Dynamic="Required All" />
+            <Type Name="System.Reflection.AssemblyCompanyAttribute" Dynamic="Required All" />
+            <Type Name="System.Reflection.AssemblyCopyrightAttribute" Dynamic="Required All" />
+            <Type Name="System.Reflection.AssemblyProductAttribute" Dynamic="Required All" />
+            <Type Name="System.Reflection.AssemblyDefaultAliasAttribute" Dynamic="Required All" />
+            <Type Name="System.Reflection.AssemblyMetadataAttribute" Dynamic="Required All" />
+            <Type Name="System.AttributeUsageAttribute" Dynamic="Required All" />
+            <Type Name="System.AttributeUsageAttribute[]" Dynamic="Required All" />
+            <Type Name="System.Runtime.InteropServices.ComVisibleAttribute" Dynamic="Required All" />
+            <Type Name="System.CLSCompliantAttribute" Dynamic="Required All" />
+            <Type Name="System.Reflection.Assembly" Dynamic="Required All" />
+            <Type Name="System.RuntimeExceptionHelpers+ExceptionData" Dynamic="Required All" />
+            <Type Name="System.Func`2[System.Object,System.Object]" Dynamic="Required All" />
+            <Type Name="System.Func`2[System.Reflection.MethodInfo,System.Boolean]" Dynamic="Required All" />
+            <Type Name="System.Func`3[System.Object,System.Object,System.Object]" Dynamic="Required All" />
+            <Type Name="System.Func`4[[System.Collections.Generic.IDictionary`2[System.Object,System.Object]],System.Object,System.Object,System.Boolean]" Dynamic="Required All" />
+            <Type Name="System.Func`5[[System.Linq.Expressions.Expression,System.Linq.Expressions],System.String,System.Boolean,System.Collections.ObjectModel.ReadOnlyCollection`1[[System.Linq.Expressions.ParameterExpression,System.Linq.Expressions]],[System.Linq.Expressions.LambdaExpression,System.Linq.Expressions]]" Dynamic="Required All" />
+            <Type Name="System.Action`3[[System.Collections.Generic.IDictionary`2[System.Object,System.Object]],System.Object,System.Object]" Dynamic="Required All" />
+            <Type Name="System.Action`3[[System.Collections.Generic.IDictionary`2[System.Object,System.Object]],System.Object,System.Object]" Dynamic="Required All" />
+            <Type Name="System.Action`2[System.Object,System.Boolean]" Dynamic="Required All" />
+            <Type Name="System.Action`1[System.Object]" Dynamic="Required All" />
+            <Type Name="System.Tuple`3[System.Object,System.Object,System.Boolean]" Dynamic="Required All" />
+            <Type Name="System.Runtime.CompilerServices.CompilerGeneratedAttribute" Dynamic="Required All" />
+            <Type Name="System.ComponentModel.DefaultValueAttribute" Dynamic="Required All" />
+            <Type Name="System.ComponentModel.DefaultValueAttribute[]" Dynamic="Required All" />
+            <Type Name="System.Reflection.DefaultMemberAttribute" Dynamic="Required All" />
+            <Type Name="System.Reflection.DefaultMemberAttribute[]" Dynamic="Required All" />
+            <Type Name="System.Reflection.MethodInfo" Dynamic="Required All" />
+            <Type Name="System.Reflection.MethodInfo[]" Dynamic="Required All" />
+            <Type Name="System.Collections.Generic.KeyValuePair`2[System.Object,System.Object]" Dynamic="Required All" />
+        </Assembly>
+        <Assembly Name="System.Collections">
+            <Type Name="System.Collections.Generic.Dictionary`2[[System.Object,System.Private.CoreLib],[System.Object,System.Private.CoreLib]]" Dynamic="Required All" />
+        </Assembly>
+        <Assembly Name="System.Diagnostics.Tracing">
+            <Type Name="System.Diagnostics.Tracing.EventSourceAttribute" Dynamic="Required All" />
+            <Type Name="System.Diagnostics.Tracing.EventSourceAttribute[]" Dynamic="Required All" />
+        </Assembly>
+        <Assembly Name="System.Reflection">
+            <Type Name="System.Reflection.Assembly" Dynamic="Required All" />
+        </Assembly>
+        <Assembly Name="Microsoft.AspNetCore.Server.Kestrel.Core">
+            <Type Name="Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServer" Dynamic="Required All" />
+            <Type Name="Microsoft.AspNetCore.Server.Kestrel.Core.Internal.KestrelServerOptionsSetup" Dynamic="Required All" />
+        </Assembly>
+        <Assembly Name="Microsoft.AspNetCore.Server.Kestrel" Dynamic="Required All"/>
+        <Assembly Name="Microsoft.AspNetCore.Server.Kestrel.Transport.Libuv">
+            <Type Name="Microsoft.AspNetCore.Server.Kestrel.Transport.Libuv.LibuvTransportFactory" Dynamic="Required All" />
+            <Type Name="Microsoft.AspNetCore.Server.Kestrel.Transport.Libuv.LibuvTransportOptions" Dynamic="Required All" />
+        </Assembly>
+        <Assembly Name="Microsoft.Extensions.DependencyInjection" Dynamic="Required All">
+            <Type Name="Microsoft.Extensions.DependencyInjection.DefaultServiceProviderFactory" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteExpressionBuilder" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteValidator" Dynamic="Required All" />
+        </Assembly>
+        <Assembly Name="Microsoft.Extensions.Options">
+            <Type Name="Microsoft.Extensions.Options.OptionsManager`1[[Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions,Microsoft.AspNetCore.Server.Kestrel.Core]]" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.Options.OptionsFactory`1[[Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions,Microsoft.AspNetCore.Server.Kestrel.Core]]" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions,Microsoft.AspNetCore.Server.Kestrel.Core]]" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions,Microsoft.AspNetCore.Server.Kestrel.Core]][]" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.AspNetCore.Http.Features.FormOptions,Microsoft.AspNetCore.Http]]" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.AspNetCore.Http.Features.FormOptions,Microsoft.AspNetCore.Http]][]" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.Options.OptionsManager`1[[Microsoft.AspNetCore.Http.Features.FormOptions,Microsoft.AspNetCore.Http]]" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.Options.OptionsManager`1[[Microsoft.AspNetCore.Http.Features.FormOptions,Microsoft.AspNetCore.Http]][]" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.Options.OptionsFactory`1[[Microsoft.AspNetCore.Http.Features.FormOptions,Microsoft.AspNetCore.Http]]" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.Options.OptionsMonitor`1[[System.Object,System.Private.CoreLib]]" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.Options.IOptionsSnapshot`1[[System.Object,System.Private.CoreLib]]" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.Options.OptionsFactory`1[[System.Object,System.Private.CoreLib]]" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.Options.OptionsCache`1[[System.Object,System.Private.CoreLib]]" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.Options.OptionsManager`1[[Microsoft.AspNetCore.Server.Kestrel.Transport.Libuv.LibuvTransportOptions,Microsoft.AspNetCore.Server.Kestrel.Transport.Libuv]]" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.Options.OptionsFactory`1[[Microsoft.AspNetCore.Server.Kestrel.Transport.Libuv.LibuvTransportOptions,Microsoft.AspNetCore.Server.Kestrel.Transport.Libuv]]" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.Options.OptionsManager`1[[Microsoft.AspNetCore.Mvc.MvcOptions,Microsoft.AspNetCore.Mvc.Core]]" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.Options.OptionsManager`1[[Microsoft.AspNetCore.Mvc.MvcJsonOptions,Microsoft.AspNetCore.Mvc.Formatters.Json]]" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.Options.OptionsManager`1[[Microsoft.AspNetCore.Authorization.AuthorizationOptions,Microsoft.AspNetCore.Authorization]]" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.Options.OptionsManager`1[[Microsoft.AspNetCore.Routing.RouteOptions,Microsoft.AspNetCore.Routing]]" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.Options.OptionsFactory`1[[Microsoft.AspNetCore.Routing.RouteOptions,Microsoft.AspNetCore.Routing]]" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.Options.OptionsMonitor`1[[Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions,Microsoft.Extensions.Logging.Console]]" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.Options.OptionsFactory`1[[Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions,Microsoft.Extensions.Logging.Console]]" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.Options.OptionsMonitor`1[[Microsoft.Extensions.Logging.LoggerFilterOptions,Microsoft.Extensions.Logging]]" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.Options.OptionsFactory`1[[Microsoft.Extensions.Logging.LoggerFilterOptions,Microsoft.Extensions.Logging]]" Dynamic="Required All" />
+        </Assembly>
+        <Assembly Name="Microsoft.AspNetCore.Http.Abstractions">
+            <Type Name="Microsoft.AspNetCore.Http.RequestDelegate" Dynamic="Required All" />
+        </Assembly>
+        <Assembly Name="Microsoft.AspNetCore.Mvc.Core" Dynamic="Required All" />
+        <Assembly Name="Microsoft.AspNetCore.Routing">
+            <Type Name="Microsoft.AspNetCore.Routing.Internal.RoutingMarkerService" Dynamic="Required All" />
+            <Type Name="Microsoft.AspNetCore.Builder.RouterMiddleware" Dynamic="Required All" />
+            <Type Name="Microsoft.AspNetCore.Routing.Tree.TreeRouteBuilder" Dynamic="Required All" />
+            <Type Name="Microsoft.AspNetCore.Routing.DefaultInlineConstraintResolver" Dynamic="Required All" />
+            <Type Name="Microsoft.AspNetCore.Routing.RouteOptions" Dynamic="Required All" />
+        </Assembly>
+        <Assembly Name="Microsoft.AspNetCore.Mvc.Formatters.Json">
+            <Type Name="Microsoft.AspNetCore.Mvc.Formatters.Json.Internal.MvcJsonMvcOptionsSetup" Dynamic="Required All" />
+            <Type Name="Microsoft.AspNetCore.Mvc.MvcJsonOptions" Dynamic="Required All" />
+        </Assembly>
+        <Assembly Name="Microsoft.AspNetCore.Authorization">
+            <Type Name="Microsoft.AspNetCore.Authorization.DefaultAuthorizationPolicyProvider" Dynamic="Required All" />
+            <Type Name="Microsoft.AspNetCore.Authorization.AuthorizationOptions" Dynamic="Required All" />
+        </Assembly>
+        <Assembly Name="Microsoft.AspNetCore.Http">
+            <Type Name="Microsoft.AspNetCore.Http.HttpContextFactory" Dynamic="Required All" />
+        </Assembly>
+        <Assembly Name="Microsoft.AspNetCore.Hosting" Dynamic="Required All">
+            <Type Name="Microsoft.AspNetCore.Hosting.Internal.ApplicationLifetime" Dynamic="Required All" />
+        </Assembly>
+        <Assembly Name="Microsoft.Extensions.Logging.Abstractions">
+            <Type Name="Microsoft.Extensions.Logging.ILogger`1[[Microsoft.AspNetCore.Hosting.Internal.WebHost,Microsoft.AspNetCore.Hosting]]" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.Logging.Logger`1[[Microsoft.AspNetCore.Hosting.Internal.WebHost,Microsoft.AspNetCore.Hosting]]" Dynamic="Required All" />
+        </Assembly>
+        <Assembly Name="Microsoft.Extensions.Logging">
+            <Type Name="Microsoft.Extensions.Logging.LoggerFactory" Dynamic="Required All" />
+        </Assembly>
+        <Assembly Name="Microsoft.Extensions.Logging.Console">
+            <Type Name="Microsoft.Extensions.Logging.Console.ConsoleLoggerProvider" Dynamic="Required All" />
+        </Assembly>
+        <Assembly Name="Microsoft.Extensions.Logging.Debug">
+            <Type Name="Microsoft.Extensions.Logging.Debug.DebugLogger" Dynamic="Required All" />
+            <Type Name="Microsoft.Extensions.Logging.Debug.DebugLoggerProvider" Dynamic="Required All" />
+        </Assembly>
+        <Assembly Name="System.Runtime">
+            <Type Name="System.Collections.Generic.IEnumerable`1[[System.Diagnostics.Tracing.EventSourceAttribute,System.Diagnostics.Tracing]]" Dynamic="Required All" />
+            <Type Name="System.Collections.Generic.IList`1[[System.Diagnostics.Tracing.EventSourceAttribute,System.Diagnostics.Tracing]]" Dynamic="Required All" />
+            <Type Name="System.Collections.Generic.IReadOnlyCollection`1[[System.Diagnostics.Tracing.EventSourceAttribute,System.Diagnostics.Tracing]]" Dynamic="Required All" />
+            <Type Name="System.Collections.Generic.IReadOnlyList`1[[System.Diagnostics.Tracing.EventSourceAttribute,System.Diagnostics.Tracing]]" Dynamic="Required All" />
+            <Type Name="System.Collections.Generic.IEnumerator`1[[System.Diagnostics.Tracing.EventSourceAttribute,System.Diagnostics.Tracing]]" Dynamic="Required All" />
+            <Type Name="System.Collections.Generic.IEnumerable`1[[Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions,Microsoft.AspNetCore.Server.Kestrel.Core]],Microsoft.Extensions.Options]]" Dynamic="Required All" />
+            <Type Name="System.Collections.Generic.IEnumerable`1[[Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.AspNetCore.Http.Features.FormOptions,Microsoft.AspNetCore.Http]],Microsoft.Extensions.Options]]" Dynamic="Required All" />
+        </Assembly>
+        <Assembly Name="System.Linq.Expressions">
+            <Type Name="System.Linq.Expressions.ExpressionCreator`1[[Newtonsoft.Json.Serialization.ObjectConstructor`1[[System.Object,System.Private.CoreLib]],Newtonsoft.Json]]" Dynamic="Required All" />
+            <Type Name="System.Linq.Expressions.ExpressionCreator`1[[System.Func`2[[System.Object,System.Private.CoreLib],[System.Object,System.Private.CoreLib]],System.Private.CoreLib]]" Dynamic="Required All" />
+        </Assembly>
+        <Assembly Name="Microsoft.Extensions.ObjectPool">
+            <Type Name="Microsoft.Extensions.ObjectPool.DefaultObjectPoolProvider" Dynamic="Required All" />
+        </Assembly>
+        <Assembly Name="Newtonsoft.Json">
+            <Type Name="Newtonsoft.Json.Serialization.ObjectConstructor`1[[System.Object,System.Private.CoreLib]]" Dynamic="Required All" />
+        </Assembly>
+        <Assembly Name="System.ComponentModel.TypeConverter">
+            <Type Name="System.ComponentModel.TypeConverter" Dynamic="Required All" />
+            <Type Name="System.ComponentModel.StringConverter" Dynamic="Required All" />
+            <Type Name="System.ComponentModel.BooleanConverter" Dynamic="Required All" />
+            <Type Name="System.ComponentModel.Int32Converter" Dynamic="Required All" />
+        </Assembly>
+        <Assembly Name="Microsoft.Extensions.Configuration.Json">
+            <Type Name="Microsoft.Extensions.Configuration.Json.JsonConfigurationSource" Dynamic="Required All" />
+        </Assembly>
+    </Application>
+</Directives>

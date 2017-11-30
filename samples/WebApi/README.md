@@ -1,0 +1,115 @@
+# Description
+This is a sample application, which uses CoreRT to compile a .NET Core Web API sample.
+TODO WIP - Might not work on Linix
+
+# Building a WebAPI app with CoreRT
+
+## Install the .NET Core SDK
+CoreRT is and AOT-optimized .NET Core runtime. If you're new to .NET Core make sure to visit the [official starting page](http://dotnet.github.io). It will guide you through installing pre-requisites and building your first app.
+If you're already familiar with .NET Core make sure you've [downloaded and installed the .NET Core 2 SDK](https://www.microsoft.com/net/download/core).
+
+## Create your app 
+
+Open a **new** shell/command prompt window and run the following commands.
+``> dotnet new webapi -o myApp`` 
+
+``> cd myApp``
+
+## Add CoreRT to your project
+
+Using CoreRT to compile your application is done via the ILCompiler NuGet package.
+
+In your shell/command prompt navigate to the root directory of your project run the command 
+
+`` dotnet new nuget ``
+
+This will add a nuget.config file to your application. Open the file and in the ``<packageSources> `` element under ``<clear/>`` add the following:
+
+``<add key="dotnet-core" value="https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" /> ``
+``<add key="aspnet-core" value="https://dotnet.myget.org/F/aspnetcore-release/api/v3/index.json" /> ``
+
+Once you've added the package source, add a reference to the compiler by running the following command:
+
+`` dotnet add package Microsoft.DotNet.ILCompiler -v <Version> `` 
+
+where ``<Version>`` is the [latest version of the ILCompiler package](https://dotnet.myget.org/feed/dotnet-core/package/nuget/Microsoft.DotNet.ILCompiler) (e.g. 1.0.0-alpha-26006-02).
+
+After the package has been succesfully added to your project, open the file called ``Startup.cs`` and in the ``ConfigureServices()`` method modify the line:    
+    
+    services.AddMvc();
+
+to
+
+    services.AddMvcCore().AddJsonFormatters();
+
+## Using reflection 
+Runtime directives are XML configuration files, which specify which elements of your program are available for reflection. They are used at compile-time to enable AOT compilation in applications at runtime. 
+
+In this sample a basic rd.xml file has been added for a simple Web API application under the root project folder. Copy its contents to your application directory and modify the
+``<Assembly Name="SampleWebApi" Dynamic="Required All" /> `` element to use your app's name.
+
+If your application makes use of reflection, you will need to create a rd.xml file specifying explicitly which assemblies and types should be made available. For example, in  your .NET Core Web API application, reflection is required to determine the correct namespace, from which to load the ``Startup`` type. Both are defined respectively via the ``<Assembly> `` and ``<Type>`` attributes. For example, in the case of our specific application;
+
+    <Assembly Name="SampleWebApi">
+      <Type Name="SampleWebApi.Startup" Dynamic="Required All" />
+    </Assembly>
+
+At runtime, if a method or type is not found or cannot be loaded, an exception will be thrown. The exception message will contain information on the missing type reference, which you can then add to the rd.xml of your program.
+
+Once you've created a rd.xml file, navigate to the root directory of your project and open its ``.csproj `` file and in the first ``<PropertyGroup>`` element add the following:
+
+    <RdXmlFile>path_to_rdxml_file\rd.xml</RdXmlFile>
+    <RuntimeIdentifiers>runtime_identifier</RuntimeIdentifiers>
+
+where path_to_rdxml_file is the location of the file on your disk and runtime_identifier is one of win-x64, linux-x64 or osx-x64, depending on the OS for which you would like to publish. Under the second ``<ItemGroup>`` remove the line containing a reference to ``Microsoft.AspNetCore.All`` and substitute it with:
+
+    <PackageReference Include="Microsoft.AspNetCore" Version="2.0.1" /> 
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.0.1" /> 
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Formatters.Json" Version="2.0.1" />
+
+After you've created your rd.xml file and specified its location, open your application's controller file (in the default template this should be called ``ValuesController.cs``) and substitute the ValuesController class with the following: 
+
+    public class ValuesController 
+    { 
+        [HttpGet("/")]
+        public string Hello() => "Hello World!";
+
+        // GET api/values
+        [HttpGet("/api/values")]
+        public IEnumerable<string> Get()
+        {
+            return new string[] { "value1", "value2" };
+        }
+        // GET api/values/5
+        [HttpGet("/api/values/{id}")]
+        public string Get(int id)
+        {
+            return "Your value is " + id;
+        }
+    }
+
+(note the removed inheritance and [Route] directive). Also note that URL request paths are explicitly defined on each method. 
+
+
+## Restore and Publish your app
+In your console run the command:
+
+`` dotnet restore ``
+
+This will restore your application's packages and download and import the correct version of the ILCompiler for your runtime.
+
+Once the package has been successfully added it's time to compile and publish your app! If you're using Windows, make sure you're using ``x64 Native Tools Command Prompt for VS 2017`` instead of the standard Windows command prompt. In the shell/command prompt window, run the following command:
+
+``dotnet publish -r <RID> -c <Configuration>``
+
+where ``<Configuration>`` is your project configuration (such as Debug or Release) and ``<RID>`` is theis the runtime identifier, which you specified in the csproj file (one of win-x64, linux-x64, osx-x64). For example, if you want to publish a release configuration of your app for a 64-bit version of Windows the command would look like:
+
+``dotnet publish -r win-x64 -c release`
+
+Once completed, you can find the native executable in the root folder of your project under ``/bin/x64/<Configuration>/netcoreapp2.0/publish/`` 
+
+## Try it out!
+
+Navigate to ``/bin/x64/<Configuration>/netcoreapp2.0/publish/`` in your project folder and run the produced executable. It should display "Now listening on: http://localhost:XXXX" with XXXX being a port on your machine. Open your browser and navigate to that URL. You should see "Hello World!" displayed in your browser.
+
+Feel free to modify the sample application and experiment. However, keep in mind some functionality might not yet be supported in CoreRT. Let us know on the [Issues page](https://github.com/dotnet/corert/issues/).
