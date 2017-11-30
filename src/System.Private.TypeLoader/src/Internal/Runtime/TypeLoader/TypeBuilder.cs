@@ -1946,11 +1946,17 @@ namespace Internal.Runtime.TypeLoader
 
             // First, check if the current version of the existing floating dictionary matches the version in the native layout. If so, there
             // is no need to allocate anything new, and we can just use the existing statically compiled floating portion of the input dictionary.
-            int currentFloatingVersion = (int)(((IntPtr*)fixedDictionary)[floatingVersionCellIndex]);
-            if(currentFloatingVersion == floatingVersionInLayout)
+
+            // If the fixed dictionary claims to have a floating section
+            if (*((IntPtr*)fixedDictionary) != IntPtr.Zero)
             {
-                isNewlyAllocatedDictionary = false;
-                return fixedDictionary + IntPtr.Size * floatingVersionCellIndex;
+                int currentFloatingVersion = (int)(((IntPtr*)fixedDictionary)[floatingVersionCellIndex]);
+
+                if (currentFloatingVersion == floatingVersionInLayout)
+                {
+                    isNewlyAllocatedDictionary = false;
+                    return fixedDictionary + IntPtr.Size * floatingVersionCellIndex;
+                }
             }
 
             GenericTypeDictionary floatingDict = new GenericTypeDictionary(floatingCells);

@@ -682,7 +682,7 @@ namespace ILCompiler
                 if (invokeMapMethod != null)
                     methodMappings.Add(new MetadataMapping<MethodDesc>(invokeMapMethod, token));
             }
-            else if (!WillUseMetadataTokenToReferenceMethod(method) && _compilationModuleGroup.ContainsMethodBody(canonicalMethod))
+            else if (!WillUseMetadataTokenToReferenceMethod(method) && _compilationModuleGroup.ContainsMethodBody(canonicalMethod, false))
             {
                 MethodDesc invokeMapMethod = GetInvokeMapMethodForMethod(canonicalToSpecificMethods, method);
 

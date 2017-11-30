@@ -69,7 +69,7 @@ namespace Internal.TypeSystem
             return resolvedMethod;
         }
 
-        protected IEnumerable<MethodDesc> GetAllMethodsForEnum(TypeDesc enumType)
+        protected virtual IEnumerable<MethodDesc> GetAllMethodsForEnum(TypeDesc enumType)
         {
             TypeDesc enumTypeDefinition = enumType.GetTypeDefinition();
             EnumInfo info = _enumInfoHashtable.GetOrCreateValue(enumTypeDefinition);

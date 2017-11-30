@@ -31,7 +31,7 @@ namespace ILCompiler.DependencyAnalysis
             return nameMangler.NodeMangler.ThreadStatics(type);
         }
 
-        public virtual bool IsExported(NodeFactory factory) => factory.CompilationModuleGroup.ExportsType(Type);
+        public virtual ExportForm GetExportForm(NodeFactory factory) => factory.CompilationModuleGroup.GetExportTypeForm(Type);
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {

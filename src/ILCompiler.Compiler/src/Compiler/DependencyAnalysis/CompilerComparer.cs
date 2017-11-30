@@ -4,12 +4,13 @@
 
 using System;
 using System.Diagnostics;
+using System.Collections.Generic;
 
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class CompilerComparer : TypeSystemComparer
+    public class CompilerComparer : TypeSystemComparer, IComparer<ISortableSymbolNode>
     {
         public int Compare(ISortableSymbolNode x, ISortableSymbolNode y)
         {
