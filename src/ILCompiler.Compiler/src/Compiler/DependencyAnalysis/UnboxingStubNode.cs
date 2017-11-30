@@ -21,8 +21,8 @@ namespace ILCompiler.DependencyAnalysis
         // Section name on Windows has to be alphabetically less than the ending WindowsUnboxingStubsRegionNode node, and larger than
         // the begining WindowsUnboxingStubsRegionNode node, in order to have proper delimiters to the begining/ending of the
         // stubs region, in order for the runtime to know where the region starts and ends.
-        static readonly string WindowsSectionName = ".unbox$M";
-        static readonly string UnixSectionName = "__unbox";
+        internal static readonly string WindowsSectionName = ".unbox$M";
+        internal static readonly string UnixSectionName = "__unbox";
 
         private readonly TargetDetails _targetDetails;
 
@@ -38,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis
         }
         public override bool IsShareable => true;
 
-        public bool IsExported(NodeFactory factory) => factory.CompilationModuleGroup.ExportsMethod(Method);
+        public ExportForm GetExportForm(NodeFactory factory) => factory.CompilationModuleGroup.GetExportMethodForm(Method, true);
 
         public UnboxingStubNode(MethodDesc target, TargetDetails targetDetails)
         {
@@ -46,6 +46,16 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(target.OwningType.IsValueType);
             Method = target;
             _targetDetails = targetDetails;
+        }
+
+        private ISymbolNode GetUnderlyingMethodEntrypoint(NodeFactory factory)
+        {
+            ISymbolNode node = factory.MethodEntrypoint(Method);
+            if (node is RuntimeDecodableJumpStubNode)
+            {
+                return ((RuntimeDecodableJumpStubNode)node).Target;
+            }
+            return node;
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

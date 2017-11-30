@@ -203,7 +203,7 @@ namespace ILCompiler.DependencyAnalysis
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
     }
 
-    public sealed class PrecomputedDictionaryLayoutNode : DictionaryLayoutNode
+    public class PrecomputedDictionaryLayoutNode : DictionaryLayoutNode
     {
         private readonly GenericLookupResult[] _layout;
 

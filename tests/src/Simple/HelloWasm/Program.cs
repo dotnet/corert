@@ -8,6 +8,8 @@ using System.Runtime.InteropServices;
 internal static class Program
 {
     private static int staticInt;
+    [ThreadStatic]
+    private static int threadStaticInt;
     private static unsafe void Main(string[] args)
     {
         Add(1, 2);
@@ -37,6 +39,17 @@ internal static class Program
         if (staticInt == 5)
         {
             PrintLine("static int field test: Ok.");
+        }
+
+        if(threadStaticInt == 0)
+        {
+            PrintLine("thread static int initial value field test: Ok.");
+        }
+
+        threadStaticInt = 9;
+        if(threadStaticInt == 9)
+        {
+            PrintLine("thread static int field test: Ok.");
         }
 
         var boxedInt = (object)tempInt;

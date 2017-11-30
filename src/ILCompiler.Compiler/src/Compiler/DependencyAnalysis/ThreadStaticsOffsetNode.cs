@@ -50,9 +50,9 @@ namespace ILCompiler.DependencyAnalysis
             return result;
         }
 
-        public bool IsExported(NodeFactory factory)
+        public ExportForm GetExportForm(NodeFactory factory)
         {
-            return factory.CompilationModuleGroup.ExportsType(Type);
+            return factory.CompilationModuleGroup.GetExportTypeForm(Type);
         }
 
         public MetadataType Type => _type;
@@ -85,7 +85,7 @@ namespace ILCompiler.DependencyAnalysis
 
         int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
         {
-            return CompareToImpl((ObjectNode)other, comparer);
+            return CompareToImpl((SortableDependencyNode)other, comparer);
         }
     }
 }

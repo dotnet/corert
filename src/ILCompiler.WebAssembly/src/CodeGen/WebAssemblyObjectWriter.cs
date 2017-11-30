@@ -203,11 +203,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public static LLVMValueRef EmitGlobal(LLVMModuleRef module, FieldDesc field, NameMangler nameMangler)
         {
-            if (field.IsThreadStatic)
-            {
-                throw new NotImplementedException("thread static field");
-            }
-            else if (field.IsStatic)
+            if (field.IsStatic)
             {
                 if (s_staticFieldMapping.TryGetValue(field, out LLVMValueRef existingValue))
                     return existingValue;
@@ -217,6 +213,10 @@ namespace ILCompiler.DependencyAnalysis
                     var llvmValue = LLVM.AddGlobal(module, valueType, nameMangler.GetMangledFieldName(field).ToString());
                     LLVM.SetLinkage(llvmValue, LLVMLinkage.LLVMInternalLinkage);
                     LLVM.SetInitializer(llvmValue, GetConstZeroArray(field.FieldType.GetElementSize().AsInt));
+                    if (field.IsThreadStatic)
+                    {
+                        LLVM.SetThreadLocal(llvmValue, LLVMMisc.True);
+                    }
                     s_staticFieldMapping.Add(field, llvmValue);
                     return llvmValue;
                 }
@@ -698,28 +698,6 @@ namespace ILCompiler.DependencyAnalysis
 
                     if (node.ShouldSkipEmittingObjectNode(factory))
                         continue;
-
-                    if (node is EETypeNode)
-                    {
-                        DefType t = ((EETypeNode)node).Type.GetClosestDefType();
-                        int iSlot = GetVTableSlotsCount(factory, t.BaseType);
-                        var pointerSize = factory.Target.PointerSize;
-                        foreach (MethodDesc m in factory.VTable(t).Slots)
-                        {
-                            // set _getslot variable to sizeof(EEType) + iSlot * pointer size
-                            string realSymbolName = factory.NameMangler.GetMangledMethodName(m).ToString();
-                            var globalRefName = "__getslot__" + realSymbolName;
-                            LLVMValueRef slot = LLVM.GetNamedGlobal(compilation.Module, globalRefName);
-                            if (slot.Pointer == IntPtr.Zero)
-                            {
-                                slot = LLVM.AddGlobal(compilation.Module, LLVM.Int32Type(), globalRefName);
-                            }
-                            LLVM.SetInitializer(slot, LLVM.ConstInt(LLVM.Int32Type(), (ulong)((EETypeNode.GetVTableOffset(pointerSize) / pointerSize) + iSlot), LLVMMisc.False));
-                            LLVM.SetGlobalConstant(slot, LLVMMisc.True);
-                            iSlot++;
-                        }
-                        
-                    }
 
                     objectWriter.StartObjectNode(node);
                     ObjectData nodeContents = node.GetData(factory);

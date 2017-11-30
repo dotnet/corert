@@ -85,6 +85,11 @@ namespace ILCompiler
                 flags: default(AssemblyFlags), 
                 hashAlgorithm: AssemblyHashAlgorithm.None);
 
+            _metadataBuilder.AddModule(
+                0,
+                _metadataBuilder.GetOrAddString(assemblyName),
+                default(GuidHandle), default(GuidHandle), default(GuidHandle));
+
             // Module type
             _metadataBuilder.AddTypeDefinition(
                default(TypeAttributes),
@@ -187,7 +192,7 @@ namespace ILCompiler
         }
 
         #region TypeSystem Entities To Handle Encoders
-        private Dictionary<EcmaAssembly, AssemblyReferenceHandle> _assemblyRefHandles = new Dictionary<EcmaAssembly, AssemblyReferenceHandle>();
+        private Dictionary<IAssemblyDesc, AssemblyReferenceHandle> _assemblyRefHandles = new Dictionary<IAssemblyDesc, AssemblyReferenceHandle>();
         private Dictionary<TypeDesc, EntityHandle> _typeRefOrSpecHandles = new Dictionary<TypeDesc, EntityHandle>();
         private Dictionary<TypeSystemEntity, EntityHandle> _memberRefOrSpecHandles = new Dictionary<TypeSystemEntity, EntityHandle>();
         private Dictionary<MethodSignature, BlobHandle> _methodSignatureHandles = new Dictionary<MethodSignature, BlobHandle>();
@@ -251,7 +256,7 @@ namespace ILCompiler
             }
         }
 
-        private AssemblyReferenceHandle MakeAssemblyReferenceHandle(EcmaAssembly assemblyRef)
+        private AssemblyReferenceHandle MakeAssemblyReferenceHandle(IAssemblyDesc assemblyRef)
         {
             AssemblyReferenceHandle handle;
 
@@ -273,44 +278,27 @@ namespace ILCompiler
             return handle;
         }
 
-        private AssemblyReferenceHandle MakeCorlibAssemblyReferenceHandle()
-        {
-            return MakeAssemblyReferenceHandle((EcmaAssembly)_typeSystemContext.SystemModule);
-        }
-
         private EntityHandle MakeTypeRefHandle(TypeDesc type)
         {
             Debug.Assert(type.IsTypeDefinition);
-            Debug.Assert((type is EcmaType) || _typeSystemContext.IsCanonicalDefinitionType(type, CanonicalFormKind.Any));
+            Debug.Assert(type is MetadataType);
 
             EntityHandle handle;
 
             if (!_typeRefOrSpecHandles.TryGetValue(type, out handle))
             {
-                if (_typeSystemContext.IsCanonicalDefinitionType(type, CanonicalFormKind.Any))
-                {
-                    CanonBaseType canonType = (CanonBaseType)type;
+                EntityHandle scope;
+                MetadataType typeAsMetadataType = (MetadataType)type;
 
-                    handle = _metadataBuilder.AddTypeReference(
-                        MakeCorlibAssemblyReferenceHandle(),
-                        _metadataBuilder.GetOrAddString(canonType.Namespace),
-                        _metadataBuilder.GetOrAddString(canonType.Name));
-                }
+                if (typeAsMetadataType.ContainingType != null)
+                    scope = MakeTypeRefHandle(typeAsMetadataType.ContainingType);
                 else
-                {
-                    EntityHandle scope;
-                    EcmaType typeAsEcmaType = (EcmaType)type;
+                    scope = MakeAssemblyReferenceHandle((IAssemblyDesc)typeAsMetadataType.Module);
 
-                    if (typeAsEcmaType.ContainingType != null)
-                        scope = MakeTypeRefHandle(typeAsEcmaType.ContainingType);
-                    else
-                        scope = MakeAssemblyReferenceHandle((EcmaAssembly)typeAsEcmaType.EcmaModule);
-
-                    handle = _metadataBuilder.AddTypeReference(
-                        scope,
-                        _metadataBuilder.GetOrAddString(typeAsEcmaType.Namespace),
-                        _metadataBuilder.GetOrAddString(typeAsEcmaType.Name));
-                }
+                handle = _metadataBuilder.AddTypeReference(
+                    scope,
+                    _metadataBuilder.GetOrAddString(typeAsMetadataType.Namespace),
+                    _metadataBuilder.GetOrAddString(typeAsMetadataType.Name));
 
                 _typeRefOrSpecHandles[type] = handle;
             }

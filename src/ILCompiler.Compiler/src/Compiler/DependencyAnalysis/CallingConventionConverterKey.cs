@@ -49,17 +49,33 @@ namespace ILCompiler.DependencyAnalysis
 
     public static class MethodSignatureExtensions
     {
+        public static void AppendName(this MethodSignature signature, StringBuilder nameBuilder, UniqueTypeNameFormatter typeNameFormatter)
+        {
+            if (signature.GenericParameterCount > 0)
+            {
+                nameBuilder.Append("GenParams:");
+                nameBuilder.Append(signature.GenericParameterCount);
+                nameBuilder.Append(' ');
+            }
+
+            if (signature.IsStatic)
+                nameBuilder.Append("Static ");
+
+            typeNameFormatter.AppendName(nameBuilder, signature.ReturnType);
+            nameBuilder.Append('(');
+            for (int i = 0; i < signature.Length; i++)
+            {
+                if (i != 0)
+                    nameBuilder.Append(',');
+                typeNameFormatter.AppendName(nameBuilder, signature[i]);
+            }
+            nameBuilder.Append(')');
+        }
+
         public static string GetName(this MethodSignature signature)
         {
             StringBuilder nameBuilder = new StringBuilder();
-            if (signature.GenericParameterCount > 0)
-                nameBuilder.Append("GenParams:" + signature.GenericParameterCount);
-            if (signature.IsStatic)
-                nameBuilder.Append("Static");
-            nameBuilder.Append(signature.ReturnType.ToString());
-            for (int i = 0; i < signature.Length; i++)
-                nameBuilder.Append(signature[i].ToString());
-
+            signature.AppendName(nameBuilder, UniqueTypeNameFormatter.Instance);
             return nameBuilder.ToString();
         }
     }

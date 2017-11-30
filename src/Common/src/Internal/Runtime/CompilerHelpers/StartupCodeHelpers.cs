@@ -141,6 +141,14 @@ namespace Internal.Runtime.CompilerHelpers
             section->TypeManager = typeManager;
             section->ModuleIndex = moduleIndex;
 
+            // Initialize Mrt import address tables
+            IntPtr mrtImportSection = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.ImportAddressTables, out length);
+            if (mrtImportSection != IntPtr.Zero)
+            {
+                Debug.Assert(length % IntPtr.Size == 0);
+                InitializeImports(mrtImportSection, length);
+            }
+
 #if !PROJECTN
             // Initialize statics if any are present
             IntPtr staticsSection = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.GCStaticRegion, out length);
@@ -193,6 +201,65 @@ namespace Internal.Runtime.CompilerHelpers
             for (IntPtr* tab = (IntPtr*)cctorTableStart; tab < (IntPtr*)cctorTableEnd; tab++)
             {
                 Call(*tab);
+            }
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        unsafe struct MrtExportsV1
+        {
+            public int ExportsVersion; // Currently only version 1 is supported
+            public int SymbolsCount;
+            public int FirstDataItemAsRelativePointer; // Index 1
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        unsafe struct MrtImportsV1
+        {
+            public int ImportVersion; // Currently only version 1 is supported
+            public int ImportCount; // Count of imports
+            public MrtExportsV1** ExportTable; // Pointer to pointer to Export table
+            public IntPtr FirstImportEntry;
+        }
+
+        private static unsafe void InitializeImports(IntPtr importsRegionStart, int length)
+        {
+            IntPtr importsRegionEnd = (IntPtr)((byte*)importsRegionStart + length);
+
+            for (MrtImportsV1** importTablePtr = (MrtImportsV1**)importsRegionStart; importTablePtr < (MrtImportsV1**)importsRegionEnd; importTablePtr++)
+            {
+                MrtImportsV1* importTable = *importTablePtr;
+                if (importTable->ImportVersion != 1)
+                    RuntimeExceptionHelpers.FailFast("Mrt Import table version");
+
+                MrtExportsV1* exportTable = *importTable->ExportTable;
+                if (exportTable->ExportsVersion != 1)
+                    RuntimeExceptionHelpers.FailFast("Mrt Export table version");
+
+                if (importTable->ImportCount < 0)
+                {
+                    RuntimeExceptionHelpers.FailFast("Mrt Import Count");
+                }
+
+                int* firstExport = &exportTable->FirstDataItemAsRelativePointer;
+                IntPtr* firstImport = &importTable->FirstImportEntry;
+                for (int import = 0; import < importTable->ImportCount; import++)
+                {
+                    // Get 1 based ordinal from import table
+                    int importOrdinal = (int)firstImport[import];
+
+                    if ((importOrdinal < 1) || (importOrdinal > exportTable->SymbolsCount))
+                        RuntimeExceptionHelpers.FailFast("Mrt import ordinal");
+
+                    // Get entry in export table
+                    int* exportTableEntry = &firstExport[importOrdinal - 1];
+
+                    // Get pointer from export table
+                    int relativeOffsetFromExportTableEntry = *exportTableEntry;
+                    byte* actualPointer = ((byte*)exportTableEntry) + relativeOffsetFromExportTableEntry + sizeof(int);
+
+                    // Update import table with imported value
+                    firstImport[import] = new IntPtr(actualPointer);
+                }
             }
         }
 

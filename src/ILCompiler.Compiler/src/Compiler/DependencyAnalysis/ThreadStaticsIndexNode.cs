@@ -57,7 +57,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public bool IsExported(NodeFactory factory) => true;
+        public ExportForm GetExportForm(NodeFactory factory) => ExportForm.ByName;
 
         public override bool IsShareable => false;            
 

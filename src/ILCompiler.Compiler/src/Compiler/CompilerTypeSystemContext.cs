@@ -133,7 +133,7 @@ namespace ILCompiler
             return GetModuleForSimpleName(name.Name, throwIfNotFound);
         }
 
-        public EcmaModule GetModuleForSimpleName(string simpleName, bool throwIfNotFound = true)
+        public ModuleDesc GetModuleForSimpleName(string simpleName, bool throwIfNotFound = true)
         {
             ModuleData existing;
             if (_simpleNameHashtable.TryGetValue(simpleName, out existing))
@@ -144,6 +144,10 @@ namespace ILCompiler
             {
                 if (!ReferenceFilePaths.TryGetValue(simpleName, out filePath))
                 {
+                    // We allow the CanonTypesModule to not be an EcmaModule.
+                    if (((IAssemblyDesc)CanonTypesModule).GetName().Name == simpleName)
+                        return CanonTypesModule;
+
                     // TODO: the exception is wrong for two reasons: for one, this should be assembly full name, not simple name.
                     // The other reason is that on CoreCLR, the exception also captures the reason. We should be passing two
                     // string IDs. This makes this rather annoying.
@@ -178,7 +182,7 @@ namespace ILCompiler
             return AddModule(filePath, null, useForBinding);
         }
 
-        private static unsafe PEReader OpenPEFile(string filePath, out MemoryMappedViewAccessor mappedViewAccessor)
+        public static unsafe PEReader OpenPEFile(string filePath, out MemoryMappedViewAccessor mappedViewAccessor)
         {
             // System.Reflection.Metadata has heuristic that tries to save virtual address space. This heuristic does not work
             // well for us since it can make IL access very slow (call to OS for each method IL query). We will map the file
@@ -345,7 +349,7 @@ namespace ILCompiler
             return type.GetMethods();
         }
 
-        private IEnumerable<MethodDesc> GetAllMethodsForDelegate(TypeDesc type)
+        protected virtual IEnumerable<MethodDesc> GetAllMethodsForDelegate(TypeDesc type)
         {
             // Inject the synthetic GetThunk virtual override
             InstantiatedType instantiatedType = type as InstantiatedType;
