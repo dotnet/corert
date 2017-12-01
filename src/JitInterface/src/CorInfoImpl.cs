@@ -723,11 +723,8 @@ namespace Internal.JitInterface
             // method body.
             //
 
-            var owningType = method.OwningType;
-            var owningMetadataType = owningType as MetadataType;
-
             // method or class might have the final bit
-            if (method.IsFinal || (owningMetadataType != null && owningMetadataType.IsSealed))
+            if (_compilation.IsEffectivelySealed(method))
                 result |= CorInfoFlag.CORINFO_FLG_FINAL;
 
             if (method.IsSharedByGenericInstantiations)
@@ -754,7 +751,7 @@ namespace Internal.JitInterface
                 result |= CorInfoFlag.CORINFO_FLG_FORCEINLINE;
             }
 
-            if (owningType.IsDelegate)
+            if (method.OwningType.IsDelegate)
             {
                 if (method.Name == "Invoke")
                     // This is now used to emit efficient invoke code for any delegate invoke,
@@ -867,35 +864,20 @@ namespace Internal.JitInterface
                 return null;
             }
 
-            implType = implType.GetClosestDefType();
-
             MethodDesc decl = HandleToObject(baseMethod);
-            Debug.Assert(decl.IsVirtual);
             Debug.Assert(!decl.HasInstantiation);
 
-            MethodDesc impl;
-
-            TypeDesc declOwningType = decl.OwningType;
-            if (declOwningType.IsInterface)
+            if (ownerType != null)
             {
-                // Interface call devirtualization.
-
-                if (implType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                TypeDesc ownerTypeDesc = typeFromContext(ownerType);
+                if (decl.OwningType != ownerTypeDesc)
                 {
-                    // TODO: attempt to devirtualize methods on canonical interfaces
-                    return null;
-                }
-
-                impl = implType.ResolveInterfaceMethodTarget(decl);
-                if (impl != null)
-                {
-                    impl = implType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(impl);
+                    Debug.Assert(ownerTypeDesc is InstantiatedType);
+                    decl = _compilation.TypeSystemContext.GetMethodForInstantiatedType(decl.GetTypicalMethodDefinition(), (InstantiatedType)ownerTypeDesc);
                 }
             }
-            else
-            {
-                impl = implType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(decl);
-            }
+
+            MethodDesc impl = _compilation.ResolveVirtualMethod(decl, implType);
 
             return impl != null ? ObjectToHandle(impl) : null;
         }
@@ -1320,6 +1302,9 @@ namespace Internal.JitInterface
             if (type.IsDelegate)
                 result |= CorInfoFlag.CORINFO_FLG_DELEGATE;
 
+            if (_compilation.IsEffectivelySealed(type))
+                result |= CorInfoFlag.CORINFO_FLG_FINAL;
+
             if (metadataType != null)
             {
                 if (metadataType.ContainsGCPointers)
@@ -1327,9 +1312,6 @@ namespace Internal.JitInterface
 
                 if (metadataType.IsBeforeFieldInit)
                     result |= CorInfoFlag.CORINFO_FLG_BEFOREFIELDINIT;
-
-                if (metadataType.IsSealed)
-                    result |= CorInfoFlag.CORINFO_FLG_FINAL;
 
                 // Assume overlapping fields for explicit layout.
                 if (metadataType.IsExplicitLayout)

@@ -437,6 +437,12 @@ namespace ILCompiler
                 // If we have a scanner, feed the generic dictionary results to the compilation.
                 // This could be a command line switch if we really wanted to.
                 builder.UseGenericDictionaryLayoutProvider(scanResults.GetDictionaryLayoutInfo());
+
+                // If we feed any outputs of the scanner into the compilation, it's essential
+                // we use scanner's devirtualization manager. It prevents optimizing codegens
+                // from accidentally devirtualizing cases that can never happen at runtime
+                // (e.g. devirtualizing a method on a type that never gets allocated).
+                builder.UseDevirtualizationManager(scanResults.GetDevirtualizationManager());
             }
 
             ICompilation compilation = builder.ToCompilation();
