@@ -3122,29 +3122,9 @@ namespace Internal.JitInterface
                     // (Note: The generic lookup in R2R is performed by a call to a helper at runtime, not by
                     // codegen emitted at crossgen time)
 
-                    MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
-
-                    // Do not bother capturing the runtime determined context if we're inlining. The JIT is going
-                    // to abort the inlining attempt if the inlinee does any generic lookups.
-                    bool inlining = contextMethod != MethodBeingCompiled;
-
-                    // If we resolved a constrained call, calling GetRuntimeDeterminedObjectForToken below would
-                    // result in getting back the unresolved target. Don't capture runtime determined dependencies
-                    // in that case and rely on the dependency analysis computing them based on seeing a call to the
-                    // canonical method body.
-                    // Same applies to array address method (the method doesn't actually do any generic lookups).
-                    if (targetMethod.IsSharedByGenericInstantiations && !inlining && !resolvedConstraint && !referencingArrayAddressMethod)
-                    {
-                        MethodDesc runtimeDeterminedMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-                        pResult.codePointerOrStubLookup.constLookup = 
-                            CreateConstLookupToSymbol(_compilation.NodeFactory.RuntimeDeterminedMethod(runtimeDeterminedMethod));
-                    }
-                    else
-                    {
-                        Debug.Assert(!forceUseRuntimeLookup);
-                        pResult.codePointerOrStubLookup.constLookup = 
-                            CreateConstLookupToSymbol(_compilation.NodeFactory.MethodEntrypoint(targetMethod));
-                    }
+                    Debug.Assert(!forceUseRuntimeLookup);
+                    pResult.codePointerOrStubLookup.constLookup = 
+                        CreateConstLookupToSymbol(_compilation.NodeFactory.MethodEntrypoint(targetMethod));
                 }
                 else
                 {

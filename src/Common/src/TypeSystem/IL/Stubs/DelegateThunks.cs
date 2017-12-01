@@ -911,16 +911,14 @@ namespace Internal.IL.Stubs
 
         public override MethodIL EmitIL()
         {
-            const DelegateThunkKind maxThunkKind = DelegateThunkKind.ObjectArrayThunk + 1;
-
             ILEmitter emitter = new ILEmitter();
 
             var codeStream = emitter.NewCodeStream();
 
             ILCodeLabel returnNullLabel = emitter.NewCodeLabel();
 
-            ILCodeLabel[] labels = new ILCodeLabel[(int)maxThunkKind];
-            for (DelegateThunkKind i = 0; i < maxThunkKind; i++)
+            ILCodeLabel[] labels = new ILCodeLabel[(int)DelegateThunkCollection.MaxThunkKind];
+            for (DelegateThunkKind i = 0; i < DelegateThunkCollection.MaxThunkKind; i++)
             {
                 MethodDesc thunk = _delegateInfo.Thunks[i];
                 if (thunk != null)
@@ -934,7 +932,7 @@ namespace Internal.IL.Stubs
 
             codeStream.Emit(ILOpcode.br, returnNullLabel);
 
-            for (DelegateThunkKind i = 0; i < maxThunkKind; i++)
+            for (DelegateThunkKind i = 0; i < DelegateThunkCollection.MaxThunkKind; i++)
             {
                 MethodDesc thunk = _delegateInfo.Thunks[i];
                 if (thunk != null)

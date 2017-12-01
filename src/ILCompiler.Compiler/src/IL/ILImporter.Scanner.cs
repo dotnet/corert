@@ -563,7 +563,7 @@ namespace Internal.IL
                             _dependencies.Add(instParam, reason);
                         }
 
-                        _dependencies.Add(_factory.RuntimeDeterminedMethod(runtimeDeterminedMethod), reason);
+                        _dependencies.Add(_factory.CanonicalEntrypoint(targetMethod), reason);
                     }
                     else
                     {
