@@ -89,6 +89,19 @@ namespace ILCompiler
             return thunk;
         }
 
+        public MethodDesc GetUnspecialUnboxingThunk(MethodDesc targetMethod, ModuleDesc ownerModuleOfThunk)
+        {
+            TypeDesc owningType = targetMethod.OwningType;
+            Debug.Assert(owningType.IsValueType);
+
+            var owningTypeDefinition = (MetadataType)owningType.GetTypeDefinition();
+
+            // Get a reference type that has the same layout as the boxed valuetype.
+            var typeKey = new BoxedValuetypeHashtableKey(owningTypeDefinition, ownerModuleOfThunk);
+            BoxedValueType boxedTypeDefinition = _boxedValuetypeHashtable.GetOrCreateValue(typeKey);
+            return new UnboxingThunk(boxedTypeDefinition, targetMethod);
+        }
+
         /// <summary>
         /// Returns true of <paramref name="method"/> is a standin method for unboxing thunk target.
         /// </summary>
@@ -409,6 +422,65 @@ namespace ILCompiler
                 // Call an instance method on the target valuetype that has a fake instantiation parameter
                 // in it's signature. This will be swapped by the actual instance method after codegen is done.
                 codeStream.Emit(ILOpcode.call, emit.NewToken(_nakedTargetMethod.InstantiateAsOpen()));
+                codeStream.Emit(ILOpcode.ret);
+
+                return emit.Link(this);
+            }
+        }
+
+        /// <summary>
+        /// Represents a thunk to call instance method on boxed valuetypes.
+        /// </summary>
+        private partial class UnboxingThunk : ILStubMethod
+        {
+            private MethodDesc _targetMethod;
+            private BoxedValueType _owningType;
+
+            public UnboxingThunk(BoxedValueType owningType, MethodDesc targetMethod)
+            {
+                Debug.Assert(targetMethod.OwningType.IsValueType);
+                Debug.Assert(!targetMethod.Signature.IsStatic);
+
+                _owningType = owningType;
+                _targetMethod = targetMethod;
+            }
+
+            public override TypeSystemContext Context => _targetMethod.Context;
+
+            public override TypeDesc OwningType => _owningType;
+
+            public override MethodSignature Signature => _targetMethod.Signature;
+
+            public MethodDesc TargetMethod => _targetMethod;
+
+            public override string Name
+            {
+                get
+                {
+                    return _targetMethod.Name + "_Unbox";
+                }
+            }
+
+            public override MethodIL EmitIL()
+            {
+                // Generate the unboxing stub. This loosely corresponds to following C#:
+                // return BoxedValue.InstanceMethod([rest of parameters])
+
+                ILEmitter emit = new ILEmitter();
+                ILCodeStream codeStream = emit.NewCodeStream();
+
+                // unbox to get a pointer to the value type
+                codeStream.EmitLdArg(0);
+                codeStream.Emit(ILOpcode.unbox, emit.NewToken(_owningType));
+
+                // Load rest of the arguments
+                for (int i = 0; i < _targetMethod.Signature.Length; i++)
+                {
+                    codeStream.EmitLdArg(i + 1);
+                }
+
+                // Call an instance method on the target valuetype
+                codeStream.Emit(ILOpcode.call, emit.NewToken(_targetMethod));
                 codeStream.Emit(ILOpcode.ret);
 
                 return emit.Link(this);
