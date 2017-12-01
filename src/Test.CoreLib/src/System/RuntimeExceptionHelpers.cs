@@ -115,5 +115,10 @@ namespace System
             if (ex == null)
                 FailFast("Exceptions must derive from the System.Exception class");
         }
+
+        [RuntimeExport("OnFirstChanceException")]
+        internal static void OnFirstChanceException(object e)
+        {
+        }
     }
 }

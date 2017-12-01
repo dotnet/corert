@@ -2935,6 +2935,14 @@ namespace Internal.JitInterface
                 throw new BadImageFormatException();
             }
 
+            // This block enforces the rule that methods with [NativeCallable] attribute
+            // can only be called from unmanaged code. The call from managed code is replaced
+            // with a stub that throws an InvalidProgramException
+            if (method.IsNativeCallable && (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0)
+            {
+                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNativeCallable, method);
+            }
+
             TypeDesc exactType = HandleToObject(pResolvedToken.hClass);
 
             TypeDesc constrainedType = null;

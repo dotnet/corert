@@ -73,6 +73,7 @@ namespace DependencyLogViewer
             this.listBox1.Name = "listBox1";
             this.listBox1.Size = new System.Drawing.Size(844, 565);
             this.listBox1.TabIndex = 2;
+            this.listBox1.DoubleClick += new System.EventHandler(this.explore_Click);
             // 
             // splitContainer1
             // 

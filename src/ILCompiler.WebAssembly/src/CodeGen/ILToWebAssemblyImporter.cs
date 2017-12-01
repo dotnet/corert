@@ -847,12 +847,9 @@ namespace Internal.IL
 
         private LLVMValueRef GetOrCreateMethodSlot(MethodDesc method)
         {
-            var globalRefName = "__getslot__" + _compilation.NameMangler.GetMangledMethodName(method);
-            LLVMValueRef slot = LLVM.GetNamedGlobal(Module, globalRefName);
-            if(slot.Pointer == IntPtr.Zero)
-            {
-                slot = LLVM.AddGlobal(Module, LLVM.Int32Type(), globalRefName);
-            }
+            var vtableSlotSymbol = _compilation.NodeFactory.VTableSlot(method);
+            _dependencies.Add(vtableSlotSymbol);
+            LLVMValueRef slot = LoadAddressOfSymbolNode(vtableSlotSymbol);
             return LLVM.BuildLoad(_builder, slot, string.Empty);
         }
 

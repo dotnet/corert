@@ -2,9 +2,10 @@
 
 usage()
 {
-    echo "Usage: $0 [BuildArch] [LinuxCodeName]"
+    echo "Usage: $0 [BuildArch] [LinuxCodeName] [cross]"
     echo "BuildArch can be: arm(default), armel, arm64, x86"
     echo "LinuxCodeName - optional, Code name for Linux, can be: trusty(default), vivid, wily, jessie, xenial. If BuildArch is armel, LinuxCodeName is jessie(default) or tizen."
+    echo "cross - optional, it initializes rootfs for cross building, works only for armel tizen now"
     exit 1
 }
 
@@ -83,6 +84,17 @@ for i in "$@"
             __LinuxCodeName=
             __UbuntuRepo=
             __Tizen=tizen
+            ;;
+        cross)
+            if [ "$__Tizen" != "tizen" ]; then
+                echo "Cross building rootfs is available only for armel tizen."
+                usage;
+                exit 1;
+            fi
+            # Cross building is available for armel tizen only with x86 rootfs
+            echo Building x86 xenial rootfs for armel tizen cross build...
+            $0 x86 xenial
+            echo Building armel rootfs...
             ;;
         --skipunmount)
             __SkipUnmount=1
