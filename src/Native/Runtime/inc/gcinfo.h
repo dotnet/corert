@@ -842,6 +842,11 @@ public:
     }
 #endif // _TARGET_AMD64_
 
+    void SetFuncletOffset(UInt32 offset)
+    {
+        funcletOffset = offset;
+    }
+
     //
     // GETTERS
     //
