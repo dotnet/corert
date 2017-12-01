@@ -154,5 +154,7 @@ namespace Internal.Runtime.Augments
         }
 
         public static int TickCount => Environment.TickCount;
+
+        public static int ProcessorCount => Environment.ProcessorCount;
     }
 }
