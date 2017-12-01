@@ -154,7 +154,5 @@ namespace Internal.Runtime.Augments
                 yield return new KeyValuePair<string, string>(key, value);
             }
         }
-
-        public static int ProcessorCount => Environment.ProcessorCount;
     }
 }
