@@ -37,5 +37,7 @@ namespace Internal.Runtime.Augments
         {
             Interop.Sys.Exit(s_latchedExitCode);
         }
+
+        public static int ProcessorCount => Environment.ProcessorCount;
     }
 }
