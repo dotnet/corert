@@ -97,6 +97,8 @@ namespace ILCompiler.Metadata
                     {
                         scopeDefinition.ModuleCustomAttributes = HandleCustomAttributes(ecmaAssembly, moduleAttributes);
                     }
+
+                    HandleTypeForwarders(ecmaAssembly);
                 }
             }
             else

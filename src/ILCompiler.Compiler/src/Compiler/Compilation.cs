@@ -390,6 +390,11 @@ namespace ILCompiler
                     _graph.AddRoot(_factory.ReflectableMethod(method), reason);
                 }
             }
+
+            public void RootModuleMetadata(ModuleDesc module, string reason)
+            {
+                _graph.AddRoot(_factory.ModuleMetadata(module), reason);
+            }
         }
     }
 
