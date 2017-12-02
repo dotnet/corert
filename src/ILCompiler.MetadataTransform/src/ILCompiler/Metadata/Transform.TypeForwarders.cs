@@ -10,6 +10,10 @@ using Cts = Internal.TypeSystem;
 using Ecma = System.Reflection.Metadata;
 
 using Debug = System.Diagnostics.Debug;
+using AssemblyName = System.Reflection.AssemblyName;
+using AssemblyContentType = System.Reflection.AssemblyContentType;
+using AssemblyNameFlags = System.Reflection.AssemblyNameFlags;
+using AssemblyFlags = System.Reflection.AssemblyFlags;
 
 namespace ILCompiler.Metadata
 {
@@ -22,14 +26,7 @@ namespace ILCompiler.Metadata
                 Ecma.ExportedType exportedType = module.MetadataReader.GetExportedType(exportedTypeHandle);
                 if (exportedType.IsForwarder || exportedType.Implementation.Kind == Ecma.HandleKind.ExportedType)
                 {
-                    try
-                    {
-                        HandleTypeForwarder(module, exportedType);
-                    }
-                    catch (Cts.TypeSystemException)
-                    {
-                        // TODO: We should emit unresolvable type forwards instead of skipping these
-                    }
+                    HandleTypeForwarder(module, exportedType);
                 }
                 else
                 {
@@ -47,28 +44,42 @@ namespace ILCompiler.Metadata
             switch (exportedType.Implementation.Kind)
             {
                 case Ecma.HandleKind.AssemblyReference:
-                    string ns = reader.GetString(exportedType.Namespace);
-                    NamespaceDefinition namespaceDefinition = HandleNamespaceDefinition(module, ns);
-
-                    result = new TypeForwarder
                     {
-                        Name = HandleString(name),
-                        Scope = HandleScopeReference((Cts.ModuleDesc)module.GetObject(exportedType.Implementation)),
-                    };
-                    
-                    namespaceDefinition.TypeForwarders.Add(result);
+                        string ns = reader.GetString(exportedType.Namespace);
+                        NamespaceDefinition namespaceDefinition = HandleNamespaceDefinition(module, ns);
+
+                        Ecma.AssemblyReference assemblyRef = reader.GetAssemblyReference((Ecma.AssemblyReferenceHandle)exportedType.Implementation);
+                        AssemblyName refName = new AssemblyName
+                        {
+                            ContentType = (AssemblyContentType)((int)(assemblyRef.Flags & AssemblyFlags.ContentTypeMask) >> 9),
+                            Flags = (AssemblyNameFlags)(assemblyRef.Flags & ~AssemblyFlags.ContentTypeMask),
+                            CultureName = reader.GetString(assemblyRef.Culture),
+                            Name = reader.GetString(assemblyRef.Name),
+                            Version = assemblyRef.Version,
+                        };
+
+                        result = new TypeForwarder
+                        {
+                            Name = HandleString(name),
+                            Scope = HandleScopeReference(refName),
+                        };
+
+                        namespaceDefinition.TypeForwarders.Add(result);
+                    }
                     break;
 
                 case Ecma.HandleKind.ExportedType:
-                    TypeForwarder scope = HandleTypeForwarder(module, reader.GetExportedType((Ecma.ExportedTypeHandle)exportedType.Implementation));
-
-                    result = new TypeForwarder
                     {
-                        Name = HandleString(name),
-                        Scope = scope.Scope,
-                    };
+                        TypeForwarder scope = HandleTypeForwarder(module, reader.GetExportedType((Ecma.ExportedTypeHandle)exportedType.Implementation));
 
-                    scope.NestedTypes.Add(result);
+                        result = new TypeForwarder
+                        {
+                            Name = HandleString(name),
+                            Scope = scope.Scope,
+                        };
+
+                        scope.NestedTypes.Add(result);
+                    }
                     break;
 
                 default:
