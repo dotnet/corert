@@ -6,6 +6,7 @@
     <PackagePlatforms>x64;</PackagePlatforms>
     <PreventImplementationReference>true</PreventImplementationReference>
     <SkipValidatePackage>true</SkipValidatePackage>
+    <IncludeSymbolsInPackage Condition="'$(IncludeSymbolsInPackage)' == ''">true</IncludeSymbolsInPackage>
 
     <!-- Override this property so that the package name won't look like runtime.[RID].[TFM].[ID] -->
     <PackageTargetRuntime></PackageTargetRuntime>
@@ -25,6 +26,23 @@
     </File>
     <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\framework\*.dll">
       <TargetPath>framework</TargetPath>
+    </File>
+
+    <!-- Workaround to avoid linker warnings - include all pdb files for static native libraries -->    
+    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\bootstrapper.pdb">
+      <TargetPath>sdk</TargetPath>
+    </File>
+    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\bootstrappercpp.pdb">
+      <TargetPath>sdk</TargetPath>
+    </File>
+    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\bootstrapperdll.pdb">
+      <TargetPath>sdk</TargetPath>
+    </File>
+    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\Runtime.pdb">
+      <TargetPath>sdk</TargetPath>
+    </File>
+    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\PortableRuntime.pdb">
+      <TargetPath>sdk</TargetPath>
     </File>
   </ItemGroup>
 

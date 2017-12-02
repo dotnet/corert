@@ -22,9 +22,10 @@ See the LICENSE file in the project root for more information.
     <NativeCompilationDuringPublish Condition="'$(NativeCompilationDuringPublish)' == ''">true</NativeCompilationDuringPublish>
     <!-- Workaround for lack of current host OS detection - https://github.com/Microsoft/msbuild/issues/539 -->
     <TargetOS Condition="'$(TargetOS)' == '' and '$(OS)' == 'Unix' and Exists('/Applications')">OSX</TargetOS>
+    <!-- The correct OS detection code. Uncomment once CI machines are upgraded to the latest version of MSBuild -->
+    <!-- <TargetOS Condition="'$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</TargetOS>  -->    
     <TargetOS Condition="'$(TargetOS)' == ''">$(OS)</TargetOS>
-    <!-- Detect whether we're running the ILCompiler from a package and if so override the environmental variable to point to the correct assemblies -->
-    <IlcPath Condition="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Microsoft.DotNet.ILCompiler.nuspec)) != ''">$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Microsoft.DotNet.ILCompiler.nuspec))</IlcPath>
+    <IlcPath Condition="'$(IlcPath)' == ''"> $(MSBuildThisFileDirectory)/.. </IlcPath>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -130,8 +131,7 @@ See the LICENSE file in the project root for more information.
     <WriteLinesToFile File="$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp" Lines="@(IlcArg)" Overwrite="true" />
 
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(NativeObject)))" />
-        
-    <Error Condition="'$(IlcPath)' == ''" Text="The IlcPath environmental variable is required for target IlcCompile" />
+
     <Exec Command="&quot;$(IlcPath)\tools\ilc&quot; @&quot;$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp&quot;" />
   </Target>
 
