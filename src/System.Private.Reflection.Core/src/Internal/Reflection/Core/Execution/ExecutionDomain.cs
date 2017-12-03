@@ -91,7 +91,9 @@ namespace Internal.Reflection.Core.Execution
                         foreach (string defaultAssemblyName in defaultAssemblyNames)
                         {
                             RuntimeAssemblyName runtimeAssemblyName = AssemblyNameParser.Parse(defaultAssemblyName);
-                            RuntimeAssembly defaultAssembly = RuntimeAssembly.GetRuntimeAssembly(runtimeAssemblyName);
+                            RuntimeAssembly defaultAssembly = RuntimeAssembly.GetRuntimeAssemblyIfExists(runtimeAssemblyName);
+                            if (defaultAssembly == null)
+                                continue;
                             Type resolvedType = defaultAssembly.GetTypeCore(coreTypeName, ignoreCase: ignoreCase);
                             if (resolvedType != null)
                                 return resolvedType;
