@@ -10,7 +10,7 @@ namespace Internal.TypeSystem
     /// <summary>
     /// Provides a name formatter that is compatible with SigFormat.cpp in the CLR.
     /// </summary>
-    internal partial class ExceptionTypeNameFormatter : TypeNameFormatter
+    public partial class ExceptionTypeNameFormatter : TypeNameFormatter
     {
         public static ExceptionTypeNameFormatter Instance { get; } = new ExceptionTypeNameFormatter();
 
