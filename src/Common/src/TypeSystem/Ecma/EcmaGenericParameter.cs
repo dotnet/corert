@@ -133,11 +133,5 @@ namespace Internal.TypeSystem.Ecma
                 return constraintTypes;
             }
         }
-
-        public override string ToString()
-        {
-            MetadataReader reader = _module.MetadataReader;
-            return reader.GetString(reader.GetGenericParameter(_handle).Name);
-        }
     }
 }

@@ -46,11 +46,6 @@ namespace Internal.TypeSystem
             return _typicalMethodDef.HasCustomAttribute(attributeNamespace, attributeName);
         }
 
-        public override string ToString()
-        {
-            return OwningType.ToString() + "." + Name;
-        }
-
         public override bool IsCanonicalMethod(CanonicalFormKind policy)
         {
             // Owning type is a RuntimeDeterminedType, so it can never be canonical.
