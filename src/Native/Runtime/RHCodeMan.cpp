@@ -191,6 +191,7 @@ void ReportRegisterSet(UInt8 regSet, REGDISPLAY * pContext, GCEnumContext * hCal
 
 #else // _TARGET_ARM_ && _TARGET_ARM64_
 
+
 #pragma warning(push)
 #pragma warning(disable:4127)   // conditional expression is constant
 template <CalleeSavedRegNum regNum>
@@ -932,6 +933,7 @@ UIntNative EECodeManager::GetConservativeUpperBoundForOutgoingArgs(GCInfoHeader 
             // value by an offset that is recorded in the info header.  Recover the address of the
             // pushed RBP value by subtracting this offset.
             upperBound = pContext->GetFP() - pInfoHeader->GetFramePointerOffset();
+
 #else
 #error NYI - For this arch
 #endif

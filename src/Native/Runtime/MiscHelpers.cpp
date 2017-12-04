@@ -599,10 +599,8 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetJmpStubCodeTarget, (UInt8 * pCodeOrg))
         }
 #elif _TARGET_ARM64_
         PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
-#elif _TARGET_WASM_
-        PORTABILITY_ASSERT("@TODO: FIXME:WASM");
 #else
-#error 'Unsupported Architecture'
+        PORTABILITY_ASSERT("RhGetJmpStubCodeTarget");
 #endif
     }
     END_FOREACH_MODULE;

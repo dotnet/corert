@@ -302,49 +302,6 @@ enum ScratchRegMask
     SR_MASK_LR = 0x40000,
 };
 
-#elif defined (_TARGET_WASM_)
-
-enum RegMask
-{
-    RBM_NONE = 0,
-
-    RBM_SCRATCH_REGS = 0,
-    RBM_SCRATCH_REG_COUNT = 0,
-
-    RBM_CALLEE_SAVED_REGS = 0,
-    RBM_CALLEE_SAVED_REG_COUNT = 0,
-};
-
-#define NUM_PRESERVED_REGS RBM_CALLEE_SAVED_REG_COUNT
-
-enum RegNumber
-{
-    RN_NONE = 1,
-};
-
-enum CalleeSavedRegNum
-{
-    CSR_NUM_NONE = 1,
-};
-
-enum CalleeSavedRegMask
-{
-    CSR_MASK_NONE = 0x00,
-
-    CSR_MASK_ALL = 0x1,
-    CSR_MASK_HIGHEST = 0x1,
-};
-
-enum ScratchRegNum
-{
-    SR_NUM_NONE = 1,
-};
-
-enum ScratchRegMask
-{
-    SR_MASK_NONE = 0x00,
-};
-
 #else // _TARGET_ARM_
 
 #ifdef _TARGET_AMD64_
@@ -495,12 +452,6 @@ private:
     UInt16  hasFrameSize            : 1; // 2 [4]   1: frame size is encoded below, 0: frame size is 0
     UInt16  longCsrMask             : 1; // 2 [5]   1: high bits of calleeSavedRegMask are encoded below
     UInt16  calleeSavedRegMaskLow   : NUM_PRESERVED_REGS_LOW;   // 2 [6:7]    3 [0:7]
-#elif defined (_TARGET_WASM_)
-UInt16  returnKind              : 2; // 2 [0:1] one of: MethodReturnKind enum
-    UInt16  ebpFrame                : 1; // 2 [2]   on x64, this means "has frame pointer and it is RBP", on WASM, not clear yet
-    UInt16  epilogAtEnd             : 1; // 2 [3]
-    UInt16  hasFrameSize            : 1; // 2 [4]    1: frame size is encoded below, 0: frame size is 0
-    UInt16 calleeSavedRegMask       : 1; // 2 [5]
 #else // _TARGET_ARM_
     UInt8  returnKind               : 2; // 2 [0:1] one of: MethodReturnKind enum
     UInt8  ebpFrame                 : 1; // 2 [2]   on x64, this means "has frame pointer and it is RBP", on ARM R7
@@ -1082,7 +1033,7 @@ public:
 
     int GetReversePinvokeFrameOffset()
     {
-#if defined(_TARGET_ARM_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_) || defined(_TARGET_WASM_)
+#if defined(_TARGET_ARM_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
         // The offset can be either positive or negative on ARM.
         Int32 offsetInBytes;
         UInt32 uEncodedVal = reversePinvokeFrameOffset;

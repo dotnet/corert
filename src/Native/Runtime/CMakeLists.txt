@@ -143,7 +143,6 @@ else()
     set(ARCH_SOURCES_DIR wasm)
   endif()
 
-
   list(APPEND RUNTIME_SOURCES_ARCH_ASM
     ../libunwind/src/UnwindRegistersRestore.S
     ../libunwind/src/UnwindRegistersSave.S
@@ -222,7 +221,7 @@ convert_to_absolute_path(PORTABLE_RUNTIME_SOURCES ${PORTABLE_RUNTIME_SOURCES})
 convert_to_absolute_path(RUNTIME_SOURCES_ARCH_ASM ${RUNTIME_SOURCES_ARCH_ASM})
 
 if(NOT CLR_CMAKE_PLATFORM_ARCH_WASM)
-    add_subdirectory(Full)
+  add_subdirectory(Full)
 endif()
 
 add_subdirectory(Portable)

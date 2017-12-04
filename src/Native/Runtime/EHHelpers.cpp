@@ -414,11 +414,9 @@ static UIntNative UnwindWriteBarrierToCaller(
     pContext->SetSp(sp+sizeof(UIntNative)); // pop the stack
 #elif defined(_ARM_) || defined(_ARM64_)
     UIntNative adjustedFaultingIP = pContext->GetLr();
-#elif defined(_WASM_)
-    UIntNative adjustedFaultingIP = 0; // initializing to make the compiler happy
-    ASSERT(false); // NYI
 #else
-#error "Unknown Architecture"
+    UIntNative adjustedFaultingIP = 0; // initializing to make the compiler happy
+    PORTABILITY_ASSERT("UnwindWriteBarrierToCaller");
 #endif
     return adjustedFaultingIP;
 }

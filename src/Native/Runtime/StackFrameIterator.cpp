@@ -459,10 +459,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     m_RegDisplay.pR10 = NULL;
     m_RegDisplay.pR11 = NULL;
 
-#elif defined(_TARGET_WASM_)
-    PORTABILITY_ASSERT("@TODO: FIXME:WASM");
-
-#else // _TARGET_ARM_
+#elif defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
     //
     // preserved regs
     //
@@ -493,6 +490,8 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     m_RegDisplay.pR10 = NULL;
     m_RegDisplay.pR11 = NULL;
 #endif // _TARGET_AMD64_
+#else // _TARGET_ARM
+    PORTABILITY_ASSERT("StackFrameIterator::InternalInit");
 #endif // _TARGET_ARM_
 }
 
@@ -619,10 +618,7 @@ void StackFrameIterator::UpdateFromExceptionDispatch(PTR_StackFrameIterator pSou
     m_RegDisplay.pR14 = thisFuncletPtrs.pR14;
     m_RegDisplay.pR15 = thisFuncletPtrs.pR15;
 
-#elif defined(_TARGET_WASM_)
-    PORTABILITY_ASSERT("@TODO: FIXME:WASM");
-
-#else
+#elif defined(_TARGET_X86_) || defined(_TARGET_AMD64_) 
     // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
     m_RegDisplay.pRbp = thisFuncletPtrs.pRbp;
     m_RegDisplay.pRdi = thisFuncletPtrs.pRdi;
@@ -634,6 +630,8 @@ void StackFrameIterator::UpdateFromExceptionDispatch(PTR_StackFrameIterator pSou
     m_RegDisplay.pR14 = thisFuncletPtrs.pR14;
     m_RegDisplay.pR15 = thisFuncletPtrs.pR15;
 #endif // _TARGET_AMD64_
+#else
+    PORTABILITY_ASSERT("StackFrameIterator::UpdateFromExceptionDispatch");
 #endif // _TARGET_ARM_
 }
 

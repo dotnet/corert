@@ -112,16 +112,7 @@ struct PAL_LIMITED_CONTEXT
     void SetIp(UIntNative ip) { IP = ip; }
     void SetSp(UIntNative sp) { Rsp = sp; }
     UIntNative GetFp() const { return Rbp; }
-#elif defined _TARGET_WASM_
-    // No registers in WebAssembly, but other code forces us to pretend to have a few
-    UIntNative  IP;
-
-    UIntNative GetIp() const { return 0; }
-    UIntNative GetSp() const { return 0; }
-    UIntNative GetFp() const { return 0; }
-    void SetIp(UIntNative ip) { }
-    void SetSp(UIntNative sp) { }
-#else // _TARGET_ARM_
+#elif defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
     UIntNative  IP;
     UIntNative  Rsp;
     UIntNative  Rbp;
@@ -152,6 +143,14 @@ struct PAL_LIMITED_CONTEXT
     UIntNative GetFp() const { return Rbp; }
     void SetIp(UIntNative ip) { IP = ip; }
     void SetSp(UIntNative sp) { Rsp = sp; }
+#else // _TARGET_ARM_
+    UIntNative  IP;
+
+    UIntNative GetIp() const { PORTABILITY_ASSERT("GetIp");  return 0; }
+    UIntNative GetSp() const { PORTABILITY_ASSERT("GetSp"); return 0; }
+    UIntNative GetFp() const { PORTABILITY_ASSERT("GetFp"); return 0; }
+    void SetIp(UIntNative ip) { PORTABILITY_ASSERT("SetIp"); }
+    void SetSp(UIntNative sp) { PORTABILITY_ASSERT("GetSp"); }
 #endif // _TARGET_ARM_
 };
 

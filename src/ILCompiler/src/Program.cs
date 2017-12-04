@@ -207,6 +207,11 @@ namespace ILCompiler
                     _targetArchitecture = TargetArchitecture.ARMEL;
                 else if (_targetArchitectureStr.Equals("arm64", StringComparison.OrdinalIgnoreCase))
                     _targetArchitecture = TargetArchitecture.ARM64;
+                else if (_targetArchitectureStr.Equals("wasm", StringComparison.OrdinalIgnoreCase))
+                {
+                    _targetArchitecture = TargetArchitecture.Wasm32;
+                    _isWasmCodegen = true;
+                }
                 else
                     throw new CommandLineException("Target architecture is not supported");
             }

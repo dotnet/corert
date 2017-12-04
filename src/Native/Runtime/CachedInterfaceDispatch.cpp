@@ -86,7 +86,28 @@ static void * UpdatePointerPairAtomically(void * pPairLocation,
                                           void * pSecondPointer,
                                           bool fFailOnNonNull)
 {
-#if !defined BIT64
+#if defined(BIT64)
+    // The same comments apply to the AMD64 version. The CompareExchange looks a little different since the
+    // API was refactored in terms of Int64 to avoid creating a 128-bit integer type.
+
+    Int64 rgComparand[2] = { 0 , 0 };
+    if (!fFailOnNonNull)
+    {
+        rgComparand[0] = *(Int64 volatile *)pPairLocation;
+        rgComparand[1] = *((Int64 volatile *)pPairLocation + 1);
+    }
+
+    UInt8 bResult = PalInterlockedCompareExchange128((Int64*)pPairLocation, (Int64)pSecondPointer, (Int64)pFirstPointer, rgComparand);
+    if (bResult == 1)
+    {
+        // Success, return old value of second pointer (rgComparand is updated by
+        // PalInterlockedCompareExchange128 with the old pointer values in this case).
+        return (void*)rgComparand[1];
+    }
+
+    // Failure, return the new second pointer value.
+    return pSecondPointer;
+#else
     // Stuff the two pointers into a 64-bit value as the proposed new value for the CompareExchange64 below.
     Int64 iNewValue = (Int64)((UInt64)(UIntNative)pFirstPointer | ((UInt64)(UIntNative)pSecondPointer << 32));
 
@@ -108,28 +129,7 @@ static void * UpdatePointerPairAtomically(void * pPairLocation,
     // The update failed due to a racing update to the same location. Return the new value of the second
     // pointer (either a new cache that lost the race or a non-NULL pointer in the cache entry update case).
     return pSecondPointer;
-#else // !BIT64
-    // The same comments apply to the AMD64 version. The CompareExchange looks a little different since the
-    // API was refactored in terms of Int64 to avoid creating a 128-bit integer type.
-
-    Int64 rgComparand[2] = { 0 , 0 };
-    if (!fFailOnNonNull)
-    {
-        rgComparand[0] = *(Int64 volatile *)pPairLocation;
-        rgComparand[1] = *((Int64 volatile *)pPairLocation + 1);
-    }
-
-    UInt8 bResult = PalInterlockedCompareExchange128((Int64*)pPairLocation, (Int64)pSecondPointer, (Int64)pFirstPointer, rgComparand);
-    if (bResult == 1)
-    {
-        // Success, return old value of second pointer (rgComparand is updated by
-        // PalInterlockedCompareExchange128 with the old pointer values in this case).
-        return (void*)rgComparand[1];
-    }
-
-    // Failure, return the new second pointer value.
-    return pSecondPointer;
-#endif // !BIT64
+#endif // BIT64
 }
 
 // Helper method for updating an interface dispatch cache entry atomically. See comments by the usage of

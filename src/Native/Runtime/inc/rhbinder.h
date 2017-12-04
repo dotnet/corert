@@ -749,8 +749,6 @@ struct PInvokeTransitionFrame
 #define OFFSETOF__Thread__m_pTransitionFrame 0x2c
 #elif defined(_TARGET_ARM_)
 #define OFFSETOF__Thread__m_pTransitionFrame 0x2c
-#elif defined(_TARGET_WASM_)
-#define OFFSETOF__Thread__m_pTransitionFrame 0x2c
 #endif
 
 #ifdef RHDUMP
