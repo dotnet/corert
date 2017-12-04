@@ -355,6 +355,14 @@ namespace Internal.JitInterface
 
                             var methodIL = (MethodIL)HandleToObject((IntPtr)_methodScope);
                             var type = (TypeDesc)methodIL.GetObject((int)clause.ClassTokenOrOffset);
+
+                            // Once https://github.com/dotnet/corert/issues/3460 is done, this should be an assert.
+                            // Throwing InvalidProgram is not great, but we want to do *something* if this happens
+                            // because doing nothing means problems at runtime. This is not worth piping a
+                            // a new exception with a fancy message for.
+                            if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                                ThrowHelper.ThrowInvalidProgramException();
+
                             var typeSymbol = _compilation.NodeFactory.NecessaryTypeSymbol(type);
 
                             RelocType rel = (_compilation.NodeFactory.Target.IsWindows) ?
@@ -389,13 +397,13 @@ namespace Internal.JitInterface
                                                        relocs,
                                                        _compilation.NodeFactory.Target.MinimumFunctionAlignment,
                                                        new ISymbolDefinitionNode[] { _methodCodeNode });
+            ObjectNode.ObjectData ehInfo = _ehClauses != null ? EncodeEHInfo() : null;
 
             _methodCodeNode.SetCode(objectData);
 
             _methodCodeNode.InitializeFrameInfos(_frameInfos);
             _methodCodeNode.InitializeGCInfo(_gcInfo);
-            if (_ehClauses != null)
-                _methodCodeNode.InitializeEHInfo(EncodeEHInfo());
+            _methodCodeNode.InitializeEHInfo(ehInfo);
 
             _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
             _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);

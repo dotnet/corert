@@ -198,6 +198,17 @@ namespace Internal.IL
                     MarkBasicBlock(_basicBlocks[region.HandlerOffset]);
                     if (region.Kind == ILExceptionRegionKind.Filter)
                         MarkBasicBlock(_basicBlocks[region.FilterOffset]);
+
+                    // Once https://github.com/dotnet/corert/issues/3460 is done, this should be deleted.
+                    // Throwing InvalidProgram is not great, but we want to do *something* if this happens
+                    // because doing nothing means problems at runtime. This is not worth piping a
+                    // a new exception with a fancy message for.
+                    if (region.Kind == ILExceptionRegionKind.Catch)
+                    {
+                        TypeDesc catchType = (TypeDesc)_methodIL.GetObject(region.ClassToken);
+                        if (catchType.IsRuntimeDeterminedSubtype)
+                            ThrowHelper.ThrowInvalidProgramException();
+                    }
                 }
             }
 
