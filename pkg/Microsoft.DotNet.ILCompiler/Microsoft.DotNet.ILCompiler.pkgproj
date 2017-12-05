@@ -28,20 +28,20 @@
       <TargetPath>framework</TargetPath>
     </File>
 
-    <!-- Workaround to avoid linker warnings - include all pdb files for static native libraries -->    
-    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\bootstrapper.pdb">
+    <!-- Workaround to avoid linker warnings on Windows - include all pdb files for static native libraries -->    
+    <File Condition="Exists('$(BaseOutputPath)\$(OSPlatformConfig)\sdk\bootstrapper.pdb')" Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\bootstrapper.pdb">
       <TargetPath>sdk</TargetPath>
     </File>
-    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\bootstrappercpp.pdb">
+    <File Condition="Exists('$(BaseOutputPath)\$(OSPlatformConfig)\sdk\bootstrappercpp.pdb')" Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\bootstrappercpp.pdb">
       <TargetPath>sdk</TargetPath>
     </File>
-    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\bootstrapperdll.pdb">
+    <File Condition="Exists('$(BaseOutputPath)\$(OSPlatformConfig)\sdk\bootstrapperdll.pdb')" Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\bootstrapperdll.pdb">
       <TargetPath>sdk</TargetPath>
     </File>
-    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\Runtime.pdb">
+    <File Condition="Exists('$(BaseOutputPath)\$(OSPlatformConfig)\sdk\Runtime.pdb')" Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\Runtime.pdb">
       <TargetPath>sdk</TargetPath>
     </File>
-    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\PortableRuntime.pdb">
+    <File Condition="Exists('$(BaseOutputPath)\$(OSPlatformConfig)\sdk\PortableRuntime.pdb')" Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\PortableRuntime.pdb">
       <TargetPath>sdk</TargetPath>
     </File>
   </ItemGroup>
