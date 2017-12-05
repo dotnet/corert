@@ -490,7 +490,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     m_RegDisplay.pR10 = NULL;
     m_RegDisplay.pR11 = NULL;
 #endif // _TARGET_AMD64_
-#else // _TARGET_ARM
+#else
     PORTABILITY_ASSERT("StackFrameIterator::InternalInit");
 #endif // _TARGET_ARM_
 }
@@ -632,7 +632,7 @@ void StackFrameIterator::UpdateFromExceptionDispatch(PTR_StackFrameIterator pSou
 #endif // _TARGET_AMD64_
 #else
     PORTABILITY_ASSERT("StackFrameIterator::UpdateFromExceptionDispatch");
-#endif // _TARGET_ARM_
+#endif
 }
 
 #ifdef _TARGET_AMD64_
@@ -1131,11 +1131,9 @@ void StackFrameIterator::UnwindCallDescrThunk()
     // the CallDescrFunction
     newSP += sizeof(CALL_DESCR_CONTEXT) - offsetof(CALL_DESCR_CONTEXT, Rbp);
 
-#elif defined(_TARGET_WASM_)
-    PORTABILITY_ASSERT("@TODO: FIXME:WASM");
-    PTR_CALL_DESCR_CONTEXT pContext = NULL;
 #else
-    ASSERT_UNCONDITIONALLY("NYI for this arch");
+    PORTABILITY_ASSERT("UnwindCallDescrThunk");
+    PTR_CALL_DESCR_CONTEXT pContext = NULL;
 #endif
 
     m_RegDisplay.SetAddrOfIP(PTR_TO_MEMBER(CALL_DESCR_CONTEXT, pContext, IP));

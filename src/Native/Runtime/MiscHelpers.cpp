@@ -539,12 +539,9 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
 #elif _TARGET_ARM64_
         UNREFERENCED_PARAMETER(unboxingStub);
         PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
-#elif _TARGET_WASM_
-    UNREFERENCED_PARAMETER(unboxingStub);
-    PORTABILITY_ASSERT("@TODO: FIXME:WASM");
-
 #else
-#error 'Unsupported Architecture'
+    UNREFERENCED_PARAMETER(unboxingStub);
+    PORTABILITY_ASSERT("RhGetCodeTarget");
 #endif
 
     return pCodeOrg;

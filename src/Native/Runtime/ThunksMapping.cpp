@@ -206,12 +206,10 @@ EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
             UNREFERENCED_PARAMETER(pCurrentThunkAddress);
             /* TODO */ ASSERT_UNCONDITIONALLY("NYI");
 
-#elif _TARGET_WASM_
+#else
             UNREFERENCED_PARAMETER(pCurrentDataAddress);
             UNREFERENCED_PARAMETER(pCurrentThunkAddress);
-            /* TODO */ ASSERT_UNCONDITIONALLY("NYI");
-#else
-#error
+            PORTABILITY_ASSERT("RhAllocateThunksMapping");
 #endif
         }
     }
