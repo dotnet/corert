@@ -28,6 +28,9 @@ static_assert(false, "Cannot use the portable helpers with FEATURE_RX_THUNKS");
 #elif _TARGET_ARM64_
 //ARM64TODO
 #define THUNK_SIZE  0x8000         // This will cause RhpGetNumThunksPerBlock to return 0 for now
+#elif _TARGET_WASM_
+//WASMTODO
+#define THUNK_SIZE  0x8000         // This will cause RhpGetNumThunksPerBlock to return 0 for now
 #endif
 
 static_assert((THUNK_SIZE % 4) == 0, "Thunk stubs size not aligned correctly. This will cause runtime failures.");
@@ -202,8 +205,11 @@ EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
             UNREFERENCED_PARAMETER(pCurrentDataAddress);
             UNREFERENCED_PARAMETER(pCurrentThunkAddress);
             /* TODO */ ASSERT_UNCONDITIONALLY("NYI");
+
 #else
-#error
+            UNREFERENCED_PARAMETER(pCurrentDataAddress);
+            UNREFERENCED_PARAMETER(pCurrentThunkAddress);
+            PORTABILITY_ASSERT("RhAllocateThunksMapping");
 #endif
         }
     }

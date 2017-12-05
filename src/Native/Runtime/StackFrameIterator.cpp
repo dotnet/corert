@@ -458,7 +458,8 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     m_RegDisplay.pR9  = NULL;
     m_RegDisplay.pR10 = NULL;
     m_RegDisplay.pR11 = NULL;
-#else // _TARGET_ARM_
+
+#elif defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
     //
     // preserved regs
     //
@@ -489,6 +490,8 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     m_RegDisplay.pR10 = NULL;
     m_RegDisplay.pR11 = NULL;
 #endif // _TARGET_AMD64_
+#else
+    PORTABILITY_ASSERT("StackFrameIterator::InternalInit");
 #endif // _TARGET_ARM_
 }
 
@@ -614,7 +617,8 @@ void StackFrameIterator::UpdateFromExceptionDispatch(PTR_StackFrameIterator pSou
     m_RegDisplay.pR13 = thisFuncletPtrs.pR13;
     m_RegDisplay.pR14 = thisFuncletPtrs.pR14;
     m_RegDisplay.pR15 = thisFuncletPtrs.pR15;
-#else
+
+#elif defined(_TARGET_X86_) || defined(_TARGET_AMD64_) 
     // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
     m_RegDisplay.pRbp = thisFuncletPtrs.pRbp;
     m_RegDisplay.pRdi = thisFuncletPtrs.pRdi;
@@ -626,7 +630,9 @@ void StackFrameIterator::UpdateFromExceptionDispatch(PTR_StackFrameIterator pSou
     m_RegDisplay.pR14 = thisFuncletPtrs.pR14;
     m_RegDisplay.pR15 = thisFuncletPtrs.pR15;
 #endif // _TARGET_AMD64_
-#endif // _TARGET_ARM_
+#else
+    PORTABILITY_ASSERT("StackFrameIterator::UpdateFromExceptionDispatch");
+#endif
 }
 
 #ifdef _TARGET_AMD64_
@@ -945,6 +951,20 @@ public:
     {
         pRegisterSet->pFP = GET_POINTER_TO_FIELD(m_pushedFP);
     }
+#elif defined(_TARGET_WASM_)
+private:
+    // WASMTODO: #error NYI for this arch
+    UIntNative m_stackPassedArgs[1];        // Placeholder
+public:
+    PTR_UIntNative get_CallerSP() { PORTABILITY_ASSERT("@TODO: FIXME:WASM"); return NULL; }
+    PTR_UIntNative get_AddressOfPushedCallerIP() { PORTABILITY_ASSERT("@TODO: FIXME:WASM"); return NULL; }
+    PTR_UIntNative get_LowerBoundForConservativeReporting() { PORTABILITY_ASSERT("@TODO: FIXME:WASM"); return NULL; }
+
+    void UnwindNonVolatileRegisters(REGDISPLAY * pRegisterSet)
+    {
+        UNREFERENCED_PARAMETER(pRegisterSet);
+        PORTABILITY_ASSERT("@TODO: FIXME:WASM");
+    }
 #else
 #error NYI for this arch
 #endif
@@ -1003,6 +1023,8 @@ void StackFrameIterator::UnwindUniversalTransitionThunk()
 #define STACK_ALIGN_SIZE 16
 #elif defined(_TARGET_X86_)
 #define STACK_ALIGN_SIZE 4
+#elif defined(_TARGET_WASM_)
+#define STACK_ALIGN_SIZE 4
 #endif
 
 #ifdef _TARGET_AMD64_
@@ -1032,6 +1054,11 @@ struct CALL_DESCR_CONTEXT
 {
     UIntNative  Rbx;
     UIntNative  Rbp;
+    UIntNative  IP;
+};
+#elif defined (_TARGET_WASM_)
+struct CALL_DESCR_CONTEXT
+{
     UIntNative  IP;
 };
 #else
@@ -1103,8 +1130,10 @@ void StackFrameIterator::UnwindCallDescrThunk()
     // And adjust SP to be the state that it should be in just after returning from
     // the CallDescrFunction
     newSP += sizeof(CALL_DESCR_CONTEXT) - offsetof(CALL_DESCR_CONTEXT, Rbp);
+
 #else
-    ASSERT_UNCONDITIONALLY("NYI for this arch");
+    PORTABILITY_ASSERT("UnwindCallDescrThunk");
+    PTR_CALL_DESCR_CONTEXT pContext = NULL;
 #endif
 
     m_RegDisplay.SetAddrOfIP(PTR_TO_MEMBER(CALL_DESCR_CONTEXT, pContext, IP));

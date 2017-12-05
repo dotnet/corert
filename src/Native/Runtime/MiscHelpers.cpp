@@ -539,9 +539,9 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
 #elif _TARGET_ARM64_
         UNREFERENCED_PARAMETER(unboxingStub);
         PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
-
 #else
-#error 'Unsupported Architecture'
+    UNREFERENCED_PARAMETER(unboxingStub);
+    PORTABILITY_ASSERT("RhGetCodeTarget");
 #endif
 
     return pCodeOrg;
@@ -597,7 +597,7 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetJmpStubCodeTarget, (UInt8 * pCodeOrg))
 #elif _TARGET_ARM64_
         PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 #else
-#error 'Unsupported Architecture'
+        PORTABILITY_ASSERT("RhGetJmpStubCodeTarget");
 #endif
     }
     END_FOREACH_MODULE;

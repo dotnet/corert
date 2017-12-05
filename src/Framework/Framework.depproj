@@ -18,7 +18,7 @@
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
     </ProjectReference>
-    <ProjectReference Include="Framework-native.depproj" Condition="$(TargetsUnix)">
+    <ProjectReference Include="Framework-native.depproj" Condition="$(TargetsUnix) and '$(Platform)' != 'wasm'">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
     </ProjectReference>

@@ -38,6 +38,8 @@
 #define ENREGISTERED_RETURNTYPE_MAXSIZE
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 #define ENREGISTERED_PARAMTYPE_MAXSIZE
+#elif WASM
+#define _TARGET_WASM_
 #else
 #error Unknown architecture!
 #endif

@@ -38,6 +38,8 @@
 #define ENREGISTERED_RETURNTYPE_MAXSIZE
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 #define ENREGISTERED_PARAMTYPE_MAXSIZE
+#elif WASM
+#define _TARGET_WASM_
 #else
 #error Unknown architecture!
 #endif
@@ -1179,9 +1181,13 @@ namespace Internal.Runtime.TypeLoader
 #if _TARGET_X86_
                     SetupCallerActualReturnData(callerTransitionBlock);
                     t_NonArgRegisterReturnSpace = ((TransitionBlock*)callerTransitionBlock)->m_returnBlock;
+#elif _TARGET_WASM_
+                    throw new NotImplementedException();
 #else
 #error Platform not implemented
 #endif
+
+#if !_TARGET_WASM_
                     if (fpReturnSize == 4)
                     {
                         conversionParams._invokeReturnValue = ReturnFloatingPointReturn4Thunk;
@@ -1191,6 +1197,7 @@ namespace Internal.Runtime.TypeLoader
                         conversionParams._invokeReturnValue = ReturnFloatingPointReturn8Thunk;
                     }
                     return;
+#endif // !_TARGET_WASM_
 #endif
                 }
 

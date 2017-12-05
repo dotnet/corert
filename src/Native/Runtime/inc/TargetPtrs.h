@@ -111,6 +111,8 @@ typedef UInt32 UIntTarget;
 typedef UInt32 UIntTarget;
 #elif defined(_TARGET_ARM64_)
 typedef UInt64 UIntTarget;
+#elif defined(_TARGET_WASM_)
+typedef UInt32 UIntTarget;
 #else
 #error unexpected target architecture
 #endif

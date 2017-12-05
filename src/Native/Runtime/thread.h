@@ -14,7 +14,7 @@ class Thread;
 // runtime build.
 #define KEEP_THREAD_LAYOUT_CONSTANT
 
-#if defined(_X86_) || defined(_ARM_)
+#if defined(_X86_) || defined(_ARM_) || defined(_WASM_)
 # if defined(FEATURE_SVR_GC) || defined(KEEP_THREAD_LAYOUT_CONSTANT)
 #  define SIZEOF_ALLOC_CONTEXT 40
 # else // FEATURE_SVR_GC

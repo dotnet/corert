@@ -457,8 +457,16 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     UIntNative GetLr() { return Lr; }
 } CONTEXT, *PCONTEXT;
 
-#endif 
+#elif defined(_WASM_)
 
+typedef struct DECLSPEC_ALIGN(8) _CONTEXT {
+    // TODO: Figure out if WebAssembly has a meaningful context available
+    void SetIp(UIntNative ip) {  }
+    void SetArg0Reg(UIntNative val) {  }
+    void SetArg1Reg(UIntNative val) {  }
+    UIntNative GetIp() { return 0; }
+} CONTEXT, *PCONTEXT;
+#endif 
 
 #define EXCEPTION_MAXIMUM_PARAMETERS 15 // maximum number of exception parameters
 

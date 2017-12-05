@@ -32,6 +32,7 @@ namespace Internal.TypeSystem
         OSX,
         FreeBSD,
         NetBSD,
+        WebAssembly,
     }
 
     public enum TargetAbi

@@ -189,8 +189,8 @@ void ReportRegisterSet(UInt8 regSet, REGDISPLAY * pContext, GCEnumContext * hCal
     if (regSet & CSR_MASK_X28) { ReportObject(hCallback, GetRegObjectAddr<CSR_NUM_X28>(pContext), 0); }
 }
 
-
 #else // _TARGET_ARM_ && _TARGET_ARM64_
+
 
 #pragma warning(push)
 #pragma warning(disable:4127)   // conditional expression is constant

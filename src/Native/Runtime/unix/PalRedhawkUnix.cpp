@@ -800,6 +800,10 @@ bool QueryCacheSize()
             }
         }
     }
+
+#elif defined(_WASM_)
+    // Processor cache size not available on WebAssembly
+    success = false;
 #else
 #error Do not know how to get cache size on this platform
 #endif // __linux__
