@@ -55,6 +55,7 @@ namespace System.Reflection.Runtime.TypeInfos
         public abstract override bool IsGenericMethodParameter { get; }
         public abstract override bool IsConstructedGenericType { get; }
         public abstract override bool IsByRefLike { get; }
+        public sealed override bool IsCollectible => false;
 
         public abstract override Assembly Assembly { get; }
 
