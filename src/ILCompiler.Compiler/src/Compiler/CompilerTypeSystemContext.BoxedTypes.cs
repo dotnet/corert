@@ -89,7 +89,7 @@ namespace ILCompiler
             return thunk;
         }
 
-        public MethodDesc GetUnspecialUnboxingThunk(MethodDesc targetMethod, ModuleDesc ownerModuleOfThunk)
+        public MethodDesc GetUnboxingThunk(MethodDesc targetMethod, ModuleDesc ownerModuleOfThunk)
         {
             TypeDesc owningType = targetMethod.OwningType;
             Debug.Assert(owningType.IsValueType);
@@ -99,7 +99,23 @@ namespace ILCompiler
             // Get a reference type that has the same layout as the boxed valuetype.
             var typeKey = new BoxedValuetypeHashtableKey(owningTypeDefinition, ownerModuleOfThunk);
             BoxedValueType boxedTypeDefinition = _boxedValuetypeHashtable.GetOrCreateValue(typeKey);
-            return new UnboxingThunk(boxedTypeDefinition, targetMethod);
+
+            // Get a method on the reference type with the same signature as the target method (but different
+            // calling convention, since 'this' will be a reference type).
+            var targetMethodDefinition = targetMethod.GetTypicalMethodDefinition();
+            var methodKey = new UnboxingThunkHashtableKey(targetMethodDefinition, boxedTypeDefinition);
+            UnboxingThunk thunkDefinition = _nonGenericUnboxingThunkHashtable.GetOrCreateValue(methodKey);
+
+            // Find the thunk on the instantiated version of the reference type.
+            if (owningType != owningTypeDefinition)
+            {
+                InstantiatedType boxedType = boxedTypeDefinition.MakeInstantiatedType(owningType.Instantiation);
+                MethodDesc thunk = GetMethodForInstantiatedType(thunkDefinition, boxedType);
+                Debug.Assert(!thunk.HasInstantiation);
+                return thunk;
+            }
+            else
+                return thunkDefinition;
         }
 
         /// <summary>
@@ -197,7 +213,34 @@ namespace ILCompiler
             }
         }
         private UnboxingThunkHashtable _unboxingThunkHashtable = new UnboxingThunkHashtable();
-        
+
+        private class NonGenericUnboxingThunkHashtable : LockFreeReaderHashtable<UnboxingThunkHashtableKey, UnboxingThunk>
+        {
+            protected override int GetKeyHashCode(UnboxingThunkHashtableKey key)
+            {
+                return key.TargetMethod.GetHashCode();
+            }
+            protected override int GetValueHashCode(UnboxingThunk value)
+            {
+                return value.TargetMethod.GetHashCode();
+            }
+            protected override bool CompareKeyToValue(UnboxingThunkHashtableKey key, UnboxingThunk value)
+            {
+                return Object.ReferenceEquals(key.TargetMethod, value.TargetMethod) &&
+                    Object.ReferenceEquals(key.OwningType, value.OwningType);
+            }
+            protected override bool CompareValueToValue(UnboxingThunk value1, UnboxingThunk value2)
+            {
+                return Object.ReferenceEquals(value1.TargetMethod, value2.TargetMethod) &&
+                    Object.ReferenceEquals(value1.OwningType, value2.OwningType);
+            }
+            protected override UnboxingThunk CreateValueFromKey(UnboxingThunkHashtableKey key)
+            {
+                return new UnboxingThunk(key.OwningType, key.TargetMethod);
+            }
+        }
+
+        private NonGenericUnboxingThunkHashtable _nonGenericUnboxingThunkHashtable = new NonGenericUnboxingThunkHashtable();
 
         /// <summary>
         /// A type with an identical layout to the layout of a boxed value type.
@@ -223,6 +266,7 @@ namespace ILCompiler
             public override bool IsSequentialLayout => true;
             public override bool IsBeforeFieldInit => false;
             public override MetadataType MetadataBaseType => (MetadataType)Context.GetWellKnownType(WellKnownType.Object);
+            public override DefType BaseType => MetadataBaseType;
             public override bool IsSealed => true;
             public override bool IsAbstract => false;
             public override DefType ContainingType => null;
@@ -469,9 +513,11 @@ namespace ILCompiler
                 ILEmitter emit = new ILEmitter();
                 ILCodeStream codeStream = emit.NewCodeStream();
 
+                FieldDesc boxedValueField = _owningType.BoxedValue.InstantiateAsOpen();
+
                 // unbox to get a pointer to the value type
                 codeStream.EmitLdArg(0);
-                codeStream.Emit(ILOpcode.unbox, emit.NewToken(_owningType));
+                codeStream.Emit(ILOpcode.ldflda, emit.NewToken(boxedValueField));
 
                 // Load rest of the arguments
                 for (int i = 0; i < _targetMethod.Signature.Length; i++)

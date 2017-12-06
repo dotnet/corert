@@ -51,7 +51,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)
         {
-            return new WebAssemblyMethodCodeNode(TypeSystemContext.GetUnspecialUnboxingThunk(method, CompilationModuleGroup.GeneratedAssembly));
+            return new WebAssemblyMethodCodeNode(TypeSystemContext.GetUnboxingThunk(method, CompilationModuleGroup.GeneratedAssembly));
         }
 
         protected override ISymbolNode CreateReadyToRunHelperNode(ReadyToRunHelperKey helperCall)

@@ -451,6 +451,8 @@ namespace Internal.IL
                 case TypeFlags.Interface:
                 case TypeFlags.Array:
                 case TypeFlags.SzArray:
+                case TypeFlags.SignatureTypeVariable:
+                case TypeFlags.SignatureMethodVariable:
                     return StackValueKind.ObjRef;
                 case TypeFlags.ByRef:
                     return StackValueKind.ByRef;
@@ -985,7 +987,10 @@ namespace Internal.IL
                 TypeDesc argType;
                 if (index == 0 && !callee.Signature.IsStatic)
                 {
-                    argType = callee.OwningType;
+                    if(callee.OwningType.IsValueType)
+                        argType = callee.OwningType.MakeByRefType();
+                    else
+                        argType = callee.OwningType;
                 }
                 else
                 {
@@ -1518,8 +1523,9 @@ namespace Internal.IL
             {
                 var unboxResult = _stack.Pop().ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder);
                 LLVMValueRef unboxData = LLVM.BuildGEP(_builder, unboxResult, new LLVMValueRef[] { BuildConstInt32(type.Context.Target.PointerSize) }, "unboxData");
+                var expressionType = type.MakeByRefType();
                 //push the pointer to the data, but it shouldnt be implicitly dereferenced
-                PushExpression(GetStackValueKind(type), "unboxed", unboxData, type);
+                PushExpression(GetStackValueKind(expressionType), "unboxed", unboxData, expressionType);
             }
             else //unbox_any
             {
@@ -1702,7 +1708,7 @@ namespace Internal.IL
 
         private void ImportLoadField(int token, bool isStatic)
         {
-            FieldDesc field = (FieldDesc)_methodIL.GetObject(token);
+            FieldDesc field = ((FieldDesc)_methodIL.GetObject(token)).GetTypicalFieldDefinition();
             LLVMValueRef fieldAddress = GetFieldAddress(field, isStatic);
             PushLoadExpression(GetStackValueKind(field.FieldType), "ldfld_" + field.Name, fieldAddress, field.FieldType);
         }
