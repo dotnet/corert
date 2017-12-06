@@ -4890,6 +4890,14 @@ extern "C" uint64_t __rdtsc();
         // all buffer access times being reported as equal in access_time().
         return 0;
     }
+#elif defined(_TARGET_WASM_)
+    static ptrdiff_t get_cycle_count()
+    {
+        // @WASMTODO: cycle counter is not exposed to user mode by WebAsssembly. For now (until we can show this
+        // makes a difference on the configurations on which we'll run) just return 0. This will result in
+        // all buffer access times being reported as equal in access_time().
+        return 0;
+    }
 #else
 #error NYI platform: get_cycle_count
 #endif //_TARGET_X86_

@@ -207,6 +207,8 @@ COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo,
     pContext->Sp = pPalContext->SP;
     pContext->Lr = pPalContext->LR;
     pContext->Pc = pPalContext->IP;
+#elif defined(_WASM_)
+    // No registers, no work to do yet
 #else
 #error Not Implemented for this architecture -- RhpCopyContextFromExInfo
 #endif
@@ -301,7 +303,7 @@ EXTERN_C Int32 RhpPInvokeExceptionGuard()
 }
 #endif
 
-#if defined(_AMD64_) || defined(_ARM_) || defined(_X86_) || defined(_ARM64_)
+#if defined(_AMD64_) || defined(_ARM_) || defined(_X86_) || defined(_ARM64_) || defined(_WASM_)
 EXTERN_C REDHAWK_API void __fastcall RhpThrowHwEx();
 #else
 COOP_PINVOKE_HELPER(void, RhpThrowHwEx, ())
@@ -413,7 +415,8 @@ static UIntNative UnwindWriteBarrierToCaller(
 #elif defined(_ARM_) || defined(_ARM64_)
     UIntNative adjustedFaultingIP = pContext->GetLr();
 #else
-#error "Unknown Architecture"
+    UIntNative adjustedFaultingIP = 0; // initializing to make the compiler happy
+    PORTABILITY_ASSERT("UnwindWriteBarrierToCaller");
 #endif
     return adjustedFaultingIP;
 }

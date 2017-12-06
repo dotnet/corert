@@ -89,6 +89,14 @@ namespace ILCompiler
         ILScanResults Scan();
     }
 
+    internal class ScannerFailedException : InternalCompilerErrorException
+    {
+        public ScannerFailedException(string message)
+            : base(message + " " + "You can work around by running the compilation with scanner disabled.")
+        {
+        }
+    }
+
     public class ILScanResults : CompilationResults
     {
         internal ILScanResults(DependencyAnalyzerBase<NodeFactory> graph, NodeFactory factory)
@@ -127,7 +135,22 @@ namespace ILCompiler
                 // TODO: move ownership of compiler-generated entities to CompilerTypeSystemContext.
                 // https://github.com/dotnet/corert/issues/3873
                 if (type.GetTypeDefinition() is Internal.TypeSystem.Ecma.EcmaType)
-                    return new PrecomputedVTableSliceNode(type, _vtableSlices[type]);
+                {
+                    if (!_vtableSlices.TryGetValue(type, out IReadOnlyList<MethodDesc> slots))
+                    {
+                        // If we couln't find the vtable slice information for this type, it's because the scanner
+                        // didn't correctly predict what will be needed.
+                        // To troubleshoot, compare the dependency graph of the scanner and the compiler.
+                        // Follow the path from the node that requested this node to the root.
+                        // On the path, you'll find a node that exists in both graphs, but it's predecessor
+                        // only exists in the compiler's graph. That's the place to focus the investigation on.
+                        // Use the ILCompiler-DependencyGraph-Viewer tool to investigate.
+                        Debug.Assert(false);
+                        string typeName = ExceptionTypeNameFormatter.Instance.FormatName(type);
+                        throw new ScannerFailedException($"VTable of type '{typeName}' not computed by the IL scanner.");
+                    }
+                    return new PrecomputedVTableSliceNode(type, slots);
+                }
                 else
                     return new LazilyBuiltVTableSliceNode(type);
             }
@@ -150,6 +173,23 @@ namespace ILCompiler
                 }
             }
 
+            private DictionaryLayoutNode GetPrecomputedLayout(TypeSystemEntity methodOrType)
+            {
+                if (!_layouts.TryGetValue(methodOrType, out IEnumerable<GenericLookupResult> layout))
+                {
+                    // If we couln't find the dictionary layout information for this, it's because the scanner
+                    // didn't correctly predict what will be needed.
+                    // To troubleshoot, compare the dependency graph of the scanner and the compiler.
+                    // Follow the path from the node that requested this node to the root.
+                    // On the path, you'll find a node that exists in both graphs, but it's predecessor
+                    // only exists in the compiler's graph. That's the place to focus the investigation on.
+                    // Use the ILCompiler-DependencyGraph-Viewer tool to investigate.
+                    Debug.Assert(false);
+                    throw new ScannerFailedException($"A dictionary layout was not computed by the IL scanner.");
+                }
+                return new PrecomputedDictionaryLayoutNode(methodOrType, layout);
+            }
+
             public override DictionaryLayoutNode GetLayout(TypeSystemEntity methodOrType)
             {
                 if (methodOrType is TypeDesc type)
@@ -157,7 +197,7 @@ namespace ILCompiler
                     // TODO: move ownership of compiler-generated entities to CompilerTypeSystemContext.
                     // https://github.com/dotnet/corert/issues/3873
                     if (type.GetTypeDefinition() is Internal.TypeSystem.Ecma.EcmaType)
-                        return new PrecomputedDictionaryLayoutNode(type, _layouts[type]);
+                        return GetPrecomputedLayout(type);
                     else
                         return new LazilyBuiltDictionaryLayoutNode(type);
                 }
@@ -169,7 +209,7 @@ namespace ILCompiler
                     // TODO: move ownership of compiler-generated entities to CompilerTypeSystemContext.
                     // https://github.com/dotnet/corert/issues/3873
                     if (method.GetTypicalMethodDefinition() is Internal.TypeSystem.Ecma.EcmaMethod)
-                        return new PrecomputedDictionaryLayoutNode(method, _layouts[method]);
+                        return GetPrecomputedLayout(method);
                     else
                         return new LazilyBuiltDictionaryLayoutNode(method);
                 }

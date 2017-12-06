@@ -112,7 +112,7 @@ struct PAL_LIMITED_CONTEXT
     void SetIp(UIntNative ip) { IP = ip; }
     void SetSp(UIntNative sp) { Rsp = sp; }
     UIntNative GetFp() const { return Rbp; }
-#else // _TARGET_ARM_
+#elif defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
     UIntNative  IP;
     UIntNative  Rsp;
     UIntNative  Rbp;
@@ -143,6 +143,14 @@ struct PAL_LIMITED_CONTEXT
     UIntNative GetFp() const { return Rbp; }
     void SetIp(UIntNative ip) { IP = ip; }
     void SetSp(UIntNative sp) { Rsp = sp; }
+#else // _TARGET_ARM_
+    UIntNative  IP;
+
+    UIntNative GetIp() const { PORTABILITY_ASSERT("GetIp");  return 0; }
+    UIntNative GetSp() const { PORTABILITY_ASSERT("GetSp"); return 0; }
+    UIntNative GetFp() const { PORTABILITY_ASSERT("GetFp"); return 0; }
+    void SetIp(UIntNative ip) { PORTABILITY_ASSERT("SetIp"); }
+    void SetSp(UIntNative sp) { PORTABILITY_ASSERT("GetSp"); }
 #endif // _TARGET_ARM_
 };
 

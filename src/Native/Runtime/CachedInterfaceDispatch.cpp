@@ -86,29 +86,7 @@ static void * UpdatePointerPairAtomically(void * pPairLocation,
                                           void * pSecondPointer,
                                           bool fFailOnNonNull)
 {
-#if defined(_X86_) || defined(_ARM_)
-    // Stuff the two pointers into a 64-bit value as the proposed new value for the CompareExchange64 below.
-    Int64 iNewValue = (Int64)((UInt64)(UIntNative)pFirstPointer | ((UInt64)(UIntNative)pSecondPointer << 32));
-
-    // Read the old value in the location. If fFailOnNonNull is set we just assume this was zero and we'll
-    // fail below if that's not the case.
-    Int64 iOldValue = fFailOnNonNull ? 0 : *(Int64 volatile *)pPairLocation;
-
-    Int64 iUpdatedOldValue = PalInterlockedCompareExchange64((Int64*)pPairLocation, iNewValue, iOldValue);
-    if (iUpdatedOldValue == iOldValue)
-    {
-        // Successful update. Return the previous value of the second pointer. For cache entry updates
-        // (fFailOnNonNull == true) this is guaranteed to be NULL in this case and the result being being
-        // NULL in the success case is all the caller cares about. For indirection cell updates the second
-        // pointer represents the old cache and the caller needs this data so they can schedule the cache
-        // for deletion once it becomes safe to do so.
-        return (void*)(UInt32)(iOldValue >> 32);
-    }
-
-    // The update failed due to a racing update to the same location. Return the new value of the second
-    // pointer (either a new cache that lost the race or a non-NULL pointer in the cache entry update case).
-    return pSecondPointer;
-#elif defined(_AMD64_) || defined(_ARM64_)
+#if defined(BIT64)
     // The same comments apply to the AMD64 version. The CompareExchange looks a little different since the
     // API was refactored in terms of Int64 to avoid creating a 128-bit integer type.
 
@@ -130,8 +108,28 @@ static void * UpdatePointerPairAtomically(void * pPairLocation,
     // Failure, return the new second pointer value.
     return pSecondPointer;
 #else
-#error Unsupported architecture
-#endif
+    // Stuff the two pointers into a 64-bit value as the proposed new value for the CompareExchange64 below.
+    Int64 iNewValue = (Int64)((UInt64)(UIntNative)pFirstPointer | ((UInt64)(UIntNative)pSecondPointer << 32));
+
+    // Read the old value in the location. If fFailOnNonNull is set we just assume this was zero and we'll
+    // fail below if that's not the case.
+    Int64 iOldValue = fFailOnNonNull ? 0 : *(Int64 volatile *)pPairLocation;
+
+    Int64 iUpdatedOldValue = PalInterlockedCompareExchange64((Int64*)pPairLocation, iNewValue, iOldValue);
+    if (iUpdatedOldValue == iOldValue)
+    {
+        // Successful update. Return the previous value of the second pointer. For cache entry updates
+        // (fFailOnNonNull == true) this is guaranteed to be NULL in this case and the result being being
+        // NULL in the success case is all the caller cares about. For indirection cell updates the second
+        // pointer represents the old cache and the caller needs this data so they can schedule the cache
+        // for deletion once it becomes safe to do so.
+        return (void*)(UInt32)(iOldValue >> 32);
+    }
+
+    // The update failed due to a racing update to the same location. Return the new value of the second
+    // pointer (either a new cache that lost the race or a non-NULL pointer in the cache entry update case).
+    return pSecondPointer;
+#endif // BIT64
 }
 
 // Helper method for updating an interface dispatch cache entry atomically. See comments by the usage of

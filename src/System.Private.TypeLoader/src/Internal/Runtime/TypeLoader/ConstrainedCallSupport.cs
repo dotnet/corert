@@ -2,16 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-// The function signature of the following architectures is know for the constrained call helper functions
-#if ARM
-#elif X86
-#elif AMD64
-#elif ARM64
-#else
-#error Unknown architecture!
-#endif
-
 using System;
 using System.Collections.Generic;
 using System.Text;

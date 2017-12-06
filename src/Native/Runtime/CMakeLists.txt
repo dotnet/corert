@@ -100,7 +100,11 @@ if(WIN32)
 else()
 
   include_directories(unix)
-  include_directories(../libunwind/include)
+  if(NOT CLR_CMAKE_PLATFORM_ARCH_WASM)
+    include_directories(../libunwind/include)
+  else()
+    include_directories($ENV{EMSCRIPTEN/system/lib/libcxxabi/include})
+  endif()
 
   # Disable building _Unwind_XXX style APIs of libunwind, since we don't use them.
   add_definitions(-D_LIBUNWIND_DISABLE_ZERO_COST_APIS=1)
@@ -216,8 +220,8 @@ convert_to_absolute_path(PORTABLE_RUNTIME_SOURCES ${PORTABLE_RUNTIME_SOURCES})
 
 convert_to_absolute_path(RUNTIME_SOURCES_ARCH_ASM ${RUNTIME_SOURCES_ARCH_ASM})
 
-if(NOT CLR_CMAKE_PLATFORM_WASM)
+if(NOT CLR_CMAKE_PLATFORM_ARCH_WASM)
   add_subdirectory(Full)
-endif(NOT CLR_CMAKE_PLATFORM_WASM)
+endif()
 
 add_subdirectory(Portable)

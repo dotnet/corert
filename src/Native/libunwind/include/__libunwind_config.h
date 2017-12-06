@@ -53,6 +53,11 @@
 #  define _LIBUNWIND_CONTEXT_SIZE 16
 #  define _LIBUNWIND_CURSOR_SIZE 28
 #  define _LIBUNWIND_HIGHEST_DWARF_REGISTER 32
+# elif defined (_WASM_)
+#  define _LIBUNWIND_TARGET_WASM 1
+// TODO: Determine the right values
+#  define _LIBUNWIND_CONTEXT_SIZE 0xbadf00d
+#  define _LIBUNWIND_CURSOR_SIZE 0xbadf00d
 # else
 #  error "Unsupported architecture."
 # endif

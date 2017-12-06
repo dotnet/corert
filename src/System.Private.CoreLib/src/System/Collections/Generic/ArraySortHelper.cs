@@ -11,11 +11,11 @@ namespace System.Collections.Generic
     internal static class IntrospectiveSortUtilities
     {
         // This is the threshold where Introspective sort switches to Insertion sort.
-        // Imperically, 16 seems to speed up most cases without slowing down others, at least for integers.
+        // Empirically, 16 seems to speed up most cases without slowing down others, at least for integers.
         // Large value types may benefit from a smaller number.
         internal const int IntrosortSizeThreshold = 16;
 
-        internal static int FloorLog2(int n)
+        internal static int FloorLog2PlusOne(int n)
         {
             int result = 0;
             while (n >= 1)
@@ -165,7 +165,7 @@ namespace System.Collections.Generic
             if (length < 2)
                 return;
 
-            IntroSort(keys, left, length + left - 1, 2 * IntrospectiveSortUtilities.FloorLog2(keys.Length), comparer);
+            IntroSort(keys, left, length + left - 1, 2 * IntrospectiveSortUtilities.FloorLog2PlusOne(keys.Length), comparer);
         }
 
         private static void IntroSort(T[] keys, int lo, int hi, int depthLimit, Comparison<T> comparer)
@@ -431,7 +431,7 @@ namespace System.Collections.Generic
             if (length < 2)
                 return;
 
-            IntroSort(keys, values, left, length + left - 1, 2 * IntrospectiveSortUtilities.FloorLog2(keys.Length), comparer);
+            IntroSort(keys, values, left, length + left - 1, 2 * IntrospectiveSortUtilities.FloorLog2PlusOne(keys.Length), comparer);
         }
 
         private static void IntroSort(TKey[] keys, TValue[] values, int lo, int hi, int depthLimit, IComparer<TKey> comparer)

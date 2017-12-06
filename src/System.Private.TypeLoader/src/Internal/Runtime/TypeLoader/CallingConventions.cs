@@ -37,6 +37,8 @@
 #define ENREGISTERED_RETURNTYPE_MAXSIZE
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 #define ENREGISTERED_PARAMTYPE_MAXSIZE
+#elif WASM
+#define _TARGET_WASM_
 #else
 #error Unknown architecture!
 #endif
@@ -890,13 +892,17 @@ namespace Internal.Runtime.CallConverter
                 _idxStack = 0;
 
                 _idxFPReg = 0;
+#elif _TARGET_WASM_
+                throw new NotImplementedException();
 #else
                 PORTABILITY_ASSERT("ArgIterator::GetNextOffset");
 #endif
 
+#if !_TARGET_WASM_
                 _argNum = (_skipFirstArg ? 1 : 0);
 
                 _ITERATION_STARTED = true;
+#endif // !_TARGET_WASM_
             }
 
             if (_argNum >= this.NumFixedArgs())
@@ -916,7 +922,9 @@ namespace Internal.Runtime.CallConverter
             argType = _argForceByRef ? CorElementType.ELEMENT_TYPE_BYREF : argType;
             argSize = _argForceByRef ? IntPtr.Size : argSize;
 
+#pragma warning disable 219,168 // Unused local
             int argOfs;
+#pragma warning restore 219,168
 
 #if _TARGET_X86_
 #if FEATURE_INTERPRETER
@@ -1257,6 +1265,8 @@ namespace Internal.Runtime.CallConverter
             argOfs = TransitionBlock.GetOffsetOfArgs() + _idxStack * 8;
             _idxStack += cArgSlots;
             return argOfs;
+#elif _TARGET_WASM_
+            throw new NotImplementedException();
 #else
 #error            PORTABILITY_ASSERT("ArgIterator::GetNextOffset");
 #endif
