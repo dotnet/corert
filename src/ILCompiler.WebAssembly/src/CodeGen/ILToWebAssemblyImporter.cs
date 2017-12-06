@@ -451,8 +451,6 @@ namespace Internal.IL
                 case TypeFlags.Interface:
                 case TypeFlags.Array:
                 case TypeFlags.SzArray:
-                case TypeFlags.SignatureTypeVariable:
-                case TypeFlags.SignatureMethodVariable:
                     return StackValueKind.ObjRef;
                 case TypeFlags.ByRef:
                     return StackValueKind.ByRef;
@@ -1658,6 +1656,9 @@ namespace Internal.IL
 
         private LLVMValueRef GetInstanceFieldAddress(StackEntry objectEntry, FieldDesc field)
         {
+            if (!field.IsTypicalFieldDefinition)
+                throw new InvalidProgramException();
+
             var objectType = objectEntry.Type ?? field.OwningType;
             LLVMValueRef untypedObjectValue;
             LLVMTypeRef llvmObjectType = GetLLVMTypeForTypeDesc(objectType);
@@ -1708,7 +1709,7 @@ namespace Internal.IL
 
         private void ImportLoadField(int token, bool isStatic)
         {
-            FieldDesc field = ((FieldDesc)_methodIL.GetObject(token)).GetTypicalFieldDefinition();
+            FieldDesc field = (FieldDesc)_methodIL.GetObject(token);
             LLVMValueRef fieldAddress = GetFieldAddress(field, isStatic);
             PushLoadExpression(GetStackValueKind(field.FieldType), "ldfld_" + field.Name, fieldAddress, field.FieldType);
         }
