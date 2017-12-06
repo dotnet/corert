@@ -25,7 +25,7 @@ See the LICENSE file in the project root for more information.
     <!-- The correct OS detection code. Uncomment once CI machines are upgraded to the latest version of MSBuild -->
     <!-- <TargetOS Condition="'$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</TargetOS>  -->    
     <TargetOS Condition="'$(TargetOS)' == ''">$(OS)</TargetOS>
-    <IlcPath Condition="'$(IlcPath)' == ''"> $(MSBuildThisFileDirectory)/.. </IlcPath>
+    <IlcPath Condition="'$(IlcPath)' == ''">$(MSBuildThisFileDirectory)/..</IlcPath>
   </PropertyGroup>
 
   <PropertyGroup>
