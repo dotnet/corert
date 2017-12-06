@@ -114,6 +114,7 @@
     <Compile Include="Compiler\DependencyAnalysis\MrtProcessedExportAddressTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MrtProcessedImportAddressTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\RuntimeDecodableJumpStub.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\SymbolWithOffsetNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugILImagesSection.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugManagedNativeDictionaryInfoSection.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugMergedAssemblyRecordsSection.cs" />

@@ -2105,9 +2105,8 @@ namespace Internal.JitInterface
                         pResult.fieldLookup = CreateConstLookupToSymbol(helper);
                     }
                 }
-                else
+                else if (field.IsThreadStatic || field.HasGCStaticBase)
                 {
-
                     fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
                     pResult.helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE;
 
@@ -2116,28 +2115,35 @@ namespace Internal.JitInterface
                     {
                         helperId = ReadyToRunHelperId.GetThreadStaticBase;
                     }
-                    else if (field.HasGCStaticBase)
-                    {
-                        helperId = ReadyToRunHelperId.GetGCStaticBase;
-                    }
                     else
                     {
-                        var owningType = field.OwningType;
-                        if ((owningType.IsWellKnownType(WellKnownType.IntPtr) ||
-                                owningType.IsWellKnownType(WellKnownType.UIntPtr)) &&
-                                    field.Name == "Zero")
-                        {
-                            fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_ZERO;
-                        }
-                        else
-                        {
-                            helperId = ReadyToRunHelperId.GetNonGCStaticBase;
-                        }
+                        Debug.Assert(field.HasGCStaticBase);
+                        helperId = ReadyToRunHelperId.GetGCStaticBase;
                     }
 
                     if (helperId != ReadyToRunHelperId.Invalid)
                     {
                         pResult.fieldLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType));
+                    }
+                }
+                else
+                {
+                    var owningType = field.OwningType;
+                    if ((owningType.IsWellKnownType(WellKnownType.IntPtr) ||
+                            owningType.IsWellKnownType(WellKnownType.UIntPtr)) &&
+                                field.Name == "Zero")
+                    {
+                        fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_ZERO;
+                    }
+                    else
+                    {
+                        fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_ADDRESS;
+
+                        // We are not going through a helper. The constructor has to be triggered explicitly.
+                        if (_compilation.HasLazyStaticConstructor(field.OwningType))
+                        {
+                            //fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_INITCLASS;
+                        }
                     }
                 }
             }
@@ -3357,8 +3363,19 @@ namespace Internal.JitInterface
         private void* getFieldAddress(CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection)
         {
             FieldDesc fieldDesc = HandleToObject(field);
-            Debug.Assert(fieldDesc.HasRva);
-            return (void*)ObjectToHandle(_compilation.GetFieldRvaData(fieldDesc));
+            if (fieldDesc.HasRva)
+            {
+                return (void*)ObjectToHandle(_compilation.GetFieldRvaData(fieldDesc));
+            }
+            else
+            {
+                var owningType = fieldDesc.OwningType;
+                Debug.Assert(!fieldDesc.IsThreadStatic && !fieldDesc.HasGCStaticBase);
+
+                ISymbolNode baseAddr = _compilation.NodeFactory.TypeNonGCStaticsSymbol((MetadataType)owningType);
+
+                return (void*)ObjectToHandle(new SymbolWithOffsetNode(baseAddr, fieldDesc.Offset.AsInt));
+            }
         }
 
         private IntPtr getVarArgsHandle(CORINFO_SIG_INFO* pSig, ref void* ppIndirection)
