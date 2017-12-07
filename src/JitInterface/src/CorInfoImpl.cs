@@ -1726,10 +1726,10 @@ namespace Internal.JitInterface
                 return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
             }
 
+            MetadataType typeToInit = (MetadataType)type;
+
             if (fd == null)
             {
-                MetadataType typeToInit = (MetadataType)type;
-
                 if (typeToInit.IsBeforeFieldInit)
                 {
                     // We can wait for field accesses to run .cctor
@@ -1758,15 +1758,53 @@ namespace Internal.JitInterface
                 }
             }
 
-            if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            if (typeToInit.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
                 // Shared generic code has to use helper. Moreover, tell JIT not to inline since
                 // inlining of generic dictionary lookups is not supported.
                 return CorInfoInitClassResult.CORINFO_INITCLASS_USE_HELPER | CorInfoInitClassResult.CORINFO_INITCLASS_DONT_INLINE;
             }
 
-            // TODO: before giving up and asking to generate a helper call, check to see if this is some pattern we can
-            //       prove doesn't need initclass anymore because we initialized it earlier.
+            //
+            // Try to prove that the initialization is not necessary because of nesting
+            //
+
+            if (fd == null)
+            {
+                // Handled above
+                Debug.Assert(!typeToInit.IsBeforeFieldInit);
+
+                // Note that jit has both methods the same if asking whether to emit cctor
+                // for a given method's code (as opposed to inlining codegen).
+                MethodDesc contextMethod = methodFromContext(context);
+                if (contextMethod != MethodBeingCompiled && typeToInit == MethodBeingCompiled.OwningType)
+                {
+                    // If we're inling a call to a method in our own type, then we should already
+                    // have triggered the .cctor when caller was itself called.
+                    return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
+                }
+            }
+            else
+            {
+                // This optimization may cause static fields in reference types to be accessed without cctor being triggered
+                // for NULL "this" object. It does not conform with what the spec says. However, we have been historically 
+                // doing it for perf reasons.
+                if (!typeToInit.IsValueType && !typeToInit.IsBeforeFieldInit)
+                {
+                    if (typeToInit == typeFromContext(context) || typeToInit == MethodBeingCompiled.OwningType)
+                    {
+                        // The class will be initialized by the time we access the field.
+                        return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
+                    }
+                }
+
+                // If we are currently compiling the class constructor for this static field access then we can skip the initClass 
+                if (MethodBeingCompiled.OwningType == typeToInit && MethodBeingCompiled.IsStaticConstructor)
+                {
+                    // The class will be initialized by the time we access the field.
+                    return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
+                }
+            }
 
             return CorInfoInitClassResult.CORINFO_INITCLASS_USE_HELPER;
         }
