@@ -1,0 +1,44 @@
+<Project DefaultTargets="CreateLib" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <IlcCompileDependsOn>ComputeIlcCompileInputs;BuildOneFrameworkLibrary</IlcCompileDependsOn>
+    <CreateLibDependsOn>BuildAllFrameworkLibrariesAsSingleLib</CreateLibDependsOn>
+    <IlcMultiModule>true</IlcMultiModule>
+    <NativeIntermediateOutputPath Condition="'$(FrameworkObjPath)' != ''">$(FrameworkObjPath)\</NativeIntermediateOutputPath>
+    <BuildingFrameworkLibrary>true</BuildingFrameworkLibrary>
+  </PropertyGroup>
+  
+  <Import Project="$(RuntimePackagePath)\targets\Microsoft.NETCore.Native.targets" />
+
+  <Target Name="BuildAllFrameworkLibraries"
+    Inputs="@(DefaultFrameworkAssemblies)"
+    Outputs="@(DefaultFrameworkAssemblies->'$(NativeIntermediateOutputPath)\%(Filename)$(NativeObjectExt)')">
+    <ItemGroup>
+      <ProjectToBuild Include="$(MSBuildProjectFullPath)">
+        <AdditionalProperties>
+          LibraryToCompile=%(DefaultFrameworkAssemblies.Identity)
+        </AdditionalProperties>
+      </ProjectToBuild>
+    </ItemGroup>
+    <MSBuild Projects="@(ProjectToBuild)" Targets="IlcCompile" BuildInParallel="true" />
+  </Target>
+
+  <Target Name="BuildAllFrameworkLibrariesAsSingleLib"
+    DependsOnTargets="BuildAllFrameworkLibraries">
+
+    <ItemGroup>
+      <LibInputs Include="$(NativeIntermediateOutputPath)\*$(NativeObjectExt)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="BuildOneFrameworkLibrary">
+    <PropertyGroup>
+        <IlcGenerateMetadataLog>true</IlcGenerateMetadataLog>
+    </PropertyGroup>
+    <ItemGroup>
+        <ManagedBinary Include="$(LibraryToCompile)" />
+        <IlcCompileInput Include="@(ManagedBinary)" />
+    </ItemGroup>
+  </Target>
+  
+</Project>

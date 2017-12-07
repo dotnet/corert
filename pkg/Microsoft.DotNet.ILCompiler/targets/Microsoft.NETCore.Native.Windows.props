@@ -14,7 +14,8 @@ See the LICENSE file in the project root for more information.
 ***********************************************************************************************
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-
+<!-- Ensure that runtime-specific paths have already been set -->
+<Target Name="SetupWindowsProps" DependsOnTargets="SetupProperties" BeforeTargets="LinkNative">
   <PropertyGroup>
     <CppCompiler>cl</CppCompiler>
     <CppLinker>link</CppLinker>
@@ -75,5 +76,5 @@ See the LICENSE file in the project root for more information.
     <LinkerArg Include="/OPT:REF" />
     <LinkerArg Include="/OPT:ICF" />
   </ItemGroup>
-  
+</Target>
 </Project>
