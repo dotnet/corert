@@ -1758,7 +1758,7 @@ namespace Internal.JitInterface
                 }
             }
 
-            if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            if (typeToInit.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
                 // Shared generic code has to use helper. Moreover, tell JIT not to inline since
                 // inlining of generic dictionary lookups is not supported.
@@ -1777,7 +1777,7 @@ namespace Internal.JitInterface
                 // Note that jit has both methods the same if asking whether to emit cctor
                 // for a given method's code (as opposed to inlining codegen).
                 MethodDesc contextMethod = methodFromContext(context);
-                if (contextMethod != MethodBeingCompiled && type == MethodBeingCompiled.OwningType)
+                if (contextMethod != MethodBeingCompiled && typeToInit == MethodBeingCompiled.OwningType)
                 {
                     // If we're inling a call to a method in our own type, then we should already
                     // have triggered the .cctor when caller was itself called.
@@ -1804,7 +1804,6 @@ namespace Internal.JitInterface
                     // The class will be initialized by the time we access the field.
                     return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
                 }
-
             }
 
             return CorInfoInitClassResult.CORINFO_INITCLASS_USE_HELPER;
