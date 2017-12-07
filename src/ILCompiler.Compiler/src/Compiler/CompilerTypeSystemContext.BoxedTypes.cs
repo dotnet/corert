@@ -111,11 +111,16 @@ namespace ILCompiler
             {
                 InstantiatedType boxedType = boxedTypeDefinition.MakeInstantiatedType(owningType.Instantiation);
                 MethodDesc thunk = GetMethodForInstantiatedType(thunkDefinition, boxedType);
+                //TODO: this might be triggered by a struct that implements an interface with a generic method
                 Debug.Assert(!thunk.HasInstantiation);
                 return thunk;
             }
             else
+            {
+                //TODO: this might be triggered by a struct that implements an interface with a generic method
+                Debug.Assert(!thunkDefinition.HasInstantiation);
                 return thunkDefinition;
+            }
         }
 
         /// <summary>
