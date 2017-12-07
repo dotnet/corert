@@ -1,0 +1,12 @@
+<!-- The ILCompiler package is produced by including built binaries and executables from the OS-Specific builds.
+  These contents are defined in Microsoft.Dotnet.ILCompiler.Common.props - the purpose of this file is to force the build process to produce runtime-specific packages. -->
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  
+  <PropertyGroup>
+    <PackageTargetRuntime>osx-x64</PackageTargetRuntime>
+  </PropertyGroup>
+  
+  <Import Project="..\Microsoft.DotNet.ILCompiler.Common.props" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\src\dir.targets" />
+</Project>

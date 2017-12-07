@@ -8,7 +8,9 @@
     <BuildingFrameworkLibrary>true</BuildingFrameworkLibrary>
   </PropertyGroup>
   
-  <Import Project="Microsoft.NETCore.Native.targets" />
+  <!-- Part of workaround for lack of secondary build artifact import - https://github.com/Microsoft/msbuild/issues/2807 -->
+  <Import Project="$(MSBuildThisFileDirectory)..\build\Microsoft.DotNet.ILCompiler.targets" Condition="'$(CalledViaPackage)' == 'true'"/>
+  <Import Project="Microsoft.NETCore.Native.targets" Condition="'$(CalledViaPackage)' == ''"/>
 
   <Target Name="BuildAllFrameworkLibraries"
     Inputs="@(DefaultFrameworkAssemblies)"

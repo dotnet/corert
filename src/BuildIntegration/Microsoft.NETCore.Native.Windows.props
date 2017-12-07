@@ -14,66 +14,66 @@ See the LICENSE file in the project root for more information.
 ***********************************************************************************************
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-
+  <!-- Ensure that runtime-specific paths have already been set -->
   <PropertyGroup>
     <CppCompiler>cl</CppCompiler>
     <CppLinker>link</CppLinker>
     <CppLibCreator>lib</CppLibCreator>
   </PropertyGroup>
+  <Target Name="SetupWindowsProps" DependsOnTargets="$(DynamicBuildPropertyDependencies)">
+    <ItemGroup>
+      <CppCompilerAndLinkerArg Include="/I$(IlcPath)\inc" />
+      <CppCompilerAndLinkerArg Condition="'$(Configuration)' == 'Debug'" Include="/Od" />
+      <CppCompilerAndLinkerArg Condition="'$(Configuration)' != 'Debug'" Include="/O2" />
+      <CppCompilerAndLinkerArg Include="/c /nologo /W3 /GS /DCPPCODEGEN /EHs /Zi /bigobj" />
+      <CppCompilerAndLinkerArg Condition="'$(UseDebugCrt)' == 'true'" Include="/MTd" />
+      <CppCompilerAndLinkerArg Condition="'$(UseDebugCrt)' != 'true'" Include="/MT" />
+      <CppCompilerAndLinkerArg Include="$(AdditionalCppCompilerFlags)" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <CppCompilerAndLinkerArg Include="/I$(IlcPath)\inc" />
-    <CppCompilerAndLinkerArg Condition="'$(Configuration)' == 'Debug'" Include="/Od" />
-    <CppCompilerAndLinkerArg Condition="'$(Configuration)' != 'Debug'" Include="/O2" />
-    <CppCompilerAndLinkerArg Include="/c /nologo /W3 /GS /DCPPCODEGEN /EHs /Zi /bigobj" />
-    <CppCompilerAndLinkerArg Condition="'$(UseDebugCrt)' == 'true'" Include="/MTd" />
-    <CppCompilerAndLinkerArg Condition="'$(UseDebugCrt)' != 'true'" Include="/MT" />
-    <CppCompilerAndLinkerArg Include="$(AdditionalCppCompilerFlags)" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <NativeLibrary Condition="$(NativeCodeGen) == '' and $(NativeLib) == ''" Include="$(IlcPath)\sdk\bootstrapper.lib" />
-    <NativeLibrary Condition="$(NativeCodeGen) == '' and $(NativeLib) != ''" Include="$(IlcPath)\sdk\bootstrapperdll.lib" />
-    <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)\sdk\Runtime.lib" />
-    <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)\sdk\bootstrappercpp.lib" />
-    <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)\sdk\PortableRuntime.lib" />
-    <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)\sdk\bootstrappercpp.lib" />
-    <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)\sdk\PortableRuntime.lib" />
-    <NativeLibrary Condition="'$(IlcMultiModule)' == 'true' and $(NativeCodeGen) == ''" Include="$(SharedLibrary)" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <AdditionalNativeLibrary Include="kernel32.lib" />
-    <AdditionalNativeLibrary Include="user32.lib" />
-    <AdditionalNativeLibrary Include="gdi32.lib" />
-    <AdditionalNativeLibrary Include="winspool.lib" />
-    <AdditionalNativeLibrary Include="comdlg32.lib" />
-    <AdditionalNativeLibrary Include="advapi32.lib" />
-    <AdditionalNativeLibrary Include="shell32.lib" />
-    <AdditionalNativeLibrary Include="ole32.lib" />
-    <AdditionalNativeLibrary Include="oleaut32.lib" />
-    <AdditionalNativeLibrary Include="uuid.lib" />
-    <AdditionalNativeLibrary Include="bcrypt.lib" />
-    <AdditionalNativeLibrary Include="normaliz.lib" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <LinkerArg Condition="$(NativeLib) == 'Shared'" Include="/DLL" />
-    <LinkerArg Condition="$(DefFile) != ''" Include="/DEF:$(DefFile)" />
-    <LinkerArg Include="@(NativeLibrary)" />
-    <LinkerArg Include="@(AdditionalNativeLibrary)" />
-    <LinkerArg Include="/NOLOGO /DEBUG /MANIFEST:NO" />
-    <!-- The runtime is not compatible with jump stubs inserted by incremental linking. -->
-    <LinkerArg Include="/INCREMENTAL:NO" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- TODO <LinkerArg Include="/MACHINE:X64" /> -->
-  </ItemGroup>
- 
-  <ItemGroup Condition="'$(Configuration)' != 'Debug'">
-    <LinkerArg Include="/OPT:REF" />
-    <LinkerArg Include="/OPT:ICF" />
-  </ItemGroup>
-
+    <ItemGroup>
+      <NativeLibrary Condition="$(NativeCodeGen) == '' and $(NativeLib) == ''" Include="$(IlcPath)\sdk\bootstrapper.lib" />
+      <NativeLibrary Condition="$(NativeCodeGen) == '' and $(NativeLib) != ''" Include="$(IlcPath)\sdk\bootstrapperdll.lib" />
+      <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)\sdk\Runtime.lib" />
+      <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)\sdk\bootstrappercpp.lib" />
+      <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)\sdk\PortableRuntime.lib" />
+      <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)\sdk\bootstrappercpp.lib" />
+      <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)\sdk\PortableRuntime.lib" />
+      <NativeLibrary Condition="'$(IlcMultiModule)' == 'true' and $(NativeCodeGen) == ''" Include="$(SharedLibrary)" />
+    </ItemGroup>
+  
+    <ItemGroup>
+      <AdditionalNativeLibrary Include="kernel32.lib" />
+      <AdditionalNativeLibrary Include="user32.lib" />
+      <AdditionalNativeLibrary Include="gdi32.lib" />
+      <AdditionalNativeLibrary Include="winspool.lib" />
+      <AdditionalNativeLibrary Include="comdlg32.lib" />
+      <AdditionalNativeLibrary Include="advapi32.lib" />
+      <AdditionalNativeLibrary Include="shell32.lib" />
+      <AdditionalNativeLibrary Include="ole32.lib" />
+      <AdditionalNativeLibrary Include="oleaut32.lib" />
+      <AdditionalNativeLibrary Include="uuid.lib" />
+      <AdditionalNativeLibrary Include="bcrypt.lib" />
+      <AdditionalNativeLibrary Include="normaliz.lib" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <LinkerArg Condition="$(NativeLib) == 'Shared'" Include="/DLL" />
+      <LinkerArg Condition="$(DefFile) != ''" Include="/DEF:$(DefFile)" />
+      <LinkerArg Include="@(NativeLibrary)" />
+      <LinkerArg Include="@(AdditionalNativeLibrary)" />
+      <LinkerArg Include="/NOLOGO /DEBUG /MANIFEST:NO" />
+      <!-- The runtime is not compatible with jump stubs inserted by incremental linking. -->
+      <LinkerArg Include="/INCREMENTAL:NO" />
+    </ItemGroup>
+  
+    <ItemGroup>
+      <!-- TODO <LinkerArg Include="/MACHINE:X64" /> -->
+    </ItemGroup>
+   
+    <ItemGroup Condition="'$(Configuration)' != 'Debug'">
+      <LinkerArg Include="/OPT:REF" />
+      <LinkerArg Include="/OPT:ICF" />
+    </ItemGroup>
+  </Target>
 </Project>

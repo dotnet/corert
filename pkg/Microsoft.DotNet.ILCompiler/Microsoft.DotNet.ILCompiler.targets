@@ -1,7 +1,45 @@
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project 
+  xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <_ILCompilerRootDir>$(MSBuildThisFileDirectory)../</_ILCompilerRootDir>
-    <IlCompilerTargetsDir>$(_ILCompilerRootDir)targets/</IlCompilerTargetsDir>
+    <DeployAppHost>false</DeployAppHost>
+    <_ILCompilerPackageRootDir>$(MSBuildThisFileDirectory)../</_ILCompilerPackageRootDir>
+    <BuildIntegrationTargetsDir>$(_ILCompilerPackageRootDir)targets/</BuildIntegrationTargetsDir>
+   
+    <!-- Workaround for lack of current host OS detection - https://github.com/Microsoft/msbuild/issues/539 -->
+    <TargetOS Condition="'$(TargetOS)' == '' and '$(OS)' == 'Unix' and Exists('/Applications')">OSX</TargetOS>
+    <!-- The correct OS detection code. Uncomment once CI machines are upgraded to the latest version of MSBuild -->
+    <!-- <TargetOS Condition="'$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</TargetOS>  -->
+    <TargetOS Condition="'$(TargetOS)' == ''">$(OS)</TargetOS>
+    
+    <TargetRuntimeIdentifier Condition="'$(TargetOS)' == 'Windows_NT'">win-x64</TargetRuntimeIdentifier>
+    <TargetRuntimeIdentifier Condition="'$(TargetOS)' == 'Unix'">linux-x64</TargetRuntimeIdentifier>
+    <TargetRuntimeIdentifier Condition="'$(TargetOS)' == 'OSX'">osx-x64</TargetRuntimeIdentifier>
+
+    <!-- Part of workaround for lack of secondary build artifact import - https://github.com/Microsoft/msbuild/issues/2807 -->
+    <!-- Define the name of the runtime specific compiler package to import -->
+    <_RuntimeILCompilerPackageName Condition="'$(TargetRuntimeIdentifier)' != ''">runtime.$(TargetRuntimeIdentifier).Microsoft.DotNet.ILCompiler</_RuntimeILCompilerPackageName>
+    <RuntimeILCompilerBuildTargetPath>$(BuildIntegrationTargetsDir)$(_RuntimeILCompilerPackageName).targets</RuntimeILCompilerBuildTargetPath>
+    <CalledViaPackage>true</CalledViaPackage>
+   
+    <!-- If CoreRT is being consumed via its package, runtime-specific properties must be set before compilation can proceed -->
+    <ImportRuntimeILCompilerPackageTargetDependsOn>RunResolvePackageDependencies</ImportRuntimeILCompilerPackageTargetDependsOn>
+    <SetupPropertiesDependsOn>ImportRuntimeILCompilerPackageTarget</SetupPropertiesDependsOn>
+    <DynamicBuildPropertyDependencies>SetupProperties</DynamicBuildPropertyDependencies>
+    
   </PropertyGroup>
-  <Import Project="$(IlCompilerTargetsDir)/Microsoft.NETCore.Native.targets"/>
+
+  <!-- Part of workaround for lack of secondary build artifact import - https://github.com/Microsoft/msbuild/issues/2807 -->
+  <!-- Locate the runtime package according to the current target runtime -->
+  <Target Name="ImportRuntimeILCompilerPackageTarget" Condition="'$(BuildingFrameworkLibrary)' != 'true' AND $(CalledViaPackage) == 'true'" DependsOnTargets="$(ImportRuntimeILCompilerPackageTargetDependsOn)" BeforeTargets="Publish">
+    <!-- CoreRT SDK and Framework Assemblies need to be defined to avoid CoreCLR implementations being set as compiler inputs -->
+    <Error Condition="'@(PackageDefinitions)' == ''" Text="The PackageDefinitions ItemGroup is required for target ImportRuntimeILCompilerPackageTarget" />
+    <ItemGroup>
+      <RuntimePackage Include="@(PackageDefinitions)" Condition="'%(PackageDefinitions.Name)' == '$(_RuntimeILCompilerPackageName)'" />
+    </ItemGroup>
+    <CreateProperty Value="%(RuntimePackage.ResolvedPath)">
+      <Output TaskParameter="Value" PropertyName="RuntimePackagePath"/>
+    </CreateProperty>
+  </Target>
+
+  <Import Project="$(MSBuildThisFileDirectory)\..\targets\Microsoft.NETCore.Native.targets" />  
 </Project>
