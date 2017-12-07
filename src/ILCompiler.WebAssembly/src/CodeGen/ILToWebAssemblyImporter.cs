@@ -1656,9 +1656,6 @@ namespace Internal.IL
 
         private LLVMValueRef GetInstanceFieldAddress(StackEntry objectEntry, FieldDesc field)
         {
-            if (!field.IsTypicalFieldDefinition)
-                throw new InvalidProgramException();
-
             var objectType = objectEntry.Type ?? field.OwningType;
             LLVMValueRef untypedObjectValue;
             LLVMTypeRef llvmObjectType = GetLLVMTypeForTypeDesc(objectType);

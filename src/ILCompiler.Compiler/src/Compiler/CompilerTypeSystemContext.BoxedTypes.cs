@@ -526,7 +526,7 @@ namespace ILCompiler
                 }
 
                 // Call an instance method on the target valuetype
-                codeStream.Emit(ILOpcode.call, emit.NewToken(_targetMethod));
+                codeStream.Emit(ILOpcode.call, emit.NewToken(_targetMethod.InstantiateAsOpen()));
                 codeStream.Emit(ILOpcode.ret);
 
                 return emit.Link(this);
