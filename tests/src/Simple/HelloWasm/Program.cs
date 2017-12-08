@@ -58,6 +58,9 @@ internal static class Program
             PrintLine("box test: Ok.");
         }
 
+        var boxedStruct = (object)new BoxStubTest { Value = "Boxed Stub Test: Ok." };
+        PrintLine(boxedStruct.ToString());
+
         var not = Not(0xFFFFFFFF) == 0x00000000;
         if (not)
         {
@@ -182,6 +185,15 @@ public struct TwoByteStr
 {
     public byte first;
     public byte second;
+}
+
+public struct BoxStubTest
+{
+    public string Value;
+    public override string ToString()
+    {
+        return Value;
+    }
 }
 
 public class TestClass

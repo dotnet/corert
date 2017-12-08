@@ -40,6 +40,17 @@ namespace ILCompiler
             }
         }
 
+        partial class UnboxingThunk
+        {
+            protected override int ClassCode => 446545583;
+
+            protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
+            {
+                var otherMethod = (UnboxingThunk)other;
+                return comparer.Compare(_targetMethod, otherMethod._targetMethod);
+            }
+        }
+
         partial class ValueTypeInstanceMethodWithHiddenParameter
         {
             protected override int ClassCode => 2131875345;

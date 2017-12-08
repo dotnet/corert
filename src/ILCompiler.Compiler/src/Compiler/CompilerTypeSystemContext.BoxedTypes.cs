@@ -89,6 +89,40 @@ namespace ILCompiler
             return thunk;
         }
 
+        public MethodDesc GetUnboxingThunk(MethodDesc targetMethod, ModuleDesc ownerModuleOfThunk)
+        {
+            TypeDesc owningType = targetMethod.OwningType;
+            Debug.Assert(owningType.IsValueType);
+
+            var owningTypeDefinition = (MetadataType)owningType.GetTypeDefinition();
+
+            // Get a reference type that has the same layout as the boxed valuetype.
+            var typeKey = new BoxedValuetypeHashtableKey(owningTypeDefinition, ownerModuleOfThunk);
+            BoxedValueType boxedTypeDefinition = _boxedValuetypeHashtable.GetOrCreateValue(typeKey);
+
+            // Get a method on the reference type with the same signature as the target method (but different
+            // calling convention, since 'this' will be a reference type).
+            var targetMethodDefinition = targetMethod.GetTypicalMethodDefinition();
+            var methodKey = new UnboxingThunkHashtableKey(targetMethodDefinition, boxedTypeDefinition);
+            UnboxingThunk thunkDefinition = _nonGenericUnboxingThunkHashtable.GetOrCreateValue(methodKey);
+
+            // Find the thunk on the instantiated version of the reference type.
+            if (owningType != owningTypeDefinition)
+            {
+                InstantiatedType boxedType = boxedTypeDefinition.MakeInstantiatedType(owningType.Instantiation);
+                MethodDesc thunk = GetMethodForInstantiatedType(thunkDefinition, boxedType);
+                //TODO: this might be triggered by a struct that implements an interface with a generic method
+                Debug.Assert(!thunk.HasInstantiation);
+                return thunk;
+            }
+            else
+            {
+                //TODO: this might be triggered by a struct that implements an interface with a generic method
+                Debug.Assert(!thunkDefinition.HasInstantiation);
+                return thunkDefinition;
+            }
+        }
+
         /// <summary>
         /// Returns true of <paramref name="method"/> is a standin method for unboxing thunk target.
         /// </summary>
@@ -184,7 +218,34 @@ namespace ILCompiler
             }
         }
         private UnboxingThunkHashtable _unboxingThunkHashtable = new UnboxingThunkHashtable();
-        
+
+        private class NonGenericUnboxingThunkHashtable : LockFreeReaderHashtable<UnboxingThunkHashtableKey, UnboxingThunk>
+        {
+            protected override int GetKeyHashCode(UnboxingThunkHashtableKey key)
+            {
+                return key.TargetMethod.GetHashCode();
+            }
+            protected override int GetValueHashCode(UnboxingThunk value)
+            {
+                return value.TargetMethod.GetHashCode();
+            }
+            protected override bool CompareKeyToValue(UnboxingThunkHashtableKey key, UnboxingThunk value)
+            {
+                return Object.ReferenceEquals(key.TargetMethod, value.TargetMethod) &&
+                    Object.ReferenceEquals(key.OwningType, value.OwningType);
+            }
+            protected override bool CompareValueToValue(UnboxingThunk value1, UnboxingThunk value2)
+            {
+                return Object.ReferenceEquals(value1.TargetMethod, value2.TargetMethod) &&
+                    Object.ReferenceEquals(value1.OwningType, value2.OwningType);
+            }
+            protected override UnboxingThunk CreateValueFromKey(UnboxingThunkHashtableKey key)
+            {
+                return new UnboxingThunk(key.OwningType, key.TargetMethod);
+            }
+        }
+
+        private NonGenericUnboxingThunkHashtable _nonGenericUnboxingThunkHashtable = new NonGenericUnboxingThunkHashtable();
 
         /// <summary>
         /// A type with an identical layout to the layout of a boxed value type.
@@ -210,6 +271,7 @@ namespace ILCompiler
             public override bool IsSequentialLayout => true;
             public override bool IsBeforeFieldInit => false;
             public override MetadataType MetadataBaseType => (MetadataType)Context.GetWellKnownType(WellKnownType.Object);
+            public override DefType BaseType => MetadataBaseType;
             public override bool IsSealed => true;
             public override bool IsAbstract => false;
             public override DefType ContainingType => null;
@@ -404,6 +466,67 @@ namespace ILCompiler
                 // Call an instance method on the target valuetype that has a fake instantiation parameter
                 // in it's signature. This will be swapped by the actual instance method after codegen is done.
                 codeStream.Emit(ILOpcode.call, emit.NewToken(_nakedTargetMethod.InstantiateAsOpen()));
+                codeStream.Emit(ILOpcode.ret);
+
+                return emit.Link(this);
+            }
+        }
+
+        /// <summary>
+        /// Represents a thunk to call instance method on boxed valuetypes.
+        /// </summary>
+        private partial class UnboxingThunk : ILStubMethod
+        {
+            private MethodDesc _targetMethod;
+            private BoxedValueType _owningType;
+
+            public UnboxingThunk(BoxedValueType owningType, MethodDesc targetMethod)
+            {
+                Debug.Assert(targetMethod.OwningType.IsValueType);
+                Debug.Assert(!targetMethod.Signature.IsStatic);
+
+                _owningType = owningType;
+                _targetMethod = targetMethod;
+            }
+
+            public override TypeSystemContext Context => _targetMethod.Context;
+
+            public override TypeDesc OwningType => _owningType;
+
+            public override MethodSignature Signature => _targetMethod.Signature;
+
+            public MethodDesc TargetMethod => _targetMethod;
+
+            public override string Name
+            {
+                get
+                {
+                    return _targetMethod.Name + "_Unbox";
+                }
+            }
+
+            public override MethodIL EmitIL()
+            {
+                // Generate the unboxing stub. This loosely corresponds to following C#:
+                // return BoxedValue.InstanceMethod([rest of parameters])
+
+                ILEmitter emit = new ILEmitter();
+                ILCodeStream codeStream = emit.NewCodeStream();
+
+                FieldDesc boxedValueField = _owningType.BoxedValue.InstantiateAsOpen();
+
+                // unbox to get a pointer to the value type
+                codeStream.EmitLdArg(0);
+                codeStream.Emit(ILOpcode.ldflda, emit.NewToken(boxedValueField));
+
+                // Load rest of the arguments
+                for (int i = 0; i < _targetMethod.Signature.Length; i++)
+                {
+                    codeStream.EmitLdArg(i + 1);
+                }
+
+                // Call an instance method on the target valuetype
+                codeStream.Emit(ILOpcode.call, emit.NewToken(_targetMethod.InstantiateAsOpen()));
                 codeStream.Emit(ILOpcode.ret);
 
                 return emit.Link(this);
