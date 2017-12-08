@@ -427,6 +427,7 @@ template <typename A, typename R>
 class UnwindCursor : public AbstractUnwindCursor{
   typedef typename A::pint_t pint_t;
 public:
+                      UnwindCursor(A &as);
                       UnwindCursor(unw_context_t *context, A &as);
                       UnwindCursor(A &as, void *threadArg);
   virtual             ~UnwindCursor() {}
@@ -469,6 +470,7 @@ private:
 #endif
 
 #if _LIBUNWIND_SUPPORT_DWARF_UNWIND
+public:
   bool getInfoFromDwarfSection(pint_t pc, const UnwindInfoSections &sects,
                                             uint32_t fdeSectionOffsetHint=0);
   int stepWithDwarfFDE() {
@@ -608,6 +610,13 @@ private:
   bool             _isSignalFrame;
 };
 
+template <typename A, typename R>
+UnwindCursor<A, R>::UnwindCursor(A &as)
+    : _addressSpace(as)
+    , _unwindInfoMissing(false)
+    , _isSignalFrame(false) {
+  memset(&_info, 0, sizeof(_info));
+}
 
 template <typename A, typename R>
 UnwindCursor<A, R>::UnwindCursor(unw_context_t *context, A &as)

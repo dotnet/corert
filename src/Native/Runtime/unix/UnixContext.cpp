@@ -18,6 +18,7 @@
 #endif  // HAVE_UCONTEXT_T
 
 #include "UnixContext.h"
+#include "UnwindHelpers.h"
 
 // WebAssembly has a slightly different version of LibUnwind that doesn't define unw_get_save_loc
 #if defined(_WASM_)
@@ -599,38 +600,5 @@ bool FindProcInfo(UIntNative controlPC, UIntNative* startAddress, UIntNative* ls
 // Virtually unwind stack to the caller of the context specified by the REGDISPLAY
 bool VirtualUnwind(REGDISPLAY* pRegisterSet)
 {
-    unw_context_t unwContext;
-    unw_cursor_t cursor;
-
-    if (!InitializeUnwindContextAndCursor(pRegisterSet, &cursor, &unwContext))
-    {
-        return false;
-    }
-
-    // FreeBSD, NetBSD and OSX appear to do two different things when unwinding
-    // 1: If it reaches where it cannot unwind anymore, say a
-    // managed frame.  It wil return 0, but also update the $pc
-    // 2: If it unwinds all the way to _start it will return
-    // 0 from the step, but $pc will stay the same.
-    // The behaviour of libunwind from nongnu.org is to null the PC
-    // So we bank the original PC here, so we can compare it after
-    // the step
-    uintptr_t curPc = pRegisterSet->GetIP();
-
-    int st = unw_step(&cursor);
-    if (st < 0)
-    {
-        return false;
-    }
-
-    // Update the REGDISPLAY to reflect the unwind
-    UnwindCursorToRegDisplay(&cursor, &unwContext, pRegisterSet);
-
-    if (st == 0 && pRegisterSet->GetIP() == curPc)
-    {
-        // TODO: is this correct for CoreRT? Should we return false instead?
-        pRegisterSet->SetIP(0);
-    }
-
-    return true;
+    return UnwindHelpers::StepFrame(pRegisterSet);
 }
