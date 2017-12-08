@@ -378,11 +378,7 @@ int main(int argc, char* argv[])
         retval = -1;
     }
 #endif
-#ifdef _WASM_
-    // WASMTODO: Emit a reverse pinvoke on main in compilation
-    __reverse_pinvoke_return(&frame);
-#endif // _WASM_
-
+    
     RhpShutdown();
 
     return retval;
