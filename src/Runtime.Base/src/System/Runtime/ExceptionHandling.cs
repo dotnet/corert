@@ -876,11 +876,10 @@ namespace System.Runtime
             return false;
         }
 
-#if DEBUG
+#if DEBUG && !INPLACE_RUNTIME
         private static EEType* s_pLowLevelObjectType;
         private static void AssertNotRuntimeObject(EEType* pClauseType)
         {
-#if !INPLACE_RUNTIME
             //
             // The C# try { } catch { } clause expands into a typed catch of System.Object.
             // Since runtime has its own definition of System.Object, try { } catch { } might not do what
@@ -898,14 +897,13 @@ namespace System.Runtime
             }
 
             Debug.Assert(!pClauseType->IsEquivalentTo(s_pLowLevelObjectType));
-#endif // !INPLACE_RUNTIME
         }
-#endif // DEBUG
+#endif // DEBUG && !INPLACE_RUNTIME
 
 
         private static bool ShouldTypedClauseCatchThisException(object exception, EEType* pClauseType)
         {
-#if DEBUG
+#if DEBUG && !INPLACE_RUNTIME
             AssertNotRuntimeObject(pClauseType);
 #endif
 
