@@ -11,6 +11,7 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.Runtime;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
@@ -337,6 +338,13 @@ namespace ILCompiler
         public StandaloneGCStaticDescRegionNode StandaloneGCStaticDescRegion(GCStaticDescNode staticDesc)
         {
             return _standaloneGCStaticDescs.GetOrAdd(staticDesc);
+        }
+
+        public BlobNode FieldRvaDataBlob(FieldDesc field)
+        {
+            // Use the typical field definition in case this is an instantiated generic type
+            field = field.GetTypicalFieldDefinition();
+            return ReadOnlyDataBlob(NameMangler.GetMangledFieldName(field), ((EcmaField)field).GetFieldRvaData(), Target.PointerSize);
         }
 
         public class UtcDictionaryLayoutProvider : DictionaryLayoutProvider

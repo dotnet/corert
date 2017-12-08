@@ -9,6 +9,9 @@ using System.Runtime.InteropServices;
 
 using Internal.Runtime;
 
+// Disable: Filter expression is a constant. We know. We just can't do an unfiltered catch.
+#pragma warning disable 7095
+
 namespace System.Runtime
 {
     public enum RhFailFastReason
@@ -180,7 +183,7 @@ namespace System.Runtime
                 // Invoke the classlib fail fast function.
                 CalliIntrinsics.CallVoid(pFailFastFunction, reason, unhandledException, IntPtr.Zero, IntPtr.Zero);
             }
-            catch
+            catch when (true)
             {
                 // disallow all exceptions leaking out of callbacks
             }
@@ -226,7 +229,7 @@ namespace System.Runtime
             {
                 CalliIntrinsics.CallVoid(pOnFirstChanceFunction, exception);
             }
-            catch
+            catch when (true)
             {
                 // disallow all exceptions leaking out of callbacks
             }
@@ -258,7 +261,7 @@ namespace System.Runtime
             {
                 CalliIntrinsics.CallVoid(pFailFastFunction, reason, unhandledException, exInfo._pExContext->IP, (IntPtr)pContext);
             }
-            catch
+            catch when (true)
             {
                 // disallow all exceptions leaking out of callbacks
             }
@@ -288,7 +291,7 @@ namespace System.Runtime
                 {
                     CalliIntrinsics.CallVoid(pAppendStackFrame, exception, IP, flags);
                 }
-                catch
+                catch when (true)
                 {
                     // disallow all exceptions leaking out of callbacks
                 }
@@ -315,7 +318,7 @@ namespace System.Runtime
             {
                 e = CalliIntrinsics.Call<Exception>(pGetRuntimeExceptionFunction, id);
             }
-            catch
+            catch when (true)
             {
                 // disallow all exceptions leaking out of callbacks
             }
@@ -351,7 +354,7 @@ namespace System.Runtime
             {
                 e = CalliIntrinsics.Call<Exception>(pGetRuntimeExceptionFunction, id);
             }
-            catch
+            catch when (true)
             {
                 // disallow all exceptions leaking out of callbacks
             }
@@ -873,28 +876,38 @@ namespace System.Runtime
             return false;
         }
 
+#if DEBUG && !INPLACE_RUNTIME
         private static EEType* s_pLowLevelObjectType;
-
-        private static bool ShouldTypedClauseCatchThisException(object exception, EEType* pClauseType)
+        private static void AssertNotRuntimeObject(EEType* pClauseType)
         {
-            if (TypeCast.IsInstanceOfClass(exception, pClauseType) != null)
-                return true;
+            //
+            // The C# try { } catch { } clause expands into a typed catch of System.Object.
+            // Since runtime has its own definition of System.Object, try { } catch { } might not do what
+            // was intended (catch all exceptions).
+            //
+            // This assertion is making sure we don't use try { } catch { } within the runtime.
+            // The runtime codebase should either use try { } catch (Exception) { } for exception types
+            // from the runtime or a try { } catch when (true) { } to catch all exceptions.
+            //
 
             if (s_pLowLevelObjectType == null)
             {
-                // TODO: Avoid allocating here as that may fail
+                // Allocating might fail, but since this is just a debug assert, it's probably fine.
                 s_pLowLevelObjectType = new System.Object().EEType;
             }
 
-            // This allows the typical try { } catch { }--which expands to a typed catch of System.Object--to work on 
-            // all objects when the clause is in the low level runtime code.  This special case is needed because 
-            // objects from foreign type systems are sometimes throw back up at runtime code and this is the only way
-            // to catch them outside of having a filter with no type check in it, which isn't currently possible to 
-            // write in C#.  See https://github.com/dotnet/roslyn/issues/4388
-            if (pClauseType->IsEquivalentTo(s_pLowLevelObjectType))
-                return true;
+            Debug.Assert(!pClauseType->IsEquivalentTo(s_pLowLevelObjectType));
+        }
+#endif // DEBUG && !INPLACE_RUNTIME
 
-            return false;
+
+        private static bool ShouldTypedClauseCatchThisException(object exception, EEType* pClauseType)
+        {
+#if DEBUG && !INPLACE_RUNTIME
+            AssertNotRuntimeObject(pClauseType);
+#endif
+
+            return TypeCast.IsInstanceOfClass(exception, pClauseType) != null;
         }
 
         private static void InvokeSecondPass(ref ExInfo exInfo, uint idxStart)

@@ -661,10 +661,9 @@ namespace ILCompiler
             return mangledName;
         }
 
-        public string GetMangledDataBlobName(byte[] blob)
+        public string GetMangledDataBlobName(FieldDesc field)
         {
-            var hash = _sha256.ComputeHash(blob);
-            return "__Data_" + BitConverter.ToString(hash).Replace("-", "");
+            return "__Data_" + ComputeMangledFieldName(field);
         }
 
         public string GetImportedTlsIndexPrefix()
