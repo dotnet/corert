@@ -51,7 +51,7 @@ namespace Internal.TypeSystem.Ecma
 
 #if DEBUG
             // Initialize name eagerly in debug builds for convenience
-            this.ToString();
+            InitializeName();
 #endif
         }
 
@@ -395,11 +395,6 @@ namespace Internal.TypeSystem.Ecma
         {
             return !MetadataReader.GetCustomAttributeHandle(MetadataReader.GetMethodDefinition(_handle).GetCustomAttributes(),
                 attributeNamespace, attributeName).IsNil;
-        }
-
-        public override string ToString()
-        {
-            return _type.ToString() + "." + Name;
         }
 
         public override bool IsPInvoke

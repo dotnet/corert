@@ -528,5 +528,19 @@
       <Link>NativeFormat\NativeFormatType.MethodImpls.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)'=='Debug'">
+    <Compile Include="..\..\Common\src\TypeSystem\Common\TypeDesc.ToString.cs">
+      <Link>Internal\TypeSystem\TypeDesc.ToString.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\MethodDesc.ToString.cs">
+      <Link>Internal\TypeSystem\MethodDesc.ToString.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\FieldDesc.ToString.cs">
+      <Link>Internal\TypeSystem\FieldDesc.ToString.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\DebugNameFormatter.cs">
+      <Link>Utilities\DebugNameFormatter.cs</Link>
+    </Compile>
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -76,10 +76,5 @@ namespace Internal.IL.Stubs
         {
             return _declMethod.GetPInvokeMethodMetadata();
         }
-
-        public override string ToString()
-        {
-            return "[EXTERNAL]" + Name;
-        }
     }
 }

@@ -189,11 +189,6 @@ namespace Internal.TypeSystem
 
             return _hashcode;
         }
-
-        public override string ToString()
-        {
-            return FullName;
-        }
     }
 
     /// <summary>
@@ -280,11 +275,6 @@ namespace Internal.TypeSystem
             }
 
             return _hashcode;
-        }
-
-        public override string ToString()
-        {
-            return FullName;
         }
     }
 }

@@ -150,14 +150,5 @@ namespace Internal.TypeSystem
                 return _methodDef.Name;
             }
         }
-
-        public override string ToString()
-        {
-            var sb = new StringBuilder(_methodDef.ToString());
-            sb.Append('<');
-            sb.Append(_instantiation.ToString());
-            sb.Append('>');
-            return sb.ToString();
-        }
     }
 }

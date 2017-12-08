@@ -248,11 +248,6 @@ namespace ILCompiler
                 return hashCodeBuilder.ToHashCode();
             }
 
-            public override string ToString()
-            {
-                return "Boxed " + Module.ToString() + ValueTypeRepresented.ToString();
-            }
-
             protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
             {
                 TypeFlags flags = 0;

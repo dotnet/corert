@@ -53,7 +53,7 @@ namespace Internal.TypeSystem.NativeFormat
 
 #if DEBUG
             // Initialize name eagerly in debug builds for convenience
-            this.ToString();
+            InitializeName();
 #endif
         }
 
@@ -414,11 +414,6 @@ namespace Internal.TypeSystem.NativeFormat
         {
             return MetadataReader.HasCustomAttribute(MetadataReader.GetMethod(_handle).CustomAttributes,
                 attributeNamespace, attributeName);
-        }
-
-        public override string ToString()
-        {
-            return _type.ToString() + "." + Name;
         }
 
         public override MethodNameAndSignature NameAndSignature
