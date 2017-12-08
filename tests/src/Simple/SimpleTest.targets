@@ -52,8 +52,6 @@
 
   <ItemGroup>
     <IlcArg Include="--targetarch=$(Platform)" />
-    
-    <!-- Broken on wasm: https://github.com/dotnet/corert/issues/5005 -->
     <IlcArg Include="--stacktracedata" />
   </ItemGroup>
 
