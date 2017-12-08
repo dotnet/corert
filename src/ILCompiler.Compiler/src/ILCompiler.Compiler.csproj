@@ -137,6 +137,7 @@
     <Compile Include="Compiler\EmptyInteropStubManager.cs" />
     <Compile Include="Compiler\DependencyAnalysis\SortableDependencyNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ImportedNodeProvider.cs" />
+    <Compile Include="Compiler\GeneratingMetadataManager.cs" />
     <Compile Include="Compiler\InternalCompilerErrorException.cs" />
     <Compile Include="Compiler\PreInitFieldInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FrozenArrayNode.cs" />
@@ -321,7 +322,6 @@
     <Compile Include="Compiler\MainMethodRootProvider.cs" />
     <Compile Include="Compiler\ManagedBinaryEmitter.cs" />
     <Compile Include="Compiler\MemoryHelper.cs" />
-    <Compile Include="Compiler\CompilerGeneratedMetadataManager.cs" />
     <Compile Include="Compiler\MergedAssemblyRecords.cs" />
     <Compile Include="Compiler\MetadataManager.cs" />
     <Compile Include="Compiler\InteropStubManager.cs" />
@@ -343,6 +343,7 @@
     <Compile Include="Compiler\TypeExtensions.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.TypeInit.cs" />
     <Compile Include="Compiler\CoreRTNameMangler.cs" />
+    <Compile Include="Compiler\UsageBasedMetadataManager.cs" />
     <Compile Include="Compiler\UserDefinedTypeDescriptor.cs" />
     <Compile Include="Compiler\UniversalGenericsRootProvider.cs" />
     <Compile Include="Compiler\UnixNodeMangler.cs" />

@@ -418,9 +418,10 @@ namespace ILCompiler
             var stackTracePolicy = _emitStackTraceData ?
                 (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
 
-            CompilerGeneratedMetadataManager metadataManager = new CompilerGeneratedMetadataManager(
+            UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager(
                 compilationGroup,
                 typeSystemContext,
+                new BlockedInternalsBlockingPolicy(),
                 _metadataLogFileName,
                 stackTracePolicy);
 
