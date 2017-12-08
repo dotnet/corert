@@ -23,7 +23,7 @@ namespace ILCompiler
             IEnumerable<ICompilationRootProvider> roots,
             Logger logger,
             WebAssemblyCodegenConfigProvider options)
-            : base(dependencyGraph, nodeFactory, GetCompilationRoots(roots, nodeFactory), null, logger)
+            : base(dependencyGraph, nodeFactory, GetCompilationRoots(roots, nodeFactory), null, null, logger)
         {
             NodeFactory = nodeFactory;
             LLVM.LoadLibrary_libLLVM("./libLLVM-x64.dll");

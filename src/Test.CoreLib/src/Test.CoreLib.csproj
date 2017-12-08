@@ -157,9 +157,6 @@
     <Compile Include="..\..\Runtime.Base\src\System\RuntimeHandles.cs">
       <Link>System\RuntimeHandles.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\RuntimeTypeHandle.cs">
-      <Link>System\RuntimeTypeHandle.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs">
       <Link>System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs</Link>
     </Compile>
@@ -239,6 +236,8 @@
     <Compile Include="System\Array.cs" />
     <Compile Include="System\RuntimeExceptionHelpers.cs" />
     <Compile Include="System\Object.cs" />
+    <Compile Include="System\Type.cs" />
+    <Compile Include="System\RuntimeTypeHandle.cs" />
     <Compile Include="..\..\Common\src\Internal\Runtime\TypeManagerHandle.cs">
       <Link>Internal\Runtime\TypeManagerHandle.cs</Link>
     </Compile>

@@ -30,7 +30,7 @@ namespace ILCompiler
             IEnumerable<ICompilationRootProvider> roots,
             DebugInformationProvider debugInformationProvider,
             Logger logger)
-            : base(dependencyGraph, nodeFactory, roots, debugInformationProvider, logger)
+            : base(dependencyGraph, nodeFactory, roots, debugInformationProvider, null, logger)
         {
         }
 
@@ -112,6 +112,11 @@ namespace ILCompiler
         public DictionaryLayoutProvider GetDictionaryLayoutInfo()
         {
             return new ScannedDictionaryLayoutProvider(MarkedNodes);
+        }
+
+        public DevirtualizationManager GetDevirtualizationManager()
+        {
+            return new ScannedDevirtualizationManager(MarkedNodes);
         }
 
         private class ScannedVTableProvider : VTableSliceProvider
@@ -213,6 +218,95 @@ namespace ILCompiler
                     else
                         return new LazilyBuiltDictionaryLayoutNode(method);
                 }
+            }
+        }
+
+        private class ScannedDevirtualizationManager : DevirtualizationManager
+        {
+            private HashSet<TypeDesc> _constructedTypes = new HashSet<TypeDesc>();
+            private HashSet<TypeDesc> _unsealedTypes = new HashSet<TypeDesc>();
+
+            public ScannedDevirtualizationManager(ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
+            {
+                foreach (var node in markedNodes)
+                {
+                    if (node is ConstructedEETypeNode eetypeNode)
+                    {
+                        TypeDesc type = eetypeNode.Type;
+
+                        if (!type.IsInterface)
+                        {
+                            //
+                            // We collect this information:
+                            //
+                            // 1. What types got allocated
+                            //    This is needed for optimizing codegens that might attempt to devirtualize
+                            //    calls to sealed types. The devirtualization is not allowed to succeed
+                            //    for types that never got allocated because the scanner likely didn't scan
+                            //    the target of the virtual call.
+                            // 2. What types are the base types of other types
+                            //    This is needed for optimizations. We use this information to effectively
+                            //    seal types that are not base types for any other type.
+                            //
+
+                            TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+
+                            _constructedTypes.Add(canonType);
+
+                            // Since this is used for the purposes of devirtualization, it's really convenient
+                            // to also have Array<T> for each T[].
+                            if (canonType.IsArray)
+                                _constructedTypes.Add(canonType.GetClosestDefType());
+
+                            TypeDesc baseType = canonType.BaseType;
+                            bool added = true;
+                            while (baseType != null && added)
+                            {
+                                baseType = baseType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                                added = _unsealedTypes.Add(baseType);
+                                baseType = baseType.BaseType;
+                            }
+                        }
+
+                    }
+                }
+            }
+
+            public override bool IsEffectivelySealed(TypeDesc type)
+            {
+                // If we know we scanned a type that derives from this one, this for sure can't be reported as sealed.
+                TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+                if (_unsealedTypes.Contains(canonType))
+                    return false;
+
+                // We don't want to report types that never got allocated as sealed because that would allow
+                // the codegen to do direct calls to the type's methods. That can potentially lead to codegen
+                // generating calls to methods we never scanned (consider a sealed type that never got allocated
+                // with a virtual method that can be devirtualized because the type is sealed).
+                // Codegen looking at code we didn't scan is never okay.
+                if (!_constructedTypes.Contains(canonType))
+                    return false;
+
+                if (type is MetadataType metadataType)
+                {
+                    // Due to how the compiler is structured, we might see "constructed" EETypes for things
+                    // that never got allocated (doing a typeof() on a class that is otherwise never used is
+                    // a good example of when that happens). This can put us into a position where we could
+                    // report `sealed` on an `abstract` class, but that doesn't lead to anything good.
+                    return !metadataType.IsAbstract;
+                }
+
+                // Everything else can be considered sealed.
+                return true;
+            }
+
+            public override bool IsEffectivelySealed(MethodDesc method)
+            {
+                // For the same reason as above, don't report methods on unallocated types as sealed.
+                if (!_constructedTypes.Contains(method.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific)))
+                    return false;
+
+                return base.IsEffectivelySealed(method);
             }
         }
     }

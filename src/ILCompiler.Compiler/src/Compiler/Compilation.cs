@@ -25,6 +25,7 @@ namespace ILCompiler
         protected readonly NodeFactory _nodeFactory;
         protected readonly Logger _logger;
         private readonly DebugInformationProvider _debugInformationProvider;
+        private readonly DevirtualizationManager _devirtualizationManager;
 
         public NameMangler NameMangler => _nodeFactory.NameMangler;
         public NodeFactory NodeFactory => _nodeFactory;
@@ -41,12 +42,14 @@ namespace ILCompiler
             NodeFactory nodeFactory,
             IEnumerable<ICompilationRootProvider> compilationRoots,
             DebugInformationProvider debugInformationProvider,
+            DevirtualizationManager devirtualizationManager,
             Logger logger)
         {
             _dependencyGraph = dependencyGraph;
             _nodeFactory = nodeFactory;
             _logger = logger;
             _debugInformationProvider = debugInformationProvider;
+            _devirtualizationManager = devirtualizationManager;
 
             _dependencyGraph.ComputeDependencyRoutine += ComputeDependencyNodeDependencies;
             NodeFactory.AttachToDependencyGraph(_dependencyGraph);
@@ -176,6 +179,21 @@ namespace ILCompiler
         public bool HasFixedSlotVTable(TypeDesc type)
         {
             return NodeFactory.VTable(type).HasFixedSlots;
+        }
+
+        public bool IsEffectivelySealed(TypeDesc type)
+        {
+            return _devirtualizationManager.IsEffectivelySealed(type);
+        }
+
+        public bool IsEffectivelySealed(MethodDesc method)
+        {
+            return _devirtualizationManager.IsEffectivelySealed(method);
+        }
+
+        public MethodDesc ResolveVirtualMethod(MethodDesc declMethod, TypeDesc implType)
+        {
+            return _devirtualizationManager.ResolveVirtualMethod(declMethod, implType);
         }
 
         public bool NeedsRuntimeLookup(ReadyToRunHelperId lookupKind, object targetOfLookup)
