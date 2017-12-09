@@ -111,6 +111,174 @@ static int LocateSectionsCallback(struct dl_phdr_info *info, size_t size, void *
 
 #endif // __APPLE__
 
+#ifdef _TARGET_AMD64_
+
+// Shim that implements methods required by libunwind over REGDISPLAY
+struct Registers_REGDISPLAY : REGDISPLAY
+{
+    inline uint64_t getRegister(int regNum) const
+    {
+        switch (regNum)
+        {
+        case UNW_REG_IP:
+            return IP;
+        case UNW_REG_SP:
+            return SP;
+        case UNW_X86_64_RAX:
+            return *pRax;
+        case UNW_X86_64_RDX:
+            return *pRdx;
+        case UNW_X86_64_RCX:
+            return *pRcx;
+        case UNW_X86_64_RBX:
+            return *pRbx;
+        case UNW_X86_64_RSI:
+            return *pRsi;
+        case UNW_X86_64_RDI:
+            return *pRdi;
+        case UNW_X86_64_RBP:
+            return *pRbp;
+        case UNW_X86_64_RSP:
+            return SP;
+        case UNW_X86_64_R8:
+            return *pR8;
+        case UNW_X86_64_R9:
+            return *pR9;
+        case UNW_X86_64_R10:
+            return *pR10;
+        case UNW_X86_64_R11:
+            return *pR11;
+        case UNW_X86_64_R12:
+            return *pR12;
+        case UNW_X86_64_R13:
+            return *pR13;
+        case UNW_X86_64_R14:
+            return *pR14;
+        case UNW_X86_64_R15:
+            return *pR15;
+        }
+
+        // Unsupported register requested
+        abort();
+    }
+
+    inline void setRegister(int regNum, uint64_t value, uint64_t location)
+    {
+        switch (regNum)
+        {
+        case UNW_REG_IP:
+            IP = value;
+            pIP = (PTR_PCODE)location;
+            return;
+        case UNW_REG_SP:
+            SP = value;
+            return;
+        case UNW_X86_64_RAX:
+            pRax = (PTR_UIntNative)location;
+            return;
+        case UNW_X86_64_RDX:
+            pRdx = (PTR_UIntNative)location;
+            return;
+        case UNW_X86_64_RCX:
+            pRcx = (PTR_UIntNative)location;
+            return;
+        case UNW_X86_64_RBX:
+            pRbx = (PTR_UIntNative)location;
+            return;
+        case UNW_X86_64_RSI:
+            pRsi = (PTR_UIntNative)location;
+            return;
+        case UNW_X86_64_RDI:
+            pRdi = (PTR_UIntNative)location;
+            return;
+        case UNW_X86_64_RBP:
+            pRbp = (PTR_UIntNative)location;
+            return;
+        case UNW_X86_64_RSP:
+            SP = value;
+            return;
+        case UNW_X86_64_R8:
+            pR8 = (PTR_UIntNative)location;
+            return;
+        case UNW_X86_64_R9:
+            pR9 = (PTR_UIntNative)location;
+            return;
+        case UNW_X86_64_R10:
+            pR10 = (PTR_UIntNative)location;
+            return;
+        case UNW_X86_64_R11:
+            pR11 = (PTR_UIntNative)location;
+            return;
+        case UNW_X86_64_R12:
+            pR12 = (PTR_UIntNative)location;
+            return;
+        case UNW_X86_64_R13:
+            pR13 = (PTR_UIntNative)location;
+            return;
+        case UNW_X86_64_R14:
+            pR14 = (PTR_UIntNative)location;
+            return;
+        case UNW_X86_64_R15:
+            pR15 = (PTR_UIntNative)location;
+            return;
+        }
+
+        // Unsupported x86_64 register
+        abort();
+    }
+
+    // N/A for x86_64
+    inline bool validFloatRegister(int) { return false; }
+    inline bool validVectorRegister(int) { return false; }
+
+    inline static int  lastDwarfRegNum() { return 16; }
+
+    inline bool validRegister(int regNum) const
+    {
+        if (regNum == UNW_REG_IP)
+            return true;
+        if (regNum == UNW_REG_SP)
+            return true;
+        if (regNum < 0)
+            return false;
+        if (regNum > 15)
+            return false;
+        return true;
+    }
+
+    // N/A for x86_64
+    inline double getFloatRegister(int) const { abort(); }
+    inline   void setFloatRegister(int, double) { abort(); }
+    inline double getVectorRegister(int) const { abort(); }
+    inline   void setVectorRegister(int, ...) { abort(); }
+
+    uint64_t  getSP() const { return SP; }
+    void      setSP(uint64_t value, uint64_t location) { SP = value; }
+
+    uint64_t  getIP() const { return IP; }
+
+    void      setIP(uint64_t value, uint64_t location)
+    {
+        IP = value;
+        pIP = (PTR_PCODE)location;
+    }
+
+    uint64_t  getRBP() const { return *pRbp; }
+    void      setRBP(uint64_t value, uint64_t location) { pRbp = (PTR_UIntNative)location; }
+    uint64_t  getRBX() const { return *pRbx; }
+    void      setRBX(uint64_t value, uint64_t location) { pRbx = (PTR_UIntNative)location; }
+    uint64_t  getR12() const { return *pR12; }
+    void      setR12(uint64_t value, uint64_t location) { pR12 = (PTR_UIntNative)location; }
+    uint64_t  getR13() const { return *pR13; }
+    void      setR13(uint64_t value, uint64_t location) { pR13 = (PTR_UIntNative)location; }
+    uint64_t  getR14() const { return *pR14; }
+    void      setR14(uint64_t value, uint64_t location) { pR14 = (PTR_UIntNative)location; }
+    uint64_t  getR15() const { return *pR15; }
+    void      setR15(uint64_t value, uint64_t location) { pR15 = (PTR_UIntNative)location; }
+};
+
+#endif // _TARGET_AMD64_
+
 bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs)
 {
 #if defined(_TARGET_AMD64_)
@@ -130,9 +298,9 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
     unw_proc_info_t procInfo;
     uc.getInfo(&procInfo);
 
-    DwarfInstructions<LocalAddressSpace, REGDISPLAY> dwarfInst;
+    DwarfInstructions<LocalAddressSpace, Registers_REGDISPLAY> dwarfInst;
 
-    int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, procInfo.unwind_info, *regs);
+    int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, procInfo.unwind_info, *(Registers_REGDISPLAY*)regs);
     if (stepRet != UNW_STEP_SUCCESS)
     {
         return false;
