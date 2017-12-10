@@ -199,6 +199,8 @@ FUNCTIONS
     BOOL shouldEnforceCallvirtRestriction(CORINFO_MODULE_HANDLE scope)
     CorInfoType asCorInfoType(CORINFO_CLASS_HANDLE cls)
     const char* getClassName(CORINFO_CLASS_HANDLE cls)
+    const char* getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char **namespaceName)
+    CORINFO_CLASS_HANDLE getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index)
     int appendClassName(WCHAR** ppBuf, int* pnBufLen, CORINFO_CLASS_HANDLE cls, BOOL fNamespace, BOOL fFullInst, BOOL fAssembly)
     BOOL isValueClass(CORINFO_CLASS_HANDLE cls)
     BOOL canInlineTypeCheckWithObjectVTable(CORINFO_CLASS_HANDLE cls)

@@ -1224,6 +1224,28 @@ namespace Internal.JitInterface
             return (byte*)GetPin(StringToUTF8(type.ToString()));
         }
 
+        private byte* getClassNameFromMetadata(CORINFO_CLASS_STRUCT_* cls, byte** namespaceName)
+        {
+            var type = HandleToObject(cls) as MetadataType;
+            if (type != null)
+            {
+                *namespaceName = (byte*)GetPin(type.Namespace);
+                return (byte*)GetPin(type.Name);
+            }
+
+            *namespaceName = null;
+            return null;
+        }
+        
+        private CORINFO_CLASS_STRUCT_* getTypeInstantiationArgument(CORINFO_CLASS_STRUCT_* cls, uint index)
+        {
+            TypeDesc type = HandleToObject(cls);
+            Instantiation inst = type.Instantiation;
+
+            return index < (uint)inst.Length ? ObjectToHandle(inst[(int)index]) : null;
+        }
+
+
         private int appendClassName(short** ppBuf, ref int pnBufLen, CORINFO_CLASS_STRUCT_* cls, bool fNamespace, bool fFullInst, bool fAssembly)
         {
             // We support enough of this to make SIMD work, but not much else.
