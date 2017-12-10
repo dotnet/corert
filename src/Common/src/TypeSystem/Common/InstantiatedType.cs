@@ -269,15 +269,6 @@ namespace Internal.TypeSystem
             return _typeDef;
         }
 
-        public override string ToString()
-        {
-            var sb = new StringBuilder(_typeDef.ToString());
-            sb.Append('<');
-            sb.Append(_instantiation.ToString());
-            sb.Append('>');
-            return sb.ToString();
-        }
-
         // Properties that are passed through from the type definition
         public override ClassLayoutMetadata GetClassLayout()
         {

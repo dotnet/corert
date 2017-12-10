@@ -731,11 +731,8 @@ namespace Internal.JitInterface
             // method body.
             //
 
-            var owningType = method.OwningType;
-            var owningMetadataType = owningType as MetadataType;
-
             // method or class might have the final bit
-            if (method.IsFinal || (owningMetadataType != null && owningMetadataType.IsSealed))
+            if (_compilation.IsEffectivelySealed(method))
                 result |= CorInfoFlag.CORINFO_FLG_FINAL;
 
             if (method.IsSharedByGenericInstantiations)
@@ -762,7 +759,7 @@ namespace Internal.JitInterface
                 result |= CorInfoFlag.CORINFO_FLG_FORCEINLINE;
             }
 
-            if (owningType.IsDelegate)
+            if (method.OwningType.IsDelegate)
             {
                 if (method.Name == "Invoke")
                     // This is now used to emit efficient invoke code for any delegate invoke,
@@ -875,35 +872,20 @@ namespace Internal.JitInterface
                 return null;
             }
 
-            implType = implType.GetClosestDefType();
-
             MethodDesc decl = HandleToObject(baseMethod);
-            Debug.Assert(decl.IsVirtual);
             Debug.Assert(!decl.HasInstantiation);
 
-            MethodDesc impl;
-
-            TypeDesc declOwningType = decl.OwningType;
-            if (declOwningType.IsInterface)
+            if (ownerType != null)
             {
-                // Interface call devirtualization.
-
-                if (implType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                TypeDesc ownerTypeDesc = typeFromContext(ownerType);
+                if (decl.OwningType != ownerTypeDesc)
                 {
-                    // TODO: attempt to devirtualize methods on canonical interfaces
-                    return null;
-                }
-
-                impl = implType.ResolveInterfaceMethodTarget(decl);
-                if (impl != null)
-                {
-                    impl = implType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(impl);
+                    Debug.Assert(ownerTypeDesc is InstantiatedType);
+                    decl = _compilation.TypeSystemContext.GetMethodForInstantiatedType(decl.GetTypicalMethodDefinition(), (InstantiatedType)ownerTypeDesc);
                 }
             }
-            else
-            {
-                impl = implType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(decl);
-            }
+
+            MethodDesc impl = _compilation.ResolveVirtualMethod(decl, implType);
 
             return impl != null ? ObjectToHandle(impl) : null;
         }
@@ -1328,6 +1310,9 @@ namespace Internal.JitInterface
             if (type.IsDelegate)
                 result |= CorInfoFlag.CORINFO_FLG_DELEGATE;
 
+            if (_compilation.IsEffectivelySealed(type))
+                result |= CorInfoFlag.CORINFO_FLG_FINAL;
+
             if (metadataType != null)
             {
                 if (metadataType.ContainsGCPointers)
@@ -1335,9 +1320,6 @@ namespace Internal.JitInterface
 
                 if (metadataType.IsBeforeFieldInit)
                     result |= CorInfoFlag.CORINFO_FLG_BEFOREFIELDINIT;
-
-                if (metadataType.IsSealed)
-                    result |= CorInfoFlag.CORINFO_FLG_FINAL;
 
                 // Assume overlapping fields for explicit layout.
                 if (metadataType.IsExplicitLayout)
@@ -1726,10 +1708,10 @@ namespace Internal.JitInterface
                 return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
             }
 
+            MetadataType typeToInit = (MetadataType)type;
+
             if (fd == null)
             {
-                MetadataType typeToInit = (MetadataType)type;
-
                 if (typeToInit.IsBeforeFieldInit)
                 {
                     // We can wait for field accesses to run .cctor
@@ -1758,15 +1740,53 @@ namespace Internal.JitInterface
                 }
             }
 
-            if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            if (typeToInit.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
                 // Shared generic code has to use helper. Moreover, tell JIT not to inline since
                 // inlining of generic dictionary lookups is not supported.
                 return CorInfoInitClassResult.CORINFO_INITCLASS_USE_HELPER | CorInfoInitClassResult.CORINFO_INITCLASS_DONT_INLINE;
             }
 
-            // TODO: before giving up and asking to generate a helper call, check to see if this is some pattern we can
-            //       prove doesn't need initclass anymore because we initialized it earlier.
+            //
+            // Try to prove that the initialization is not necessary because of nesting
+            //
+
+            if (fd == null)
+            {
+                // Handled above
+                Debug.Assert(!typeToInit.IsBeforeFieldInit);
+
+                // Note that jit has both methods the same if asking whether to emit cctor
+                // for a given method's code (as opposed to inlining codegen).
+                MethodDesc contextMethod = methodFromContext(context);
+                if (contextMethod != MethodBeingCompiled && typeToInit == MethodBeingCompiled.OwningType)
+                {
+                    // If we're inling a call to a method in our own type, then we should already
+                    // have triggered the .cctor when caller was itself called.
+                    return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
+                }
+            }
+            else
+            {
+                // This optimization may cause static fields in reference types to be accessed without cctor being triggered
+                // for NULL "this" object. It does not conform with what the spec says. However, we have been historically 
+                // doing it for perf reasons.
+                if (!typeToInit.IsValueType && !typeToInit.IsBeforeFieldInit)
+                {
+                    if (typeToInit == typeFromContext(context) || typeToInit == MethodBeingCompiled.OwningType)
+                    {
+                        // The class will be initialized by the time we access the field.
+                        return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
+                    }
+                }
+
+                // If we are currently compiling the class constructor for this static field access then we can skip the initClass 
+                if (MethodBeingCompiled.OwningType == typeToInit && MethodBeingCompiled.IsStaticConstructor)
+                {
+                    // The class will be initialized by the time we access the field.
+                    return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
+                }
+            }
 
             return CorInfoInitClassResult.CORINFO_INITCLASS_USE_HELPER;
         }

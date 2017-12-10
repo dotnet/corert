@@ -173,11 +173,6 @@ namespace Internal.TypeSystem
             return false;
         }
 
-        public override string ToString()
-        {
-            return String.Concat(_runtimeDeterminedDetailsType.ToString(), "_", _rawCanonType.ToString());
-        }
-
         public override TypeDesc GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
             if (_runtimeDeterminedDetailsType.Kind == GenericParameterKind.Type)

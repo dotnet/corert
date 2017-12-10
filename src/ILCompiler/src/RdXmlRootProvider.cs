@@ -62,6 +62,8 @@ namespace ILCompiler
 
             ModuleDesc assembly = _context.ResolveAssembly(new AssemblyName(assemblyNameAttribute.Value));
 
+            rootProvider.RootModuleMetadata(assembly, "RD.XML root");
+
             var dynamicDegreeAttribute = assemblyElement.Attribute("Dynamic");
             if (dynamicDegreeAttribute != null)
             {
