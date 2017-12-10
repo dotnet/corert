@@ -183,7 +183,7 @@ namespace Internal.TypeSystem
             if ((options & FormatOptions.NamespaceQualify) != 0)
             {
                 string ns = type.Namespace;
-                if (ns.Length > 0)
+                if (!string.IsNullOrEmpty(ns))
                 {
                     sb.Append(ns);
                     sb.Append('.');
