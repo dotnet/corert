@@ -892,7 +892,7 @@ namespace Internal.IL
                 objectSize += type.Context.Target.PointerSize;
             }
 
-            LLVMValueRef eeTypePointer = GetEETypeForTypeDesc(type);
+            LLVMValueRef eeTypePointer = GetEETypeForTypeDesc(type, true);
             var rhpNewFastSig = LLVM.FunctionType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), new LLVMTypeRef[] { LLVM.TypeOf(eeTypePointer) }, false);
             var rhpNewFast = GetOrCreateLLVMFunction("RhpNewFast", rhpNewFastSig);
             LLVMValueRef allocatedMemory = LLVM.BuildCall(_builder, rhpNewFast, new LLVMValueRef[] { eeTypePointer }, "newobj");
@@ -915,9 +915,17 @@ namespace Internal.IL
             return LLVM.ConstInt(LLVM.Int32Type(), (ulong)number, LLVMMisc.False);
         }
 
-        private LLVMValueRef GetEETypeForTypeDesc(TypeDesc target)
+        private LLVMValueRef GetEETypeForTypeDesc(TypeDesc target, bool constructed)
         {
-            ISymbolNode node = _compilation.NodeFactory.NecessaryTypeSymbol(target);
+            ISymbolNode node;
+            if (constructed)
+            {
+                node = _compilation.NodeFactory.ConstructedTypeSymbol(target);
+            }
+            else
+            {
+                node = _compilation.NodeFactory.NecessaryTypeSymbol(target);
+            }
             LLVMValueRef eeTypePointer = LoadAddressOfSymbolNode(node);
             _dependencies.Add(node);
 
@@ -1636,7 +1644,7 @@ namespace Internal.IL
             if (ldtokenValue is TypeDesc)
             {
                 ldtokenKind = WellKnownType.RuntimeTypeHandle;
-                PushExpression(StackValueKind.ByRef, "ldtoken", GetEETypeForTypeDesc(ldtokenValue as TypeDesc), _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr"));
+                PushExpression(StackValueKind.ByRef, "ldtoken", GetEETypeForTypeDesc(ldtokenValue as TypeDesc, false), _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr"));
                 MethodDesc helper = _compilation.TypeSystemContext.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeTypeHandle");
                 AddMethodReference(helper);
                 HandleCall(helper);
