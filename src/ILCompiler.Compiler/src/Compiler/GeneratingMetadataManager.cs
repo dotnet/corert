@@ -27,12 +27,14 @@ namespace ILCompiler
         private readonly string _metadataLogFile;
         private readonly StackTraceEmissionPolicy _stackTraceEmissionPolicy;
         private readonly Dictionary<DynamicInvokeMethodSignature, MethodDesc> _dynamicInvokeThunks;
+        private readonly ModuleDesc _generatedAssembly;
 
-        public GeneratingMetadataManager(CompilationModuleGroup group, CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy, string logFile, StackTraceEmissionPolicy stackTracePolicy)
-            : base(group, typeSystemContext, blockingPolicy)
+        public GeneratingMetadataManager(ModuleDesc generatedAssembly, CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy, string logFile, StackTraceEmissionPolicy stackTracePolicy)
+            : base(typeSystemContext, blockingPolicy)
         {
             _metadataLogFile = logFile;
             _stackTraceEmissionPolicy = stackTracePolicy;
+            _generatedAssembly = generatedAssembly;
 
             if (DynamicInvokeMethodThunk.SupportsThunks(typeSystemContext))
             {
@@ -232,7 +234,7 @@ namespace ILCompiler
             var lookupSig = new DynamicInvokeMethodSignature(sig);
             if (!_dynamicInvokeThunks.TryGetValue(lookupSig, out thunk))
             {
-                thunk = new DynamicInvokeMethodThunk(_compilationModuleGroup.GeneratedAssembly.GetGlobalModuleType(), lookupSig);
+                thunk = new DynamicInvokeMethodThunk(_generatedAssembly.GetGlobalModuleType(), lookupSig);
                 _dynamicInvokeThunks.Add(lookupSig, thunk);
             }
 

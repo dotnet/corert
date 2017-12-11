@@ -19,14 +19,17 @@ namespace ILCompiler
     /// </summary>
     public sealed class UsageBasedMetadataManager : GeneratingMetadataManager
     {
+        private readonly CompilationModuleGroup _compilationModuleGroup;
+
         public UsageBasedMetadataManager(
             CompilationModuleGroup group,
             CompilerTypeSystemContext typeSystemContext,
             MetadataBlockingPolicy blockingPolicy,
             string logFile,
             StackTraceEmissionPolicy stackTracePolicy)
-            : base(group, typeSystemContext, blockingPolicy, logFile, stackTracePolicy)
+            : base(group.GeneratedAssembly, typeSystemContext, blockingPolicy, logFile, stackTracePolicy)
         {
+            _compilationModuleGroup = group;
         }
 
         protected override MetadataCategory GetMetadataCategory(FieldDesc field)

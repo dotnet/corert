@@ -33,7 +33,7 @@ namespace ILCompiler
             _context = context;
             _compilationGroup = compilationGroup;
             _nameMangler = nameMangler;
-            _metadataManager = new EmptyMetadataManager(compilationGroup, context);
+            _metadataManager = new EmptyMetadataManager(context);
         }
 
         public CompilationBuilder UseLogger(Logger logger)

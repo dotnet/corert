@@ -34,7 +34,6 @@ namespace ILCompiler
         private List<MetadataMapping<MethodDesc>> _methodMappings;
         private List<MetadataMapping<MethodDesc>> _stackTraceMappings;
 
-        protected readonly CompilationModuleGroup _compilationModuleGroup;
         protected readonly CompilerTypeSystemContext _typeSystemContext;
         protected readonly MetadataBlockingPolicy _blockingPolicy;
 
@@ -52,9 +51,8 @@ namespace ILCompiler
         internal DynamicInvokeTemplateDataNode DynamicInvokeTemplateData { get; private set; }
         public virtual bool SupportsReflection => true;
 
-        public MetadataManager(CompilationModuleGroup compilationModuleGroup, CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy)
+        public MetadataManager(CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy)
         {
-            _compilationModuleGroup = compilationModuleGroup;
             _typeSystemContext = typeSystemContext;
             _blockingPolicy = blockingPolicy;
         }
