@@ -168,7 +168,7 @@ namespace Internal.IL
                 return false;
 
             var value = (StackValue)obj;
-            return this.Kind == value.Kind && this.IsReadOnly == value.IsReadOnly && this.Type == value.Type;
+            return this.Kind == value.Kind && this.Flags == value.Flags && this.Type == value.Type;
         }
 
         public static bool operator ==(StackValue left, StackValue right)
@@ -488,7 +488,7 @@ namespace Internal.IL
 
         bool IsAssignable(StackValue src, StackValue dst)
         {
-            if (src == dst)
+            if (src.Kind == dst.Kind && src.Type == dst.Type && src.IsReadOnly == dst.IsReadOnly)
                 return true;
 
             if (dst.Type == null)
