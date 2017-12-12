@@ -548,7 +548,7 @@
         ret
     }
 
-    .method public instance void Leave.CatchToEnclosingCatch_Valid() cil managed
+    .method public instance void Leave.TryToEnclosingCatch_Valid() cil managed
     {
         .try
         {
