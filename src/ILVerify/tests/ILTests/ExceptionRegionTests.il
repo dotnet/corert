@@ -453,30 +453,6 @@
         ret
     }
 
-    .method public instance void Leave.IntoEnclosingTry_Valid() cil managed
-    {
-        .try
-        {
-            .try
-            {
-                leave   EnclosingTry
-            }
-            catch [System.Runtime]System.Object
-            {
-                leave   EnclosingTry
-            }
-            EnclosingTry:
-                leave   MethodEnd
-        }
-        finally
-        {
-            endfinally
-        }
-        
-    MethodEnd:
-        ret
-    }
-
     .method public instance void Leave.OutOfCatch_Valid() cil managed
     {
         .try
@@ -572,7 +548,7 @@
         ret
     }
 
-    .method public instance void Leave.CatchToEnclosingTry_Valid() cil managed
+    .method public instance void Leave.TryToEnclosingCatch_Valid() cil managed
     {
         .try
         {
@@ -582,14 +558,44 @@
         {
             .try
             {
-                leave   EnclosingTry
+                leave   EnclosingCatch
             }
             finally
             {
                 endfinally
             }
 
+        EnclosingCatch:
+            leave   MethodEnd
+        }
+
+    MethodEnd:
+        ret
+    }
+
+    .method public instance void Leave.CatchToEnclosingTry_Valid() cil managed
+    {
+        .try
+        {
+            .try
+            {
+                leave   MethodEnd
+            }
+            catch [System.Runtime]System.Object
+            {
+                leave   EnclosingTry
+            }
+
         EnclosingTry:
+            leave   MethodEnd
+        }
+        filter
+        {
+            pop
+            ldc.i4.0
+            endfilter
+        }
+        {
             leave   MethodEnd
         }
 
