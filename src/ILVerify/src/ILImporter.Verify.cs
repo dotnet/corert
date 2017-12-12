@@ -614,7 +614,7 @@ again:
             {
                 if (target.TryIndex.HasValue)
                 {
-                    ref var srcRegion = ref _exceptionRegions[target.TryIndex.Value].ILRegion;
+                    ref var srcRegion = ref _exceptionRegions[src.HandlerIndex.Value].ILRegion;
                     ref var targetRegion = ref _exceptionRegions[target.TryIndex.Value].ILRegion;
 
                     // If target is not associated try block, and not enclosing srcRegion
