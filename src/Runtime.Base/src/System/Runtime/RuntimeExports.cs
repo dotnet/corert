@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 using Internal.Runtime;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime
 {

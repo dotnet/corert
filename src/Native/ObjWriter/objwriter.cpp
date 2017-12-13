@@ -385,8 +385,6 @@ int ObjectWriter::EmitSymbolRef(const char *SymbolName,
     EmitRelocDirective(GetDFSize(), "R_ARM_THM_JUMP24", TargetExpr);
     return 4;
   }
-  default:
-    assert(false && "NYI RelocationType!");
   }
 
   const MCExpr *TargetExpr = GenTargetExpr(SymbolName, Kind, Delta, IsPCRel, Size);

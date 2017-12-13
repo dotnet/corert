@@ -128,6 +128,8 @@ else
         "-DCMAKE_RANLIB=$llvm_ranlib" \
         "-DCMAKE_BUILD_TYPE=$build_type" \
         "-DCLR_CMAKE_TARGET_ARCH=$build_arch" \
+        "-DOBJWRITER_BUILD=${__ObjWriterBuild}" \
+        "-DCROSS_BUILD=${__CrossBuild}" \
         $cmake_extra_defines \
         "$1/src/Native"
 fi

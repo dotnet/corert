@@ -73,7 +73,7 @@ namespace ILVerify
         ReturnFromTry,                  // Return out of try block.
         ReturnFromHandler,              // Return out of exception handler block.
         ReturnFromFilter,               // Return out of exception filter block.
-        //E_BAD_JMP_TARGET              "jmp / exception into the middle of an instruction."
+        BadJumpTarget,                  // Branch / Leave into the middle of an instruction.
         PathStackUnexpected,            // Non-compatible types on stack depending on path.
         PathStackDepth,                 // Stack depth differs depending on path.
         //E_THIS_UNINIT_EXCEP           "Uninitialized this on entering a try block."

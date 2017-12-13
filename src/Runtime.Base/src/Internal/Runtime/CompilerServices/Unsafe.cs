@@ -2,18 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Runtime.CompilerServices;
+
 #if BIT64
 using nint = System.Int64;
 #else
 using nint = System.Int32;
 #endif
 
-namespace System.Runtime.CompilerServices
+namespace Internal.Runtime.CompilerServices
 {
     //
     // Subsetted clone of System.Runtime.CompilerServices.Unsafe for internal runtime use.
     // Keep in sync with https://github.com/dotnet/corefx/tree/master/src/System.Runtime.CompilerServices.Unsafe.
-    // 
+    //
 
     /// <summary>
     /// Contains generic, low-level functionality for manipulating pointers.

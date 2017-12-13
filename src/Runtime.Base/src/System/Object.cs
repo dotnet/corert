@@ -17,6 +17,8 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+using Internal.Runtime.CompilerServices;
+
 // TODO: remove when m_pEEType becomes EETypePtr
 using EEType = Internal.Runtime.EEType;
 using ObjHeader = Internal.Runtime.ObjHeader;

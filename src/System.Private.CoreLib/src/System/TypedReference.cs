@@ -7,6 +7,7 @@ using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
+using Internal.Runtime.CompilerServices;
 using Internal.Reflection.Augments;
 
 namespace System

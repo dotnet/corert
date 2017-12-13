@@ -8,6 +8,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
+using Internal.Runtime.CompilerServices;
+
 #if ENABLE_WINRT
 using Internal.Runtime.Augments;
 #endif

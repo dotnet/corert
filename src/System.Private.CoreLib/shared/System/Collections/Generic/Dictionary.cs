@@ -48,9 +48,9 @@ namespace System.Collections.Generic
         private int[] _buckets;
         private Entry[] _entries;
         private int _count;
-        private int _version;
         private int _freeList;
         private int _freeCount;
+        private int _version;
         private IEqualityComparer<TKey> _comparer;
         private KeyCollection _keys;
         private ValueCollection _values;
@@ -256,14 +256,20 @@ namespace System.Collections.Generic
 
         public void Clear()
         {
-            if (_count > 0)
+            int count = _count;
+            if (count > 0)
             {
-                for (int i = 0; i < _buckets.Length; i++) _buckets[i] = -1;
-                Array.Clear(_entries, 0, _count);
-                _freeList = -1;
+                int[] buckets = _buckets;
+                for (int i = 0; i < buckets.Length; i++)
+                {
+                    buckets[i] = -1;
+                }
+
                 _count = 0;
+                _freeList = -1;
                 _freeCount = 0;
                 _version++;
+                Array.Clear(_entries, 0, count);
             }
         }
 
@@ -370,10 +376,15 @@ namespace System.Collections.Generic
         private void Initialize(int capacity)
         {
             int size = HashHelpers.GetPrime(capacity);
-            _buckets = new int[size];
-            for (int i = 0; i < _buckets.Length; i++) _buckets[i] = -1;
-            _entries = new Entry[size];
+            int[] buckets = new int[size];
+            for (int i = 0; i < buckets.Length; i++)
+            {
+                buckets[i] = -1;
+            }
+
             _freeList = -1;
+            _buckets = buckets;
+            _entries = new Entry[size];
         }
 
         private bool TryInsert(TKey key, TValue value, InsertionBehavior behavior)
@@ -464,10 +475,7 @@ namespace System.Collections.Generic
 
             if (hashsize != 0)
             {
-                _buckets = new int[hashsize];
-                for (int i = 0; i < _buckets.Length; i++) _buckets[i] = -1;
-                _entries = new Entry[hashsize];
-                _freeList = -1;
+                Initialize(hashsize);
 
                 KeyValuePair<TKey, TValue>[] array = (KeyValuePair<TKey, TValue>[])
                     siInfo.GetValue(KeyValuePairsName, typeof(KeyValuePair<TKey, TValue>[]));

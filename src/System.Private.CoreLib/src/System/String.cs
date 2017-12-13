@@ -20,6 +20,8 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
 
+using Internal.Runtime.CompilerServices;
+
 namespace System
 {
     // The String class represents a static string of characters.  Many of

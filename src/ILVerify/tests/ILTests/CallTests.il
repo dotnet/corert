@@ -24,6 +24,11 @@
     {
         ret
     }
+
+    .method public hidebysig static void InObjectMethod([in] object&) cil managed 
+    {
+        ret
+    }
 }
 
 .class public auto ansi beforefieldinit DerivedClass
@@ -128,6 +133,18 @@
     {
         ldarg.1
         call    instance void SimpleClass::VirtualMethod()
+        ret
+    }
+
+    .method public hidebysig instance void Call.ReadonlyByRefForInArg_Invalid_StackUnexpected(object[] objectArray) cil managed
+    {
+        // SimpleClass.InObjectMethod(objectArray[0]);
+
+        ldarg.1
+        ldc.i4.0
+        readonly.
+        ldelema     [System.Runtime]System.Object
+        call        void SimpleClass::InObjectMethod(object&)
         ret
     }
 }

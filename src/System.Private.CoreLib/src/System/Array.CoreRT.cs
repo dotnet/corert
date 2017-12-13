@@ -12,6 +12,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 using Internal.Runtime.Augments;
+using Internal.Runtime.CompilerServices;
 using Internal.Reflection.Core.NonPortable;
 using Internal.IntrinsicSupport;
 using EEType = Internal.Runtime.EEType;

@@ -10,6 +10,7 @@ using System.Diagnostics;
 
 using Internal.Reflection.Core.NonPortable;
 using Internal.Runtime.Augments;
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {
