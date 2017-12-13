@@ -9,7 +9,7 @@ using System.Collections.Concurrent;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.BindingFlagSupport;
 
-using Unsafe = System.Runtime.CompilerServices.Unsafe;
+using Unsafe = Internal.Runtime.CompilerServices.Unsafe;
 
 using EnumInfo = Internal.Runtime.Augments.EnumInfo;
 

@@ -6,6 +6,8 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
+using Internal.Runtime.CompilerServices;
+
 namespace System.Threading
 {
     public static class Interlocked

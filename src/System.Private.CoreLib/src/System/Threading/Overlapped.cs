@@ -28,6 +28,8 @@ using System.Runtime.ConstrainedExecution;
 using System.Diagnostics;
 using System.Collections.Concurrent;
 
+using Internal.Runtime.CompilerServices;
+
 namespace System.Threading
 {
     #region class _IOCompletionCallback
