@@ -123,6 +123,9 @@
   <data name="BadBranch" xml:space="preserve">
     <value>Branch out of the method.</value>
   </data>
+  <data name="BadJumpTarget" xml:space="preserve">
+    <value>Branch / Leave into the middle of an instruction.</value>
+  </data>
   <data name="BoxByRef" xml:space="preserve">
     <value>Cannot box byref.</value>
   </data>

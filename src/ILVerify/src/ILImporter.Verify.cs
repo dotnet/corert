@@ -60,6 +60,8 @@ namespace Internal.IL
         bool _modifiesThisPtr;
         bool _trackObjCtorState;
 
+        bool[] _validTargetOffsets;
+
         int? _delegateCreateStart;
 
         class ExceptionRegion
@@ -211,7 +213,7 @@ namespace Internal.IL
 
             FindBasicBlocks();
             FindEnclosingExceptionRegions();
-            FindThisPtrModification();
+            InitialPass();
             ImportBasicBlocks();
         }
 
@@ -278,28 +280,37 @@ namespace Internal.IL
             }
         }
 
-        private void FindThisPtrModification()
+        /// <summary>
+        /// Checks whether the metod's il modifies the this pointer and builds up the
+        /// array of valid target offsets.
+        /// </summary>
+        private void InitialPass()
         {
             _modifiesThisPtr = false;
+            _validTargetOffsets = new bool[_ilBytes.Length];
 
-            if (_thisType == null)
-                return; // Early exit: no this pointer in this method
+            bool previousWasPrefix = false;
 
             _currentOffset = 0;
 
             while (_currentOffset < _ilBytes.Length)
             {
+                if (!previousWasPrefix) // The instruction following a prefix is not a valid branch target.
+                    _validTargetOffsets[_currentOffset] = true;
+
                 ILOpcode opCode = (ILOpcode)ReadILByte();
 
+                previousWasPrefix = false;
 again:
                 switch (opCode)
                 {
+                    // Check this pointer modification
                     case ILOpcode.starg_s:
                     case ILOpcode.ldarga_s:
                         if (ReadILByte() == 0)
                         {
                             _modifiesThisPtr = true;
-                            return;
+                            break;
                         }
                         break;
                     case ILOpcode.starg:
@@ -307,16 +318,31 @@ again:
                         if (ReadILUInt16() == 0)
                         {
                             _modifiesThisPtr = true;
-                            return;
+                            break;
                         }
                         break;
+
+                    // Keep track of prefixes
+                    case ILOpcode.unaligned:
+                        SkipIL(1);
+                        previousWasPrefix = true;
+                        break;
+                    case ILOpcode.constrained:
+                        previousWasPrefix = true;
+                        SkipIL(4);
+                        break;
+                    case ILOpcode.tail:
+                    case ILOpcode.volatile_:
+                    case ILOpcode.readonly_:
+                        previousWasPrefix = true;
+                        continue;
+
                     // Skip all other Opcodes
                     case ILOpcode.ldarg_s:
                     case ILOpcode.ldloc_s:
                     case ILOpcode.ldloca_s:
                     case ILOpcode.stloc_s:
                     case ILOpcode.ldc_i4_s:
-                    case ILOpcode.unaligned:
                     case ILOpcode.br_s:
                     case ILOpcode.leave_s:
                     case ILOpcode.brfalse_s:
@@ -371,7 +397,6 @@ again:
                     case ILOpcode.ldftn:
                     case ILOpcode.ldvirtftn:
                     case ILOpcode.initobj:
-                    case ILOpcode.constrained:
                     case ILOpcode.sizeof_:
                     case ILOpcode.br:
                     case ILOpcode.leave:
@@ -550,6 +575,12 @@ again:
 
         private void CheckIsValidLeaveTarget(BasicBlock src, BasicBlock target)
         {
+            if (!_validTargetOffsets[target.StartOffset])
+            {
+                VerificationError(VerifierError.BadJumpTarget);
+                return;
+            }
+
             // If the source is within filter, target shall be within the same
             if (src.FilterIndex.HasValue && src.FilterIndex != target.FilterIndex)
             {
@@ -662,6 +693,13 @@ again:
 
         bool IsValidBranchTarget(BasicBlock src, BasicBlock target, bool isFallthrough, bool reportErrors = true)
         {
+            if (!_validTargetOffsets[target.StartOffset])
+            {
+                if (reportErrors)
+                    VerificationError(VerifierError.BadJumpTarget);
+                return false;
+            }
+
             bool isValid = true;
 
             if (src.TryIndex != target.TryIndex)
