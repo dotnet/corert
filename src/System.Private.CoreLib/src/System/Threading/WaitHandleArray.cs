@@ -68,7 +68,7 @@ namespace System.Threading
 
             for (int i = 0; i < _items.Length; ++i)
             {
-                // Do call EqualityComparer<T>.Default here as it may call type loader. Type loader uses
+                // Do not call EqualityComparer<T>.Default here as it may call type loader. Type loader uses
                 // locks and we would end up with infinite recursion.
                 // Debug.Assert(EqualityComparer<T>.Default.Equals(_items[i], default(T)));
 
