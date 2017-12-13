@@ -22,106 +22,19 @@ namespace Internal.Runtime.CompilerServices
     //
 
     /// <summary>
-    /// Contains generic, low-level functionality for manipulating pointers.
+    /// For internal use only. Contains generic, low-level functionality for manipulating pointers.
     /// </summary>
     [CLSCompliant(false)]
-    public static class Unsafe
+    public static unsafe class Unsafe
     {
-        /// <summary>
-        /// Reads a value of type <typeparamref name="T"/> from the given location.
-        /// </summary>
-        [Intrinsic]
-        [NonVersionable]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe T Read<T>(void* source)
-        {
-            return Unsafe.As<byte, T>(ref *(byte*)source);
-        }
-
-        /// <summary>
-        /// Reads a value of type <typeparamref name="T"/> from the given location.
-        /// </summary>
-        [Intrinsic]
-        [NonVersionable]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe T Read<T>(ref byte source)
-        {
-            return Unsafe.As<byte, T>(ref source);
-        }
-
-        /// <summary>
-        /// Reads a value of type <typeparamref name="T"/> from the given location.
-        /// </summary>
-        [Intrinsic]
-        [NonVersionable]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe T ReadUnaligned<T>(void* source)
-        {
-            return Unsafe.As<byte, T>(ref *(byte*)source);
-        }
-
-        /// <summary>
-        /// Reads a value of type <typeparamref name="T"/> from the given location.
-        /// </summary>
-        [Intrinsic]
-        [NonVersionable]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe T ReadUnaligned<T>(ref byte source)
-        {
-            return Unsafe.As<byte, T>(ref source);
-        }
-
-        /// <summary>
-        /// Writes a value of type <typeparamref name="T"/> to the given location.
-        /// </summary>
-        [Intrinsic]
-        [NonVersionable]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void Write<T>(void* source, T value)
-        {
-            Unsafe.As<byte, T>(ref *(byte*)source) = value;
-        }
-
-        /// <summary>
-        /// Writes a value of type <typeparamref name="T"/> to the given location.
-        /// </summary>
-        [Intrinsic]
-        [NonVersionable]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void Write<T>(ref byte source, T value)
-        {
-            Unsafe.As<byte, T>(ref source) = value;
-        }
-
-        /// <summary>
-        /// Writes a value of type <typeparamref name="T"/> to the given location.
-        /// </summary>
-        [Intrinsic]
-        [NonVersionable]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void WriteUnaligned<T>(void* source, T value)
-        {
-            Unsafe.As<byte, T>(ref *(byte*)source) = value;
-        }
-
-        /// <summary>
-        /// Writes a value of type <typeparamref name="T"/> to the given location.
-        /// </summary>
-        [Intrinsic]
-        [NonVersionable]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void WriteUnaligned<T>(ref byte source, T value)
-        {
-            Unsafe.As<byte, T>(ref source) = value;
-        }
-
         /// <summary>
         /// Returns a pointer to the given by-ref parameter.
         /// </summary>
+        
         [Intrinsic]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void* AsPointer<T>(ref T source)
+        public static void* AsPointer<T>(ref T value)
         {
             // This method is implemented by the toolchain
             throw new PlatformNotSupportedException();
@@ -130,7 +43,7 @@ namespace Internal.Runtime.CompilerServices
             // conv.u
             // ret
         }
-
+        
         /// <summary>
         /// Returns the size of an object of the given type parameter.
         /// </summary>
@@ -145,14 +58,14 @@ namespace Internal.Runtime.CompilerServices
             // sizeof !!0
             // ret
         }
-
+        
         /// <summary>
         /// Casts the given object to the specified type, performs no dynamic type checking.
         /// </summary>
         [Intrinsic]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T As<T>(Object value) where T : class
+        public static T As<T>(object value) where T : class
         {
             // This method is implemented by the toolchain
             throw new PlatformNotSupportedException();
@@ -176,28 +89,6 @@ namespace Internal.Runtime.CompilerServices
             // ret
         }
 
-        [Intrinsic]
-        [NonVersionable]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe ref T AddByteOffset<T>(ref T source, nuint byteOffset)
-        {
-            return ref AddByteOffset(ref source, (IntPtr)(void*)byteOffset);
-        }
-
-        [Intrinsic]
-        [NonVersionable]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref T AddByteOffset<T>(ref T source, IntPtr byteOffset)
-        {
-            // This method is implemented by the toolchain
-            throw new PlatformNotSupportedException();
-
-            // ldarg.0
-            // ldarg.1
-            // add
-            // ret
-        }
-
         /// <summary>
         /// Adds an element offset to the given reference.
         /// </summary>
@@ -213,9 +104,20 @@ namespace Internal.Runtime.CompilerServices
         /// </summary>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void* Add<T>(void* source, int elementOffset)
+        public static void* Add<T>(void* source, int elementOffset)
         {
             return (byte*)source + (elementOffset * (nint)SizeOf<T>());
+        }
+
+        /// <summary>
+        /// Adds an element offset to the given reference.
+        /// </summary>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T AddByteOffset<T>(ref T source, nuint byteOffset)
+        {
+            return ref AddByteOffset(ref source, (IntPtr)(void*)byteOffset);
         }
 
         /// <summary>
@@ -247,5 +149,114 @@ namespace Internal.Runtime.CompilerServices
             for (uint i = 0; i < byteCount; i++)
                 AddByteOffset(ref startAddress, i) = value;
         }
+
+        /// <summary>
+        /// Reads a value of type <typeparamref name="T"/> from the given location.
+        /// </summary>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T ReadUnaligned<T>(void* source)
+        {
+            return Unsafe.As<byte, T>(ref *(byte*)source);
+        }
+
+        /// <summary>
+        /// Reads a value of type <typeparamref name="T"/> from the given location.
+        /// </summary>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T ReadUnaligned<T>(ref byte source)
+        {
+            return Unsafe.As<byte, T>(ref source);
+        }
+
+        /// <summary>
+        /// Writes a value of type <typeparamref name="T"/> to the given location.
+        /// </summary>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteUnaligned<T>(void* destination, T value)
+        {
+            Unsafe.As<byte, T>(ref *(byte*)destination) = value;
+        }
+
+        /// <summary>
+        /// Writes a value of type <typeparamref name="T"/> to the given location.
+        /// </summary>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteUnaligned<T>(ref byte destination, T value)
+        {
+            Unsafe.As<byte, T>(ref destination) = value;
+        }
+
+#region NotInCoreCLR
+        // These APIs are not available in CoreCLR - https://github.com/dotnet/coreclr/blob/master/src/mscorlib/src/Internal/Runtime/CompilerServices/Unsafe.cs
+
+        /// <summary>
+        /// Adds an element offset to the given reference.
+        /// </summary>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T AddByteOffset<T>(ref T source, IntPtr byteOffset)
+        {
+            // This method is implemented by the toolchain
+            throw new PlatformNotSupportedException();
+
+            // ldarg.0
+            // ldarg.1
+            // add
+            // ret
+        }
+
+        /// <summary>
+        /// Reads a value of type <typeparamref name="T"/> from the given location.
+        /// </summary>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T Read<T>(void* source)
+        {
+            return Unsafe.As<byte, T>(ref *(byte*)source);
+        }
+
+        /// <summary>
+        /// Reads a value of type <typeparamref name="T"/> from the given location.
+        /// </summary>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T Read<T>(ref byte source)
+        {
+            return Unsafe.As<byte, T>(ref source);
+        }
+
+        /// <summary>
+        /// Writes a value of type <typeparamref name="T"/> to the given location.
+        /// </summary>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Write<T>(void* destination, T value)
+        {
+            Unsafe.As<byte, T>(ref *(byte*)destination) = value;
+        }
+
+        /// <summary>
+        /// Writes a value of type <typeparamref name="T"/> to the given location.
+        /// </summary>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Write<T>(ref byte destination, T value)
+        {
+            Unsafe.As<byte, T>(ref destination) = value;
+        }
+#endregion
     }
 }
