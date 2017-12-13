@@ -8,6 +8,8 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 
+using Internal.Runtime.CompilerServices;
+
 namespace System
 {
     public partial class String

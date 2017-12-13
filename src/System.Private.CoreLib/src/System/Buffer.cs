@@ -12,6 +12,8 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
+using Internal.Runtime.CompilerServices;
+
 #if BIT64
 using nuint = System.UInt64;
 #else

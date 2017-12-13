@@ -11,6 +11,8 @@ using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
+using Internal.Runtime.CompilerServices;
+
 namespace System
 {
     [Serializable]

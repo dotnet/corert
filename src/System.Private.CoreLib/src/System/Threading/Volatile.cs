@@ -7,6 +7,8 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Runtime;
 
+using Internal.Runtime.CompilerServices;
+
 namespace System.Threading
 {
     //

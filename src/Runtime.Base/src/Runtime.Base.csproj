@@ -77,7 +77,6 @@
     <Compile Include="System\Runtime\CompilerServices\ManuallyManagedAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\MethodImplAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpers.cs" />
-    <Compile Include="System\Runtime\CompilerServices\Unsafe.cs" />
     <Compile Include="System\Runtime\CompilerServices\UnsafeValueTypeAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\CallingConvention.cs" />
     <Compile Include="System\Runtime\InteropServices\CharSet.cs" />
@@ -91,6 +90,9 @@
     <Compile Include="System\Runtime\InteropServices\StructLayoutAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\UnsafeGCHandle.cs" />
     <Compile Include="RhBaseName.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Internal\Runtime\CompilerServices\Unsafe.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\Internal\Runtime\EEType.Constants.cs" >

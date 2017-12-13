@@ -11,6 +11,10 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 
+#if SUPPORT_JIT
+using Internal.Runtime.CompilerServices;
+#endif
+
 using Internal.TypeSystem;
 
 using Internal.IL;

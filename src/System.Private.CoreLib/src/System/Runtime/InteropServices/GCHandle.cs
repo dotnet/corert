@@ -6,6 +6,8 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
+using Internal.Runtime.CompilerServices;
+
 namespace System.Runtime.InteropServices
 {
     // This class allows you to create an opaque, GC handle to any 
