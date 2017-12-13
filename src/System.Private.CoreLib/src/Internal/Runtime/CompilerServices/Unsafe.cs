@@ -30,7 +30,7 @@ namespace Internal.Runtime.CompilerServices
         /// <summary>
         /// Returns a pointer to the given by-ref parameter.
         /// </summary>
-        
+
         [Intrinsic]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -43,7 +43,7 @@ namespace Internal.Runtime.CompilerServices
             // conv.u
             // ret
         }
-        
+
         /// <summary>
         /// Returns the size of an object of the given type parameter.
         /// </summary>
@@ -58,7 +58,7 @@ namespace Internal.Runtime.CompilerServices
             // sizeof !!0
             // ret
         }
-        
+
         /// <summary>
         /// Casts the given object to the specified type, performs no dynamic type checking.
         /// </summary>
@@ -194,7 +194,7 @@ namespace Internal.Runtime.CompilerServices
             Unsafe.As<byte, T>(ref destination) = value;
         }
 
-#region NotInCoreCLR
+        #region NotInCoreCLR
         // These APIs are not available in CoreCLR - https://github.com/dotnet/coreclr/blob/master/src/mscorlib/src/Internal/Runtime/CompilerServices/Unsafe.cs
 
         /// <summary>
@@ -257,6 +257,6 @@ namespace Internal.Runtime.CompilerServices
         {
             Unsafe.As<byte, T>(ref destination) = value;
         }
-#endregion
+        #endregion
     }
 }
