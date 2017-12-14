@@ -979,4 +979,27 @@
 
         ret
     }
+
+    .method static public hidebysig void Branch.BackwardWithComplexPredecessor_Valid() cil managed 
+    {
+        ldnull
+        br          MethodEnd
+
+    Predecessor:
+        ldnull
+
+    BackwardBranch:
+        pop
+
+        ldnull
+        ldc.i4.1
+        brtrue      BackwardBranch
+
+    MethodEnd:
+        pop
+        ldc.i4.1
+        brtrue          Predecessor
+
+        ret
+    }
 }
