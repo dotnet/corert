@@ -55,7 +55,7 @@ namespace Internal.IL.Stubs
                 case "ByteOffset":
                     return new ILStubMethodIL(method, new byte[]
                     {
-                        (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ldarg_1,
+                        (byte)ILOpcode.ldarg_1, (byte)ILOpcode.ldarg_0,
                         (byte)ILOpcode.sub,
                         (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
             }
