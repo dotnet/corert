@@ -11,10 +11,11 @@
     <!-- <TargetOS Condition="'$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</TargetOS>  -->
     <TargetOS Condition="'$(TargetOS)' == ''">$(OS)</TargetOS>
     
-    <TargetRuntime Condition="'$(TargetOS)' == 'Windows_NT'">win-x64</TargetRuntime>
-    <TargetRuntime Condition="'$(TargetOS)' == 'Linux'">linux-x64</TargetRuntime>
-    <TargetRuntime Condition="'$(TargetOS)' == 'OSX'">osx-x64</TargetRuntime>
-    <_RuntimeILCompilerPackageName Condition="'$(TargetRuntime)' != ''">runtime.$(TargetRuntime).Microsoft.DotNet.ILCompiler</_RuntimeILCompilerPackageName>
+    <TargetRuntimeIdentifier Condition="'$(TargetOS)' == 'Windows_NT'">win-x64</TargetRuntimeIdentifier>
+    <TargetRuntimeIdentifier Condition="'$(TargetOS)' == 'Unix'">linux-x64</TargetRuntimeIdentifier>
+    <TargetRuntimeIdentifier Condition="'$(TargetOS)' == 'OSX'">osx-x64</TargetRuntimeIdentifier>
+
+    <_RuntimeILCompilerPackageName Condition="'$(TargetRuntimeIdentifier)' != ''">runtime.$(TargetRuntimeIdentifier).Microsoft.DotNet.ILCompiler</_RuntimeILCompilerPackageName>
     <RuntimeILCompilerBuildTargetPath>$(IlCompilerTargetsDir)$(_RuntimeILCompilerPackageName).targets</RuntimeILCompilerBuildTargetPath>
   </PropertyGroup>
 
