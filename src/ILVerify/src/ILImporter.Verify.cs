@@ -112,6 +112,9 @@ namespace Internal.IL
             public int? HandlerIndex;
             public int? FilterIndex;
 
+            // Used for Backward Branch Constraint
+            public bool HasPredecessorWithLowerOffset = false;
+
             public int ErrorCount
             {
                 get;
@@ -1232,8 +1235,6 @@ again:
 
             if (basicBlock.FilterStart || basicBlock.HandlerStart)
             {
-                Debug.Assert(basicBlock.EntryStack == null);
-
                 ExceptionRegion r;
                 if (basicBlock.HandlerIndex.HasValue)
                 {
@@ -1245,26 +1246,50 @@ again:
                 }
                 else
                 {
+                    Debug.Fail("Block marked as filter / handler start but no filter / handler index set.");
                     return;
                 }
 
-                if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
+                if (r.ILRegion.Kind == ILExceptionRegionKind.Filter || r.ILRegion.Kind == ILExceptionRegionKind.Catch)
                 {
-                    basicBlock.EntryStack = new StackValue[] { StackValue.CreateObjRef(GetWellKnownType(WellKnownType.Object)) };
+                    // stack must uninit or 1 (exception object)
+                    Check(basicBlock.EntryStack == null || basicBlock.EntryStack.Length == 1, VerifierError.FilterOrCatchUnexpectedStack);
+
+                    if (basicBlock.EntryStack == null)
+                        basicBlock.EntryStack = new StackValue[1];
+
+                    if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
+                    {
+                        basicBlock.EntryStack[0] = StackValue.CreateObjRef(GetWellKnownType(WellKnownType.Object));
+                    }
+                    else
+                    if (r.ILRegion.Kind == ILExceptionRegionKind.Catch)
+                    {
+                        var exceptionType = ResolveTypeToken(r.ILRegion.ClassToken);
+                        Check(!exceptionType.IsByRef, VerifierError.CatchByRef);
+                        basicBlock.EntryStack[0] = StackValue.CreateObjRef(exceptionType);
+                    }
                 }
                 else
-                if (r.ILRegion.Kind == ILExceptionRegionKind.Catch)
                 {
-                    basicBlock.EntryStack = new StackValue[] { StackValue.CreateObjRef(ResolveTypeToken(r.ILRegion.ClassToken)) };
-                }
-                else
-                {
-                    basicBlock.EntryStack = s_emptyStack;
+                    // stack must be uninit or empty
+                    Check(basicBlock.EntryStack == null || basicBlock.EntryStack.Length == 0, VerifierError.FinOrFaultNonEmptyStack);
+                    if (basicBlock.EntryStack == null)
+                        basicBlock.EntryStack = s_emptyStack;
                 }
             }
 
             if (basicBlock.EntryStack?.Length > 0)
             {
+                if (!basicBlock.TryStart && !basicBlock.HandlerStart && !basicBlock.FilterStart)
+                {
+                    // ECMA III 1.7.5 Backward Branch Constraints
+                    // if stack is not empty at beginning of this block,
+                    // there must exist a predecessor block with lower IL offset.
+                    Check(basicBlock.HasPredecessorWithLowerOffset, VerifierError.BackwardBranch);
+                }
+
+                // Copy stack state
                 if (_stack == null || _stack.Length < basicBlock.EntryStack.Length)
                     Array.Resize(ref _stack, basicBlock.EntryStack.Length);
                 Array.Copy(basicBlock.EntryStack, _stack, basicBlock.EntryStack.Length);
@@ -1840,6 +1865,9 @@ again:
         {
             if (!IsValidBranchTarget(_currentBasicBlock, next, isFallthrough) || _currentBasicBlock.ErrorCount > 0)
                 return;
+
+            if (_currentBasicBlock.StartOffset <= next.StartOffset)
+                next.HasPredecessorWithLowerOffset = true;
 
             PropagateThisState(_currentBasicBlock, next);
 
