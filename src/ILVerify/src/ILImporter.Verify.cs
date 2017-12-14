@@ -112,6 +112,9 @@ namespace Internal.IL
             public int? HandlerIndex;
             public int? FilterIndex;
 
+            // Used for Backward Branch Constraint
+            public bool HasPredecessorWithLowerOffset = false;
+
             public int ErrorCount
             {
                 get;
@@ -324,27 +327,43 @@ again:
 
                     // Keep track of prefixes
                     case ILOpcode.unaligned:
-                        SkipIL(1);
+                    case ILOpcode.no:
                         previousWasPrefix = true;
-                        break;
+                        SkipIL(1);
+                        continue;
                     case ILOpcode.constrained:
                         previousWasPrefix = true;
                         SkipIL(4);
-                        break;
+                        continue;
                     case ILOpcode.tail:
                     case ILOpcode.volatile_:
                     case ILOpcode.readonly_:
                         previousWasPrefix = true;
                         continue;
 
-                    // Skip all other Opcodes
-                    case ILOpcode.ldarg_s:
-                    case ILOpcode.ldloc_s:
-                    case ILOpcode.ldloca_s:
-                    case ILOpcode.stloc_s:
-                    case ILOpcode.ldc_i4_s:
+                    // Check for block predecessors with lower il offset
+                    case ILOpcode.br:
+                    case ILOpcode.leave:
+                        MarkPredecessorWithLowerOffset((int)ReadILUInt32());
+                        continue;
+                    case ILOpcode.brfalse:
+                    case ILOpcode.brtrue:
+                    case ILOpcode.beq:
+                    case ILOpcode.bge:
+                    case ILOpcode.bgt:
+                    case ILOpcode.ble:
+                    case ILOpcode.blt:
+                    case ILOpcode.bne_un:
+                    case ILOpcode.bge_un:
+                    case ILOpcode.bgt_un:
+                    case ILOpcode.ble_un:
+                    case ILOpcode.blt_un:
+                        MarkPredecessorWithLowerOffset((int)ReadILUInt32());
+                        break;
                     case ILOpcode.br_s:
                     case ILOpcode.leave_s:
+                        MarkPredecessorWithLowerOffset(ReadILByte());
+                        continue;
                     case ILOpcode.brfalse_s:
                     case ILOpcode.brtrue_s:
                     case ILOpcode.beq_s:
@@ -357,6 +376,32 @@ again:
                     case ILOpcode.bgt_un_s:
                     case ILOpcode.ble_un_s:
                     case ILOpcode.blt_un_s:
+                        MarkPredecessorWithLowerOffset(ReadILByte());
+                        break;
+                    case ILOpcode.switch_:
+                        {
+                            uint count = ReadILUInt32();
+                            int[] jmpDeltas = new int[count];
+                            for (uint i = 0; i < count; i++)
+                                jmpDeltas[i] = (int)ReadILUInt32();
+
+                            foreach (int delta in jmpDeltas)
+                                MarkPredecessorWithLowerOffset(delta);
+                        }
+                        break;
+
+                    // Skip all other Opcodes
+                    case ILOpcode.ret:
+                    case ILOpcode.throw_:
+                    case ILOpcode.rethrow:
+                    case ILOpcode.endfinally:
+                    case ILOpcode.endfilter:
+                        continue;
+                    case ILOpcode.ldarg_s:
+                    case ILOpcode.ldloc_s:
+                    case ILOpcode.ldloca_s:
+                    case ILOpcode.stloc_s:
+                    case ILOpcode.ldc_i4_s:
                         SkipIL(1);
                         break;
                     case ILOpcode.ldarg:
@@ -367,7 +412,6 @@ again:
                         break;
                     case ILOpcode.ldc_i4:
                     case ILOpcode.ldc_r4:
-                    case ILOpcode.jmp:
                     case ILOpcode.call:
                     case ILOpcode.calli:
                     case ILOpcode.callvirt:
@@ -398,22 +442,11 @@ again:
                     case ILOpcode.ldvirtftn:
                     case ILOpcode.initobj:
                     case ILOpcode.sizeof_:
-                    case ILOpcode.br:
-                    case ILOpcode.leave:
-                    case ILOpcode.brfalse:
-                    case ILOpcode.brtrue:
-                    case ILOpcode.beq:
-                    case ILOpcode.bge:
-                    case ILOpcode.bgt:
-                    case ILOpcode.ble:
-                    case ILOpcode.blt:
-                    case ILOpcode.bne_un:
-                    case ILOpcode.bge_un:
-                    case ILOpcode.bgt_un:
-                    case ILOpcode.ble_un:
-                    case ILOpcode.blt_un:
                         SkipIL(4);
                         break;
+                    case ILOpcode.jmp:
+                        SkipIL(4);
+                        continue;
                     case ILOpcode.ldc_i8:
                     case ILOpcode.ldc_r8:
                         SkipIL(8);
@@ -421,17 +454,20 @@ again:
                     case ILOpcode.prefix1:
                         opCode = (ILOpcode)(0x100 + ReadILByte());
                         goto again;
-                    case ILOpcode.switch_:
-                        {
-                            uint count = ReadILUInt32();
-                            for (uint i = 0; i < count; i++)
-                               SkipIL(4);
-                        }
-                        break;
                     default:
-                        continue;
+                        break;
                 }
+
+                var fallthrough = _basicBlocks[_currentOffset];
+                if (fallthrough != null)
+                    MarkPredecessorWithLowerOffset(0);
             }
+        }
+
+        void MarkPredecessorWithLowerOffset(int delta)
+        {
+            if (delta >= 0)
+                _basicBlocks[_currentOffset + delta].HasPredecessorWithLowerOffset = true;
         }
 
         void AbortBasicBlockVerification()
@@ -1232,8 +1268,6 @@ again:
 
             if (basicBlock.FilterStart || basicBlock.HandlerStart)
             {
-                Debug.Assert(basicBlock.EntryStack == null);
-
                 ExceptionRegion r;
                 if (basicBlock.HandlerIndex.HasValue)
                 {
@@ -1245,26 +1279,50 @@ again:
                 }
                 else
                 {
+                    Debug.Fail("Block marked as filter / handler start but no filter / handler index set.");
                     return;
                 }
 
-                if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
+                if (r.ILRegion.Kind == ILExceptionRegionKind.Filter || r.ILRegion.Kind == ILExceptionRegionKind.Catch)
                 {
-                    basicBlock.EntryStack = new StackValue[] { StackValue.CreateObjRef(GetWellKnownType(WellKnownType.Object)) };
+                    // stack must uninit or 1 (exception object)
+                    Check(basicBlock.EntryStack == null || basicBlock.EntryStack.Length == 1, VerifierError.FilterOrCatchUnexpectedStack);
+
+                    if (basicBlock.EntryStack == null)
+                        basicBlock.EntryStack = new StackValue[1];
+
+                    if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
+                    {
+                        basicBlock.EntryStack[0] = StackValue.CreateObjRef(GetWellKnownType(WellKnownType.Object));
+                    }
+                    else
+                    if (r.ILRegion.Kind == ILExceptionRegionKind.Catch)
+                    {
+                        var exceptionType = ResolveTypeToken(r.ILRegion.ClassToken);
+                        Check(!exceptionType.IsByRef, VerifierError.CatchByRef);
+                        basicBlock.EntryStack[0] = StackValue.CreateObjRef(exceptionType);
+                    }
                 }
                 else
-                if (r.ILRegion.Kind == ILExceptionRegionKind.Catch)
                 {
-                    basicBlock.EntryStack = new StackValue[] { StackValue.CreateObjRef(ResolveTypeToken(r.ILRegion.ClassToken)) };
-                }
-                else
-                {
-                    basicBlock.EntryStack = s_emptyStack;
+                    // stack must be uninit or empty
+                    Check(basicBlock.EntryStack == null || basicBlock.EntryStack.Length == 0, VerifierError.FinOrFaultNonEmptyStack);
+                    if (basicBlock.EntryStack == null)
+                        basicBlock.EntryStack = s_emptyStack;
                 }
             }
 
             if (basicBlock.EntryStack?.Length > 0)
             {
+                if (!basicBlock.TryStart && !basicBlock.HandlerStart && !basicBlock.FilterStart)
+                {
+                    // ECMA III 1.7.5 Backward Branch Constraints
+                    // if stack is not empty at beginning of this block,
+                    // there must exist a predecessor block with lower IL offset.
+                    Check(basicBlock.HasPredecessorWithLowerOffset, VerifierError.BackwardBranch);
+                }
+
+                // Copy stack state
                 if (_stack == null || _stack.Length < basicBlock.EntryStack.Length)
                     Array.Resize(ref _stack, basicBlock.EntryStack.Length);
                 Array.Copy(basicBlock.EntryStack, _stack, basicBlock.EntryStack.Length);
