@@ -110,7 +110,6 @@
     <Compile Include="Internal\Runtime\CompilerServices\RuntimeMethodHandleInfo.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\RuntimeSignature.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\OpenMethodResolver.cs" />
-    <Compile Include="Internal\Runtime\CompilerServices\Unsafe.cs" />
     <Compile Include="Internal\Runtime\TypeLoaderExceptionHelper.cs" />
     <Compile Include="Internal\Threading\Tracing\SpinLockTrace.cs" />
     <Compile Include="Internal\Toolchain\NonExecutableAttribute.cs" />
