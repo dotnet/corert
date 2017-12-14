@@ -327,27 +327,43 @@ again:
 
                     // Keep track of prefixes
                     case ILOpcode.unaligned:
-                        SkipIL(1);
+                    case ILOpcode.no:
                         previousWasPrefix = true;
-                        break;
+                        SkipIL(1);
+                        continue;
                     case ILOpcode.constrained:
                         previousWasPrefix = true;
                         SkipIL(4);
-                        break;
+                        continue;
                     case ILOpcode.tail:
                     case ILOpcode.volatile_:
                     case ILOpcode.readonly_:
                         previousWasPrefix = true;
                         continue;
 
-                    // Skip all other Opcodes
-                    case ILOpcode.ldarg_s:
-                    case ILOpcode.ldloc_s:
-                    case ILOpcode.ldloca_s:
-                    case ILOpcode.stloc_s:
-                    case ILOpcode.ldc_i4_s:
+                    // Check for block predecessors with lower il offset
+                    case ILOpcode.br:
+                    case ILOpcode.leave:
+                        MarkPredecessorWithLowerOffset((int)ReadILUInt32());
+                        continue;
+                    case ILOpcode.brfalse:
+                    case ILOpcode.brtrue:
+                    case ILOpcode.beq:
+                    case ILOpcode.bge:
+                    case ILOpcode.bgt:
+                    case ILOpcode.ble:
+                    case ILOpcode.blt:
+                    case ILOpcode.bne_un:
+                    case ILOpcode.bge_un:
+                    case ILOpcode.bgt_un:
+                    case ILOpcode.ble_un:
+                    case ILOpcode.blt_un:
+                        MarkPredecessorWithLowerOffset((int)ReadILUInt32());
+                        break;
                     case ILOpcode.br_s:
                     case ILOpcode.leave_s:
+                        MarkPredecessorWithLowerOffset(ReadILByte());
+                        continue;
                     case ILOpcode.brfalse_s:
                     case ILOpcode.brtrue_s:
                     case ILOpcode.beq_s:
@@ -360,6 +376,32 @@ again:
                     case ILOpcode.bgt_un_s:
                     case ILOpcode.ble_un_s:
                     case ILOpcode.blt_un_s:
+                        MarkPredecessorWithLowerOffset(ReadILByte());
+                        break;
+                    case ILOpcode.switch_:
+                        {
+                            uint count = ReadILUInt32();
+                            int[] jmpDeltas = new int[count];
+                            for (uint i = 0; i < count; i++)
+                                jmpDeltas[i] = (int)ReadILUInt32();
+
+                            foreach (int delta in jmpDeltas)
+                                MarkPredecessorWithLowerOffset(delta);
+                        }
+                        break;
+
+                    // Skip all other Opcodes
+                    case ILOpcode.ret:
+                    case ILOpcode.throw_:
+                    case ILOpcode.rethrow:
+                    case ILOpcode.endfinally:
+                    case ILOpcode.endfilter:
+                        continue;
+                    case ILOpcode.ldarg_s:
+                    case ILOpcode.ldloc_s:
+                    case ILOpcode.ldloca_s:
+                    case ILOpcode.stloc_s:
+                    case ILOpcode.ldc_i4_s:
                         SkipIL(1);
                         break;
                     case ILOpcode.ldarg:
@@ -370,7 +412,6 @@ again:
                         break;
                     case ILOpcode.ldc_i4:
                     case ILOpcode.ldc_r4:
-                    case ILOpcode.jmp:
                     case ILOpcode.call:
                     case ILOpcode.calli:
                     case ILOpcode.callvirt:
@@ -401,22 +442,11 @@ again:
                     case ILOpcode.ldvirtftn:
                     case ILOpcode.initobj:
                     case ILOpcode.sizeof_:
-                    case ILOpcode.br:
-                    case ILOpcode.leave:
-                    case ILOpcode.brfalse:
-                    case ILOpcode.brtrue:
-                    case ILOpcode.beq:
-                    case ILOpcode.bge:
-                    case ILOpcode.bgt:
-                    case ILOpcode.ble:
-                    case ILOpcode.blt:
-                    case ILOpcode.bne_un:
-                    case ILOpcode.bge_un:
-                    case ILOpcode.bgt_un:
-                    case ILOpcode.ble_un:
-                    case ILOpcode.blt_un:
                         SkipIL(4);
                         break;
+                    case ILOpcode.jmp:
+                        SkipIL(4);
+                        continue;
                     case ILOpcode.ldc_i8:
                     case ILOpcode.ldc_r8:
                         SkipIL(8);
@@ -424,17 +454,20 @@ again:
                     case ILOpcode.prefix1:
                         opCode = (ILOpcode)(0x100 + ReadILByte());
                         goto again;
-                    case ILOpcode.switch_:
-                        {
-                            uint count = ReadILUInt32();
-                            for (uint i = 0; i < count; i++)
-                               SkipIL(4);
-                        }
-                        break;
                     default:
-                        continue;
+                        break;
                 }
+
+                var fallthrough = _basicBlocks[_currentOffset];
+                if (fallthrough != null)
+                    MarkPredecessorWithLowerOffset(0);
             }
+        }
+
+        void MarkPredecessorWithLowerOffset(int delta)
+        {
+            if (delta >= 0)
+                _basicBlocks[_currentOffset + delta].HasPredecessorWithLowerOffset = true;
         }
 
         void AbortBasicBlockVerification()
@@ -1865,9 +1898,6 @@ again:
         {
             if (!IsValidBranchTarget(_currentBasicBlock, next, isFallthrough) || _currentBasicBlock.ErrorCount > 0)
                 return;
-
-            if (_currentBasicBlock.StartOffset <= next.StartOffset)
-                next.HasPredecessorWithLowerOffset = true;
 
             PropagateThisState(_currentBasicBlock, next);
 
