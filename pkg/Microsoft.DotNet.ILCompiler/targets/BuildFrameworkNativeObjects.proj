@@ -8,7 +8,7 @@
     <BuildingFrameworkLibrary>true</BuildingFrameworkLibrary>
   </PropertyGroup>
   
-  <Import Project="$(RuntimePackagePath)\targets\Microsoft.NETCore.Native.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)..\build\Microsoft.DotNet.ILCompiler.targets" />
 
   <Target Name="BuildAllFrameworkLibraries"
     Inputs="@(DefaultFrameworkAssemblies)"

@@ -111,7 +111,7 @@
     BuildFrameworkLib is invoked before IlcCompile in multi-module builds to 
     produce the shared framework library on demand
   -->
-  <Target Name="BuildFrameworkLib" Condition="'$(DisableFrameworkLibGeneration)' != 'true'" DependsOnTargets="SetupProperties" BeforeTargets="Publish">
+  <Target Name="BuildFrameworkLib" Condition="'$(DisableFrameworkLibGeneration)' != 'true'" DependsOnTargets="SetupProperties" BeforeTargets="IlcCompile">
     <ItemGroup>
     <!-- This builds the project with the ILC implementation in the identified runtime package to avoid resolving it again  -->
       <ProjectToBuild Include="$(IlCompilerTargetsDir)BuildFrameworkNativeObjects.proj">
@@ -119,7 +119,7 @@
         </AdditionalProperties>
       </ProjectToBuild>
     </ItemGroup>
-    <MSBuild Projects="@(ProjectToBuild)" BuildInParallel="false" />
+    <MSBuild Projects="@(ProjectToBuild)" BuildInParallel="true" />
   </Target>
   
   <Target Name="IlcCompile" Inputs="@(IlcCompileInput)" Outputs="$(NativeIntermediateOutputPath)%(ManagedBinary.Filename)$(IlcOutputFileExt)" DependsOnTargets="$(IlcCompileDependsOn)" BeforeTargets="Publish">
