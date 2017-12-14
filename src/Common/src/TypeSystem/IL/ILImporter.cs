@@ -141,6 +141,7 @@ namespace Internal.IL
                     case ILOpcode.stloc_s:
                     case ILOpcode.ldc_i4_s:
                     case ILOpcode.unaligned:
+                    case ILOpcode.no:
                         SkipIL(1);
                         break;
                     case ILOpcode.ldarg:
