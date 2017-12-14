@@ -931,4 +931,52 @@
         call    void BranchingTestsType::StaticMethod()
         ret
     }
+
+    .method static public hidebysig void Branch.BackwardWithPredecessor_Valid() cil managed 
+    {
+        ldnull
+        ldc.i4.0
+        brfalse     MethodEnd
+
+    BackwardBranch:
+        pop
+
+        ldnull
+        ldc.i4.1
+        brtrue      BackwardBranch
+
+    MethodEnd:
+        pop
+        ret
+    }
+
+    .method static public hidebysig void Branch.BackwardWithoutPredecessor_Invalid_BackwardBranch() cil managed 
+    {
+        br      MethodEnd
+
+    BackwardBranch:
+        pop
+
+    MethodEnd:
+        ldnull
+        ldc.i4.1
+        brtrue      BackwardBranch
+
+        pop
+        ret
+    }
+
+    .method static public hidebysig void Branch.BackwardEmptyStack_Valid() cil managed 
+    {
+        br      MethodEnd
+
+    BackwardBranch:
+        nop
+
+    MethodEnd:
+        ldc.i4.1
+        brtrue      BackwardBranch
+
+        ret
+    }
 }
