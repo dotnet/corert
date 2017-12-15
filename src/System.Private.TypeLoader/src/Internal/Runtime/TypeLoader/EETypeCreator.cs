@@ -318,7 +318,9 @@ namespace Internal.Runtime.TypeLoader
                         rareFlags |= (uint)EETypeRareFlags.RequiresAlign8Flag;
                     else
                         rareFlags &= ~(uint)EETypeRareFlags.RequiresAlign8Flag;
+#endif
 
+#if ARM || ARM64
                     if (state.IsHFA)
                         rareFlags |= (uint)EETypeRareFlags.IsHFAFlag;
                     else

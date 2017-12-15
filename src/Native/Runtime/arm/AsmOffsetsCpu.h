@@ -21,7 +21,7 @@ PLAT_ASM_OFFSET(130, ExInfo, m_notifyDebuggerSP)
 PLAT_ASM_OFFSET(4, PInvokeTransitionFrame, m_RIP)
 PLAT_ASM_OFFSET(8, PInvokeTransitionFrame, m_FramePointer)
 PLAT_ASM_OFFSET(0c, PInvokeTransitionFrame, m_pThread)
-PLAT_ASM_OFFSET(10, PInvokeTransitionFrame, m_dwFlags)
+PLAT_ASM_OFFSET(10, PInvokeTransitionFrame, m_Flags)
 PLAT_ASM_OFFSET(14, PInvokeTransitionFrame, m_PreservedRegs)
 
 PLAT_ASM_SIZEOF(118, StackFrameIterator)

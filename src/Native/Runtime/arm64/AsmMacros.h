@@ -15,6 +15,11 @@ TSF_SuppressGcStress            equ 0x08
 TSF_DoNotTriggerGc              equ 0x10
 TSF_SuppressGcStress__OR__TSF_DoNotTriggerGC equ 0x18
 
+;; Bit position for the flags above, to be used with tbz/tbnz instructions
+TSF_Attached_Bit                equ 0
+TSF_SuppressGcStress_Bit        equ 3
+TSF_DoNotTriggerGc_Bit          equ 4
+
 ;; GC type flags
 GC_ALLOC_FINALIZE               equ 1
 GC_ALLOC_ALIGN8_BIAS            equ 4
@@ -33,11 +38,52 @@ PTFF_SAVE_X27           equ 0x00000100
 PTFF_SAVE_X28           equ 0x00000200
 PTFF_SAVE_SP            equ 0x00000400
 PTFF_SAVE_ALL_PRESERVED equ 0x000003FF  ;; NOTE: x19-x28
-PTFF_SAVE_FP            equ 0x00080000
-PTFF_SAVE_LR            equ 0x00100000
-PTFF_X0_IS_GCREF        equ 0x00200000  ;; iff PTFF_SAVE_X0 : set->x0 is Object, clear->x0 is scalar
-PTFF_X0_IS_BYREF        equ 0x00400000  ;; iff PTFF_SAVE_X0 : set->x0 is ByRef, clear->x0 is Object or scalar
-PTFF_THREAD_ABORT       equ 0x00800000  ;; indicates that ThreadAbortException should be thrown when returning from the transition
+PTFF_SAVE_X0            equ 0x00000800
+PTFF_SAVE_X1            equ 0x00001000
+PTFF_SAVE_X2            equ 0x00002000
+PTFF_SAVE_X3            equ 0x00004000
+PTFF_SAVE_X4            equ 0x00008000
+PTFF_SAVE_X5            equ 0x00010000
+PTFF_SAVE_X6            equ 0x00020000
+PTFF_SAVE_X7            equ 0x00040000
+PTFF_SAVE_X8            equ 0x00080000
+PTFF_SAVE_X9            equ 0x00100000
+PTFF_SAVE_X10           equ 0x00200000
+PTFF_SAVE_X11           equ 0x00400000
+PTFF_SAVE_X12           equ 0x00800000
+PTFF_SAVE_X13           equ 0x01000000
+PTFF_SAVE_X14           equ 0x02000000
+PTFF_SAVE_X15           equ 0x04000000
+PTFF_SAVE_X16           equ 0x08000000
+PTFF_SAVE_X17           equ 0x10000000
+PTFF_SAVE_X18           equ 0x20000000
+PTFF_SAVE_ALL_SCRATCH   equ 0x3FFFF800  ;; NOTE: X0-X18
+PTFF_SAVE_FP            equ 0x40000000
+PTFF_SAVE_LR            equ 0x80000000
+
+;; NOTE: The following flags represent the upper 32 bits of the PInvokeTransitionFrameFlags. 
+;; Since the assembler doesn't support 64 bit constants in any way, we need to define just
+;; the upper bits here
+PTFF_X0_IS_GCREF_HI     equ 0x00000001 ;; iff PTFF_SAVE_X0 : set->x0 is Object, clear->x0 is scalar
+PTFF_X0_IS_BYREF_HI     equ 0x00000002 ;; iff PTFF_SAVE_X0 : set->x0 is ByRef, clear->x0 is Object or scalar
+PTFF_X1_IS_GCREF_HI     equ 0x00000004 ;; iff PTFF_SAVE_X1 : set->x1 is Object, clear->x1 is scalar
+PTFF_X1_IS_BYREF_HI     equ 0x00000008 ;; iff PTFF_SAVE_X1 : set->x1 is ByRef, clear->x1 is Object or scalar
+PTFF_THREAD_ABORT_HI    equ 0x00000010 ;; indicates that ThreadAbortException should be thrown when returning from the transition
+
+;; Bit position for the flags above, to be used with tbz / tbnz instructions
+PTFF_THREAD_ABORT_BIT   equ 36
+
+;; These must match the TrapThreadsFlags enum
+TrapThreadsFlags_None            equ 0
+TrapThreadsFlags_AbortInProgress equ 1
+TrapThreadsFlags_TrapThreads     equ 2
+
+;; Bit position for the flags above, to be used with tbz / tbnz instructions
+TrapThreadsFlags_AbortInProgress_Bit equ 0
+TrapThreadsFlags_TrapThreads_Bit     equ 1
+
+;; This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
+STATUS_REDHAWK_THREAD_ABORT      equ 0x43
 
 ;;
 ;; Rename fields of nested structs
@@ -51,11 +97,59 @@ OFFSETOF__Thread__m_alloc_context__alloc_limit      equ OFFSETOF__Thread__m_rgbA
     EXTERN RhpGcAlloc
     EXTERN RhpPublishObject
     EXTERN RhExceptionHandling_FailedAllocation
-    IMPORT g_lowest_address
-    IMPORT g_highest_address
-    IMPORT g_ephemeral_low
-    IMPORT g_ephemeral_high
-    IMPORT g_card_table
+    EXTERN RhDebugBreak
+    EXTERN RhpWaitForSuspend2
+    EXTERN RhpWaitForGC2
+    EXTERN RhpReversePInvokeAttachOrTrapThread2
+    EXTERN RhpCalculateStackTraceWorker
+    EXTERN RhThrowHwEx
+    EXTERN RhThrowEx
+    EXTERN RhRethrow
+
+    EXTERN RhpTrapThreads
+    EXTERN g_lowest_address
+    EXTERN g_highest_address
+    EXTERN g_ephemeral_low
+    EXTERN g_ephemeral_high
+    EXTERN g_card_table
+
+
+;; -----------------------------------------------------------------------------
+;; Macro used to assign an alternate name to a symbol containing characters normally disallowed in a symbol
+;; name (e.g. C++ decorated names).
+    MACRO
+      SETALIAS   $name, $symbol
+        GBLS    $name
+$name   SETS    "|$symbol|"
+    MEND
+
+;;-----------------------------------------------------------------------------
+;; Macro for loading a 64-bit constant by a minimal number of instructions
+;; Since the asssembles doesn't support 64 bit arithmetics in expressions, 
+;; the value is passed in as lo, hi pair.
+    MACRO
+        MOVL64 $Reg, $ConstantLo, $ConstantHi
+
+        LCLS MovInstr
+MovInstr SETS "movz"
+
+         IF ((($ConstantHi):SHR:16):AND:0xffff) != 0
+         $MovInstr $Reg, #((($Constant):SHR:16):AND:0xffff), lsl #48
+MovInstr SETS "movk"
+         ENDIF
+
+         IF (($ConstantHi):AND:0xffff) != 0
+         $MovInstr $Reg, #(($ConstantHi):AND:0xffff), lsl #32
+MovInstr SETS "movk"
+         ENDIF
+
+        IF ((($ConstantLo):SHR:16):AND:0xffff) != 0
+        $MovInstr $Reg, #((($ConstantLo):SHR:16):AND:0xffff), lsl #16
+MovInstr SETS "movk"
+        ENDIF
+
+        $MovInstr $Reg, #(($ConstantLo):AND:0xffff)
+    MEND
 
 ;; -----------------------------------------------------------------------------
 ;;
@@ -63,15 +157,17 @@ OFFSETOF__Thread__m_alloc_context__alloc_limit      equ OFFSETOF__Thread__m_rgbA
 ;;
     MACRO
         EXPORT_POINTER_TO_ADDRESS $Name
-1
+        LCLS CodeLbl
+CodeLbl SETS "$Name":CC:"Lbl"
+$CodeLbl
         AREA | .rdata | , ALIGN = 8, DATA, READONLY
 $Name
-        DCQ         $Name, 0
+        DCQ         $CodeLbl
         EXPORT      $Name
         TEXTAREA
         ROUT
 
-    MEND
+    MEND 
 
 ;; -----------------------------------------------------------------------------
 ;;
@@ -105,8 +201,14 @@ __SECTIONREL_tls_CurrentThread SETS "SECTIONREL_tls_CurrentThread"
     MACRO
         INLINE_GETTHREAD $destReg, $trashReg
 
+        ;; The following macro variables are just some assembler magic to get the name of the 32-bit version
+        ;; of $trashReg. It does it by string manipulation. Replaces something like x3 with w3.
+        LCLS TrashRegister32Bit
+TrashRegister32Bit SETS "$trashReg"
+TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister32Bit) - 1))
+
         ldr         $trashReg, =_tls_index
-        ldr         $trashReg, [$trashReg]
+        ldr         $TrashRegister32Bit, [$trashReg]
         ldr         $destReg, [xpr, #__tls_array]
         ldr         $destReg, [$destReg, $trashReg lsl #3]
         ldr         $trashReg, =$__SECTIONREL_tls_CurrentThread
@@ -129,6 +231,21 @@ $__SECTIONREL_tls_CurrentThread
 
 __SECTIONREL_tls_CurrentThread SETS "$__SECTIONREL_tls_CurrentThread":CC:"_"
 
+    MEND
+
+    MACRO
+        INLINE_THREAD_UNHIJACK $threadReg, $trashReg1, $trashReg2
+        ;;
+        ;; Thread::Unhijack()
+        ;;
+        ldr         $trashReg1, [$threadReg, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+        cbz         $trashReg1, %ft0
+
+        ldr         $trashReg2, [$threadReg, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
+        str         $trashReg1, [$trashReg2]
+        str         xzr, [$threadReg, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
+        str         xzr, [$threadReg, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+0
     MEND
 
 ;; -----------------------------------------------------------------------------
@@ -156,12 +273,6 @@ DEFAULT_FRAME_SAVE_FLAGS equ PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
     MACRO
         PUSH_COOP_PINVOKE_FRAME $trashReg
 
-        ;; The following macro variables are just some assembler magic to get the name of the 32-bit version
-        ;; of $trashReg. It does it by string manipulation. Replaces something like x3 with w3.
-        LCLS TrashRegister32Bit
-TrashRegister32Bit SETS "$trashReg"
-TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister32Bit) - 1))
-
         PROLOG_SAVE_REG_PAIR   fp, lr, #-0x80!      ;; Push down stack pointer and store FP and LR
 
         ;; 0x10 bytes reserved for Thread* and flags
@@ -178,8 +289,8 @@ TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister
         str                    $trashReg, [sp, #0x70]
 
         ;; Record the bitmask of saved registers in the frame (slot #3)
-        mov                    $TrashRegister32Bit, #DEFAULT_FRAME_SAVE_FLAGS
-        str                    $TrashRegister32Bit, [sp, #0x18]
+        mov                    $trashReg, #DEFAULT_FRAME_SAVE_FLAGS
+        str                    $trashReg, [sp, #0x18]
 
         mov $trashReg, sp
     MEND
@@ -195,3 +306,12 @@ TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister
         EPILOG_RESTORE_REG_PAIR   x27, x28, #0x60
         EPILOG_RESTORE_REG_PAIR   fp, lr, #0x80!
     MEND
+
+
+#ifdef FEATURE_GC_STRESS
+    SETALIAS THREAD__HIJACKFORGCSTRESS, ?HijackForGcStress@Thread@@SAXPEAUPAL_LIMITED_CONTEXT@@@Z
+    SETALIAS REDHAWKGCINTERFACE__STRESSGC, ?StressGc@RedhawkGCInterface@@SAXXZ
+
+    EXTERN $REDHAWKGCINTERFACE__STRESSGC
+    EXTERN $THREAD__HIJACKFORGCSTRESS
+#endif ;; FEATURE_GC_STRESS

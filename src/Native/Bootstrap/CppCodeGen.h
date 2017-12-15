@@ -52,6 +52,6 @@ struct PInvokeTransitionFrame
     void*       m_RIP;
     void*       m_pThread;  // unused by stack crawler, this is so GetThread is only called once per method
                             // can be an invalid pointer in universal transition cases (which never need to call GetThread)
-    uint32_t    m_dwFlags;  // PInvokeTransitionFrameFlags
+    uint32_t    m_Flags;  // PInvokeTransitionFrameFlags
 };
 #endif

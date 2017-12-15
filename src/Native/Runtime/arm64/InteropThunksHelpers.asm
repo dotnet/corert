@@ -19,6 +19,12 @@ ThunkParamSlot % 0x8
 
     EXTERN _tls_index
 
+    ;; Section relocs are 32 bits. Using an extra DCD initialized to zero for 8-byte alignment.
+__SECTIONREL_ThunkParamSlot
+        DCD ThunkParamSlot
+        RELOC 8, ThunkParamSlot      ;; SECREL
+        DCD 0
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Interop Thunks Helpers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     ;;
@@ -33,12 +39,10 @@ ThunkParamSlot % 0x8
         ;; Custom calling convention:
         ;;      xip0 pointer to the current thunk's data block (data contains 2 pointer values: context + target pointers)
         
-        brk 0xf000      ;; TODO: remove after debugging/testing stub
-
         ;; Save context data into the ThunkParamSlot thread-local variable
         ;; A pointer to the delegate and function pointer for open static delegate should have been saved in the thunk's context cell during thunk allocation
         ldr         x10, =_tls_index
-        ldr         x10, [x10]
+        ldr         w10, [x10]
         ldr         x9, [xpr, #__tls_array]
         ldr         x9, [x9, x10 lsl #3]     ;; x9 <- our TLS base
        
@@ -48,7 +52,8 @@ ThunkParamSlot % 0x8
 
         ;; store thunk address in thread static
         ldr         x10, [xip0]
-        ldr         x11, =ThunkParamSlot
+        ldr         x11, =__SECTIONREL_ThunkParamSlot
+        ldr         x11, [x11]
         str         x10, [x9, x11]            ;; ThunkParamSlot <- context slot data
         
         ;; Now load the target address and jump to it.
@@ -70,14 +75,14 @@ ThunkParamSlot % 0x8
     ;; IntPtr RhGetCurrentThunkContext()
     ;;
     LEAF_ENTRY RhGetCurrentThunkContext
-        brk 0xf000      ;; TODO: remove after debugging/testing stub
 
         ldr         x1, =_tls_index
-        ldr         x1, [x1]
+        ldr         w1, [x1]
         ldr         x0, [xpr, #__tls_array]
         ldr         x0, [x0, x1 lsl #3]     ;; x0 <- our TLS base
 
-        ldr         x1, =ThunkParamSlot
+        ldr         x1, =__SECTIONREL_ThunkParamSlot
+        ldr         x1, [x1]
         ldr         x0, [x0, x1]            ;; x0 <- ThunkParamSlot
 
         ret

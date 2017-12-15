@@ -215,7 +215,7 @@ COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo,
 }
 
 
-#if defined(_AMD64_) || defined(_ARM_) || defined(_X86_)
+#if defined(_AMD64_) || defined(_ARM_) || defined(_X86_) || defined(_ARM64_)
 // ARM64TODO
 struct DISPATCHER_CONTEXT
 {

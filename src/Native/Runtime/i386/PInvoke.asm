@@ -100,7 +100,7 @@ _RhpWaitForGC proc public
 NoWait:
         test        [RhpTrapThreads], TrapThreadsFlags_AbortInProgress
         jz          Done
-        test        dword ptr [ebx + OFFSETOF__PInvokeTransitionFrame__m_dwFlags], PTFF_THREAD_ABORT
+        test        dword ptr [ebx + OFFSETOF__PInvokeTransitionFrame__m_Flags], PTFF_THREAD_ABORT
         jz          Done
 
         mov         ecx, STATUS_REDHAWK_THREAD_ABORT

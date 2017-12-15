@@ -130,7 +130,7 @@ namespace Internal.Runtime.CallConverter
         }
         public bool IsHFA()
         {
-#if !ARM
+#if !ARM && !ARM64
             return false;
 #else
             if (_isByRef)
@@ -143,14 +143,17 @@ namespace Internal.Runtime.CallConverter
 
         public CorElementType GetHFAType()
         {
+            Debug.Assert(IsHFA());
 #if ARM
             if (RequiresAlign8())
             {
                 return CorElementType.ELEMENT_TYPE_R8;
             }
-#endif
-#if ARM64
-            Debug.Assert(false); // HFA8 detection not yet implemented for this platform
+#elif ARM64
+            if (_eeType->FieldAlignmentRequirement == IntPtr.Size)
+            {
+                return CorElementType.ELEMENT_TYPE_R8;
+            }
 #endif
             return CorElementType.ELEMENT_TYPE_R4;
         }
@@ -273,8 +276,12 @@ namespace Internal.Runtime.CallConverter
         public int m_idxStack;     // First stack slot used (or -1)
         public int m_cStack;       // Count of stack slots used (or 0)
 
+#if _TARGET_ARM64_
+        public bool m_isSinglePrecision;        // For determining if HFA is single or double precision
+#endif
+
 #if _TARGET_ARM_
-        public bool m_fRequires64BitAlignment; // True if the argument should always be aligned (in registers or on the stack
+        public bool m_fRequires64BitAlignment;  // True if the argument should always be aligned (in registers or on the stack
 #endif
 
         // Initialize to represent a non-placed argument (no register or stack slots referenced).
@@ -286,6 +293,11 @@ namespace Internal.Runtime.CallConverter
             m_cGenReg = 0;
             m_idxStack = -1;
             m_cStack = 0;
+
+#if _TARGET_ARM64_
+            m_isSinglePrecision = false;
+#endif
+
 #if _TARGET_ARM_
             m_fRequires64BitAlignment = false;
 #endif
@@ -714,17 +726,20 @@ namespace Internal.Runtime.CallConverter
 
 #if _TARGET_X86_
             // x86 is special as always
-            //    ret += this.HasThis() ? offsetof(ArgumentRegisters, EDX) : offsetof(ArgumentRegisters, ECX);
             // DESKTOP BEHAVIOR            ret += this.HasThis() ? ArgumentRegisters.GetOffsetOfEdx() : ArgumentRegisters.GetOffsetOfEcx();
             int ret = TransitionBlock.GetOffsetOfArgs();
 #else
             // RetBuf arg is in the first argument register by default
             int ret = TransitionBlock.GetOffsetOfArgumentRegisters();
 
+#if _TARGET_ARM64_
+            ret += ArgumentRegisters.GetOffsetOfx8();
+#else
             // But if there is a this pointer, push it to the second.
             if (this.HasThis())
                 ret += IntPtr.Size;
-#endif
+#endif  // _TARGET_ARM64_
+#endif  // _TARGET_X86_
 
             return ret;
         }
@@ -747,7 +762,7 @@ namespace Internal.Runtime.CallConverter
                 ret += IntPtr.Size;
             }
 
-            if (this.HasRetBuffArg())
+            if (this.HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
             {
                 ret += IntPtr.Size;
             }
@@ -786,7 +801,7 @@ namespace Internal.Runtime.CallConverter
                 ret += IntPtr.Size;
             }
 
-            if (this.HasRetBuffArg())
+            if (this.HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
             {
                 ret += IntPtr.Size;
             }
@@ -816,7 +831,7 @@ namespace Internal.Runtime.CallConverter
                 if (this.HasThis())
                     numRegistersUsed++;
 
-                if (this.HasRetBuffArg())
+                if (this.HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
                 {
 #if !_TARGET_X86_
                     numRegistersUsed++;
@@ -916,6 +931,15 @@ namespace Internal.Runtime.CallConverter
 
             int argSize = TypeHandle.GetElemSize(argType, _argTypeHandle);
 
+#if _TARGET_ARM64_
+            // NOT DESKTOP BEHAVIOR: The S and D registers overlap, and the UniversalTransitionThunk copies D registers to the transition blocks. We'll need
+            // to work with the D registers here as well.
+            if (argType == CorElementType.ELEMENT_TYPE_VALUETYPE && _argTypeHandle.IsHFA() && _argTypeHandle.GetHFAType() == CorElementType.ELEMENT_TYPE_R4)
+            {
+                argSize *= 2;
+            }
+#endif
+
             _argType = argType;
             _argSize = argSize;
 
@@ -965,7 +989,7 @@ namespace Internal.Runtime.CallConverter
 
                 case CorElementType.ELEMENT_TYPE_VALUETYPE:
                     {
-                        // UNIXTODO: Passing of structs, HFAs. For now, use the Windows convention.
+                        // UNIXTODO: FEATURE_UNIX_AMD64_STRUCT_PASSING: Passing of structs, HFAs. For now, use the Windows convention.
                         argSize = IntPtr.Size;
                         break;
                     }
@@ -1214,7 +1238,8 @@ namespace Internal.Runtime.CallConverter
                         if (_argTypeHandle.IsHFA())
                         {
                             CorElementType type = _argTypeHandle.GetHFAType();
-                            cFPRegs = (type == CorElementType.ELEMENT_TYPE_R4) ? (argSize / sizeof(float)) : (argSize / sizeof(double));
+                            // DESKTOP BEHAVIOR cFPRegs = (type == CorElementType.ELEMENT_TYPE_R4) ? (argSize / sizeof(float)) : (argSize / sizeof(double));
+                            cFPRegs = argSize / sizeof(double);
                         }
                         else
                         {
@@ -1309,7 +1334,7 @@ namespace Internal.Runtime.CallConverter
             if (this.HasThis())
                 numRegistersUsed++;
 
-            if (this.HasRetBuffArg())
+            if (this.HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
             {
                 // DESKTOP BEHAVIOR                numRegistersUsed++;
                 // On ProjectN ret buff arg is passed on the call stack as the top stack arg
@@ -1505,7 +1530,11 @@ namespace Internal.Runtime.CallConverter
                 if (!_argTypeHandle.IsNull() && _argTypeHandle.IsHFA())
                 {
                     CorElementType type = _argTypeHandle.GetHFAType();
-                    pLoc->m_cFloatReg = (type == CorElementType.ELEMENT_TYPE_R4) ? GetArgSize() / sizeof(float) : GetArgSize() / sizeof(double);
+                    bool isFloatType = (type == CorElementType.ELEMENT_TYPE_R4);
+
+                    // DESKTOP BEHAVIOR pLoc->m_cFloatReg = isFloatType ? GetArgSize() / sizeof(float) : GetArgSize() / sizeof(double);
+                    pLoc->m_cFloatReg = GetArgSize() / sizeof(double);
+                    pLoc->m_isSinglePrecision = isFloatType;
                 }
                 else
                 {
@@ -1530,7 +1559,7 @@ namespace Internal.Runtime.CallConverter
             }
             else
             {
-                pLoc->m_idxStack = TransitionBlock.GetArgumentIndexFromOffset(argOffset) - 8;
+                pLoc->m_idxStack = TransitionBlock.GetStackArgumentIndexFromOffset(argOffset);
                 pLoc->m_cStack = cSlots;
             }
         }
@@ -1542,6 +1571,14 @@ namespace Internal.Runtime.CallConverter
         {
             //        LIMITED_METHOD_CONTRACT;
 
+            if (argOffset == TransitionBlock.StructInRegsOffset)
+            {
+                // We always already have argLocDesc for structs passed in registers, we 
+                // compute it in the GetNextOffset for those since it is always needed.
+                Debug.Assert(false);
+                return;
+            }
+        
             pLoc->Init();
 
             if (TransitionBlock.IsFloatArgumentRegisterOffset(argOffset))
@@ -1568,7 +1605,7 @@ namespace Internal.Runtime.CallConverter
                 pLoc->m_cStack = cSlots;
             }
         }
-#endif // _TARGET_ARM64_ && UNIX_AMD64_ABI
+#endif // _TARGET_AMD64_ && UNIX_AMD64_ABI
 
         private int _nSizeOfArgStack;      // Cached value of SizeOfArgStack
 
@@ -1678,9 +1715,16 @@ namespace Internal.Runtime.CallConverter
                         {
                             CorElementType hfaType = thRetType.GetHFAType();
 
+#if _TARGET_ARM64_
+                            // DESKTOP BEHAVIOR fpReturnSize = (hfaType == CorElementType.ELEMENT_TYPE_R4) ? (4 * (uint)sizeof(float)) : (4 * (uint)sizeof(double));
+                            // S and D registers overlap. Since we copy D registers in the UniversalTransitionThunk, we'll
+                            // thread floats like doubles during copying.
+                            fpReturnSize = 4 * (uint)sizeof(double);
+#else
                             fpReturnSize = (hfaType == CorElementType.ELEMENT_TYPE_R4) ?
                                 (4 * (uint)sizeof(float)) :
                                 (4 * (uint)sizeof(double));
+#endif
 
                             break;
                         }
@@ -1744,6 +1788,16 @@ namespace Internal.Runtime.CallConverter
         {
             Debug.Assert(0 == (alignment & (alignment - 1)));
             return 0 == (val.ToInt64() & (alignment - 1));
+        }
+
+        public static bool IsRetBuffPassedAsFirstArg()
+        {
+            //        WRAPPER_NO_CONTRACT; 
+#if !_TARGET_ARM64_
+            return true;
+#else
+            return false;
+#endif
         }
     };
 }

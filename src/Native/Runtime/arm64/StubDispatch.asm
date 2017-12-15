@@ -12,17 +12,37 @@
     EXTERN RhpCidResolve
     EXTERN RhpUniversalTransition_DebugStepTailCall
 
+    EXTERN t_TLS_DispatchCell
+
     MACRO
         GET_TLS_DISPATCH_CELL
-        ;; ARM64TODO
-        brk 0xf000
+
+        ldr         x9, =_tls_index
+        ldr         w9, [x9]
+        ldr         xip1, [xpr, #__tls_array]
+        ldr         xip1, [xip1, x9 lsl #3]
+        ldr         x9, =SECTIONREL_t_TLS_DispatchCell
+        ldr         x9, [x9]
+        ldr         xip1, [xip1, x9]
     MEND
 
     MACRO
         SET_TLS_DISPATCH_CELL
-        ;; ARM64TODO
-        brk 0xf000
+        ;; xip1 : Value to be assigned to the TLS variable
+
+        ldr         x9, =_tls_index
+        ldr         w9, [x9]
+        ldr         x10, [xpr, #__tls_array]
+        ldr         x10, [x10, x9 lsl #3]
+        ldr         x9, =SECTIONREL_t_TLS_DispatchCell
+        ldr         x9, [x9]
+        str         xip1, [x10, x9]
     MEND
+
+SECTIONREL_t_TLS_DispatchCell
+        DCD t_TLS_DispatchCell
+        RELOC 8, t_TLS_DispatchCell      ;; SECREL
+        DCD 0
 
     ;; Macro that generates code to check a single cache entry.
     MACRO
@@ -41,21 +61,41 @@
 
 
     LEAF_ENTRY RhpCastableObjectDispatch_CommonStub
-        brk 0xf000
+        ;; Custom calling convention:
+        ;;      xip0 has pointer to the current thunk's data block
+
+        ;; store dispatch cell address in thread static
+        ldr     xip1, [xip0]
+        SET_TLS_DISPATCH_CELL
+
+        ;; Now load the target address and jump to it.
+        ldr     x9, [xip0, #8]
+        ret     x9
     LEAF_END RhpCastableObjectDispatch_CommonStub
 
     LEAF_ENTRY RhpTailCallTLSDispatchCell
-        brk 0xf000
+        ;; Load the dispatch cell out of the TLS variable
+        GET_TLS_DISPATCH_CELL
+
+        ;; Tail call to the target of the dispatch cell, preserving the cell address in xip1
+        ldr     x9, [xip1]
+        ret     x9
     LEAF_END RhpTailCallTLSDispatchCell
 
     LEAF_ENTRY RhpCastableObjectDispatchHelper_TailCalled
-        brk 0xf000
+        ;; Load the dispatch cell out of the TLS variable
+        GET_TLS_DISPATCH_CELL
+        b       RhpCastableObjectDispatchHelper
     LEAF_END RhpCastableObjectDispatchHelper_TailCalled
 
     LEAF_ENTRY  RhpCastableObjectDispatchHelper
-        brk 0xf000
-    ALTERNATE_ENTRY RhpCastableObjectDispatchHelper2
-        brk 0xf000
+        ;; The address of the indirection cell is passed to this function in the xip1
+        ;; The calling convention of the universal thunk is that the parameter
+        ;; for the universal thunk target is to be placed in xip1
+        ;; and the universal thunk target address is to be placed in xip0
+        ldr     xip0, =RhpCastableObjectResolve
+
+        b       RhpUniversalTransition_DebugStepTailCall
     LEAF_END RhpCastableObjectDispatchHelper
 
 
@@ -74,7 +114,7 @@ StubName    SETS    "RhpInterfaceDispatch$entries"
         ;; xip1 currently holds the indirection cell address. We need to get the cache structure instead.
         ldr     x9, [xip1, #OFFSETOF__InterfaceDispatchCell__m_pCache]
 
-        ;; Load the EEType from the object instance in r0.
+        ;; Load the EEType from the object instance in x0.
         ldr     x10, [x0]
 
     GBLA CurrentEntry 

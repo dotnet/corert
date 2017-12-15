@@ -66,6 +66,9 @@ struct PAL_LIMITED_CONTEXT
     void SetIp(UIntNative ip) { IP = ip; }
     void SetSp(UIntNative sp) { SP = sp; }
 #elif defined(_TARGET_ARM64_)
+    UIntNative  FP;
+    UIntNative  LR;
+
     UIntNative  X0;
     UIntNative  X1;
     UIntNative  X19;
@@ -79,8 +82,6 @@ struct PAL_LIMITED_CONTEXT
     UIntNative  X27;
     UIntNative  X28;
 
-    UIntNative  FP;
-    UIntNative  LR;
     UIntNative  SP;
     UIntNative  IP;
 
