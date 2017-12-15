@@ -461,9 +461,12 @@ again:
                         break;
                 }
 
-                var fallthrough = _basicBlocks[_currentOffset];
-                if (fallthrough != null)
-                    MarkPredecessorWithLowerOffset(0);
+                if (_currentOffset < _basicBlocks.Length)
+                {
+                    var fallthrough = _basicBlocks[_currentOffset];
+                    if (fallthrough != null)
+                        MarkPredecessorWithLowerOffset(0);
+                }
             }
         }
 
@@ -2668,7 +2671,12 @@ again:
             VerificationError(VerifierError.MethodFallthrough);
         }
 
-        void ReportInvalidInstruction(ILOpcode opcode)
+        private void ReportMethodEndInsideInstruction()
+        {
+            VerificationError(VerifierError.MethodEnd);
+        }
+
+        private void ReportInvalidInstruction(ILOpcode opcode)
         {
             VerificationError(VerifierError.UnknownOpcode);
         }

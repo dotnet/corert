@@ -288,6 +288,9 @@
   <data name="MethodAccess" xml:space="preserve">
     <value>Method is not visible.</value>
   </data>
+  <data name="MethodEnd" xml:space="preserve">
+    <value>Method ends in the middle of an instruction.</value>
+  </data>
   <data name="MethodFallthrough" xml:space="preserve">
     <value>Fall through end of the method without returning.</value>
   </data>

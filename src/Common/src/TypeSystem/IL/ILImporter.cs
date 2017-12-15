@@ -478,6 +478,12 @@ namespace Internal.IL
                         return;
                     case ILOpcode.switch_:
                         {
+                            if (_currentOffset + 3 >= _ilBytes.Length)
+                            {
+                                ReportMethodEndInsideInstruction();
+                                return;
+                            }
+
                             uint count = ReadILUInt32();
                             int jmpBase = _currentOffset + (int)(4 * count);
                             int[] jmpDelta = new int[count];
@@ -829,6 +835,12 @@ namespace Internal.IL
                         ImportConvert(WellKnownType.UIntPtr, false, false);
                         break;
                     case ILOpcode.prefix1:
+                        if (_currentOffset >= _ilBytes.Length)
+                        {
+                            ReportMethodEndInsideInstruction();
+                            return;
+                        }
+
                         opCode = (ILOpcode)(0x100 + ReadILByte());
                         goto again;
                     case ILOpcode.arglist:
@@ -916,9 +928,15 @@ namespace Internal.IL
                 EndImportingInstruction();
 
                 // Check if control falls through the end of method.
-                if (_currentOffset >= _basicBlocks.Length)
+                if (_currentOffset == _basicBlocks.Length)
                 {
                     ReportFallthroughAtEndOfMethod();
+                    return;
+                }
+
+                if (_currentOffset > _ilBytes.Length)
+                {
+                    ReportMethodEndInsideInstruction();
                     return;
                 }
 

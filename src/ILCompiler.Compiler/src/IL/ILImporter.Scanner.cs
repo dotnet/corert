@@ -1051,6 +1051,11 @@ namespace Internal.IL
             ThrowHelper.ThrowInvalidProgramException();
         }
 
+        private void ReportMethodEndInsideInstruction()
+        {
+            ThrowHelper.ThrowInvalidProgramException();
+        }
+
         private void ReportInvalidInstruction(ILOpcode opcode)
         {
             ThrowHelper.ThrowInvalidProgramException();

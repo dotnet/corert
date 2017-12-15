@@ -129,7 +129,7 @@ namespace ILVerify
         TailRetVoid,                    // Void ret type expected for tail call.
         TailRetType,                    // Tail call return type not compatible.
         TailStackEmpty,                 // Stack not empty after tail call.
-        //E_METHOD_END                  "Method ends in the middle of an instruction."
+        MethodEnd,                      // Method ends in the middle of an instruction.
         BadBranch,                      // Branch out of the method.
         //E_LEXICAL_NESTING             "Lexical nesting."
         Volatile,                       // Missing ldsfld, stsfld, ldind, stind, ldfld, stfld, ldobj, stobj, initblk, or cpblk.
