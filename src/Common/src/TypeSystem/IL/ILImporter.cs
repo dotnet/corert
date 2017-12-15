@@ -424,6 +424,7 @@ namespace Internal.IL
                         break;
                     case ILOpcode.jmp:
                         ImportJmp(ReadILToken());
+                        EndImportingInstruction();
                         return;
                     case ILOpcode.call:
                         ImportCall(opCode, ReadILToken());
@@ -433,6 +434,7 @@ namespace Internal.IL
                         break;
                     case ILOpcode.ret:
                         ImportReturn();
+                        EndImportingInstruction();
                         return;
                     case ILOpcode.br_s:
                     case ILOpcode.brfalse_s:
@@ -452,6 +454,7 @@ namespace Internal.IL
                             ImportBranch(opCode + (ILOpcode.br - ILOpcode.br_s),
                                 _basicBlocks[_currentOffset + delta], (opCode != ILOpcode.br_s) ? _basicBlocks[_currentOffset] : null);
                         }
+                        EndImportingInstruction();
                         return;
                     case ILOpcode.br:
                     case ILOpcode.brfalse:
@@ -471,6 +474,7 @@ namespace Internal.IL
                             ImportBranch(opCode,
                                 _basicBlocks[_currentOffset + delta], (opCode != ILOpcode.br) ? _basicBlocks[_currentOffset] : null);
                         }
+                        EndImportingInstruction();
                         return;
                     case ILOpcode.switch_:
                         {
@@ -482,6 +486,7 @@ namespace Internal.IL
 
                             ImportSwitchJump(jmpBase, jmpDelta, _basicBlocks[_currentOffset]);
                         }
+                        EndImportingInstruction();
                         return;
                     case ILOpcode.ldind_i1:
                         ImportLoadIndirect(WellKnownType.SByte);
@@ -609,6 +614,7 @@ namespace Internal.IL
                         break;
                     case ILOpcode.throw_:
                         ImportThrow();
+                        EndImportingInstruction();
                         return;
                     case ILOpcode.ldfld:
                         ImportLoadField(ReadILToken(), false);
@@ -800,18 +806,21 @@ namespace Internal.IL
                         break;
                     case ILOpcode.endfinally: //both endfinally and endfault
                         ImportEndFinally();
+                        EndImportingInstruction();
                         return;
                     case ILOpcode.leave:
                         {
                             int delta = (int)ReadILUInt32();
                             ImportLeave(_basicBlocks[_currentOffset + delta]);
                         }
+                        EndImportingInstruction();
                         return;
                     case ILOpcode.leave_s:
                         {
                             int delta = (sbyte)ReadILByte();
                             ImportLeave(_basicBlocks[_currentOffset + delta]);
                         }
+                        EndImportingInstruction();
                         return;
                     case ILOpcode.stind_i:
                         ImportStoreIndirect(WellKnownType.IntPtr);
@@ -859,6 +868,7 @@ namespace Internal.IL
                         break;
                     case ILOpcode.endfilter:
                         ImportEndFilter();
+                        EndImportingInstruction();
                         return;
                     case ILOpcode.unaligned:
                         ImportUnalignedPrefix(ReadILByte());
@@ -886,6 +896,7 @@ namespace Internal.IL
                         continue;
                     case ILOpcode.rethrow:
                         ImportRethrow();
+                        EndImportingInstruction();
                         return;
                     case ILOpcode.sizeof_:
                         ImportSizeOf(ReadILToken());
