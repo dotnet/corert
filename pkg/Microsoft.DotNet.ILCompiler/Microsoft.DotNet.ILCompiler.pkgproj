@@ -15,21 +15,13 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <File Include="$(PackageSourceDirectory)\BuildIntegration\Microsoft.DotNet.ILCompiler.targets">
+    <File Include="$(PackageSourceDirectory)\BuildIntegration\*">
       <TargetPath>build</TargetPath>
-    </File>
-    
-    <File Include="$(PackageSourceDirectory)\BuildIntegration\*" Exclude="$(PackageSourceDirectory)\BuildIntegration\Microsoft.DotNet.ILCompiler.targets">
-      <TargetPath>targets</TargetPath>
     </File>
 
     <!-- This assembly is needed so the build tasks can be resolved and run from the metapackage -->
     <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\tools\\ILCompiler.Build.Tasks.dll" Exclude="$(BaseOutputPath)\$(OSPlatformConfig)\tools\*.pdb">
       <TargetPath>tools</TargetPath>
-    </File>
-
-    <File Include="$(MSBuildThisFileDirectory)\targets\*">
-      <TargetPath>targets</TargetPath>
     </File>
   </ItemGroup>
 

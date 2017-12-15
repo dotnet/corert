@@ -15,7 +15,7 @@
     </Project>
 
     <!-- Include platform-specific package definitions-->
-    <Project Include="$(TargetRuntimePackageLocation)\Microsoft.DotNet.ILCompiler.pkgproj" />
+    <Project Include="$(MSBuildThisFileDirectory)\TargetSpecific\Microsoft.DotNet.ILCompiler.pkgproj" />
 
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

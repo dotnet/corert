@@ -4,7 +4,9 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <PackageTargetRuntime>win-x64</PackageTargetRuntime>
+    <PackageTargetRuntime Condition="'$(OSGroup)' == 'Windows_NT'">win-x64</PackageTargetRuntime>
+    <PackageTargetRuntime Condition="'$(OSGroup)' == 'Linux'">linux-x64</PackageTargetRuntime>
+    <PackageTargetRuntime Condition="'$(OSGroup)' == 'OSX'">osx-x64</PackageTargetRuntime>
   </PropertyGroup>
 
   <Import Project="..\Microsoft.DotNet.ILCompiler.Common.props" />  
