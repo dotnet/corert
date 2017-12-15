@@ -445,7 +445,7 @@ namespace System.IO
                     unsafe
                     {
                         fixed (byte* pBytes = byteBuffer)
-                        fixed (char* pChars = &buffer.DangerousGetPinnableReference())
+                        fixed (char* pChars = &MemoryMarshal.GetReference(buffer))
                         {
                             charsRead = _decoder.GetChars(pBytes + position, numBytes, pChars + index, charsRemaining, flush: false);
                         }
