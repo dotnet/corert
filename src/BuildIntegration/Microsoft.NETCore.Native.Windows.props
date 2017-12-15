@@ -20,7 +20,7 @@ See the LICENSE file in the project root for more information.
     <CppLinker>link</CppLinker>
     <CppLibCreator>lib</CppLibCreator>
   </PropertyGroup>
-  <Target Name="SetupWindowsProps" DependsOnTargets="$(DynamicBuildPropertyDependencies)">
+  <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
     <ItemGroup>
       <CppCompilerAndLinkerArg Include="/I$(IlcPath)\inc" />
       <CppCompilerAndLinkerArg Condition="'$(Configuration)' == 'Debug'" Include="/Od" />

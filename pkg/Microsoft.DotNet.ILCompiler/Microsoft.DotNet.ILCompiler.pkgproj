@@ -15,11 +15,11 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <File Include="$(MSBuildThisFileDirectory)\Microsoft.DotNet.ILCompiler.targets">
+    <File Include="$(PackageSourceDirectory)\BuildIntegration\Microsoft.DotNet.ILCompiler.targets">
       <TargetPath>build</TargetPath>
     </File>
     
-    <File Include="$(PackageSourceDirectory)\BuildIntegration\*">
+    <File Include="$(PackageSourceDirectory)\BuildIntegration\*" Exclude="$(PackageSourceDirectory)\BuildIntegration\Microsoft.DotNet.ILCompiler.targets">
       <TargetPath>targets</TargetPath>
     </File>
 

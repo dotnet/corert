@@ -28,7 +28,7 @@ See the LICENSE file in the project root for more information.
     
     <!-- Part of workaround for lack of secondary build artifact import - https://github.com/Microsoft/msbuild/issues/2807 -->
     <!-- This value is only changed if running from a package -->
-    <BuildIntegrationTargetsDir Condition="'$(BuildIntegrationTargetsDir)' == '' ">$(MSBuildThisFileDirectory)</BuildIntegrationTargetsDir>
+    <IlcBuildIntegrationTargetsDir Condition="'$(IlcBuildIntegrationTargetsDir)' == '' ">$(MSBuildThisFileDirectory)</IlcBuildIntegrationTargetsDir>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -67,14 +67,13 @@ See the LICENSE file in the project root for more information.
 
     <SharedLibrary Condition="'$(OS)' == 'Windows_NT'">$(FrameworkLibPath)\Framework$(LibFileExt)</SharedLibrary>
     <SharedLibrary Condition="'$(OS)' != 'Windows_NT'">$(FrameworkLibPath)\libframework$(LibFileExt)</SharedLibrary>
-    <DynamicBuildPropertyDependencies Condition="'$(CalledViaPackage)' == 'true'">SetupProperties</DynamicBuildPropertyDependencies>
+    <IlcDynamicBuildPropertyDependencies Condition="'$(IlcCalledViaPackage)' == 'true'">SetupProperties</IlcDynamicBuildPropertyDependencies>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IlcCompileDependsOn)'=='' and '$(NativeCompilationDuringPublish)' != 'false'">
     <IlcCompileDependsOn Condition="'$(BuildingFrameworkLibrary)' != 'true'">Compile;ComputeIlcCompileInputs</IlcCompileDependsOn>
     <IlcCompileDependsOn Condition="'$(IlcMultiModule)' == 'true' and '$(BuildingFrameworkLibrary)' != 'true'">$(IlcCompileDependsOn);BuildFrameworkLib</IlcCompileDependsOn>
-    <IlcCompileDependsOn Condition="'$(TargetOS)' == 'Windows_NT'">$(IlcCompileDependsOn);SetupWindowsProps</IlcCompileDependsOn>  
-    <IlcCompileDependsOn Condition="'$(TargetOS)' != 'Windows_NT'">$(IlcCompileDependsOn);SetupUnixProps</IlcCompileDependsOn>  
+    <IlcCompileDependsOn Condition="'$(TargetOS)' == 'Windows_NT'">$(IlcCompileDependsOn);SetupOSSpecificProps</IlcCompileDependsOn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -91,11 +90,11 @@ See the LICENSE file in the project root for more information.
 
   <!-- Part of workaround for lack of secondary build artifact import - https://github.com/Microsoft/msbuild/issues/2807 -->
   <!-- The properties below need to be defined only after we've found the correct runtime package reference -->
-  <Target Name="SetupProperties" DependsOnTargets="$(SetupPropertiesDependsOn)" BeforeTargets="Publish">
+  <Target Name="SetupProperties" DependsOnTargets="$(IlcSetupPropertiesDependsOn)" BeforeTargets="Publish">
     <PropertyGroup>
       <!-- Define paths used in build targets to point to the runtime-specific ILCompiler implementation -->
       <IlcPath Condition="'$(IlcPath)' == ''">$(RuntimePackagePath)</IlcPath>
-      <BuildTasksPath>$(RuntimePackagePath)\tools\ILCompiler.Build.Tasks.dll</BuildTasksPath>
+      <IlcBuildTasksPath>$(RuntimePackagePath)\tools\ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
       <!-- Set defaults for unspecified properties -->
     </PropertyGroup>
     
@@ -113,7 +112,7 @@ See the LICENSE file in the project root for more information.
     </ItemGroup>
   </Target>
 
-  <Target Name="ComputeIlcCompileInputs" DependsOnTargets="$(DynamicBuildPropertyDependencies)" BeforeTargets="Publish">
+  <Target Name="ComputeIlcCompileInputs" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)" BeforeTargets="Publish">
     <ItemGroup>
       <ManagedBinary Condition="$(BuildingFrameworkLibrary) != 'true'" Include="$(IntermediateOutputPath)$(TargetName)$(TargetExt)" />
       <IlcCompileInput Include="@(ManagedBinary)" />
@@ -125,10 +124,10 @@ See the LICENSE file in the project root for more information.
     BuildFrameworkLib is invoked before IlcCompile in multi-module builds to 
     produce the shared framework library on demand
   -->
-  <Target Name="BuildFrameworkLib" Condition="'$(DisableFrameworkLibGeneration)' != 'true'" DependsOnTargets="$(DynamicBuildPropertyDependencies)">
+  <Target Name="BuildFrameworkLib" Condition="'$(DisableFrameworkLibGeneration)' != 'true'" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
     <ItemGroup>
      <!-- This builds the project with the ILC implementation in the identified runtime package to avoid resolving it again  -->
-      <ProjectToBuild Include="$(BuildIntegrationTargetsDir)BuildFrameworkNativeObjects.proj">
+      <ProjectToBuild Include="$(IlcBuildIntegrationTargetsDir)BuildFrameworkNativeObjects.proj">
           <AdditionalProperties>
           IntermediateOutputPath=$(IntermediateOutputPath);
           FrameworkLibPath=$(FrameworkLibPath);
@@ -168,8 +167,8 @@ See the LICENSE file in the project root for more information.
     <Exec Command="&quot;$(IlcPath)\tools\ilc&quot; @&quot;$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp&quot;" />
   </Target>
 
-  <Import Project="$(BuildIntegrationTargetsDir)Microsoft.NETCore.Native.Windows.props" Condition="'$(TargetOS)' == 'Windows_NT'" />
-  <Import Project="$(BuildIntegrationTargetsDir)Microsoft.NETCore.Native.Unix.props" Condition="'$(TargetOS)' != 'Windows_NT'" />
+  <Import Project="$(IlcBuildIntegrationTargetsDir)Microsoft.NETCore.Native.Windows.props" Condition="'$(TargetOS)' == 'Windows_NT'" />
+  <Import Project="$(IlcBuildIntegrationTargetsDir)Microsoft.NETCore.Native.Unix.props" Condition="'$(TargetOS)' != 'Windows_NT'" />
   
   <Target Name="CppCompile"
       Inputs="$(IlcCompileOutput)"
@@ -225,7 +224,7 @@ See the LICENSE file in the project root for more information.
   <Target Name="CreateLib"
     Inputs="@(LibInputs)"
     Outputs="$(SharedLibrary)"
-    DependsOnTargets="$(CreateLibDependsOn);$(DynamicBuildPropertyDependencies)"
+    DependsOnTargets="$(CreateLibDependsOn);$(IlcDynamicBuildPropertyDependencies)"
     >
 
     <ItemGroup>
@@ -240,6 +239,6 @@ See the LICENSE file in the project root for more information.
     <Exec Command="$(CppLibCreator) @(CustomLibArg, ' ')" Condition="'$(OS)' != 'Windows_NT'" />
   </Target>
 
-  <Import Project="$(BuildIntegrationTargetsDir)Microsoft.NETCore.Native.Publish.targets" Condition="'$(NativeCompilationDuringPublish)' != 'false'" />
+  <Import Project="$(IlcBuildIntegrationTargetsDir)Microsoft.NETCore.Native.Publish.targets" Condition="'$(NativeCompilationDuringPublish)' != 'false'" />
 
 </Project>

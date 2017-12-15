@@ -9,8 +9,8 @@
   </PropertyGroup>
   
   <!-- Part of workaround for lack of secondary build artifact import - https://github.com/Microsoft/msbuild/issues/2807 -->
-  <Import Project="$(MSBuildThisFileDirectory)..\build\Microsoft.DotNet.ILCompiler.targets" Condition="'$(CalledViaPackage)' == 'true'"/>
-  <Import Project="Microsoft.NETCore.Native.targets" Condition="'$(CalledViaPackage)' == ''"/>
+  <Import Project="$(MSBuildThisFileDirectory)..\build\Microsoft.DotNet.ILCompiler.targets" Condition="'$(IlcCalledViaPackage)' == 'true'"/>
+  <Import Project="Microsoft.NETCore.Native.targets" Condition="'$(IlcCalledViaPackage)' == ''"/>
 
   <Target Name="BuildAllFrameworkLibraries"
     Inputs="@(DefaultFrameworkAssemblies)"

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <DeployAppHost>false</DeployAppHost>
     <_ILCompilerPackageRootDir>$(MSBuildThisFileDirectory)../</_ILCompilerPackageRootDir>
-    <BuildIntegrationTargetsDir>$(_ILCompilerPackageRootDir)targets/</BuildIntegrationTargetsDir>
+    <IlcBuildIntegrationTargetsDir>$(_ILCompilerPackageRootDir)targets/</IlcBuildIntegrationTargetsDir>
    
     <!-- Workaround for lack of current host OS detection - https://github.com/Microsoft/msbuild/issues/539 -->
     <TargetOS Condition="'$(TargetOS)' == '' and '$(OS)' == 'Unix' and Exists('/Applications')">OSX</TargetOS>
@@ -11,30 +11,29 @@
     <!-- <TargetOS Condition="'$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</TargetOS>  -->
     <TargetOS Condition="'$(TargetOS)' == ''">$(OS)</TargetOS>
     
-    <TargetRuntimeIdentifier Condition="'$(TargetOS)' == 'Windows_NT'">win-x64</TargetRuntimeIdentifier>
-    <TargetRuntimeIdentifier Condition="'$(TargetOS)' == 'Unix'">linux-x64</TargetRuntimeIdentifier>
-    <TargetRuntimeIdentifier Condition="'$(TargetOS)' == 'OSX'">osx-x64</TargetRuntimeIdentifier>
+    <IlcTargetRuntimeIdentifier Condition="'$(TargetOS)' == 'Windows_NT'">win-x64</IlcTargetRuntimeIdentifier>
+    <IlcTargetRuntimeIdentifier Condition="'$(TargetOS)' == 'Unix'">linux-x64</IlcTargetRuntimeIdentifier>
+    <IlcTargetRuntimeIdentifier Condition="'$(TargetOS)' == 'OSX'">osx-x64</IlcTargetRuntimeIdentifier>
 
     <!-- Part of workaround for lack of secondary build artifact import - https://github.com/Microsoft/msbuild/issues/2807 -->
     <!-- Define the name of the runtime specific compiler package to import -->
-    <_RuntimeILCompilerPackageName Condition="'$(TargetRuntimeIdentifier)' != ''">runtime.$(TargetRuntimeIdentifier).Microsoft.DotNet.ILCompiler</_RuntimeILCompilerPackageName>
-    <RuntimeILCompilerBuildTargetPath>$(BuildIntegrationTargetsDir)$(_RuntimeILCompilerPackageName).targets</RuntimeILCompilerBuildTargetPath>
-    <CalledViaPackage>true</CalledViaPackage>
+    <RuntimeIlcPackageName Condition="'$(IlcTargetRuntimeIdentifier)' != ''">runtime.$(IlcTargetRuntimeIdentifier).Microsoft.DotNet.ILCompiler</RuntimeIlcPackageName>
+    <IlcCalledViaPackage>true</IlcCalledViaPackage>
    
     <!-- If CoreRT is being consumed via its package, runtime-specific properties must be set before compilation can proceed -->
     <ImportRuntimeILCompilerPackageTargetDependsOn>RunResolvePackageDependencies</ImportRuntimeILCompilerPackageTargetDependsOn>
-    <SetupPropertiesDependsOn>ImportRuntimeILCompilerPackageTarget</SetupPropertiesDependsOn>
-    <DynamicBuildPropertyDependencies>SetupProperties</DynamicBuildPropertyDependencies>
+    <IlcSetupPropertiesDependsOn>ImportRuntimeILCompilerPackageTarget</IlcSetupPropertiesDependsOn>
+    <IlcDynamicBuildPropertyDependencies>SetupProperties</IlcDynamicBuildPropertyDependencies>
     
   </PropertyGroup>
 
   <!-- Part of workaround for lack of secondary build artifact import - https://github.com/Microsoft/msbuild/issues/2807 -->
   <!-- Locate the runtime package according to the current target runtime -->
-  <Target Name="ImportRuntimeILCompilerPackageTarget" Condition="'$(BuildingFrameworkLibrary)' != 'true' AND $(CalledViaPackage) == 'true'" DependsOnTargets="$(ImportRuntimeILCompilerPackageTargetDependsOn)" BeforeTargets="Publish">
+  <Target Name="ImportRuntimeILCompilerPackageTarget" Condition="'$(BuildingFrameworkLibrary)' != 'true' AND $(IlcCalledViaPackage) == 'true'" DependsOnTargets="$(ImportRuntimeILCompilerPackageTargetDependsOn)" BeforeTargets="Publish">
     <!-- CoreRT SDK and Framework Assemblies need to be defined to avoid CoreCLR implementations being set as compiler inputs -->
     <Error Condition="'@(PackageDefinitions)' == ''" Text="The PackageDefinitions ItemGroup is required for target ImportRuntimeILCompilerPackageTarget" />
     <ItemGroup>
-      <RuntimePackage Include="@(PackageDefinitions)" Condition="'%(PackageDefinitions.Name)' == '$(_RuntimeILCompilerPackageName)'" />
+      <RuntimePackage Include="@(PackageDefinitions)" Condition="'%(PackageDefinitions.Name)' == '$(RuntimeIlcPackageName)'" />
     </ItemGroup>
     <CreateProperty Value="%(RuntimePackage.ResolvedPath)">
       <Output TaskParameter="Value" PropertyName="RuntimePackagePath"/>
