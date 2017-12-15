@@ -2,13 +2,9 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <TargetOS Condition="'$(TargetOS)' == '' and '$(OS)' == 'Unix' and Exists('/Applications')">OSX</TargetOS>
-    <!-- The correct OS detection code. Uncomment once CI machines are upgraded to the latest version of MSBuild -->
-    <!-- <TargetOS Condition="'$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</TargetOS>  -->    
-    <TargetOS Condition="'$(TargetOS)' == ''">$(OS)</TargetOS>
-    <TargetRuntimePackageLocation Condition="'$(TargetOS)' == 'Windows_NT'">win</TargetRuntimePackageLocation>
-    <TargetRuntimePackageLocation Condition="'$(TargetOS)' == 'Unix'">linux</TargetRuntimePackageLocation>
-    <TargetRuntimePackageLocation Condition="'$(TargetOS)' == 'OSX'">osx</TargetRuntimePackageLocation>
+    <TargetRuntimePackageLocation Condition="'$(OSGroup)' == 'Windows_NT'">win</TargetRuntimePackageLocation>
+    <TargetRuntimePackageLocation Condition="'$(OSGroup)' == 'Unix'">linux</TargetRuntimePackageLocation>
+    <TargetRuntimePackageLocation Condition="'$(OSGroup)' == 'OSX'">osx</TargetRuntimePackageLocation>
   </PropertyGroup>
   
   

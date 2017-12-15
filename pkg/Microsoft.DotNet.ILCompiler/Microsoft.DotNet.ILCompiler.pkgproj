@@ -13,13 +13,7 @@
     <!-- Override this property so that the package name won't look like runtime.[RID].[TFM].[ID] -->
     <PackageTargetRuntime></PackageTargetRuntime>
   </PropertyGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="win\Microsoft.DotNet.ILCompiler.pkgproj" />
-    <ProjectReference Include="linux\Microsoft.DotNet.ILCompiler.pkgproj" />
-    <ProjectReference Include="osx\Microsoft.DotNet.ILCompiler.pkgproj" />
-  </ItemGroup>
-
+  
   <ItemGroup>
     <File Include="$(MSBuildThisFileDirectory)\Microsoft.DotNet.ILCompiler.targets">
       <TargetPath>build</TargetPath>
