@@ -122,10 +122,10 @@ namespace ILVerify
         //E_SIG_ARRAY                   "Cannot resolve Array type."
         ArrayByRef,                     // Array of ELEMENT_TYPE_BYREF or ELEMENT_TYPE_TYPEDBYREF.
         ByrefOfByref,                   // ByRef of ByRef.
-        //E_CODE_SIZE_ZERO              "Code size is zero."
+        CodeSizeZero,                   // Code size is zero.
         TailCall,                       // Missing call/callvirt/calli.
         TailByRef,                      // Cannot pass ByRef to a tail call.
-        //E_TAIL_RET                    "Missing ret."
+        TailRet,                        // tail.call may only be followed by ret.
         TailRetVoid,                    // Void ret type expected for tail call.
         TailRetType,                    // Tail call return type not compatible.
         TailStackEmpty,                 // Stack not empty after tail call.
