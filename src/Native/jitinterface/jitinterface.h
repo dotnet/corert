@@ -83,6 +83,7 @@ struct JitInterfaceCallbacks
     void (* classMustBeLoadedBeforeCodeIsRun)(void * thisHandle, CorInfoException** ppException, void* cls);
     void* (* getBuiltinClass)(void * thisHandle, CorInfoException** ppException, int classId);
     int (* getTypeForPrimitiveValueClass)(void * thisHandle, CorInfoException** ppException, void* cls);
+    int (* getTypeForPrimitiveNumericClass)(void * thisHandle, CorInfoException** ppException, void* cls);
     int (* canCast)(void * thisHandle, CorInfoException** ppException, void* child, void* parent);
     int (* areTypesEquivalent)(void * thisHandle, CorInfoException** ppException, void* cls1, void* cls2);
     int (* compareTypesForCast)(void * thisHandle, CorInfoException** ppException, void* fromClass, void* toClass);
@@ -831,6 +832,15 @@ public:
     {
         CorInfoException* pException = nullptr;
         int _ret = _callbacks->getTypeForPrimitiveValueClass(_thisHandle, &pException, cls);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual int getTypeForPrimitiveNumericClass(void* cls)
+    {
+        CorInfoException* pException = nullptr;
+        int _ret = _callbacks->getTypeForPrimitiveNumericClass(_thisHandle, &pException, cls);
         if (pException != nullptr)
             throw pException;
         return _ret;

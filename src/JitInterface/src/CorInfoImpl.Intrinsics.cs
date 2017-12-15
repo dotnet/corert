@@ -79,6 +79,7 @@ namespace Internal.JitInterface
 
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Sin, "Sin", "System", "Math");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Cos, "Cos", "System", "Math");
+            // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Cbrt, "Cbrt", "System", "Math"); // not in CoreRT yet
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Sqrt, "Sqrt", "System", "Math");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Abs, "Abs", "System", "Math");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Round, "Round", "System", "Math");
@@ -87,9 +88,12 @@ namespace Internal.JitInterface
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Tan, "Tan", "System", "Math");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Tanh, "Tanh", "System", "Math");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Asin, "Asin", "System", "Math");
+            // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Asinh, "Asinh", "System", "Math"); // not in CoreRT yet
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Acos, "Acos", "System", "Math");
+            // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Acosh, "Acosh", "System", "Math"); // not in CoreRT yet
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Atan, "Atan", "System", "Math");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Atan2, "Atan2", "System", "Math");
+            // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Atanh, "Atanh", "System", "Math"); // not in CoreRT yet
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Log10, "Log10", "System", "Math");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Pow, "Pow", "System", "Math");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Exp, "Exp", "System", "Math");
@@ -130,7 +134,7 @@ namespace Internal.JitInterface
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetRawHandle, "DefaultConstructorOf", "System", "Activator");
 
             // If this assert fails, make sure to add the new intrinsics to the table above and update the expected count below.
-            Debug.Assert((int)CorInfoIntrinsics.CORINFO_INTRINSIC_Count == 50);
+            Debug.Assert((int)CorInfoIntrinsics.CORINFO_INTRINSIC_Count == 54);
 
             return table;
         }
