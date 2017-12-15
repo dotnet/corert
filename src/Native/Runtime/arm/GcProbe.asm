@@ -7,6 +7,7 @@
         TEXTAREA
 
     SETALIAS    GetLoopIndirCells, ?GetLoopIndirCells@ModuleHeader@@QAAPAEXZ
+    ;; ARM64TODO: do same fix here as on Arm64?
     SETALIAS    g_fGcStressStarted, ?g_GCShadow@@3PAEA
     SETALIAS    g_pTheRuntimeInstance, ?g_pTheRuntimeInstance@@3PAVRuntimeInstance@@A
     SETALIAS    RuntimeInstance__ShouldHijackLoopForGcStress, ?ShouldHijackLoopForGcStress@RuntimeInstance@@QAA_NI@Z
@@ -28,7 +29,7 @@ m_ChainPointer  field 4         ; r11 - OS frame chain used for quick stackwalks
 m_RIP           field 4         ; lr
 m_FramePointer  field 4         ; r7
 m_pThread       field 4
-m_dwFlags       field 4         ; bitmask of saved registers
+m_Flags         field 4         ; bitmask of saved registers
 m_PreservedRegs field (4 * 6)   ; r4-r6,r8-r10
 m_CallersSP     field 4         ; sp at routine entry
 m_SavedR0       field 4         ; r0
@@ -87,14 +88,14 @@ PROBE_FRAME_SIZE    field 0
     ;;
     ;;  $threadReg  : register containing the Thread* (this will be preserved)
     ;;  $trashReg   : register that can be trashed by this macro
-    ;;  $BITMASK    : value to initialize m_dwFlags field with (register or #constant)
+    ;;  $BITMASK    : value to initialize m_Flags field with (register or #constant)
     ;;  $frameSize  : total size of the method's stack frame (including probe frame size)
     MACRO
         INIT_PROBE_FRAME $threadReg, $trashReg, $BITMASK, $frameSize
 
         str         $threadReg, [sp, #m_pThread]    ; Thread *
         mov         $trashReg, $BITMASK             ; Bitmask of preserved registers
-        str         $trashReg, [sp, #m_dwFlags]
+        str         $trashReg, [sp, #m_Flags]
         add         $trashReg, sp, #$frameSize
         str         $trashReg, [sp, #m_CallersSP]
     MEND
@@ -106,7 +107,7 @@ PROBE_FRAME_SIZE    field 0
     ;;                the current thread will be calculated inline into r2 ($trashReg must not equal r2 in
     ;;                this case)
     ;;  $trashReg   : register that can be trashed by this macro
-    ;;  $BITMASK    : value to initialize m_dwFlags field with (register or #constant)
+    ;;  $BITMASK    : value to initialize m_Flags field with (register or #constant)
     MACRO
         PROLOG_PROBE_FRAME $threadReg, $trashReg, $BITMASK
 
@@ -336,7 +337,7 @@ __PPF_ThreadReg SETS "r2"
         mov         r4, r2
         WaitForGCCompletion
 
-        ldr         r2, [sp, #OFFSETOF__PInvokeTransitionFrame__m_dwFlags]
+        ldr         r2, [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
         tst         r2, #PTFF_THREAD_ABORT
         bne         %1
 
@@ -375,7 +376,7 @@ __PPF_ThreadReg SETS "r2"
         WaitForGCCompletion
 
         EPILOG_PROBE_FRAME
-    NESTED_END RhpGcPoll
+    NESTED_END RhpGcPollRare
 
     LEAF_ENTRY RhpGcPollStress
         ;
@@ -713,7 +714,7 @@ NoGcStress
         bl          RhpWaitForGCNoAbort
 
 DoneWaitingForGc
-        ldr         r12, [sp, #OFFSETOF__PInvokeTransitionFrame__m_dwFlags]
+        ldr         r12, [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
         tst         r12, #PTFF_THREAD_ABORT
         bne         Abort
         ; restore condition codes

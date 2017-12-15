@@ -28,7 +28,7 @@ NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
         mov         qword ptr [rbx + OFFSETOF__PInvokeTransitionFrame__m_RIP], r11
 
         lea         r11, [rsp + 0x10]           // r11 <- caller SP
-        mov         dword ptr [rbx + OFFSETOF__PInvokeTransitionFrame__m_dwFlags], PTFF_SAVE_RSP
+        mov         dword ptr [rbx + OFFSETOF__PInvokeTransitionFrame__m_Flags], PTFF_SAVE_RSP
         mov         qword ptr [rbx + OFFSETOF__PInvokeTransitionFrame__m_PreservedRegs], r11
 
         mov         qword ptr [rax + OFFSETOF__Thread__m_pTransitionFrame], rbx

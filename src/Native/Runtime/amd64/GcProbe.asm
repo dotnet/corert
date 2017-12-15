@@ -232,7 +232,7 @@ NESTED_ENTRY RhpGcProbe, _TEXT
         WaitForGCCompletion
 
         mov         rax, [rbx + OFFSETOF__Thread__m_pHackPInvokeTunnel]
-        test        dword ptr [rax + OFFSETOF__PInvokeTransitionFrame__m_dwFlags], PTFF_THREAD_ABORT
+        test        dword ptr [rax + OFFSETOF__PInvokeTransitionFrame__m_Flags], PTFF_THREAD_ABORT
         jnz         Abort
         POP_PROBE_FRAME 0
         ret
@@ -579,7 +579,7 @@ NESTED_ENTRY RhpLoopHijack, _TEXT
         ;;   [rsp + 20]  -> m_RIP                           -------|
         ;;   [rsp + 28]  -> m_FramePointer                         |
         ;;   [rsp + 30]  -> m_pThread                              |
-        ;;   [rsp + 38]  -> m_dwFlags / m_dwAlignPad2              |
+        ;;   [rsp + 38]  -> m_Flags / m_dwAlignPad2                |
         ;;   [rsp + 40]  -> rbx save                               |
         ;;   [rsp + 48]  -> rsi save                               |
         ;;   [rsp + 50]  -> rdi save                               |
@@ -659,7 +659,7 @@ NESTED_ENTRY RhpLoopHijack, _TEXT
         push_nonvol_reg rdi
         push_nonvol_reg rsi
         push_nonvol_reg rbx
-        push_vol_reg    PROBE_SAVE_FLAGS_EVERYTHING     ; m_dwFlags / m_dwAlignPad2
+        push_vol_reg    PROBE_SAVE_FLAGS_EVERYTHING     ; m_Flags / m_dwAlignPad2
 
         ;; rdx <- GetThread(), TRASHES rcx
         INLINE_GETTHREAD rdx, rcx
@@ -781,12 +781,12 @@ endif ;; FEATURE_GC_STRESS
 
 DontRestoreXmmAgain:
         add         rsp, sizeof_OutgoingScratchSpace
-        mov         eax, [rsp + OFFSETOF__PInvokeTransitionFrame__m_dwFlags]
+        mov         eax, [rsp + OFFSETOF__PInvokeTransitionFrame__m_Flags]
         test        eax, PTFF_THREAD_ABORT
         pop         rax                     ; m_RIP
         pop         rbp                     ; m_FramePointer
         pop         rax                     ; m_pThread
-        pop         rax                     ; m_dwFlags / m_dwAlign2
+        pop         rax                     ; m_Flags / m_dwAlign2
         pop         rbx
         pop         rsi
         pop         rdi
@@ -861,7 +861,7 @@ NESTED_ENTRY RhpTrapToGC, _TEXT
         ;;   [rsp + 20]  -> m_RIP                           -------|
         ;;   [rsp + 28]  -> m_FramePointer                         |
         ;;   [rsp + 30]  -> m_pThread                              |
-        ;;   [rsp + 38]  -> m_dwFlags / m_dwAlignPad2              |
+        ;;   [rsp + 38]  -> m_Flags / m_dwAlignPad2                |
         ;;   [rsp + 40]  -> rbx save                               |
         ;;   [rsp + 48]  -> rsi save                               |
         ;;   [rsp + 50]  -> rdi save                               |
@@ -940,7 +940,7 @@ NESTED_ENTRY RhpTrapToGC, _TEXT
         push_nonvol_reg rdi
         push_nonvol_reg rsi
         push_nonvol_reg rbx
-        push_vol_reg    PROBE_SAVE_FLAGS_EVERYTHING     ; m_dwFlags / m_dwAlignPad2
+        push_vol_reg    PROBE_SAVE_FLAGS_EVERYTHING     ; m_Flags / m_dwAlignPad2
 
         ;; rdx <- GetThread(), TRASHES rcx
         INLINE_GETTHREAD rdx, rcx
@@ -1049,12 +1049,12 @@ endif ;; FEATURE_GC_STRESS
 
 DontRestoreXmmAgain:
         add         rsp, sizeof_OutgoingScratchSpace
-        mov         eax, [rsp + OFFSETOF__PInvokeTransitionFrame__m_dwFlags]
+        mov         eax, [rsp + OFFSETOF__PInvokeTransitionFrame__m_Flags]
         test        eax, PTFF_THREAD_ABORT
         pop         rax                     ; m_RIP
         pop         rbp                     ; m_FramePointer
         pop         rax                     ; m_pThread
-        pop         rax                     ; m_dwFlags / m_dwAlign2
+        pop         rax                     ; m_Flags / m_dwAlign2
         pop         rbx
         pop         rsi
         pop         rdi

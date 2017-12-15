@@ -201,7 +201,7 @@ SynchronousRendezVous:
 
         WaitForGCCompletion
 
-        mov         edx, [esp + OFFSETOF__PInvokeTransitionFrame__m_dwFlags]
+        mov         edx, [esp + OFFSETOF__PInvokeTransitionFrame__m_Flags]
         ;;
         ;; Restore preserved registers -- they may have been updated by GC 
         ;;
@@ -734,7 +734,7 @@ DoneWaitingForGc:
         mov         ecx, [ebp - 8h]
         mov         [ebp - 4h], ecx
 
-        mov         edx, [esp + OFFSETOF__PInvokeTransitionFrame__m_dwFlags]
+        mov         edx, [esp + OFFSETOF__PInvokeTransitionFrame__m_Flags]
 
         ; Restore our integer register state from the PInvokeTransitionFrame
         PopProbeFrame

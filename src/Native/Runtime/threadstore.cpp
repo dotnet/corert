@@ -355,7 +355,7 @@ void ThreadStore::InitiateThreadAbort(Thread* targetThread, Object * threadAbort
     if (initiateAbort)
     {
         PInvokeTransitionFrame* transitionFrame = reinterpret_cast<PInvokeTransitionFrame*>(targetThread->GetTransitionFrame());
-        transitionFrame->m_dwFlags |= PTFF_THREAD_ABORT;
+        transitionFrame->m_Flags |= PTFF_THREAD_ABORT;
     }
 
     ResumeAllThreads(&dummyEvent);
@@ -372,7 +372,7 @@ void ThreadStore::CancelThreadAbort(Thread* targetThread)
     PInvokeTransitionFrame* transitionFrame = reinterpret_cast<PInvokeTransitionFrame*>(targetThread->GetTransitionFrame());
     if (transitionFrame != nullptr)
     {
-        transitionFrame->m_dwFlags &= ~PTFF_THREAD_ABORT;
+        transitionFrame->m_Flags &= ~PTFF_THREAD_ABORT;
     }
 
     targetThread->SetThreadAbortException(nullptr);

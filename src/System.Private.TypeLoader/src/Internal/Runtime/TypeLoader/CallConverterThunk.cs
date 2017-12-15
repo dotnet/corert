@@ -1156,7 +1156,7 @@ namespace Internal.Runtime.TypeLoader
 
 #if CALLDESCR_FPARGREGSARERETURNREGS
                     Debug.Assert(fpReturnSize <= sizeof(FloatArgumentRegisters));
-                    memzeroPointerAligned(calleeTransitionBlock + TransitionBlock.GetOffsetOfFloatArgumentRegisters(), sizeof(FloatArgumentRegisters));
+                    memzeroPointerAligned(callerTransitionBlock + TransitionBlock.GetOffsetOfFloatArgumentRegisters(), sizeof(FloatArgumentRegisters));
                     if (returnValueToCopy == null)
                     {
                         // object array delegate thunk result is a null object. We'll fill the return buffer with 'returnSize' zeros in that case
