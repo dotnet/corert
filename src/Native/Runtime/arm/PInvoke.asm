@@ -65,7 +65,7 @@ Done
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; RhpWaitForGCNoAbort
+;; RhpWaitForGC
 ;;
 ;;
 ;; INPUT: r2: transition frame
@@ -84,7 +84,7 @@ Done
 NoWait
         tst         r0, #TrapThreadsFlags_AbortInProgress
         beq         NoAbort
-        ldr         r0, [r2, #OFFSETOF__PInvokeTransitionFrame__m_dwFlags]
+        ldr         r0, [r2, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
         tst         r0, #PTFF_THREAD_ABORT
         beq         NoAbort
         EPILOG_POP  {r0,r1}         ; hijack target address as exception PC

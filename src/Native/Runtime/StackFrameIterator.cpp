@@ -179,30 +179,30 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
     m_RegDisplay.pLR = (PTR_UIntNative)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_RIP);
     m_RegDisplay.pR11 = (PTR_UIntNative)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_ChainPointer);
      
-    if (pFrame->m_dwFlags & PTFF_SAVE_R4)  { m_RegDisplay.pR4 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_R5)  { m_RegDisplay.pR5 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_R6)  { m_RegDisplay.pR6 = pPreservedRegsCursor++; }
-    ASSERT(!(pFrame->m_dwFlags & PTFF_SAVE_R7)); // R7 should never contain a GC ref because we require
-                                                 // a frame pointer for methods with pinvokes
-    if (pFrame->m_dwFlags & PTFF_SAVE_R8)  { m_RegDisplay.pR8 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_R9)  { m_RegDisplay.pR9 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_R10)  { m_RegDisplay.pR10 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_SP)  { m_RegDisplay.SP  = *pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R4)  { m_RegDisplay.pR4 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R5)  { m_RegDisplay.pR5 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R6)  { m_RegDisplay.pR6 = pPreservedRegsCursor++; }
+    ASSERT(!(pFrame->m_Flags & PTFF_SAVE_R7)); // R7 should never contain a GC ref because we require
+                                               // a frame pointer for methods with pinvokes
+    if (pFrame->m_Flags & PTFF_SAVE_R8)  { m_RegDisplay.pR8 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R9)  { m_RegDisplay.pR9 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R10)  { m_RegDisplay.pR10 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_SP)  { m_RegDisplay.SP  = *pPreservedRegsCursor++; }
 
     m_RegDisplay.pR7 = (PTR_UIntNative) PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_FramePointer);
 
-    if (pFrame->m_dwFlags & PTFF_SAVE_R0)  { m_RegDisplay.pR0 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_R1)  { m_RegDisplay.pR1 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_R2)  { m_RegDisplay.pR2 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_R3)  { m_RegDisplay.pR3 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_LR)  { m_RegDisplay.pLR = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R0)  { m_RegDisplay.pR0 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R1)  { m_RegDisplay.pR1 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R2)  { m_RegDisplay.pR2 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R3)  { m_RegDisplay.pR3 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_LR)  { m_RegDisplay.pLR = pPreservedRegsCursor++; }
 
-    if (pFrame->m_dwFlags & PTFF_R0_IS_GCREF)
+    if (pFrame->m_Flags & PTFF_R0_IS_GCREF)
     {
         m_pHijackedReturnValue = (PTR_RtuObjectRef) m_RegDisplay.pR0;
         m_HijackedReturnValueKind = GCRK_Object;
     }
-    if (pFrame->m_dwFlags & PTFF_R0_IS_BYREF)
+    if (pFrame->m_Flags & PTFF_R0_IS_BYREF)
     {
         m_pHijackedReturnValue = (PTR_RtuObjectRef) m_RegDisplay.pR0;
         m_HijackedReturnValueKind = GCRK_Byref;
@@ -212,76 +212,88 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
     m_RegDisplay.pFP = (PTR_UIntNative)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_FramePointer);
     m_RegDisplay.pLR = (PTR_UIntNative)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_RIP);
 
-    ASSERT(!(pFrame->m_dwFlags & PTFF_SAVE_FP)); // FP should never contain a GC ref because we require
-                                                 // a frame pointer for methods with pinvokes
+    ASSERT(!(pFrame->m_Flags & PTFF_SAVE_FP)); // FP should never contain a GC ref because we require
+                                               // a frame pointer for methods with pinvokes
 
-    if (pFrame->m_dwFlags & PTFF_SAVE_X19) { m_RegDisplay.pX19 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_X20) { m_RegDisplay.pX20 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_X21) { m_RegDisplay.pX21 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_X22) { m_RegDisplay.pX22 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_X23) { m_RegDisplay.pX23 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_X24) { m_RegDisplay.pX24 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_X25) { m_RegDisplay.pX25 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_X26) { m_RegDisplay.pX26 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_X27) { m_RegDisplay.pX27 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_X28) { m_RegDisplay.pX28 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X19) { m_RegDisplay.pX19 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X20) { m_RegDisplay.pX20 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X21) { m_RegDisplay.pX21 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X22) { m_RegDisplay.pX22 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X23) { m_RegDisplay.pX23 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X24) { m_RegDisplay.pX24 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X25) { m_RegDisplay.pX25 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X26) { m_RegDisplay.pX26 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X27) { m_RegDisplay.pX27 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X28) { m_RegDisplay.pX28 = pPreservedRegsCursor++; }
 
-    if (pFrame->m_dwFlags & PTFF_SAVE_SP) { m_RegDisplay.SP = *pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_SP) { m_RegDisplay.SP = *pPreservedRegsCursor++; }
 
-    if (pFrame->m_dwFlags & PTFF_SAVE_X0) { m_RegDisplay.pX0 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_X1) { m_RegDisplay.pX1 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_X2) { m_RegDisplay.pX2 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_X3) { m_RegDisplay.pX3 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_X4) { m_RegDisplay.pX4 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_X5) { m_RegDisplay.pX5 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_X6) { m_RegDisplay.pX6 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_X7) { m_RegDisplay.pX7 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_LR) { m_RegDisplay.pLR = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X0) { m_RegDisplay.pX0 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X1) { m_RegDisplay.pX1 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X2) { m_RegDisplay.pX2 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X3) { m_RegDisplay.pX3 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X4) { m_RegDisplay.pX4 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X5) { m_RegDisplay.pX5 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X6) { m_RegDisplay.pX6 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X7) { m_RegDisplay.pX7 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X8) { m_RegDisplay.pX8 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X9) { m_RegDisplay.pX9 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X10) { m_RegDisplay.pX10 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X11) { m_RegDisplay.pX11 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X12) { m_RegDisplay.pX12 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X13) { m_RegDisplay.pX13 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X14) { m_RegDisplay.pX14 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X15) { m_RegDisplay.pX15 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X16) { m_RegDisplay.pX16 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X17) { m_RegDisplay.pX17 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_X18) { m_RegDisplay.pX18 = pPreservedRegsCursor++; }
 
-    if (pFrame->m_dwFlags & PTFF_X0_IS_GCREF)
+    if (pFrame->m_Flags & PTFF_SAVE_LR) { m_RegDisplay.pLR = pPreservedRegsCursor++; }
+
+    if (pFrame->m_Flags & PTFF_X0_IS_GCREF)
     {
         m_pHijackedReturnValue = (PTR_RtuObjectRef)m_RegDisplay.pX0;
         m_HijackedReturnValueKind = GCRK_Object;
     }
-    if (pFrame->m_dwFlags & PTFF_X0_IS_BYREF)
+    if (pFrame->m_Flags & PTFF_X0_IS_BYREF)
     {
         m_pHijackedReturnValue = (PTR_RtuObjectRef)m_RegDisplay.pX0;
         m_HijackedReturnValueKind = GCRK_Byref;
     }
 
 #else // _TARGET_ARM_
-    if (pFrame->m_dwFlags & PTFF_SAVE_RBX)  { m_RegDisplay.pRbx = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_RSI)  { m_RegDisplay.pRsi = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_RDI)  { m_RegDisplay.pRdi = pPreservedRegsCursor++; }
-    ASSERT(!(pFrame->m_dwFlags & PTFF_SAVE_RBP)); // RBP should never contain a GC ref because we require
-                                                  // a frame pointer for methods with pinvokes
+    if (pFrame->m_Flags & PTFF_SAVE_RBX)  { m_RegDisplay.pRbx = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_RSI)  { m_RegDisplay.pRsi = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_RDI)  { m_RegDisplay.pRdi = pPreservedRegsCursor++; }
+    ASSERT(!(pFrame->m_Flags & PTFF_SAVE_RBP)); // RBP should never contain a GC ref because we require
+                                                // a frame pointer for methods with pinvokes
 #ifdef _TARGET_AMD64_
-    if (pFrame->m_dwFlags & PTFF_SAVE_R12)  { m_RegDisplay.pR12 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_R13)  { m_RegDisplay.pR13 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_R14)  { m_RegDisplay.pR14 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_R15)  { m_RegDisplay.pR15 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R12)  { m_RegDisplay.pR12 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R13)  { m_RegDisplay.pR13 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R14)  { m_RegDisplay.pR14 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R15)  { m_RegDisplay.pR15 = pPreservedRegsCursor++; }
 #endif // _TARGET_AMD64_
 
     m_RegDisplay.pRbp = (PTR_UIntNative) PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_FramePointer);
 
-    if (pFrame->m_dwFlags & PTFF_SAVE_RSP)  { m_RegDisplay.SP   = *pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_RSP)  { m_RegDisplay.SP   = *pPreservedRegsCursor++; }
 
-    if (pFrame->m_dwFlags & PTFF_SAVE_RAX)  { m_RegDisplay.pRax = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_RCX)  { m_RegDisplay.pRcx = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_RDX)  { m_RegDisplay.pRdx = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_RAX)  { m_RegDisplay.pRax = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_RCX)  { m_RegDisplay.pRcx = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_RDX)  { m_RegDisplay.pRdx = pPreservedRegsCursor++; }
 #ifdef _TARGET_AMD64_
-    if (pFrame->m_dwFlags & PTFF_SAVE_R8 )  { m_RegDisplay.pR8  = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_R9 )  { m_RegDisplay.pR9  = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_R10)  { m_RegDisplay.pR10 = pPreservedRegsCursor++; }
-    if (pFrame->m_dwFlags & PTFF_SAVE_R11)  { m_RegDisplay.pR11 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R8 )  { m_RegDisplay.pR8  = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R9 )  { m_RegDisplay.pR9  = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R10)  { m_RegDisplay.pR10 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R11)  { m_RegDisplay.pR11 = pPreservedRegsCursor++; }
 #endif // _TARGET_AMD64_
 
-    if (pFrame->m_dwFlags & PTFF_RAX_IS_GCREF)
+    if (pFrame->m_Flags & PTFF_RAX_IS_GCREF)
     {
         m_pHijackedReturnValue = (PTR_RtuObjectRef) m_RegDisplay.pRax;
         m_HijackedReturnValueKind = GCRK_Object;
     }
-    if (pFrame->m_dwFlags & PTFF_RAX_IS_BYREF)
+    if (pFrame->m_Flags & PTFF_RAX_IS_BYREF)
     {
         m_pHijackedReturnValue = (PTR_RtuObjectRef) m_RegDisplay.pRax;
         m_HijackedReturnValueKind = GCRK_Byref;
@@ -607,7 +619,7 @@ void StackFrameIterator::UpdateFromExceptionDispatch(PTR_StackFrameIterator pSou
     m_RegDisplay.pX26 = thisFuncletPtrs.pX26;
     m_RegDisplay.pX27 = thisFuncletPtrs.pX27;
     m_RegDisplay.pX28 = thisFuncletPtrs.pX28;
-    // ARM64TODO: FP? LR?
+    m_RegDisplay.pFP = thisFuncletPtrs.pFP; 
 
 #elif defined(UNIX_AMD64_ABI)
     // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
@@ -812,15 +824,61 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     m_RegDisplay.pR11 = SP++;
     
 #elif defined(_TARGET_ARM64_)
-    UNREFERENCED_PARAMETER(isFilterInvoke);
-    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+    PTR_UInt64 d = (PTR_UInt64)(m_RegDisplay.SP);
+
+    for (int i = 0; i < 8; i++)
+    {
+        m_RegDisplay.D[i] = *d++;
+    }
+
+    SP = (PTR_UIntNative)d;
+
+    if (!isFilterInvoke)
+    {
+        // RhpCallCatchFunclet puts a couple of extra things on the stack that aren't put there by the other two
+        // thunks, but we don't need to know what they are here, so we just skip them.
+        SP += EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ? 4 : 2;
+
+        // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
+        m_funcletPtrs.pX19  = m_RegDisplay.pX19;
+        m_funcletPtrs.pX20  = m_RegDisplay.pX20;
+        m_funcletPtrs.pX21  = m_RegDisplay.pX21;
+        m_funcletPtrs.pX22  = m_RegDisplay.pX22;
+        m_funcletPtrs.pX23  = m_RegDisplay.pX23;
+        m_funcletPtrs.pX24  = m_RegDisplay.pX24;
+        m_funcletPtrs.pX25  = m_RegDisplay.pX25; 
+        m_funcletPtrs.pX26  = m_RegDisplay.pX26;
+        m_funcletPtrs.pX27  = m_RegDisplay.pX27;
+        m_funcletPtrs.pX28  = m_RegDisplay.pX28;
+        m_funcletPtrs.pFP   = m_RegDisplay.pFP;
+    }
+
+    m_RegDisplay.pFP  = SP++;
+
+    m_RegDisplay.SetAddrOfIP((PTR_PCODE)SP);
+    m_RegDisplay.SetIP(*SP++); 
+
+    m_RegDisplay.pX19 = SP++;
+    m_RegDisplay.pX20 = SP++;
+    m_RegDisplay.pX21 = SP++;
+    m_RegDisplay.pX22 = SP++;
+    m_RegDisplay.pX23 = SP++;
+    m_RegDisplay.pX24 = SP++;
+    m_RegDisplay.pX25 = SP++;
+    m_RegDisplay.pX26 = SP++;
+    m_RegDisplay.pX27 = SP++;
+    m_RegDisplay.pX28 = SP++;
 
 #else
     SP = (PTR_UIntNative)(m_RegDisplay.SP);
     ASSERT_UNCONDITIONALLY("NYI for this arch");
 #endif
+
+#if !defined(_TARGET_ARM64_)
     m_RegDisplay.SetAddrOfIP((PTR_PCODE)SP);
     m_RegDisplay.SetIP(*SP++);
+#endif
+
     m_RegDisplay.SetSP((UIntNative)dac_cast<TADDR>(SP));
     m_ControlPC = dac_cast<PTR_VOID>(*(m_RegDisplay.pIP));
 
@@ -932,15 +990,16 @@ public:
 
 #elif defined(_TARGET_ARM64_)
 
-// Conservative GC reporting must be applied to everything between the base of the
-// ReturnBlock and the top of the StackPassedArgs.
+    // Conservative GC reporting must be applied to everything between the base of the
+    // ReturnBlock and the top of the StackPassedArgs.
 private:
-    UIntNative m_pushedFP;                  // ChildSP+000     CallerSP-0C8 (0x08 bytes)    (fp)
-    UIntNative m_pushedLR;                  // ChildSP+008     CallerSP-0C0 (0x08 bytes)    (lr)
-    UInt64 m_fpArgRegs[8];                  // ChildSP+010     CallerSP-0C0 (0x40 bytes)    (d0-d7)
-    UIntNative m_returnBlock[8];            // ChildSP+050     CallerSP-080 (0x40 bytes)
-    UIntNative m_intArgRegs[8];             // ChildSP+090     CallerSP-040 (0x40 bytes)    (x0-x7)
-    UIntNative m_stackPassedArgs[1];        // ChildSP+0D0     CallerSP+000 (unknown size)
+    UIntNative m_pushedFP;                  // ChildSP+000     CallerSP-0C0 (0x08 bytes)    (fp)
+    UIntNative m_pushedLR;                  // ChildSP+008     CallerSP-0B8 (0x08 bytes)    (lr)
+    UInt64 m_fpArgRegs[8];                  // ChildSP+010     CallerSP-0B0 (0x40 bytes)    (d0-d7)
+    UIntNative m_returnBlock[4];            // ChildSP+050     CallerSP-070 (0x40 bytes)
+    UIntNative m_intArgRegs[9];             // ChildSP+070     CallerSP-050 (0x48 bytes)    (x0-x8)
+    UIntNative m_alignmentPad;              // ChildSP+0B8     CallerSP-008 (0x08 bytes)
+    UIntNative m_stackPassedArgs[1];        // ChildSP+0C0     CallerSP+000 (unknown size)
 
 public:
     PTR_UIntNative get_CallerSP() { return GET_POINTER_TO_FIELD(m_stackPassedArgs[0]); }
@@ -1044,10 +1103,12 @@ struct CALL_DESCR_CONTEXT
     UIntNative  IP;
 };
 #elif defined(_TARGET_ARM64_)
-// ARM64TODO: Add ARM64 entries
 struct CALL_DESCR_CONTEXT
 {
-    UIntNative IP;
+    UIntNative  FP;
+    UIntNative  IP;
+    UIntNative  X19;
+    UIntNative  X20;
 };
 #elif defined(_TARGET_X86_)
 struct CALL_DESCR_CONTEXT
@@ -1108,13 +1169,18 @@ void StackFrameIterator::UnwindCallDescrThunk()
     newSP += sizeof(CALL_DESCR_CONTEXT);
 
 #elif defined(_TARGET_ARM64_)
-    // ARM64TODO: pFP points to the SP that we want to capture? (This arrangement allows for
+    // pFP points to the SP that we want to capture. (This arrangement allows for
     // the arguments from this function to be loaded into memory with an adjustment
     // to SP, like an alloca
     newSP = *(PTR_UIntNative)m_RegDisplay.pFP;
     PTR_CALL_DESCR_CONTEXT pContext = (PTR_CALL_DESCR_CONTEXT)newSP;
 
-    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+    m_RegDisplay.pX19 = PTR_TO_MEMBER(CALL_DESCR_CONTEXT, pContext, X19);
+    m_RegDisplay.pX20 = PTR_TO_MEMBER(CALL_DESCR_CONTEXT, pContext, X20);
+
+    // And adjust SP to be the state that it should be in just after returning from
+    // the CallDescrFunction
+    newSP += sizeof(CALL_DESCR_CONTEXT);
 
 #elif defined(_TARGET_X86_)
     // RBP points to the SP that we want to capture. (This arrangement allows for
@@ -1198,7 +1264,7 @@ void StackFrameIterator::UnwindThrowSiteThunk()
     m_RegDisplay.pX26 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, X26);
     m_RegDisplay.pX27 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, X27);
     m_RegDisplay.pX28 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, X28);
-    // ARM64TODO: FP? LR?
+    m_RegDisplay.pFP = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, FP);
 #elif defined(_TARGET_X86_)
     m_RegDisplay.pRbp = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, Rbp);
     m_RegDisplay.pRdi = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, Rdi);

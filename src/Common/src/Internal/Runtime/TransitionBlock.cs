@@ -134,26 +134,6 @@ namespace Internal.Runtime
         IntPtr returnValue2;
         IntPtr returnValue3;
         IntPtr returnValue4;
-        IntPtr returnValue5;
-        IntPtr returnValue6;
-        IntPtr returnValue7;
-        IntPtr returnValue8;
-    }
-
-    struct CalleeSavedRegisters
-    {
-        IntPtr x29;
-        public IntPtr m_ReturnAddress; // Also known as x30
-        IntPtr x19;
-        IntPtr x20;
-        IntPtr x21;
-        IntPtr x22;
-        IntPtr x23;
-        IntPtr x24;
-        IntPtr x25;
-        IntPtr x26;
-        IntPtr x27;
-        IntPtr x28;
     }
 
     struct ArgumentRegisters
@@ -166,6 +146,11 @@ namespace Internal.Runtime
         IntPtr x5;
         IntPtr x6;
         IntPtr x7;
+        IntPtr x8;
+        public static unsafe int GetOffsetOfx8()
+        {
+            return sizeof(IntPtr) * 8;
+        }
     }
 #pragma warning restore 0169
 
@@ -190,10 +175,10 @@ namespace Internal.Runtime
 
         public const int NUM_ARGUMENT_REGISTERS = 8;
         public const int ARGUMENTREGISTERS_SIZE = NUM_ARGUMENT_REGISTERS * 8;
-        public const int ENREGISTERED_RETURNTYPE_MAXSIZE = 64; //(maximum HFA size is 8 doubles)
-        public const int ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE = 8;
+        public const int ENREGISTERED_RETURNTYPE_MAXSIZE = 32;                  // bytes (four FP registers: d0,d1,d2 and d3)
+        public const int ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE = 16;          // bytes (two int registers: x0 and x1)
         public const int ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE_PRIMITIVE = 8;
-        public const int ENREGISTERED_PARAMTYPE_MAXSIZE = 16; //(max value type size than can be passed by value)
+        public const int ENREGISTERED_PARAMTYPE_MAXSIZE = 16;                   // bytes (max value type size that can be passed by value)
         public const int STACK_ELEM_SIZE = 8;
         public static int StackElemSize(int size) { return (((size) + STACK_ELEM_SIZE - 1) & ~(STACK_ELEM_SIZE - 1)); }
     }
@@ -396,6 +381,8 @@ namespace Internal.Runtime
         {
             return sizeof(ReturnBlock);
         }
+
+        public IntPtr m_alignmentPad;
 #elif _TARGET_WASM_
         public ReturnBlock m_returnBlock;
         public static unsafe int GetOffsetOfReturnValuesBlock()
@@ -440,6 +427,11 @@ namespace Internal.Runtime
         public static unsafe int GetArgumentIndexFromOffset(int offset)
         {
             return ((offset - GetOffsetOfArgumentRegisters()) / IntPtr.Size);
+        }
+
+        public static int GetStackArgumentIndexFromOffset(int offset)
+        {
+            return (offset - GetOffsetOfArgs()) / ArchitectureConstants.STACK_ELEM_SIZE;
         }
 #endif
 

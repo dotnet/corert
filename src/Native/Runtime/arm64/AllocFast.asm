@@ -113,9 +113,9 @@ NewOutOfMemory
 ;;  x1 == element/character count
     LEAF_ENTRY RhNewString
         ;; Make sure computing the overall allocation size won't overflow
-        mov         x2,#0x7FFFFFFF
+        mov         x2, #0x7FFFFFFF
         cmp         x1, x2
-        bgt         StringSizeOverflow
+        bhi         StringSizeOverflow
 
         ;; Compute overall allocation size (align(base size + (element size * elements), 8)).
         mov         w2, #STRING_COMPONENT_SIZE
@@ -155,13 +155,13 @@ NewOutOfMemory
         ret
 
 StringSizeOverflow
-        ; We get here if the length of the final string object can't be represented as an unsigned 
+        ; We get here if the length of the final string object can't be represented as an unsigned
         ; 32-bit value. We're going to tail-call to a managed helper that will throw
         ; an OOM exception that the caller of this allocator understands.
 
         ; x0 holds EEType pointer already
         mov         x1, #1                  ; Indicate that we should throw OverflowException
-        bl          RhExceptionHandling_FailedAllocation
+        b           RhExceptionHandling_FailedAllocation
     LEAF_END    RhNewString
 
     INLINE_GETTHREAD_CONSTANT_POOL
@@ -174,11 +174,11 @@ StringSizeOverflow
 
         ;; We want to limit the element count to the non-negative 32-bit int range.
         ;; If the element count is <= 0x7FFFFFFF, no overflow is possible because the component
-        ;; size is <= 0xffff (it's an unsigned 16-bit value), and the base size for the worst 
+        ;; size is <= 0xffff (it's an unsigned 16-bit value), and the base size for the worst
         ;; case (32 dimensional MdArray) is less than 0xffff, and thus the product fits in 64 bits.
-        mov         x2,#0x7FFFFFFF
-        cmp         x1,x2
-        bgt         ArraySizeOverflow
+        mov         x2, #0x7FFFFFFF
+        cmp         x1, x2
+        bhi         ArraySizeOverflow
 
         ldrh        w2, [x0, #OFFSETOF__EEType__m_usComponentSize]
         umull       x2, w1, w2
@@ -219,13 +219,13 @@ StringSizeOverflow
         ret
 
 ArraySizeOverflow
-        ; We get here if the size of the final array object can't be represented as an unsigned 
+        ; We get here if the size of the final array object can't be represented as an unsigned
         ; 32-bit value. We're going to tail-call to a managed helper that will throw
         ; an overflow exception that the caller of this allocator understands.
 
         ; x0 holds EEType pointer already
         mov         x1, #1                  ; Indicate that we should throw OverflowException
-        bl          RhExceptionHandling_FailedAllocation
+        b           RhExceptionHandling_FailedAllocation
     LEAF_END    RhpNewArray
 
     INLINE_GETTHREAD_CONSTANT_POOL

@@ -192,9 +192,11 @@ namespace System.Runtime
 #if AMD64
         [StructLayout(LayoutKind.Explicit, Size = 0x4d0)]
 #elif ARM
-        [StructLayout(LayoutKind.Explicit, Size=0x1a0)]
+        [StructLayout(LayoutKind.Explicit, Size = 0x1a0)]
 #elif X86
-        [StructLayout(LayoutKind.Explicit, Size=0x2cc)]
+        [StructLayout(LayoutKind.Explicit, Size = 0x2cc)]
+#elif ARM64
+        [StructLayout(LayoutKind.Explicit, Size = 0x390)]
 #else
         [StructLayout(LayoutKind.Explicit, Size = 0x10)] // this is small enough that it should trip an assert in RhpCopyContextFromExInfo
 #endif
