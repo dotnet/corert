@@ -21,44 +21,56 @@ See the LICENSE file in the project root for more information.
     <CppLinker>$(CppCompilerAndLinker)</CppLinker>
     <CppLibCreator>ar</CppLibCreator>
   </PropertyGroup>
+  
+  <!-- Part of workaround for lack of secondary build artifact import - https://github.com/Microsoft/msbuild/issues/2807 -->
+  <!-- Ensure that runtime-specific paths have already been set -->
+  <PropertyGroup>
+    <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == '' and '$(TargetOS)' == 'OSX'">clang</CppCompilerAndLinker>
+    <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang-3.9</CppCompilerAndLinker>
+    <CppCompiler>$(CppCompilerAndLinker)</CppCompiler>
+    <CppLinker>$(CppCompilerAndLinker)</CppLinker>
+    <CppLibCreator>ar</CppLibCreator>
+  </PropertyGroup>
+  <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
 
-  <ItemGroup>
-    <CppCompilerAndLinkerArg Include="-I $(IlcPath)/inc" />
-    <CppCompilerAndLinkerArg Condition="'$(Configuration)' == 'Debug'" Include="-g -O0" />
-    <CppCompilerAndLinkerArg Condition="'$(Configuration)' != 'Debug'" Include="-O2" />
-    <CppCompilerAndLinkerArg Include="-c -Wno-invalid-offsetof" />
-    <CppCompilerAndLinkerArg Include="$(AdditionalCppCompilerFlags)" />
-  </ItemGroup>
+    <ItemGroup>
+      <CppCompilerAndLinkerArg Include="-I $(IlcPath)/inc" />
+      <CppCompilerAndLinkerArg Condition="'$(Configuration)' == 'Debug'" Include="-g -O0" />
+      <CppCompilerAndLinkerArg Condition="'$(Configuration)' != 'Debug'" Include="-O2" />
+      <CppCompilerAndLinkerArg Include="-c -Wno-invalid-offsetof" />
+      <CppCompilerAndLinkerArg Include="$(AdditionalCppCompilerFlags)" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <NativeLibrary Condition="'$(IlcMultiModule)' == 'true' and $(NativeCodeGen) == ''" Include="$(SharedLibrary)" />
-    <NativeLibrary Condition="$(NativeCodeGen) == '' and $(NativeLib) == ''" Include="$(IlcPath)/sdk/libbootstrapper.a" />
-    <NativeLibrary Condition="$(NativeCodeGen) == '' and $(NativeLib) != ''" Include="$(IlcPath)/sdk/libbootstrapperdll.a" />
-    <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)/sdk/libRuntime.a" />
-    <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)/sdk/libbootstrappercpp.a" />
-    <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)/sdk/libPortableRuntime.a" />
-    <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)/sdk/libbootstrappercpp.a" />
-    <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)/sdk/libPortableRuntime.a" />
-  </ItemGroup>
+    <ItemGroup>
+      <NativeLibrary Condition="'$(IlcMultiModule)' == 'true' and $(NativeCodeGen) == ''" Include="$(SharedLibrary)" />
+      <NativeLibrary Condition="$(NativeCodeGen) == '' and $(NativeLib) == ''" Include="$(IlcPath)/sdk/libbootstrapper.a" />
+      <NativeLibrary Condition="$(NativeCodeGen) == '' and $(NativeLib) != ''" Include="$(IlcPath)/sdk/libbootstrapperdll.a" />
+      <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)/sdk/libRuntime.a" />
+      <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)/sdk/libbootstrappercpp.a" />
+      <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)/sdk/libPortableRuntime.a" />
+      <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)/sdk/libbootstrappercpp.a" />
+      <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)/sdk/libPortableRuntime.a" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <AdditionalNativeLibrary Include="$(IlcPath)/sdk/libSystem.Private.CoreLib.Native.a" />
-    <AdditionalNativeLibrary Include="$(IlcPath)/framework/System.Native.a" />
-    <AdditionalNativeLibrary Include="$(IlcPath)/framework/libSystem.Globalization.Native.a" />
-  </ItemGroup>
+    <ItemGroup>
+      <AdditionalNativeLibrary Include="$(IlcPath)/sdk/libSystem.Private.CoreLib.Native.a" />
+      <AdditionalNativeLibrary Include="$(IlcPath)/framework/System.Native.a" />
+      <AdditionalNativeLibrary Include="$(IlcPath)/framework/libSystem.Globalization.Native.a" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <LinkerArg Include="@(NativeLibrary)" />
-    <LinkerArg Include="@(AdditionalNativeLibrary)" />
-    <LinkerArg Include="-g" />
-    <LinkerArg Include="-Wl,-rpath,'$ORIGIN'" />
-    <LinkerArg Include="-pthread" />
-    <LinkerArg Include="-lstdc++" />
-    <LinkerArg Include="-ldl" />
-    <LinkerArg Include="-lm" />
-    <LinkerArg Include="-luuid" Condition="'$(TargetOS)' != 'OSX'" />
-    <LinkerArg Include="-lrt" Condition="'$(TargetOS)' != 'OSX'" />
-    <LinkerArg Include="-licucore" Condition="'$(TargetOS)' == 'OSX'" />
-    <LinkerArg Include="-shared" Condition="'$(NativeLib)' == 'Shared'" />
-  </ItemGroup>
+    <ItemGroup>
+      <LinkerArg Include="@(NativeLibrary)" />
+      <LinkerArg Include="@(AdditionalNativeLibrary)" />
+      <LinkerArg Include="-g" />
+      <LinkerArg Include="-Wl,-rpath,'$ORIGIN'" />
+      <LinkerArg Include="-pthread" />
+      <LinkerArg Include="-lstdc++" />
+      <LinkerArg Include="-ldl" />
+      <LinkerArg Include="-lm" />
+      <LinkerArg Include="-luuid" Condition="'$(TargetOS)' != 'OSX'" />
+      <LinkerArg Include="-lrt" Condition="'$(TargetOS)' != 'OSX'" />
+      <LinkerArg Include="-licucore" Condition="'$(TargetOS)' == 'OSX'" />
+      <LinkerArg Include="-shared" Condition="'$(NativeLib)' == 'Shared'" />
+    </ItemGroup>
+  </Target>
 </Project>
