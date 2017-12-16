@@ -14,12 +14,14 @@ See the LICENSE file in the project root for more information.
 ***********************************************************************************************
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <!-- Ensure that runtime-specific paths have already been set -->
   <PropertyGroup>
     <CppCompiler>cl</CppCompiler>
     <CppLinker>link</CppLinker>
     <CppLibCreator>lib</CppLibCreator>
   </PropertyGroup>
+    
+  <!-- Part of workaround for lack of secondary build artifact import - https://github.com/Microsoft/msbuild/issues/2807 -->
+  <!-- Ensure that runtime-specific paths have already been set -->  
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
     <ItemGroup>
       <CppCompilerAndLinkerArg Include="/I$(IlcPath)\inc" />

@@ -9,17 +9,17 @@
     <IlcCalledViaPackage>true</IlcCalledViaPackage>
    
     <!-- If CoreRT is being consumed via its package, runtime-specific properties must be set before compilation can proceed -->
-    <ImportRuntimeILCompilerPackageTargetDependsOn>RunResolvePackageDependencies</ImportRuntimeILCompilerPackageTargetDependsOn>
-    <IlcSetupPropertiesDependsOn>ImportRuntimeILCompilerPackageTarget</IlcSetupPropertiesDependsOn>
+    <ImportRuntimeIlcPackageTargetDependsOn>RunResolvePackageDependencies</ImportRuntimeIlcPackageTargetDependsOn>
+    <IlcSetupPropertiesDependsOn>ImportRuntimeIlcPackageTarget</IlcSetupPropertiesDependsOn>
     <IlcDynamicBuildPropertyDependencies>SetupProperties</IlcDynamicBuildPropertyDependencies>
     
   </PropertyGroup>
 
   <!-- Part of workaround for lack of secondary build artifact import - https://github.com/Microsoft/msbuild/issues/2807 -->
   <!-- Locate the runtime package according to the current target runtime -->
-  <Target Name="ImportRuntimeILCompilerPackageTarget" Condition="'$(BuildingFrameworkLibrary)' != 'true' AND $(IlcCalledViaPackage) == 'true'" DependsOnTargets="$(ImportRuntimeILCompilerPackageTargetDependsOn)" BeforeTargets="Publish">
+  <Target Name="ImportRuntimeIlcPackageTarget" Condition="'$(BuildingFrameworkLibrary)' != 'true' AND $(IlcCalledViaPackage) == 'true'" DependsOnTargets="$(ImportRuntimeIlcPackageTargetDependsOn)" BeforeTargets="Publish">
     <!-- CoreRT SDK and Framework Assemblies need to be defined to avoid CoreCLR implementations being set as compiler inputs -->
-    <Error Condition="'@(PackageDefinitions)' == ''" Text="The PackageDefinitions ItemGroup is required for target ImportRuntimeILCompilerPackageTarget" />
+    <Error Condition="'@(PackageDefinitions)' == ''" Text="The PackageDefinitions ItemGroup is required for target ImportRuntimeIlcPackageTarget" />
     <ItemGroup>
       <RuntimePackage Include="@(PackageDefinitions)" Condition="'%(PackageDefinitions.Name)' == '$(RuntimeIlcPackageName)'" />
     </ItemGroup>
