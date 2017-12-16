@@ -120,6 +120,12 @@
         ret
     }
 
+    .method static public hidebysig void Tail.NoRet_Invalid_TailRet() cil managed 
+    {
+        tail.
+        call        void PrefixTestsType::StaticMethod()
+    }
+
     .method static public hidebysig void Tail.DoubleCall_Invalid_TailRet() cil managed 
     {
         tail.
@@ -138,6 +144,24 @@
 
     MethodEnd:
         ret
+    }
+
+    .method static public hidebysig void Tail.ComplexBranchToRet_Valid() cil managed 
+    {
+        br          AfterTail
+
+    TailCall:
+        tail.
+        call        void PrefixTestsType::StaticMethod()
+
+    MethodEnd:
+        ret
+
+    AfterTail:
+        ldc.i4.0
+        brfalse     TailCall
+
+        br          MethodEnd
     }
 
     .method static public hidebysig void Tail.BranchToNopRet_Invalid_TailRet() cil managed 
