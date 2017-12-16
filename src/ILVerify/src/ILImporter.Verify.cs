@@ -2674,6 +2674,7 @@ again:
         private void ReportMethodEndInsideInstruction()
         {
             VerificationError(VerifierError.MethodEnd);
+            AbortMethodVerification();
         }
 
         private void ReportInvalidInstruction(ILOpcode opcode)
