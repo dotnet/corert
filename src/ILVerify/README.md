@@ -17,7 +17,7 @@ Historically on Full Framework IL generators used PEVerify to make sure that the
 - Fast spin up/tear down. 
 
 ## The codebase
-The project targets netcoreapp2.0 and uses the new .csproj based project format. If you want to open and compile it with Visual Studio then you need a version, which supports .NET Core 2.0 tooling. Currently this is supported in Visual Studio 2017 Update 3 Preview (Version 15.3). The other option is to use command (with .NET Core 2.0 tooling - currenly also preview). 
+The project targets netcoreapp2.0 and uses the new .csproj based project format. If you want to open and compile it with Visual Studio then you need a version, which supports .NET Core 2.0 tooling. This is supported in Visual Studio 2017 Update 3  (Version 15.3) or later. The other option is to use command (with .NET Core 2.0 tooling). 
 
 ## Tests
 
