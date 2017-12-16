@@ -171,6 +171,9 @@
   <data name="CatchByRef" xml:space="preserve">
     <value>ByRef not allowed as catch type.</value>
   </data>
+  <data name="CodeSizeZero" xml:space="preserve">
+    <value>Code size is zero.</value>
+  </data>
   <data name="Constrained" xml:space="preserve">
     <value>Missing callvirt following constrained prefix.</value>
   </data>
@@ -285,6 +288,9 @@
   <data name="MethodAccess" xml:space="preserve">
     <value>Method is not visible.</value>
   </data>
+  <data name="MethodEnd" xml:space="preserve">
+    <value>Method ends in the middle of an instruction.</value>
+  </data>
   <data name="MethodFallthrough" xml:space="preserve">
     <value>Fall through end of the method without returning.</value>
   </data>
@@ -365,6 +371,9 @@
   </data>
   <data name="TailCallInsideER" xml:space="preserve">
     <value>The tail.call (or calli or callvirt) instruction cannot be used to transfer control out of a try, filter, catch, or finally block.</value>
+  </data>
+  <data name="TailRet" xml:space="preserve">
+    <value>tail.call may only be followed by ret.</value>
   </data>
   <data name="TailRetType" xml:space="preserve">
     <value>Tail call return type not compatible.</value>
