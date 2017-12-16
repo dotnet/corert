@@ -47,11 +47,17 @@ namespace Internal.IL
 
         private byte ReadILByte()
         {
+            if (_currentOffset >= _ilBytes.Length)
+                ReportMethodEndInsideInstruction();
+
             return _ilBytes[_currentOffset++];
         }
 
         private UInt16 ReadILUInt16()
         {
+            if (_currentOffset + 1 >= _ilBytes.Length)
+                ReportMethodEndInsideInstruction();
+
             UInt16 val = (UInt16)(_ilBytes[_currentOffset] + (_ilBytes[_currentOffset + 1] << 8));
             _currentOffset += 2;
             return val;
@@ -59,6 +65,9 @@ namespace Internal.IL
 
         private UInt32 ReadILUInt32()
         {
+            if (_currentOffset + 3 >= _ilBytes.Length)
+                ReportMethodEndInsideInstruction();
+
             UInt32 val = (UInt32)(_ilBytes[_currentOffset] + (_ilBytes[_currentOffset + 1] << 8) + (_ilBytes[_currentOffset + 2] << 16) + (_ilBytes[_currentOffset + 3] << 24));
             _currentOffset += 4;
             return val;
@@ -90,6 +99,9 @@ namespace Internal.IL
 
         private void SkipIL(int bytes)
         {
+            if (_currentOffset + (bytes - 1) >= _ilBytes.Length)
+                ReportMethodEndInsideInstruction();
+
             _currentOffset += bytes;
         }
 
@@ -195,12 +207,6 @@ namespace Internal.IL
                         SkipIL(4);
                         break;
                     case ILOpcode.prefix1:
-                        if (_currentOffset >= _ilBytes.Length)
-                        {
-                            ReportMethodEndInsideInstruction();
-                            return;
-                        }
-
                         opCode = (ILOpcode)(0x100 + ReadILByte());
                         goto again;
                     case ILOpcode.br_s:
@@ -271,12 +277,6 @@ namespace Internal.IL
                         break;
                     case ILOpcode.switch_:
                         {
-                            if (_currentOffset + 3 >= _ilBytes.Length)
-                            {
-                                ReportMethodEndInsideInstruction();
-                                return;
-                            }
-
                             uint count = ReadILUInt32();
                             int jmpBase = _currentOffset + (int)(4 * count);
                             for (uint i = 0; i < count; i++)

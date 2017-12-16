@@ -2660,13 +2660,13 @@ again:
             VerificationError(VerifierError.MethodFallthrough);
         }
 
-        private void ReportMethodEndInsideInstruction()
+        void ReportMethodEndInsideInstruction()
         {
             VerificationError(VerifierError.MethodEnd);
             AbortMethodVerification();
         }
 
-        private void ReportInvalidInstruction(ILOpcode opcode)
+        void ReportInvalidInstruction(ILOpcode opcode)
         {
             VerificationError(VerifierError.UnknownOpcode);
         }
