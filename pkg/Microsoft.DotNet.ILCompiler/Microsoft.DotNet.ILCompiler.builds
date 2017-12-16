@@ -1,20 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  <PropertyGroup>
-    <TargetRuntimePackageLocation Condition="'$(OSGroup)' == 'Windows_NT'">win</TargetRuntimePackageLocation>
-    <TargetRuntimePackageLocation Condition="'$(OSGroup)' == 'Unix'">linux</TargetRuntimePackageLocation>
-    <TargetRuntimePackageLocation Condition="'$(OSGroup)' == 'OSX'">osx</TargetRuntimePackageLocation>
-  </PropertyGroup>
-  
-  
 
   <ItemGroup>
     <Project Include="Microsoft.DotNet.ILCompiler.pkgproj" >
       <OSGroup>AnyOS</OSGroup>
     </Project>
 
-    <!-- Include platform-specific package definitions-->
+    <!-- Include this to force a build of platform-specific packages-->
     <Project Include="$(MSBuildThisFileDirectory)\TargetSpecific\Microsoft.DotNet.ILCompiler.pkgproj" />
 
   </ItemGroup>
