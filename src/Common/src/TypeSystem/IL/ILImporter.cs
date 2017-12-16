@@ -934,12 +934,6 @@ namespace Internal.IL
                     return;
                 }
 
-                if (_currentOffset > _ilBytes.Length)
-                {
-                    ReportMethodEndInsideInstruction();
-                    return;
-                }
-
                 BasicBlock nextBasicBlock = _basicBlocks[_currentOffset];
                 if (nextBasicBlock != null)
                 {
