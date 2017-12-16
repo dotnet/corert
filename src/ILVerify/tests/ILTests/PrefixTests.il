@@ -120,7 +120,7 @@
         ret
     }
 
-    .method static public hidebysig void Tail.NoRet_Invalid_TailRet() cil managed 
+    .method static public hidebysig void Tail.NoRet_Invalid_TailRet.MethodFallthrough() cil managed 
     {
         tail.
         call        void PrefixTestsType::StaticMethod()

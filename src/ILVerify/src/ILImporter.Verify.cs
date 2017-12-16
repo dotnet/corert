@@ -63,7 +63,6 @@ namespace Internal.IL
         bool[] _validTargetOffsets;
 
         int? _delegateCreateStart;
-        bool _pendingTailcall;
 
         class ExceptionRegion
         {
@@ -1239,22 +1238,6 @@ again:
 
         void EndImportingInstruction()
         {
-            var currentOpcode = (ILOpcode)_ilBytes[_currentInstructionOffset];
-
-            // tail.call may only be followed by return
-            if (_pendingTailcall)
-            {
-                Check(currentOpcode == ILOpcode.ret, VerifierError.TailRet);
-                _pendingTailcall = false;
-            }
-
-            if (HasPendingPrefix(Prefix.Tail) &&
-                (currentOpcode == ILOpcode.call || currentOpcode == ILOpcode.calli || currentOpcode == ILOpcode.callvirt))
-            {
-                _pendingTailcall = true;
-                ClearPendingPrefix(Prefix.Tail);
-            }
-
             CheckPendingPrefix(_pendingPrefix);
             ClearPendingPrefix(_pendingPrefix); // Make sure prefix is cleared
         }
@@ -1495,7 +1478,10 @@ again:
                 }
 
                 if (HasPendingPrefix(Prefix.Tail))
+                {
+                    ClearPendingPrefix(Prefix.Tail);
                     tailCall = true;
+                }
             }
 
             // TODO: VarArgs
@@ -1692,6 +1678,9 @@ again:
 
                 // for tailcall, stack must be empty
                 Check(_stackTop == 0, VerifierError.TailStackEmpty);
+
+                // The instruction following a tail.call shall be a ret
+                Check(_currentOffset < _ilBytes.Length && (ILOpcode)_ilBytes[_currentOffset] == ILOpcode.ret, VerifierError.TailRet);
             }
 
             // now push on the result
