@@ -25,10 +25,6 @@ See the LICENSE file in the project root for more information.
     <!-- The correct OS detection code. Uncomment once CI machines are upgraded to the latest version of MSBuild -->
     <!-- <TargetOS Condition="'$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</TargetOS>  -->    
     <TargetOS Condition="'$(TargetOS)' == ''">$(OS)</TargetOS>
-    
-    <!-- Part of workaround for lack of secondary build artifact import - https://github.com/Microsoft/msbuild/issues/2807 -->
-    <!-- This value is only changed if running from a package -->
-    <IlcBuildIntegrationTargetsDir Condition="'$(IlcBuildIntegrationTargetsDir)' == '' ">$(MSBuildThisFileDirectory)</IlcBuildIntegrationTargetsDir>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -127,7 +123,7 @@ See the LICENSE file in the project root for more information.
   <Target Name="BuildFrameworkLib" Condition="'$(DisableFrameworkLibGeneration)' != 'true'" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
     <ItemGroup>
      <!-- This builds the project with the ILC implementation in the identified runtime package to avoid resolving it again  -->
-      <ProjectToBuild Include="$(IlcBuildIntegrationTargetsDir)BuildFrameworkNativeObjects.proj">
+      <ProjectToBuild Include="$(MSBuildThisFileDirectory)BuildFrameworkNativeObjects.proj">
           <AdditionalProperties>
           IntermediateOutputPath=$(IntermediateOutputPath);
           FrameworkLibPath=$(FrameworkLibPath);
@@ -167,8 +163,8 @@ See the LICENSE file in the project root for more information.
     <Exec Command="&quot;$(IlcPath)\tools\ilc&quot; @&quot;$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp&quot;" />
   </Target>
 
-  <Import Project="$(IlcBuildIntegrationTargetsDir)Microsoft.NETCore.Native.Windows.props" Condition="'$(TargetOS)' == 'Windows_NT'" />
-  <Import Project="$(IlcBuildIntegrationTargetsDir)Microsoft.NETCore.Native.Unix.props" Condition="'$(TargetOS)' != 'Windows_NT'" />
+  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Windows.props" Condition="'$(TargetOS)' == 'Windows_NT'" />
+  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Unix.props" Condition="'$(TargetOS)' != 'Windows_NT'" />
   
   <Target Name="CppCompile"
       Inputs="$(IlcCompileOutput)"
@@ -239,6 +235,6 @@ See the LICENSE file in the project root for more information.
     <Exec Command="$(CppLibCreator) @(CustomLibArg, ' ')" Condition="'$(OS)' != 'Windows_NT'" />
   </Target>
 
-  <Import Project="$(IlcBuildIntegrationTargetsDir)Microsoft.NETCore.Native.Publish.targets" Condition="'$(NativeCompilationDuringPublish)' != 'false'" />
+  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Publish.targets" Condition="'$(NativeCompilationDuringPublish)' != 'false'" />
 
 </Project>
