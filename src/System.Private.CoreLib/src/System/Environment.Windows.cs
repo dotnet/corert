@@ -12,17 +12,6 @@ namespace System
 
         internal static long TickCount64 => (long)Interop.mincore.GetTickCount64();
 
-        public static int ProcessorCount
-        {
-            get
-            {
-                // @TODO: can we finally fix this to return the actual number of processors when there are >64?
-                Interop.mincore.SYSTEM_INFO info;
-                Interop.mincore.GetNativeSystemInfo(out info);
-                return (int)info.dwNumberOfProcessors;
-            }
-        }
-
         private static int ComputeExecutionId() => (int)Interop.mincore.GetCurrentProcessorNumber();
 
         public static string ExpandEnvironmentVariables(string name)

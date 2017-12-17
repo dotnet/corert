@@ -794,3 +794,8 @@ EXTERN_C void * FASTCALL RecoverLoopHijackTarget(UInt32 entryIndex, ModuleHeader
     Module * pModule = GetRuntimeInstance()->FindModuleByReadOnlyDataAddress(pModuleHeader);
     return pModule->RecoverLoopHijackTarget(entryIndex, pModuleHeader);
 }
+
+COOP_PINVOKE_HELPER(Int32, RhGetProcessCpuCount, ())
+{
+    return PalGetProcessCpuCount();
+}
