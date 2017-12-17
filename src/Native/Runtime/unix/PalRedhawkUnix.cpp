@@ -738,12 +738,16 @@ REDHAWK_PALEXPORT UInt32 REDHAWK_PALAPI PalGetTickCount()
 REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer)
 {
     HANDLE moduleHandle = NULL;
+    // Emscripten's implementation of dladdr corrupts memory,
+    // but always returns 0 for the module handle, so just skip the call
+#if !defined(_WASM_)
     Dl_info info;
     int st = dladdr(pointer, &info);
     if (st != 0)
     {
         moduleHandle = info.dli_fbase;
     }
+#endif // _WASM_
 
     return moduleHandle;
 }
@@ -1227,7 +1231,10 @@ REDHAWK_PALEXPORT bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out
 REDHAWK_PALEXPORT Int32 PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase)
 {
     Dl_info dl;
+    // Emscripten's implementation of dladdr corrupts memory and doesn't have the real name, so skip it
+#if !defined(_WASM_)
     if (dladdr(moduleBase, &dl) == 0)
+#endif // !defined(_WASM_)
     {
         *pModuleNameOut = NULL;
         return 0;
