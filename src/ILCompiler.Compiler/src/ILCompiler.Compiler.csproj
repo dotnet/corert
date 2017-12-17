@@ -97,6 +97,7 @@
     <Compile Include="..\..\JitInterface\src\TypeString.cs">
       <Link>JitInterface\TypeString.cs</Link>
     </Compile>
+    <Compile Include="Compiler\AnalysisBasedMetadataManager.cs" />
     <Compile Include="Compiler\BlockedInternalsBlockingPolicy.cs" />
     <Compile Include="Compiler\CodeGenerationFailedException.cs" />
     <Compile Include="Compiler\CompilerGeneratedType.cs" />

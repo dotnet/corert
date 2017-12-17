@@ -382,6 +382,16 @@ namespace ILCompiler
             else
                 builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup);
 
+            var stackTracePolicy = _emitStackTraceData ?
+                (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
+
+            UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager(
+                compilationGroup,
+                typeSystemContext,
+                new BlockedInternalsBlockingPolicy(),
+                _metadataLogFileName,
+                stackTracePolicy);
+
             // Unless explicitly opted in at the command line, we enable scanner for retail builds by default.
             // We don't do this for CppCodegen and Wasm, because those codegens are behind.
             // We also don't do this for multifile because scanner doesn't simulate inlining (this would be
@@ -392,11 +402,13 @@ namespace ILCompiler
 
             useScanner &= !_noScanner;
 
+            MetadataManager compilationMetadataManager = _isWasmCodegen ? (MetadataManager)new EmptyMetadataManager(typeSystemContext) : metadataManager;
             ILScanResults scanResults = null;
             if (useScanner)
             {
                 ILScannerBuilder scannerBuilder = builder.GetILScannerBuilder()
-                    .UseCompilationRoots(compilationRoots);
+                    .UseCompilationRoots(compilationRoots)
+                    .UseMetadataManager(metadataManager);
 
                 if (_scanDgmlLogFileName != null)
                     scannerBuilder.UseDependencyTracking(_generateFullScanDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
@@ -404,6 +416,8 @@ namespace ILCompiler
                 IILScanner scanner = scannerBuilder.ToILScanner();
 
                 scanResults = scanner.Scan();
+
+                compilationMetadataManager = metadataManager.ToAnalysisBasedMetadataManager();
             }
 
             var logger = new Logger(Console.Out, _isVerbose);
@@ -415,19 +429,11 @@ namespace ILCompiler
             DependencyTrackingLevel trackingLevel = _dgmlLogFileName == null ?
                 DependencyTrackingLevel.None : (_generateFullDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
 
-            var stackTracePolicy = _emitStackTraceData ?
-                (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
-
-            UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager(
-                compilationGroup,
-                typeSystemContext,
-                new BlockedInternalsBlockingPolicy(),
-                _metadataLogFileName,
-                stackTracePolicy);
+            compilationRoots.Add(compilationMetadataManager);
 
             builder
                 .UseBackendOptions(_codegenOptions)
-                .UseMetadataManager(metadataManager)
+                .UseMetadataManager(compilationMetadataManager)
                 .UseLogger(logger)
                 .UseDependencyTracking(trackingLevel)
                 .UseCompilationRoots(compilationRoots)

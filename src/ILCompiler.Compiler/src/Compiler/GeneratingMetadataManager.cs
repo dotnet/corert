@@ -24,8 +24,8 @@ namespace ILCompiler
     /// </summary>
     public abstract class GeneratingMetadataManager : MetadataManager
     {
-        private readonly string _metadataLogFile;
-        private readonly StackTraceEmissionPolicy _stackTraceEmissionPolicy;
+        protected readonly string _metadataLogFile;
+        protected readonly StackTraceEmissionPolicy _stackTraceEmissionPolicy;
         private readonly Dictionary<DynamicInvokeMethodSignature, MethodDesc> _dynamicInvokeThunks;
         private readonly ModuleDesc _generatedAssembly;
 
@@ -83,7 +83,8 @@ namespace ILCompiler
                 // Methods that will end up in the reflection invoke table should not have an entry in stack trace table
                 // We'll try looking them up in reflection data at runtime.
                 if (transformed.GetTransformedMethodDefinition(typicalMethod) != null &&
-                    ShouldMethodBeInInvokeMap(method))
+                    ShouldMethodBeInInvokeMap(method) &&
+                    (GetMetadataCategory(method) & MetadataCategory.RuntimeMapping) != 0)
                     continue;
 
                 if (!_stackTraceEmissionPolicy.ShouldIncludeMethod(method))
@@ -162,6 +163,9 @@ namespace ILCompiler
                 }
 
                 if (IsReflectionBlocked(method.Instantiation) || IsReflectionBlocked(method.OwningType.Instantiation))
+                    continue;
+
+                if ((GetMetadataCategory(method) & MetadataCategory.RuntimeMapping) == 0)
                     continue;
 
                 MetadataRecord record = transformed.GetTransformedMethodDefinition(method.GetTypicalMethodDefinition());

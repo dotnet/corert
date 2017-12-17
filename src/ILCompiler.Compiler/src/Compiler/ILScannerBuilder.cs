@@ -23,12 +23,14 @@ namespace ILCompiler
         private Logger _logger = Logger.Null;
         private DependencyTrackingLevel _dependencyTrackingLevel = DependencyTrackingLevel.None;
         private IEnumerable<ICompilationRootProvider> _compilationRoots = Array.Empty<ICompilationRootProvider>();
+        private MetadataManager _metadataManager;
 
         internal ILScannerBuilder(CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup, NameMangler mangler)
         {
             _context = context;
             _compilationGroup = compilationGroup;
             _nameMangler = mangler;
+            _metadataManager = new EmptyMetadataManager(context);
         }
 
         public ILScannerBuilder UseDependencyTracking(DependencyTrackingLevel trackingLevel)
@@ -43,12 +45,16 @@ namespace ILCompiler
             return this;
         }
 
+        public ILScannerBuilder UseMetadataManager(MetadataManager metadataManager)
+        {
+            _metadataManager = metadataManager;
+            return this;
+        }
+
         public IILScanner ToILScanner()
         {
-            // TODO: we will want different metadata managers depending on whether we're doing reflection analysis
-            var metadataManager = new UsageBasedMetadataManager(_compilationGroup, _context, new BlockedInternalsBlockingPolicy(), null, new NoStackTraceEmissionPolicy());
             var interopStubManager = new CompilerGeneratedInteropStubManager(_compilationGroup, _context, new InteropStateManager(_compilationGroup.GeneratedAssembly));
-            var nodeFactory = new ILScanNodeFactory(_context, _compilationGroup, metadataManager, interopStubManager, _nameMangler);
+            var nodeFactory = new ILScanNodeFactory(_context, _compilationGroup, _metadataManager, interopStubManager, _nameMangler);
             DependencyAnalyzerBase<NodeFactory> graph = _dependencyTrackingLevel.CreateDependencyGraph(nodeFactory);
 
             return new ILScanner(graph, nodeFactory, _compilationRoots, new NullDebugInformationProvider(), _logger);
