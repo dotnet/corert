@@ -35,6 +35,7 @@
     <FileToExclude Include="System.Linq.Expressions" />
     <FileToExclude Include="System.Reflection.Primitives" />
     <FileToExclude Include="System.Runtime.InteropServices" />
+    <FileToExclude Include="System.Text.RegularExpressions" />
 
     <!-- TODO: Upstack framework -->
     <FileToExclude Include="System.Private.DataContractSerialization" />
