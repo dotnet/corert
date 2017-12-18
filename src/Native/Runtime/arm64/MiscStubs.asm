@@ -5,6 +5,10 @@
 #include "AsmMacros.h"
 
     EXTERN memcpy
+    EXTERN memcpyGCRefs
+    EXTERN memcpyGCRefsWithWriteBarrier
+    EXTERN memcpyAnyWithWriteBarrier
+    EXTERN GetClasslibCCtorCheck
 
     TEXTAREA
 
@@ -14,13 +18,26 @@
 ;; execute the cctor and update the context to record this fact.
 ;;
 ;;  Input:
-;;      r0 : Address of StaticClassConstructionContext structure
+;;      x0 : Address of StaticClassConstructionContext structure
 ;;
 ;;  Output:
 ;;      All volatile registers and the condition codes may be trashed.
 ;;
     LEAF_ENTRY RhpCheckCctor
-        brk 0xf000
+
+        ;; Check the m_initialized field of the context. The cctor has been run only if this equals 1 (the
+        ;; initial state is 0 and the remaining values are reserved for classlib use). This check is
+        ;; unsynchronized; if we go down the slow path and call the classlib then it is responsible for
+        ;; synchronizing with other threads and re-checking the value.
+        ldr     w12, [x0, #OFFSETOF__StaticClassConstructionContext__m_initialized]
+        cmp     w12, #1
+        bne     RhpCheckCctor__SlowPath
+        ret
+RhpCheckCctor__SlowPath
+        mov     x1, x0
+        b       RhpCheckCctor2 ; tail-call the check cctor helper that actually has an implementation to call
+                               ; the cctor
+
     LEAF_END RhpCheckCctor
 
 ;;
@@ -29,28 +46,58 @@
 ;; execute the cctor and update the context to record this fact.
 ;;
 ;;  Input:
-;;      r0 : Value that must be preserved in this register across the cctor check.
-;;      r1 : Address of StaticClassConstructionContext structure
+;;      x0 : Value that must be preserved in this register across the cctor check.
+;;      x1 : Address of StaticClassConstructionContext structure
 ;;
 ;;  Output:
-;;      All volatile registers other than r0 may be trashed and the condition codes may also be trashed.
+;;      All volatile registers other than x0 may be trashed and the condition codes may also be trashed.
 ;;
     LEAF_ENTRY RhpCheckCctor2
-        brk 0xf000
+
+        ;; Check the m_initialized field of the context. The cctor has been run only if this equals 1 (the
+        ;; initial state is 0 and the remaining values are reserved for classlib use). This check is
+        ;; unsynchronized; if we go down the slow path and call the classlib then it is responsible for
+        ;; synchronizing with other threads and re-checking the value.
+        ldr     w12, [x1, #OFFSETOF__StaticClassConstructionContext__m_initialized]
+        cmp     w12, #1
+        bne     RhpCheckCctor2__SlowPath
+        ret
+
     LEAF_END RhpCheckCctor2
 
 ;;
 ;; Slow path helper for RhpCheckCctor.
 ;;
 ;;  Input:
-;;      r0 : Value that must be preserved in this register across the cctor check.
-;;      r1 : Address of StaticClassConstructionContext structure
+;;      x0 : Value that must be preserved in this register across the cctor check.
+;;      x1 : Address of StaticClassConstructionContext structure
 ;;
 ;;  Output:
-;;      All volatile registers other than r0 may be trashed and the condition codes may also be trashed.
+;;      All volatile registers other than x0 may be trashed and the condition codes may also be trashed.
 ;;
     NESTED_ENTRY RhpCheckCctor2__SlowPath
-        brk 0xf000
+
+        ;; Need to preserve x0, x1 and lr across helper call. fp is also pushed to keep the stack 16 byte aligned.
+        PROLOG_SAVE_REG_PAIR fp, lr, #-0x20!
+        stp     x0, x1, [sp, #0x10]
+
+        ;; Call a C++ helper to retrieve the address of the classlib callback. The caller's return address is
+        ;; passed as the argument to the helper; it's an address in the module and is used by the helper to
+        ;; locate the classlib.
+        mov     x0, lr
+        bl      GetClasslibCCtorCheck
+
+        ;; X0 now contains the address of the classlib method to call. The single argument is the context
+        ;; structure address currently in stashed on the stack. Clean up and tail call to the classlib
+        ;; callback so we're not on the stack should a GC occur (so we don't need to worry about transition
+        ;; frames).
+        mov     x12, x0
+        ldp     x0, x1, [sp, #0x10]
+        EPILOG_RESTORE_REG_PAIR fp, lr, #0x20!
+        ;; tail-call the class lib cctor check function. This function is required to return its first
+        ;; argument, so that x0 can be preserved.
+        EPILOG_NOP ret x12
+
     NESTED_END RhpCheckCctor__SlowPath2
 
 
@@ -99,11 +146,29 @@ NothingToCopy_NoGCRefs
 ;;
 
     LEAF_ENTRY    RhpCopyMultibyte
-        brk 0xf000
+
+        ; x0    dest
+        ; x1    src
+        ; x2    count
+
+        ; check for a zero-length copy
+        cbz     x2, NothingToCopy_RhpCopyMultibyte
+
+        ; Now check the dest and src pointers.  If they AV, the EH subsystem will recognize the address of the AV,
+        ; unwind the frame, and fixup the stack to make it look like the (managed) caller AV'ed, which will be 
+        ; translated to a managed exception as usual.
     ALTERNATE_ENTRY RhpCopyMultibyteDestAVLocation
-        brk 0xf000
+        ldrb    wzr, [x0]
     ALTERNATE_ENTRY RhpCopyMultibyteSrcAVLocation
-        brk 0xf000
+        ldrb    wzr, [x1]
+
+        ; tail-call to the GC-safe memcpy implementation
+        b       memcpyGCRefs
+
+NothingToCopy_RhpCopyMultibyte
+        ; dest is already still in x0
+        ret
+
     LEAF_END
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -117,11 +182,28 @@ NothingToCopy_NoGCRefs
 ;;
 
     LEAF_ENTRY    RhpCopyMultibyteWithWriteBarrier
-        brk 0xf000
+
+        ; x0    dest
+        ; x1    src
+        ; x2    count
+
+        ; check for a zero-length copy
+        cbz     x2, NothingToCopy_RhpCopyMultibyteWithWriteBarrier
+
+        ; Now check the dest and src pointers.  If they AV, the EH subsystem will recognize the address of the AV,
+        ; unwind the frame, and fixup the stack to make it look like the (managed) caller AV'ed, which will be 
+        ; translated to a managed exception as usual.
     ALTERNATE_ENTRY RhpCopyMultibyteWithWriteBarrierDestAVLocation
-        brk 0xf000
+        ldrb    wzr, [x0]
     ALTERNATE_ENTRY RhpCopyMultibyteWithWriteBarrierSrcAVLocation
-        brk 0xf000
+        ldrb    wzr, [x1]
+
+        ; tail-call to the GC-safe memcpy implementation
+        b       memcpyGCRefsWithWriteBarrier
+
+NothingToCopy_RhpCopyMultibyteWithWriteBarrier
+        ; dest is already still in x0
+        ret
     LEAF_END
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -135,11 +217,29 @@ NothingToCopy_NoGCRefs
 ;;
 
     LEAF_ENTRY    RhpCopyAnyWithWriteBarrier
-        brk 0xf000
+
+        ; x0    dest
+        ; x1    src
+        ; x2    count
+
+        ; check for a zero-length copy
+        cbz     x2, NothingToCopy_RhpCopyAnyWithWriteBarrier
+
+        ; Now check the dest and src pointers.  If they AV, the EH subsystem will recognize the address of the AV,
+        ; unwind the frame, and fixup the stack to make it look like the (managed) caller AV'ed, which will be 
+        ; translated to a managed exception as usual.
     ALTERNATE_ENTRY RhpCopyAnyWithWriteBarrierDestAVLocation
-        brk 0xf000
+        ldrb    wzr, [x0]
     ALTERNATE_ENTRY RhpCopyAnyWithWriteBarrierSrcAVLocation
-        brk 0xf000
+        ldrb    wzr, [x1]
+
+        ; tail-call to the GC-safe memcpy implementation
+        b       memcpyAnyWithWriteBarrier
+
+NothingToCopy_RhpCopyAnyWithWriteBarrier
+        ; dest is already still in x0
+        ret
+
     LEAF_END
 
     end

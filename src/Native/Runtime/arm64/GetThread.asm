@@ -13,14 +13,14 @@
 ;;
 ;; INPUT: none
 ;;
-;; OUTPUT: x0: Thread pointer
+;; OUTPUT: x9: Thread pointer
 ;;
 ;; MUST PRESERVE ARGUMENT REGISTERS
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     LEAF_ENTRY RhpGetThread
-        ;; x0 = GetThread(), TRASHES xip0 (which can be used as an intra-procedure-call scratch register)
-        INLINE_GETTHREAD x0, xip0
+        ;; x9 = GetThread(), TRASHES xip0 (which can be used as an intra-procedure-call scratch register)
+        INLINE_GETTHREAD x9, xip0
         ret
     LEAF_END
 FASTCALL_ENDFUNC

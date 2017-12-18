@@ -42,7 +42,8 @@ namespace Internal.TypeSystem.Ecma
 
 #if DEBUG
             // Initialize name eagerly in debug builds for convenience
-            this.ToString();
+            InitializeName();
+            InitializeNamespace();
 #endif
         }
 
@@ -474,11 +475,6 @@ namespace Internal.TypeSystem.Ecma
         {
             return !MetadataReader.GetCustomAttributeHandle(_typeDefinition.GetCustomAttributes(),
                 attributeNamespace, attributeName).IsNil;
-        }
-
-        public override string ToString()
-        {
-            return "[" + _module.ToString() + "]" + this.GetFullName();
         }
 
         public override ClassLayoutMetadata GetClassLayout()

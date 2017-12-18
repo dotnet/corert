@@ -985,7 +985,10 @@ namespace Internal.IL
                 TypeDesc argType;
                 if (index == 0 && !callee.Signature.IsStatic)
                 {
-                    argType = callee.OwningType;
+                    if(callee.OwningType.IsValueType)
+                        argType = callee.OwningType.MakeByRefType();
+                    else
+                        argType = callee.OwningType;
                 }
                 else
                 {
@@ -1518,8 +1521,9 @@ namespace Internal.IL
             {
                 var unboxResult = _stack.Pop().ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder);
                 LLVMValueRef unboxData = LLVM.BuildGEP(_builder, unboxResult, new LLVMValueRef[] { BuildConstInt32(type.Context.Target.PointerSize) }, "unboxData");
+                var expressionType = type.MakeByRefType();
                 //push the pointer to the data, but it shouldnt be implicitly dereferenced
-                PushExpression(GetStackValueKind(type), "unboxed", unboxData, type);
+                PushExpression(GetStackValueKind(expressionType), "unboxed", unboxData, expressionType);
             }
             else //unbox_any
             {
@@ -1922,6 +1926,11 @@ namespace Internal.IL
         }
 
         private void ReportFallthroughAtEndOfMethod()
+        {
+            ThrowHelper.ThrowInvalidProgramException();
+        }
+
+        private void ReportMethodEndInsideInstruction()
         {
             ThrowHelper.ThrowInvalidProgramException();
         }

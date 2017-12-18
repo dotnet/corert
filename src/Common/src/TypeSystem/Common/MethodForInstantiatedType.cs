@@ -134,10 +134,5 @@ namespace Internal.TypeSystem
                 return _typicalMethodDef.Name;
             }
         }
-
-        public override string ToString()
-        {
-            return OwningType.ToString() + "." + Name;
-        }
     }
 }

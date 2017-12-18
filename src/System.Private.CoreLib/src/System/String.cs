@@ -20,6 +20,8 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
 
+using Internal.Runtime.CompilerServices;
+
 namespace System
 {
     // The String class represents a static string of characters.  Many of
@@ -406,7 +408,7 @@ namespace System
             }
 
             string result = FastAllocateString(value.Length);
-            fixed (char* dest = &result._firstChar, src = &value.DangerousGetPinnableReference())
+            fixed (char* dest = &result._firstChar, src = &MemoryMarshal.GetReference(value))
             {
                 wstrcpy(dest, src, value.Length);
             }

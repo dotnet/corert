@@ -32,6 +32,7 @@
     <Compile Include="ILCompiler\Metadata\Transform.Scope.cs" />
     <Compile Include="ILCompiler\Metadata\Transform.String.cs" />
     <Compile Include="ILCompiler\Metadata\Transform.Type.cs" />
+    <Compile Include="ILCompiler\Metadata\Transform.TypeForwarders.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" Condition="'$(IsProjectNLibrary)' != 'true'"/>
 </Project>

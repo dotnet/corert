@@ -47,6 +47,14 @@
 .class public auto ansi beforefieldinit BranchingTestsType
        extends [System.Runtime]System.Object
 {
+    // Volatile field for testing
+    .field private static int32 modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) volatileField
+
+    .method static public hidebysig void StaticMethod() cil managed
+    {
+        ret
+    }
+
     .method static public hidebysig void Branching.NullConditional_Valid() cil managed
     {
         //object o = null;
@@ -810,5 +818,188 @@
         }
 
         lbl_ret: ret
+    }
+
+    .method static public hidebysig void Branch.BeforeReadonlyInstruction_Valid(object[] objectArray) cil managed
+    {
+        // objectArray[0];
+
+        ldarg.0
+        ldc.i4.0
+        br          BeforeInstr
+
+    BeforeInstr:
+        readonly.
+        ldelema     [System.Runtime]System.Object
+        pop
+        ret
+    }
+
+    .method static public hidebysig void Branch.IntoReadonlyInstruction_Invalid_BadJumpTarget(object[] objectArray) cil managed
+    {
+        // objectArray[0];
+
+        ldarg.0
+        ldc.i4.0
+        br          MidInstr
+
+        readonly.
+    MidInstr:
+        ldelema     [System.Runtime]System.Object
+        pop
+        ret
+    }
+
+    .method static public hidebysig void Branch.IntoConstrainedInstruction_Invalid_BadJumpTarget<T>(!!T arg) cil managed
+    {
+        // arg.ToString();
+        ldarga.s    arg
+        br          MidInstr
+
+        constrained. !!T
+    MidInstr:
+        callvirt    instance string [System.Runtime]System.Object::ToString()
+        pop
+        ret
+    }
+
+    .method static public hidebysig void Branch.AfterConstrainedInstruction_Valid<T>(!!T arg) cil managed
+    {
+        // arg.ToString();
+        ldarga.s    arg
+        br          AfterInstr
+
+        constrained. !!T
+        callvirt    instance string [System.Runtime]System.Object::ToString()
+    AfterInstr:
+        pop
+        ret
+    }
+
+    .method static public hidebysig void Branch.IntoVolatileInstruction_Invalid_BadJumpTarget() cil managed
+    {
+        // volatileField = 0;
+
+        ldc.i4.0
+        br          MidInstr
+
+        volatile.
+    MidInstr:
+        stsfld    int32 modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) BranchingTestsType::volatileField
+        ret
+    }
+
+    .method static public hidebysig void Branch.IntoUnalignedInstruction_Invalid_BadJumpTarget() cil managed 
+    {
+        .locals init (
+            int32&
+        )
+
+        ldloc.0
+        br      MidInstr
+
+        unaligned. 4
+    MidInstr:
+        ldind.i4
+        pop
+        ret
+    }
+
+    .method static public hidebysig void Branch.IntoUnalignedVolatileInstruction_Invalid_BadJumpTarget() cil managed 
+    {
+        .locals init (
+            int32&
+        )
+
+        ldloc.0
+        br      MidInstr
+
+        unaligned. 4
+        volatile.
+    MidInstr:
+        ldind.i4
+        pop
+        ret
+    }
+
+    .method static public hidebysig void Branch.IntoTailInstruction_Invalid_BadJumpTarget() cil managed 
+    {
+        br      MidInstr
+
+        tail.
+    MidInstr:
+        call    void BranchingTestsType::StaticMethod()
+        ret
+    }
+
+    .method static public hidebysig void Branch.BackwardWithPredecessor_Valid() cil managed 
+    {
+        ldnull
+        ldc.i4.0
+        brfalse     MethodEnd
+
+    BackwardBranch:
+        pop
+
+        ldnull
+        ldc.i4.1
+        brtrue      BackwardBranch
+
+    MethodEnd:
+        pop
+        ret
+    }
+
+    .method static public hidebysig void Branch.BackwardWithoutPredecessor_Invalid_BackwardBranch() cil managed 
+    {
+        br      MethodEnd
+
+    BackwardBranch:
+        pop
+
+    MethodEnd:
+        ldnull
+        ldc.i4.1
+        brtrue      BackwardBranch
+
+        pop
+        ret
+    }
+
+    .method static public hidebysig void Branch.BackwardEmptyStack_Valid() cil managed 
+    {
+        br      MethodEnd
+
+    BackwardBranch:
+        nop
+
+    MethodEnd:
+        ldc.i4.1
+        brtrue      BackwardBranch
+
+        ret
+    }
+
+    .method static public hidebysig void Branch.BackwardWithComplexPredecessor_Valid() cil managed 
+    {
+        ldnull
+        br          MethodEnd
+
+    Predecessor:
+        ldnull
+
+    BackwardBranch:
+        pop
+
+        ldnull
+        ldc.i4.1
+        brtrue      BackwardBranch
+
+    MethodEnd:
+        pop
+        ldc.i4.1
+        brtrue          Predecessor
+
+        ret
     }
 }

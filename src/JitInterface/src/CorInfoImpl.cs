@@ -11,6 +11,10 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 
+#if SUPPORT_JIT
+using Internal.Runtime.CompilerServices;
+#endif
+
 using Internal.TypeSystem;
 
 using Internal.IL;
@@ -731,11 +735,8 @@ namespace Internal.JitInterface
             // method body.
             //
 
-            var owningType = method.OwningType;
-            var owningMetadataType = owningType as MetadataType;
-
             // method or class might have the final bit
-            if (method.IsFinal || (owningMetadataType != null && owningMetadataType.IsSealed))
+            if (_compilation.IsEffectivelySealed(method))
                 result |= CorInfoFlag.CORINFO_FLG_FINAL;
 
             if (method.IsSharedByGenericInstantiations)
@@ -762,7 +763,7 @@ namespace Internal.JitInterface
                 result |= CorInfoFlag.CORINFO_FLG_FORCEINLINE;
             }
 
-            if (owningType.IsDelegate)
+            if (method.OwningType.IsDelegate)
             {
                 if (method.Name == "Invoke")
                     // This is now used to emit efficient invoke code for any delegate invoke,
@@ -875,35 +876,20 @@ namespace Internal.JitInterface
                 return null;
             }
 
-            implType = implType.GetClosestDefType();
-
             MethodDesc decl = HandleToObject(baseMethod);
-            Debug.Assert(decl.IsVirtual);
             Debug.Assert(!decl.HasInstantiation);
 
-            MethodDesc impl;
-
-            TypeDesc declOwningType = decl.OwningType;
-            if (declOwningType.IsInterface)
+            if (ownerType != null)
             {
-                // Interface call devirtualization.
-
-                if (implType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                TypeDesc ownerTypeDesc = typeFromContext(ownerType);
+                if (decl.OwningType != ownerTypeDesc)
                 {
-                    // TODO: attempt to devirtualize methods on canonical interfaces
-                    return null;
-                }
-
-                impl = implType.ResolveInterfaceMethodTarget(decl);
-                if (impl != null)
-                {
-                    impl = implType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(impl);
+                    Debug.Assert(ownerTypeDesc is InstantiatedType);
+                    decl = _compilation.TypeSystemContext.GetMethodForInstantiatedType(decl.GetTypicalMethodDefinition(), (InstantiatedType)ownerTypeDesc);
                 }
             }
-            else
-            {
-                impl = implType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(decl);
-            }
+
+            MethodDesc impl = _compilation.ResolveVirtualMethod(decl, implType);
 
             return impl != null ? ObjectToHandle(impl) : null;
         }
@@ -1242,6 +1228,28 @@ namespace Internal.JitInterface
             return (byte*)GetPin(StringToUTF8(type.ToString()));
         }
 
+        private byte* getClassNameFromMetadata(CORINFO_CLASS_STRUCT_* cls, byte** namespaceName)
+        {
+            var type = HandleToObject(cls) as MetadataType;
+            if (type != null)
+            {
+                *namespaceName = (byte*)GetPin(type.Namespace);
+                return (byte*)GetPin(type.Name);
+            }
+
+            *namespaceName = null;
+            return null;
+        }
+        
+        private CORINFO_CLASS_STRUCT_* getTypeInstantiationArgument(CORINFO_CLASS_STRUCT_* cls, uint index)
+        {
+            TypeDesc type = HandleToObject(cls);
+            Instantiation inst = type.Instantiation;
+
+            return index < (uint)inst.Length ? ObjectToHandle(inst[(int)index]) : null;
+        }
+
+
         private int appendClassName(short** ppBuf, ref int pnBufLen, CORINFO_CLASS_STRUCT_* cls, bool fNamespace, bool fFullInst, bool fAssembly)
         {
             // We support enough of this to make SIMD work, but not much else.
@@ -1328,6 +1336,9 @@ namespace Internal.JitInterface
             if (type.IsDelegate)
                 result |= CorInfoFlag.CORINFO_FLG_DELEGATE;
 
+            if (_compilation.IsEffectivelySealed(type))
+                result |= CorInfoFlag.CORINFO_FLG_FINAL;
+
             if (metadataType != null)
             {
                 if (metadataType.ContainsGCPointers)
@@ -1335,9 +1346,6 @@ namespace Internal.JitInterface
 
                 if (metadataType.IsBeforeFieldInit)
                     result |= CorInfoFlag.CORINFO_FLG_BEFOREFIELDINIT;
-
-                if (metadataType.IsSealed)
-                    result |= CorInfoFlag.CORINFO_FLG_FINAL;
 
                 // Assume overlapping fields for explicit layout.
                 if (metadataType.IsExplicitLayout)
@@ -1758,7 +1766,7 @@ namespace Internal.JitInterface
                 }
             }
 
-            if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            if (typeToInit.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
                 // Shared generic code has to use helper. Moreover, tell JIT not to inline since
                 // inlining of generic dictionary lookups is not supported.
@@ -1777,7 +1785,7 @@ namespace Internal.JitInterface
                 // Note that jit has both methods the same if asking whether to emit cctor
                 // for a given method's code (as opposed to inlining codegen).
                 MethodDesc contextMethod = methodFromContext(context);
-                if (contextMethod != MethodBeingCompiled && type == MethodBeingCompiled.OwningType)
+                if (contextMethod != MethodBeingCompiled && typeToInit == MethodBeingCompiled.OwningType)
                 {
                     // If we're inling a call to a method in our own type, then we should already
                     // have triggered the .cctor when caller was itself called.
@@ -1804,7 +1812,6 @@ namespace Internal.JitInterface
                     // The class will be initialized by the time we access the field.
                     return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
                 }
-
             }
 
             return CorInfoInitClassResult.CORINFO_INITCLASS_USE_HELPER;
@@ -1857,6 +1864,29 @@ namespace Internal.JitInterface
                 return CorInfoType.CORINFO_TYPE_UNDEF;
 
             return asCorInfoType(type);
+        }
+
+        private CorInfoType getTypeForPrimitiveNumericClass(CORINFO_CLASS_STRUCT_* cls)
+        {
+            var type = HandleToObject(cls);
+
+            switch (type.Category)
+            {
+                case TypeFlags.Byte:
+                case TypeFlags.SByte:
+                case TypeFlags.UInt16:
+                case TypeFlags.Int16:
+                case TypeFlags.UInt32:
+                case TypeFlags.Int32:
+                case TypeFlags.UInt64:
+                case TypeFlags.Int64:
+                case TypeFlags.Single:
+                case TypeFlags.Double:
+                    return asCorInfoType(type);
+
+                default:
+                    return CorInfoType.CORINFO_TYPE_UNDEF;
+            }
         }
 
         private bool canCast(CORINFO_CLASS_STRUCT_* child, CORINFO_CLASS_STRUCT_* parent)
@@ -2459,7 +2489,7 @@ namespace Internal.JitInterface
                 //  m_RIP
                 //  m_FramePointer
                 //  m_pThread
-                //  m_dwFlags + align
+                //  m_Flags + align (no align for ARM64 that has 64 bit m_Flags)
                 //  m_PreserverRegs - RSP
                 //      No need to save other preserved regs because of the JIT ensures that there are
                 //      no live GC references in callee saved registers around the PInvoke callsite.

@@ -73,7 +73,7 @@ namespace ILVerify
         ReturnFromTry,                  // Return out of try block.
         ReturnFromHandler,              // Return out of exception handler block.
         ReturnFromFilter,               // Return out of exception filter block.
-        //E_BAD_JMP_TARGET              "jmp / exception into the middle of an instruction."
+        BadJumpTarget,                  // Branch / Leave into the middle of an instruction.
         PathStackUnexpected,            // Non-compatible types on stack depending on path.
         PathStackDepth,                 // Stack depth differs depending on path.
         //E_THIS_UNINIT_EXCEP           "Uninitialized this on entering a try block."
@@ -122,14 +122,14 @@ namespace ILVerify
         //E_SIG_ARRAY                   "Cannot resolve Array type."
         ArrayByRef,                     // Array of ELEMENT_TYPE_BYREF or ELEMENT_TYPE_TYPEDBYREF.
         ByrefOfByref,                   // ByRef of ByRef.
-        //E_CODE_SIZE_ZERO              "Code size is zero."
+        CodeSizeZero,                   // Code size is zero.
         TailCall,                       // Missing call/callvirt/calli.
         TailByRef,                      // Cannot pass ByRef to a tail call.
-        //E_TAIL_RET                    "Missing ret."
+        TailRet,                        // tail.call may only be followed by ret.
         TailRetVoid,                    // Void ret type expected for tail call.
         TailRetType,                    // Tail call return type not compatible.
         TailStackEmpty,                 // Stack not empty after tail call.
-        //E_METHOD_END                  "Method ends in the middle of an instruction."
+        MethodEnd,                      // Method ends in the middle of an instruction.
         BadBranch,                      // Branch out of the method.
         //E_LEXICAL_NESTING             "Lexical nesting."
         Volatile,                       // Missing ldsfld, stsfld, ldind, stind, ldfld, stfld, ldobj, stobj, initblk, or cpblk.
@@ -137,6 +137,8 @@ namespace ILVerify
         //E_INNERMOST_FIRST             "Innermost exception blocks should be declared first."
         CallAbstract,                   // Call not allowed on abstract methods.
         TryNonEmptyStack,               // Attempt to enter a try block with nonempty stack.
+        FilterOrCatchUnexpectedStack,   // Attempt to enter a filter or catch block with unexpected stack state.
+        FinOrFaultNonEmptyStack,        // Attempt to enter a finally or fault block with nonempty stack.
         DelegateCtor,                   // Unrecognized arguments for delegate .ctor.
         DelegatePattern,                // Dup, ldvirtftn, newobj delegate::.ctor() pattern expected (in the same basic block).
         //E_SIG_C_VC                    "ELEMENT_TYPE_CLASS ValueClass in signature."
@@ -148,7 +150,7 @@ namespace ILVerify
         DelegateCtorSigI,               // Unrecognized delegate .ctor signature; expected Native Int.
         DelegateCtorSigO,               // Unrecognized delegate .ctor signature; expected Object.
         //E_RA_PTR_TO_STACK             "Mkrefany on TypedReference, ArgHandle, or ArgIterator."
-        //E_CATCH_BYREF                 "ByRef not allowed as catch type."
+        CatchByRef,                     // ByRef not allowed as catch type.
         LdvirtftnOnStatic,              // ldvirtftn on static.
         CallVirtOnStatic,               // callvirt on static.
         InitLocals,                     // initlocals must be set for verifiable methods with one or more local variables.
@@ -173,7 +175,7 @@ namespace ILVerify
         //E_READONLY_IN_MKREFANY              "A readonly ByRef cannot be used with mkrefany."
         //E_UNALIGNED_ALIGNMENT               "Alignment specified for 'unaligned' prefix must be 1, 2, or 4."
         TailCallInsideER,                     // The tail.call (or calli or callvirt) instruction cannot be used to transfer control out of a try, filter, catch, or finally block.
-        //E_BACKWARD_BRANCH                   "Stack height at all points must be determinable in a single forward scan of IL."
+        BackwardBranch,                       // Stack height at all points must be determinable in a single forward scan of IL.
         //E_CALL_TO_VTYPE_BASE                "Call to base type of valuetype."
         NewobjAbstractClass,                  // Cannot construct an instance of abstract class.
         UnmanagedPointer,                     // Unmanaged pointers are not a verifiable type.

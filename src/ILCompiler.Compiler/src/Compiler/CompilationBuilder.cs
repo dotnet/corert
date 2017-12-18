@@ -26,6 +26,7 @@ namespace ILCompiler
         protected VTableSliceProvider _vtableSliceProvider = new LazyVTableSliceProvider();
         protected DictionaryLayoutProvider _dictionaryLayoutProvider = new LazyDictionaryLayoutProvider();
         protected DebugInformationProvider _debugInformationProvider = new DebugInformationProvider();
+        protected DevirtualizationManager _devirtualizationManager = new DevirtualizationManager();
 
         public CompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup, NameMangler nameMangler)
         {
@@ -74,6 +75,12 @@ namespace ILCompiler
         public CompilationBuilder UseGenericDictionaryLayoutProvider(DictionaryLayoutProvider provider)
         {
             _dictionaryLayoutProvider = provider;
+            return this;
+        }
+
+        public CompilationBuilder UseDevirtualizationManager(DevirtualizationManager manager)
+        {
+            _devirtualizationManager = manager;
             return this;
         }
 

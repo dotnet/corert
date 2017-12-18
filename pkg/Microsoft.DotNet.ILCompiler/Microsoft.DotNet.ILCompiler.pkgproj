@@ -5,44 +5,23 @@
     <BaseLinePackageDependencies>false</BaseLinePackageDependencies>
     <PackagePlatforms>x64;</PackagePlatforms>
     <PreventImplementationReference>true</PreventImplementationReference>
+    <RestorePackages>true</RestorePackages>
     <SkipValidatePackage>true</SkipValidatePackage>
     <IncludeSymbolsInPackage Condition="'$(IncludeSymbolsInPackage)' == ''">true</IncludeSymbolsInPackage>
-
+    <!-- Mark this package as a lineup (meta-) package -->
+    <IsLineupPackage Condition="'$(IsLineupPackage)' == ''">true</IsLineupPackage>
     <!-- Override this property so that the package name won't look like runtime.[RID].[TFM].[ID] -->
     <PackageTargetRuntime></PackageTargetRuntime>
   </PropertyGroup>
+  
   <ItemGroup>
-    <File Include="$(MSBuildThisFileDirectory)\Microsoft.DotNet.ILCompiler.targets" >
+    <File Include="$(PackageSourceDirectory)\BuildIntegration\*">
       <TargetPath>build</TargetPath>
     </File>
-    <File Include="$(PackageSourceDirectory)\BuildIntegration\*">
-      <TargetPath>targets</TargetPath>
-    </File>
-    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\tools\*" Exclude="$(BaseOutputPath)\$(OSPlatformConfig)\tools\*.pdb">
-      <TargetPath>tools</TargetPath>
-    </File>
-    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\*" Exclude="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\*.pdb">
-      <TargetPath>sdk</TargetPath>
-    </File>
-    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\framework\*.dll">
-      <TargetPath>framework</TargetPath>
-    </File>
 
-    <!-- Workaround to avoid linker warnings - include all pdb files for static native libraries -->    
-    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\bootstrapper.pdb">
-      <TargetPath>sdk</TargetPath>
-    </File>
-    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\bootstrappercpp.pdb">
-      <TargetPath>sdk</TargetPath>
-    </File>
-    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\bootstrapperdll.pdb">
-      <TargetPath>sdk</TargetPath>
-    </File>
-    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\Runtime.pdb">
-      <TargetPath>sdk</TargetPath>
-    </File>
-    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\PortableRuntime.pdb">
-      <TargetPath>sdk</TargetPath>
+    <!-- This assembly is needed so the build tasks can be resolved and run from the metapackage -->
+    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\tools\\ILCompiler.Build.Tasks.dll" Exclude="$(BaseOutputPath)\$(OSPlatformConfig)\tools\*.pdb">
+      <TargetPath>tools</TargetPath>
     </File>
   </ItemGroup>
 

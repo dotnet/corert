@@ -226,11 +226,6 @@ namespace TypeSystemTests
             {
                 return false;
             }
-
-            public override string ToString()
-            {
-                return "[::Synthetic]" + _owningType.ToString() + "." + _name;
-            }
         }
     }
 }

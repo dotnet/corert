@@ -21,6 +21,7 @@ using System.Runtime.Versioning;
 using Internal.Reflection.Core.NonPortable;
 
 using Internal.Runtime;
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {

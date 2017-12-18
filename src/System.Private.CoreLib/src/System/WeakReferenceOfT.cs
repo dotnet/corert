@@ -18,6 +18,7 @@ using System.Threading;
 using System.Diagnostics;
 
 using Internal.Runtime.Augments;
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {

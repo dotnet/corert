@@ -5,6 +5,8 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
+using Internal.Runtime.CompilerServices;
+
 namespace System
 {
     internal static class Marvin

@@ -149,6 +149,11 @@
         ret
     }
 
+    .method public hidebysig instance void MissingReturn_Invalid_MethodFallthrough() cil managed
+    {
+        ldarg.0
+    }
+
     .method public hidebysig instance void 'special.ReturnAfterBaseCtor..ctor_Valid'() cil managed { ret }
     .method public hidebysig specialname rtspecialname instance void .ctor() cil managed 
     {

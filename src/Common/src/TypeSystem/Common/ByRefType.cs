@@ -41,10 +41,5 @@ namespace Internal.TypeSystem
 
             return flags;
         }
-
-        public override string ToString()
-        {
-            return this.ParameterType.ToString() + "&";
-        }
     }
 }

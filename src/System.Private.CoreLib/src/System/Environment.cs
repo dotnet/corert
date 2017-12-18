@@ -12,13 +12,7 @@
 **
 ============================================================*/
 
-using System.Runtime;
 using System.Diagnostics;
-using System.Globalization;
-using System.Collections;
-using System.Text;
-using System.Runtime.InteropServices;
-using Microsoft.Win32;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -147,6 +141,14 @@ namespace System
             get
             {
                 return EnvironmentAugments.StackTrace;
+            }
+        }
+
+        public static int ProcessorCount
+        {
+            get
+            {
+                return Runtime.RuntimeImports.RhGetProcessCpuCount();
             }
         }
     }

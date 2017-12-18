@@ -467,7 +467,7 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
     // is this an unboxing stub followed by a relative jump?
     else if (unboxingStub && pCode[0] == 0xe9)
     {
-        // relatie jump - dist is relative to the point *after* the instruction
+        // relative jump - dist is relative to the point *after* the instruction
         Int32 distToTarget = *(Int32 *)&pCode[1];
         UInt8 * target = pCode + 5 + distToTarget;
         return target;
@@ -494,7 +494,7 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
     // is this an unboxing stub followed by a relative jump?
     else if (unboxingStub && pCode[0] == 0xe9)
     {
-        // relatie jump - dist is relative to the point *after* the instruction
+        // relative jump - dist is relative to the point *after* the instruction
         Int32 distToTarget = *(Int32 *)&pCode[1];
         UInt8 * pTarget = pCode + 5 + distToTarget;
         return pTarget;
@@ -537,8 +537,27 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
     }
 
 #elif _TARGET_ARM64_
-        UNREFERENCED_PARAMETER(unboxingStub);
-        PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+    UInt32 * pCode = (UInt32 *)pCodeOrg;
+    // is this "add x0,x0,#8"?
+    if (pCode[0] == 0x91002000)
+    {
+        // unboxing sequence
+        unboxingStub = true;
+        pCode++;
+    }
+    // is this an indirect jump?
+    if (/* ARM64TODO */ false)
+    {
+        // ARM64TODO
+    }
+    // is this an unboxing stub followed by a relative jump?
+    else if (unboxingStub && (pCode[0] >> 26) == 0x5)
+    {
+        // relative jump - dist is relative to the instruction
+        // offset = SignExtend(imm26:'00', 64);
+        Int64 distToTarget = ((Int64)pCode[0] << 38) >> 36;
+        return (UInt8 *)pCode + distToTarget;
+    }
 #else
     UNREFERENCED_PARAMETER(unboxingStub);
     PORTABILITY_ASSERT("RhGetCodeTarget");
@@ -774,4 +793,9 @@ EXTERN_C void * FASTCALL RecoverLoopHijackTarget(UInt32 entryIndex, ModuleHeader
 {
     Module * pModule = GetRuntimeInstance()->FindModuleByReadOnlyDataAddress(pModuleHeader);
     return pModule->RecoverLoopHijackTarget(entryIndex, pModuleHeader);
+}
+
+COOP_PINVOKE_HELPER(Int32, RhGetProcessCpuCount, ())
+{
+    return PalGetProcessCpuCount();
 }

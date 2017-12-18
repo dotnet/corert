@@ -228,7 +228,7 @@ namespace Internal.IL
                 case StackValueKind.Float:
                     return "Double";
                 case StackValueKind.ByRef:
-                    return "address of " + TypeToStringForByRef(Type);
+                    return (IsReadOnly ? "readonly " : "") + "address of " + TypeToStringForByRef(Type);
                 case StackValueKind.ObjRef:
                     return (Type != null) ? "ref '" + Type.ToString() + "'" : "Nullobjref 'NullReference'";
                 case StackValueKind.ValueType:
@@ -488,7 +488,7 @@ namespace Internal.IL
 
         bool IsAssignable(StackValue src, StackValue dst)
         {
-            if (src.Kind == dst.Kind && src.Type == dst.Type)
+            if (src.Kind == dst.Kind && src.Type == dst.Type && src.IsReadOnly == dst.IsReadOnly)
                 return true;
 
             if (dst.Type == null)
@@ -513,6 +513,8 @@ namespace Internal.IL
                 return false;
 
             case StackValueKind.ByRef:
+                if (dst.Kind == StackValueKind.ByRef && dst.IsReadOnly)
+                    return src.Type == dst.Type;
 
                 // TODO: Other cases - variance, etc.
 

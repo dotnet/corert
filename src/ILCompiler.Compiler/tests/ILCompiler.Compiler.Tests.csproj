@@ -41,6 +41,7 @@
 
   <ItemGroup>
     <Compile Include="DependencyGraphTests.cs" />
+    <Compile Include="DevirtualizationTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
