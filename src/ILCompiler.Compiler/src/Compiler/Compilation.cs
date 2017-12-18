@@ -113,6 +113,20 @@ namespace ILCompiler
             }
         }
 
+        public ISymbolNode GetFieldData(FieldDesc field)
+        {
+            if (field.HasRva)
+            {
+                return (ISymbolNode)GetFieldRvaData(field);
+            }
+            else
+            {
+                Debug.Assert(field.IsStatic && !field.IsThreadStatic && !field.HasGCStaticBase);
+                ISymbolNode baseAddr = NodeFactory.TypeNonGCStaticsSymbol((MetadataType)field.OwningType);
+                return NodeFactory.SymbolWithOffset(baseAddr, field.Offset.AsInt);
+            }
+        }
+
         public bool HasLazyStaticConstructor(TypeDesc type)
         {
             return TypeSystemContext.HasLazyStaticConstructor(type);

@@ -414,6 +414,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new NamedJumpStubNode(id.Item1, id.Item2);
             });
 
+            _symbolWithOffsetNodes = new NodeCache<SymbolWithOffsetKey, SymbolWithOffsetNode>((SymbolWithOffsetKey key) =>
+            {
+                return new SymbolWithOffsetNode(key.Symbol, key.Offset);
+            });
+
             _vTableNodes = new NodeCache<TypeDesc, VTableSliceNode>((TypeDesc type ) =>
             {
                 if (CompilationModuleGroup.ShouldProduceFullVTable(type))
@@ -973,7 +978,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             return _namedJumpStubNodes.GetOrAdd(new Tuple<string, ISymbolNode>(name, target));
         }
-        
+
+        private NodeCache<SymbolWithOffsetKey, SymbolWithOffsetNode> _symbolWithOffsetNodes;
+
+        public ISymbolNode SymbolWithOffset(ISymbolNode symbol, int offset)
+        {
+            return _symbolWithOffsetNodes.GetOrAdd(new SymbolWithOffsetKey(symbol, offset));
+        }
+
         /// <summary>
         /// Returns alternative symbol name that object writer should produce for given symbols
         /// in addition to the regular one.
@@ -1138,6 +1150,27 @@ namespace ILCompiler.DependencyAnalysis
                 int hashCode = Target.GetHashCode();
                 if (CallsiteId != null)
                     hashCode = hashCode * 23 + CallsiteId.GetHashCode();
+                return hashCode;
+            }
+        }
+
+        protected struct SymbolWithOffsetKey : IEquatable<SymbolWithOffsetKey>
+        {
+            public readonly ISymbolNode Symbol;
+            public readonly int Offset;
+
+            public SymbolWithOffsetKey(ISymbolNode symbol, int offset)
+            {
+                Symbol = symbol;
+                Offset = offset;
+            }
+
+            public bool Equals(SymbolWithOffsetKey other) => Symbol == other.Symbol && Offset == other.Offset;
+            public override bool Equals(object obj) => obj is SymbolWithOffsetKey && Equals((SymbolWithOffsetKey)obj);
+            public override int GetHashCode()
+            {
+                int hashCode = Symbol.GetHashCode();
+                hashCode = hashCode * 23 + Offset;
                 return hashCode;
             }
         }

@@ -2172,7 +2172,7 @@ namespace Internal.JitInterface
                         // We are not going through a helper. The constructor has to be triggered explicitly.
                         if (_compilation.HasLazyStaticConstructor(field.OwningType))
                         {
-                            //fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_INITCLASS;
+                            fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_INITCLASS;
                         }
                     }
                 }
@@ -3393,19 +3393,7 @@ namespace Internal.JitInterface
         private void* getFieldAddress(CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection)
         {
             FieldDesc fieldDesc = HandleToObject(field);
-            if (fieldDesc.HasRva)
-            {
-                return (void*)ObjectToHandle(_compilation.GetFieldRvaData(fieldDesc));
-            }
-            else
-            {
-                var owningType = fieldDesc.OwningType;
-                Debug.Assert(!fieldDesc.IsThreadStatic && !fieldDesc.HasGCStaticBase);
-
-                ISymbolNode baseAddr = _compilation.NodeFactory.TypeNonGCStaticsSymbol((MetadataType)owningType);
-
-                return (void*)ObjectToHandle(new SymbolWithOffsetNode(baseAddr, fieldDesc.Offset.AsInt));
-            }
+            return (void*)ObjectToHandle(_compilation.GetFieldData(fieldDesc));
         }
 
         private IntPtr getVarArgsHandle(CORINFO_SIG_INFO* pSig, ref void* ppIndirection)

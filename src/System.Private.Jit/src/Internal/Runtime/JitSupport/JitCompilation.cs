@@ -47,6 +47,11 @@ namespace ILCompiler
             throw new NotImplementedException();
         }
 
+        public ObjectNode GetFieldData(FieldDesc field)
+        {
+            throw new NotImplementedException();
+        }
+
         internal MethodIL GetMethodIL(MethodDesc method)
         {
             // Flush the cache when it grows too big
