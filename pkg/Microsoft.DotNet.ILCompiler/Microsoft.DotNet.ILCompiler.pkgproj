@@ -16,7 +16,15 @@
   
   <!-- The package references are used to generate a runtimes.json for the meta-package-->
   <ItemGroup>
-    <ProjectReference Include="TargetSpecific\Microsoft.DotNet.ILCompiler.pkgproj" />
+    <ProjectReference Include="TargetSpecific\Microsoft.DotNet.ILCompiler.pkgproj">
+      <AdditionalProperties>%(ProjectReference.AdditionalProperties);PackageTargetRuntime=win-x64</AdditionalProperties>
+    </ProjectReference>
+    <ProjectReference Include="TargetSpecific\Microsoft.DotNet.ILCompiler.pkgproj">
+      <AdditionalProperties>%(ProjectReference.AdditionalProperties);PackageTargetRuntime=linux-x64</AdditionalProperties>
+    </ProjectReference>
+    <ProjectReference Include="TargetSpecific\Microsoft.DotNet.ILCompiler.pkgproj">
+      <AdditionalProperties>%(ProjectReference.AdditionalProperties);PackageTargetRuntime=osx-x64</AdditionalProperties>
+    </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>
