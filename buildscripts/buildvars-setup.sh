@@ -29,6 +29,8 @@ setup_dirs()
     if [ $__CrossBuild = 1 ]; then
         mkdir -p "$__ProductHostBinDir"
         mkdir -p "$__IntermediatesHostDir"
+        mkdir -p "$__PackagesHostDir"
+
     fi
 }
 
@@ -43,6 +45,7 @@ clean()
     if [ $__CrossBuild = 1 ]; then
         rm -rf "$__ProductHostBinDir"
         rm -rf "$__IntermediatesHostDir"
+        rm -rf "$__PackagesHostDir"
     fi
 }
 
