@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -16,25 +16,25 @@ using ILCompiler.Metadata;
 using ILCompiler.DependencyAnalysis;
 
 using Debug = System.Diagnostics.Debug;
-using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 
 namespace ILCompiler
 {
     /// <summary>
-    /// This class is responsible for managing native metadata to be emitted into the compiled
-    /// module. It applies a policy that every type/method emitted shall be reflectable.
+    /// Base class for metadata managers that generate metadata blobs.
     /// </summary>
-    public sealed class CompilerGeneratedMetadataManager : MetadataManager
+    public abstract class GeneratingMetadataManager : MetadataManager
     {
-        private readonly string _metadataLogFile;
-        private readonly StackTraceEmissionPolicy _stackTraceEmissionPolicy;
-        private Dictionary<DynamicInvokeMethodSignature, MethodDesc> _dynamicInvokeThunks;
+        protected readonly string _metadataLogFile;
+        protected readonly StackTraceEmissionPolicy _stackTraceEmissionPolicy;
+        private readonly Dictionary<DynamicInvokeMethodSignature, MethodDesc> _dynamicInvokeThunks;
+        private readonly ModuleDesc _generatedAssembly;
 
-        public CompilerGeneratedMetadataManager(CompilationModuleGroup group, CompilerTypeSystemContext typeSystemContext, string logFile, StackTraceEmissionPolicy stackTracePolicy)
-            : base(group, typeSystemContext, new BlockedInternalsBlockingPolicy())
+        public GeneratingMetadataManager(ModuleDesc generatedAssembly, CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy, string logFile, StackTraceEmissionPolicy stackTracePolicy)
+            : base(typeSystemContext, blockingPolicy)
         {
             _metadataLogFile = logFile;
             _stackTraceEmissionPolicy = stackTracePolicy;
+            _generatedAssembly = generatedAssembly;
 
             if (DynamicInvokeMethodThunk.SupportsThunks(typeSystemContext))
             {
@@ -42,69 +42,26 @@ namespace ILCompiler
             }
         }
 
-        public override bool WillUseMetadataTokenToReferenceMethod(MethodDesc method)
+        public sealed override bool WillUseMetadataTokenToReferenceMethod(MethodDesc method)
         {
             return (GetMetadataCategory(method) & MetadataCategory.Description) != 0;
         }
 
-        public override bool WillUseMetadataTokenToReferenceField(FieldDesc field)
+        public sealed override bool WillUseMetadataTokenToReferenceField(FieldDesc field)
         {
             return (GetMetadataCategory(field) & MetadataCategory.Description) != 0;
         }
 
-        protected override MetadataCategory GetMetadataCategory(FieldDesc field)
+        protected void ComputeMetadata<TPolicy>(
+            TPolicy policy,
+            NodeFactory factory,
+            out byte[] metadataBlob,
+            out List<MetadataMapping<MetadataType>> typeMappings,
+            out List<MetadataMapping<MethodDesc>> methodMappings,
+            out List<MetadataMapping<FieldDesc>> fieldMappings,
+            out List<MetadataMapping<MethodDesc>> stackTraceMapping) where TPolicy : struct, IMetadataPolicy
         {
-            MetadataCategory category = 0;
-
-            if (!IsReflectionBlocked(field))
-            {
-                category = MetadataCategory.RuntimeMapping;
-
-                if (_compilationModuleGroup.ContainsType(field.GetTypicalFieldDefinition().OwningType))
-                    category |= MetadataCategory.Description;
-            }
-
-            return category;
-        }
-
-        protected override MetadataCategory GetMetadataCategory(MethodDesc method)
-        {
-            MetadataCategory category = 0;
-
-            if (!IsReflectionBlocked(method))
-            {
-                category = MetadataCategory.RuntimeMapping;
-
-                if (_compilationModuleGroup.ContainsType(method.GetTypicalMethodDefinition().OwningType))
-                    category |= MetadataCategory.Description;
-            }
-
-            return category;
-        }
-
-        protected override MetadataCategory GetMetadataCategory(TypeDesc type)
-        {
-            MetadataCategory category = 0;
-
-            if (!IsReflectionBlocked(type))
-            {
-                category = MetadataCategory.RuntimeMapping;
-
-                if (_compilationModuleGroup.ContainsType(type.GetTypeDefinition()))
-                    category |= MetadataCategory.Description;
-            }
-
-            return category;
-        }
-
-        protected override void ComputeMetadata(NodeFactory factory,
-                                                out byte[] metadataBlob, 
-                                                out List<MetadataMapping<MetadataType>> typeMappings,
-                                                out List<MetadataMapping<MethodDesc>> methodMappings,
-                                                out List<MetadataMapping<FieldDesc>> fieldMappings,
-                                                out List<MetadataMapping<MethodDesc>> stackTraceMapping)
-        {
-            var transformed = MetadataTransform.Run(new GeneratedTypesAndCodeMetadataPolicy(_blockingPolicy, factory), GetCompilationModulesWithMetadata());
+            var transformed = MetadataTransform.Run(policy, GetCompilationModulesWithMetadata());
             MetadataTransform transform = transformed.Transform;
 
             // TODO: DeveloperExperienceMode: Use transformed.Transform.HandleType() to generate
@@ -126,14 +83,15 @@ namespace ILCompiler
                 // Methods that will end up in the reflection invoke table should not have an entry in stack trace table
                 // We'll try looking them up in reflection data at runtime.
                 if (transformed.GetTransformedMethodDefinition(typicalMethod) != null &&
-                    ShouldMethodBeInInvokeMap(method))
+                    ShouldMethodBeInInvokeMap(method) &&
+                    (GetMetadataCategory(method) & MetadataCategory.RuntimeMapping) != 0)
                     continue;
 
                 if (!_stackTraceEmissionPolicy.ShouldIncludeMethod(method))
                     continue;
 
                 MetadataRecord record = transform.HandleQualifiedMethod(typicalMethod);
-                
+
                 // As a twist, instantiated generic methods appear as if instantiated over their formals.
                 if (typicalMethod.HasInstantiation)
                 {
@@ -159,7 +117,7 @@ namespace ILCompiler
 
                 writer.AdditionalRootRecords.Add(record);
             }
-            
+
             var ms = new MemoryStream();
 
             // .NET metadata is UTF-16 and UTF-16 contains code points that don't translate to UTF-8.
@@ -207,6 +165,9 @@ namespace ILCompiler
                 if (IsReflectionBlocked(method.Instantiation) || IsReflectionBlocked(method.OwningType.Instantiation))
                     continue;
 
+                if ((GetMetadataCategory(method) & MetadataCategory.RuntimeMapping) == 0)
+                    continue;
+
                 MetadataRecord record = transformed.GetTransformedMethodDefinition(method.GetTypicalMethodDefinition());
 
                 if (record != null)
@@ -248,7 +209,7 @@ namespace ILCompiler
         /// <summary>
         /// Is there a reflection invoke stub for a method that is invokable?
         /// </summary>
-        public override bool HasReflectionInvokeStubForInvokableMethod(MethodDesc method)
+        public sealed override bool HasReflectionInvokeStubForInvokableMethod(MethodDesc method)
         {
             Debug.Assert(IsReflectionInvokable(method));
 
@@ -267,7 +228,7 @@ namespace ILCompiler
         /// <summary>
         /// Gets a stub that can be used to reflection-invoke a method with a given signature.
         /// </summary>
-        public override MethodDesc GetCanonicalReflectionInvokeStub(MethodDesc method)
+        public sealed override MethodDesc GetCanonicalReflectionInvokeStub(MethodDesc method)
         {
             TypeSystemContext context = method.Context;
             var sig = method.Signature;
@@ -277,66 +238,11 @@ namespace ILCompiler
             var lookupSig = new DynamicInvokeMethodSignature(sig);
             if (!_dynamicInvokeThunks.TryGetValue(lookupSig, out thunk))
             {
-                thunk = new DynamicInvokeMethodThunk(_compilationModuleGroup.GeneratedAssembly.GetGlobalModuleType(), lookupSig);
+                thunk = new DynamicInvokeMethodThunk(_generatedAssembly.GetGlobalModuleType(), lookupSig);
                 _dynamicInvokeThunks.Add(lookupSig, thunk);
             }
 
             return InstantiateCanonicalDynamicInvokeMethodForMethod(thunk, method);
-        }
-
-        protected override void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
-        {
-            dependencies = dependencies ?? new DependencyList();
-            dependencies.Add(factory.MethodMetadata(method.GetTypicalMethodDefinition()), "Reflectable method");
-        }
-
-        protected override void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
-        {
-            TypeMetadataNode.GetMetadataDependencies(ref dependencies, factory, type, "Reflectable type");
-        }
-
-        private struct GeneratedTypesAndCodeMetadataPolicy : IMetadataPolicy
-        {
-            private readonly MetadataBlockingPolicy _blockingPolicy;
-            private readonly NodeFactory _factory;
-            private readonly ExplicitScopeAssemblyPolicyMixin _explicitScopeMixin;
-
-            public GeneratedTypesAndCodeMetadataPolicy(MetadataBlockingPolicy blockingPolicy, NodeFactory factory)
-            {
-                _blockingPolicy = blockingPolicy;
-                _factory = factory;
-                _explicitScopeMixin = new ExplicitScopeAssemblyPolicyMixin();
-            }
-
-            public bool GeneratesMetadata(FieldDesc fieldDef)
-            {
-                return _factory.FieldMetadata(fieldDef).Marked;
-            }
-
-            public bool GeneratesMetadata(MethodDesc methodDef)
-            {
-                return _factory.MethodMetadata(methodDef).Marked;
-            }
-
-            public bool GeneratesMetadata(MetadataType typeDef)
-            {
-                return _factory.TypeMetadata(typeDef).Marked;
-            }
-
-            public bool IsBlocked(MetadataType typeDef)
-            {
-                return _blockingPolicy.IsBlocked(typeDef);
-            }
-
-            public bool IsBlocked(MethodDesc methodDef)
-            {
-                return _blockingPolicy.IsBlocked(methodDef);
-            }
-
-            public ModuleDesc GetModuleOfType(MetadataType typeDef)
-            {
-                return _explicitScopeMixin.GetModuleOfType(typeDef);
-            }
         }
     }
 }

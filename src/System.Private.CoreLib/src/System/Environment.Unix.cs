@@ -20,8 +20,6 @@ namespace System
             }
         }
 
-        public static int ProcessorCount => (int)Interop.Sys.SysConf(Interop.Sys.SysConfName._SC_NPROCESSORS_ONLN);
-
         private static int ComputeExecutionId()
         {
             int executionId = Interop.Sys.SchedGetCpu();

@@ -3,12 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.IO;
 using System.Collections.Generic;
 
 using Internal.TypeSystem;
 
-using ILCompiler.Metadata;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 
@@ -34,7 +32,6 @@ namespace ILCompiler
         private List<MetadataMapping<MethodDesc>> _methodMappings;
         private List<MetadataMapping<MethodDesc>> _stackTraceMappings;
 
-        protected readonly CompilationModuleGroup _compilationModuleGroup;
         protected readonly CompilerTypeSystemContext _typeSystemContext;
         protected readonly MetadataBlockingPolicy _blockingPolicy;
 
@@ -44,7 +41,6 @@ namespace ILCompiler
         private HashSet<MethodDesc> _methodsGenerated = new HashSet<MethodDesc>();
         private HashSet<GenericDictionaryNode> _genericDictionariesGenerated = new HashSet<GenericDictionaryNode>();
         private HashSet<IMethodBodyNode> _methodBodiesGenerated = new HashSet<IMethodBodyNode>();
-        private List<ModuleDesc> _modulesWithMetadata = new List<ModuleDesc>();
         private List<TypeGVMEntriesNode> _typeGVMEntries = new List<TypeGVMEntriesNode>();
         private HashSet<DefaultConstructorFromLazyNode> _defaultConstructorsNeeded = new HashSet<DefaultConstructorFromLazyNode>();
 
@@ -52,9 +48,8 @@ namespace ILCompiler
         internal DynamicInvokeTemplateDataNode DynamicInvokeTemplateData { get; private set; }
         public virtual bool SupportsReflection => true;
 
-        public MetadataManager(CompilationModuleGroup compilationModuleGroup, CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy)
+        public MetadataManager(CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy)
         {
-            _compilationModuleGroup = compilationModuleGroup;
             _typeSystemContext = typeSystemContext;
             _blockingPolicy = blockingPolicy;
         }
@@ -154,7 +149,7 @@ namespace ILCompiler
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeStatics), nativeStaticsTableNode, nativeStaticsTableNode, nativeStaticsTableNode.EndSymbol);
         }
 
-        private void Graph_NewMarkedNode(DependencyNodeCore<NodeFactory> obj)
+        protected virtual void Graph_NewMarkedNode(DependencyNodeCore<NodeFactory> obj)
         {
             var eetypeNode = obj as EETypeNode;
             if (eetypeNode != null)
@@ -175,12 +170,9 @@ namespace ILCompiler
                 _methodBodiesGenerated.Add(methodBodyNode);
             }
 
-            IMethodNode methodNode = obj as MethodCodeNode;
+            IMethodNode methodNode = methodBodyNode;
             if (methodNode == null)
                 methodNode = obj as ShadowConcreteMethodNode;
-
-            if (methodNode == null)
-                methodNode = obj as NonExternMethodSymbolNode;
 
             if (methodNode != null)
             {
@@ -216,13 +208,6 @@ namespace ILCompiler
             if (ctorFromLazyGenericsNode != null)
             {
                 _defaultConstructorsNeeded.Add(ctorFromLazyGenericsNode);
-            }
-
-            // TODO: temporary until we have an IL scanning Metadata Manager. We shouldn't have to keep track of these.
-            var moduleMetadataNode = obj as ModuleMetadataNode;
-            if (moduleMetadataNode != null)
-            {
-                _modulesWithMetadata.Add(moduleMetadataNode.Module);
             }
         }
 
@@ -547,15 +532,7 @@ namespace ILCompiler
         /// <summary>
         /// Returns a set of modules that will get some metadata emitted into the output module
         /// </summary>
-        public virtual IEnumerable<ModuleDesc> GetCompilationModulesWithMetadata()
-        {
-            // TODO: this is temporary until we have a metadata manager for IL scanner. This method should be abstract.
-
-            // TODO: We should also return the list of satellite assemblies here (this API is used by the ResourceDataNode to
-            // generate the BlobIdResourceIndex blob, for the ResourceManager to work at runtime).
-
-            return _modulesWithMetadata;
-        }
+        public abstract IEnumerable<ModuleDesc> GetCompilationModulesWithMetadata();
 
         public byte[] GetMetadataBlob(NodeFactory factory)
         {

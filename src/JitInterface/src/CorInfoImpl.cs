@@ -1866,6 +1866,29 @@ namespace Internal.JitInterface
             return asCorInfoType(type);
         }
 
+        private CorInfoType getTypeForPrimitiveNumericClass(CORINFO_CLASS_STRUCT_* cls)
+        {
+            var type = HandleToObject(cls);
+
+            switch (type.Category)
+            {
+                case TypeFlags.Byte:
+                case TypeFlags.SByte:
+                case TypeFlags.UInt16:
+                case TypeFlags.Int16:
+                case TypeFlags.UInt32:
+                case TypeFlags.Int32:
+                case TypeFlags.UInt64:
+                case TypeFlags.Int64:
+                case TypeFlags.Single:
+                case TypeFlags.Double:
+                    return asCorInfoType(type);
+
+                default:
+                    return CorInfoType.CORINFO_TYPE_UNDEF;
+            }
+        }
+
         private bool canCast(CORINFO_CLASS_STRUCT_* child, CORINFO_CLASS_STRUCT_* parent)
         { throw new NotImplementedException("canCast"); }
         private bool areTypesEquivalent(CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2)

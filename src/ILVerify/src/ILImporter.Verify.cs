@@ -289,6 +289,8 @@ namespace Internal.IL
         /// </summary>
         private void InitialPass()
         {
+            FatalCheck(_ilBytes.Length > 0, VerifierError.CodeSizeZero);
+
             _modifiesThisPtr = false;
             _validTargetOffsets = new bool[_ilBytes.Length];
 
@@ -458,9 +460,12 @@ again:
                         break;
                 }
 
-                var fallthrough = _basicBlocks[_currentOffset];
-                if (fallthrough != null)
-                    MarkPredecessorWithLowerOffset(0);
+                if (_currentOffset < _basicBlocks.Length)
+                {
+                    var fallthrough = _basicBlocks[_currentOffset];
+                    if (fallthrough != null)
+                        MarkPredecessorWithLowerOffset(0);
+                }
             }
         }
 
@@ -1673,6 +1678,9 @@ again:
 
                 // for tailcall, stack must be empty
                 Check(_stackTop == 0, VerifierError.TailStackEmpty);
+
+                // The instruction following a tail.call shall be a ret
+                Check(_currentOffset < _ilBytes.Length && (ILOpcode)_ilBytes[_currentOffset] == ILOpcode.ret, VerifierError.TailRet);
             }
 
             // now push on the result
@@ -2650,6 +2658,12 @@ again:
         void ReportFallthroughAtEndOfMethod()
         {
             VerificationError(VerifierError.MethodFallthrough);
+        }
+
+        void ReportMethodEndInsideInstruction()
+        {
+            VerificationError(VerifierError.MethodEnd);
+            AbortMethodVerification();
         }
 
         void ReportInvalidInstruction(ILOpcode opcode)

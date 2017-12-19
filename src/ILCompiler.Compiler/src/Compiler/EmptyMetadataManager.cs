@@ -12,12 +12,12 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
-    class EmptyMetadataManager : MetadataManager
+    public class EmptyMetadataManager : MetadataManager
     {
         public override bool SupportsReflection => false;
 
-        public EmptyMetadataManager(CompilationModuleGroup group, CompilerTypeSystemContext typeSystemContext)
-            : base(group, typeSystemContext, new FullyBlockedMetadataPolicy())
+        public EmptyMetadataManager(CompilerTypeSystemContext typeSystemContext)
+            : base(typeSystemContext, new FullyBlockedMetadataPolicy())
         {
         }
 
