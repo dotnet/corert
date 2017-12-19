@@ -14,6 +14,11 @@
     <PackageTargetRuntime></PackageTargetRuntime>
   </PropertyGroup>
   
+  <!-- The package references are used to generate a runtimes.json for the meta-package-->
+  <ItemGroup>
+    <ProjectReference Include="TargetSpecific\Microsoft.DotNet.ILCompiler.pkgproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <File Include="$(PackageSourceDirectory)\BuildIntegration\*">
       <TargetPath>build</TargetPath>
