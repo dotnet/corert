@@ -52,6 +52,7 @@ namespace ILCompiler
         private readonly byte[] _metadataBlob;
         private readonly StackTraceEmissionPolicy _stackTraceEmissionPolicy;
         private byte[] _stackTraceBlob;
+        private readonly CompilationModuleGroup _compilationModuleGroup;
 
         public PrecomputedMetadataManager(
             CompilationModuleGroup group, 
@@ -61,8 +62,9 @@ namespace ILCompiler
             IEnumerable<ModuleDesc> inputMetadataOnlyAssemblies,
             byte[] metadataBlob,
             StackTraceEmissionPolicy stackTraceEmissionPolicy)
-            : base(group, typeSystemContext, new AttributeSpecifiedBlockingPolicy())
+            : base(typeSystemContext, new AttributeSpecifiedBlockingPolicy())
         {
+            _compilationModuleGroup = group;
             _metadataDescribingModule = metadataDescribingModule;
             _compilationModules = new HashSet<ModuleDesc>(compilationModules);
             _metadataOnlyAssemblies = new HashSet<ModuleDesc>(inputMetadataOnlyAssemblies);
