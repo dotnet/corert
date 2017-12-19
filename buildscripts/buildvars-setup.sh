@@ -15,6 +15,7 @@ usage()
     echo "cross - optional argument to signify cross compilation,"
     echo "      - will use ROOTFS_DIR environment variable if set."
     echo "skiptests - optional argument to skip running tests after building."
+    echo "skipbuildpackages - optional argument to skip building packages."
     exit 1
 }
 
@@ -24,6 +25,7 @@ setup_dirs()
 
     mkdir -p "$__ProductBinDir"
     mkdir -p "$__IntermediatesDir"
+    mkdir -p "$__PackagesDir"
     if [ $__CrossBuild = 1 ]; then
         mkdir -p "$__ProductHostBinDir"
         mkdir -p "$__IntermediatesHostDir"
@@ -37,6 +39,7 @@ clean()
     echo "Cleaning previous output for the selected configuration"
     rm -rf "$__ProductBinDir"
     rm -rf "$__IntermediatesDir"
+    rm -rf "$__PackagesDir"
     if [ $__CrossBuild = 1 ]; then
         rm -rf "$__ProductHostBinDir"
         rm -rf "$__IntermediatesHostDir"
@@ -185,6 +188,9 @@ while [ "$1" != "" ]; do
         skiptests)
             export __SkipTests=true
             ;;
+        skipbuildpackages)
+            export __SkipBuildPackages=true
+            ;;
         *)
           export __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
     esac
@@ -245,6 +251,10 @@ fi
 export __ProductBinDir="$__rootbinpath/$__BuildOS.$__BuildArch.$__BuildType"
 if [ $__CrossBuild = 1 ]; then
     export __ProductHostBinDir="$__rootbinpath/$__BuildOS.$__HostArch.$__BuildType"
+fi
+export __PackagesDir="$__rootbinpath/packages"
+if [ $__CrossBuild = 1 ]; then
+    export __PackagesHostDir="$__rootbinpath/packages"
 fi
 
 # CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to set.

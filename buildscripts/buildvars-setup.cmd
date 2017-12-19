@@ -35,6 +35,8 @@ if /i "%1" == "clean"   (set __CleanBuild=1&shift&goto Arg_Loop)
 
 if /i "%1" == "skiptests" (set __SkipTests=1&shift&goto Arg_Loop)
 if /i "%1" == "skipvsdev" (set __SkipVsDev=1&shift&goto Arg_Loop)
+if /i "%1" == "skipbuildpackages" (set __SkipBuildPackages=1&shift&goto Arg_Loop)
+
 if /i "%1" == "/dotnetclipath" (set __DotNetCliPath=%2&shift&shift&goto Arg_Loop)
 
 if /i "%1" == "/officialbuildid" (set "__ExtraMsBuildParams=/p:OfficialBuildId=%2"&shift&shift&goto Arg_Loop)
@@ -49,6 +51,7 @@ set "__ObjDir=%__RootBinDir%\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__IntermediatesDir=%__RootBinDir%\obj\Native\%__BuildOS%.%__BuildArch%.%__BuildType%\"
 set "__NativeBuildLog=%__LogsDir%\Native_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
 set "__BuildLog=%__LogsDir%\msbuild_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
+set "__PackagesDir=%__RootBinDir%\packages"
 
 :: Generate path to be set for CMAKE_INSTALL_PREFIX to contain forward slash
 set "__CMakeBinDir=%__BinDir%"
@@ -64,6 +67,7 @@ if exist "%__BinDir%" rd /s /q "%__BinDir%"
 if exist "%__ObjDir%" rd /s /q "%__ObjDir%"
 if exist "%__IntermediatesDir%" rd /s /q "%__IntermediatesDir%"
 
+if exist "%__PackagesDir%" rd /s /q "%__PackagesDir%"
 if exist "%__LogsDir%" del /f /q "%__LogsDir%\*_%__BuildOS%__%__BuildArch%__%__BuildType%.*"
 
 :MakeDirs
@@ -71,6 +75,7 @@ if not exist "%__BinDir%" md "%__BinDir%"
 if not exist "%__ObjDir%" md "%__ObjDir%"
 if not exist "%__IntermediatesDir%" md "%__IntermediatesDir%"
 if not exist "%__LogsDir%" md "%__LogsDir%"
+if not exist "%__PackagesDir%" md "%__PackagesDir%"
 
 :: Check prerequisites
 echo Checking pre-requisites...
@@ -183,4 +188,5 @@ echo Build architecture: one of x64, x86, arm, wasm ^(default: x64^).
 echo Build type: one of Debug, Checked, Release ^(default: Debug^).
 echo clean: force a clean build ^(default is to perform an incremental build^).
 echo skiptests: skip building tests ^(default: tests are built^).
+echo skipbuildpackages: skip building packages ^(default: packages are built^).
 exit /b 1
