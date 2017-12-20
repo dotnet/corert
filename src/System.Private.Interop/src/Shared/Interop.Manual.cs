@@ -162,6 +162,9 @@ partial class Interop
         internal const int TYPE_E_TYPEMISMATCH = unchecked((int)0x80028CA0);
         internal const int DISP_E_OVERFLOW = unchecked((int)0x8002000A);
 
+        internal const int CLASS_E_NOAGGREGATION = unchecked((int)0x80040110);
+        internal const int CLASS_E_CLASSNOTAVAILABLE = unchecked((int)0x80040111);
+
         /// <summary>
         /// Error indicates that you are accessing a CCW whose target object has already been garbage
         /// collected while the CCW still has non-0 jupiter ref counts

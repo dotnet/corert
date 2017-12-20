@@ -16,11 +16,13 @@
 
     <Compile Include="Shared\ComCallableObject.cs" />
     <Compile Include="Shared\ComInterop.cs" />
+    <Compile Include="Shared\ClassFactory.cs" />
     <Compile Include="Shared\Dictionary.cs" />
     <Compile Include="Shared\DictionaryBase.cs" />
     <Compile Include="Shared\FixedHashTable.cs" />
     <Compile Include="Shared\GCEventProvider.cs" />
     <Compile Include="Shared\HashSet.cs" />
+    <Compile Include="Shared\IClassFactory.cs" />
     <Compile Include="Shared\InternalModule.cs" />
     <Compile Include="Shared\Interop.Manual.cs" />
     <Compile Include="Shared\List.cs" />
