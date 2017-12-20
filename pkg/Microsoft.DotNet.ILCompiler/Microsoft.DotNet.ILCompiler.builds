@@ -3,12 +3,12 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <ItemGroup>
-    <Project Include="Microsoft.DotNet.ILCompiler.pkgproj" >
-      <OSGroup>AnyOS</OSGroup>
-    </Project>
 
-    <!-- Include this to force a build of platform-specific packages-->
-    <Project Include="$(MSBuildThisFileDirectory)\TargetSpecific\Microsoft.DotNet.ILCompiler.pkgproj" />
+    <!-- Only build the metapackage in Windows - in CoreCLR this logic is included in a dir.props file. This is a workaround until CoreRT supports multiple packages -->
+    <Project Include="Microsoft.DotNet.ILCompiler.pkgproj" Condition="'$(BuildIdentityPackage)' != 'false'"/>
+
+    <!-- Include this to force a build of platform-specific packages -->
+    <Project Include="$(MSBuildThisFileDirectory)\TargetSpecific\Microsoft.DotNet.ILCompiler.pkgproj"/>
 
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
