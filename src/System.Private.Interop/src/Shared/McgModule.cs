@@ -912,6 +912,32 @@ namespace System.Runtime.InteropServices
             mcgGenericArgumentMarshalInfo = default(McgGenericArgumentMarshalInfo);
             return false;
         }
+
+        static Guid s_IID_IClassFactory = new Guid(0x00000001, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
+
+        public unsafe int DllGetClassObjectImpl(Guid rclsid, Guid riid, IntPtr* ppv)
+        {
+            if (riid != s_IID_IClassFactory)
+            {
+                // Make sure we generate a CCW for IClassFactory
+                // IntPtr dummy = Marshal.GetComInterfaceForObject(new ClassFactory(null, typeof(IClassFactory).TypeHandle), typeof(IClassFactory));
+                // Marshal.Release(dummy);
+                return Interop.COM.E_NOINTERFACE;
+            }
+
+            // TODO: build a index similar as McgModule.m_guidMap
+            for (int i = 0; i < this.m_ccwTemplateData.Length; i++)
+            {
+                if (this.m_ccwTemplateData[i].Clsid == rclsid)
+                {
+                    ClassFactory classFactory = new ClassFactory(this, this.m_ccwTemplateData[i].ClassType);
+                    *ppv = McgMarshal.ObjectToComInterface(classFactory, typeof(IClassFactory).TypeHandle);
+                    return Interop.COM.S_OK;
+                }
+            }
+            return Interop.COM.CLASS_E_CLASSNOTAVAILABLE;
+        }
+        
 #if ENABLE_WINRT
         static Guid s_IID_IActivationFactory = new Guid(0x00000035, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
 
