@@ -769,11 +769,9 @@ namespace Internal.JitInterface
                 // including multicast.
                 result |= CorInfoFlag.CORINFO_FLG_DELEGATE_INVOKE;
 
-                // Make sure to report the method as final if it's final in the metadata.
                 // RyuJIT special cases this method; it would assert if it's not final
                 // and we might not have set the bit in the code above.
-                if (method.IsFinal || method.OwningType.IsSealed())
-                    result |= CorInfoFlag.CORINFO_FLG_FINAL;
+                result |= CorInfoFlag.CORINFO_FLG_FINAL;
            }
 
             result |= CorInfoFlag.CORINFO_FLG_NOSECURITYWRAP;
