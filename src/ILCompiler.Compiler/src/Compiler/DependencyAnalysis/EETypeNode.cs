@@ -382,7 +382,6 @@ namespace ILCompiler.DependencyAnalysis
             dependencies.Add(new DependencyListEntry(_optionalFieldsNode, "Optional fields"));
 
             StaticsInfoHashtableNode.AddStaticsInfoDependencies(ref dependencies, factory, _type);
-            ReflectionFieldMapNode.AddReflectionFieldMapEntryDependencies(ref dependencies, factory, _type);
 
             if (EmitVirtualSlotsAndInterfaces)
             {
