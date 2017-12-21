@@ -5,7 +5,7 @@ TODO WIP - Might not work on Linix
 # Building a WebAPI app with CoreRT
 
 ## Install the .NET Core SDK
-CoreRT is and AOT-optimized .NET Core runtime. If you're new to .NET Core make sure to visit the [official starting page](http://dotnet.github.io). It will guide you through installing pre-requisites and building your first app.
+CoreRT is an AOT-optimized .NET Core runtime. If you're new to .NET Core make sure to visit the [official starting page](http://dotnet.github.io). It will guide you through installing pre-requisites and building your first app.
 If you're already familiar with .NET Core make sure you've [downloaded and installed the .NET Core 2 SDK](https://www.microsoft.com/net/download/core).
 
 ## Create your app 
@@ -30,9 +30,7 @@ This will add a nuget.config file to your application. Open the file and in the 
 
 Once you've added the package source, add a reference to the compiler by running the following command:
 
-`` dotnet add package Microsoft.DotNet.ILCompiler -v <Version> `` 
-
-where ``<Version>`` is the [latest version of the ILCompiler package](https://dotnet.myget.org/feed/dotnet-core/package/nuget/Microsoft.DotNet.ILCompiler) (e.g. 1.0.0-alpha-26006-02).
+`` dotnet add package Microsoft.DotNet.ILCompiler -v 1.0.0-alpha-* `` 
 
 After the package has been succesfully added to your project, open the file called ``Startup.cs`` and in the ``ConfigureServices()`` method modify the line:    
     
