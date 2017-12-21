@@ -212,7 +212,14 @@ See the LICENSE file in the project root for more information.
     <WriteLinesToFile File="$(NativeIntermediateOutputPath)lib.rsp" Lines="@(CustomLibArg)" Overwrite="true" Condition="'$(OS)' == 'Windows_NT' and '$(NativeLib)' == 'Static'" />
     <Exec Command="$(CppLibCreator)  @&quot;$(NativeIntermediateOutputPath)lib.rsp&quot;" Condition="'$(OS)' == 'Windows_NT' and '$(NativeLib)' == 'Static' and '$(NativeCodeGen)' != 'wasm'" />
     
-    <Exec Command="&quot;$(EMSCRIPTEN)\emcc.bat&quot;  &quot;$(NativeObject)&quot; &quot;$(IlcPath)\..\WebAssembly.wasm.$(Configuration)\sdk\libPortableRuntime.bc&quot; &quot;$(IlcPath)\..\WebAssembly.wasm.$(Configuration)\sdk\libbootstrappercpp.bc&quot; -o &quot;$(NativeBinary)&quot; -s WASM=1 -s ALLOW_MEMORY_GROWTH=1" Condition="'$(NativeCodeGen)' == 'wasm' and '$(EMSCRIPTEN)' != ''" />
+    <PropertyGroup>
+      <EmccArgs>&quot;$(NativeObject)&quot; -o &quot;$(NativeBinary)&quot; -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 </EmccArgs>
+      <EmccArgs Condition="'$(Platform)'=='wasm'">$(EmccArgs) &quot;$(IlcPath)\sdk\libPortableRuntime.bc&quot; &quot;$(IlcPath)\sdk\libbootstrappercpp.bc&quot; </EmccArgs>
+      <EmccArgs Condition="'$(Configuration)'=='Release'">$(EmccArgs) -O2 --llvm-lto 2</EmccArgs>
+      <EmccArgs Condition="'$(Configuration)'=='Debug'">$(EmccArgs) -g3</EmccArgs>
+    </PropertyGroup>
+    
+    <Exec Command="&quot;$(EMSCRIPTEN)\emcc.bat&quot; $(EmccArgs)" Condition="'$(NativeCodeGen)' == 'wasm' and '$(EMSCRIPTEN)' != ''" />
     <Message Text="Emscripten not found, not linking WebAssembly. To enable WebAssembly linking, install Emscripten and ensure the EMSCRIPTEN environment variable points to the directory containing emcc.bat"
              Condition="'$(NativeCodeGen)' == 'wasm' and '$(EMSCRIPTEN)' == ''" />
   </Target>
