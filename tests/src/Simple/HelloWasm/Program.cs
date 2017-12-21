@@ -20,15 +20,7 @@ internal static class Program
             PrintLine("Hello from C#!");
         }
 
-        TestClass tempObj = new TestDerivedClass(1337); 
-        if(tempObj == null)
-        {
-            PrintLine("tempobj is null!");
-        }
-        else
-        {
-            PrintLine("tempobj is non-null");
-        }
+        TestClass tempObj = new TestDerivedClass(1337);
         tempObj.TestMethod("Hello");
         tempObj.TestVirtualMethod("Hello");
         tempObj.TestVirtualMethod2("Hello");

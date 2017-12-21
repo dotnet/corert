@@ -310,11 +310,6 @@ namespace ILCompiler
                     LibraryInitializers libraryInitializers =
                         new LibraryInitializers(typeSystemContext, _isCppCodegen);
                     compilationRoots.Add(new MainMethodRootProvider(entrypointModule, libraryInitializers.LibraryInitializerMethods));
-
-                    if (!_isWasmCodegen)
-                    {
-                        compilationRoots.Add(new RawMainMethodRootProvider(entrypointModule));
-                    }
                 }
                 else if (_nativeLib)
                 {
