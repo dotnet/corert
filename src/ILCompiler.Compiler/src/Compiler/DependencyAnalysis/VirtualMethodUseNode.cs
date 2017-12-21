@@ -68,11 +68,7 @@ namespace ILCompiler.DependencyAnalysis
 
             dependencies.Add(new DependencyListEntry(factory.VTable(_decl.OwningType), "VTable of a VirtualMethodUse"));
 
-            // TODO: https://github.com/dotnet/corert/issues/3224
-            if (_decl.IsAbstract)
-            {
-                dependencies.Add(factory.ReflectableMethod(_decl), "Abstract reflectable method");
-            }
+            factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref dependencies, factory, _decl);
 
             return dependencies;
         }

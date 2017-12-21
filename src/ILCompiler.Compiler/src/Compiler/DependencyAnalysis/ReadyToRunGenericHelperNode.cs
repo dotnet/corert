@@ -88,7 +88,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public IEnumerable<DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
-            ArrayBuilder<DependencyListEntry> result = new ArrayBuilder<DependencyListEntry>();
+            DependencyList result = new DependencyList();
 
             var lookupContext = new GenericLookupResultContext(_dictionaryOwner, typeInstantiation, methodInstantiation);
 
@@ -125,11 +125,7 @@ namespace ILCompiler.DependencyAnalysis
                                         "Dictionary dependency"));
                             }
 
-                            // TODO: https://github.com/dotnet/corert/issues/3224 
-                            if (instantiatedTargetMethod.IsAbstract)
-                            {
-                                result.Add(new DependencyListEntry(factory.ReflectableMethod(instantiatedTargetMethod), "Abstract reflectable method"));
-                            }
+                            factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref result, factory, instantiatedTargetMethod);
                         }
                     }
                     break;
