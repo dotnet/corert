@@ -490,14 +490,14 @@ namespace Internal.IL
     {
         public T LdToken { get; }
 
-        public LdTokenEntry(StackValueKind kind, string name, T token, TypeDesc type = null) : base(kind, name, default(LLVMValueRef), type)
+        public LdTokenEntry(StackValueKind kind, string name, T token, LLVMValueRef llvmValue, TypeDesc type = null) : base(kind, name, llvmValue, type)
         {
             LdToken = token;
         }
 
         public override StackEntry Duplicate()
         {
-            return new LdTokenEntry<T>(Kind, Name, LdToken, Type);
+            return new LdTokenEntry<T>(Kind, Name, LdToken, RawLLVMValue, Type);
         }
 
         protected override LLVMValueRef ValueAsTypeInternal(LLVMTypeRef type, LLVMBuilderRef builder, bool signExtend)
