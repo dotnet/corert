@@ -1158,8 +1158,8 @@ namespace Internal.IL
                         kind = op2.Kind;
                     }
 
-                    LLVMValueRef left = op1.ValueForStackKind(kind, _builder, false);
-                    LLVMValueRef right = op2.ValueForStackKind(kind, _builder, false);
+                    LLVMValueRef right = op1.ValueForStackKind(kind, _builder, false);
+                    LLVMValueRef left = op2.ValueForStackKind(kind, _builder, false);
 
                     if (kind != StackValueKind.Float)
                     {
