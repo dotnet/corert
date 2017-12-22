@@ -735,22 +735,20 @@ REDHAWK_PALEXPORT UInt32 REDHAWK_PALAPI PalGetTickCount()
     return (UInt32)PalGetTickCount64();
 }
 
+#if !defined(_WASM_)
 REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer)
 {
     HANDLE moduleHandle = NULL;
-    // Emscripten's implementation of dladdr corrupts memory,
-    // but always returns 0 for the module handle, so just skip the call
-#if !defined(_WASM_)
     Dl_info info;
     int st = dladdr(pointer, &info);
     if (st != 0)
     {
         moduleHandle = info.dli_fbase;
     }
-#endif // _WASM_
 
     return moduleHandle;
 }
+#endif //!defined(_WASM_)
 
 REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
 {
@@ -815,9 +813,9 @@ bool QueryCacheSize()
     }
 
 #elif defined(_WASM_)
-    // Processor cache size not available on WebAssembly, but we can't start up without it, so pick a reasonable value
+    // Processor cache size not available on WebAssembly, but we can't start up without it, so pick the same default as the GC does
     success = true;
-    g_cbLargestOnDieCacheAdjusted = 512 * 1024;
+    g_cbLargestOnDieCache = 256 * 1024;
 #else
 #error Do not know how to get cache size on this platform
 #endif // __linux__
@@ -1230,11 +1228,14 @@ REDHAWK_PALEXPORT bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out
 //
 REDHAWK_PALEXPORT Int32 PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase)
 {
+    // Emscripten's implementation of dladdr corrupts memory and doesn't have the real name, so make up a name instead
+#if defined(_WASM_)
+    const TCHAR* wasmModuleName = "WebAssemblyModule";
+    *pModuleNameOut = wasmModuleName;
+    return strlen(wasmModuleName);
+#else // _WASM_
     Dl_info dl;
-    // Emscripten's implementation of dladdr corrupts memory and doesn't have the real name, so skip it
-#if !defined(_WASM_)
     if (dladdr(moduleBase, &dl) == 0)
-#endif // !defined(_WASM_)
     {
         *pModuleNameOut = NULL;
         return 0;
@@ -1242,6 +1243,7 @@ REDHAWK_PALEXPORT Int32 PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut,
 
     *pModuleNameOut = dl.dli_fname;
     return strlen(dl.dli_fname);
+#endif // defined(_WASM_)
 }
 
 GCSystemInfo g_SystemInfo;

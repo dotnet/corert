@@ -10,7 +10,7 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using ILCompiler;
-using ILCompiler.Compiler.CppCodeGen;
+using ILCompiler.CodeGen;
 
 using ILCompiler.DependencyAnalysis;
 using LLVMSharp;
@@ -83,6 +83,13 @@ namespace Internal.IL
                     ilImporter.SetParameterNames(parameters);*/
 
                 ilImporter.Import();
+
+                // Generate thunk for runtime exports
+                if (method.IsRuntimeExport)
+                {
+                    EmitNativeToManagedThunk(compilation, method, ((EcmaMethod)method).GetRuntimeExportName(), ilImporter._llvmFunction);
+                }
+
                 methodCodeNodeNeedingCode.CompilationCompleted = true;
             }
             catch (Exception e)
@@ -97,6 +104,42 @@ namespace Internal.IL
 
             // Ensure dependencies show up regardless of exceptions to avoid breaking LLVM
             methodCodeNodeNeedingCode.SetDependencies(ilImporter.GetDependencies());
+        }
+
+        private static void EmitNativeToManagedThunk(WebAssemblyCodegenCompilation compilation, MethodDesc method, string nativeName, LLVMValueRef managedFunction)
+        {
+            LLVMTypeRef[] llvmParams = new LLVMTypeRef[method.Signature.Length];
+            for (int i = 0; i < llvmParams.Length; i++)
+            {
+                llvmParams[i] = GetLLVMTypeForTypeDesc(method.Signature[i]);
+            }
+
+            LLVMTypeRef thunkSig = LLVM.FunctionType(GetLLVMTypeForTypeDesc(method.Signature.ReturnType), llvmParams, false);
+            LLVMValueRef thunkFunc = LLVM.AddFunction(compilation.Module, nativeName, thunkSig);
+            LLVMBasicBlockRef block = LLVM.AppendBasicBlock(thunkFunc, "Block0");
+            LLVMBuilderRef builder = LLVM.CreateBuilder();
+            LLVM.PositionBuilderAtEnd(builder, block);
+
+            LLVMValueRef shadowStack = LLVM.BuildArrayAlloca(builder, LLVM.Int8Type(), LLVM.ConstInt(LLVM.Int32Type(), 1000000, LLVMMisc.False), "shadowStack");
+
+            int curOffset = 0;
+            for (int i = 0; i < llvmParams.Length; i++)
+            {
+                LLVMValueRef argAddr = LLVM.BuildGEP(builder, shadowStack, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (ulong)curOffset, LLVMMisc.False) }, "arg" + i);
+                LLVM.BuildStore(builder, LLVM.GetParam(thunkFunc, (uint)i), CastIfNecessary(builder, argAddr, LLVM.PointerType(llvmParams[i], 0)));
+                curOffset += method.Signature[i].GetElementSize().AsInt;
+            }
+
+            LLVMValueRef retAddr = LLVM.BuildGEP(builder, shadowStack, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (ulong)curOffset, LLVMMisc.False) }, "retAddr");
+            LLVM.BuildCall(builder, managedFunction, new LLVMValueRef[] { shadowStack, retAddr }, "");
+            if (method.Signature.ReturnType != compilation.TypeSystemContext.GetWellKnownType(WellKnownType.Void))
+            {
+                LLVM.BuildRet(builder, LLVM.BuildLoad(builder, CastIfNecessary(builder, retAddr, LLVM.PointerType(GetLLVMTypeForTypeDesc(method.Signature.ReturnType), 0)), ""));
+            }
+            else
+            {
+                LLVM.BuildRetVoid(builder);
+            }
         }
 
         static LLVMValueRef TrapFunction = default(LLVMValueRef);

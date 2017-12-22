@@ -41,6 +41,12 @@ inline double __uint64_to_double(uint64_t v)
     return val.d;
 }
 
+struct ReversePInvokeFrame
+{
+    void*   m_savedPInvokeTransitionFrame;
+    void*   m_savedThread;
+};
+
 struct PInvokeTransitionFrame
 {
     void*       m_RIP;

@@ -271,7 +271,9 @@ extern "C" bool RhRegisterOSModule(void * pModule,
     void * pvUnboxingStubsStartRange, uint32_t cbUnboxingStubsRange,
     void ** pClasslibFunctions, uint32_t nClasslibFunctions);
 
+#if !defined(_WASM_)
 extern "C" void* PalGetModuleHandleFromPointer(void* pointer);
+#endif //!defined(_WASM_)
 
 extern "C" void GetRuntimeException();
 extern "C" void FailFast();
@@ -317,7 +319,15 @@ static int InitializeRuntime()
 #endif // CPPCODEGEN
 
 #ifndef CPPCODEGEN
-    void * osModule = PalGetModuleHandleFromPointer((void*)&CORERT_ENTRYPOINT);
+    void * osModule;
+    
+#ifdef _WASM_
+    // No way to get osModule on WASM
+    osModule = NULL;
+#else // _WASM_
+    osModule = PalGetModuleHandleFromPointer((void*)&CORERT_ENTRYPOINT);
+#endif // _WASM_
+
     // TODO: pass struct with parameters instead of the large signature of RhRegisterOSModule
     if (!RhRegisterOSModule(
         osModule,
@@ -328,12 +338,6 @@ static int InitializeRuntime()
         return -1;
     }
 #endif // !CPPCODEGEN
-
-#ifdef _WASM_
-    // WASMTODO: Emit a reverse pinvoke on main in compilation
-    ReversePInvokeFrame frame;
-    __reverse_pinvoke(&frame);
-#endif // _WASM_
 
 #ifndef CPPCODEGEN
     InitializeModules(osModule, __modules_a, (int)((__modules_z - __modules_a)), (void **)&c_classlibFunctions, _countof(c_classlibFunctions));
@@ -378,7 +382,6 @@ int main(int argc, char* argv[])
         retval = -1;
     }
 #endif
-    
     RhpShutdown();
 
     return retval;
