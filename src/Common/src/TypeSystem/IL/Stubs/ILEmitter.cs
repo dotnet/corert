@@ -549,6 +549,25 @@ namespace Internal.IL.Stubs
         }
     }
 
+    // Workaround for places that emit IL that doesn't conform to the ECMA-335 CIL stack requirements.
+    // https://github.com/dotnet/corert/issues/5152
+    // This class and all references to it should be deleted when the issue is fixed.
+    // Do not add new references to this.
+    public class ILStubMethodILWithNonConformingStack : ILStubMethodIL
+    {
+        public ILStubMethodILWithNonConformingStack(MethodDesc owningMethod, byte[] ilBytes, LocalVariableDefinition[] locals, Object[] tokens, MethodDebugInformation debugInfo)
+            : base(owningMethod, ilBytes, locals, tokens, debugInfo)
+        {
+        }
+
+        public ILStubMethodILWithNonConformingStack(ILStubMethodIL methodIL)
+            : base(methodIL)
+        {
+        }
+
+        public override int MaxStack => GetILBytes().Length;
+    }
+
     public class ILCodeLabel
     {
         private ILCodeStream _codeStream;
@@ -646,7 +665,7 @@ namespace Internal.IL.Stubs
             return newLabel;
         }
 
-        public MethodIL Link(MethodDesc owningMethod)
+        public MethodIL Link(MethodDesc owningMethod, bool nonConformingStackWorkaround = false)
         {
             int totalLength = 0;
             int numSequencePoints = 0;
@@ -692,8 +711,17 @@ namespace Internal.IL.Stubs
                 debugInfo = new EmittedMethodDebugInformation(sequencePoints);
             }
 
-            var result = new ILStubMethodIL(owningMethod, ilInstructions, _locals.ToArray(), _tokens.ToArray(), debugInfo);
-            result.CheckStackBalance();
+            ILStubMethodIL result;
+            if (nonConformingStackWorkaround)
+            {
+                // nonConformingStackWorkaround is a workaround for https://github.com/dotnet/corert/issues/5152
+                result = new ILStubMethodILWithNonConformingStack(owningMethod, ilInstructions, _locals.ToArray(), _tokens.ToArray(), debugInfo);
+            }
+            else
+            {
+                result = new ILStubMethodIL(owningMethod, ilInstructions, _locals.ToArray(), _tokens.ToArray(), debugInfo);
+                result.CheckStackBalance();
+            }
             return result;
         }
 
