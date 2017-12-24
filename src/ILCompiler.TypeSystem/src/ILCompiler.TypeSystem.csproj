@@ -406,8 +406,14 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\InstantiatedMethodIL.cs">
       <Link>IL\InstantiatedMethodIL.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\ILStackHelper.cs">
+      <Link>IL\ILStackHelper.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\ILOpcode.cs">
       <Link>IL\ILOpcode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\ILOpcodeHelper.cs">
+      <Link>IL\ILOpcodeHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.EnumMethods.cs">
       <Link>IL\TypeSystemContext.EnumMethods.cs</Link>

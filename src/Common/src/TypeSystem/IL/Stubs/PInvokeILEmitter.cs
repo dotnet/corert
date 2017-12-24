@@ -306,7 +306,7 @@ namespace Internal.IL.Stubs
 
             unmarshallingCodestream.Emit(ILOpcode.ret);
 
-            return new  PInvokeILStubMethodIL((ILStubMethodIL)emitter.Link(_targetMethod), 
+            return new  PInvokeILStubMethodIL((ILStubMethodIL)emitter.Link(_targetMethod, nonConformingStackWorkaround: true), 
                 IsStubRequired());
         }
 
@@ -395,7 +395,7 @@ namespace Internal.IL.Stubs
         }
     }
 
-    public sealed class PInvokeILStubMethodIL : ILStubMethodIL
+    public sealed class PInvokeILStubMethodIL : ILStubMethodILWithNonConformingStack
     {
         public bool IsStubRequired { get; }
         public PInvokeILStubMethodIL(ILStubMethodIL methodIL, bool isStubRequired) : base(methodIL)
