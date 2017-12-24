@@ -13,6 +13,7 @@ using ILCompiler.CodeGen;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem.Ecma;
+using System.Linq;
 
 namespace Internal.IL
 {
@@ -2082,30 +2083,73 @@ namespace Internal.IL
 
         private void ImportNewArray(int token)
         {
+            TypeDesc arrayType = ResolveTypeToken(token).MakeArrayType();
+            var sizeOfArray = _stack.Pop();
+            var madeArray = EmitRuntimeHelperCall("RhpNewArray", new LLVMValueRef[] { GetEETypeForTypeDesc(arrayType), sizeOfArray.ValueAsInt32(_builder, true) });
+            PushExpression(StackValueKind.ObjRef, "newArray", madeArray, arrayType);
+        }
+
+        private LLVMValueRef ArrayBaseSize()
+        {
+            return BuildConstInt32(2 * _compilation.NodeFactory.Target.PointerSize);
         }
 
         private void ImportLoadElement(int token)
         {
+            ImportLoadElement(ResolveTypeToken(token));
         }
 
         private void ImportLoadElement(TypeDesc elementType)
         {
+            StackEntry index = _stack.Pop();
+            StackEntry arrayReference = _stack.Pop();
+            PushLoadExpression(GetStackValueKind(elementType), "ldelem", GetElementAddress(index.ValueAsInt32(_builder, true), arrayReference.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), elementType), elementType);
         }
 
         private void ImportStoreElement(int token)
         {
+            ImportStoreElement(ResolveTypeToken(token));
         }
 
         private void ImportStoreElement(TypeDesc elementType)
         {
+            StackEntry value = _stack.Pop();
+            StackEntry index = _stack.Pop();
+            StackEntry arrayReference = _stack.Pop();
+            LLVMValueRef elementAddress = GetElementAddress(index.ValueAsInt32(_builder, true), arrayReference.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), elementType);
+            CastingStore(elementAddress, value, elementType);
         }
 
         private void ImportLoadLength()
         {
+            StackEntry arrayReference = _stack.Pop();
+            LLVMValueRef lengthPtr = LLVM.BuildGEP(_builder, arrayReference.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), new LLVMValueRef[] { BuildConstInt32(_compilation.NodeFactory.Target.PointerSize) }, "arrayLength");
+            LLVMValueRef castLengthPtr = LLVM.BuildPointerCast(_builder, lengthPtr, LLVM.PointerType(LLVM.Int32Type(), 0), "castArrayLength");
+            PushLoadExpression(StackValueKind.Int32, "arrayLength", castLengthPtr, GetWellKnownType(WellKnownType.Int32));
         }
 
         private void ImportAddressOfElement(int token)
         {
+            TypeDesc elementType = ResolveTypeToken(token);
+            var byRefElement = elementType.MakeByRefType();
+            StackEntry index = _stack.Pop();
+            StackEntry arrayReference = _stack.Pop();
+
+            PushExpression(GetStackValueKind(byRefElement), "ldelema", GetElementAddress(index.ValueAsInt32(_builder, true), arrayReference.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), elementType), byRefElement);
+        }
+
+        private LLVMValueRef GetElementAddress(LLVMValueRef elementPosition, LLVMValueRef arrayReference, TypeDesc arrayElementType)
+        {
+            LLVMValueRef elementOffset = LLVM.BuildMul(_builder, elementPosition, BuildConstInt32(arrayElementType.GetElementSize().AsInt), "elementOffset");
+            LLVMValueRef arrayOffset = LLVM.BuildAdd(_builder, elementOffset, ArrayBaseSize(), "arrayOffset");
+            return LLVM.BuildGEP(_builder, arrayReference, new LLVMValueRef[] { arrayOffset }, "elementPointer");
+        }
+
+        LLVMValueRef EmitRuntimeHelperCall(string name, LLVMValueRef[] parameters)
+        {
+            var runtimeHelperSig = LLVM.FunctionType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), parameters.Select(valRef => LLVM.TypeOf(valRef)).ToArray(), false);
+            var runtimeHelper = GetOrCreateLLVMFunction(name, runtimeHelperSig);
+            return LLVM.BuildCall(_builder, runtimeHelper, parameters, "call_" + name);
         }
 
         private void ImportEndFinally()
