@@ -15,41 +15,53 @@ namespace ILCompiler.DependencyAnalysis
 {
     internal static class ExportedDefinitionsWriter
     {
-        private static string _defFilePath;
+        private static string _exportsFilePath;
         private static string _moduleName;
+        private static TargetDetails _targetDetails;
 
-        private static void BuildDefinitionFileInfo(string outputFile)
+        private static string GetExportsFileExtenstion()
+            => _targetDetails.IsWindows ? ".def" : ".exports";
+
+        private static void BuildExportsFileInfo(string outputFile)
         {
             string directory = Path.GetDirectoryName(outputFile);
             string filename = Path.GetFileNameWithoutExtension(outputFile);
             _moduleName = filename;
-            _defFilePath = Path.Combine(directory, filename + ".def");
+            _exportsFilePath = Path.Combine(directory, filename + GetExportsFileExtenstion());
         }
 
         public static void EmitExportedSymbols(string outputFile, NodeFactory factory)
         {
-            BuildDefinitionFileInfo(outputFile);
+            _targetDetails = factory.Target;
+            BuildExportsFileInfo(outputFile);
             var nativeCallables = factory.NodeAliases.Where(n => n.Key is IMethodNode)
                                     .Where(n => (n.Key as IMethodNode).Method.IsNativeCallable);
 
-            WriteToDefinitionFile(nativeCallables.Select(n => n.Value));
+            WriteExportedSymbolsToFile(nativeCallables.Select(n => n.Value));
         }
 
-        private static void WriteToDefinitionFile(IEnumerable<string> exportNames)
+        private static void WriteExportedSymbolsToFile(IEnumerable<string> exportNames)
         {
             StringBuilder stringBuilder = new StringBuilder();
 
-            stringBuilder.Append("LIBRARY   ");
-            stringBuilder.AppendLine(_moduleName.ToUpper());
-
-            stringBuilder.AppendLine("EXPORTS");
-            foreach (var exportName in exportNames)
+            if (_targetDetails.OperatingSystem == TargetOS.Windows)
             {
-                stringBuilder.Append("   ");
-                stringBuilder.AppendLine(exportName);
+                stringBuilder.Append("LIBRARY   ");
+                stringBuilder.AppendLine(_moduleName.ToUpper());
+
+                stringBuilder.AppendLine("EXPORTS");
+                foreach (var exportName in exportNames)
+                    stringBuilder.AppendLine("   " + exportName);
+            }
+            else if (_targetDetails.OperatingSystem == TargetOS.OSX)
+            {
+                stringBuilder.Append("# Module: ");
+                stringBuilder.AppendLine(_moduleName);
+                foreach (var exportName in exportNames)
+                    stringBuilder.AppendLine("_" + exportName);
             }
 
-            File.WriteAllText(_defFilePath, stringBuilder.ToString());
+            File.WriteAllText(_exportsFilePath, stringBuilder.ToString());
         }
     }
 }
