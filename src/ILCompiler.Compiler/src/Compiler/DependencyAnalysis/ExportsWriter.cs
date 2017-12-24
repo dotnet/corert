@@ -13,7 +13,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal static class ExportedDefinitionsWriter
+    internal static class ExportsWriter
     {
         private static string _exportsFilePath;
         private static string _moduleName;
