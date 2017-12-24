@@ -49,11 +49,12 @@ See the LICENSE file in the project root for more information.
     <NativeBinaryExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' != 'Windows_NT' and $(NativeLib) == 'Static'">.a</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(NativeCodeGen)' == 'wasm'">.html</NativeBinaryExt>
 
-    <NativeExportExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' == 'Windows_NT' and '$(NativeLib)' == 'Shared'">.def</NativeExportExt>
+    <ExportsFiletExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' == 'Windows_NT' and '$(NativeLib)' == 'Shared'">.def</ExportsFiletExt>
+    <ExportsFiletExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' != 'Windows_NT' and '$(NativeLib)' == 'Shared'">.exports</ExportsFiletExt>
 
     <NativeObject>$(NativeIntermediateOutputPath)$(TargetName)$(NativeObjectExt)</NativeObject>
-    <NativeExport>$(NativeIntermediateOutputPath)$(TargetName)$(NativeExportExt)</NativeExport>
     <NativeBinary>$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)</NativeBinary>
+    <ExportsFile>$(NativeIntermediateOutputPath)$(TargetName)$(ExportsFiletExt)</ExportsFile>
 
     <IlcCompileOutput Condition="$(NativeCodeGen) == ''">$(NativeObject)</IlcCompileOutput>
     <IlcCompileOutput Condition="$(NativeCodeGen) == 'cpp'">$(NativeIntermediateOutputPath)$(TargetName).cpp</IlcCompileOutput>
@@ -197,7 +198,8 @@ See the LICENSE file in the project root for more information.
       <CustomLinkerArg Include="$(NativeObject)" />
       <CustomLinkerArg Include="-o $(NativeBinary)" Condition="'$(OS)' != 'Windows_NT'" />
       <CustomLinkerArg Include="/OUT:$(NativeBinary)" Condition="'$(OS)' == 'Windows_NT'" />
-      <CustomLinkerArg Include="/DEF:$(NativeExport)" Condition="'$(OS)' == 'Windows_NT' and '$(NativeLib)' == 'Shared'" />
+      <CustomLinkerArg Include="/DEF:$(ExportsFile)" Condition="'$(OS)' == 'Windows_NT' and '$(NativeLib)' == 'Shared'" />
+      <CustomLinkerArg Include="-exported_symbols_list $(ExportsFile)" Condition="'$(TargetOS)' == 'OSX' and '$(NativeLib)' == 'Shared'" />
       <CustomLinkerArg Include="@(LinkerArg)" />
     </ItemGroup>
 
