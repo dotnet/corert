@@ -560,11 +560,6 @@ namespace Internal.TypeSystem.Interop
             }
             else if (type.IsPointer || type.IsFunctionPointer)
             {
-                //
-                // @TODO - add checks for the pointee type in case the pointee type is not blittable
-                // C# already does this and will emit compilation errors (can't declare pointers to 
-                // managed type).
-                //
                 if (nativeType == NativeTypeKind.Invalid)
                     return MarshallerKind.BlittableValue;
                 else
@@ -612,13 +607,13 @@ namespace Internal.TypeSystem.Interop
                         return MarshallerKind.Invalid;
                 }
             }
-            else if (type.IsObject)
-            {
-                if (nativeType == NativeTypeKind.Invalid)
-                    return MarshallerKind.Variant;
-                else
-                    return MarshallerKind.Invalid;
-            }
+            // else if (type.IsObject)
+            // {
+            //    if (nativeType == NativeTypeKind.Invalid)
+            //        return MarshallerKind.Variant;
+            //    else
+            //        return MarshallerKind.Invalid;
+            // }
             else if (InteropTypes.IsStringBuilder(context, type))
             {
                 switch (nativeType)
@@ -649,22 +644,13 @@ namespace Internal.TypeSystem.Interop
                 else
                     return MarshallerKind.Invalid;
             }
-            /*
-                                TODO: Bring CriticalHandle to CoreLib
-                                https://github.com/dotnet/corert/issues/2570
-
-                                else if (InteropTypes.IsCriticalHandle(context, type))
-                                {
-                                    if (nativeType != NativeType.Invalid || isField)
-                                    {
-                                        return MarshallerKind.Invalid;
-                                    }
-                                    else
-                                    {
-                                        return MarshallerKind.CriticalHandle;
-                                    }
-                                }
-            */
+            else if (InteropTypes.IsCriticalHandle(context, type))
+            {
+                if (nativeType == NativeTypeKind.Invalid)
+                    return MarshallerKind.CriticalHandle;
+                else
+                    return MarshallerKind.Invalid;
+            }
             else
             {
                 return MarshallerKind.Invalid;
@@ -784,15 +770,13 @@ namespace Internal.TypeSystem.Interop
                         return MarshallerKind.Invalid;
                     }
                 }
-                /*              
-                                TODO: Bring HandleRef to CoreLib
-                                https://github.com/dotnet/corert/issues/2570
-
-                                else if (InteropTypes.IsHandleRef(context, elementType))
-                                {
-                                    return MarshallerKind.HandleRef;
-                                }
-                */
+                else if (InteropTypes.IsHandleRef(context, elementType))
+                {
+                    if (nativeType == NativeTypeKind.Invalid)
+                        return MarshallerKind.HandleRef;
+                    else
+                        return MarshallerKind.Invalid;
+                }
                 else
                 {
 
@@ -815,14 +799,13 @@ namespace Internal.TypeSystem.Interop
                     }
                 }
             }
-            // else if (elementType.IsSzArray)
-            // {
-            //     return MarshallerKind.Invalid;
-            // }
-            // else if (elementType.IsPointer || elementType.IsFunctionPointer)
-            // {
-            //     return MarshallerKind.Invalid;
-            // }
+            else if (elementType.IsPointer || elementType.IsFunctionPointer)
+            {
+                if (nativeType == NativeTypeKind.Invalid)
+                    return MarshallerKind.BlittableValue;
+                else
+                    return MarshallerKind.Invalid;
+            }
             else if (elementType.IsString)
             {
                 switch (nativeType)
@@ -840,26 +823,13 @@ namespace Internal.TypeSystem.Interop
                         return MarshallerKind.Invalid;
                 }
             }
-            else if (elementType.IsObject)
-            {
-                if (nativeType == NativeTypeKind.Invalid)
-                    return MarshallerKind.Variant;
-                else
-                    return MarshallerKind.Invalid;
-            }
-            // else if (InteropTypes.IsSafeHandle(context, elementType))
+            // else if (elementType.IsObject)
             // {
-            //    return MarshallerKind.Invalid;
+            //    if (nativeType == NativeTypeKind.Invalid)
+            //        return MarshallerKind.Variant;
+            //    else
+            //        return MarshallerKind.Invalid;
             // }
-            /*          
-                            TODO: Bring CriticalHandle to CoreLib
-                            https://github.com/dotnet/corert/issues/2570
-
-                            if (pInvokeData.IsCriticalHandle(elementType))
-                            {
-                                return MarshallerKind.Invalid;
-                            }
-            */
             else
             {
                 return MarshallerKind.Invalid;

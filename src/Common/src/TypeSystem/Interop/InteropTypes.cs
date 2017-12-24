@@ -15,9 +15,19 @@ namespace Internal.TypeSystem.Interop
             return context.SystemModule.GetKnownType("System", "GC");
         }
 
-        public static MetadataType GetSafeHandleType(TypeSystemContext context)
+        public static MetadataType GetSafeHandle(TypeSystemContext context)
         {
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "SafeHandle");
+        }
+
+        public static MetadataType GetCriticalHandle(TypeSystemContext context)
+        {
+            return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "CriticalHandle");
+        }
+
+        public static MetadataType GetHandleRef(TypeSystemContext context)
+        {
+            return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "HandleRef");
         }
 
         public static MetadataType GetMissingMemberException(TypeSystemContext context)
@@ -30,36 +40,14 @@ namespace Internal.TypeSystem.Interop
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "PInvokeMarshal");
         }
 
-        /*      
-                TODO: Bring CriticalHandle to CoreLib
-                https://github.com/dotnet/corert/issues/2570
-
-                public static MetadataType GetCriticalHandle(TypeSystemContext context)
-                {
-                        return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "CriticalHandle");
-                }
-
-
-                TODO: Bring HandleRef to CoreLib
-                https://github.com/dotnet/corert/issues/2570
-
-                public static MetadataType GetHandleRef(TypeSystemContext context)
-                {
-                    get
-                    {
-                        return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "HandleRef");
-                    }
-                }
-        */
-
         public static MetadataType GetNativeFunctionPointerWrapper(TypeSystemContext context)
         {
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "NativeFunctionPointerWrapper");
         }
 
-        public static MetadataType GetStringBuilder(TypeSystemContext context, bool throwIfNotFound = true)
+        public static MetadataType GetStringBuilder(TypeSystemContext context)
         {
-            return context.SystemModule.GetKnownType("System.Text", "StringBuilder", throwIfNotFound);
+            return context.SystemModule.GetKnownType("System.Text", "StringBuilder");
         }
 
         public static MetadataType GetSystemDateTime(TypeSystemContext context)
@@ -79,23 +67,18 @@ namespace Internal.TypeSystem.Interop
 
         public static bool IsSafeHandle(TypeSystemContext context, TypeDesc type)
         {
-            return IsOrDerivesFromType(type, GetSafeHandleType(context));
+            return IsOrDerivesFromType(type, GetSafeHandle(context));
         }
-        /*      
-               TODO: Bring CriticalHandle to CoreLib
-               https://github.com/dotnet/corert/issues/2570
 
-               public static bool IsCriticalHandle(TypeSystemContext context, TypeDesc type)
-                {
-                    return IsOrDerivesFromType(type, context.GetCriticalHandle());
-                }
+        public static bool IsCriticalHandle(TypeSystemContext context, TypeDesc type)
+        {
+            return IsOrDerivesFromType(type, GetCriticalHandle(context));
+        }
 
-                TODO: Bring HandleRef to CoreLib
-                public static bool IsHandleRef(TypeSystemContext context, TypeDesc type)
-                {
-                    return IsOrDerivesFromType(type, this.HandleRef);
-                }
-        */
+        public static bool IsHandleRef(TypeSystemContext context, TypeDesc type)
+        {
+            return type == GetHandleRef(context);
+        }
 
         public static bool IsSystemDateTime(TypeSystemContext context, TypeDesc type)
         {
@@ -104,8 +87,7 @@ namespace Internal.TypeSystem.Interop
 
         public static bool IsStringBuilder(TypeSystemContext context, TypeDesc type)
         {
-            Debug.Assert(type != null);
-            return type == GetStringBuilder(context, throwIfNotFound: false);
+            return type == GetStringBuilder(context);
         }
 
         public static bool IsSystemDecimal(TypeSystemContext context, TypeDesc type)

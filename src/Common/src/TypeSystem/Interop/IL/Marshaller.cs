@@ -1679,7 +1679,7 @@ namespace Internal.TypeSystem.Interop
                 throw new NotSupportedException("Marshalling an argument as both in and out not yet implemented");
             }
 
-            var safeHandleType = InteropTypes.GetSafeHandleType(Context);
+            var safeHandleType = InteropTypes.GetSafeHandle(Context);
 
             if (Out && IsManagedByRef)
             {
@@ -1734,7 +1734,7 @@ namespace Internal.TypeSystem.Interop
             LoadManagedValue(codeStream);
             LoadNativeValue(codeStream);
             codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
-            InteropTypes.GetSafeHandleType(Context).GetKnownMethod("SetHandle", null)));
+            InteropTypes.GetSafeHandle(Context).GetKnownMethod("SetHandle", null)));
         }
     }
 
