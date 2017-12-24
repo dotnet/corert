@@ -38,6 +38,7 @@ namespace ILCompiler
             StackTraceEmissionPolicy stackTracePolicy)
             : base(group.GeneratedAssembly, typeSystemContext, blockingPolicy, logFile, stackTracePolicy)
         {
+            // We use this to mark places that would behave differently if we tracked exact fields used. 
             _hasPreciseFieldUsageInformation = false;
             _compilationModuleGroup = group;
         }
