@@ -62,11 +62,6 @@ namespace Internal.TypeSystem.Interop
             return context.SystemModule.GetKnownType("System.Text", "StringBuilder", throwIfNotFound);
         }
 
-        public static MetadataType GetSystemArray(TypeSystemContext context)
-        {
-            return context.SystemModule.GetKnownType("System", "Array");
-        }
-
         public static MetadataType GetSystemDateTime(TypeSystemContext context)
         {
             return context.SystemModule.GetKnownType("System", "DateTime");
@@ -101,11 +96,6 @@ namespace Internal.TypeSystem.Interop
                     return IsOrDerivesFromType(type, this.HandleRef);
                 }
         */
-
-        public static bool IsSystemArray(TypeSystemContext context, TypeDesc type)
-        {
-            return type == GetSystemArray(context);
-        }
 
         public static bool IsSystemDateTime(TypeSystemContext context, TypeDesc type)
         {
