@@ -311,8 +311,8 @@ namespace Internal.TypeSystem.Interop
             }
             else
             {
-                // Passing as [Out] is valid only if it is not ValueType nor string
-                if (!parameterType.IsValueType && !parameterType.IsString)
+                // Passing as [Out] is valid only if it is not ValueType, string nor pointer
+                if (!parameterType.IsValueType && !parameterType.IsString && !parameterType.IsPointer)
                     marshaller.Out = isOut;
             }
 
