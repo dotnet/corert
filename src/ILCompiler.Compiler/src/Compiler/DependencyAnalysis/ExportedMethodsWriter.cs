@@ -13,34 +13,35 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal static class ExportedMethodsWriter
+    internal class ExportedMethodsWriter
     {
-        private static string _exportsFilePath;
-        private static string _moduleName;
-        private static TargetDetails _targetDetails;
+        private string _exportsFilePath;
+        private string _moduleName;
+        private TargetDetails _targetDetails;
 
-        private static string GetExportsFileExtenstion()
-            => _targetDetails.IsWindows ? ".def" : ".exports";
-
-        private static void BuildExportsFileInfo(string outputFile)
+        private ExportedMethodsWriter(string outputFile, NodeFactory factory)
         {
             string directory = Path.GetDirectoryName(outputFile);
             string filename = Path.GetFileNameWithoutExtension(outputFile);
+
+            _targetDetails = factory.Target;
             _moduleName = filename;
             _exportsFilePath = Path.Combine(directory, filename + GetExportsFileExtenstion());
         }
 
         public static void EmitExportedMethods(string outputFile, NodeFactory factory)
         {
-            _targetDetails = factory.Target;
-            BuildExportsFileInfo(outputFile);
             var nativeCallables = factory.NodeAliases.Where(n => n.Key is IMethodNode)
                                     .Where(n => (n.Key as IMethodNode).Method.IsNativeCallable);
 
-            WriteExportedMethodsToFile(nativeCallables.Select(n => n.Value));
+            var exportNames = nativeCallables.Select(n => n.Value);
+            new ExportedMethodsWriter(outputFile, factory).WriteExportedMethodsToFile(exportNames);
         }
 
-        private static void WriteExportedMethodsToFile(IEnumerable<string> exportNames)
+        private string GetExportsFileExtenstion()
+            => _targetDetails.IsWindows ? ".def" : ".exports";
+
+        private void WriteExportedMethodsToFile(IEnumerable<string> exportNames)
         {
             StringBuilder stringBuilder = new StringBuilder();
 
