@@ -159,17 +159,9 @@ namespace Internal.Runtime.Augments
             return !GetThreadStateBit(ThreadState.Unstarted);
         }
 
-        internal ExecutionContext ExecutionContext
-        {
-            get { return _executionContext; }
-            set { _executionContext = value; }
-        }
+        internal ref ExecutionContext ExecutionContext => ref _executionContext;
 
-        internal SynchronizationContext SynchronizationContext
-        {
-            get { return _synchronizationContext; }
-            set { _synchronizationContext = value; }
-        }
+        internal ref SynchronizationContext SynchronizationContext => ref _synchronizationContext;
 
         public bool IsAlive
         {

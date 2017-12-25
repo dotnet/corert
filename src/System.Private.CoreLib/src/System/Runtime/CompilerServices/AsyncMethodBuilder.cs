@@ -726,10 +726,30 @@ namespace System.Runtime.CompilerServices
         {
             // Async state machines are required not to throw, so no need for try/finally here.
             Thread currentThread = Thread.CurrentThread;
-            ExecutionContextSwitcher ecs = default(ExecutionContextSwitcher);
-            ExecutionContext.EstablishCopyOnWriteScope(currentThread, ref ecs);
+            // Capture references to Thread Contexts
+            ref ExecutionContext current = ref currentThread.ExecutionContext;
+            ref SynchronizationContext currentSyncCtx = ref currentThread.SynchronizationContext;
+
+            // Store current ExecutionContext and SynchronizationContext as "previous"
+            // This allows us to restore them and undo any Context changes made in stateMachine.MoveNext
+            // so that they won't "leak" out of the first await.
+            ExecutionContext previous = current;
+            SynchronizationContext previousSyncCtx = currentSyncCtx;
+
             stateMachine.MoveNext();
-            ecs.Undo(currentThread);
+
+            // The common case is that these have not changed, so avoid the cost of a write barrier if not needed.
+            if (previousSyncCtx != currentSyncCtx)
+            {
+                // Restore changed SynchronizationContext back to previous
+                currentSyncCtx = previousSyncCtx;
+            }
+
+            if (previous != current)
+            {
+                // Restore changed ExecutionContext back to previous
+                ExecutionContext.Restore(ref current, previous);
+            }
         }
 
         //
