@@ -18,6 +18,7 @@ namespace ILCompiler.DependencyAnalysis
         private string _exportsFilePath;
         private string _moduleName;
         private TargetDetails _targetDetails;
+        private static ModuleDesc _systemModule;
 
         private ExportedMethodsWriter(string outputFile, NodeFactory factory)
         {
@@ -25,6 +26,7 @@ namespace ILCompiler.DependencyAnalysis
             string filename = Path.GetFileNameWithoutExtension(outputFile);
 
             _targetDetails = factory.Target;
+            _systemModule = factory.TypeSystemContext.SystemModule;
             _moduleName = filename;
             _exportsFilePath = Path.Combine(directory, filename + GetExportsFileExtenstion());
         }
@@ -32,7 +34,8 @@ namespace ILCompiler.DependencyAnalysis
         public static void EmitExportedMethods(string outputFile, NodeFactory factory)
         {
             var nativeCallables = factory.NodeAliases.Where(n => n.Key is IMethodNode)
-                                    .Where(n => (n.Key as IMethodNode).Method.IsNativeCallable);
+                                    .Where(n => (n.Key as IMethodNode).Method.IsNativeCallable)
+                                    .Where(n => !IsInternalExport((n.Key as IMethodNode).Method));
 
             var exportNames = nativeCallables.Select(n => n.Value);
             new ExportedMethodsWriter(outputFile, factory).WriteExportedMethodsToFile(exportNames);
@@ -40,6 +43,9 @@ namespace ILCompiler.DependencyAnalysis
 
         private string GetExportsFileExtenstion()
             => _targetDetails.IsWindows ? ".def" : ".exports";
+
+        private static bool IsInternalExport(MethodDesc method)
+            => ((MetadataType)method.OwningType).Module == _systemModule;
 
         private void WriteExportedMethodsToFile(IEnumerable<string> exportNames)
         {
