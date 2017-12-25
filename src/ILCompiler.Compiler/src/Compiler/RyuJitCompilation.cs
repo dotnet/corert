@@ -40,7 +40,7 @@ namespace ILCompiler
             var nodes = _dependencyGraph.MarkedNodeList;
 
             NodeFactory.SetMarkingComplete();
-            ExportsWriter.EmitExportedSymbols(outputFile, NodeFactory);
+            ExportedMethodsWriter.EmitExportedMethods(outputFile, NodeFactory);
             ObjectWriter.EmitObject(outputFile, nodes, NodeFactory, dumper);
         }
 

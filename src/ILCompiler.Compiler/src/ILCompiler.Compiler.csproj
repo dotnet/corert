@@ -186,7 +186,7 @@
     <Compile Include="Compiler\DependencyAnalysis\GenericTypesTemplateMap.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericMethodsHashtableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExactMethodInstantiationsNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ExportsWriter.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ExportedMethodsWriter.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericMethodsTemplateMap.cs" />
     <Compile Include="Compiler\DependencyAnalysis\RuntimeFieldHandleNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\RuntimeMethodHandleNode.cs" />

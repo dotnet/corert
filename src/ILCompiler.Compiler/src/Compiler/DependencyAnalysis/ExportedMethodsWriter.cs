@@ -13,7 +13,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal static class ExportsWriter
+    internal static class ExportedMethodsWriter
     {
         private static string _exportsFilePath;
         private static string _moduleName;
@@ -30,17 +30,17 @@ namespace ILCompiler.DependencyAnalysis
             _exportsFilePath = Path.Combine(directory, filename + GetExportsFileExtenstion());
         }
 
-        public static void EmitExportedSymbols(string outputFile, NodeFactory factory)
+        public static void EmitExportedMethods(string outputFile, NodeFactory factory)
         {
             _targetDetails = factory.Target;
             BuildExportsFileInfo(outputFile);
             var nativeCallables = factory.NodeAliases.Where(n => n.Key is IMethodNode)
                                     .Where(n => (n.Key as IMethodNode).Method.IsNativeCallable);
 
-            WriteExportedSymbolsToFile(nativeCallables.Select(n => n.Value));
+            WriteExportedMethodsToFile(nativeCallables.Select(n => n.Value));
         }
 
-        private static void WriteExportedSymbolsToFile(IEnumerable<string> exportNames)
+        private static void WriteExportedMethodsToFile(IEnumerable<string> exportNames)
         {
             StringBuilder stringBuilder = new StringBuilder();
 
