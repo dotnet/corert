@@ -33,6 +33,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public static void EmitExportedMethods(string outputFile, NodeFactory factory)
         {
+            // Only generate an export file if we're in native library mode
+            // marked by the presense of __managed__Startup method
+            if (!factory.NodeAliases.Values.Contains("__managed__Startup"))
+                return;
+
             var nativeCallables = factory.NodeAliases.Where(n => n.Key is IMethodNode)
                                     .Where(n => (n.Key as IMethodNode).Method.IsNativeCallable)
                                     .Where(n => !IsInternalExport((n.Key as IMethodNode).Method));
