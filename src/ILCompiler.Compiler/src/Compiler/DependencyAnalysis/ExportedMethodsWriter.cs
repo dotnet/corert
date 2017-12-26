@@ -52,10 +52,8 @@ namespace ILCompiler.DependencyAnalysis
                 return ".def";
             else if (_targetDetails.OperatingSystem == TargetOS.OSX)
                 return ".exports";
-            else if (_targetDetails.OperatingSystem == TargetOS.Linux)
+            else
                 return ".map";
-            
-            return string.Empty;
         }
 
         private static bool IsInternalExport(MethodDesc method)
@@ -81,7 +79,7 @@ namespace ILCompiler.DependencyAnalysis
                 foreach (var exportName in exportNames)
                     stringBuilder.AppendLine("_" + exportName);
             }
-            else if (_targetDetails.OperatingSystem == TargetOS.Linux)
+            else
             {
                 stringBuilder.AppendLine(_moduleName.ToUpper() + " {");
                 stringBuilder.AppendLine("    global:");
