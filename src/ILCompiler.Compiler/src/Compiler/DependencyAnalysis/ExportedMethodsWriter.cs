@@ -47,7 +47,16 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private string GetExportsFileExtenstion()
-            => _targetDetails.IsWindows ? ".def" : ".exports";
+        {
+            if (_targetDetails.OperatingSystem == TargetOS.Windows)
+                return ".def";
+            else if (_targetDetails.OperatingSystem == TargetOS.OSX)
+                return ".exports";
+            else if (_targetDetails.OperatingSystem == TargetOS.Linux)
+                return ".map";
+            
+            return string.Empty;
+        }
 
         private static bool IsInternalExport(MethodDesc method)
             => ((MetadataType)method.OwningType).Module == _systemModule;
@@ -71,6 +80,17 @@ namespace ILCompiler.DependencyAnalysis
                 stringBuilder.AppendLine(_moduleName);
                 foreach (var exportName in exportNames)
                     stringBuilder.AppendLine("_" + exportName);
+            }
+            else if (_targetDetails.OperatingSystem == TargetOS.Linux)
+            {
+                stringBuilder.AppendLine(_moduleName.ToUpper() + " {");
+                stringBuilder.AppendLine("    global:");
+                foreach (var exportName in exportNames)
+                    stringBuilder.AppendLine("        " + exportName + ";");
+                
+                stringBuilder.AppendLine("    local:");
+                stringBuilder.AppendLine("        *;");
+                stringBuilder.AppendLine("};");
             }
 
             File.WriteAllText(_exportsFilePath, stringBuilder.ToString());
