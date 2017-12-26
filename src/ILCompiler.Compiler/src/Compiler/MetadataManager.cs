@@ -388,8 +388,9 @@ namespace ILCompiler
             {
                 // We're going to generate a mapping table entry for this. Collect dependencies.
 
-                // Nothing for now - the mapping table only refers to the EEType and we already generated one because
-                // we got the callback.
+                // Nothing special is needed for the mapping table (we only emit the EEType and we already
+                // have one, since we got this callback). But check if a child wants to do something extra.
+                GetRuntimeMappingDependenciesDueToReflectability(ref dependencies, factory, type);
             }
         }
 
@@ -398,6 +399,12 @@ namespace ILCompiler
             // MetadataManagers can override this to provide additional dependencies caused by the emission of metadata
             // (E.g. dependencies caused by the type having custom attributes applied to it: making sure we compile the attribute constructor
             // and property setters)
+        }
+
+        protected virtual void GetRuntimeMappingDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        {
+            // MetadataManagers can override this to provide additional dependencies caused by the emission of a runtime
+            // mapping for a type.
         }
 
         /// <summary>

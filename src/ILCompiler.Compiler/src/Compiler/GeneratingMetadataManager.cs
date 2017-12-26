@@ -174,29 +174,11 @@ namespace ILCompiler
                     methodMappings.Add(new MetadataMapping<MethodDesc>(method, writer.GetRecordHandle(record)));
             }
 
-            foreach (var eetypeGenerated in GetTypesWithEETypes())
+            foreach (var field in GetFieldsWithRuntimeMapping())
             {
-                if (eetypeGenerated.IsGenericDefinition)
-                    continue;
-
-                if (eetypeGenerated.HasInstantiation)
-                {
-                    // Collapsing of field map entries based on canonicalization, to avoid redundant equivalent entries
-
-                    TypeDesc canonicalType = eetypeGenerated.ConvertToCanonForm(CanonicalFormKind.Specific);
-                    if (canonicalType != eetypeGenerated && TypeGeneratesEEType(canonicalType))
-                        continue;
-                }
-
-                foreach (FieldDesc field in eetypeGenerated.GetFields())
-                {
-                    if (IsReflectionBlocked(field.OwningType.Instantiation))
-                        continue;
-
-                    Field record = transformed.GetTransformedFieldDefinition(field.GetTypicalFieldDefinition());
-                    if (record != null)
-                        fieldMappings.Add(new MetadataMapping<FieldDesc>(field, writer.GetRecordHandle(record)));
-                }
+                Field record = transformed.GetTransformedFieldDefinition(field.GetTypicalFieldDefinition());
+                if (record != null)
+                    fieldMappings.Add(new MetadataMapping<FieldDesc>(field, writer.GetRecordHandle(record)));
             }
 
             // Generate stack trace metadata mapping
@@ -205,6 +187,12 @@ namespace ILCompiler
                 stackTraceMapping.Add(new MetadataMapping<MethodDesc>(stackTraceRecord.Key, writer.GetRecordHandle(stackTraceRecord.Value)));
             }
         }
+
+        /// <summary>
+        /// Gets a list of fields that got "compiled" and are eligible for a runtime mapping.
+        /// </summary>
+        /// <returns></returns>
+        protected abstract IEnumerable<FieldDesc> GetFieldsWithRuntimeMapping();
 
         /// <summary>
         /// Is there a reflection invoke stub for a method that is invokable?
