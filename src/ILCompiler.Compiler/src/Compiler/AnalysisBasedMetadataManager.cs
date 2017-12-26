@@ -144,6 +144,15 @@ namespace ILCompiler
             return 0;
         }
 
+        protected override IEnumerable<FieldDesc> GetFieldsWithRuntimeMapping()
+        {
+            foreach (var pair in _reflectableFields)
+            {
+                if ((pair.Value & MetadataCategory.RuntimeMapping) != 0)
+                    yield return pair.Key;
+            }
+        }
+
         void ICompilationRootProvider.AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
             // We go over all the types and members that need a runtime artiface present in the

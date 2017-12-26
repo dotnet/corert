@@ -350,6 +350,21 @@ namespace ILCompiler
             }
         }
 
+        /// <summary>
+        /// This method is an extension point that can provide additional metadata-based dependencies on a virtual method.
+        /// </summary>
+        public void GetDependenciesDueToVirtualMethodReflectability(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        {
+            // If we have a use of an abstract method, GetDependenciesDueToReflectability is not going to see the method
+            // as being used since there's no body. We inject a dependency on a new node that serves as a logical method body
+            // for the metadata manager. Metadata manager treats that node the same as a body.
+            if (method.IsAbstract && GetMetadataCategory(method) != 0)
+            {
+                dependencies = dependencies ?? new DependencyList();
+                dependencies.Add(factory.ReflectableMethod(method), "Abstract reflectable method");
+            }
+        }
+
         protected virtual void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
             // MetadataManagers can override this to provide additional dependencies caused by the emission of metadata
@@ -373,8 +388,9 @@ namespace ILCompiler
             {
                 // We're going to generate a mapping table entry for this. Collect dependencies.
 
-                // Nothing for now - the mapping table only refers to the EEType and we already generated one because
-                // we got the callback.
+                // Nothing special is needed for the mapping table (we only emit the EEType and we already
+                // have one, since we got this callback). But check if a child wants to do something extra.
+                GetRuntimeMappingDependenciesDueToReflectability(ref dependencies, factory, type);
             }
         }
 
@@ -383,6 +399,12 @@ namespace ILCompiler
             // MetadataManagers can override this to provide additional dependencies caused by the emission of metadata
             // (E.g. dependencies caused by the type having custom attributes applied to it: making sure we compile the attribute constructor
             // and property setters)
+        }
+
+        protected virtual void GetRuntimeMappingDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        {
+            // MetadataManagers can override this to provide additional dependencies caused by the emission of a runtime
+            // mapping for a type.
         }
 
         /// <summary>

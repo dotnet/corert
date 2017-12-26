@@ -11,6 +11,7 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
@@ -21,6 +22,8 @@ namespace ILCompiler
     public sealed class UsageBasedMetadataManager : GeneratingMetadataManager
     {
         private readonly CompilationModuleGroup _compilationModuleGroup;
+
+        private readonly bool _hasPreciseFieldUsageInformation;
 
         private readonly List<ModuleDesc> _modulesWithMetadata = new List<ModuleDesc>();
         private readonly List<FieldDesc> _fieldsWithMetadata = new List<FieldDesc>();
@@ -35,6 +38,8 @@ namespace ILCompiler
             StackTraceEmissionPolicy stackTracePolicy)
             : base(group.GeneratedAssembly, typeSystemContext, blockingPolicy, logFile, stackTracePolicy)
         {
+            // We use this to mark places that would behave differently if we tracked exact fields used. 
+            _hasPreciseFieldUsageInformation = false;
             _compilationModuleGroup = group;
         }
 
@@ -138,11 +143,103 @@ namespace ILCompiler
                 return;
 
             TypeMetadataNode.GetMetadataDependencies(ref dependencies, factory, type, "Reflectable type");
+
+            // If we don't have precise field usage information, apply policy that all fields that
+            // are eligible to have metadata get metadata.
+            if (!_hasPreciseFieldUsageInformation)
+            {
+                TypeDesc typeDefinition = type.GetTypeDefinition();
+
+                foreach (FieldDesc field in typeDefinition.GetFields())
+                {
+                    if ((GetMetadataCategory(field) & MetadataCategory.Description) != 0)
+                    {
+                        dependencies = dependencies ?? new DependencyList();
+                        dependencies.Add(factory.FieldMetadata(field), "Field of a reflectable type");
+                    }
+                }
+            }
+        }
+
+        protected override void GetRuntimeMappingDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        {
+            // If we precisely track field usage, we don't need the logic below.
+            if (_hasPreciseFieldUsageInformation)
+                return;
+
+            const string reason = "Reflection";
+
+            // This logic is applying policy: if a type is reflectable (has a runtime mapping), all of it's fields
+            // are reflectable (with a runtime mapping) as well.
+            // This is potentially overly broad (we don't know if any of the fields will actually be eligile
+            // for metadata - e.g. they could all be reflection blocked). This is fine since lack of
+            // precise field usage information is already not ideal from a size on disk perspective.
+            // The more precise way to do this would be to go over each field, check that it's eligible for RuntimeMapping
+            // according to the policy (e.g. it's not blocked), and only then root the base of the field.
+            if (type is MetadataType metadataType && !type.IsGenericDefinition)
+            {
+                Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any));
+
+                if (metadataType.GCStaticFieldSize.AsInt > 0)
+                {
+                    dependencies.Add(factory.TypeGCStaticsSymbol(metadataType), reason);
+                }
+
+                if (metadataType.NonGCStaticFieldSize.AsInt > 0 || _typeSystemContext.HasLazyStaticConstructor(metadataType))
+                {
+                    dependencies.Add(factory.TypeNonGCStaticsSymbol(metadataType), reason);
+                }
+
+                // TODO: tread static fields
+            }
+        }
+
+        protected override IEnumerable<FieldDesc> GetFieldsWithRuntimeMapping()
+        {
+            if (_hasPreciseFieldUsageInformation)
+            {
+                // TODO
+            }
+            else
+            {
+                // This applies a policy that fields inherit runtime mapping from their owning type,
+                // unless they are blocked.
+                foreach (var type in GetTypesWithRuntimeMapping())
+                {
+                    if (type.IsGenericDefinition)
+                        continue;
+
+                    foreach (var field in type.GetFields())
+                    {
+                        if ((GetMetadataCategory(field) & MetadataCategory.RuntimeMapping) != 0)
+                            yield return field;
+                    }
+                }
+            }
         }
 
         public override IEnumerable<ModuleDesc> GetCompilationModulesWithMetadata()
         {
             return _modulesWithMetadata;
+        }
+
+        private IEnumerable<TypeDesc> GetTypesWithRuntimeMapping()
+        {
+            // All constructed types that are not blocked get runtime mapping
+            foreach (var constructedType in GetTypesWithConstructedEETypes())
+            {
+                if (!IsReflectionBlocked(constructedType))
+                    yield return constructedType;
+            }
+
+            // All necessary types for which this is the highest load level that are not blocked
+            // get runtime mapping.
+            foreach (var necessaryType in GetTypesWithEETypes())
+            {
+                if (!ConstructedEETypeNode.CreationAllowed(necessaryType) &&
+                    !IsReflectionBlocked(necessaryType))
+                    yield return necessaryType;
+            }
         }
 
         public MetadataManager ToAnalysisBasedMetadataManager()
@@ -155,8 +252,7 @@ namespace ILCompiler
                 reflectableTypes[typeWithMetadata] = MetadataCategory.Description;
             }
 
-            // All the constructed types we generated that are not blocked are required to have runtime artifacts
-            foreach (var constructedType in GetTypesWithConstructedEETypes())
+            foreach (var constructedType in GetTypesWithRuntimeMapping())
             {
                 if (!IsReflectionBlocked(constructedType))
                 {
@@ -168,24 +264,6 @@ namespace ILCompiler
                         (reflectableTypes[constructedTypeDefinition] & MetadataCategory.Description) != 0)
                     {
                         reflectableTypes[constructedType] |= MetadataCategory.Description;
-                    }
-                }
-            }
-
-            // All the necessary types for which this is the higest load level are required to have runtime artifacts
-            foreach (var necessaryType in GetTypesWithEETypes())
-            {
-                if (!ConstructedEETypeNode.CreationAllowed(necessaryType) &&
-                    !IsReflectionBlocked(necessaryType))
-                {
-                    reflectableTypes[necessaryType] |= MetadataCategory.RuntimeMapping;
-
-                    // Also set the description bit if the definition is getting metadata.
-                    TypeDesc necessaryTypeDefinition = necessaryType.GetTypeDefinition();
-                    if (necessaryType != necessaryTypeDefinition &&
-                        (reflectableTypes[necessaryTypeDefinition] & MetadataCategory.Description) != 0)
-                    {
-                        reflectableTypes[necessaryType] |= MetadataCategory.Description;
                     }
                 }
             }
@@ -221,19 +299,41 @@ namespace ILCompiler
                 reflectableFields[fieldWithMetadata] = MetadataCategory.Description;
             }
 
-            // TODO: this should be more precise
-            foreach (var reflectableType in reflectableTypes.ToEnumerable())
+            if (_hasPreciseFieldUsageInformation)
             {
-                if (reflectableType.Entity.IsGenericDefinition)
-                    continue;
-
-                if (reflectableType.Entity.IsCanonicalSubtype(CanonicalFormKind.Specific))
-                    continue;
-
-                foreach (var field in reflectableType.Entity.GetFields())
+                // TODO
+            }
+            else
+            {
+                // If we don't have precise field usage information we apply a policy that
+                // says the fields inherit the setting from the type, potentially restricted by blocking.
+                // (I.e. if a type has RuntimeMapping metadata, the field has RuntimeMapping too, unless blocked.)
+                foreach (var reflectableType in reflectableTypes.ToEnumerable())
                 {
-                    if (CanGenerateMetadata(field.GetTypicalFieldDefinition()))
-                        reflectableFields[field] |= reflectableType.Category;
+                    if (reflectableType.Entity.IsGenericDefinition)
+                        continue;
+
+                    if (reflectableType.Entity.IsCanonicalSubtype(CanonicalFormKind.Specific))
+                        continue;
+
+                    if ((reflectableType.Category & MetadataCategory.RuntimeMapping) == 0)
+                        continue;
+
+                    foreach (var field in reflectableType.Entity.GetFields())
+                    {
+                        if (!IsReflectionBlocked(field))
+                        {
+                            reflectableFields[field] |= MetadataCategory.RuntimeMapping;
+
+                            // Also set the description bit if the definition is getting metadata.
+                            FieldDesc typicalField = field.GetTypicalFieldDefinition();
+                            if (field != typicalField &&
+                                (reflectableFields[typicalField] & MetadataCategory.Description) != 0)
+                            {
+                                reflectableFields[field] |= MetadataCategory.Description;
+                            }
+                        }
+                    }
                 }
             }
 

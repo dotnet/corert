@@ -58,9 +58,8 @@ namespace ILCompiler.DependencyAnalysis
                 result.Add(factory.VirtualMethodUse(_targetMethod), "Interface method use");
             }
 
-            // TODO: https://github.com/dotnet/corert/issues/3224 
-            result.Add(factory.ReflectableMethod(_targetMethod), "Abstract reflectable method");
-
+            factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref result, factory, _targetMethod);
+            
             return result;
         }
 

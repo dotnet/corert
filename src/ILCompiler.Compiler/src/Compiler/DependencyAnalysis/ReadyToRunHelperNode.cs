@@ -146,11 +146,7 @@ namespace ILCompiler.DependencyAnalysis
                 DependencyList dependencyList = new DependencyList();
 
 #if !SUPPORT_JIT
-                // TODO: https://github.com/dotnet/corert/issues/3224 
-                if (targetMethod.IsAbstract)
-                {
-                    dependencyList.Add(factory.ReflectableMethod(targetMethod), "Abstract reflectable method");
-                }
+                factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref dependencyList, factory, targetMethod);
 
                 if (!factory.VTable(targetMethod.OwningType).HasFixedSlots)
 
@@ -170,11 +166,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     DependencyList dependencyList = new DependencyList();
 #if !SUPPORT_JIT
-                    // TODO: https://github.com/dotnet/corert/issues/3224 
-                    if (targetMethod.IsAbstract)
-                    {
-                        dependencyList.Add(factory.ReflectableMethod(targetMethod), "Abstract reflectable method");
-                    }
+                    factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref dependencyList, factory, targetMethod);
 
                     if (!factory.VTable(info.TargetMethod.OwningType).HasFixedSlots)
                     {

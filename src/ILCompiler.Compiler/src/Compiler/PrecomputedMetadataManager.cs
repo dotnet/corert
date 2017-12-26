@@ -426,6 +426,36 @@ namespace ILCompiler
             return MetadataCategory.RuntimeMapping;
         }
 
+        protected override void GetRuntimeMappingDependenciesDueToReflectability(ref DependencyNodeCore<NodeFactory>.DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        {
+            // Backwards compatible behavior with when this code was indiscriminately injected into all EETypes.
+            // We might want to tweak this.
+
+            if (type is MetadataType metadataType && !type.IsGenericDefinition)
+            {
+                Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any));
+
+                // For instantiated types, we write the static fields offsets directly into the table, and we do not reference the gc/non-gc statics nodes
+                if (!type.HasInstantiation)
+                {
+                    if (metadataType.GCStaticFieldSize.AsInt > 0)
+                    {
+                        dependencies.Add(factory.TypeGCStaticsSymbol(metadataType), "GC statics for ReflectionFieldMap entry");
+                    }
+
+                    if (metadataType.NonGCStaticFieldSize.AsInt > 0)
+                    {
+                        dependencies.Add(factory.TypeNonGCStaticsSymbol(metadataType), "Non-GC statics for ReflectionFieldMap entry");
+                    }
+                }
+
+                if (metadataType.ThreadStaticFieldSize.AsInt > 0)
+                {
+                    dependencies.Add(((UtcNodeFactory)factory).TypeThreadStaticsOffsetSymbol(metadataType), "Thread statics for ReflectionFieldMap entry");
+                }
+            }
+        }
+
         private bool IsMethodSupportedInPrecomputedReflection(MethodDesc method)
         {
             if (!IsMethodSupportedInReflectionInvoke(method))

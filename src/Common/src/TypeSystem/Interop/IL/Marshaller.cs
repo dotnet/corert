@@ -301,20 +301,21 @@ namespace Internal.TypeSystem.Interop
             marshaller.PInvokeFlags = flags;
 
             //
-            // Desktop ignores [Out] on marshaling scenarios where they don't make sense (such as passing
-            // value types and string as [out] without byref). 
+            // Desktop ignores [Out] on marshaling scenarios where they don't make sense
             //
-            if (marshaller.IsManagedByRef)
+            if (isOut)
             {
-                // Passing as [Out] by ref is valid
-                marshaller.Out = isOut;
+                // Passing as [Out] by ref is always valid. 
+                if (!marshaller.IsManagedByRef)
+                {
+                    // Ignore [Out] for ValueType, string and pointers
+                    if (parameterType.IsValueType || parameterType.IsString || parameterType.IsPointer || parameterType.IsFunctionPointer)
+                    {
+                        isOut = false;
+                    }
+                }
             }
-            else
-            {
-                // Passing as [Out] is valid only if it is not ValueType nor string
-                if (!parameterType.IsValueType && !parameterType.IsString)
-                    marshaller.Out = isOut;
-            }
+            marshaller.Out = isOut;
 
             if (!marshaller.In && !marshaller.Out)
             {
@@ -1678,7 +1679,7 @@ namespace Internal.TypeSystem.Interop
                 throw new NotSupportedException("Marshalling an argument as both in and out not yet implemented");
             }
 
-            var safeHandleType = InteropTypes.GetSafeHandleType(Context);
+            var safeHandleType = InteropTypes.GetSafeHandle(Context);
 
             if (Out && IsManagedByRef)
             {
@@ -1733,7 +1734,7 @@ namespace Internal.TypeSystem.Interop
             LoadManagedValue(codeStream);
             LoadNativeValue(codeStream);
             codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
-            InteropTypes.GetSafeHandleType(Context).GetKnownMethod("SetHandle", null)));
+            InteropTypes.GetSafeHandle(Context).GetKnownMethod("SetHandle", null)));
         }
     }
 

@@ -18,11 +18,6 @@ namespace ILCompiler.DependencyAnalysis
     {
         public static void AddDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
-            // TODO: https://github.com/dotnet/corert/issues/3224
-            // Reflection invoke stub handling is here because in the current reflection model we reflection-enable
-            // all methods that are compiled. Ideally the list of reflection enabled methods should be known before
-            // we even start the compilation process (with the invocation stubs being compilation roots like any other).
-            // The existing model has it's problems: e.g. the invocability of the method depends on inliner decisions.
             if (factory.MetadataManager.IsReflectionInvokable(method))
             {
                 if (dependencies == null)
