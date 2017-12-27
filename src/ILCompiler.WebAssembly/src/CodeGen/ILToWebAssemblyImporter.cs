@@ -1516,16 +1516,16 @@ namespace Internal.IL
                 throw new InvalidOperationException();
             }
 
-            var dest = _stack.Pop();
+            var src = _stack.Pop();
 
-            if (dest.Kind != StackValueKind.NativeInt && dest.Kind != StackValueKind.ByRef && dest.Kind != StackValueKind.ObjRef)
+            if (src.Kind != StackValueKind.NativeInt && src.Kind != StackValueKind.ByRef && src.Kind != StackValueKind.ObjRef)
             {
                 throw new InvalidOperationException();
             }
 
-            var src = _stack.Pop();
+            var dest = _stack.Pop();
 
-            if (src.Kind != StackValueKind.NativeInt && src.Kind != StackValueKind.ByRef && src.Kind != StackValueKind.ObjRef)
+            if (dest.Kind != StackValueKind.NativeInt && dest.Kind != StackValueKind.ByRef && dest.Kind != StackValueKind.ObjRef)
             {
                 throw new InvalidOperationException();
             }
