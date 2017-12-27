@@ -167,15 +167,13 @@ ICodeManager * RuntimeInstance::FindCodeManagerByAddress(PTR_VOID pvAddress)
             return pModule;
     }
 
-    // TODO: JIT support in DAC
+    // TODO: ICodeManager support in DAC
 #ifndef DACCESS_COMPILE
-#ifdef FEATURE_DYNAMIC_CODE
     for (CodeManagerEntry * pEntry = m_CodeManagerList.GetHead(); pEntry != NULL; pEntry = pEntry->m_pNext)
     {
         if (dac_cast<TADDR>(pvAddress) - dac_cast<TADDR>(pEntry->m_pvStartRange) < pEntry->m_cbRange)
             return pEntry->m_pCodeManager;
     }
-#endif
 #endif
 
     return NULL;
@@ -395,7 +393,6 @@ void RuntimeInstance::UnregisterModule(Module *pModule)
     pModule->Destroy();
 }
 
-#ifdef FEATURE_DYNAMIC_CODE
 bool RuntimeInstance::RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, UInt32 cbRange)
 {
     CodeManagerEntry * pEntry = new (nothrow) CodeManagerEntry();
@@ -447,7 +444,6 @@ extern "C" void __stdcall UnregisterCodeManager(ICodeManager * pCodeManager)
 {
     return GetRuntimeInstance()->UnregisterCodeManager(pCodeManager);
 }
-#endif
 
 bool RuntimeInstance::RegisterUnboxingStubs(PTR_VOID pvStartRange, UInt32 cbRange)
 {
