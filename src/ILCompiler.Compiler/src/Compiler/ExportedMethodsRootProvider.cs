@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.IO;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -17,16 +16,20 @@ namespace ILCompiler
     {
         private EcmaModule _module;
         private List<EcmaMethod> _methods;
-        private string _exportsFile;
 
-        public ExportedMethodsRootProvider(EcmaModule module, string exportsFile)
+        public ExportedMethodsRootProvider(EcmaModule module)
         {
             _module = module;
             _methods = new List<EcmaMethod>();
-            _exportsFile = exportsFile;
         }
 
-        public ExportedMethodsRootProvider(EcmaModule module) : this(module, null) { }
+        public IEnumerable<EcmaMethod> ExportedMethods
+        {
+            get
+            {
+                return _methods;
+            }
+        }
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
@@ -49,33 +52,11 @@ namespace ILCompiler
 
                         if (nativeCallableExportName != null)
                         {
-                            _methods.Add(ecmaMethod);
+                            if (ecmaMethod.Module != _module.Context.SystemModule)
+                                _methods.Add(ecmaMethod);
                             rootProvider.AddCompilationRoot(method, "Native callable", nativeCallableExportName);
                         }
                     }
-                }
-            }
-
-            // _exportsFile is not null when it's a shared library build
-            if (_exportsFile != null)
-                EmitExportedMethods();
-        }
-
-        private void EmitExportedMethods()
-        {
-            FileStream fileStream = new FileStream(_exportsFile, FileMode.Create);
-            using (StreamWriter streamWriter = new StreamWriter(fileStream))
-            {
-                if (_module.Context.Target.IsWindows)
-                {
-                    streamWriter.WriteLine("EXPORTS");
-                    foreach (var method in _methods)
-                        streamWriter.WriteLine($"   {method.GetNativeCallableExportName()}");
-                }
-                else
-                {
-                    foreach (var method in _methods)
-                        streamWriter.WriteLine($"_{method.GetNativeCallableExportName()}");
                 }
             }
         }

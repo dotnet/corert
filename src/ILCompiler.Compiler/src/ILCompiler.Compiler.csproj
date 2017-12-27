@@ -332,6 +332,7 @@
     <Compile Include="Compiler\NativeLibraryInitializerRootProvider.cs" />
     <Compile Include="Compiler\NodeMangler.cs" />
     <Compile Include="Compiler\ObjectDumper.cs" />
+    <Compile Include="Compiler\DefFileWriter.cs" />
     <Compile Include="Compiler\PrecomputedMetadataManager.cs" />
     <Compile Include="Compiler\ReadyToRun.cs" />
     <Compile Include="Compiler\RyuJitCompilation.cs" />

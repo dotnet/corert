@@ -307,7 +307,7 @@ namespace ILCompiler
                     // TODO: Wasm fails to compile some of the exported methods due to missing opcodes
                     if (!_isWasmCodegen)
                     {
-                        compilationRoots.Add(new ExportedMethodsRootProvider(module, _exportsFile));
+                        compilationRoots.Add(new ExportedMethodsRootProvider(module));
                     }
                 }
 
@@ -456,6 +456,17 @@ namespace ILCompiler
             ObjectDumper dumper = _mapFileName != null ? new ObjectDumper(_mapFileName) : null;
 
             CompilationResults compilationResults = compilation.Compile(_outputFilePath, dumper);
+            if (_nativeLib)
+            {
+                DefFileWriter defFileWriter = new DefFileWriter(typeSystemContext, _exportsFile);
+                foreach (var compilationRoot in compilationRoots)
+                {
+                    if (compilationRoot is ExportedMethodsRootProvider)
+                        defFileWriter.AddExportedMethods(((ExportedMethodsRootProvider)compilationRoot).ExportedMethods);
+                }
+
+                defFileWriter.EmitExportedMethods();
+            }
 
             if (_dgmlLogFileName != null)
                 compilationResults.WriteDependencyLog(_dgmlLogFileName);
