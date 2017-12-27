@@ -209,8 +209,8 @@ public class TestClass
     public void TestMethod(string str)
     {
         TestString = str;
-        if(TestString != str)
-            throw new Exception();
+        if (TestString == str)
+            Program.PrintLine("Instance method call test: Ok.");
     }
     public virtual void TestVirtualMethod(string str)
     {

@@ -10,7 +10,7 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using ILCompiler;
-using ILCompiler.Compiler.CppCodeGen;
+using ILCompiler.CodeGen;
 
 using ILCompiler.DependencyAnalysis;
 using LLVMSharp;
@@ -54,7 +54,7 @@ namespace Internal.IL
                 // TODO: We should use the startup node to generate StartupCodeMain and avoid special casing here
                 if (methodCodeNodeNeedingCode.Method.Signature.IsStatic && methodCodeNodeNeedingCode.Method.Name == "Main")
                 {
-                    mangledName = "Main";
+                    mangledName = "StartupCodeMain";
                 }
                 else
                 {
@@ -83,6 +83,7 @@ namespace Internal.IL
                     ilImporter.SetParameterNames(parameters);*/
 
                 ilImporter.Import();
+
                 methodCodeNodeNeedingCode.CompilationCompleted = true;
             }
             catch (Exception e)
@@ -101,6 +102,7 @@ namespace Internal.IL
 
         static LLVMValueRef TrapFunction = default(LLVMValueRef);
         static LLVMValueRef DoNothingFunction = default(LLVMValueRef);
+
         private static IEnumerable<string> GetParameterNamesForMethod(MethodDesc method)
         {
             // TODO: The uses of this method need revision. The right way to get to this info is from

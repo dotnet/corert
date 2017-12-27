@@ -631,6 +631,10 @@ typedef UInt32(__stdcall *BackgroundCallback)(_In_opt_ void* pCallbackContext);
 
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, UInt32_BOOL highPriority)
 {
+#ifdef _WASM_
+    // No threads, so we can't start one
+    ASSERT(false);
+#endif // _WASM_
     pthread_attr_t attrs;
 
     int st = pthread_attr_init(&attrs);
@@ -671,7 +675,12 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundGCThread(_In_ Background
 
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
+#ifdef _WASM_
+    // WASMTODO: No threads so we can't start the finalizer thread
+    return true;
+#else // _WASM_
     return PalStartBackgroundWork(callback, pCallbackContext, UInt32_TRUE);
+#endif // _WASM_
 }
 
 // Returns a 64-bit tick count with a millisecond resolution. It tries its best
@@ -729,12 +738,17 @@ REDHAWK_PALEXPORT UInt32 REDHAWK_PALAPI PalGetTickCount()
 REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer)
 {
     HANDLE moduleHandle = NULL;
+
+    // Emscripten's implementation of dladdr corrupts memory,
+    // but always returns 0 for the module handle, so just skip the call
+#if !defined(_WASM_)
     Dl_info info;
     int st = dladdr(pointer, &info);
     if (st != 0)
     {
         moduleHandle = info.dli_fbase;
     }
+#endif //!defined(_WASM_)
 
     return moduleHandle;
 }
@@ -802,8 +816,9 @@ bool QueryCacheSize()
     }
 
 #elif defined(_WASM_)
-    // Processor cache size not available on WebAssembly
-    success = false;
+    // Processor cache size not available on WebAssembly, but we can't start up without it, so pick the same default as the GC does
+    success = true;
+    g_cbLargestOnDieCache = 256 * 1024;
 #else
 #error Do not know how to get cache size on this platform
 #endif // __linux__
@@ -1216,6 +1231,12 @@ REDHAWK_PALEXPORT bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out
 //
 REDHAWK_PALEXPORT Int32 PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase)
 {
+#if defined(_WASM_)
+    // Emscripten's implementation of dladdr corrupts memory and doesn't have the real name, so make up a name instead
+    const TCHAR* wasmModuleName = "WebAssemblyModule";
+    *pModuleNameOut = wasmModuleName;
+    return strlen(wasmModuleName);
+#else // _WASM_
     Dl_info dl;
     if (dladdr(moduleBase, &dl) == 0)
     {
@@ -1225,6 +1246,7 @@ REDHAWK_PALEXPORT Int32 PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut,
 
     *pModuleNameOut = dl.dli_fname;
     return strlen(dl.dli_fname);
+#endif // defined(_WASM_)
 }
 
 GCSystemInfo g_SystemInfo;
