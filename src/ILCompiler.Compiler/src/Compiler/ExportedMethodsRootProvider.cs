@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -26,6 +25,8 @@ namespace ILCompiler
             _methods = new List<EcmaMethod>();
             _exportsFile = exportsFile;
         }
+
+        public ExportedMethodsRootProvider(EcmaModule module) : this(module, null) { }
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
@@ -55,35 +56,34 @@ namespace ILCompiler
                 }
             }
 
-            // Only emit exported methods for user supplied assemblies
-            // _exportsFile is null when we're not doing a shared library build
-            if (_module != _module.Context.SystemModule && _exportsFile != null)
+            // _exportsFile is not null when it's a shared library build
+            if (_exportsFile != null)
                 EmitExportedMethods();
         }
 
         private void EmitExportedMethods()
         {
             string moduleName = Path.GetFileNameWithoutExtension(_exportsFile);
-            StringBuilder stringBuilder = new StringBuilder();
-
-            if (_module.Context.Target.IsWindows)
+            FileStream fileStream = new FileStream(_exportsFile, FileMode.OpenOrCreate);
+            using (StreamWriter streamWriter = new StreamWriter(fileStream))
             {
-                stringBuilder.Append("LIBRARY   ");
-                stringBuilder.AppendLine(moduleName.ToUpper());
+                if (_module.Context.Target.IsWindows)
+                {
+                    streamWriter.Write("LIBRARY   ");
+                    streamWriter.WriteLine(moduleName.ToUpperInvariant());
 
-                stringBuilder.AppendLine("EXPORTS");
-                foreach (var method in _methods)
-                    stringBuilder.AppendLine("   " + method.GetNativeCallableExportName());
+                    streamWriter.WriteLine("EXPORTS");
+                    foreach (var method in _methods)
+                        streamWriter.WriteLine($"   {method.GetNativeCallableExportName()}");
+                }
+                else
+                {
+                    streamWriter.Write("# Module: ");
+                    streamWriter.WriteLine(moduleName);
+                    foreach (var method in _methods)
+                        streamWriter.WriteLine($"_{method.GetNativeCallableExportName()}");
+                }
             }
-            else
-            {
-                stringBuilder.Append("# Module: ");
-                stringBuilder.AppendLine(moduleName);
-                foreach (var method in _methods)
-                    stringBuilder.AppendLine("_" + method.GetNativeCallableExportName());
-            }
-
-            File.WriteAllText(_exportsFile, stringBuilder.ToString());
         }
     }
 }

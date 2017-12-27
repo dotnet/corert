@@ -350,7 +350,7 @@ namespace ILCompiler
                     // TODO: Wasm fails to compile some of the xported methods due to missing opcodes
                     if (!_isWasmCodegen)
                     {
-                        compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule, _exportsFile));
+                        compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
                     }
 
                     compilationGroup = new SingleFileCompilationModuleGroup(typeSystemContext);
