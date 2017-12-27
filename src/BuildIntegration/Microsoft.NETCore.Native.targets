@@ -54,7 +54,7 @@ See the LICENSE file in the project root for more information.
 
     <NativeObject>$(NativeIntermediateOutputPath)$(TargetName)$(NativeObjectExt)</NativeObject>
     <NativeBinary>$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)</NativeBinary>
-    <ExportsFile>$(NativeIntermediateOutputPath)$(TargetName)$(ExportsFiletExt)</ExportsFile>
+    <ExportsFile Condition="$(NativeLib) == 'Shared' and $(ExportsFile) == ''">$(NativeIntermediateOutputPath)$(TargetName)$(ExportsFiletExt)</ExportsFile>
 
     <IlcCompileOutput Condition="$(NativeCodeGen) == ''">$(NativeObject)</IlcCompileOutput>
     <IlcCompileOutput Condition="$(NativeCodeGen) == 'cpp'">$(NativeIntermediateOutputPath)$(TargetName).cpp</IlcCompileOutput>
@@ -157,7 +157,7 @@ See the LICENSE file in the project root for more information.
       <IlcArg Condition="$(IlcGenerateMapFile) == 'true'" Include="--map:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).map.xml" />
       <IlcArg Condition="$(RdXmlFile) != ''" Include="--rdxml:$(RdXmlFile)" />
       <IlcArg Condition="$(OutputType) == 'Library' and $(NativeLib) != ''" Include="--nativelib" />
-      <IlcArg Condition="$(OutputType) == 'Library' and $(NativeLib) == 'Shared'" Include="--exportsfile:$(ExportsFile)" />
+      <IlcArg Condition="$(ExportsFile) != ''" Include="--exportsfile:$(ExportsFile)" />
       <ILcArg Condition="'$(Platform)' == 'wasm'" Include="--wasm" />
     </ItemGroup>
 
@@ -199,8 +199,8 @@ See the LICENSE file in the project root for more information.
       <CustomLinkerArg Include="$(NativeObject)" />
       <CustomLinkerArg Include="-o $(NativeBinary)" Condition="'$(OS)' != 'Windows_NT'" />
       <CustomLinkerArg Include="/OUT:$(NativeBinary)" Condition="'$(OS)' == 'Windows_NT'" />
-      <CustomLinkerArg Include="/DEF:$(ExportsFile)" Condition="'$(OS)' == 'Windows_NT' and '$(NativeLib)' == 'Shared'" />
-      <CustomLinkerArg Include="-exported_symbols_list $(ExportsFile)" Condition="'$(TargetOS)' != 'Windows_NT' and '$(NativeLib)' == 'Shared'" />
+      <CustomLinkerArg Include="/DEF:$(ExportsFile)" Condition="'$(OS)' == 'Windows_NT' and $(ExportsFile) != ''" />
+      <CustomLinkerArg Include="-exported_symbols_list $(ExportsFile)" Condition="'$(OS)' != 'Windows_NT' and $(ExportsFile) != ''" />
       <CustomLinkerArg Include="@(LinkerArg)" />
     </ItemGroup>
 
