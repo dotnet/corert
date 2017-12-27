@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -69,17 +69,12 @@ namespace ILCompiler
             {
                 if (_module.Context.Target.IsWindows)
                 {
-                    streamWriter.Write("LIBRARY   ");
-                    streamWriter.WriteLine(moduleName.ToUpperInvariant());
-
                     streamWriter.WriteLine("EXPORTS");
                     foreach (var method in _methods)
                         streamWriter.WriteLine($"   {method.GetNativeCallableExportName()}");
                 }
                 else
                 {
-                    streamWriter.Write("# Module: ");
-                    streamWriter.WriteLine(moduleName);
                     foreach (var method in _methods)
                         streamWriter.WriteLine($"_{method.GetNativeCallableExportName()}");
                 }
