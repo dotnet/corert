@@ -271,9 +271,7 @@ extern "C" bool RhRegisterOSModule(void * pModule,
     void * pvUnboxingStubsStartRange, uint32_t cbUnboxingStubsRange,
     void ** pClasslibFunctions, uint32_t nClasslibFunctions);
 
-#if !defined(_WASM_)
 extern "C" void* PalGetModuleHandleFromPointer(void* pointer);
-#endif //!defined(_WASM_)
 
 extern "C" void GetRuntimeException();
 extern "C" void FailFast();
@@ -319,14 +317,7 @@ static int InitializeRuntime()
 #endif // CPPCODEGEN
 
 #ifndef CPPCODEGEN
-    void * osModule;
-    
-#ifdef _WASM_
-    // No way to get osModule on WASM
-    osModule = NULL;
-#else // _WASM_
-    osModule = PalGetModuleHandleFromPointer((void*)&CORERT_ENTRYPOINT);
-#endif // _WASM_
+    void * osModule = PalGetModuleHandleFromPointer((void*)&CORERT_ENTRYPOINT);
 
     // TODO: pass struct with parameters instead of the large signature of RhRegisterOSModule
     if (!RhRegisterOSModule(

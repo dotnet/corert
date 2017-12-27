@@ -297,14 +297,7 @@ extern "C" bool RhInitialize()
     if (!PalInit())
         return false;
 
-    HANDLE pModuleHandle;
-#ifdef _WASM_
-    // No way to get a module handle on wasm
-    pModuleHandle = NULL;
-#else // _WASM_
-    pModuleHandle = PalGetModuleHandleFromPointer((void*)&RhInitialize));
-#endif // _WASM_
-    if (!InitDLL(pModuleHandle))
+    if (!InitDLL(PalGetModuleHandleFromPointer((void*)&RhInitialize)))
         return false;
 
     return true;

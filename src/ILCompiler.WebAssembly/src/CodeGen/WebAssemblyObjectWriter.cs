@@ -228,6 +228,8 @@ namespace ILCompiler.DependencyAnalysis
 
         private void EmitNativeMain()
         {
+            LLVMValueRef shadowStackTop = LLVM.GetNamedGlobal(Module, "t_pShadowStackTop");
+
             LLVMBuilderRef builder = LLVM.CreateBuilder();
             var mainSignature = LLVM.FunctionType(LLVM.Int32Type(), new LLVMTypeRef[] { LLVM.Int32Type(), LLVM.PointerType(LLVM.Int8Type(), 0) }, false);
             var mainFunc = LLVM.AddFunction(Module, "__managed__Main", mainSignature);
@@ -246,6 +248,7 @@ namespace ILCompiler.DependencyAnalysis
 
             var shadowStack = LLVM.BuildMalloc(builder, LLVM.ArrayType(LLVM.Int8Type(), 1000000), String.Empty);
             var castShadowStack = LLVM.BuildPointerCast(builder, shadowStack, LLVM.PointerType(LLVM.Int8Type(), 0), String.Empty);
+            LLVM.BuildStore(builder, castShadowStack, shadowStackTop);
             LLVM.BuildCall(builder, managedMain, new LLVMValueRef[]
             {
                 castShadowStack,

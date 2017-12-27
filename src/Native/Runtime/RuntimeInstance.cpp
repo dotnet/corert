@@ -949,13 +949,7 @@ EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
         // cannot reuse it here. Now we need to create a new mapping of the thunks section in order to have 
         // more thunks
 
-        UInt8* pModuleBase;
-#ifdef _WASM_
-        // No way to get module base on wasm
-        pModuleBase = NULL;
-#else // _WASM_
-        pModuleBase = (UInt8*)PalGetModuleHandleFromPointer(pThunksTemplateAddress);
-#endif // _WASM_
+        UInt8* pModuleBase = (UInt8*)PalGetModuleHandleFromPointer(pThunksTemplateAddress);
         int templateRva = (int)((UInt8*)RhpGetThunksBase() - pModuleBase);
 
         if (!PalAllocateThunksFromTemplate((HANDLE)pModuleBase, templateRva, templateSize, &pThunkMap))

@@ -735,20 +735,23 @@ REDHAWK_PALEXPORT UInt32 REDHAWK_PALAPI PalGetTickCount()
     return (UInt32)PalGetTickCount64();
 }
 
-#if !defined(_WASM_)
 REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer)
 {
     HANDLE moduleHandle = NULL;
+
+    // Emscripten's implementation of dladdr corrupts memory,
+    // but always returns 0 for the module handle, so just skip the call
+#if !defined(_WASM_)
     Dl_info info;
     int st = dladdr(pointer, &info);
     if (st != 0)
     {
         moduleHandle = info.dli_fbase;
     }
+#endif //!defined(_WASM_)
 
     return moduleHandle;
 }
-#endif //!defined(_WASM_)
 
 REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
 {
@@ -1228,8 +1231,8 @@ REDHAWK_PALEXPORT bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out
 //
 REDHAWK_PALEXPORT Int32 PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase)
 {
-    // Emscripten's implementation of dladdr corrupts memory and doesn't have the real name, so make up a name instead
 #if defined(_WASM_)
+    // Emscripten's implementation of dladdr corrupts memory and doesn't have the real name, so make up a name instead
     const TCHAR* wasmModuleName = "WebAssemblyModule";
     *pModuleNameOut = wasmModuleName;
     return strlen(wasmModuleName);

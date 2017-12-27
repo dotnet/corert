@@ -12,6 +12,7 @@ using LLVMSharp;
 using ILCompiler.CodeGen;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+using Internal.TypeSystem.Ecma;
 
 namespace Internal.IL
 {
@@ -124,6 +125,14 @@ namespace Internal.IL
                 EmitTrapCall();
                 LLVM.BuildRetVoid(_builder);
                 throw;
+            }
+            finally
+            {
+                // Generate thunk for runtime exports
+                if (_method.IsRuntimeExport)
+                {
+                    EmitNativeToManagedThunk(_compilation, _method, ((EcmaMethod)_method).GetRuntimeExportName(), _llvmFunction);
+                }
             }
         }
 
@@ -1071,11 +1080,68 @@ namespace Internal.IL
                 arguments[arguments.Length - i - 1] = _stack.Pop().ValueAsType(GetLLVMTypeForTypeDesc(signatureType), _builder);
             }
 
-            //dont name the return value if the function returns void, its invalid
+            // Save the top of the shadow stack in case the callee reverse P/Invokes
+            LLVMValueRef stackFrameSize = BuildConstInt32(GetTotalParameterOffset() + GetTotalLocalOffset());
+            LLVM.BuildStore(_builder, LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_llvmFunction), new LLVMValueRef[] { stackFrameSize }, "shadowStackTop"),
+                LLVM.GetNamedGlobal(Module, "t_pShadowStackTop"));
+
+            // Don't name the return value if the function returns void, it's invalid
             var returnValue = LLVM.BuildCall(_builder, nativeFunc, arguments, !method.Signature.ReturnType.IsVoid ? "call" : string.Empty);
 
             if(!method.Signature.ReturnType.IsVoid)
                 PushExpression(GetStackValueKind(method.Signature.ReturnType), "retval", returnValue, method.Signature.ReturnType);
+        }
+
+        static LLVMValueRef s_shadowStackTop = default(LLVMValueRef);
+        LLVMValueRef ShadowStackTop
+        {
+            get
+            {
+                if (s_shadowStackTop.Pointer.Equals(IntPtr.Zero))
+                {
+                    s_shadowStackTop = LLVM.AddGlobal(Module, LLVM.PointerType(LLVM.Int8Type(), 0), "t_pShadowStackTop");
+                    LLVM.SetLinkage(s_shadowStackTop, LLVMLinkage.LLVMInternalLinkage);
+                    LLVM.SetInitializer(s_shadowStackTop, LLVM.ConstPointerNull(LLVM.PointerType(LLVM.Int8Type(), 0)));
+                    LLVM.SetThreadLocal(s_shadowStackTop, LLVMMisc.True);                    
+                }
+                return s_shadowStackTop;
+            }
+        }
+
+        private void EmitNativeToManagedThunk(WebAssemblyCodegenCompilation compilation, MethodDesc method, string nativeName, LLVMValueRef managedFunction)
+        {
+            LLVMTypeRef[] llvmParams = new LLVMTypeRef[method.Signature.Length];
+            for (int i = 0; i < llvmParams.Length; i++)
+            {
+                llvmParams[i] = GetLLVMTypeForTypeDesc(method.Signature[i]);
+            }
+
+            LLVMTypeRef thunkSig = LLVM.FunctionType(GetLLVMTypeForTypeDesc(method.Signature.ReturnType), llvmParams, false);
+            LLVMValueRef thunkFunc = LLVM.AddFunction(compilation.Module, nativeName, thunkSig);
+            LLVMBasicBlockRef block = LLVM.AppendBasicBlock(thunkFunc, "Block0");
+            LLVMBuilderRef builder = LLVM.CreateBuilder();
+            LLVM.PositionBuilderAtEnd(builder, block);
+
+            LLVMValueRef shadowStack = LLVM.BuildLoad(builder, ShadowStackTop, "");
+
+            int curOffset = 0;
+            for (int i = 0; i < llvmParams.Length; i++)
+            {
+                LLVMValueRef argAddr = LLVM.BuildGEP(builder, shadowStack, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (ulong)curOffset, LLVMMisc.False) }, "arg" + i);
+                LLVM.BuildStore(builder, LLVM.GetParam(thunkFunc, (uint)i), CastIfNecessary(builder, argAddr, LLVM.PointerType(llvmParams[i], 0)));
+                curOffset += method.Signature[i].GetElementSize().AsInt;
+            }
+
+            LLVMValueRef retAddr = LLVM.BuildGEP(builder, shadowStack, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (ulong)curOffset, LLVMMisc.False) }, "retAddr");
+            LLVM.BuildCall(builder, managedFunction, new LLVMValueRef[] { shadowStack, retAddr }, "");
+            if (method.Signature.ReturnType != compilation.TypeSystemContext.GetWellKnownType(WellKnownType.Void))
+            {
+                LLVM.BuildRet(builder, LLVM.BuildLoad(builder, CastIfNecessary(builder, retAddr, LLVM.PointerType(GetLLVMTypeForTypeDesc(method.Signature.ReturnType), 0)), ""));
+            }
+            else
+            {
+                LLVM.BuildRetVoid(builder);
+            }
         }
 
         private void ImportCalli(int token)
