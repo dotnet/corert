@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -63,8 +63,7 @@ namespace ILCompiler
 
         private void EmitExportedMethods()
         {
-            string moduleName = Path.GetFileNameWithoutExtension(_exportsFile);
-            FileStream fileStream = new FileStream(_exportsFile, FileMode.OpenOrCreate);
+            FileStream fileStream = new FileStream(_exportsFile, FileMode.Create);
             using (StreamWriter streamWriter = new StreamWriter(fileStream))
             {
                 if (_module.Context.Target.IsWindows)
