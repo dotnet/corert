@@ -304,11 +304,7 @@ namespace ILCompiler
                         entrypointModule = module;
                     }
 
-                    // TODO: Wasm fails to compile some of the exported methods due to missing opcodes
-                    if (!_isWasmCodegen)
-                    {
-                        compilationRoots.Add(new ExportedMethodsRootProvider(module));
-                    }
+                    compilationRoots.Add(new ExportedMethodsRootProvider(module));
                 }
 
                 if (entrypointModule != null)
@@ -347,11 +343,7 @@ namespace ILCompiler
                     if (entrypointModule == null && !_nativeLib)
                         throw new Exception("No entrypoint module");
 
-                    // TODO: Wasm fails to compile some of the xported methods due to missing opcodes
-                    if (!_isWasmCodegen)
-                    {
-                        compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
-                    }
+                    compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
 
                     compilationGroup = new SingleFileCompilationModuleGroup(typeSystemContext);
                 }
