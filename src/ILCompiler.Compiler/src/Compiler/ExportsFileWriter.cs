@@ -4,19 +4,20 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
-    public class DefFileWriter
+    public class ExportsFileWriter
     {
         private string _exportsFile;
         private List<EcmaMethod> _methods;
         private TypeSystemContext _context;
 
-        public DefFileWriter(TypeSystemContext context, string exportsFile)
+        public ExportsFileWriter(TypeSystemContext context, string exportsFile)
         {
             _exportsFile = exportsFile;
             _context = context;
@@ -24,7 +25,7 @@ namespace ILCompiler
         }
 
         public void AddExportedMethods(IEnumerable<EcmaMethod> methods)
-            => _methods.AddRange(methods);
+            => _methods.AddRange(methods.Where(m => m.Module != _context.SystemModule));
 
         public void EmitExportedMethods()
         {

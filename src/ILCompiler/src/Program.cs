@@ -448,13 +448,13 @@ namespace ILCompiler
             ObjectDumper dumper = _mapFileName != null ? new ObjectDumper(_mapFileName) : null;
 
             CompilationResults compilationResults = compilation.Compile(_outputFilePath, dumper);
-            if (_nativeLib)
+            if (_exportsFile != null)
             {
-                DefFileWriter defFileWriter = new DefFileWriter(typeSystemContext, _exportsFile);
+                ExportsFileWriter defFileWriter = new ExportsFileWriter(typeSystemContext, _exportsFile);
                 foreach (var compilationRoot in compilationRoots)
                 {
-                    if (compilationRoot is ExportedMethodsRootProvider)
-                        defFileWriter.AddExportedMethods(((ExportedMethodsRootProvider)compilationRoot).ExportedMethods);
+                    if (compilationRoot is ExportedMethodsRootProvider provider)
+                        defFileWriter.AddExportedMethods(provider.ExportedMethods);
                 }
 
                 defFileWriter.EmitExportedMethods();
