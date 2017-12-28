@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using CpObj;
 
 internal static class Program
 {
@@ -107,6 +108,14 @@ internal static class Program
         if (switchTestDefault == 0)
         {
             PrintLine("SwitchOpDefault test: Ok.");
+        }
+
+        var cpObjTestA = new TestValue { Field = 1234 };
+        var cpObjTestB = new TestValue { Field = 5678 };
+        CpObjTest.CpObj(ref cpObjTestB, ref cpObjTestA);
+        if (cpObjTestB.Field == cpObjTestA.Field)
+        {
+            PrintLine("CpObj test: Ok.");
         }
     }
 
