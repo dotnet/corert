@@ -174,11 +174,18 @@ namespace ILCompiler.DependencyAnalysis
 
         private static bool AddDependenciesFromCustomAttributeArgument(DependencyList dependencies, NodeFactory factory, TypeDesc type, object value)
         {
+            // If this is an initializer that refers to e.g. a blocked enum, we can't encode this attribute.
+            if (factory.MetadataManager.IsReflectionBlocked(type))
+                return false;
+
             if (type.UnderlyingType.IsPrimitive || type.IsString || value == null)
                 return true;
 
             if (type.IsSzArray)
             {
+                // Reflection will need to be able to allocate this array at runtime.
+                dependencies.Add(factory.ConstructedTypeSymbol(type), "Custom attribute blob");
+
                 TypeDesc elementType = ((ArrayType)type).ElementType;
                 if (elementType.UnderlyingType.IsPrimitive || elementType.IsString)
                     return true;
@@ -201,7 +208,11 @@ namespace ILCompiler.DependencyAnalysis
             if (factory.MetadataManager.IsReflectionBlocked(typeofType))
                 return false;
 
-            TypeMetadataNode.GetMetadataDependencies(ref dependencies, factory, typeofType, "Custom attribute blob");
+            // We go for the entire EEType because the reflection stack at runtime might need an EEType anyway
+            // (e.g. if this is a `typeof(SomeType[,,])` just having the metadata for SomeType is not enough).
+            // Theoretically, we only need the EEType if this is a constructed type, but let's go for the full
+            // EEType for the sake of consistency.
+            dependencies.Add(factory.MaximallyConstructableType(typeofType), "Custom attribute blob");
 
             return true;
         }
