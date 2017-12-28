@@ -194,7 +194,7 @@ namespace ILCompiler
             }
         }
 
-        public override void GetDependenciesDueToLDToken(ref DependencyList dependencies, NodeFactory factory, FieldDesc field)
+        public override void GetDependenciesDueToLdToken(ref DependencyList dependencies, NodeFactory factory, FieldDesc field)
         {
             // In order for the RuntimeFieldHandle data structure to be usable at runtime, ensure the field
             // is generating metadata.
@@ -205,7 +205,7 @@ namespace ILCompiler
             }
         }
 
-        public override void GetDependenciesDueToLDToken(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        public override void GetDependenciesDueToLdToken(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
             // In order for the RuntimeMethodHandle data structure to be usable at runtime, ensure the method
             // is generating metadata.

@@ -410,7 +410,7 @@ namespace ILCompiler
         /// <summary>
         /// This method is an extension point that can provide additional metadata-based dependencies to generated RuntimeMethodHandles.
         /// </summary>
-        public virtual void GetDependenciesDueToLDToken(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        public virtual void GetDependenciesDueToLdToken(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
             // MetadataManagers can override this to provide additional dependencies caused by the presence of a
             // RuntimeMethodHandle data structure.
@@ -419,7 +419,7 @@ namespace ILCompiler
         /// <summary>
         /// This method is an extension point that can provide additional metadata-based dependencies to generated RuntimeFieldHandles.
         /// </summary>
-        public virtual void GetDependenciesDueToLDToken(ref DependencyList dependencies, NodeFactory factory, FieldDesc field)
+        public virtual void GetDependenciesDueToLdToken(ref DependencyList dependencies, NodeFactory factory, FieldDesc field)
         {
             // MetadataManagers can override this to provide additional dependencies caused by the presence of a
             // RuntimeFieldHandle data structure.

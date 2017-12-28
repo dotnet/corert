@@ -50,7 +50,7 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(factory.GVMDependencies(_targetMethod), "GVM dependencies for runtime method handle");
             }
 
-            factory.MetadataManager.GetDependenciesDueToLDToken(ref dependencies, factory, _targetMethod);
+            factory.MetadataManager.GetDependenciesDueToLdToken(ref dependencies, factory, _targetMethod);
 
             return dependencies;
         }

@@ -38,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList result = null;
-            factory.MetadataManager.GetDependenciesDueToLDToken(ref result, factory, _targetField);
+            factory.MetadataManager.GetDependenciesDueToLdToken(ref result, factory, _targetField);
             return result;
         }
 
