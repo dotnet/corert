@@ -13,7 +13,7 @@
     <PackageReference Include="Microsoft.AspNetCore" Version="2.0.1" /> 
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.0.1" /> 
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Formatters.Json" Version="2.0.1" />     
-    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="1.0.0-alpha-25929-0" />
+    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="1.0.0-alpha-*" />
   </ItemGroup>
 
 </Project>

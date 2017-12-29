@@ -1,7 +1,5 @@
 # Description
-This is a sample application, which uses CoreRT to compile a .NET Core Web API sample.
-TODO WIP - Might not work on Linix
-
+This is a sample application, which uses CoreRT to compile a .NET Core Web API sample. 
 # Building a WebAPI app with CoreRT
 
 ## Install the .NET Core SDK
@@ -17,10 +15,10 @@ Open a **new** shell/command prompt window and run the following commands.
 ```
 
 ## Add CoreRT to your project
+Using CoreRT to compile your application is done via the ILCompiler NuGet package, which is [published to MyGet with the CoreRT daily builds](https://dotnet.myget.org/feed/dotnet-core/package/nuget/Microsoft.DotNet.ILCompiler).
+For the compiler to work, it first needs to be added to your project.
 
-Using CoreRT to compile your application is done via the ILCompiler NuGet package.
-
-In your shell/command prompt navigate to the root directory of your project run the command 
+In your shell/command prompt navigate to the root directory of your project and run the command:
 
 `> dotnet new nuget `
 
@@ -74,10 +72,19 @@ Once you've created a rd.xml file, navigate to the root directory of your projec
 
 ```xml
 <RdXmlFile>path_to_rdxml_file\rd.xml</RdXmlFile>
+```
+
+where path_to_rdxml_file is the location of the file on your disk.
+
+Directly below, add:
+
+```xml
 <RuntimeIdentifiers>runtime_identifier</RuntimeIdentifiers>
 ```
 
-where path_to_rdxml_file is the location of the file on your disk and runtime_identifier is one of win-x64, linux-x64 or osx-x64, depending on the OS for which you would like to publish. Under the second `<ItemGroup>` remove the line containing a reference to `Microsoft.AspNetCore.All` and substitute it with:
+where runtime_identifier is one of win-x64, linux-x64 or osx-x64, depending on the OS for which you would like to publish. 
+
+Under the second `<ItemGroup>` remove the line containing a reference to `Microsoft.AspNetCore.All` and substitute it with:
 
 ```xml
 <PackageReference Include="Microsoft.AspNetCore" Version="2.0.1" />
