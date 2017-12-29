@@ -22,6 +22,8 @@ namespace ILCompiler.DependencyAnalysis
         public VTableSliceNode(TypeDesc type)
         {
             Debug.Assert(!type.IsArray, "Wanted to call GetClosestDefType?");
+            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any) ||
+                type.ConvertToCanonForm(CanonicalFormKind.Specific) == type);
             _type = type;
         }
 
@@ -46,9 +48,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            if (_type.HasBaseType)
+            DefType baseType = _type.NormalizedBaseType();
+            if (baseType != null)
             {
-                return new[] { new DependencyListEntry(factory.VTable(_type.BaseType), "Base type VTable") };
+                return new[] { new DependencyListEntry(factory.VTable(baseType), "Base type VTable") };
             }
 
             return null;

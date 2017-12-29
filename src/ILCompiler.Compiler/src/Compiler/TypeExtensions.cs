@@ -183,5 +183,74 @@ namespace ILCompiler
 
             return false;
         }
+
+        /// <summary>
+        /// Gets a fully canonicalized base type if base type is canonical, or unmodified base type otherwise.
+        /// </summary>
+        public static DefType NormalizedBaseType(this TypeDesc type)
+        {
+            // Base type for Foo<__Canon> where Foo is defined as
+            // class Foo<T> : Bar<T, string> { }
+            // is Bar<__Canon, string>. This method normalizes it to Bar<__Canon, __Canon>.
+            DefType baseType = type.BaseType;
+            if (baseType != null && baseType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                baseType = (DefType)baseType.ConvertToCanonForm(CanonicalFormKind.Specific);
+            return baseType;
+        }
+
+        /// <summary>
+        /// Gets an interface list that is fully canonicalized if the interfaces are canonical or the unmodified
+        /// interface types otherwise.
+        /// </summary>
+        public static NormalizedInterfaceList NormalizedRuntimeInterfaces(this TypeDesc type)
+        {
+            // Interface list for Foo<__Canon> where Foo is defined as
+            // class Foo<T> : IFooer<T, object>
+            // is IFooer<__Canon, object>. This method normalizes it to IFooer<__Canon, __Canon>.
+            return new NormalizedInterfaceList(type);
+        }
+
+        public struct NormalizedInterfaceList
+        {
+            private readonly TypeDesc _type;
+
+            public NormalizedInterfaceList(TypeDesc type)
+            {
+                _type = type;
+            }
+
+            public Enumerator GetEnumerator()
+            {
+                return new Enumerator(_type);
+            }
+
+            public struct Enumerator
+            {
+                private readonly DefType[] _interfaces;
+                private int _index;
+
+                public Enumerator(TypeDesc type)
+                {
+                    _interfaces = type.RuntimeInterfaces;
+                    _index = -1;
+                }
+
+                public DefType Current
+                {
+                    get
+                    {
+                        DefType intface = _interfaces[_index];
+                        if (intface.IsCanonicalSubtype(CanonicalFormKind.Any))
+                            intface = (DefType)intface.ConvertToCanonForm(CanonicalFormKind.Specific);
+                        return intface;
+                    }
+                }
+
+                public bool MoveNext()
+                {
+                    return ++_index < _interfaces.Length;
+                }
+            }
+        }
     }
 }
