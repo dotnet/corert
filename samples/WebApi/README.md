@@ -35,17 +35,24 @@ Once you've added the package source, add a reference to the compiler by running
 
 `> dotnet add package Microsoft.DotNet.ILCompiler -v 1.0.0-alpha-* `
 
-After the package has been succesfully added to your project, open the file called `Startup.cs` and in the `ConfigureServices()` method modify the line:    
-    
+## Add Core MVC services
+With the package successfully added to your project, your project's default registered MVC services must be modified.
+
+The default template's `AddMvc()` call registers a large set of middleware services by default, even if they are not needed by your application. This is not AOT-compilation friendly because it leads to large binaries and creates the risk of adding unsupported features.
+
+Open the file called `Startup.cs` and in the `ConfigureServices()` method and modify the line:
+
 ```csharp
-services.AddMvc(); 
+services.AddMvc();
 ```
 
 to
 
-```csharp 
-services.AddMvcCore().AddJsonFormatters(); 
+```csharp
+services.AddMvcCore().AddJsonFormatters();
 ```
+
+Replacing `AddMvc()` with `AddMvcCore()` adds only the basic MVC functionality. It's followed by explicit registration of services, which are required by the application - in this case the `JsonFormatter`. For more details see [Fabian Gosebrink's blog post comparing AddMvc and AddMvcCore](https://dzone.com/articles/the-difference-between-addmvc-and-addmvccore).
 
 ## Using reflection 
 Runtime directives are XML configuration files, which specify which elements of your program are available for reflection. They are used at compile-time to enable AOT compilation in applications at runtime. 
@@ -58,7 +65,7 @@ If your application makes use of reflection, you will need to create a rd.xml fi
 ```xml 
 <Assembly Name="SampleWebApi">
   <Type Name="SampleWebApi.Startup" Dynamic="Required All" />
-</Assembly> 
+</Assembly>
 ```
 
 At runtime, if a method or type is not found or cannot be loaded, an exception will be thrown. The exception message will contain information on the missing type reference, which you can then add to the rd.xml of your program.
@@ -78,7 +85,9 @@ where path_to_rdxml_file is the location of the file on your disk and runtime_id
 <PackageReference Include="Microsoft.AspNetCore.Mvc.Formatters.Json" Version="2.0.1" />
 ```
 
-After you've created your rd.xml file and specified its location, open your application's controller file (in the default template this should be called `ValuesController.cs`) and substitute the ValuesController class with the following: 
+This substitution removes unnecessary package references added by AspNetCore.All, which will reduce the size of your application's published binary files and avoid encountering unsupported features, as described in [the section above](#add-core-mvc-services)
+
+After you've modified your project's `.csproj` file, open your application's controller file (in the default template this should be called `ValuesController.cs`) and substitute the ValuesController class with the following: 
 
 ```csharp 
 public class ValuesController 
