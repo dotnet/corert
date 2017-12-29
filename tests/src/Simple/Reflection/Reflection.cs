@@ -28,6 +28,7 @@ internal class ReflectionTest
 #if !OPTIMIZED_MODE_WITHOUT_SCANNER
         TestContainment.Run();
         TestInterfaceMethod.Run();
+        TestByRefLikeTypeMethod.Run();
 #endif
         TestAttributeInheritance.Run();
         TestStringConstructor.Run();
@@ -320,6 +321,47 @@ internal class ReflectionTest
 
             DerivedAttribute attr = typeof(TestType).GetCustomAttribute<DerivedAttribute>();
             if (attr.Field != "Hello" || attr.Property != 100)
+                throw new Exception();
+        }
+    }
+
+    class TestByRefLikeTypeMethod
+    {
+        ref struct ByRefLike
+        {
+            public readonly int Value;
+
+            public ByRefLike(int value)
+            {
+                Value = value;
+            }
+
+            public override string ToString()
+            {
+                return Value.ToString();
+            }
+        }
+
+        delegate string ToStringDelegate(ref ByRefLike thisObj);
+
+        public static void Run()
+        {
+            Console.WriteLine(nameof(TestByRefLikeTypeMethod));
+
+            // Ensure things we reflect on are in the static callgraph
+            if (string.Empty.Length > 0)
+            {
+                default(ByRefLike).ToString();
+                ToStringDelegate s = null;
+                s = s.Invoke;
+            }
+
+            Type byRefLikeType = GetTestType(nameof(TestByRefLikeTypeMethod), nameof(ByRefLike));
+            MethodInfo toStringMethod = byRefLikeType.GetMethod("ToString");
+            var toString = (ToStringDelegate)toStringMethod.CreateDelegate(typeof(ToStringDelegate));
+
+            ByRefLike foo = new ByRefLike(123);
+            if (toString(ref foo) != "123")
                 throw new Exception();
         }
     }
