@@ -12,7 +12,7 @@ If you're already familiar with .NET Core make sure you've [downloaded and insta
 
 Open a **new** shell/command prompt window and run the following commands.
 ``` 
-> dotnet new webapi -o myApp 
+> dotnet new webapi -o myApp
 > cd myApp
 ```
 
@@ -27,8 +27,8 @@ In your shell/command prompt navigate to the root directory of your project run 
 This will add a nuget.config file to your application. Open the file and in the ``<packageSources> `` element under ``<clear/>`` add the following:
 
 ```xml
-<add key="dotnet-core" value="https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" /> 
-<add key="aspnet-core" value="https://dotnet.myget.org/F/aspnetcore-release/api/v3/index.json" /> 
+<add key="dotnet-core" value="https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" />
+<add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
 ```
 
 Once you've added the package source, add a reference to the compiler by running the following command:
@@ -80,17 +80,17 @@ Once you've created a rd.xml file, navigate to the root directory of your projec
 where path_to_rdxml_file is the location of the file on your disk and runtime_identifier is one of win-x64, linux-x64 or osx-x64, depending on the OS for which you would like to publish. Under the second `<ItemGroup>` remove the line containing a reference to `Microsoft.AspNetCore.All` and substitute it with:
 
 ```xml
-<PackageReference Include="Microsoft.AspNetCore" Version="2.0.1" /> 
-<PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.0.1" /> 
+<PackageReference Include="Microsoft.AspNetCore" Version="2.0.1" />
+<PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.0.1" />
 <PackageReference Include="Microsoft.AspNetCore.Mvc.Formatters.Json" Version="2.0.1" />
 ```
 
-This substitution removes unnecessary package references added by AspNetCore.All, which will reduce the size of your application's published binary files and avoid encountering unsupported features, as described in [the section above](#add-core-mvc-services)
+This substitution removes unnecessary package references added by AspNetCore.All, which will remove them from your application's published files and avoid encountering unsupported features, as described in [the section above](#add-core-mvc-services)
 
 After you've modified your project's `.csproj` file, open your application's controller file (in the default template this should be called `ValuesController.cs`) and substitute the ValuesController class with the following: 
 
 ```csharp 
-public class ValuesController 
+public class ValuesController
 { 
     [HttpGet("/")]
     public string Hello() => "Hello World!";
@@ -106,7 +106,7 @@ public class ValuesController
     {
         return "Your value is " + id;
     }
-} 
+}
 ```
 
 (note the removed inheritance and [Route] directive). Also note that URL request paths are explicitly defined on each method. 
