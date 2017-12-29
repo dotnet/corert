@@ -115,6 +115,21 @@ namespace ILCompiler
         }
         private BlockedTypeHashtable _blockedTypes;
 
+        private MetadataType _arrayOfTType;
+        private MetadataType InitializeArrayOfTType(TypeSystemEntity contextEntity)
+        {
+            _arrayOfTType = contextEntity.Context.SystemModule.GetType("System", "Array`1");
+            return _arrayOfTType;
+        }
+        private MetadataType GetArrayOfTType(TypeSystemEntity contextEntity)
+        {
+            if (_arrayOfTType != null)
+            {
+                return _arrayOfTType;
+            }
+            return InitializeArrayOfTType(contextEntity);
+        }
+
         public BlockedInternalsBlockingPolicy()
         {
             _blockedTypes = new BlockedTypeHashtable(_blockedModules);
@@ -145,6 +160,14 @@ namespace ILCompiler
             if (_blockedModules.GetOrCreateValue(ecmaMethod.Module).HasBlockedInternals)
             {
                 if ((ecmaMethod.Attributes & MethodAttributes.Public) != MethodAttributes.Public)
+                    return true;
+
+                // Methods on Array`1<T> are implementation details that implement the generic interfaces on
+                // arrays. They should not generate metadata or be reflection invokable.
+                // We could get rid of this special casing two ways:
+                // * Make these method stop being regular EcmaMethods with Array<T> as their owning type, or
+                // * Make these methods implement the interfaces explicitly (they would become private and naturally blocked)
+                if (ecmaMethod.OwningType == GetArrayOfTType(ecmaMethod))
                     return true;
             }
 

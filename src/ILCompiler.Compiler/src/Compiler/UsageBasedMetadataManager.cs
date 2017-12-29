@@ -130,18 +130,12 @@ namespace ILCompiler
 
         protected override void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
-            if (method.GetTypicalMethodDefinition().OwningType == factory.ArrayOfTClass)
-                return;
-
             dependencies = dependencies ?? new DependencyList();
             dependencies.Add(factory.MethodMetadata(method.GetTypicalMethodDefinition()), "Reflectable method");
         }
 
         protected override void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
         {
-            if (type.GetTypeDefinition() == factory.ArrayOfTClass)
-                return;
-
             TypeMetadataNode.GetMetadataDependencies(ref dependencies, factory, type, "Reflectable type");
 
             // If we don't have precise field usage information, apply policy that all fields that
