@@ -194,6 +194,28 @@ namespace ILCompiler
             }
         }
 
+        public override void GetDependenciesDueToLdToken(ref DependencyList dependencies, NodeFactory factory, FieldDesc field)
+        {
+            // In order for the RuntimeFieldHandle data structure to be usable at runtime, ensure the field
+            // is generating metadata.
+            if ((GetMetadataCategory(field) & MetadataCategory.Description) == MetadataCategory.Description)
+            {
+                dependencies = dependencies ?? new DependencyList();
+                dependencies.Add(factory.FieldMetadata(field.GetTypicalFieldDefinition()), "LDTOKEN field");
+            }
+        }
+
+        public override void GetDependenciesDueToLdToken(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        {
+            // In order for the RuntimeMethodHandle data structure to be usable at runtime, ensure the method
+            // is generating metadata.
+            if ((GetMetadataCategory(method) & MetadataCategory.Description) == MetadataCategory.Description)
+            {
+                dependencies = dependencies ?? new DependencyList();
+                dependencies.Add(factory.MethodMetadata(method.GetTypicalMethodDefinition()), "LDTOKEN method");
+            }
+        }
+
         protected override IEnumerable<FieldDesc> GetFieldsWithRuntimeMapping()
         {
             if (_hasPreciseFieldUsageInformation)
