@@ -99,7 +99,7 @@ namespace Internal.IL
             // Ensure dependencies show up regardless of exceptions to avoid breaking LLVM
             methodCodeNodeNeedingCode.SetDependencies(ilImporter.GetDependencies());
         }
-
+        
         static LLVMValueRef TrapFunction = default(LLVMValueRef);
         static LLVMValueRef DoNothingFunction = default(LLVMValueRef);
 
