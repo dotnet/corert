@@ -178,14 +178,15 @@ namespace ILCompiler.DependencyAnalysis
             if (factory.MetadataManager.IsReflectionBlocked(type))
                 return false;
 
+            // Reflection will need to be able to allocate this type at runtime
+            // (e.g. this could be an array that needs to be allocated, or an enum that needs to be boxed).
+            dependencies.Add(factory.ConstructedTypeSymbol(type), "Custom attribute blob");
+
             if (type.UnderlyingType.IsPrimitive || type.IsString || value == null)
                 return true;
 
             if (type.IsSzArray)
             {
-                // Reflection will need to be able to allocate this array at runtime.
-                dependencies.Add(factory.ConstructedTypeSymbol(type), "Custom attribute blob");
-
                 TypeDesc elementType = ((ArrayType)type).ElementType;
                 if (elementType.UnderlyingType.IsPrimitive || elementType.IsString)
                     return true;
