@@ -77,5 +77,10 @@ See the LICENSE file in the project root for more information.
       <LinkerArg Include="/OPT:REF" />
       <LinkerArg Include="/OPT:ICF" />
     </ItemGroup>
+
+    <Exec Command="where /Q $(CppLinker)" IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="_WhereLinker"/>
+    </Exec>
+    <Error Condition="'$(_WhereLinker)' != '0'" Text="Platform linker not found. Make sure to publish from a Visual Studio Developer Command prompt with C++ tools installed." />
   </Target>
 </Project>

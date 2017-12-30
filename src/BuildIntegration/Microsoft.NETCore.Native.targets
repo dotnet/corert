@@ -160,6 +160,8 @@ See the LICENSE file in the project root for more information.
 
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(NativeObject)))" />
 
+    <Message Text="Generating native code" Importance="high" />
+
     <Exec Command="&quot;$(IlcPath)\tools\ilc&quot; @&quot;$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp&quot;" />
   </Target>
 
