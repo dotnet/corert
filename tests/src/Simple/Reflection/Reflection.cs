@@ -358,14 +358,11 @@ internal class ReflectionTest
 
             Type byRefLikeType = GetTestType(nameof(TestByRefLikeTypeMethod), nameof(ByRefLike));
             MethodInfo toStringMethod = byRefLikeType.GetMethod("ToString");
-            /*var toString = (ToStringDelegate)*/toStringMethod.CreateDelegate(typeof(ToStringDelegate));
+            var toString = (ToStringDelegate)toStringMethod.CreateDelegate(typeof(ToStringDelegate));
 
-            // Doesn't work on Unix: https://github.com/dotnet/corert/issues/4379
-#if false
             ByRefLike foo = new ByRefLike(123);
             if (toString(ref foo) != "123")
                 throw new Exception();
-#endif
         }
     }
 
