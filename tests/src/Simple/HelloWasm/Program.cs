@@ -113,7 +113,7 @@ internal static class Program
         var cpObjTestA = new TestValue { Field = 1234 };
         var cpObjTestB = new TestValue { Field = 5678 };
         CpObjTest.CpObj(ref cpObjTestB, ref cpObjTestA);
-        if (cpObjTestB.Field == cpObjTestA.Field)
+        if (cpObjTestB.Field == 1234)
         {
             PrintLine("CpObj test: Ok.");
         }
