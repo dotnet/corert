@@ -38,7 +38,6 @@ public:
 private:
     OsModuleList                m_OsModuleList;
 
-#ifdef FEATURE_DYNAMIC_CODE
     struct CodeManagerEntry;
     typedef DPTR(CodeManagerEntry) PTR_CodeManagerEntry;
 
@@ -52,7 +51,6 @@ private:
 
     typedef SList<CodeManagerEntry> CodeManagerList;
     CodeManagerList             m_CodeManagerList;
-#endif
 
 public:
     struct TypeManagerEntry
@@ -178,10 +176,9 @@ public:
     void EnableConservativeStackReporting();
     bool IsConservativeStackReportingEnabled() { return m_conservativeStackReportingEnabled; }
 
-#ifdef FEATURE_DYNAMIC_CODE
     bool RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, UInt32 cbRange);
     void UnregisterCodeManager(ICodeManager * pCodeManager);
-#endif
+
     ICodeManager * FindCodeManagerByAddress(PTR_VOID ControlPC);
 
     bool RegisterTypeManager(TypeManager * pTypeManager);

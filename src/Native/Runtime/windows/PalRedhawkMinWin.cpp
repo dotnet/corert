@@ -162,33 +162,7 @@ extern "C" UInt64 PalGetCurrentThreadIdForLogging()
     return GetCurrentThreadId();
 }
 
-#define SUPPRESS_WARNING_4127   \
-    __pragma(warning(push))     \
-    __pragma(warning(disable:4127)) /* conditional expression is constant*/
-
-#define POP_WARNING_STATE       \
-    __pragma(warning(pop))
-
-#define WHILE_0             \
-    SUPPRESS_WARNING_4127   \
-    while(0)                \
-    POP_WARNING_STATE       \
-
-#define RETURN_RESULT(success)                          \
-    do                                                  \
-    {                                                   \
-        if (success)                                    \
-            return S_OK;                                \
-        else                                            \
-        {                                               \
-            DWORD lasterror = GetLastError();           \
-            if (lasterror == 0)                         \
-                return E_FAIL;                          \
-            return HRESULT_FROM_WIN32(lasterror);       \
-        }                                               \
-    }                                                   \
-    WHILE_0;
-
+#if !defined(USE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, UInt32 templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut)
 {
 #ifdef XBOX_ONE
@@ -228,9 +202,10 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(_In_ void
     return UnmapViewOfFile(pBaseAddress);
 #endif    
 }
+#endif // !USE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalMarkThunksAsValidCallTargets(
-    void *virtualAddress, 
+    void *virtualAddress,
     int thunkSize,
     int thunksPerBlock,
     int thunkBlockSize,
