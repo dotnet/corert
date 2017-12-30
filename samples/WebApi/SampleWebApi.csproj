@@ -3,7 +3,6 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <RdXmlFile>rd.xml</RdXmlFile>
-    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers> 
   </PropertyGroup>
 
   <ItemGroup>

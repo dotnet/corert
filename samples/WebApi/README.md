@@ -76,14 +76,6 @@ Once you've created a rd.xml file, navigate to the root directory of your projec
 
 where path_to_rdxml_file is the location of the file on your disk.
 
-Directly below, add:
-
-```xml
-<RuntimeIdentifiers>runtime_identifier</RuntimeIdentifiers>
-```
-
-where runtime_identifier is one of win-x64, linux-x64 or osx-x64, depending on the OS for which you would like to publish. 
-
 Under the second `<ItemGroup>` remove the line containing a reference to `Microsoft.AspNetCore.All` and substitute it with:
 
 ```xml
@@ -120,11 +112,6 @@ public class ValuesController
 
 
 ## Restore and Publish your app
-In your console run the command:
-
-`> dotnet restore `
-
-This will restore your application's packages and download and import the correct version of the ILCompiler for your runtime.
 
 Once the package has been successfully added it's time to compile and publish your app! If you're using Windows, make sure you're using `x64 Native Tools Command Prompt for VS 2017` instead of the standard Windows command prompt. In the shell/command prompt window, run the following command:
 
