@@ -2,26 +2,9 @@
     <Application>
         <Assembly Name="SampleWebApi" Dynamic="Required All" />
         <Assembly Name="System.Private.CoreLib">
-            <Type Name="System.Runtime.CompilerServices.CompilationRelaxationsAttribute" Dynamic="Required All" />
-            <Type Name="System.Runtime.CompilerServices.RuntimeCompatibilityAttribute" Dynamic="Required All" />
-            <Type Name="System.Runtime.CompilerServices.ExtensionAttribute" Dynamic="Required All" />
-            <Type Name="System.Runtime.CompilerServices.IntrinsicAttribute" Dynamic="Required All" />
-            <Type Name="System.Diagnostics.DebuggableAttribute" Dynamic="Required All" />
             <Type Name="System.Diagnostics.StackTrace" Dynamic="Required All" />            
-            <Type Name="System.Reflection.AssemblyInformationalVersionAttribute" Dynamic="Required All" />
-            <Type Name="System.Reflection.AssemblyTitleAttribute" Dynamic="Required All" />
-            <Type Name="System.Reflection.AssemblyFileVersionAttribute" Dynamic="Required All" />
-            <Type Name="System.Reflection.AssemblyDescriptionAttribute" Dynamic="Required All" />
-            <Type Name="System.Reflection.AssemblyCompanyAttribute" Dynamic="Required All" />
-            <Type Name="System.Reflection.AssemblyCopyrightAttribute" Dynamic="Required All" />
-            <Type Name="System.Reflection.AssemblyProductAttribute" Dynamic="Required All" />
-            <Type Name="System.Reflection.AssemblyDefaultAliasAttribute" Dynamic="Required All" />
-            <Type Name="System.Reflection.AssemblyMetadataAttribute" Dynamic="Required All" />
             <Type Name="System.AttributeUsageAttribute" Dynamic="Required All" />
             <Type Name="System.AttributeUsageAttribute[]" Dynamic="Required All" />
-            <Type Name="System.Runtime.InteropServices.ComVisibleAttribute" Dynamic="Required All" />
-            <Type Name="System.CLSCompliantAttribute" Dynamic="Required All" />
-            <Type Name="System.Reflection.Assembly" Dynamic="Required All" />
             <Type Name="System.RuntimeExceptionHelpers+ExceptionData" Dynamic="Required All" />
             <Type Name="System.Func`2[System.Object,System.Object]" Dynamic="Required All" />
             <Type Name="System.Func`2[System.Reflection.MethodInfo,System.Boolean]" Dynamic="Required All" />
@@ -33,24 +16,10 @@
             <Type Name="System.Action`2[System.Object,System.Boolean]" Dynamic="Required All" />
             <Type Name="System.Action`1[System.Object]" Dynamic="Required All" />
             <Type Name="System.Tuple`3[System.Object,System.Object,System.Boolean]" Dynamic="Required All" />
-            <Type Name="System.Runtime.CompilerServices.CompilerGeneratedAttribute" Dynamic="Required All" />
-            <Type Name="System.ComponentModel.DefaultValueAttribute" Dynamic="Required All" />
-            <Type Name="System.ComponentModel.DefaultValueAttribute[]" Dynamic="Required All" />
-            <Type Name="System.Reflection.DefaultMemberAttribute" Dynamic="Required All" />
-            <Type Name="System.Reflection.DefaultMemberAttribute[]" Dynamic="Required All" />
-            <Type Name="System.Reflection.MethodInfo" Dynamic="Required All" />
-            <Type Name="System.Reflection.MethodInfo[]" Dynamic="Required All" />
             <Type Name="System.Collections.Generic.KeyValuePair`2[System.Object,System.Object]" Dynamic="Required All" />
         </Assembly>
         <Assembly Name="System.Collections">
             <Type Name="System.Collections.Generic.Dictionary`2[[System.Object,System.Private.CoreLib],[System.Object,System.Private.CoreLib]]" Dynamic="Required All" />
-        </Assembly>
-        <Assembly Name="System.Diagnostics.Tracing">
-            <Type Name="System.Diagnostics.Tracing.EventSourceAttribute" Dynamic="Required All" />
-            <Type Name="System.Diagnostics.Tracing.EventSourceAttribute[]" Dynamic="Required All" />
-        </Assembly>
-        <Assembly Name="System.Reflection">
-            <Type Name="System.Reflection.Assembly" Dynamic="Required All" />
         </Assembly>
         <Assembly Name="Microsoft.AspNetCore.Server.Kestrel.Core">
             <Type Name="Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServer" Dynamic="Required All" />
@@ -133,11 +102,6 @@
             <Type Name="Microsoft.Extensions.Logging.Debug.DebugLoggerProvider" Dynamic="Required All" />
         </Assembly>
         <Assembly Name="System.Runtime">
-            <Type Name="System.Collections.Generic.IEnumerable`1[[System.Diagnostics.Tracing.EventSourceAttribute,System.Diagnostics.Tracing]]" Dynamic="Required All" />
-            <Type Name="System.Collections.Generic.IList`1[[System.Diagnostics.Tracing.EventSourceAttribute,System.Diagnostics.Tracing]]" Dynamic="Required All" />
-            <Type Name="System.Collections.Generic.IReadOnlyCollection`1[[System.Diagnostics.Tracing.EventSourceAttribute,System.Diagnostics.Tracing]]" Dynamic="Required All" />
-            <Type Name="System.Collections.Generic.IReadOnlyList`1[[System.Diagnostics.Tracing.EventSourceAttribute,System.Diagnostics.Tracing]]" Dynamic="Required All" />
-            <Type Name="System.Collections.Generic.IEnumerator`1[[System.Diagnostics.Tracing.EventSourceAttribute,System.Diagnostics.Tracing]]" Dynamic="Required All" />
             <Type Name="System.Collections.Generic.IEnumerable`1[[Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions,Microsoft.AspNetCore.Server.Kestrel.Core]],Microsoft.Extensions.Options]]" Dynamic="Required All" />
             <Type Name="System.Collections.Generic.IEnumerable`1[[Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.AspNetCore.Http.Features.FormOptions,Microsoft.AspNetCore.Http]],Microsoft.Extensions.Options]]" Dynamic="Required All" />
         </Assembly>
@@ -154,7 +118,6 @@
         <Assembly Name="System.ComponentModel.TypeConverter">
             <Type Name="System.ComponentModel.TypeConverter" Dynamic="Required All" />
             <Type Name="System.ComponentModel.StringConverter" Dynamic="Required All" />
-            <Type Name="System.ComponentModel.BooleanConverter" Dynamic="Required All" />
             <Type Name="System.ComponentModel.Int32Converter" Dynamic="Required All" />
         </Assembly>
         <Assembly Name="Microsoft.Extensions.Configuration.Json">
