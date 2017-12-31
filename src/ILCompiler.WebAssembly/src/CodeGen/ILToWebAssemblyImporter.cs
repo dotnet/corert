@@ -1651,6 +1651,32 @@ namespace Internal.IL
 
         private void ImportCpOpj(int token)
         {
+            var type = ResolveTypeToken(token);
+
+            if (!type.IsValueType)
+            {
+                throw new InvalidOperationException();
+            }
+
+            var src = _stack.Pop();
+
+            if (src.Kind != StackValueKind.NativeInt && src.Kind != StackValueKind.ByRef && src.Kind != StackValueKind.ObjRef)
+            {
+                throw new InvalidOperationException();
+            }
+
+            var dest = _stack.Pop();
+
+            if (dest.Kind != StackValueKind.NativeInt && dest.Kind != StackValueKind.ByRef && dest.Kind != StackValueKind.ObjRef)
+            {
+                throw new InvalidOperationException();
+            }
+
+            var pointerType = GetLLVMTypeForTypeDesc(type.MakePointerType());
+
+            var value = LLVM.BuildLoad(_builder, src.ValueAsType(pointerType, _builder), "cpobj.load");
+
+            LLVM.BuildStore(_builder, value, dest.ValueAsType(pointerType, _builder));
         }
 
         private void ImportUnbox(int token, ILOpcode opCode)
