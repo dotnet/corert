@@ -167,15 +167,13 @@ ICodeManager * RuntimeInstance::FindCodeManagerByAddress(PTR_VOID pvAddress)
             return pModule;
     }
 
-    // TODO: JIT support in DAC
+    // TODO: ICodeManager support in DAC
 #ifndef DACCESS_COMPILE
-#ifdef FEATURE_DYNAMIC_CODE
     for (CodeManagerEntry * pEntry = m_CodeManagerList.GetHead(); pEntry != NULL; pEntry = pEntry->m_pNext)
     {
         if (dac_cast<TADDR>(pvAddress) - dac_cast<TADDR>(pEntry->m_pvStartRange) < pEntry->m_cbRange)
             return pEntry->m_pCodeManager;
     }
-#endif
 #endif
 
     return NULL;
@@ -395,7 +393,6 @@ void RuntimeInstance::UnregisterModule(Module *pModule)
     pModule->Destroy();
 }
 
-#ifdef FEATURE_DYNAMIC_CODE
 bool RuntimeInstance::RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, UInt32 cbRange)
 {
     CodeManagerEntry * pEntry = new (nothrow) CodeManagerEntry();
@@ -447,7 +444,6 @@ extern "C" void __stdcall UnregisterCodeManager(ICodeManager * pCodeManager)
 {
     return GetRuntimeInstance()->UnregisterCodeManager(pCodeManager);
 }
-#endif
 
 bool RuntimeInstance::RegisterUnboxingStubs(PTR_VOID pvStartRange, UInt32 cbRange)
 {
@@ -917,61 +913,5 @@ COOP_PINVOKE_HELPER(PTR_UInt8, RhGetThreadLocalStorageForDynamicType, (UInt32 uO
     ASSERT(tlsStorageSize > 0 && numTlsCells > 0);
     return pCurrentThread->AllocateThreadLocalStorageForDynamicType(uOffset, tlsStorageSize, numTlsCells);
 }
-
-#ifndef FEATURE_RX_THUNKS
-
-COOP_PINVOKE_HELPER(void*, RhpGetThunksBase, ());
-COOP_PINVOKE_HELPER(int, RhpGetNumThunkBlocksPerMapping, ());
-COOP_PINVOKE_HELPER(int, RhpGetNumThunksPerBlock, ());
-COOP_PINVOKE_HELPER(int, RhpGetThunkSize, ());
-COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize, ());
-
-EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
-{
-    static void* pThunksTemplateAddress = NULL;
-
-    void *pThunkMap = NULL;
-
-    int thunkBlocksPerMapping = RhpGetNumThunkBlocksPerMapping();
-    int thunkBlockSize = RhpGetThunkBlockSize();
-    int templateSize = thunkBlocksPerMapping * thunkBlockSize;
-
-    if (pThunksTemplateAddress == NULL)
-    {
-        // First, we use the thunks directly from the thunks template sections in the module until all
-        // thunks in that template are used up.
-        pThunksTemplateAddress = RhpGetThunksBase();
-        pThunkMap = pThunksTemplateAddress;
-    }
-    else
-    {
-        // We've already used the thunks template in the module for some previous thunks, and we 
-        // cannot reuse it here. Now we need to create a new mapping of the thunks section in order to have 
-        // more thunks
-
-        UInt8* pModuleBase = (UInt8*)PalGetModuleHandleFromPointer(pThunksTemplateAddress);
-        int templateRva = (int)((UInt8*)RhpGetThunksBase() - pModuleBase);
-
-        if (!PalAllocateThunksFromTemplate((HANDLE)pModuleBase, templateRva, templateSize, &pThunkMap))
-            return NULL;
-    }
-
-    if (!PalMarkThunksAsValidCallTargets(
-        pThunkMap,
-        RhpGetThunkSize(),
-        RhpGetNumThunksPerBlock(),
-        thunkBlockSize,
-        thunkBlocksPerMapping))
-    {
-        if (pThunkMap != pThunksTemplateAddress)
-            PalFreeThunksFromTemplate(pThunkMap);
-
-        return NULL;
-    }
-
-    return pThunkMap;
-}
-
-#endif      // FEATURE_RX_THUNKS
 
 #endif

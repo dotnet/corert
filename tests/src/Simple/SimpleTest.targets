@@ -50,6 +50,10 @@
     <CustomLinkerArg Include="$(AdditionalLinkerFlags)" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <DefineConstants Condition="'$(IlcMultiModule)' == 'true'">MULTIMODULE_BUILD;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <IlcArg Include="--targetarch=$(Platform)" />
     <IlcArg Include="--stacktracedata" />

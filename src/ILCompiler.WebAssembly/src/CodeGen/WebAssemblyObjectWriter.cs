@@ -228,15 +228,27 @@ namespace ILCompiler.DependencyAnalysis
 
         private void EmitNativeMain()
         {
+            LLVMValueRef shadowStackTop = LLVM.GetNamedGlobal(Module, "t_pShadowStackTop");
+
             LLVMBuilderRef builder = LLVM.CreateBuilder();
-            var mainSignature = LLVM.FunctionType(LLVM.Int32Type(), new LLVMTypeRef[0], false);
-            var mainFunc = LLVM.AddFunction(Module, "main", mainSignature);
+            var mainSignature = LLVM.FunctionType(LLVM.Int32Type(), new LLVMTypeRef[] { LLVM.Int32Type(), LLVM.PointerType(LLVM.Int8Type(), 0) }, false);
+            var mainFunc = LLVM.AddFunction(Module, "__managed__Main", mainSignature);
             var mainEntryBlock = LLVM.AppendBasicBlock(mainFunc, "entry");
             LLVM.PositionBuilderAtEnd(builder, mainEntryBlock);
-            LLVMValueRef managedMain = LLVM.GetNamedFunction(Module, "Main");
+            LLVMValueRef managedMain = LLVM.GetNamedFunction(Module, "StartupCodeMain");
+            if (managedMain.Pointer == IntPtr.Zero)
+            {
+                throw new Exception("Main not found");
+            }
+
+            LLVMTypeRef reversePInvokeFrameType = LLVM.StructType(new LLVMTypeRef[] { LLVM.PointerType(LLVM.Int8Type(), 0), LLVM.PointerType(LLVM.Int8Type(), 0) }, false);
+            LLVMValueRef reversePinvokeFrame = LLVM.BuildAlloca(builder, reversePInvokeFrameType, "ReversePInvokeFrame");
+            LLVMValueRef RhpReversePInvoke2 = LLVM.AddFunction(Module, "RhpReversePInvoke2", LLVM.FunctionType(LLVM.VoidType(), new LLVMTypeRef[] { LLVM.PointerType(reversePInvokeFrameType, 0) }, false));
+            LLVM.BuildCall(builder, RhpReversePInvoke2, new LLVMValueRef[] { reversePinvokeFrame }, "");
 
             var shadowStack = LLVM.BuildMalloc(builder, LLVM.ArrayType(LLVM.Int8Type(), 1000000), String.Empty);
             var castShadowStack = LLVM.BuildPointerCast(builder, shadowStack, LLVM.PointerType(LLVM.Int8Type(), 0), String.Empty);
+            LLVM.BuildStore(builder, castShadowStack, shadowStackTop);
             LLVM.BuildCall(builder, managedMain, new LLVMValueRef[]
             {
                 castShadowStack,

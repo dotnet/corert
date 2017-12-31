@@ -1,6 +1,9 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Compile Include="*.cs" />
+
+    <ProjectReference Include="CpObj.ilproj" />
+    <IlcArg Include="-r:$(IntermediateOutputPath)\CpObj.dll" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), SimpleTest.targets))\SimpleTest.targets" />

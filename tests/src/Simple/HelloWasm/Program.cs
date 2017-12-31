@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using CpObj;
 
 internal static class Program
 {
@@ -108,6 +109,14 @@ internal static class Program
         {
             PrintLine("SwitchOpDefault test: Ok.");
         }
+
+        var cpObjTestA = new TestValue { Field = 1234 };
+        var cpObjTestB = new TestValue { Field = 5678 };
+        CpObjTest.CpObj(ref cpObjTestB, ref cpObjTestA);
+        if (cpObjTestB.Field == 1234)
+        {
+            PrintLine("CpObj test: Ok.");
+        }
     }
 
     private static unsafe void PrintString(string s)
@@ -209,8 +218,8 @@ public class TestClass
     public void TestMethod(string str)
     {
         TestString = str;
-        if(TestString != str)
-            throw new Exception();
+        if (TestString == str)
+            Program.PrintLine("Instance method call test: Ok.");
     }
     public virtual void TestVirtualMethod(string str)
     {

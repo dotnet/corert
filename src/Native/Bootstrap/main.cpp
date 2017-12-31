@@ -318,6 +318,7 @@ static int InitializeRuntime()
 
 #ifndef CPPCODEGEN
     void * osModule = PalGetModuleHandleFromPointer((void*)&CORERT_ENTRYPOINT);
+
     // TODO: pass struct with parameters instead of the large signature of RhRegisterOSModule
     if (!RhRegisterOSModule(
         osModule,
@@ -331,6 +332,9 @@ static int InitializeRuntime()
 
 #ifndef CPPCODEGEN
     InitializeModules(osModule, __modules_a, (int)((__modules_z - __modules_a)), (void **)&c_classlibFunctions, _countof(c_classlibFunctions));
+#elif defined _WASM_
+    // WASMTODO: Figure out what to do here. This is a NativeCallable method in the runtime
+    // and we also would have to figure out what to pass for pModuleHeaders
 #else // !CPPCODEGEN
     InitializeModules(nullptr, (void**)RtRHeaderWrapper(), 2, nullptr, 0);
 #endif // !CPPCODEGEN
@@ -369,7 +373,6 @@ int main(int argc, char* argv[])
         retval = -1;
     }
 #endif
-
     RhpShutdown();
 
     return retval;

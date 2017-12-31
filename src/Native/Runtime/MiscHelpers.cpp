@@ -448,8 +448,15 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
 #ifdef _TARGET_AMD64_
     UInt8 * pCode = pCodeOrg;
 
-    // is this "add rcx,8"?
-    if (pCode[0] == 0x48 && pCode[1] == 0x83 && pCode[2] == 0xc1 && pCode[3] == 0x08)
+    // is this "add rcx/rdi,8"?
+    if (pCode[0] == 0x48 &&
+        pCode[1] == 0x83 &&
+#ifdef UNIX_AMD64_ABI
+        pCode[2] == 0xc7 &&
+#else
+        pCode[2] == 0xc1 &&
+#endif
+        pCode[3] == 0x08)
     {
         // unboxing sequence
         unboxingStub = true;

@@ -44,6 +44,13 @@ namespace ILCompiler.DependencyAnalysis
             else
                 dependencies.Add(factory.ModuleMetadata(_type.Module), "Containing module of a reflectable type");
 
+            if (_type.IsDelegate)
+            {
+                // A delegate type metadata is rather useless without the Invoke method.
+                // If someone reflects on a delegate, chances are they're going to look at the signature.
+                dependencies.Add(factory.MethodMetadata(_type.GetMethod("Invoke", null)), "Delegate invoke method metadata");
+            }
+
             return dependencies;
         }
 

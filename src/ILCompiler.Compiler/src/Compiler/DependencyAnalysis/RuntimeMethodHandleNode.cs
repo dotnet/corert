@@ -50,14 +50,7 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(factory.GVMDependencies(_targetMethod), "GVM dependencies for runtime method handle");
             }
 
-            // TODO: https://github.com/dotnet/corert/issues/3224
-            // We should figure out reflectable methods when scanning for reflection
-            MethodDesc methodDefinition = _targetMethod.GetTypicalMethodDefinition();
-            if (factory.MetadataManager.CanGenerateMetadata(methodDefinition))
-            {
-                dependencies = dependencies ?? new DependencyList();
-                dependencies.Add(factory.MethodMetadata(methodDefinition), "LDTOKEN");
-            }
+            factory.MetadataManager.GetDependenciesDueToLdToken(ref dependencies, factory, _targetMethod);
 
             return dependencies;
         }
