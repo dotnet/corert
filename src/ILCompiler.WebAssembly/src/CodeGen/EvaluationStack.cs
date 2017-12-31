@@ -484,6 +484,25 @@ namespace Internal.IL
     }
 
     /// <summary>
+    /// Represents a managed function pointer
+    /// </summary>
+    internal class FunctionPointerEntry : ExpressionEntry
+    {
+        /// <summary>
+        /// True if the function pointer was loaded as a virtual function pointer
+        /// </summary>
+        public bool IsVirtual { get; }
+
+        public MethodDesc Method { get; }
+
+        public FunctionPointerEntry(string name, MethodDesc method, LLVMValueRef llvmValue, TypeDesc type, bool isVirtual) : base(StackValueKind.NativeInt, name, llvmValue, type)
+        {
+            Method = method;
+            IsVirtual = isVirtual;
+        }
+    }
+
+    /// <summary>
     /// Entry representing some token (either of TypeDesc, MethodDesc or FieldDesc) along with its string representation
     /// </summary>
     internal class LdTokenEntry<T> : ExpressionEntry

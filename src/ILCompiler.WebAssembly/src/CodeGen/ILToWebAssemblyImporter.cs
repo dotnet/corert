@@ -842,7 +842,8 @@ namespace Internal.IL
             {
                 if (opcode == ILOpcode.newobj)
                 {
-                    DelegateCreationInfo delegateInfo = _compilation.GetDelegateCtor(callee.OwningType, ((LdTokenEntry<MethodDesc>)_stack.Peek()).LdToken, followVirtualDispatch: false);
+                    FunctionPointerEntry functionPointer = ((FunctionPointerEntry)_stack.Peek());
+                    DelegateCreationInfo delegateInfo = _compilation.GetDelegateCtor(callee.OwningType, functionPointer.Method, functionPointer.IsVirtual);
                     callee = delegateInfo.Constructor.Method;
                     if(callee.Signature.Length == 3)
                     {
@@ -868,7 +869,7 @@ namespace Internal.IL
                     throw new NotImplementedException();
 
                 if (!_compilation.HasFixedSlotVTable(callee.OwningType))
-                    _dependencies.Add(_compilation.NodeFactory.VirtualMethodUse(callee));
+                    AddVirtualMethodReference(callee);
 
                 //TODO: needs runtime support for DispatchByInterface
                 if (callee.OwningType.IsInterface)
@@ -1196,16 +1197,16 @@ namespace Internal.IL
         {
             MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
 
-            if (opCode == ILOpcode.ldvirtftn && method.IsVirtual && method.OwningType.IsInterface)
+            if (opCode == ILOpcode.ldvirtftn && method.IsVirtual)
             {
-                _dependencies.Add(_compilation.NodeFactory.VirtualMethodUse(method));
+                AddVirtualMethodReference(method);
             }
             else
             {
                 AddMethodReference(method);
             }
 
-            var entry = new LdTokenEntry<MethodDesc>(StackValueKind.NativeInt, "ldftn", method, GetOrCreateLLVMFunction(_compilation.NameMangler.GetMangledMethodName(method).ToString()));
+            var entry = new FunctionPointerEntry("ldftn", method, GetOrCreateLLVMFunction(_compilation.NameMangler.GetMangledMethodName(method).ToString()), GetWellKnownType(WellKnownType.IntPtr), opCode == ILOpcode.ldvirtftn);
             _stack.Push(entry);
         }
 
@@ -1846,7 +1847,7 @@ namespace Internal.IL
         {
             TypeDesc type = (TypeDesc)_methodIL.GetObject(token);
             int size = type.GetElementSize().AsInt;
-            PushExpression(StackValueKind.Int32, "sizeof", LLVM.ConstInt(LLVM.Int32Type(), (ulong)size, LLVMMisc.False), _compilation.TypeSystemContext.GetWellKnownType(WellKnownType.Int32));
+            PushExpression(StackValueKind.Int32, "sizeof", LLVM.ConstInt(LLVM.Int32Type(), (ulong)size, LLVMMisc.False), GetWellKnownType(WellKnownType.Int32));
         }
 
         private void ImportRefAnyType()
