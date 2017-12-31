@@ -20,13 +20,27 @@ namespace ILCompiler
         public ExportedMethodsRootProvider(EcmaModule module)
         {
             _module = module;
-            _methods = new List<EcmaMethod>();
         }
 
         public IEnumerable<EcmaMethod> ExportedMethods
         {
             get
             {
+                if (_methods != null)
+                    return _methods;
+
+                _methods = new List<EcmaMethod>();
+
+                foreach (var type in _module.GetAllTypes())
+                {
+                    foreach (var method in type.GetMethods())
+                    {
+                        EcmaMethod ecmaMethod = (EcmaMethod)method;
+                        if (ecmaMethod.IsNativeCallable)
+                            _methods.Add(ecmaMethod);
+                    }
+                }
+
                 return _methods;
             }
         }
@@ -45,19 +59,14 @@ namespace ILCompiler
                         if (runtimeExportName != null)
                             rootProvider.AddCompilationRoot(method, "Runtime export", runtimeExportName);
                     }
-
-                    if (ecmaMethod.IsNativeCallable)
-                    {
-                        string nativeCallableExportName = ecmaMethod.GetNativeCallableExportName();
-
-                        if (nativeCallableExportName != null)
-                        {
-                            if (ecmaMethod.Module != _module.Context.SystemModule)
-                                _methods.Add(ecmaMethod);
-                            rootProvider.AddCompilationRoot(method, "Native callable", nativeCallableExportName);
-                        }
-                    }
                 }
+            }
+
+            foreach (var ecmaMethod in ExportedMethods)
+            {
+                string nativeCallableExportName = ecmaMethod.GetNativeCallableExportName();
+                if (nativeCallableExportName != null)
+                    rootProvider.AddCompilationRoot((MethodDesc)ecmaMethod, "Native callable", nativeCallableExportName);
             }
         }
     }
