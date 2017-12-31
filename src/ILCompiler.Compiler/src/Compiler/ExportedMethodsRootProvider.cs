@@ -15,7 +15,6 @@ namespace ILCompiler
     public class ExportedMethodsRootProvider : ICompilationRootProvider
     {
         private EcmaModule _module;
-        private List<EcmaMethod> _methods;
 
         public ExportedMethodsRootProvider(EcmaModule module)
         {
@@ -26,47 +25,38 @@ namespace ILCompiler
         {
             get
             {
-                if (_methods != null)
-                    return _methods;
-
-                _methods = new List<EcmaMethod>();
+                var methods = new List<EcmaMethod>();
 
                 foreach (var type in _module.GetAllTypes())
                 {
                     foreach (var method in type.GetMethods())
                     {
                         EcmaMethod ecmaMethod = (EcmaMethod)method;
-                        if (ecmaMethod.IsNativeCallable)
-                            _methods.Add(ecmaMethod);
+                        if (ecmaMethod.IsRuntimeExport || ecmaMethod.IsNativeCallable)
+                            methods.Add(ecmaMethod);
                     }
                 }
 
-                return _methods;
+                return methods;
             }
         }
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
-            foreach (var type in _module.GetAllTypes())
-            {
-                foreach (var method in type.GetMethods())
-                {
-                    EcmaMethod ecmaMethod = (EcmaMethod)method;
-
-                    if (ecmaMethod.IsRuntimeExport)
-                    {
-                        string runtimeExportName = ecmaMethod.GetRuntimeExportName();
-                        if (runtimeExportName != null)
-                            rootProvider.AddCompilationRoot(method, "Runtime export", runtimeExportName);
-                    }
-                }
-            }
-
             foreach (var ecmaMethod in ExportedMethods)
             {
-                string nativeCallableExportName = ecmaMethod.GetNativeCallableExportName();
-                if (nativeCallableExportName != null)
-                    rootProvider.AddCompilationRoot((MethodDesc)ecmaMethod, "Native callable", nativeCallableExportName);
+                if (ecmaMethod.IsRuntimeExport)
+                {
+                    string runtimeExportName = ecmaMethod.GetRuntimeExportName();
+                    if (runtimeExportName != null)
+                        rootProvider.AddCompilationRoot((MethodDesc)ecmaMethod, "Runtime export", runtimeExportName);
+                }
+                else if (ecmaMethod.IsNativeCallable)
+                {
+                    string nativeCallableExportName = ecmaMethod.GetNativeCallableExportName();
+                    if (nativeCallableExportName != null)
+                        rootProvider.AddCompilationRoot((MethodDesc)ecmaMethod, "Native callable", nativeCallableExportName);
+                }
             }
         }
     }
