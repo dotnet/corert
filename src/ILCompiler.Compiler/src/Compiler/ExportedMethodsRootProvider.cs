@@ -25,19 +25,15 @@ namespace ILCompiler
         {
             get
             {
-                var methods = new List<EcmaMethod>();
-
                 foreach (var type in _module.GetAllTypes())
                 {
                     foreach (var method in type.GetMethods())
                     {
                         EcmaMethod ecmaMethod = (EcmaMethod)method;
                         if (ecmaMethod.IsRuntimeExport || ecmaMethod.IsNativeCallable)
-                            methods.Add(ecmaMethod);
+                            yield return ecmaMethod;
                     }
                 }
-
-                return methods;
             }
         }
 
