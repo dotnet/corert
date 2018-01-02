@@ -21,6 +21,11 @@ namespace ILCompiler
         {
         }
 
+        public override void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory, ExternalReferencesTableNode commonFixupsTableNode)
+        {
+            // We don't attach any metadata blobs.
+        }
+
         public override IEnumerable<ModuleDesc> GetCompilationModulesWithMetadata()
         {
             return Array.Empty<ModuleDesc>();

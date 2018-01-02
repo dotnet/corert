@@ -168,6 +168,9 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasConditionalStaticDependencies => true;
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
+            if (!factory.MetadataManager.SupportsReflection)
+                return Array.Empty<CombinedDependencyListEntry>();
+
             List<CombinedDependencyListEntry> conditionalDependencies = new List<CombinedDependencyListEntry>();
             NativeLayoutSavedVertexNode templateLayout;
             if (_dictionaryOwner is MethodDesc)

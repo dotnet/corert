@@ -36,7 +36,6 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectNodeSection Section => _externalReferences.Section;
         public override bool StaticDependenciesAreComputed => true;
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
-        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => !factory.MetadataManager.SupportsReflection;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
