@@ -1,6 +1,6 @@
-# Description
-This is a sample application, which uses CoreRT to compile a .NET Core Web API sample. 
 # Building a WebAPI app with CoreRT
+
+This document will guide you through compiling a .NET Core Web API application with CoreRT. 
 
 ## Install the .NET Core SDK
 CoreRT is an AOT-optimized .NET Core runtime. If you're new to .NET Core make sure to visit the [official starting page](http://dotnet.github.io). It will guide you through installing pre-requisites and building your first app.
@@ -8,7 +8,7 @@ If you're already familiar with .NET Core make sure you've [downloaded and insta
 
 ## Create your app 
 
-Open a **new** shell/command prompt window and run the following commands.
+Open a new shell/command prompt window and run the following commands.
 ``` 
 > dotnet new webapi -o myApp
 > cd myApp
