@@ -205,6 +205,7 @@ namespace ILCompiler
             InteropStubManager.AddToReadyToRunHeader(ReadyToRunHeader, this, commonFixupsTableNode);
             MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader, this, commonFixupsTableNode);
             MetadataManager.AttachToDependencyGraph(graph);
+            ReadyToRunHeader.Add(MetadataManager.BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable), commonFixupsTableNode, commonFixupsTableNode, commonFixupsTableNode.EndSymbol);
         }
 
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
