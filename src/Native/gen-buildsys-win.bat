@@ -23,7 +23,7 @@ for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& %~dp0
 
 :DoGen
 if "%3" == "wasm" (
-  emcmake "%CMakePath%" "-DEMSCRIPTEN_GENERATE_BITCODE_STATIC_LIBRARIES=1" "-DCMAKE_TOOLCHAIN_FILE=%EMSCRIPTEN%/cmake/Modules/Platform/Emscripten.cmake" "-DCMAKE_BUILD_TYPE=%4" -G "NMake Makefiles" %1
+  emcmake "%CMakePath%" "-DEMSCRIPTEN_GENERATE_BITCODE_STATIC_LIBRARIES=1" "-DCMAKE_TOOLCHAIN_FILE=%EMSCRIPTEN%/cmake/Modules/Platform/Emscripten.cmake" "-DCLR_CMAKE_TARGET_ARCH=%3" "-DCMAKE_BUILD_TYPE=%4" -G "NMake Makefiles" %1
 ) else (
   "%CMakePath%" "-DCLR_CMAKE_TARGET_ARCH=%3" -G "%__CmakeGenerator%" %1
 )
