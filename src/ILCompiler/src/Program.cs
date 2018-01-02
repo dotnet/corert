@@ -40,6 +40,7 @@ namespace ILCompiler
         private string _systemModuleName = "System.Private.CoreLib";
         private bool _multiFile;
         private bool _nativeLib;
+        private string _exportsFile;
         private bool _useSharedGenerics;
         private bool _useScanner;
         private bool _noScanner;
@@ -134,6 +135,7 @@ namespace ILCompiler
                 syntax.DefineOption("cpp", ref _isCppCodegen, "Compile for C++ code-generation");
                 syntax.DefineOption("wasm", ref _isWasmCodegen, "Compile for WebAssembly code-generation");
                 syntax.DefineOption("nativelib", ref _nativeLib, "Compile as static or shared library");
+                syntax.DefineOption("exportsfile", ref _exportsFile, "File to write exported method definitions");
                 syntax.DefineOption("dgmllog", ref _dgmlLogFileName, "Save result of dependency analysis as DGML");
                 syntax.DefineOption("fulllog", ref _generateFullDgmlLog, "Save detailed log of dependency analysis");
                 syntax.DefineOption("scandgmllog", ref _scanDgmlLogFileName, "Save result of scanner dependency analysis as DGML");
@@ -446,6 +448,17 @@ namespace ILCompiler
             ObjectDumper dumper = _mapFileName != null ? new ObjectDumper(_mapFileName) : null;
 
             CompilationResults compilationResults = compilation.Compile(_outputFilePath, dumper);
+            if (_exportsFile != null)
+            {
+                ExportsFileWriter defFileWriter = new ExportsFileWriter(typeSystemContext, _exportsFile);
+                foreach (var compilationRoot in compilationRoots)
+                {
+                    if (compilationRoot is ExportedMethodsRootProvider provider)
+                        defFileWriter.AddExportedMethods(provider.ExportedMethods);
+                }
+
+                defFileWriter.EmitExportedMethods();
+            }
 
             if (_dgmlLogFileName != null)
                 compilationResults.WriteDependencyLog(_dgmlLogFileName);

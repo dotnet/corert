@@ -61,7 +61,6 @@ See the LICENSE file in the project root for more information.
     
     <ItemGroup>
       <LinkerArg Condition="$(NativeLib) == 'Shared'" Include="/DLL" />
-      <LinkerArg Condition="$(DefFile) != ''" Include="/DEF:$(DefFile)" />
       <LinkerArg Include="@(NativeLibrary)" />
       <LinkerArg Include="@(AdditionalNativeLibrary)" />
       <LinkerArg Include="/NOLOGO /DEBUG /MANIFEST:NO" />
