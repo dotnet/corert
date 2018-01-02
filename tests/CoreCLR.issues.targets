@@ -374,6 +374,10 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\interactions\throw2dimarray_d\throw2dimarray_d.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\interactions\throw2dimarray_r\throw2dimarray_r.*" />
 
+    <!-- Rethrown exceptions don't clear stack trace -->
+    <!-- https://github.com/dotnet/corert/issues/5183 -->
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\529206\vsw529206StaticCctor\vsw529206StaticCctor.*" />    
+
     <!-- PInvoke Ansi/Widechar entrypoint probing -->
     <!-- https://github.com/dotnet/corert/issues/730 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\pinvoke\tail\tail.*" />
