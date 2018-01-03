@@ -9,7 +9,7 @@ If you're already familiar with .NET Core make sure you've [downloaded and insta
 ## Create your app 
 
 Open a new shell/command prompt window and run the following commands.
-``` 
+```bash
 > dotnet new webapi -o myApp
 > cd myApp
 ```
@@ -20,7 +20,9 @@ For the compiler to work, it first needs to be added to your project.
 
 In your shell/command prompt navigate to the root directory of your project and run the command:
 
-`> dotnet new nuget `
+```bash
+> dotnet new nuget 
+```
 
 This will add a nuget.config file to your application. Open the file and in the ``<packageSources> `` element under ``<clear/>`` add the following:
 
@@ -31,7 +33,9 @@ This will add a nuget.config file to your application. Open the file and in the 
 
 Once you've added the package source, add a reference to the compiler by running the following command:
 
-`> dotnet add package Microsoft.DotNet.ILCompiler -v 1.0.0-alpha-* `
+```bash
+> dotnet add package Microsoft.DotNet.ILCompiler -v 1.0.0-alpha-* 
+```
 
 ## Add Core MVC services
 With the package successfully added to your project, your project's default registered MVC services must be modified.
@@ -55,10 +59,13 @@ Replacing `AddMvc()` with `AddMvcCore()` adds only the basic MVC functionality. 
 ## Using reflection 
 Runtime directives are XML configuration files, which specify which elements of your program are available for reflection. They are used at compile-time to enable AOT compilation in applications at runtime. 
 
-In this sample a basic rd.xml file has been added for a simple Web API application under the root project folder. Copy its contents to your application directory and modify the
-```xml <Assembly Name="SampleWebApi" Dynamic="Required All" /> ``` element to use your app's name.
+In this sample a basic rd.xml file has been added for a simple Web API application under the root project folder. Copy its contents to your application directory and modify the element
+```xml
+ <Assembly Name="SampleWebApi" Dynamic="Required All" /> 
+ ``` 
+ to use your app's name.
 
-If your application makes use of reflection, you will need to create a rd.xml file specifying explicitly which assemblies and types should be made available. For example, in  your .NET Core Web API application, reflection is required to determine the correct namespace, from which to load the ``Startup`` type. Both are defined respectively via the `<Assembly>` and `<Type>` attributes. For example, in the case of our specific application;
+If your application makes use of reflection, you will need to create a rd.xml file specifying explicitly which assemblies and types should be made available. For example, in  your .NET Core Web API application, reflection is required to determine the correct namespace, from which to load the ``Startup`` type. Both are defined respectively via the `<Assembly>` and `<Type>` attributes. For example, in the case of our specific application:
 
 ```xml 
 <Assembly Name="SampleWebApi">
@@ -115,11 +122,15 @@ public class ValuesController
 
 Once the package has been successfully added it's time to compile and publish your app! If you're using Windows, make sure you're using `x64 Native Tools Command Prompt for VS 2017` instead of the standard Windows command prompt. In the shell/command prompt window, run the following command:
 
-`> dotnet publish -r <RID> -c <Configuration>`
+```bash
+> dotnet publish -r <RID> -c <Configuration>
+```
 
 where `<Configuration>` is your project configuration (such as Debug or Release) and `<RID>` is the runtime identifier, which you specified in the csproj file (one of win-x64, linux-x64, osx-x64). For example, if you want to publish a release configuration of your app for a 64-bit version of Windows the command would look like:
 
-`> dotnet publish -r win-x64 -c release`
+```bash 
+> dotnet publish -r win-x64 -c release
+```
 
 Once completed, you can find the native executable in the root folder of your project under `/bin/x64/<Configuration>/netcoreapp2.0/publish/`
 
