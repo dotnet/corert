@@ -57,14 +57,7 @@ namespace ILVerify
             {
                 if (_typeSystemContext.SystemModule is null)
                 {
-                    if (_typeSystemContext._inferredSystemModule != null)
-                    {
-                        _typeSystemContext.SetSystemModule(_typeSystemContext._inferredSystemModule);
-                    }
-                    else
-                    {
-                        throw new VerifierException("No system module specified");
-                    }
+                    return new VerificationResult() { NumErrors = 1, Message = "No system module specified" };
                 }
 
                 EcmaModule module = _typeSystemContext.GetModule(moduleToVerify);

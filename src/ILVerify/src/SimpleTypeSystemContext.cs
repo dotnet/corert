@@ -23,19 +23,12 @@ namespace ILVerify
         // cache from simple name to EcmaModule
         private readonly Dictionary<string, EcmaModule> _modules = new Dictionary<string, EcmaModule>(StringComparer.OrdinalIgnoreCase);
 
-        internal EcmaModule _inferredSystemModule;
-
         public SimpleTypeSystemContext(IResolver resolver)
         {
             _resolver = resolver;
         }
 
         public override ModuleDesc ResolveAssembly(AssemblyName name, bool throwIfNotFound = true)
-        {
-            return GetModule(name, throwIfNotFound);
-        }
-
-        public override ModuleDesc ResolveModule(AssemblyName name, bool throwIfNotFound = true)
         {
             return GetModule(name, throwIfNotFound);
         }
@@ -79,14 +72,7 @@ namespace ILVerify
             }
 
             EcmaModule module = EcmaModule.Create(this, peReader);
-
             MetadataReader metadataReader = module.MetadataReader;
-
-            if (this.SystemModule == null && IsSystemModule(metadataReader))
-            {
-                Debug.Assert(_inferredSystemModule is null);
-                _inferredSystemModule = module;
-            }
 
             StringHandle nameHandle = metadataReader.IsAssembly
                 ? metadataReader.GetAssemblyDefinition().Name
@@ -99,18 +85,6 @@ namespace ILVerify
             _modules.Add(name.Name, module);
 
             return module;
-        }
-
-        private bool IsSystemModule(MetadataReader metadataReader)
-        {
-            if (metadataReader.AssemblyReferences.Count > 0)
-            {
-                return false;
-            }
-
-            // TODO check for System.Object too
-
-            return true;
         }
     }
 }

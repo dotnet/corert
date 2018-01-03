@@ -147,10 +147,6 @@ namespace Internal.TypeSystem.Ecma
                         item = _module;
                         break;
 
-                    case HandleKind.ModuleReference:
-                        item = _module.ResolveModuleReference((ModuleReferenceHandle)handle);
-                        break;
-
                     default:
                         throw new BadImageFormatException("Unknown metadata token type: " + handle.Kind);
                 }
@@ -481,13 +477,6 @@ namespace Internal.TypeSystem.Ecma
             an.ContentType = GetContentTypeFromAssemblyFlags(assemblyReference.Flags);
 
             return Context.ResolveAssembly(an);
-        }
-
-        private Object ResolveModuleReference(ModuleReferenceHandle handle)
-        {
-            ModuleReference moduleReference = _metadataReader.GetModuleReference(handle);
-            string name = _metadataReader.GetString(moduleReference.Name);
-            return Context.ResolveModule(new AssemblyName(name));
         }
 
         private Object ResolveExportedType(ExportedTypeHandle handle)
