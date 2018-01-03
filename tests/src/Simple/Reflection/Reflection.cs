@@ -216,6 +216,9 @@ internal class ReflectionTest
 
     class TestParameterAttributes
     {
+#if OPTIMIZED_MODE_WITHOUT_SCANNER
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+#endif
         public static bool Method([Parameter] ParameterType parameter)
         {
             return parameter == null;
