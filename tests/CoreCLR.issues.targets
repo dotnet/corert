@@ -49,6 +49,9 @@
     <!-- https://github.com/dotnet/corert/issues/370 -->
     <ExcludeList Include="$(XunitTestBinBase)\managed\Compilation\Compilation\Compilation.*" />
 
+    <!-- System.Runtime.CompilerServices.Unsafe -->
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Inline\tests\UnsafeBlockCopy\UnsafeBlockCopy.*" />
+
     <!-- These depend on things outside of the .NET Core profile. Need test fixes. -->
     <ExcludeList Include="$(XunitTestBinBase)\Interop\NativeCallable\NativeCallableTest\NativeCallableTest.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-RTM\b475589\b475589\b475589.*" />
