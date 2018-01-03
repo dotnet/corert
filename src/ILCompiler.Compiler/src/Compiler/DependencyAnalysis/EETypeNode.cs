@@ -231,7 +231,7 @@ namespace ILCompiler.DependencyAnalysis
                     if (impl.OwningType == defType && !impl.IsAbstract)
                     {
                         MethodDesc canonImpl = impl.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                        yield return new CombinedDependencyListEntry(factory.MethodEntrypoint(canonImpl, _type.IsValueType), factory.VirtualMethodUse(decl), "Virtual method");
+                        yield return new CombinedDependencyListEntry(factory.MethodEntrypoint(canonImpl, _type.IsValueType), factory.VirtualMethodUse(decl.Normalize()), "Virtual method");
                     }
                 }
 
@@ -243,7 +243,7 @@ namespace ILCompiler.DependencyAnalysis
                 // Add conditional dependencies for interface methods the type implements. For example, if the type T implements
                 // interface IFoo which has a method M1, add a dependency on T.M1 dependent on IFoo.M1 being called, since it's
                 // possible for any IFoo object to actually be an instance of T.
-                foreach (DefType interfaceType in defType.RuntimeInterfaces)
+                foreach (DefType interfaceType in defType.NormalizedRuntimeInterfaces())
                 {
                     Debug.Assert(interfaceType.IsInterface);
 
@@ -277,7 +277,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_type.RuntimeInterfaces.Length > 0 && !factory.VTable(closestDefType).HasFixedSlots)
             {
-                foreach (var implementedInterface in _type.RuntimeInterfaces)
+                foreach (var implementedInterface in _type.NormalizedRuntimeInterfaces())
                 {
                     // If the type implements ICastable, the methods are implicitly necessary
                     if (implementedInterface == factory.ICastableInterface)
@@ -634,22 +634,6 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected static TypeDesc GetFullCanonicalTypeForCanonicalType(TypeDesc type)
-        {
-            if (type.IsCanonicalSubtype(CanonicalFormKind.Specific))
-            {
-                return type.ConvertToCanonForm(CanonicalFormKind.Specific);
-            }
-            else if (type.IsCanonicalSubtype(CanonicalFormKind.Universal))
-            {
-                return type.ConvertToCanonForm(CanonicalFormKind.Universal);
-            }
-            else
-            {
-                return type;
-            }
-        }
-
         protected virtual ISymbolNode GetBaseTypeNode(NodeFactory factory)
         {
             return _type.BaseType != null ? factory.NecessaryTypeSymbol(_type.BaseType) : null;
@@ -697,7 +681,7 @@ namespace ILCompiler.DependencyAnalysis
             declType = declType.GetClosestDefType();
             templateType = templateType.ConvertToCanonForm(CanonicalFormKind.Specific);
 
-            var baseType = declType.BaseType;
+            var baseType = declType.NormalizedBaseType();
             if (baseType != null)
             {
                 Debug.Assert(templateType.BaseType != null);
@@ -1033,18 +1017,18 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             // It must be possible to create an EEType for the base type of this type
-            TypeDesc baseType = type.BaseType;
+            TypeDesc baseType = type.NormalizedBaseType();
             if (baseType != null)
             {
                 // Make sure EEType can be created for this.
-                factory.NecessaryTypeSymbol(GetFullCanonicalTypeForCanonicalType(baseType));
+                factory.NecessaryTypeSymbol(baseType);
             }
             
             // We need EETypes for interfaces
-            foreach (var intf in type.RuntimeInterfaces)
+            foreach (var intf in type.NormalizedRuntimeInterfaces())
             {
                 // Make sure EEType can be created for this.
-                factory.NecessaryTypeSymbol(GetFullCanonicalTypeForCanonicalType(intf));
+                factory.NecessaryTypeSymbol(intf);
             }
 
             // Validate classes, structs, enums, interfaces, and delegates

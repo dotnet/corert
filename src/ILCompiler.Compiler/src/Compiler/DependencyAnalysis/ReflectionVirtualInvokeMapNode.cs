@@ -115,7 +115,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (!method.HasInstantiation)
                 {
-                    MethodDesc slotDefiningMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method);
+                    MethodDesc slotDefiningMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method).Normalize();
                     if (!factory.VTable(slotDefiningMethod.OwningType).HasFixedSlots)
                     {
                         dependencies.Add(factory.VirtualMethodUse(slotDefiningMethod), "Reflection virtual invoke method");
