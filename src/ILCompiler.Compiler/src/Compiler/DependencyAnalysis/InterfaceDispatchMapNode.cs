@@ -80,7 +80,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         builder.EmitShort(checked((short)interfaceIndex));
                         builder.EmitShort(checked((short)(interfaceMethodSlot + (interfaceType.HasGenericDictionarySlot() ? 1 : 0))));
-                        builder.EmitShort(checked((short)VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, implMethod)));
+                        builder.EmitShort(checked((short)VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, implMethod.Normalize())));
                         entryCount++;
                     }
                 }
