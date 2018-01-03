@@ -23,7 +23,16 @@ namespace ILCompiler.DependencyAnalysis
         {
             MetadataReader reader = method.MetadataReader;
             MethodDefinition methodDef = reader.GetMethodDefinition(method.Handle);
+
+            // Handle custom attributes on the method
             AddDependenciesDueToCustomAttributes(ref dependencies, factory, method.Module, methodDef.GetCustomAttributes());
+
+            // Handle custom attributes on method parameters
+            foreach (ParameterHandle parameterHandle in methodDef.GetParameters())
+            {
+                Parameter parameter = reader.GetParameter(parameterHandle);
+                AddDependenciesDueToCustomAttributes(ref dependencies, factory, method.Module, parameter.GetCustomAttributes());
+            }
         }
 
         public static void AddDependenciesDueToCustomAttributes(ref DependencyList dependencies, NodeFactory factory, EcmaType type)
