@@ -33,7 +33,7 @@
     </File>
 
     <!-- This assembly is needed so the build tasks can be resolved and run from the metapackage -->
-    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\tools\\ILCompiler.Build.Tasks.dll" Exclude="$(BaseOutputPath)\$(OSPlatformConfig)\tools\*.pdb">
+    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\tools\\ILCompiler.Build.Tasks.dll">
       <TargetPath>tools</TargetPath>
     </File>
   </ItemGroup>
