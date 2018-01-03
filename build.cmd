@@ -44,8 +44,14 @@ exit /b %ERRORLEVEL%
 
 :AfterManagedBuild
 
-call %~dp0buildscripts\build-tests.cmd %*
+call %~dp0buildscripts\build-packages.cmd %*
 
+IF NOT ERRORLEVEL 1 goto AfterNuGetPackageBuild
+echo Package build failed.
+exit /b %ERRORLEVEL%
+
+:AfterNuGetPackageBuild
+call %~dp0buildscripts\build-tests.cmd %*
 IF NOT ERRORLEVEL 1 goto AfterTests
 echo Tests failed.
 exit /b %ERRORLEVEL%

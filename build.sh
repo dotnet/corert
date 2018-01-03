@@ -21,6 +21,13 @@ if [ $BUILDERRORLEVEL != 0 ]; then
     exit $BUILDERRORLEVEL
 fi
 
+. ./buildscripts/build-packages.sh $*
+
+# If NuGet package build failed, exit with the status code of the package build
+if [ $BUILDERRORLEVEL != 0 ]; then
+    exit $BUILDERRORLEVEL
+fi
+
 . ./buildscripts/build-tests.sh $*
 
 if [ $TESTERRORLEVEL != 0 ]; then

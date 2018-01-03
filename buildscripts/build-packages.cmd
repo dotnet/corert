@@ -27,5 +27,7 @@ exit /b %ERRORLEVEL%
 
 :AfterVarSetup
 
+if defined __SkipBuildPackages exit /b 0
+
 %_msbuildexe% "%__ProjectDir%\pkg\packages.proj" /m /nologo /flp:v=diag;LogFile=build-packages.log /p:NuPkgRid=%__NugetRuntimeId% /p:OSGroup=%__BuildOS% /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% %__ExtraMsBuildParams%
 exit /b %ERRORLEVEL%
