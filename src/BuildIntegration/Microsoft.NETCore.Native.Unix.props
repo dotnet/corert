@@ -72,5 +72,10 @@ See the LICENSE file in the project root for more information.
       <LinkerArg Include="-licucore" Condition="'$(TargetOS)' == 'OSX'" />
       <LinkerArg Include="-shared" Condition="'$(NativeLib)' == 'Shared'" />
     </ItemGroup>
+    
+    <Exec Command="command -v $(CppLinker)" IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="_WhereLinker"/>
+    </Exec>
+    <Error Condition="'$(_WhereLinker)' != '0'" Text="Platform linker ('$(CppLinker)') not found. On macOS, platform linker gets installed with Xcode. On Linux, it comes with clang." />
   </Target>
 </Project>
