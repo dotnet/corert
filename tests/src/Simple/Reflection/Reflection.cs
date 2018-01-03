@@ -9,6 +9,7 @@
 #endif
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Reflection;
 
 [assembly: TestAssembly]
@@ -34,6 +35,7 @@ internal class ReflectionTest
         TestStringConstructor.Run();
         TestAssemblyAndModuleAttributes.Run();
         TestAttributeExpressions.Run();
+        TestParameterAttributes.Run();
 
         //
         // Mostly functionality tests
@@ -209,6 +211,43 @@ internal class ReflectionTest
                 if (d(new Greeter("pop")) != "Hello pop")
                     throw new Exception();
             }
+        }
+    }
+
+    class TestParameterAttributes
+    {
+        public static bool Method([Parameter] ParameterType parameter)
+        {
+            return parameter == null;
+        }
+
+        public class ParameterType { }
+
+        class ParameterAttribute : Attribute
+        {
+            public ParameterAttribute([CallerMemberName] string memberName = null)
+            {
+                MemberName = memberName;
+            }
+
+            public string MemberName { get; }
+        }
+
+        public static void Run()
+        {
+            Console.WriteLine(nameof(TestParameterAttributes));
+
+            // Ensure things we reflect on are in the static callgraph
+            if (string.Empty.Length > 0)
+            {
+                Method(null);
+            }
+
+            MethodInfo method = typeof(TestParameterAttributes).GetMethod(nameof(Method));
+
+            var attribute = method.GetParameters()[0].GetCustomAttribute<ParameterAttribute>();
+            if (attribute.MemberName != nameof(Method))
+                throw new Exception();
         }
     }
 
