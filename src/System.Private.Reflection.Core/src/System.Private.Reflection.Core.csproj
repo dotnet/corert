@@ -258,8 +258,8 @@
     <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\DeveloperExperienceState.cs">
       <Link>System\Runtime\CompilerServices\DeveloperExperienceState.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\__BlockReflectionAttribute.cs" Condition="'$(IsProjectNLibrary)' != 'true'">
-      <Link>System\Runtime\CompilerServices\__BlockReflectionAttribute.cs</Link>
+    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs" Condition="'$(IsProjectNLibrary)' != 'true'">
+      <Link>System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
