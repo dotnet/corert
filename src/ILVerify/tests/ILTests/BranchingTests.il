@@ -6,7 +6,7 @@
 {
 }
 
-.assembly Branching
+.assembly BranchingTests
 {
 }
 

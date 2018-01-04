@@ -6,7 +6,7 @@
 {
 }
 
-.assembly LoadStoreIndirect
+.assembly LoadStoreIndirectTests
 {
 }
 
