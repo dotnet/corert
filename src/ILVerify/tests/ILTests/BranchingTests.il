@@ -966,6 +966,18 @@
         ret
     }
 
+    .method static public hidebysig void BrFalseS.Backward_Valid() cil managed 
+    {
+    BackwardBranch:
+        // Note: additional nops to increase branch delta
+        nop
+        nop
+        ldc.i4.0
+        brfalse.s   BackwardBranch
+
+        ret
+    }
+
     .method static public hidebysig void Branch.BackwardEmptyStack_Valid() cil managed 
     {
         br      MethodEnd
