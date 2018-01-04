@@ -6,7 +6,7 @@
 {
 }
 
-.assembly Prefix 
+.assembly PrefixTests
 {
 }
 

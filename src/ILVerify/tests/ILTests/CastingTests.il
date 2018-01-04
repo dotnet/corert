@@ -6,7 +6,7 @@
 {
 }
 
-.assembly Casting
+.assembly CastingTests
 {
 }
 

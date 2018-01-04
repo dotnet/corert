@@ -6,7 +6,7 @@
 {
 }
 
-.assembly ExceptionRegion
+.assembly ExceptionRegionTests
 {
 }
 

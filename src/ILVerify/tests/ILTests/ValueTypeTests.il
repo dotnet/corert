@@ -6,7 +6,7 @@
 {
 }
 
-.assembly ValueType
+.assembly ValueTypeTests
 {
 }
 
