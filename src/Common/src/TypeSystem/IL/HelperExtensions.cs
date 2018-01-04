@@ -95,10 +95,10 @@ namespace Internal.IL
         /// Retrieves a namespace type in <paramref name= "module" /> that is well known to the compiler.
         /// Throws an exception if the type doesn't exist.
         /// </summary>
-        public static MetadataType GetKnownType(this ModuleDesc module, string @namespace, string name, bool throwIfNotFound = true)
+        public static MetadataType GetKnownType(this ModuleDesc module, string @namespace, string name)
         {
             MetadataType type = module.GetType(@namespace, name, false);
-            if (type == null && throwIfNotFound)
+            if (type == null)
             {
                 throw new InvalidOperationException(
                     String.Format("Expected type '{0}' not found in module '{1}'",

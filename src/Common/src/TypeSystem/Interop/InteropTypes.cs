@@ -25,11 +25,6 @@ namespace Internal.TypeSystem.Interop
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "CriticalHandle");
         }
 
-        public static MetadataType GetHandleRef(TypeSystemContext context)
-        {
-            return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "HandleRef");
-        }
-
         public static MetadataType GetMissingMemberException(TypeSystemContext context)
         {
             return context.SystemModule.GetKnownType("System", "MissingMemberException");
@@ -45,26 +40,6 @@ namespace Internal.TypeSystem.Interop
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "NativeFunctionPointerWrapper");
         }
 
-        public static MetadataType GetStringBuilder(TypeSystemContext context)
-        {
-            return context.SystemModule.GetKnownType("System.Text", "StringBuilder");
-        }
-
-        public static MetadataType GetSystemDateTime(TypeSystemContext context)
-        {
-            return context.SystemModule.GetKnownType("System", "DateTime");
-        }
-
-        public static MetadataType GetSystemDecimal(TypeSystemContext context)
-        {
-            return context.SystemModule.GetKnownType("System", "Decimal");
-        }
-
-        public static MetadataType GetSystemGuid(TypeSystemContext context)
-        {
-            return context.SystemModule.GetKnownType("System", "Guid");
-        }
-
         public static bool IsSafeHandle(TypeSystemContext context, TypeDesc type)
         {
             return IsOrDerivesFromType(type, GetSafeHandle(context));
@@ -75,29 +50,37 @@ namespace Internal.TypeSystem.Interop
             return IsOrDerivesFromType(type, GetCriticalHandle(context));
         }
 
+        private static bool IsCoreNamedType(TypeSystemContext context, TypeDesc type, string @namespace, string name)
+        {
+            return type is MetadataType mdType &&
+                mdType.Name == name &&
+                mdType.Namespace == @namespace &&
+                mdType.Module == context.SystemModule;
+        }
+
         public static bool IsHandleRef(TypeSystemContext context, TypeDesc type)
         {
-            return type == GetHandleRef(context);
+            return IsCoreNamedType(context, type, "System.Runtime.InteropServices", "HandleRef");
         }
 
         public static bool IsSystemDateTime(TypeSystemContext context, TypeDesc type)
         {
-            return type == GetSystemDateTime(context);
+            return IsCoreNamedType(context, type, "System", "DateTime");
         }
 
         public static bool IsStringBuilder(TypeSystemContext context, TypeDesc type)
         {
-            return type == GetStringBuilder(context);
+            return IsCoreNamedType(context, type, "System.Text", "StringBuilder");
         }
 
         public static bool IsSystemDecimal(TypeSystemContext context, TypeDesc type)
         {
-            return type == GetSystemDecimal(context);
+            return IsCoreNamedType(context, type, "System", "Decimal");
         }
 
         public static bool IsSystemGuid(TypeSystemContext context, TypeDesc type)
         {
-            return type == GetSystemGuid(context);
+            return IsCoreNamedType(context, type, "System", "Guid");
         }
 
         private static bool IsOrDerivesFromType(TypeDesc type, MetadataType targetType)
