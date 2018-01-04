@@ -855,7 +855,7 @@ namespace Internal.JitInterface
             // Normalize to the slot defining method. We don't have slot information for the overrides.
             methodDesc = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(methodDesc);
 
-            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(_compilation.NodeFactory, methodDesc);
+            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(_compilation.NodeFactory, methodDesc.Normalize());
             Debug.Assert(slot != -1);
 
             offsetAfterIndirection = (uint)(EETypeNode.GetVTableOffset(pointerSize) + slot * pointerSize);
@@ -3299,7 +3299,7 @@ namespace Internal.JitInterface
                 }
             }
             else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0
-                && _compilation.HasFixedSlotVTable(targetMethod.OwningType))
+                && _compilation.HasFixedSlotVTable(targetMethod.Normalize().OwningType))
             {
                 pResult.kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_VTABLE;
                 pResult.nullInstanceCheck = true;

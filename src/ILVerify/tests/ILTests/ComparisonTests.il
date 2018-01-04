@@ -6,7 +6,7 @@
 {
 }
 
-.assembly Comparison
+.assembly ComparisonTests
 {
 }
 

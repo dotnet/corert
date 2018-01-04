@@ -6,7 +6,7 @@
 {
 }
 
-.assembly Branching
+.assembly BranchingTests
 {
 }
 
@@ -963,6 +963,18 @@
         brtrue      BackwardBranch
 
         pop
+        ret
+    }
+
+    .method static public hidebysig void BrFalseS.Backward_Valid() cil managed 
+    {
+    BackwardBranch:
+        // Note: additional nops to increase branch delta
+        nop
+        nop
+        ldc.i4.0
+        brfalse.s   BackwardBranch
+
         ret
     }
 

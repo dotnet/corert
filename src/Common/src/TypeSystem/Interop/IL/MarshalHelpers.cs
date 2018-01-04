@@ -447,18 +447,13 @@ namespace Internal.TypeSystem.Interop
                     else
                         return MarshallerKind.Invalid;
                 }
-                /*              
-                                TODO: Bring HandleRef to CoreLib
-                                https://github.com/dotnet/corert/issues/2570
-
-                                else if (context.IsHandleRef(type))
-                                {
-                                    if (nativeType == NativeType.Invalid)
-                                        return MarshallerKind.HandleRef;
-                                    else
-                                        return MarshallerKind.Invalid;
-                                }
-                */
+                else if (InteropTypes.IsHandleRef(context, type))
+                {
+                    if (nativeType == NativeTypeKind.Invalid)
+                        return MarshallerKind.HandleRef;
+                    else
+                        return MarshallerKind.Invalid;
+                }
 
                 switch (nativeType)
                 {

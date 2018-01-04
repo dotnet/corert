@@ -77,7 +77,14 @@ See the LICENSE file in the project root for more information.
       <LinkerArg Include="-luuid" Condition="'$(TargetOS)' != 'OSX'" />
       <LinkerArg Include="-lrt" Condition="'$(TargetOS)' != 'OSX'" />
       <LinkerArg Include="-licucore" Condition="'$(TargetOS)' == 'OSX'" />
-      <LinkerArg Include="-shared" Condition="'$(NativeLib)' == 'Shared'" />
+      <LinkerArg Include="-dynamiclib" Condition="'$(TargetOS)' == 'OSX' and '$(NativeLib)' == 'Shared'" />
+      <LinkerArg Include="-shared" Condition="'$(TargetOS)' != 'OSX' and '$(NativeLib)' == 'Shared'" />
     </ItemGroup>
+    
+    <Exec Command="command -v $(CppLinker)" IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="_WhereLinker"/>
+    </Exec>
+    <Error Condition="'$(_WhereLinker)' != '0' and '$(TargetOS)' == 'OSX'" Text="Platform linker ('$(CppLinker)') not found. Try installing Xcode to resolve the problem." />
+    <Error Condition="'$(_WhereLinker)' != '0' and '$(TargetOS)' != 'OSX'" Text="Platform linker ('$(CppLinker)') not found. Try installing $(CppLinker) or the appropriate package for your platform to resolve the problem." />
   </Target>
 </Project>

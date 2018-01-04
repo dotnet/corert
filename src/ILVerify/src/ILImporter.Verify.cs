@@ -364,7 +364,7 @@ again:
                         break;
                     case ILOpcode.br_s:
                     case ILOpcode.leave_s:
-                        MarkPredecessorWithLowerOffset(ReadILByte());
+                        MarkPredecessorWithLowerOffset((sbyte)ReadILByte());
                         continue;
                     case ILOpcode.brfalse_s:
                     case ILOpcode.brtrue_s:
@@ -378,7 +378,7 @@ again:
                     case ILOpcode.bgt_un_s:
                     case ILOpcode.ble_un_s:
                     case ILOpcode.blt_un_s:
-                        MarkPredecessorWithLowerOffset(ReadILByte());
+                        MarkPredecessorWithLowerOffset((sbyte)ReadILByte());
                         break;
                     case ILOpcode.switch_:
                         {

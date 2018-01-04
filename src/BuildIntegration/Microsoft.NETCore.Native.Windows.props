@@ -61,7 +61,6 @@ See the LICENSE file in the project root for more information.
     
     <ItemGroup>
       <LinkerArg Condition="$(NativeLib) == 'Shared'" Include="/DLL" />
-      <LinkerArg Condition="$(DefFile) != ''" Include="/DEF:$(DefFile)" />
       <LinkerArg Include="@(NativeLibrary)" />
       <LinkerArg Include="@(AdditionalNativeLibrary)" />
       <LinkerArg Include="/NOLOGO /DEBUG /MANIFEST:NO" />
@@ -77,5 +76,10 @@ See the LICENSE file in the project root for more information.
       <LinkerArg Include="/OPT:REF" />
       <LinkerArg Include="/OPT:ICF" />
     </ItemGroup>
+
+    <Exec Command="where /Q $(CppLinker)" IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="_WhereLinker"/>
+    </Exec>
+    <Error Condition="'$(_WhereLinker)' != '0'" Text="Platform linker not found. Make sure to publish from a x64 Native Tools Command Prompt for VS 2017 with C++ tools installed." />
   </Target>
 </Project>

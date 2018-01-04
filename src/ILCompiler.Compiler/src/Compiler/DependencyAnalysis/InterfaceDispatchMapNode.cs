@@ -49,7 +49,7 @@ namespace ILCompiler.DependencyAnalysis
             result.Add(factory.InterfaceDispatchMapIndirection(_type), "Interface dispatch map indirection node");
 
             // VTable slots of implemented interfaces are consulted during emission
-            foreach (TypeDesc runtimeInterface in _type.RuntimeInterfaces)
+            foreach (TypeDesc runtimeInterface in _type.NormalizedRuntimeInterfaces())
             {
                 result.Add(factory.VTable(runtimeInterface), "Interface for a dispatch map");
             }
@@ -61,10 +61,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             var entryCountReservation = builder.ReserveInt();
             int entryCount = 0;
+            int interfaceIndex = 0;
             
-            for (int interfaceIndex = 0; interfaceIndex < _type.RuntimeInterfaces.Length; interfaceIndex++)
+            foreach (var interfaceType in _type.NormalizedRuntimeInterfaces())
             {
-                var interfaceType = _type.RuntimeInterfaces[interfaceIndex];
                 Debug.Assert(interfaceType.IsInterface);
 
                 IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(interfaceType).Slots;
@@ -80,10 +80,12 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         builder.EmitShort(checked((short)interfaceIndex));
                         builder.EmitShort(checked((short)(interfaceMethodSlot + (interfaceType.HasGenericDictionarySlot() ? 1 : 0))));
-                        builder.EmitShort(checked((short)VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, implMethod)));
+                        builder.EmitShort(checked((short)VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, implMethod.Normalize())));
                         entryCount++;
                     }
                 }
+
+                interfaceIndex++;
             }
 
             builder.EmitInt(entryCountReservation, entryCount);

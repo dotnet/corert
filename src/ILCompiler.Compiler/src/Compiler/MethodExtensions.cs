@@ -113,5 +113,16 @@ namespace ILCompiler
 
             return false;
         }
+
+        /// <summary>
+        /// Gets fully canonicalized method if method is canonical.
+        /// </summary>
+        public static MethodDesc Normalize(this MethodDesc method)
+        {
+            // If method is Foo<__Canon,object>::Method, we get Foo<__Canon,__Canon>::Method.
+            if (method.IsCanonicalMethod(CanonicalFormKind.Any))
+                return method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            return method;
+        }
     }
 }
