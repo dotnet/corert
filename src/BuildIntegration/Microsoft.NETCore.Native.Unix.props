@@ -76,6 +76,7 @@ See the LICENSE file in the project root for more information.
     <Exec Command="command -v $(CppLinker)" IgnoreExitCode="true">
       <Output TaskParameter="ExitCode" PropertyName="_WhereLinker"/>
     </Exec>
-    <Error Condition="'$(_WhereLinker)' != '0'" Text="Platform linker ('$(CppLinker)') not found. On macOS, platform linker gets installed with Xcode. On Linux, it comes with clang." />
+    <Error Condition="'$(_WhereLinker)' != '0' and '$(TargetOS)' == 'OSX'" Text="Platform linker ('$(CppLinker)') not found. Try installing Xcode to resolve the problem." />
+    <Error Condition="'$(_WhereLinker)' != '0' and '$(TargetOS)' != 'OSX'" Text="Platform linker ('$(CppLinker)') not found. Try installing $(CppLinker) or the appropriate package for your platform to resolve the problem." />
   </Target>
 </Project>
