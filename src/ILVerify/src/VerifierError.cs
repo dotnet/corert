@@ -4,8 +4,9 @@
 
 namespace ILVerify
 {
-    enum VerifierError
+    public enum VerifierError
     {
+        None = 0,
         //E_HRESULT           "[HRESULT 0x%08X]"
         //E_OFFSET            "[offset 0x%08X]"
         //E_OPCODE            "[opcode %s]"

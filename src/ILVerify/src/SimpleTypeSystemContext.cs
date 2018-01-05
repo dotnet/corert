@@ -4,10 +4,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -15,13 +15,12 @@ namespace ILVerify
 {
     class SimpleTypeSystemContext : MetadataTypeSystemContext
     {
-        private readonly IResolver _resolver;
+        internal readonly IResolver _resolver;
 
         private RuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
         private MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
 
-        // cache from simple name to EcmaModule
-        private readonly Dictionary<string, EcmaModule> _modules = new Dictionary<string, EcmaModule>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<PEReader, EcmaModule> _modulesCache = new Dictionary<PEReader, EcmaModule>();
 
         public SimpleTypeSystemContext(IResolver resolver)
         {
@@ -30,7 +29,13 @@ namespace ILVerify
 
         public override ModuleDesc ResolveAssembly(AssemblyName name, bool throwIfNotFound = true)
         {
-            return GetModule(name, throwIfNotFound);
+            PEReader peReader = _resolver.Resolve(name);
+            string actualSimpleName =peReader.GetSimpleName();
+
+            if (!actualSimpleName.Equals(name.Name, StringComparison.OrdinalIgnoreCase))
+                throw new VerifierException($"Actual PE name '{actualSimpleName}' does not match provided name '{name}'");
+
+            return GetModule(peReader, throwIfNotFound);
         }
 
         protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)
@@ -47,43 +52,32 @@ namespace ILVerify
             return _metadataRuntimeInterfacesAlgorithm;
         }
 
-        internal EcmaModule GetModule(AssemblyName name, bool throwIfNotFound = true)
+        internal EcmaModule GetModule(PEReader peReader, bool throwIfNotFound = true)
         {
-            if (_modules.TryGetValue(name.Name, out EcmaModule existingModule))
+            if (_modulesCache.TryGetValue(peReader, out EcmaModule existingModule))
             {
                 return existingModule;
             }
 
-            EcmaModule module = CreateModule(name);
+            EcmaModule module = CreateModule(peReader);
+            string simpleName = peReader.GetSimpleName();
             if (module is null && throwIfNotFound)
             {
-                throw new VerifierException("Assembly or module not found: " + name.Name);
+                throw new VerifierException("Assembly or module not found: " + simpleName);
             }
 
             return module;
         }
 
-        private EcmaModule CreateModule(AssemblyName name)
+        private EcmaModule CreateModule(PEReader peReader)
         {
-            PEReader peReader = _resolver.Resolve(name);
             if (peReader is null)
             {
                 return null;
             }
 
             EcmaModule module = EcmaModule.Create(this, peReader);
-            MetadataReader metadataReader = module.MetadataReader;
-
-            StringHandle nameHandle = metadataReader.IsAssembly
-                ? metadataReader.GetAssemblyDefinition().Name
-                : metadataReader.GetModuleDefinition().Name;
-
-            string actualSimpleName = metadataReader.GetString(nameHandle);
-            if (!actualSimpleName.Equals(name.Name, StringComparison.OrdinalIgnoreCase))
-                throw new VerifierException($"Assembly name '{actualSimpleName}' does not match filename '{name}'");
-
-            _modules.Add(name.Name, module);
-
+            _modulesCache.Add(peReader, module);
             return module;
         }
     }

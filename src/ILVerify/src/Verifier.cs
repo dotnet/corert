@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Resources;
 using System.Text;
@@ -15,13 +16,6 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILVerify
 {
-    public delegate bool ShouldVerifyMethod(string name);
-
-    public interface IResolver
-    {
-        PEReader Resolve(AssemblyName name);
-    }
-
     public class Verifier
     {
         private Lazy<ResourceManager> _stringResourceManager =
@@ -29,7 +23,7 @@ namespace ILVerify
 
         private SimpleTypeSystemContext _typeSystemContext;
 
-        public ShouldVerifyMethod ShouldVerifyMethod { private get; set; }
+        private static VerificationResult s_noSystemModuleResult = new VerificationResult() { Message = "No system module specified" };
 
         public Verifier(IResolver resolver)
         {
@@ -43,65 +37,131 @@ namespace ILVerify
 
         public void SetSystemModuleName(AssemblyName name)
         {
-            _typeSystemContext.SetSystemModule(_typeSystemContext.GetModule(name));
+            _typeSystemContext.SetSystemModule(_typeSystemContext.GetModule(_typeSystemContext._resolver.Resolve(name)));
         }
 
-        public VerificationResult Verify(AssemblyName moduleToVerify)
+        public IEnumerable<VerificationResult> Verify(PEReader peReader)
         {
-            if (moduleToVerify == null)
+            if (peReader == null)
             {
-                throw new ArgumentNullException(nameof(moduleToVerify));
+                throw new ArgumentNullException(nameof(peReader));
             }
 
+            if (_typeSystemContext.SystemModule is null)
+            {
+                yield return s_noSystemModuleResult;
+                yield break;
+            }
+
+            IEnumerable<VerificationResult> results;
             try
             {
-                if (_typeSystemContext.SystemModule is null)
-                {
-                    return new VerificationResult() { NumErrors = 1, Message = "No system module specified" };
-                }
-
-                EcmaModule module = _typeSystemContext.GetModule(moduleToVerify);
-                return VerifyModule(module, moduleToVerify.Name);
+                EcmaModule module = _typeSystemContext.GetModule(peReader);
+                results = VerifyMethods(module, peReader.GetSimpleName(), module.MetadataReader.MethodDefinitions);
             }
             catch (VerifierException e)
             {
-                return new VerificationResult() { NumErrors = 1, Message = e.Message };
+                results = new[] { new VerificationResult() { Message = e.Message } };
+            }
+
+            foreach (var result in results)
+            {
+                yield return result;
             }
         }
 
-        private VerificationResult VerifyModule(EcmaModule module, string path)
+        public IEnumerable<VerificationResult> Verify(PEReader peReader, TypeDefinitionHandle typeHandle)
         {
-            foreach (var methodHandle in module.MetadataReader.MethodDefinitions)
+            if (peReader is null)
+            {
+                throw new ArgumentNullException(nameof(peReader));
+            }
+
+            if (typeHandle.IsNil)
+            {
+                throw new ArgumentNullException(nameof(typeHandle));
+            }
+
+            if (_typeSystemContext.SystemModule is null)
+            {
+                yield return s_noSystemModuleResult;
+                yield break;
+            }
+
+            IEnumerable<VerificationResult> results;
+            try
+            {
+                EcmaModule module = _typeSystemContext.GetModule(peReader);
+                var typeDef = peReader.GetMetadataReader().GetTypeDefinition(typeHandle);
+                results = VerifyMethods(module, peReader.GetSimpleName(), typeDef.GetMethods());
+            }
+            catch (VerifierException e)
+            {
+                results = new[] { new VerificationResult() { Message = e.Message } };
+            }
+
+            foreach (var result in results)
+            {
+                yield return result;
+            }
+        }
+
+        public IEnumerable<VerificationResult> Verify(PEReader peReader, MethodDefinitionHandle methodHandle)
+        {
+            if (peReader is null)
+            {
+                throw new ArgumentNullException(nameof(peReader));
+            }
+
+            if (methodHandle.IsNil)
+            {
+                throw new ArgumentNullException(nameof(methodHandle));
+            }
+
+            if (_typeSystemContext.SystemModule is null)
+            {
+                yield return s_noSystemModuleResult;
+                yield break;
+            }
+
+            IEnumerable<VerificationResult> results;
+            try
+            {
+                EcmaModule module = _typeSystemContext.GetModule(peReader);
+                results = VerifyMethods(module, peReader.GetSimpleName(), new[] { methodHandle });
+            }
+            catch (VerifierException e)
+            {
+                results = new[] { new VerificationResult() { Message = e.Message } };
+            }
+
+            foreach (var result in results)
+            {
+                yield return result;
+            }
+        }
+
+        private IEnumerable<VerificationResult> VerifyMethods(EcmaModule module, string moduleName, IEnumerable<MethodDefinitionHandle> methodHandles)
+        {
+            foreach (var methodHandle in methodHandles)
             {
                 var method = (EcmaMethod)module.GetMethod(methodHandle);
-
                 var methodIL = EcmaMethodIL.Create(method);
-                if (methodIL == null)
-                {
-                    continue;
-                }
 
-                var methodName = method.ToString();
-                if (ShouldVerifyMethod != null && !ShouldVerifyMethod(methodName))
+                if (methodIL != null)
                 {
-                    continue;
-                }
-
-                var result = VerifyMethod(method, methodIL, path);
-                if (result.NumErrors > 0)
-                {
-                    return result;
+                    var results = VerifyMethod(module, moduleName, method, methodIL);
+                    foreach (var result in results)
+                    {
+                        yield return result;
+                    }
                 }
             }
-
-            return new VerificationResult();
         }
 
-        internal VerificationResult VerifyMethod(MethodDesc method, MethodIL methodIL, string moduleName)
+        private IEnumerable<VerificationResult> VerifyMethod(EcmaModule module, string moduleName, MethodDesc method, MethodIL methodIL)
         {
-            StringBuilder output = new StringBuilder();
-            int numErrors = 0;
-            var errors = new List<VerifierError>();
+            var builder = new ArrayBuilder<VerificationResult>();
 
             try
             {
@@ -109,116 +169,87 @@ namespace ILVerify
 
                 importer.ReportVerificationError = (args) =>
                 {
-                    AppendError(method, moduleName, args, output);
-                    errors.Add(args.Code);
-                    numErrors++;
+                    var codeResource = _stringResourceManager.Value.GetString(args.Code.ToString(), CultureInfo.InvariantCulture);
+
+                    builder.Add(new VerificationResult()
+                    {
+                        ModuleName = moduleName,
+                        TypeName = ((EcmaType)method.OwningType).Name,
+                        Method = MethodDescription(method),
+                        Error = args,
+                        Message = string.IsNullOrEmpty(codeResource) ? args.Code.ToString() : codeResource
+                    });
                 };
 
                 importer.Verify();
             }
             catch (NotImplementedException e)
             {
-                output.AppendLine($"Error in {method}: {e.Message}");
-                numErrors++;
+                reportException(e);
             }
             catch (InvalidProgramException e)
             {
-                output.AppendLine($"Error in {method}: {e.Message}");
-                numErrors++;
+                reportException(e);
             }
             catch (VerificationException)
             {
-                numErrors++;
+                // a result was reported already (before aborting)
             }
             catch (BadImageFormatException)
             {
-                output.AppendLine("Unable to resolve token");
-                numErrors++;
+                builder.Add(new VerificationResult()
+                {
+                    ModuleName = moduleName,
+                    TypeName = ((EcmaType)method.OwningType).Name,
+                    Method = method.Name,
+                    Message = "Unable to resolve token"
+                });
             }
             catch (PlatformNotSupportedException e)
             {
-                output.AppendLine(e.Message);
-                numErrors++;
+                reportException(e);
             }
             catch (VerifierException e)
             {
-                output.AppendLine(e.Message);
-                numErrors++;
+                reportException(e);
             }
             catch (TypeSystemException e)
             {
-                output.AppendLine(e.Message);
-                numErrors++;
+                reportException(e);
             }
 
-            return new VerificationResult() { NumErrors = numErrors, Message = output.ToString(), _errors = errors };
+            return builder.ToArray();
+
+            void reportException(Exception e)
+            {
+                builder.Add(new VerificationResult()
+                {
+                    ModuleName = moduleName,
+                    TypeName = ((EcmaType)method.OwningType).Name,
+                    Method = method.Name,
+                    Message = e.Message
+                });
+            }
         }
 
-        internal void AppendError(MethodDesc method, string moduleName, VerificationErrorArgs args, StringBuilder output)
+        private string MethodDescription(MethodDesc method)
         {
-            output.Append("[IL]: Error: ");
+            StringBuilder description = new StringBuilder();
+            description.Append(method.Name);
+            description.Append("(");
 
-            output.Append("[");
-            output.Append(moduleName);
-            output.Append(" : ");
-            output.Append(((EcmaType)method.OwningType).Name);
-            output.Append("::");
-            output.Append(method.Name);
-            output.Append("(");
             if (method.Signature._parameters != null && method.Signature._parameters.Length > 0)
             {
                 foreach (TypeDesc parameter in method.Signature._parameters)
                 {
-                    output.Append(parameter.ToString());
-                    output.Append(", ");
+                    description.Append(parameter.ToString());
+                    description.Append(", ");
                 }
-                output.Remove(output.Length - 2, 2);
-            }
-            output.Append(")");
-            output.Append("]");
-
-            output.Append("[offset 0x");
-            output.Append(args.Offset.ToString("X8"));
-            output.Append("]");
-
-            if (args.Found != null)
-            {
-                output.Append("[found ");
-                output.Append(args.Found);
-                output.Append("]");
+                description.Remove(description.Length - 2, 2);
             }
 
-            if (args.Expected != null)
-            {
-                output.Append("[expected ");
-                output.Append(args.Expected);
-                output.Append("]");
-            }
-
-            if (args.Token != 0)
-            {
-                output.Append("[token  0x");
-                output.Append(args.Token.ToString("X8"));
-                output.Append("]");
-            }
-
-            output.Append(" ");
-            var str = _stringResourceManager.Value.GetString(args.Code.ToString(), CultureInfo.InvariantCulture);
-            output.AppendLine(string.IsNullOrEmpty(str) ? args.Code.ToString() : str);
-        }
-    }
-
-    public class VerificationResult
-    {
-        public int NumErrors = 0;
-        public string Message = string.Empty;
-        internal IEnumerable<VerifierError> _errors; // Note: there may be fewer errors recorded here than counted in NumErrors, which also counts exceptions
-    }
-
-    public class VerifierException : Exception
-    {
-        public VerifierException(string message) : base(message)
-        {
+            description.Append(")");
+            return description.ToString();
         }
     }
 }

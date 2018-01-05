@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 
 namespace Internal.TypeSystem.Ecma
@@ -282,6 +283,17 @@ namespace Internal.TypeSystem.Ecma
         public static bool IsPublic(this MethodAttributes flags)
         {
             return (flags & MethodAttributes.MemberAccessMask) == MethodAttributes.Public;
+        }
+
+        public static string GetSimpleName(this PEReader peReader)
+        {
+            MetadataReader metadataReader = peReader.GetMetadataReader();
+
+            StringHandle nameHandle = metadataReader.IsAssembly
+                ? metadataReader.GetAssemblyDefinition().Name
+                : metadataReader.GetModuleDefinition().Name;
+
+            return metadataReader.GetString(nameHandle);
         }
     }
 }

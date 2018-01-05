@@ -175,13 +175,14 @@ namespace ILVerify.Tests
             Assembly systemRuntime = Assembly.Load("System.Runtime");
             simpleNameToPathMap.Add(systemRuntime.GetName().Name, systemRuntime.Location);
 
-            var typeSystemContext = new SimpleTypeSystemContext(new TestResolver(simpleNameToPathMap));
-            typeSystemContext.SetSystemModule(typeSystemContext.GetModule(coreAssembly.GetName()));
+            var resolver = new TestResolver(simpleNameToPathMap);
+            var typeSystemContext = new SimpleTypeSystemContext(resolver);
+            typeSystemContext.SetSystemModule(typeSystemContext.GetModule(resolver.Resolve(coreAssembly.GetName())));
 
-            return typeSystemContext.GetModule(new AssemblyName(Path.GetFileNameWithoutExtension(assemblyName)));
+            return typeSystemContext.GetModule(resolver.Resolve(new AssemblyName(Path.GetFileNameWithoutExtension(assemblyName))));
         }
 
-        private class TestResolver : IResolver
+        private class TestResolver : ResolverBase
         {
             Dictionary<string, string> _simpleNameToPathMap;
             public TestResolver(Dictionary<string, string> simpleNameToPathMap)
@@ -189,7 +190,7 @@ namespace ILVerify.Tests
                 _simpleNameToPathMap = simpleNameToPathMap;
             }
 
-            public PEReader Resolve(AssemblyName name)
+            public override PEReader ResolveCore(AssemblyName name)
             {
                 if (_simpleNameToPathMap.TryGetValue(name.Name, out string path))
                 {

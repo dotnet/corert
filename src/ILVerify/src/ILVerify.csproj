@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Library</OutputType>
+    <OutputType>Exe</OutputType>
     <TargetFrameworks>netcoreapp2.0;net46</TargetFrameworks>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <CLSCompliant>false</CLSCompliant>
@@ -24,6 +24,8 @@
     <Compile Include="TypeSystemHelpers.cs" />
     <Compile Include="InstantiatedGenericParameter.cs" />
     <Compile Include="AccessVerificationHelpers.cs" />
+    <Compile Include="VerificationResult.cs" />
+    <Compile Include="IResolver.cs" />
   </ItemGroup>
 
   <ItemGroup>

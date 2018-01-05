@@ -8,17 +8,19 @@ using System.CommandLine;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Text.RegularExpressions;
 using Internal.CommandLine;
+using static System.Console;
 
 namespace ILVerify
 {
-    class Program : IResolver
+    class Program : ResolverBase
     {
         private bool _help;
 
-        private AssemblyName _systemModule;
+        private AssemblyName _systemModule = new AssemblyName("mscorlib");
         private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // map of simple name to file path
         private Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // map of simple name to file path
         private IReadOnlyList<Regex> _includePatterns = Array.Empty<Regex>();
@@ -32,9 +34,9 @@ namespace ILVerify
 
         private void Help(string helpText)
         {
-            Console.WriteLine("ILVerify version " + typeof(Program).GetTypeInfo().Assembly.GetName().Version.ToString());
-            Console.WriteLine();
-            Console.WriteLine(helpText);
+            WriteLine("ILVerify version " + typeof(Program).GetTypeInfo().Assembly.GetName().Version.ToString());
+            WriteLine();
+            WriteLine(helpText);
         }
 
         public static IReadOnlyList<Regex> StringPatternsToRegexList(IReadOnlyList<string> patterns)
@@ -83,7 +85,7 @@ namespace ILVerify
             if (!string.IsNullOrEmpty(includeFile))
             {
                 if (includePatterns.Count > 0)
-                    Console.WriteLine("[Warning] --include-file takes precedence over --include");
+                    WriteLine("[Warning] --include-file takes precedence over --include");
                 includePatterns = File.ReadAllLines(includeFile);
             }
             _includePatterns = StringPatternsToRegexList(includePatterns);
@@ -91,7 +93,7 @@ namespace ILVerify
             if (!string.IsNullOrEmpty(excludeFile))
             {
                 if (excludePatterns.Count > 0)
-                    Console.WriteLine("[Warning] --exclude-file takes precedence over --exclude");
+                    WriteLine("[Warning] --exclude-file takes precedence over --exclude");
                 excludePatterns = File.ReadAllLines(excludeFile);
             }
             _excludePatterns = StringPatternsToRegexList(excludePatterns);
@@ -113,19 +115,89 @@ namespace ILVerify
 
             _verifier = new Verifier(this);
             _verifier.SetSystemModuleName(_systemModule);
-            _verifier.ShouldVerifyMethod = this.ShouldVerifyMethod;
 
             foreach (var kvp in _inputFilePaths)
             {
-                var result = _verifier.Verify(new AssemblyName(kvp.Key));
+                var results = VerifyAssembly(new AssemblyName(kvp.Key));
 
-                if (result.NumErrors > 0)
-                    Console.WriteLine(result.NumErrors + " Error(s) Verifying " + kvp.Value);
+                foreach (var result in results)
+                {
+                    PrintResult(result);
+                }
+
+                var numErrors = results.Count();
+                if (numErrors > 0)
+                    WriteLine(numErrors + " Error(s) Verifying " + kvp.Value);
                 else
-                    Console.WriteLine("All Classes and Methods in " + kvp.Value + " Verified.");
+                    WriteLine("All Classes and Methods in " + kvp.Value + " Verified.");
             }
 
             return 0;
+        }
+
+        private void PrintResult(VerificationResult result)
+        {
+            Write("[IL]: Error: ");
+
+            Write("[");
+            Write(result.ModuleName);
+            Write(" : ");
+            Write(result.TypeName);
+            Write("::");
+            Write(result.Method);
+            Write("]");
+
+            var args = result.Error;
+            if (args.Code != VerifierError.None)
+            {
+                Write("[offset 0x");
+                Write(args.Offset.ToString("X8"));
+                Write("]");
+
+                if (args.Found != null)
+                {
+                    Write("[found ");
+                    Write(args.Found);
+                    Write("]");
+                }
+
+                if (args.Expected != null)
+                {
+                    Write("[expected ");
+                    Write(args.Expected);
+                    Write("]");
+                }
+
+                if (args.Token != 0)
+                {
+                    Write("[token  0x");
+                    Write(args.Token.ToString("X8"));
+                    Write("]");
+                }
+            }
+
+            Write(" ");
+            WriteLine(result.Message);
+        }
+
+        private IEnumerable<VerificationResult> VerifyAssembly(AssemblyName name)
+        {
+            PEReader peReader = Resolve(name);
+            MetadataReader metadataReader = peReader.GetMetadataReader();
+            foreach (var methodHandle in metadataReader.MethodDefinitions)
+            {
+                var methodName = metadataReader.GetString(metadataReader.GetMethodDefinition(methodHandle).Name);
+                if (ShouldVerifyMethod(methodName))
+                {
+                    var results = _verifier.Verify(peReader, methodHandle);
+                    if (results.Count() > 0)
+                    {
+                        return results;
+                    }
+                }
+            }
+
+            return new VerificationResult[0];
         }
 
         private bool ShouldVerifyMethod(string methodName)
@@ -143,10 +215,11 @@ namespace ILVerify
             return true;
         }
 
-        PEReader IResolver.Resolve(AssemblyName name)
+        public override PEReader ResolveCore(AssemblyName name)
         {
             // Note: we use simple names instead of full names to resolve, because we can't get a full name from an assembly without reading it
             string simpleName = name.Name;
+
             string path = null;
             if (_inputFilePaths.TryGetValue(simpleName, out path) || _referenceFilePaths.TryGetValue(simpleName, out path))
             {
