@@ -44,7 +44,7 @@ namespace Internal.IL
         private LLVMBuilderRef _builder;
         private readonly LocalVariableDefinition[] _locals;
         private List<SpilledExpressionEntry> _spilledExpressions = new List<SpilledExpressionEntry>();
-
+        private int _pointerSize;
         private readonly byte[] _ilBytes;
 
         /// <summary>
@@ -102,6 +102,7 @@ namespace Internal.IL
             }
             _llvmFunction = GetOrCreateLLVMFunction(mangledName);
             _builder = LLVM.CreateBuilder();
+            _pointerSize = compilation.NodeFactory.Target.PointerSize;
         }
 
         public void Import()
@@ -143,7 +144,7 @@ namespace Internal.IL
             int totalLocalSize = 0;
             foreach(LocalVariableDefinition local in _locals)
             {
-                int localSize = local.Type.GetElementSize().AsInt;
+                int localSize = local.Type.GetElementSize().AsInt.AlignUp(_pointerSize);
                 totalLocalSize += localSize;
             }
 
@@ -661,7 +662,7 @@ namespace Internal.IL
             int offset = GetTotalRealLocalOffset();
             for (int i = 0; i < _spilledExpressions.Count; i++)
             {
-                offset += _spilledExpressions[i].Type.GetElementSize().AsInt;
+                offset += _spilledExpressions[i].Type.GetElementSize().AsInt.AlignUp(_pointerSize);
             }
             return offset;
         }
@@ -671,7 +672,7 @@ namespace Internal.IL
             int offset = 0;
             for (int i = 0; i < _locals.Length; i++)
             {
-                offset += _locals[i].Type.GetElementSize().AsInt;
+                offset += _locals[i].Type.GetElementSize().AsInt.AlignUp(_pointerSize);
             }
             return offset;
         }
@@ -681,7 +682,7 @@ namespace Internal.IL
             int offset = 0;
             for (int i = 0; i < _signature.Length; i++)
             {
-                offset += _signature[i].GetElementSize().AsInt;
+                offset += _signature[i].GetElementSize().AsInt.AlignUp(_pointerSize);
             }
             if (!_signature.IsStatic)
             {
@@ -692,7 +693,7 @@ namespace Internal.IL
                 }
                 else
                 {
-                    offset += _thisType.GetElementSize().AsInt;
+                    offset += _thisType.GetElementSize().AsInt.AlignUp(_pointerSize);
                 }
             }
 
@@ -704,7 +705,7 @@ namespace Internal.IL
             int thisSize = 0;
             if (!_signature.IsStatic)
             {
-                thisSize = _thisType.IsValueType ? _thisType.Context.Target.PointerSize : _thisType.GetElementSize().AsInt;
+                thisSize = _thisType.IsValueType ? _thisType.Context.Target.PointerSize : _thisType.GetElementSize().AsInt.AlignUp(_pointerSize);
                 if (index == 0)
                 {
                     size = thisSize;
@@ -723,7 +724,7 @@ namespace Internal.IL
             offset = thisSize;
             for (int i = 0; i < index; i++)
             {
-                offset += _signature[i].GetElementSize().AsInt;
+                offset += _signature[i].GetElementSize().AsInt.AlignUp(_pointerSize);
             }
         }
 
@@ -735,7 +736,7 @@ namespace Internal.IL
             offset = 0;
             for (int i = 0; i < index; i++)
             {
-                offset += _locals[i].Type.GetElementSize().AsInt;
+                offset += _locals[i].Type.GetElementSize().AsInt.AlignUp(_pointerSize);
             }
         }
 
@@ -747,7 +748,7 @@ namespace Internal.IL
             offset = 0;
             for (int i = 0; i < index; i++)
             {
-                offset += _spilledExpressions[i].Type.GetElementSize().AsInt;
+                offset += _spilledExpressions[i].Type.GetElementSize().AsInt.AlignUp(_pointerSize);
             }
         }
 
@@ -995,7 +996,7 @@ namespace Internal.IL
             LLVMValueRef castReturnAddress;
             if (signature.ReturnType != GetWellKnownType(WellKnownType.Void))
             {
-                offset += signature.ReturnType.GetElementSize().AsInt;
+                offset += signature.ReturnType.GetElementSize().AsInt.AlignUp(_pointerSize);
 
                 int returnOffset = GetTotalParameterOffset() + GetTotalLocalOffset();
                 returnAddress = LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_llvmFunction),
@@ -1054,7 +1055,7 @@ namespace Internal.IL
 
                 ImportStoreHelper(toStore.ValueAsType(valueType, _builder), valueType, castShadowStack, argOffset);
 
-                argOffset += (uint)argType.GetElementSize().AsInt;
+                argOffset += (uint)argType.GetElementSize().AsInt.AlignUp(_pointerSize);
             }
 
             LLVMValueRef fn;
@@ -1174,7 +1175,7 @@ namespace Internal.IL
             {
                 LLVMValueRef argAddr = LLVM.BuildGEP(builder, shadowStack, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (ulong)curOffset, LLVMMisc.False) }, "arg" + i);
                 LLVM.BuildStore(builder, LLVM.GetParam(thunkFunc, (uint)i), CastIfNecessary(builder, argAddr, LLVM.PointerType(llvmParams[i], 0)));
-                curOffset += method.Signature[i].GetElementSize().AsInt;
+                curOffset += method.Signature[i].GetElementSize().AsInt.AlignUp(_pointerSize);
             }
 
             LLVMValueRef retAddr = LLVM.BuildGEP(builder, shadowStack, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (ulong)curOffset, LLVMMisc.False) }, "retAddr");
