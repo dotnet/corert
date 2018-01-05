@@ -9,7 +9,6 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Resources;
-using System.Text;
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -22,8 +21,6 @@ namespace ILVerify
             new Lazy<ResourceManager>(() => new ResourceManager("ILVerify.Resources.Strings", Assembly.GetExecutingAssembly()));
 
         private SimpleTypeSystemContext _typeSystemContext;
-
-        private static VerificationResult s_noSystemModuleResult = new VerificationResult() { Message = "No system module specified" };
 
         public Verifier(IResolver resolver)
         {
@@ -47,17 +44,16 @@ namespace ILVerify
                 throw new ArgumentNullException(nameof(peReader));
             }
 
-            if (_typeSystemContext.SystemModule is null)
+            if (_typeSystemContext.SystemModule == null)
             {
-                yield return s_noSystemModuleResult;
-                yield break;
+                ThrowMissingSystemModule();
             }
 
             IEnumerable<VerificationResult> results;
             try
             {
                 EcmaModule module = _typeSystemContext.GetModule(peReader);
-                results = VerifyMethods(module, peReader.GetSimpleName(), module.MetadataReader.MethodDefinitions);
+                results = VerifyMethods(module, module.MetadataReader.MethodDefinitions);
             }
             catch (VerifierException e)
             {
@@ -72,7 +68,7 @@ namespace ILVerify
 
         public IEnumerable<VerificationResult> Verify(PEReader peReader, TypeDefinitionHandle typeHandle)
         {
-            if (peReader is null)
+            if (peReader == null)
             {
                 throw new ArgumentNullException(nameof(peReader));
             }
@@ -82,18 +78,17 @@ namespace ILVerify
                 throw new ArgumentNullException(nameof(typeHandle));
             }
 
-            if (_typeSystemContext.SystemModule is null)
+            if (_typeSystemContext.SystemModule == null)
             {
-                yield return s_noSystemModuleResult;
-                yield break;
+                ThrowMissingSystemModule();
             }
 
             IEnumerable<VerificationResult> results;
             try
             {
                 EcmaModule module = _typeSystemContext.GetModule(peReader);
-                var typeDef = peReader.GetMetadataReader().GetTypeDefinition(typeHandle);
-                results = VerifyMethods(module, peReader.GetSimpleName(), typeDef.GetMethods());
+                TypeDefinition typeDef = peReader.GetMetadataReader().GetTypeDefinition(typeHandle);
+                results = VerifyMethods(module, typeDef.GetMethods());
             }
             catch (VerifierException e)
             {
@@ -108,7 +103,7 @@ namespace ILVerify
 
         public IEnumerable<VerificationResult> Verify(PEReader peReader, MethodDefinitionHandle methodHandle)
         {
-            if (peReader is null)
+            if (peReader == null)
             {
                 throw new ArgumentNullException(nameof(peReader));
             }
@@ -118,17 +113,16 @@ namespace ILVerify
                 throw new ArgumentNullException(nameof(methodHandle));
             }
 
-            if (_typeSystemContext.SystemModule is null)
+            if (_typeSystemContext.SystemModule == null)
             {
-                yield return s_noSystemModuleResult;
-                yield break;
+                ThrowMissingSystemModule();
             }
 
             IEnumerable<VerificationResult> results;
             try
             {
                 EcmaModule module = _typeSystemContext.GetModule(peReader);
-                results = VerifyMethods(module, peReader.GetSimpleName(), new[] { methodHandle });
+                results = VerifyMethods(module, new[] { methodHandle });
             }
             catch (VerifierException e)
             {
@@ -141,7 +135,7 @@ namespace ILVerify
             }
         }
 
-        private IEnumerable<VerificationResult> VerifyMethods(EcmaModule module, string moduleName, IEnumerable<MethodDefinitionHandle> methodHandles)
+        private IEnumerable<VerificationResult> VerifyMethods(EcmaModule module, IEnumerable<MethodDefinitionHandle> methodHandles)
         {
             foreach (var methodHandle in methodHandles)
             {
@@ -150,7 +144,7 @@ namespace ILVerify
 
                 if (methodIL != null)
                 {
-                    var results = VerifyMethod(module, moduleName, method, methodIL);
+                    var results = VerifyMethod(module, method, methodIL, methodHandle);
                     foreach (var result in results)
                     {
                         yield return result;
@@ -159,7 +153,7 @@ namespace ILVerify
             }
         }
 
-        private IEnumerable<VerificationResult> VerifyMethod(EcmaModule module, string moduleName, MethodDesc method, MethodIL methodIL)
+        private IEnumerable<VerificationResult> VerifyMethod(EcmaModule module, MethodDesc method, MethodIL methodIL, MethodDefinitionHandle methodHandle)
         {
             var builder = new ArrayBuilder<VerificationResult>();
 
@@ -173,23 +167,14 @@ namespace ILVerify
 
                     builder.Add(new VerificationResult()
                     {
-                        ModuleName = moduleName,
                         TypeName = ((EcmaType)method.OwningType).Name,
-                        Method = MethodDescription(method),
+                        Method = methodHandle,
                         Error = args,
                         Message = string.IsNullOrEmpty(codeResource) ? args.Code.ToString() : codeResource
                     });
                 };
 
                 importer.Verify();
-            }
-            catch (NotImplementedException e)
-            {
-                reportException(e);
-            }
-            catch (InvalidProgramException e)
-            {
-                reportException(e);
             }
             catch (VerificationException)
             {
@@ -199,11 +184,18 @@ namespace ILVerify
             {
                 builder.Add(new VerificationResult()
                 {
-                    ModuleName = moduleName,
                     TypeName = ((EcmaType)method.OwningType).Name,
-                    Method = method.Name,
+                    Method = methodHandle,
                     Message = "Unable to resolve token"
                 });
+            }
+            catch (NotImplementedException e)
+            {
+                reportException(e);
+            }
+            catch (InvalidProgramException e)
+            {
+                reportException(e);
             }
             catch (PlatformNotSupportedException e)
             {
@@ -224,32 +216,16 @@ namespace ILVerify
             {
                 builder.Add(new VerificationResult()
                 {
-                    ModuleName = moduleName,
                     TypeName = ((EcmaType)method.OwningType).Name,
-                    Method = method.Name,
+                    Method = methodHandle,
                     Message = e.Message
                 });
             }
         }
 
-        private string MethodDescription(MethodDesc method)
+        private void ThrowMissingSystemModule()
         {
-            StringBuilder description = new StringBuilder();
-            description.Append(method.Name);
-            description.Append("(");
-
-            if (method.Signature._parameters != null && method.Signature._parameters.Length > 0)
-            {
-                foreach (TypeDesc parameter in method.Signature._parameters)
-                {
-                    description.Append(parameter.ToString());
-                    description.Append(", ");
-                }
-                description.Remove(description.Length - 2, 2);
-            }
-
-            description.Append(")");
-            return description.ToString();
+            throw new VerifierException("No system module specified");
         }
     }
 }

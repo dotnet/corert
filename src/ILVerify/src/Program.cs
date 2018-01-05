@@ -122,7 +122,7 @@ namespace ILVerify
 
                 foreach (var result in results)
                 {
-                    PrintResult(result);
+                    PrintResult(result, kvp.Value);
                 }
 
                 var numErrors = results.Count();
@@ -135,12 +135,12 @@ namespace ILVerify
             return 0;
         }
 
-        private void PrintResult(VerificationResult result)
+        private void PrintResult(VerificationResult result, string pathOrModuleName)
         {
             Write("[IL]: Error: ");
 
             Write("[");
-            Write(result.ModuleName);
+            Write(pathOrModuleName);
             Write(" : ");
             Write(result.TypeName);
             Write("::");
@@ -190,14 +190,12 @@ namespace ILVerify
                 if (ShouldVerifyMethod(methodName))
                 {
                     var results = _verifier.Verify(peReader, methodHandle);
-                    if (results.Count() > 0)
+                    foreach (var result in results)
                     {
-                        return results;
+                        yield return result;
                     }
                 }
             }
-
-            return new VerificationResult[0];
         }
 
         private bool ShouldVerifyMethod(string methodName)
@@ -215,7 +213,7 @@ namespace ILVerify
             return true;
         }
 
-        public override PEReader ResolveCore(AssemblyName name)
+        protected override PEReader ResolveCore(AssemblyName name)
         {
             // Note: we use simple names instead of full names to resolve, because we can't get a full name from an assembly without reading it
             string simpleName = name.Name;

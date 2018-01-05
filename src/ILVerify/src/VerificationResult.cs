@@ -2,15 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+using System.Reflection.Metadata;
 
 namespace ILVerify
 {
     public class VerificationResult
     {
-        public string ModuleName { get; internal set; }
         public string TypeName { get; internal set; }
-        public string Method { get; internal set; }
+        public MethodDefinitionHandle Method { get; internal set; }
         public VerificationErrorArgs Error { get; internal set; }
         public string Message { get; internal set; }
     }

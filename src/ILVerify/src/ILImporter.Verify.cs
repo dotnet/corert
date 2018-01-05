@@ -26,7 +26,7 @@ namespace Internal.IL
         }
     }
 
-    internal class VerifierException : Exception
+    class VerifierException : Exception
     {
         internal VerifierException(string message) : base(message)
         {

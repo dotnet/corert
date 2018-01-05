@@ -42,6 +42,6 @@ namespace ILVerify
             return null;
         }
 
-        public abstract PEReader ResolveCore(AssemblyName name);
+        protected abstract PEReader ResolveCore(AssemblyName name);
     }
 }

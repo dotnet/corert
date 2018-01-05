@@ -182,7 +182,7 @@ namespace ILVerify.Tests
             return typeSystemContext.GetModule(resolver.Resolve(new AssemblyName(Path.GetFileNameWithoutExtension(assemblyName))));
         }
 
-        private class TestResolver : ResolverBase
+        private sealed class TestResolver : ResolverBase
         {
             Dictionary<string, string> _simpleNameToPathMap;
             public TestResolver(Dictionary<string, string> simpleNameToPathMap)
@@ -190,7 +190,7 @@ namespace ILVerify.Tests
                 _simpleNameToPathMap = simpleNameToPathMap;
             }
 
-            public override PEReader ResolveCore(AssemblyName name)
+            protected override PEReader ResolveCore(AssemblyName name)
             {
                 if (_simpleNameToPathMap.TryGetValue(name.Name, out string path))
                 {

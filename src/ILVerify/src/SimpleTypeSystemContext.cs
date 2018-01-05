@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using Internal.IL;
 using Internal.TypeSystem;
@@ -30,12 +29,18 @@ namespace ILVerify
         public override ModuleDesc ResolveAssembly(AssemblyName name, bool throwIfNotFound = true)
         {
             PEReader peReader = _resolver.Resolve(name);
-            string actualSimpleName =peReader.GetSimpleName();
+            if (peReader == null && throwIfNotFound)
+            {
+                throw new VerifierException("Assembly or module not found: " + name.Name);
+            }
 
+            string actualSimpleName = peReader.GetSimpleName();
             if (!actualSimpleName.Equals(name.Name, StringComparison.OrdinalIgnoreCase))
+            {
                 throw new VerifierException($"Actual PE name '{actualSimpleName}' does not match provided name '{name}'");
+            }
 
-            return GetModule(peReader, throwIfNotFound);
+            return GetModule(peReader);
         }
 
         protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)
@@ -52,28 +57,16 @@ namespace ILVerify
             return _metadataRuntimeInterfacesAlgorithm;
         }
 
-        internal EcmaModule GetModule(PEReader peReader, bool throwIfNotFound = true)
+        internal EcmaModule GetModule(PEReader peReader)
         {
+            if (peReader == null)
+            {
+                return null;
+            }
+
             if (_modulesCache.TryGetValue(peReader, out EcmaModule existingModule))
             {
                 return existingModule;
-            }
-
-            EcmaModule module = CreateModule(peReader);
-            string simpleName = peReader.GetSimpleName();
-            if (module is null && throwIfNotFound)
-            {
-                throw new VerifierException("Assembly or module not found: " + simpleName);
-            }
-
-            return module;
-        }
-
-        private EcmaModule CreateModule(PEReader peReader)
-        {
-            if (peReader is null)
-            {
-                return null;
             }
 
             EcmaModule module = EcmaModule.Create(this, peReader);
