@@ -5,7 +5,6 @@
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
 //
-
 //
 // Compiler-targeted type for switching back into the current execution context, e.g.
 // 
@@ -25,6 +24,7 @@
 using System;
 using System.Security;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -46,7 +46,7 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Provides an awaiter that switches into a target environment.</summary>
         /// <remarks>This type is intended for compiler use only.</remarks>
-        public struct YieldAwaiter : ICriticalNotifyCompletion
+        public readonly struct YieldAwaiter : ICriticalNotifyCompletion
         {
             /// <summary>Gets whether a yield is not required.</summary>
             /// <remarks>This property is intended for compiler user rather than use directly in code.</remarks>
@@ -57,7 +57,7 @@ namespace System.Runtime.CompilerServices
             /// <exception cref="System.ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
             public void OnCompleted(Action continuation)
             {
-                QueueContinuation(continuation);
+                QueueContinuation(continuation, flowContext: true);
             }
 
             /// <summary>Posts the <paramref name="continuation"/> back to the current context.</summary>
@@ -65,17 +65,22 @@ namespace System.Runtime.CompilerServices
             /// <exception cref="System.ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
             public void UnsafeOnCompleted(Action continuation)
             {
-                QueueContinuation(continuation);
+                QueueContinuation(continuation, flowContext: false);
             }
 
             /// <summary>Posts the <paramref name="continuation"/> back to the current context.</summary>
             /// <param name="continuation">The action to invoke asynchronously.</param>
+            /// <param name="flowContext">true to flow ExecutionContext; false if flowing is not required.</param>
             /// <exception cref="System.ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
-            private static void QueueContinuation(Action continuation)
+            private static void QueueContinuation(Action continuation, bool flowContext)
             {
                 // Validate arguments
                 if (continuation == null) throw new ArgumentNullException(nameof(continuation));
 
+                if (TplEtwProvider.Log.IsEnabled())
+                {
+                    continuation = OutputCorrelationEtwEvent(continuation);
+                }
                 // Get the current SynchronizationContext, and if there is one,
                 // post the continuation to it.  However, treat the base type
                 // as if there wasn't a SynchronizationContext, since that's what it
@@ -93,7 +98,14 @@ namespace System.Runtime.CompilerServices
                     TaskScheduler scheduler = TaskScheduler.Current;
                     if (scheduler == TaskScheduler.Default)
                     {
-                        ThreadPool.UnsafeQueueUserWorkItem(s_waitCallbackRunAction, continuation);
+                        if (flowContext)
+                        {
+                            ThreadPool.QueueUserWorkItem(s_waitCallbackRunAction, continuation);
+                        }
+                        else
+                        {
+                            ThreadPool.UnsafeQueueUserWorkItem(s_waitCallbackRunAction, continuation);
+                        }
                     }
                     // We're targeting a custom scheduler, so queue a task.
                     else
@@ -101,6 +113,40 @@ namespace System.Runtime.CompilerServices
                         Task.Factory.StartNew(continuation, default(CancellationToken), TaskCreationOptions.PreferFairness, scheduler);
                     }
                 }
+            }
+
+            private static Action OutputCorrelationEtwEvent(Action continuation)
+            {
+#if CORERT
+                // TODO
+                return continuation;
+#else
+                int continuationId = Task.NewId();
+                Task currentTask = Task.InternalCurrent;
+                // fire the correlation ETW event
+                TplEtwProvider.Log.AwaitTaskContinuationScheduled(TaskScheduler.Current.Id, (currentTask != null) ? currentTask.Id : 0, continuationId);
+
+                return AsyncMethodBuilderCore.CreateContinuationWrapper(continuation, (innerContinuation,continuationIdTask) =>
+                {
+                    var etwLog = TplEtwProvider.Log;
+                    etwLog.TaskWaitContinuationStarted(((Task<int>)continuationIdTask).Result);
+
+                    // ETW event for Task Wait End.
+                    Guid prevActivityId = new Guid();
+                    // Ensure the continuation runs under the correlated activity ID generated above
+                    if (etwLog.TasksSetActivityIds)
+                        EventSource.SetCurrentThreadActivityId(TplEtwProvider.CreateGuidForTaskID(((Task<int>)continuationIdTask).Result), out prevActivityId);
+
+                    // Invoke the original continuation provided to OnCompleted.
+                    innerContinuation();
+                    // Restore activity ID
+
+                    if (etwLog.TasksSetActivityIds)
+                        EventSource.SetCurrentThreadActivityId(prevActivityId);
+
+                    etwLog.TaskWaitContinuationComplete(((Task<int>)continuationIdTask).Result);
+                }, Task.FromResult(continuationId)); // pass the ID in a task to avoid a closure\
+#endif
             }
 
             /// <summary>WaitCallback that invokes the Action supplied as object state.</summary>
