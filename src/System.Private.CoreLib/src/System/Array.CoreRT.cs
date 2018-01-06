@@ -942,7 +942,7 @@ namespace System
         {
             public ComparerAsComparerT(IComparer comparer)
             {
-                _comparer = (comparer == null) ? LowLevelComparer.Default : comparer;
+                _comparer = (comparer == null) ? Comparer.Default : comparer;
             }
 
             public int Compare(Object x, Object y)
