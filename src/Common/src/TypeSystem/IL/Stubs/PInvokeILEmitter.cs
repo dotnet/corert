@@ -107,6 +107,7 @@ namespace Internal.IL.Stubs
         {
             ILEmitter emitter = ilCodeStreams.Emitter;
             ILCodeStream fnptrLoadStream = ilCodeStreams.FunctionPointerLoadStream;
+            ILCodeStream marshallingCodeStream = ilCodeStreams.MarshallingCodeStream;
             ILCodeStream callsiteSetupCodeStream = ilCodeStreams.CallsiteSetupCodeStream;
             TypeSystemContext context = _targetMethod.Context;
 
@@ -155,7 +156,7 @@ namespace Internal.IL.Stubs
 
                 ILLocalVariable vDelegateStub = emitter.NewLocal(delegateMethod.DelegateType);
                 fnptrLoadStream.EmitStLoc(vDelegateStub);
-                fnptrLoadStream.EmitLdLoc(vDelegateStub);
+                marshallingCodeStream.EmitLdLoc(vDelegateStub);
                 MethodDesc invokeMethod = delegateMethod.DelegateType.GetKnownMethod("Invoke", null);
                 callsiteSetupCodeStream.Emit(ILOpcode.callvirt, emitter.NewToken(invokeMethod));
             }
@@ -304,10 +305,10 @@ namespace Internal.IL.Stubs
                 EmitPInvokeCall(pInvokeILCodeStreams);
             }
 
+            _marshallers[0].LoadReturnValue(unmarshallingCodestream);
             unmarshallingCodestream.Emit(ILOpcode.ret);
 
-            return new  PInvokeILStubMethodIL((ILStubMethodIL)emitter.Link(_targetMethod, nonConformingStackWorkaround: true), 
-                IsStubRequired());
+            return new  PInvokeILStubMethodIL((ILStubMethodIL)emitter.Link(_targetMethod), IsStubRequired());
         }
 
         public static MethodIL EmitIL(MethodDesc method, 
@@ -395,7 +396,7 @@ namespace Internal.IL.Stubs
         }
     }
 
-    public sealed class PInvokeILStubMethodIL : ILStubMethodILWithNonConformingStack
+    public sealed class PInvokeILStubMethodIL : ILStubMethodIL
     {
         public bool IsStubRequired { get; }
         public PInvokeILStubMethodIL(ILStubMethodIL methodIL, bool isStubRequired) : base(methodIL)
