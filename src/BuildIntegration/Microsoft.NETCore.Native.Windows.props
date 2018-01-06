@@ -76,9 +76,20 @@ See the LICENSE file in the project root for more information.
       <LinkerArg Include="/OPT:ICF" />
     </ItemGroup>
 
-    <Exec Command="where /Q $(CppLinker)" IgnoreExitCode="true">
-      <Output TaskParameter="ExitCode" PropertyName="_WhereLinker"/>
+    <Exec Command="where /Q $(CppCompiler) &amp;&amp; where /Q $(CppLinker)" IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="_WhereCppTools"/>
     </Exec>
-    <Error Condition="'$(_WhereLinker)' != '0'" Text="Platform linker not found. Make sure to publish from a x64 Native Tools Command Prompt for VS 2017 with C++ tools installed." />
+
+    <Exec Condition="'$(_WhereCppTools)' != '0'" Command="&quot;$(MSBuildThisFileDirectory)getvctoolspath.bat&quot; x86_amd64" LogStandardErrorAsError="true" ContinueOnError="false" ConsoleToMSBuild="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_CppToolsDirectory"/>
+    </Exec>
+
+    <PropertyGroup Condition="'$(_CppToolsDirectory)' != ''">
+      <CppCompiler>"$(_CppToolsDirectory)cl.exe"</CppCompiler>
+      <CppLinker>"$(_CppToolsDirectory)link.exe"</CppLinker>
+      <CppLibCreator>"$(_CppToolsDirectory)lib.exe"</CppLibCreator>
+    </PropertyGroup>
+
+    <Error Condition="'$(_WhereCppTools)' != '0' AND '$(_CppToolsDirectory)' == ''" Text="Platform linker not found. Make sure to publish from a x64 Native Tools Command Prompt for VS 2017 with C++ tools installed." />
   </Target>
 </Project>
