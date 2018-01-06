@@ -464,7 +464,7 @@ namespace System
             if (array.Rank != 1)
                 throw new RankException(SR.Rank_MultiDimNotSupported);
 
-            if (comparer == null) comparer = LowLevelComparer.Default;
+            if (comparer == null) comparer = Comparer.Default;
 
             int lo = index;
             int hi = index + length - 1;
