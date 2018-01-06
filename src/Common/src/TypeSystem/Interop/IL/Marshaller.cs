@@ -1102,7 +1102,7 @@ namespace Internal.TypeSystem.Interop
             codeStream.Emit(ILOpcode.brfalse, lNullArray);
 
             // allocate memory
-            // nativeParameter = (byte**)CoTaskMemAllocAndZeroMemory((IntPtr)(checked(manageParameter.Length * sizeof(byte*))));
+            // nativeParameter = (byte**)CoTaskMemAllocAndZeroMemory((IntPtr)(checked(managedParameter.Length * sizeof(byte*))));
 
             // loads the number of elements
             EmitElementCount(codeStream, MarshalDirection.Forward);
@@ -1111,10 +1111,6 @@ namespace Internal.TypeSystem.Interop
             codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(nativeElementType));
 
             codeStream.Emit(ILOpcode.mul_ovf);
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                                Context.SystemModule.
-                                    GetKnownType("System", "IntPtr").
-                                        GetKnownMethod("op_Explicit", null)));
 
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
                                 Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemAllocAndZeroMemory")));

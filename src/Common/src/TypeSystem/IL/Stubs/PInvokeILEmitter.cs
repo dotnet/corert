@@ -107,6 +107,7 @@ namespace Internal.IL.Stubs
         {
             ILEmitter emitter = ilCodeStreams.Emitter;
             ILCodeStream fnptrLoadStream = ilCodeStreams.FunctionPointerLoadStream;
+            ILCodeStream marshallingCodeStream = ilCodeStreams.MarshallingCodeStream;
             ILCodeStream callsiteSetupCodeStream = ilCodeStreams.CallsiteSetupCodeStream;
             TypeSystemContext context = _targetMethod.Context;
 
@@ -155,7 +156,7 @@ namespace Internal.IL.Stubs
 
                 ILLocalVariable vDelegateStub = emitter.NewLocal(delegateMethod.DelegateType);
                 fnptrLoadStream.EmitStLoc(vDelegateStub);
-                fnptrLoadStream.EmitLdLoc(vDelegateStub);
+                marshallingCodeStream.EmitLdLoc(vDelegateStub);
                 MethodDesc invokeMethod = delegateMethod.DelegateType.GetKnownMethod("Invoke", null);
                 callsiteSetupCodeStream.Emit(ILOpcode.callvirt, emitter.NewToken(invokeMethod));
             }
