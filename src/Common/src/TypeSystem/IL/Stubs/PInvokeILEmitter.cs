@@ -304,10 +304,10 @@ namespace Internal.IL.Stubs
                 EmitPInvokeCall(pInvokeILCodeStreams);
             }
 
+            _marshallers[0].LoadReturnValue(unmarshallingCodestream);
             unmarshallingCodestream.Emit(ILOpcode.ret);
 
-            return new  PInvokeILStubMethodIL((ILStubMethodIL)emitter.Link(_targetMethod), 
-                IsStubRequired());
+            return new  PInvokeILStubMethodIL((ILStubMethodIL)emitter.Link(_targetMethod), IsStubRequired());
         }
 
         public static MethodIL EmitIL(MethodDesc method, 

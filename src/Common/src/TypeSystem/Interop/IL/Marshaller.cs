@@ -434,7 +434,7 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public void EmitArgumentMarshallingIL()
+        private void EmitArgumentMarshallingIL()
         {
             switch (MarshalDirection)
             {
@@ -443,7 +443,7 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public void EmitElementMarshallingIL()
+        private void EmitElementMarshallingIL()
         {
             switch (MarshalDirection)
             {
@@ -452,7 +452,7 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public void EmitFieldMarshallingIL()
+        private void EmitFieldMarshallingIL()
         {
             switch (MarshalDirection)
             {
@@ -526,14 +526,22 @@ namespace Internal.TypeSystem.Interop
             StoreNativeValue(_ilCodeStreams.ReturnValueMarshallingCodeStream);
 
             AllocAndTransformNativeToManaged(_ilCodeStreams.ReturnValueMarshallingCodeStream);
+        }
 
-            LoadManagedValue(_ilCodeStreams.ReturnValueMarshallingCodeStream);
+        public virtual void LoadReturnValue(ILCodeStream codeStream)
+        {
+            Debug.Assert(Return);
+
+            switch (MarshalDirection)
+            {
+                case MarshalDirection.Forward: LoadManagedValue(codeStream); return;
+                case MarshalDirection.Reverse: LoadNativeValue(codeStream); return;
+            }
         }
 
         protected virtual void SetupArguments()
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            ILCodeStream marshallingCodeStream = _ilCodeStreams.MarshallingCodeStream;
 
             if (MarshalDirection == MarshalDirection.Forward)
             {
@@ -560,7 +568,6 @@ namespace Internal.TypeSystem.Interop
         protected virtual void SetupArgumentsForElementMarshalling()
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            ILCodeStream marshallingCodeStream = _ilCodeStreams.MarshallingCodeStream;
 
             _managedHome = new Home(emitter.NewLocal(ManagedType), ManagedType, isByRef: false);
             _nativeHome = new Home(emitter.NewLocal(NativeType), NativeType, isByRef: false);
@@ -569,7 +576,6 @@ namespace Internal.TypeSystem.Interop
         protected virtual void SetupArgumentsForFieldMarshalling()
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            ILCodeStream marshallingCodeStream = _ilCodeStreams.MarshallingCodeStream;
 
             //
             // these are temporary locals for propagating value
@@ -581,7 +587,6 @@ namespace Internal.TypeSystem.Interop
         protected virtual void SetupArgumentsForReturnValueMarshalling()
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            ILCodeStream marshallingCodeStream = _ilCodeStreams.MarshallingCodeStream;
 
             _managedHome = new Home(emitter.NewLocal(ManagedType), ManagedType, isByRef: false);
             _nativeHome = new Home(emitter.NewLocal(NativeType), NativeType, isByRef: false);
@@ -768,8 +773,6 @@ namespace Internal.TypeSystem.Interop
             StoreManagedValue(_ilCodeStreams.ReturnValueMarshallingCodeStream);
 
             AllocAndTransformManagedToNative(_ilCodeStreams.ReturnValueMarshallingCodeStream);
-
-            LoadNativeValue(_ilCodeStreams.ReturnValueMarshallingCodeStream);
         }
 
         protected virtual void EmitMarshalArgumentNativeToManaged()
@@ -901,6 +904,10 @@ namespace Internal.TypeSystem.Interop
         }
         protected override void EmitMarshalReturnValueNativeToManaged()
         {
+        }
+        public override void LoadReturnValue(ILCodeStream codeStream)
+        {
+            Debug.Assert(Return);
         }
     }
 
@@ -1174,8 +1181,7 @@ namespace Internal.TypeSystem.Interop
 
             codeStream.EmitLdLoc(vIndex);
             codeStream.EmitLdLoc(vLength);
-            codeStream.Emit(ILOpcode.clt);
-            codeStream.Emit(ILOpcode.brtrue, lLoopHeader);
+            codeStream.Emit(ILOpcode.blt, lLoopHeader);
             codeStream.EmitLabel(lNullArray);
         }
 
@@ -1243,8 +1249,7 @@ namespace Internal.TypeSystem.Interop
             codeStream.EmitLabel(lRangeCheck);
             codeStream.EmitLdLoc(vIndex);
             codeStream.EmitLdLoc(vLength);
-            codeStream.Emit(ILOpcode.clt);
-            codeStream.Emit(ILOpcode.brtrue, lLoopHeader);
+            codeStream.Emit(ILOpcode.blt, lLoopHeader);
             codeStream.EmitLabel(lNullArray);
         }
 
@@ -1323,8 +1328,7 @@ namespace Internal.TypeSystem.Interop
 
                 codeStream.EmitLdLoc(vIndex);
                 codeStream.EmitLdLoc(vLength);
-                codeStream.Emit(ILOpcode.clt);
-                codeStream.Emit(ILOpcode.brtrue, lLoopHeader);
+                codeStream.Emit(ILOpcode.blt, lLoopHeader);
             }
 
             LoadNativeValue(codeStream);
@@ -2042,8 +2046,7 @@ namespace Internal.TypeSystem.Interop
             codeStream.EmitLdLoc(vIndex);
 
             codeStream.EmitLdLoc(vLength);
-            codeStream.Emit(ILOpcode.clt);
-            codeStream.Emit(ILOpcode.brtrue, lLoopHeader);
+            codeStream.Emit(ILOpcode.blt, lLoopHeader);
 
             codeStream.EmitLabel(lDone);
         }
@@ -2121,8 +2124,7 @@ namespace Internal.TypeSystem.Interop
 
             codeStream.EmitLdLoc(vIndex);
             codeStream.EmitLdLoc(vLength);
-            codeStream.Emit(ILOpcode.clt);
-            codeStream.Emit(ILOpcode.brtrue, lLoopHeader);
+            codeStream.Emit(ILOpcode.blt, lLoopHeader);
         }
     }
 
