@@ -734,34 +734,31 @@ namespace ILCompiler.DependencyAnalysis
             _owningMethodOrType = owningMethodOrType;
         }
 
-        private GenericContextKind ContextKind
+        private GenericContextKind ContextKind(NodeFactory factory)
         {
-            get
+            if (_owningMethodOrType is MethodDesc)
             {
-                if (_owningMethodOrType is MethodDesc)
+                MethodDesc owningMethod = (MethodDesc)_owningMethodOrType;
+                Debug.Assert(owningMethod.HasInstantiation);
+                return GenericContextKind.FromMethodHiddenArg | GenericContextKind.NeedsUSGContext;
+            }
+            else
+            {
+                TypeDesc owningType = (TypeDesc)_owningMethodOrType;
+                if (owningType.IsSzArray || owningType.HasSameTypeDefinition(factory.ArrayOfTClass) || owningType.IsValueType || owningType.IsSealed())
                 {
-                    MethodDesc owningMethod = (MethodDesc)_owningMethodOrType;
-                    Debug.Assert(owningMethod.HasInstantiation);
-                    return GenericContextKind.FromMethodHiddenArg | GenericContextKind.NeedsUSGContext;
+                    return GenericContextKind.FromHiddenArg | GenericContextKind.NeedsUSGContext;
                 }
                 else
                 {
-                    TypeDesc owningType = (TypeDesc)_owningMethodOrType;
-                    if (owningType.IsSzArray || owningType.IsValueType || owningType.IsSealed())
-                    {
-                        return GenericContextKind.FromHiddenArg | GenericContextKind.NeedsUSGContext;
-                    }
-                    else
-                    {
-                        return GenericContextKind.FromHiddenArg | GenericContextKind.NeedsUSGContext | GenericContextKind.HasDeclaringType;
-                    }
+                    return GenericContextKind.FromHiddenArg | GenericContextKind.NeedsUSGContext | GenericContextKind.HasDeclaringType;
                 }
             }
         }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
         {
-            if ((ContextKind & GenericContextKind.HasDeclaringType) != 0)
+            if ((ContextKind(context) & GenericContextKind.HasDeclaringType) != 0)
             {
                 return new DependencyListEntry[] 
                 {
@@ -796,10 +793,10 @@ namespace ILCompiler.DependencyAnalysis
 
             Vertex signature;
 
-            GenericContextKind contextKind = ContextKind;
+            GenericContextKind contextKind = ContextKind(factory);
             NativeWriter nativeWriter = GetNativeWriter(factory);
 
-            if ((ContextKind & GenericContextKind.HasDeclaringType) != 0)
+            if ((contextKind & GenericContextKind.HasDeclaringType) != 0)
             {
                 signature = nativeWriter.GetTuple(factory.NativeLayout.TypeSignatureVertex((TypeDesc)_owningMethodOrType).WriteVertex(factory), sequence);
             }
