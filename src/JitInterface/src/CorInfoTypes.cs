@@ -1464,7 +1464,7 @@ namespace Internal.JitInterface
         CORJIT_FLAG_UNUSED3 = 10,
         CORJIT_FLAG_UNUSED4 = 11,
         CORJIT_FLAG_UNUSED5 = 12,
-        CORJIT_FLAG_USE_SSE3_4 = 13,
+        CORJIT_FLAG_UNUSED6 = 13,
         CORJIT_FLAG_USE_AVX = 14,
         CORJIT_FLAG_USE_AVX2 = 15,
         CORJIT_FLAG_USE_AVX_512 = 16,
