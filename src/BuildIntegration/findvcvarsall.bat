@@ -1,9 +1,8 @@
 @ECHO OFF
 SETLOCAL
+
 SET vswherePath=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe
-IF NOT EXIST "%vswherePath%" (
-    GOTO :ERROR
-)
+IF NOT EXIST "%vswherePath%" GOTO :ERROR
 
 FOR /F "tokens=*" %%i IN (	'
 	  "%vswherePath%" -latest -products * ^
@@ -11,18 +10,13 @@ FOR /F "tokens=*" %%i IN (	'
         -property installationPath'
       ) DO SET vsBase=%%i
 
-IF "%vsBase%"=="" (
-    GOTO :ERROR
-)
+IF "%vsBase%"=="" GOTO :ERROR
 
-CALL "%vsBase%\vc\Auxiliary\Build\vcvarsall.bat" %1% > NUL
-
-FOR /F "delims=" %%W IN ('where link') DO (
-    FOR %%A IN ("%%W") DO ECHO %%~dpA
-    EXIT /B 0
-)
+>"%~dp0\.vcvarsallwithargs" echo("%vsBase%\vc\Auxiliary\Build\vcvarsall.bat" %1%
 
 ENDLOCAL
+
+EXIT /B 0
 
 :ERROR
     ECHO "Visual Studio not found, try to downloading it from https://www.visualstudio.com/ and select Desktop Development for C++ workload."

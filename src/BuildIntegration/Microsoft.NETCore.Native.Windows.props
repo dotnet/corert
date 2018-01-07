@@ -80,16 +80,16 @@ See the LICENSE file in the project root for more information.
       <Output TaskParameter="ExitCode" PropertyName="_WhereCppTools"/>
     </Exec>
 
-    <Exec Condition="'$(_WhereCppTools)' != '0'" Command="&quot;$(MSBuildThisFileDirectory)getvctoolspath.bat&quot; x86_amd64" LogStandardErrorAsError="true" ContinueOnError="false" ConsoleToMSBuild="true">
-      <Output TaskParameter="ConsoleOutput" PropertyName="_CppToolsDirectory"/>
+    <Exec Condition="'$(_WhereCppTools)' != '0'" Command="&quot;$(MSBuildThisFileDirectory)findvcvarsall.bat&quot; x86_amd64" IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="_VCVarsAllFound"/>
     </Exec>
 
-    <PropertyGroup Condition="'$(_CppToolsDirectory)' != ''">
-      <CppCompiler>"$(_CppToolsDirectory)cl.exe"</CppCompiler>
-      <CppLinker>"$(_CppToolsDirectory)link.exe"</CppLinker>
-      <CppLibCreator>"$(_CppToolsDirectory)lib.exe"</CppLibCreator>
+    <PropertyGroup Condition="'$(_VCVarsAllFound)' == '0'">
+      <CppCompiler>"$(MSBuildThisFileDirectory)winvcppcompiler.bat"</CppCompiler>
+      <CppLinker>"$(MSBuildThisFileDirectory)winvcpplinker.bat"</CppLinker>
+      <CppLibCreator>"$(MSBuildThisFileDirectory)winvcpplibcreator.bat"</CppLibCreator>
     </PropertyGroup>
 
-    <Error Condition="'$(_WhereCppTools)' != '0' AND '$(_CppToolsDirectory)' == ''" Text="Platform linker not found. Make sure to publish from a x64 Native Tools Command Prompt for VS 2017 with C++ tools installed." />
+    <Error Condition="'$(_WhereCppTools)' != '0' AND '$(_VCVarsAllFound)' == '1'" Text="Platform linker not found. Make sure to publish from a x64 Native Tools Command Prompt for VS 2017 with C++ tools installed." />
   </Target>
 </Project>
