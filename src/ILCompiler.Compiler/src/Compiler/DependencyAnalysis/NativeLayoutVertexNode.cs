@@ -885,6 +885,16 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => "NativeLayoutTemplateTypeLayoutVertexNode_" + factory.NameMangler.GetMangledTypeName(_type);
 
+        private bool GeneratesInstanceFieldLayoutInformation
+        {
+            get
+            {
+                return !_isUniversalCanon
+                    && _type.Context.Target.Abi != TargetAbi.ProjectN
+                    && InstanceFieldLayoutNode.NeedsFieldLayoutInformation(_type);
+            }
+        }
+
         public NativeLayoutTemplateTypeLayoutVertexNode(NodeFactory factory, TypeDesc type)
         {
             Debug.Assert(type.IsCanonicalSubtype(CanonicalFormKind.Any));
@@ -1013,6 +1023,27 @@ namespace ILCompiler.DependencyAnalysis
                 // For USG delegate, we need to write the signature of the Invoke method to the native layout.
                 // This signature is used by the calling convention converter to marshal parameters during delegate calls.
                 yield return new DependencyListEntry(context.NativeLayout.MethodSignatureVertex(_type.GetMethod("Invoke", null).GetTypicalMethodDefinition().Signature), "invoke method signature");
+            }
+
+            if (GeneratesInstanceFieldLayoutInformation)
+            {
+                const string reason = "Instance field layout";
+
+                foreach (FieldDesc field in _type.GetFields())
+                {
+                    if (field.IsStatic)
+                        continue;
+
+                    TypeDesc fieldType = InstanceFieldLayoutNode.NormalizeFieldType(field.FieldType);
+                    
+                    yield return new DependencyListEntry(context.NativeLayout.PlacedSignatureVertex(context.NativeLayout.TypeSignatureVertex(fieldType)), reason);
+
+                    // And ensure the type can be properly laid out
+                    foreach (var dependency in context.NativeLayout.TemplateConstructableTypes(fieldType))
+                    {
+                        yield return new DependencyListEntry(dependency, reason);
+                    }
+                }
             }
 
             if (_isUniversalCanon)
@@ -1255,6 +1286,27 @@ namespace ILCompiler.DependencyAnalysis
                 List<uint> varianceFlag = new List<uint>();
                 varianceFlag.Add((uint)Internal.Runtime.GenericVariance.ArrayCovariant);
                 layoutInfo.Append(BagElementKind.GenericVarianceInfo, factory.NativeLayout.PlacedUIntVertexSequence(varianceFlag).WriteVertex(factory));
+            }
+
+            if (GeneratesInstanceFieldLayoutInformation)
+            {
+                VertexSequence fieldsSequence = new VertexSequence();
+
+                foreach (FieldDesc field in _type.GetFields())
+                {
+                    if (field.IsStatic)
+                        continue;
+
+                    TypeDesc fieldType = InstanceFieldLayoutNode.NormalizeFieldType(field.FieldType);
+                    NativeLayoutPlacedSignatureVertexNode fieldTypeSignature = factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.TypeSignatureVertex(fieldType));
+
+                    Vertex staticFieldVertexData = writer.GetTuple(fieldTypeSignature.WriteVertex(factory), writer.GetUnsignedConstant((uint)field.Offset.AsInt));
+
+                    fieldsSequence.Append(staticFieldVertexData);
+                }
+
+                Vertex placedFieldsLayout = factory.MetadataManager.NativeLayoutInfo.SignaturesSection.Place(fieldsSequence);
+                layoutInfo.Append(BagElementKind.InstanceFieldLayout, placedFieldsLayout);
             }
 
             if (_isUniversalCanon)

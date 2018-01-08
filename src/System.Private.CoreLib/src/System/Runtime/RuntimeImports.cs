@@ -340,6 +340,10 @@ namespace System.Runtime
         internal static extern unsafe object RhBoxAny(void* pData, EETypePtr pEEType);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhBoxAny")]
+        internal static extern unsafe object RhBoxAny(ref byte pData, EETypePtr pEEType);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewObject")]
         internal static extern object RhNewObject(EETypePtr pEEType);
 

@@ -57,6 +57,7 @@ namespace ILCompiler.DependencyAnalysis
             ResourceDataNode,
             ResourceIndexNode,
             TypeMetadataMapNode,
+            InstanceFieldLayoutNode,
             ClassConstructorContextMap,
             DynamicInvokeTemplateDataNode,
             ReflectionInvokeMapNode,

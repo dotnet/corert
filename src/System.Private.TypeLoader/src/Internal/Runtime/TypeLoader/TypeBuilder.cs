@@ -629,6 +629,11 @@ namespace Internal.Runtime.TypeLoader
                         typeInfoParser.SkipInteger(); // Handled in type layout algorithm
                         break;
 
+                    case BagElementKind.InstanceFieldLayout:
+                        TypeLoaderLogger.WriteLine("Found BagElementKind.InstanceFieldLayout");
+                        typeInfoParser.SkipInteger(); // Handled in ValueType.GetHashCode/Equals support code
+                        break;
+
                     case BagElementKind.VTableMethodSignatures:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.VTableMethodSignatures");
                         ParseVTableMethodSignatures(state, context, typeInfoParser.GetParserFromRelativeOffset());

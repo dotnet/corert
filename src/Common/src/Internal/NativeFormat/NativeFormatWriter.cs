@@ -680,6 +680,14 @@ namespace Internal.NativeFormat
     {
         private List<Vertex> _elements;
 
+        public int Count
+        {
+            get
+            {
+                return _elements.Count;
+            }
+        }
+
         public VertexSequence()
         {
             _elements = new List<Vertex>();
