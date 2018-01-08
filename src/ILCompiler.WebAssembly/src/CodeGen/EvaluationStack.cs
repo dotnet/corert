@@ -484,7 +484,7 @@ namespace Internal.IL
     }
 
     /// <summary>
-    /// Represents a managed function pointer
+    /// Represents the result of a ldftn or ldvirtftn
     /// </summary>
     internal class FunctionPointerEntry : ExpressionEntry
     {
@@ -499,6 +499,11 @@ namespace Internal.IL
         {
             Method = method;
             IsVirtual = isVirtual;
+        }
+
+        public override StackEntry Duplicate()
+        {
+            return new FunctionPointerEntry(Name, Method, RawLLVMValue, Type, IsVirtual);
         }
     }
 

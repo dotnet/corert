@@ -850,10 +850,6 @@ namespace Internal.IL
                         PushExpression(StackValueKind.NativeInt, "thunk", GetOrCreateLLVMFunction(_compilation.NodeFactory.NameMangler.GetMangledMethodName(delegateInfo.Thunk.Method).ToString()));
                     }
                 }
-                else
-                {
-                    opcode = ILOpcode.call;
-                }
             }
 
             HandleCall(callee, callee.Signature, opcode);
@@ -882,7 +878,7 @@ namespace Internal.IL
                 return GetOrCreateLLVMFunction(calleeName);
             }
         }
-
+        
         private LLVMValueRef GetOrCreateMethodSlot(MethodDesc method)
         {
             var vtableSlotSymbol = _compilation.NodeFactory.VTableSlot(method);
@@ -991,27 +987,36 @@ namespace Internal.IL
 
         private void HandleCall(MethodDesc callee, MethodSignature signature, ILOpcode opcode = ILOpcode.call, LLVMValueRef calliTarget = default(LLVMValueRef))
         {
-            if (opcode == ILOpcode.callvirt && callee.IsVirtual)
-            {
-                AddVirtualMethodReference(callee);
-            }
-            else if (callee != null)
+            if (callee != null && !callee.IsAbstract)
             {
                 AddMethodReference(callee);
             }
 
-            int offset = GetTotalParameterOffset() + GetTotalLocalOffset() + signature.ReturnType.GetElementSize().AsInt;
+            int offset = GetTotalParameterOffset() + GetTotalLocalOffset();
+
+            LLVMValueRef returnAddress;
+            LLVMValueRef castReturnAddress;
+            if (signature.ReturnType != GetWellKnownType(WellKnownType.Void))
+            {
+                offset += signature.ReturnType.GetElementSize().AsInt;
+
+                int returnOffset = GetTotalParameterOffset() + GetTotalLocalOffset();
+                returnAddress = LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_llvmFunction),
+                    new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)returnOffset, LLVMMisc.False) },
+                    String.Empty);
+                castReturnAddress = LLVM.BuildPointerCast(_builder, returnAddress, LLVM.PointerType(LLVM.Int8Type(), 0), "castreturnaddress");
+            }
+            else
+            {
+                returnAddress = LLVM.ConstNull(LLVM.PointerType(LLVM.Int8Type(), 0));
+                castReturnAddress = returnAddress;
+            }
 
             LLVMValueRef shadowStack = LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_llvmFunction),
                 new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)offset, LLVMMisc.False) },
                 String.Empty);
             var castShadowStack = LLVM.BuildPointerCast(_builder, shadowStack, LLVM.PointerType(LLVM.Int8Type(), 0), "castshadowstack");
 
-            int returnOffset = GetTotalParameterOffset() + GetTotalLocalOffset();
-            var returnAddress = LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_llvmFunction),
-                new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)returnOffset, LLVMMisc.False) },
-                String.Empty);
-            var castReturnAddress = LLVM.BuildPointerCast(_builder, returnAddress, LLVM.PointerType(LLVM.Int8Type(), 0), "castreturnaddress");
 
             // argument offset
             uint argOffset = 0;
