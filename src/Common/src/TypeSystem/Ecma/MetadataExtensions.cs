@@ -284,16 +284,5 @@ namespace Internal.TypeSystem.Ecma
         {
             return (flags & MethodAttributes.MemberAccessMask) == MethodAttributes.Public;
         }
-
-        public static string GetSimpleName(this PEReader peReader)
-        {
-            MetadataReader metadataReader = peReader.GetMetadataReader();
-
-            StringHandle nameHandle = metadataReader.IsAssembly
-                ? metadataReader.GetAssemblyDefinition().Name
-                : metadataReader.GetModuleDefinition().Name;
-
-            return metadataReader.GetString(nameHandle);
-        }
     }
 }

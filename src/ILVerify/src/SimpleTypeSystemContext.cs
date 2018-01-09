@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using Internal.IL;
 using Internal.TypeSystem;
@@ -34,13 +35,23 @@ namespace ILVerify
                 throw new VerifierException("Assembly or module not found: " + name.Name);
             }
 
-            string actualSimpleName = peReader.GetSimpleName();
+            var module = GetModule(peReader);
+            VerifyModuleName(name, module);
+            return module;
+        }
+
+        private static void VerifyModuleName(AssemblyName name, EcmaModule module)
+        {
+            MetadataReader metadataReader = module.MetadataReader;
+            StringHandle nameHandle = metadataReader.IsAssembly
+                ? metadataReader.GetAssemblyDefinition().Name
+                : metadataReader.GetModuleDefinition().Name;
+
+            string actualSimpleName = metadataReader.GetString(nameHandle);
             if (!actualSimpleName.Equals(name.Name, StringComparison.OrdinalIgnoreCase))
             {
                 throw new VerifierException($"Actual PE name '{actualSimpleName}' does not match provided name '{name}'");
             }
-
-            return GetModule(peReader);
         }
 
         protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)

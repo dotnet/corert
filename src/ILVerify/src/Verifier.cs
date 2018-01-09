@@ -37,6 +37,11 @@ namespace ILVerify
             _typeSystemContext.SetSystemModule(_typeSystemContext.GetModule(_typeSystemContext._resolver.Resolve(name)));
         }
 
+        public EcmaModule GetModule(PEReader peReader)
+        {
+            return _typeSystemContext.GetModule(peReader);
+        }
+
         public IEnumerable<VerificationResult> Verify(PEReader peReader)
         {
             if (peReader == null)
@@ -52,7 +57,7 @@ namespace ILVerify
             IEnumerable<VerificationResult> results;
             try
             {
-                EcmaModule module = _typeSystemContext.GetModule(peReader);
+                EcmaModule module = GetModule(peReader);
                 results = VerifyMethods(module, module.MetadataReader.MethodDefinitions);
             }
             catch (VerifierException e)
@@ -86,7 +91,7 @@ namespace ILVerify
             IEnumerable<VerificationResult> results;
             try
             {
-                EcmaModule module = _typeSystemContext.GetModule(peReader);
+                EcmaModule module = GetModule(peReader);
                 TypeDefinition typeDef = peReader.GetMetadataReader().GetTypeDefinition(typeHandle);
                 results = VerifyMethods(module, typeDef.GetMethods());
             }
@@ -121,7 +126,7 @@ namespace ILVerify
             IEnumerable<VerificationResult> results;
             try
             {
-                EcmaModule module = _typeSystemContext.GetModule(peReader);
+                EcmaModule module = GetModule(peReader);
                 results = VerifyMethods(module, new[] { methodHandle });
             }
             catch (VerifierException e)
@@ -144,7 +149,7 @@ namespace ILVerify
 
                 if (methodIL != null)
                 {
-                    var results = VerifyMethod(module, method, methodIL, methodHandle);
+                    var results = VerifyMethod(module, methodIL, methodHandle);
                     foreach (var result in results)
                     {
                         yield return result;
@@ -153,9 +158,10 @@ namespace ILVerify
             }
         }
 
-        private IEnumerable<VerificationResult> VerifyMethod(EcmaModule module, MethodDesc method, MethodIL methodIL, MethodDefinitionHandle methodHandle)
+        private IEnumerable<VerificationResult> VerifyMethod(EcmaModule module, MethodIL methodIL, MethodDefinitionHandle methodHandle)
         {
             var builder = new ArrayBuilder<VerificationResult>();
+            MethodDesc method = methodIL.OwningMethod; 
 
             try
             {
@@ -167,7 +173,6 @@ namespace ILVerify
 
                     builder.Add(new VerificationResult()
                     {
-                        TypeName = ((EcmaType)method.OwningType).Name,
                         Method = methodHandle,
                         Error = args,
                         Message = string.IsNullOrEmpty(codeResource) ? args.Code.ToString() : codeResource
@@ -184,7 +189,6 @@ namespace ILVerify
             {
                 builder.Add(new VerificationResult()
                 {
-                    TypeName = ((EcmaType)method.OwningType).Name,
                     Method = methodHandle,
                     Message = "Unable to resolve token"
                 });
@@ -216,7 +220,6 @@ namespace ILVerify
             {
                 builder.Add(new VerificationResult()
                 {
-                    TypeName = ((EcmaType)method.OwningType).Name,
                     Method = methodHandle,
                     Message = e.Message
                 });

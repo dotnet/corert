@@ -12,6 +12,7 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Text.RegularExpressions;
 using Internal.CommandLine;
+using Internal.TypeSystem.Ecma;
 using static System.Console;
 
 namespace ILVerify
@@ -118,14 +119,15 @@ namespace ILVerify
 
             foreach (var kvp in _inputFilePaths)
             {
-                var results = VerifyAssembly(new AssemblyName(kvp.Key));
+                var results = VerifyAssembly(new AssemblyName(kvp.Key), out EcmaModule module);
+                int numErrors = 0;
 
                 foreach (var result in results)
                 {
-                    PrintResult(result, kvp.Value);
+                    numErrors++;
+                    PrintResult(result, module, kvp.Value);
                 }
 
-                var numErrors = results.Count();
                 if (numErrors > 0)
                     WriteLine(numErrors + " Error(s) Verifying " + kvp.Value);
                 else
@@ -135,16 +137,23 @@ namespace ILVerify
             return 0;
         }
 
-        private void PrintResult(VerificationResult result, string pathOrModuleName)
+        private void PrintResult(VerificationResult result, EcmaModule module, string pathOrModuleName)
         {
             Write("[IL]: Error: ");
 
             Write("[");
             Write(pathOrModuleName);
             Write(" : ");
-            Write(result.TypeName);
+
+            MetadataReader metadataReader = module.MetadataReader;
+
+            TypeDefinition typeDef = metadataReader.GetTypeDefinition(metadataReader.GetMethodDefinition(result.Method).GetDeclaringType());
+            string typeName = metadataReader.GetString(typeDef.Name);
+            Write(typeName);
+
             Write("::");
-            Write(result.Method);
+            var method = (EcmaMethod)module.GetMethod(result.Method);
+            PrintMethod(method);
             Write("]");
 
             var args = result.Error;
@@ -180,9 +189,42 @@ namespace ILVerify
             WriteLine(result.Message);
         }
 
-        private IEnumerable<VerificationResult> VerifyAssembly(AssemblyName name)
+        private static void PrintMethod(EcmaMethod method)
+        {
+            Write(method.Name);
+            Write("(");
+
+            if (method.Signature._parameters != null && method.Signature._parameters.Length > 0)
+            {
+                bool first = true;
+                foreach (Internal.TypeSystem.TypeDesc parameter in method.Signature._parameters)
+                {
+                    if (first)
+                    {
+                        first = false;
+                    }
+                    else
+                    {
+                        Write(", ");
+                    }
+
+                    Write(parameter.ToString());
+                }
+            }
+
+            Write(")");
+        }
+
+        private IEnumerable<VerificationResult> VerifyAssembly(AssemblyName name, out EcmaModule module)
         {
             PEReader peReader = Resolve(name);
+            module = _verifier.GetModule(peReader);
+
+            return VerifyAssembly(peReader);
+        }
+
+        private IEnumerable<VerificationResult> VerifyAssembly(PEReader peReader)
+        {
             MetadataReader metadataReader = peReader.GetMetadataReader();
             foreach (var methodHandle in metadataReader.MethodDefinitions)
             {
