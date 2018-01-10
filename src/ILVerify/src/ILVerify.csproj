@@ -7,9 +7,6 @@
     <CLSCompliant>false</CLSCompliant>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>D:\repos\roslyn4\build\Targets\..\Strong Name Keys\RoslynInternalKey.Private.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,7 +15,7 @@
     <Compile Include="ILImporter.Verify.cs" />
     <Compile Include="ILImporter.StackValue.cs" />
     <Compile Include="SimpleArrayOfTRuntimeInterfacesAlgorithm.cs" />
-    <Compile Include="SimpleTypeSystemContext.cs" />
+    <Compile Include="ILVerifyTypeSystemContext.cs" />
     <Compile Include="Verifier.cs" />
     <Compile Include="VerifierError.cs" />
     <Compile Include="TypeSystemHelpers.cs" />

@@ -13,7 +13,7 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILVerify
 {
-    class SimpleTypeSystemContext : MetadataTypeSystemContext
+    class ILVerifyTypeSystemContext : MetadataTypeSystemContext
     {
         internal readonly IResolver _resolver;
 
@@ -22,7 +22,7 @@ namespace ILVerify
 
         private readonly Dictionary<PEReader, EcmaModule> _modulesCache = new Dictionary<PEReader, EcmaModule>();
 
-        public SimpleTypeSystemContext(IResolver resolver)
+        public ILVerifyTypeSystemContext(IResolver resolver)
         {
             _resolver = resolver;
         }

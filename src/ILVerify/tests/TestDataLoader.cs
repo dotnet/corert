@@ -176,7 +176,7 @@ namespace ILVerify.Tests
             simpleNameToPathMap.Add(systemRuntime.GetName().Name, systemRuntime.Location);
 
             var resolver = new TestResolver(simpleNameToPathMap);
-            var typeSystemContext = new SimpleTypeSystemContext(resolver);
+            var typeSystemContext = new ILVerifyTypeSystemContext(resolver);
             typeSystemContext.SetSystemModule(typeSystemContext.GetModule(resolver.Resolve(coreAssembly.GetName())));
 
             return typeSystemContext.GetModule(resolver.Resolve(new AssemblyName(Path.GetFileNameWithoutExtension(assemblyName))));
