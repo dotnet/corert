@@ -418,10 +418,8 @@
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\InterfaceFolding\Ambiguous\Ambiguous.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TSAmbiguities\SameMethodImpl\CollapsedInterfaces\HelloWorld\HelloWorld.*" />
 
-    <!-- Ambiguous virtual overloads -->
-    <!-- https://github.com/dotnet/corert/issues/190 -->
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TSAmbiguities\CollapsedMethods\InterfaceImplementation\HelloWorld\HelloWorld.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TSAmbiguities\CollapsedMethods\Override\HelloWorld\HelloWorld.*" />
+    <!-- Complex constrained method calls in shared generic code -->
+    <!-- https://github.com/dotnet/corert/issues/2526 -->
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_568786\4_Misc\Variance2\Variance2.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_568786\4_Misc\SealedTypes\SealedTypes.*" /> 
 
