@@ -28,12 +28,26 @@ namespace System
 
         public override bool Equals(object obj)
         {
+#if PROJECTN
             return RuntimeAugments.Callbacks.ValueTypeEqualsUsingReflection(this, obj);
+#else
+            if (obj == null)
+                return false;
+
+            if (EETypePtr != obj.EETypePtr)
+                return false;
+
+            return RuntimeAugments.TypeLoaderCallbacks.ValueTypeEquals(this, obj);
+#endif
         }
 
         public override int GetHashCode()
         {
+#if PROJECTN
             return RuntimeAugments.Callbacks.ValueTypeGetHashCodeUsingReflection(this);
+#else
+            return RuntimeAugments.TypeLoaderCallbacks.ValueTypeGetHashCode(this);
+#endif
         }
     }
 }

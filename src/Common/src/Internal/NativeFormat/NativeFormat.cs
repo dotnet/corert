@@ -59,6 +59,7 @@ namespace Internal.NativeFormat
         GenericVarianceInfo         = 0x50,
         DelegateInvokeSignature     = 0x51,
         GcStaticEEType              = 0x52,
+        InstanceFieldLayout         = 0x53,
 
         // Add new custom bag elements that don't match to something you'd find in the ECMA metadata here.
     }

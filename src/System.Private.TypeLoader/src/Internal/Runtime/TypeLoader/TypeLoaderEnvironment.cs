@@ -91,6 +91,16 @@ namespace Internal.Runtime.TypeLoader
             return TypeLoaderEnvironment.Instance.UpdateFloatingDictionary(context, dictionaryPtr);
         }
 
+        public override bool ValueTypeEquals(ValueType thisObj, object thatObj)
+        {
+            return TypeLoaderEnvironment.Instance.ValueTypeEquals(thisObj, thatObj);
+        }
+
+        public override int ValueTypeGetHashCode(ValueType thisObj)
+        {
+            return TypeLoaderEnvironment.Instance.ValueTypeGetHashCode(thisObj);
+        }
+
         /// <summary>
         /// Register a new runtime-allocated code thunk in the diagnostic stream.
         /// </summary>

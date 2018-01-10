@@ -473,6 +473,7 @@
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.NamedTypeLookup.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.SignatureParsing.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.StaticsLookup.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.ValueTypeSupport.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderLogger.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderTypeSystemContext.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeSystemContextFactory.cs" />

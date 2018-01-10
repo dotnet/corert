@@ -130,6 +130,10 @@ namespace ILCompiler.DependencyAnalysis
                 dependencyList.Add(new DependencyListEntry(factory.TypeNonGCStaticsSymbol((MetadataType)_type), "Class constructor"));
             }
 
+            // TODO: this should really be conditional in some way - this depends on whether the class library
+            // is able to use this (and whether we have a classlib with Equals/GetHashCode on System.Object in the first place)
+            InstanceFieldLayoutNode.AddDependenciesDueToEETypePresence(ref dependencyList, factory, _type);
+
             // Ask the metadata manager if we have any dependencies due to reflectability.
             factory.MetadataManager.GetDependenciesDueToReflectability(ref dependencyList, factory, _type);
 

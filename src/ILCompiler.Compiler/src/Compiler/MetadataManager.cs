@@ -138,6 +138,9 @@ namespace ILCompiler
 #if !CORERT
             var stackTraceEmbeddedMetadataNode = new StackTraceEmbeddedMetadataNode();
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdStackTraceEmbeddedMetadata), stackTraceEmbeddedMetadataNode, stackTraceEmbeddedMetadataNode, stackTraceEmbeddedMetadataNode.EndSymbol);
+#else
+            var instanceFieldLayoutNode = new InstanceFieldLayoutNode(nativeReferencesTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.InstanceFieldLayoutHashtable), instanceFieldLayoutNode, instanceFieldLayoutNode, instanceFieldLayoutNode.EndSymbol);
 #endif
 
             var stackTraceMethodMappingNode = new StackTraceMethodMappingNode();

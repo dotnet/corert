@@ -1120,6 +1120,11 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.RhBoxAny((void*)pData, new EETypePtr(pEEType));
         }
 
+        public static unsafe object RhBoxAny(ref byte data, RuntimeTypeHandle typeHandle)
+        {
+            return RuntimeImports.RhBoxAny(ref data, typeHandle.ToEETypePtr());
+        }
+
         public static IntPtr RhHandleAlloc(Object value, GCHandleType type)
         {
             return RuntimeImports.RhHandleAlloc(value, type);
