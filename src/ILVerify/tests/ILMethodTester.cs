@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-using Internal.IL;
 using Internal.TypeSystem.Ecma;
 using Xunit;
 
@@ -19,16 +18,8 @@ namespace ILVerify.Tests
         [Trait("", "Valid IL Tests")]
         void TestMethodsWithValidIL(ValidILTestCase validIL)
         {
-            ILImporter importer = ConstructILImporter(validIL);
-
-            var verifierErrors = new List<VerifierError>();
-            importer.ReportVerificationError = new Action<VerificationErrorArgs>((err) =>
-            {
-                verifierErrors.Add(err.Code);
-            });
-
-            importer.Verify();
-            Assert.Equal(0, verifierErrors.Count);
+            var results = Verify(validIL);
+            Assert.Equal(0, results.Count());
         }
 
         [Theory(DisplayName = "")]
@@ -36,17 +27,11 @@ namespace ILVerify.Tests
         [Trait("", "Invalid IL Tests")]
         void TestMethodsWithInvalidIL(InvalidILTestCase invalidIL)
         {
-            ILImporter importer = ConstructILImporter(invalidIL);
-
-            var verifierErrors = new List<VerifierError>();
-            importer.ReportVerificationError = new Action<VerificationErrorArgs>((err) =>
-            {
-                verifierErrors.Add(err.Code);
-            });
+            IEnumerable<VerificationResult> results = null;
             
             try
             {
-                importer.Verify();
+                results = Verify(invalidIL);
             }
             catch
             {
@@ -57,23 +42,24 @@ namespace ILVerify.Tests
             }
             finally
             {
-                Assert.Equal(invalidIL.ExpectedVerifierErrors.Count, verifierErrors.Count);
+                Assert.NotNull(results);
+                Assert.Equal(invalidIL.ExpectedVerifierErrors.Count, results.Count());
 
                 foreach (var item in invalidIL.ExpectedVerifierErrors)
                 {
-                    var actual = verifierErrors.Select(e => e.ToString());
-                    Assert.True(verifierErrors.Contains(item), $"Actual errors where: {string.Join(',', actual)}");
+                    var actual = results.Select(e => e.ToString());
+                    Assert.True(results.Where(r => r.Error.Code == item).Count() > 0, $"Actual errors where: {string.Join(',', actual)}");
                 }
             }
         }
 
-        private ILImporter ConstructILImporter(TestCase testCase)
+        private static IEnumerable<VerificationResult> Verify(TestCase testCase)
         {
-            var module = TestDataLoader.GetModuleForTestAssembly(testCase.ModuleName);
-            var method = (EcmaMethod)module.GetMethod(MetadataTokens.EntityHandle(testCase.MetadataToken));
-            var methodIL = EcmaMethodIL.Create(method);
-
-            return new ILImporter(method, methodIL);
+            EcmaModule module = TestDataLoader.GetModuleForTestAssembly(testCase.ModuleName);
+            var methodHandle = (MethodDefinitionHandle) MetadataTokens.EntityHandle(testCase.MetadataToken);
+            var method = (EcmaMethod)module.GetMethod(methodHandle);
+            var verifier = new Verifier((ILVerifyTypeSystemContext)method.Context);
+            return verifier.Verify(module.PEReader, methodHandle);
         }
     }
 }
