@@ -22,7 +22,7 @@ Verify that the empty game builds and runs. You should see blue window:
 > dotnet run
 ```
 
-MonoGame build system requires [Mono](http://www.mono-project.com/download/) on non-Windows platforms.
+MonoGame tools require [Mono](http://www.mono-project.com/download/) on non-Windows platforms.
 
 ## Add CoreRT to your project
 Using CoreRT to compile your application is done via the ILCompiler NuGet package, which is [published to MyGet with the CoreRT daily builds](https://dotnet.myget.org/feed/dotnet-core/package/nuget/Microsoft.DotNet.ILCompiler).
