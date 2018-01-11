@@ -16,11 +16,13 @@ Open a new shell/command prompt window and run the following commands.
 
 This will install .NET Core MonoGame template and create empty game project. .NET Core MonoGame port lives at https://github.com/cra0zy/MonoGame/tree/core currently. Thank you @cra0zy for the great work! 
 
-Verify that the empty game runs. You should see light blue window:
+Verify that the empty game builds and runs. You should see blue window:
 
 ```bash
 > dotnet run
 ```
+
+MonoGame build system requires [Mono](http://www.mono-project.com/download/) on non-Windows platforms.
 
 ## Add CoreRT to your project
 Using CoreRT to compile your application is done via the ILCompiler NuGet package, which is [published to MyGet with the CoreRT daily builds](https://dotnet.myget.org/feed/dotnet-core/package/nuget/Microsoft.DotNet.ILCompiler).
@@ -53,7 +55,7 @@ Once the package has been successfully added it's time to compile and publish yo
 > dotnet publish -r <RID> -c <Configuration>
 ```
 
-where `<Configuration>` is your project configuration (such as Debug or Release) and `<RID>` is the runtime identifier, which you specified in the csproj file (one of win-x64, linux-x64, osx-x64). For example, if you want to publish a release configuration of your app for a 64-bit version of Windows the command would look like:
+where `<Configuration>` is your project configuration (such as Debug or Release) and `<RID>` is the runtime identifier (one of win-x64, linux-x64, osx-x64). For example, if you want to publish a release configuration of your app for a 64-bit version of Windows the command would look like:
 
 ```bash 
 > dotnet publish -r win-x64 -c release
@@ -69,12 +71,14 @@ Clone MonoGame samples from github:
 > git clone https://github.com/MonoGame/MonoGame.Samples
 ```
 
-MonoGame samples include project files for number of targets, but not for .NET Core yet. One has to create the project using above steps and transplant links to sample sources and assets to it. This directory contains .NET Core project for NeonShooter sample that assumes MonoGame.Samples is cloned under it. Build it and start shooting!
+MonoGame samples include project files for number of targets, but not for .NET Core yet. One has to create the project using above steps and transplant links to sample sources and assets to it. This directory contains .NET Core project for Platformer2D and NeonShooter samples that assume MonoGame.Samples is cloned under it. Build it and start playing!
 
 ```bash
-> dotnet publish -r win-x64 -c release NeonShooter.csproj
-> bin\x64\Release\netcoreapp2.0\publish\NeonShooter.exe
+> dotnet publish -r win-x64 -c release Platformer2D.csproj
+> bin\x64\Release\netcoreapp2.0\publish\Platformer2D.exe
 ```
+
+The NeonShooter sample works on Windows-only due to https://github.com/MonoGame/MonoGame/issues/3270.
 
 ## Using reflection 
 Runtime directives are XML configuration files, which specify which otherwise unreachable elements of your program are available for reflection. They are used at compile-time to enable AOT compilation in applications at runtime. The runtime directives are reference in the project via RdXmlFile property:
