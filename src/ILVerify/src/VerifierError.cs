@@ -2,16 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace ILVerify
 {
-    enum VerifierError
+    public enum VerifierError
     {
+        None = 0,
         //E_HRESULT           "[HRESULT 0x%08X]"
         //E_OFFSET            "[offset 0x%08X]"
         //E_OPCODE            "[opcode %s]"

@@ -3,42 +3,31 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.IO;
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Reflection;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
-using System.Text;
-
-using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
-using Internal.IL;
-
-using Internal.CommandLine;
 using System.Text.RegularExpressions;
-using System.Globalization;
-using System.Resources;
+using Internal.CommandLine;
+using Internal.TypeSystem.Ecma;
+using static System.Console;
 
 namespace ILVerify
 {
-    class Program
+    class Program : ResolverBase
     {
-        private const string DefaultSystemModuleName = "mscorlib";
         private bool _help;
 
-        private string _systemModule = DefaultSystemModuleName;
-        private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private AssemblyName _systemModule = new AssemblyName("mscorlib");
+        private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // map of simple name to file path
+        private Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // map of simple name to file path
         private IReadOnlyList<Regex> _includePatterns = Array.Empty<Regex>();
         private IReadOnlyList<Regex> _excludePatterns = Array.Empty<Regex>();
 
-        private SimpleTypeSystemContext _typeSystemContext;
-        private ResourceManager _stringResourceManager;
-
-        private int _numErrors;
+        private Verifier _verifier;
 
         private Program()
         {
@@ -46,9 +35,9 @@ namespace ILVerify
 
         private void Help(string helpText)
         {
-            Console.WriteLine("ILVerify version " + typeof(Program).GetTypeInfo().Assembly.GetName().Version.ToString());
-            Console.WriteLine();
-            Console.WriteLine(helpText);
+            WriteLine("ILVerify version " + typeof(Program).GetTypeInfo().Assembly.GetName().Version.ToString());
+            WriteLine();
+            WriteLine(helpText);
         }
 
         public static IReadOnlyList<Regex> StringPatternsToRegexList(IReadOnlyList<string> patterns)
@@ -78,7 +67,7 @@ namespace ILVerify
                 syntax.HandleErrors = true;
 
                 syntax.DefineOption("h|help", ref _help, "Display this usage message");
-                syntax.DefineOption("s|system-module", ref _systemModule, "System module name (default: mscorlib)");
+                syntax.DefineOption("s|system-module", ref _systemModule, s => new AssemblyName(s), "System module name (default: mscorlib)");
                 syntax.DefineOptionList("r|reference", ref referenceFiles, "Reference metadata from the specified assembly");
                 syntax.DefineOptionList("i|include", ref includePatterns, "Use only methods/types/namespaces, which match the given regular expression(s)");
                 syntax.DefineOption("include-file", ref includeFile, "Same as --include, but the regular expression(s) are declared line by line in the specified file.");
@@ -97,7 +86,7 @@ namespace ILVerify
             if (!string.IsNullOrEmpty(includeFile))
             {
                 if (includePatterns.Count > 0)
-                    Console.WriteLine("[Warning] --include-file takes precedence over --include");
+                    WriteLine("[Warning] --include-file takes precedence over --include");
                 includePatterns = File.ReadAllLines(includeFile);
             }
             _includePatterns = StringPatternsToRegexList(includePatterns);
@@ -105,128 +94,12 @@ namespace ILVerify
             if (!string.IsNullOrEmpty(excludeFile))
             {
                 if (excludePatterns.Count > 0)
-                    Console.WriteLine("[Warning] --exclude-file takes precedence over --exclude");
+                    WriteLine("[Warning] --exclude-file takes precedence over --exclude");
                 excludePatterns = File.ReadAllLines(excludeFile);
             }
             _excludePatterns = StringPatternsToRegexList(excludePatterns);
 
             return argSyntax;
-        }
-
-        private void VerifyMethod(MethodDesc method, MethodIL methodIL)
-        {
-            // Console.WriteLine("Verifying: " + method.ToString());
-
-            try
-            {
-                var importer = new ILImporter(method, methodIL);
-
-                importer.ReportVerificationError = (args) =>
-                {
-                    var message = new StringBuilder();
-
-                    message.Append("[IL]: Error: ");
-
-                    message.Append("[");
-                    message.Append(_typeSystemContext.GetModulePath(((EcmaMethod)method).Module));
-                    message.Append(" : ");
-                    message.Append(((EcmaType)method.OwningType).Name);
-                    message.Append("::");
-                    message.Append(method.Name);
-                    message.Append("(");
-                    if (method.Signature._parameters != null && method.Signature._parameters.Length > 0)
-                    {
-                        foreach (TypeDesc parameter in method.Signature._parameters)
-                        {
-                            message.Append(parameter.ToString());
-                            message.Append(", ");
-                        }
-                        message.Remove(message.Length - 2, 2);
-                    }
-                    message.Append(")");
-                    message.Append("]");
-
-                    message.Append("[offset 0x");
-                    message.Append(args.Offset.ToString("X8"));
-                    message.Append("]");
-
-                    if (args.Found != null)
-                    {
-                        message.Append("[found ");
-                        message.Append(args.Found);
-                        message.Append("]");
-                    }
-
-                    if (args.Expected != null)
-                    {
-                        message.Append("[expected ");
-                        message.Append(args.Expected);
-                        message.Append("]");
-                    }
-
-                    if (args.Token != 0)
-                    {
-                        message.Append("[token  0x");
-                        message.Append(args.Token.ToString("X8"));
-                        message.Append("]");
-                    }
-
-                    message.Append(" ");
-
-                    if (_stringResourceManager == null)
-                    {
-                        _stringResourceManager = new ResourceManager("ILVerify.Resources.Strings", Assembly.GetExecutingAssembly());
-                    }
-
-                    var str = _stringResourceManager.GetString(args.Code.ToString(), CultureInfo.InvariantCulture);
-                    message.Append(string.IsNullOrEmpty(str) ? args.Code.ToString() : str);
-
-                    Console.WriteLine(message);
-
-                    _numErrors++;
-                };
-
-                importer.Verify();
-            }
-            catch (NotImplementedException e)
-            {
-                Console.Error.WriteLine($"Error in {method}: {e.Message}");
-            }
-            catch (InvalidProgramException e)
-            {
-                Console.Error.WriteLine($"Error in {method}: {e.Message}");
-            }
-            catch (VerificationException)
-            {
-            }
-            catch (BadImageFormatException)
-            {
-                Console.WriteLine("Unable to resolve token");
-            }
-            catch (PlatformNotSupportedException e)
-            {
-                Console.WriteLine(e.Message);
-            }
-        }
-
-        private void VerifyModule(EcmaModule module)
-        {
-            foreach (var methodHandle in module.MetadataReader.MethodDefinitions)
-            {
-                var method = (EcmaMethod)module.GetMethod(methodHandle);
-
-                var methodIL = EcmaMethodIL.Create(method);
-                if (methodIL == null)
-                    continue;
-
-                var methodName = method.ToString();
-                if (_includePatterns.Count > 0 && !_includePatterns.Any(p => p.IsMatch(methodName)))
-                    continue;
-                if (_excludePatterns.Any(p => p.IsMatch(methodName)))
-                    continue;
-
-                VerifyMethod(method, methodIL);
-            }
         }
 
         private int Run(string[] args)
@@ -241,25 +114,159 @@ namespace ILVerify
             if (_inputFilePaths.Count == 0)
                 throw new CommandLineException("No input files specified");
 
-            _typeSystemContext = new SimpleTypeSystemContext();
-            _typeSystemContext.InputFilePaths = _inputFilePaths;
-            _typeSystemContext.ReferenceFilePaths = _referenceFilePaths;
+            _verifier = new Verifier(this);
+            _verifier.SetSystemModuleName(_systemModule);
 
-            _typeSystemContext.SetSystemModule(_typeSystemContext.GetModuleForSimpleName(_systemModule));
-
-            foreach (var inputPath in _inputFilePaths.Values)
+            foreach (var kvp in _inputFilePaths)
             {
-                _numErrors = 0;
+                var results = VerifyAssembly(new AssemblyName(kvp.Key), out EcmaModule module);
+                int numErrors = 0;
 
-                VerifyModule(_typeSystemContext.GetModuleFromPath(inputPath));
+                foreach (var result in results)
+                {
+                    numErrors++;
+                    PrintResult(result, module, kvp.Value);
+                }
 
-                if (_numErrors > 0)
-                    Console.WriteLine(_numErrors + " Error(s) Verifying " + inputPath);
+                if (numErrors > 0)
+                    WriteLine(numErrors + " Error(s) Verifying " + kvp.Value);
                 else
-                    Console.WriteLine("All Classes and Methods in " + inputPath + " Verified.");
+                    WriteLine("All Classes and Methods in " + kvp.Value + " Verified.");
             }
 
             return 0;
+        }
+
+        private void PrintResult(VerificationResult result, EcmaModule module, string pathOrModuleName)
+        {
+            Write("[IL]: Error: ");
+
+            Write("[");
+            Write(pathOrModuleName);
+            Write(" : ");
+
+            MetadataReader metadataReader = module.MetadataReader;
+
+            TypeDefinition typeDef = metadataReader.GetTypeDefinition(metadataReader.GetMethodDefinition(result.Method).GetDeclaringType());
+            string typeName = metadataReader.GetString(typeDef.Name);
+            Write(typeName);
+
+            Write("::");
+            var method = (EcmaMethod)module.GetMethod(result.Method);
+            PrintMethod(method);
+            Write("]");
+
+            var args = result.Error;
+            if (args.Code != VerifierError.None)
+            {
+                Write("[offset 0x");
+                Write(args.Offset.ToString("X8"));
+                Write("]");
+
+                if (args.Found != null)
+                {
+                    Write("[found ");
+                    Write(args.Found);
+                    Write("]");
+                }
+
+                if (args.Expected != null)
+                {
+                    Write("[expected ");
+                    Write(args.Expected);
+                    Write("]");
+                }
+
+                if (args.Token != 0)
+                {
+                    Write("[token  0x");
+                    Write(args.Token.ToString("X8"));
+                    Write("]");
+                }
+            }
+
+            Write(" ");
+            WriteLine(result.Message);
+        }
+
+        private static void PrintMethod(EcmaMethod method)
+        {
+            Write(method.Name);
+            Write("(");
+
+            if (method.Signature._parameters != null && method.Signature._parameters.Length > 0)
+            {
+                bool first = true;
+                foreach (Internal.TypeSystem.TypeDesc parameter in method.Signature._parameters)
+                {
+                    if (first)
+                    {
+                        first = false;
+                    }
+                    else
+                    {
+                        Write(", ");
+                    }
+
+                    Write(parameter.ToString());
+                }
+            }
+
+            Write(")");
+        }
+
+        private IEnumerable<VerificationResult> VerifyAssembly(AssemblyName name, out EcmaModule module)
+        {
+            PEReader peReader = Resolve(name);
+            module = _verifier.GetModule(peReader);
+
+            return VerifyAssembly(peReader);
+        }
+
+        private IEnumerable<VerificationResult> VerifyAssembly(PEReader peReader)
+        {
+            MetadataReader metadataReader = peReader.GetMetadataReader();
+            foreach (var methodHandle in metadataReader.MethodDefinitions)
+            {
+                var methodName = metadataReader.GetString(metadataReader.GetMethodDefinition(methodHandle).Name);
+                if (ShouldVerifyMethod(methodName))
+                {
+                    var results = _verifier.Verify(peReader, methodHandle);
+                    foreach (var result in results)
+                    {
+                        yield return result;
+                    }
+                }
+            }
+        }
+
+        private bool ShouldVerifyMethod(string methodName)
+        {
+            if (_includePatterns.Count > 0 && !_includePatterns.Any(p => p.IsMatch(methodName)))
+            {
+                return false;
+            }
+
+            if (_excludePatterns.Any(p => p.IsMatch(methodName)))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        protected override PEReader ResolveCore(AssemblyName name)
+        {
+            // Note: we use simple names instead of full names to resolve, because we can't get a full name from an assembly without reading it
+            string simpleName = name.Name;
+
+            string path = null;
+            if (_inputFilePaths.TryGetValue(simpleName, out path) || _referenceFilePaths.TryGetValue(simpleName, out path))
+            {
+                return new PEReader(File.OpenRead(path));
+            }
+
+            return null;
         }
 
         private static int Main(string[] args)

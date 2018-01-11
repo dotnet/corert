@@ -847,9 +847,8 @@ namespace Internal.TypeSystem.Interop
             codeStream.Emit(ILOpcode.ldstr, emitter.NewToken(message));
             codeStream.Emit(ILOpcode.newobj, emitter.NewToken(exceptionCtor));
             codeStream.Emit(ILOpcode.throw_);
-            codeStream.Emit(ILOpcode.ret);
 
-            return new PInvokeILStubMethodIL((ILStubMethodIL)emitter.Link(method, nonConformingStackWorkaround: true), true);
+            return new PInvokeILStubMethodIL((ILStubMethodIL)emitter.Link(method), isStubRequired: true);
         }
 
     }

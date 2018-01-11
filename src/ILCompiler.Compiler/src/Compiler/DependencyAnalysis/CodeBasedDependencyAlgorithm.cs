@@ -100,7 +100,7 @@ namespace ILCompiler.DependencyAnalysis
 
             factory.InteropStubManager.AddDependeciesDueToPInvoke(ref dependencies, factory, method);
 
-            if (method.IsIntrinsic && factory.Target.Abi != TargetAbi.ProjectN)
+            if (method.IsIntrinsic && factory.Target.Abi != TargetAbi.ProjectN && factory.MetadataManager.SupportsReflection)
             {
                 if (method.OwningType is MetadataType owningType)
                 {

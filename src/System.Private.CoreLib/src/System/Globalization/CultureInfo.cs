@@ -530,6 +530,19 @@ namespace System.Globalization
             s_currentThreadUICulture = null;
         }
 
+        internal static CultureInfo UserDefaultUICulture
+        {
+            get
+            {
+                if (s_userDefaultCulture == null)
+                {
+                    Init();
+                }
+                Debug.Assert(s_userDefaultCulture != null, "[CultureInfo.InstalledUICulture] s_userDefaultCulture != null");
+                return s_userDefaultCulture;
+            }
+        }
+
         public static CultureInfo InstalledUICulture
         {
             get

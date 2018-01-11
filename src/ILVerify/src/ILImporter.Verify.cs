@@ -26,13 +26,11 @@ namespace Internal.IL
         }
     }
 
-    struct VerificationErrorArgs
+    class VerifierException : Exception
     {
-        public VerifierError Code;
-        public int Offset;
-        public int Token;
-        public string Found;
-        public string Expected;
+        internal VerifierException(string message) : base(message)
+        {
+        }
     }
 
     partial class ILImporter

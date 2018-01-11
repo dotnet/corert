@@ -19,6 +19,7 @@ using ILCompiler.Metadata;
 using ILCompiler.DependencyAnalysis;
 
 using Debug = System.Diagnostics.Debug;
+using ReflectionMapBlob = Internal.Runtime.ReflectionMapBlob;
 
 namespace ILCompiler
 {
@@ -72,6 +73,14 @@ namespace ILCompiler
             _dynamicInvokeStubs = new Lazy<Dictionary<MethodDesc, MethodDesc>>(LoadDynamicInvokeStubs);
             _metadataBlob = metadataBlob;
             _stackTraceEmissionPolicy = stackTraceEmissionPolicy;
+        }
+
+        public override void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory, ExternalReferencesTableNode commonFixupsTableNode)
+        {
+            base.AddToReadyToRunHeader(header, nodeFactory, commonFixupsTableNode);
+
+            var stackTraceEmbeddedMetadataNode = new StackTraceEmbeddedMetadataNode();
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdStackTraceEmbeddedMetadata), stackTraceEmbeddedMetadataNode, stackTraceEmbeddedMetadataNode, stackTraceEmbeddedMetadataNode.EndSymbol);
         }
 
         /// <summary>

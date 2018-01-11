@@ -8,9 +8,8 @@ using System.IO;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
 using System.Text;
-using Internal.IL;
-using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Newtonsoft.Json;
 using Xunit;
@@ -96,7 +95,7 @@ namespace ILVerify.Tests
 
         private static TheoryData<TestCase> GetTestMethodsFromDll(Func<string[], MethodDefinitionHandle, TestCase> methodSelector)
         {
-            var retVal = new Xunit.TheoryData<TestCase>();
+            var retVal = new TheoryData<TestCase>();
 
             foreach (var testDllName in GetAllTestDlls())
             {
@@ -152,33 +151,54 @@ namespace ILVerify.Tests
 
         private static IEnumerable<string> GetAllTestDlls()
         {
-            foreach (var item in System.IO.Directory.GetFiles(TESTASSEMBLYPATH))
+            foreach (var item in Directory.GetFiles(TESTASSEMBLYPATH))
             {
                 if (item.ToLower().EndsWith(".dll"))
                 {
-                    yield return System.IO.Path.GetFileName(item);
+                    yield return Path.GetFileName(item);
                 }
             }
         }
 
         public static EcmaModule GetModuleForTestAssembly(string assemblyName)
         {
-            var typeSystemContext = new SimpleTypeSystemContext();
-            var coreAssembly = typeof(Object).Assembly;
-            var systemRuntime = Assembly.Load("System.Runtime");
+            var simpleNameToPathMap = new Dictionary<string, string>();
 
-            typeSystemContext.InputFilePaths = new Dictionary<string, string>
-            {
-                { coreAssembly.GetName().Name, coreAssembly.Location },
-                { systemRuntime.GetName().Name, systemRuntime.Location }
-            };
-
-            typeSystemContext.ReferenceFilePaths = new Dictionary<string, string>();
             foreach (var fileName in GetAllTestDlls())
-                typeSystemContext.ReferenceFilePaths.Add(Path.GetFileNameWithoutExtension(fileName), TESTASSEMBLYPATH + fileName);
+            {
+                simpleNameToPathMap.Add(Path.GetFileNameWithoutExtension(fileName), TESTASSEMBLYPATH + fileName);
+            }
 
-            typeSystemContext.SetSystemModule(typeSystemContext.GetModuleForSimpleName(coreAssembly.GetName().Name));
-            return typeSystemContext.GetModuleFromPath(TESTASSEMBLYPATH + assemblyName);
+            Assembly coreAssembly = typeof(object).Assembly;
+            simpleNameToPathMap.Add(coreAssembly.GetName().Name, coreAssembly.Location);
+
+            Assembly systemRuntime = Assembly.Load("System.Runtime");
+            simpleNameToPathMap.Add(systemRuntime.GetName().Name, systemRuntime.Location);
+
+            var resolver = new TestResolver(simpleNameToPathMap);
+            var typeSystemContext = new ILVerifyTypeSystemContext(resolver);
+            typeSystemContext.SetSystemModule(typeSystemContext.GetModule(resolver.Resolve(coreAssembly.GetName())));
+
+            return typeSystemContext.GetModule(resolver.Resolve(new AssemblyName(Path.GetFileNameWithoutExtension(assemblyName))));
+        }
+
+        private sealed class TestResolver : ResolverBase
+        {
+            Dictionary<string, string> _simpleNameToPathMap;
+            public TestResolver(Dictionary<string, string> simpleNameToPathMap)
+            {
+                _simpleNameToPathMap = simpleNameToPathMap;
+            }
+
+            protected override PEReader ResolveCore(AssemblyName name)
+            {
+                if (_simpleNameToPathMap.TryGetValue(name.Name, out string path))
+                {
+                    return new PEReader(File.OpenRead(path));
+                }
+
+                return null;
+            }
         }
     }
 
