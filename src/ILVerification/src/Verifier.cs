@@ -18,7 +18,7 @@ namespace ILVerify
     public class Verifier
     {
         private Lazy<ResourceManager> _stringResourceManager =
-            new Lazy<ResourceManager>(() => new ResourceManager("ILVerification.Resources.Strings", Assembly.GetExecutingAssembly()));
+            new Lazy<ResourceManager>(() => new ResourceManager("ILVerify.Resources.Strings", typeof(Verifier).GetTypeInfo().Assembly));
 
         private ILVerifyTypeSystemContext _typeSystemContext;
 
@@ -37,7 +37,7 @@ namespace ILVerify
             _typeSystemContext.SetSystemModule(_typeSystemContext.GetModule(_typeSystemContext._resolver.Resolve(name)));
         }
 
-        internal EcmaModule GetModule(PEReader peReader)
+        public EcmaModule GetModule(PEReader peReader)
         {
             return _typeSystemContext.GetModule(peReader);
         }
