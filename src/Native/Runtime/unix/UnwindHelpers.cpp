@@ -58,8 +58,8 @@ struct dyld_unwind_sections
 // Passed to the callback function called by dl_iterate_phdr
 struct dl_iterate_cb_data
 {
-  UnwindInfoSections *sects;
-  uintptr_t targetAddr;
+    UnwindInfoSections *sects;
+    uintptr_t targetAddr;
 };
 
 // Callback called by dl_iterate_phdr. Locates unwind info sections for the target
