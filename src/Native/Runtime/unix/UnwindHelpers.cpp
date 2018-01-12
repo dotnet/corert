@@ -20,12 +20,23 @@
 #include <src/config.h>
 #include <src/Registers.hpp>
 #include <src/AddressSpace.hpp>
+#if defined(_TARGET_ARM_)
+#include <src/libunwind_ext.h>
+#endif
 #include <src/UnwindCursor.hpp>
 
+#if defined(_TARGET_AMD64_)
 using libunwind::Registers_x86_64;
+#elif defined(_TARGET_ARM_)
+using libunwind::Registers_arm;
+#else
+#error "Unwinding is not implemented for this architecture yet."
+#endif
 using libunwind::LocalAddressSpace;
 using libunwind::EHHeaderParser;
+#if defined(_TARGET_AMD64_)
 using libunwind::DwarfInstructions;
+#endif
 using libunwind::UnwindInfoSections;
 
 LocalAddressSpace _addressSpace;
@@ -43,11 +54,12 @@ struct dyld_unwind_sections
 
 #else // __APPLE__
 
+#if defined(_TARGET_AMD64_)
 // Passed to the callback function called by dl_iterate_phdr
 struct dl_iterate_cb_data
 {
-    UnwindInfoSections *sects;
-    uintptr_t targetAddr;
+  UnwindInfoSections *sects;
+  uintptr_t targetAddr;
 };
 
 // Callback called by dl_iterate_phdr. Locates unwind info sections for the target
@@ -108,6 +120,7 @@ static int LocateSectionsCallback(struct dl_phdr_info *info, size_t size, void *
 
     return 0;
 }
+#endif
 
 #endif // __APPLE__
 
@@ -289,6 +302,7 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
     #error "Unwinding is not implemented for this architecture yet."
 #endif
 
+#if defined(_TARGET_AMD64_)
     bool retVal = uc.getInfoFromDwarfSection(pc, uwInfoSections, 0 /* fdeSectionOffsetHint */);
     if (!retVal)
     {
@@ -307,6 +321,7 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
     }
 
     regs->pIP = PTR_PCODE(regs->SP - sizeof(TADDR));
+#endif
 
     return true;
 }
@@ -333,8 +348,10 @@ UnwindInfoSections LocateUnwindSections(uintptr_t pc)
     }
 #else // __APPLE__
 
+#if defined(_TARGET_AMD64_)
     dl_iterate_cb_data cb_data = {&uwInfoSections, pc };
     dl_iterate_phdr(LocateSectionsCallback, &cb_data);
+#endif
 
 #endif
 
@@ -346,10 +363,13 @@ bool UnwindHelpers::StepFrame(REGDISPLAY *regs)
     uintptr_t pc = regs->GetIP();
 
     UnwindInfoSections uwInfoSections = LocateUnwindSections(pc);
+
+#if defined(_TARGET_AMD64_)
     if (uwInfoSections.dwarf_section == NULL)
     {
         return false;
     }
+#endif
 
     return DoTheStep(pc, uwInfoSections, regs);
 }
