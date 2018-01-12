@@ -65,23 +65,23 @@ namespace System.Runtime.CompilerServices
             return RuntimeImports.RhMemberwiseClone(obj);
         }
 
-        public new static bool Equals(Object obj1, Object obj2)
+        public new static bool Equals(Object o1, Object o2)
         {
-            if (obj1 == obj2)
+            if (o1 == o2)
                 return true;
 
-            if ((obj1 == null) || (obj2 == null))
+            if ((o1 == null) || (o2 == null))
                 return false;
 
             // If it's not a value class, don't compare by value
-            if (!obj1.EETypePtr.IsValueType)
+            if (!o1.EETypePtr.IsValueType)
                 return false;
 
             // Make sure they are the same type.
-            if (obj1.EETypePtr != obj2.EETypePtr)
+            if (o1.EETypePtr != o2.EETypePtr)
                 return false;
 
-            return RuntimeImports.RhCompareObjectContentsAndPadding(obj1, obj2);
+            return RuntimeImports.RhCompareObjectContentsAndPadding(o1, o2);
         }
 
 #if !FEATURE_SYNCTABLE
