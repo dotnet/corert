@@ -493,21 +493,21 @@ namespace System
 
         // This method will combine this delegate with the passed delegate
         //  to form a new delegate.
-        protected virtual Delegate CombineImpl(Delegate follow)
+        protected virtual Delegate CombineImpl(Delegate d)
         {
-            if ((Object)follow == null) // cast to object for a more efficient test
+            if ((Object)d == null) // cast to object for a more efficient test
                 return this;
 
             // Verify that the types are the same...
-            if (!InternalEqualTypes(this, follow))
+            if (!InternalEqualTypes(this, d))
                 throw new ArgumentException();
 
-            if (IsDynamicDelegate() && follow.IsDynamicDelegate())
+            if (IsDynamicDelegate() && d.IsDynamicDelegate())
             {
                 throw new InvalidOperationException();
             }
 
-            MulticastDelegate dFollow = (MulticastDelegate)follow;
+            MulticastDelegate dFollow = (MulticastDelegate)d;
             Delegate[] resultList;
             int followCount = 1;
             Delegate[] followList = dFollow.m_helperObject as Delegate[];
@@ -616,12 +616,12 @@ namespace System
         //  look at the invocation list.)  If this is found we remove it from
         //  this list and return a new delegate.  If its not found a copy of the
         //  current list is returned.
-        protected virtual Delegate RemoveImpl(Delegate value)
+        protected virtual Delegate RemoveImpl(Delegate d)
         {
             // There is a special case were we are removing using a delegate as
             //    the value we need to check for this case
             //
-            MulticastDelegate v = value as MulticastDelegate;
+            MulticastDelegate v = d as MulticastDelegate;
 
             if (v == null)
                 return this;
@@ -631,7 +631,7 @@ namespace System
                 if (invocationList == null)
                 {
                     // they are both not real Multicast
-                    if (this.Equals(value))
+                    if (this.Equals(d))
                         return null;
                 }
                 else
@@ -639,7 +639,7 @@ namespace System
                     int invocationCount = (int)m_extraFunctionPointerOrData;
                     for (int i = invocationCount; --i >= 0;)
                     {
-                        if (value.Equals(invocationList[i]))
+                        if (d.Equals(invocationList[i]))
                         {
                             if (invocationCount == 2)
                             {

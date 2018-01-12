@@ -35,10 +35,10 @@ namespace System
             HResult = HResults.COR_E_MISSINGFIELD;
         }
 
-        public MissingFieldException(string className, string methodName)
+        public MissingFieldException(string className, string fieldName)
         {
             ClassName = className;
-            MemberName = methodName;
+            MemberName = fieldName;
         }
 
         protected MissingFieldException(SerializationInfo info, StreamingContext context)

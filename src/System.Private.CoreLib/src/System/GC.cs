@@ -75,23 +75,23 @@ namespace System
         /// Returns the current generation number of the target 
         /// of a specified <see cref="System.WeakReference"/>.  
         /// </summary>
-        /// <param name="wr">The WeakReference whose target is the object
+        /// <param name="wo">The WeakReference whose target is the object
         /// whose generation will be returned</param>
         /// <returns>The generation of the target of the WeakReference</returns>
         /// <exception cref="ArgumentNullException">The target of the weak reference
         /// has already been garbage collected.</exception>
-        public static int GetGeneration(WeakReference wr)
+        public static int GetGeneration(WeakReference wo)
         {
             // note - this throws an NRE if given a null weak reference. This isn't
             // documented, but it's the behavior of Desktop and CoreCLR.
-            Object handleRef = RuntimeImports.RhHandleGet(wr.m_handle);
+            Object handleRef = RuntimeImports.RhHandleGet(wo.m_handle);
             if (handleRef == null)
             {
-                throw new ArgumentNullException(nameof(wr));
+                throw new ArgumentNullException(nameof(wo));
             }
 
             int result = RuntimeImports.RhGetGeneration(handleRef);
-            KeepAlive(wr);
+            KeepAlive(wo);
             return result;
         }
 
