@@ -131,6 +131,9 @@ internal static class Program
             PrintLine("Instance delegate test: Ok.");
         }
 
+        Action virtualDelegate = tempObj.VirtualDelegateTarget;
+        virtualDelegate();
+
         PrintLine("Done");
     }
 
@@ -223,6 +226,13 @@ public struct BoxStubTest
     {
         return Value;
     }
+
+    public string GetValue()
+    {
+        Program.PrintLine("BoxStubTest.GetValue called");
+        Program.PrintLine(Value);
+        return Value;
+    }
 }
 
 public class TestClass
@@ -256,6 +266,11 @@ public class TestClass
     {
         return TestInt;
     }
+
+    public virtual void VirtualDelegateTarget()
+    {
+        Program.PrintLine("Virtual delegate incorrectly dispatched to base.");
+    }
 }
 
 public class TestDerivedClass : TestClass
@@ -273,6 +288,11 @@ public class TestDerivedClass : TestClass
     public override string ToString()
     {
         throw new Exception();
+    }
+
+    public override void VirtualDelegateTarget()
+    {
+        Program.PrintLine("Virtual Delegate Test: Ok");
     }
 }
 

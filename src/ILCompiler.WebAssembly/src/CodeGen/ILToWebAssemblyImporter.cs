@@ -838,17 +838,14 @@ namespace Internal.IL
                 throw new NotImplementedException();
             }
 
-            if (callee.OwningType.IsDelegate)
+            if (opcode == ILOpcode.newobj && callee.OwningType.IsDelegate)
             {
-                if (opcode == ILOpcode.newobj)
+                FunctionPointerEntry functionPointer = ((FunctionPointerEntry)_stack.Peek());
+                DelegateCreationInfo delegateInfo = _compilation.GetDelegateCtor(callee.OwningType, functionPointer.Method, functionPointer.IsVirtual);
+                callee = delegateInfo.Constructor.Method;
+                if (callee.Signature.Length == 3)
                 {
-                    FunctionPointerEntry functionPointer = ((FunctionPointerEntry)_stack.Peek());
-                    DelegateCreationInfo delegateInfo = _compilation.GetDelegateCtor(callee.OwningType, functionPointer.Method, functionPointer.IsVirtual);
-                    callee = delegateInfo.Constructor.Method;
-                    if(callee.Signature.Length == 3)
-                    {
-                        PushExpression(StackValueKind.NativeInt, "thunk", GetOrCreateLLVMFunction(_compilation.NodeFactory.NameMangler.GetMangledMethodName(delegateInfo.Thunk.Method).ToString()));
-                    }
+                    PushExpression(StackValueKind.NativeInt, "thunk", GetOrCreateLLVMFunction(_compilation.NodeFactory.NameMangler.GetMangledMethodName(delegateInfo.Thunk.Method).ToString()));
                 }
             }
 
@@ -1040,9 +1037,9 @@ namespace Internal.IL
 
                 TypeDesc argType;
                 if (index == 0 && !signature.IsStatic)
-                {                    
+                {
                     if (opcode == ILOpcode.calli)
-                        argType = GetWellKnownType(WellKnownType.Object);
+                        argType = toStore.Type;
                     else if (callee.OwningType.IsValueType)
                         argType = callee.OwningType.MakeByRefType();
                     else
@@ -1201,17 +1198,27 @@ namespace Internal.IL
         private void ImportLdFtn(int token, ILOpcode opCode)
         {
             MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
-
-            if (opCode == ILOpcode.ldvirtftn && method.IsVirtual)
+            LLVMValueRef targetLLVMFunction = default(LLVMValueRef);
+            if (opCode == ILOpcode.ldvirtftn)
             {
-                AddVirtualMethodReference(method);
+                StackEntry thisPointer = _stack.Pop();
+                if (method.IsVirtual)
+                {
+                    targetLLVMFunction = LLVMFunctionForMethod(method, thisPointer, true);
+                    AddVirtualMethodReference(method);
+                }
             }
             else
             {
                 AddMethodReference(method);
             }
 
-            var entry = new FunctionPointerEntry("ldftn", method, GetOrCreateLLVMFunction(_compilation.NameMangler.GetMangledMethodName(method).ToString()), GetWellKnownType(WellKnownType.IntPtr), opCode == ILOpcode.ldvirtftn);
+            if (targetLLVMFunction.Pointer.Equals(IntPtr.Zero))
+            {
+                targetLLVMFunction = GetOrCreateLLVMFunction(_compilation.NameMangler.GetMangledMethodName(method).ToString());
+            }
+
+            var entry = new FunctionPointerEntry("ldftn", method, targetLLVMFunction, GetWellKnownType(WellKnownType.IntPtr), opCode == ILOpcode.ldvirtftn);
             _stack.Push(entry);
         }
 
