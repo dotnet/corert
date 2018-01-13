@@ -115,16 +115,21 @@ namespace ILCompiler
 
             if (mangledName != literal)
             {
-                if (_sha256 == null)
+                byte[] hash;
+                lock (this)
                 {
-                    // Use SHA256 hash here to provide a high degree of uniqueness to symbol names without requiring them to be long
-                    // This hash function provides an exceedingly high likelihood that no two strings will be given equal symbol names
-                    // This is not considered used for security purpose; however collisions would be highly unfortunate as they will cause compilation
-                    // failure.
-                    _sha256 = SHA256.Create();
-                }
+                    if (_sha256 == null)
+                    {
+                        // Use SHA256 hash here to provide a high degree of uniqueness to symbol names without requiring them to be long
+                        // This hash function provides an exceedingly high likelihood that no two strings will be given equal symbol names
+                        // This is not considered used for security purpose; however collisions would be highly unfortunate as they will cause compilation
+                        // failure.
+                        _sha256 = SHA256.Create();
+                    }
 
-                var hash = _sha256.ComputeHash(GetBytesFromString(literal));
+                    hash = _sha256.ComputeHash(GetBytesFromString(literal));
+                }
+                                
                 mangledName += "_" + BitConverter.ToString(hash).Replace("-", "");
             }
 

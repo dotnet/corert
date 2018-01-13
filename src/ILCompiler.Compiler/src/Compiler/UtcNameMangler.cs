@@ -202,7 +202,12 @@ namespace ILCompiler
 
             if (mangledName != literal)
             {
-                var hash = _sha256.ComputeHash(GetBytesFromString(literal));
+                byte[] hash;
+                lock (this)
+                {
+                    hash = _sha256.ComputeHash(GetBytesFromString(literal));
+                }
+
                 mangledName += "_" + BitConverter.ToString(hash).Replace("-", "");
             }
 
