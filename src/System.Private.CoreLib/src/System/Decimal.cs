@@ -544,7 +544,7 @@ namespace System
             return Number.ParseDecimal(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static Decimal Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider)
+        public static Decimal Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
         {
             ValidateParseStyleFloatingPoint(style);
             return Number.ParseDecimal(s, style, NumberFormatInfo.GetInstance(provider));

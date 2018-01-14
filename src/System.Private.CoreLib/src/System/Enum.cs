@@ -833,6 +833,7 @@ namespace System
             return Format(enumInfo, this, format);
         }
 
+        [Obsolete("The provider argument is not used. Please use ToString().")]
         public String ToString(String format, IFormatProvider provider)
         {
             return ToString(format);

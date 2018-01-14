@@ -126,7 +126,7 @@ Once the package has been successfully added it's time to compile and publish yo
 > dotnet publish -r <RID> -c <Configuration>
 ```
 
-where `<Configuration>` is your project configuration (such as Debug or Release) and `<RID>` is the runtime identifier, which you specified in the csproj file (one of win-x64, linux-x64, osx-x64). For example, if you want to publish a release configuration of your app for a 64-bit version of Windows the command would look like:
+where `<Configuration>` is your project configuration (such as Debug or Release) and `<RID>` is the runtime identifier (one of win-x64, linux-x64, osx-x64). For example, if you want to publish a release configuration of your app for a 64-bit version of Windows the command would look like:
 
 ```bash 
 > dotnet publish -r win-x64 -c release

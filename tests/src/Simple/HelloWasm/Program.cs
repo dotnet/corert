@@ -117,6 +117,29 @@ internal static class Program
         {
             PrintLine("CpObj test: Ok.");
         }
+
+        Func<int> staticDelegate = StaticDelegateTarget;
+        if(staticDelegate() == 7)
+        {
+            PrintLine("Static delegate test: Ok.");
+        }
+
+        tempObj.TestInt = 8;
+        Func<int> instanceDelegate = tempObj.InstanceDelegateTarget;
+        if(instanceDelegate() == 8)
+        {
+            PrintLine("Instance delegate test: Ok.");
+        }
+
+        Action virtualDelegate = tempObj.VirtualDelegateTarget;
+        virtualDelegate();
+
+        PrintLine("Done");
+    }
+
+    private static int StaticDelegateTarget()
+    {
+        return 7;
     }
 
     private static unsafe void PrintString(string s)
@@ -203,11 +226,19 @@ public struct BoxStubTest
     {
         return Value;
     }
+
+    public string GetValue()
+    {
+        Program.PrintLine("BoxStubTest.GetValue called");
+        Program.PrintLine(Value);
+        return Value;
+    }
 }
 
 public class TestClass
 {
-    public string TestString {get; set;}
+    public string TestString { get; set; }
+    public int TestInt { get; set; }
 
     public TestClass(int number)
     {
@@ -230,6 +261,16 @@ public class TestClass
     {
         Program.PrintLine("Virtual Slot Test 2: Ok");
     }
+
+    public int InstanceDelegateTarget()
+    {
+        return TestInt;
+    }
+
+    public virtual void VirtualDelegateTarget()
+    {
+        Program.PrintLine("Virtual delegate incorrectly dispatched to base.");
+    }
 }
 
 public class TestDerivedClass : TestClass
@@ -247,6 +288,11 @@ public class TestDerivedClass : TestClass
     public override string ToString()
     {
         throw new Exception();
+    }
+
+    public override void VirtualDelegateTarget()
+    {
+        Program.PrintLine("Virtual Delegate Test: Ok");
     }
 }
 
