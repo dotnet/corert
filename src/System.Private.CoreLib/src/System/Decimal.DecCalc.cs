@@ -757,8 +757,13 @@ ThrowOverflow:
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static int LeadingZeroCount(uint value)
+            private static int LeadingZeroCount(uint value)
             {
+#if CORECLR
+                if (System.Runtime.Intrinsics.X86.Lzcnt.IsSupported)
+                    return (int)System.Runtime.Intrinsics.X86.Lzcnt.LeadingZeroCount(value);
+#endif
+
                 int c = 1;
                 if ((value & 0xFFFF0000) == 0)
                 {
@@ -1244,7 +1249,7 @@ ReturnResult:
                 return;
             }
 
-            #endregion
+#endregion
 
             //**********************************************************************
             // VarCyFromDec - Convert Currency to Decimal (similar to OleAut32 api.)
@@ -2423,7 +2428,7 @@ done:
                 return;
             }
 
-            #region Number Formatting helpers
+#region Number Formatting helpers
 
             private static uint D32DivMod1E9(uint hi32, ref uint lo32)
             {
@@ -2489,7 +2494,7 @@ done:
                 D32AddCarry(ref value.uhi, d.High);
             }
 
-            #endregion
+#endregion
 
             struct PowerOvfl
             {

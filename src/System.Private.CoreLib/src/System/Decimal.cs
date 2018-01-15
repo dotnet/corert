@@ -658,7 +658,7 @@ namespace System
         public static Decimal Round(Decimal d, MidpointRounding mode) => Round(ref d, 0, mode);
         public static Decimal Round(Decimal d, int decimals, MidpointRounding mode) => Round(ref d, decimals, mode);
 
-        static Decimal Round(ref Decimal d, int decimals, MidpointRounding mode)
+        private static Decimal Round(ref Decimal d, int decimals, MidpointRounding mode)
         {
             if ((uint)decimals > 28)
                 throw new ArgumentOutOfRangeException(nameof(decimals), SR.ArgumentOutOfRange_DecimalRound);
@@ -866,7 +866,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static void Truncate(ref Decimal d)
+        private static void Truncate(ref Decimal d)
         {
             uint flags = d.uflags;
             if ((flags & ScaleMask) != 0)
