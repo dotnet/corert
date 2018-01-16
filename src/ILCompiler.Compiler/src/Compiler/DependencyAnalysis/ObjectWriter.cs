@@ -276,19 +276,19 @@ namespace ILCompiler.DependencyAnalysis
         private static extern uint GetCompleteClassTypeIndex(IntPtr objWriter, ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptor classFieldsTypeDescriptior, DataFieldDescriptor[] fields);
 
         [DllImport(NativeObjectWriterFileName)]
-        private static extern void EmitFnStart(IntPtr objWriter);
-        public void EmitFnStart()
+        private static extern void EmitARMFnStart(IntPtr objWriter);
+        public void EmitARMFnStart()
         {
             Debug.Assert(_frameOpened);
-            EmitFnStart(_nativeObjectWriter);
+            EmitARMFnStart(_nativeObjectWriter);
         }
 
         [DllImport(NativeObjectWriterFileName)]
-        private static extern void EmitFnEnd(IntPtr objWriter);
-        public void EmitFnEnd()
+        private static extern void EmitARMFnEnd(IntPtr objWriter);
+        public void EmitARMFnEnd()
         {
             Debug.Assert(_frameOpened);
-            EmitFnEnd(_nativeObjectWriter);
+            EmitARMFnEnd(_nativeObjectWriter);
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -663,7 +663,7 @@ namespace ILCompiler.DependencyAnalysis
             if (_offsetToCfiEnd.Contains(offset))
             {
                 if (forArm)
-                    EmitFnEnd(_nativeObjectWriter);
+                    EmitARMFnEnd();
                 else
                     EmitCFIEnd(offset);
             }
@@ -671,7 +671,7 @@ namespace ILCompiler.DependencyAnalysis
             if (_offsetToCfiStart.Contains(offset))
             {
                 if (forArm)
-                    EmitFnStart(_nativeObjectWriter);
+                    EmitARMFnStart();
                 else
                     EmitCFIStart(offset);
 

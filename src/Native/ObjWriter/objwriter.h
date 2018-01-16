@@ -91,8 +91,8 @@ public:
 
   unsigned GetMemberFunctionId(const MemberFunctionIdTypeDescriptor& MemberIdDescriptor);
 
-  void EmitFnStart();
-  void EmitFnEnd();
+  void EmitARMFnStart();
+  void EmitARMFnEnd();
   void EmitARMExIdxCode(int Offset, const char *Blob);
   void EmitARMExIdxLsda(const char *Blob);
 
@@ -324,14 +324,14 @@ extern "C" unsigned GetMemberFunctionIdTypeIndex(ObjectWriter *OW,
     return OW->GetMemberFunctionId(MemberIdDescriptor);
 }
 
-extern "C" void EmitFnStart(ObjectWriter *OW) {
+extern "C" void EmitARMFnStart(ObjectWriter *OW) {
     assert(OW && "ObjWriter is null");
-    return OW->EmitFnStart();
+    return OW->EmitARMFnStart();
 }
 
-extern "C" void EmitFnEnd(ObjectWriter *OW) {
+extern "C" void EmitARMFnEnd(ObjectWriter *OW) {
   assert(OW && "ObjWriter is null");
-  return OW->EmitFnEnd();
+  return OW->EmitARMFnEnd();
 }
 
 extern "C" void EmitARMExIdxLsda(ObjectWriter *OW, const char *Blob) {

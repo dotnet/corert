@@ -839,14 +839,14 @@ ObjectWriter::GetMemberFunctionId(const MemberFunctionIdTypeDescriptor& MemberId
 }
 
 void
-ObjectWriter::EmitFnStart() {
+ObjectWriter::EmitARMFnStart() {
   MCTargetStreamer &TS = *(Streamer->getTargetStreamer());
   ARMTargetStreamer &ATS = static_cast<ARMTargetStreamer &>(TS);
 
   ATS.emitFnStart();
 }
 
-void ObjectWriter::EmitFnEnd() {
+void ObjectWriter::EmitARMFnEnd() {
   MCTargetStreamer &TS = *(Streamer->getTargetStreamer());
   ARMTargetStreamer &ATS = static_cast<ARMTargetStreamer &>(TS);
 
