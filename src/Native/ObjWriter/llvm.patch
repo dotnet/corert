@@ -1,7 +1,7 @@
-diff --git i/include/llvm/MC/MCObjectStreamer.h w/include/llvm/MC/MCObjectStreamer.h
+diff --git a/include/llvm/MC/MCObjectStreamer.h b/include/llvm/MC/MCObjectStreamer.h
 index 7c1189e..d1d77c9 100644
---- i/include/llvm/MC/MCObjectStreamer.h
-+++ w/include/llvm/MC/MCObjectStreamer.h
+--- a/include/llvm/MC/MCObjectStreamer.h
++++ b/include/llvm/MC/MCObjectStreamer.h
 @@ -101,6 +101,11 @@ public:
    void EmitInstruction(const MCInst &Inst, const MCSubtargetInfo &STI,
                         bool = false) override;
@@ -14,10 +14,10 @@ index 7c1189e..d1d77c9 100644
    /// \brief Emit an instruction to a special fragment, because this instruction
    /// can change its size during relaxation.
    virtual void EmitInstToFragment(const MCInst &Inst, const MCSubtargetInfo &);
-diff --git i/include/llvm/MC/MCStreamer.h w/include/llvm/MC/MCStreamer.h
+diff --git a/include/llvm/MC/MCStreamer.h b/include/llvm/MC/MCStreamer.h
 index 5390e79..e28a3cc 100644
---- i/include/llvm/MC/MCStreamer.h
-+++ w/include/llvm/MC/MCStreamer.h
+--- a/include/llvm/MC/MCStreamer.h
++++ b/include/llvm/MC/MCStreamer.h
 @@ -115,6 +115,7 @@ public:
    virtual void emitPad(int64_t Offset);
    virtual void emitRegSave(const SmallVectorImpl<unsigned> &RegList,
@@ -26,10 +26,10 @@ index 5390e79..e28a3cc 100644
    virtual void emitUnwindRaw(int64_t StackOffset,
                               const SmallVectorImpl<uint8_t> &Opcodes);
  
-diff --git i/lib/MC/MCObjectStreamer.cpp w/lib/MC/MCObjectStreamer.cpp
+diff --git a/lib/MC/MCObjectStreamer.cpp b/lib/MC/MCObjectStreamer.cpp
 index 174397e..ef7161f 100644
---- i/lib/MC/MCObjectStreamer.cpp
-+++ w/lib/MC/MCObjectStreamer.cpp
+--- a/lib/MC/MCObjectStreamer.cpp
++++ b/lib/MC/MCObjectStreamer.cpp
 @@ -122,7 +122,7 @@ void MCObjectStreamer::EmitCFISections(bool EH, bool Debug) {
  }
  
@@ -57,10 +57,10 @@ index 174397e..ef7161f 100644
  void MCObjectStreamer::EmitCFIStartProcImpl(MCDwarfFrameInfo &Frame) {
    // We need to create a local symbol to avoid relocations.
    Frame.Begin = getContext().createTempSymbol();
-diff --git i/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.cpp w/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.cpp
+diff --git a/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.cpp b/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.cpp
 index a77df7a..e1aa752 100644
---- i/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.cpp
-+++ w/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.cpp
+--- a/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.cpp
++++ b/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.cpp
 @@ -48,6 +48,14 @@ public:
  };
  } // end anonymous namespace
@@ -95,10 +95,10 @@ index a77df7a..e1aa752 100644
    case FK_SecRel_2:
      return 2;
    case FK_SecRel_4:
-diff --git i/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.h w/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.h
+diff --git a/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.h b/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.h
 index 0237496..01676a0 100644
---- i/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.h
-+++ w/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.h
+--- a/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.h
++++ b/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.h
 @@ -36,6 +36,7 @@ public:
  
    bool hasNOP() const { return STI->getFeatureBits()[ARM::HasV6T2Ops]; }
@@ -107,10 +107,10 @@ index 0237496..01676a0 100644
    const MCFixupKindInfo &getFixupKindInfo(MCFixupKind Kind) const override;
  
    bool shouldForceRelocation(const MCAssembler &Asm, const MCFixup &Fixup,
-diff --git i/lib/Target/ARM/MCTargetDesc/ARMELFObjectWriter.cpp w/lib/Target/ARM/MCTargetDesc/ARMELFObjectWriter.cpp
+diff --git a/lib/Target/ARM/MCTargetDesc/ARMELFObjectWriter.cpp b/lib/Target/ARM/MCTargetDesc/ARMELFObjectWriter.cpp
 index 59f31be..9b95598 100644
---- i/lib/Target/ARM/MCTargetDesc/ARMELFObjectWriter.cpp
-+++ w/lib/Target/ARM/MCTargetDesc/ARMELFObjectWriter.cpp
+--- a/lib/Target/ARM/MCTargetDesc/ARMELFObjectWriter.cpp
++++ b/lib/Target/ARM/MCTargetDesc/ARMELFObjectWriter.cpp
 @@ -103,6 +103,9 @@ unsigned ARMELFObjectWriter::GetRelocTypeInner(const MCValue &Target,
          break;
        }
@@ -121,10 +121,10 @@ index 59f31be..9b95598 100644
      case ARM::fixup_arm_blx:
      case ARM::fixup_arm_uncondbl:
        switch (Modifier) {
-diff --git i/lib/Target/ARM/MCTargetDesc/ARMELFStreamer.cpp w/lib/Target/ARM/MCTargetDesc/ARMELFStreamer.cpp
+diff --git a/lib/Target/ARM/MCTargetDesc/ARMELFStreamer.cpp b/lib/Target/ARM/MCTargetDesc/ARMELFStreamer.cpp
 index 93f4006..67ae439 100644
---- i/lib/Target/ARM/MCTargetDesc/ARMELFStreamer.cpp
-+++ w/lib/Target/ARM/MCTargetDesc/ARMELFStreamer.cpp
+--- a/lib/Target/ARM/MCTargetDesc/ARMELFStreamer.cpp
++++ b/lib/Target/ARM/MCTargetDesc/ARMELFStreamer.cpp
 @@ -396,6 +396,7 @@ private:
    void emitPad(int64_t Offset) override;
    void emitRegSave(const SmallVectorImpl<unsigned> &RegList,
@@ -203,10 +203,10 @@ index 93f4006..67ae439 100644
  void ARMELFStreamer::emitUnwindRaw(int64_t Offset,
                                     const SmallVectorImpl<uint8_t> &Opcodes) {
    FlushPendingOffset();
-diff --git i/lib/Target/ARM/MCTargetDesc/ARMTargetStreamer.cpp w/lib/Target/ARM/MCTargetDesc/ARMTargetStreamer.cpp
+diff --git a/lib/Target/ARM/MCTargetDesc/ARMTargetStreamer.cpp b/lib/Target/ARM/MCTargetDesc/ARMTargetStreamer.cpp
 index 4a94318..f4f5aa1 100644
---- i/lib/Target/ARM/MCTargetDesc/ARMTargetStreamer.cpp
-+++ w/lib/Target/ARM/MCTargetDesc/ARMTargetStreamer.cpp
+--- a/lib/Target/ARM/MCTargetDesc/ARMTargetStreamer.cpp
++++ b/lib/Target/ARM/MCTargetDesc/ARMTargetStreamer.cpp
 @@ -61,6 +61,7 @@ void ARMTargetStreamer::emitMovSP(unsigned Reg, int64_t Offset) {}
  void ARMTargetStreamer::emitPad(int64_t Offset) {}
  void ARMTargetStreamer::emitRegSave(const SmallVectorImpl<unsigned> &RegList,
@@ -215,10 +215,10 @@ index 4a94318..f4f5aa1 100644
  void ARMTargetStreamer::emitUnwindRaw(int64_t StackOffset,
                                        const SmallVectorImpl<uint8_t> &Opcodes) {
  }
-diff --git i/tools/CMakeLists.txt w/tools/CMakeLists.txt
+diff --git a/tools/CMakeLists.txt b/tools/CMakeLists.txt
 index b654b8c..58d2515 100644
---- i/tools/CMakeLists.txt
-+++ w/tools/CMakeLists.txt
+--- a/tools/CMakeLists.txt
++++ b/tools/CMakeLists.txt
 @@ -46,6 +46,7 @@ add_llvm_external_project(clang)
  add_llvm_external_project(llgo)
  add_llvm_external_project(lld)
