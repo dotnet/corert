@@ -655,10 +655,9 @@ namespace ILCompiler.DependencyAnalysis
             EnsureCurrentSection();
         }
 
-        public void EmitCFICodes(int offset, NodeFactory factory)
+        public void EmitCFICodes(int offset)
         {
-            TargetArchitecture tarch = factory.Target.Architecture;
-            bool forArm = (tarch == TargetArchitecture.ARMEL || tarch == TargetArchitecture.ARM);
+            bool forArm = (_targetPlatform.Architecture == TargetArchitecture.ARMEL || _targetPlatform.Architecture == TargetArchitecture.ARM);
 
             // Emit end the old frame before start a frame.
             if (_offsetToCfiEnd.Contains(offset))
@@ -1028,7 +1027,7 @@ namespace ILCompiler.DependencyAnalysis
                         objectWriter.EmitSymbolDefinition(i);
 
                         // Emit CFI codes for the given offset.
-                        objectWriter.EmitCFICodes(i, factory);
+                        objectWriter.EmitCFICodes(i);
 
                         // Emit debug loc info if needed.
                         objectWriter.EmitDebugLocInfo(i);
@@ -1106,7 +1105,7 @@ namespace ILCompiler.DependencyAnalysis
                         objectWriter.PublishUnwindInfo(node);
 
                     // Emit the last CFI to close the frame.
-                    objectWriter.EmitCFICodes(nodeContents.Data.Length, factory);
+                    objectWriter.EmitCFICodes(nodeContents.Data.Length);
 
                     if (objectWriter.HasFunctionDebugInfo())
                     {
