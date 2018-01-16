@@ -1,0 +1,62 @@
+<Project 
+  xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="..\..\..\..\..\dir.props" />
+  <PropertyGroup>
+    <TargetFramework>net46</TargetFramework>
+    <XunitPackageVersion>2.2.0-beta2-build3300</XunitPackageVersion>
+    <XunitConsoleNetcorePackageVersion>2.1.0-prerelease-02411-04</XunitConsoleNetcorePackageVersion>
+    <XunitAbstractionsVersion>2.0.1</XunitAbstractionsVersion>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <!-- Pickup a few selected aot-specific files from uapaot instead -->
+    <FileToInclude Include="System.Linq.Expressions" />
+    <FileToInclude Include="System.Text.RegularExpressions" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="xunit">
+      <Version>$(XunitPackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.assert">
+      <Version>$(XunitPackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.core">
+      <Version>$(XunitPackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.runner.msbuild">
+      <Version>$(XunitPackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.abstractions">
+      <Version>$(XunitAbstractionsVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.extensibility.core">
+      <Version>$(XunitPackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.runner.utility">
+      <Version>$(XunitPackageVersion)</Version>
+    </PackageReference>
+    <!-- Version mismatch, WHAT TO DO -->
+    <!-- <PackageReference Include="xunit.console.netcore">
+      <Version>$(XunitConsoleNetcorePackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Xunit.NetCore.Extensions">
+      <Version>$(XunitNetcoreExtensionsVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.DotNet.BuildTools.TestSuite">
+      <Version>$(XunitNetcoreExtensionsVersion)</Version>
+    </PackageReference> -->
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageToInclude Include="xunit.abstractions"/>
+    <PackageToInclude Include="xunit.assert"/>
+    <PackageToInclude Include="xunit.extensibility.core"/>
+    <PackageToInclude Include="xunit.extensibility.execution"/>
+    <PackageToInclude Include="xunit.runner.utility"/>
+    <PackageToInclude Include="Microsoft.xunit.netcore.extensions"/>
+    <PackageToInclude Include="xunit.console.netcore" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
