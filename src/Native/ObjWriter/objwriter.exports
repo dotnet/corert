@@ -24,3 +24,7 @@ GetArrayTypeIndex
 GetPointerTypeIndex
 GetMemberFunctionTypeIndex
 GetMemberFunctionIdTypeIndex
+EmitARMFnStart
+EmitARMFnEnd
+EmitARMExIdxCode
+EmitARMExIdxLsda
