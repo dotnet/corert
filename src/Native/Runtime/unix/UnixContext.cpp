@@ -592,6 +592,7 @@ bool FindProcInfo(UIntNative controlPC, UIntNative* startAddress, UIntNative* ls
     assert((procInfo.start_ip <= controlPC) && (controlPC < procInfo.end_ip));
 
 #if defined(_ARM_)
+    // libunwind fills by reference not by value for ARM
     *lsda = *((UIntNative *)procInfo.lsda);
 #else
     *lsda = procInfo.lsda;
