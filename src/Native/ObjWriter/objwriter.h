@@ -91,6 +91,11 @@ public:
 
   unsigned GetMemberFunctionId(const MemberFunctionIdTypeDescriptor& MemberIdDescriptor);
 
+  void EmitFnStart();
+  void EmitFnEnd();
+  void EmitARMExIdxCode(int Offset, const char *Blob);
+  void EmitARMExIdxLsda(const char *Blob);
+
 private:
   void EmitLabelDiff(const MCSymbol *From, const MCSymbol *To,
                      unsigned int Size = 4);
@@ -317,4 +322,24 @@ extern "C" unsigned GetMemberFunctionIdTypeIndex(ObjectWriter *OW,
     MemberFunctionIdTypeDescriptor MemberIdDescriptor) {
     assert(OW && "ObjWriter is null");
     return OW->GetMemberFunctionId(MemberIdDescriptor);
+}
+
+extern "C" void EmitFnStart(ObjectWriter *OW) {
+    assert(OW && "ObjWriter is null");
+    return OW->EmitFnStart();
+}
+
+extern "C" void EmitFnEnd(ObjectWriter *OW) {
+  assert(OW && "ObjWriter is null");
+  return OW->EmitFnEnd();
+}
+
+extern "C" void EmitARMExIdxLsda(ObjectWriter *OW, const char *Blob) {
+  assert(OW && "ObjWriter is null");
+  return OW->EmitARMExIdxLsda(Blob);
+}
+
+extern "C" void EmitARMExIdxCode(ObjectWriter *OW, int Offset, const char *Blob) {
+  assert(OW && "ObjWriter is null");
+  return OW->EmitARMExIdxCode(Offset, Blob);
 }

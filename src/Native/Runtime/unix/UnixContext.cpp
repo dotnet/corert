@@ -591,7 +591,11 @@ bool FindProcInfo(UIntNative controlPC, UIntNative* startAddress, UIntNative* ls
 
     assert((procInfo.start_ip <= controlPC) && (controlPC < procInfo.end_ip));
 
+#if defined(_ARM_)
+    *lsda = *((UIntNative *)procInfo.lsda);
+#else
     *lsda = procInfo.lsda;
+#endif
     *startAddress = procInfo.start_ip;
 
     return true;
