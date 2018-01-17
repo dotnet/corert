@@ -338,9 +338,15 @@ goto :eof
     exit /b -1
 
 :RestoreCoreFXTests
+  
+  set TESTS_SEMAPHORE=%CoreRT_TestExtRepo_CoreFX%\init-tests.completed
+  :: If sempahore exists do nothing
+  if exist "%TESTS_SEMAPHORE%" (
+    echo Tests are already initialized.
+    goto :EOF
+  )
 
-echo todo
-exit /b 0
+  exit /b 0
 
 :RestoreCoreCLRTests
 

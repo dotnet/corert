@@ -24,6 +24,10 @@ echo %TestFileName%
 copy /Y %~dp0\Test.csproj %TestFolder%
 copy /Y %~dp0\default.rd.xml %TestFolder%
 
+:: Workaround until we have a better reflection engine
+:: Add name of currently executing test to rd.xml
+powershell -Command "(Get-Content %TestFolder%\default.rd.xml).replace('*Application*', '%TestFileName%') | Set-Content  %TestFolder%\default.rd.xml"
+
 if "%CoreRT_BuildArch%" == "x64" (
     call "%VS140COMNTOOLS%\..\..\VC\bin\amd64\vcvars64.bat"
 )

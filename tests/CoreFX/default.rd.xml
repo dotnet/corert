@@ -1,6 +1,7 @@
 <Directives 
     xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
     <Application>
+        <Assembly Name="*Application*" Dynamic="Required All" />
         <Assembly Name="xunit.execution.dotnet" Dynamic="Required All" />
         <Assembly Name="xunit.execution.dotnet" Dynamic="Required All" />
         <Assembly Name="xunit.core" Dynamic="Required All">
@@ -29,7 +30,7 @@
         </Assembly>
         <Assembly Name="mscorlib">
             <Type Name="System.IO.File" Dynamic="Required All"/>
-            <Type Name="System.Threading.ExecutionContefxt" Dynamic="Required All"/>
+            <Type Name="System.Threading.ExecutionContext" Dynamic="Required All"/>
             <Type Name="System.Threading.ContextCallback" Dynamic="Required All"/>            
         </Assembly>
         <!-- <Assembly Name="System.Private.CoreLib"><Type Name="System.AttributeTargets" Dynamic="Required All"/></Assembly> -->
