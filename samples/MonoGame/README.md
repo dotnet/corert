@@ -81,12 +81,12 @@ MonoGame samples include project files for number of targets, but not for .NET C
 The NeonShooter sample works on Windows-only due to https://github.com/MonoGame/MonoGame/issues/3270.
 
 ## Using reflection 
-Runtime directives are XML configuration files, which specify which otherwise unreachable elements of your program are available for reflection. They are used at compile-time to enable AOT compilation in applications at runtime. The runtime directives are reference in the project via RdXmlFile property:
+Runtime directives are XML configuration files, which specify which otherwise unreachable elements of your program are available for reflection. They are used at compile-time to enable AOT compilation in applications at runtime. The runtime directives are reference in the project via RdXmlFile item:
 
 ```xml
-<PropertyGroup>
-  <RdXmlFile>rd.xml</RdXmlFile>
-</PropertyGroup>
+<ItemGroup>
+  <RdXmlFile Include="rd.xml" />
+</ItemGroup>
 ```
 
 MonoGame serialization engine uses reflection to create types representing the game assets that needs to mentioned in the [rd.xml](rd.xml) file. If you see MissingMetadataException thrown during game startup, add the missing types to the rd.xml file.

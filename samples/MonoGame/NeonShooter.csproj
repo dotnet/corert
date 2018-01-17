@@ -5,8 +5,11 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <DefineConstants>$(DefineConstants);WINDOWS;LINUX</DefineConstants>
-    <RdXmlFile>rd.xml</RdXmlFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <RdXmlFile Include="rd.xml" />
+  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="MonoGame.Samples\NeonShooter\Game.cs">

@@ -2,8 +2,11 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
-    <RdXmlFile>rd.xml</RdXmlFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <RdXmlFile Include="rd.xml" />
+  </ItemGroup>
 
   <ItemGroup>
     <Folder Include="wwwroot\" />
