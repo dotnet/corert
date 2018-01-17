@@ -1176,6 +1176,9 @@
   <data name="InvalidOperation_AsyncFlowCtrlCtxMismatch" xml:space="preserve">
     <value>AsyncFlowControl objects can be used to restore flow only on a Context that had its flow suppressed.</value>
   </data>
+  <data name="InvalidOperation_AsyncIOInProgress" xml:space="preserve">
+    <value>The stream is currently in use by a previous operation on the stream.</value>
+  </data>
   <data name="InvalidProgram_Default" xml:space="preserve">
     <value>Common Language Runtime detected an invalid program.</value>
   </data>
@@ -1972,9 +1975,6 @@
   <data name="IndexOutOfRange_UMSPosition" xml:space="preserve">
     <value>Unmanaged memory stream position was beyond the capacity of the stream.</value>
   </data>
-  <data name="ObjectDisposed_StreamIsClosed" xml:space="preserve">
-    <value>Cannot access a closed Stream.</value>
-  </data>
   <data name="ObjectDisposed_ViewAccessorClosed" xml:space="preserve">
     <value>Cannot access a closed accessor.</value>
   </data>
@@ -2685,5 +2685,14 @@
   </data>
   <data name="HashCode_EqualityNotSupported" xml:space="preserve">
     <value>HashCode is a mutable struct and should not be compared with other HashCodes.</value>
+  </data>
+  <data name="ObjectDisposed_WriterClosed" xml:space="preserve">
+    <value>Cannot write to a closed TextWriter.</value>
+  </data>
+  <data name="ObjectDisposed_ReaderClosed" xml:space="preserve">
+    <value>Cannot read from a closed TextReader.</value>
+  </data>
+  <data name="IO_InvalidReadLength" xml:space="preserve">
+    <value>The read operation returned an invalid length.</value>
   </data>
 </root>
