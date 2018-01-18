@@ -17,13 +17,17 @@ Historically on Full Framework IL generators used PEVerify to make sure that the
 - Fast spin up/tear down. 
 
 ## The codebase
-The project targets netcoreapp2.0 and uses the new .csproj based project format. If you want to open and compile it with Visual Studio then you need a version, which supports .NET Core 2.0 tooling. This is supported in Visual Studio 2017 Update 3  (Version 15.3) or later. The other option is to use command (with .NET Core 2.0 tooling). 
+The project targets netcoreapp2.0 and uses the new .csproj based project format. If you want to open and compile it with Visual Studio then you need a version, which supports .NET Core 2.0 tooling. This is supported in Visual Studio 2017 Update 3  (Version 15.3) or later. The other option is to use command (with .NET Core 2.0 tooling).
+The code is split into three projects:
+- ILVerification is the library with the core verification logic,
+- ILVerification.Tests contains the tests for ILVerification,
+- ILVerify is an application that provides a command-line interface on top of ILVerification.
 
 ## Tests
 
-To test ILVerify we have small methods checked in as .il files testing specific verification scenarios. These tests live under [src/ILVerify/tests/ILTests](https://github.com/dotnet/corert/tree/master/src/ILVerify/tests/ILTests). Tests are grouped into .il files based on functionalities they test. There is no strict policy here, the goal is to have a few dozen .il files instead of thousands containing each only a single method. 
+To test the ILVerification library we have small methods checked in as .il files testing specific verification scenarios. These tests live under [src/ILVerification/tests/ILTests](https://github.com/dotnet/corert/tree/master/src/ILVerification/tests/ILTests). Tests are grouped into .il files based on functionalities they test. There is no strict policy here, the goal is to have a few dozen .il files instead of thousands containing each only a single method. 
 
-Currently the IL files are NOT compiled automatically. You have to compile manually (We want to automatize this step later):
+Currently the IL files are NOT compiled automatically. You have to compile manually (We want to automate this step later):
 
 ```
 ilasm [filename.il] /dll /ERROR
@@ -35,7 +39,7 @@ Note: if you run the tests and get an error similar to this then it means that t
 Result Message:	System.InvalidOperationException : No data found for ILVerify.Tests.ILMethodTester.TestMethodsWithInvalidIL
 ```
 
-The test project itself is under [src/ILVerify/tests](https://github.com/dotnet/corert/tree/master/src/ILVerify/tests)
+The test project itself is under [src/ILVerification/tests](https://github.com/dotnet/corert/tree/master/src/ILVerification/tests)
 
  Method names in the .il files must follow the following naming convention:
 
@@ -58,7 +62,7 @@ E.g.: ```SimpleAdd_Valid```
 The method name must contain 2 '`_`' characters.
  1. part: a friendly name
  2. part: must be the word 'Invalid' (Case sensitive)
- 3. part: the expected [VerifierErrors](https://github.com/dotnet/corert/blob/master/src/ILVerify/src/VerifierError.cs) as string separated by '.'. We assert on these errors; the test fails if ILVerify does not report these errors.     
+ 3. part: the expected [VerifierErrors](https://github.com/dotnet/corert/blob/master/src/ILVerification/src/VerifierError.cs) as string separated by '.'. We assert on these errors; the test fails if ILVerify does not report these errors.     
  
  E.g.: ```SimpleAdd_Invalid_ExpectedNumericType```
  

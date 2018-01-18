@@ -13,15 +13,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\ILVerify.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="ILTests\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="0.1.0-e160909-1" />    
+    <ProjectReference Include="..\src\ILVerification.csproj" />
   </ItemGroup>
 
 </Project>
