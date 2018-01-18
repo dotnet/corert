@@ -243,7 +243,7 @@ namespace ILCompiler.DependencyAnalysis
                 // Add conditional dependencies for interface methods the type implements. For example, if the type T implements
                 // interface IFoo which has a method M1, add a dependency on T.M1 dependent on IFoo.M1 being called, since it's
                 // possible for any IFoo object to actually be an instance of T.
-                foreach (DefType interfaceType in defType.NormalizedRuntimeInterfaces())
+                foreach (DefType interfaceType in defType.RuntimeInterfaces)
                 {
                     Debug.Assert(interfaceType.IsInterface);
 
@@ -259,7 +259,7 @@ namespace ILCompiler.DependencyAnalysis
                         MethodDesc implMethod = defType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
                         if (implMethod != null)
                         {
-                            yield return new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method");
+                            yield return new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod.Normalize()), factory.VirtualMethodUse(interfaceMethod.Normalize()), "Interface method");
                         }
                     }
                 }
@@ -277,7 +277,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_type.RuntimeInterfaces.Length > 0 && !factory.VTable(closestDefType).HasFixedSlots)
             {
-                foreach (var implementedInterface in _type.NormalizedRuntimeInterfaces())
+                foreach (var implementedInterface in _type.RuntimeInterfaces)
                 {
                     // If the type implements ICastable, the methods are implicitly necessary
                     if (implementedInterface == factory.ICastableInterface)
@@ -340,8 +340,8 @@ namespace ILCompiler.DependencyAnalysis
                             MethodDesc implMethod = closestDefType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
                             if (implMethod != null)
                             {
-                                dependencyList.Add(factory.VirtualMethodUse(interfaceMethod), "Variant interface method");
-                                dependencyList.Add(factory.VirtualMethodUse(implMethod), "Variant interface method");
+                                dependencyList.Add(factory.VirtualMethodUse(interfaceMethod.Normalize()), "Variant interface method");
+                                dependencyList.Add(factory.VirtualMethodUse(implMethod.Normalize()), "Variant interface method");
                             }
                         }
                     }
