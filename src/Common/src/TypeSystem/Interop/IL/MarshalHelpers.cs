@@ -101,6 +101,10 @@ namespace Internal.TypeSystem.Interop
             if (importModule == "[MRT]" || importModule == "*")
                 return false;
 
+            // Force link time symbol resolution for "__Internal" module for compatibility with Mono
+            if (importModule == "__Internal")
+                return false;
+
             if (method.Context.Target.IsWindows)
             {
                 return !importModule.StartsWith("api-ms-win-");

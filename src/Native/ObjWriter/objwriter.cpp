@@ -32,6 +32,7 @@
 #include "llvm/MC/MCObjectStreamer.h"
 #include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/MC/MCTargetOptionsCommandFlags.h"
+#include "llvm/MC/MCELFStreamer.h"
 #include "llvm/BinaryFormat/COFF.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Compression.h"
@@ -837,3 +838,56 @@ ObjectWriter::GetMemberFunctionId(const MemberFunctionIdTypeDescriptor& MemberId
     return TypeBuilder.GetMemberFunctionId(MemberIdDescriptor);
 }
 
+void
+ObjectWriter::EmitARMFnStart() {
+  MCTargetStreamer &TS = *(Streamer->getTargetStreamer());
+  ARMTargetStreamer &ATS = static_cast<ARMTargetStreamer &>(TS);
+
+  ATS.emitFnStart();
+}
+
+void ObjectWriter::EmitARMFnEnd() {
+  MCTargetStreamer &TS = *(Streamer->getTargetStreamer());
+  ARMTargetStreamer &ATS = static_cast<ARMTargetStreamer &>(TS);
+
+  ATS.emitFnEnd();
+}
+
+void ObjectWriter::EmitARMExIdxLsda(const char *LsdaBlobSymbolName)
+{
+  MCTargetStreamer &TS = *(Streamer->getTargetStreamer());
+  ARMTargetStreamer &ATS = static_cast<ARMTargetStreamer &>(TS);
+
+  MCSymbol *T = OutContext->getOrCreateSymbol(LsdaBlobSymbolName);
+  Assembler->registerSymbol(*T);
+
+  ATS.emitLsda(T);
+}
+
+void ObjectWriter::EmitARMExIdxCode(int Offset, const char *Blob)
+{
+  MCTargetStreamer &TS = *(Streamer->getTargetStreamer());
+  ARMTargetStreamer &ATS = static_cast<ARMTargetStreamer &>(TS);
+  SmallVector<unsigned, 4> RegList;
+
+  const CFI_CODE *CfiCode = (const CFI_CODE *)Blob;
+  switch (CfiCode->CfiOpCode) {
+  case CFI_ADJUST_CFA_OFFSET:
+    assert(CfiCode->DwarfReg == DWARF_REG_ILLEGAL &&
+           "Unexpected Register Value for OpAdjustCfaOffset");
+    ATS.emitPad(CfiCode->Offset);
+    break;
+  case CFI_REL_OFFSET:
+    RegList.push_back(CfiCode->DwarfReg);
+    ATS.emitRegSave(RegList, false);
+    break;
+  case CFI_DEF_CFA_REGISTER:
+    assert(CfiCode->Offset == 0 &&
+           "Unexpected Offset Value for OpDefCfaRegister");
+    ATS.emitMovSP(CfiCode->DwarfReg, 0);
+    break;
+  default:
+    assert(false && "Unrecognized CFI");
+    break;
+  }
+}

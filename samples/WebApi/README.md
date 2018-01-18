@@ -75,10 +75,10 @@ If your application makes use of reflection, you will need to create a rd.xml fi
 
 At runtime, if a method or type is not found or cannot be loaded, an exception will be thrown. The exception message will contain information on the missing type reference, which you can then add to the rd.xml of your program.
 
-Once you've created a rd.xml file, navigate to the root directory of your project and open its `.csproj` file and in the first `<PropertyGroup>` element add the following:
+Once you've created a rd.xml file, navigate to the root directory of your project and open its `.csproj` file and in the first `<ItemGroup>` element add the following:
 
 ```xml
-<RdXmlFile>path_to_rdxml_file\rd.xml</RdXmlFile>
+<RdXmlFile Include="path_to_rdxml_file\rd.xml" />
 ```
 
 where path_to_rdxml_file is the location of the file on your disk.

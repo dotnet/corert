@@ -141,7 +141,7 @@ See the LICENSE file in the project root for more information.
   </Target>
 
   <Target Name="IlcCompile" 
-      Inputs="@(IlcCompileInput)"
+      Inputs="@(IlcCompileInput);@(RdXmlFile)"
       Outputs="$(NativeIntermediateOutputPath)%(ManagedBinary.Filename)$(IlcOutputFileExt)"
       DependsOnTargets="$(IlcCompileDependsOn)">
 
@@ -155,7 +155,7 @@ See the LICENSE file in the project root for more information.
       <IlcArg Condition="$(Optimize) == 'true'" Include="-O" />
       <IlcArg Condition="$(DebugSymbols) == 'true'" Include="-g" />
       <IlcArg Condition="$(IlcGenerateMapFile) == 'true'" Include="--map:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).map.xml" />
-      <IlcArg Condition="$(RdXmlFile) != ''" Include="--rdxml:$(RdXmlFile)" />
+      <IlcArg Include="@(RdXmlFile->'--rdxml:%(Identity)')" />
       <IlcArg Condition="$(OutputType) == 'Library' and $(NativeLib) != ''" Include="--nativelib" />
       <IlcArg Condition="$(ExportsFile) != ''" Include="--exportsfile:$(ExportsFile)" />
       <ILcArg Condition="'$(Platform)' == 'wasm'" Include="--wasm" />
