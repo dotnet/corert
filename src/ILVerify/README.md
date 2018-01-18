@@ -14,7 +14,7 @@ Historically on Full Framework IL generators used PEVerify to make sure that the
 - No coupling with CoreLib: ILVerify can point to any assembly and verify it. This also includes the full framework base assemblies (especially mscorlib).
 - Cross-platform, Open-Source
 - It should be easy to add new verification rules
-- Fast spin up/tear down. 
+- Fast spin up/tear down.
 
 ## The codebase
 The project targets netcoreapp2.0 and uses the new .csproj based project format. If you want to open and compile it with Visual Studio then you need a version, which supports .NET Core 2.0 tooling. This is supported in Visual Studio 2017 Update 3  (Version 15.3) or later. The other option is to use command (with .NET Core 2.0 tooling).
@@ -25,7 +25,7 @@ The code is split into three projects:
 
 ## Tests
 
-To test the ILVerification library we have small methods checked in as .il files testing specific verification scenarios. These tests live under [src/ILVerification/tests/ILTests](https://github.com/dotnet/corert/tree/master/src/ILVerification/tests/ILTests). Tests are grouped into .il files based on functionalities they test. There is no strict policy here, the goal is to have a few dozen .il files instead of thousands containing each only a single method. 
+To test the ILVerification library we have small methods checked in as .il files testing specific verification scenarios. These tests live under [src/ILVerification/tests/ILTests](../ILVerification/tests/ILTests). Tests are grouped into .il files based on functionalities they test. There is no strict policy here, the goal is to have a few dozen .il files instead of thousands containing each only a single method.
 
 Currently the IL files are NOT compiled automatically. You have to compile manually (We want to automate this step later):
 
@@ -39,7 +39,7 @@ Note: if you run the tests and get an error similar to this then it means that t
 Result Message:	System.InvalidOperationException : No data found for ILVerify.Tests.ILMethodTester.TestMethodsWithInvalidIL
 ```
 
-The test project itself is under [src/ILVerification/tests](https://github.com/dotnet/corert/tree/master/src/ILVerification/tests)
+The test project itself is under [src/ILVerification/tests](../ILVerification/tests)
 
  Method names in the .il files must follow the following naming convention:
 
@@ -48,9 +48,9 @@ The test project itself is under [src/ILVerification/tests](https://github.com/d
 ```
 [FriendlyName]_Valid
 ```
-The method must contain 1 '`_`'. 
+The method must contain 1 '`_`'.
  - The part before the `_` is a friendly name describing what the method does.
- - The word after the `_` must be 'Valid' (Case sensitive) 
+ - The word after the `_` must be 'Valid' (Case sensitive)
 
 E.g.: ```SimpleAdd_Valid```
 
@@ -62,10 +62,10 @@ E.g.: ```SimpleAdd_Valid```
 The method name must contain 2 '`_`' characters.
  1. part: a friendly name
  2. part: must be the word 'Invalid' (Case sensitive)
- 3. part: the expected [VerifierErrors](https://github.com/dotnet/corert/blob/master/src/ILVerification/src/VerifierError.cs) as string separated by '.'. We assert on these errors; the test fails if ILVerify does not report these errors.     
- 
+ 3. part: the expected [VerifierErrors](../ILVerification/src/VerifierError.cs) as string separated by '.'. We assert on these errors; the test fails if ILVerify does not report these errors.
+
  E.g.: ```SimpleAdd_Invalid_ExpectedNumericType```
- 
+
 ### Methods with special names:
 
 In order to test methods with special names (e.g. '.ctor'), the specialname method is defined as usual and a separate empty method is added to the type:
@@ -96,7 +96,7 @@ Currently every IL command falls into one of these categories:
 
  - Not implemented: the implementation is completely missing. The easiest way is to pick one of them (look for NotImplentedException in the code) and implement it. First you should 100% understand the spec. (see [ECMA-335](https://www.ecma-international.org/publications/standards/Ecma-335.htm)), then try to port an existing implementation (sources below).
  - Partially implemented: These are typically methods with TODOs in it. As the first phase we want to make sure that for every command the stack is correctly maintained, therefore for some commands we either have no verification or we have only a not complete verification. You can also pick one of these and finish it.
- - Implemented: find and fix bugs ;) .  
+ - Implemented: find and fix bugs ;) .
 
 Another option to contribute is to write tests (see Tests section).
 
@@ -104,4 +104,4 @@ Useful sources:
  - [PEVerify source code](https://github.com/lewischeng-ms/sscli/blob/master/clr/src/jit64/newverify.cpp)
  - [RyuJIT source code](https://github.com/dotnet/coreclr/blob/master/src/jit), specifically: [exception handling specific part](https://github.com/dotnet/coreclr/blob/master/src/jit/jiteh.cpp), [importer.cpp](https://github.com/dotnet/coreclr/blob/master/src/jit/importer.cpp) (look for `Compiler::ver`, `Verify`, `VerifyOrReturn`, and `VerifyOrReturnSpeculative`), [_typeinfo.h](https://github.com/dotnet/coreclr/blob/master/src/jit/_typeinfo.h), [typeinfo.cpp](https://github.com/dotnet/coreclr/blob/master/src/jit/typeinfo.cpp)
  - [ECMA-335 standard](https://www.ecma-international.org/publications/standards/Ecma-335.htm)
- - [Expert .NET 2.0 IL Assembler book](http://www.apress.com/us/book/9781590596463) by Serge Lidin 
+ - [Expert .NET 2.0 IL Assembler book](http://www.apress.com/us/book/9781590596463) by Serge Lidin
