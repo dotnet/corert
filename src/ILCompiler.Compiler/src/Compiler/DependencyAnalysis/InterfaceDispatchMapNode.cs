@@ -61,14 +61,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             var entryCountReservation = builder.ReserveInt();
             int entryCount = 0;
-            int interfaceIndex = 0;
-            
-            foreach (var interfaceType in _type.NormalizedRuntimeInterfaces())
+
+            for (int interfaceIndex = 0; interfaceIndex < _type.RuntimeInterfaces.Length; interfaceIndex++)
             {
+                var interfaceType = _type.RuntimeInterfaces[interfaceIndex];
                 Debug.Assert(interfaceType.IsInterface);
 
                 IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(interfaceType).Slots;
-                
+
                 for (int interfaceMethodSlot = 0; interfaceMethodSlot < virtualSlots.Count; interfaceMethodSlot++)
                 {
                     MethodDesc declMethod = virtualSlots[interfaceMethodSlot];
@@ -84,8 +84,6 @@ namespace ILCompiler.DependencyAnalysis
                         entryCount++;
                     }
                 }
-
-                interfaceIndex++;
             }
 
             builder.EmitInt(entryCountReservation, entryCount);
