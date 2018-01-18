@@ -942,6 +942,7 @@ namespace Internal.IL
             MetadataType metadataType = (MetadataType)type;
             var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
             var arguments = new StackEntry[] { new LoadExpressionEntry(StackValueKind.ByRef, "eeType", GetEETypePointerForTypeDesc(metadataType, true), eeTypeDesc) };
+            //TODO: call GetNewObjectHelperForType from JitHelper.cs (needs refactoring)
             return CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhNewObject", arguments, type);
         }
 
@@ -2160,8 +2161,8 @@ namespace Internal.IL
             var sizeOfArray = _stack.Pop();
             var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
             var arguments = new StackEntry[] { new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(arrayType, true), eeTypeDesc.MakePointerType()), sizeOfArray };
+            //TODO: call GetNewArrayHelperForType from JitHelper.cs (needs refactoring)
             PushNonNull(CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhNewArray", arguments, arrayType));
-
         }
 
         private LLVMValueRef ArrayBaseSize()
@@ -2178,8 +2179,8 @@ namespace Internal.IL
         {
             StackEntry index = _stack.Pop();
             StackEntry arrayReference = _stack.Pop();
-            var nullsafeElementType = elementType ?? GetWellKnownType(WellKnownType.Object);
-            PushLoadExpression(GetStackValueKind(nullsafeElementType), "ldelem", GetElementAddress(index.ValueAsInt32(_builder, true), arrayReference.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), nullsafeElementType), nullsafeElementType);
+            var nullSafeElementType = elementType ?? GetWellKnownType(WellKnownType.Object);
+            PushLoadExpression(GetStackValueKind(nullSafeElementType), "ldelem", GetElementAddress(index.ValueAsInt32(_builder, true), arrayReference.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), nullSafeElementType), nullSafeElementType);
         }
 
         private void ImportStoreElement(int token)
@@ -2192,9 +2193,9 @@ namespace Internal.IL
             StackEntry value = _stack.Pop();
             StackEntry index = _stack.Pop();
             StackEntry arrayReference = _stack.Pop();
-            var nullsafeElementType = elementType ?? GetWellKnownType(WellKnownType.Object);
-            LLVMValueRef elementAddress = GetElementAddress(index.ValueAsInt32(_builder, true), arrayReference.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), nullsafeElementType);
-            CastingStore(elementAddress, value, nullsafeElementType);
+            var nullSafeElementType = elementType ?? GetWellKnownType(WellKnownType.Object);
+            LLVMValueRef elementAddress = GetElementAddress(index.ValueAsInt32(_builder, true), arrayReference.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), nullSafeElementType);
+            CastingStore(elementAddress, value, nullSafeElementType);
         }
 
         private void ImportLoadLength()
