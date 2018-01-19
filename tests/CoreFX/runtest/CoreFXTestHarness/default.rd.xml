@@ -3,7 +3,6 @@
     <Application>
         <Assembly Name="*Application*" Dynamic="Required All" />
         <Assembly Name="xunit.execution.dotnet" Dynamic="Required All" />
-        <Assembly Name="xunit.execution.dotnet" Dynamic="Required All" />
         <Assembly Name="xunit.core" Dynamic="Required All">
             <Type Name="Xunit.Sdk.BeforeAfterTestAttribute[]" Dynamic="Required All" />
         </Assembly>
@@ -33,7 +32,7 @@
             <Type Name="System.Threading.ExecutionContext" Dynamic="Required All"/>
             <Type Name="System.Threading.ContextCallback" Dynamic="Required All"/>            
         </Assembly>
-        <!-- <Assembly Name="System.Private.CoreLib"><Type Name="System.AttributeTargets" Dynamic="Required All"/></Assembly> -->
+        <Assembly Name="System.Private.CoreLib" Dynamic="Required All" />
         <Assembly Name="xunit.core" Dynamic="Required All" />
         <Assembly Name="System.Linq.Expressions" Dynamic="Required All" />
     </Application>

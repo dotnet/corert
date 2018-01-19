@@ -16,7 +16,6 @@
         <IlcCompileInput Include="$(MSBuildProjectDirectory)\*.dll" />
         <IlcCompileInput Include="$(ToolsDir)System.Private.Xml.Linq.dll" />
         <IlcCompileInput Include="$(ToolsDir)System.Private.Xml.dll" />
-        
         <IlcCompileInput Include="$(PackagesDir)xunit.runner.utility\2.2.0-beta2-build3300\lib\netstandard1.1\xunit.runner.utility.dotnet.dll" />
         <IlcCompileInput Include="$(PackagesDir)xunit.extensibility.execution\2.2.0-beta2-build3300\lib\netstandard1.0\xunit.execution.dotnet.dll" />        
         <IlcCompileInput Include="$(PackagesDir)xunit.abstractions\2.0.1-rc2\lib\netstandard1.0\xunit.abstractions.dll"/>

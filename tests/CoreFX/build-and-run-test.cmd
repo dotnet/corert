@@ -17,12 +17,10 @@ set TestFolder=%1
 set TestExecutable=xunit.console.netcore
 set TestFileName=%2
 
-echo %TestExecutable%
-echo %TestFileName%
 
 :: Copy artefacts necessary to compile and run the xunit exe
-copy /Y %~dp0\Test.csproj %TestFolder%
-copy /Y %~dp0\default.rd.xml %TestFolder%
+copy /Y "%~dp0\runtest\CoreFXTestHarness\*" "%TestFolder%"
+
 
 :: Workaround until we have a better reflection engine
 :: Add name of currently executing test to rd.xml
