@@ -22,6 +22,8 @@ namespace ILCompiler.DependencyAnalysis
         public VTableSliceNode(TypeDesc type)
         {
             Debug.Assert(!type.IsArray, "Wanted to call GetClosestDefType?");
+            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any) ||
+                type.ConvertToCanonForm(CanonicalFormKind.Specific) == type);
             _type = type;
         }
 
