@@ -3345,7 +3345,7 @@ namespace Internal.JitInterface
                     // Get the slot defining method to make sure our virtual method use tracking gets this right.
                     // For normal C# code the targetMethod will always be newslot.
                     MethodDesc slotDefiningMethod = targetMethod.IsNewSlot ?
-                        targetMethod : MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(targetMethod).Normalize();
+                        targetMethod : MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(targetMethod);
 
                     pResult.codePointerOrStubLookup.constLookup = 
                         CreateConstLookupToSymbol(

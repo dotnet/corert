@@ -669,7 +669,7 @@ namespace Internal.IL
             else
             {
                 MethodDesc slotDefiningMethod = targetMethod.IsNewSlot ?
-                        targetMethod : MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(targetMethod).Normalize();
+                        targetMethod : MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(targetMethod);
                 _dependencies.Add(_factory.VirtualMethodUse(slotDefiningMethod), reason);
             }
         }
