@@ -339,14 +339,27 @@ goto :eof
 
 :RestoreCoreFXTests
   
-  set TESTS_SEMAPHORE=%CoreRT_TestExtRepo_CoreFX%\init-tests.completed
-  :: If sempahore exists do nothing
-  if exist "%TESTS_SEMAPHORE%" (
-    echo Tests are already initialized.
-    goto :EOF
-  )
+    :: Explicitly restore the test helper project
+    "%CoreRT_CliDir%\dotnet.exe" msbuild /t:Restore "!CoreRT_TestRoot!\CoreFX\runtest\src\Common\CoreFXTestUtils\CoreFXTestUtils.csproj"
+    if errorlevel 1 (
+        exit /b 1
+    )
 
-  exit /b 0
+    :: Build the test helper project
+    "%CoreRT_CliDir%\dotnet.exe" msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:OSGroup=%CoreRT_BuildOS%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%CoreRT_TestRoot%..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /p:RepoLocalBuild=true "!CoreRT_TestRoot!\CoreFX\runtest\src\Common\CoreFXTestUtils\CoreFXTestUtils.csproj"
+    if errorlevel 1 (
+        exit /b 1
+    )
+
+    set TESTS_SEMAPHORE=%CoreRT_TestExtRepo_CoreFX%\init-tests.completed
+    :: If sempahore exists do nothing
+    if exist "%TESTS_SEMAPHORE%" (
+      echo Tests are already initialized.
+      goto :EOF
+    )
+    "%CoreRT_CliDir%\dotnet.exe" !CoreRT_TestRoot!\CoreFX\runtest\src\Common\CoreFXTestUtils\bin\!CoreRT_BuildArch!\!CoreRT_BuildType!\netcoreapp2.0\CoreFXTestUtils.dll 
+
+    exit /b 0
 
 :RestoreCoreCLRTests
 
@@ -412,6 +425,7 @@ goto :eof
         exit /b 1
     )
 
+
     if not "%CoreRT_CoreCLRTest%" == "" (
         if not exist "%CoreRT_CoreCLRTest%" (
             echo Target test file not found: %CoreRT_CoreCLRTest%
@@ -434,13 +448,15 @@ goto :eof
 
 :TestExtRepoCoreFX
     
-    if "%CoreRT_TestExtRepo_CoreFX%" == "" (
+
+    ::if "%CoreRT_TestExtRepo_CoreFX%" == "" (
         set CoreRT_TestExtRepo_CoreFX=%CoreRT_TestRoot%\..\tests_downloaded\CoreFX
+
         call :RestoreCoreFXTests
         if errorlevel 1 (
             exit /b 1
         )
-    )
+    ::)
 
     set FXCustomTestLauncher=%CoreRT_TestRoot%\CoreFX\build-and-run-test.cmd
     set XunitTestBinBase=!CoreRT_TestExtRepo_CoreFX!
@@ -453,6 +469,6 @@ goto :eof
 
     rem TODO Add single test/target test support; add exclude tests
     
-    echo runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% LogsDir %__LogDir%
-    call runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% LogsDir %__LogDir%
+    REM echo runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% LogsDir %__LogDir%
+    REM call runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% LogsDir %__LogDir%
      
