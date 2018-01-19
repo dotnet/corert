@@ -67,7 +67,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override ISymbolNode GetBaseTypeNode(NodeFactory factory)
         {
-            return _type.BaseType != null ? factory.NecessaryTypeSymbol(_type.NormalizedBaseType()) : null;
+            return _type.BaseType != null ? factory.NecessaryTypeSymbol(GetFullCanonicalTypeForCanonicalType(_type.BaseType)) : null;
         }
 
         protected override int GCDescSize
