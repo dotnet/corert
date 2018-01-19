@@ -1,47 +1,108 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
-namespace CoreFXTestUtils
+namespace CoreFXTestUtils.TestArchiveUtils
 {
-    public static class ArchiveTestUtils
+    public static class TestArchiveUtils
     {
-        static string testUrl = "https://dotnetbuilddrops.blob.core.windows.net/build-e0a70e19967c4fbfa9e6a9e7fed567cc/TestList.json?sv=2015-04-05&sr=c&sig=rwqOIDM585nrCg4ydSleaYi%2FN1%2BcFqEivySw06MiZRs%3D&st=2018-01-12T01%3A34%3A06.4065828Z&se=2018-02-11T01%3A34%3A06.4065828Z&sp=r";
         static Dictionary<string,string> testNames = new Dictionary<string,string>(){ { "Common.Tests", "" }, { "System.Collections.Tests", "" }, { "asdasdasd", "" } };
         private static HttpClient httpClient;
-
-        static string baseOutputDir = @"C:\Users\anandono\source\repos\CoreFXTestsDownloaded\";
+        private static bool cleanTestBuild = false;
 
         public static void Main(string[] args)
         {
-            if(args.Length < 1)
+            string outputDir = string.Empty;
+            string testUrl = string.Empty;
+            string testListPath = string.Empty;
+
+            Console.WriteLine("Passed " + args.Length + " arguments; which are");
+
+            foreach (string arg in args)
             {
-                throw new ArgumentException("Please supply an output directory");
+                Console.WriteLine(arg);
             }
 
-            if (!Directory.Exists(baseOutputDir))
+            for (int i = 0; i < args.Length; i++)
             {
-                Directory.CreateDirectory(baseOutputDir);
+                switch (args[i])
+                {
+                    case "--outputDirectory":
+                    case "--out":
+                    case "--outputDir":
+                        if(i + 1 < args.Length && !args[i+1].Substring(0,2).Equals("--"))
+                        {
+                            outputDir = args[i + 1];
+                            i++;
+                        }
+                        break;
+                    case "--testUrl":
+                        if (i + 1 < args.Length && !args[i + 1].Substring(0, 2).Equals("--"))
+                        {
+                            testUrl = args[i + 1];
+                            i++;
+                        }
+                        break;
+                    case "--testListJsonPath":
+                        if (i + 1 < args.Length && !args[i + 1].Substring(0, 2).Equals("--"))
+                        {
+                            testListPath = args[i + 1];
+                            i++;
+                        }
+                        break;
+                    case "--clean":
+                        cleanTestBuild = true;
+                        break;
+                        
+                }
             }
-            
+
+            if (!Directory.Exists(outputDir))
+            {
+                Directory.CreateDirectory(outputDir);
+            }
             // parse args
-            SetupTests(testNames, testUrl, baseOutputDir);
+            SetupTests(testNames, testUrl, outputDir).Wait();
         }
 
-        public static void SetupTests(Dictionary<string, string> testNames, String jsonUrl, string destinationDirectory)
+        public static Dictionary<string, string> ReadTestNames(string testFilePath)
         {
+            Debug.Assert(File.Exists(testFilePath));
+
+            Dictionary<string, string> testNames = new Dictionary<string, string>();
+            // We assume we're being a passed a list of test assembly names, so ignore anything that's not a string
+            using (var sr = new StreamReader(testFilePath))
+            using (var jsonReader = new JsonTextReader(sr))
+            {
+                while (jsonReader.Read())
+                {
+                    if(jsonReader.TokenType == JsonToken.String)
+                    {
+                        testNames.Add(jsonReader.Value.ToString(), string.Empty);
+                    }
+                }
+            }
+
+            return testNames;
+        }
+
+        public static async Task SetupTests(Dictionary<string, string> testNames, string jsonUrl, string destinationDirectory)
+        {
+            Debug.Assert(Directory.Exists(destinationDirectory));
+
             string tempDirPath = Path.Combine(destinationDirectory, "temp");
             if (!Directory.Exists(tempDirPath))
             {
                 Directory.CreateDirectory(tempDirPath);
             }
 
-            Dictionary<string, string> testPayloads = GetTestUrls(testNames, testUrl).Result;
-            GetTestArchives(testPayloads, tempDirPath).Wait();
+            Dictionary<string, string> testPayloads = await GetTestUrls(testNames, jsonUrl);
+            await GetTestArchives(testPayloads, tempDirPath);
             ExpandArchivesInDirectory(tempDirPath, destinationDirectory);
 
             Directory.Delete(tempDirPath);
@@ -55,13 +116,13 @@ namespace CoreFXTestUtils
             }
 
             // Set up the json stream reader
-            using (var responseStream = httpClient.GetStreamAsync(jsonUrl).Result)
+            using (var responseStream = await httpClient.GetStreamAsync(jsonUrl))
             using (var streamReader = new StreamReader(responseStream))
             using (var jsonReader = new JsonTextReader(streamReader))
             {
                 // Manual parsing - we only need to key-value pairs from each object and this avoids deserializing all of the work items into objects
-                string markedTestName = String.Empty;
-                string currentPropertyName = String.Empty;
+                string markedTestName = string.Empty;
+                string currentPropertyName = string.Empty;
 
                 while (jsonReader.Read())
                 {
@@ -83,10 +144,10 @@ namespace CoreFXTestUtils
                                         markedTestName = currentTestName;
                                     }
                                 }
-                                else if(currentPropertyName.Equals("PayloadUri") && markedTestName != String.Empty)
+                                else if(currentPropertyName.Equals("PayloadUri") && markedTestName != string.Empty)
                                 {
                                     testNames[markedTestName] = jsonReader.Value.ToString();
-                                    markedTestName = String.Empty;
+                                    markedTestName = string.Empty;
                                 }
                                 break;
                         }
@@ -120,6 +181,8 @@ namespace CoreFXTestUtils
                         {
                             Directory.CreateDirectory(downloadDir);
                         }
+
+                        // CoreFX test archives are output as .zip regardless of platform
                         string archivePath = Path.Combine(downloadDir, testName + ".zip");
 
                         // Copy to a temp folder 
@@ -132,19 +195,26 @@ namespace CoreFXTestUtils
                 }
             }
         }
-        public static void ExpandArchivesInDirectory(string archiveDirectory)
-        {
-            ExpandArchivesInDirectory(archiveDirectory, archiveDirectory);
-        }
 
         public static void ExpandArchivesInDirectory(string archiveDirectory, string destinationDirectory, bool cleanup = true)
         {
+            Debug.Assert(Directory.Exists(archiveDirectory));
+            Debug.Assert(Directory.Exists(destinationDirectory));
+
             string[] archives = Directory.GetFiles(archiveDirectory, "*.zip", SearchOption.TopDirectoryOnly);
 
             foreach (string archivePath in archives)
             {
-                string destinationDirName = Path.GetFileNameWithoutExtension(archivePath);
-                ZipFile.ExtractToDirectory(archivePath, destinationDirectory + destinationDirName);
+                string destinationDirName = Path.Combine(destinationDirectory, Path.GetFileNameWithoutExtension(archivePath));
+                
+                // If doing clean test build - delete existing artefacts
+                if (Directory.Exists(destinationDirName) && cleanTestBuild)
+                {
+                    Directory.Delete(destinationDirName, true);
+                }
+
+                ZipFile.ExtractToDirectory(archivePath, destinationDirName);
+
 
                 // Delete archives
                 if (cleanup)
