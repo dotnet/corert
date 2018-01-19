@@ -65,7 +65,49 @@ namespace System
         private const long c_ticksPerDay = c_ticksPerHour * 24;
         private const long c_ticksPerDayRange = c_ticksPerDay - c_ticksPerMillisecond;
 
-        // ---- SECTION: public methods --------------*
+#pragma warning disable 0420
+        private sealed partial class CachedData
+        {
+            private static TimeZoneInfo GetCurrentOneYearLocal()
+            {
+                // load the data from the OS
+                TIME_ZONE_INFORMATION timeZoneInformation;
+                int result = Interop.mincore.GetTimeZoneInformation(out timeZoneInformation);
+                return result == Interop.mincore.TIME_ZONE_ID_INVALID ?
+                    CreateCustomTimeZone(LocalId, TimeSpan.Zero, LocalId, LocalId) :
+                    GetLocalTimeZoneFromWin32Data(timeZoneInformation, dstDisabled: false);
+            }
+
+            private volatile OffsetAndRule _oneYearLocalFromUtc;
+
+            public OffsetAndRule GetOneYearLocalFromUtc(int year)
+            {
+                OffsetAndRule oneYearLocFromUtc = _oneYearLocalFromUtc;
+                if (oneYearLocFromUtc == null || oneYearLocFromUtc.Year != year)
+                {
+                    TimeZoneInfo currentYear = GetCurrentOneYearLocal();
+                    AdjustmentRule rule = currentYear._adjustmentRules == null ? null : currentYear._adjustmentRules[0];
+                    oneYearLocFromUtc = new OffsetAndRule(year, currentYear.BaseUtcOffset, rule);
+                    _oneYearLocalFromUtc = oneYearLocFromUtc;
+                }
+                return oneYearLocFromUtc;
+            }
+        }
+#pragma warning restore 0420
+
+        private sealed class OffsetAndRule
+        {
+            public readonly int Year;
+            public readonly TimeSpan Offset;
+            public readonly AdjustmentRule Rule;
+
+            public OffsetAndRule(int year, TimeSpan offset, AdjustmentRule rule)
+            {
+                Year = year;
+                Offset = offset;
+                Rule = rule;
+            }
+        }
 
         //
         // GetAdjustmentRules -
@@ -110,7 +152,7 @@ namespace System
         {
             if (String.IsNullOrEmpty(new String(zone.StandardName)))
             {
-                _id = c_localId;  // the ID must contain at least 1 character - initialize _id to "Local"
+                _id = LocalId;  // the ID must contain at least 1 character - initialize _id to "Local"
             }
             else
             {
@@ -182,7 +224,8 @@ namespace System
                     TimeSpan.Zero, // no daylight saving transition
                     TransitionTime.CreateFixedDateRule(DateTime.MinValue, 1, 1),
                     TransitionTime.CreateFixedDateRule(DateTime.MinValue.AddMilliseconds(1), 1, 1),
-                    new TimeSpan(0, defaultBaseUtcOffset - timeZoneInformation.Bias, 0));  // Bias delta is all what we need from this rule
+                    new TimeSpan(0, defaultBaseUtcOffset - timeZoneInformation.Bias, 0),  // Bias delta is all what we need from this rule
+                    noDaylightTransitions: false);
             }
 
             //
@@ -212,7 +255,8 @@ namespace System
                 new TimeSpan(0, -timeZoneInformation.DaylightBias, 0),
                 (TransitionTime)daylightTransitionStart,
                 (TransitionTime)daylightTransitionEnd,
-                new TimeSpan(0, defaultBaseUtcOffset - timeZoneInformation.Bias, 0));
+                new TimeSpan(0, defaultBaseUtcOffset - timeZoneInformation.Bias, 0),
+                noDaylightTransitions: false);
 
             return rule;
         }
@@ -273,7 +317,7 @@ namespace System
             if (result == Interop.mincore.TIME_ZONE_ID_INVALID)
             {
                 // return a dummy entry
-                return CreateCustomTimeZone(c_localId, TimeSpan.Zero, c_localId, c_localId);
+                return CreateCustomTimeZone(LocalId, TimeSpan.Zero, LocalId, LocalId);
             }
 
             TIME_ZONE_INFORMATION timeZoneInformation =
@@ -342,7 +386,7 @@ namespace System
             }
 
             // the data returned from Windows is completely bogus; return a dummy entry
-            return CreateCustomTimeZone(c_localId, TimeSpan.Zero, c_localId, c_localId);
+            return CreateCustomTimeZone(LocalId, TimeSpan.Zero, LocalId, LocalId);
         }
 
         //
@@ -360,7 +404,7 @@ namespace System
             // Special case for Utc as it will not exist in the dictionary with the rest
             // of the system time zones.  There is no need to do this check for Local.Id
             // since Local is a real time zone that exists in the dictionary cache
-            if (String.Compare(id, c_utcId, StringComparison.OrdinalIgnoreCase) == 0)
+            if (String.Compare(id, UtcId, StringComparison.OrdinalIgnoreCase) == 0)
             {
                 return TimeZoneInfo.Utc;
             }
@@ -402,6 +446,29 @@ namespace System
             {
                 throw new TimeZoneNotFoundException(String.Format(SR.TimeZoneNotFound_MissingRegistryData, id), e);
             }
+        }
+
+        // DateTime.Now fast path that avoids allocating an historically accurate TimeZoneInfo.Local and just creates a 1-year (current year) accurate time zone
+        internal static TimeSpan GetDateTimeNowUtcOffsetFromUtc(DateTime time, out bool isAmbiguousLocalDst)
+        {
+            bool isDaylightSavings = false;
+            isAmbiguousLocalDst = false;
+            TimeSpan baseOffset;
+            int timeYear = time.Year;
+
+            OffsetAndRule match = s_cachedData.GetOneYearLocalFromUtc(timeYear);
+            baseOffset = match.Offset;
+
+            if (match.Rule != null)
+            {
+                baseOffset = baseOffset + match.Rule.BaseUtcOffsetDelta;
+                if (match.Rule.HasDaylightSaving)
+                {
+                    isDaylightSavings = GetIsDaylightSavingsFromUtc(time, timeYear, match.Offset, match.Rule, null, out isAmbiguousLocalDst, Local);
+                    baseOffset += (isDaylightSavings ? match.Rule.DaylightDelta : TimeSpan.Zero /* FUTURE: rule.StandardDelta */);
+                }
+            }
+            return baseOffset;
         }
 
         //
@@ -977,7 +1044,7 @@ namespace System
         }
 
         //
-        // TryGetTimeZoneByRegistryKey -
+        // TryGetTimeZoneFromLocalMachine -
         //
         // Helper function that takes a string representing a <time_zone_name> registry key name
         // and returns a TimeZoneInfo instance.
@@ -1015,7 +1082,7 @@ namespace System
         // * TZI,         REG_BINARY REG_TZI_FORMAT
         //                       See REGISTRY_TIME_ZONE_INFORMATION
         //
-        private static TimeZoneInfoResult TryGetTimeZoneByRegistryKey(string id, out TimeZoneInfo value, out Exception e)
+        private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachine(string id, out TimeZoneInfo value, out Exception e)
         {
             e = null;
 
@@ -1086,76 +1153,5 @@ namespace System
                 }
             }
         }
-
-        //
-        // TryGetTimeZone -
-        //
-        // Helper function for retrieving a TimeZoneInfo object by <time_zone_name>.
-        //
-        // This function may return null.
-        //
-        // assumes cachedData lock is taken
-        //
-        private static TimeZoneInfoResult TryGetTimeZone(string id, Boolean dstDisabled, out TimeZoneInfo value, out Exception e, CachedData cachedData)
-        {
-            TimeZoneInfoResult result = TimeZoneInfoResult.Success;
-            e = null;
-            TimeZoneInfo match = null;
-
-            // check the cache
-            if (cachedData._systemTimeZones != null)
-            {
-                if (cachedData._systemTimeZones.TryGetValue(id, out match))
-                {
-                    if (dstDisabled && match._supportsDaylightSavingTime)
-                    {
-                        // we found a cache hit but we want a time zone without DST and this one has DST data
-                        value = CreateCustomTimeZone(match._id, match._baseUtcOffset, match._displayName, match._standardDisplayName);
-                    }
-                    else
-                    {
-                        value = new TimeZoneInfo(match._id, match._baseUtcOffset, match._displayName, match._standardDisplayName,
-                                              match._daylightDisplayName, match._adjustmentRules, false);
-                    }
-                    return result;
-                }
-            }
-
-            // fall back to reading from the local machine 
-            // when the cache is not fully populated               
-            if (!cachedData._allSystemTimeZonesRead)
-            {
-                result = TryGetTimeZoneByRegistryKey(id, out match, out e);
-                if (result == TimeZoneInfoResult.Success)
-                {
-                    if (cachedData._systemTimeZones == null)
-                        cachedData._systemTimeZones = new LowLevelDictionaryWithIEnumerable<System.TimeZoneInfo.CachedData.OrdinalIgnoreCaseString, TimeZoneInfo>();
-
-                    cachedData._systemTimeZones.Add(id, match);
-
-                    if (dstDisabled && match._supportsDaylightSavingTime)
-                    {
-                        // we found a cache hit but we want a time zone without DST and this one has DST data
-                        value = CreateCustomTimeZone(match._id, match._baseUtcOffset, match._displayName, match._standardDisplayName);
-                    }
-                    else
-                    {
-                        value = new TimeZoneInfo(match._id, match._baseUtcOffset, match._displayName, match._standardDisplayName,
-                                              match._daylightDisplayName, match._adjustmentRules, false);
-                    }
-                }
-                else
-                {
-                    value = null;
-                }
-            }
-            else
-            {
-                result = TimeZoneInfoResult.TimeZoneNotFoundException;
-                value = null;
-            }
-
-            return result;
-        }
-    } // TimezoneInfo
-} // namespace System
+    }
+}
