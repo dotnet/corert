@@ -43,8 +43,8 @@ namespace System
             // parse the raw TZif bytes; this method can throw ArgumentException when the data is malformed.
             TZif_ParseRaw(data, out t, out dts, out typeOfLocalTime, out transitionType, out zoneAbbreviations, out StandardTime, out GmtTime);
 
-            _id = c_localId;
-            _displayName = c_localId;
+            _id = LocalId;
+            _displayName = LocalId;
             _baseUtcOffset = TimeSpan.Zero;
 
             // find the best matching baseUtcOffset and display strings based on the current utcNow value
@@ -176,7 +176,21 @@ namespace System
                 catch (InvalidTimeZoneException) { }
             }
             // the data returned from the PAL is completely bogus; return a dummy entry
-            return CreateCustomTimeZone(c_localId, TimeSpan.Zero, c_localId, c_localId);
+            return CreateCustomTimeZone(LocalId, TimeSpan.Zero, LocalId, LocalId);
+        }
+
+        private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachine(string id, out TimeZoneInfo value, out Exception e)
+        {
+            // UNIXTODO
+            throw new NotImplementedException();
+        }
+
+        // DateTime.Now fast path that avoids allocating an historically accurate TimeZoneInfo.Local and just creates a 1-year (current year) accurate time zone
+        internal static TimeSpan GetDateTimeNowUtcOffsetFromUtc(DateTime time, out bool isAmbiguousLocalDst)
+        {
+            bool isDaylightSavings;
+            // Use the standard code path for Unix since there isn't a faster way of handling current-year-only time zones
+            return GetUtcOffsetFromUtc(time, Local, out isDaylightSavings, out isAmbiguousLocalDst);
         }
 
         // TZFILE(5)                   BSD File Formats Manual                  TZFILE(5)

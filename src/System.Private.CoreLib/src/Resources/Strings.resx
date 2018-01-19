@@ -534,6 +534,9 @@
   <data name="Argument_DateTimeKindMustBeUnspecified" xml:space="preserve">
     <value>The supplied DateTime must have the Kind property set to DateTimeKind.Unspecified.</value>
   </data>
+  <data name="Argument_DateTimeKindMustBeUnspecifiedOrUtc" xml:space="preserve">
+    <value>The supplied DateTime must have the Kind property set to DateTimeKind.Unspecified or DateTimeKind.Utc.</value>
+  </data>
   <data name="Argument_DateTimeOffsetInvalidDateTimeStyles" xml:space="preserve">
     <value>The DateTimeStyles value 'NoCurrentDateDefault' is not allowed when parsing DateTimeOffset.</value>
   </data>
