@@ -46,10 +46,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            DefType baseType = _type.NormalizedBaseType();
-            if (baseType != null)
+            if (_type.HasBaseType)
             {
-                return new[] { new DependencyListEntry(factory.VTable(baseType), "Base type VTable") };
+                return new[] { new DependencyListEntry(factory.VTable(_type.BaseType), "Base type VTable") };
             }
 
             return null;

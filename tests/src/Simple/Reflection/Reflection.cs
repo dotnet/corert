@@ -423,6 +423,21 @@ internal class ReflectionTest
             }
         }
 
+        class Gen<T> { }
+
+        interface IFoo<out T>
+        {
+            string Frob();
+        }
+
+        class Foo<T> : IFoo<Gen<T>>
+        {
+            public string Frob()
+            {
+                return typeof(T).ToString();
+            }
+        }
+
         public static void Run()
         {
             Console.WriteLine(nameof(TestInterfaceMethod));
@@ -431,10 +446,15 @@ internal class ReflectionTest
             if (string.Empty.Length > 0)
             {
                 ((IFoo)new Foo()).Frob(1);
+                ((IFoo<object>)new Foo<string>()).Frob();
             }
 
             object result = InvokeTestMethod(typeof(IFoo), "Frob", new Foo(), 42);
             if ((string)result != "42")
+                throw new Exception();
+
+            result = InvokeTestMethod(typeof(IFoo<object>), "Frob", new Foo<string>());
+            if ((string)result != "System.String")
                 throw new Exception();
         }
     }
