@@ -6,18 +6,37 @@
         <OutputType>Exe</OutputType>
         <OutputPath>$(MSBuildProjectDirectory)\</OutputPath>
         <IntermediateOutputPath>$(MSBuildProjectDirectory)\</IntermediateOutputPath>
-        <RdXmlFile>default.rd.xml</RdXmlFile>
         <XunitPackageVersion>2.2.0-beta2-build3300</XunitPackageVersion>
         <ToolsDir>$(FrameworkLibPath)\..\tools\</ToolsDir>
     </PropertyGroup>
-
+    <ItemGroup>
+        <RdXmlFile Include="default.rd.xml" />
+    </ItemGroup>
+    <!-- <ItemGroup>
+        <PackageReference Include="xunit">
+            <Version>$(XunitPackageVersion)</Version>
+        </PackageReference>
+        <PackageReference Include="xunit.assert">
+            <Version>$(XunitPackageVersion)</Version>
+        </PackageReference>
+        <PackageReference Include="xunit.core">
+            <Version>$(XunitPackageVersion)</Version>
+        </PackageReference>
+        <PackageReference Include="xunit.runner.msbuild">
+            <Version>$(XunitPackageVersion)</Version>
+        </PackageReference>
+        <PackageReference Include="xunit.execution.dotnet">
+            <Version>$(XunitPackageVersion)</Version>
+        </PackageReference>
+    </ItemGroup> -->
     <ItemGroup>
         <!-- Some tests consist of multiple assemblies - make sure ILC sees them -->
         <IlcCompileInput Include="$(MSBuildProjectDirectory)\*.dll" />
         <IlcCompileInput Include="$(ToolsDir)System.Private.Xml.Linq.dll" />
         <IlcCompileInput Include="$(ToolsDir)System.Private.Xml.dll" />
         <IlcCompileInput Include="$(PackagesDir)xunit.runner.utility\2.2.0-beta2-build3300\lib\netstandard1.1\xunit.runner.utility.dotnet.dll" />
-        <IlcCompileInput Include="$(PackagesDir)xunit.extensibility.execution\2.2.0-beta2-build3300\lib\netstandard1.0\xunit.execution.dotnet.dll" />        
+        <IlcCompileInput Include="$(PackagesDir)xunit.extensibility.execution\2.2.0\lib\netstandard1.1\xunit.execution.dotnet.dll" />
+        <IlcCompileInput Include="C:\Users\anandono\source\repos\corert\packages\xunit.extensibility.execution\2.2.0-beta2-build3300\lib\net45\xunit.execution.desktop.dll" />
         <IlcCompileInput Include="$(PackagesDir)xunit.abstractions\2.0.1-rc2\lib\netstandard1.0\xunit.abstractions.dll"/>
         <IlcCompileInput Include="$(PackagesDir)xunit.extensibility.core\2.2.0-beta2-build3300\lib\netstandard1.0\xunit.core.dll"/>
         <IlcCompileInput Include="$(PackagesDir)microsoft.xunit.netcore.extensions\1.0.1-prerelease-02104-02\lib\netstandard1.0\Xunit.NetCore.Extensions.dll"/>
