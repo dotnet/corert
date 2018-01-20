@@ -21,6 +21,8 @@ set TestFileName=%2
 :: Copy artefacts necessary to compile and run the xunit exe
 copy /Y "%~dp0\runtest\CoreFXTestHarness\*" "%TestFolder%"
 
+:: Create log dir
+if not exist %__LogsDir%\CoreFX md %__LogsDir%\CoreFX
 
 :: Workaround until we have a better reflection engine
 :: Add name of currently executing test to rd.xml
@@ -30,7 +32,7 @@ if "%CoreRT_BuildArch%" == "x64" (
     call "%VS140COMNTOOLS%\..\..\VC\bin\amd64\vcvars64.bat"
 )
 echo msbuild /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:DebugSymbols=true" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /p:DisableFrameworkLibGeneration=true /p:PackagesDir=%~dp0..\..\packages\ /p:ExecutableName=%TestExecutable% %TestFolder%\Test.csproj
-call msbuild /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:DebugSymbols=true" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /p:DisableFrameworkLibGeneration=true /p:PackagesDir=%~dp0..\..\packages\ /p:ExecutableName=%TestExecutable% %TestFolder%\Test.csproj
+call msbuild /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:DebugSymbols=false" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /p:DisableFrameworkLibGeneration=true /p:PackagesDir=%~dp0..\..\packages\ /p:ExecutableName=%TestExecutable% %TestFolder%\Test.csproj
 
 echo %TestFolder%\native\%TestExecutable% %TestFolder%\%TestFileName%.dll
-call %TestFolder%\native\%TestExecutable% %TestFolder%\%TestFileName%.dll
+call %TestFolder%\native\%TestExecutable% %TestFolder%\%TestFileName%.dll -xml %__LogDir%\CoreFX\%TestFileName%.xml

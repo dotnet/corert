@@ -11,7 +11,6 @@ namespace CoreFXTestUtils.TestArchiveUtils
 {
     public static class TestArchiveUtils
     {
-        static Dictionary<string,string> testNames = new Dictionary<string,string>(){ { "Common.Tests", "" }, { "System.Collections.Tests", "" }, { "asdasdasd", "" } };
         private static HttpClient httpClient;
         private static bool cleanTestBuild = false;
 
@@ -20,13 +19,6 @@ namespace CoreFXTestUtils.TestArchiveUtils
             string outputDir = string.Empty;
             string testUrl = string.Empty;
             string testListPath = string.Empty;
-
-            Console.WriteLine("Passed " + args.Length + " arguments; which are");
-
-            foreach (string arg in args)
-            {
-                Console.WriteLine(arg);
-            }
 
             for (int i = 0; i < args.Length; i++)
             {
@@ -67,7 +59,7 @@ namespace CoreFXTestUtils.TestArchiveUtils
                 Directory.CreateDirectory(outputDir);
             }
             // parse args
-            SetupTests(testNames, testUrl, outputDir).Wait();
+            SetupTests(ReadTestNames(testListPath), testUrl, outputDir).Wait();
         }
 
         public static Dictionary<string, string> ReadTestNames(string testFilePath)

@@ -422,7 +422,7 @@ goto :eof
     set CLRCustomTestLauncher=%CoreRT_TestRoot%\CoreCLR\build-and-run-test.cmd
     set XunitTestBinBase=!CoreRT_TestExtRepo_CoreCLR!
     pushd %CoreRT_TestRoot%\CoreCLR\runtest
-
+    
     "%CoreRT_CliDir%\dotnet.exe" msbuild /t:Restore /p:RepoLocalBuild=true src\TestWrappersConfig\XUnitTooling.depproj
     if errorlevel 1 (
         exit /b 1
@@ -451,7 +451,6 @@ goto :eof
 
 :TestExtRepoCoreFX
     
-
     ::if "%CoreRT_TestExtRepo_CoreFX%" == "" (
         set CoreRT_TestExtRepo_CoreFX=%CoreRT_TestRoot%\..\tests_downloaded\CoreFX
 
@@ -463,6 +462,7 @@ goto :eof
 
     set FXCustomTestLauncher=%CoreRT_TestRoot%\CoreFX\build-and-run-test.cmd
     set XunitTestBinBase=!CoreRT_TestExtRepo_CoreFX!
+    set XunitLog=!CoreRT_TestExtRepo_CoreFX!\logs
     pushd %CoreRT_TestRoot%\CoreFX\runtest
 
     "%CoreRT_CliDir%\dotnet.exe" msbuild /t:Restore /p:RepoLocalBuild=true src\TestWrappersConfig\XUnitTooling.depproj
