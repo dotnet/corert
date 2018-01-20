@@ -164,14 +164,14 @@ namespace System
             throw new ArgumentNullException(GetArgumentName(argument));
         }
 
-        internal static void ThrowObjectDisposedException(string objectName, ExceptionResource resource)
-        {
-            throw new ObjectDisposedException(objectName, GetResourceString(resource));
-        }
-
         internal static void ThrowInvalidOperationException(ExceptionResource resource)
         {
             throw new InvalidOperationException(GetResourceString(resource));
+        }
+
+        internal static void ThrowInvalidOperationException_OutstandingReferences()
+        {
+            throw new InvalidOperationException(SR.Memory_OutstandingReferences);
         }
 
         internal static void ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion()
@@ -202,6 +202,11 @@ namespace System
         internal static void ThrowSerializationException(ExceptionResource resource)
         {
             throw new SerializationException(GetResourceString(resource));
+        }
+
+        internal static void ThrowObjectDisposedException_MemoryDisposed()
+        {
+            throw new ObjectDisposedException("OwnedMemory<T>", SR.MemoryDisposed);
         }
 
         internal static void ThrowNotSupportedException()
@@ -350,10 +355,6 @@ namespace System
                     return SR.TaskCompletionSourceT_TrySetException_NullException;
                 case ExceptionResource.TaskCompletionSourceT_TrySetException_NoExceptions:
                     return SR.TaskCompletionSourceT_TrySetException_NoExceptions;
-                case ExceptionResource.Memory_ThrowIfDisposed:
-                    return SR.Memory_ThrowIfDisposed;
-                case ExceptionResource.Memory_OutstandingReferences:
-                    return SR.Memory_OutstandingReferences;
                 default:
                     Debug.Assert(false,
                         "The enum value is not defined, please check the ExceptionResource Enum.");
@@ -421,7 +422,5 @@ namespace System
         TaskT_TransitionToFinal_AlreadyCompleted,
         TaskCompletionSourceT_TrySetException_NullException,
         TaskCompletionSourceT_TrySetException_NoExceptions,
-        Memory_ThrowIfDisposed,
-        Memory_OutstandingReferences,
     }
 }

@@ -534,6 +534,9 @@
   <data name="Argument_DateTimeKindMustBeUnspecified" xml:space="preserve">
     <value>The supplied DateTime must have the Kind property set to DateTimeKind.Unspecified.</value>
   </data>
+  <data name="Argument_DateTimeKindMustBeUnspecifiedOrUtc" xml:space="preserve">
+    <value>The supplied DateTime must have the Kind property set to DateTimeKind.Unspecified or DateTimeKind.Utc.</value>
+  </data>
   <data name="Argument_DateTimeOffsetInvalidDateTimeStyles" xml:space="preserve">
     <value>The DateTimeStyles value 'NoCurrentDateDefault' is not allowed when parsing DateTimeOffset.</value>
   </data>
@@ -2674,7 +2677,7 @@
   <data name="NotSupported_SignatureType" xml:space="preserve">
     <value>This method is not supported on signature types.</value>
   </data>
-  <data name="Memory_ThrowIfDisposed" xml:space="preserve">
+  <data name="MemoryDisposed" xml:space="preserve">
     <value>Memory&lt;T&gt; has been disposed.</value>
   </data>
   <data name="Memory_OutstandingReferences" xml:space="preserve">

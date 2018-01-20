@@ -30,9 +30,6 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!decl.IsRuntimeDeterminedExactMethod);
             Debug.Assert(decl.IsVirtual);
 
-            Debug.Assert(!decl.IsCanonicalMethod(CanonicalFormKind.Any) ||
-                decl.GetCanonMethodTarget(CanonicalFormKind.Specific) == decl);
-
             // Virtual method use always represents the slot defining method of the virtual.
             // Places that might see virtual methods being used through an override need to normalize
             // to the slot defining method.
@@ -71,7 +68,9 @@ namespace ILCompiler.DependencyAnalysis
 
             dependencies.Add(new DependencyListEntry(factory.VTable(_decl.OwningType), "VTable of a VirtualMethodUse"));
 
-            factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref dependencies, factory, _decl);
+            // Do not report things like Foo<object, __Canon>.Frob().
+            if (!_decl.IsCanonicalMethod(CanonicalFormKind.Any) || canonDecl == _decl)
+                factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref dependencies, factory, _decl);
 
             return dependencies;
         }
