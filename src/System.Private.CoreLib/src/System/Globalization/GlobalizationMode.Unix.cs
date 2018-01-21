@@ -13,7 +13,7 @@ namespace System.Globalization
             bool invariantEnabled = false;
             if (!invariantEnabled)
             {
-                if (Interop.GlobalizationInterop.LoadICU() == 0)
+                if (Interop.Globalization.LoadICU() == 0)
                 {
                     string message = "Couldn't find a valid ICU package installed on the system. " + 
                                     "Set the configuration flag System.Globalization.Invariant to true if you want to run with no globalization support.";
