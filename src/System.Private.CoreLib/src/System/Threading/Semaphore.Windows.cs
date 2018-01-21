@@ -19,9 +19,9 @@ namespace System.Threading
 
         private static void VerifyNameForCreate(string name)
         {
-            if (null != name && MAX_PATH < name.Length)
+            if (null != name && Interop.Kernel32.MAX_PATH < name.Length)
             {
-                throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Interop.Constants.MaxPath), nameof(name));
+                throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Interop.Kernel32.MAX_PATH), nameof(name));
             }
         }
 
@@ -30,7 +30,7 @@ namespace System.Threading
             Debug.Assert(initialCount >= 0);
             Debug.Assert(maximumCount >= 1);
             Debug.Assert(initialCount <= maximumCount);
-            Debug.Assert(name == null || name.Length <= MAX_PATH);
+            Debug.Assert(name == null || name.Length <= Interop.Kernel32.MAX_PATH);
 
             SafeWaitHandle myHandle = Interop.mincore.CreateSemaphoreEx(IntPtr.Zero, initialCount, maximumCount, name, 0, AccessRights);
 
@@ -64,9 +64,9 @@ namespace System.Threading
             {
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
             }
-            if (null != name && MAX_PATH < name.Length)
+            if (null != name && Interop.Kernel32.MAX_PATH < name.Length)
             {
-                throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, MAX_PATH), nameof(name));
+                throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Interop.Kernel32.MAX_PATH), nameof(name));
             }
 
             result = null;

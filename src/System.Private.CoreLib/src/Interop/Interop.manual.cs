@@ -7,11 +7,6 @@ using System.Runtime.InteropServices;
 
 internal partial class Interop
 {
-    internal partial class Kernel32
-    {
-        internal const int MAX_PATH = 260;
-    }
-
     internal enum Constants : uint
     {
         WaitObject0 = 0x0u,
@@ -29,7 +24,6 @@ internal partial class Interop
         CreateSuspended = 0x4u,
         WaitAbandoned0 = 0x80u,
         WaitTimeout = 0x102u,
-        MaxPath = 0x104u,
         StackSizeParamIsAReservation = 0x10000u,
         Synchronize = 0x100000u,
         MaximumAllowed = 0x02000000u,
