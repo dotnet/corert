@@ -44,7 +44,7 @@ namespace Internal.IL
         private LLVMBuilderRef _builder;
         private readonly LocalVariableDefinition[] _locals;
         private List<SpilledExpressionEntry> _spilledExpressions = new List<SpilledExpressionEntry>();
-
+        private int _pointerSize;
         private readonly byte[] _ilBytes;
 
         /// <summary>
@@ -102,6 +102,7 @@ namespace Internal.IL
             }
             _llvmFunction = GetOrCreateLLVMFunction(mangledName);
             _builder = LLVM.CreateBuilder();
+            _pointerSize = compilation.NodeFactory.Target.PointerSize;
         }
 
         public void Import()
@@ -143,12 +144,11 @@ namespace Internal.IL
             int totalLocalSize = 0;
             foreach(LocalVariableDefinition local in _locals)
             {
-                int localSize = local.Type.GetElementSize().AsInt;
-                totalLocalSize += localSize;
+                totalLocalSize = PadNextOffset(local.Type, totalLocalSize);
             }
 
             var sp = LLVM.GetFirstParam(_llvmFunction);
-            int paramOffset = GetTotalParameterOffset();
+            int paramOffset = totalLocalSize.AlignUp(_pointerSize) + GetTotalParameterOffset();
             for (int i = 0; i < totalLocalSize; i++)
             {
                 var stackOffset = LLVM.BuildGEP(_builder, sp, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (ulong)(paramOffset + i), LLVMMisc.False) }, String.Empty);
@@ -661,9 +661,9 @@ namespace Internal.IL
             int offset = GetTotalRealLocalOffset();
             for (int i = 0; i < _spilledExpressions.Count; i++)
             {
-                offset += _spilledExpressions[i].Type.GetElementSize().AsInt;
+                offset = PadNextOffset(_spilledExpressions[i].Type, offset);
             }
-            return offset;
+            return offset.AlignUp(_pointerSize);
         }
 
         private int GetTotalRealLocalOffset()
@@ -671,9 +671,9 @@ namespace Internal.IL
             int offset = 0;
             for (int i = 0; i < _locals.Length; i++)
             {
-                offset += _locals[i].Type.GetElementSize().AsInt;
+                offset = PadNextOffset(_locals[i].Type, offset);
             }
-            return offset;
+            return offset.AlignUp(_pointerSize);
         }
 
         private int GetTotalParameterOffset()
@@ -681,22 +681,22 @@ namespace Internal.IL
             int offset = 0;
             for (int i = 0; i < _signature.Length; i++)
             {
-                offset += _signature[i].GetElementSize().AsInt;
+                offset = PadNextOffset(_signature[i], offset);
             }
             if (!_signature.IsStatic)
             {
                 // If this is a struct, then it's a pointer on the stack
                 if (_thisType.IsValueType)
                 {
-                    offset += _thisType.Context.Target.PointerSize;
+                    offset = PadNextOffset(_thisType.MakeByRefType(), offset);
                 }
                 else
                 {
-                    offset += _thisType.GetElementSize().AsInt;
+                    offset = PadNextOffset(_thisType, offset);
                 }
             }
 
-            return offset;
+            return offset.AlignUp(_pointerSize);
         }
 
         private void GetArgSizeAndOffsetAtIndex(int index, out int size, out int offset)
@@ -704,7 +704,7 @@ namespace Internal.IL
             int thisSize = 0;
             if (!_signature.IsStatic)
             {
-                thisSize = _thisType.IsValueType ? _thisType.Context.Target.PointerSize : _thisType.GetElementSize().AsInt;
+                thisSize = _thisType.IsValueType ? _thisType.Context.Target.PointerSize : _thisType.GetElementSize().AsInt.AlignUp(_pointerSize);
                 if (index == 0)
                 {
                     size = thisSize;
@@ -723,7 +723,7 @@ namespace Internal.IL
             offset = thisSize;
             for (int i = 0; i < index; i++)
             {
-                offset += _signature[i].GetElementSize().AsInt;
+                offset = PadNextOffset(_signature[i], offset);
             }
         }
 
@@ -735,7 +735,7 @@ namespace Internal.IL
             offset = 0;
             for (int i = 0; i < index; i++)
             {
-                offset += _locals[i].Type.GetElementSize().AsInt;
+                offset = PadNextOffset(_locals[i].Type, offset);
             }
         }
 
@@ -747,8 +747,39 @@ namespace Internal.IL
             offset = 0;
             for (int i = 0; i < index; i++)
             {
-                offset += _spilledExpressions[i].Type.GetElementSize().AsInt;
+                offset = PadNextOffset(_spilledExpressions[i].Type, offset);
             }
+        }
+
+        public int PadNextOffset(TypeDesc type, int atOffset)
+        {
+            var size = type is DefType && type.IsValueType ? ((DefType)type).InstanceFieldSize : type.Context.Target.LayoutPointerSize;
+            return PadOffset(type, atOffset) + size.AsInt;
+        }
+
+        public int PadOffset(TypeDesc type, int atOffset)
+        {
+            var fieldAlignment = type is DefType && type.IsValueType ? ((DefType)type).InstanceFieldAlignment : type.Context.Target.LayoutPointerSize;
+            var alignment = LayoutInt.Min(fieldAlignment, new LayoutInt(ComputePackingSize(type))).AsInt;
+            var padding = (atOffset + (alignment - 1)) & ~(alignment - 1);
+            return padding;
+        }
+
+        private static int ComputePackingSize(TypeDesc type)
+        {
+            if (type is MetadataType)
+            {
+                var metaType = type as MetadataType;
+                var layoutMetadata = metaType.GetClassLayout();
+
+                // If a type contains pointers then the metadata specified packing size is ignored (On desktop this is disqualification from ManagedSequential)
+                if (layoutMetadata.PackingSize == 0 || metaType.ContainsGCPointers)
+                    return type.Context.Target.DefaultPackingSize;
+                else
+                    return layoutMetadata.PackingSize;
+            }
+            else
+                return type.Context.Target.DefaultPackingSize;
         }
 
         private void ImportAddressOfVar(int index, bool argument)
@@ -995,7 +1026,7 @@ namespace Internal.IL
             LLVMValueRef castReturnAddress;
             if (signature.ReturnType != GetWellKnownType(WellKnownType.Void))
             {
-                offset += signature.ReturnType.GetElementSize().AsInt;
+                offset = PadNextOffset(signature.ReturnType, offset);
 
                 int returnOffset = GetTotalParameterOffset() + GetTotalLocalOffset();
                 returnAddress = LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_llvmFunction),
@@ -1016,7 +1047,7 @@ namespace Internal.IL
 
 
             // argument offset
-            uint argOffset = 0;
+            int argOffset = 0;
             int instanceAdjustment = 0;
             if (!signature.IsStatic)
             {
@@ -1052,9 +1083,9 @@ namespace Internal.IL
 
                 LLVMTypeRef valueType = GetLLVMTypeForTypeDesc(argType);
 
-                ImportStoreHelper(toStore.ValueAsType(valueType, _builder), valueType, castShadowStack, argOffset);
+                ImportStoreHelper(toStore.ValueAsType(valueType, _builder), valueType, castShadowStack, (uint)argOffset);
 
-                argOffset += (uint)argType.GetElementSize().AsInt;
+                argOffset = PadNextOffset(argType, argOffset);
             }
 
             LLVMValueRef fn;
@@ -1174,7 +1205,7 @@ namespace Internal.IL
             {
                 LLVMValueRef argAddr = LLVM.BuildGEP(builder, shadowStack, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (ulong)curOffset, LLVMMisc.False) }, "arg" + i);
                 LLVM.BuildStore(builder, LLVM.GetParam(thunkFunc, (uint)i), CastIfNecessary(builder, argAddr, LLVM.PointerType(llvmParams[i], 0)));
-                curOffset += method.Signature[i].GetElementSize().AsInt;
+                curOffset = PadNextOffset(method.Signature[i], curOffset);
             }
 
             LLVMValueRef retAddr = LLVM.BuildGEP(builder, shadowStack, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (ulong)curOffset, LLVMMisc.False) }, "retAddr");
