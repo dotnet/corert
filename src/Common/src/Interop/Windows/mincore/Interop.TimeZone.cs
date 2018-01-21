@@ -75,7 +75,6 @@ internal static partial class Interop
         internal const int TIME_ZONE_ID_UNKNOWN = 0;
         internal const int TIME_ZONE_ID_STANDARD = 1;
         internal const int TIME_ZONE_ID_DAYLIGHT = 2;
-        internal const int MAX_PATH = 260;
 
         [DllImport("api-ms-win-core-timezone-l1-1-0.dll")]
         internal extern static uint EnumDynamicTimeZoneInformation(uint dwIndex, out TIME_DYNAMIC_ZONE_INFORMATION lpTimeZoneInformation);
