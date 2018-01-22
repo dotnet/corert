@@ -64,8 +64,8 @@ See the LICENSE file in the project root for more information.
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'OSX'">
-      <AdditionalFramework Include="CoreFoundation" />
-      <AdditionalFramework Include="Security" />
+      <AdditionalNativeFramework Include="CoreFoundation" />
+      <AdditionalNativeFramework Include="Security" />
     </ItemGroup>
 
     <ItemGroup>
@@ -84,7 +84,7 @@ See the LICENSE file in the project root for more information.
       <LinkerArg Include="-licucore" Condition="'$(TargetOS)' == 'OSX'" />
       <LinkerArg Include="-dynamiclib" Condition="'$(TargetOS)' == 'OSX' and '$(NativeLib)' == 'Shared'" />
       <LinkerArg Include="-shared" Condition="'$(TargetOS)' != 'OSX' and '$(NativeLib)' == 'Shared'" />
-      <LinkerArg Include="@(AdditionalFramework->'-framework %(Identity)')" Condition="'$(TargetOS)' == 'OSX'" />
+      <LinkerArg Include="@(AdditionalNativeFramework->'-framework %(Identity)')" Condition="'$(TargetOS)' == 'OSX'" />
     </ItemGroup>
     
     <Exec Command="command -v $(CppLinker)" IgnoreExitCode="true">
