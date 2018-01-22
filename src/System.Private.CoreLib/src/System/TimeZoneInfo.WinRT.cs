@@ -705,7 +705,7 @@ namespace System
             }
             if (id.Length == 0 || id.Length > 255 || id.Contains("\0"))
             {
-                throw new TimeZoneNotFoundException(SR.Format(SR.TimeZoneNotFound_MissingRegistryData, id));
+                throw new TimeZoneNotFoundException(SR.Format(SR.TimeZoneNotFound_MissingData, id));
             }
 
             //
@@ -740,7 +740,7 @@ namespace System
                     }
                 }
             }
-            throw new TimeZoneNotFoundException(SR.Format(SR.TimeZoneNotFound_MissingRegistryData, id));
+            throw new TimeZoneNotFoundException(SR.Format(SR.TimeZoneNotFound_MissingData, id));
         }
 
         // DateTime.Now fast path that avoids allocating an historically accurate TimeZoneInfo.Local and just creates a 1-year (current year) accurate time zone

@@ -420,7 +420,6 @@
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFindHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeThreadPoolIOHandle.cs" />
     <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\TimeZoneInfo.WinRT.cs" />
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\TimeZoneInfo.Win32.cs" />
     <Compile Include="System\AppContext.Windows.cs" />
     <Compile Include="System\DateTime.Windows.CoreRT.cs" />
     <Compile Include="System\Number.Windows.cs" />
@@ -465,9 +464,6 @@
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\kernel32\Interop.VirtualAlloc.cs">
       <Link>Interop\Windows\kernel32\Interop.VirtualAlloc.cs</Link>
     </Compile>
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.MUI.cs">
-      <Link>Interop\Windows\mincore\Interop.MUI.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.DateTime.cs">
       <Link>Interop\Windows\mincore\Interop.DateTime.cs</Link>
     </Compile>
@@ -485,6 +481,7 @@
       <Link>Interop\Windows\mincore\Interop.CommandLine.cs</Link>
     </Compile>
     <Compile Include="System\Environment.Windows.cs" />
+    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\Environment.Win32.cs" />
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetTickCount64.cs">
       <Link>Interop\Windows\mincore\Interop.GetTickCount64.cs</Link>
     </Compile>
@@ -523,6 +520,24 @@
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.ThreadPoolIO.cs">
       <Link>Interop\Windows\mincore\Interop.ThreadPoolIO.cs</Link>
     </Compile>
+    <Compile Condition="'$(EnableWinRT)' == 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.TimeZone.cs">
+      <Link>Interop\Windows\mincore\Interop.TimeZone.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\Interop.Libraries.cs">
+      <Link>Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetLastError.cs">
+      <Link>Interop\Windows\mincore\Interop.GetLastError.cs</Link>
+    </Compile>
+    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetSystemDirectory.cs">
+      <Link>Interop\Windows\mincore\Interop.GetSystemDirectory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.CoCreateGuid.cs">
+      <Link>Interop\Windows\mincore\Interop.CoCreateGuid.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.QueryUnbiasedInterruptTime.cs">
+      <Link>Interop\Windows\mincore\Interop.QueryUnbiasedInterruptTime.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true' And '$(EnableDummyGlobalizationImplementation)' != 'true'">
     <Compile Include="System\Globalization\CultureInfo.Windows.cs" />
@@ -540,30 +555,6 @@
     <Compile Include="System\Threading\ClrThreadPool.WorkerThread.cs" />
     <Compile Include="System\Threading\ClrThreadPool.CpuUtilizationReader.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
     <Compile Include="System\Threading\ClrThreadPool.CpuUtilizationReader.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
-  </ItemGroup>
-  <ItemGroup>
-    <!-- CORERT-TODO: Port to Unix -->
-    <Compile Include="..\..\Common\src\Interop\Windows\Interop.Libraries.cs">
-      <Link>Interop\Windows\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetLastError.cs">
-      <Link>Interop\Windows\mincore\Interop.GetLastError.cs</Link>
-    </Compile>
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetSystemDirectory.cs">
-      <Link>Interop\Windows\mincore\Interop.GetSystemDirectory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.TimeZone.cs">
-      <Link>Interop\Windows\mincore\Interop.TimeZone.cs</Link>
-    </Compile>
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.TimeZone.Win32.cs">
-      <Link>Interop\Windows\mincore\Interop.TimeZone.Win32.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.CoCreateGuid.cs">
-      <Link>Interop\Windows\mincore\Interop.CoCreateGuid.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.QueryUnbiasedInterruptTime.cs">
-      <Link>Interop\Windows\mincore\Interop.QueryUnbiasedInterruptTime.cs</Link>
-    </Compile>
   </ItemGroup>
   <!-- Dummy globalization implementation -->
   <ItemGroup Condition="'$(EnableDummyGlobalizationImplementation)' == 'true'">
