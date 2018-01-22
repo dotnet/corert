@@ -63,6 +63,11 @@ See the LICENSE file in the project root for more information.
       <AdditionalNativeLibrary Include="$(IlcPath)/framework/System.Security.Cryptography.Native.OpenSsl.a" Condition="'$(TargetOS)' != 'OSX'"/>
     </ItemGroup>
 
+    <ItemGroup Condition="'$(TargetOS)' == 'OSX'">
+      <AdditionalFramework Include="CoreFoundation" />
+      <AdditionalFramework Include="Security" />
+    </ItemGroup>
+
     <ItemGroup>
       <LinkerArg Include="@(NativeLibrary)" />
       <LinkerArg Include="@(AdditionalNativeLibrary)" />
@@ -79,6 +84,7 @@ See the LICENSE file in the project root for more information.
       <LinkerArg Include="-licucore" Condition="'$(TargetOS)' == 'OSX'" />
       <LinkerArg Include="-dynamiclib" Condition="'$(TargetOS)' == 'OSX' and '$(NativeLib)' == 'Shared'" />
       <LinkerArg Include="-shared" Condition="'$(TargetOS)' != 'OSX' and '$(NativeLib)' == 'Shared'" />
+      <LinkerArg Include="@(AdditionalFramework->'-framework %(Identity)')" Condition="'$(TargetOS)' == 'OSX'" />
     </ItemGroup>
     
     <Exec Command="command -v $(CppLinker)" IgnoreExitCode="true">
