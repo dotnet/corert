@@ -1539,6 +1539,9 @@ ReturnZero:
             //**********************************************************************
             // VarDecFromR4 - Convert float to Decimal
             //**********************************************************************
+#if PROJECTN // Workaround ProjectN bug #555233
+            [MethodImplAttribute(MethodImplOptions.NoOptimization)]
+#endif
             internal static void VarDecFromR4(float input, out Decimal pdecOut)
             {
                 pdecOut = new Decimal();
@@ -1708,6 +1711,9 @@ ThrowOverflow:
             //**********************************************************************
             // VarDecFromR8 - Convert double to Decimal
             //**********************************************************************
+#if PROJECTN // Workaround ProjectN bug #555233
+            [MethodImplAttribute(MethodImplOptions.NoOptimization)]
+#endif
             internal static void VarDecFromR8(double input, out Decimal pdecOut)
             {
                 pdecOut = new Decimal();
