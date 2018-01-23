@@ -7,6 +7,4 @@
     <PackageReference Include="Newtonsoft.Json" Version="10.0.1" />
     <PackageReference Include="System.CommandLine" Version="0.1.0-e160909-1" />
   </ItemGroup>
-  <Target Name="Compile" />
-  <Import Project="$(IlcPath)\build\Microsoft.NETCore.Native.targets" />
 </Project>

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.CommandLine;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -14,52 +15,32 @@ namespace CoreFX.TestUtils.TestFileSetup
         private static HttpClient httpClient;
         private static bool cleanTestBuild = false;
 
+        private static string outputDir;
+        private static string testUrl;
+        private static string testListPath;
+
         public static void Main(string[] args)
         {
-            string outputDir = string.Empty;
-            string testUrl = string.Empty;
-            string testListPath = string.Empty;
-
-            for (int i = 0; i < args.Length; i++)
-            {
-                switch (args[i])
-                {
-                    case "--outputDirectory":
-                    case "--out":
-                    case "--outputDir":
-                        if(i + 1 < args.Length && !args[i+1].Substring(0,2).Equals("--"))
-                        {
-                            outputDir = args[i + 1];
-                            i++;
-                        }
-                        break;
-                    case "--testUrl":
-                        if (i + 1 < args.Length && !args[i + 1].Substring(0, 2).Equals("--"))
-                        {
-                            testUrl = args[i + 1];
-                            i++;
-                        }
-                        break;
-                    case "--testListJsonPath":
-                        if (i + 1 < args.Length && !args[i + 1].Substring(0, 2).Equals("--"))
-                        {
-                            testListPath = args[i + 1];
-                            i++;
-                        }
-                        break;
-                    case "--clean":
-                        cleanTestBuild = true;
-                        break;
-                        
-                }
-            }
-
+            ArgumentSyntax argSyntax = ParseCommandLine(args);
             if (!Directory.Exists(outputDir))
             {
                 Directory.CreateDirectory(outputDir);
             }
             // parse args
             SetupTests(testUrl, outputDir, ReadTestNames(testListPath)).Wait();
+        }
+
+        public static ArgumentSyntax ParseCommandLine(string[] args)
+        {
+            ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>
+            {
+                syntax.DefineOption("out|outDir|outputDirectory", ref outputDir, "Directory where tests are downloaded");
+                syntax.DefineOption("testUrl", ref testUrl, "URL, pointing to the list of tests");
+                syntax.DefineOption("testListJsonPath", ref testListPath, "JSON-formatted list of test assembly names to download");
+                syntax.DefineOption("clean", ref cleanTestBuild, "Remove all previously built test assemblies");
+            });
+
+            return argSyntax;
         }
 
         public static Dictionary<string, string> ReadTestNames(string testFilePath)

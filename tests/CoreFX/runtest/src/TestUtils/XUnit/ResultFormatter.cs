@@ -85,7 +85,6 @@ namespace CoreFX.TestUtils.XUnit
 
         private static ArgumentSyntax ParseCommandLine(string[] args)
         {
-            AssemblyName name = typeof(ResultFormatter).GetTypeInfo().Assembly.GetName();
 
             ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>
             {
