@@ -19,7 +19,7 @@ namespace System
         /// </summary>
         private static string GetBaseDirectoryCore()
         {
-            StringBuilder buffer = new StringBuilder(Interop.mincore.MAX_PATH);
+            StringBuilder buffer = new StringBuilder(Interop.Kernel32.MAX_PATH);
             while (true)
             {
                 int size = Interop.mincore.GetModuleFileName(IntPtr.Zero, buffer, buffer.Capacity);
