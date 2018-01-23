@@ -7,9 +7,9 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
-namespace CoreFXTestUtils.TestArchiveUtils
+namespace CoreFX.TestUtils.TestFileSetup
 {
-    public static class TestArchiveUtils
+    public static class TestFileSetup
     {
         private static HttpClient httpClient;
         private static bool cleanTestBuild = false;
@@ -59,7 +59,7 @@ namespace CoreFXTestUtils.TestArchiveUtils
                 Directory.CreateDirectory(outputDir);
             }
             // parse args
-            SetupTests(ReadTestNames(testListPath), testUrl, outputDir).Wait();
+            SetupTests(testUrl, outputDir, ReadTestNames(testListPath)).Wait();
         }
 
         public static Dictionary<string, string> ReadTestNames(string testFilePath)
@@ -67,7 +67,8 @@ namespace CoreFXTestUtils.TestArchiveUtils
             Debug.Assert(File.Exists(testFilePath));
 
             Dictionary<string, string> testNames = new Dictionary<string, string>();
-            // We assume we're being a passed a list of test assembly names, so ignore anything that's not a string
+
+            // We're being a passed a list of test assembly names, so anything that's not a string is invalid
             using (var sr = new StreamReader(testFilePath))
             using (var jsonReader = new JsonTextReader(sr))
             {
@@ -83,7 +84,7 @@ namespace CoreFXTestUtils.TestArchiveUtils
             return testNames;
         }
 
-        public static async Task SetupTests(Dictionary<string, string> testNames, string jsonUrl, string destinationDirectory)
+        public static async Task SetupTests(string jsonUrl, string destinationDirectory, Dictionary<string, string> testNames = null)
         {
             Debug.Assert(Directory.Exists(destinationDirectory));
 
@@ -93,19 +94,21 @@ namespace CoreFXTestUtils.TestArchiveUtils
                 Directory.CreateDirectory(tempDirPath);
             }
 
-            Dictionary<string, string> testPayloads = await GetTestUrls(testNames, jsonUrl);
+            Dictionary<string, string> testPayloads = await GetTestUrls(jsonUrl, testNames);
             await GetTestArchives(testPayloads, tempDirPath);
             ExpandArchivesInDirectory(tempDirPath, destinationDirectory);
 
             Directory.Delete(tempDirPath);
         }
 
-        public static async Task<Dictionary<string, string>> GetTestUrls(Dictionary<string,string> testNames, string jsonUrl)
+        public static async Task<Dictionary<string, string>> GetTestUrls(string jsonUrl, Dictionary<string, string> testNames = null)
         {
             if(httpClient is null)
             {
                 httpClient = new HttpClient();
             }
+
+            bool allTests = testNames == null;
 
             // Set up the json stream reader
             using (var responseStream = await httpClient.GetStreamAsync(jsonUrl))
@@ -131,7 +134,7 @@ namespace CoreFXTestUtils.TestArchiveUtils
                                     string currentTestName = jsonReader.Value.ToString();
                                     // Test if we've added the key
                                     //// TODO add per test fetching
-                                    if (testNames.ContainsKey(currentTestName))
+                                    if (allTests || testNames.ContainsKey(currentTestName))
                                     {
                                         markedTestName = currentTestName;
                                     }

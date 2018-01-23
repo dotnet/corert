@@ -55,7 +55,7 @@ shift
 
 set "__TestWorkingDir=%CoreRT_TestRoot\CoreFX%"
 
-if not defined XunitTestBinBase       set  XunitTestBinBase=%__TestWorkingDir%
+if not defined XunitTestBinBase set  XunitTestBinBase=%__TestWorkingDir%
 
 if not exist %__LogsDir% md %__LogsDir%
 
@@ -94,6 +94,7 @@ if not defined __Sequential (
 for /D %%i in ("%XunitTestBinBase%\*" ) do (
     set TestFolderName=%%i
     set TestFileName=%%~nxi
+
     echo %FXCustomTestLauncher% !TestFolderName! !TestFileName!
     call %FXCustomTestLauncher% !TestFolderName! !TestFileName!
 )

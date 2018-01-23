@@ -111,7 +111,7 @@ if NOT "%CoreRT_MultiFileConfiguration%" == "" (
     if not exist %__CoreRTTestBinDir%\%CoreRT_MultiFileConfiguration%\ mkdir %__CoreRTTestBinDir%\%CoreRT_MultiFileConfiguration%
 )
 
-set __LogDir=%CoreRT_TestRoot%\..\bin\Logs\%__BuildStr%\tests
+set __LogDir=%CoreRT_TestRoot%..\bin\Logs\%__BuildStr%\tests
 
 if defined VisualStudioVersion goto :RunVCVars
 
@@ -338,15 +338,20 @@ goto :eof
     exit /b -1
 
 :RestoreCoreFXTests
-  
+
     :: Explicitly restore the test helper project
-    "%CoreRT_CliDir%\dotnet.exe" msbuild /t:Restore "!CoreRT_TestRoot!\CoreFX\runtest\src\Common\CoreFXTestUtils\CoreFXTestUtils.TestArchiveUtils.csproj"
+    "%CoreRT_CliDir%\dotnet.exe" msbuild /t:Restore "%CoreRT_TestFileHelperProjectPath%"
+    "%CoreRT_CliDir%\dotnet.exe" msbuild /t:Restore "%CoreRT_XunitHelperProjectPath%"    
     if errorlevel 1 (
         exit /b 1
     )
 
     :: Build the test helper project
-    "%CoreRT_CliDir%\dotnet.exe" msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:OSGroup=%CoreRT_BuildOS%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%CoreRT_TestRoot%..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /p:RepoLocalBuild=true "!CoreRT_TestRoot!\CoreFX\runtest\src\Common\CoreFXTestUtils\CoreFXTestUtils.TestArchiveUtils.csproj"
+    echo "%CoreRT_CliDir%\dotnet.exe" msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:OSGroup=%CoreRT_BuildOS%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%CoreRT_TestRoot%..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" "/p:OutputPath=%CoreRT_TestingUtilitiesOutputDir%" /p:RepoLocalBuild=true "%CoreRT_TestFileHelperProjectPath%" 
+    echo "%CoreRT_CliDir%\dotnet.exe" msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:OSGroup=%CoreRT_BuildOS%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%CoreRT_TestRoot%..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" "/p:OutputPath=%CoreRT_TestingUtilitiesOutputDir%" /p:RepoLocalBuild=true "%CoreRT_XunitHelperProjectPath%"       
+    "%CoreRT_CliDir%\dotnet.exe" msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:OSGroup=%CoreRT_BuildOS%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%CoreRT_TestRoot%..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" "/p:OutputPath=%CoreRT_TestingUtilitiesOutputDir%" /p:RepoLocalBuild=true "%CoreRT_TestFileHelperProjectPath%" 
+    "%CoreRT_CliDir%\dotnet.exe" msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:OSGroup=%CoreRT_BuildOS%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%CoreRT_TestRoot%..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" "/p:OutputPath=%CoreRT_TestingUtilitiesOutputDir%" /p:RepoLocalBuild=true "%CoreRT_XunitHelperProjectPath%" 
+    
     if errorlevel 1 (
         exit /b 1
     )
@@ -360,7 +365,14 @@ goto :eof
 
     set /p TESTS_REMOTE_URL=< "%~dp0/CoreFXTestListURL.txt"
     set TEST_LIST="%~dp0/Top200.CoreFX.issues.json"
-    "%CoreRT_CliDir%\dotnet.exe" !CoreRT_TestRoot!\CoreFX\runtest\src\Common\CoreFXTestUtils\bin\!CoreRT_BuildArch!\!CoreRT_BuildType!\netcoreapp2.0\CoreFXTestUtils.TestArchiveUtils.dll --clean --outputDirectory !CoreRT_TestExtRepo_CoreFX! --testListJsonPath "%TEST_LIST%" --testUrl "%TESTS_REMOTE_URL%"
+
+    if not exist !CoreRT_TestingUtilitiesOutputDir!\%CoreRT_TestFileHelperName%.dll (
+        echo File !CoreRT_TestingUtilitiesOutputDir!\%CoreRT_TestFileHelperName%.dll not found.
+        exit /b 1
+    )
+
+    "%CoreRT_CliDir%\dotnet.exe" !CoreRT_TestingUtilitiesOutputDir!\%CoreRT_TestFileHelperName%.dll --clean --outputDirectory !CoreRT_TestExtRepo_CoreFX! --testListJsonPath "%TEST_LIST%" --testUrl "%TESTS_REMOTE_URL%"
+
 
     exit /b 0
 
@@ -451,8 +463,18 @@ goto :eof
 
 :TestExtRepoCoreFX
     
+    set CoreRT_TestExtRepo_CoreFX=%CoreRT_TestRoot%\..\tests_downloaded\CoreFX
+    set CoreRT_TestingUtilitiesOutputDir=%CoreRT_TestExtRepo_CoreFX%\Utilities
+
+    :: Set paths to helpers
+    set CoreRT_TestFileHelperName=CoreFX.TestUtils.TestFileSetup
+    set CoreRT_TestFileHelperProjectPath="%CoreRT_TestRoot%\CoreFX\runtest\src\TestUtils\TestFileSetup\%CoreRT_TestFileHelperName%.csproj"
+
+    set CoreRT_XunitHelperName=CoreFX.TestUtils.XUnit
+    set CoreRT_XunitHelperProjectPath="%CoreRT_TestRoot%\CoreFX\runtest\src\TestUtils\XUnit\%CoreRT_XunitHelperName%.csproj"    
+    
+
     ::if "%CoreRT_TestExtRepo_CoreFX%" == "" (
-        set CoreRT_TestExtRepo_CoreFX=%CoreRT_TestRoot%\..\tests_downloaded\CoreFX
 
         call :RestoreCoreFXTests
         if errorlevel 1 (
@@ -461,17 +483,20 @@ goto :eof
     ::)
 
     set FXCustomTestLauncher=%CoreRT_TestRoot%\CoreFX\build-and-run-test.cmd
-    set XunitTestBinBase=!CoreRT_TestExtRepo_CoreFX!
-    set XunitLog=!CoreRT_TestExtRepo_CoreFX!\logs
+    set XunitTestBinBase=%CoreRT_TestExtRepo_CoreFX%
+    set XunitLogDir= %__LogDir%\CoreFX
     pushd %CoreRT_TestRoot%\CoreFX\runtest
 
-    "%CoreRT_CliDir%\dotnet.exe" msbuild /t:Restore /p:RepoLocalBuild=true src\TestWrappersConfig\XUnitTooling.depproj
+    rem TODO Add single test/target test support; add exclude tests
+    
+
+
+    echo runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% LogsDir %XunitLogDir%
+    call runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% LogsDir %XunitLogDir% 
     if errorlevel 1 (
         exit /b 1
     )
 
-    rem TODO Add single test/target test support; add exclude tests
-    
-    echo runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% LogsDir %__LogDir%
-    call runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% LogsDir %__LogDir%
+    echo "%CoreRT_CliDir%\dotnet.exe" !CoreRT_TestingUtilitiesOutputDir!\!CoreRT_XunitHelperName!.dll --logDir "%XunitLogDir%" --pattern "*.xml"
+    "%CoreRT_CliDir%\dotnet.exe" !CoreRT_TestingUtilitiesOutputDir!\!CoreRT_XunitHelperName!.dll --logDir "%XunitLogDir%" --pattern "*.xml"
      
