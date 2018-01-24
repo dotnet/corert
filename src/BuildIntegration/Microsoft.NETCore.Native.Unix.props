@@ -53,19 +53,23 @@ See the LICENSE file in the project root for more information.
     </ItemGroup>
 
     <ItemGroup>
-      <AdditionalNativeLibrary Include="$(IlcPath)/sdk/libSystem.Private.CoreLib.Native.a" />
-      <AdditionalNativeLibrary Include="$(IlcPath)/framework/System.Native.a" />
-      <AdditionalNativeLibrary Include="$(IlcPath)/framework/System.Globalization.Native.a" />
-      <AdditionalNativeLibrary Include="$(IlcPath)/framework/System.IO.Compression.Native.a" />
-      <AdditionalNativeLibrary Include="$(IlcPath)/framework/System.Net.Http.Native.a" />
-      <AdditionalNativeLibrary Include="$(IlcPath)/framework/System.Net.Security.Native.a" />
-      <AdditionalNativeLibrary Include="$(IlcPath)/framework/System.Security.Cryptography.Native.Apple.a" Condition="'$(TargetOS)' == 'OSX'"/>
-      <AdditionalNativeLibrary Include="$(IlcPath)/framework/System.Security.Cryptography.Native.OpenSsl.a" Condition="'$(TargetOS)' != 'OSX'"/>
+      <NativeLibrary Include="$(IlcPath)/sdk/libSystem.Private.CoreLib.Native.a" />
+      <NativeLibrary Include="$(IlcPath)/framework/System.Native.a" />
+      <NativeLibrary Include="$(IlcPath)/framework/System.Globalization.Native.a" />
+      <NativeLibrary Include="$(IlcPath)/framework/System.IO.Compression.Native.a" />
+      <NativeLibrary Include="$(IlcPath)/framework/System.Net.Http.Native.a" />
+      <NativeLibrary Include="$(IlcPath)/framework/System.Net.Security.Native.a" />
+      <NativeLibrary Include="$(IlcPath)/framework/System.Security.Cryptography.Native.Apple.a" Condition="'$(TargetOS)' == 'OSX'"/>
+      <NativeLibrary Include="$(IlcPath)/framework/System.Security.Cryptography.Native.OpenSsl.a" Condition="'$(TargetOS)' != 'OSX'"/>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetOS)' == 'OSX'">
+      <NativeFramework Include="CoreFoundation" />
+      <NativeFramework Include="Security" />
     </ItemGroup>
 
     <ItemGroup>
       <LinkerArg Include="@(NativeLibrary)" />
-      <LinkerArg Include="@(AdditionalNativeLibrary)" />
       <LinkerArg Include="-g" />
       <LinkerArg Include="-Wl,-rpath,'$ORIGIN'" />
       <LinkerArg Include="-pthread" />
@@ -79,6 +83,7 @@ See the LICENSE file in the project root for more information.
       <LinkerArg Include="-licucore" Condition="'$(TargetOS)' == 'OSX'" />
       <LinkerArg Include="-dynamiclib" Condition="'$(TargetOS)' == 'OSX' and '$(NativeLib)' == 'Shared'" />
       <LinkerArg Include="-shared" Condition="'$(TargetOS)' != 'OSX' and '$(NativeLib)' == 'Shared'" />
+      <LinkerArg Include="@(NativeFramework->'-framework %(Identity)')" Condition="'$(TargetOS)' == 'OSX'" />
     </ItemGroup>
     
     <Exec Command="command -v $(CppLinker)" IgnoreExitCode="true">

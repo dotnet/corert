@@ -13,8 +13,6 @@ namespace System.Threading
 {
     public sealed partial class Semaphore : WaitHandle
     {
-        private const int MAX_PATH = (int)Interop.Constants.MaxPath;
-
         // creates a nameless semaphore object
         // Win32 only takes maximum count of Int32.MaxValue
         public Semaphore(int initialCount, int maximumCount)

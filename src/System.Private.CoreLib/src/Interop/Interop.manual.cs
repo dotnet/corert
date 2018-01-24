@@ -24,7 +24,6 @@ internal partial class Interop
         CreateSuspended = 0x4u,
         WaitAbandoned0 = 0x80u,
         WaitTimeout = 0x102u,
-        MaxPath = 0x104u,
         StackSizeParamIsAReservation = 0x10000u,
         Synchronize = 0x100000u,
         MaximumAllowed = 0x02000000u,

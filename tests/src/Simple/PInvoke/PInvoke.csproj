@@ -19,7 +19,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <AdditionalNativeLibrary Include="$(PInvokeNativeObject)" />
+    <NativeLibrary Include="$(PInvokeNativeObject)" />
   </ItemGroup>
 
 
