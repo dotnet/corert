@@ -22,7 +22,6 @@ namespace CoreFX.TestUtils.XUnit
             ArgumentSyntax syntax = ParseCommandLine(args);
             IEnumerable<string> logFiles = DiscoverLogs(logDir, logPattern);
             PrintTotals(logFiles);
-            
         }
 
         private static void PrintTotals(IEnumerable<string> logFiles)
@@ -41,8 +40,6 @@ namespace CoreFX.TestUtils.XUnit
                     reader.ReadToDescendant("collection");
                     do
                     {
-
-
                         // Get total tests in current element
                         string totalAttr = reader.GetAttribute("total");
                         int currentTotal;
@@ -79,7 +76,7 @@ namespace CoreFX.TestUtils.XUnit
             }
 
             Console.WriteLine("=== CoreFX TEST EXECUTION SUMMARY ===: ");
-            Console.WriteLine(String.Format("Total: {0}, Errors: {1}, Failed: {2}, Skipped: {3}", total, passed, failed, timeElapsed));
+            Console.WriteLine(String.Format("Total: {0}, Passed: {1}, Failed: {2}, Skipped: {3}", total, passed, failed, timeElapsed));
 
         }
 

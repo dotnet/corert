@@ -1,52 +1,59 @@
-<Project DefaultTargets="LinkNative" 
-    xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="LinkNative">
+    <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+    <!-- Override Default MSBuild properties-->
     <PropertyGroup>
         <TargetName>$(ExecutableName)</TargetName>
         <TargetExt>.exe</TargetExt>
         <OutputType>Exe</OutputType>
-        <OutputPath>$(MSBuildProjectDirectory)\</OutputPath>
-        <IntermediateOutputPath>$(MSBuildProjectDirectory)\</IntermediateOutputPath>
+    </PropertyGroup>
+    
+    <PropertyGroup>
         <XunitPackageVersion>2.2.0-beta2-build3300</XunitPackageVersion>
         <ToolsDir>$(FrameworkLibPath)\..\tools\</ToolsDir>
+        <TargetFramework>netcoreapp2.0</TargetFramework>
+        <!-- Don't warn if some dependencies were rolled forward -->
+        <NoWarn>$(NoWarn);NU1603</NoWarn>
     </PropertyGroup>
+
     <ItemGroup>
         <RdXmlFile Include="default.rd.xml" />
     </ItemGroup>
-    <!-- <ItemGroup>
-        <PackageReference Include="xunit">
-            <Version>$(XunitPackageVersion)</Version>
+    <ItemGroup>
+        <PackageReference Include="xunit.abstractions">
+            <Version>2.0.1-rc2</Version>
         </PackageReference>
         <PackageReference Include="xunit.assert">
+            <Version>$(XunitPackageVersion)</Version>
+        </PackageReference>
+        <PackageReference Include="xunit.extensibility.core">
             <Version>$(XunitPackageVersion)</Version>
         </PackageReference>
         <PackageReference Include="xunit.core">
             <Version>$(XunitPackageVersion)</Version>
         </PackageReference>
-        <PackageReference Include="xunit.runner.msbuild">
+        <PackageReference Include="xunit.runner.utility">
             <Version>$(XunitPackageVersion)</Version>
         </PackageReference>
-        <PackageReference Include="xunit.execution.dotnet">
+        <PackageReference Include="xunit.extensibility.execution">
             <Version>$(XunitPackageVersion)</Version>
         </PackageReference>
-    </ItemGroup> -->
+        <PackageReference Include="microsoft.xunit.netcore.extensions">
+            <Version>1.0.1-prerelease-02104-02</Version>
+        </PackageReference>
+    </ItemGroup>
     <ItemGroup>
         <!-- Some tests consist of multiple assemblies - make sure ILC sees them -->
         <IlcCompileInput Include="$(MSBuildProjectDirectory)\*.dll" />
         <IlcCompileInput Include="$(ToolsDir)System.Private.Xml.Linq.dll" />
         <IlcCompileInput Include="$(ToolsDir)System.Private.Xml.dll" />
-        <IlcCompileInput Include="$(PackagesDir)xunit.runner.utility\2.2.0-beta2-build3300\lib\netstandard1.1\xunit.runner.utility.dotnet.dll" />
-        <IlcCompileInput Include="$(PackagesDir)xunit.extensibility.execution\2.2.0\lib\netstandard1.1\xunit.execution.dotnet.dll" />
-        <IlcCompileInput Include="C:\Users\anandono\source\repos\corert\packages\xunit.extensibility.execution\2.2.0-beta2-build3300\lib\net45\xunit.execution.desktop.dll" />
-        <IlcCompileInput Include="$(PackagesDir)xunit.abstractions\2.0.1-rc2\lib\netstandard1.0\xunit.abstractions.dll"/>
-        <IlcCompileInput Include="$(PackagesDir)xunit.extensibility.core\2.2.0-beta2-build3300\lib\netstandard1.0\xunit.core.dll"/>
-        <IlcCompileInput Include="$(PackagesDir)microsoft.xunit.netcore.extensions\1.0.1-prerelease-02104-02\lib\netstandard1.0\Xunit.NetCore.Extensions.dll"/>
-        <IlcCompileInput Include="$(PackagesDir)xunit.assert\2.2.0-beta2-build3300\lib\netstandard1.0\xunit.assert.dll"/>
     </ItemGroup>
+    <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+    <!-- Set OutputPath after the SDK targets have been imported-->
+    <PropertyGroup>
+        <OutputPath>$(MSBuildProjectDirectory)\</OutputPath>
+        <IntermediateOutputPath>$(MSBuildProjectDirectory)\</IntermediateOutputPath>
+    </PropertyGroup>
+    <Import Project="$(IlcPath)\build\Microsoft.NETCore.Native.targets" />
     <!-- Since tests are already compiled, override Compile target to prevent CSC running -->
     <Target Name="Compile" />
-    <Import Project="$(IlcPath)\build\Microsoft.NETCore.Native.targets" />
 </Project>
-<!--
-Created by running 
-msbuild /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=C:\Users\anandono\source\repos\corert\bin\Windows_NT.x64.Debug" "/p:DebugSymbols=true" "/p:Configuration=Debug" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=C:\Users\anandono\source\repos\corert\bin\Windows_NT.x64.Debug\lib" "/p:FrameworkObjPath=C:\Users\anandono\source\repos\corert\bin\obj\Windows_NT.x64.Debug\Framework" /p:DisableFrameworkLibGeneration=true /p:PackagesDir=C:\Users\anandono\source\repos\corert\packages\ /p:TestFileName=xunit.console.netcore Test.csproj
--->
