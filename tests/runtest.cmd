@@ -362,7 +362,7 @@ goto :eof
     )
 
     set /p TESTS_REMOTE_URL=< "%~dp0/CoreFXTestListURL.txt"
-    set TEST_LIST="%~dp0/Top200.CoreFX.issues.json"
+    set TEST_LIST="%~dp0/TopN.CoreFX.issues.json"
 
     if not exist !CoreRT_TestingUtilitiesOutputDir!\%CoreRT_TestFileHelperName%.dll (
         echo File !CoreRT_TestingUtilitiesOutputDir!\%CoreRT_TestFileHelperName%.dll not found.
@@ -471,21 +471,18 @@ goto :eof
     set CoreRT_XunitHelperName=CoreFX.TestUtils.XUnit
     set CoreRT_XunitHelperProjectPath="%CoreRT_TestRoot%\CoreFX\runtest\src\TestUtils\XUnit\%CoreRT_XunitHelperName%.csproj"    
     
-
-    ::if "%CoreRT_TestExtRepo_CoreFX%" == "" (
-
-        call :RestoreCoreFXTests
-        if errorlevel 1 (
-            exit /b 1
-        )
-    ::)
+    :: TODO Check if each requested test has already been restored
+    call :RestoreCoreFXTests
+    if errorlevel 1 (
+        exit /b 1
+    )
 
     set FXCustomTestLauncher=%CoreRT_TestRoot%\CoreFX\build-and-run-test.cmd
     set XunitTestBinBase=%CoreRT_TestExtRepo_CoreFX%
     set XunitLogDir= %__LogDir%\CoreFX
     pushd %CoreRT_TestRoot%\CoreFX\runtest
 
-    rem TODO Add single test/target test support; add exclude tests
+    :: TODO Add single test/target test support; add exclude tests argument
 
     echo runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% LogsDir %XunitLogDir%
     call runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% LogsDir %XunitLogDir% 

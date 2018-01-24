@@ -1,5 +1,7 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildThisFileDirectory)\..\..\..\dir.props" />
+  
+  <!-- Don't import the project's parent dir.props - all other projects in the CoreRT repo are set up for the old project format -->
+
   <!--
     $(OS) is set to Unix/Windows_NT. This comes from an environment variable on Windows and MSBuild on Unix.
   -->
@@ -7,12 +9,6 @@
     <OsEnvironment Condition="'$(OsEnvironment)'==''">$(OS)</OsEnvironment>
   </PropertyGroup>
   
-  <!-- Build Tools Versions -->
-  <PropertyGroup>
-    <RoslynVersion>1.0.0-rc3-20150510-01</RoslynVersion>
-    <RoslynPackageName>Microsoft.Net.ToolsetCompilers</RoslynPackageName>
-  </PropertyGroup>
-
   <!-- Common repo directories -->
   <PropertyGroup>
     <CopyNuGetImplementations Condition="'$(CopyNuGetImplementations)'==''">false</CopyNuGetImplementations>
@@ -23,7 +19,7 @@
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolsDir)dotnetcli/</DotnetCliPath>
     <SkipImportILTargets>true</SkipImportILTargets>
   </PropertyGroup>
-  
+
   <!-- Provides properties for dependency versions and configures dependency verification/auto-upgrade. -->
   <Import Project="$(MSBuildThisFileDirectory)\..\dependencies.props" />
 
@@ -33,22 +29,5 @@
     <DotnetSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json" />
     <DotnetSourceList Include="https:%2F%2Fapi.nuget.org/v3/index.json" /> 
   </ItemGroup> 
-  
-  <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">
-    <!-- When we do a traversal build we get all packages up front, don't restore them again -->
-    <RestorePackages>false</RestorePackages>
-  </PropertyGroup>
-  
-  <PropertyGroup Condition="'$(DnuRestoreCommand)' == ''">
-    <DotnetToolCommand Condition="'$(DotnetToolCommand)'=='' and '$(OsEnvironment)'!='Unix'">$(DotnetCliPath)dotnet.exe</DotnetToolCommand>    
-    <DotnetToolCommand Condition="'$(DotnetToolCommand)'=='' and '$(OsEnvironment)'=='Unix'">$(DotnetCliPath)dotnet</DotnetToolCommand>    
-
-    <DnuRestoreSource>@(DnuSourceList -> '--source %(Identity)', ' ')</DnuRestoreSource>
-    <DnuRestoreDirs>@(DnuRestoreDir -> '%(Identity)', ' ')</DnuRestoreDirs>
-
-    <DnuRestoreCommand>$(DnuRestoreCommand) "$(DotnetToolCommand)"</DnuRestoreCommand>
-    <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
-    <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))" $(DnuRestoreSource)</DnuRestoreCommand>
-  </PropertyGroup>
   
 </Project>

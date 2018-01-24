@@ -1,5 +1,6 @@
 <Project DefaultTargets="LinkNative">
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
     <!-- Override Default MSBuild properties-->
     <PropertyGroup>
         <TargetName>$(ExecutableName)</TargetName>
@@ -8,7 +9,10 @@
     </PropertyGroup>
     
     <PropertyGroup>
+        <!-- TODO - need a general way to specify version without relying on the test directory structure being intact, i.e. import dependencies from \tests\ -->
         <XunitPackageVersion>2.2.0-beta2-build3300</XunitPackageVersion>
+        <XunitAbstractionsVersion>2.0.1-rc2</XunitAbstractionsVersion>
+        <XunitNetcoreExtensionsVersion>1.0.1-prerelease-02104-02</XunitNetcoreExtensionsVersion>
         <ToolsDir>$(FrameworkLibPath)\..\tools\</ToolsDir>
         <TargetFramework>netcoreapp2.0</TargetFramework>
         <!-- Don't warn if some dependencies were rolled forward -->
@@ -20,7 +24,7 @@
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="xunit.abstractions">
-            <Version>2.0.1-rc2</Version>
+            <Version>$(XunitAbstractionsVersion)</Version>
         </PackageReference>
         <PackageReference Include="xunit.assert">
             <Version>$(XunitPackageVersion)</Version>
@@ -38,22 +42,27 @@
             <Version>$(XunitPackageVersion)</Version>
         </PackageReference>
         <PackageReference Include="microsoft.xunit.netcore.extensions">
-            <Version>1.0.1-prerelease-02104-02</Version>
+            <Version>$(XunitNetcoreExtensionsVersion)</Version>
         </PackageReference>
     </ItemGroup>
     <ItemGroup>
         <!-- Some tests consist of multiple assemblies - make sure ILC sees them -->
         <IlcCompileInput Include="$(MSBuildProjectDirectory)\*.dll" />
+        <!-- TODO Get both assemblies from somewhere else?  -->
         <IlcCompileInput Include="$(ToolsDir)System.Private.Xml.Linq.dll" />
         <IlcCompileInput Include="$(ToolsDir)System.Private.Xml.dll" />
     </ItemGroup>
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+
     <!-- Set OutputPath after the SDK targets have been imported-->
     <PropertyGroup>
         <OutputPath>$(MSBuildProjectDirectory)\</OutputPath>
         <IntermediateOutputPath>$(MSBuildProjectDirectory)\</IntermediateOutputPath>
     </PropertyGroup>
+
+    <!-- Import CoreRT build targets -->
     <Import Project="$(IlcPath)\build\Microsoft.NETCore.Native.targets" />
+
     <!-- Since tests are already compiled, override Compile target to prevent CSC running -->
     <Target Name="Compile" />
 </Project>

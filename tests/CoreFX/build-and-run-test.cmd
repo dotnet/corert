@@ -36,7 +36,11 @@ if "%CoreRT_BuildArch%" == "x64" (
     call "%VS140COMNTOOLS%\..\..\VC\bin\amd64\vcvars64.bat" >nul
 )
 
+echo Build %TestFileName%
+
 call "%CoreRT_CliDir%\dotnet.exe" publish /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:DebugSymbols=false" "/p:Configuration=%CoreRT_BuildType%" "/p:FrameworkLibPath=%~dp0..\..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /p:DisableFrameworkLibGeneration=true /p:PackagesDir=%~dp0..\..\packages\ /p:ExecutableName=%TestExecutable% %TestFolder%\Test.csproj 
 REM /verbosity:diag > "C:\Users\anandono\source\repos\runtestFX.log"
+
+echo Executing %TestFileName%
 
 call %TestFolder%\native\%TestExecutable% %TestFolder%\%TestFileName%.dll -xml %XunitLogDir%\%TestFileName%.xml

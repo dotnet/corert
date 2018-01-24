@@ -77,6 +77,7 @@ namespace CoreFX.TestUtils.XUnit
 
             Console.WriteLine("=== CoreFX TEST EXECUTION SUMMARY ===: ");
             Console.WriteLine(String.Format("Total: {0}, Passed: {1}, Failed: {2}, Skipped: {3}", total, passed, failed, timeElapsed));
+            Console.WriteLine("Detailed logs written to: " + logDir);
 
         }
 
