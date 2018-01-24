@@ -9,6 +9,7 @@ using Internal.Runtime.Augments;
 
 namespace System.Threading
 {
+    [ReflectionBlocked]
     public sealed class Lock
     {
         // The following constants define characteristics of spinning logic in the Lock class

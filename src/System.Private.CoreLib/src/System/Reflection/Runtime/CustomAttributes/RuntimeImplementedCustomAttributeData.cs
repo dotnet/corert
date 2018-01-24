@@ -12,6 +12,7 @@ namespace System.Reflection.Runtime.CustomAttributes
     // If a CustomAttributeData implementation derives from this, it is a hint that it has a AttributeType implementation
     // that's more efficient than building a ConstructorInfo and gettings its DeclaredType.
     //
+    [System.Runtime.CompilerServices.ReflectionBlocked]
     public abstract class RuntimeImplementedCustomAttributeData : CustomAttributeData
     {
         public new abstract Type AttributeType { get; }

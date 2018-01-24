@@ -4,6 +4,7 @@
 
 namespace System.Diagnostics
 {
+    [System.Runtime.CompilerServices.ReflectionBlocked]
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Constructor, Inherited = false)]
     public sealed class DebuggerGuidedStepThroughAttribute : Attribute
     {

@@ -15,6 +15,7 @@ namespace System.Reflection
     //
     // Parses an assembly name.
     //
+    [System.Runtime.CompilerServices.ReflectionBlocked]
     public static class AssemblyNameParser
     {
         public static void Parse(AssemblyName blank, String s)

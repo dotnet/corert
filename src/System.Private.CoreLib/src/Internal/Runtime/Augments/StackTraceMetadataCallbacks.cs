@@ -15,6 +15,7 @@ namespace Internal.Runtime.Augments
     /// Internal.Runtime.Augments.RuntimeAugments.InitializeStackTraceMetadataSupport(StackTraceMetadataCallbacks callbacks);
     ///
     /// </summary>
+    [System.Runtime.CompilerServices.ReflectionBlocked]
     [CLSCompliant(false)]
     public abstract class StackTraceMetadataCallbacks
     {
