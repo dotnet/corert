@@ -9,6 +9,7 @@ using Internal.Runtime.Augments;
 
 namespace Internal.Runtime.CompilerServices
 {
+    [System.Runtime.CompilerServices.ReflectionBlocked]
     public static class FunctionPointerOps
     {
         private struct GenericMethodDescriptorInfo : IEquatable<GenericMethodDescriptorInfo>

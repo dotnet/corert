@@ -94,6 +94,10 @@ namespace ILCompiler
 
             private bool ComputeIsBlocked(EcmaType type, ModuleBlockingMode blockingMode)
             {
+                // If the type is explicitly blocked, it's always blocked.
+                if (type.HasCustomAttribute("System.Runtime.CompilerServices", "ReflectionBlockedAttribute"))
+                    return true;
+
                 // If no blocking is applied to the module, the type is not blocked
                 if (blockingMode == ModuleBlockingMode.None)
                     return false;

@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Runtime
 {
+    [ReflectionBlocked]
     public static class TypeLoaderExports
     {
 #if PROJECTN
@@ -419,6 +420,7 @@ namespace System.Runtime
         }
     }
 
+    [ReflectionBlocked]
     public delegate IntPtr RuntimeObjectFactory(IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult);
 
     [System.Runtime.InteropServices.McgIntrinsicsAttribute]

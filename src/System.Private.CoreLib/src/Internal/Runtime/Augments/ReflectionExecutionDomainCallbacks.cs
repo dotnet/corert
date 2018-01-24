@@ -23,6 +23,7 @@ using System.Reflection;
 namespace Internal.Runtime.Augments
 {
     [CLSCompliant(false)]
+    [System.Runtime.CompilerServices.ReflectionBlocked]
     public abstract class ReflectionExecutionDomainCallbacks
     {
         // Api's that are exposed in System.Runtime but are really reflection apis.

@@ -14,6 +14,7 @@ using Internal.Runtime.CompilerServices;
 
 namespace System
 {
+    [System.Runtime.CompilerServices.ReflectionBlocked]
     [System.Runtime.CompilerServices.DependencyReductionRoot]
     public static class InvokeUtils
     {
