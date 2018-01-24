@@ -77,6 +77,8 @@ GPTR_IMPL(EEType, g_pFreeObjectEEType);
 
 #include "DebuggerHook.h"
 
+#include "gctoclreventsink.h"
+
 #ifndef DACCESS_COMPILE
 
 bool RhInitializeFinalization();
@@ -1499,6 +1501,11 @@ void GCToEEInterface::WalkAsyncPinnedForPromotion(Object* object, ScanContext* s
 
 void GCToEEInterface::WalkAsyncPinned(Object* object, void* context, void (*callback)(Object*, Object*, void*))
 {
+}
+
+IGCToCLREventSink* GCToEEInterface::EventSink()
+{
+    return &g_gcToClrEventSink;
 }
 
 MethodTable* GCToEEInterface::GetFreeObjectMethodTable()

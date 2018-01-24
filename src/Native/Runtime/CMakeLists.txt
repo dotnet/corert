@@ -11,6 +11,7 @@ set(COMMON_RUNTIME_SOURCES
     event.cpp
     FinalizerHelpers.cpp
     GCHelpers.cpp
+    gctoclreventsink.cpp
     gcheaputilities.cpp
     GCMemoryHelpers.cpp
     gcrhenv.cpp
