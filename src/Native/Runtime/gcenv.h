@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+#ifndef __GCENV_H__
+#define __GCENV_H__
+
 #define FEATURE_PREMORTEM_FINALIZATION
 
 #ifdef _MSC_VER
@@ -274,3 +277,5 @@ extern DWORD g_dwHandles;
 #if !defined (_TRUNCATE)
 #define _TRUNCATE ((size_t)-1)
 #endif  /* !defined (_TRUNCATE) */
+
+#endif // __GCENV_H__
