@@ -1217,7 +1217,7 @@ namespace Internal.Reflection.Execution
 
             NativeParser entryParser = new NativeParser(invokeMapReader, parserOffset);
 
-            declaringTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
+            RuntimeTypeHandle entryTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
 
             // Hash table names / sigs are indirected through to the native layout info
             MethodNameAndSignature nameAndSignature;
@@ -1236,8 +1236,9 @@ namespace Internal.Reflection.Execution
             if (functionPointer != canonOriginalLdFtnResult)
                 return false;
 
-            if (TypeLoaderEnvironment.Instance.TryGetMetadataForTypeMethodNameAndSignature(declaringTypeHandle, nameAndSignature, out methodHandle))
+            if (TypeLoaderEnvironment.Instance.TryGetMetadataForTypeMethodNameAndSignature(entryTypeHandle, nameAndSignature, out methodHandle))
             {
+                declaringTypeHandle = entryTypeHandle;
                 return true;
             }
 
