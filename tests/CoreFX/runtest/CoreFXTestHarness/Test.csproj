@@ -1,6 +1,8 @@
 <Project DefaultTargets="LinkNative">
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
+    <Import Project="$(TestRootDir)\dependencies.props" />
+
     <!-- Override Default MSBuild properties-->
     <PropertyGroup>
         <TargetName>$(ExecutableName)</TargetName>
@@ -10,9 +12,6 @@
     
     <PropertyGroup>
         <!-- TODO - need a general way to specify version without relying on the test directory structure being intact, i.e. import dependencies from \tests\ -->
-        <XunitPackageVersion>2.2.0-beta2-build3300</XunitPackageVersion>
-        <XunitAbstractionsVersion>2.0.1-rc2</XunitAbstractionsVersion>
-        <XunitNetcoreExtensionsVersion>1.0.1-prerelease-02104-02</XunitNetcoreExtensionsVersion>
         <ToolsDir>$(FrameworkLibPath)\..\tools\</ToolsDir>
         <TargetFramework>netcoreapp2.0</TargetFramework>
         <!-- Don't warn if some dependencies were rolled forward -->

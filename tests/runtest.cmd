@@ -111,7 +111,7 @@ if NOT "%CoreRT_MultiFileConfiguration%" == "" (
     if not exist %__CoreRTTestBinDir%\%CoreRT_MultiFileConfiguration%\ mkdir %__CoreRTTestBinDir%\%CoreRT_MultiFileConfiguration%
 )
 
-set __LogDir=%CoreRT_TestRoot%..\bin\Logs\%__BuildStr%\tests
+set __LogDir=%CoreRT_TestRoot%\..\bin\Logs\%__BuildStr%\tests
 
 if defined VisualStudioVersion goto :RunVCVars
 
