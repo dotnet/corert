@@ -1,7 +1,6 @@
-:: Test execution wrapper for CoreCLR tests
+:: Test build and execution wrapper for CoreFX tests
 ::
-:: This wrapper is called from each CoreCLR test's .cmd / .sh run script as the custom test launcher.
-:: We use this opportunity to invoke the CoreRT compiler and then run the produced native binary.
+:: This wrapper is called for each of CoreFX's tests by runtest.cmd
 ::
 :: %1 contains test folder
 :: %2 contains test exe name
@@ -12,13 +11,13 @@ setlocal ENABLEDELAYEDEXPANSION
 set TestFolder=%1
 
 ::
-:: We're only interested in referencing the xunit runner - the test dlls will be imported by the test project
+:: We're only interested in referencing the xunit runner - the test dlls will be imported by the test wrapper project
 ::
 set TestExecutable=xunit.console.netcore
 set TestFileName=%2
 
 
-:: Copy artefacts necessary to compile and run the xunit exe
+:: Copy the artefacts we need to compile and run the xunit exe
 copy /Y "%~dp0\runtest\CoreFXTestHarness\*" "%TestFolder%" >nul
 
 :: Create log dir if it doesn't exist
