@@ -34,7 +34,8 @@ namespace CoreFX.TestUtils.XUnit
 
             foreach(string logFile in logFiles)
             {
-                using (XmlReader reader = XmlReader.Create(logFile))
+                // TODO XMLReader escapes the character sequence \\.. as just a single backslash \ - Is this intended behavior? 
+                using (XmlReader reader = XmlReader.Create(logFile.Replace(@"\\..", @"\..")))
                 {
                     reader.MoveToContent();
                     reader.ReadToDescendant("collection");
@@ -96,8 +97,9 @@ namespace CoreFX.TestUtils.XUnit
         public static IEnumerable<string> DiscoverLogs(string logDirectory, string logPattern)
         {
             Debug.Assert(Directory.Exists(logDirectory));
+            Console.WriteLine(logDirectory);
             var logFiles = Directory.EnumerateFiles(logDirectory, logPattern, SearchOption.AllDirectories);
-
+            
             return logFiles;
         }
 
