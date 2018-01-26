@@ -30,6 +30,20 @@ namespace System.Runtime
         public uint VTableOffset;
     }
 
+    // Constants used with RhpGetClasslibFunction, to indicate which classlib function
+    // we are interested in. 
+    // Note: make sure you change the def in ICodeManager.h if you change this!
+    internal enum ClassLibFunctionId
+    {
+        GetRuntimeException = 0,
+        FailFast = 1,
+        // UnhandledExceptionHandler = 2, // unused
+        AppendExceptionStackFrame = 3,
+        CheckStaticClassConstruction = 4,
+        GetSystemArrayEEType = 5,
+        OnFirstChance = 6,
+    }
+
     internal static class InternalCalls
     {
         //
@@ -232,12 +246,12 @@ namespace System.Runtime
         [RuntimeImport(Redhawk.BaseName, "RhpGetClasslibFunctionFromCodeAddress")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal extern static unsafe void* RhpGetClasslibFunctionFromCodeAddress(IntPtr address, EH.ClassLibFunctionId id);
+        internal extern static unsafe void* RhpGetClasslibFunctionFromCodeAddress(IntPtr address, ClassLibFunctionId id);
 
         [RuntimeImport(Redhawk.BaseName, "RhpGetClasslibFunctionFromEEType")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal extern static unsafe void* RhpGetClasslibFunctionFromEEType(IntPtr pEEType, EH.ClassLibFunctionId id);
+        internal extern static unsafe void* RhpGetClasslibFunctionFromEEType(IntPtr pEEType, ClassLibFunctionId id);
 
         //
         // StackFrameIterator
