@@ -21,7 +21,8 @@
         PROLOG_SAVE_REG_PAIR x23, x24, #0x40
         PROLOG_SAVE_REG_PAIR x25, x26, #0x50
         PROLOG_SAVE_REG_PAIR x27, x28, #0x60
-        PROLOG_NOP stp x0, lr, [sp, #0x70]   ; x0 is the SP and lr is the IP of the fault site   
+        PROLOG_NOP stp x0, lr, [sp, #0x70]   ; x0 is the SP and lr is the IP of the fault site 
+                                             ; in case of software exception x0 is the exception object address
         PROLOG_NOP stp d8, d9, [sp, #0x80]
         PROLOG_NOP stp d10, d11, [sp, #0x90]
         PROLOG_NOP stp d12, d13, [sp, #0xA0]
@@ -599,7 +600,11 @@ SetSuccess
 ;; 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     NESTED_ENTRY RhpCallFilterFunclet
-        ALLOC_CALL_FUNCLET_FRAME 0
+        ALLOC_CALL_FUNCLET_FRAME 0x40
+        stp d8, d9,   [sp, #0x00]
+        stp d10, d11, [sp, #0x10]
+        stp d12, d13, [sp, #0x20]
+        stp d14, d15, [sp, #0x30]
 
         ldr         x12, [x2, #OFFSETOF__REGDISPLAY__pFP]
         ldr         fp, [x12]
@@ -612,7 +617,12 @@ SetSuccess
 
     EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFilterFunclet2
 
-        FREE_CALL_FUNCLET_FRAME 0
+        ldp         d8, d9,   [sp, #0x00]
+        ldp         d10, d11, [sp, #0x10]
+        ldp         d12, d13, [sp, #0x20]
+        ldp         d14, d15, [sp, #0x30]
+
+        FREE_CALL_FUNCLET_FRAME 0x40
         EPILOG_RETURN
 
     NESTED_END RhpCallFilterFunclet

@@ -59,7 +59,6 @@ namespace ILCompiler.DependencyAnalysis.ARM64
         {
             if (symbol.RepresentsIndirectionCell)
             {
-                Debug.Assert(false, "The following code to emit an jump stub to an indirection cell is untested. When testing on ARM64 please remove this assert and verify it is correct");
                 // xip0 register num is 0x10
 
                 // ADRP xip0, [symbol (21bit ADRP thing)]
@@ -119,6 +118,5 @@ namespace ILCompiler.DependencyAnalysis.ARM64
         {
             return i == (int)(sbyte)i;
         }
-
     }
 }

@@ -139,8 +139,7 @@ COOP_PINVOKE_HELPER(Int32, RhGetModuleFileName, (HANDLE moduleHandle, _Out_ cons
     return PalGetModuleFileName(pModuleNameOut, moduleHandle);
 }
 
-COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo, 
-                                (void * pOSContext, Int32 cbOSContext, PAL_LIMITED_CONTEXT * pPalContext))
+COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo, (void * pOSContext, Int32 cbOSContext, PAL_LIMITED_CONTEXT * pPalContext))
 {
     UNREFERENCED_PARAMETER(cbOSContext);
     ASSERT(cbOSContext >= sizeof(CONTEXT));
@@ -214,9 +213,7 @@ COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo,
 #endif
 }
 
-
 #if defined(_AMD64_) || defined(_ARM_) || defined(_X86_) || defined(_ARM64_)
-// ARM64TODO
 struct DISPATCHER_CONTEXT
 {
     UIntNative  ControlPc;
@@ -238,9 +235,9 @@ EXTERN_C void REDHAWK_CALLCONV RhpFailFastForPInvokeExceptionCoop(IntNative PInv
 Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
 
 EXTERN_C Int32 __stdcall RhpPInvokeExceptionGuard(PEXCEPTION_RECORD       pExceptionRecord,
-                                        UIntNative              EstablisherFrame,
-                                        PCONTEXT                pContextRecord,
-                                        DISPATCHER_CONTEXT *    pDispatcherContext)
+                                                  UIntNative              EstablisherFrame,
+                                                  PCONTEXT                pContextRecord,
+                                                  DISPATCHER_CONTEXT *    pDispatcherContext)
 {
     UNREFERENCED_PARAMETER(EstablisherFrame);
 #ifdef APP_LOCAL_RUNTIME
@@ -267,7 +264,6 @@ EXTERN_C Int32 __stdcall RhpPInvokeExceptionGuard(PEXCEPTION_RECORD       pExcep
     // managed code that calls to native code (without pinvoking) which might have a bug that causes an AV.  
     if (pThread->IsDoNotTriggerGcSet())
         RhFailFast();
-
 
     // We promote exceptions that were not converted to managed exceptions to a FailFast.  However, we have to
     // be careful because we got here via OS SEH infrastructure and, therefore, don't know what GC mode we're
@@ -423,7 +419,8 @@ static UIntNative UnwindWriteBarrierToCaller(
 
 #ifdef PLATFORM_UNIX
 
-Int32 __stdcall RhpHardwareExceptionHandler(UIntNative faultCode, UIntNative faultAddress, PAL_LIMITED_CONTEXT* palContext, UIntNative* arg0Reg, UIntNative* arg1Reg)
+Int32 __stdcall RhpHardwareExceptionHandler(UIntNative faultCode, UIntNative faultAddress,
+    PAL_LIMITED_CONTEXT* palContext, UIntNative* arg0Reg, UIntNative* arg1Reg)
 {
     UIntNative faultingIP = palContext->GetIp();
 
@@ -544,6 +541,5 @@ COOP_PINVOKE_HELPER(void, RhpFallbackFailFast, ())
 {
     RhFailFast();
 }
-
 
 #endif // !DACCESS_COMPILE

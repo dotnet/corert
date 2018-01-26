@@ -20,7 +20,7 @@
 PROBE_SAVE_FLAGS_EVERYTHING     equ DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_ALL_SCRATCH
 
     ;; Build a map of symbols representing offsets into the transition frame (see PInvokeTransitionFrame in
-    ;; rhbinder.h and keep these two in sync.
+    ;; rhbinder.h) and keep these two in sync.
     map 0
             field OFFSETOF__PInvokeTransitionFrame__m_PreservedRegs
             field 10 * 8 ; x19..x28
@@ -41,7 +41,7 @@ PROBE_FRAME_SIZE    field 0
     ;;
     ;; Note that we currently employ a significant simplification of frame setup: we always allocate a
     ;; maximally-sized PInvokeTransitionFrame and save all of the registers. Depending on the caller this can
-    ;; lead to upto 20 additional register saves (x0-x18, lr) or 160 bytes of stack space. I have done no
+    ;; lead to up to 20 additional register saves (x0-x18, lr) or 160 bytes of stack space. I have done no
     ;; analysis to see whether any of the worst cases occur on performance sensitive paths and whether the
     ;; additional saves will show any measurable degradation.
 
@@ -82,7 +82,7 @@ PROBE_FRAME_SIZE    field 0
 
         ; Save the floating return registers
         PROLOG_NOP stp         d0, d1,   [sp, #0x120]
-        PROLOG_NOP stp         d2, d3,   [sp, #0x130]        
+        PROLOG_NOP stp         d2, d3,   [sp, #0x130]
 
     MEND
 
@@ -106,9 +106,9 @@ PROBE_FRAME_SIZE    field 0
 
         ; Restore the floating return registers
         EPILOG_NOP ldp          d0, d1,   [sp, #0x120]
-        EPILOG_NOP ldp          d2, d3,   [sp, #0x130]        
+        EPILOG_NOP ldp          d2, d3,   [sp, #0x130]
 
-        ;; Resttore callee saved registers
+        ;; Restore callee saved registers
         EPILOG_RESTORE_REG_PAIR x19, x20, #0x20
         EPILOG_RESTORE_REG_PAIR x21, x22, #0x30
         EPILOG_RESTORE_REG_PAIR x23, x24, #0x40
@@ -135,12 +135,13 @@ BitmaskStr SETS "$savedRegsMask"
 
         str         $threadReg, [sp, #OFFSETOF__PInvokeTransitionFrame__m_pThread]            ; Thread *
         IF          BitmaskStr:LEFT:1 == "#"
-        ;; The savedRegsMask is a constant, remove the leading "#" since the MOVL64 doesn't expect it
-BitmaskStr SETS BitmaskStr:RIGHT:(:LEN:BitmaskStr - 1)
-        MOVL64      $trashReg, $BitmaskStr, $gcFlags
+            ;; The savedRegsMask is a constant, remove the leading "#" since the MOVL64 doesn't expect it
+BitmaskStr  SETS BitmaskStr:RIGHT:(:LEN:BitmaskStr - 1)
+            MOVL64      $trashReg, $BitmaskStr, $gcFlags
         ELSE
-        ;; The savedRegsMask is a register
-        mov         $trashReg, $savedRegsMask
+            ASSERT "$gcFlags" == ""
+            ;; The savedRegsMask is a register
+            mov         $trashReg, $savedRegsMask
         ENDIF
         str         $trashReg, [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
         add         $trashReg, sp, #$frameSize
@@ -178,7 +179,7 @@ __PPF_ThreadReg SETS "x2"
 
         ; Perform the rest of the PInvokeTransitionFrame initialization.
         INIT_PROBE_FRAME $__PPF_ThreadReg, $trashReg, $savedRegsMask, $gcFlags, PROBE_FRAME_SIZE
-        add         $trashReg, sp, xzr
+        mov         $trashReg, sp
         str         $trashReg, [$__PPF_ThreadReg, #OFFSETOF__Thread__m_pHackPInvokeTunnel]
     MEND
 
@@ -255,8 +256,11 @@ EXTRA_SAVE_SIZE equ (28*8)
     MACRO
         ClearHijackState
 
-        str         xzr, [x2, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
-        str         xzr, [x2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+        ASSERT OFFSETOF__Thread__m_pvHijackedReturnAddress == (OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation + 8)
+        ;; Clear m_ppvHijackedReturnAddressLocation and m_pvHijackedReturnAddress
+        stp         xzr, xzr, [x2, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
+        ;; Clear m_uHijackedReturnValueFlags
+        str         xzr, [x2, #OFFSETOF__Thread__m_uHijackedReturnValueFlags]
     MEND
 
 ;;
@@ -269,6 +273,7 @@ EXTRA_SAVE_SIZE equ (28*8)
 ;; Register state on exit:
 ;;  x2: thread pointer
 ;;  x3: trashed
+;;  x12: transition frame flags for the return registers x0 and x1
 ;;
     MACRO
         FixupHijackedCallstack
@@ -279,7 +284,9 @@ EXTRA_SAVE_SIZE equ (28*8)
         ;;
         ;; Fix the stack by restoring the original return address
         ;;
-        ldr         lr, [x2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+        ASSERT OFFSETOF__Thread__m_uHijackedReturnValueFlags == (OFFSETOF__Thread__m_pvHijackedReturnAddress + 8)
+        ;; Load m_pvHijackedReturnAddress and m_uHijackedReturnValueFlags
+        ldp         lr, x12, [x2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
 
         ClearHijackState
     MEND
@@ -330,39 +337,15 @@ EXTRA_SAVE_SIZE equ (28*8)
 ;;
     EXTERN RhpPInvokeExceptionGuard
 
-
-    NESTED_ENTRY RhpGcProbeHijackScalarWrapper, .text, RhpPInvokeExceptionGuard
-        brk 0xf000 ;; TODO: remove after debugging/testing stub
+    NESTED_ENTRY RhpGcProbeHijackWrapper, .text, RhpPInvokeExceptionGuard
         HijackTargetFakeProlog
 
-    LABELED_RETURN_ADDRESS RhpGcProbeHijackScalar
+    LABELED_RETURN_ADDRESS RhpGcProbeHijack
 
         FixupHijackedCallstack
-        MOVL64      x12, DEFAULT_FRAME_SAVE_FLAGS, 0
+        orr         x12, x12, #DEFAULT_FRAME_SAVE_FLAGS
         b           RhpGcProbe
-    NESTED_END RhpGcProbeHijackScalarWrapper
-
-    NESTED_ENTRY RhpGcProbeHijackObjectWrapper, .text, RhpPInvokeExceptionGuard
-        brk 0xf000 ;; TODO: remove after debugging/testing stub
-        HijackTargetFakeProlog
-
-    LABELED_RETURN_ADDRESS RhpGcProbeHijackObject
-
-        FixupHijackedCallstack
-        MOVL64      x12, (DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0), PTFF_X0_IS_GCREF_HI
-        b           RhpGcProbe
-    NESTED_END RhpGcProbeHijackObjectWrapper
-
-    NESTED_ENTRY RhpGcProbeHijackByrefWrapper, .text, RhpPInvokeExceptionGuard
-        brk 0xf000 ;; TODO: remove after debugging/testing stub
-        HijackTargetFakeProlog
-
-    LABELED_RETURN_ADDRESS RhpGcProbeHijackByref
-
-        FixupHijackedCallstack
-        MOVL64      x12, (DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0) , PTFF_X0_IS_BYREF_HI
-        b           RhpGcProbe
-    NESTED_END RhpGcProbeHijackByrefWrapper
+    NESTED_END RhpGcProbeHijackWrapper
 
 #ifdef FEATURE_GC_STRESS
 ;;
@@ -370,25 +353,11 @@ EXTRA_SAVE_SIZE equ (28*8)
 ;; GC Stress Hijack targets
 ;;
 ;;
-    LEAF_ENTRY RhpGcStressHijackScalar
+    LEAF_ENTRY RhpGcStressHijack
         FixupHijackedCallstack
-        MOVL64      x12, DEFAULT_FRAME_SAVE_FLAGS, 0
+        orr         x12, x12, #DEFAULT_FRAME_SAVE_FLAGS
         b           RhpGcStressProbe
-    LEAF_END RhpGcStressHijackScalar
-
-    LEAF_ENTRY RhpGcStressHijackObject
-        FixupHijackedCallstack
-        MOVL64      x12, (DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0), PTFF_X0_IS_GCREF_HI
-        b           RhpGcStressProbe
-    LEAF_END RhpGcStressHijackObject
-
-    LEAF_ENTRY RhpGcStressHijackByref
-        FixupHijackedCallstack
-        MOVL64      x12, (DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0), PTFF_X0_IS_BYREF_HI
-        b           RhpGcStressProbe
-    LEAF_END RhpGcStressHijackByref
-
-
+    LEAF_END RhpGcStressHijack
 ;;
 ;; Worker for our GC stress probes.  Do not call directly!!  
 ;; Instead, go through RhpGcStressHijack{Scalar|Object|Byref}. 
@@ -595,7 +564,7 @@ EXTRA_SAVE_SIZE equ (28*8)
 
 #endif ;; FEATURE_GC_STRESS
 
-
+#if 0 ;; used by the binder only
 ;;
 ;; The following functions are _jumped_ to when we need to transfer control from one method to another for EH 
 ;; dispatch. These are needed to properly coordinate with the GC hijacking logic. We are essentially replacing
@@ -605,10 +574,10 @@ EXTRA_SAVE_SIZE equ (28*8)
 ;; after a real return from the throwing method. Then, if we are not hijacked we can simply jump to the 
 ;; handler in the caller.
 ;; 
-;; If we are hijacked, then we jump to a routine that will unhijack appropriatley and wait for the GC to 
+;; If we are hijacked, then we jump to a routine that will unhijack appropriately and wait for the GC to
 ;; complete. There are also variants for GC stress.
 ;;
-;; Note that at this point we are eiher hijacked or we are not, and this will not change until we return to 
+;; Note that at this point we are either hijacked or we are not, and this will not change until we return to
 ;; managed code. It is an invariant of the system that a thread will only attempt to hijack or unhijack 
 ;; another thread while the target thread is suspended in managed code, and this is _not_ managed code.
 ;;
@@ -634,13 +603,13 @@ EXTRA_SAVE_SIZE equ (28*8)
     MEND
 ;; We need an instance of the helper for each possible hijack function. The binder has enough
 ;; information to determine which one we need to use for any function.
-    RTU_EH_JUMP_HELPER RhpEHJumpScalar,         RhpGcProbeHijackScalar, {false}, 0
-    RTU_EH_JUMP_HELPER RhpEHJumpObject,         RhpGcProbeHijackObject, {false}, 0
-    RTU_EH_JUMP_HELPER RhpEHJumpByref,          RhpGcProbeHijackByref,  {false}, 0
+    RTU_EH_JUMP_HELPER RhpEHJumpScalar,         RhpGcProbeHijack, {false}, 0
+    RTU_EH_JUMP_HELPER RhpEHJumpObject,         RhpGcProbeHijack, {false}, 0
+    RTU_EH_JUMP_HELPER RhpEHJumpByref,          RhpGcProbeHijack,  {false}, 0
 #ifdef FEATURE_GC_STRESS
-    RTU_EH_JUMP_HELPER RhpEHJumpScalarGCStress, RhpGcProbeHijackScalar, {true},  RhpGcStressHijackScalar
-    RTU_EH_JUMP_HELPER RhpEHJumpObjectGCStress, RhpGcProbeHijackObject, {true},  RhpGcStressHijackObject
-    RTU_EH_JUMP_HELPER RhpEHJumpByrefGCStress,  RhpGcProbeHijackByref,  {true},  RhpGcStressHijackByref
+    RTU_EH_JUMP_HELPER RhpEHJumpScalarGCStress, RhpGcProbeHijack, {true},  RhpGcStressHijack
+    RTU_EH_JUMP_HELPER RhpEHJumpObjectGCStress, RhpGcProbeHijack, {true},  RhpGcStressHijack
+    RTU_EH_JUMP_HELPER RhpEHJumpByrefGCStress,  RhpGcProbeHijack,  {true},  RhpGcStressHijack
 #endif
 
 ;;
@@ -757,7 +726,10 @@ EXTRA_SAVE_SIZE equ (28*8)
 
         EHJumpProbeEpilog
     NESTED_END RhpGCStressProbeForEHJump
+#endif ;; FEATURE_GC_STRESS
+#endif ;; 0
 
+#ifdef FEATURE_GC_STRESS
 ;;
 ;; INVARIANT: Don't trash the argument registers, the binder codegen depends on this.
 ;;
