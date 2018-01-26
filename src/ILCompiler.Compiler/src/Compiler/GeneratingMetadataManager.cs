@@ -90,26 +90,7 @@ namespace ILCompiler
                 if (!_stackTraceEmissionPolicy.ShouldIncludeMethod(method))
                     continue;
 
-                MetadataRecord record = transform.HandleQualifiedMethod(typicalMethod);
-
-                // As a twist, instantiated generic methods appear as if instantiated over their formals.
-                if (typicalMethod.HasInstantiation)
-                {
-                    var methodInst = new MethodInstantiation
-                    {
-                        Method = record,
-                    };
-                    methodInst.GenericTypeArguments.Capacity = typicalMethod.Instantiation.Length;
-                    foreach (EcmaGenericParameter typeArgument in typicalMethod.Instantiation)
-                    {
-                        var genericParam = new TypeReference
-                        {
-                            TypeName = (ConstantStringValue)typeArgument.Name,
-                        };
-                        methodInst.GenericTypeArguments.Add(genericParam);
-                    }
-                    record = methodInst;
-                }
+                MetadataRecord record = CreateStackTraceRecord(transform, method);
 
                 stackTraceRecords.Add(new KeyValuePair<MethodDesc, MetadataRecord>(
                     method,

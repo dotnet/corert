@@ -15,6 +15,14 @@ using ReadyToRunSectionType = Internal.Runtime.ReadyToRunSectionType;
 using ReflectionMapBlob = Internal.Runtime.ReflectionMapBlob;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 
+using MetadataRecord = Internal.Metadata.NativeFormat.Writer.MetadataRecord;
+using MemberReference = Internal.Metadata.NativeFormat.Writer.MemberReference;
+using TypeReference = Internal.Metadata.NativeFormat.Writer.TypeReference;
+using TypeSpecification = Internal.Metadata.NativeFormat.Writer.TypeSpecification;
+using ConstantStringValue = Internal.Metadata.NativeFormat.Writer.ConstantStringValue;
+using TypeInstantiationSignature = Internal.Metadata.NativeFormat.Writer.TypeInstantiationSignature;
+using MethodInstantiation = Internal.Metadata.NativeFormat.Writer.MethodInstantiation;
+
 namespace ILCompiler
 {
     /// <summary>
@@ -561,7 +569,59 @@ namespace ILCompiler
                                                 out List<MetadataMapping<FieldDesc>> fieldMappings,
                                                 out List<MetadataMapping<MethodDesc>> stackTraceMapping);
 
+        protected MetadataRecord CreateStackTraceRecord(Metadata.MetadataTransform transform, MethodDesc method)
+        {
+            // In the metadata, we only represent the generic definition
+            MethodDesc methodToGenerateMetadataFor = method.GetTypicalMethodDefinition();
+            MetadataRecord record = transform.HandleQualifiedMethod(methodToGenerateMetadataFor);
 
+            // If we're generating a MemberReference to a method on a generic type, the owning type
+            // should appear as if instantiated over its formals
+            TypeDesc owningTypeToGenerateMetadataFor = methodToGenerateMetadataFor.OwningType;
+            if (owningTypeToGenerateMetadataFor.HasInstantiation
+                && record is MemberReference memberRefRecord
+                && memberRefRecord.Parent is TypeReference)
+            {
+                List<MetadataRecord> genericArgs = new List<MetadataRecord>();
+                foreach (Internal.TypeSystem.Ecma.EcmaGenericParameter genericParam in owningTypeToGenerateMetadataFor.Instantiation)
+                {
+                    genericArgs.Add(new TypeReference
+                    {
+                        TypeName = (ConstantStringValue)genericParam.Name,
+                    });
+                }
+
+                memberRefRecord.Parent = new TypeSpecification
+                {
+                    Signature = new TypeInstantiationSignature
+                    {
+                        GenericType = memberRefRecord.Parent,
+                        GenericTypeArguments = genericArgs,
+                    }
+                };
+            }
+
+            // As a twist, instantiated generic methods appear as if instantiated over their formals.
+            if (methodToGenerateMetadataFor.HasInstantiation)
+            {
+                var methodInst = new MethodInstantiation
+                {
+                    Method = record,
+                };
+                methodInst.GenericTypeArguments.Capacity = methodToGenerateMetadataFor.Instantiation.Length;
+                foreach (Internal.TypeSystem.Ecma.EcmaGenericParameter typeArgument in methodToGenerateMetadataFor.Instantiation)
+                {
+                    var genericParam = new TypeReference
+                    {
+                        TypeName = (ConstantStringValue)typeArgument.Name,
+                    };
+                    methodInst.GenericTypeArguments.Add(genericParam);
+                }
+                record = methodInst;
+            }
+
+            return record;
+        }
 
         /// <summary>
         /// Returns a set of modules that will get some metadata emitted into the output module
