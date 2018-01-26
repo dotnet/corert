@@ -1075,7 +1075,7 @@ namespace Internal.Runtime.Augments
 
         public static bool FileExists(string path)
         {
-            return InternalFile.Exists(path);
+            return Internal.IO.File.Exists(path);
         }
 
         public static string GetLastResortString(RuntimeTypeHandle typeHandle)
