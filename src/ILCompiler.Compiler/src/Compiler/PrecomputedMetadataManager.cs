@@ -897,28 +897,7 @@ namespace ILCompiler
                 if (!_stackTraceEmissionPolicy.ShouldIncludeMethod(method))
                     continue;
 
-                // In the metadata, we only represent the generic definition
-                MethodDesc methodToGenerateMetadataFor = method.GetTypicalMethodDefinition();
-                MetadataRecord record = transform.HandleQualifiedMethod(methodToGenerateMetadataFor);
-
-                // As a twist, instantiated generic methods appear as if instantiated over their formals.
-                if (methodToGenerateMetadataFor.HasInstantiation)
-                {
-                    var methodInst = new MethodInstantiation
-                    {
-                        Method = record,
-                    };
-                    methodInst.GenericTypeArguments.Capacity = methodToGenerateMetadataFor.Instantiation.Length;
-                    foreach (EcmaGenericParameter typeArgument in methodToGenerateMetadataFor.Instantiation)
-                    {
-                        var genericParam = new TypeReference
-                        {
-                            TypeName = (ConstantStringValue)typeArgument.Name,
-                        };
-                        methodInst.GenericTypeArguments.Add(genericParam);
-                    }
-                    record = methodInst;
-                }
+                MetadataRecord record = CreateStackTraceRecord(transform, method);
 
                 stackTraceRecords.Add(new KeyValuePair<MethodDesc, MetadataRecord>(
                     method,
