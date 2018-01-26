@@ -99,7 +99,7 @@ struct EHClause
 
 // Constants used with RhpGetClasslibFunction, to indicate which classlib function
 // we are interested in. 
-// Note: make sure you change the def in System\Runtime\exceptionhandling.cs if you change this!
+// Note: make sure you change the def in System\Runtime\InternalCalls.cs if you change this!
 enum class ClasslibFunctionId
 {
     GetRuntimeException = 0,

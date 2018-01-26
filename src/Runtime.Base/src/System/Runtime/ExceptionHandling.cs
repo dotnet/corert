@@ -144,20 +144,6 @@ namespace System.Runtime
             InternalCalls.RhpFallbackFailFast();
         }
 
-        // Constants used with RhpGetClasslibFunction, to indicate which classlib function
-        // we are interested in. 
-        // Note: make sure you change the def in EHHelpers.cpp if you change this!
-        internal enum ClassLibFunctionId
-        {
-            GetRuntimeException = 0,
-            FailFast = 1,
-            // UnhandledExceptionHandler = 2, // unused
-            AppendExceptionStackFrame = 3,
-            CheckStaticClassConstruction = 4,
-            GetSystemArrayEEType = 5,
-            OnFirstChance = 6,
-        }
-
         // Given an address pointing somewhere into a managed module, get the classlib-defined fail-fast 
         // function and invoke it.  Any failure to find and invoke the function, or if it returns, results in 
         // MRT-defined fail-fast behavior.
