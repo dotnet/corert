@@ -193,41 +193,42 @@ done
 
 export $__BuildArch
 
+# Use uname to determine what the OS is.
+export OSName=$(uname -s)
+case $OSName in
+    Darwin)
+        export __BuildOS=OSX
+        export __NugetRuntimeId=osx.10.10-x64
+        ulimit -n 2048
+        ;;
+
+    FreeBSD)
+        export __BuildOS=FreeBSD
+        # TODO: Add proper FreeBSD target
+        export __NugetRuntimeId=ubuntu.14.04-x64
+        ;;
+
+    Linux)
+        export __BuildOS=Linux
+        export __NugetRuntimeId=$(get_current_linux_rid)-$__HostArch
+        ;;
+
+    NetBSD)
+        export __BuildOS=NetBSD
+        # TODO: Add proper NetBSD target
+        export __NugetRuntimeId=ubuntu.14.04-x64
+        ;;
+
+    *)
+        echo "Unsupported OS $OSName detected, configuring as if for Linux"
+        export __BuildOS=Linux
+        export __NugetRuntimeId=ubuntu.14.04-x64
+        ;;
+esac
+
+# Overwrite __BuildOS with WebAssembly if wasm is target build arch, but keep the __NugetRuntimeId to match the Host OS
 if [ $__BuildArch == "wasm" ]; then
     export __BuildOS=WebAssembly
-else
-    # Use uname to determine what the OS is.
-    export OSName=$(uname -s)
-    case $OSName in
-        Darwin)
-            export __BuildOS=OSX
-            export __NugetRuntimeId=osx.10.10-x64
-            ulimit -n 2048
-            ;;
-
-        FreeBSD)
-            export __BuildOS=FreeBSD
-            # TODO: Add proper FreeBSD target
-            export __NugetRuntimeId=ubuntu.14.04-x64
-            ;;
-
-        Linux)
-            export __BuildOS=Linux
-            export __NugetRuntimeId=$(get_current_linux_rid)-$__HostArch
-            ;;
-
-        NetBSD)
-            export __BuildOS=NetBSD
-            # TODO: Add proper NetBSD target
-            export __NugetRuntimeId=ubuntu.14.04-x64
-            ;;
-
-        *)
-            echo "Unsupported OS $OSName detected, configuring as if for Linux"
-            export __BuildOS=Linux
-            export __NugetRuntimeId=ubuntu.14.04-x64
-            ;;
-    esac
 fi
 
 # If neither managed nor native are passed as arguments, default to building both

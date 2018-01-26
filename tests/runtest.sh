@@ -176,6 +176,9 @@ while [ "$1" != "" ]; do
             usage
             exit 1
             ;;
+        wasm)
+            CoreRT_BuildArch=wasm
+            ;;
         x86)
             CoreRT_BuildArch=x86
             ;;

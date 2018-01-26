@@ -14,6 +14,9 @@ for i in "$@"
 			usage
 			exit 1
 			;;
+		wasm)
+			CoreRT_BuildArch=wasm
+			;;
 		x86)
 			CoreRT_BuildArch=x86
 			;;
@@ -47,7 +50,7 @@ for i in "$@"
 done
 
 if [ -z ${CoreRT_BuildArch} ]; then
-    echo "Set CoreRT_BuildArch to x86/x64/arm/arm64"
+    echo "Set CoreRT_BuildArch to x86/x64/arm/arm64/wasm"
     exit -1
 fi
 
@@ -56,30 +59,35 @@ if [ -z ${CoreRT_BuildType} ]; then
     exit -1
 fi
 
-# Use uname to determine what the OS is.
-OSName=$(uname -s)
-case $OSName in
-    Darwin)
-        CoreRT_BuildOS=OSX
-        ;;
 
-    FreeBSD)
-        CoreRT_BuildOS=FreeBSD
-        ;;
+if [ $__BuildArch == "wasm" ]; then
+    export CoreRT_BuildOS=WebAssembly
+else
+    # Use uname to determine what the OS is.
+    export OSName=$(uname -s)
+    case $OSName in
+        Darwin)
+            export CoreRT_BuildOS=OSX
+            ;;
 
-    Linux)
-        CoreRT_BuildOS=Linux
-        ;;
+        FreeBSD)
+            export CoreRT_BuildOS=FreeBSD
+            ;;
 
-    NetBSD)
-        CoreRT_BuildOS=NetBSD
-        ;;
+        Linux)
+            export CoreRT_BuildOS=Linux
+            ;;
 
-    *)
-        echo "Unsupported OS $OSName detected, configuring as if for Linux"
-        CoreRT_BuildOS=Linux
-        ;;
-esac
+        NetBSD)
+            export CoreRT_BuildOS=NetBSD
+            ;;
+
+        *)
+            echo "Unsupported OS $OSName detected, configuring as if for Linux"
+            export CoreRT_BuildOS=Linux
+            ;;
+    esac
+fi
 
 export CoreRT_BuildArch
 export CoreRT_BuildType
