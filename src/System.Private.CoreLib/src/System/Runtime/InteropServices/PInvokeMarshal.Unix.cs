@@ -44,6 +44,16 @@ namespace System.Runtime.InteropServices
             return System.Text.Encoding.UTF8.GetString((byte*)ptr, len);
         }
 
+        public static unsafe String PtrToStringAnsi(IntPtr ptr, int len)
+        {
+            if (ptr == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(ptr));
+            if (len < 0)
+                throw new ArgumentException(nameof(len));
+
+            return System.Text.Encoding.UTF8.GetString((byte*)ptr, len);
+        }
+
         public static unsafe IntPtr MemAlloc(IntPtr cb)
         {
             return Interop.MemAlloc((UIntPtr)(void*)cb);
