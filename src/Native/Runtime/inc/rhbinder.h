@@ -649,14 +649,38 @@ enum PInvokeTransitionFrameFlags : UInt64
                                                 // a return address pointing into the hijacked method and that method's
                                                 // lr register, which may hold a gc pointer
 
-    // Other flags
-    PTFF_X0_IS_GCREF    = 0x0000000100000000,   // used by hijack handler to report return value of hijacked method
-    PTFF_X0_IS_BYREF    = 0x0000000200000000,   // used by hijack handler to report return value of hijacked method
-    PTFF_X1_IS_GCREF    = 0x0000000400000000,   // used by hijack handler to report return value of hijacked method
-    PTFF_X1_IS_BYREF    = 0x0000000800000000,   // used by hijack handler to report return value of hijacked method
+    // used by hijack handler to report return value of hijacked method
+    PTFF_X0_IS_GCREF    = 0x0000000100000000,
+    PTFF_X0_IS_BYREF    = 0x0000000200000000,
+    PTFF_X1_IS_GCREF    = 0x0000000400000000,
+    PTFF_X1_IS_BYREF    = 0x0000000800000000,
 
     PTFF_THREAD_ABORT   = 0x0000001000000000,   // indicates that ThreadAbortException should be thrown when returning from the transition
 };
+
+// TODO: Consider moving the PInvokeTransitionFrameFlags definition to a separate file to simplify header dependencies
+#ifdef ICODEMANAGER_INCLUDED
+// Verify that we can use bitwise shifts to convert from GCRefKind to PInvokeTransitionFrameFlags and back
+C_ASSERT(PTFF_X0_IS_GCREF == ((UInt64)GCRK_Object << 32));
+C_ASSERT(PTFF_X0_IS_BYREF == ((UInt64)GCRK_Byref << 32));
+C_ASSERT(PTFF_X1_IS_GCREF == ((UInt64)GCRK_Scalar_Obj << 32));
+C_ASSERT(PTFF_X1_IS_BYREF == ((UInt64)GCRK_Scalar_Byref << 32));
+
+inline UInt64 ReturnKindToTransitionFrameFlags(GCRefKind returnKind)
+{
+    if (returnKind == GCRK_Scalar)
+        return 0;
+
+    return PTFF_SAVE_X0 | PTFF_SAVE_X1 | ((UInt64)returnKind << 32);
+}
+
+inline GCRefKind TransitionFrameFlagsToReturnKind(UInt64 transFrameFlags)
+{
+    GCRefKind returnKind = (GCRefKind)((transFrameFlags & (PTFF_X0_IS_GCREF | PTFF_X0_IS_BYREF | PTFF_X1_IS_GCREF | PTFF_X1_IS_BYREF)) >> 32);
+    ASSERT((returnKind == GCRK_Scalar) || ((transFrameFlags & PTFF_SAVE_X0) && (transFrameFlags & PTFF_SAVE_X1)));
+    return returnKind;
+}
+#endif // ICODEMANAGER_INCLUDED
 #else // _TARGET_ARM_
 enum PInvokeTransitionFrameFlags
 {

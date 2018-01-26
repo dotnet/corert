@@ -1056,8 +1056,7 @@ UInt32 CountBits(size_t bfBitfield)
 // 'answers' between the current implementation and the CLR implementation.
 //
 //#define TRACE_CACHE_TOPOLOGY
-#if defined(_DEBUG) && !defined(_ARM64_)
-// ARM64TODO: restore
+#ifdef _DEBUG
 void DumpCacheTopology(_In_reads_(cRecords) SYSTEM_LOGICAL_PROCESSOR_INFORMATION * pProcInfos, UInt32 cRecords)
 {
     printf("----------------\n");
@@ -1101,6 +1100,7 @@ void DumpCacheTopology(_In_reads_(cRecords) SYSTEM_LOGICAL_PROCESSOR_INFORMATION
     }
     printf("----------------\n");
 }
+
 void DumpCacheTopologyResults(UInt32 maxCpuId, CpuVendor cpuVendor, _In_reads_(cRecords) SYSTEM_LOGICAL_PROCESSOR_INFORMATION * pProcInfos, UInt32 cRecords)
 {
     DumpCacheTopology(pProcInfos, cRecords);
@@ -1109,7 +1109,7 @@ void DumpCacheTopologyResults(UInt32 maxCpuId, CpuVendor cpuVendor, _In_reads_(c
     printf("        g_cbLargestOnDieCache: 0x%08zx 0x%08zx :CLR_LargestOnDieCache(TRUE)\n", g_cbLargestOnDieCache, CLR_GetLargestOnDieCacheSize(TRUE, pProcInfos, cRecords));
     printf("g_cbLargestOnDieCacheAdjusted: 0x%08zx 0x%08zx :CLR_LargestOnDieCache(FALSE)\n", g_cbLargestOnDieCacheAdjusted, CLR_GetLargestOnDieCacheSize(FALSE, pProcInfos, cRecords));
 }
-#endif // defined(_DEBUG) && !defined(_ARM64_)
+#endif // _DEBUG
 
 // Method used to initialize the above values.
 bool PalQueryProcessorTopology()
@@ -1282,21 +1282,18 @@ bool PalQueryProcessorTopology()
         g_cbLargestOnDieCache = cbCache;
         g_cbLargestOnDieCacheAdjusted = cbCacheAdjusted;
 
-#if defined(_DEBUG)
-#if defined(TRACE_CACHE_TOPOLOGY) && !defined(_ARM64_)
-// ARM64TODO: restore
+#ifdef _DEBUG
+#ifdef TRACE_CACHE_TOPOLOGY
         DumpCacheTopologyResults(maxCpuId, cpuVendor, pProcInfos, cRecords);
-#endif // defined(TRACE_CACHE_TOPOLOGY) && !defined(_ARM64_)
+#endif
         if ((CLR_GetLargestOnDieCacheSize(TRUE, pProcInfos, cRecords) != g_cbLargestOnDieCache) ||
             (CLR_GetLargestOnDieCacheSize(FALSE, pProcInfos, cRecords) != g_cbLargestOnDieCacheAdjusted) ||
             (CLR_GetLogicalCpuCount(pProcInfos, cRecords) != g_cLogicalCpus))
         {
-#if !defined(_ARM64_)
             DumpCacheTopologyResults(maxCpuId, cpuVendor, pProcInfos, cRecords);
-#endif
             assert(!"QueryProcessorTopology doesn't match CLR's results.  See stdout for more info.");
         }
-#endif
+#endif // _DEBUG
     }
 
     if (pProcInfos)

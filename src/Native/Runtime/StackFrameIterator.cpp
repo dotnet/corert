@@ -250,15 +250,11 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
 
     if (pFrame->m_Flags & PTFF_SAVE_LR) { m_RegDisplay.pLR = pPreservedRegsCursor++; }
 
-    if (pFrame->m_Flags & PTFF_X0_IS_GCREF)
+    GCRefKind retValueKind = TransitionFrameFlagsToReturnKind(pFrame->m_Flags);
+    if (retValueKind != GCRK_Scalar)
     {
         m_pHijackedReturnValue = (PTR_RtuObjectRef)m_RegDisplay.pX0;
-        m_HijackedReturnValueKind = GCRK_Object;
-    }
-    if (pFrame->m_Flags & PTFF_X0_IS_BYREF)
-    {
-        m_pHijackedReturnValue = (PTR_RtuObjectRef)m_RegDisplay.pX0;
-        m_HijackedReturnValueKind = GCRK_Byref;
+        m_HijackedReturnValueKind = retValueKind;
     }
 
 #else // _TARGET_ARM_
@@ -1728,7 +1724,7 @@ bool StackFrameIterator::GetHijackedReturnValueLocation(PTR_RtuObjectRef * pLoca
     if (GCRK_Unknown == m_HijackedReturnValueKind)
         return false;
 
-    ASSERT((GCRK_Object == m_HijackedReturnValueKind) || (GCRK_Byref == m_HijackedReturnValueKind));
+    ASSERT((GCRK_Scalar < m_HijackedReturnValueKind) && (m_HijackedReturnValueKind <= GCRK_LastValid));
 
     *pLocation = m_pHijackedReturnValue;
     *pKind = m_HijackedReturnValueKind;
