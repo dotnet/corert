@@ -128,7 +128,7 @@ enum RegMask
     RBM_X5 = 0x00000020,
     RBM_X6 = 0x00000040,
     RBM_X7 = 0x00000080,
-    RBM_X8 = 0x00000100, // ARM64TODO: ARM64 ABI: indirect result register
+    RBM_X8 = 0x00000100, // ARM64 ABI: indirect result register
     RBM_X9 = 0x00000200,
     RBM_X10 = 0x00000400,
     RBM_X11 = 0x00000800,
@@ -535,15 +535,19 @@ private:
     {
         struct
         {
+#if defined(_TARGET_ARM64_)
+            UInt8 FPLRAreOnTop      : 1;    // [0]      1: FP and LR are saved on top of locals, not at the bottom (see MdmSaveFPAndLRAtTopOfLocalsArea)
+            UInt8 reg1ReturnKind    : 2;    // [1:2]    One of MRK_Returns{Scalar|Object|Byref} constants describing value returned in x1 if any
+            UInt8 hasGSCookie       : 1;    // [3]      1: frame uses GS cookie
+            UInt8 hasCommonVars     : 1;    // [4]      1: method has a list of "common vars"
+                                            //          as an optimization for methods with many call sites and variables
+            UInt8                   : 3;    // [5:7]    unused bits
+#else
             UInt8 logStackAlignment : 4;    // [0:3]    binary logarithm of frame alignment (3..15) or 0
             UInt8 hasGSCookie       : 1;    // [4]      1: frame uses GS cookie
             UInt8 hasCommonVars     : 1;    // [5]      1: method has a list of "common vars"
                                             //          as an optimization for methods with many call sites and variables
-#if defined(_TARGET_ARM64_)
-            UInt8 FPLRAreOnTop      : 1;    // [6]      1: FP and LR are saved on top of locals, not at the bottom (see MdmSaveFPAndLRAtTopOfLocalsArea)
-            UInt8 extraDataUnused   : 1;    // [7]      unused bits
-#else
-            UInt8 extraDataUnused   : 2;    // [6:7]    unused bits
+            UInt8                   : 2;    // [6:7]    unused bits
 #endif
 #pragma warning(suppress:4201) // nameless struct
         };
@@ -608,7 +612,28 @@ public:
         MRK_ReturnsObject   = 1,
         MRK_ReturnsByref    = 2,
         MRK_ReturnsToNative = 3,
+
+#if defined(_TARGET_ARM64_)
+        // Cases for structs returned in two registers.
+        // Naming scheme: MRK_reg0Kind_reg1Kind.
+        // Encoding scheme: <two bits for reg1Kind> <two bits for reg0Kind>.
+        // We do not distinguish returning a scalar in reg1 and no return value in reg1,
+        // which means we can use MRK_ReturnsObject for MRK_Obj_Scalar, etc.
+        MRK_Scalar_Obj      = (MRK_ReturnsObject << 2) | MRK_ReturnsScalar,
+        MRK_Obj_Obj         = (MRK_ReturnsObject << 2) | MRK_ReturnsObject,
+        MRK_Byref_Obj       = (MRK_ReturnsObject << 2) | MRK_ReturnsByref,
+        MRK_Scalar_Byref    = (MRK_ReturnsByref  << 2) | MRK_ReturnsScalar,
+        MRK_Obj_Byref       = (MRK_ReturnsByref  << 2) | MRK_ReturnsObject,
+        MRK_Byref_Byref     = (MRK_ReturnsByref  << 2) | MRK_ReturnsByref,
+
+        MRK_LastValid       = MRK_Byref_Byref,
+        // Illegal or uninitialized value. Never written to the image.
+        MRK_Unknown         = 0xff,
+#else
+        MRK_LastValid       = MRK_ReturnsToNative,
+        // Illegal or uninitialized value. Never written to the image.
         MRK_Unknown         = 4,
+#endif
     };
 
     enum EncodingConstants
@@ -672,7 +697,15 @@ public:
         else
         {
             ASSERT(sizeInBytes != 0);
-            PokeFixedEpilogSize(sizeInBytes);
+#if defined (_TARGET_ARM64_)
+            // For arm64 we encode multiples of 4, rather than raw bytes, since instructions are all same size.
+            ASSERT((sizeInBytes & 3) == 0);
+            fixedEpilogSize = sizeInBytes >> 2;
+            ASSERT(fixedEpilogSize == sizeInBytes >> 2);
+#else
+            fixedEpilogSize = sizeInBytes;
+            ASSERT(fixedEpilogSize == sizeInBytes);
+#endif
         }
     }
 
@@ -686,9 +719,10 @@ public:
         epilogCountSmall = count < EC_MaxEpilogCountSmall ? count : EC_MaxEpilogCountSmall;
     }
 
+#if !defined(_TARGET_ARM64_)
     void SetReturnKind(MethodReturnKind kind)
     {
-        ASSERT(kind < MRK_Unknown); // not enough bits to encode 'unknown'
+        ASSERT(kind <= MRK_ReturnsToNative); // not enough bits to encode 'unknown'
         returnKind = kind;
     }
 
@@ -705,6 +739,7 @@ public:
         ASSERT(logStackAlignment == logByteAlignment);
         paramPointerReg = RN_NONE;
     }
+#endif // !defined(_TARGET_ARM64_)
 
 #if defined(_TARGET_ARM64_)
     void SetFPLROnTop(void)
@@ -931,7 +966,11 @@ public:
     UInt32 GetFixedEpilogSize()
     {
         ASSERT(!HasVaryingEpilogSizes());
-        return PeekFixedEpilogSize();
+#if defined (_TARGET_ARM64_)
+        return fixedEpilogSize << 2;
+#else
+        return fixedEpilogSize;
+#endif
     }
 
     UInt32 GetEpilogCount()
@@ -946,7 +985,11 @@ public:
 
     MethodReturnKind GetReturnKind()
     {
+#if defined(_TARGET_ARM64_)
+        return (MethodReturnKind)((reg1ReturnKind << 2) | returnKind);
+#else
         return (MethodReturnKind)returnKind;
+#endif
     }
 
     bool ReturnsToNative()
@@ -954,7 +997,7 @@ public:
         return (GetReturnKind() == MRK_ReturnsToNative);
     }
 
-    bool HasFramePointer()
+    bool HasFramePointer() const
     {
         return !!ebpFrame;
     }
@@ -989,12 +1032,21 @@ public:
 
     bool HasDynamicAlignment()
     {
+#if defined(_TARGET_ARM64_)
+        return false;
+#else
         return !!logStackAlignment;
+#endif
     }
 
     UInt32 GetDynamicAlignment()
     {
+#if defined(_TARGET_ARM64_)
+        ASSERT(!"Not supported");
+        return 1;
+#else
         return 1 << logStackAlignment;
+#endif
     }
 
     bool HasGSCookie()
@@ -1003,7 +1055,7 @@ public:
     }
 
 #if defined(_TARGET_ARM64_)
-    bool AreFPLROnTop()
+    bool AreFPLROnTop() const
     {
         return FPLRAreOnTop;
     }
@@ -1015,7 +1067,7 @@ public:
         return gsCookieOffset * POINTER_SIZE;
     }
 
-    bool HasCommonVars()
+    bool HasCommonVars() const
     {
         return hasCommonVars;
     }
@@ -1028,7 +1080,7 @@ public:
 #ifdef _TARGET_AMD64_
     static const UInt32 SKEW_FOR_OFFSET_FROM_SP = 0x10;
 
-    int GetFramePointerOffset() // returned in bytes
+    int GetFramePointerOffset() const // returned in bytes
     {
         // traditional frames where FP points to the pushed FP have fp offset == 0
         if (x64_framePtrOffset == 0)
@@ -1048,12 +1100,12 @@ public:
         return offsetFromSP - preservedRegsSaveSize - GetFrameSize();
     }
 
-    bool IsFramePointerOffsetFromSP()
+    bool IsFramePointerOffsetFromSP() const
     {
         return x64_framePtrOffset != 0;
     }
 
-    int GetFramePointerOffsetFromSP()
+    int GetFramePointerOffsetFromSP() const
     {
         ASSERT(IsFramePointerOffsetFromSP());
         int offsetFromSP;
@@ -1095,7 +1147,7 @@ public:
     }
 #endif
 
-    int GetFrameSize()
+    int GetFrameSize() const
     {
         return frameSize * POINTER_SIZE;
     }
@@ -1126,7 +1178,7 @@ public:
         return (CalleeSavedRegMask) calleeSavedRegMask;
     }
 
-    bool IsRegSaved(CalleeSavedRegMask reg)
+    bool IsRegSaved(CalleeSavedRegMask reg) const
     {
         return (0 != (calleeSavedRegMask & reg));
     }
@@ -1449,7 +1501,7 @@ public:
             //             the per-method epilog table, so at least we're consistent with what is encoded.
             UInt8  mainEpilogAtEnd      = epilogAtEnd;
             UInt16 mainEpilogCount      = epilogCount;
-            UInt16 mainFixedEpilogSize  = (UInt16) PeekFixedEpilogSize();
+            UInt16 mainFixedEpilogSize  = fixedEpilogSize;  // Either in bytes or in instructions
             UInt8  mainHasCommonVars    = hasCommonVars;
             // -------
 
@@ -1589,15 +1641,24 @@ public:
 
 #ifdef RHDUMP
     char const * GetBoolStr(bool val) { return val ? " true" : "false"; }
-    char const * GetRetKindStr(int k)
+
+    char const * GetRetKindStr(MethodReturnKind kind)
     {
-        switch (k)
+        switch (kind)
         {
         case MRK_ReturnsScalar:     return "scalar";
         case MRK_ReturnsObject:     return "object";
-        case MRK_ReturnsByref:      return " byref";
+        case MRK_ReturnsByref:      return "byref";
         case MRK_ReturnsToNative:   return "native";
-        default:                    return "unknwn";
+#if defined(_TARGET_ARM64_)
+        case MRK_Scalar_Obj:        return "{scalar, object}";
+        case MRK_Scalar_Byref:      return "{scalar, byref}";
+        case MRK_Obj_Obj:           return "{object, object}";
+        case MRK_Obj_Byref:         return "{object, byref}";
+        case MRK_Byref_Obj:         return "{byref, object}";
+        case MRK_Byref_Byref:       return "{byref, byref}";
+#endif // defined(_TARGET_ARM64_)
+        default:                    return "unknown";
         }
     }
 
@@ -1739,10 +1800,10 @@ public:
 
     void Dump()
     {
-        printf("  | prologSize:   %02X""  | epilogSize:    %02X""  | epilogCount:    %02X""  | epilogAtEnd:  %s\n", 
-            GetPrologSize(), PeekFixedEpilogSize(), epilogCount, GetBoolStr(epilogAtEnd));
-        printf("  | frameSize:  %04X""  | ebpFrame:   %s""  | hasFunclets: %s""  | returnKind:  %s\n", 
-            GetFrameSize(), GetBoolStr(ebpFrame), GetBoolStr(hasFunclets), GetRetKindStr(returnKind));
+        printf("  | prologSize:   %02X""  | epilogSize:    %02X""  | epilogCount:    %02X""  | epilogAtEnd:  %s\n",
+            GetPrologSize(), HasVaryingEpilogSizes() ? 0 : GetFixedEpilogSize(), epilogCount, GetBoolStr(epilogAtEnd));
+        printf("  | frameSize:  %04X""  | ebpFrame:   %s""  | hasFunclets: %s""  | returnKind:  %s\n",
+            GetFrameSize(), GetBoolStr(ebpFrame), GetBoolStr(hasFunclets), GetRetKindStr(GetReturnKind()));
         printf("  | regMask:    %04X"  "  {", calleeSavedRegMask);
         PrintCalleeSavedRegs(calleeSavedRegMask);
         printf(" }\n");

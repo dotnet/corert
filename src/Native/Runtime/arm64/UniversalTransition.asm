@@ -110,7 +110,7 @@
         stp         x2, x3,  [sp, #(ARGUMENT_REGISTERS_OFFSET + 0x10)]
         stp         x4, x5,  [sp, #(ARGUMENT_REGISTERS_OFFSET + 0x20)]
         stp         x6, x7,  [sp, #(ARGUMENT_REGISTERS_OFFSET + 0x30)]
-        str         x8,      [sp, #(ARGUMENT_REGISTERS_OFFSET + 0x40)]
+        stp         x8, xzr, [sp, #(ARGUMENT_REGISTERS_OFFSET + 0x40)]
 
 #ifdef TRASH_SAVED_ARGUMENT_REGISTERS
         ;; ARM64TODO
