@@ -115,15 +115,18 @@ namespace Internal.IL
             }
             catch
             {
+                LLVMBasicBlockRef trapBlock = LLVM.AppendBasicBlock(_llvmFunction, "Trap");
+                
                 // Change the function body to trap
                 foreach (BasicBlock block in _basicBlocks)
                 {
                     if (block != null && block.Block.Pointer != IntPtr.Zero)
                     {
+                        LLVM.ReplaceAllUsesWith(block.Block, trapBlock);
                         LLVM.DeleteBasicBlock(block.Block);
                     }
                 }
-                LLVMBasicBlockRef trapBlock = LLVM.AppendBasicBlock(_llvmFunction, "Trap");
+
                 LLVM.PositionBuilderAtEnd(_builder, trapBlock);
                 EmitTrapCall();
                 LLVM.BuildRetVoid(_builder);
