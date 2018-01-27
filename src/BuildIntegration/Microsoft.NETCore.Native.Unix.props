@@ -33,11 +33,6 @@ See the LICENSE file in the project root for more information.
   </PropertyGroup>
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
 
-    <PropertyGroup>
-      <LibraryExtension Condition="$(NativeCodeGen) == 'wasm'">.bc</LibraryExtension>
-      <LibraryExtension Condition="$(NativeCodeGen) != 'wasm'">.a</LibraryExtension>
-    </PropertyGroup>
-
     <ItemGroup>
       <CppCompilerAndLinkerArg Include="-I $(IlcPath)/inc" />
       <CppCompilerAndLinkerArg Condition="'$(Configuration)' == 'Debug'" Include="-g -O0" />
