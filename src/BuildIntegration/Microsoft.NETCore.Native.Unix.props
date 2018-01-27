@@ -33,6 +33,11 @@ See the LICENSE file in the project root for more information.
   </PropertyGroup>
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
 
+    <PropertyGroup>
+      <LibraryExtension Condition="$(NativeCodeGen) == 'wasm'">.bc</LibraryExtension>
+      <LibraryExtension Condition="$(NativeCodeGen) != 'wasm'">.a</LibraryExtension>
+    </PropertyGroup>
+
     <ItemGroup>
       <CppCompilerAndLinkerArg Include="-I $(IlcPath)/inc" />
       <CppCompilerAndLinkerArg Condition="'$(Configuration)' == 'Debug'" Include="-g -O0" />
@@ -48,14 +53,15 @@ See the LICENSE file in the project root for more information.
       <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)/sdk/libRuntime.a" />
       <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)/sdk/libbootstrappercpp.a" />
       <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)/sdk/libPortableRuntime.a" />
-      <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)/sdk/libbootstrappercpp.a" />
-      <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)/sdk/libPortableRuntime.a" />
+      <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)/sdk/libbootstrappercpp.bc" />
+      <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)/sdk/libPortableRuntime.bc" />
     </ItemGroup>
 
     <ItemGroup>
-      <NativeLibrary Include="$(IlcPath)/sdk/libSystem.Private.CoreLib.Native.a" />
+      <NativeLibrary Include="$(IlcPath)/sdk/libSystem.Private.CoreLib.Native.a" Condition="$(NativeCodeGen) != 'wasm'" />
+      <NativeLibrary Include="$(IlcPath)/sdk/libSystem.Private.CoreLib.Native.bc" Condition="$(NativeCodeGen) == 'wasm'" />
       <NativeLibrary Include="$(IlcPath)/framework/System.Native.a" />
-      <NativeLibrary Include="$(IlcPath)/framework/System.Globalization.Native.a" />
+      <NativeLibrary Include="$(IlcPath)/framework/System.Globalization.Native.a" Condition="$(NativeCodeGen) != 'wasm'" />
       <NativeLibrary Include="$(IlcPath)/framework/System.IO.Compression.Native.a" />
       <NativeLibrary Include="$(IlcPath)/framework/System.Net.Http.Native.a" />
       <NativeLibrary Include="$(IlcPath)/framework/System.Net.Security.Native.a" />
