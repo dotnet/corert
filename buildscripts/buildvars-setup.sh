@@ -226,6 +226,8 @@ case $OSName in
         ;;
 esac
 
+export __HostOS="$__BuildOS"
+
 # Overwrite __BuildOS with WebAssembly if wasm is target build arch, but keep the __NugetRuntimeId to match the Host OS
 if [ $__BuildArch == "wasm" ]; then
     export __BuildOS=WebAssembly
