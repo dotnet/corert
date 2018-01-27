@@ -66,7 +66,7 @@
     <Content Include="..\..\..\packages\libllvm4\4.0.1.3\runtimes\osx\native\libLLVM.dylib" Condition="'$(HostOS)' == 'OSX'">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\..\..\packages\libllvm4\4.0.1.3\runtimes\win-x64\native\libLLVM.dll" Condition="'$(HostOS)' == 'Windows_NT'">
+    <Content Include="..\..\..\packages\libllvm4\4.0.1.3\runtimes\win-x64\native\libLLVM.dll" Condition="'$(OS)' == 'Windows_NT'">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
