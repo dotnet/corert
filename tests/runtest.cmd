@@ -341,15 +341,21 @@ goto :eof
 
     :: Explicitly restore the test helper project
     "%CoreRT_CliDir%\dotnet.exe" msbuild /t:Restore "%CoreRT_TestFileHelperProjectPath%"
+    if errorlevel 1 (
+        exit /b 1
+    )
     "%CoreRT_CliDir%\dotnet.exe" msbuild /t:Restore "%CoreRT_XunitHelperProjectPath%"    
     if errorlevel 1 (
         exit /b 1
     )
 
-    :: Build the test helper project
+    :: Build the test helper projects
     "%CoreRT_CliDir%\dotnet.exe" msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:OSGroup=%CoreRT_BuildOS%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%CoreRT_TestRoot%..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" "/p:OutputPath=%CoreRT_TestingUtilitiesOutputDir%" /p:RepoLocalBuild=true "%CoreRT_TestFileHelperProjectPath%" 
+        if errorlevel 1 (
+        exit /b 1
+    )
+
     "%CoreRT_CliDir%\dotnet.exe" msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:OSGroup=%CoreRT_BuildOS%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%CoreRT_TestRoot%..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" "/p:OutputPath=%CoreRT_TestingUtilitiesOutputDir%" /p:RepoLocalBuild=true "%CoreRT_XunitHelperProjectPath%" 
-    
     if errorlevel 1 (
         exit /b 1
     )

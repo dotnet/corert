@@ -65,10 +65,6 @@ if not defined VS%__VSProductVersion%COMNTOOLS goto NoVS
 set __VSToolsRoot=!VS%__VSProductVersion%COMNTOOLS!
 if %__VSToolsRoot:~-1%==\ set "__VSToolsRoot=%__VSToolsRoot:~0,-1%"
 
-set _msbuildexe="%VSINSTALLDIR%\MSBuild\15.0\Bin\MSBuild.exe"
-
-if not exist !_msbuildexe! (echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md for build instructions. && exit /b 1)
-
 :: Set the environment for the  build- VS cmd prompt
 echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\VsDevCmd.bat"
 call                                 "%__VSToolsRoot%\VsDevCmd.bat"
@@ -76,18 +72,6 @@ call                                 "%__VSToolsRoot%\VsDevCmd.bat"
 if not defined VSINSTALLDIR (
     echo %__MsgPrefix%Error: runtest.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
     exit /b 1
-)
-
-:: Note: We've disabled node reuse because it causes file locking issues.
-::       The issue is that we extend the build with our own targets which
-::       means that that rebuilding cannot successfully delete the task
-::       assembly. 
-set __msbuildCommonArgs=/nologo /nodeReuse:false %__msbuildExtraArgs% /p:Platform=%__MSBuildBuildArch%
-
-if not defined __Sequential (
-    set __msbuildCommonArgs=%__msbuildCommonArgs% /maxcpucount
-) else (
-    set __msbuildCommonArgs=%__msbuildCommonArgs% /p:ParallelRun=false
 )
 
 :: Iterate through unzipped CoreFX tests 
@@ -98,3 +82,21 @@ for /D %%i in ("%XunitTestBinBase%\*" ) do (
     echo %FXCustomTestLauncher% !TestFolderName! !TestFileName!
     call %FXCustomTestLauncher% !TestFolderName! !TestFileName!
 )
+
+exit /b 0
+
+:Usage
+echo.
+echo Usage:
+echo   %0 BuildArch BuildType [SkipWrapperGeneration] [Exclude EXCLUSION_TARGETS] [TestEnv TEST_ENV_SCRIPT] [VSVersion] CORE_ROOT
+echo where:
+echo.
+echo./? -? /h -h /help -help: view this message.
+echo BuildArch- Optional parameter - x64 or x86 ^(default: x64^).
+echo BuildType- Optional parameter - Debug, Release, or Checked ^(default: Debug^).
+exit /b 1
+
+:NoVS
+echo Visual Studio 2017 ^(Community is free^) is a prerequisite to build this repository.
+echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
+exit /b 1

@@ -27,6 +27,7 @@ if not exist %TestFolder%\%TestExecutable%.exe (
     :: Not a test we support yet, exit silently
     exit /b 0
 )
+
 :: Workaround until we have a better reflection engine
 :: Add name of currently executing test to rd.xml
 powershell -Command "(Get-Content %TestFolder%\default.rd.xml).replace('*Application*', '%TestFileName%') | Set-Content  %TestFolder%\default.rd.xml"
@@ -37,7 +38,11 @@ if "%CoreRT_BuildArch%" == "x64" (
 
 echo Build %TestFileName%
 
-call "%CoreRT_CliDir%\dotnet.exe" publish %TestFolder%\Test.csproj /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:DebugSymbols=false" "/p:Configuration=%CoreRT_BuildType%" "/p:FrameworkLibPath=%~dp0..\..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /p:DisableFrameworkLibGeneration=true /p:TestRootDir=%~dp0  /p:ExecutableName=%TestExecutable%
+call "%CoreRT_CliDir%\dotnet.exe" publish %TestFolder%\Test.csproj /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:DebugSymbols=false" "/p:Configuration=%CoreRT_BuildType%" "/p:FrameworkLibPath=%~dp0..\..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /p:DisableFrameworkLibGeneration=true /p:TestRootDir=%~dp0  /p:ExecutableName=%TestExecutable% /nologo
+if errorlevel 1 (
+    echo Building %TestFileName% failed
+    exit /b 1
+)
 
 echo Executing %TestFileName%
 

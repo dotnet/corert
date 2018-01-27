@@ -47,9 +47,6 @@
     <ItemGroup>
         <!-- Some tests consist of multiple assemblies - make sure ILC sees them -->
         <IlcCompileInput Include="$(MSBuildProjectDirectory)\*.dll" />
-        <!-- TODO Get both assemblies from somewhere else?  -->
-        <IlcCompileInput Include="$(ToolsDir)System.Private.Xml.Linq.dll" />
-        <IlcCompileInput Include="$(ToolsDir)System.Private.Xml.dll" />
     </ItemGroup>
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
