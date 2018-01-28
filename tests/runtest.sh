@@ -340,21 +340,22 @@ __BuildOsLowcase=$(echo "${CoreRT_BuildOS}" | tr '[:upper:]' '[:lower:]')
 __TestSearchPath=src/Simple/${CoreRT_TestName}
 for csproj in $(find ${__TestSearchPath} -name "*.csproj")
 do
-    if [ ! -e `dirname ${csproj}`/no_unix ]; then
-        if [ "${CoreRT_TestCompileMode}" = "ryujit" ] || [ "${CoreRT_TestCompileMode}" = "" ]; then
-            if [ ! -e `dirname ${csproj}`/no_ryujit ]; then
-                run_test_dir ${csproj} "Jit"
-            fi
+    if [ -e `dirname ${csproj}`/no_unix ]; then continue; fi
+    if [ -e `dirname ${csproj}`/no_linux ] && [ "${CoreRT_HostOS}" != "OSX" ]; then continue; fi
+
+    if [ "${CoreRT_TestCompileMode}" = "ryujit" ] || [ "${CoreRT_TestCompileMode}" = "" ]; then
+        if [ ! -e `dirname ${csproj}`/no_ryujit ]; then
+            run_test_dir ${csproj} "Jit"
         fi
-        if [ "${CoreRT_TestCompileMode}" = "cpp" ] || [ "${CoreRT_TestCompileMode}" = "" ]; then
-            if [ ! -e `dirname ${csproj}`/no_cpp ]; then
-                run_test_dir ${csproj} "Cpp" "$CoreRT_ExtraCXXFlags" "$CoreRT_ExtraLinkFlags"
-            fi
+    fi
+    if [ "${CoreRT_TestCompileMode}" = "cpp" ] || [ "${CoreRT_TestCompileMode}" = "" ]; then
+        if [ ! -e `dirname ${csproj}`/no_cpp ]; then
+            run_test_dir ${csproj} "Cpp" "$CoreRT_ExtraCXXFlags" "$CoreRT_ExtraLinkFlags"
         fi
-        if [ "${CoreRT_TestCompileMode}" = "wasm" ]; then
-            if [ -e `dirname ${csproj}`/wasm ]; then
-                run_test_dir ${csproj} "Wasm"
-            fi
+    fi
+    if [ "${CoreRT_TestCompileMode}" = "wasm" ]; then
+        if [ -e `dirname ${csproj}`/wasm ]; then
+            run_test_dir ${csproj} "Wasm"
         fi
     fi
 done

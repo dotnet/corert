@@ -60,33 +60,36 @@ if [ -z ${CoreRT_BuildType} ]; then
 fi
 
 
+# Use uname to determine what the OS is.
+export OSName=$(uname -s)
+case $OSName in
+	Darwin)
+		export CoreRT_BuildOS=OSX
+		;;
+
+	FreeBSD)
+		export CoreRT_BuildOS=FreeBSD
+		;;
+
+	Linux)
+		export CoreRT_BuildOS=Linux
+		;;
+
+	NetBSD)
+		export CoreRT_BuildOS=NetBSD
+		;;
+
+	*)
+		echo "Unsupported OS $OSName detected, configuring as if for Linux"
+		export CoreRT_BuildOS=Linux
+		;;
+esac
+
+export CoreRT_HostOS=${CoreRT_BuildOS}
+
+# Overwrite __BuildOS with WebAssembly if wasm is target build arch, but keep the CoreRT_HostOS to match the Host OS
 if [ $__BuildArch == "wasm" ]; then
     export CoreRT_BuildOS=WebAssembly
-else
-    # Use uname to determine what the OS is.
-    export OSName=$(uname -s)
-    case $OSName in
-        Darwin)
-            export CoreRT_BuildOS=OSX
-            ;;
-
-        FreeBSD)
-            export CoreRT_BuildOS=FreeBSD
-            ;;
-
-        Linux)
-            export CoreRT_BuildOS=Linux
-            ;;
-
-        NetBSD)
-            export CoreRT_BuildOS=NetBSD
-            ;;
-
-        *)
-            echo "Unsupported OS $OSName detected, configuring as if for Linux"
-            export CoreRT_BuildOS=Linux
-            ;;
-    esac
 fi
 
 export CoreRT_BuildArch
