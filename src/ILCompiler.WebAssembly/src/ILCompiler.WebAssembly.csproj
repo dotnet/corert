@@ -17,11 +17,11 @@
     </PackageReference>
     <PackageReference Include="libLLVM4">
       <!--
-        This is a temporary package (instead of official libLLVM). Holds LLVM binaries v3.9.1 for Windows and v4.0.1 for OSX 
+        This is a temporary package (instead of official libLLVM). Holds LLVM binaries v3.9.1 for Windows and v4.0.1 for OSX & Linux 
         We need this until Emscripten supports LLVM 5.0
         LLVMSharp 5.0.0 works fine with those older binaries.
       -->
-      <Version>4.0.1.4</Version>
+      <Version>4.0.1.6</Version>
     </PackageReference>
   </ItemGroup>
 
@@ -63,10 +63,13 @@
     <Content Include="..\..\..\packages\llvmsharp\5.0.0\lib\netstandard1.1\LLVMSharp.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\..\..\packages\libllvm4\4.0.1.4\runtimes\osx-x64\native\libLLVM.dylib" Condition="'$(HostOS)' == 'OSX'">
+    <Content Include="..\..\..\packages\libllvm4\4.0.1.6\runtimes\osx-x64\native\libLLVM.dylib" Condition="'$(HostOS)' == 'OSX'">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\..\..\packages\libllvm4\4.0.1.4\runtimes\win-x64\native\libLLVM.dll" Condition="'$(HostOS)' == 'Windows_NT'">
+    <Content Include="..\..\..\packages\libllvm4\4.0.1.6\runtimes\linux-x64\native\libLLVM.so" Condition="'$(HostOS)' == 'Linux'">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\..\packages\libllvm4\4.0.1.6\runtimes\win-x64\native\libLLVM.dll" Condition="'$(HostOS)' == 'Windows_NT'">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
