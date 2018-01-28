@@ -21,7 +21,7 @@
         We need this until Emscripten supports LLVM 5.0
         LLVMSharp 5.0.0 works fine with those older binaries.
       -->
-      <Version>4.0.1.3</Version>
+      <Version>4.0.1.4</Version>
     </PackageReference>
   </ItemGroup>
 
@@ -63,10 +63,10 @@
     <Content Include="..\..\..\packages\llvmsharp\5.0.0\lib\netstandard1.1\LLVMSharp.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\..\..\packages\libllvm4\4.0.1.3\runtimes\osx\native\libLLVM.dylib" Condition="'$(HostOS)' == 'OSX'">
+    <Content Include="..\..\..\packages\libllvm4\4.0.1.4\runtimes\osx-x64\native\libLLVM.dylib" Condition="'$(HostOS)' == 'OSX'">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\..\..\packages\libllvm4\4.0.1.3\runtimes\win-x64\native\libLLVM.dll" Condition="'$(HostOS)' == 'Windows_NT'">
+    <Content Include="..\..\..\packages\libllvm4\4.0.1.4\runtimes\win-x64\native\libLLVM.dll" Condition="'$(HostOS)' == 'Windows_NT'">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
