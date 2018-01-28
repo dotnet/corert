@@ -33,6 +33,11 @@ See the LICENSE file in the project root for more information.
   </PropertyGroup>
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
 
+    <PropertyGroup>
+      <NativeLibraryExtension Condition="'$(NativeCodeGen)' != 'wasm'">.a</NativeLibraryExtension>
+      <NativeLibraryExtension Condition="'$(NativeCodeGen)' == 'wasm'">.bc</NativeLibraryExtension>
+    </PropertyGroup>
+
     <ItemGroup>
       <CppCompilerAndLinkerArg Include="-I $(IlcPath)/inc" />
       <CppCompilerAndLinkerArg Condition="'$(Configuration)' == 'Debug'" Include="-g -O0" />
@@ -53,15 +58,14 @@ See the LICENSE file in the project root for more information.
     </ItemGroup>
 
     <ItemGroup>
-      <NativeLibrary Include="$(IlcPath)/sdk/libSystem.Private.CoreLib.Native.a" Condition="$(NativeCodeGen) != 'wasm'" />
-      <NativeLibrary Include="$(IlcPath)/sdk/libSystem.Private.CoreLib.Native.bc" Condition="$(NativeCodeGen) == 'wasm'" />
-      <NativeLibrary Include="$(IlcPath)/framework/System.Native.a" />
-      <NativeLibrary Include="$(IlcPath)/framework/System.Globalization.Native.a" Condition="$(NativeCodeGen) != 'wasm'" />
-      <NativeLibrary Include="$(IlcPath)/framework/System.IO.Compression.Native.a" />
-      <NativeLibrary Include="$(IlcPath)/framework/System.Net.Http.Native.a" />
-      <NativeLibrary Include="$(IlcPath)/framework/System.Net.Security.Native.a" />
-      <NativeLibrary Include="$(IlcPath)/framework/System.Security.Cryptography.Native.Apple.a" Condition="'$(TargetOS)' == 'OSX'"/>
-      <NativeLibrary Include="$(IlcPath)/framework/System.Security.Cryptography.Native.OpenSsl.a" Condition="'$(TargetOS)' != 'OSX'"/>
+      <NativeLibrary Include="$(IlcPath)/sdk/libSystem.Private.CoreLib.Native$(NativeLibraryExtension)" />
+      <NativeLibrary Include="$(IlcPath)/framework/System.Native$(NativeLibraryExtension)" />
+      <NativeLibrary Include="$(IlcPath)/framework/System.Globalization.Native$(NativeLibraryExtension)" />
+      <NativeLibrary Include="$(IlcPath)/framework/System.IO.Compression.Native$(NativeLibraryExtension)" />
+      <NativeLibrary Include="$(IlcPath)/framework/System.Net.Http.Native$(NativeLibraryExtension)" />
+      <NativeLibrary Include="$(IlcPath)/framework/System.Net.Security.Native$(NativeLibraryExtension)" />
+      <NativeLibrary Include="$(IlcPath)/framework/System.Security.Cryptography.Native.Apple$(NativeLibraryExtension)" Condition="'$(TargetOS)' == 'OSX'"/>
+      <NativeLibrary Include="$(IlcPath)/framework/System.Security.Cryptography.Native.OpenSsl$(NativeLibraryExtension)" Condition="'$(TargetOS)' != 'OSX'"/>
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'OSX'">
