@@ -30,5 +30,10 @@ namespace System.Globalization
 
             return cultureInfo;
         }
+
+        private static CultureInfo GetUserDefaultUICulture()
+        {
+            return s_userDefaultCulture ?? InitializeUserDefaultCulture();
+        }
     }
 }
