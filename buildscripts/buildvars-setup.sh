@@ -197,36 +197,36 @@ export $__BuildArch
 export OSName=$(uname -s)
 case $OSName in
     Darwin)
-        export __BuildOS=OSX
+        export __HostOS=OSX
         export __NugetRuntimeId=osx.10.10-x64
         ulimit -n 2048
         ;;
 
     FreeBSD)
-        export __BuildOS=FreeBSD
+        export __HostOS=FreeBSD
         # TODO: Add proper FreeBSD target
         export __NugetRuntimeId=ubuntu.14.04-x64
         ;;
 
     Linux)
-        export __BuildOS=Linux
+        export __HostOS=Linux
         export __NugetRuntimeId=$(get_current_linux_rid)-$__HostArch
         ;;
 
     NetBSD)
-        export __BuildOS=NetBSD
+        export __HostOS=NetBSD
         # TODO: Add proper NetBSD target
         export __NugetRuntimeId=ubuntu.14.04-x64
         ;;
 
     *)
         echo "Unsupported OS $OSName detected, configuring as if for Linux"
-        export __BuildOS=Linux
+        export __HostOS=Linux
         export __NugetRuntimeId=ubuntu.14.04-x64
         ;;
 esac
 
-export __HostOS="$__BuildOS"
+export __BuildOS="$__HostOS"
 
 # Overwrite __BuildOS with WebAssembly if wasm is target build arch, but keep the __NugetRuntimeId to match the Host OS
 if [ $__BuildArch == "wasm" ]; then

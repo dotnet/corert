@@ -64,28 +64,28 @@ fi
 export OSName=$(uname -s)
 case $OSName in
 	Darwin)
-		export CoreRT_BuildOS=OSX
+		export CoreRT_HostOS=OSX
 		;;
 
 	FreeBSD)
-		export CoreRT_BuildOS=FreeBSD
+		export CoreRT_HostOS=FreeBSD
 		;;
 
 	Linux)
-		export CoreRT_BuildOS=Linux
+		export CoreRT_HostOS=Linux
 		;;
 
 	NetBSD)
-		export CoreRT_BuildOS=NetBSD
+		export CoreRT_HostOS=NetBSD
 		;;
 
 	*)
 		echo "Unsupported OS $OSName detected, configuring as if for Linux"
-		export CoreRT_BuildOS=Linux
+		export CoreRT_HostOS=Linux
 		;;
 esac
 
-export CoreRT_HostOS=${CoreRT_BuildOS}
+export CoreRT_BuildOS=${CoreRT_HostOS}
 
 # Overwrite __BuildOS with WebAssembly if wasm is target build arch, but keep the CoreRT_HostOS to match the Host OS
 if [ $__BuildArch == "wasm" ]; then
