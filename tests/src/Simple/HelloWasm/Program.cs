@@ -139,14 +139,32 @@ internal static class Program
             PrintLine(element.Value);
 
         arrayTest[1].Value = "Array load/store test: Ok.";
-        
         PrintLine(arrayTest[1].Value);
+
+        var largeArrayTest = new long[] { Int64.MaxValue, 0, Int64.MinValue, 0 };
+        if(largeArrayTest[0] == Int64.MaxValue &&
+            largeArrayTest[1] == 0 &&
+            largeArrayTest[2] == Int64.MinValue &&
+            largeArrayTest[3] == 0)
+        {
+            PrintLine("Large array load/store test: Ok.");
+        }
+
+        var smallArrayTest = new long[] { Int16.MaxValue, 0, Int16.MinValue, 0 };
+        if(smallArrayTest[0] == Int16.MaxValue &&
+            smallArrayTest[1] == 0 &&
+            smallArrayTest[2] == Int16.MinValue &&
+            smallArrayTest[3] == 0)
+        {
+            PrintLine("Small array load/store test: Ok.");
+        }
 
         PrintLine("Done");
     }
 
     private static int StaticDelegateTarget()
     {
+         
         return 7;
     }
 
@@ -247,7 +265,6 @@ public class TestClass
 {
     public string TestString { get; set; }
     public int TestInt { get; set; }
-
 
     public TestClass(int number)
     {
