@@ -94,7 +94,6 @@ namespace Internal.TypeSystem.NoMetadata
                 }
                 else
                 {
-                    Debug.Assert(this.HasNativeLayout);
                     // Parsing of the base type has not yet happened. Perform that part of native layout parsing
                     // just-in-time
                     TypeBuilderState state = GetOrCreateTypeBuilderState();
