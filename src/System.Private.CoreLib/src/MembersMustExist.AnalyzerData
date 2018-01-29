@@ -219,7 +219,7 @@ private void* System.IntPtr._value
 private static volatile System.Collections.Generic.ArraySortHelper<TKey, TValue> System.Collections.Generic.ArraySortHelper<TKey, TValue>.s_defaultArraySortHelper
 private static volatile System.Globalization.CultureInfo System.Globalization.CultureInfo.s_DefaultThreadCurrentCulture
 private static volatile System.Globalization.CultureInfo System.Globalization.CultureInfo.s_DefaultThreadCurrentUICulture
-private static volatile System.Globalization.CultureInfo System.Globalization.CultureInfo.s_InvariantCultureInfo
+private static readonly System.Globalization.CultureInfo System.Globalization.CultureInfo.s_InvariantCultureInfo
 private System.Threading.Tasks.Task System.Runtime.CompilerServices.AsyncVoidMethodBuilder.m_task
 private System.Threading.Tasks.Task<System.Threading.Tasks.VoidTaskResult> System.Runtime.CompilerServices.AsyncTaskMethodBuilder.m_task
 private System.Threading.Tasks.Task<TResult> System.Runtime.CompilerServices.AsyncTaskMethodBuilder<TResult>.m_task
