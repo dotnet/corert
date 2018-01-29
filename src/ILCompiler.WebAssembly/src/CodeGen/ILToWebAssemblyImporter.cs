@@ -1062,7 +1062,7 @@ namespace Internal.IL
             PushNonNull(HandleCall(callee, signature, argumentValues, opcode, calliTarget));
         }
 
-        private LoadExpressionEntry HandleCall(MethodDesc callee, MethodSignature signature, StackEntry[] argumentValues, ILOpcode opcode = ILOpcode.call, LLVMValueRef calliTarget = default(LLVMValueRef), TypeDesc forcedReturnType = null)
+        private ExpressionEntry HandleCall(MethodDesc callee, MethodSignature signature, StackEntry[] argumentValues, ILOpcode opcode = ILOpcode.call, LLVMValueRef calliTarget = default(LLVMValueRef), TypeDesc forcedReturnType = null)
         {
             if (opcode == ILOpcode.callvirt && callee.IsVirtual)
             {
@@ -1073,8 +1073,6 @@ namespace Internal.IL
                 AddMethodReference(callee);
             }
             var pointerSize = _compilation.NodeFactory.Target.PointerSize;
-            int offset = GetTotalParameterOffset() + GetTotalLocalOffset() +
-                signature.ReturnType.GetElementSize().AsInt;
 
             LLVMValueRef returnAddress;
             LLVMValueRef castReturnAddress;
@@ -1146,7 +1144,7 @@ namespace Internal.IL
             
             if (!returnType.IsVoid)
             {
-                _stack.Push(returnSlot);
+                return returnSlot;
             }
             else
             {
@@ -2391,9 +2389,14 @@ namespace Internal.IL
             {
                 addressValue = ((LoadExpressionEntry)entry).RawLLVMValue;
             }
+            else if (entry is SpilledExpressionEntry)
+            {
+                int spillIndex = ((SpilledExpressionEntry)entry).LocalIndex;
+                addressValue = LoadVarAddress(spillIndex, LocalVarKind.Temp, out TypeDesc unused);
+            }
             else
             {
-                //This path should only ever be taken for constants and the results of a primative cast (not writable)
+                //This path should only ever be taken for constants and the results of a primitive cast (not writable)
                 //all other cases should be operating on a LoadExpressionEntry
                 var entryIndex = _spilledExpressions.Count;
                 var newEntry = new SpilledExpressionEntry(entry.Kind, entry is ExpressionEntry ? ((ExpressionEntry)entry).Name : "address_of_temp" + entryIndex, entryType, entryIndex, this);
