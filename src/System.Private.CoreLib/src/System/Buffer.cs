@@ -443,11 +443,18 @@ namespace System
             if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
                 // Blittable memmove
-
+#if PROJECTN
+                unsafe
+                {
+                    fixed (byte* pDestination = &Unsafe.As<T, byte>(ref destination), pSource = &Unsafe.As<T, byte>(ref source))
+                        Memmove(pDestination, pSource, elementCount * (nuint)Unsafe.SizeOf<T>());
+                }
+#else
                 Memmove(
                     new ByReference<byte>(ref Unsafe.As<T, byte>(ref destination)),
                     new ByReference<byte>(ref Unsafe.As<T, byte>(ref source)),
                     elementCount * (nuint)Unsafe.SizeOf<T>());
+#endif
             }
             else
             {
@@ -465,6 +472,7 @@ namespace System
             }
         }
 
+#if !PROJECTN
         // This method has different signature for x64 and other platforms and is done for performance reasons.
         private static void Memmove(ByReference<byte> dest, ByReference<byte> src, nuint len)
         {
@@ -668,6 +676,7 @@ BuffersOverlap:
 PInvoke:
             _Memmove(ref dest.Value, ref src.Value, len);
         }
+#endif // !PROJECTN
 
         // Non-inlinable wrapper around the QCall that avoids poluting the fast path
         // with P/Invoke prolog/epilog.
