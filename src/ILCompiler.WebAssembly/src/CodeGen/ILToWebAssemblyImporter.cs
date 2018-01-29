@@ -1002,7 +1002,7 @@ namespace Internal.IL
         private LLVMValueRef GetEETypePointerForTypeDesc(TypeDesc target, bool constructed)
         {
             ISymbolNode node;
-            if (constructed && !target.IsByRefLike)
+            if (constructed)
             {
                 node = _compilation.NodeFactory.MaximallyConstructableType(target);
             }
@@ -1032,17 +1032,14 @@ namespace Internal.IL
             switch (method.Name)
             {
                 case "get_Value":
-                    if (metadataType is InstantiatedType)
+                    if (metadataType.IsByReferenceOfT)
                     {
                         InstantiatedType instantiation = (InstantiatedType)metadataType;
-                        if (instantiation.GetTypeDefinition().Equals(GetWellKnownType(WellKnownType.ByReferenceOfT)))
-                        {
-                            StackEntry byRefHolder = _stack.Pop();
+                        StackEntry byRefHolder = _stack.Pop();
 
-                            TypeDesc byRefType = instantiation.Instantiation[0].MakeByRefType();
-                            PushLoadExpression(StackValueKind.ByRef, "byref", byRefHolder.ValueForStackKind(StackValueKind.ByRef, _builder, false), byRefType);
-                            return true;
-                        }
+                        TypeDesc byRefType = instantiation.Instantiation[0].MakeByRefType();
+                        PushLoadExpression(StackValueKind.ByRef, "byref", byRefHolder.ValueForStackKind(StackValueKind.ByRef, _builder, false), byRefType);
+                        return true;
                     }
                     break;
             }
