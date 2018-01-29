@@ -776,7 +776,6 @@ COOP_PINVOKE_HELPER(void, RhpBox, (Object * pObj, void * pData))
     
     UInt8 * pbFields = (UInt8*)pObj + sizeof(EEType*);
 
-#if !defined(_WASM_)
     // Copy the unboxed value type data into the new object.
     // Perform any write barriers necessary for embedded reference fields.
     if (pEEType->HasReferenceFields())
@@ -787,10 +786,6 @@ COOP_PINVOKE_HELPER(void, RhpBox, (Object * pObj, void * pData))
     {
         memcpy(pbFields, pData, cbFields);
     }
-#else
-    //TODO: write barriers currently crash in wasm and we dont really have GC anyway
-    memcpy(pbFields, pData, cbFields);
-#endif
 }
 
 bool EETypesEquivalentEnoughForUnboxing(EEType *pObjectEEType, EEType *pUnboxToEEType)
