@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 namespace Internal.Runtime.Augments
 {
     [CLSCompliant(false)]
+    [System.Runtime.CompilerServices.ReflectionBlocked]
     public abstract class InteropCallbacks
     {
         public abstract bool TryGetMarshallerDataForDelegate(RuntimeTypeHandle delegateTypeHandle, out McgPInvokeDelegateData  delegateData);

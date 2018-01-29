@@ -19,6 +19,7 @@ namespace System.Runtime.InteropServices
     ///     in order to be accessible from System.Private.Interop.dll.
     /// </summary>
     [CLSCompliant(false)]
+    [ReflectionBlocked]
     public static class InteropExtensions
     {
         // Converts a managed DateTime to native OLE datetime

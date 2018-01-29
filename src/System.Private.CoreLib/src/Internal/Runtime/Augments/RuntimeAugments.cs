@@ -35,6 +35,7 @@ using Volatile = System.Threading.Volatile;
 
 namespace Internal.Runtime.Augments
 {
+    [ReflectionBlocked]
     public static class RuntimeAugments
     {
         /// <summary>

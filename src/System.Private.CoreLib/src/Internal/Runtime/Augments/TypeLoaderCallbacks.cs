@@ -11,6 +11,7 @@ using Internal.Runtime.CompilerServices;
 namespace Internal.Runtime.Augments
 {
     [CLSCompliant(false)]
+    [System.Runtime.CompilerServices.ReflectionBlocked]
     public abstract class TypeLoaderCallbacks
     {
         public abstract bool TryGetConstructedGenericTypeForComponents(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle);

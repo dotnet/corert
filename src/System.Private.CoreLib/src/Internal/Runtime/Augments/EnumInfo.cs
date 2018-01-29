@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 
 namespace Internal.Runtime.Augments
 {
+    [ReflectionBlocked]
     public sealed class EnumInfo
     {
         public EnumInfo(Type enumType)

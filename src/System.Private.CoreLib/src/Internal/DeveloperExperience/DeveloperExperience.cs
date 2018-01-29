@@ -13,6 +13,7 @@ using Internal.Runtime.Augments;
 
 namespace Internal.DeveloperExperience
 {
+    [System.Runtime.CompilerServices.ReflectionBlocked]
     public class DeveloperExperience
     {
         public virtual void WriteLine(String s)
