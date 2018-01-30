@@ -570,15 +570,6 @@
   <data name="Argument_FallbackBufferNotEmpty" xml:space="preserve">
     <value>Cannot change fallback when buffer is not empty. Previous Convert() call left data in the fallback buffer.</value>
   </data>
-  <data name="Argument_IdnBadLabelSize" xml:space="preserve">
-    <value>IDN labels must be between 1 and 63 characters long.</value>
-  </data>
-  <data name="Argument_IdnBadPunycode" xml:space="preserve">
-    <value>Invalid IDN encoded string.</value>
-  </data>
-  <data name="Argument_IdnIllegalName" xml:space="preserve">
-    <value>Decoded string is not a valid IDN name.</value>
-  </data>
   <data name="Argument_ImplementIComparable" xml:space="preserve">
     <value>At least one object must implement IComparable.</value>
   </data>
@@ -2688,6 +2679,9 @@
   </data>
   <data name="Argument_IdnBadStd3" xml:space="preserve">
     <value>Label contains character '{0}' not allowed with UseStd3AsciiRules</value>
+  </data>
+  <data name="Argument_IdnIllegalName" xml:space="preserve">
+    <value>Decoded string is not a valid IDN name.</value>
   </data>
   <data name="InvalidOperation_NotGenericType" xml:space="preserve">
     <value>This operation is only valid on generic types.</value>
