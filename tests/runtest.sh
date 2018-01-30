@@ -327,7 +327,7 @@ fi
 echo > ${__CoreRTTestBinDir}/testResults.tmp
 
 __BuildOsLowcase=$(echo "${CoreRT_BuildOS}" | tr '[:upper:]' '[:lower:]')
-__TestSearchPath=src/Simple/${CoreRT_TestName}
+__TestSearchPath=${CoreRT_TestRoot}/src/Simple/${CoreRT_TestName}
 for csproj in $(find ${__TestSearchPath} -name "*.csproj")
 do
     if [ ! -e `dirname ${csproj}`/no_unix ]; then
