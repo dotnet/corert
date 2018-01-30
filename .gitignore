@@ -3,9 +3,6 @@ syntax: glob
 # Build tools related files
 /[Tt]ools/
 
-# CoreRT ignores
-.vcvarsallwithargs
-
 # External tests
 tests_downloaded/
 
