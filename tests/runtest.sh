@@ -6,6 +6,7 @@ usage()
     echo "    -mode         : Compilation mode. Specify cpp/ryujit. Default: ryujit"
     echo "    -test         : Run a single test by folder name (ie, BasicThreading)"
     echo "    -runtest      : Should just compile or run compiled binary? Specify: true/false. Default: true."
+    echo "    -corefx       : Download and run the CoreFX repo tests"
     echo "    -coreclr      : Download and run the CoreCLR repo tests"
     echo "    -multimodule  : Compile the framework as a .so and link tests against it (ryujit only)"
     echo "    -coredumps    : [For CI use] Enables core dump generation, and analyzes and possibly stores/uploads"
@@ -81,7 +82,7 @@ run_test_dir()
     return $?
 }
 
-download_and_unzip_tests_artifacts()
+download_and_unzip_coreclr_tests_artifacts()
 {
     url=$1
     location=$2
@@ -101,6 +102,38 @@ download_and_unzip_tests_artifacts()
     fi
 }
 
+download_and_unzip_corefx_tests_artifacts()
+{
+    # Build and restore test helper projects
+    ${__msbuild_dir}/dotnetcli/dotnet ${__msbuild_dir}/MSBuild.dll /t:Restore "${CoreRT_TestFileHelperProjectPath}"
+    __exitcode = $?
+    if [__exitcode != 0]; then
+        exit __exitcode
+    fi
+
+    ${__msbuild_dir}/dotnetcli/dotnet ${__msbuild_dir}/MSBuild.dll /t:Restore "${CoreRT_XunitHelperProjectPath}"    
+    __exitcode = $?
+    if [__exitcode != 0]; then
+        exit __exitcode
+    fi
+
+    # Build the test helper projects
+    ${__msbuild_dir}/dotnetcli/dotnet ${__msbuild_dir}/MSBuild.dll /m /ConsoleLoggerParameters:ForceNoAlign /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:Platform=${CoreRT_BuildArch} /p:OSGroup=${CoreRT_BuildOS} /p:RepoLocalBuild=true "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" "${CoreRT_TestFileHelperProjectPath}" 
+    
+    __exitcode = $?
+    if [__exitcode != 0]; then
+        exit __exitcode
+    fi
+    
+    ${__msbuild_dir}/dotnetcli/dotnet ${__msbuild_dir}/MSBuild.dll /m /ConsoleLoggerParameters:ForceNoAlign /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:Platform=${CoreRT_BuildArch} /p:OSGroup=${CoreRT_BuildOS} /p:RepoLocalBuild=true "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" "${CoreRT_XunitHelperProjectPath}" 
+    __exitcode = $?
+    if [__exitcode != 0]; then
+        exit __exitcode
+    fi
+    
+}
+
+
 restore_coreclr_tests()
 {
     CoreRT_Test_Download_Semaphore=${CoreRT_TestExtRepo}/init-tests.completed
@@ -115,10 +148,10 @@ restore_coreclr_tests()
     CoreRT_NativeArtifactRepo=${CoreRT_TestExtRepo}/native
 
     echo "Restoring tests (this may take a few minutes).."
-    download_and_unzip_tests_artifacts ${TESTS_REMOTE_URL}  ${CoreRT_TestExtRepo} ${CoreRT_Test_Download_Semaphore}
+    download_and_unzip_coreclr_tests_artifacts ${TESTS_REMOTE_URL}  ${CoreRT_TestExtRepo} ${CoreRT_Test_Download_Semaphore}
 
     echo "Restoring native test artifacts..."
-    download_and_unzip_tests_artifacts ${NATIVE_REMOTE_URL}  ${CoreRT_NativeArtifactRepo} ${CoreRT_NativeArtifact_Download_Semaphore}
+    download_and_unzip_coreclr_tests_artifacts ${NATIVE_REMOTE_URL}  ${CoreRT_NativeArtifactRepo} ${CoreRT_NativeArtifact_Download_Semaphore}
 }
 
 run_coreclr_tests()
@@ -154,6 +187,43 @@ run_coreclr_tests()
 
     echo ./runtest.sh --testRootDir=${CoreRT_TestExtRepo} --coreOverlayDir=${CoreRT_TestRoot}/CoreCLR ${CoreRT_TestSelectionArg} --logdir=$__LogDir --disableEventLogging
     ./runtest.sh --testRootDir=${CoreRT_TestExtRepo} --coreOverlayDir=${CoreRT_TestRoot}/CoreCLR ${CoreRT_TestSelectionArg} --logdir=$__LogDir --disableEventLogging
+}
+
+run_corefx_tests()
+{
+    CoreRT_TestExtRepo_CoreFX=%CoreRT_TestRoot%\..\tests_downloaded\CoreFX
+    CoreRT_TestingUtilitiesOutputDir=%CoreRT_TestExtRepo_CoreFX%\Utilities
+
+    # Set paths to helpers
+    CoreRT_TestFileHelperName=CoreFX.TestUtils.TestFileSetup
+    CoreRT_TestFileHelperProjectPath="%CoreRT_TestRoot%\CoreFX\runtest\src\TestUtils\TestFileSetup\%CoreRT_TestFileHelperName%.csproj"
+
+    CoreRT_XunitHelperName=CoreFX.TestUtils.XUnit
+    CoreRT_XunitHelperProjectPath="%CoreRT_TestRoot%\CoreFX\runtest\src\TestUtils\XUnit\%CoreRT_XunitHelperName%.csproj"    
+    
+    download_and_unzip_corefx_tests_artifacts ${CoreRT_TestFileHelperProjectPath} ${CoreRT_XunitHelperProjectPath}
+    __exitcode = $?
+    if [__exitcode != 0];
+    then
+        exit __exitcode
+    fi
+    # FXCustomTestLauncher=%CoreRT_TestRoot%\CoreFX\build-and-run-test.cmd
+    # XunitTestBinBase=%CoreRT_TestExtRepo_CoreFX%
+    # XunitLogDir= %__LogDir%\CoreFX
+    # pushd %CoreRT_TestRoot%\CoreFX\runtest
+
+    # # TODO Add single test/target test support; add exclude tests argument
+
+    # runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% LogsDir %XunitLogDir%
+    # runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% LogsDir %XunitLogDir% 
+    # if errorlevel 1 
+    # then
+    #     exit /b 1
+    
+
+    # "%CoreRT_CliDir%\dotnet.exe" !CoreRT_TestingUtilitiesOutputDir!\!CoreRT_XunitHelperName!.dll --logDir "%XunitLogDir%" --pattern "*.xml"
+     
+    
 }
 
 CoreRT_TestRoot="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -228,6 +298,10 @@ while [ "$1" != "" ]; do
                 echo "Error: Invalid CoreCLR test selection."
                 exit -1
             fi
+            ;;
+        -corefx)
+            CoreRT_RunCoreFXTests=true;
+            shift
             ;;
         -multimodule)
             CoreRT_MultiFileConfiguration=MultiModule;
@@ -312,6 +386,11 @@ fi
 
 if [ ${CoreRT_RunCoreCLRTests} ]; then
     run_coreclr_tests
+    exit $?
+fi
+
+if [ ${CoreRT_RunCoreFXTests} ]; then
+    run_corefx_tests
     exit $?
 fi
 
