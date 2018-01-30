@@ -1,0 +1,33 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  
+  <!-- Don't import the project's parent dir.props - all other projects in the CoreRT repo are set up for the old project format -->
+
+  <!--
+    $(OS) is set to Unix/Windows_NT. This comes from an environment variable on Windows and MSBuild on Unix.
+  -->
+  <PropertyGroup>
+    <OsEnvironment Condition="'$(OsEnvironment)'==''">$(OS)</OsEnvironment>
+  </PropertyGroup>
+  
+  <!-- Common repo directories -->
+  <PropertyGroup>
+    <CopyNuGetImplementations Condition="'$(CopyNuGetImplementations)'==''">false</CopyNuGetImplementations>
+    <ProjectDir>$(MSBuildThisFileDirectory)\</ProjectDir>
+    <SourceDir>$(ProjectDir)src\</SourceDir>
+    <PackagesDir>$(ProjectDir)..\..\..\packages\</PackagesDir>
+    <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)..\Tools\</ToolsDir>
+    <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolsDir)dotnetcli/</DotnetCliPath>
+    <SkipImportILTargets>true</SkipImportILTargets>
+  </PropertyGroup>
+
+  <!-- Provides properties for dependency versions and configures dependency verification/auto-upgrade. -->
+  <Import Project="$(MSBuildThisFileDirectory)\..\dependencies.props" />
+
+  <!-- list of nuget package sources passed to dnu --> 
+  <ItemGroup> 
+    <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. -->
+    <DotnetSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json" />
+    <DotnetSourceList Include="https:%2F%2Fapi.nuget.org/v3/index.json" /> 
+  </ItemGroup> 
+  
+</Project>

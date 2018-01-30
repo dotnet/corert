@@ -1,0 +1,13 @@
+<Project DefaultTargets="Build" 
+    xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <Import Project="..\..\dependencies.props" />
+ 
+    <!-- Package version dependencies in test helper projects. -->
+    <PropertyGroup>
+        <SystemCommandLineVersion>0.1.0-e160909-1</SystemCommandLineVersion>
+        <NewtonsoftJsonVersion>10.0.1</NewtonsoftJsonVersion>
+        <XunitPackageVersion>2.2.0-beta2-build3300</XunitPackageVersion>        
+        <XunitAbstractionsVersion>2.0.1-rc2</XunitAbstractionsVersion>
+        <XunitNetcoreExtensionsVersion>1.0.1-prerelease-02104-02</XunitNetcoreExtensionsVersion>
+    </PropertyGroup>
+</Project>

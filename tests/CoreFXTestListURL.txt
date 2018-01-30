@@ -1,0 +1,1 @@
+https://dotnetbuilddrops.blob.core.windows.net/build-e0a70e19967c4fbfa9e6a9e7fed567cc/TestList.json?sv=2015-04-05&sr=c&sig=rwqOIDM585nrCg4ydSleaYi%2FN1%2BcFqEivySw06MiZRs%3D&st=2018-01-12T01%3A34%3A06.4065828Z&se=2018-02-11T01%3A34%3A06.4065828Z&sp=r
