@@ -1034,10 +1034,9 @@ namespace Internal.IL
                 case "get_Value":
                     if (metadataType.IsByReferenceOfT)
                     {
-                        InstantiatedType instantiation = (InstantiatedType)metadataType;
                         StackEntry byRefHolder = _stack.Pop();
 
-                        TypeDesc byRefType = instantiation.Instantiation[0].MakeByRefType();
+                        TypeDesc byRefType = metadataType.Instantiation[0].MakeByRefType();
                         PushLoadExpression(StackValueKind.ByRef, "byref", byRefHolder.ValueForStackKind(StackValueKind.ByRef, _builder, false), byRefType);
                         return true;
                     }
