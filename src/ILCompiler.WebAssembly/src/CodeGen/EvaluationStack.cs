@@ -570,7 +570,10 @@ namespace Internal.IL
 
         protected override LLVMValueRef ValueAsTypeInternal(LLVMTypeRef type, LLVMBuilderRef builder, bool signExtend)
         {
-            return _importer.LoadTemp(LocalIndex, type);
+            LLVMTypeRef origLLVMType = ILImporter.GetLLVMTypeForTypeDesc(Type);
+            LLVMValueRef value = _importer.LoadTemp(LocalIndex, origLLVMType);
+
+            return ILImporter.CastIfNecessary(builder, value, type);
         }
 
         public override StackEntry Duplicate()
