@@ -98,6 +98,7 @@ extern "C" void * RhTypeCast_CheckCast(void * pObject, MethodTable * pMT);
 extern "C" void RhpStelemRef(void * pArray, int index, void * pObj);
 extern "C" void * RhpLdelemaRef(void * pArray, int index, MethodTable * pMT);
 extern "C" __NORETURN void RhpThrowEx(void * pEx);
+extern "C" void RhDebugBreak();
 
 extern "C" Object * __allocate_object(MethodTable * pMT)
 {
@@ -132,6 +133,11 @@ extern "C" void* __ldelema_ref(void * pArray, unsigned idx, MethodTable * type)
 extern "C" void __throw_exception(void * pEx)
 {
     RhpThrowEx(pEx);
+}
+
+extern "C" void __debug_break()
+{
+    RhDebugBreak();
 }
 
 void __range_check_fail()
