@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using System.Threading;
+using Thread = Internal.Runtime.Augments.RuntimeThread;
 
 namespace System.Runtime.CompilerServices
 {

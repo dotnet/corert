@@ -71,9 +71,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine
-        {
-            AsyncMethodBuilderCore.Start(ref stateMachine);
-        }
+            => AsyncMethodBuilder.Start(ref stateMachine);
 
         /// <summary>Associates the builder with the state machine it represents.</summary>
         /// <param name="stateMachine">The heap-allocated state machine object.</param>
@@ -238,9 +236,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine
-        {
-            AsyncMethodBuilderCore.Start(ref stateMachine);
-        }
+            => AsyncMethodBuilder.Start(ref stateMachine);
 
         /// <summary>Associates the builder with the state machine it represents.</summary>
         /// <param name="stateMachine">The heap-allocated state machine object.</param>
@@ -437,9 +433,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine
-        {
-            AsyncMethodBuilderCore.Start(ref stateMachine); // argument validation handled by AsyncMethodBuilderCore
-        }
+            => AsyncMethodBuilder.Start(ref stateMachine);
 
         /// <summary>Associates the builder with the state machine it represents.</summary>
         /// <param name="stateMachine">The heap-allocated state machine object.</param>
@@ -721,16 +715,8 @@ namespace System.Runtime.CompilerServices
         /// <exception cref="System.ArgumentNullException">The <paramref name="stateMachine"/> argument is null (Nothing in Visual Basic).</exception>
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void Start<TStateMachine>(ref TStateMachine stateMachine)
-            where TStateMachine : IAsyncStateMachine
-        {
-            // Async state machines are required not to throw, so no need for try/finally here.
-            Thread currentThread = Thread.CurrentThread;
-            ExecutionContextSwitcher ecs = default(ExecutionContextSwitcher);
-            ExecutionContext.EstablishCopyOnWriteScope(currentThread, ref ecs);
-            stateMachine.MoveNext();
-            ecs.Undo(currentThread);
-        }
+        internal static void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine
+            => AsyncMethodBuilder.Start(ref stateMachine);
 
         //
         // We are going to do something odd here, which may require some explaining.  GetCompletionAction does quite a bit
