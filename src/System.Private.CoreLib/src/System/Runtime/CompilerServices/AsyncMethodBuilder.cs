@@ -71,9 +71,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine
-        {
-            AsyncMethodBuilderCore.Start(ref stateMachine);
-        }
+            => AsyncMethodBuilderCore.Start(ref stateMachine);
 
         /// <summary>Associates the builder with the state machine it represents.</summary>
         /// <param name="stateMachine">The heap-allocated state machine object.</param>
@@ -238,9 +236,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine
-        {
-            AsyncMethodBuilderCore.Start(ref stateMachine);
-        }
+            => AsyncMethodBuilderCore.Start(ref stateMachine);
 
         /// <summary>Associates the builder with the state machine it represents.</summary>
         /// <param name="stateMachine">The heap-allocated state machine object.</param>
@@ -437,9 +433,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine
-        {
-            AsyncMethodBuilderCore.Start(ref stateMachine); // argument validation handled by AsyncMethodBuilderCore
-        }
+            => AsyncMethodBuilderCore.Start(ref stateMachine);
 
         /// <summary>Associates the builder with the state machine it represents.</summary>
         /// <param name="stateMachine">The heap-allocated state machine object.</param>
@@ -724,12 +718,32 @@ namespace System.Runtime.CompilerServices
         internal static void Start<TStateMachine>(ref TStateMachine stateMachine)
             where TStateMachine : IAsyncStateMachine
         {
-            // Async state machines are required not to throw, so no need for try/finally here.
             Thread currentThread = Thread.CurrentThread;
-            ExecutionContextSwitcher ecs = default(ExecutionContextSwitcher);
-            ExecutionContext.EstablishCopyOnWriteScope(currentThread, ref ecs);
+            ExecutionContext previousExecutionCtx = currentThread.ExecutionContext;
+            SynchronizationContext previousSyncCtx = currentThread.SynchronizationContext;
+
+            // Async state machines are required not to throw, so no need for try/finally here.
             stateMachine.MoveNext();
-            ecs.Undo(currentThread);
+
+            // The common case is that these have not changed, so avoid the cost of a write barrier if not needed.
+            if (previousSyncCtx != currentThread.SynchronizationContext)
+            {
+                // Restore changed SynchronizationContext back to previous
+                currentThread.SynchronizationContext = previousSyncCtx;
+            }
+
+            ExecutionContext currentExecutionCtx = currentThread.ExecutionContext;
+            if (previousExecutionCtx != currentExecutionCtx)
+            {
+                // Restore changed ExecutionContext back to previous
+                currentThread.ExecutionContext = previousExecutionCtx;
+                if ((currentExecutionCtx != null && currentExecutionCtx.HasChangeNotifications) ||
+                    (previousExecutionCtx != null && previousExecutionCtx.HasChangeNotifications))
+                {
+                    // There are change notifications; trigger any affected
+                    ExecutionContext.OnValuesChanged(currentExecutionCtx, previousExecutionCtx);
+                }
+            }
         }
 
         //

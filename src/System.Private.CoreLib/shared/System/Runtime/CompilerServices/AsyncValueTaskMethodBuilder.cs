@@ -40,7 +40,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="stateMachine">The state machine instance, passed by reference.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine =>
-            AsyncMethodBuilder.Start(ref stateMachine); // will provide the right ExecutionContext semantics
+            AsyncMethodBuilderCore.Start(ref stateMachine); // will provide the right ExecutionContext semantics
 
         /// <summary>Associates the builder with the specified state machine.</summary>
         /// <param name="stateMachine">The state machine instance to associate with the builder.</param>
