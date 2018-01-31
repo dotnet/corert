@@ -5,7 +5,9 @@
 using System;
 using System.Diagnostics;
 using System.Threading;
+#if CORERT
 using Thread = Internal.Runtime.Augments.RuntimeThread;
+#endif
 
 namespace System.Runtime.CompilerServices
 {
