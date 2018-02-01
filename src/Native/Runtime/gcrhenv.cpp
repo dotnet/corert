@@ -106,10 +106,6 @@ int EEConfig::GetGCconcurrent()
 static RhConfig g_sRhConfig;
 RhConfig * g_pRhConfig = &g_sRhConfig;
 
-#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
-DWORD g_dwHandles = 0;
-#endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
-
 #ifdef FEATURE_ETW
 //
 // -----------------------------------------------------------------------------------------------------------
@@ -1018,6 +1014,11 @@ void GCToEEInterface::SyncBlockCacheDemote(int /*max_gen*/)
 
 void GCToEEInterface::SyncBlockCachePromotionsGranted(int /*max_gen*/)
 {
+}
+
+uint32_t GCToEEInterface::GetActiveSyncBlockCount()
+{
+    return SyncBlockCache::GetSyncBlockCache()->GetActiveCount();
 }
 
 gc_alloc_context * GCToEEInterface::GetAllocContext(Thread * pThread)
