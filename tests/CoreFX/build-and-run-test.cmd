@@ -46,4 +46,8 @@ if errorlevel 1 (
 
 echo Executing %TestFileName%
 
+if not exist %TestExecutable% (
+    echo "ERROR:Native binary not found Unable to run test.""
+)
+
 call %TestFolder%\native\%TestExecutable% %TestFolder%\%TestFileName%.dll -xml %XunitLogDir%\%TestFileName%.xml

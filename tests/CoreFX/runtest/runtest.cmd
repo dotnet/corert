@@ -74,6 +74,11 @@ if not defined VSINSTALLDIR (
     exit /b 1
 )
 
+if not defined FXCustomTestLauncher (
+    echo The CoreFX test launcher is not defined 
+    exit /b 1
+)
+
 :: Iterate through unzipped CoreFX tests 
 for /D %%i in ("%XunitTestBinBase%\*" ) do (
     set TestFolderName=%%i
