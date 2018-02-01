@@ -135,7 +135,7 @@ namespace System.Runtime
                 if (newHeap._nextAvailableThunkPtr != IntPtr.Zero)
                     return newHeap;
             }
-            catch { }
+            catch (Exception) { }
 
             return null;
         }
@@ -156,7 +156,7 @@ namespace System.Runtime
             {
                 newBlockInfo = new AllocatedBlock();
             }
-            catch
+            catch (Exception)
             {
                 return false;
             }
