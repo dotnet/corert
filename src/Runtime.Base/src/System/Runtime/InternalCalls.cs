@@ -42,6 +42,8 @@ namespace System.Runtime
         CheckStaticClassConstruction = 4,
         GetSystemArrayEEType = 5,
         OnFirstChance = 6,
+        DebugFuncEvalHelper = 7,
+        DebugFuncEvalAbortHelper = 8,
     }
 
     internal static class InternalCalls

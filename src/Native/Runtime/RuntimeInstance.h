@@ -14,6 +14,8 @@ enum GenericVarianceType : UInt8;
 struct GenericUnificationDesc;
 class GenericUnificationHashtable;
 
+#include "ICodeManager.h"
+
 class RuntimeInstance
 {
     friend class AsmOffsets;
@@ -149,7 +151,10 @@ private:
 
     bool BuildGenericTypeHashTable();
 
+    ICodeManager * FindCodeManagerForClasslibFunction(PTR_VOID address);
+
 public:
+
     class ModuleIterator
     {
         ReaderWriterLock::ReadHolder    m_readHolder;
@@ -180,6 +185,7 @@ public:
     void UnregisterCodeManager(ICodeManager * pCodeManager);
 
     ICodeManager * FindCodeManagerByAddress(PTR_VOID ControlPC);
+    PTR_VOID GetClasslibFunctionFromCodeAddress(PTR_VOID address, ClasslibFunctionId functionId);
 
     bool RegisterTypeManager(TypeManager * pTypeManager);
     TypeManagerList& GetTypeManagerList();
