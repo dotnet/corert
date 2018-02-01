@@ -15,7 +15,7 @@
 
 #ifndef DACCESS_COMPILE
 
-typedef void(*HighLevelDebugFuncEvalAbortHelperType)(UInt64);
+typedef void(*DebugFuncEvalAbortHelperFunctionType)(UInt64);
 
 class DebugFuncEval
 {
@@ -51,18 +51,6 @@ public:
     /// It is used for the stack walker to understand the hijack frame
     /// </remarks>
     static UInt64 GetMostRecentFuncEvalHijackInstructionPointer();
-
-    /// <summary>
-    /// Retrieve the high level debug func eval abort helper
-    /// </summary>
-    static HighLevelDebugFuncEvalAbortHelperType GetHighLevelDebugFuncEvalAbortHelper();
-
-
-    /// <summary>
-    /// Set the high level debug func eval abort helper
-    /// </summary>
-    static void SetHighLevelDebugFuncEvalAbortHelper(HighLevelDebugFuncEvalAbortHelperType highLevelDebugFuncEvalAbortHelper);
-
 };
 
 #else
