@@ -438,12 +438,11 @@ goto :eof
     set CLRCustomTestLauncher=%CoreRT_TestRoot%\CoreCLR\build-and-run-test.cmd
     set XunitTestBinBase=!CoreRT_TestExtRepo_CoreCLR!
     pushd %CoreRT_TestRoot%\CoreCLR\runtest
-    
+
     "%CoreRT_CliDir%\dotnet.exe" msbuild /t:Restore /p:RepoLocalBuild=true src\TestWrappersConfig\XUnitTooling.depproj
     if errorlevel 1 (
         exit /b 1
     )
-
 
     if not "%CoreRT_CoreCLRTest%" == "" (
         if not exist "%CoreRT_CoreCLRTest%" (
@@ -497,4 +496,3 @@ goto :eof
     )
 
     "%CoreRT_CliDir%\dotnet.exe" !CoreRT_TestingUtilitiesOutputDir!\!CoreRT_XunitHelperName!.dll --logDir "%XunitLogDir%" --pattern "*.xml"
-     

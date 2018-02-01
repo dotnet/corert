@@ -36,7 +36,7 @@ if "%CoreRT_BuildArch%" == "x64" (
     call "%VS140COMNTOOLS%\..\..\VC\bin\amd64\vcvars64.bat" >nul
 )
 
-echo Build %TestFileName%
+echo Building %TestFileName%
 
 call "%CoreRT_CliDir%\dotnet.exe" publish %TestFolder%\Test.csproj /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:DebugSymbols=false" "/p:Configuration=%CoreRT_BuildType%" "/p:FrameworkLibPath=%~dp0..\..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /p:DisableFrameworkLibGeneration=true /p:TestRootDir=%~dp0  /p:ExecutableName=%TestExecutable% /nologo
 if errorlevel 1 (
@@ -44,10 +44,11 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo Executing %TestFileName%
+echo Executing %TestFileName% - writing logs to %XunitLogDir%\%TestFileName%.xml
 
-if not exist %TestExecutable% (
-    echo "ERROR:Native binary not found Unable to run test.""
+if not exist "%TestFolder%\native\%TestExecutable%".exe (
+    echo ERROR:Native binary not found Unable to run test.
+    exit /b 1
 )
 
 call %TestFolder%\native\%TestExecutable% %TestFolder%\%TestFileName%.dll -xml %XunitLogDir%\%TestFileName%.xml

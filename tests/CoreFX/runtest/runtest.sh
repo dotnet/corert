@@ -69,5 +69,3 @@ if [ -z "$__LogDir" ]; then
 fi
 
 run_tests_in_directory ${testRootDir}
-
-

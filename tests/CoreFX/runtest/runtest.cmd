@@ -40,13 +40,6 @@ if /i "%1" == "release"               (set __BuildType=Release&shift&goto Arg_Lo
 if /i "%1" == "LogsDir"         (set __LogsDir=%2&shift&shift&goto Arg_Loop) 
 
 if /i not "%1" == "msbuildargs" goto SkipMsbuildArgs
-:: All the rest of the args will be collected and passed directly to msbuild.
-:CollectMsbuildArgs
-shift
-if "%1"=="" goto ArgsDone
-set __msbuildExtraArgs=%__msbuildExtraArgs% %1
-goto CollectMsbuildArgs
-:SkipMsbuildArgs
 
 set CORE_ROOT=%1
 echo %__MsgPrefix%CORE_ROOT is initially set to: "%CORE_ROOT%"
