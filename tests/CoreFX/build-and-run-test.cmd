@@ -24,7 +24,7 @@ copy /Y "%~dp0\runtest\CoreFXTestHarness\*" "%TestFolder%" >nul
 if not exist %XunitLogDir% md %XunitLogDir%
 
 if not exist %TestFolder%\%TestExecutable%.exe ( 
-    :: Not a test we support yet, exit silently
+    :: Not a test we support, exit silently
     exit /b 0
 )
 

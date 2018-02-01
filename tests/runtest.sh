@@ -105,6 +105,7 @@ download_and_unzip_coreclr_tests_artifacts()
 download_and_unzip_corefx_tests_artifacts()
 {    
     url=$1
+    test_list=$2
     #semaphore=${CoreRT_TestExtRepo_CoreFX}/init-tests.completed
     
     local __msbuild_dir=${CoreRT_CliBinDir}/..
@@ -136,8 +137,11 @@ download_and_unzip_corefx_tests_artifacts()
         exit ${__exitcode}
     fi
 
-     ${CoreRT_CliBinDir}/dotnet ${CoreRT_TestingUtilitiesOutputDir}/
-    
+    ${CoreRT_CliBinDir}/dotnet ${CoreRT_TestingUtilitiesOutputDir}/${CoreRT_TestFileHelperName}.dll --clean --outputDirectory ${CoreRT_TestExtRepo_CoreFX} --testListJsonPath ${test_list} --testUrl ${url}
+    __exitcode=$?
+    if [ ${__exitcode} != 0 ]; then
+        exit ${__exitcode}
+    fi
 }
 
 
@@ -201,8 +205,12 @@ run_corefx_tests()
     CoreRT_TestExtRepo_CoreFX=${CoreRT_TestRoot}/../tests_downloaded/CoreFX
     CoreRT_TestingUtilitiesOutputDir=${CoreRT_TestExtRepo_CoreFX}/Utilities
 
+    export CoreRT_TestRoot
+    export CoreRT_EnableCoreDumps
+    
     export CoreRT_TestExtRepo_CoreFX
     export CoreRT_TestingUtilitiesOutputDir
+    export CoreRT_CliBinDir
 
     # Set paths to helpers
     CoreRT_TestFileHelperName=CoreFX.TestUtils.TestFileSetup
@@ -211,27 +219,32 @@ run_corefx_tests()
     CoreRT_XunitHelperName=CoreFX.TestUtils.XUnit
     CoreRT_XunitHelperProjectPath="${CoreRT_TestRoot}/CoreFX/runtest/src/TestUtils/XUnit/${CoreRT_XunitHelperName}.csproj"    
     
-    TESTS_REMOTE_URL=$(<${CoreRT_TestRoot}/CoreFXTestsURL.txt)
+    TESTS_REMOTE_URL=$(<${CoreRT_TestRoot}/CoreFXTestListURL.txt)
+    TEST_LIST_JSON=${CoreRT_TestRoot}/TopN.CoreFX.issues.json
 
-    download_and_unzip_corefx_tests_artifacts ${TESTS_REMOTE_URL} ${CoreRT_TestFileHelperProjectPath} ${CoreRT_XunitHelperProjectPath}
+    download_and_unzip_corefx_tests_artifacts ${TESTS_REMOTE_URL} ${TEST_LIST_JSON}
     __exitcode=$?
     if [ ${__exitcode} != 0 ];
     then
         exit ${__exitcode}
     fi
-    # FXCustomTestLauncher=%CoreRT_TestRoot%\CoreFX\build-and-run-test.cmd
-    # XunitTestBinBase=%CoreRT_TestExtRepo_CoreFX%
-    # XunitLogDir= %__LogDir%\CoreFX
-    # pushd %CoreRT_TestRoot%\CoreFX\runtest
 
-    # # TODO Add single test/target test support; add exclude tests argument
+    FXCustomTestLauncher=${CoreRT_TestRoot}/CoreFX/corerun
+    XunitTestBinBase=${CoreRT_TestExtRepo_CoreFX}
+    XunitLogDir=${__LogDir}/CoreFX
+    pushd ${CoreRT_TestRoot}/CoreFX/runtest
 
-    # runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% LogsDir %XunitLogDir%
-    # runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% LogsDir %XunitLogDir% 
+    # TODO Add single test/target test support; add exclude tests argument
+    ./runtest.sh --testRootDir=${XunitTestBinBase} --logdir=${XunitLogDir} --testLauncher=${FXCustomTestLauncher}
+
     # if errorlevel 1 
     # then
     #     exit /b 1
-    
+    __exitcode=$?
+    if [ ${__exitcode} != 0 ];
+    then 
+        exit ${__exitcode}
+    fi    
 
     # "%CoreRT_CliDir%\dotnet.exe" !CoreRT_TestingUtilitiesOutputDir!\!CoreRT_XunitHelperName!.dll --logDir "%XunitLogDir%" --pattern "*.xml"
      

@@ -4,17 +4,17 @@
 # It is invoked by each test's bash script. The reason it's called corerun is that
 # the unix CoreCLR tests don't have a custom runner override environment variable.
 # See issue https://github.com/dotnet/coreclr/issues/9007
-# The CoreFX alternative is named corerun to keep parity with CoreCLR's testing infrastructure
+# The CoreFX alternative is named corerun to keep parity with the CoreCLR testing convention
 
-#!/usr/bin/env bash
 
-# This is the Unix equivalent of build-and-run-test.cmd
-# It is invoked by each test's bash script. The reason it's called corerun is that
-# the unix CoreCLR tests don't have a custom runner override environment variable.
-# See issue https://github.com/dotnet/coreclr/issues/9007
+export TestFolderName=$1
+export TestFileName=$(basename ${TestFolderName})
+export TestRootDir=${CoreRT_TestRoot}/CoreFX
 
-export TestExecutable=$1
-export TestFileName=${TestExecutable%.*}
+#
+# We're only interested in referencing the xunit runner - the test dlls will be imported by the test wrapper project
+#
+TestExecutable=xunit.console.netcore
 
 source "$CoreRT_TestRoot/coredump_handling.sh"
 
@@ -22,61 +22,38 @@ if [[ $CoreRT_EnableCoreDumps == 1 ]]; then
     set_up_core_dump_generation
 fi
 
-cp -ar $CoreRT_TestRoot/CoreCLR/. .
+if [ ! -e "${TestFolderName}/${TestExecutable}.exe" ]; then 
+    echo "not found in ${TestFolderName}/${TestExecutable}.exe"
+    # Not a test we support, exit silently
+    exit 0
+fi
+
+# Copy the artefacts we need to compile and run the xunit exe
+cp -ar ${CoreRT_TestRoot}/CoreFX/runtest/CoreFXTestHarness/. ${TestFolderName}
+__exitcode=$?
+if [ ${__exitcode} != 0 ];
+then
+    exit ${__exitcode}
+fi
 
 # Workaround until we have a better reflection engine
 # Add name of currently executing test to rd.xml
+sed -i "s/\*Application\*/${TestFileName}/g" ${TestFolderName}/default.rd.xml
 
-$__dotnetclipath/dotnet publish 
 
+#${__dotnetclipath}/dotnet restore  
 
-__msbuild_dir=${CoreRT_TestRoot}/../Tools
-echo ${__msbuild_dir}/msbuild.sh /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} Test.csproj
-${__msbuild_dir}/msbuild.sh /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} Test.csproj
+echo ${CoreRT_CliBinDir}/dotnet publish "/p:IlcPath=${CoreRT_ToolchainDir}" "/p:DebugSymbols=false" "/p:Configuration=${CoreRT_BuildType}" "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" /p:DisableFrameworkLibGeneration=true /p:TestRootDir=${TestRootDir} /p:ExecutableName=${TestExecutable} ${TestFolderName}/Test.csproj 
+${CoreRT_CliBinDir}/dotnet restore "/p:IlcPath=${CoreRT_ToolchainDir}" "/p:DebugSymbols=false" "/p:Configuration=${CoreRT_BuildType}" "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" /p:DisableFrameworkLibGeneration=true /p:TestRootDir=${TestRootDir} /p:ExecutableName=${TestExecutable} ${TestFolderName}/Test.csproj 
 
-if [[ $CoreRT_EnableCoreDumps == 1 ]]; then
-    # Handle any core files generated when running the test IL through the toolchain.
-    inspect_and_delete_core_files $CoreRT_ToolchainDir/corerun "$CoreRT_ToolchainDir"
+${CoreRT_CliBinDir}/dotnet build "/p:IlcPath=${CoreRT_ToolchainDir}" "/p:DebugSymbols=false" "/p:Configuration=${CoreRT_BuildType}" "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" /p:DisableFrameworkLibGeneration=true /p:TestRootDir=${TestRootDir} /p:ExecutableName=${TestExecutable} "/p:OutputPath=${TestFolderName}/native" ${TestFolderName}/Test.csproj 
+__exitcode=$?
+if [ ${__exitcode} != 0 ];
+then
+    exit ${__exitcode}
 fi
 
-# Remove the test executable from the arg list so it isn't passed to test execution
-shift
+${CoreRT_CliBinDir}/dotnet ${TestFolderName}/native/${TestExecutable}.exe ${TestFileName}.dll -xml res.xml
 
-testExtRepo=$( dirname ${CoreRT_TestRoot} )/tests_downloaded/CoreCLR/
-nativeArtifactRepo=${testExtRepo}native/
-dirSuffix=$(dirname ${PWD#$testExtRepo})/
-nativeDir=${nativeArtifactRepo}tests/src/${dirSuffix}
 
-# In OSX we copy the native component to the directory where the exectuable resides.
-# However, in Linux dlopen doesn't seem to look for current directory to resolve the dynamic library.
-# So instead we point LD_LIBRARY_PATH to the directory where the native component is.
-if [ -e ${nativeDir} ]; then
-    if [ "${CoreRT_BuildOS}" == "OSX" ]; then
-        echo "Copying native component from :"${nativeDir}
-        cp ${nativeDir}*.dylib  native/ 2>/dev/null
-    fi
-    if [ "${CoreRT_BuildOS}" == "Linux" ]; then
-        LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${nativeDir}
-        export LD_LIBRARY_PATH
-    fi
-fi
-
-if [[ ! -f native/${TestFileName} ]]; then
-    echo "ERROR: Native binary not found. Unable to run test."
-    exit -1
-fi
-
-pushd native/
-./${TestFileName} "$@"
-testScriptExitCode=$?
-popd
-
-if [[ $CoreRT_EnableCoreDumps == 1 ]]; then
-    # Handle any core files generated when running the test.
-    inspect_and_delete_core_files native/$TestFileName "$CoreRT_ToolchainDir"
-fi
-
-# Clean up test binary artifacts to save space
-rm -r native 2>/dev/null
-
-exit $testScriptExitCode
+exit 0
