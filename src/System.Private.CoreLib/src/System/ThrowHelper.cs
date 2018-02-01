@@ -307,8 +307,6 @@ namespace System
                     return "start";
                 case ExceptionArgument.format:
                     return "format";
-                case ExceptionArgument.stateMachine:
-                    return "stateMachine";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -397,8 +395,7 @@ namespace System
         exception,
         pointer,
         start,
-        format,
-        stateMachine
+        format
     }
 
     //
