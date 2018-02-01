@@ -56,6 +56,8 @@ namespace ILCompiler.DependencyAnalysis
         VtableOffset,       // Offset of a virtual method into the type's vtable
         Constrained,        // ConstrainedCallDesc
         ConstrainedDirect,  // Direct ConstrainedCallDesc
+        Integer,            // Integer
+        UnboxingMethod,     // UnboxingMethod
     }
 
     public interface IGenericLookupResultTocWriter
@@ -725,7 +727,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
         {
-            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.Method, _method);
+            LookupResultType lookupResult = LookupResultType.Method;
+            if (_isUnboxingThunk && ProjectNDependencyBehavior.EnableFullAnalysis)
+                lookupResult = LookupResultType.UnboxingMethod;
+
+            writer.WriteData(LookupResultReferenceType(factory), lookupResult, _method);
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -1253,7 +1259,7 @@ namespace ILCompiler.DependencyAnalysis
             UtcNodeFactory utcNodeFactory = factory as UtcNodeFactory;
             Debug.Assert(utcNodeFactory != null);
             TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
-            return utcNodeFactory.TypeThreadStaticsIndexSymbol(instantiatedType);
+            return utcNodeFactory.TypeThreadStaticsIndexSymbol((MetadataType)instantiatedType);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -1576,8 +1582,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             MethodDesc instantiatedConstrainedMethod = _constrainedMethod.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
             TypeDesc instantiatedConstraintType = _constraintType.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+            MethodDesc implMethod = instantiatedConstrainedMethod;
 
-            MethodDesc implMethod = instantiatedConstraintType.GetClosestDefType().ResolveInterfaceMethodToVirtualMethodOnType(instantiatedConstrainedMethod);
+            if (implMethod.OwningType.IsInterface)
+            {
+                implMethod = instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToVirtualMethodOnType(implMethod);
+            }
+
+            implMethod = instantiatedConstraintType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(implMethod);
 
             // AOT use of this generic lookup is restricted to finding methods on valuetypes (runtime usage of this slot in universal generics is more flexible)
             Debug.Assert(instantiatedConstraintType.IsValueType);
@@ -1589,7 +1601,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                return factory.MethodEntrypoint(implMethod);
+                return factory.CanonicalEntrypoint(implMethod);
             }
         }
 

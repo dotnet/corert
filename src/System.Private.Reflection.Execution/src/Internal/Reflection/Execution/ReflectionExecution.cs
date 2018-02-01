@@ -26,12 +26,15 @@
 using global::System;
 using global::System.Collections.Generic;
 using global::System.Reflection;
-using global::System.Runtime.CompilerServices;
+using global::System.Reflection.Runtime.General;
 
 using global::Internal.Runtime.Augments;
 
 using global::Internal.Reflection.Core;
 using global::Internal.Reflection.Core.Execution;
+using global::Internal.Metadata.NativeFormat;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.Reflection.Execution
 {
@@ -86,6 +89,36 @@ namespace Internal.Reflection.Execution
             defaultAssemblies.Add(callingAssemblyName);
             defaultAssemblies.AddRange(DefaultAssemblyNamesForGetType);
             return ReflectionCoreExecution.ExecutionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, defaultAssemblies);
+        }
+
+        public static bool TryGetMethodMetadataFromStartAddress(IntPtr methodStartAddress, out MetadataReader reader, out TypeDefinitionHandle typeHandle, out MethodHandle methodHandle)
+        {
+            reader = null;
+            typeHandle = default(TypeDefinitionHandle);
+            methodHandle = default(MethodHandle);
+
+            RuntimeTypeHandle declaringTypeHandle = default(RuntimeTypeHandle);
+            if (!ExecutionEnvironment.TryGetMethodForOriginalLdFtnResult(methodStartAddress,
+                ref declaringTypeHandle, out QMethodDefinition qMethodDefinition, out _))
+                return false;
+
+            if (!qMethodDefinition.IsNativeFormatMetadataBased)
+                return false;
+
+            if (RuntimeAugments.IsGenericType(declaringTypeHandle))
+                declaringTypeHandle = RuntimeAugments.GetGenericDefinition(declaringTypeHandle);
+
+            if (!ExecutionEnvironment.TryGetMetadataForNamedType(declaringTypeHandle, out QTypeDefinition qTypeDefinition))
+                return false;
+
+            Debug.Assert(qTypeDefinition.IsNativeFormatMetadataBased);
+            Debug.Assert(qTypeDefinition.NativeFormatReader == qMethodDefinition.NativeFormatReader);
+
+            reader = qTypeDefinition.NativeFormatReader;
+            typeHandle = qTypeDefinition.NativeFormatHandle;
+            methodHandle = qMethodDefinition.NativeFormatHandle;
+
+            return true;
         }
 
         internal static ExecutionEnvironmentImplementation ExecutionEnvironment { get; private set; }

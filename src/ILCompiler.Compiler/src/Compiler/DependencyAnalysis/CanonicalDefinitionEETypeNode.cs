@@ -42,5 +42,7 @@ namespace ILCompiler.DependencyAnalysis
 
         // Canonical definition types will have their base size set to the minimum
         protected override int BaseSize => MinimumObjectSize;
+
+        protected internal override int ClassCode => -1851030036;
     }
 }

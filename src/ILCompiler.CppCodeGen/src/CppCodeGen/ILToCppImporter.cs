@@ -321,6 +321,145 @@ namespace Internal.IL
             }
         }
 
+        private void AppendComparison(ILOpcode opcode, StackEntry op1, StackEntry op2)
+        {
+            // StackValueKind is carefully ordered to make this work (assuming the IL is valid)
+            StackValueKind kind = (op1.Kind > op2.Kind) ? op1.Kind : op2.Kind;
+
+            string op = null;
+            bool unsigned = false;
+            bool inverted = false;
+            switch (opcode)
+            {
+                case ILOpcode.beq:
+                case ILOpcode.ceq:
+                    op = "==";
+                    break;
+                case ILOpcode.bge:
+                    op = ">=";
+                    break;
+                case ILOpcode.bgt:
+                case ILOpcode.cgt:
+                    op = ">";
+                    break;
+                case ILOpcode.ble:
+                    op = "<=";
+                    break;
+                case ILOpcode.blt:
+                case ILOpcode.clt:
+                    op = "<";
+                    break;
+                case ILOpcode.bne_un:
+                    op = "!=";
+                    break;
+                case ILOpcode.bge_un:
+                    if (kind == StackValueKind.Float)
+                    {
+                        op = "<";
+                        inverted = true;
+                    }
+                    else
+                    {
+                        op = ">=";
+                        unsigned = true;
+                    }
+                    break;
+                case ILOpcode.bgt_un:
+                case ILOpcode.cgt_un:
+                    if (kind == StackValueKind.Float)
+                    {
+                        op = "<=";
+                        inverted = true;
+                    }
+                    else
+                    if (op1.Kind == StackValueKind.ObjRef && op1.Type == null)
+                    {
+                        // ECMA-335 III.1.5 Operand type table, P. 303:
+                        // cgt.un is commonly used when comparing an ObjectRef with null (there is no "compare - not - equal" instruction)
+                        // Turn into more natural compare not equal.
+                        op = "!=";
+                    }
+                    else
+                    {
+                        op = ">";
+                        unsigned = true;
+                    }
+                    break;
+                case ILOpcode.ble_un:
+                    if (kind == StackValueKind.Float)
+                    {
+                        op = ">";
+                        inverted = true;
+                    }
+                    else
+                    {
+                        op = "<=";
+                        unsigned = true;
+                    }
+                    break;
+                case ILOpcode.blt_un:
+                case ILOpcode.clt_un:
+                    if (kind == StackValueKind.Float)
+                    {
+                        op = ">=";
+                        inverted = true;
+                    }
+                    else
+                    {
+                        op = "<";
+                        unsigned = true;
+                    }
+                    break;
+                default:
+                    Debug.Fail("Unexpected opcode");
+                    break;
+            }
+
+            if (inverted)
+            {
+                Append("!(");
+            }
+            if (unsigned)
+            {
+                if (kind < StackValueKind.ByRef)
+                {
+                    Append("(u");
+                    Append(GetStackValueKindCPPTypeName(kind));
+                    Append(")");
+                }
+                else
+                {
+                    if (op2.Kind < StackValueKind.ByRef
+                            || (op2.Kind == StackValueKind.ObjRef && op2.Type == null))
+                        Append("(void*)");
+                }
+            }
+            Append(op2);
+            Append(" ");
+            Append(op);
+            Append(" ");
+            if (unsigned)
+            {
+                if (kind < StackValueKind.ByRef)
+                {
+                    Append("(u");
+                    Append(GetStackValueKindCPPTypeName(kind));
+                    Append(")");
+                }
+                else
+                {
+                    if (op1.Kind < StackValueKind.ByRef
+                            || (op1.Kind == StackValueKind.ObjRef && op1.Type == null))
+                        Append("(void*)");
+                }
+            }
+            Append(op1);
+            if (inverted)
+            {
+                Append(")");
+            }
+        }
+
         private StackEntry NewSpillSlot(StackEntry entry)
         {
             if (_spillSlots == null)
@@ -678,7 +817,9 @@ namespace Internal.IL
 
         private void ImportBreak()
         {
-            throw new NotImplementedException("Opcode: break");
+            AppendLine();
+            Append("__debug_break()");
+            AppendSemicolon();
         }
 
         private void ImportLoadVar(int index, bool argument)
@@ -1551,107 +1692,7 @@ namespace Internal.IL
                     var op1 = _stack.Pop();
                     var op2 = _stack.Pop();
 
-                    // StackValueKind is carefully ordered to make this work (assuming the IL is valid)
-                    StackValueKind kind;
-
-                    if (op1.Kind > op2.Kind)
-                    {
-                        kind = op1.Kind;
-                    }
-                    else
-                    {
-                        kind = op2.Kind;
-                    }
-
-                    string op = null;
-                    bool unsigned = false;
-                    bool inverted = false;
-                    switch (opcode)
-                    {
-                        case ILOpcode.beq: op = "=="; break;
-                        case ILOpcode.bge: op = ">="; break;
-                        case ILOpcode.bgt: op = ">"; break;
-                        case ILOpcode.ble: op = "<="; break;
-                        case ILOpcode.blt: op = "<"; break;
-                        case ILOpcode.bne_un: op = "!="; break;
-                        case ILOpcode.bge_un:
-                            if (kind == StackValueKind.Float)
-                            {
-                                op = "<"; inverted = true;
-                            }
-                            else
-                            {
-                                op = ">=";
-                            }
-                            if (kind == StackValueKind.Int32 || kind == StackValueKind.Int64)
-                                unsigned = true;
-                            break;
-                        case ILOpcode.bgt_un:
-                            if (kind == StackValueKind.Float)
-                            {
-                                op = "<="; inverted = true;
-                            }
-                            else
-                            {
-                                op = ">";
-                            }
-                            if (kind == StackValueKind.Int32 || kind == StackValueKind.Int64)
-                                unsigned = true;
-                            break;
-                        case ILOpcode.ble_un:
-                            if (kind == StackValueKind.Float)
-                            {
-                                op = ">"; inverted = true;
-                            }
-                            else
-                            {
-                                op = "<=";
-                            }
-                            if (kind == StackValueKind.Int32 || kind == StackValueKind.Int64)
-                                unsigned = true;
-                            break;
-                        case ILOpcode.blt_un:
-                            if (kind == StackValueKind.Float)
-                            {
-                                op = ">="; inverted = true;
-                            }
-                            else
-                            {
-                                op = "<";
-                            }
-                            if (kind == StackValueKind.Int32 || kind == StackValueKind.Int64)
-                                unsigned = true;
-                            break;
-                    }
-
-                    if (kind == StackValueKind.ByRef)
-                        unsigned = false;
-
-                    if (inverted)
-                    {
-                        Append("!(");
-                    }
-                    if (unsigned)
-                    {
-                        Append("(u");
-                        Append(GetStackValueKindCPPTypeName(kind));
-                        Append(")");
-                    }
-                    Append(op2);
-                    Append(" ");
-                    Append(op);
-                    Append(" ");
-                    if (unsigned)
-                    {
-                        Append("(u");
-                        Append(GetStackValueKindCPPTypeName(kind));
-                        Append(")");
-                    }
-                    Append(op1);
-                    if (inverted)
-                    {
-                        Append(")");
-                    }
+                    AppendComparison(opcode, op1, op2);
                 }
                 Append(") ");
             }
@@ -1799,82 +1840,9 @@ namespace Internal.IL
             var op1 = _stack.Pop();
             var op2 = _stack.Pop();
 
-            // StackValueKind is carefully ordered to make this work (assuming the IL is valid)
-            StackValueKind kind;
-
-            if (op1.Kind > op2.Kind)
-            {
-                kind = op1.Kind;
-            }
-            else
-            {
-                kind = op2.Kind;
-            }
-
             PushTemp(StackValueKind.Int32);
 
-            string op = null;
-            bool unsigned = false;
-            bool inverted = false;
-            switch (opcode)
-            {
-                case ILOpcode.ceq: op = "=="; break;
-                case ILOpcode.cgt: op = ">"; break;
-                case ILOpcode.clt: op = "<"; break;
-                case ILOpcode.cgt_un:
-                    if (kind == StackValueKind.Float)
-                    {
-                        op = "<="; inverted = true;
-                    }
-                    else
-                    {
-                        op = ">";
-                        if (kind == StackValueKind.Int32 || kind == StackValueKind.Int64)
-                            unsigned = true;
-                    }
-                    break;
-                case ILOpcode.clt_un:
-                    if (kind == StackValueKind.Float)
-                    {
-                        op = ">="; inverted = true;
-                    }
-                    else
-                    {
-                        op = "<";
-                        if (kind == StackValueKind.Int32 || kind == StackValueKind.Int64)
-                            unsigned = true;
-                    }
-                    break;
-            }
-
-            if (kind == StackValueKind.ByRef)
-                unsigned = false;
-
-            if (inverted)
-            {
-                Append("!(");
-            }
-            if (unsigned)
-            {
-                Append("(u");
-                Append(GetStackValueKindCPPTypeName(kind));
-                Append(")");
-            }
-            Append(op2);
-            Append(" ");
-            Append(op);
-            Append(" ");
-            if (unsigned)
-            {
-                Append("(u");
-                Append(GetStackValueKindCPPTypeName(kind));
-                Append(")");
-            }
-            Append(op1);
-            if (inverted)
-            {
-                Append(")");
-            }
+            AppendComparison(opcode, op1, op2);
             AppendSemicolon();
         }
 
@@ -2416,6 +2384,8 @@ namespace Internal.IL
             var index = _stack.Pop();
             var arrayPtr = _stack.Pop();
 
+            // TODO: type check, unless readonly prefix was applied
+
             // Range check
             AppendLine();
             Append("__range_check(");
@@ -2671,7 +2641,7 @@ namespace Internal.IL
 
         private void ImportReadOnlyPrefix()
         {
-            throw new NotImplementedException();
+            _pendingPrefix |= Prefix.ReadOnly;
         }
 
         private void TriggerCctor(TypeDesc type)
@@ -2783,6 +2753,11 @@ namespace Internal.IL
         }
 
         private void ReportFallthroughAtEndOfMethod()
+        {
+            ThrowHelper.ThrowInvalidProgramException();
+        }
+
+        private void ReportMethodEndInsideInstruction()
         {
             ThrowHelper.ThrowInvalidProgramException();
         }

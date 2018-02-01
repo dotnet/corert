@@ -17,6 +17,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Internal.Runtime.Augments;
+using Internal.Runtime.CompilerServices;
 
 using AsyncStatus = Internal.Runtime.Augments.AsyncStatus;
 using CausalityRelation = Internal.Runtime.Augments.CausalityRelation;

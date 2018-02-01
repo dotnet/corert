@@ -6,8 +6,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsCoreAssembly>true</IsCoreAssembly>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <!-- Hack to disable analyzers. Replace once https://github.com/dotnet/buildtools/issues/1349 is fixed. -->
-    <CodeAnalyzerDir>$(MSBuildThisFileDirectory)/Documentation</CodeAnalyzerDir>
+    <EnableFxCopAnalyzers>false</EnableFxCopAnalyzers>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <DefineConstants>FEATURE_GC_STRESS;$(DefineConstants)</DefineConstants>
@@ -84,7 +83,8 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">
-    <Compile Include="$(BaseIntermediateOutputPath)\Native\$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)\Runtime\Full\AsmOffsets.cs" />
+    <Compile Condition="'$(Platform)'!='wasm'" Include="$(BaseIntermediateOutputPath)\Native\$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)\Runtime\Full\AsmOffsets.cs" />
+    <Compile Condition="'$(Platform)'=='wasm'" Include="$(BaseIntermediateOutputPath)\Native\$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)\Runtime\Portable\AsmOffsetsPortable.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs">
@@ -156,9 +156,6 @@
     <Compile Include="..\..\Runtime.Base\src\System\RuntimeHandles.cs">
       <Link>System\RuntimeHandles.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\RuntimeTypeHandle.cs">
-      <Link>System\RuntimeTypeHandle.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs">
       <Link>System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs</Link>
     </Compile>
@@ -176,9 +173,6 @@
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\IsByRefLikeAttribute.cs">
       <Link>Runtime.Base\src\System\Runtime\CompilerServices\IsByRefLikeAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\Unsafe.cs">
-      <Link>System\Runtime\CompilerServices\Unsafe.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\EETypePtr.cs">
       <Link>System\EETypePtr.cs</Link>
@@ -231,6 +225,9 @@
     <Compile Include="..\..\Runtime.Base\src\System\Void.cs">
       <Link>System\Void.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime.Base\src\Internal\Runtime\CompilerServices\Unsafe.cs">
+      <Link>Internal\Runtime\CompilerServices\Unsafe.cs</Link>
+    </Compile>
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
     <Compile Include="System\Runtime\RuntimeImports.cs" />
@@ -238,6 +235,8 @@
     <Compile Include="System\Array.cs" />
     <Compile Include="System\RuntimeExceptionHelpers.cs" />
     <Compile Include="System\Object.cs" />
+    <Compile Include="System\Type.cs" />
+    <Compile Include="System\RuntimeTypeHandle.cs" />
     <Compile Include="..\..\Common\src\Internal\Runtime\TypeManagerHandle.cs">
       <Link>Internal\Runtime\TypeManagerHandle.cs</Link>
     </Compile>

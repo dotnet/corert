@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
+using Internal.Runtime.CompilerServices;
 
 #pragma warning disable 0809  //warning CS0809: Obsolete member 'Span<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
 
@@ -21,12 +22,13 @@ namespace System
     /// Span represents a contiguous region of arbitrary memory. Unlike arrays, it can point to either managed
     /// or native memory, or to memory allocated on the stack. It is type- and memory-safe.
     /// </summary>
+    [DebuggerTypeProxy(typeof(SpanDebugView<>))]
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     [NonVersionable]
     public readonly ref struct Span<T>
     {
         /// <summary>A byref or a native ptr.</summary>
-        private readonly ByReference<T> _pointer;
+        internal readonly ByReference<T> _pointer;
         /// <summary>The number of elements this Span contains.</summary>
 #if PROJECTN
         [Bound]
@@ -129,16 +131,13 @@ namespace System
             _length = length;
         }
 
-        //Debugger Display = {T[length]}
-        private string DebuggerDisplay => string.Format("{{{0}[{1}]}}", typeof(T).Name, _length);
-
         /// <summary>
         /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to the location where the 0th element
         /// would have been stored. Such a reference can be used for pinning but must never be dereferenced.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public ref T DangerousGetPinnableReference()
+        internal ref T DangerousGetPinnableReference()
         {
             return ref _pointer.Value;
         }
@@ -184,9 +183,7 @@ namespace System
                 return ref Unsafe.Add(ref _pointer.Value, index);
             }
 #else
-#if CORERT
             [Intrinsic]
-#endif
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [NonVersionable]
             get
@@ -278,8 +275,18 @@ namespace System
         /// </exception>
         public void CopyTo(Span<T> destination)
         {
-            if (!TryCopyTo(destination))
+            // Using "if (!TryCopyTo(...))" results in two branches: one for the length
+            // check, and one for the result of TryCopyTo. Since these checks are equivalent,
+            // we can optimize by performing the check once ourselves then calling Memmove directly.
+
+            if ((uint)_length <= (uint)destination.Length)
+            {
+                Buffer.Memmove(ref destination.DangerousGetPinnableReference(), ref _pointer.Value, (nuint)_length);
+            }
+            else
+            {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
         }
 
         /// <summary>
@@ -292,11 +299,13 @@ namespace System
         /// return false and no data is written to the destination.</returns>        
         public bool TryCopyTo(Span<T> destination)
         {
-            if ((uint)_length > (uint)destination.Length)
-                return false;
-
-            Span.CopyTo<T>(ref destination._pointer.Value, ref _pointer.Value, _length);
-            return true;
+            bool retVal = false;
+            if ((uint)_length <= (uint)destination.Length)
+            {
+                Buffer.Memmove(ref destination.DangerousGetPinnableReference(), ref _pointer.Value, (nuint)_length);
+                retVal = true;
+            }
+            return retVal;
         }
 
         /// <summary>
@@ -341,14 +350,20 @@ namespace System
         }
 
         /// <summary>
+        /// Returns a <see cref="String"/> with the name of the type and the number of elements
+        /// </summary>
+        public override string ToString() => string.Format("System.Span<{0}>[{1}]", typeof(T).Name, _length);
+
+        /// <summary>
         /// Defines an implicit conversion of an array to a <see cref="Span{T}"/>
         /// </summary>
-        public static implicit operator Span<T>(T[] array) => new Span<T>(array);
+        public static implicit operator Span<T>(T[] array) => array != null ? new Span<T>(array) : default;
 
         /// <summary>
         /// Defines an implicit conversion of a <see cref="ArraySegment{T}"/> to a <see cref="Span{T}"/>
         /// </summary>
-        public static implicit operator Span<T>(ArraySegment<T> arraySegment) => new Span<T>(arraySegment.Array, arraySegment.Offset, arraySegment.Count);
+        public static implicit operator Span<T>(ArraySegment<T> arraySegment)
+            => arraySegment.Array != null ? new Span<T>(arraySegment.Array, arraySegment.Offset, arraySegment.Count) : default;
 
         /// <summary>
         /// Defines an implicit conversion of a <see cref="Span{T}"/> to a <see cref="ReadOnlySpan{T}"/>
@@ -400,7 +415,7 @@ namespace System
                 return Array.Empty<T>();
 
             var destination = new T[_length];
-            Span.CopyTo<T>(ref Unsafe.As<byte, T>(ref destination.GetRawSzArrayData()), ref _pointer.Value, _length);
+            Buffer.Memmove(ref Unsafe.As<byte, T>(ref destination.GetRawSzArrayData()), ref _pointer.Value, (nuint)_length);
             return destination;
         }
 
@@ -408,5 +423,47 @@ namespace System
         /// Returns an empty <see cref="Span{T}"/>
         /// </summary>
         public static Span<T> Empty => default(Span<T>);
+
+        /// <summary>Gets an enumerator for this span.</summary>
+        public Enumerator GetEnumerator() => new Enumerator(this);
+
+        /// <summary>Enumerates the elements of a <see cref="Span{T}"/>.</summary>
+        public ref struct Enumerator
+        {
+            /// <summary>The span being enumerated.</summary>
+            private readonly Span<T> _span;
+            /// <summary>The next index to yield.</summary>
+            private int _index;
+
+            /// <summary>Initialize the enumerator.</summary>
+            /// <param name="span">The span to enumerate.</param>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            internal Enumerator(Span<T> span)
+            {
+                _span = span;
+                _index = -1;
+            }
+
+            /// <summary>Advances the enumerator to the next element of the span.</summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool MoveNext()
+            {
+                int index = _index + 1;
+                if (index < _span.Length)
+                {
+                    _index = index;
+                    return true;
+                }
+
+                return false;
+            }
+
+            /// <summary>Gets the element at the current position of the enumerator.</summary>
+            public ref T Current
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => ref _span[_index];
+            }
+        }
     }
 }

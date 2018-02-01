@@ -164,6 +164,7 @@ private:
         PTR_UIntNative pX26;
         PTR_UIntNative pX27;
         PTR_UIntNative pX28;
+        PTR_UIntNative pFP;
 #elif defined(UNIX_AMD64_ABI)
         PTR_UIntNative pRbp;
         PTR_UIntNative pRbx;

@@ -114,7 +114,7 @@ NESTED_ENTRY RhpWaitForGC, _TEXT
 NoWait:
         test        [RhpTrapThreads], TrapThreadsFlags_AbortInProgress
         jz          Done
-        test        dword ptr [rbx + OFFSETOF__PInvokeTransitionFrame__m_dwFlags], PTFF_THREAD_ABORT
+        test        dword ptr [rbx + OFFSETOF__PInvokeTransitionFrame__m_Flags], PTFF_THREAD_ABORT
         jz          Done
 
         mov         rcx, STATUS_REDHAWK_THREAD_ABORT
@@ -293,7 +293,7 @@ LEAF_ENTRY RhpPInvoke, _TEXT
         mov         qword ptr [rcx + OFFSETOF__PInvokeTransitionFrame__m_RIP], r11
 
         lea         r11, [rsp + 8]              ; r11 <- caller SP
-        mov         dword ptr [rcx + OFFSETOF__PInvokeTransitionFrame__m_dwFlags], PTFF_SAVE_RSP
+        mov         dword ptr [rcx + OFFSETOF__PInvokeTransitionFrame__m_Flags], PTFF_SAVE_RSP
         mov         qword ptr [rcx + OFFSETOF__PInvokeTransitionFrame__m_PreservedRegs], r11
 
         mov         qword ptr [r10 + OFFSETOF__Thread__m_pTransitionFrame], rcx

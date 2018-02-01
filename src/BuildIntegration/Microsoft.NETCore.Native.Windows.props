@@ -14,63 +14,71 @@ See the LICENSE file in the project root for more information.
 ***********************************************************************************************
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-
   <PropertyGroup>
     <CppCompiler>cl</CppCompiler>
     <CppLinker>link</CppLinker>
     <CppLibCreator>lib</CppLibCreator>
   </PropertyGroup>
+    
+  <!-- Part of workaround for lack of secondary build artifact import - https://github.com/Microsoft/msbuild/issues/2807 -->
+  <!-- Ensure that runtime-specific paths have already been set -->  
+  <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
+    <ItemGroup>
+      <CppCompilerAndLinkerArg Include="/I$(IlcPath)\inc" />
+      <CppCompilerAndLinkerArg Condition="'$(Configuration)' == 'Debug'" Include="/Od" />
+      <CppCompilerAndLinkerArg Condition="'$(Configuration)' != 'Debug'" Include="/O2" />
+      <CppCompilerAndLinkerArg Include="/c /nologo /W3 /GS /DCPPCODEGEN /EHs /Zi /bigobj" />
+      <CppCompilerAndLinkerArg Condition="'$(UseDebugCrt)' == 'true'" Include="/MTd" />
+      <CppCompilerAndLinkerArg Condition="'$(UseDebugCrt)' != 'true'" Include="/MT" />
+      <CppCompilerAndLinkerArg Include="$(AdditionalCppCompilerFlags)" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <CppCompilerAndLinkerArg Include="/I$(IlcPath)\inc" />
-    <CppCompilerAndLinkerArg Condition="'$(Configuration)' == 'Debug'" Include="/Od" />
-    <CppCompilerAndLinkerArg Condition="'$(Configuration)' != 'Debug'" Include="/O2" />
-    <CppCompilerAndLinkerArg Include="/c /nologo /W3 /GS /DCPPCODEGEN /EHs /Zi /bigobj" />
-    <CppCompilerAndLinkerArg Condition="'$(UseDebugCrt)' == 'true'" Include="/MTd" />
-    <CppCompilerAndLinkerArg Condition="'$(UseDebugCrt)' != 'true'" Include="/MT" />
-    <CppCompilerAndLinkerArg Include="$(AdditionalCppCompilerFlags)" />
-  </ItemGroup>
+    <ItemGroup>
+      <NativeLibrary Condition="$(NativeCodeGen) == '' and $(NativeLib) == ''" Include="$(IlcPath)\sdk\bootstrapper.lib" />
+      <NativeLibrary Condition="$(NativeCodeGen) == '' and $(NativeLib) != ''" Include="$(IlcPath)\sdk\bootstrapperdll.lib" />
+      <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)\sdk\Runtime.lib" />
+      <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)\sdk\bootstrappercpp.lib" />
+      <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)\sdk\PortableRuntime.lib" />
+      <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)\sdk\bootstrappercpp.lib" />
+      <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)\sdk\PortableRuntime.lib" />
+      <NativeLibrary Condition="'$(IlcMultiModule)' == 'true' and $(NativeCodeGen) == ''" Include="$(SharedLibrary)" />
+    </ItemGroup>
+  
+    <ItemGroup>
+      <NativeLibrary Include="kernel32.lib" />
+      <NativeLibrary Include="user32.lib" />
+      <NativeLibrary Include="gdi32.lib" />
+      <NativeLibrary Include="winspool.lib" />
+      <NativeLibrary Include="comdlg32.lib" />
+      <NativeLibrary Include="advapi32.lib" />
+      <NativeLibrary Include="shell32.lib" />
+      <NativeLibrary Include="ole32.lib" />
+      <NativeLibrary Include="oleaut32.lib" />
+      <NativeLibrary Include="uuid.lib" />
+      <NativeLibrary Include="bcrypt.lib" />
+      <NativeLibrary Include="normaliz.lib" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <LinkerArg Condition="$(NativeLib) == 'Shared'" Include="/DLL" />
+      <LinkerArg Include="@(NativeLibrary)" />
+      <LinkerArg Include="/NOLOGO /DEBUG /MANIFEST:NO" />
+      <!-- The runtime is not compatible with jump stubs inserted by incremental linking. -->
+      <LinkerArg Include="/INCREMENTAL:NO" />
+    </ItemGroup>
+  
+    <ItemGroup>
+      <!-- TODO <LinkerArg Include="/MACHINE:X64" /> -->
+    </ItemGroup>
+   
+    <ItemGroup Condition="'$(Configuration)' != 'Debug'">
+      <LinkerArg Include="/OPT:REF" />
+      <LinkerArg Include="/OPT:ICF" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)\sdk\bootstrapper.lib" />
-    <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)\sdk\Runtime.lib" />
-    <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)\sdk\bootstrappercpp.lib" />
-    <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)\sdk\PortableRuntime.lib" />
-    <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)\sdk\bootstrappercpp.lib" />
-    <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)\sdk\PortableRuntime.lib" />
-    <NativeLibrary Condition="'$(IlcMultiModule)' == 'true' and $(NativeCodeGen) == ''" Include="$(SharedLibrary)" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <AdditionalNativeLibrary Include="kernel32.lib" />
-    <AdditionalNativeLibrary Include="user32.lib" />
-    <AdditionalNativeLibrary Include="gdi32.lib" />
-    <AdditionalNativeLibrary Include="winspool.lib" />
-    <AdditionalNativeLibrary Include="comdlg32.lib" />
-    <AdditionalNativeLibrary Include="advapi32.lib" />
-    <AdditionalNativeLibrary Include="shell32.lib" />
-    <AdditionalNativeLibrary Include="ole32.lib" />
-    <AdditionalNativeLibrary Include="oleaut32.lib" />
-    <AdditionalNativeLibrary Include="uuid.lib" />
-    <AdditionalNativeLibrary Include="bcrypt.lib" />
-    <AdditionalNativeLibrary Include="normaliz.lib" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <LinkerArg Include="@(NativeLibrary)" />
-    <LinkerArg Include="@(AdditionalNativeLibrary)" />
-    <LinkerArg Include="/NOLOGO /DEBUG /MANIFEST:NO" />
-    <!-- The runtime is not compatible with jump stubs inserted by incremental linking. -->
-    <LinkerArg Include="/INCREMENTAL:NO" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- TODO <LinkerArg Include="/MACHINE:X64" /> -->
-  </ItemGroup>
- 
-  <ItemGroup Condition="'$(Configuration)' != 'Debug'">
-    <LinkerArg Include="/OPT:REF" />
-    <LinkerArg Include="/OPT:ICF" />
-  </ItemGroup>
-
+    <Exec Command="where /Q $(CppLinker)" IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="_WhereLinker"/>
+    </Exec>
+    <Error Condition="'$(_WhereLinker)' != '0'" Text="Platform linker not found. Make sure to publish from a x64 Native Tools Command Prompt for VS 2017 with C++ tools installed." />
+  </Target>
 </Project>

@@ -17,7 +17,7 @@ namespace System
         public bool IsInterface => (GetAttributeFlagsImpl() & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface;
 
         [Intrinsic]
-        public static Type GetTypeFromHandle(RuntimeTypeHandle handle) => ReflectionCoreNonPortable.GetTypeForRuntimeTypeHandle(handle);
+        public static Type GetTypeFromHandle(RuntimeTypeHandle handle) => RuntimeTypeUnifier.GetTypeForRuntimeTypeHandle(handle);
 
         [Intrinsic]
         public static Type GetType(string typeName) => GetType(typeName, throwOnError: false, ignoreCase: false);
@@ -51,6 +51,7 @@ namespace System
             return Type.GetTypeFromCLSID(clsid, server, throwOnError);
         }
 
+        [Intrinsic]
         public static bool operator ==(Type left, Type right)
         {
             if (object.ReferenceEquals(left, right))
@@ -62,6 +63,7 @@ namespace System
             return left.Equals(right);
         }
 
+        [Intrinsic]
         public static bool operator !=(Type left, Type right) => !(left == right);
 
         public bool IsRuntimeImplemented() => this is IRuntimeImplementedType; // Not an api but needs to be public because of Reflection.Core/CoreLib divide.

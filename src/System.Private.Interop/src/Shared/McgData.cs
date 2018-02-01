@@ -603,6 +603,11 @@ namespace System.Runtime.InteropServices
         /// hierarchy and also know which are the ones implemented by managed class
         /// </summary>
         public bool IsWinRTType;
+
+        /// <summary>
+        /// The clsid of the COM class, or Guid.Empty if not available
+        /// </summary>
+        public Guid Clsid;
     }
 
 }

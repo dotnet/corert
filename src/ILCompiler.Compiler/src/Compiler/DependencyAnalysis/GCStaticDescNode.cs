@@ -170,6 +170,19 @@ namespace ILCompiler.DependencyAnalysis
 
             Debug.Assert(numSeries == NumSeries);
         }
+
+        internal int CompareTo(GCStaticDescNode other, TypeSystemComparer comparer)
+        {
+            var compare = _isThreadStatic.CompareTo(other._isThreadStatic);
+            return compare != 0 ? compare : comparer.Compare(_type, other._type);
+        }
+
+        protected internal override int ClassCode => 2142332918;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(_type, ((GCStaticDescNode)other)._type);
+        }
     }
 
     public class GCStaticDescRegionNode : ArrayOfEmbeddedDataNode<GCStaticDescNode>
@@ -231,6 +244,13 @@ namespace ILCompiler.DependencyAnalysis
         protected override string GetName(NodeFactory context)
         {
             return "Standalone" + _standaloneGCStaticDesc.GetMangledName(context.NameMangler);
+        }
+        
+        protected internal override int ClassCode => 2091208431;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            return _standaloneGCStaticDesc.CompareTo(((StandaloneGCStaticDescRegionNode)other)._standaloneGCStaticDesc, comparer);
         }
     }
 }

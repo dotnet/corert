@@ -6,6 +6,8 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
 
+using Internal.Runtime.CompilerServices;
+
 namespace System.Runtime.InteropServices
 {
     /// <summary>

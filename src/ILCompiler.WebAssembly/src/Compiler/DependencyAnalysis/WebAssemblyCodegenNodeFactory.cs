@@ -10,17 +10,31 @@ namespace ILCompiler.DependencyAnalysis
 {
     public sealed class WebAssemblyCodegenNodeFactory : NodeFactory
     {
+        private NodeCache<MethodDesc, WebAssemblyVTableSlotNode> _vTableSlotNodes;
+
         public WebAssemblyCodegenNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager,
             InteropStubManager interopStubManager, NameMangler nameMangler, VTableSliceProvider vtableSliceProvider, DictionaryLayoutProvider dictionaryLayoutProvider)
-            : base(context, compilationModuleGroup, metadataManager, interopStubManager, nameMangler, new LazyGenericsDisabledPolicy(), vtableSliceProvider, dictionaryLayoutProvider)
+            : base(context, 
+                  compilationModuleGroup, 
+                  metadataManager, 
+                  interopStubManager, 
+                  nameMangler, 
+                  new LazyGenericsDisabledPolicy(), 
+                  vtableSliceProvider, 
+                  dictionaryLayoutProvider, 
+                  new ImportedNodeProviderThrowing())
         {
+            _vTableSlotNodes = new NodeCache<MethodDesc, WebAssemblyVTableSlotNode>(methodKey =>
+            {
+                return new WebAssemblyVTableSlotNode(methodKey);
+            });
         }
 
         public override bool IsCppCodegenTemporaryWorkaround => true;
 
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
         {
-            if (CompilationModuleGroup.ContainsMethodBody(method))
+            if (CompilationModuleGroup.ContainsMethodBody(method, false))
             {
                 return new WebAssemblyMethodCodeNode(method);
             }
@@ -30,10 +44,14 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public WebAssemblyVTableSlotNode VTableSlot(MethodDesc method)
+        {
+            return _vTableSlotNodes.GetOrAdd(method);
+        }
+
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)
         {
-            // TODO: this is wrong: this returns an assembly stub node
-            return new UnboxingStubNode(method, Target);
+            return new WebAssemblyMethodCodeNode(TypeSystemContext.GetUnboxingThunk(method, CompilationModuleGroup.GeneratedAssembly));
         }
 
         protected override ISymbolNode CreateReadyToRunHelperNode(ReadyToRunHelperKey helperCall)

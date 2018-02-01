@@ -213,11 +213,11 @@ TODO: Talk about initializing strutures before use
     #define SELECTANY extern __declspec(selectany)
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* 8f51c68e-d515-425c-9e04-97e4a8148b07 */
-    0x8f51c68e,
-    0xd515,
-    0x425c,
-    {0x9e, 0x04, 0x97, 0xe4, 0xa8, 0x14, 0x8b, 0x07}
+SELECTANY const GUID JITEEVersionIdentifier = { /* e042cffc-cf03-4315-96b9-5fd01dc15923 */
+    0xe042cffc,
+    0xcf03,
+    0x4315,
+    {0x96, 0xb9, 0x5f, 0xd0, 0x1d, 0xc1, 0x59, 0x23}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -642,6 +642,7 @@ enum CorInfoHelpFunc
 
     CORINFO_HELP_THROW_ARGUMENTEXCEPTION,           // throw ArgumentException
     CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION, // throw ArgumentOutOfRangeException
+    CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED,      // throw PlatformNotSupportedException
 
     CORINFO_HELP_JIT_PINVOKE_BEGIN, // Transition to preemptive mode before a P/Invoke, frame is the first argument
     CORINFO_HELP_JIT_PINVOKE_END,   // Transition to cooperative mode after a P/Invoke, frame is the first argument
@@ -808,7 +809,7 @@ enum CorInfoFlag
     CORINFO_FLG_VIRTUAL               = 0x00000040,
 //  CORINFO_FLG_UNUSED                = 0x00000080,
     CORINFO_FLG_NATIVE                = 0x00000100,
-//  CORINFO_FLG_UNUSED                = 0x00000200,
+    CORINFO_FLG_INTRINSIC_TYPE        = 0x00000200, // This type is marked by [Intrinsic]
     CORINFO_FLG_ABSTRACT              = 0x00000400,
 
     CORINFO_FLG_EnC                   = 0x00000800, // member was added by Edit'n'Continue
@@ -914,6 +915,7 @@ enum CorInfoIntrinsics
 {
     CORINFO_INTRINSIC_Sin,
     CORINFO_INTRINSIC_Cos,
+    CORINFO_INTRINSIC_Cbrt,
     CORINFO_INTRINSIC_Sqrt,
     CORINFO_INTRINSIC_Abs,
     CORINFO_INTRINSIC_Round,
@@ -922,9 +924,12 @@ enum CorInfoIntrinsics
     CORINFO_INTRINSIC_Tan,
     CORINFO_INTRINSIC_Tanh,
     CORINFO_INTRINSIC_Asin,
+    CORINFO_INTRINSIC_Asinh,
     CORINFO_INTRINSIC_Acos,
+    CORINFO_INTRINSIC_Acosh,
     CORINFO_INTRINSIC_Atan,
     CORINFO_INTRINSIC_Atan2,
+    CORINFO_INTRINSIC_Atanh,
     CORINFO_INTRINSIC_Log10,
     CORINFO_INTRINSIC_Pow,
     CORINFO_INTRINSIC_Exp,
@@ -2093,6 +2098,12 @@ public:
             CORINFO_CONTEXT_HANDLE      ownerType = NULL        /* IN */
             ) = 0;
 
+    // Get the unboxed entry point for a method, if possible.
+    virtual CORINFO_METHOD_HANDLE getUnboxedEntry(
+        CORINFO_METHOD_HANDLE ftn,
+        bool* requiresInstMethodTableArg = NULL /* OUT */
+        ) = 0;
+
     // Given T, return the type of the default EqualityComparer<T>.
     // Returns null if the type can't be determined exactly.
     virtual CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(
@@ -2273,6 +2284,21 @@ public:
     virtual const char* getClassName (
             CORINFO_CLASS_HANDLE    cls
             ) = 0;
+
+    // Return class name as in metadata, or nullptr if there is none.
+    // Suitable for non-debugging use.
+    virtual const char* getClassNameFromMetadata (
+            CORINFO_CLASS_HANDLE    cls,
+            const char            **namespaceName   /* OUT */
+            ) = 0;
+
+    // Return the type argument of the instantiated generic class,
+    // which is specified by the index
+    virtual CORINFO_CLASS_HANDLE getTypeInstantiationArgument(
+            CORINFO_CLASS_HANDLE cls, 
+            unsigned             index
+            ) = 0;
+    
 
     // Append a (possibly truncated) representation of the type cls to the preallocated buffer ppBuf of length pnBufLen
     // If fNamespace=TRUE, include the namespace/enclosing classes
@@ -2483,6 +2509,12 @@ public:
 
     // "System.Int32" ==> CORINFO_TYPE_INT..
     virtual CorInfoType getTypeForPrimitiveValueClass(
+            CORINFO_CLASS_HANDLE        cls
+            ) = 0;
+
+    // "System.Int32" ==> CORINFO_TYPE_INT..
+    // "System.UInt32" ==> CORINFO_TYPE_UINT..
+    virtual CorInfoType getTypeForPrimitiveNumericClass(
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 

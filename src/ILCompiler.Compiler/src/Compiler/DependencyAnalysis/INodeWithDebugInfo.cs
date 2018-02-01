@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
+
 using Internal.JitInterface;
 using Internal.TypeSystem;
 
@@ -52,5 +52,18 @@ namespace ILCompiler.DependencyAnalysis
             this.Type = type;
             this.Ranges = new List<NativeVarInfo>();
         }
+    }
+
+    public static class WellKnownLineNumber
+    {
+        /// <summary>
+        /// Informs the debugger that it should step through the annotated sequence point.
+        /// </summary>
+        public const int DebuggerStepThrough = 0xF00F00;
+
+        /// <summary>
+        /// Informs the debugger that it should step into the annotated sequence point.
+        /// </summary>
+        public const int DebuggerStepIn = 0xFEEFEE;
     }
 }

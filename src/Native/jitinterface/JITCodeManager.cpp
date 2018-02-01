@@ -716,6 +716,13 @@ UIntNative JITCodeManager::GetConservativeUpperBoundForOutgoingArgs(MethodInfo *
     return false;
 }
 
+PTR_VOID JITCodeManager::GetOsModuleHandle()
+{
+    // Should not be called
+    assert(false);
+    return nullptr;
+}
+
 PTR_VOID JITCodeManager::GetMethodStartAddress(MethodInfo * pMethodInfo)
 {
     JITMethodInfo * pJITMethodInfo = (JITMethodInfo *)pMethodInfo;

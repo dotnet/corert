@@ -7,18 +7,15 @@
     <ExcludeProjects Condition="'$(OSEnvironment)'!='Windows_NT'" Include="**\ILCompiler.MetadataTransform.Tests.csproj" />
 
     <!-- These projects target netcoreapp2.0, so they are disabled until #3682 is done -->
+    <ExcludeProjects Include="**\ILVerification.csproj" />
+    <ExcludeProjects Include="**\ILVerification.Tests.csproj" />
     <ExcludeProjects Include="**\ILVerify.csproj" />
-    <ExcludeProjects Include="**\ILVerify.Tests.csproj" />
-
-    <!-- These projects have issues building in CoreRT -->
-    <ExcludeProjects Condition="'$(IsProjectNLibrary)' != 'true'" Include="**\System.Private.Interop.CoreCLR.csproj" />
-    <ExcludeProjects Condition="'$(IsProjectNLibrary)' != 'true'" Include="**\System.Private.Interop.Mono.csproj" />
 
     <Project Include="AotPackageReference\AotPackageReference.depproj" />
 
     <Project Include="Framework\Framework.depproj" />
     <Project Include="Framework\Framework-uapaot.depproj" />
-    <Project Include="Framework\Framework-native.depproj" Condition="$(TargetsUnix)" />
+    <Project Include="Framework\Framework-native.depproj" Condition="$(TargetsUnix) and '$(Platform)' != 'wasm'" />
 
     <Project Include="ILCompiler\**\*.depproj" />
 

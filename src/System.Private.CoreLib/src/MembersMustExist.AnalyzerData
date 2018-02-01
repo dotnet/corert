@@ -72,7 +72,7 @@ internal static extern bool System.Runtime.RuntimeImports.AreTypesAssignable(Sys
 internal static extern bool System.Runtime.RuntimeImports.AreTypesEquivalent(System.EETypePtr pType1, System.EETypePtr pType2)
 internal static extern double System.Runtime.RuntimeImports.asin(double x)
 internal static extern double System.Runtime.RuntimeImports.atan(double x)
-internal static extern double System.Runtime.RuntimeImports.atan2(double x, double y)
+internal static extern double System.Runtime.RuntimeImports.atan2(double y, double x)
 internal static extern double System.Runtime.RuntimeImports.ceil(double x)
 internal static extern double System.Runtime.RuntimeImports.cos(double x)
 internal static extern double System.Runtime.RuntimeImports.cosh(double x)
@@ -108,7 +108,6 @@ internal static extern int System.Runtime.RuntimeImports.RhGetGeneration(object 
 internal static extern long System.Runtime.RuntimeImports.RhGetLastGCDuration(int generation)
 internal static extern long System.Runtime.RuntimeImports.RhGetLastGCStartTime(int generation)
 internal static extern uint System.Runtime.RuntimeImports.RhGetLoadedOSModules(System.IntPtr[] resultArray)
-internal static extern uint System.Runtime.RuntimeImports.RhGetLoadedModules(System.Runtime.TypeManagerHandle[] resultArray)
 internal static extern int System.Runtime.RuntimeImports.RhGetLohCompactionMode()
 internal static extern int System.Runtime.RuntimeImports.RhGetMaxGcGeneration()
 internal static extern int System.Runtime.RuntimeImports.RhGetModuleFileName(System.IntPtr moduleHandle, out char* moduleName)
@@ -207,7 +206,6 @@ public static System.IntPtr System.IntPtr.operator +(System.IntPtr pointer, int 
 public static bool System.IntPtr.operator ==(System.IntPtr value1, System.IntPtr value2)
 public static int System.IntPtr.Size.get
 public static System.IntPtr System.IntPtr.Subtract(System.IntPtr pointer, int offset)
-internal bool System.IntPtr.IsNull()
 public int System.IntPtr.ToInt32()
 public long System.IntPtr.ToInt64()
 public void* System.IntPtr.ToPointer()
@@ -221,7 +219,7 @@ private void* System.IntPtr._value
 private static volatile System.Collections.Generic.ArraySortHelper<TKey, TValue> System.Collections.Generic.ArraySortHelper<TKey, TValue>.s_defaultArraySortHelper
 private static volatile System.Globalization.CultureInfo System.Globalization.CultureInfo.s_DefaultThreadCurrentCulture
 private static volatile System.Globalization.CultureInfo System.Globalization.CultureInfo.s_DefaultThreadCurrentUICulture
-private static volatile System.Globalization.CultureInfo System.Globalization.CultureInfo.s_InvariantCultureInfo
+private static readonly System.Globalization.CultureInfo System.Globalization.CultureInfo.s_InvariantCultureInfo
 private System.Threading.Tasks.Task System.Runtime.CompilerServices.AsyncVoidMethodBuilder.m_task
 private System.Threading.Tasks.Task<System.Threading.Tasks.VoidTaskResult> System.Runtime.CompilerServices.AsyncTaskMethodBuilder.m_task
 private System.Threading.Tasks.Task<TResult> System.Runtime.CompilerServices.AsyncTaskMethodBuilder<TResult>.m_task

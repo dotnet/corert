@@ -1035,12 +1035,6 @@ void Module::UnsynchronizedResetHijackedLoops()
     }
 }
 
-EXTERN_C void * FASTCALL RecoverLoopHijackTarget(UInt32 entryIndex, ModuleHeader * pModuleHeader)
-{
-    Module * pModule = GetRuntimeInstance()->FindModuleByReadOnlyDataAddress(pModuleHeader);
-    return pModule->RecoverLoopHijackTarget(entryIndex, pModuleHeader);
-}
-
 void * Module::RecoverLoopHijackTarget(UInt32 entryIndex, ModuleHeader * pModuleHeader)
 {
     // read lock scope

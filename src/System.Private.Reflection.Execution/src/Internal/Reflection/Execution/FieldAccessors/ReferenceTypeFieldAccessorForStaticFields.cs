@@ -16,7 +16,7 @@ namespace Internal.Reflection.Execution.FieldAccessors
 
         unsafe protected sealed override Object GetFieldBypassCctor()
         {
-#if CORERT
+#if !PROJECTN
             if (IsGcStatic)
             {
                 // The _staticsBase variable points to a GC handle, which points at the GC statics base of the type.
@@ -30,8 +30,7 @@ namespace Internal.Reflection.Execution.FieldAccessors
 
         unsafe protected sealed override void UncheckedSetFieldBypassCctor(Object value)
         {
-
-#if CORERT
+#if !PROJECTN
             if (IsGcStatic)
             {
                 // The _staticsBase variable points to a GC handle, which points at the GC statics base of the type.

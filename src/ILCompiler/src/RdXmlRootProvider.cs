@@ -62,6 +62,8 @@ namespace ILCompiler
 
             ModuleDesc assembly = _context.ResolveAssembly(new AssemblyName(assemblyNameAttribute.Value));
 
+            rootProvider.RootModuleMetadata(assembly, "RD.XML root");
+
             var dynamicDegreeAttribute = assemblyElement.Attribute("Dynamic");
             if (dynamicDegreeAttribute != null)
             {
@@ -179,10 +181,7 @@ namespace ILCompiler
 
                 // Virtual methods should be rooted as if they were called virtually
                 if (method.IsVirtual)
-                {
-                    MethodDesc slotMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method);
-                    rootProvider.RootVirtualMethodForReflection(slotMethod, "RD.XML root");
-                }
+                    rootProvider.RootVirtualMethodForReflection(method, "RD.XML root");
 
                 if (!method.IsAbstract)
                     rootProvider.AddCompilationRoot(method, "RD.XML root");

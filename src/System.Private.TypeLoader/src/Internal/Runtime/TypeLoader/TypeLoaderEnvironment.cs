@@ -526,21 +526,11 @@ namespace Internal.Runtime.TypeLoader
 
             if (isTypeContext)
             {
-                EEType* pEEType = (EEType*)context.ToPointer();
-                IntPtr curDictPtr = EETypeCreator.GetDictionary(pEEType);
-
                 // Look for the exact base type that owns the dictionary. We may be having
                 // a virtual method run on a derived type and the generic lookup are performed
                 // on the base type's dictionary.
-                while (curDictPtr != dictionaryPtr)
-                {
-                    pEEType = pEEType->BaseType;
-                    Debug.Assert(pEEType != null);
-                    curDictPtr = EETypeCreator.GetDictionary(pEEType);
-                    Debug.Assert(curDictPtr != IntPtr.Zero);
-                }
-
-                context = (IntPtr)pEEType;
+                EEType* pEEType = (EEType*)context.ToPointer();
+                context = (IntPtr)EETypeCreator.GetBaseEETypeForDictionaryPtr(pEEType, dictionaryPtr);
             }
 
             using (LockHolder.Hold(_typeLoaderLock))
@@ -689,6 +679,15 @@ namespace Internal.Runtime.TypeLoader
             if (associatedModule == IntPtr.Zero)
             {
                 return false;
+            }
+
+            // Module having a type manager means we are not in ProjectN mode. Bail out earlier.
+            foreach (TypeManagerHandle handle in ModuleList.Enumerate())
+            {
+                if (handle.OsModuleBase == associatedModule && handle.IsTypeManager)
+                {
+                    return false;
+                }
             }
 
             // Get UnboxingAndInstantiatingTable

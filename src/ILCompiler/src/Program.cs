@@ -39,9 +39,12 @@ namespace ILCompiler
         private string _ilDump;
         private string _systemModuleName = "System.Private.CoreLib";
         private bool _multiFile;
+        private bool _nativeLib;
+        private string _exportsFile;
         private bool _useSharedGenerics;
         private bool _useScanner;
         private bool _noScanner;
+        private bool _emitStackTraceData;
         private string _mapFileName;
         private string _metadataLogFileName;
 
@@ -100,6 +103,11 @@ namespace ILCompiler
             default:
                 throw new NotImplementedException();
             }
+
+            // Workaround for https://github.com/dotnet/corefx/issues/25267
+            // If pointer size is 8, we're obviously not an X86 process...
+            if (_targetArchitecture == TargetArchitecture.X86 && IntPtr.Size == 8)
+                _targetArchitecture = TargetArchitecture.X64;
         }
 
         private ArgumentSyntax ParseCommandLine(string[] args)
@@ -126,6 +134,8 @@ namespace ILCompiler
                 syntax.DefineOption("g", ref _enableDebugInfo, "Emit debugging information");
                 syntax.DefineOption("cpp", ref _isCppCodegen, "Compile for C++ code-generation");
                 syntax.DefineOption("wasm", ref _isWasmCodegen, "Compile for WebAssembly code-generation");
+                syntax.DefineOption("nativelib", ref _nativeLib, "Compile as static or shared library");
+                syntax.DefineOption("exportsfile", ref _exportsFile, "File to write exported method definitions");
                 syntax.DefineOption("dgmllog", ref _dgmlLogFileName, "Save result of dependency analysis as DGML");
                 syntax.DefineOption("fulllog", ref _generateFullDgmlLog, "Save detailed log of dependency analysis");
                 syntax.DefineOption("scandgmllog", ref _scanDgmlLogFileName, "Save result of scanner dependency analysis as DGML");
@@ -142,6 +152,7 @@ namespace ILCompiler
                 syntax.DefineOption("scan", ref _useScanner, "Use IL scanner to generate optimized code (implied by -O)");
                 syntax.DefineOption("noscan", ref _noScanner, "Do not use IL scanner to generate optimized code");
                 syntax.DefineOption("ildump", ref _ilDump, "Dump IL assembly listing for compiler-generated IL");
+                syntax.DefineOption("stacktracedata", ref _emitStackTraceData, "Emit data to support generating stack trace strings at runtime");
 
                 syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
                 syntax.DefineOption("targetos", ref _targetOSStr, "Target OS for cross compilation");
@@ -198,6 +209,11 @@ namespace ILCompiler
                     _targetArchitecture = TargetArchitecture.ARMEL;
                 else if (_targetArchitectureStr.Equals("arm64", StringComparison.OrdinalIgnoreCase))
                     _targetArchitecture = TargetArchitecture.ARM64;
+                else if (_targetArchitectureStr.Equals("wasm", StringComparison.OrdinalIgnoreCase))
+                {
+                    _targetArchitecture = TargetArchitecture.Wasm32;
+                    _isWasmCodegen = true;
+                }
                 else
                     throw new CommandLineException("Target architecture is not supported");
             }
@@ -288,26 +304,20 @@ namespace ILCompiler
                         entrypointModule = module;
                     }
 
-                    // TODO: Wasm fails to compile some of the exported methods due to missing opcodes
-                    if (!_isWasmCodegen)
-                    {
-                        compilationRoots.Add(new ExportedMethodsRootProvider(module));
-                    }
+                    compilationRoots.Add(new ExportedMethodsRootProvider(module));
                 }
 
                 if (entrypointModule != null)
                 {
-                    // TODO: Wasm fails to compile some of the library initializers
-                    if (!_isWasmCodegen)
-                    {
-                        LibraryInitializers libraryInitializers =
-                            new LibraryInitializers(typeSystemContext, _isCppCodegen);
-                        compilationRoots.Add(new MainMethodRootProvider(entrypointModule, libraryInitializers.LibraryInitializerMethods));
-                    }
-                    else
-                    {
-                        compilationRoots.Add(new RawMainMethodRootProvider(entrypointModule));
-                    }
+                    LibraryInitializers libraryInitializers =
+                        new LibraryInitializers(typeSystemContext, _isCppCodegen);
+                    compilationRoots.Add(new MainMethodRootProvider(entrypointModule, libraryInitializers.LibraryInitializerMethods));
+                }
+                else if (_nativeLib)
+                {
+                    EcmaModule module = (EcmaModule)typeSystemContext.SystemModule;
+                    LibraryInitializers libraryInitializers = new LibraryInitializers(typeSystemContext, _isCppCodegen);
+                    compilationRoots.Add(new NativeLibraryInitializerRootProvider(module, libraryInitializers.LibraryInitializerMethods));
                 }
 
                 if (_multiFile)
@@ -330,18 +340,16 @@ namespace ILCompiler
                 }
                 else
                 {
-                    if (entrypointModule == null)
+                    if (entrypointModule == null && !_nativeLib)
                         throw new Exception("No entrypoint module");
 
-                    // TODO: Wasm fails to compile some of the xported methods due to missing opcodes
-                    if (!_isWasmCodegen)
-                    {
-                        compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
-                    }
+                    compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
 
                     compilationGroup = new SingleFileCompilationModuleGroup(typeSystemContext);
                 }
 
+                if (_rdXmlFilePaths.Count > 0)
+                    Console.WriteLine("Warning: RD.XML processing will change before release (https://github.com/dotnet/corert/issues/5001)");
                 foreach (var rdXmlFilePath in _rdXmlFilePaths)
                 {
                     compilationRoots.Add(new RdXmlRootProvider(typeSystemContext, rdXmlFilePath));
@@ -360,16 +368,33 @@ namespace ILCompiler
             else
                 builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup);
 
+            var stackTracePolicy = _emitStackTraceData ?
+                (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
+
+            UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager(
+                compilationGroup,
+                typeSystemContext,
+                new BlockedInternalsBlockingPolicy(),
+                _metadataLogFileName,
+                stackTracePolicy);
+
+            // Unless explicitly opted in at the command line, we enable scanner for retail builds by default.
+            // We don't do this for CppCodegen and Wasm, because those codegens are behind.
+            // We also don't do this for multifile because scanner doesn't simulate inlining (this would be
+            // fixable by using a CompilationGroup for the scanner that has a bigger worldview, but
+            // let's cross that bridge when we get there).
             bool useScanner = _useScanner ||
-                (_optimizationMode != OptimizationMode.None && !_isCppCodegen && !_isWasmCodegen);
+                (_optimizationMode != OptimizationMode.None && !_isCppCodegen && !_isWasmCodegen && !_multiFile);
 
             useScanner &= !_noScanner;
 
+            MetadataManager compilationMetadataManager = _isWasmCodegen ? (MetadataManager)new EmptyMetadataManager(typeSystemContext) : metadataManager;
             ILScanResults scanResults = null;
             if (useScanner)
             {
                 ILScannerBuilder scannerBuilder = builder.GetILScannerBuilder()
-                    .UseCompilationRoots(compilationRoots);
+                    .UseCompilationRoots(compilationRoots)
+                    .UseMetadataManager(metadataManager);
 
                 if (_scanDgmlLogFileName != null)
                     scannerBuilder.UseDependencyTracking(_generateFullScanDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
@@ -377,6 +402,8 @@ namespace ILCompiler
                 IILScanner scanner = scannerBuilder.ToILScanner();
 
                 scanResults = scanner.Scan();
+
+                compilationMetadataManager = metadataManager.ToAnalysisBasedMetadataManager();
             }
 
             var logger = new Logger(Console.Out, _isVerbose);
@@ -388,11 +415,11 @@ namespace ILCompiler
             DependencyTrackingLevel trackingLevel = _dgmlLogFileName == null ?
                 DependencyTrackingLevel.None : (_generateFullDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
 
-            CompilerGeneratedMetadataManager metadataManager = new CompilerGeneratedMetadataManager(compilationGroup, typeSystemContext, _metadataLogFileName);
+            compilationRoots.Add(compilationMetadataManager);
 
             builder
                 .UseBackendOptions(_codegenOptions)
-                .UseMetadataManager(metadataManager)
+                .UseMetadataManager(compilationMetadataManager)
                 .UseLogger(logger)
                 .UseDependencyTracking(trackingLevel)
                 .UseCompilationRoots(compilationRoots)
@@ -408,6 +435,12 @@ namespace ILCompiler
                 // If we have a scanner, feed the generic dictionary results to the compilation.
                 // This could be a command line switch if we really wanted to.
                 builder.UseGenericDictionaryLayoutProvider(scanResults.GetDictionaryLayoutInfo());
+
+                // If we feed any outputs of the scanner into the compilation, it's essential
+                // we use scanner's devirtualization manager. It prevents optimizing codegens
+                // from accidentally devirtualizing cases that can never happen at runtime
+                // (e.g. devirtualizing a method on a type that never gets allocated).
+                builder.UseDevirtualizationManager(scanResults.GetDevirtualizationManager());
             }
 
             ICompilation compilation = builder.ToCompilation();
@@ -415,6 +448,17 @@ namespace ILCompiler
             ObjectDumper dumper = _mapFileName != null ? new ObjectDumper(_mapFileName) : null;
 
             CompilationResults compilationResults = compilation.Compile(_outputFilePath, dumper);
+            if (_exportsFile != null)
+            {
+                ExportsFileWriter defFileWriter = new ExportsFileWriter(typeSystemContext, _exportsFile);
+                foreach (var compilationRoot in compilationRoots)
+                {
+                    if (compilationRoot is ExportedMethodsRootProvider provider)
+                        defFileWriter.AddExportedMethods(provider.ExportedMethods);
+                }
+
+                defFileWriter.EmitExportedMethods();
+            }
 
             if (_dgmlLogFileName != null)
                 compilationResults.WriteDependencyLog(_dgmlLogFileName);

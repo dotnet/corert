@@ -505,7 +505,7 @@ namespace Internal.Runtime.TypeLoader
             // If so, use that, otherwise, run down the template type loader path with the universal template
             if ((state.TemplateType == null) || isTemplateUniversalCanon)
             {
-#if !CORERT
+#if PROJECTN
                 // CanonAlike types do not get dictionaries
                 if ((state.TemplateType == null) && (type.IsConstructedOverType(type.Context.CanonAlikeTypeArray)))
                     return;
@@ -643,7 +643,7 @@ namespace Internal.Runtime.TypeLoader
                         TypeLoaderLogger.WriteLine("Found BagElementKind.DictionaryLayout");
                         Debug.Assert(!isTemplateUniversalCanon, "Universal template nativelayout do not have DictionaryLayout");
 
-#if !CORERT
+#if PROJECTN
                         if (type.IsConstructedOverType(type.Context.CanonAlikeTypeArray))
                         {
                             TypeLoaderLogger.WriteLine("Type is CanonAlike, skip generation of dictionary");
@@ -1682,9 +1682,16 @@ namespace Internal.Runtime.TypeLoader
             NativeReader reader;
             uint offset;
 
-#if !CORERT
+#if PROJECTN
             // If the system module is compiled with as a type manager, all modules are compiled as such
-            if (ModuleList.Instance.SystemModule.Handle.IsTypeManager)
+            if (!ModuleList.Instance.SystemModule.Handle.IsTypeManager)
+            {
+                IntPtr moduleHandle = RuntimeAugments.GetOSModuleFromPointer(signature);
+                typeManager = new TypeManagerHandle(moduleHandle);
+                reader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(typeManager);
+                offset = reader.AddressToOffset(signature);
+            }
+            else
 #endif
             {
                 // The first is a pointer that points to the TypeManager indirection cell.
@@ -1694,15 +1701,6 @@ namespace Internal.Runtime.TypeLoader
                 offset = checked((uint)new IntPtr(lazySignature[1]).ToInt32());
                 reader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(typeManager);
             }
-#if !CORERT
-            else
-            {
-                IntPtr moduleHandle = RuntimeAugments.GetOSModuleFromPointer(signature);
-                typeManager = new TypeManagerHandle(moduleHandle);
-                reader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(typeManager);
-                offset = reader.AddressToOffset(signature);
-            }
-#endif
 
             NativeParser parser = new NativeParser(reader, offset);
 
@@ -1948,11 +1946,17 @@ namespace Internal.Runtime.TypeLoader
 
             // First, check if the current version of the existing floating dictionary matches the version in the native layout. If so, there
             // is no need to allocate anything new, and we can just use the existing statically compiled floating portion of the input dictionary.
-            int currentFloatingVersion = (int)(((IntPtr*)fixedDictionary)[floatingVersionCellIndex]);
-            if(currentFloatingVersion == floatingVersionInLayout)
+
+            // If the fixed dictionary claims to have a floating section
+            if (*((IntPtr*)fixedDictionary) != IntPtr.Zero)
             {
-                isNewlyAllocatedDictionary = false;
-                return fixedDictionary + IntPtr.Size * floatingVersionCellIndex;
+                int currentFloatingVersion = (int)(((IntPtr*)fixedDictionary)[floatingVersionCellIndex]);
+
+                if (currentFloatingVersion == floatingVersionInLayout)
+                {
+                    isNewlyAllocatedDictionary = false;
+                    return fixedDictionary + IntPtr.Size * floatingVersionCellIndex;
+                }
             }
 
             GenericTypeDictionary floatingDict = new GenericTypeDictionary(floatingCells);

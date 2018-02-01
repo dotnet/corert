@@ -54,7 +54,7 @@ namespace System.Runtime.CompilerServices
 {
     /// <summary>Provides an awaiter for awaiting a <see cref="System.Threading.Tasks.Task"/>.</summary>
     /// <remarks>This type is intended for compiler use only.</remarks>
-    public struct TaskAwaiter : ICriticalNotifyCompletion
+    public readonly struct TaskAwaiter : ICriticalNotifyCompletion
     {
         /// <summary>The task being awaited.</summary>
         private readonly Task m_task;
@@ -257,7 +257,7 @@ namespace System.Runtime.CompilerServices
 
     /// <summary>Provides an awaiter for awaiting a <see cref="System.Threading.Tasks.Task{TResult}"/>.</summary>
     /// <remarks>This type is intended for compiler use only.</remarks>
-    public struct TaskAwaiter<TResult> : ICriticalNotifyCompletion
+    public readonly struct TaskAwaiter<TResult> : ICriticalNotifyCompletion
     {
         /// <summary>The task being awaited.</summary>
         private readonly Task<TResult> m_task;
@@ -313,7 +313,7 @@ namespace System.Runtime.CompilerServices
 
     /// <summary>Provides an awaitable object that allows for configured awaits on <see cref="System.Threading.Tasks.Task"/>.</summary>
     /// <remarks>This type is intended for compiler use only.</remarks>
-    public struct ConfiguredTaskAwaitable
+    public readonly struct ConfiguredTaskAwaitable
     {
         /// <summary>The task being awaited.</summary>
         private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter m_configuredTaskAwaiter;
@@ -338,7 +338,7 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Provides an awaiter for a <see cref="ConfiguredTaskAwaitable"/>.</summary>
         /// <remarks>This type is intended for compiler use only.</remarks>
-        public struct ConfiguredTaskAwaiter : ICriticalNotifyCompletion
+        public readonly struct ConfiguredTaskAwaiter : ICriticalNotifyCompletion
         {
             /// <summary>The task being awaited.</summary>
             private readonly Task m_task;
@@ -401,7 +401,7 @@ namespace System.Runtime.CompilerServices
 
     /// <summary>Provides an awaitable object that allows for configured awaits on <see cref="System.Threading.Tasks.Task{TResult}"/>.</summary>
     /// <remarks>This type is intended for compiler use only.</remarks>
-    public struct ConfiguredTaskAwaitable<TResult>
+    public readonly struct ConfiguredTaskAwaitable<TResult>
     {
         /// <summary>The underlying awaitable on whose logic this awaitable relies.</summary>
         private readonly ConfiguredTaskAwaitable<TResult>.ConfiguredTaskAwaiter m_configuredTaskAwaiter;
@@ -425,7 +425,7 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Provides an awaiter for a <see cref="ConfiguredTaskAwaitable{TResult}"/>.</summary>
         /// <remarks>This type is intended for compiler use only.</remarks>
-        public struct ConfiguredTaskAwaiter : ICriticalNotifyCompletion
+        public readonly struct ConfiguredTaskAwaiter : ICriticalNotifyCompletion
         {
             /// <summary>The task being awaited.</summary>
             private readonly Task<TResult> m_task;

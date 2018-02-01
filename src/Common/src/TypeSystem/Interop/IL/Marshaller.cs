@@ -301,20 +301,21 @@ namespace Internal.TypeSystem.Interop
             marshaller.PInvokeFlags = flags;
 
             //
-            // Desktop ignores [Out] on marshaling scenarios where they don't make sense (such as passing
-            // value types and string as [out] without byref). 
+            // Desktop ignores [Out] on marshaling scenarios where they don't make sense
             //
-            if (marshaller.IsManagedByRef)
+            if (isOut)
             {
-                // Passing as [Out] by ref is valid
-                marshaller.Out = isOut;
+                // Passing as [Out] by ref is always valid. 
+                if (!marshaller.IsManagedByRef)
+                {
+                    // Ignore [Out] for ValueType, string and pointers
+                    if (parameterType.IsValueType || parameterType.IsString || parameterType.IsPointer || parameterType.IsFunctionPointer)
+                    {
+                        isOut = false;
+                    }
+                }
             }
-            else
-            {
-                // Passing as [Out] is valid only if it is not ValueType nor string
-                if (!parameterType.IsValueType && !parameterType.IsString)
-                    marshaller.Out = isOut;
-            }
+            marshaller.Out = isOut;
 
             if (!marshaller.In && !marshaller.Out)
             {
@@ -433,7 +434,7 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public void EmitArgumentMarshallingIL()
+        private void EmitArgumentMarshallingIL()
         {
             switch (MarshalDirection)
             {
@@ -442,7 +443,7 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public void EmitElementMarshallingIL()
+        private void EmitElementMarshallingIL()
         {
             switch (MarshalDirection)
             {
@@ -451,7 +452,7 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public void EmitFieldMarshallingIL()
+        private void EmitFieldMarshallingIL()
         {
             switch (MarshalDirection)
             {
@@ -525,14 +526,22 @@ namespace Internal.TypeSystem.Interop
             StoreNativeValue(_ilCodeStreams.ReturnValueMarshallingCodeStream);
 
             AllocAndTransformNativeToManaged(_ilCodeStreams.ReturnValueMarshallingCodeStream);
+        }
 
-            LoadManagedValue(_ilCodeStreams.ReturnValueMarshallingCodeStream);
+        public virtual void LoadReturnValue(ILCodeStream codeStream)
+        {
+            Debug.Assert(Return);
+
+            switch (MarshalDirection)
+            {
+                case MarshalDirection.Forward: LoadManagedValue(codeStream); return;
+                case MarshalDirection.Reverse: LoadNativeValue(codeStream); return;
+            }
         }
 
         protected virtual void SetupArguments()
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            ILCodeStream marshallingCodeStream = _ilCodeStreams.MarshallingCodeStream;
 
             if (MarshalDirection == MarshalDirection.Forward)
             {
@@ -559,7 +568,6 @@ namespace Internal.TypeSystem.Interop
         protected virtual void SetupArgumentsForElementMarshalling()
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            ILCodeStream marshallingCodeStream = _ilCodeStreams.MarshallingCodeStream;
 
             _managedHome = new Home(emitter.NewLocal(ManagedType), ManagedType, isByRef: false);
             _nativeHome = new Home(emitter.NewLocal(NativeType), NativeType, isByRef: false);
@@ -568,7 +576,6 @@ namespace Internal.TypeSystem.Interop
         protected virtual void SetupArgumentsForFieldMarshalling()
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            ILCodeStream marshallingCodeStream = _ilCodeStreams.MarshallingCodeStream;
 
             //
             // these are temporary locals for propagating value
@@ -580,7 +587,6 @@ namespace Internal.TypeSystem.Interop
         protected virtual void SetupArgumentsForReturnValueMarshalling()
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            ILCodeStream marshallingCodeStream = _ilCodeStreams.MarshallingCodeStream;
 
             _managedHome = new Home(emitter.NewLocal(ManagedType), ManagedType, isByRef: false);
             _nativeHome = new Home(emitter.NewLocal(NativeType), NativeType, isByRef: false);
@@ -767,8 +773,6 @@ namespace Internal.TypeSystem.Interop
             StoreManagedValue(_ilCodeStreams.ReturnValueMarshallingCodeStream);
 
             AllocAndTransformManagedToNative(_ilCodeStreams.ReturnValueMarshallingCodeStream);
-
-            LoadNativeValue(_ilCodeStreams.ReturnValueMarshallingCodeStream);
         }
 
         protected virtual void EmitMarshalArgumentNativeToManaged()
@@ -900,6 +904,10 @@ namespace Internal.TypeSystem.Interop
         }
         protected override void EmitMarshalReturnValueNativeToManaged()
         {
+        }
+        public override void LoadReturnValue(ILCodeStream codeStream)
+        {
+            Debug.Assert(Return);
         }
     }
 
@@ -1094,7 +1102,7 @@ namespace Internal.TypeSystem.Interop
             codeStream.Emit(ILOpcode.brfalse, lNullArray);
 
             // allocate memory
-            // nativeParameter = (byte**)CoTaskMemAllocAndZeroMemory((IntPtr)(checked(manageParameter.Length * sizeof(byte*))));
+            // nativeParameter = (byte**)CoTaskMemAllocAndZeroMemory((IntPtr)(checked(managedParameter.Length * sizeof(byte*))));
 
             // loads the number of elements
             EmitElementCount(codeStream, MarshalDirection.Forward);
@@ -1103,10 +1111,6 @@ namespace Internal.TypeSystem.Interop
             codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(nativeElementType));
 
             codeStream.Emit(ILOpcode.mul_ovf);
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                                Context.SystemModule.
-                                    GetKnownType("System", "IntPtr").
-                                        GetKnownMethod("op_Explicit", null)));
 
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
                                 Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemAllocAndZeroMemory")));
@@ -1173,8 +1177,7 @@ namespace Internal.TypeSystem.Interop
 
             codeStream.EmitLdLoc(vIndex);
             codeStream.EmitLdLoc(vLength);
-            codeStream.Emit(ILOpcode.clt);
-            codeStream.Emit(ILOpcode.brtrue, lLoopHeader);
+            codeStream.Emit(ILOpcode.blt, lLoopHeader);
             codeStream.EmitLabel(lNullArray);
         }
 
@@ -1242,8 +1245,7 @@ namespace Internal.TypeSystem.Interop
             codeStream.EmitLabel(lRangeCheck);
             codeStream.EmitLdLoc(vIndex);
             codeStream.EmitLdLoc(vLength);
-            codeStream.Emit(ILOpcode.clt);
-            codeStream.Emit(ILOpcode.brtrue, lLoopHeader);
+            codeStream.Emit(ILOpcode.blt, lLoopHeader);
             codeStream.EmitLabel(lNullArray);
         }
 
@@ -1322,8 +1324,7 @@ namespace Internal.TypeSystem.Interop
 
                 codeStream.EmitLdLoc(vIndex);
                 codeStream.EmitLdLoc(vLength);
-                codeStream.Emit(ILOpcode.clt);
-                codeStream.Emit(ILOpcode.brtrue, lLoopHeader);
+                codeStream.Emit(ILOpcode.blt, lLoopHeader);
             }
 
             LoadNativeValue(codeStream);
@@ -1678,7 +1679,7 @@ namespace Internal.TypeSystem.Interop
                 throw new NotSupportedException("Marshalling an argument as both in and out not yet implemented");
             }
 
-            var safeHandleType = InteropTypes.GetSafeHandleType(Context);
+            var safeHandleType = InteropTypes.GetSafeHandle(Context);
 
             if (Out && IsManagedByRef)
             {
@@ -1733,7 +1734,7 @@ namespace Internal.TypeSystem.Interop
             LoadManagedValue(codeStream);
             LoadNativeValue(codeStream);
             codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
-            InteropTypes.GetSafeHandleType(Context).GetKnownMethod("SetHandle", null)));
+            InteropTypes.GetSafeHandle(Context).GetKnownMethod("SetHandle", null)));
         }
     }
 
@@ -2041,8 +2042,7 @@ namespace Internal.TypeSystem.Interop
             codeStream.EmitLdLoc(vIndex);
 
             codeStream.EmitLdLoc(vLength);
-            codeStream.Emit(ILOpcode.clt);
-            codeStream.Emit(ILOpcode.brtrue, lLoopHeader);
+            codeStream.Emit(ILOpcode.blt, lLoopHeader);
 
             codeStream.EmitLabel(lDone);
         }
@@ -2120,8 +2120,7 @@ namespace Internal.TypeSystem.Interop
 
             codeStream.EmitLdLoc(vIndex);
             codeStream.EmitLdLoc(vLength);
-            codeStream.Emit(ILOpcode.clt);
-            codeStream.Emit(ILOpcode.brtrue, lLoopHeader);
+            codeStream.Emit(ILOpcode.blt, lLoopHeader);
         }
     }
 

@@ -84,6 +84,13 @@ namespace Internal.TypeSystem
                 if (containingType.IsRuntimeDeterminedSubtype)
                     return true;
 
+                // Handles situation when shared code refers to uninstantiated generic
+                // method definitions (think: LDTOKEN).
+                // Walking the instantiation would make us assert. This is simply
+                // not a runtime determined method.
+                if (IsGenericMethodDefinition)
+                    return false;
+
                 foreach (TypeDesc typeArg in Instantiation)
                 {
                     if (typeArg.IsRuntimeDeterminedSubtype)

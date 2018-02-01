@@ -58,13 +58,20 @@ namespace ILCompiler.DependencyAnalysis
             if (!relocsOnly)
             {
                 var node = factory.TypeThreadStaticsSymbol(_type);
-                typeTlsIndex = factory.ThreadStaticsRegion.IndexOfEmbeddedObject((ThreadStaticsNode)node);
+                typeTlsIndex = ((ThreadStaticsNode)node).IndexFromBeginningOfArray;
             }
 
             objData.EmitPointerReloc(factory.TypeManagerIndirection);
             objData.EmitNaturalInt(typeTlsIndex);
 
             return objData.ToObjectData();
+        }
+
+        protected internal override int ClassCode => -149601250;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(_type, ((TypeThreadStaticIndexNode)other)._type);
         }
     }
 }

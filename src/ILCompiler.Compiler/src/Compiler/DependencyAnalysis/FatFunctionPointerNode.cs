@@ -78,7 +78,7 @@ namespace ILCompiler.DependencyAnalysis
             builder.EmitPointerReloc(factory.MethodEntrypoint(canonMethod, _isUnboxingStub));
 
             // Find out what's the context to use
-            ISymbolNode contextParameter;
+            ISortableSymbolNode contextParameter;
             if (canonMethod.RequiresInstMethodDescArg())
             {
                 contextParameter = factory.MethodGenericDictionary(Method);
@@ -95,6 +95,24 @@ namespace ILCompiler.DependencyAnalysis
             builder.EmitPointerReloc(factory.Indirection(contextParameter));
             
             return builder.ToObjectData();
+        }
+
+        protected internal override int ClassCode => 190463489;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            var compare = _isUnboxingStub.CompareTo(((FatFunctionPointerNode)other)._isUnboxingStub);
+            if (compare != 0)
+                return compare;
+
+            return comparer.Compare(Method, ((FatFunctionPointerNode)other).Method);
+        }
+
+        int ISortableSymbolNode.ClassCode => ClassCode;
+
+        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
+        {
+            return CompareToImpl((ObjectNode)other, comparer);
         }
     }
 }

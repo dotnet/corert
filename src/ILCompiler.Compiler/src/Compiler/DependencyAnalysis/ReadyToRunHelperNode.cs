@@ -36,7 +36,7 @@ namespace ILCompiler.DependencyAnalysis
         DefaultConstructor,
     }
 
-    public partial class ReadyToRunHelperNode : AssemblyStubNode
+    public partial class ReadyToRunHelperNode : AssemblyStubNode, INodeWithDebugInfo
     {
         private ReadyToRunHelperId _id;
         private Object _target;
@@ -146,11 +146,7 @@ namespace ILCompiler.DependencyAnalysis
                 DependencyList dependencyList = new DependencyList();
 
 #if !SUPPORT_JIT
-                // TODO: https://github.com/dotnet/corert/issues/3224 
-                if (targetMethod.IsAbstract)
-                {
-                    dependencyList.Add(factory.ReflectableMethod(targetMethod), "Abstract reflectable method");
-                }
+                factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref dependencyList, factory, targetMethod);
 
                 if (!factory.VTable(targetMethod.OwningType).HasFixedSlots)
 
@@ -170,11 +166,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     DependencyList dependencyList = new DependencyList();
 #if !SUPPORT_JIT
-                    // TODO: https://github.com/dotnet/corert/issues/3224 
-                    if (targetMethod.IsAbstract)
-                    {
-                        dependencyList.Add(factory.ReflectableMethod(targetMethod), "Abstract reflectable method");
-                    }
+                    factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref dependencyList, factory, targetMethod);
 
                     if (!factory.VTable(info.TargetMethod.OwningType).HasFixedSlots)
                     {
@@ -188,5 +180,75 @@ namespace ILCompiler.DependencyAnalysis
 
             return null;
         }
+
+        DebugLocInfo[] INodeWithDebugInfo.DebugLocInfos
+        {
+            get
+            {
+                if (_id == ReadyToRunHelperId.VirtualCall)
+                {
+                    // Generate debug information that lets debuggers step into the virtual calls.
+                    // We generate a step into sequence point at the point where the helper jumps to
+                    // the target of the virtual call.
+                    TargetDetails target = ((MethodDesc)_target).Context.Target;
+                    int debuggerStepInOffset = -1;
+                    switch (target.Architecture)
+                    {
+                        case TargetArchitecture.X64:
+                            debuggerStepInOffset = 3;
+                            break;
+                    }
+                    if (debuggerStepInOffset != -1)
+                    {
+                        return new DebugLocInfo[]
+                        {
+                            new DebugLocInfo(0, String.Empty, WellKnownLineNumber.DebuggerStepThrough),
+                            new DebugLocInfo(debuggerStepInOffset, String.Empty, WellKnownLineNumber.DebuggerStepIn)
+                        };
+                    }
+                }
+
+                return Array.Empty<DebugLocInfo>();
+            }
+        }
+
+        DebugVarInfo[] INodeWithDebugInfo.DebugVarInfos
+        {
+            get
+            {
+                return Array.Empty<DebugVarInfo>();
+            }
+        }
+
+#if !SUPPORT_JIT
+        protected internal override int ClassCode => -911637948;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            var compare = _id.CompareTo(((ReadyToRunHelperNode)other)._id);
+            if (compare != 0)
+                return compare;
+
+            switch (_id)
+            {
+                case ReadyToRunHelperId.NewHelper:
+                case ReadyToRunHelperId.NewArr1:
+                case ReadyToRunHelperId.IsInstanceOf:
+                case ReadyToRunHelperId.CastClass:
+                case ReadyToRunHelperId.GetNonGCStaticBase:
+                case ReadyToRunHelperId.GetGCStaticBase:
+                case ReadyToRunHelperId.GetThreadStaticBase:
+                    return comparer.Compare((TypeDesc)_target, (TypeDesc)((ReadyToRunHelperNode)other)._target);
+                case ReadyToRunHelperId.VirtualCall:
+                case ReadyToRunHelperId.ResolveVirtualFunction:
+                    return comparer.Compare((MethodDesc)_target, (MethodDesc)((ReadyToRunHelperNode)other)._target);
+                case ReadyToRunHelperId.DelegateCtor:
+                    return ((DelegateCreationInfo)_target).CompareTo((DelegateCreationInfo)((ReadyToRunHelperNode)other)._target, comparer);
+                default:
+                    throw new NotImplementedException();
+            }
+            
+        }
+#endif
     }
 }

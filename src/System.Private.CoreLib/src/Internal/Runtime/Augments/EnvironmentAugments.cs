@@ -55,8 +55,6 @@ namespace Internal.Runtime.Augments
 
         private static void ValidateVariableAndValue(string variable, ref string value)
         {
-            const int MaxEnvVariableValueLength = 32767;
-
             if (variable == null)
                 throw new ArgumentNullException(nameof(variable));
 
@@ -66,9 +64,6 @@ namespace Internal.Runtime.Augments
             if (variable[0] == '\0')
                 throw new ArgumentException(SR.Argument_StringFirstCharIsZero, nameof(variable));
 
-            if (variable.Length >= MaxEnvVariableValueLength)
-                throw new ArgumentException(SR.Argument_LongEnvVarValue, nameof(variable));
-
             if (variable.IndexOf('=') != -1)
                 throw new ArgumentException(SR.Argument_IllegalEnvVarName, nameof(variable));
 
@@ -76,10 +71,6 @@ namespace Internal.Runtime.Augments
             {
                 // Explicitly null out value if it's empty
                 value = null;
-            }
-            else if (value.Length >= MaxEnvVariableValueLength)
-            {
-                throw new ArgumentException(SR.Argument_LongEnvVarValue, nameof(value));
             }
         }
 
@@ -154,5 +145,7 @@ namespace Internal.Runtime.Augments
         }
 
         public static int TickCount => Environment.TickCount;
+
+        public static int ProcessorCount => Environment.ProcessorCount;
     }
 }

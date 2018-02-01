@@ -11,10 +11,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     [WindowsRuntimeImport]
     public interface IPropertyValue
     {
-        PropertyType Type
-        {
-            get;
-        }
+        PropertyType get_Type();
 
         bool IsNumericScalar
         {

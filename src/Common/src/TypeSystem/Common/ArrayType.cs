@@ -149,11 +149,6 @@ namespace Internal.TypeSystem
 
             return flags;
         }
-
-        public override string ToString()
-        {
-            return this.ElementType.ToString() + "[" + new String(',', Rank - 1) + "]";
-        }
     }
 
     public enum ArrayMethodKind
@@ -325,11 +320,6 @@ namespace Internal.TypeSystem
                 return ((ArrayType)instantiatedOwningType).GetArrayMethod(_kind);
             else
                 return this;
-        }
-
-        public override string ToString()
-        {
-            return _owningType.ToString() + "." + Name;
         }
     }
 }

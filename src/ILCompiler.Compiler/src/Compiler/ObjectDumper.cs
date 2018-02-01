@@ -4,6 +4,7 @@
 
 using System;
 using System.IO;
+using System.Security.Cryptography;
 using System.Xml;
 
 using Internal.Text;
@@ -17,7 +18,7 @@ namespace ILCompiler
     public class ObjectDumper : IObjectDumper
     {
         private readonly string _fileName;
-
+        private SHA256 _sha256;
         private XmlWriter _writer;
 
         public ObjectDumper(string fileName)
@@ -33,6 +34,7 @@ namespace ILCompiler
                 Indent = true,
             };
 
+            _sha256 = SHA256.Create();
             _writer = XmlWriter.Create(File.CreateText(_fileName), settings);
             _writer.WriteStartElement("ObjectNodes");
         }
@@ -69,7 +71,7 @@ namespace ILCompiler
             }
 
             _writer.WriteAttributeString("Length", objectData.Data.Length.ToStringInvariant());
-
+            _writer.WriteAttributeString("Hash", HashData(objectData.Data));
             _writer.WriteEndElement();
 
             var nodeWithCodeInfo = node as INodeWithCodeInfo;
@@ -78,6 +80,7 @@ namespace ILCompiler
                 _writer.WriteStartElement("GCInfo");
                 _writer.WriteAttributeString("Name", name);
                 _writer.WriteAttributeString("Length", nodeWithCodeInfo.GCInfo.Length.ToStringInvariant());
+                _writer.WriteAttributeString("Hash", HashData(nodeWithCodeInfo.GCInfo));
                 _writer.WriteEndElement();
 
                 if (nodeWithCodeInfo.EHInfo != null)
@@ -85,9 +88,15 @@ namespace ILCompiler
                     _writer.WriteStartElement("EHInfo");
                     _writer.WriteAttributeString("Name", name);
                     _writer.WriteAttributeString("Length", nodeWithCodeInfo.EHInfo.Data.Length.ToStringInvariant());
+                    _writer.WriteAttributeString("Hash", HashData(nodeWithCodeInfo.EHInfo.Data));
                     _writer.WriteEndElement();
                 }
             }
+        }
+
+        private string HashData(byte[] data)
+        {
+            return BitConverter.ToString(_sha256.ComputeHash(data)).Replace("-", "").ToLower();
         }
 
         internal void End()

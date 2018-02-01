@@ -13,12 +13,15 @@
     EXTERN RhpFpTrashValues
 #endif ;; TRASH_SAVED_ARGUMENT_REGISTERS
 
-#define COUNT_ARG_REGISTERS (8)
+;; Padding to account for the odd number of saved integer registers
+#define ALIGNMENT_PADDING_SIZE (8)
+
+#define COUNT_ARG_REGISTERS (9)
 #define INTEGER_REGISTER_SIZE (8)
 #define ARGUMENT_REGISTERS_SIZE (COUNT_ARG_REGISTERS * INTEGER_REGISTER_SIZE)
 
-;; Largest return block is 8 doubles
-#define RETURN_BLOCK_SIZE (64) 
+;; Largest return block is 4 doubles
+#define RETURN_BLOCK_SIZE (32) 
 
 #define COUNT_FLOAT_ARG_REGISTERS (8)
 #define FLOAT_REGISTER_SIZE (8)
@@ -30,23 +33,26 @@
 ;;
 ;; From CallerSP to ChildSP, the stack frame is composed of the following adjacent regions:
 ;;
+;;      ALIGNMENT_PADDING_SIZE
 ;;      ARGUMENT_REGISTERS_SIZE
 ;;      RETURN_BLOCK_SIZE
 ;;      FLOAT_ARG_REGISTERS_SIZE
-;;      PUSHED_LR
-;;      PUSHED_FP
+;;      PUSHED_LR_SIZE
+;;      PUSHED_FP_SIZE
 ;;
 
 #define DISTANCE_FROM_CHILDSP_TO_RETURN_BLOCK (PUSHED_FP_SIZE + PUSHED_LR_SIZE + FLOAT_ARG_REGISTERS_SIZE)
 
-#define STACK_SIZE (ARGUMENT_REGISTERS_SIZE + RETURN_BLOCK_SIZE + FLOAT_ARG_REGISTERS_SIZE + PUSHED_LR_SIZE + PUSHED_FP_SIZE)
+#define STACK_SIZE (ALIGNMENT_PADDING_SIZE + ARGUMENT_REGISTERS_SIZE + RETURN_BLOCK_SIZE + FLOAT_ARG_REGISTERS_SIZE + \
+    PUSHED_LR_SIZE + PUSHED_FP_SIZE)
+
 #define FLOAT_ARG_OFFSET (PUSHED_FP_SIZE + PUSHED_LR_SIZE)
 #define ARGUMENT_REGISTERS_OFFSET (FLOAT_ARG_OFFSET + FLOAT_ARG_REGISTERS_SIZE + RETURN_BLOCK_SIZE)
 
 ;;
 ;; RhpUniversalTransition
 ;; 
-;; At input to this function, x0-7, d0-7 and the stack may contain any number of arguments.
+;; At input to this function, x0-8, d0-7 and the stack may contain any number of arguments.
 ;;
 ;; In addition, there are 2 extra arguments passed in the intra-procedure-call scratch register:
 ;;  xip0 will contain the managed function that is to be called by this transition function
@@ -59,15 +65,16 @@
 ;;
 ;; Frame layout is:
 ;;
-;;  {StackPassedArgs}                           ChildSP+0D0     CallerSP+000
-;;  {IntArgRegs (x0-x7) (0x40 bytes)}           ChildSP+090     CallerSP-040
-;;  {ReturnBlock (0x40 bytes)}                  ChildSP+050     CallerSP-080
+;;  {StackPassedArgs}                           ChildSP+0C0     CallerSP+000
+;;  {AlignmentPad (0x8 bytes)}                  ChildSP+0B8     CallerSP-008
+;;  {IntArgRegs (x0-x8) (0x48 bytes)}           ChildSP+070     CallerSP-050
+;;  {ReturnBlock (0x20 bytes)}                  ChildSP+050     CallerSP-070
 ;;   -- The base address of the Return block is the TransitionBlock pointer, the floating point args are
 ;;      in the neg space of the TransitionBlock pointer.  Note that the callee has knowledge of the exact
 ;;      layout of all pieces of the frame that lie at or above the pushed floating point registers.
-;;  {FpArgRegs (d0-d7) (0x40 bytes)}            ChildSP+010     CallerSP-0C0
-;;  {PushedLR}                                  ChildSP+008     CallerSP-0C8
-;;  {PushedFP}                                  ChildSP+000     CallerSP-0D0
+;;  {FpArgRegs (d0-d7) (0x40 bytes)}            ChildSP+010     CallerSP-0B0
+;;  {PushedLR}                                  ChildSP+008     CallerSP-0B8
+;;  {PushedFP}                                  ChildSP+000     CallerSP-0C0
 ;;
 ;; NOTE: If the frame layout ever changes, the C++ UniversalTransitionStackFrame structure
 ;; must be updated as well.
@@ -99,10 +106,11 @@
         ;; Space for return buffer data (0x40 bytes)
 
         ;; Save argument registers
-        stp         x0, x1, [sp, #(ARGUMENT_REGISTERS_OFFSET       )]
-        stp         x2, x3, [sp, #(ARGUMENT_REGISTERS_OFFSET + 0x10)]
-        stp         x4, x5, [sp, #(ARGUMENT_REGISTERS_OFFSET + 0x20)]
-        stp         x6, x7, [sp, #(ARGUMENT_REGISTERS_OFFSET + 0x30)]
+        stp         x0, x1,  [sp, #(ARGUMENT_REGISTERS_OFFSET       )]
+        stp         x2, x3,  [sp, #(ARGUMENT_REGISTERS_OFFSET + 0x10)]
+        stp         x4, x5,  [sp, #(ARGUMENT_REGISTERS_OFFSET + 0x20)]
+        stp         x6, x7,  [sp, #(ARGUMENT_REGISTERS_OFFSET + 0x30)]
+        stp         x8, xzr, [sp, #(ARGUMENT_REGISTERS_OFFSET + 0x40)]
 
 #ifdef TRASH_SAVED_ARGUMENT_REGISTERS
         ;; ARM64TODO
@@ -123,16 +131,17 @@
         mov         x12, x0
 
         ;; Restore floating point registers
-        ldp            d0, d1, [sp, #(FLOAT_ARG_OFFSET       )]
-        ldp            d2, d3, [sp, #(FLOAT_ARG_OFFSET + 0x10)]
-        ldp            d4, d5, [sp, #(FLOAT_ARG_OFFSET + 0x20)]
-        ldp            d6, d7, [sp, #(FLOAT_ARG_OFFSET + 0x30)]
+        ldp         d0, d1, [sp, #(FLOAT_ARG_OFFSET       )]
+        ldp         d2, d3, [sp, #(FLOAT_ARG_OFFSET + 0x10)]
+        ldp         d4, d5, [sp, #(FLOAT_ARG_OFFSET + 0x20)]
+        ldp         d6, d7, [sp, #(FLOAT_ARG_OFFSET + 0x30)]
 
         ;; Restore the argument registers
-        ldp            x0, x1, [sp, #(ARGUMENT_REGISTERS_OFFSET       )]
-        ldp            x2, x3, [sp, #(ARGUMENT_REGISTERS_OFFSET + 0x10)]
-        ldp            x4, x5, [sp, #(ARGUMENT_REGISTERS_OFFSET + 0x20)]
-        ldp            x6, x7, [sp, #(ARGUMENT_REGISTERS_OFFSET + 0x30)]
+        ldp         x0, x1,  [sp, #(ARGUMENT_REGISTERS_OFFSET       )]
+        ldp         x2, x3,  [sp, #(ARGUMENT_REGISTERS_OFFSET + 0x10)]
+        ldp         x4, x5,  [sp, #(ARGUMENT_REGISTERS_OFFSET + 0x20)]
+        ldp         x6, x7,  [sp, #(ARGUMENT_REGISTERS_OFFSET + 0x30)]
+        ldr         x8,      [sp, #(ARGUMENT_REGISTERS_OFFSET + 0x40)]
 
         ;; Restore FP and LR registers, and free the allocated stack block
         EPILOG_RESTORE_REG_PAIR   fp, lr, #STACK_SIZE!

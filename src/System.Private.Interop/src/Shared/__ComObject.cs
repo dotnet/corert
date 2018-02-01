@@ -26,7 +26,7 @@ using System.Runtime;
 
 using Internal.NativeFormat;
 
-#if !RHTESTCL && !CORECLR && !CORERT
+#if !RHTESTCL && PROJECTN && ENABLE_WINRT
 using Internal.Runtime.Augments;
 using Internal.Runtime.TypeLoader;
 #endif
@@ -72,7 +72,7 @@ namespace System
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
     [CLSCompliant(false)]
-#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_WINRT
+#if !RHTESTCL && PROJECTN && ENABLE_WINRT
     public unsafe class __ComObject : CastableObject, ICastable
 #else
     public unsafe class __ComObject : ICastable
@@ -161,7 +161,7 @@ namespace System
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private RCWFinalizer m_finalizer;
 
-#if !RHTESTCL && !CORECLR && !CORERT
+#if !RHTESTCL && PROJECTN && ENABLE_WINRT
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private static readonly System.Collections.Generic.Dictionary<RuntimeTypeHandle, RuntimeTypeHandle> s_DynamicRCWAdapters = 
             new System.Collections.Generic.Dictionary<RuntimeTypeHandle, RuntimeTypeHandle>();
@@ -333,7 +333,7 @@ namespace System
 
         static __ComObject()
         {
-#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_WINRT
+#if !RHTESTCL && PROJECTN && ENABLE_WINRT
             // Projected types
             s_DynamicRCWAdapters[typeof(IEnumerable<>).TypeHandle]                                                  = typeof(IEnumerable_RCWAdapter<>).TypeHandle;
             s_DynamicRCWAdapters[typeof(IList<>).TypeHandle]                                                        = typeof(IList_RCWAdapter<>).TypeHandle;
@@ -1326,7 +1326,7 @@ namespace System
             }
 #endif
 
-#if !RHTESTCL && !CORECLR && !CORERT
+#if !RHTESTCL && PROJECTN
 
             //
             // Search the existing cached interfaces in the simple cache that we can cast to the input interface type
@@ -1571,7 +1571,7 @@ namespace System
         #endregion
 
         #region CastableObject implementation for weakly typed RCWs
-#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_WINRT
+#if !RHTESTCL && PROJECTN && ENABLE_WINRT
         object CastToICollectionHelper(RuntimeTypeHandle genericTypeDef, RuntimeTypeHandle[] genericArguments, bool testForIDictionary)
         {
             Debug.Assert(genericTypeDef.Equals(typeof(ICollection<>).TypeHandle) || genericTypeDef.Equals(typeof(IReadOnlyCollection<>).TypeHandle));
@@ -1871,7 +1871,7 @@ namespace System
             //
             bool hasValidDispatcher = true;
 
-#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_WINRT
+#if !RHTESTCL && PROJECTN && ENABLE_WINRT
             hasValidDispatcher = McgModuleManager.UseDynamicInterop && interfaceType.IsGenericType() ? 
                 !interfaceType.GetDispatchClassType().IsInvalid() : 
                 true;
@@ -2267,7 +2267,7 @@ namespace System
             if (dynamicAdapter != null)
                 return dynamicAdapter;
 
-#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_WINRT
+#if !RHTESTCL && PROJECTN && ENABLE_WINRT
             // Try dynamic rcw, The Caller will generate/throw exception if return null
             Exception e;
             dynamicAdapter = CastToInterface(requestedType, /*produceCastErrorException*/ false, out e);

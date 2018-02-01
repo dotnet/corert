@@ -23,6 +23,7 @@ struct JitInterfaceCallbacks
     void* (* getMethodModule)(void * thisHandle, CorInfoException** ppException, void* method);
     void (* getMethodVTableOffset)(void * thisHandle, CorInfoException** ppException, void* method, unsigned* offsetOfIndirection, unsigned* offsetAfterIndirection, bool* isRelative);
     void* (* resolveVirtualMethod)(void * thisHandle, CorInfoException** ppException, void* virtualMethod, void* implementingClass, void* ownerType);
+    void* (* getUnboxedEntry)(void * thisHandle, CorInfoException** ppException, void* ftn, bool* requiresInstMethodTableArg);
     void* (* getDefaultEqualityComparerClass)(void * thisHandle, CorInfoException** ppException, void* elemType);
     void (* expandRawHandleIntrinsic)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, void* pResult);
     int (* getIntrinsicID)(void * thisHandle, CorInfoException** ppException, void* method, bool* pMustExpand);
@@ -48,6 +49,8 @@ struct JitInterfaceCallbacks
     int (* shouldEnforceCallvirtRestriction)(void * thisHandle, CorInfoException** ppException, void* scope);
     int (* asCorInfoType)(void * thisHandle, CorInfoException** ppException, void* cls);
     const char* (* getClassName)(void * thisHandle, CorInfoException** ppException, void* cls);
+    const char* (* getClassNameFromMetadata)(void * thisHandle, CorInfoException** ppException, void* cls, const char** namespaceName);
+    void* (* getTypeInstantiationArgument)(void * thisHandle, CorInfoException** ppException, void* cls, unsigned index);
     int (* appendClassName)(void * thisHandle, CorInfoException** ppException, wchar_t** ppBuf, int* pnBufLen, void* cls, int fNamespace, int fFullInst, int fAssembly);
     int (* isValueClass)(void * thisHandle, CorInfoException** ppException, void* cls);
     int (* canInlineTypeCheckWithObjectVTable)(void * thisHandle, CorInfoException** ppException, void* cls);
@@ -80,6 +83,7 @@ struct JitInterfaceCallbacks
     void (* classMustBeLoadedBeforeCodeIsRun)(void * thisHandle, CorInfoException** ppException, void* cls);
     void* (* getBuiltinClass)(void * thisHandle, CorInfoException** ppException, int classId);
     int (* getTypeForPrimitiveValueClass)(void * thisHandle, CorInfoException** ppException, void* cls);
+    int (* getTypeForPrimitiveNumericClass)(void * thisHandle, CorInfoException** ppException, void* cls);
     int (* canCast)(void * thisHandle, CorInfoException** ppException, void* child, void* parent);
     int (* areTypesEquivalent)(void * thisHandle, CorInfoException** ppException, void* cls1, void* cls2);
     int (* compareTypesForCast)(void * thisHandle, CorInfoException** ppException, void* fromClass, void* toClass);
@@ -304,6 +308,15 @@ public:
         return _ret;
     }
 
+    virtual void* getUnboxedEntry(void* ftn, bool* requiresInstMethodTableArg)
+    {
+        CorInfoException* pException = nullptr;
+        void* _ret = _callbacks->getUnboxedEntry(_thisHandle, &pException, ftn, requiresInstMethodTableArg);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
     virtual void* getDefaultEqualityComparerClass(void* elemType)
     {
         CorInfoException* pException = nullptr;
@@ -516,6 +529,24 @@ public:
     {
         CorInfoException* pException = nullptr;
         const char* _ret = _callbacks->getClassName(_thisHandle, &pException, cls);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual const char* getClassNameFromMetadata(void* cls, const char** namespaceName)
+    {
+        CorInfoException* pException = nullptr;
+        const char* _ret = _callbacks->getClassNameFromMetadata(_thisHandle, &pException, cls, namespaceName);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual void* getTypeInstantiationArgument(void* cls, unsigned index)
+    {
+        CorInfoException* pException = nullptr;
+        void* _ret = _callbacks->getTypeInstantiationArgument(_thisHandle, &pException, cls, index);
         if (pException != nullptr)
             throw pException;
         return _ret;
@@ -801,6 +832,15 @@ public:
     {
         CorInfoException* pException = nullptr;
         int _ret = _callbacks->getTypeForPrimitiveValueClass(_thisHandle, &pException, cls);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual int getTypeForPrimitiveNumericClass(void* cls)
+    {
+        CorInfoException* pException = nullptr;
+        int _ret = _callbacks->getTypeForPrimitiveNumericClass(_thisHandle, &pException, cls);
         if (pException != nullptr)
             throw pException;
         return _ret;

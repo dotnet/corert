@@ -43,5 +43,10 @@ namespace ILCompiler.DependencyAnalysisFramework
             // This marker does not permit logging.
             return;
         }
+
+        void IDependencyAnalysisMarkStrategy<DependencyContextType>.AttachContext(DependencyContextType context)
+        {
+            // This logger does not need to use the context
+        }
     }
 }

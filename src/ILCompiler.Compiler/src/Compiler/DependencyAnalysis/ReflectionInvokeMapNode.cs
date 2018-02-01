@@ -44,8 +44,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectNodeSection Section => _externalReferences.Section;
 
-        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => !factory.MetadataManager.SupportsReflection;
-
         public override bool StaticDependenciesAreComputed => true;
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
@@ -76,12 +74,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 MethodDesc method = mappingEntry.Entity;
 
-                // The current format requires us to have an EEType for the owning type. We might want to lift this.
-                if (!factory.MetadataManager.TypeGeneratesEEType(method.OwningType))
-                    continue;
-
-                // We have a method body, we have a metadata token, but we can't get an invoke stub. Bail.
-                if (!factory.MetadataManager.IsReflectionInvokable(method))
+                if (!factory.MetadataManager.ShouldMethodBeInInvokeMap(method))
                     continue;
 
                 bool useUnboxingStub = method.OwningType.IsValueType && !method.Signature.IsStatic;
@@ -194,5 +187,8 @@ namespace ILCompiler.DependencyAnalysis
 
             return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
         }
+
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+        protected internal override int ClassCode => (int)ObjectNodeOrder.ReflectionInvokeMapNode;
     }
 }

@@ -14,6 +14,7 @@
 
 using System.Reflection;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
 namespace System.Globalization
@@ -55,6 +56,9 @@ namespace System.Globalization
         private const CompareOptions ValidSortkeyCtorMaskOffFlags =
             ~(CompareOptions.IgnoreCase | CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace |
               CompareOptions.IgnoreWidth | CompareOptions.IgnoreKanaType | CompareOptions.StringSort);
+
+        // Cache the invariant CompareInfo
+        internal static readonly CompareInfo Invariant = CultureInfo.InvariantCulture.CompareInfo;
 
         //
         // CompareInfos have an interesting identity.  They are attached to the locale that created them,
@@ -555,8 +559,8 @@ namespace System.Globalization
             int length = Math.Min(strA.Length, strB.Length);
             int range = length;
 
-            fixed (char* ap = &strA.DangerousGetPinnableReference())
-            fixed (char* bp = &strB.DangerousGetPinnableReference())
+            fixed (char* ap = &MemoryMarshal.GetReference(strA))
+            fixed (char* bp = &MemoryMarshal.GetReference(strB))
             {
                 char* a = ap;
                 char* b = bp;

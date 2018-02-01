@@ -4,11 +4,13 @@
 
 using System;
 using System.Collections.Generic;
+
 using ILCompiler.DependencyAnalysisFramework;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public abstract class ObjectNode : DependencyNodeCore<NodeFactory>
+    public abstract partial class ObjectNode : SortableDependencyNode
     {
         public class ObjectData
         {

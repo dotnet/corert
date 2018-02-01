@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 
 using Internal.Runtime;
@@ -126,5 +127,7 @@ namespace ILCompiler.DependencyAnalysis
 
             return builder.ToObjectData();
         }
+
+        protected internal override int ClassCode => -534800244;
     }
 }

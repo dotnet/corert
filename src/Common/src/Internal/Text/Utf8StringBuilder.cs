@@ -4,6 +4,7 @@
 
 using System;
 using System.Text;
+using System.Diagnostics;
 
 namespace Internal.Text
 {
@@ -23,6 +24,13 @@ namespace Internal.Text
         public Utf8StringBuilder Clear()
         {
             _length = 0;
+            return this;
+        }
+
+        public Utf8StringBuilder Truncate(int newLength)
+        {
+            Debug.Assert(newLength <= _length);
+            _length = newLength;
             return this;
         }
 

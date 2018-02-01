@@ -36,7 +36,6 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectNodeSection Section => _externalReferences.Section;
 
         public override bool StaticDependenciesAreComputed => true;
-        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => !factory.MetadataManager.SupportsReflection;
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
@@ -52,7 +51,7 @@ namespace ILCompiler.DependencyAnalysis
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(typeMapHashTable);
 
-            foreach (var type in factory.MetadataManager.GetTypesWithEETypes())
+            foreach (var type in factory.MetadataManager.GetTypesWithConstructedEETypes())
             {
                 if (!type.IsSzArray)
                     continue;
@@ -62,8 +61,8 @@ namespace ILCompiler.DependencyAnalysis
                 if (!arrayType.ElementType.IsValueType)
                     continue;
 
-                // Go with a necessary type symbol. It will be upgraded to a constructed one if a constructed was emitted.
-                IEETypeNode arrayTypeSymbol = factory.NecessaryTypeSymbol(arrayType);
+                // Look at the constructed type symbol. If a constructed type wasn't emitted, then the array map entry isn't valid for use
+                IEETypeNode arrayTypeSymbol = factory.ConstructedTypeSymbol(arrayType);
 
                 Vertex vertex = writer.GetUnsignedConstant(_externalReferences.GetIndex(arrayTypeSymbol));
 
@@ -77,5 +76,8 @@ namespace ILCompiler.DependencyAnalysis
 
             return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
         }
+
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+        protected internal override int ClassCode => (int)ObjectNodeOrder.ArrayMapNode;
     }
 }

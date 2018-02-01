@@ -96,18 +96,13 @@ namespace Internal.TypeSystem.Interop
             if (forceLazyResolution.HasValue)
                 return forceLazyResolution.Value;
 
-            // In multi-module library mode, the WinRT p/invokes in System.Private.Interop cause linker failures
-            // since we don't link against the OS libraries containing those APIs. Force them to be lazy.
-            // See https://github.com/dotnet/corert/issues/2601
-            string assemblySimpleName = ((IAssemblyDesc)((MetadataType)method.OwningType).Module).GetName().Name;
-            if (assemblySimpleName == "System.Private.Interop")
-            {
-                return true;
-            }
-
             // Determine whether this call should be made through a lazy resolution or a static reference
             // Eventually, this should be controlled by a custom attribute (or an extension to the metadata format).
             if (importModule == "[MRT]" || importModule == "*")
+                return false;
+
+            // Force link time symbol resolution for "__Internal" module for compatibility with Mono
+            if (importModule == "__Internal")
                 return false;
 
             if (method.Context.Target.IsWindows)
@@ -305,7 +300,7 @@ namespace Internal.TypeSystem.Interop
             var elementNativeType = nativeType as MetadataType;
             if (elementNativeType == null)
             {
-                Debug.Assert(nativeType is PointerType);
+                Debug.Assert(nativeType.IsPointer || nativeType.IsFunctionPointer);
 
                 // If it is a pointer type we will create InlineArray for IntPtr
                 elementNativeType = (MetadataType)managedElementType.Context.GetWellKnownType(WellKnownType.IntPtr);
@@ -456,18 +451,13 @@ namespace Internal.TypeSystem.Interop
                     else
                         return MarshallerKind.Invalid;
                 }
-                /*              
-                                TODO: Bring HandleRef to CoreLib
-                                https://github.com/dotnet/corert/issues/2570
-
-                                else if (context.IsHandleRef(type))
-                                {
-                                    if (nativeType == NativeType.Invalid)
-                                        return MarshallerKind.HandleRef;
-                                    else
-                                        return MarshallerKind.Invalid;
-                                }
-                */
+                else if (InteropTypes.IsHandleRef(context, type))
+                {
+                    if (nativeType == NativeTypeKind.Invalid)
+                        return MarshallerKind.HandleRef;
+                    else
+                        return MarshallerKind.Invalid;
+                }
 
                 switch (nativeType)
                 {
@@ -512,181 +502,158 @@ namespace Internal.TypeSystem.Interop
                     return MarshallerKind.Struct;
                 }
             }
-            else                  // !ValueType
+            else if (type.IsSzArray)
             {
-                if (type.Category == TypeFlags.Class)
+                if (nativeType == NativeTypeKind.Invalid)
+                    nativeType = NativeTypeKind.Array;
+
+                switch (nativeType)
                 {
-                    if (type.IsString)
-                    {
-                        switch (nativeType)
+                    case NativeTypeKind.Array:
                         {
-                            case NativeTypeKind.LPWStr:
-                                return MarshallerKind.UnicodeString;
-
-                            case NativeTypeKind.LPStr:
-                                return MarshallerKind.AnsiString;
-
-                            case NativeTypeKind.LPTStr:
-                                return MarshallerKind.UnicodeString;
-
-                            case NativeTypeKind.ByValTStr:
-                                if (isAnsi)
-                                {
-                                    elementMarshallerKind = MarshallerKind.AnsiChar;
-                                    return MarshallerKind.ByValAnsiString;
-                                }
-                                else
-                                {
-                                    elementMarshallerKind = MarshallerKind.UnicodeChar;
-                                    return MarshallerKind.ByValUnicodeString;
-                                }
-
-                            case NativeTypeKind.Invalid:
-                                if (isAnsi)
-                                    return MarshallerKind.AnsiString;
-                                else
-                                    return MarshallerKind.UnicodeString;
-
-                            default:
+                            if (isField || isReturn)
                                 return MarshallerKind.Invalid;
+
+                            var arrayType = (ArrayType)type;
+
+                            elementMarshallerKind = GetArrayElementMarshallerKind(
+                                arrayType,
+                                marshalAs,
+                                isAnsi);
+
+                            // If element is invalid type, the array itself is invalid
+                            if (elementMarshallerKind == MarshallerKind.Invalid)
+                                return MarshallerKind.Invalid;
+
+                            if (elementMarshallerKind == MarshallerKind.AnsiChar)
+                                return MarshallerKind.AnsiCharArray;
+                            else if (elementMarshallerKind == MarshallerKind.UnicodeChar    // Arrays of unicode char should be marshalled as blittable arrays
+                                || elementMarshallerKind == MarshallerKind.Enum
+                                || elementMarshallerKind == MarshallerKind.BlittableValue)
+                                return MarshallerKind.BlittableArray;
+                            else
+                                return MarshallerKind.Array;
                         }
-                    }
-                    else if (type.IsDelegate)
-                    {
-                        if (nativeType == NativeTypeKind.Invalid || nativeType == NativeTypeKind.Func)
-                            return MarshallerKind.FunctionPointer;
-                        else
-                            return MarshallerKind.Invalid;
-                    }
-                    else if (type.IsObject)
-                    {
-                        if (nativeType == NativeTypeKind.Invalid)
-                            return MarshallerKind.Variant;
-                        else
-                            return MarshallerKind.Invalid;
-                    }
-                    else if (InteropTypes.IsStringBuilder(context, type))
-                    {
-                        switch (nativeType)
+
+                    case NativeTypeKind.ByValArray:         // fix sized array
                         {
-                            case NativeTypeKind.Invalid:
-                                if (isAnsi)
-                                {
-                                    return MarshallerKind.AnsiStringBuilder;
-                                }
-                                else
-                                {
-                                    return MarshallerKind.UnicodeStringBuilder;
-                                }
+                            var arrayType = (ArrayType)type;
+                            elementMarshallerKind = GetArrayElementMarshallerKind(
+                                arrayType,
+                                marshalAs,
+                                isAnsi);
 
-                            case NativeTypeKind.LPStr:
-                                return MarshallerKind.AnsiStringBuilder;
-
-                            case NativeTypeKind.LPWStr:
-                                return MarshallerKind.UnicodeStringBuilder;
-                            default:
+                            // If element is invalid type, the array itself is invalid
+                            if (elementMarshallerKind == MarshallerKind.Invalid)
                                 return MarshallerKind.Invalid;
+
+                            if (elementMarshallerKind == MarshallerKind.AnsiChar)
+                                return MarshallerKind.ByValAnsiCharArray;
+                            else
+                                return MarshallerKind.ByValArray;
                         }
-                    }
-                    else if (InteropTypes.IsSafeHandle(context, type))
-                    {
-                        if (nativeType == NativeTypeKind.Invalid)
-                            return MarshallerKind.SafeHandle;
-                        else
-                            return MarshallerKind.Invalid;
-                    }
-                    /*
-                                        TODO: Bring CriticalHandle to CoreLib
-                                        https://github.com/dotnet/corert/issues/2570
 
-                                        else if (InteropTypes.IsCriticalHandle(context, type))
-                                        {
-                                            if (nativeType != NativeType.Invalid || isField)
-                                            {
-                                                return MarshallerKind.Invalid;
-                                            }
-                                            else
-                                            {
-                                                return MarshallerKind.CriticalHandle;
-                                            }
-                                        }
-                    */
-                    return MarshallerKind.Invalid;
-                }
-                else if (InteropTypes.IsSystemArray(context, type))
-                {
-                    return MarshallerKind.Invalid;
-                }
-                else if (type.IsSzArray)
-                {
-                    if (nativeType == NativeTypeKind.Invalid)
-                        nativeType = NativeTypeKind.Array;
-
-                    switch (nativeType)
-                    {
-                        case NativeTypeKind.Array:
-                            {
-                                if (isField || isReturn)
-                                    return MarshallerKind.Invalid;
-
-                                var arrayType = (ArrayType)type;
-
-                                elementMarshallerKind = GetArrayElementMarshallerKind(
-                                    arrayType,
-                                    marshalAs,
-                                    isAnsi);
-
-                                // If element is invalid type, the array itself is invalid
-                                if (elementMarshallerKind == MarshallerKind.Invalid)
-                                    return MarshallerKind.Invalid;
-
-                                if (elementMarshallerKind == MarshallerKind.AnsiChar)
-                                    return MarshallerKind.AnsiCharArray;
-                                else if (elementMarshallerKind == MarshallerKind.UnicodeChar    // Arrays of unicode char should be marshalled as blittable arrays
-                                    || elementMarshallerKind == MarshallerKind.Enum
-                                    || elementMarshallerKind == MarshallerKind.BlittableValue)
-                                    return MarshallerKind.BlittableArray;
-                                else
-                                    return MarshallerKind.Array;
-                            }
-
-                        case NativeTypeKind.ByValArray:         // fix sized array
-                            {
-                                var arrayType = (ArrayType)type;
-                                elementMarshallerKind = GetArrayElementMarshallerKind(
-                                    arrayType,
-                                    marshalAs,
-                                    isAnsi);
-
-                                // If element is invalid type, the array itself is invalid
-                                if (elementMarshallerKind == MarshallerKind.Invalid)
-                                    return MarshallerKind.Invalid;
-
-                                if (elementMarshallerKind == MarshallerKind.AnsiChar)
-                                    return MarshallerKind.ByValAnsiCharArray;
-                                else
-                                    return MarshallerKind.ByValArray;
-                            }
-
-                        default:
-                            return MarshallerKind.Invalid;
-                    }
-                }
-                else if (type.Category == TypeFlags.Pointer)
-                {
-                    //
-                    // @TODO - add checks for the pointee type in case the pointee type is not blittable
-                    // C# already does this and will emit compilation errors (can't declare pointers to 
-                    // managed type).
-                    //
-                    if (nativeType == NativeTypeKind.Invalid)
-                        return MarshallerKind.BlittableValue;
-                    else
+                    default:
                         return MarshallerKind.Invalid;
                 }
             }
+            else if (type.IsPointer || type.IsFunctionPointer)
+            {
+                if (nativeType == NativeTypeKind.Invalid)
+                    return MarshallerKind.BlittableValue;
+                else
+                    return MarshallerKind.Invalid;
+            }
+            else if (type.IsDelegate)
+            {
+                if (nativeType == NativeTypeKind.Invalid || nativeType == NativeTypeKind.Func)
+                    return MarshallerKind.FunctionPointer;
+                else
+                    return MarshallerKind.Invalid;
+            }
+            else if (type.IsString)
+            {
+                switch (nativeType)
+                {
+                    case NativeTypeKind.LPWStr:
+                        return MarshallerKind.UnicodeString;
 
-            return MarshallerKind.Invalid;
+                    case NativeTypeKind.LPStr:
+                        return MarshallerKind.AnsiString;
+
+                    case NativeTypeKind.LPTStr:
+                        return MarshallerKind.UnicodeString;
+
+                    case NativeTypeKind.ByValTStr:
+                        if (isAnsi)
+                        {
+                            elementMarshallerKind = MarshallerKind.AnsiChar;
+                            return MarshallerKind.ByValAnsiString;
+                        }
+                        else
+                        {
+                            elementMarshallerKind = MarshallerKind.UnicodeChar;
+                            return MarshallerKind.ByValUnicodeString;
+                        }
+
+                    case NativeTypeKind.Invalid:
+                        if (isAnsi)
+                            return MarshallerKind.AnsiString;
+                        else
+                            return MarshallerKind.UnicodeString;
+
+                    default:
+                        return MarshallerKind.Invalid;
+                }
+            }
+            // else if (type.IsObject)
+            // {
+            //    if (nativeType == NativeTypeKind.Invalid)
+            //        return MarshallerKind.Variant;
+            //    else
+            //        return MarshallerKind.Invalid;
+            // }
+            else if (InteropTypes.IsStringBuilder(context, type))
+            {
+                switch (nativeType)
+                {
+                    case NativeTypeKind.Invalid:
+                        if (isAnsi)
+                        {
+                            return MarshallerKind.AnsiStringBuilder;
+                        }
+                        else
+                        {
+                            return MarshallerKind.UnicodeStringBuilder;
+                        }
+
+                    case NativeTypeKind.LPStr:
+                        return MarshallerKind.AnsiStringBuilder;
+
+                    case NativeTypeKind.LPWStr:
+                        return MarshallerKind.UnicodeStringBuilder;
+                    default:
+                        return MarshallerKind.Invalid;
+                }
+            }
+            else if (InteropTypes.IsSafeHandle(context, type))
+            {
+                if (nativeType == NativeTypeKind.Invalid)
+                    return MarshallerKind.SafeHandle;
+                else
+                    return MarshallerKind.Invalid;
+            }
+            else if (InteropTypes.IsCriticalHandle(context, type))
+            {
+                if (nativeType == NativeTypeKind.Invalid)
+                    return MarshallerKind.CriticalHandle;
+                else
+                    return MarshallerKind.Invalid;
+            }
+            else
+            {
+                return MarshallerKind.Invalid;
+            }
         }
 
         private static MarshallerKind GetArrayElementMarshallerKind(
@@ -802,15 +769,13 @@ namespace Internal.TypeSystem.Interop
                         return MarshallerKind.Invalid;
                     }
                 }
-                /*              
-                                TODO: Bring HandleRef to CoreLib
-                                https://github.com/dotnet/corert/issues/2570
-
-                                else if (InteropTypes.IsHandleRef(context, elementType))
-                                {
-                                    return MarshallerKind.HandleRef;
-                                }
-                */
+                else if (InteropTypes.IsHandleRef(context, elementType))
+                {
+                    if (nativeType == NativeTypeKind.Invalid)
+                        return MarshallerKind.HandleRef;
+                    else
+                        return MarshallerKind.Invalid;
+                }
                 else
                 {
 
@@ -833,60 +798,41 @@ namespace Internal.TypeSystem.Interop
                     }
                 }
             }
-            else                          //  !valueType
+            else if (elementType.IsPointer || elementType.IsFunctionPointer)
             {
-                if (elementType.IsString)
+                if (nativeType == NativeTypeKind.Invalid)
+                    return MarshallerKind.BlittableValue;
+                else
+                    return MarshallerKind.Invalid;
+            }
+            else if (elementType.IsString)
+            {
+                switch (nativeType)
                 {
-                    switch (nativeType)
-                    {
-                        case NativeTypeKind.Invalid:
-                            if (isAnsi)
-                                return MarshallerKind.AnsiString;
-                            else
-                                return MarshallerKind.UnicodeString;
-                        case NativeTypeKind.LPStr:
+                    case NativeTypeKind.Invalid:
+                        if (isAnsi)
                             return MarshallerKind.AnsiString;
-                        case NativeTypeKind.LPWStr:
+                        else
                             return MarshallerKind.UnicodeString;
-                        default:
-                            return MarshallerKind.Invalid;
-                    }
-                }
-
-                if (elementType.IsObject)
-                {
-                    if (nativeType == NativeTypeKind.Invalid)
-                        return MarshallerKind.Variant;
-                    else
+                    case NativeTypeKind.LPStr:
+                        return MarshallerKind.AnsiString;
+                    case NativeTypeKind.LPWStr:
+                        return MarshallerKind.UnicodeString;
+                    default:
                         return MarshallerKind.Invalid;
                 }
-
-                if (elementType.IsSzArray)
-                {
-                    return MarshallerKind.Invalid;
-                }
-
-                if (elementType.IsPointer)
-                {
-                    return MarshallerKind.Invalid;
-                }
-
-                if (InteropTypes.IsSafeHandle(context, elementType))
-                {
-                    return MarshallerKind.Invalid;
-                }
-                /*          
-                                TODO: Bring CriticalHandle to CoreLib
-                                https://github.com/dotnet/corert/issues/2570
-
-                                if (pInvokeData.IsCriticalHandle(elementType))
-                                {
-                                    return MarshallerKind.Invalid;
-                                }
-                */
             }
-
-            return MarshallerKind.Invalid;
+            // else if (elementType.IsObject)
+            // {
+            //    if (nativeType == NativeTypeKind.Invalid)
+            //        return MarshallerKind.Variant;
+            //    else
+            //        return MarshallerKind.Invalid;
+            // }
+            else
+            {
+                return MarshallerKind.Invalid;
+            }
         }
 
         //TODO: https://github.com/dotnet/corert/issues/2675
@@ -905,9 +851,8 @@ namespace Internal.TypeSystem.Interop
             codeStream.Emit(ILOpcode.ldstr, emitter.NewToken(message));
             codeStream.Emit(ILOpcode.newobj, emitter.NewToken(exceptionCtor));
             codeStream.Emit(ILOpcode.throw_);
-            codeStream.Emit(ILOpcode.ret);
 
-            return new PInvokeILStubMethodIL((ILStubMethodIL)emitter.Link(method), true);
+            return new PInvokeILStubMethodIL((ILStubMethodIL)emitter.Link(method), isStubRequired: true);
         }
 
     }

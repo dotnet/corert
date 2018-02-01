@@ -255,6 +255,9 @@
   <data name="Arg_KeyNotFound" xml:space="preserve">
     <value>The given key was not present in the dictionary.</value>
   </data>
+  <data name="Arg_KeyNotFoundWithKey" xml:space="preserve">
+    <value>The given key '{0}' was not present in the dictionary.</value>
+  </data>
   <data name="Arg_LongerThanSrcString" xml:space="preserve">
     <value>Source string was not long enough. Check sourceIndex and count.</value>
   </data>
@@ -531,6 +534,9 @@
   <data name="Argument_DateTimeKindMustBeUnspecified" xml:space="preserve">
     <value>The supplied DateTime must have the Kind property set to DateTimeKind.Unspecified.</value>
   </data>
+  <data name="Argument_DateTimeKindMustBeUnspecifiedOrUtc" xml:space="preserve">
+    <value>The supplied DateTime must have the Kind property set to DateTimeKind.Unspecified or DateTimeKind.Utc.</value>
+  </data>
   <data name="Argument_DateTimeOffsetInvalidDateTimeStyles" xml:space="preserve">
     <value>The DateTimeStyles value 'NoCurrentDateDefault' is not allowed when parsing DateTimeOffset.</value>
   </data>
@@ -563,15 +569,6 @@
   </data>
   <data name="Argument_FallbackBufferNotEmpty" xml:space="preserve">
     <value>Cannot change fallback when buffer is not empty. Previous Convert() call left data in the fallback buffer.</value>
-  </data>
-  <data name="Argument_IdnBadLabelSize" xml:space="preserve">
-    <value>IDN labels must be between 1 and 63 characters long.</value>
-  </data>
-  <data name="Argument_IdnBadPunycode" xml:space="preserve">
-    <value>Invalid IDN encoded string.</value>
-  </data>
-  <data name="Argument_IdnIllegalName" xml:space="preserve">
-    <value>Decoded string is not a valid IDN name.</value>
   </data>
   <data name="Argument_ImplementIComparable" xml:space="preserve">
     <value>At least one object must implement IComparable.</value>
@@ -1021,7 +1018,10 @@
     <value>String was not recognized as a valid Boolean.</value>
   </data>
   <data name="Format_BadFormatSpecifier" xml:space="preserve">
-    <value>Format specifier was invalid.</value>
+    <value>Format specifier '{0}' was invalid.</value>
+  </data>
+  <data name="Format_NoFormatSpecifier" xml:space="preserve">
+    <value>No format specifiers were provided.</value>
   </data>
   <data name="Format_BadQuote" xml:space="preserve">
     <value>Cannot find a matching quote character for the character '{0}'.</value>
@@ -1170,6 +1170,9 @@
   <data name="InvalidOperation_AsyncFlowCtrlCtxMismatch" xml:space="preserve">
     <value>AsyncFlowControl objects can be used to restore flow only on a Context that had its flow suppressed.</value>
   </data>
+  <data name="InvalidOperation_AsyncIOInProgress" xml:space="preserve">
+    <value>The stream is currently in use by a previous operation on the stream.</value>
+  </data>
   <data name="InvalidProgram_Default" xml:space="preserve">
     <value>Common Language Runtime detected an invalid program.</value>
   </data>
@@ -1182,8 +1185,23 @@
   <data name="InvalidProgram_CallVirtFinalize" xml:space="preserve">
     <value>Object.Finalize() can not be called directly. It is only callable by the runtime.</value>
   </data>
+  <data name="InvalidProgram_NativeCallable" xml:space="preserve">
+    <value>NativeCallable method cannot be called from managed code.</value>
+  </data>
   <data name="InvalidTimeZone_InvalidRegistryData" xml:space="preserve">
     <value>The time zone ID '{0}' was found on the local computer, but the registry information was corrupt.</value>
+  </data>
+  <data name="InvalidTimeZone_InvalidFileData" xml:space="preserve">
+    <value>The time zone ID '{0}' was found on the local computer, but the file at '{1}' was corrupt.</value>
+  </data>
+  <data name="InvalidTimeZone_JulianDayNotSupported" xml:space="preserve">
+    <value>Julian dates in POSIX strings are unsupported.</value>
+  </data>
+  <data name="InvalidTimeZone_NoTTInfoStructures" xml:space="preserve">
+    <value>There are no ttinfo structures in the tzfile.  At least one ttinfo structure is required in order to construct a TimeZoneInfo object.</value>
+  </data>
+  <data name="InvalidTimeZone_UnparseablePosixMDateString" xml:space="preserve">
+    <value>'{0}' is not a valid POSIX-TZ-environment-variable MDate rule.  A valid rule has the format 'Mm.w.d'.</value>
   </data>
   <data name="IO_DriveNotFound_Drive" xml:space="preserve">
     <value>Could not find the drive '{0}'. The drive might not be ready or might not be mapped.</value>
@@ -1377,7 +1395,7 @@
   <data name="Threading_WaitHandleCannotBeOpenedException_InvalidHandle" xml:space="preserve">
     <value>A WaitHandle with system-wide name '{0}' cannot be created. A WaitHandle of a different type might have the same name.</value>
   </data>
-  <data name="TimeZoneNotFound_MissingRegistryData" xml:space="preserve">
+  <data name="TimeZoneNotFound_MissingData" xml:space="preserve">
     <value>The time zone ID '{0}' was not found on the local computer.</value>
   </data>
   <data name="TypeInitialization_Default" xml:space="preserve">
@@ -1507,31 +1525,31 @@
     <value>Could not determine the order of year, month, and date from '{0}'.</value>
   </data>
   <data name="Format_BadDateTime" xml:space="preserve">
-    <value>String was not recognized as a valid DateTime.</value>
+    <value>String '{0}' was not recognized as a valid DateTime.</value>
   </data>
   <data name="Format_BadDateTimeCalendar" xml:space="preserve">
-    <value>The DateTime represented by the string is not supported in calendar {0}.</value>
+    <value>The DateTime represented by the string '{0}' is not supported in calendar '{1}'.</value>
   </data>
   <data name="Format_BadDayOfWeek" xml:space="preserve">
-    <value>String was not recognized as a valid DateTime because the day of week was incorrect.</value>
+    <value>String '{0}' was not recognized as a valid DateTime because the day of week was incorrect.</value>
   </data>
   <data name="Format_DateOutOfRange" xml:space="preserve">
-    <value>The DateTime represented by the string is out of range.</value>
+    <value>The DateTime represented by the string '{0}' is out of range.</value>
   </data>
   <data name="Format_MissingIncompleteDate" xml:space="preserve">
-    <value>There must be at least a partial date with a year present in the input.</value>
+    <value>There must be at least a partial date with a year present in the input string '{0}'.</value>
   </data>
   <data name="Format_OffsetOutOfRange" xml:space="preserve">
-    <value>The time zone offset must be within plus or minus 14 hours.</value>
+    <value>The time zone offset of string '{0}' must be within plus or minus 14 hours.</value>
   </data>
   <data name="Format_RepeatDateTimePattern" xml:space="preserve">
     <value>DateTime pattern '{0}' appears more than once with different values.</value>
   </data>
-  <data name="Format_UnknowDateTimeWord" xml:space="preserve">
-    <value>The string was not recognized as a valid DateTime. There is an unknown word starting at index {0}.</value>
+  <data name="Format_UnknownDateTimeWord" xml:space="preserve">
+    <value>The string '{0}' was not recognized as a valid DateTime. There is an unknown word starting at index '{1}'.</value>
   </data>
   <data name="Format_UTCOutOfRange" xml:space="preserve">
-    <value>The UTC representation of the date falls outside the year range 1-9999.</value>
+    <value>The UTC representation of the date '{0}' falls outside the year range 1-9999.</value>
   </data>
   <data name="RFLCT_Ambiguous" xml:space="preserve">
     <value>Ambiguous match found.</value>
@@ -1846,6 +1864,9 @@
   <data name="Format_StringZeroLength" xml:space="preserve">
     <value>String cannot have zero length.</value>
   </data>
+  <data name="Security_CannotReadFileData" xml:space="preserve">
+    <value>The time zone ID '{0}' was found on the local computer, but the application does not have permission to read the file.</value>
+  </data>
   <data name="Security_CannotReadRegistryData" xml:space="preserve">
     <value>The time zone ID '{0}' was found on the local computer, but the application does not have permission to read the registry information.</value>
   </data>
@@ -1894,7 +1915,7 @@
   <data name="ArgumentOutOfRange_AddressSpace" xml:space="preserve">
     <value>The number of bytes cannot exceed the virtual address space on a 32 bit machine.</value>
   </data>
-  <data name="ArgumentOutOfRange_UIntPtrMaxMinusOne" xml:space="preserve">
+  <data name="ArgumentOutOfRange_UIntPtrMax" xml:space="preserve">
     <value>The length of the buffer must be less than the maximum UIntPtr value for your platform.</value>
   </data>
   <data name="Arg_BufferTooSmall" xml:space="preserve">
@@ -1963,9 +1984,6 @@
   <data name="IndexOutOfRange_UMSPosition" xml:space="preserve">
     <value>Unmanaged memory stream position was beyond the capacity of the stream.</value>
   </data>
-  <data name="ObjectDisposed_StreamIsClosed" xml:space="preserve">
-    <value>Cannot access a closed Stream.</value>
-  </data>
   <data name="ObjectDisposed_ViewAccessorClosed" xml:space="preserve">
     <value>Cannot access a closed accessor.</value>
   </data>
@@ -2022,6 +2040,9 @@
   </data>
   <data name="IO_FileStreamHandlePosition" xml:space="preserve">
     <value>The OS handle's position is not what FileStream expected. Do not use a handle simultaneously in one FileStream and in Win32 code or another FileStream. This may cause data loss.</value>
+  </data>
+  <data name="IO_FileTooLong2GB" xml:space="preserve">
+    <value>The file is too long. This operation is currently limited to supporting files less than 2 gigabytes in size.</value>
   </data>
   <data name="NotSupported_FileStreamOnNonFiles" xml:space="preserve">
     <value>FileStream was asked to open a device that was not a file. For support for devices like 'com1:' or 'lpt1:', call CreateFile, then use the FileStream constructors that take an OS handle as an IntPtr.</value>
@@ -2095,22 +2116,16 @@
   <data name="NotSupported_ValueCollectionSet" xml:space="preserve">
     <value>Mutating a value collection derived from a dictionary is not allowed.</value>
   </data>
-  <data name="IO_IO_StreamTooLong" xml:space="preserve">
-    <value>Stream was too long.</value>
-  </data>
   <data name="UnauthorizedAccess_MemStreamBuffer" xml:space="preserve">
     <value>MemoryStream's internal buffer cannot be accessed.</value>
   </data>
   <data name="NotSupported_MemStreamNotExpandable" xml:space="preserve">
     <value>Memory stream is not expandable.</value>
   </data>
-  <data name="IO_IO_SeekBeforeBegin" xml:space="preserve">
-    <value>An attempt was made to move the position before the beginning of the stream.</value>
-  </data>
   <data name="ArgumentNull_Stream" xml:space="preserve">
     <value>Stream cannot be null.</value>
   </data>
-  <data name="IO_IO_InvalidStringLen_Len" xml:space="preserve">
+  <data name="IO_InvalidStringLen_Len" xml:space="preserve">
     <value>BinaryReader encountered an invalid string length of {0} characters.</value>
   </data>
   <data name="ArgumentOutOfRange_BinaryReaderFillBuffer" xml:space="preserve">
@@ -2474,7 +2489,7 @@
     <value>Attempt to define more than the maximum limit of 8 channels for a provider.</value>
   </data>
   <data name="EventSource_MismatchIdToWriteEvent" xml:space="preserve">
-    <value>Event {0} is givien event ID {1} but {2} was passed to WriteEvent.</value>
+    <value>Event {0} was assigned event ID {1} but {2} was passed to WriteEvent.</value>
   </data>
   <data name="EventSource_NeedGuid" xml:space="preserve">
     <value>The Guid of an EventSource must be non zero.</value>
@@ -2650,16 +2665,49 @@
   <data name="Argument_HasToBeArrayClass" xml:space="preserve">
     <value>Must be an array type.</value>
   </data>
+  <data name="Argument_IdnBadBidi" xml:space="preserve">
+    <value>Left to right characters may not be mixed with right to left characters in IDN labels.</value>
+  </data>
+  <data name="Argument_IdnBadLabelSize" xml:space="preserve">
+    <value>IDN labels must be between 1 and 63 characters long.</value>
+  </data>
+  <data name="Argument_IdnBadNameSize" xml:space="preserve">
+    <value>IDN names must be between 1 and {0} characters long.</value>
+  </data>
+  <data name="Argument_IdnBadPunycode" xml:space="preserve">
+    <value>Invalid IDN encoded string.</value>
+  </data>
+  <data name="Argument_IdnBadStd3" xml:space="preserve">
+    <value>Label contains character '{0}' not allowed with UseStd3AsciiRules</value>
+  </data>
+  <data name="Argument_IdnIllegalName" xml:space="preserve">
+    <value>Decoded string is not a valid IDN name.</value>
+  </data>
   <data name="InvalidOperation_NotGenericType" xml:space="preserve">
     <value>This operation is only valid on generic types.</value>
   </data>
   <data name="NotSupported_SignatureType" xml:space="preserve">
     <value>This method is not supported on signature types.</value>
   </data>
-  <data name="Memory_ThrowIfDisposed" xml:space="preserve">
+  <data name="MemoryDisposed" xml:space="preserve">
     <value>Memory&lt;T&gt; has been disposed.</value>
   </data>
   <data name="Memory_OutstandingReferences" xml:space="preserve">
     <value>Release all references before disposing this instance.</value>
+  </data>
+  <data name="HashCode_HashCodeNotSupported" xml:space="preserve">
+    <value>HashCode is a mutable struct and should not be compared with other HashCodes. Use ToHashCode to retrieve the computed hash code.</value>
+  </data>
+  <data name="HashCode_EqualityNotSupported" xml:space="preserve">
+    <value>HashCode is a mutable struct and should not be compared with other HashCodes.</value>
+  </data>
+  <data name="ObjectDisposed_WriterClosed" xml:space="preserve">
+    <value>Cannot write to a closed TextWriter.</value>
+  </data>
+  <data name="ObjectDisposed_ReaderClosed" xml:space="preserve">
+    <value>Cannot read from a closed TextReader.</value>
+  </data>
+  <data name="IO_InvalidReadLength" xml:space="preserve">
+    <value>The read operation returned an invalid length.</value>
   </data>
 </root>

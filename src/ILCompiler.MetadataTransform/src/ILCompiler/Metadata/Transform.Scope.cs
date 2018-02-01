@@ -13,6 +13,7 @@ using Debug = System.Diagnostics.Debug;
 using AssemblyFlags = Internal.Metadata.NativeFormat.AssemblyFlags;
 using AssemblyNameFlags = System.Reflection.AssemblyNameFlags;
 using AssemblyContentType = System.Reflection.AssemblyContentType;
+using AssemblyName = System.Reflection.AssemblyName;
 
 namespace ILCompiler.Metadata
 {
@@ -97,6 +98,8 @@ namespace ILCompiler.Metadata
                     {
                         scopeDefinition.ModuleCustomAttributes = HandleCustomAttributes(ecmaAssembly, moduleAttributes);
                     }
+
+                    HandleTypeForwarders(ecmaAssembly);
                 }
             }
             else
@@ -105,45 +108,57 @@ namespace ILCompiler.Metadata
             }
         }
 
-        private EntityMap<Cts.ModuleDesc, ScopeReference> _scopeRefs
-            = new EntityMap<Cts.ModuleDesc, ScopeReference>(EqualityComparer<Cts.ModuleDesc>.Default);
-        private Action<Cts.ModuleDesc, ScopeReference> _initScopeRef;
+        private EntityMap<AssemblyName, ScopeReference> _scopeRefs
+            = new EntityMap<AssemblyName, ScopeReference>(new SimpleAssemblyNameComparer());
+        private Action<AssemblyName, ScopeReference> _initScopeRef;
 
         private ScopeReference HandleScopeReference(Cts.ModuleDesc module)
         {
-            return _scopeRefs.GetOrCreate(module, _initScopeRef ?? (_initScopeRef = InitializeScopeReference));
+            var assembly = module as Cts.IAssemblyDesc;
+            if (assembly != null)
+                return HandleScopeReference(assembly.GetName());
+            else
+                throw new NotSupportedException("Multi-module assemblies");
         }
 
-        private void InitializeScopeReference(Cts.ModuleDesc module, ScopeReference scopeReference)
+        private ScopeReference HandleScopeReference(AssemblyName assemblyName)
         {
-            var assemblyDesc = module as Cts.IAssemblyDesc;
-            if (assemblyDesc != null)
+            return _scopeRefs.GetOrCreate(assemblyName, _initScopeRef ?? (_initScopeRef = InitializeScopeReference));
+        }
+
+        private void InitializeScopeReference(AssemblyName assemblyName, ScopeReference scopeReference)
+        {
+            scopeReference.Name = HandleString(assemblyName.Name);
+            scopeReference.Culture = HandleString(assemblyName.CultureName);
+            scopeReference.MajorVersion = checked((ushort)assemblyName.Version.Major);
+            scopeReference.MinorVersion = checked((ushort)assemblyName.Version.Minor);
+            scopeReference.BuildNumber = checked((ushort)assemblyName.Version.Build);
+            scopeReference.RevisionNumber = checked((ushort)assemblyName.Version.Revision);
+
+            Debug.Assert((int)AssemblyFlags.PublicKey == (int)AssemblyNameFlags.PublicKey);
+            Debug.Assert((int)AssemblyFlags.Retargetable == (int)AssemblyNameFlags.Retargetable);
+
+            // References use a public key token instead of full public key.
+            scopeReference.Flags = (AssemblyFlags)(assemblyName.Flags & ~AssemblyNameFlags.PublicKey);
+
+            if (assemblyName.ContentType == AssemblyContentType.WindowsRuntime)
             {
-                var assemblyName = assemblyDesc.GetName();
-
-                scopeReference.Name = HandleString(assemblyName.Name);
-                scopeReference.Culture = HandleString(assemblyName.CultureName);
-                scopeReference.MajorVersion = checked((ushort)assemblyName.Version.Major);
-                scopeReference.MinorVersion = checked((ushort)assemblyName.Version.Minor);
-                scopeReference.BuildNumber = checked((ushort)assemblyName.Version.Build);
-                scopeReference.RevisionNumber = checked((ushort)assemblyName.Version.Revision);
-
-                Debug.Assert((int)AssemblyFlags.PublicKey == (int)AssemblyNameFlags.PublicKey);
-                Debug.Assert((int)AssemblyFlags.Retargetable == (int)AssemblyNameFlags.Retargetable);
-
-                // References use a public key token instead of full public key.
-                scopeReference.Flags = (AssemblyFlags)(assemblyName.Flags & ~AssemblyNameFlags.PublicKey);
-
-                if (assemblyName.ContentType == AssemblyContentType.WindowsRuntime)
-                {
-                    scopeReference.Flags |= (AssemblyFlags)((int)AssemblyContentType.WindowsRuntime << 9);
-                }
-
-                scopeReference.PublicKeyOrToken = assemblyName.GetPublicKeyToken();
+                scopeReference.Flags |= (AssemblyFlags)((int)AssemblyContentType.WindowsRuntime << 9);
             }
-            else
+
+            scopeReference.PublicKeyOrToken = assemblyName.GetPublicKeyToken();
+        }
+
+        private class SimpleAssemblyNameComparer : IEqualityComparer<AssemblyName>
+        {
+            public bool Equals(AssemblyName x, AssemblyName y)
             {
-                throw new NotSupportedException("Multi-module assemblies");
+                return Object.Equals(x.Name, y.Name);
+            }
+
+            public int GetHashCode(AssemblyName obj)
+            {
+                return obj.Name?.GetHashCode() ?? 0;
             }
         }
     }

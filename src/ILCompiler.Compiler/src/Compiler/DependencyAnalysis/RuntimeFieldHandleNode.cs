@@ -37,18 +37,9 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            // TODO: https://github.com/dotnet/corert/issues/3224
-            // We should figure out reflectable fields when scanning for reflection
-            FieldDesc fieldDefinition = _targetField.GetTypicalFieldDefinition();
-            if (factory.MetadataManager.CanGenerateMetadata(fieldDefinition))
-            {
-                return new DependencyList
-                {
-                    new DependencyListEntry(factory.FieldMetadata(fieldDefinition), "LDTOKEN")
-                };
-            }
-
-            return null;
+            DependencyList result = null;
+            factory.MetadataManager.GetDependenciesDueToLdToken(ref result, factory, _targetField);
+            return result;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
@@ -62,6 +53,13 @@ namespace ILCompiler.DependencyAnalysis
             objData.EmitPointerReloc(factory.NativeLayout.NativeLayoutSignature(ldtokenSigNode, s_NativeLayoutSignaturePrefix, _targetField));
 
             return objData.ToObjectData();
+        }
+
+        protected internal override int ClassCode => -1326215725;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(_targetField, ((RuntimeFieldHandleNode)other)._targetField);
         }
     }
 }

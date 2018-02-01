@@ -23,7 +23,7 @@ NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
         str     r7, [r0, #OFFSETOF__PInvokeTransitionFrame__m_FramePointer]
         str     sp, [r0, #OFFSETOF__PInvokeTransitionFrame__m_PreservedRegs]
         mov     r3, #PTFF_SAVE_SP
-        str     r3, [r0, #OFFSETOF__PInvokeTransitionFrame__m_dwFlags]
+        str     r3, [r0, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
 
         PROLOG_PUSH "{r5,lr}"
 

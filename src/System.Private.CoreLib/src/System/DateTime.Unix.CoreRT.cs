@@ -4,14 +4,14 @@
 
 namespace System
 {
-    public partial struct DateTime
+    public readonly partial struct DateTime
     {
         public static DateTime UtcNow
         {
             get
             {
                 // For performance, use a private constructor that does not validate arguments.
-                return new DateTime(((ulong)(Interop.Sys.GetSystemTimeAsTicks() + TicksTo1970)) | KindUtc);
+                return new DateTime(((ulong)(Interop.Sys.GetSystemTimeAsTicks() + DateTime.UnixEpochTicks)) | KindUtc);
             }
         }
     }

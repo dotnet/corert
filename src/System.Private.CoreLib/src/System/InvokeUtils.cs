@@ -10,9 +10,11 @@ using System.Diagnostics;
 
 using Internal.Reflection.Core.NonPortable;
 using Internal.Runtime.Augments;
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {
+    [System.Runtime.CompilerServices.ReflectionBlocked]
     [System.Runtime.CompilerServices.DependencyReductionRoot]
     public static class InvokeUtils
     {
@@ -151,43 +153,53 @@ namespace System
             switch (dstCorElementType)
             {
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
-                    dstObject = Convert.ToBoolean(srcObject);
+                    bool boolValue = Convert.ToBoolean(srcObject);
+                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, boolValue ? 1 : 0) : boolValue;
                     break;
 
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
-                    dstObject = Convert.ToChar(srcObject);
+                    char charValue = Convert.ToChar(srcObject);
+                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, charValue) : charValue;
                     break;
 
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
-                    dstObject = Convert.ToSByte(srcObject);
+                    sbyte sbyteValue = Convert.ToSByte(srcObject);
+                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, sbyteValue) : sbyteValue;
                     break;
 
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
-                    dstObject = Convert.ToInt16(srcObject);
+                    short shortValue = Convert.ToInt16(srcObject);
+                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, shortValue) : shortValue;
                     break;
 
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
-                    dstObject = Convert.ToInt32(srcObject);
+                    int intValue = Convert.ToInt32(srcObject);
+                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, intValue) : intValue;
                     break;
 
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
-                    dstObject = Convert.ToInt64(srcObject);
+                    long longValue = Convert.ToInt64(srcObject);
+                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, longValue) : longValue;
                     break;
 
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
-                    dstObject = Convert.ToByte(srcObject);
+                    byte byteValue = Convert.ToByte(srcObject);
+                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, byteValue) : byteValue;
                     break;
 
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
-                    dstObject = Convert.ToUInt16(srcObject);
+                    ushort ushortValue = Convert.ToUInt16(srcObject);
+                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, ushortValue) : ushortValue;
                     break;
 
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
-                    dstObject = Convert.ToUInt32(srcObject);
+                    uint uintValue = Convert.ToUInt32(srcObject);
+                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, uintValue) : uintValue;
                     break;
 
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
-                    dstObject = Convert.ToUInt64(srcObject);
+                    ulong ulongValue = Convert.ToUInt64(srcObject);
+                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, (long)ulongValue) : ulongValue;
                     break;
 
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_R4:
@@ -216,12 +228,6 @@ namespace System
                     Debug.Fail("Unexpected CorElementType: " + dstCorElementType + ": Not a valid widening target.");
                     dstObject = null;
                     return CreateChangeTypeException(srcEEType, dstEEType, semantics);
-            }
-
-            if (dstEEType.IsEnum)
-            {
-                Type dstType = ReflectionCoreNonPortable.GetRuntimeTypeForEEType(dstEEType);
-                dstObject = Enum.ToObject(dstType, dstObject);
             }
 
             Debug.Assert(dstObject.EETypePtr == dstEEType);

@@ -25,8 +25,9 @@ namespace ILCompiler
             IEnumerable<ICompilationRootProvider> roots,
             DebugInformationProvider debugInformationProvider,
             Logger logger,
+            DevirtualizationManager devirtualizationManager,
             JitConfigProvider configProvider)
-            : base(dependencyGraph, nodeFactory, roots, debugInformationProvider, logger)
+            : base(dependencyGraph, nodeFactory, roots, debugInformationProvider, devirtualizationManager, logger)
         {
             _jitConfigProvider = configProvider;
         }

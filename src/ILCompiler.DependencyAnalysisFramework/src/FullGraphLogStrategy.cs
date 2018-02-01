@@ -195,5 +195,9 @@ namespace ILCompiler.DependencyAnalysisFramework
                 }
             }
         }
+        void IDependencyAnalysisMarkStrategy<DependencyContextType>.AttachContext(DependencyContextType context)
+        {
+            // This logger does not need to use the context
+        }
     }
 }

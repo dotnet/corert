@@ -474,12 +474,16 @@ public:
 
     DynamicModule* get_DynamicModule();
 
-#if defined(EETYPE_TYPE_MANAGER)
     TypeManagerHandle* GetTypeManagerPtr()
-         { return m_ppTypeManager; }
-#endif
-
+    { 
 #if defined(EETYPE_TYPE_MANAGER)
+        return m_ppTypeManager;
+#else
+        return NULL;
+#endif
+    }
+
+#ifdef PROJECTN
     //
     // PROJX-TODO
     // Needed while we exist in a world where some things are built using CoreRT and some built using 
@@ -487,9 +491,13 @@ public:
     //
     bool HasTypeManager()
     {
+#if defined(EETYPE_TYPE_MANAGER)
         return m_ppTypeManager != nullptr;
-    }
+#else
+        return false;
 #endif
+    }
+#endif // PROJECTN
 
 #ifndef BINDER
     DispatchMap *GetDispatchMap();

@@ -2,14 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.Text;
-using Internal.TypeSystem.Ecma;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+
+using Internal.Text;
+using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -39,8 +41,6 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
 
         public override bool StaticDependenciesAreComputed => true;
-
-        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => !factory.MetadataManager.SupportsReflection;
 
         public int Offset => 0;
 
@@ -141,6 +141,9 @@ namespace ILCompiler.DependencyAnalysis
             _endSymbol.SetSymbolOffset(resourceBlob.Length);
             return resourceBlob;
         }
+
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+        protected internal override int ClassCode => (int)ObjectNodeOrder.ResourceDataNode;
     }
 
     /// <summary>

@@ -33,6 +33,9 @@
 EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpHandleAlloc(void* pObject, int type);
 EXTERN_C REDHAWK_API void REDHAWK_CALLCONV RhHandleFree(void*);
 
+static int (*g_RuntimeInitializationCallback)();
+static Thread* g_RuntimeInitializingThread;
+
 #ifdef _MSC_VER
 extern "C" void _ReadWriteBarrier(void);
 #pragma intrinsic(_ReadWriteBarrier)
@@ -289,10 +292,10 @@ void Thread::Construct()
     m_numDynamicTypesTlsCells = 0;
     m_pDynamicTypesTlsCells = NULL;
 
-#if CORERT
+#ifndef PROJECTN
     m_pThreadLocalModuleStatics = NULL;
     m_numThreadLocalModuleStatics = 0;
-#endif // CORERT
+#endif // PROJECTN
 
     // NOTE: We do not explicitly defer to the GC implementation to initialize the alloc_context.  The 
     // alloc_context will be initialized to 0 via the static initialization of tls_CurrentThread. If the
@@ -380,7 +383,7 @@ void Thread::Destroy()
         delete[] m_pDynamicTypesTlsCells;
     }
 
-#if CORERT
+#ifndef PROJECTN
     if (m_pThreadLocalModuleStatics != NULL)
     {
         for (UInt32 i = 0; i < m_numThreadLocalModuleStatics; i++)
@@ -392,7 +395,7 @@ void Thread::Destroy()
         }
         delete[] m_pThreadLocalModuleStatics;
     }
-#endif // CORERT
+#endif // !PROJECTN
 
     RedhawkGCInterface::ReleaseAllocContext(GetAllocContext());
 
@@ -447,12 +450,27 @@ bool Thread::GcScanRoots(GcScanRootsCallbackFunc * pfnEnumCallback, void * token
 
 void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, StackFrameIterator & frameIterator)
 {
-    PTR_RtuObjectRef pHijackedReturnValue    = NULL;
-    GCRefKind        ReturnValueKind         = GCRK_Unknown;
+    PTR_RtuObjectRef pHijackedReturnValue = NULL;
+    GCRefKind        returnValueKind      = GCRK_Unknown;
 
-    if (frameIterator.GetHijackedReturnValueLocation(&pHijackedReturnValue, &ReturnValueKind))
+    if (frameIterator.GetHijackedReturnValueLocation(&pHijackedReturnValue, &returnValueKind))
     {
-        RedhawkGCInterface::EnumGcRef(pHijackedReturnValue, ReturnValueKind, pfnEnumCallback, pvCallbackData);
+#ifdef _TARGET_ARM64_
+        GCRefKind reg0Kind = ExtractReg0ReturnKind(returnValueKind);
+        GCRefKind reg1Kind = ExtractReg1ReturnKind(returnValueKind);
+
+        // X0 and X1 are saved next to each other in this order
+        if (reg0Kind != GCRK_Scalar)
+        {
+            RedhawkGCInterface::EnumGcRef(pHijackedReturnValue, reg0Kind, pfnEnumCallback, pvCallbackData);
+        }
+        if (reg1Kind != GCRK_Scalar)
+        {
+            RedhawkGCInterface::EnumGcRef(pHijackedReturnValue + 1, reg1Kind, pfnEnumCallback, pvCallbackData);
+        }
+#else
+        RedhawkGCInterface::EnumGcRef(pHijackedReturnValue, returnValueKind, pfnEnumCallback, pvCallbackData);
+#endif
     }
 
 #ifndef DACCESS_COMPILE
@@ -541,40 +559,58 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
 
 #ifndef DACCESS_COMPILE
 
+#ifndef _TARGET_ARM64_
 EXTERN_C void FASTCALL RhpGcProbeHijackScalar();
 EXTERN_C void FASTCALL RhpGcProbeHijackObject();
 EXTERN_C void FASTCALL RhpGcProbeHijackByref();
 
-static void* NormalHijackTargets[3]     = 
+static void* NormalHijackTargets[3] =
 {
     reinterpret_cast<void*>(RhpGcProbeHijackScalar), // GCRK_Scalar = 0,
-    reinterpret_cast<void*>(RhpGcProbeHijackObject), // GCRK_Object  = 1,
+    reinterpret_cast<void*>(RhpGcProbeHijackObject), // GCRK_Object = 1,
     reinterpret_cast<void*>(RhpGcProbeHijackByref)   // GCRK_Byref  = 2,
 };
+#else // _TARGET_ARM64_
+EXTERN_C void FASTCALL RhpGcProbeHijack();
+
+static void* NormalHijackTargets[1] =
+{
+    reinterpret_cast<void*>(RhpGcProbeHijack)
+};
+#endif // _TARGET_ARM64_
 
 #ifdef FEATURE_GC_STRESS
+#ifndef _TARGET_ARM64_
 EXTERN_C void FASTCALL RhpGcStressHijackScalar();
 EXTERN_C void FASTCALL RhpGcStressHijackObject();
 EXTERN_C void FASTCALL RhpGcStressHijackByref();
 
-static void* GcStressHijackTargets[3]   = 
-{ 
+static void* GcStressHijackTargets[3] =
+{
     reinterpret_cast<void*>(RhpGcStressHijackScalar), // GCRK_Scalar = 0,
-    reinterpret_cast<void*>(RhpGcStressHijackObject), // GCRK_Object  = 1,
+    reinterpret_cast<void*>(RhpGcStressHijackObject), // GCRK_Object = 1,
     reinterpret_cast<void*>(RhpGcStressHijackByref)   // GCRK_Byref  = 2,
 };
+#else // _TARGET_ARM64_
+EXTERN_C void FASTCALL RhpGcStressHijack();
+
+static void* GcStressHijackTargets[1] =
+{
+    reinterpret_cast<void*>(RhpGcStressHijack)
+};
+#endif // _TARGET_ARM64_
 #endif // FEATURE_GC_STRESS
 
 // static
 bool Thread::IsHijackTarget(void * address)
 {
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < COUNTOF(NormalHijackTargets); i++)
     {
         if (NormalHijackTargets[i] == address)
             return true;
     }
 #ifdef FEATURE_GC_STRESS
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < COUNTOF(GcStressHijackTargets); i++)
     {
         if (GcStressHijackTargets[i] == address)
             return true;
@@ -680,7 +716,7 @@ void Thread::HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx)
 // 2) from another thread to place a return hijack onto this thread's stack. In this case the target
 //    thread is OS suspended someplace in managed code. The only constraint on the suspension is that the
 //    stack be crawlable enough to yield the location of the return address.
-bool Thread::InternalHijack(PAL_LIMITED_CONTEXT * pSuspendCtx, void* HijackTargets[3])
+bool Thread::InternalHijack(PAL_LIMITED_CONTEXT * pSuspendCtx, void * pvHijackTargets[])
 {
     bool fSuccess = false;
 
@@ -713,10 +749,14 @@ bool Thread::InternalHijack(PAL_LIMITED_CONTEXT * pSuspendCtx, void* HijackTarge
 
             m_ppvHijackedReturnAddressLocation = ppvRetAddrLocation;
             m_pvHijackedReturnAddress = pvRetAddr;
-            void* pvHijackTarget = HijackTargets[retValueKind];
+#ifdef _TARGET_ARM64_
+            m_uHijackedReturnValueFlags = ReturnKindToTransitionFrameFlags(retValueKind);
+            *ppvRetAddrLocation = pvHijackTargets[0];
+#else
+            void* pvHijackTarget = pvHijackTargets[retValueKind];
             ASSERT_MSG(IsHijackTarget(pvHijackTarget), "unexpected method used as hijack target");
             *ppvRetAddrLocation = pvHijackTarget;
-
+#endif
             fSuccess = true;
         }
     }
@@ -765,6 +805,9 @@ void Thread::UnhijackWorker()
     // Clear the hijack state.
     m_ppvHijackedReturnAddressLocation  = NULL;
     m_pvHijackedReturnAddress           = NULL;
+#ifdef _TARGET_ARM64_
+    m_uHijackedReturnValueFlags         = 0;
+#endif
 }
 
 #if _DEBUG
@@ -1115,10 +1158,22 @@ FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame * pFram
     return true;
 }
 
+EXTERN_C void RhSetRuntimeInitializationCallback(int (*fPtr)())
+{
+    g_RuntimeInitializationCallback = fPtr;
+}
+
 void Thread::ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame)
 {
     if (!IsStateSet(TSF_Attached))
+    {
+        if (g_RuntimeInitializationCallback != NULL && g_RuntimeInitializingThread != this)
+        {
+            EnsureRuntimeInitialized();
+        }
+
         ThreadStore::AttachCurrentThread();
+    }
 
     // If the thread is already in cooperative mode, this is a bad transition.
     if (IsCurrentThreadInCooperativeMode())
@@ -1147,6 +1202,24 @@ void Thread::ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame)
     {
         WaitForGC(pFrame->m_savedPInvokeTransitionFrame);
     }
+}
+
+void Thread::EnsureRuntimeInitialized()
+{
+    while (PalInterlockedCompareExchangePointer((void *volatile *)&g_RuntimeInitializingThread, this, NULL) != NULL)
+    {
+        PalSleep(1);
+    }
+
+    if (g_RuntimeInitializationCallback != NULL)
+    {
+        if (g_RuntimeInitializationCallback() != 0)
+            RhFailFast();
+
+        g_RuntimeInitializationCallback = NULL;
+    }
+
+    PalInterlockedExchangePointer((void *volatile *)&g_RuntimeInitializingThread, NULL);
 }
 
 FORCEINLINE void Thread::InlineReversePInvokeReturn(ReversePInvokeFrame * pFrame)
@@ -1199,7 +1272,7 @@ COOP_PINVOKE_HELPER(Object *, RhpGetThreadAbortException, ())
     return pCurThread->GetThreadAbortException();
 }
 
-#if CORERT
+#ifndef PROJECTN
 Object* Thread::GetThreadStaticStorageForModule(UInt32 moduleIndex)
 {
     // Return a pointer to the TLS storage if it has already been
@@ -1282,7 +1355,7 @@ COOP_PINVOKE_HELPER(UInt8*, RhCurrentNativeThreadId, ())
     return (UInt8*)ThreadStore::RawGetCurrentThread();
 #endif // PLATFORM_UNIX
 }
-#endif // CORERT
+#endif // !PROJECTN
 
 // Standard calling convention variant and actual implementation for RhpReversePInvokeAttachOrTrapThread
 EXTERN_C NOINLINE void FASTCALL RhpReversePInvokeAttachOrTrapThread2(ReversePInvokeFrame * pFrame)

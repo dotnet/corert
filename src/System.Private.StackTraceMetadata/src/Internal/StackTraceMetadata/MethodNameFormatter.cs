@@ -24,18 +24,58 @@ namespace Internal.StackTraceMetadata
         private readonly StringBuilder _outputBuilder;
 
         /// <summary>
+        /// Represents the instatiation type context.
+        /// </summary>
+        private readonly SigTypeContext _typeContext;
+
+        /// <summary>
         /// Initialize the reader used for method name formatting.
         /// </summary>
-        private MethodNameFormatter(MetadataReader metadataReader)
+        private MethodNameFormatter(MetadataReader metadataReader, SigTypeContext typeContext)
         {
             _metadataReader = metadataReader;
             _outputBuilder = new StringBuilder();
+            _typeContext = typeContext;
         }
 
         public static string FormatMethodName(MetadataReader metadataReader, Handle methodHandle)
         {
-            MethodNameFormatter formatter = new MethodNameFormatter(metadataReader);
+            MethodNameFormatter formatter = new MethodNameFormatter(metadataReader, SigTypeContext.FromMethod(metadataReader, methodHandle));
             formatter.EmitMethodName(methodHandle);
+            return formatter._outputBuilder.ToString();
+        }
+
+        public static string FormatMethodName(MetadataReader metadataReader, TypeDefinitionHandle enclosingTypeHandle, MethodHandle methodHandle)
+        {
+            MethodNameFormatter formatter = new MethodNameFormatter(metadataReader, SigTypeContext.FromMethod(metadataReader, enclosingTypeHandle, methodHandle));
+
+            Method method = metadataReader.GetMethod(methodHandle);
+            MethodSignature methodSignature = metadataReader.GetMethodSignature(method.Signature);
+            formatter.EmitTypeName(enclosingTypeHandle, namespaceQualified: true);
+            formatter._outputBuilder.Append('.');
+            formatter.EmitString(method.Name);
+
+            bool first = true;
+            foreach (GenericParameterHandle handle in method.GenericParameters)
+            {
+                if (first)
+                {
+                    first = false;
+                    formatter._outputBuilder.Append('[');
+                }
+                else
+                {
+                    formatter._outputBuilder.Append(", ");
+                }
+                formatter.EmitTypeName(handle, namespaceQualified: false);
+            }
+            if (!first)
+            {
+                formatter._outputBuilder.Append(']');
+            }
+
+            formatter.EmitMethodParameters(methodSignature);
+
             return formatter._outputBuilder.ToString();
         }
 
@@ -54,6 +94,10 @@ namespace Internal.StackTraceMetadata
                 case HandleType.MethodInstantiation:
                     EmitMethodInstantiationName(methodHandle.ToMethodInstantiationHandle(_metadataReader));
                     break;
+
+                case HandleType.QualifiedMethod:
+                    EmitMethodDefinitionName(methodHandle.ToQualifiedMethodHandle(_metadataReader));
+                    break;
     
                 default:
                     Debug.Assert(false);
@@ -70,7 +114,7 @@ namespace Internal.StackTraceMetadata
         {
             MemberReference methodRef = _metadataReader.GetMemberReference(memberRefHandle);
             MethodSignature methodSignature;
-            EmitReturnTypeContainingTypeAndMethodName(methodRef, out methodSignature);
+            EmitContainingTypeAndMethodName(methodRef, out methodSignature);
             EmitMethodParameters(methodSignature);
         }
     
@@ -84,8 +128,19 @@ namespace Internal.StackTraceMetadata
             MemberReferenceHandle methodRefHandle = methodInst.Method.ToMemberReferenceHandle(_metadataReader);
             MemberReference methodRef = methodRefHandle.GetMemberReference(_metadataReader);
             MethodSignature methodSignature;
-            EmitReturnTypeContainingTypeAndMethodName(methodRef, out methodSignature);
+            EmitContainingTypeAndMethodName(methodRef, out methodSignature);
             EmitGenericArguments(methodInst.GenericTypeArguments);
+            EmitMethodParameters(methodSignature);
+        }
+
+        private void EmitMethodDefinitionName(QualifiedMethodHandle qualifiedMethodHandle)
+        {
+            QualifiedMethod qualifiedMethod = _metadataReader.GetQualifiedMethod(qualifiedMethodHandle);
+            Method method = _metadataReader.GetMethod(qualifiedMethod.Method);
+            MethodSignature methodSignature = _metadataReader.GetMethodSignature(method.Signature);
+            EmitTypeName(qualifiedMethod.EnclosingType, namespaceQualified: true);
+            _outputBuilder.Append('.');
+            EmitString(method.Name);
             EmitMethodParameters(methodSignature);
         }
     
@@ -94,11 +149,9 @@ namespace Internal.StackTraceMetadata
         /// </summary>
         /// <param name="methodRef">Method reference to format</param>
         /// <param name="methodSignature">Output method signature</param>
-        private void EmitReturnTypeContainingTypeAndMethodName(MemberReference methodRef, out MethodSignature methodSignature)
+        private void EmitContainingTypeAndMethodName(MemberReference methodRef, out MethodSignature methodSignature)
         {
             methodSignature = _metadataReader.GetMethodSignature(methodRef.Signature.ToMethodSignatureHandle(_metadataReader));
-            EmitTypeName(methodSignature.ReturnType, namespaceQualified: false);
-            _outputBuilder.Append(" ");
             EmitTypeName(methodRef.Parent, namespaceQualified: true);
             _outputBuilder.Append(".");
             EmitString(methodRef.Name);
@@ -172,7 +225,23 @@ namespace Internal.StackTraceMetadata
                 case HandleType.ByReferenceSignature:
                     EmitByRefTypeName(typeHandle.ToByReferenceSignatureHandle(_metadataReader));
                     break;
-    
+
+                case HandleType.TypeDefinition:
+                    EmitTypeDefinitionName(typeHandle.ToTypeDefinitionHandle(_metadataReader), namespaceQualified);
+                    break;
+
+                case HandleType.TypeVariableSignature:
+                    EmitTypeName(_typeContext.GetTypeVariable(typeHandle.ToTypeVariableSignatureHandle(_metadataReader).GetTypeVariableSignature(_metadataReader).Number), namespaceQualified);
+                    break;
+
+                case HandleType.MethodTypeVariableSignature:
+                    EmitTypeName(_typeContext.GetMethodVariable(typeHandle.ToMethodTypeVariableSignatureHandle(_metadataReader).GetMethodTypeVariableSignature(_metadataReader).Number), namespaceQualified);
+                    break;
+
+                case HandleType.GenericParameter:
+                    EmitString(typeHandle.ToGenericParameterHandle(_metadataReader).GetGenericParameter(_metadataReader).Name);
+                    break;
+
                 default:
                     Debug.Assert(false);
                     _outputBuilder.Append("???");
@@ -190,12 +259,28 @@ namespace Internal.StackTraceMetadata
             if (!namespaceRef.ParentScopeOrNamespace.IsNull(_metadataReader) &&
                 namespaceRef.ParentScopeOrNamespace.HandleType == HandleType.NamespaceReference)
             {
+                int charsWritten = _outputBuilder.Length;
                 EmitNamespaceReferenceName(namespaceRef.ParentScopeOrNamespace.ToNamespaceReferenceHandle(_metadataReader));
-                _outputBuilder.Append('.');
+                if (_outputBuilder.Length - charsWritten > 0)
+                    _outputBuilder.Append('.');
             }
             EmitString(namespaceRef.Name);
         }
-    
+
+        private void EmitNamespaceDefinitionName(NamespaceDefinitionHandle namespaceDefHandle)
+        {
+            NamespaceDefinition namespaceDef = _metadataReader.GetNamespaceDefinition(namespaceDefHandle);
+            if (!namespaceDef.ParentScopeOrNamespace.IsNull(_metadataReader) &&
+                namespaceDef.ParentScopeOrNamespace.HandleType == HandleType.NamespaceDefinition)
+            {
+                int charsWritten = _outputBuilder.Length;
+                EmitNamespaceDefinitionName(namespaceDef.ParentScopeOrNamespace.ToNamespaceDefinitionHandle(_metadataReader));
+                if (_outputBuilder.Length - charsWritten > 0)
+                    _outputBuilder.Append('.');
+            }
+            EmitString(namespaceDef.Name);
+        }
+
         /// <summary>
         /// Emit type reference.
         /// </summary>
@@ -210,17 +295,38 @@ namespace Internal.StackTraceMetadata
                 {
                     // Nested type
                     EmitTypeName(typeRef.ParentNamespaceOrType, namespaceQualified);
-                    _outputBuilder.Append('+');
+                    _outputBuilder.Append('.');
                 }
                 else if (namespaceQualified)
                 {
+                    int charsWritten = _outputBuilder.Length;
                     EmitNamespaceReferenceName(typeRef.ParentNamespaceOrType.ToNamespaceReferenceHandle(_metadataReader));
-                    _outputBuilder.Append('.');
+                    if (_outputBuilder.Length - charsWritten > 0)
+                        _outputBuilder.Append('.');
                 }
             }
             EmitString(typeRef.TypeName);
         }
-    
+
+        private void EmitTypeDefinitionName(TypeDefinitionHandle typeDefHandle, bool namespaceQualified)
+        {
+            TypeDefinition typeDef = _metadataReader.GetTypeDefinition(typeDefHandle);
+            if (!typeDef.EnclosingType.IsNull(_metadataReader))
+            {
+                // Nested type
+                EmitTypeName(typeDef.EnclosingType, namespaceQualified);
+                _outputBuilder.Append('.');
+            }
+            else if (namespaceQualified)
+            {
+                int charsWritten = _outputBuilder.Length;
+                EmitNamespaceDefinitionName(typeDef.NamespaceDefinition);
+                if (_outputBuilder.Length - charsWritten > 0)
+                    _outputBuilder.Append('.');
+            }
+            EmitString(typeDef.Name);
+        }
+
         /// <summary>
         /// Emit an arbitrary type specification.
         /// </summary>
@@ -239,9 +345,9 @@ namespace Internal.StackTraceMetadata
         /// <param name="namespaceQualified">When set to true, include namespace information</param>
         private void EmitTypeInstantiationName(TypeInstantiationSignatureHandle typeInstHandle, bool namespaceQualified)
         {
+            // Stack trace metadata ignores the instantiation arguments of the type in the CLR
             TypeInstantiationSignature typeInst = _metadataReader.GetTypeInstantiationSignature(typeInstHandle);
             EmitTypeName(typeInst.GenericType, namespaceQualified);
-            EmitGenericArguments(typeInst.GenericTypeArguments);
         }
     
         /// <summary>
@@ -317,6 +423,133 @@ namespace Internal.StackTraceMetadata
         private void EmitString(ConstantStringValueHandle stringHandle)
         {
             _outputBuilder.Append(_metadataReader.GetConstantStringValue(stringHandle).Value);
+        }
+
+        private struct SigTypeContext
+        {
+            private readonly object _typeContext;
+            private readonly object _methodContext;
+
+            public SigTypeContext(object typeContext, object methodContext)
+            {
+                _typeContext = typeContext;
+                _methodContext = methodContext;
+            }
+
+            public static Handle GetHandleAt(HandleCollection collection, int index)
+            {
+                int currentIndex = 0;
+
+                foreach (var currentArg in collection)
+                {
+                    if (currentIndex == index)
+                        return currentArg;
+                    currentIndex++;
+                }
+
+                Debug.Assert(false);
+                return default(Handle);
+            }
+
+            public static Handle GetHandleAt(GenericParameterHandleCollection collection, int index)
+            {
+                int currentIndex = 0;
+
+                foreach (var currentArg in collection)
+                {
+                    if (currentIndex == index)
+                        return currentArg;
+                    currentIndex++;
+                }
+
+                Debug.Assert(false);
+                return default(Handle);
+            }
+
+            public Handle GetTypeVariable(int index)
+            {
+                return _typeContext is GenericParameterHandleCollection ?
+                    GetHandleAt((GenericParameterHandleCollection)_typeContext, index) :
+                    GetHandleAt((HandleCollection)_typeContext, index);
+            }
+
+            public Handle GetMethodVariable(int index)
+            {
+                return _typeContext is GenericParameterHandleCollection ?
+                    GetHandleAt((GenericParameterHandleCollection)_methodContext, index) :
+                    GetHandleAt((HandleCollection)_methodContext, index);
+            }
+
+            private static object GetTypeContext(MetadataReader metadataReader, Handle handle)
+            {
+                switch (handle.HandleType)
+                {
+                    case HandleType.MemberReference:
+                        MemberReference memberRef = handle.ToMemberReferenceHandle(metadataReader).GetMemberReference(metadataReader);
+                        return GetTypeContext(metadataReader, memberRef.Parent);
+
+                    case HandleType.QualifiedMethod:
+                        QualifiedMethod qualifiedMethod = handle.ToQualifiedMethodHandle(metadataReader).GetQualifiedMethod(metadataReader);
+                        return GetTypeContext(metadataReader, qualifiedMethod.EnclosingType);
+
+                    case HandleType.TypeDefinition:
+                        TypeDefinition typeDef = handle.ToTypeDefinitionHandle(metadataReader).GetTypeDefinition(metadataReader);
+                        return typeDef.GenericParameters;
+
+                    case HandleType.TypeReference:
+                        return default(HandleCollection);
+
+                    case HandleType.TypeSpecification:
+                        TypeSpecification typeSpec = handle.ToTypeSpecificationHandle(metadataReader).GetTypeSpecification(metadataReader);
+                        if (typeSpec.Signature.HandleType != HandleType.TypeInstantiationSignature)
+                        {
+                            Debug.Assert(false);
+                            return default(HandleCollection);
+                        }
+                        return typeSpec.Signature.ToTypeInstantiationSignatureHandle(metadataReader).GetTypeInstantiationSignature(metadataReader).GenericTypeArguments;
+
+                    default:
+                        Debug.Assert(false);
+                        return default(HandleCollection);
+                }
+            }
+
+            public static SigTypeContext FromMethod(MetadataReader metadataReader, Handle methodHandle)
+            {
+                object typeContext;
+                object methodContext;
+
+                switch (methodHandle.HandleType)
+                {
+                    case HandleType.MemberReference:
+                        typeContext = GetTypeContext(metadataReader, methodHandle);
+                        methodContext = default(HandleCollection);
+                        break;
+
+                    case HandleType.MethodInstantiation:
+                        MethodInstantiation methodInst = methodHandle.ToMethodInstantiationHandle(metadataReader).GetMethodInstantiation(metadataReader);
+                        typeContext = GetTypeContext(metadataReader, methodInst.Method);
+                        methodContext = methodInst.GenericTypeArguments;
+                        break;
+
+                    case HandleType.QualifiedMethod:
+                        QualifiedMethod qualifiedMethod = methodHandle.ToQualifiedMethodHandle(metadataReader).GetQualifiedMethod(metadataReader);
+                        typeContext = GetTypeContext(metadataReader, qualifiedMethod.EnclosingType);
+                        methodContext = qualifiedMethod.Method.GetMethod(metadataReader).GenericParameters;
+                        break;
+                    default:
+                        Debug.Assert(false);
+                        return default(SigTypeContext);
+                }
+
+                return new SigTypeContext(typeContext, methodContext);
+            }
+
+            public static SigTypeContext FromMethod(MetadataReader metadataReader, TypeDefinitionHandle enclosingTypeHandle, MethodHandle methodHandle)
+            {
+                Method method = metadataReader.GetMethod(methodHandle);
+                return new SigTypeContext(GetTypeContext(metadataReader, enclosingTypeHandle), method.GenericParameters);
+            }
         }
     }
 }

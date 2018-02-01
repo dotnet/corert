@@ -597,7 +597,7 @@ enum PInvokeTransitionFrameFlags
     PTFF_THREAD_ABORT   = 0x00010000,   // indicates that ThreadAbortException should be thrown when returning from the transition
 };
 #elif defined(_TARGET_ARM64_)
-enum PInvokeTransitionFrameFlags
+enum PInvokeTransitionFrameFlags : UInt64
 {
     // NOTE: Keep in sync with ndp\FxCore\CoreRT\src\Native\Runtime\arm64\AsmMacros.h
 
@@ -605,45 +605,82 @@ enum PInvokeTransitionFrameFlags
     //       to match the order of these flags (that's also the order in which they are read in StackFrameIterator.cpp
 
     // standard preserved registers
-    PTFF_SAVE_X19       = 0x00000001,
-    PTFF_SAVE_X20       = 0x00000002,
-    PTFF_SAVE_X21       = 0x00000004,
-    PTFF_SAVE_X22       = 0x00000008,
-    PTFF_SAVE_X23       = 0x00000010,
-    PTFF_SAVE_X24       = 0x00000020,
-    PTFF_SAVE_X25       = 0x00000040,
-    PTFF_SAVE_X26       = 0x00000080,
-    PTFF_SAVE_X27       = 0x00000100,
-    PTFF_SAVE_X28       = 0x00000200,
+    PTFF_SAVE_X19       = 0x0000000000000001,
+    PTFF_SAVE_X20       = 0x0000000000000002,
+    PTFF_SAVE_X21       = 0x0000000000000004,
+    PTFF_SAVE_X22       = 0x0000000000000008,
+    PTFF_SAVE_X23       = 0x0000000000000010,
+    PTFF_SAVE_X24       = 0x0000000000000020,
+    PTFF_SAVE_X25       = 0x0000000000000040,
+    PTFF_SAVE_X26       = 0x0000000000000080,
+    PTFF_SAVE_X27       = 0x0000000000000100,
+    PTFF_SAVE_X28       = 0x0000000000000200,
 
-    PTFF_SAVE_SP        = 0x00000400,   // Used for 'coop pinvokes' in runtime helper routines.  Methods with
-                                        // PInvokes are required to have a frame pointers, but methods which
-                                        // call runtime helpers are not.  Therefore, methods that call runtime
-                                        // helpers may need SP to seed the stackwalk.
+    PTFF_SAVE_SP        = 0x0000000000000400,   // Used for 'coop pinvokes' in runtime helper routines.  Methods with
+                                                // PInvokes are required to have a frame pointers, but methods which
+                                                // call runtime helpers are not.  Therefore, methods that call runtime
+                                                // helpers may need SP to seed the stackwalk.
 
     // Scratch registers
-    PTFF_SAVE_X0        = 0x00000800,
-    PTFF_SAVE_X1        = 0x00001000,
-    PTFF_SAVE_X2        = 0x00002000,
-    PTFF_SAVE_X3        = 0x00004000,
-    PTFF_SAVE_X4        = 0x00008000,
-    PTFF_SAVE_X5        = 0x00010000,
-    PTFF_SAVE_X6        = 0x00020000,
-    PTFF_SAVE_X7        = 0x00040000,
+    PTFF_SAVE_X0        = 0x0000000000000800,
+    PTFF_SAVE_X1        = 0x0000000000001000,
+    PTFF_SAVE_X2        = 0x0000000000002000,
+    PTFF_SAVE_X3        = 0x0000000000004000,
+    PTFF_SAVE_X4        = 0x0000000000008000,
+    PTFF_SAVE_X5        = 0x0000000000010000,
+    PTFF_SAVE_X6        = 0x0000000000020000,
+    PTFF_SAVE_X7        = 0x0000000000040000,
+    PTFF_SAVE_X8        = 0x0000000000080000,
+    PTFF_SAVE_X9        = 0x0000000000100000,
+    PTFF_SAVE_X10       = 0x0000000000200000,
+    PTFF_SAVE_X11       = 0x0000000000400000,
+    PTFF_SAVE_X12       = 0x0000000000800000,
+    PTFF_SAVE_X13       = 0x0000000001000000,
+    PTFF_SAVE_X14       = 0x0000000002000000,
+    PTFF_SAVE_X15       = 0x0000000004000000,
+    PTFF_SAVE_X16       = 0x0000000008000000,
+    PTFF_SAVE_X17       = 0x0000000010000000,
+    PTFF_SAVE_X18       = 0x0000000020000000,
 
-    PTFF_SAVE_FP        = 0x00080000,   // should never be used, we require FP frames for methods with 
-                                        // pinvoke and it is saved into the frame pointer field instead
+    PTFF_SAVE_FP        = 0x0000000040000000,   // should never be used, we require FP frames for methods with 
+                                                // pinvoke and it is saved into the frame pointer field instead
 
-    PTFF_SAVE_LR        = 0x00100000,   // this is useful for the case of loop hijacking where we need both
-                                        // a return address pointing into the hijacked method and that method's
-                                        // lr register, which may hold a gc pointer
+    PTFF_SAVE_LR        = 0x0000000080000000,   // this is useful for the case of loop hijacking where we need both
+                                                // a return address pointing into the hijacked method and that method's
+                                                // lr register, which may hold a gc pointer
 
-    // Other flags
-    PTFF_X0_IS_GCREF    = 0x00200000,   // used by hijack handler to report return value of hijacked method
-    PTFF_X0_IS_BYREF    = 0x00400000,   // used by hijack handler to report return value of hijacked method
+    // used by hijack handler to report return value of hijacked method
+    PTFF_X0_IS_GCREF    = 0x0000000100000000,
+    PTFF_X0_IS_BYREF    = 0x0000000200000000,
+    PTFF_X1_IS_GCREF    = 0x0000000400000000,
+    PTFF_X1_IS_BYREF    = 0x0000000800000000,
 
-    PTFF_THREAD_ABORT   = 0x00800000,   // indicates that ThreadAbortException should be thrown when returning from the transition
+    PTFF_THREAD_ABORT   = 0x0000001000000000,   // indicates that ThreadAbortException should be thrown when returning from the transition
 };
+
+// TODO: Consider moving the PInvokeTransitionFrameFlags definition to a separate file to simplify header dependencies
+#ifdef ICODEMANAGER_INCLUDED
+// Verify that we can use bitwise shifts to convert from GCRefKind to PInvokeTransitionFrameFlags and back
+C_ASSERT(PTFF_X0_IS_GCREF == ((UInt64)GCRK_Object << 32));
+C_ASSERT(PTFF_X0_IS_BYREF == ((UInt64)GCRK_Byref << 32));
+C_ASSERT(PTFF_X1_IS_GCREF == ((UInt64)GCRK_Scalar_Obj << 32));
+C_ASSERT(PTFF_X1_IS_BYREF == ((UInt64)GCRK_Scalar_Byref << 32));
+
+inline UInt64 ReturnKindToTransitionFrameFlags(GCRefKind returnKind)
+{
+    if (returnKind == GCRK_Scalar)
+        return 0;
+
+    return PTFF_SAVE_X0 | PTFF_SAVE_X1 | ((UInt64)returnKind << 32);
+}
+
+inline GCRefKind TransitionFrameFlagsToReturnKind(UInt64 transFrameFlags)
+{
+    GCRefKind returnKind = (GCRefKind)((transFrameFlags & (PTFF_X0_IS_GCREF | PTFF_X0_IS_BYREF | PTFF_X1_IS_GCREF | PTFF_X1_IS_BYREF)) >> 32);
+    ASSERT((returnKind == GCRK_Scalar) || ((transFrameFlags & PTFF_SAVE_X0) && (transFrameFlags & PTFF_SAVE_X1)));
+    return returnKind;
+}
+#endif // ICODEMANAGER_INCLUDED
 #else // _TARGET_ARM_
 enum PInvokeTransitionFrameFlags
 {
@@ -689,7 +726,7 @@ enum PInvokeTransitionFrameFlags
 #pragma warning(push)
 #pragma warning(disable:4200) // nonstandard extension used: zero-sized array in struct/union
 class Thread;
-#if defined(USE_PORTABLE_HELPERS) && defined(CORERT)
+#if defined(USE_PORTABLE_HELPERS)
 //the members of this structure are currently unused except m_pThread and exist only to allow compilation
 //of StackFrameIterator their values are not currently being filled in and will require significant rework
 //in order to satisfy the runtime requirements of StackFrameIterator
@@ -698,9 +735,9 @@ struct PInvokeTransitionFrame
     void*       m_RIP;
     Thread*     m_pThread;  // unused by stack crawler, this is so GetThread is only called once per method
                             // can be an invalid pointer in universal transition cases (which never need to call GetThread)
-    uint32_t    m_dwFlags;  // PInvokeTransitionFrameFlags
+    uint32_t    m_Flags;    // PInvokeTransitionFrameFlags
 };
-#else // USE_PORTABLE_HELPERS && CORERT
+#else // USE_PORTABLE_HELPERS
 struct PInvokeTransitionFrame
 {
 #ifdef _TARGET_ARM_
@@ -716,13 +753,14 @@ struct PInvokeTransitionFrame
 #endif
     TgtPTR_Thread   m_pThread;  // unused by stack crawler, this is so GetThread is only called once per method
                                 // can be an invalid pointer in universal transition cases (which never need to call GetThread)
-    UInt32          m_dwFlags;  // PInvokeTransitionFrameFlags
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
-    UInt32          m_dwAlignPad2;
-#endif
+#ifdef _TARGET_ARM64_
+    UInt64          m_Flags;  // PInvokeTransitionFrameFlags
+#else   
+    UInt32          m_Flags;  // PInvokeTransitionFrameFlags
+#endif       
     UIntTarget      m_PreservedRegs[];
 };
-#endif // USE_PORTABLE_HELPERS && CORERT
+#endif // USE_PORTABLE_HELPERS
 #pragma warning(pop)
 
 #ifdef _TARGET_AMD64_
@@ -734,10 +772,6 @@ struct PInvokeTransitionFrame
 #elif defined(_TARGET_ARM_)
 // R4-R6,R8-R10, R0, SP
 #define PInvokeTransitionFrame_SaveRegs_count 8
-#elif defined(_TARGET_ARM64_)
-// X19-X29, X0, SP
-// ARM64TODO: do we need more here? Verify count when you start using this define.
-#define PInvokeTransitionFrame_SaveRegs_count 12
 #endif
 #define PInvokeTransitionFrame_MAX_SIZE (sizeof(PInvokeTransitionFrame) + (POINTER_SIZE * PInvokeTransitionFrame_SaveRegs_count))
 

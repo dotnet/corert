@@ -8,7 +8,7 @@ using System.Text;
 
 namespace Internal.Text
 {
-    public struct Utf8String : IEquatable<Utf8String>
+    public struct Utf8String : IEquatable<Utf8String>, IComparable<Utf8String>
     {
         private byte[] _value;
 
@@ -111,6 +111,41 @@ namespace Internal.Text
                     return true;
                 }
             }
+        }
+
+        private static int Compare(Utf8String strA, Utf8String strB)
+        {
+            int length = Math.Min(strA.Length, strB.Length);
+
+            unsafe
+            {
+                fixed (byte* ap = strA._value)
+                fixed (byte* bp = strB._value)
+                {
+                    byte* a = ap;
+                    byte* b = bp;
+
+                    while (length > 0)
+                    {
+                        if (*a != *b)
+                            return *a - *b;
+                        a += 1;
+                        b += 1;
+                        length -= 1;
+                    }
+
+                    // At this point, we have compared all the characters in at least one string.
+                    // The longer string will be larger.
+                    // We could optimize and compare lengths before iterating strings, but we want
+                    // Foo and Foo1 to be sorted adjacent to eachother.
+                    return strA.Length - strB.Length;
+                }
+            }
+        }
+
+        public int CompareTo(Utf8String other)
+        {
+            return Compare(this, other);
         }
     }
 }

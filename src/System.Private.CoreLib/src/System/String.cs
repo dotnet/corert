@@ -13,11 +13,14 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
+
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -405,7 +408,7 @@ namespace System
             }
 
             string result = FastAllocateString(value.Length);
-            fixed (char* dest = &result._firstChar, src = &value.DangerousGetPinnableReference())
+            fixed (char* dest = &result._firstChar, src = &MemoryMarshal.GetReference(value))
             {
                 wstrcpy(dest, src, value.Length);
             }
@@ -433,6 +436,9 @@ namespace System
 
             throw new ArgumentOutOfRangeException(nameof(length));
         }
+
+        public static implicit operator ReadOnlySpan<char>(string value) =>
+            value != null ? new ReadOnlySpan<char>(ref value.GetRawStringData(), value.Length) : default;
 
         public object Clone()
         {

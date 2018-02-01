@@ -20,7 +20,12 @@ namespace ILCompiler
             return true;
         }
 
-        public override bool ContainsMethodBody(MethodDesc method)
+        public override bool ContainsTypeDictionary(TypeDesc type)
+        {
+            return true;
+        }
+
+        public override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)
         {
             return true;
         }
@@ -28,22 +33,27 @@ namespace ILCompiler
         public override bool ContainsMethodDictionary(MethodDesc method)
         {
             Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) != method);
-            return ContainsMethodBody(method);
+            return ContainsMethodBody(method, false);
         }
 
-        public override bool ExportsType(TypeDesc type)
+        public override ExportForm GetExportTypeForm(TypeDesc type)
         {
-            return false;
+            return ExportForm.None;
         }
 
-        public override bool ExportsMethod(MethodDesc method)
+        public override ExportForm GetExportTypeFormDictionary(TypeDesc type)
         {
-            return false;
+            return ExportForm.None;
         }
 
-        public override bool ExportsMethodDictionary(MethodDesc method)
+        public override ExportForm GetExportMethodForm(MethodDesc method, bool unboxingStub)
         {
-            return false;
+            return ExportForm.None;
+        }
+
+        public override ExportForm GetExportMethodDictionaryForm(MethodDesc method)
+        {
+            return ExportForm.None;
         }
 
         public override bool IsSingleFileCompilation
@@ -60,6 +70,11 @@ namespace ILCompiler
         }
 
         public override bool ShouldPromoteToFullType(TypeDesc type)
+        {
+            return false;
+        }
+
+        public override bool PresenceOfEETypeImpliesAllMethodsOnType(TypeDesc type)
         {
             return false;
         }

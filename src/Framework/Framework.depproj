@@ -18,7 +18,7 @@
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
     </ProjectReference>
-    <ProjectReference Include="Framework-native.depproj" Condition="$(TargetsUnix)">
+    <ProjectReference Include="Framework-native.depproj" Condition="$(TargetsUnix) and '$(Platform)' != 'wasm'">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
     </ProjectReference>
@@ -35,6 +35,7 @@
     <FileToExclude Include="System.Linq.Expressions" />
     <FileToExclude Include="System.Reflection.Primitives" />
     <FileToExclude Include="System.Runtime.InteropServices" />
+    <FileToExclude Include="System.Text.RegularExpressions" />
 
     <!-- TODO: Upstack framework -->
     <FileToExclude Include="System.Private.DataContractSerialization" />

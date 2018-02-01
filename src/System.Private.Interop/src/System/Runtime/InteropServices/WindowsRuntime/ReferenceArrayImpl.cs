@@ -13,7 +13,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private T[] _value;
 
-        public ReferenceArrayImpl(T[] obj, global::Windows.Foundation.PropertyType type) : base(obj, type)
+        public ReferenceArrayImpl(T[] obj, PropertyType type) : base(obj, type)
         {
             _value = obj;
             m_unboxed = true;

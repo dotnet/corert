@@ -5,8 +5,10 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
-using Internal.Runtime.Augments;
 using System.Diagnostics;
+
+using Internal.Runtime.Augments;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
 {
@@ -17,6 +19,7 @@ namespace System.Runtime.InteropServices
     ///     in order to be accessible from System.Private.Interop.dll.
     /// </summary>
     [CLSCompliant(false)]
+    [ReflectionBlocked]
     public static class InteropExtensions
     {
         // Converts a managed DateTime to native OLE datetime

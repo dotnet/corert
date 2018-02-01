@@ -11,29 +11,20 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class InterfaceDispatchMapNode : ObjectNode, ISymbolDefinitionNode
+    public class InterfaceDispatchMapNode : ObjectNode, ISymbolDefinitionNode, ISortableSymbolNode
     {
-        const int IndexNotSet = int.MaxValue;
-
-        int _dispatchMapTableIndex;
         TypeDesc _type;
 
         public InterfaceDispatchMapNode(TypeDesc type)
         {
             _type = type;
-            _dispatchMapTableIndex = IndexNotSet;
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            if (_dispatchMapTableIndex == IndexNotSet)
-            {
-                throw new InvalidOperationException("MangledName called before InterfaceDispatchMap index was initialized.");
-            }
-
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__InterfaceDispatchMap_").Append(_dispatchMapTableIndex.ToStringInvariant());
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__InterfaceDispatchMap_").Append(nameMangler.SanitizeName(nameMangler.GetMangledTypeName(_type)));
         }
 
         public int Offset => 0;
@@ -51,21 +42,7 @@ namespace ILCompiler.DependencyAnalysis
                     return ObjectNodeSection.DataSection;
             }
         }
-
-        public void SetDispatchMapIndex(NodeFactory factory, int index)
-        {
-            _dispatchMapTableIndex = index;
-            IEETypeNode eeTypeNode = factory.ConstructedTypeSymbol(_type);
-
-            if (eeTypeNode is ImportedEETypeSymbolNode)
-            {
-                Debug.Assert(_type == factory.TypeSystemContext.GetWellKnownType(WellKnownType.String));
-                eeTypeNode = factory.ConstructedClonedTypeSymbol(_type);
-            }
-
-            ((EETypeNode)eeTypeNode).SetDispatchMapIndex(_dispatchMapTableIndex);
-        }
-
+        
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             var result = new DependencyList();
@@ -124,6 +101,20 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return objData.ToObjectData();
+        }
+
+        protected internal override int ClassCode => 848664602;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(_type, ((InterfaceDispatchMapNode)other)._type);
+        }
+
+        int ISortableSymbolNode.ClassCode => ClassCode;
+
+        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
+        {
+            return CompareToImpl((ObjectNode)other, comparer);
         }
     }
 }

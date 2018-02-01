@@ -741,7 +741,7 @@
       "value": "microsoft/dotnet-buildtools-prereqs"
     },
     "DockerTag": {
-      "value": "debian-8.2-corert-395a49e-20170403100424"
+      "value": "ubuntu-14.04-198573d-20170319080304"
     },
     "DockerCopyDest": {
       "value": "$(Build.BinariesDirectory)/docker_$(SourceFolder)"
@@ -807,7 +807,7 @@
       "fetchDepth": "0",
       "gitLfsSupport": "false",
       "skipSyncSource": "false",
-      "cleanOptions": "0"
+      "cleanOptions": "3"
     },
     "id": "0a2b2664-c1be-429c-9b40-8a24dee27a4a",
     "type": "TfsGit",

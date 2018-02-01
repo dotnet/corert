@@ -2,7 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Diagnostics;
+
 using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -53,10 +57,17 @@ namespace ILCompiler.DependencyAnalysis
             if (!relocsOnly)
             {
                 _owner.ComputeOptionalEETypeFields(factory, relocsOnly: false);
-                objData.EmitBytes(_owner.GetOptionalFieldsData(factory));
+                objData.EmitBytes(_owner.GetOptionalFieldsData());
             }
             
             return objData.ToObjectData();
+        }
+
+        protected internal override int ClassCode => 821718028;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            return SortableDependencyNode.CompareImpl(_owner, ((EETypeOptionalFieldsNode)other)._owner, comparer);
         }
     }
 }

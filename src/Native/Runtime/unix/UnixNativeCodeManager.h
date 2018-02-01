@@ -60,4 +60,6 @@ public:
     void * GetClasslibFunction(ClasslibFunctionId functionId);
 
     PTR_VOID GetAssociatedData(PTR_VOID ControlPC);
+
+    PTR_VOID GetOsModuleHandle();
 };

@@ -30,7 +30,7 @@ namespace System.Runtime.CompilerServices
         //
         // No attempt is made to detect or break deadlocks due to other synchronization mechanisms.
         //==============================================================================================================
-#if !CORERT
+#if PROJECTN
         [RuntimeExport("CheckStaticClassConstruction")]
         public static unsafe void* CheckStaticClassConstruction(void* returnValue, StaticClassConstructionContext* pContext)
         {

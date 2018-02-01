@@ -19,14 +19,21 @@ namespace ILCompiler
     /// </summary>
     public sealed class BlockedInternalsBlockingPolicy : MetadataBlockingPolicy
     {
+        private enum ModuleBlockingMode
+        {
+            None,
+            BlockedInternals,
+            FullyBlocked,
+        }
+
         private class ModuleBlockingState
         {
             public ModuleDesc Module { get; }
-            public bool HasBlockedInternals { get; }
-            public ModuleBlockingState(ModuleDesc module, bool hasBlockedInternals)
+            public ModuleBlockingMode BlockingMode { get; }
+            public ModuleBlockingState(ModuleDesc module, ModuleBlockingMode mode)
             {
                 Module = module;
-                HasBlockedInternals = hasBlockedInternals;
+                BlockingMode = mode;
             }
         }
 
@@ -38,8 +45,18 @@ namespace ILCompiler
             protected override bool CompareValueToValue(ModuleBlockingState value1, ModuleBlockingState value2) => Object.ReferenceEquals(value1.Module, value2.Module);
             protected override ModuleBlockingState CreateValueFromKey(ModuleDesc module)
             {
-                bool moduleHasBlockingPolicy = module.GetType("System.Runtime.CompilerServices", "__BlockReflectionAttribute", false) != null;
-                return new ModuleBlockingState(module, moduleHasBlockingPolicy);
+                ModuleBlockingMode blockingMode = ModuleBlockingMode.None;
+
+                if (module.GetType("System.Runtime.CompilerServices", "__BlockAllReflectionAttribute", false) != null)
+                {
+                    blockingMode = ModuleBlockingMode.FullyBlocked;
+                }
+                else if (module.GetType("System.Runtime.CompilerServices", "__BlockReflectionAttribute", false) != null)
+                {
+                    blockingMode = ModuleBlockingMode.BlockedInternals;
+                }
+
+                return new ModuleBlockingState(module, blockingMode);
             }
         }
         private BlockedModulesHashtable _blockedModules = new BlockedModulesHashtable();
@@ -70,17 +87,21 @@ namespace ILCompiler
             protected override bool CompareValueToValue(BlockingState value1, BlockingState value2) => Object.ReferenceEquals(value1.Type, value2.Type);
             protected override BlockingState CreateValueFromKey(EcmaType type)
             {
-                bool isBlocked = false;
-                if (_blockedModules.GetOrCreateValue(type.EcmaModule).HasBlockedInternals)
-                {
-                    isBlocked = ComputeIsBlocked(type);
-                }
-
+                ModuleBlockingMode moduleBlockingMode = _blockedModules.GetOrCreateValue(type.EcmaModule).BlockingMode;
+                bool isBlocked = ComputeIsBlocked(type, moduleBlockingMode);
                 return new BlockingState(type, isBlocked);
             }
 
-            private bool ComputeIsBlocked(EcmaType type)
+            private bool ComputeIsBlocked(EcmaType type, ModuleBlockingMode blockingMode)
             {
+                // If the type is explicitly blocked, it's always blocked.
+                if (type.HasCustomAttribute("System.Runtime.CompilerServices", "ReflectionBlockedAttribute"))
+                    return true;
+
+                // If no blocking is applied to the module, the type is not blocked
+                if (blockingMode == ModuleBlockingMode.None)
+                    return false;
+
                 // <Module> type always gets metadata
                 if (type.IsModuleType)
                     return false;
@@ -88,6 +109,10 @@ namespace ILCompiler
                 // The various SR types used in Resource Manager always get metadata
                 if (type.Name == "SR")
                     return false;
+
+                // We block everything else if the module is blocked
+                if (blockingMode == ModuleBlockingMode.FullyBlocked)
+                    return true;
 
                 var typeDefinition = type.MetadataReader.GetTypeDefinition(type.Handle);
                 DefType containingType = type.ContainingType;
@@ -102,7 +127,7 @@ namespace ILCompiler
                 {
                     if ((typeDefinition.Attributes & TypeAttributes.VisibilityMask) == TypeAttributes.NestedPublic)
                     {
-                        return ComputeIsBlocked((EcmaType)containingType);
+                        return ComputeIsBlocked((EcmaType)containingType, blockingMode);
                     }
                     else
                     {
@@ -114,6 +139,21 @@ namespace ILCompiler
             }
         }
         private BlockedTypeHashtable _blockedTypes;
+
+        private MetadataType _arrayOfTType;
+        private MetadataType InitializeArrayOfTType(TypeSystemEntity contextEntity)
+        {
+            _arrayOfTType = contextEntity.Context.SystemModule.GetType("System", "Array`1");
+            return _arrayOfTType;
+        }
+        private MetadataType GetArrayOfTType(TypeSystemEntity contextEntity)
+        {
+            if (_arrayOfTType != null)
+            {
+                return _arrayOfTType;
+            }
+            return InitializeArrayOfTType(contextEntity);
+        }
 
         public BlockedInternalsBlockingPolicy()
         {
@@ -139,14 +179,28 @@ namespace ILCompiler
             if (ecmaMethod == null)
                 return true;
 
+            ModuleBlockingMode moduleBlockingMode = _blockedModules.GetOrCreateValue(ecmaMethod.Module).BlockingMode;
+            if (moduleBlockingMode == ModuleBlockingMode.None)
+                return false;
+            else if (moduleBlockingMode == ModuleBlockingMode.FullyBlocked)
+                return true;
+
+            // We are blocking internal implementation details
+            Debug.Assert(moduleBlockingMode == ModuleBlockingMode.BlockedInternals);
+
             if (_blockedTypes.GetOrCreateValue((EcmaType)ecmaMethod.OwningType).IsBlocked)
                 return true;
 
-            if (_blockedModules.GetOrCreateValue(ecmaMethod.Module).HasBlockedInternals)
-            {
-                if ((ecmaMethod.Attributes & MethodAttributes.Public) != MethodAttributes.Public)
-                    return true;
-            }
+            if ((ecmaMethod.Attributes & MethodAttributes.Public) != MethodAttributes.Public)
+                return true;
+
+            // Methods on Array`1<T> are implementation details that implement the generic interfaces on
+            // arrays. They should not generate metadata or be reflection invokable.
+            // We could get rid of this special casing two ways:
+            // * Make these method stop being regular EcmaMethods with Array<T> as their owning type, or
+            // * Make these methods implement the interfaces explicitly (they would become private and naturally blocked)
+            if (ecmaMethod.OwningType == GetArrayOfTType(ecmaMethod))
+                return true;
 
             return false;
         }
@@ -159,14 +213,20 @@ namespace ILCompiler
             if (ecmaField == null)
                 return true;
 
+            ModuleBlockingMode moduleBlockingMode = _blockedModules.GetOrCreateValue(ecmaField.Module).BlockingMode;
+            if (moduleBlockingMode == ModuleBlockingMode.None)
+                return false;
+            else if (moduleBlockingMode == ModuleBlockingMode.FullyBlocked)
+                return true;
+
+            // We are blocking internal implementation details
+            Debug.Assert(moduleBlockingMode == ModuleBlockingMode.BlockedInternals);
+
             if (_blockedTypes.GetOrCreateValue((EcmaType)ecmaField.OwningType).IsBlocked)
                 return true;
 
-            if (_blockedModules.GetOrCreateValue(ecmaField.Module).HasBlockedInternals)
-            {
-                if ((ecmaField.Attributes & FieldAttributes.Public) != FieldAttributes.Public)
-                    return true;
-            }
+            if ((ecmaField.Attributes & FieldAttributes.Public) != FieldAttributes.Public)
+                return true;
 
             return false;
         }

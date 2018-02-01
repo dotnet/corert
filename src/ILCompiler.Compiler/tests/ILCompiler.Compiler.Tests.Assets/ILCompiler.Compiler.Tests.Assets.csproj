@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <Compile Include="DependencyGraph.cs" />
+    <Compile Include="Devirtualization.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

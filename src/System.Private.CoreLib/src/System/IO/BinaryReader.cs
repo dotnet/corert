@@ -6,6 +6,7 @@ using Internal.Runtime.CompilerServices;
 using System;
 using System.Text;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.IO
 {
@@ -294,7 +295,7 @@ namespace System.IO
             stringLength = Read7BitEncodedInt();
             if (stringLength < 0)
             {
-                throw new IOException(SR.Format(SR.IO_IO_InvalidStringLen_Len, stringLength));
+                throw new IOException(SR.Format(SR.IO_InvalidStringLen_Len, stringLength));
             }
 
             if (stringLength == 0)
@@ -445,7 +446,7 @@ namespace System.IO
                     unsafe
                     {
                         fixed (byte* pBytes = byteBuffer)
-                        fixed (char* pChars = &buffer.DangerousGetPinnableReference())
+                        fixed (char* pChars = &MemoryMarshal.GetReference(buffer))
                         {
                             charsRead = _decoder.GetChars(pBytes + position, numBytes, pChars + index, charsRemaining, flush: false);
                         }

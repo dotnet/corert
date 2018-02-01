@@ -2,7 +2,7 @@
 
 usage()
 {
-    echo "Usage: $0 [managed] [native] [BuildArch] [BuildType] [clean] [cross] [verbose] [clangx.y]"
+    echo "Usage: $0 [managed] [native] [BuildArch] [BuildType] [clean] [cross] [verbose] [objwriter] [clangx.y]"
     echo "managed - optional argument to build the managed code"
     echo "native - optional argument to build the native code"
     echo "The following arguments affect native builds only:"
@@ -10,6 +10,7 @@ usage()
     echo "BuildType can be: Debug, Release"
     echo "clean - optional argument to force a clean build."
     echo "verbose - optional argument to enable verbose build output."
+    echo "objwriter - optional argument to enable build ObjWriter library"
     echo "clangx.y - optional argument to build using clang version x.y."
     echo "cross - optional argument to signify cross compilation,"
     echo "      - will use ROOTFS_DIR environment variable if set."
@@ -90,37 +91,8 @@ export __buildmanaged=false
 export __buildnative=false
 export __dotnetclipath=$__ProjectRoot/Tools/dotnetcli
 
-# Use uname to determine what the CPU is.
-export CPUName=$(uname -p)
-# Some Linux platforms report unknown for platform, but the arch for machine.
-if [ $CPUName == "unknown" ]; then
-    export CPUName=$(uname -m)
-fi
-
-case $CPUName in
-    i686)
-        export __HostArch=x86
-        ;;
-
-    x86_64)
-        export __HostArch=x64
-        ;;
-
-    armv7l)
-        echo "Unsupported CPU $CPUName detected, build might not succeed!"
-        export __HostArch=arm
-        ;;
-
-    aarch64)
-        echo "Unsupported CPU $CPUName detected, build might not succeed!"
-        export __HostArch=arm64
-        ;;
-
-    *)
-        echo "Unknown CPU $CPUName detected, configuring as if for x64"
-        export __HostArch=x64
-        ;;
-esac
+# Initialize variables that depend on the compilation host
+. $__scriptpath/hostvars-setup.sh
 
 export __BuildType=Debug
 
@@ -130,6 +102,7 @@ export BUILDERRORLEVEL=0
 export __UnprocessedBuildArgs=
 export __CleanBuild=0
 export __VerboseBuild=0
+export __ObjWriterBuild=0
 export __ClangMajorVersion=3
 export __ClangMinorVersion=9
 export __CrossBuild=0
@@ -178,6 +151,9 @@ while [ "$1" != "" ]; do
             ;;
         verbose)
             export __VerboseBuild=1
+            ;;
+        objwriter)
+            export __ObjWriterBuild=1
             ;;
         clang3.6)
             export __ClangMajorVersion=3

@@ -28,8 +28,9 @@ tests\runtest.sh
 You should see the below message when you build CoreRT or run the local tests manually, otherwise something is broken.
 
 ```
-JIT - TOTAL: 7 PASSED: 7
+JIT - TOTAL: 12 PASSED: 12
 CPP - TOTAL: 2 PASSED: 2
+WASM - TOTAL: 1 PASSED: 1
 ```
 
 ## External Tests
@@ -55,7 +56,7 @@ tests\runtest.cmd /coreclr Top200|All|KnownGood
 
 On Linux / macOS:
 
-**TBD**
+tests/runtest.sh -coreclr Top200|All|KnownGood
 
 ### Suppress Windows Error Reporting Dialogs
 It's advisable to use some sort of a dialog killer tool if you see test regressions as many tests fail with pop-ups for Windows Error Reporting. However, the following regedit scripts have also proven to be useful to mask these pop-ups.

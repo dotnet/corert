@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -106,6 +107,22 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override IEnumerable<MethodDesc> GetMethods()
+        {
+            foreach (var method in _rawCanonType.GetMethods())
+            {
+                yield return Context.GetMethodForRuntimeDeterminedType(method.GetTypicalMethodDefinition(), this);
+            }
+        }
+
+        public override MethodDesc GetMethod(string name, MethodSignature signature)
+        {
+            MethodDesc method = _rawCanonType.GetMethod(name, signature);
+            if (method == null)
+                return null;
+            return Context.GetMethodForRuntimeDeterminedType(method.GetTypicalMethodDefinition(), this);
+        }
+
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
             TypeFlags flags = 0;
@@ -154,11 +171,6 @@ namespace Internal.TypeSystem
         public override bool IsCanonicalSubtype(CanonicalFormKind policy)
         {
             return false;
-        }
-
-        public override string ToString()
-        {
-            return String.Concat(_runtimeDeterminedDetailsType.ToString(), "_", _rawCanonType.ToString());
         }
 
         public override TypeDesc GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(Instantiation typeInstantiation, Instantiation methodInstantiation)

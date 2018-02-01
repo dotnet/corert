@@ -24,7 +24,7 @@ namespace ILCompiler.DependencyAnalysis
     /// in the DependencyAnalysis infrastructure during compilation that is compiled 
     /// in the current compilation process
     /// </summary>
-    public class NonExternMethodSymbolNode : ExternSymbolNode, IMethodBodyNodeWithFuncletSymbols, ISpecialUnboxThunkNode
+    public class NonExternMethodSymbolNode : ExternSymbolNode, IMethodBodyNodeWithFuncletSymbols, ISpecialUnboxThunkNode, IExportableSymbolNode
     {
         private MethodDesc _method;
         private bool _isUnboxing;
@@ -46,6 +46,14 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         protected override string GetName(NodeFactory factory) => "Non" + base.GetName(factory);
+
+        public ExportForm GetExportForm(NodeFactory factory)
+        {
+            ExportForm exportForm = factory.CompilationModuleGroup.GetExportMethodForm(_method, IsSpecialUnboxingThunk);
+            if (exportForm == ExportForm.ByName)
+                return ExportForm.None; // Non-extern symbols exported by name are naturally handled by the linker
+            return exportForm;
+        }
 
         public MethodDesc Method
         {

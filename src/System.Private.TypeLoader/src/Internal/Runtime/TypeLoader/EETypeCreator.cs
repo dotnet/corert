@@ -318,7 +318,9 @@ namespace Internal.Runtime.TypeLoader
                         rareFlags |= (uint)EETypeRareFlags.RequiresAlign8Flag;
                     else
                         rareFlags &= ~(uint)EETypeRareFlags.RequiresAlign8Flag;
+#endif
 
+#if ARM || ARM64
                     if (state.IsHFA)
                         rareFlags |= (uint)EETypeRareFlags.IsHFAFlag;
                     else
@@ -457,7 +459,7 @@ namespace Internal.Runtime.TypeLoader
                     pEEType->OptionalFieldsPtr = (byte*)pEEType + cbEEType;
                     optionalFields.WriteToEEType(pEEType, cbOptionalFieldsSize);
 
-#if CORERT
+#if !PROJECTN
                     pEEType->PointerToTypeManager = PermanentAllocatedMemoryBlobs.GetPointerToIntPtr(moduleInfo.Handle.GetIntPtrUNSAFE());
 #endif
                     pEEType->DynamicModule = dynamicModulePtr;
@@ -1024,6 +1026,8 @@ namespace Internal.Runtime.TypeLoader
             CreateEETypeWorker(typeof(void*).TypeHandle.ToEETypePtr(), hashCodeOfNewType, 0, false, state);
             Debug.Assert(!state.HalfBakedRuntimeTypeHandle.IsNull());
 
+            TypeLoaderLogger.WriteLine("Allocated new POINTER type " + pointerType.ToString() + " with hashcode value = 0x" + hashCodeOfNewType.LowLevelToString() + " with eetype = " + state.HalfBakedRuntimeTypeHandle.ToIntPtr().LowLevelToString());
+
             state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->RelatedParameterType = pointeeTypeHandle.ToEETypePtr();
 
             return state.HalfBakedRuntimeTypeHandle;
@@ -1037,6 +1041,8 @@ namespace Internal.Runtime.TypeLoader
             // Ideally this should be typeof(void&) but C# doesn't support that syntax. We adjust for this below.
             CreateEETypeWorker(typeof(void*).TypeHandle.ToEETypePtr(), hashCodeOfNewType, 0, false, state);
             Debug.Assert(!state.HalfBakedRuntimeTypeHandle.IsNull());
+
+            TypeLoaderLogger.WriteLine("Allocated new BYREF type " + byRefType.ToString() + " with hashcode value = 0x" + hashCodeOfNewType.LowLevelToString() + " with eetype = " + state.HalfBakedRuntimeTypeHandle.ToIntPtr().LowLevelToString());
 
             state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->RelatedParameterType = pointeeTypeHandle.ToEETypePtr();
 
@@ -1101,13 +1107,23 @@ namespace Internal.Runtime.TypeLoader
             return state.HalfBakedRuntimeTypeHandle;
         }
 
-        public static IntPtr GetDictionary(EEType* pEEType)
+        public static int GetDictionaryOffsetInEEtype(EEType* pEEType)
         {
             // Dictionary slot is the first vtable slot
 
             EEType* pBaseType = pEEType->BaseType;
             int dictionarySlot = (pBaseType == null ? 0 : pBaseType->NumVtableSlots);
-            return *(IntPtr*)((byte*)pEEType + sizeof(EEType) + dictionarySlot * IntPtr.Size);
+            return sizeof(EEType) + dictionarySlot * IntPtr.Size;
+        }
+
+        public static IntPtr GetDictionaryAtOffset(EEType* pEEType, int offset)
+        {
+            return *(IntPtr*)((byte*)pEEType + offset);
+        }
+
+        public static IntPtr GetDictionary(EEType* pEEType)
+        {
+            return GetDictionaryAtOffset(pEEType, GetDictionaryOffsetInEEtype(pEEType));
         }
 
         public static int GetDictionarySlotInVTable(TypeDesc type)
@@ -1135,6 +1151,25 @@ namespace Internal.Runtime.TypeLoader
 
             typeWithDictionary = null;
             return -1;
+        }
+
+        public static EEType* GetBaseEETypeForDictionaryPtr(EEType* pEEType, IntPtr dictionaryPtr)
+        {
+            // Look for the exact base type that owns the dictionary
+            IntPtr curDictPtr = GetDictionary(pEEType);
+            EEType* pBaseEEType = pEEType;
+
+            while (curDictPtr != dictionaryPtr)
+            {
+                pBaseEEType = pBaseEEType->BaseType;
+                Debug.Assert(pBaseEEType != null);
+                // Since in multifile scenario, the base type's dictionary may end up having
+                // a copy in each module, therefore the lookup of the right base type should be
+                // based on the dictionary pointer in the current EEtype, instead of the base EEtype.
+                curDictPtr = GetDictionaryAtOffset(pEEType, EETypeCreator.GetDictionaryOffsetInEEtype(pBaseEEType));
+            }
+
+            return pBaseEEType;
         }
     }
 }

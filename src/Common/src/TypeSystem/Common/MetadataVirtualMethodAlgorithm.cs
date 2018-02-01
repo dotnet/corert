@@ -274,15 +274,22 @@ namespace Internal.TypeSystem
             return false;
         }
 
-        private static MethodDesc FindMatchingVirtualMethodOnTypeByNameAndSig(MethodDesc targetMethod, DefType currentType)
+        /// <summary>
+        /// Find matching a matching method by name and sig on a type. (Restricted to virtual methods only)
+        /// </summary>
+        /// <param name="targetMethod"></param>
+        /// <param name="currentType"></param>
+        /// <param name="reverseMethodSearch">Used to control the order of the search. For historical purposes to 
+        /// match .NET Framework behavior, this is typically true, but not always. There is no particular rationale 
+        /// for the particular orders other than to attempt to be consistent in virtual method override behavior 
+        /// betweeen runtimes.</param>
+        /// <param name="nameSigMatchMethodIsValidCandidate"></param>
+        /// <returns></returns>
+        private static MethodDesc FindMatchingVirtualMethodOnTypeByNameAndSig(MethodDesc targetMethod, DefType currentType, bool reverseMethodSearch, Func<MethodDesc, MethodDesc, bool> nameSigMatchMethodIsValidCandidate)
         {
             string name = targetMethod.Name;
             MethodSignature sig = targetMethod.Signature;
 
-            // TODO: InstantiatedType.GetMethod can't handle this for a situation like
-            // an instantiation of Foo<T>.M(T) because sig is instantiated, but it compares
-            // it to the uninstantiated version
-            //MethodDesc implMethod = currentType.GetMethod(name, sig);
             MethodDesc implMethod = null;
             foreach (MethodDesc candidate in currentType.GetAllMethods())
             {
@@ -293,11 +300,15 @@ namespace Internal.TypeSystem
                 {
                     if (candidate.Signature.Equals(sig))
                     {
-                        if (implMethod != null)
+                        if (nameSigMatchMethodIsValidCandidate == null || nameSigMatchMethodIsValidCandidate(targetMethod, candidate))
                         {
-                            throw NotImplemented.ActiveIssue("https://github.com/dotnet/corert/issues/190");
+                            implMethod = candidate;
+
+                            // If reverseMethodSearch is enabled, we want to find the last match on this type, not the first
+                            // (reverseMethodSearch is used for most matches except for searches for name/sig method matches for interface methods on the most derived type)
+                            if (!reverseMethodSearch)
+                                return implMethod;
                         }
-                        implMethod = candidate;
                     }
                 }
             }
@@ -313,7 +324,7 @@ namespace Internal.TypeSystem
         {
             while (currentType != null)
             {
-                MethodDesc nameSigOverride = FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(targetMethod, currentType);
+                MethodDesc nameSigOverride = FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(targetMethod, currentType, reverseMethodSearch:true);
 
                 if (nameSigOverride != null)
                 {
@@ -339,7 +350,7 @@ namespace Internal.TypeSystem
             // Loop until a newslot method is found
             while ((currentType != null) && !method.IsNewSlot)
             {
-                MethodDesc foundMethod = FindMatchingVirtualMethodOnTypeByNameAndSig(method, currentType);
+                MethodDesc foundMethod = FindMatchingVirtualMethodOnTypeByNameAndSig(method, currentType, reverseMethodSearch: true, nameSigMatchMethodIsValidCandidate:null);
                 if (foundMethod != null)
                 {
                     method = foundMethod;
@@ -353,22 +364,25 @@ namespace Internal.TypeSystem
             return method;
         }
 
-        private static MethodDesc FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(MethodDesc method, DefType currentType)
+        /// <summary>
+        /// Find matching a matching method by name and sig on a type. (Restricted to virtual methods only) Only search amonst methods with the same vtable slot.
+        /// </summary>
+        /// <param name="method"></param>
+        /// <param name="currentType"></param>
+        /// <param name="reverseMethodSearch">Used to control the order of the search. For historical purposes to 
+        /// match .NET Framework behavior, this is typically true, but not always. There is no particular rationale 
+        /// for the particular orders other than to attempt to be consistent in virtual method override behavior 
+        /// betweeen runtimes.</param>
+        /// <returns></returns>
+        private static MethodDesc FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(MethodDesc method, DefType currentType, bool reverseMethodSearch)
         {
-            MethodDesc foundMethod = FindMatchingVirtualMethodOnTypeByNameAndSig(method, currentType);
-            if (foundMethod != null)
-            {
-                if (VerifyMethodsHaveTheSameVirtualSlot(foundMethod, method))
-                {
-                    return foundMethod;
-                }
-            }
-
-            return null;
+            return FindMatchingVirtualMethodOnTypeByNameAndSig(method, currentType, reverseMethodSearch, nameSigMatchMethodIsValidCandidate: s_VerifyMethodsHaveTheSameVirtualSlot);
         }
 
+        private static Func<MethodDesc, MethodDesc, bool> s_VerifyMethodsHaveTheSameVirtualSlot = VerifyMethodsHaveTheSameVirtualSlot;
+
         // Return true if the slot that defines methodToVerify matches slotDefiningMethod
-        private static bool VerifyMethodsHaveTheSameVirtualSlot(MethodDesc methodToVerify, MethodDesc slotDefiningMethod)
+        private static bool VerifyMethodsHaveTheSameVirtualSlot(MethodDesc slotDefiningMethod, MethodDesc methodToVerify)
         {
             MethodDesc slotDefiningMethodOfMethodToVerify = FindSlotDefiningMethodForVirtualMethod(methodToVerify);
             return slotDefiningMethodOfMethodToVerify == slotDefiningMethod;
@@ -384,7 +398,7 @@ namespace Internal.TypeSystem
                 unificationGroup.SetDefiningMethod(methodImpl);
             }
 
-            MethodDesc nameSigMatchMethod = FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(unificationGroup.DefiningMethod, currentType);
+            MethodDesc nameSigMatchMethod = FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(unificationGroup.DefiningMethod, currentType, reverseMethodSearch: true);
             MetadataType baseType = currentType.MetadataBaseType;
 
             // Unless the current type has a name/sig match for the group, look to the base type to define the unification group further
@@ -404,7 +418,7 @@ namespace Internal.TypeSystem
 
             foreach (MethodDesc memberMethod in unificationGroup)
             {
-                MethodDesc nameSigMatchMemberMethod = FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(memberMethod, currentType);
+                MethodDesc nameSigMatchMemberMethod = FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(memberMethod, currentType, reverseMethodSearch: true);
                 if (nameSigMatchMemberMethod != null)
                 {
                     if (separatedMethods == null)
@@ -468,6 +482,11 @@ namespace Internal.TypeSystem
             return ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, (MetadataType)currentType);
         }
 
+        public override MethodDesc ResolveVariantInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType)
+        {
+            return ResolveVariantInterfaceMethodToVirtualMethodOnType(interfaceMethod, (MetadataType)currentType);
+        }
+
         //////////////////////// INTERFACE RESOLUTION
         //Interface function resolution
         //    Interface function resolution follows the following rules
@@ -499,7 +518,9 @@ namespace Internal.TypeSystem
 
             if (foundExplicitInterface)
             {
-                MethodDesc foundOnCurrentType = FindMatchingVirtualMethodOnTypeByNameAndSig(interfaceMethod, currentType);
+                MethodDesc foundOnCurrentType = FindMatchingVirtualMethodOnTypeByNameAndSig(interfaceMethod, currentType
+                    , reverseMethodSearch: false /* When searching for name/sig overrides on a type that explicitly defines an interface, search through the type in the forward direction*/
+                    , nameSigMatchMethodIsValidCandidate :null);
                 foundOnCurrentType = FindSlotDefiningMethodForVirtualMethod(foundOnCurrentType);
 
                 if (baseType == null)
@@ -535,16 +556,53 @@ namespace Internal.TypeSystem
                 }
                 else
                 {
-                    return FindNameSigOverrideForInterfaceMethodRecursive(interfaceMethod, currentType);
+                    MethodDesc foundOnCurrentType = FindMatchingVirtualMethodOnTypeByNameAndSig(interfaceMethod, currentType
+                                            , reverseMethodSearch: false /* When searching for name/sig overrides on a type that is the first type in the hierarchy to require the interface, search through the type in the forward direction*/
+                                            , nameSigMatchMethodIsValidCandidate: null);
+
+                    foundOnCurrentType = FindSlotDefiningMethodForVirtualMethod(foundOnCurrentType);
+
+                    if (foundOnCurrentType != null)
+                        return foundOnCurrentType;
+
+                    return FindNameSigOverrideForInterfaceMethodRecursive(interfaceMethod, baseType);
                 }
             }
+        }
+
+        public static MethodDesc ResolveVariantInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, MetadataType currentType)
+        {
+            MetadataType interfaceType = (MetadataType)interfaceMethod.OwningType;
+            bool foundInterface = IsInterfaceImplementedOnType(currentType, interfaceType);
+            MethodDesc implMethod;
+
+            if (foundInterface)
+            {
+                implMethod = ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, currentType);
+                if (implMethod != null)
+                    return implMethod;
+            }
+
+            foreach (TypeDesc iface in currentType.RuntimeInterfaces)
+            {
+                if (iface.CanCastTo(interfaceType))
+                {
+                    implMethod = iface.FindMethodOnTypeWithMatchingTypicalMethod(interfaceMethod);
+                    Debug.Assert(implMethod != null);
+                    implMethod = ResolveInterfaceMethodToVirtualMethodOnType(implMethod, currentType);
+                    if (implMethod != null)
+                        return implMethod;
+                }
+            }
+
+            return null;
         }
 
         // Helper routine used during implicit interface implementation discovery
         private static MethodDesc ResolveInterfaceMethodToVirtualMethodOnTypeRecursive(MethodDesc interfaceMethod, MetadataType currentType)
         {
             while (true)
-            {
+            {       
                 if (currentType == null)
                     return null;
 
@@ -572,7 +630,10 @@ namespace Internal.TypeSystem
                 if (currentType == null)
                     return null;
 
-                MethodDesc nameSigOverride = FindMatchingVirtualMethodOnTypeByNameAndSig(interfaceMethod, currentType);
+                MethodDesc nameSigOverride = FindMatchingVirtualMethodOnTypeByNameAndSig(interfaceMethod, currentType
+                    , reverseMethodSearch: true /* When searching for a name sig match for an interface on parent types search in reverse order of declaration */
+                    , nameSigMatchMethodIsValidCandidate:null);
+
                 if (nameSigOverride != null)
                 {
                     return FindSlotDefiningMethodForVirtualMethod(nameSigOverride);

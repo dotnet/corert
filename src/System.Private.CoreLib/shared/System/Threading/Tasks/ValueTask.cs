@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -50,7 +49,7 @@ namespace System.Threading.Tasks
     /// </remarks>
     [AsyncMethodBuilder(typeof(AsyncValueTaskMethodBuilder<>))]
     [StructLayout(LayoutKind.Auto)]
-    public struct ValueTask<TResult> : IEquatable<ValueTask<TResult>>
+    public readonly struct ValueTask<TResult> : IEquatable<ValueTask<TResult>>
     {
         /// <summary>The task to be used if the operation completed asynchronously or if it completed synchronously but non-successfully.</summary>
         internal readonly Task<TResult> _task;
@@ -77,7 +76,7 @@ namespace System.Threading.Tasks
             }
 
             _task = task;
-            _result = default(TResult);
+            _result = default;
         }
 
         /// <summary>Returns the hash code for this instance.</summary>
@@ -114,13 +113,38 @@ namespace System.Threading.Tasks
             // Return the task if we were constructed from one, otherwise manufacture one.  We don't
             // cache the generated task into _task as it would end up changing both equality comparison
             // and the hash code we generate in GetHashCode.
-            _task ?? AsyncTaskMethodBuilder<TResult>.GetTaskForResult(_result);
+            _task ??
+#if netstandard
+                Task.FromResult(_result);
+#else
+                AsyncTaskMethodBuilder<TResult>.GetTaskForResult(_result);
+#endif
+
+        internal Task<TResult> AsTaskExpectNonNull() =>
+            // Return the task if we were constructed from one, otherwise manufacture one.
+            // Unlike AsTask(), this method is called only when we expect _task to be non-null,
+            // and thus we don't want GetTaskForResult inlined.
+            _task ?? GetTaskForResultNoInlining();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private Task<TResult> GetTaskForResultNoInlining() =>
+#if netstandard
+            Task.FromResult(_result);
+#else
+            AsyncTaskMethodBuilder<TResult>.GetTaskForResult(_result);
+#endif
 
         /// <summary>Gets whether the <see cref="ValueTask{TResult}"/> represents a completed operation.</summary>
         public bool IsCompleted => _task == null || _task.IsCompleted;
 
         /// <summary>Gets whether the <see cref="ValueTask{TResult}"/> represents a successfully completed operation.</summary>
-        public bool IsCompletedSuccessfully => _task == null || _task.IsCompletedSuccessfully;
+        public bool IsCompletedSuccessfully =>
+            _task == null ||
+#if netstandard
+            _task.Status == TaskStatus.RanToCompletion;
+#else
+            _task.IsCompletedSuccessfully;
+#endif
 
         /// <summary>Gets whether the <see cref="ValueTask{TResult}"/> represents a failed operation.</summary>
         public bool IsFaulted => _task != null && _task.IsFaulted;
@@ -144,26 +168,16 @@ namespace System.Threading.Tasks
         /// <summary>Gets a string-representation of this <see cref="ValueTask{TResult}"/>.</summary>
         public override string ToString()
         {
-            if (_task != null)
+            if (IsCompletedSuccessfully)
             {
-                return _task.IsCompletedSuccessfully && _task.Result != null ?
-                    _task.Result.ToString() :
-                    string.Empty;
+                TResult result = Result;
+                if (result != null)
+                {
+                    return result.ToString();
+                }
             }
-            else
-            {
-                return _result != null ?
-                    _result.ToString() :
-                    string.Empty;
-            }
+
+            return string.Empty;
         }
-
-        // TODO https://github.com/dotnet/corefx/issues/22171:
-        // Remove CreateAsyncMethodBuilder once the C# compiler relies on the AsyncBuilder attribute.
-
-        /// <summary>Creates a method builder for use with an async method.</summary>
-        /// <returns>The created builder.</returns>
-        [EditorBrowsable(EditorBrowsableState.Never)] // intended only for compiler consumption
-        public static AsyncValueTaskMethodBuilder<TResult> CreateAsyncMethodBuilder() => AsyncValueTaskMethodBuilder<TResult>.Create();
     }
 }

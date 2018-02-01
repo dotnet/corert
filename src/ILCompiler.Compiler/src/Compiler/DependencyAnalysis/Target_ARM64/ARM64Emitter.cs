@@ -59,7 +59,30 @@ namespace ILCompiler.DependencyAnalysis.ARM64
         {
             if (symbol.RepresentsIndirectionCell)
             {
-                throw new NotImplementedException();
+                // xip0 register num is 0x10
+
+                // ADRP xip0, [symbol (21bit ADRP thing)]
+                // 0x90000000 + (xip regnum)
+                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21);
+                Builder.EmitByte(0x10);
+                Builder.EmitByte(0x00);
+                Builder.EmitByte(0x00);
+                Builder.EmitByte(0x90);
+
+                // LDR xip0, [xip0 + 12bit LDR page offset reloc)]
+                // 0xF9400000 + ((xip0 regnum) << 5) + (xip regnum)
+                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L);
+                Builder.EmitByte(0x10);
+                Builder.EmitByte(0x02);
+                Builder.EmitByte(0x40);
+                Builder.EmitByte(0xF9);
+
+                // BR xip0
+                // 0xD61F0000 + (xip0 regnum) << 5)
+                Builder.EmitByte(0x00);
+                Builder.EmitByte(0x02);
+                Builder.EmitByte(0x1F);
+                Builder.EmitByte(0xD6);
             }
             else
             {
@@ -95,6 +118,5 @@ namespace ILCompiler.DependencyAnalysis.ARM64
         {
             return i == (int)(sbyte)i;
         }
-
     }
 }

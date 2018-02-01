@@ -66,10 +66,16 @@ namespace System.Threading
         {
             Debug.Assert(_items != null);
 
-            EqualityComparer<T> comparer = EqualityComparer<T>.Default;
             for (int i = 0; i < _items.Length; ++i)
             {
-                Debug.Assert(comparer.Equals(_items[i], default(T)));
+                // Do not call EqualityComparer<T>.Default here as it may call type loader. Type loader uses
+                // locks and we would end up with infinite recursion.
+                // Debug.Assert(EqualityComparer<T>.Default.Equals(_items[i], default(T)));
+
+                if (default(T) != null)
+                    Debug.Assert(_items[i].Equals(default(T)));
+                else
+                    Debug.Assert(_items[i] == null);
             }
         }
 

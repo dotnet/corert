@@ -20,7 +20,7 @@ namespace System
             number.precision = precision;
             if (DoubleHelper.Exponent(value) == 0x7ff)
             {
-                number.scale = DoubleHelper.Mantissa(value) != 0 ? SCALE_NAN : SCALE_INF;
+                number.scale = DoubleHelper.Mantissa(value) != 0 ? ScaleNAN : ScaleINF;
                 number.sign = DoubleHelper.Sign(value);
                 number.digits[0] = '\0';
                 return;

@@ -4,9 +4,6 @@
 
 /*============================================================
 **
-** 
-** 
-**
 **
 ** Purpose: Searches for resources on disk, used for file-
 ** based resource lookup.
@@ -14,19 +11,16 @@
 ** 
 ===========================================================*/
 
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Threading;
+
+using Internal.IO;
+
 namespace System.Resources
 {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Globalization;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.Versioning;
-    using System.Text;
-    using System.Threading;
-    using System.Diagnostics;
-    
     internal class FileBasedResourceGroveler : IResourceGroveler
     {
         private ResourceManager.ResourceManagerMediator _mediator;
@@ -89,14 +83,14 @@ namespace System.Resources
             if (_mediator.ModuleDir != null)
             {
                 String path = Path.Combine(_mediator.ModuleDir, fileName);
-                if (InternalFile.Exists(path))
+                if (File.Exists(path))
                 {
                     return path;
                 }
             }
 
             // look in .
-            if (InternalFile.Exists(fileName))
+            if (File.Exists(fileName))
                 return fileName;
                 
             return null;  // give up.

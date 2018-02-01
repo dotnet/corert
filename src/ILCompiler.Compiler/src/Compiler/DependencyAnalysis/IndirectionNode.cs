@@ -14,11 +14,11 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public class IndirectionNode : ObjectNode, ISymbolDefinitionNode
     {
-        private ISymbolNode _indirectedNode;
+        private ISortableSymbolNode _indirectedNode;
         private int _offsetDelta;
         private TargetDetails _target;
 
-        public IndirectionNode(TargetDetails target, ISymbolNode indirectedNode, int offsetDelta)
+        public IndirectionNode(TargetDetails target, ISortableSymbolNode indirectedNode, int offsetDelta)
         {
             _indirectedNode = indirectedNode;
             _offsetDelta = offsetDelta;
@@ -59,6 +59,13 @@ namespace ILCompiler.DependencyAnalysis
             builder.EmitPointerReloc(_indirectedNode, _offsetDelta);
 
             return builder.ToObjectData();
+        }
+
+        protected internal override int ClassCode => -1401349230;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(this._indirectedNode, ((IndirectionNode)other)._indirectedNode);
         }
     }
 }

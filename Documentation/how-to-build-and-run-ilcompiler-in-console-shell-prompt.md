@@ -51,8 +51,6 @@ You should now be able to use the `dotnet` commands of the CLI tools.
 
 * Please [open an issue](https://github.com/dotnet/corert/issues) if these instructions do not work anymore.
 
-    * Projects with references to other projects or packages require workaround described in https://github.com/dotnet/corert/issues/2619#issuecomment-276095878
-
 ## Using RyuJIT ##
 
 This approach uses the same code-generator (RyuJIT), as [CoreCLR](https://github.com/dotnet/coreclr), for compiling the application. Linking is done using the platform specific linker.
@@ -60,10 +58,10 @@ This approach uses the same code-generator (RyuJIT), as [CoreCLR](https://github
 From the shell/command prompt, issue the following commands, from the folder containing your project, to generate the native executable
 
 ``` 
-    dotnet build /t:LinkNative
+    dotnet publish -r win-x64|linux-x64|osx-x64 
 ``` 
 
-Native executable will be dropped in `./bin/[configuration]/native/` folder and will have the same name as the folder in which your source file is present.
+Native executable will be dropped in `./bin/x64/[configuration]/netcoreapp2.0/publish/` folder and will have the same name as the folder in which your source file is present.
 
 ## Using CPP Code Generator ##
 
@@ -72,10 +70,14 @@ This approach uses [transpiler](https://en.wikipedia.org/wiki/Source-to-source_c
 From the shell/command prompt, issue the following commands to generate the native executable:
 
 ``` 
-    dotnet build /t:LinkNative /p:NativeCodeGen=cpp
+    dotnet publish /p:NativeCodeGen=cpp -r win-x64|linux-x64|osx-x64 
 ```
 
 For CoreRT debug build on Windows, add an extra `/p:AdditionalCppCompilerFlags=/MTd` argument.
+
+## Disabling Native Compilation 
+
+Native compilation can be disabled during publishing by adding an extra `/p:NativeCompilationDuringPublish=false` argument.
 
 ## Workarounds for build errors on Windows ##
 

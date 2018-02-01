@@ -29,6 +29,7 @@ namespace ILCompiler
                 new LibraryInitializerInfo("System.Private.Reflection.Execution"),
                 new LibraryInitializerInfo("System.Private.DeveloperExperience.Console"),
                 new LibraryInitializerInfo("System.Private.Interop"),
+                new LibraryInitializerInfo("System.Private.StackTraceMetadata"),
             };
 
         private List<MethodDesc> _libraryInitializerMethods;

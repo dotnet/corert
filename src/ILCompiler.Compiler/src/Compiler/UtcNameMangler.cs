@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
@@ -21,7 +22,11 @@ namespace ILCompiler
         public bool isImport;
         public uint tlsIndexOrdinal;
         public ReadOnlyDictionary<TypeDesc, uint> typeOrdinals;
+        public ReadOnlyDictionary<TypeDesc, uint> nonGcStaticOrdinals;
+        public ReadOnlyDictionary<TypeDesc, uint> gcStaticOrdinals;
+        public ReadOnlyDictionary<TypeDesc, uint> tlsStaticOrdinals;
         public ReadOnlyDictionary<MethodDesc, uint> methodOrdinals;
+        public ReadOnlyDictionary<MethodDesc, uint> unboxingStubMethodOrdinals;
         public ReadOnlyDictionary<MethodDesc, uint> methodDictionaryOrdinals;
     }
 
@@ -53,6 +58,12 @@ namespace ILCompiler
             {
                 _exportOrdinals = ordinals;
             }
+
+            // Use SHA256 hash here to provide a high degree of uniqueness to symbol names without requiring them to be long
+            // This hash function provides an exceedingly high likelihood that no two strings will be given equal symbol names
+            // This is not considered used for security purpose; however collisions would be highly unfortunate as they will cause compilation
+            // failure.
+            _sha256 = SHA256.Create();
         }
 
         private bool GetMethodOrdinal(MethodDesc method, out uint ordinal)
@@ -191,16 +202,12 @@ namespace ILCompiler
 
             if (mangledName != literal)
             {
-                if (_sha256 == null)
+                byte[] hash;
+                lock (this)
                 {
-                    // Use SHA256 hash here to provide a high degree of uniqueness to symbol names without requiring them to be long
-                    // This hash function provides an exceedingly high likelihood that no two strings will be given equal symbol names
-                    // This is not considered used for security purpose; however collisions would be highly unfortunate as they will cause compilation
-                    // failure.
-                    _sha256 = SHA256.Create();
+                    hash = _sha256.ComputeHash(GetBytesFromString(literal));
                 }
 
-                var hash = _sha256.ComputeHash(GetBytesFromString(literal));
                 mangledName += "_" + BitConverter.ToString(hash).Replace("-", "");
             }
 
@@ -228,7 +235,7 @@ namespace ILCompiler
                 result = string.Concat(origName, deDuplicatePrefix, (iter++).ToStringInvariant());
             }
             return result;
-        }
+        }               
 
         public override string GetMangledTypeName(TypeDesc type)
         {
@@ -611,19 +618,9 @@ namespace ILCompiler
             return mangledName;
         }
 
-        public string GetMangledDataBlobName(byte[] blob)
+        public string GetMangledDataBlobName(FieldDesc field)
         {
-            if (_sha256 == null)
-            {
-                // Use SHA256 hash here to provide a high degree of uniqueness to symbol names without requiring them to be long
-                // This hash function provides an exceedingly high likelihood that no two strings will be given equal symbol names
-                // This is not considered used for security purpose; however collisions would be highly unfortunate as they will cause compilation
-                // failure.
-                _sha256 = SHA256.Create();
-            }
-
-            var hash = _sha256.ComputeHash(blob);
-            return "__Data_" + BitConverter.ToString(hash).Replace("-", "");
+            return "__Data_" + ComputeMangledFieldName(field);
         }
 
         public string GetImportedTlsIndexPrefix()

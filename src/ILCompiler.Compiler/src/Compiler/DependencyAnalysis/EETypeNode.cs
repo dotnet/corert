@@ -95,7 +95,7 @@ namespace ILCompiler.DependencyAnalysis
             return (ObjectNode)factory.NecessaryTypeSymbol(_type);
         }
 
-        public virtual bool IsExported(NodeFactory factory) => factory.CompilationModuleGroup.ExportsType(Type);
+        public ExportForm GetExportForm(NodeFactory factory) => factory.CompilationModuleGroup.GetExportTypeForm(Type);
 
         public TypeDesc Type => _type;
 
@@ -119,18 +119,13 @@ namespace ILCompiler.DependencyAnalysis
             get { return _optionalFieldsBuilder.IsAtLeastOneFieldUsed(); }
         }
 
-        internal byte[] GetOptionalFieldsData(NodeFactory factory)
+        internal byte[] GetOptionalFieldsData()
         {
             return _optionalFieldsBuilder.GetBytes();
         }
         
         public override bool StaticDependenciesAreComputed => true;
-
-        public void SetDispatchMapIndex(int index)
-        {
-            _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.DispatchMap, checked((uint)index));
-        }
-
+        
         public static string GetMangledName(TypeDesc type, NameMangler nameMangler)
         {
             return nameMangler.NodeMangler.EEType(type);
@@ -217,6 +212,9 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 yield break;
             }
+
+            if (!EmitVirtualSlotsAndInterfaces)
+                yield break;
 
             DefType defType = _type.GetClosestDefType();
 
@@ -351,6 +349,28 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        internal static bool MethodHasNonGenericILMethodBody(MethodDesc method)
+        {
+            // Generic methods have their own generic dictionaries
+            if (method.HasInstantiation)
+                return false;
+
+            // Abstract methods don't have a body
+            if (method.IsAbstract)
+                return false;
+
+            // PInvoke methods, runtime imports, etc. are not permitted on generic types,
+            // but let's not crash the compilation because of that.
+            if (method.IsPInvoke || method.IsRuntimeImplemented)
+                return false;
+
+            // InternalCall functions do not really have entrypoints that need to be handled here
+            if (method.IsInternalCall)
+                return false;
+
+            return true;
+        }
+
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencies = new DependencyList();
@@ -362,11 +382,36 @@ namespace ILCompiler.DependencyAnalysis
             dependencies.Add(new DependencyListEntry(_optionalFieldsNode, "Optional fields"));
 
             StaticsInfoHashtableNode.AddStaticsInfoDependencies(ref dependencies, factory, _type);
-            ReflectionFieldMapNode.AddReflectionFieldMapEntryDependencies(ref dependencies, factory, _type);
 
             if (EmitVirtualSlotsAndInterfaces)
             {
                 AddVirtualMethodUseDependencies(dependencies, factory);
+            }
+
+            if (factory.CompilationModuleGroup.PresenceOfEETypeImpliesAllMethodsOnType(_type))
+            {
+                if (_type.IsArray || _type.IsDefType)
+                {
+                    // If the compilation group wants this type to be fully promoted, ensure that all non-generic methods of the 
+                    // type are generated.
+                    // This may be done for several reasons:
+                    //   - The EEType may be going to be COMDAT folded with other EETypes generated in a different object file
+                    //     This means their generic dictionaries need to have identical contents. The only way to achieve that is 
+                    //     by generating the entries for all methods that contribute to the dictionary, and sorting the dictionaries.
+                    //   - The generic type may be imported into another module, in which case the generic dictionary imported
+                    //     must represent all of the methods, as the set of used methods cannot be known at compile time
+                    //   - As a matter of policy, the type and its methods may be exported for use in another module. The policy
+                    //     may wish to specify that if a type is to be placed into a shared module, all of the methods associated with
+                    //     it should be also be exported.
+                    foreach (var method in _type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific).GetAllMethods())
+                    {
+                        if (!MethodHasNonGenericILMethodBody(method))
+                            continue;
+
+                        dependencies.Add(factory.MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                            "Ensure all methods on type due to CompilationModuleGroup policy");
+                    }
+                }
             }
 
             return dependencies;
@@ -798,6 +843,11 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         protected internal virtual void ComputeOptionalEETypeFields(NodeFactory factory, bool relocsOnly)
         {
+            if (!relocsOnly && _type.RuntimeInterfaces.Length > 0 && factory.InterfaceDispatchMap(_type).Marked)
+            {
+                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.DispatchMap, checked((uint)factory.InterfaceDispatchMapIndirection(Type).IndexFromBeginningOfArray));
+            }
+            
             ComputeRareFlags(factory);
             ComputeNullableValueOffset();
             if (!relocsOnly)
@@ -1148,6 +1198,20 @@ namespace ILCompiler.DependencyAnalysis
                     dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(universalCanonGVMMethod), "USG GVM Method"));
                 }
             }
+        }
+
+        protected internal override int ClassCode => 1521789141;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(_type, ((EETypeNode)other)._type);
+        }
+
+        int ISortableSymbolNode.ClassCode => ClassCode;
+
+        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
+        {
+            return CompareToImpl((ObjectNode)other, comparer);
         }
 
         private struct SlotCounter

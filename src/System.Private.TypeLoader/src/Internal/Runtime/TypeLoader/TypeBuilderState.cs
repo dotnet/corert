@@ -115,6 +115,17 @@ namespace Internal.Runtime.TypeLoader
             {
                 if (!_templateComputed)
                 {
+                    // Multidimensional arrays and szarrays of pointers don't implement generic interfaces and are special cases. They use
+                    // typeof(object[,]) as their template.
+                    if (TypeBeingBuilt.IsMdArray || (TypeBeingBuilt.IsSzArray && ((ArrayType)TypeBeingBuilt).ElementType.IsPointer))
+                    {
+                        _templateType = TypeBeingBuilt.Context.ResolveRuntimeTypeHandle(typeof(object[,]).TypeHandle);
+                        _templateTypeLoaderNativeLayout = false;
+                        _nativeLayoutComputed = _nativeLayoutTokenComputed = _templateComputed = true;
+
+                        return _templateType;
+                    }
+
                     // Locate the template type and native layout info
                     _templateType = TypeBeingBuilt.Context.TemplateLookup.TryGetTypeTemplate(TypeBeingBuilt, ref _nativeLayoutInfo);
                     Debug.Assert(_templateType == null || !_templateType.RuntimeTypeHandle.IsNull());
@@ -372,23 +383,23 @@ namespace Internal.Runtime.TypeLoader
                     }
                     else
                     {
-                        // This should only happen for non-universal templates
-                        Debug.Assert(TypeBeingBuilt.IsTemplateCanonical());
-
-                        // Canonical template type loader case
                         unsafe
                         {
-                            return templateType.GetRuntimeTypeHandle().ToEETypePtr()->NumVtableSlots;
+                            if (TypeBeingBuilt.IsMdArray || (TypeBeingBuilt.IsSzArray && ((ArrayType)TypeBeingBuilt).ElementType.IsPointer))
+                            {
+                                // MDArray types and pointer arrays have the same vtable as the System.Array type they "derive" from.
+                                // They do not implement the generic interfaces that make this interesting for normal arrays.
+                                return TypeBeingBuilt.BaseType.GetRuntimeTypeHandle().ToEETypePtr()->NumVtableSlots;
+                            }
+                            else
+                            {
+                                // This should only happen for non-universal templates
+                                Debug.Assert(TypeBeingBuilt.IsTemplateCanonical());
+
+                                // Canonical template type loader case
+                                return templateType.GetRuntimeTypeHandle().ToEETypePtr()->NumVtableSlots;
+                            }
                         }
-                    }
-                }
-                else if (TypeBeingBuilt.IsMdArray || (TypeBeingBuilt.IsSzArray && ((ArrayType)TypeBeingBuilt).ElementType.IsPointer))
-                {
-                    // MDArray types and pointer arrays have the same vtable as the System.Array type they "derive" from.
-                    // They do not implement the generic interfaces that make this interesting for normal arrays.
-                    unsafe
-                    {
-                        return TypeBeingBuilt.BaseType.GetRuntimeTypeHandle().ToEETypePtr()->NumVtableSlots;
                     }
                 }
                 else

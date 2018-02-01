@@ -180,7 +180,7 @@ HANDLE TypeManager::GetOsModuleHandle()
 
 bool TypeManagerHandle::IsTypeManager()
 {
-#if !CORERT
+#if PROJECTN
     if (((uintptr_t)_value & 1) == 0)
         return false;
 #endif

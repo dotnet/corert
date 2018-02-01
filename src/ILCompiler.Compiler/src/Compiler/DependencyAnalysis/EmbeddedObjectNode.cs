@@ -10,17 +10,19 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public abstract class EmbeddedObjectNode : DependencyNodeCore<NodeFactory>
+    public abstract class EmbeddedObjectNode : SortableDependencyNode
     {
         private const int InvalidOffset = int.MinValue;
 
         private int _offset;
+        private int _index;
 
         public IHasStartSymbol ContainingNode { get; set; }
 
         public EmbeddedObjectNode()
         {
             _offset = InvalidOffset;
+            _index = InvalidOffset;
         }
 
         public int OffsetFromBeginningOfArray
@@ -32,10 +34,25 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public int IndexFromBeginningOfArray
+        {
+            get
+            {
+                Debug.Assert(_index != InvalidOffset);
+                return _index;
+            }
+        }
+
         internal void InitializeOffsetFromBeginningOfArray(int offset)
         {
             Debug.Assert(_offset == InvalidOffset || _offset == offset);
             _offset = offset;
+        }
+
+        internal void InitializeIndexFromBeginningOfArray(int index)
+        {
+            Debug.Assert(_index == InvalidOffset || _index == index);
+            _index = index;
         }
 
         public virtual bool IsShareable => false;

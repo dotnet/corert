@@ -442,8 +442,15 @@ namespace Internal.IL.Stubs
 
         public void DefineSequencePoint(string document, int lineNumber)
         {
-            Debug.Assert(_sequencePoints.Count == 0 || _sequencePoints[_sequencePoints.Count - 1].Offset < _length);
-            _sequencePoints.Add(new ILSequencePoint(_length, document, lineNumber));
+            // Last sequence point defined for this offset wins.
+            if (_sequencePoints.Count > 0 && _sequencePoints[_sequencePoints.Count - 1].Offset == _length)
+            {
+                _sequencePoints[_sequencePoints.Count - 1] = new ILSequencePoint(_length, document, lineNumber);
+            }
+            else
+            {
+                _sequencePoints.Add(new ILSequencePoint(_length, document, lineNumber));
+            }
         }
     }
 
@@ -466,12 +473,16 @@ namespace Internal.IL.Stubs
         private readonly MethodDesc _method;
         private readonly MethodDebugInformation _debugInformation;
 
+        private const int MaxStackNotSet = -1;
+        private int _maxStack;
+
         public ILStubMethodIL(MethodDesc owningMethod, byte[] ilBytes, LocalVariableDefinition[] locals, Object[] tokens, MethodDebugInformation debugInfo = null)
         {
             _ilBytes = ilBytes;
             _locals = locals;
             _tokens = tokens;
             _method = owningMethod;
+            _maxStack = MaxStackNotSet;
 
             if (debugInfo == null)
                 debugInfo = MethodDebugInformation.None;
@@ -485,6 +496,7 @@ namespace Internal.IL.Stubs
             _tokens = methodIL._tokens;
             _method = methodIL._method;
             _debugInformation = methodIL._debugInformation;
+            _maxStack = methodIL._maxStack;
         }
 
         public override MethodDesc OwningMethod
@@ -509,8 +521,9 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                // Conservative estimate...
-                return _ilBytes.Length;
+                if (_maxStack == MaxStackNotSet)
+                    _maxStack = this.ComputeMaxStack();
+                return _maxStack;
             }
         }
 
@@ -679,7 +692,9 @@ namespace Internal.IL.Stubs
                 debugInfo = new EmittedMethodDebugInformation(sequencePoints);
             }
 
-            return new ILStubMethodIL(owningMethod, ilInstructions, _locals.ToArray(), _tokens.ToArray(), debugInfo);
+            var result = new ILStubMethodIL(owningMethod, ilInstructions, _locals.ToArray(), _tokens.ToArray(), debugInfo);
+            result.CheckStackBalance();
+            return result;
         }
 
         private class EmittedMethodDebugInformation : MethodDebugInformation

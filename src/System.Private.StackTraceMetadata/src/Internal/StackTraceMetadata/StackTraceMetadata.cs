@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime;
-using System.Text;
 
 using Internal.Metadata.NativeFormat;
 using Internal.Runtime;
@@ -13,7 +12,15 @@ using Internal.Runtime.Augments;
 using Internal.Runtime.TypeLoader;
 using Internal.TypeSystem;
 
-using MethodSignature = Internal.Metadata.NativeFormat.MethodSignature;
+using ReflectionExecution = Internal.Reflection.Execution.ReflectionExecution;
+
+#if BIT64
+using nint = System.Int64;
+using nuint = System.UInt64;
+#else
+using nint = System.Int32;
+using nuint = System.UInt32;
+#endif
 
 namespace Internal.StackTraceMetadata
 {
@@ -46,11 +53,27 @@ namespace Internal.StackTraceMetadata
         public static string GetMethodNameFromStartAddressIfAvailable(IntPtr methodStartAddress)
         {
             IntPtr moduleStartAddress = RuntimeAugments.GetOSModuleFromPointer(methodStartAddress);
-            int rva = (int)(methodStartAddress.ToInt64() - moduleStartAddress.ToInt64());
-            
-            return _perModuleMethodNameResolverHashtable
-                .GetOrCreateValue(moduleStartAddress)
-                .GetMethodNameFromRvaIfAvailable(rva);
+            int rva = (int)((nuint)methodStartAddress - (nuint)moduleStartAddress);
+            foreach (TypeManagerHandle handle in ModuleList.Enumerate())
+            {
+                if (handle.OsModuleBase == moduleStartAddress)
+                {
+                    string name = _perModuleMethodNameResolverHashtable.GetOrCreateValue(handle.GetIntPtrUNSAFE()).GetMethodNameFromRvaIfAvailable(rva);
+                    if (name != null)
+                        return name;
+                }
+            }
+
+            // We haven't found information in the stack trace metadata tables, but maybe reflection will have this
+            if (ReflectionExecution.TryGetMethodMetadataFromStartAddress(methodStartAddress,
+                out MetadataReader reader,
+                out TypeDefinitionHandle typeHandle,
+                out MethodHandle methodHandle))
+            {
+                return MethodNameFormatter.FormatMethodName(reader, typeHandle, methodHandle);
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -169,7 +192,11 @@ namespace Internal.StackTraceMetadata
                 uint rvaToTokenMapBlobSize;
                 
                 if (nativeFormatModuleInfo.TryFindBlob(
+#if PROJECTN
                         (int)ReflectionMapBlob.BlobIdStackTraceEmbeddedMetadata,
+#else
+                        (int)ReflectionMapBlob.EmbeddedMetadata,
+#endif
                         out metadataBlob,
                         out metadataBlobSize) &&
                     nativeFormatModuleInfo.TryFindBlob(
@@ -182,7 +209,7 @@ namespace Internal.StackTraceMetadata
                     // RVA to token map consists of pairs of integers (method RVA - token)
                     int rvaToTokenMapEntryCount = (int)(rvaToTokenMapBlobSize / (2 * sizeof(int)));
                     _methodRvaToTokenMap = new Dictionary<int, int>(rvaToTokenMapEntryCount);
-                    PopulateRvaToTokenMap((int *)rvaToTokenMapBlob, rvaToTokenMapEntryCount);
+                    PopulateRvaToTokenMap(handle, (int *)rvaToTokenMapBlob, rvaToTokenMapEntryCount);
                 }
             }
             
@@ -192,11 +219,17 @@ namespace Internal.StackTraceMetadata
             /// </summary>
             /// <param name="rvaToTokenMap">List of RVA - token pairs</param>
             /// <param name="entryCount">Number of the RVA - token pairs in the list</param>
-            private unsafe void PopulateRvaToTokenMap(int *rvaToTokenMap, int entryCount)
+            private unsafe void PopulateRvaToTokenMap(TypeManagerHandle handle, int *rvaToTokenMap, int entryCount)
             {
                 for (int entryIndex = 0; entryIndex < entryCount; entryIndex++)
                 {
+#if PROJECTN
                     int methodRva = rvaToTokenMap[2 * entryIndex + 0];
+#else
+                    int* pRelPtr32 = &rvaToTokenMap[2 * entryIndex + 0];
+                    IntPtr pointer = (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
+                    int methodRva = (int)((nuint)pointer - (nuint)handle.OsModuleBase);
+#endif
                     int token = rvaToTokenMap[2 * entryIndex + 1];
                     _methodRvaToTokenMap[methodRva] = token;
                 }

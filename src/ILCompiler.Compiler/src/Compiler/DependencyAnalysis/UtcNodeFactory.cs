@@ -11,6 +11,7 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.Runtime;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
@@ -58,15 +59,15 @@ namespace ILCompiler
             return null;
         }
 
-        private static MetadataManager PickMetadataManager(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, IEnumerable<ModuleDesc> inputModules, string metadataFile)
+        private static MetadataManager PickMetadataManager(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, IEnumerable<ModuleDesc> inputModules, IEnumerable<ModuleDesc> inputMetadataOnlyAssemblies, string metadataFile)
         {
             if (metadataFile == null)
             {
-                return new EmptyMetadataManager(compilationModuleGroup, context);
+                return new EmptyMetadataManager(context);
             }
             else
             {
-                return new PrecomputedMetadataManager(compilationModuleGroup, context, FindMetadataDescribingModuleInInputSet(inputModules), inputModules, ReadBytesFromFile(metadataFile));
+                return new PrecomputedMetadataManager(compilationModuleGroup, context, FindMetadataDescribingModuleInInputSet(inputModules), inputModules, inputMetadataOnlyAssemblies, ReadBytesFromFile(metadataFile), new UtcStackTraceEmissionPolicy());
             }
         }
 
@@ -76,8 +77,26 @@ namespace ILCompiler
             return new EmptyInteropStubManager(compilationModuleGroup, context, null);
         }
 
-        public UtcNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, IEnumerable<ModuleDesc> inputModules, string metadataFile, string outputFile, UTCNameMangler nameMangler, bool buildMRT, DictionaryLayoutProvider dictionaryLayoutProvider) 
-            : base(context, compilationModuleGroup, PickMetadataManager(context, compilationModuleGroup, inputModules, metadataFile), NewEmptyInteropStubManager(context, compilationModuleGroup), nameMangler, new AttributeDrivenLazyGenericsPolicy(), null, dictionaryLayoutProvider)
+        public UtcNodeFactory(
+            CompilerTypeSystemContext context, 
+            CompilationModuleGroup compilationModuleGroup, 
+            IEnumerable<ModuleDesc> inputModules, 
+            IEnumerable<ModuleDesc> inputMetadataOnlyAssemblies, 
+            string metadataFile, 
+            string outputFile, 
+            UTCNameMangler nameMangler, 
+            bool buildMRT, 
+            DictionaryLayoutProvider dictionaryLayoutProvider,
+            ImportedNodeProvider importedNodeProvider) 
+            : base(context, 
+                  compilationModuleGroup, 
+                  PickMetadataManager(context, compilationModuleGroup, inputModules, inputMetadataOnlyAssemblies, metadataFile), 
+                  NewEmptyInteropStubManager(context, compilationModuleGroup), 
+                  nameMangler, 
+                  new AttributeDrivenLazyGenericsPolicy(), 
+                  null, 
+                  dictionaryLayoutProvider,
+                  importedNodeProvider)
         {
             CreateHostedNodeCaches();
             CompilationUnitPrefix = nameMangler.CompilationUnitPrefix;
@@ -102,19 +121,15 @@ namespace ILCompiler
                 return new GCStaticDescNode(type, true);
             });
 
-            _threadStaticsOffset = new NodeCache<MetadataType, ISymbolNode>((MetadataType type) =>
+            _threadStaticsOffset = new NodeCache<MetadataType, ISortableSymbolNode>((MetadataType type) =>
             {
-                if (CompilationModuleGroup.ContainsType(type))
+                if (CompilationModuleGroup.ContainsType(type) && !(CompilationModuleGroup.ShouldReferenceThroughImportTable(type)))
                 {
                     return new ThreadStaticsOffsetNode(type, this);
                 }
-                else if (CompilationModuleGroup.ShouldReferenceThroughImportTable(type))
-                {
-                    return new ImportedThreadStaticsOffsetNode(type, this);
-                }
                 else
                 {
-                    return new ExternSymbolNode(ThreadStaticsOffsetNode.GetMangledName(NameMangler, type));
+                    return _importedNodeProvider.ImportedThreadStaticOffsetNode(this, type);
                 }
             });
 
@@ -149,6 +164,9 @@ namespace ILCompiler
             graph.AddRoot(GCStaticDescRegion, "GC Static Desc is always generated");
             graph.AddRoot(ThreadStaticsOffsetRegion, "Thread Statics Offset Region is always generated");
             graph.AddRoot(ThreadStaticGCDescRegion, "Thread Statics GC Desc Region is always generated");
+            graph.AddRoot(ImportAddressTablesTable, "Import address tables region");
+
+
             if (Target.IsWindows)
             {
                 // We need 2 delimiter symbols to bound the unboxing stubs region on Windows platforms (these symbols are
@@ -175,16 +193,19 @@ namespace ILCompiler
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticOffsetRegion, ThreadStaticsOffsetRegion, ThreadStaticsOffsetRegion.StartSymbol, ThreadStaticsOffsetRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticGCDescRegion, ThreadStaticGCDescRegion, ThreadStaticGCDescRegion.StartSymbol, ThreadStaticGCDescRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.LoopHijackFlag, LoopHijackFlag, LoopHijackFlag);
+            ReadyToRunHeader.Add(ReadyToRunSectionType.ImportAddressTables, ImportAddressTablesTable, ImportAddressTablesTable.StartSymbol, ImportAddressTablesTable.EndSymbol);
 
             if (!buildMRT)
             {
                 ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticIndex, ThreadStaticsIndex, ThreadStaticsIndex);
             }
 
+
             var commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable", this);
             InteropStubManager.AddToReadyToRunHeader(ReadyToRunHeader, this, commonFixupsTableNode);
             MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader, this, commonFixupsTableNode);
             MetadataManager.AttachToDependencyGraph(graph);
+            ReadyToRunHeader.Add(MetadataManager.BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable), commonFixupsTableNode, commonFixupsTableNode, commonFixupsTableNode.EndSymbol);
         }
 
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
@@ -194,12 +215,12 @@ namespace ILCompiler
                 return new RuntimeImportMethodNode(method);
             }
 
-            if (CompilationModuleGroup.ContainsMethodBody(method))
+            if (CompilationModuleGroup.ContainsMethodBody(method, false))
             {
                 return NonExternMethodSymbol(method, false);
             }
 
-            return new ExternMethodSymbolNode(this, method);
+            return _importedNodeProvider.ImportedMethodCodeNode(this, method, false);
         }
 
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)
@@ -209,12 +230,12 @@ namespace ILCompiler
                 // Unboxing stubs to canonical instance methods need a special unboxing instantiating stub that unboxes
                 // 'this' and also provides an instantiation argument (we do a calling convention conversion).
                 // The unboxing instantiating stub is emitted by UTC.
-                if (CompilationModuleGroup.ContainsMethodBody(method))
+                if (CompilationModuleGroup.ContainsMethodBody(method, true))
                 {
                     return NonExternMethodSymbol(method, true);
                 }
 
-                return new ExternMethodSymbolNode(this, method, true);
+                return _importedNodeProvider.ImportedMethodCodeNode(this, method, true);
             }
             else
             {
@@ -236,7 +257,7 @@ namespace ILCompiler
             CompilationUnitPrefix + "__ThreadStaticGCDescStart", 
             CompilationUnitPrefix + "__ThreadStaticGCDescEnd");
 
-        public ArrayOfEmbeddedDataNode ThreadStaticsOffsetRegion = new ArrayOfEmbeddedDataNode(
+        public ArrayOfEmbeddedDataNode<ThreadStaticsOffsetNode> ThreadStaticsOffsetRegion = new ArrayOfEmbeddedDataNode<ThreadStaticsOffsetNode>(
             CompilationUnitPrefix + "__ThreadStaticOffsetRegionStart",
             CompilationUnitPrefix + "__ThreadStaticOffsetRegionEnd",
             null);
@@ -285,28 +306,24 @@ namespace ILCompiler
             }
         }
 
-        private NodeCache<MetadataType, ISymbolNode> _threadStaticsOffset;
+        private NodeCache<MetadataType, ISortableSymbolNode> _threadStaticsOffset;
 
-        public ISymbolNode TypeThreadStaticsOffsetSymbol(MetadataType type)
+        public ISortableSymbolNode TypeThreadStaticsOffsetSymbol(MetadataType type)
         {
             return _threadStaticsOffset.GetOrAdd(type);            
         }
 
         private NodeCache<MetadataType, ImportedThreadStaticsIndexNode> _importedThreadStaticsIndices;
 
-        public ISymbolNode TypeThreadStaticsIndexSymbol(TypeDesc type)
+        public ISortableSymbolNode TypeThreadStaticsIndexSymbol(MetadataType type)
         {
-            if (CompilationModuleGroup.ContainsType(type))
+            if (CompilationModuleGroup.ContainsType(type) && !CompilationModuleGroup.ShouldReferenceThroughImportTable(type))
             {
                 return ThreadStaticsIndex;
             }
-            else if (CompilationModuleGroup.ShouldReferenceThroughImportTable(type))
-            {
-                return _importedThreadStaticsIndices.GetOrAdd((MetadataType)type);
-            }
             else
             {
-                return ExternSymbol(ThreadStaticsIndexNode.GetMangledName((NameMangler as UTCNameMangler).GetImportedTlsIndexPrefix()));
+                return _importedNodeProvider.ImportedThreadStaticIndexNode(this, type);
             }
         }
 
@@ -322,6 +339,13 @@ namespace ILCompiler
         public StandaloneGCStaticDescRegionNode StandaloneGCStaticDescRegion(GCStaticDescNode staticDesc)
         {
             return _standaloneGCStaticDescs.GetOrAdd(staticDesc);
+        }
+
+        public BlobNode FieldRvaDataBlob(FieldDesc field)
+        {
+            // Use the typical field definition in case this is an instantiated generic type
+            field = field.GetTypicalFieldDefinition();
+            return ReadOnlyDataBlob(NameMangler.GetMangledFieldName(field), ((EcmaField)field).GetFieldRvaData(), Target.PointerSize);
         }
 
         public class UtcDictionaryLayoutProvider : DictionaryLayoutProvider

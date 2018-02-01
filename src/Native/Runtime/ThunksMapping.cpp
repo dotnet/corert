@@ -15,19 +15,14 @@
 
 #ifdef FEATURE_RX_THUNKS
 
-#if defined(USE_PORTABLE_HELPERS)
-static_assert(false, "Cannot use the portable helpers with FEATURE_RX_THUNKS");
-#endif
-
 #ifdef _TARGET_AMD64_
 #define THUNK_SIZE  20
 #elif _TARGET_X86_
 #define THUNK_SIZE  12
 #elif _TARGET_ARM_
 #define THUNK_SIZE  20
-#elif _TARGET_ARM64_
-//ARM64TODO
-#define THUNK_SIZE  0x8000         // This will cause RhpGetNumThunksPerBlock to return 0 for now
+#else
+#define THUNK_SIZE  (2 * OS_PAGE_SIZE) // This will cause RhpGetNumThunksPerBlock to return 0
 #endif
 
 static_assert((THUNK_SIZE % 4) == 0, "Thunk stubs size not aligned correctly. This will cause runtime failures.");
@@ -198,12 +193,10 @@ EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
             *((UInt16*)pCurrentThunkAddress) = 0xbf00;
             pCurrentThunkAddress += 2;
 
-#elif _TARGET_ARM64_
+#else
             UNREFERENCED_PARAMETER(pCurrentDataAddress);
             UNREFERENCED_PARAMETER(pCurrentThunkAddress);
-            /* TODO */ ASSERT_UNCONDITIONALLY("NYI");
-#else
-#error
+            PORTABILITY_ASSERT("RhAllocateThunksMapping");
 #endif
         }
     }
@@ -217,4 +210,58 @@ EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
     return pThunksSection;
 }
 
-#endif      // FEATURE_RX_THUNKS
+#else // FEATURE_RX_THUNKS
+
+COOP_PINVOKE_HELPER(void*, RhpGetThunksBase, ());
+COOP_PINVOKE_HELPER(int, RhpGetNumThunkBlocksPerMapping, ());
+COOP_PINVOKE_HELPER(int, RhpGetNumThunksPerBlock, ());
+COOP_PINVOKE_HELPER(int, RhpGetThunkSize, ());
+COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize, ());
+
+EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
+{
+    static void* pThunksTemplateAddress = NULL;
+
+    void *pThunkMap = NULL;
+
+    int thunkBlocksPerMapping = RhpGetNumThunkBlocksPerMapping();
+    int thunkBlockSize = RhpGetThunkBlockSize();
+    int templateSize = thunkBlocksPerMapping * thunkBlockSize;
+
+    if (pThunksTemplateAddress == NULL)
+    {
+        // First, we use the thunks directly from the thunks template sections in the module until all
+        // thunks in that template are used up.
+        pThunksTemplateAddress = RhpGetThunksBase();
+        pThunkMap = pThunksTemplateAddress;
+    }
+    else
+    {
+        // We've already used the thunks template in the module for some previous thunks, and we 
+        // cannot reuse it here. Now we need to create a new mapping of the thunks section in order to have 
+        // more thunks
+
+        UInt8* pModuleBase = (UInt8*)PalGetModuleHandleFromPointer(pThunksTemplateAddress);
+        int templateRva = (int)((UInt8*)RhpGetThunksBase() - pModuleBase);
+
+        if (!PalAllocateThunksFromTemplate((HANDLE)pModuleBase, templateRva, templateSize, &pThunkMap))
+            return NULL;
+    }
+
+    if (!PalMarkThunksAsValidCallTargets(
+        pThunkMap,
+        RhpGetThunkSize(),
+        RhpGetNumThunksPerBlock(),
+        thunkBlockSize,
+        thunkBlocksPerMapping))
+    {
+        if (pThunkMap != pThunksTemplateAddress)
+            PalFreeThunksFromTemplate(pThunkMap);
+
+        return NULL;
+    }
+
+    return pThunkMap;
+}
+
+#endif // FEATURE_RX_THUNKS

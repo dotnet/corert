@@ -21,6 +21,7 @@ using System.Runtime.Versioning;
 using Internal.Reflection.Core.NonPortable;
 
 using Internal.Runtime;
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -76,7 +77,7 @@ namespace System
         [Intrinsic]
         public Type GetType()
         {
-            return ReflectionCoreNonPortable.GetRuntimeTypeForEEType(EETypePtr);
+            return RuntimeTypeUnifier.GetRuntimeTypeForEEType(EETypePtr);
         }
 
         public virtual String ToString()

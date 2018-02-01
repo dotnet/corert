@@ -6,3 +6,5 @@
 #cmakedefine01 HAVE_MACH_ABSOLUTE_TIME
 #cmakedefine01 HAVE_SCHED_GETCPU
 #cmakedefine01 HAVE_LIBUUID_H
+#cmakedefine01 HAVE_UUID_GENERATE_RANDOM
+#cmakedefine01 HAVE_UUID_GENERATE

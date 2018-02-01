@@ -35,8 +35,10 @@
 // multiple times for different instantiation. 
 // 
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 
 namespace System
 {
@@ -102,6 +104,42 @@ namespace System
                                                     ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
         }
 
+        private static ArgumentException GetWrongKeyTypeArgumentException(object key, Type targetType)
+        {
+            return new ArgumentException(SR.Format(SR.Arg_WrongType, key, targetType), nameof(key));
+        }
+        internal static void ThrowWrongKeyTypeArgumentException(object key, Type targetType)
+        {
+            throw GetWrongKeyTypeArgumentException(key, targetType);
+        }
+
+        private static ArgumentException GetWrongValueTypeArgumentException(object value, Type targetType)
+        {
+            return new ArgumentException(SR.Format(SR.Arg_WrongType, value, targetType), nameof(value));
+        }
+        internal static void ThrowWrongValueTypeArgumentException(object value, Type targetType)
+        {
+            throw GetWrongValueTypeArgumentException(value, targetType);
+        }
+
+        private static ArgumentException GetAddingDuplicateWithKeyArgumentException(object key)
+        {
+            return new ArgumentException(SR.Format(SR.Argument_AddingDuplicate, key));
+        }
+        internal static void ThrowAddingDuplicateWithKeyArgumentException(object key)
+        {
+            throw GetAddingDuplicateWithKeyArgumentException(key);
+        }
+
+        private static KeyNotFoundException GetKeyNotFoundException(object key)
+        {
+            throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
+        }
+        internal static void ThrowKeyNotFoundException(object key)
+        {
+            throw GetKeyNotFoundException(key);
+        }
+
         internal static void ThrowArgumentException(ExceptionResource resource)
         {
             throw new ArgumentException(GetResourceString(resource));
@@ -118,16 +156,7 @@ namespace System
 
         internal static void ThrowArgumentException_Argument_InvalidArrayType()
         {
-            throw new ArgumentException(GetResourceString(ExceptionResource.Argument_InvalidArrayType));
-        }
-
-        private static ArgumentException GetWrongValueTypeArgumentException(object value, Type targetType)
-        {
-            return new ArgumentException(SR.Format(SR.Arg_WrongType, value, targetType), nameof(value));
-        }
-        internal static void ThrowWrongValueTypeArgumentException(object value, Type targetType)
-        {
-            throw GetWrongValueTypeArgumentException(value, targetType);
+            throw new ArgumentException(SR.Argument_InvalidArrayType);
         }
 
         internal static void ThrowArgumentNullException(ExceptionArgument argument)
@@ -135,30 +164,76 @@ namespace System
             throw new ArgumentNullException(GetArgumentName(argument));
         }
 
-        internal static void ThrowObjectDisposedException(string objectName, ExceptionResource resource)
-        {
-            throw new ObjectDisposedException(objectName, GetResourceString(resource));
-        }
-
         internal static void ThrowInvalidOperationException(ExceptionResource resource)
         {
             throw new InvalidOperationException(GetResourceString(resource));
         }
 
+        internal static void ThrowInvalidOperationException_OutstandingReferences()
+        {
+            throw new InvalidOperationException(SR.Memory_OutstandingReferences);
+        }
+
         internal static void ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion()
         {
-            throw new InvalidOperationException(GetResourceString(ExceptionResource.InvalidOperation_EnumFailedVersion));
+            throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
         }
 
         internal static void ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen()
         {
-            throw new InvalidOperationException(GetResourceString(ExceptionResource.InvalidOperation_EnumOpCantHappen));
+            throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
         }
 
+        internal static void ThrowInvalidOperationException_InvalidOperation_EnumNotStarted()
+        {
+            throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
+        }
+
+        internal static void ThrowInvalidOperationException_InvalidOperation_EnumEnded()
+        {
+            throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
+        }
+
+        internal static void ThrowInvalidOperationException_InvalidOperation_NoValue()
+        {
+            throw new InvalidOperationException(SR.InvalidOperation_NoValue);
+        }
+
+        internal static void ThrowSerializationException(ExceptionResource resource)
+        {
+            throw new SerializationException(GetResourceString(resource));
+        }
+
+        internal static void ThrowObjectDisposedException_MemoryDisposed()
+        {
+            throw new ObjectDisposedException("OwnedMemory<T>", SR.MemoryDisposed);
+        }
+
+        internal static void ThrowNotSupportedException()
+        {
+            throw new NotSupportedException();
+        }
 
         internal static void ThrowNotSupportedException(ExceptionResource resource)
         {
             throw new NotSupportedException(GetResourceString(resource));
+        }
+
+        private static Exception GetArraySegmentCtorValidationFailedException(Array array, int offset, int count)
+        {
+            if (array == null)
+                return new ArgumentNullException(nameof(array));
+            if (offset < 0)
+                return new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (count < 0)
+                return new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+
+            Debug.Assert(array.Length - offset < count);
+            return new ArgumentException(SR.Argument_InvalidOffLen);
+        }
+        internal static void ThrowArraySegmentCtorValidationFailedExceptions(Array array, int offset, int count)
+        {
+            throw GetArraySegmentCtorValidationFailedException(array, offset, count);
         }
 
         // Allow nulls for reference types and Nullable<U>, but not for value types.
@@ -176,14 +251,20 @@ namespace System
         {
             switch (argument)
             {
+                case ExceptionArgument.obj:
+                    return "obj";
+                case ExceptionArgument.dictionary:
+                    return "dictionary";
                 case ExceptionArgument.array:
                     return "array";
+                case ExceptionArgument.info:
+                    return "info";
+                case ExceptionArgument.key:
+                    return "key";
                 case ExceptionArgument.text:
                     return "text";
                 case ExceptionArgument.values:
                     return "values";
-                case ExceptionArgument.obj:
-                    return "obj";
                 case ExceptionArgument.value:
                     return "value";
                 case ExceptionArgument.startIndex:
@@ -216,11 +297,18 @@ namespace System
                     return "action";
                 case ExceptionArgument.comparison:
                     return "comparison";
+                case ExceptionArgument.exceptions:
+                    return "exceptions";
+                case ExceptionArgument.exception:
+                    return "exception";
                 case ExceptionArgument.pointer:
                     return "pointer";
+                case ExceptionArgument.start:
+                    return "start";
+                case ExceptionArgument.format:
+                    return "format";
                 default:
-                    Debug.Assert(false,
-                        "The enum value is not defined, please check the ExceptionArgument Enum.");
+                    Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
             }
         }
@@ -235,10 +323,6 @@ namespace System
                     return SR.ArgumentOutOfRange_Count;
                 case ExceptionResource.Arg_ArrayPlusOffTooSmall:
                     return SR.Arg_ArrayPlusOffTooSmall;
-                case ExceptionResource.Memory_ThrowIfDisposed:
-                    return SR.Memory_ThrowIfDisposed;
-                case ExceptionResource.Memory_OutstandingReferences:
-                    return SR.Memory_OutstandingReferences;
                 case ExceptionResource.NotSupported_ReadOnlyCollection:
                     return SR.NotSupported_ReadOnlyCollection;
                 case ExceptionResource.Arg_RankMultiDimNotSupported:
@@ -247,8 +331,6 @@ namespace System
                     return SR.Arg_NonZeroLowerBound;
                 case ExceptionResource.ArgumentOutOfRange_ListInsert:
                     return SR.ArgumentOutOfRange_ListInsert;
-                case ExceptionResource.Argument_InvalidArrayType:
-                    return SR.Argument_InvalidArrayType;
                 case ExceptionResource.ArgumentOutOfRange_NeedNonNegNum:
                     return SR.ArgumentOutOfRange_NeedNonNegNum;
                 case ExceptionResource.ArgumentOutOfRange_SmallCapacity:
@@ -257,10 +339,22 @@ namespace System
                     return SR.Argument_InvalidOffLen;
                 case ExceptionResource.ArgumentOutOfRange_BiggerThanCollection:
                     return SR.ArgumentOutOfRange_BiggerThanCollection;
-                case ExceptionResource.InvalidOperation_EnumFailedVersion:
-                    return SR.InvalidOperation_EnumFailedVersion;
-                case ExceptionResource.InvalidOperation_EnumOpCantHappen:
-                    return SR.InvalidOperation_EnumOpCantHappen;
+                case ExceptionResource.Serialization_MissingKeys:
+                    return SR.Serialization_MissingKeys;
+                case ExceptionResource.Serialization_NullKey:
+                    return SR.Serialization_NullKey;
+                case ExceptionResource.NotSupported_KeyCollectionSet:
+                    return SR.NotSupported_KeyCollectionSet;
+                case ExceptionResource.NotSupported_ValueCollectionSet:
+                    return SR.NotSupported_ValueCollectionSet;
+                case ExceptionResource.InvalidOperation_NullArray:
+                    return SR.InvalidOperation_NullArray;
+                case ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted:
+                    return SR.TaskT_TransitionToFinal_AlreadyCompleted;
+                case ExceptionResource.TaskCompletionSourceT_TrySetException_NullException:
+                    return SR.TaskCompletionSourceT_TrySetException_NullException;
+                case ExceptionResource.TaskCompletionSourceT_TrySetException_NoExceptions:
+                    return SR.TaskCompletionSourceT_TrySetException_NoExceptions;
                 default:
                     Debug.Assert(false,
                         "The enum value is not defined, please check the ExceptionResource Enum.");
@@ -274,10 +368,13 @@ namespace System
     // 
     internal enum ExceptionArgument
     {
+        obj,
+        dictionary,
         array,
+        info,
+        key,
         text,
         values,
-        obj,
         value,
         startIndex,
         task,
@@ -294,7 +391,11 @@ namespace System
         count,
         action,
         comparison,
+        exceptions,
+        exception,
         pointer,
+        start,
+        format
     }
 
     //
@@ -305,18 +406,21 @@ namespace System
         ArgumentOutOfRange_Index,
         ArgumentOutOfRange_Count,
         Arg_ArrayPlusOffTooSmall,
-        Memory_ThrowIfDisposed,
-        Memory_OutstandingReferences,
         NotSupported_ReadOnlyCollection,
         Arg_RankMultiDimNotSupported,
         Arg_NonZeroLowerBound,
         ArgumentOutOfRange_ListInsert,
-        Argument_InvalidArrayType,
         ArgumentOutOfRange_NeedNonNegNum,
         ArgumentOutOfRange_SmallCapacity,
         Argument_InvalidOffLen,
         ArgumentOutOfRange_BiggerThanCollection,
-        InvalidOperation_EnumFailedVersion,
-        InvalidOperation_EnumOpCantHappen,
+        Serialization_MissingKeys,
+        Serialization_NullKey,
+        NotSupported_KeyCollectionSet,
+        NotSupported_ValueCollectionSet,
+        InvalidOperation_NullArray,
+        TaskT_TransitionToFinal_AlreadyCompleted,
+        TaskCompletionSourceT_TrySetException_NullException,
+        TaskCompletionSourceT_TrySetException_NoExceptions,
     }
 }

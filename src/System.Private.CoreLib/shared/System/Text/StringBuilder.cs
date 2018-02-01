@@ -7,6 +7,7 @@ using System.Runtime;
 using System.Runtime.Serialization;
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security;
 using System.Threading;
@@ -422,53 +423,12 @@ namespace System.Text
             }
 
             AssertInvariants();
-
-            StringBuilder chunk = this;
-            int sourceEndIndex = startIndex + length;
-
             string result = string.FastAllocateString(length);
-            int curDestIndex = length;
             unsafe
             {
                 fixed (char* destinationPtr = result)
                 {
-                    while (curDestIndex > 0)
-                    {
-                        int chunkEndIndex = sourceEndIndex - chunk.m_ChunkOffset;
-                        if (chunkEndIndex >= 0)
-                        {
-                            chunkEndIndex = Math.Min(chunkEndIndex, chunk.m_ChunkLength);
-
-                            int countLeft = curDestIndex;
-                            int chunkCount = countLeft;
-                            int chunkStartIndex = chunkEndIndex - countLeft;
-                            if (chunkStartIndex < 0)
-                            {
-                                chunkCount += chunkStartIndex;
-                                chunkStartIndex = 0;
-                            }
-                            curDestIndex -= chunkCount;
-
-                            if (chunkCount > 0)
-                            {
-                                // Work off of local variables so that they are stable even in the presence of race conditions
-                                char[] sourceArray = chunk.m_ChunkChars;
-
-                                // Check that we will not overrun our boundaries. 
-                                if ((uint)(chunkCount + curDestIndex) <= (uint)length && (uint)(chunkCount + chunkStartIndex) <= (uint)sourceArray.Length)
-                                {
-                                    fixed (char* sourcePtr = &sourceArray[chunkStartIndex])
-                                        string.wstrcpy(destinationPtr + curDestIndex, sourcePtr, chunkCount);
-                                }
-                                else
-                                {
-                                    throw new ArgumentOutOfRangeException(nameof(chunkCount), SR.ArgumentOutOfRange_Index);
-                                }
-                            }
-                        }
-                        chunk = chunk.m_ChunkPrevious;
-                    }
-
+                    this.CopyTo(startIndex, new Span<char>(destinationPtr, length), length);
                     return result;
                 }
             }
@@ -789,6 +749,79 @@ namespace System.Text
             }
         }
 
+        public StringBuilder Append(StringBuilder value)
+        {
+            if (value != null && value.Length != 0)
+            {
+                return AppendCore(value, 0, value.Length);
+            }
+            return this;
+        }
+
+        public StringBuilder Append(StringBuilder value, int startIndex, int count)
+        {
+            if (startIndex < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+            }
+
+            if (count < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_GenericPositive);
+            }
+
+            if (value == null)
+            {
+                if (startIndex == 0 && count == 0)
+                {
+                    return this;
+                }
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            if (count == 0)
+            {
+                return this;
+            }
+
+            if (count > value.Length - startIndex)
+            {
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+            }
+
+            return AppendCore(value, startIndex, count);
+        }
+
+        private StringBuilder AppendCore(StringBuilder value, int startIndex, int count)
+        {
+            if (value == this)
+                return Append(value.ToString(startIndex, count));
+
+            int newLength = Length + count;
+
+            if ((uint)newLength > (uint)m_MaxCapacity)
+            {
+                throw new ArgumentOutOfRangeException(nameof(Capacity), SR.ArgumentOutOfRange_Capacity);
+            }
+
+            while (count > 0)
+            {
+                int length = Math.Min(m_ChunkChars.Length - m_ChunkLength, count);
+                if (length == 0)
+                {
+                    ExpandByABlock(count);
+                    length = Math.Min(m_ChunkChars.Length - m_ChunkLength, count);
+                }
+                value.CopyTo(startIndex, new Span<char>(m_ChunkChars, m_ChunkLength, length), length);
+
+                m_ChunkLength += length;
+                startIndex += length;
+                count -= length;
+            }
+
+            return this;
+        }
+
         public StringBuilder AppendLine() => Append(Environment.NewLine);
 
         public StringBuilder AppendLine(string value)
@@ -956,11 +989,6 @@ namespace System.Text
 
         public StringBuilder Append(bool value) => Append(value.ToString());
 
-        [CLSCompliant(false)]
-        public StringBuilder Append(sbyte value) => Append(value.ToString());
-
-        public StringBuilder Append(byte value) => Append(value.ToString());
-
         public StringBuilder Append(char value)
         {
             if (m_ChunkLength < m_ChunkChars.Length)
@@ -975,26 +1003,42 @@ namespace System.Text
             return this;
         }
 
-        public StringBuilder Append(short value) => Append(value.ToString());
+        [CLSCompliant(false)]
+        public StringBuilder Append(sbyte value) => AppendSpanFormattable(value);
 
-        public StringBuilder Append(int value) => Append(value.ToString());
+        public StringBuilder Append(byte value) => AppendSpanFormattable(value);
 
-        public StringBuilder Append(long value) => Append(value.ToString());
+        public StringBuilder Append(short value) => AppendSpanFormattable(value);
 
-        public StringBuilder Append(float value) => Append(value.ToString());
+        public StringBuilder Append(int value) => AppendSpanFormattable(value);
 
-        public StringBuilder Append(double value) => Append(value.ToString());
+        public StringBuilder Append(long value) => AppendSpanFormattable(value);
 
-        public StringBuilder Append(decimal value) => Append(value.ToString());
+        public StringBuilder Append(float value) => AppendSpanFormattable(value);
+
+        public StringBuilder Append(double value) => AppendSpanFormattable(value);
+
+        public StringBuilder Append(decimal value) => AppendSpanFormattable(value);
 
         [CLSCompliant(false)]
-        public StringBuilder Append(ushort value) => Append(value.ToString());
+        public StringBuilder Append(ushort value) => AppendSpanFormattable(value);
 
         [CLSCompliant(false)]
-        public StringBuilder Append(uint value) => Append(value.ToString());
+        public StringBuilder Append(uint value) => AppendSpanFormattable(value);
 
         [CLSCompliant(false)]
-        public StringBuilder Append(ulong value) => Append(value.ToString());
+        public StringBuilder Append(ulong value) => AppendSpanFormattable(value);
+
+        private StringBuilder AppendSpanFormattable<T>(T value) where T : ISpanFormattable
+        {
+            if (value.TryFormat(RemainingCurrentChunk, out int charsWritten, format: default, provider: null))
+            {
+                m_ChunkLength += charsWritten;
+                return this;
+            }
+
+            return Append(value.ToString());
+        }
 
         public StringBuilder Append(object value) => (value == null) ? this : Append(value.ToString());
 
@@ -1019,7 +1063,7 @@ namespace System.Text
             {
                 unsafe
                 {
-                    fixed (char* valueChars = &value.DangerousGetPinnableReference())
+                    fixed (char* valueChars = &MemoryMarshal.GetReference(value))
                     {
                         Append(valueChars, value.Length);
                     }
@@ -1261,7 +1305,7 @@ namespace System.Text
             {
                 unsafe
                 {
-                    fixed (char* sourcePtr = &value.DangerousGetPinnableReference())
+                    fixed (char* sourcePtr = &MemoryMarshal.GetReference(value))
                         Insert(index, sourcePtr, value.Length);
                 }
             }
@@ -1453,6 +1497,7 @@ namespace System.Text
                 //
                 Object arg = args[index];
                 String itemFormat = null;
+                ReadOnlySpan<char> itemFormatSpan = default; // used if itemFormat is null
                 // Is current character a colon? which indicates start of formatting parameter.
                 if (ch == ':')
                 {
@@ -1507,13 +1552,13 @@ namespace System.Text
                         if (startPos != pos)
                         {
                             // There was no brace escaping, extract the item format as a single string
-                            itemFormat = format.Substring(startPos, pos - startPos);
+                            itemFormatSpan = format.AsReadOnlySpan().Slice(startPos, pos - startPos);
                         }
                     }
                     else
                     {
                         unescapedItemFormat.Append(format, startPos, pos - startPos);
-                        itemFormat = unescapedItemFormat.ToString();
+                        itemFormatSpan = itemFormat = unescapedItemFormat.ToString();
                         unescapedItemFormat.Clear();
                     }
                 }
@@ -1524,15 +1569,38 @@ namespace System.Text
                 String s = null;
                 if (cf != null)
                 {
+                    if (itemFormatSpan.Length != 0 && itemFormat == null)
+                    {
+                        itemFormat = new string(itemFormatSpan);
+                    }
                     s = cf.Format(itemFormat, arg, provider);
                 }
 
                 if (s == null)
                 {
-                    IFormattable formattableArg = arg as IFormattable;
-
-                    if (formattableArg != null)
+                    // If arg is ISpanFormattable and the beginning doesn't need padding,
+                    // try formatting it into the remaining current chunk.
+                    if (arg is ISpanFormattable spanFormattableArg &&
+                        (leftJustify || width == 0) &&
+                        spanFormattableArg.TryFormat(RemainingCurrentChunk, out int charsWritten, itemFormatSpan, provider))
                     {
+                        m_ChunkLength += charsWritten;
+
+                        // Pad the end, if needed.
+                        int padding = width - charsWritten;
+                        if (leftJustify && padding > 0) Append(' ', padding);
+
+                        // Continue to parse other characters.
+                        continue;
+                    }
+
+                    // Otherwise, fallback to trying IFormattable or calling ToString.
+                    if (arg is IFormattable formattableArg)
+                    {
+                        if (itemFormatSpan.Length != 0 && itemFormat == null)
+                        {
+                            itemFormat = new string(itemFormatSpan);
+                        }
                         s = formattableArg.ToString(itemFormat, provider);
                     }
                     else if (arg != null)
@@ -1607,6 +1675,35 @@ namespace System.Text
                 if (thisChunk.m_ChunkChars[thisChunkIndex] != sbChunk.m_ChunkChars[sbChunkIndex])
                     return false;
             }
+        }
+
+        /// <summary>
+        /// Determines if the contents of this builder are equal to the contents of ReadOnlySpan<char>.
+        /// </summary>
+        /// <param name="value">The ReadOnlySpan{char}.</param>
+        public bool Equals(ReadOnlySpan<char> value)
+        {
+            if (value.Length != Length)
+                return false;
+
+            StringBuilder sbChunk = this;
+            int offset = 0;
+
+            do
+            {
+                int chunk_length = sbChunk.m_ChunkLength;
+                offset += chunk_length;
+
+                ReadOnlySpan<char> chunk = new ReadOnlySpan<char>(sbChunk.m_ChunkChars, 0, chunk_length);
+
+                if (!chunk.Equals(value.Slice(value.Length - offset, chunk_length)))
+                    return false;
+
+                sbChunk = sbChunk.m_ChunkPrevious;
+            } while (sbChunk != null);
+
+            Debug.Assert(offset == Length);
+            return true;
         }
 
         /// <summary>
@@ -2011,7 +2108,7 @@ namespace System.Text
                 }
 
                 fixed (char* sourcePtr = &source[sourceIndex])
-                    fixed (char* destinationPtr = &destination.DangerousGetPinnableReference())
+                    fixed (char* destinationPtr = &MemoryMarshal.GetReference(destination))
                         string.wstrcpy(destinationPtr + destinationIndex, sourcePtr, count);
             }
         }
@@ -2054,6 +2151,13 @@ namespace System.Text
 
             Debug.Assert(result != null);
             return result;
+        }
+
+        /// <summary>Gets a span representing the remaining space available in the current chunk.</summary>
+        private Span<char> RemainingCurrentChunk
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => new Span<char>(m_ChunkChars, m_ChunkLength, m_ChunkChars.Length - m_ChunkLength);
         }
 
         /// <summary>

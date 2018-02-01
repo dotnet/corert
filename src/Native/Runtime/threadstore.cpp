@@ -355,7 +355,7 @@ void ThreadStore::InitiateThreadAbort(Thread* targetThread, Object * threadAbort
     if (initiateAbort)
     {
         PInvokeTransitionFrame* transitionFrame = reinterpret_cast<PInvokeTransitionFrame*>(targetThread->GetTransitionFrame());
-        transitionFrame->m_dwFlags |= PTFF_THREAD_ABORT;
+        transitionFrame->m_Flags |= PTFF_THREAD_ABORT;
     }
 
     ResumeAllThreads(&dummyEvent);
@@ -372,7 +372,7 @@ void ThreadStore::CancelThreadAbort(Thread* targetThread)
     PInvokeTransitionFrame* transitionFrame = reinterpret_cast<PInvokeTransitionFrame*>(targetThread->GetTransitionFrame());
     if (transitionFrame != nullptr)
     {
-        transitionFrame->m_dwFlags &= ~PTFF_THREAD_ABORT;
+        transitionFrame->m_Flags &= ~PTFF_THREAD_ABORT;
     }
 
     targetThread->SetThreadAbortException(nullptr);
@@ -410,11 +410,7 @@ EXTERN_C DECLSPEC_THREAD ThreadBuffer tls_CurrentThread =
     INVALID_HANDLE_VALUE,               // m_hPalThread
     0,                                  // m_ppvHijackedReturnAddressLocation
     0,                                  // m_pvHijackedReturnAddress
-    0,                                  // m_pExInfoStackHead
-    0,                                  // m_pStackLow
-    0,                                  // m_pStackHigh
-    0,                                  // m_pTEB
-    0,                                  // m_uPalThreadIdForLogging
+    0,                                  // all other fields are initialized by zeroes
 };
 
 #endif // !DACCESS_COMPILE

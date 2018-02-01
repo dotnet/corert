@@ -18,7 +18,7 @@ NESTED_ENTRY RhCommonStub, _TEXT, NoHandler
           //      red zone has pointer to the current thunk's data block (data contains 2 pointer values: context + target pointers)
           //      Copy red zone value into r12 so that the PROLOG_PUSH doesn't destroy it
           ldr          r12, [sp, #-4]
-          PROLOG_PUSH  "{r0-r5}"
+          PROLOG_PUSH  "{r0-r4, lr}"
           PROLOG_VPUSH {d0-d7}        // Capture the floating point argument registers
 
           mov          r4, r12
@@ -34,7 +34,7 @@ NESTED_ENTRY RhCommonStub, _TEXT, NoHandler
           // Now load the target address and jump to it.
           ldr          r12, [r4, #POINTER_SIZE]
           EPILOG_VPOP  {d0-d7}
-          EPILOG_POP   "{r0-r5}"
+          EPILOG_POP   "{r0-r4, lr}"
           bx           r12
 
 NESTED_END RhCommonStub, _TEXT
@@ -52,8 +52,10 @@ LEAF_END RhGetCommonStubAddress, _TEXT
 //
 LEAF_ENTRY RhGetCurrentThunkContext, _TEXT
 
+          PROLOG_PUSH   "{r12, lr}"
+
           INLINE_GET_TLS_VAR  tls_thunkData
 
           ldr           r0, [r0]
-          bx            lr
+          EPILOG_POP    "{r12, pc}"
 LEAF_END RhGetCurrentThunkContext, _TEXT

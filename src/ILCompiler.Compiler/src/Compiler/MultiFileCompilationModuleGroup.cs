@@ -40,7 +40,12 @@ namespace ILCompiler
             return true;
         }
 
-        public sealed override bool ContainsMethodBody(MethodDesc method)
+        public sealed override bool ContainsTypeDictionary(TypeDesc type)
+        {
+            return ContainsType(type);
+        }
+
+        public sealed override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)
         {
             if (method.HasInstantiation)
                 return true;
@@ -51,22 +56,27 @@ namespace ILCompiler
         public sealed override bool ContainsMethodDictionary(MethodDesc method)
         {
             Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) != method);
-            return ContainsMethodBody(method);
+            return ContainsMethodBody(method, false);
         }
 
-        public sealed override bool ExportsType(TypeDesc type)
+        public sealed override ExportForm GetExportTypeForm(TypeDesc type)
         {
-            return false;
+            return ExportForm.None;
         }
 
-        public sealed override bool ExportsMethod(MethodDesc method)
+        public sealed override ExportForm GetExportTypeFormDictionary(TypeDesc type)
         {
-            return false;
+            return ExportForm.None;
         }
 
-        public override bool ExportsMethodDictionary(MethodDesc method)
+        public sealed override ExportForm GetExportMethodForm(MethodDesc method, bool unboxingStub)
         {
-            return false;
+            return ExportForm.None;
+        }
+
+        public override ExportForm GetExportMethodDictionaryForm(MethodDesc method)
+        {
+            return ExportForm.None;
         }
 
         private bool IsModuleInCompilationGroup(EcmaModule module)
@@ -114,6 +124,12 @@ namespace ILCompiler
         public override bool ShouldPromoteToFullType(TypeDesc type)
         {
             return ShouldProduceFullVTable(type);
+        }
+
+        public override bool PresenceOfEETypeImpliesAllMethodsOnType(TypeDesc type)
+        {
+            return (type.HasInstantiation || type.IsArray) && ShouldProduceFullVTable(type) && 
+                   type.ConvertToCanonForm(CanonicalFormKind.Specific).IsCanonicalSubtype(CanonicalFormKind.Any);
         }
     }
 }

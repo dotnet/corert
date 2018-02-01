@@ -36,12 +36,12 @@ namespace System.Threading
     /// </para>
     /// </remarks>
     [DebuggerDisplay("IsCancellationRequested = {IsCancellationRequested}")]
-    public struct CancellationToken
+    public readonly struct CancellationToken
     {
         // The backing TokenSource.  
         // if null, it implicitly represents the same thing as new CancellationToken(false).
         // When required, it will be instantiated to reflect this.
-        private CancellationTokenSource m_source;
+        private readonly CancellationTokenSource m_source;
         //!! warning. If more fields are added, the assumptions in CreateLinkedToken may no longer be valid
 
         /* Properties */
@@ -110,18 +110,7 @@ namespace System.Threading
         /// </remarks>
         /// <exception cref="T:System.ObjectDisposedException">The associated <see
         /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
-        public WaitHandle WaitHandle
-        {
-            get
-            {
-                if (m_source == null)
-                {
-                    InitializeDefaultSource();
-                }
-
-                return m_source.WaitHandle;
-            }
-        }
+        public WaitHandle WaitHandle => (m_source ?? CancellationTokenSource.InternalGetStaticSource(false)).WaitHandle;
 
         // public CancellationToken()
         // this constructor is implicit for structs
@@ -484,17 +473,6 @@ namespace System.Threading
         private static void ThrowObjectDisposedException()
         {
             throw new ObjectDisposedException(null, SR.CancellationToken_SourceDisposed);
-        }
-
-        // -----------------------------------
-        // Private helpers
-
-        private void InitializeDefaultSource()
-        {
-            // Lazy is slower, and although multiple threads may try and set m_source repeatedly, the race is benign.
-            // Alternative: LazyInititalizer.EnsureInitialized(ref m_source, ()=>CancellationTokenSource.InternalGetStaticSource(false));
-
-            m_source = CancellationTokenSource.InternalGetStaticSource(false);
         }
     }
 }

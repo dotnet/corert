@@ -113,7 +113,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
 
             // Lets create the IReferenceArrayImpl of the type.
-            return new ReferenceArrayImpl<object>(boxedKeyValuePairs, global::Windows.Foundation.PropertyType.InspectableArray);
+            return new ReferenceArrayImpl<object>(boxedKeyValuePairs, PropertyType.InspectableArray);
         }
 
         public override object GetTarget()

@@ -33,6 +33,9 @@ namespace System
             if (_value == handle._value)
                 return true;
 
+            if (_value == IntPtr.Zero || handle._value == IntPtr.Zero)
+                return false;
+
             RuntimeTypeHandle declaringType1, declaringType2;
             MethodNameAndSignature nameAndSignature1, nameAndSignature2;
             RuntimeTypeHandle[] genericArgs1, genericArgs2;
@@ -68,6 +71,9 @@ namespace System
 
         public override int GetHashCode()
         {
+            if (_value == IntPtr.Zero)
+                return 0;
+
             RuntimeTypeHandle declaringType;
             MethodNameAndSignature nameAndSignature;
             RuntimeTypeHandle[] genericArgs;

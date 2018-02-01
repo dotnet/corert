@@ -5,6 +5,7 @@
 using System;
 
 using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -72,6 +73,17 @@ namespace ILCompiler.DependencyAnalysis
             builder.EmitPointerReloc(factory.PInvokeModuleFixup(_moduleName));
 
             return builder.ToObjectData();
+        }
+
+        protected internal override int ClassCode => -1592006940;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            var compare = string.Compare(_moduleName, ((PInvokeMethodFixupNode)other)._moduleName);
+            if (compare != 0)
+                return compare;
+
+            return string.Compare(_entryPointName, ((PInvokeMethodFixupNode)other)._entryPointName);
         }
     }
 }

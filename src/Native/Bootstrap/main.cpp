@@ -8,7 +8,7 @@
 #include "gcenv.structs.h"
 #include "gcenv.base.h"
 
-#include <stdlib.h> 
+#include <stdlib.h>
 
 #ifndef CPPCODEGEN
 
@@ -85,10 +85,11 @@ static char& __unbox_z = __stop___unbox;
 
 #endif // !CPPCODEGEN
 
+// Do not warn that extern C methods throw exceptions. This is temporary
+// as long as we have unimplemented/throwing APIs in this file.
+#pragma warning(disable:4297)
 
 #ifdef CPPCODEGEN
-
-#pragma warning(disable:4297)
 
 extern "C" Object * RhNewObject(MethodTable * pMT);
 extern "C" Object * RhNewArray(MethodTable * pMT, int32_t elements);
@@ -97,6 +98,7 @@ extern "C" void * RhTypeCast_CheckCast(void * pObject, MethodTable * pMT);
 extern "C" void RhpStelemRef(void * pArray, int index, void * pObj);
 extern "C" void * RhpLdelemaRef(void * pArray, int index, MethodTable * pMT);
 extern "C" __NORETURN void RhpThrowEx(void * pEx);
+extern "C" void RhDebugBreak();
 
 extern "C" Object * __allocate_object(MethodTable * pMT)
 {
@@ -131,6 +133,11 @@ extern "C" void* __ldelema_ref(void * pArray, unsigned idx, MethodTable * type)
 extern "C" void __throw_exception(void * pEx)
 {
     RhpThrowEx(pEx);
+}
+
+extern "C" void __debug_break()
+{
+    RhDebugBreak();
 }
 
 void __range_check_fail()
@@ -238,14 +245,17 @@ extern "C" void RhpUniversalTransition_DebugStepTailCall()
 {
     throw "RhpUniversalTransition_DebugStepTailCall";
 }
-extern "C" void CCWAddRef()
-{
-    throw "CCWAddRef";
-}
 
 void* RtRHeaderWrapper();
 
 #endif // CPPCODEGEN
+
+// This works around System.Private.Interop's references to Interop.Native.
+// This won't be needed once we stop dragging in S.P.Interop for basic p/invoke support.
+extern "C" void CCWAddRef()
+{
+    throw "CCWAddRef";
+}
 
 extern "C" void __fail_fast()
 {
@@ -258,6 +268,7 @@ extern "C" void __fail_fast()
 extern "C" bool RhInitialize();
 extern "C" void RhpEnableConservativeStackReporting();
 extern "C" void RhpShutdown();
+extern "C" void RhSetRuntimeInitializationCallback(int (*fPtr)());
 
 #ifndef CPPCODEGEN
 
@@ -290,13 +301,19 @@ static const pfn c_classlibFunctions[] = {
 
 extern "C" void InitializeModules(void* osModule, void ** modules, int count, void ** pClasslibFunctions, int nClasslibFunctions);
 
+#ifndef CORERT_DLL
+#define CORERT_ENTRYPOINT __managed__Main
 #if defined(_WIN32)
 extern "C" int __managed__Main(int argc, wchar_t* argv[]);
-int __cdecl wmain(int argc, wchar_t* argv[])
 #else
 extern "C" int __managed__Main(int argc, char* argv[]);
-int main(int argc, char* argv[])
 #endif
+#else
+#define CORERT_ENTRYPOINT __managed__Startup
+extern "C" void __managed__Startup();
+#endif // !CORERT_DLL
+
+static int InitializeRuntime()
 {
     if (!RhInitialize())
         return -1;
@@ -306,7 +323,8 @@ int main(int argc, char* argv[])
 #endif // CPPCODEGEN
 
 #ifndef CPPCODEGEN
-    void * osModule = PalGetModuleHandleFromPointer((void*)&__managed__Main);
+    void * osModule = PalGetModuleHandleFromPointer((void*)&CORERT_ENTRYPOINT);
+
     // TODO: pass struct with parameters instead of the large signature of RhRegisterOSModule
     if (!RhRegisterOSModule(
         osModule,
@@ -320,9 +338,31 @@ int main(int argc, char* argv[])
 
 #ifndef CPPCODEGEN
     InitializeModules(osModule, __modules_a, (int)((__modules_z - __modules_a)), (void **)&c_classlibFunctions, _countof(c_classlibFunctions));
+#elif defined _WASM_
+    // WASMTODO: Figure out what to do here. This is a NativeCallable method in the runtime
+    // and we also would have to figure out what to pass for pModuleHeaders
 #else // !CPPCODEGEN
     InitializeModules(nullptr, (void**)RtRHeaderWrapper(), 2, nullptr, 0);
 #endif // !CPPCODEGEN
+
+#ifdef CORERT_DLL
+    // Run startup method immediately for a native library
+    __managed__Startup();
+#endif // CORERT_DLL
+
+    return 0;
+}
+
+#ifndef CORERT_DLL
+#if defined(_WIN32)
+int __cdecl wmain(int argc, wchar_t* argv[])
+#else
+int main(int argc, char* argv[])
+#endif
+{
+    int initval = InitializeRuntime();
+    if (initval != 0)
+        return initval;
 
     int retval;
 #ifdef CPPCODEGEN
@@ -339,8 +379,18 @@ int main(int argc, char* argv[])
         retval = -1;
     }
 #endif
-
     RhpShutdown();
 
     return retval;
 }
+#endif // !CORERT_DLL
+
+#ifdef CORERT_DLL
+static struct InitializeRuntimePointerHelper
+{
+    InitializeRuntimePointerHelper()
+    {
+        RhSetRuntimeInitializationCallback(&InitializeRuntime);
+    }
+} initializeRuntimePointerHelper;
+#endif // CORERT_DLL

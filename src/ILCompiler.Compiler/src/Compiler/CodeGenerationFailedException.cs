@@ -8,7 +8,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler
 {
-    public class CodeGenerationFailedException : Exception
+    public class CodeGenerationFailedException : InternalCompilerErrorException
     {
         private const string MessageText = "Code generation failed";
 

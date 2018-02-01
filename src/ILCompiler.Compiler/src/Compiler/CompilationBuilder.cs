@@ -26,13 +26,14 @@ namespace ILCompiler
         protected VTableSliceProvider _vtableSliceProvider = new LazyVTableSliceProvider();
         protected DictionaryLayoutProvider _dictionaryLayoutProvider = new LazyDictionaryLayoutProvider();
         protected DebugInformationProvider _debugInformationProvider = new DebugInformationProvider();
+        protected DevirtualizationManager _devirtualizationManager = new DevirtualizationManager();
 
         public CompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup, NameMangler nameMangler)
         {
             _context = context;
             _compilationGroup = compilationGroup;
             _nameMangler = nameMangler;
-            _metadataManager = new EmptyMetadataManager(compilationGroup, context);
+            _metadataManager = new EmptyMetadataManager(context);
         }
 
         public CompilationBuilder UseLogger(Logger logger)
@@ -77,6 +78,12 @@ namespace ILCompiler
             return this;
         }
 
+        public CompilationBuilder UseDevirtualizationManager(DevirtualizationManager manager)
+        {
+            _devirtualizationManager = manager;
+            return this;
+        }
+
         public CompilationBuilder UseDebugInfoProvider(DebugInformationProvider provider)
         {
             _debugInformationProvider = provider;
@@ -85,10 +92,9 @@ namespace ILCompiler
 
         public abstract CompilationBuilder UseBackendOptions(IEnumerable<string> options);
 
-        protected DependencyAnalyzerBase<NodeFactory> CreateDependencyGraph(NodeFactory factory)
+        protected DependencyAnalyzerBase<NodeFactory> CreateDependencyGraph(NodeFactory factory, IComparer<DependencyNodeCore<NodeFactory>> comparer = null)
         {
-            // TODO: add graph sorter when we go multi-threaded
-            return _dependencyTrackingLevel.CreateDependencyGraph(factory);
+            return _dependencyTrackingLevel.CreateDependencyGraph(factory, comparer);
         }
 
         public ILScannerBuilder GetILScannerBuilder(CompilationModuleGroup compilationGroup = null)

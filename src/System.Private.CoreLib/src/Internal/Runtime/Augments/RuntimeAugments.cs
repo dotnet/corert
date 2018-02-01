@@ -35,6 +35,7 @@ using Volatile = System.Threading.Volatile;
 
 namespace Internal.Runtime.Augments
 {
+    [ReflectionBlocked]
     public static class RuntimeAugments
     {
         /// <summary>
@@ -214,12 +215,7 @@ namespace Internal.Runtime.Augments
 
         public static int GetLoadedModules(TypeManagerHandle[] resultArray)
         {
-            return (int)RuntimeImports.RhGetLoadedModules(resultArray);
-        }
-
-        public static int GetLoadedOSModules(IntPtr[] resultArray)
-        {
-            return (int)RuntimeImports.RhGetLoadedOSModules(resultArray);
+            return Internal.Runtime.CompilerHelpers.StartupCodeHelpers.GetLoadedModules(resultArray);
         }
 
         public static IntPtr GetOSModuleFromPointer(IntPtr pointerVal)
@@ -592,10 +588,7 @@ namespace Internal.Runtime.Augments
         [Intrinsic]
         public static RuntimeTypeHandle GetCanonType(CanonTypeKind kind)
         {
-#if CORERT
-            // Compiler needs to expand this. This is not expressible in IL.
-            throw new NotSupportedException();
-#else
+#if PROJECTN
             switch (kind)
             {
                 case CanonTypeKind.NormalCanon:
@@ -606,6 +599,9 @@ namespace Internal.Runtime.Augments
                     Debug.Assert(false);
                     return default(RuntimeTypeHandle);
             }
+#else
+            // Compiler needs to expand this. This is not expressible in IL.
+            throw new NotSupportedException();
 #endif
         }
 
@@ -811,14 +807,9 @@ namespace Internal.Runtime.Augments
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IntPtr RuntimeCacheLookup(IntPtr context, IntPtr signature, int registeredResolutionFunction, object contextObject, out IntPtr auxResult)
+        public static IntPtr RuntimeCacheLookup(IntPtr context, IntPtr signature, RuntimeObjectFactory factory, object contextObject, out IntPtr auxResult)
         {
-            return TypeLoaderExports.RuntimeCacheLookupInCache(context, signature, registeredResolutionFunction, contextObject, out auxResult);
-        }
-
-        public static int RegisterResolutionFunctionWithRuntimeCache(IntPtr functionPointer)
-        {
-            return TypeLoaderExports.RegisterResolutionFunction(functionPointer);
+            return TypeLoaderExports.RuntimeCacheLookupInCache(context, signature, factory, contextObject, out auxResult);
         }
 
         //==============================================================================================
@@ -1084,7 +1075,7 @@ namespace Internal.Runtime.Augments
 
         public static bool FileExists(string path)
         {
-            return InternalFile.Exists(path);
+            return Internal.IO.File.Exists(path);
         }
 
         public static string GetLastResortString(RuntimeTypeHandle typeHandle)

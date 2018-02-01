@@ -14,19 +14,7 @@ namespace Internal.Runtime.CompilerHelpers
         // ProjectN doesn't have access to a convenient always-reflection-enabled type to use.
         // (We can't use the <Module> type because of IL2IL toolchain limitations.)
 
-#if CORERT
-        private static RuntimeTypeHandle s_entryAssemblyType;
-
-        internal static void InitializeEntryAssembly(RuntimeTypeHandle entryAssemblyType)
-        {
-            s_entryAssemblyType = entryAssemblyType;
-        }
-
-        internal static Assembly GetEntryAssembly()
-        {
-            return Type.GetTypeFromHandle(s_entryAssemblyType).Assembly;
-        }
-#else
+#if PROJECTN
         private static string s_entryAssemblyName;
 
         // The only reason why this is public is because the Project N IL2IL toolchain will remove this method
@@ -45,6 +33,18 @@ namespace Internal.Runtime.CompilerHelpers
                 return Assembly.Load(s_entryAssemblyName);
             }
             return null;
+        }
+#else
+        private static RuntimeTypeHandle s_entryAssemblyType;
+
+        internal static void InitializeEntryAssembly(RuntimeTypeHandle entryAssemblyType)
+        {
+            s_entryAssemblyType = entryAssemblyType;
+        }
+
+        internal static Assembly GetEntryAssembly()
+        {
+            return Type.GetTypeFromHandle(s_entryAssemblyType).Assembly;
         }
 #endif
     }

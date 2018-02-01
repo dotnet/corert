@@ -10,7 +10,6 @@ set(COMMON_RUNTIME_SOURCES
     EHHelpers.cpp
     event.cpp
     FinalizerHelpers.cpp
-    gcdump.cpp
     GCHelpers.cpp
     gcheaputilities.cpp
     GCMemoryHelpers.cpp
@@ -21,14 +20,12 @@ set(COMMON_RUNTIME_SOURCES
     HandleTableHelpers.cpp
     MathHelpers.cpp
     MiscHelpers.cpp
-    module.cpp
     TypeManager.cpp
     ObjectLayout.cpp
     OptionalFieldsRuntime.cpp
     portable.cpp
     profheapwalkhelper.cpp
     RestrictedCallouts.cpp
-    RHCodeMan.cpp
     RhConfig.cpp
     RuntimeInstance.cpp
     RWLock.cpp
@@ -42,6 +39,11 @@ set(COMMON_RUNTIME_SOURCES
     thread.cpp
     threadstore.cpp
     UniversalTransitionHelpers.cpp
+
+    # ProjectN only
+    # gcdump.cpp
+    # module.cpp
+    # RHCodeMan.cpp
 
     ../gc/gccommon.cpp
     ../gc/gceewks.cpp
@@ -98,7 +100,14 @@ if(WIN32)
 else()
 
   include_directories(unix)
+  if(NOT CLR_CMAKE_PLATFORM_ARCH_WASM)
+    include_directories(../libunwind/include)
+  else()
+    include_directories($ENV{EMSCRIPTEN/system/lib/libcxxabi/include})
+  endif()
+
   include_directories(../libunwind/include)
+  include_directories(../libunwind)
 
   # Disable building _Unwind_XXX style APIs of libunwind, since we don't use them.
   add_definitions(-D_LIBUNWIND_DISABLE_ZERO_COST_APIS=1)
@@ -113,6 +122,7 @@ else()
   list(APPEND FULL_RUNTIME_SOURCES
     unix/HardwareExceptions.cpp
     unix/UnixContext.cpp
+    unix/UnwindHelpers.cpp
     unix/UnixNativeCodeManager.cpp
     ../libunwind/src/Unwind-EHABI.cpp
     ../libunwind/src/libunwind.cpp
@@ -133,6 +143,8 @@ else()
     set(ARCH_SOURCES_DIR arm)
   elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
     set(ARCH_SOURCES_DIR i386)
+  elseif(CLR_CMAKE_PLATFORM_ARCH_WASM)
+    set(ARCH_SOURCES_DIR wasm)
   endif()
 
   list(APPEND RUNTIME_SOURCES_ARCH_ASM
@@ -212,5 +224,8 @@ convert_to_absolute_path(PORTABLE_RUNTIME_SOURCES ${PORTABLE_RUNTIME_SOURCES})
 
 convert_to_absolute_path(RUNTIME_SOURCES_ARCH_ASM ${RUNTIME_SOURCES_ARCH_ASM})
 
-add_subdirectory(Full)
+if(NOT CLR_CMAKE_PLATFORM_ARCH_WASM)
+  add_subdirectory(Full)
+endif()
+
 add_subdirectory(Portable)

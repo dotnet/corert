@@ -6,6 +6,7 @@ using System;
 
 using Internal.NativeFormat;
 using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -31,8 +32,6 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
 
         public override bool StaticDependenciesAreComputed => true;
-
-        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => !factory.MetadataManager.SupportsReflection;
 
         public int Offset => 0;
 
@@ -96,5 +95,8 @@ namespace ILCompiler.DependencyAnalysis
             _endSymbol.SetSymbolOffset(blob.Length);
             return blob;
         }
+
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+        protected internal override int ClassCode => (int)ObjectNodeOrder.ResourceIndexNode;
     }
 }

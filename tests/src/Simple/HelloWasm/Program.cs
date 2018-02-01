@@ -4,24 +4,32 @@
 
 using System;
 using System.Runtime.InteropServices;
+using CpObj;
 
 internal static class Program
 {
     private static int staticInt;
+    [ThreadStatic]
+    private static int threadStaticInt;
     private static unsafe void Main(string[] args)
     {
         Add(1, 2);
-      
         int tempInt = 0;
         (*(&tempInt)) = 9;
-    
         if(tempInt == 9)
         {
             PrintLine("Hello from C#!");
         }
-        
+
+        TestClass tempObj = new TestDerivedClass(1337);
+        tempObj.TestMethod("Hello");
+        tempObj.TestVirtualMethod("Hello");
+        tempObj.TestVirtualMethod2("Hello");
+
         TwoByteStr str = new TwoByteStr() { first = 1, second = 2 };
         TwoByteStr str2 = new TwoByteStr() { first = 3, second = 4 };
+        *(&str) = str2;
+        str2 = *(&str);
 
         if (str2.second == 4)
         {
@@ -32,6 +40,38 @@ internal static class Program
         if (staticInt == 5)
         {
             PrintLine("static int field test: Ok.");
+        }
+
+        if(threadStaticInt == 0)
+        {
+            PrintLine("thread static int initial value field test: Ok.");
+        }
+
+        threadStaticInt = 9;
+        if(threadStaticInt == 9)
+        {
+            PrintLine("thread static int field test: Ok.");
+        }
+
+        var boxedInt = (object)tempInt;
+        if(((int)boxedInt) == 9)
+        {
+            PrintLine("box test: Ok.");
+        }
+
+        var boxedStruct = (object)new BoxStubTest { Value = "Boxed Stub Test: Ok." };
+        PrintLine(boxedStruct.ToString());
+
+        int subResult = tempInt - 1;
+        if (subResult == 8)
+        {
+            PrintLine("Subtraction Test: Ok.");
+        }
+
+        int divResult = tempInt / 3;
+        if (divResult == 3)
+        {
+            PrintLine("Division Test: Ok.");
         }
 
         var not = Not(0xFFFFFFFF) == 0x00000000;
@@ -57,6 +97,7 @@ internal static class Program
         {
             PrintLine("shiftRight test: Ok.");
         }
+
         var unsignedShift = UnsignedShift(0xFFFFFFFFu, 4) == 0x0FFFFFFFu;
         if (unsignedShift)
         {
@@ -80,6 +121,72 @@ internal static class Program
         {
             PrintLine("SwitchOpDefault test: Ok.");
         }
+
+        var cpObjTestA = new TestValue { Field = 1234 };
+        var cpObjTestB = new TestValue { Field = 5678 };
+        CpObjTest.CpObj(ref cpObjTestB, ref cpObjTestA);
+        if (cpObjTestB.Field == 1234)
+        {
+            PrintLine("CpObj test: Ok.");
+        }
+
+        Func<int> staticDelegate = StaticDelegateTarget;
+        if(staticDelegate() == 7)
+        {
+            PrintLine("Static delegate test: Ok.");
+        }
+
+        tempObj.TestInt = 8;
+        Func<int> instanceDelegate = tempObj.InstanceDelegateTarget;
+        if(instanceDelegate() == 8)
+        {
+            PrintLine("Instance delegate test: Ok.");
+        }
+
+        Action virtualDelegate = tempObj.VirtualDelegateTarget;
+        virtualDelegate();
+
+        var arrayTest = new BoxStubTest[] { new BoxStubTest { Value = "Hello" }, new BoxStubTest { Value = "Array" }, new BoxStubTest { Value = "Test" } };
+        foreach(var element in arrayTest)
+            PrintLine(element.Value);
+
+        arrayTest[1].Value = "Array load/store test: Ok.";
+        PrintLine(arrayTest[1].Value);
+
+        var largeArrayTest = new long[] { Int64.MaxValue, 0, Int64.MinValue, 0 };
+        if(largeArrayTest[0] == Int64.MaxValue &&
+            largeArrayTest[1] == 0 &&
+            largeArrayTest[2] == Int64.MinValue &&
+            largeArrayTest[3] == 0)
+        {
+            PrintLine("Large array load/store test: Ok.");
+        }
+
+        var smallArrayTest = new long[] { Int16.MaxValue, 0, Int16.MinValue, 0 };
+        if(smallArrayTest[0] == Int16.MaxValue &&
+            smallArrayTest[1] == 0 &&
+            smallArrayTest[2] == Int16.MinValue &&
+            smallArrayTest[3] == 0)
+        {
+            PrintLine("Small array load/store test: Ok.");
+        }
+
+        IntPtr returnedIntPtr = NewobjValueType();
+        if (returnedIntPtr.ToInt32() == 3)
+        {
+            PrintLine("Newobj value type test: Ok.");
+        }
+
+        StackallocTest();
+
+        IntToStringTest();
+
+        PrintLine("Done");
+    }
+
+    private static int StaticDelegateTarget()
+    {         
+        return 7;
     }
 
     private static unsafe void PrintString(string s)
@@ -96,7 +203,7 @@ internal static class Program
         }
     }
     
-    private static void PrintLine(string s)
+    public static void PrintLine(string s)
     {
         PrintString(s);
         PrintString("\n");
@@ -149,6 +256,30 @@ internal static class Program
         }
     }
 
+    private static IntPtr NewobjValueType()
+    {
+        return new IntPtr(3);
+    }
+
+    private unsafe static void StackallocTest()
+    {
+        int* intSpan = stackalloc int[2];
+        intSpan[0] = 3;
+        intSpan[1] = 7;
+
+        if (intSpan[0] == 3 && intSpan[1] == 7)
+        {
+            PrintLine("Stackalloc test: Ok.");
+        }
+    }
+
+    private static void IntToStringTest()
+    {
+        PrintLine("Int to String Test: Ok if next line says 42.");
+        string intString = 42.ToString();
+        PrintLine(intString);
+    }
+
     [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
 }
@@ -157,5 +288,82 @@ public struct TwoByteStr
 {
     public byte first;
     public byte second;
+}
+
+public struct BoxStubTest
+{
+    public string Value;
+    public override string ToString()
+    {
+        return Value;
+    }
+
+    public string GetValue()
+    {
+        Program.PrintLine("BoxStubTest.GetValue called");
+        Program.PrintLine(Value);
+        return Value;
+    }
+}
+
+public class TestClass
+{
+    public string TestString { get; set; }
+    public int TestInt { get; set; }
+
+    public TestClass(int number)
+    {
+        if(number != 1337)
+            throw new Exception();
+    }
+
+    public void TestMethod(string str)
+    {
+        TestString = str;
+        if (TestString == str)
+            Program.PrintLine("Instance method call test: Ok.");
+    }
+    public virtual void TestVirtualMethod(string str)
+    {
+        Program.PrintLine("Virtual Slot Test: Ok If second");
+    }
+	
+	public virtual void TestVirtualMethod2(string str)
+    {
+        Program.PrintLine("Virtual Slot Test 2: Ok");
+    }
+
+    public int InstanceDelegateTarget()
+    {
+        return TestInt;
+    }
+
+    public virtual void VirtualDelegateTarget()
+    {
+        Program.PrintLine("Virtual delegate incorrectly dispatched to base.");
+    }
+}
+
+public class TestDerivedClass : TestClass
+{
+    public TestDerivedClass(int number) : base(number)
+    {
+
+    }
+    public override void TestVirtualMethod(string str)
+    {
+        Program.PrintLine("Virtual Slot Test: Ok");
+        base.TestVirtualMethod(str);
+    }
+    
+    public override string ToString()
+    {
+        throw new Exception();
+    }
+
+    public override void VirtualDelegateTarget()
+    {
+        Program.PrintLine("Virtual Delegate Test: Ok");
+    }
 }
 

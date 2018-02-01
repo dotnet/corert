@@ -39,7 +39,10 @@ namespace ILCompiler
             switch (trackingLevel)
             {
                 case DependencyTrackingLevel.None:
-                    return new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(factory, comparer);
+                    if (EventSourceLogStrategy<NodeFactory>.IsEventSourceEnabled)
+                        return new DependencyAnalyzer<EventSourceLogStrategy<NodeFactory>, NodeFactory>(factory, comparer);
+                    else
+                        return new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(factory, comparer);
 
                 case DependencyTrackingLevel.First:
                     return new DependencyAnalyzer<FirstMarkLogStrategy<NodeFactory>, NodeFactory>(factory, comparer);

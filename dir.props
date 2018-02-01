@@ -135,7 +135,7 @@
     <!-- Use the shared tools host and runtime for testing -->
     <TestHostRootPath Condition="'$(TestHostRootPath)' == ''">$(DotnetCliPath)</TestHostRootPath>
 
-    <PackageOutputPath Condition="'$(PackageOutputPath)'==''">$(PackageOutputRoot)$(OSPlatformConfig)/$(MSBuildProjectName)/</PackageOutputPath>
+    <PackageOutputPath Condition="'$(PackageOutputPath)'==''">$(PackageOutputRoot)$(BinDirConfiguration)/</PackageOutputPath>
     <SymbolPackageOutputPath Condition="'$(SymbolPackageOutputPath)'==''">$(PackageOutputPath)symbols/</SymbolPackageOutputPath>
 
     <!-- Folder where we will drop the Nuget package for the toolchain -->
@@ -172,6 +172,13 @@
       <PropertyGroup>
         <TargetsWindows>true</TargetsWindows>
         <PackageTargetRuntime>win-corert</PackageTargetRuntime>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(Platform)'=='wasm'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsWindows>false</TargetsWindows>
+        <PackageTargetRuntime>unix-corert</PackageTargetRuntime>
       </PropertyGroup>
     </When>
     <When Condition="'$(OSGroup)'=='Unix'">
@@ -214,7 +221,7 @@
   </Choose>
 
   <!-- Set up various other constants -->
-  <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+  <PropertyGroup>
     <DefineConstants>CORERT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsWindows)'=='true'">
@@ -240,6 +247,9 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm64'">
     <DefineConstants>ARM64;BIT64;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'wasm'">
+    <DefineConstants>WASM;BIT32;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup>

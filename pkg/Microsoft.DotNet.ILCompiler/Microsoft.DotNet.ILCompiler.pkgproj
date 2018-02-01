@@ -1,37 +1,41 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <PackageTargetRuntime/>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <BaseLinePackageDependencies>false</BaseLinePackageDependencies>
     <PackagePlatforms>x64;</PackagePlatforms>
     <PreventImplementationReference>true</PreventImplementationReference>
+    <RestorePackages>true</RestorePackages>
     <SkipValidatePackage>true</SkipValidatePackage>
-
+    <IncludeSymbolsInPackage Condition="'$(IncludeSymbolsInPackage)' == ''">true</IncludeSymbolsInPackage>
+    <!-- Mark this package as a lineup (meta-) package -->
+    <IsLineupPackage Condition="'$(IsLineupPackage)' == ''">true</IsLineupPackage>
+    <!-- Override this property so that the package name won't look like runtime.[RID].[TFM].[ID] -->
+    <PackageTargetRuntime></PackageTargetRuntime>
   </PropertyGroup>
+  
+  <!-- The package references are used to generate a runtimes.json for the meta-package-->
+  <ItemGroup>
+    <ProjectReference Include="TargetSpecific\Microsoft.DotNet.ILCompiler.pkgproj">
+      <AdditionalProperties>%(ProjectReference.AdditionalProperties);PackageTargetRuntime=win-x64</AdditionalProperties>
+    </ProjectReference>
+    <ProjectReference Include="TargetSpecific\Microsoft.DotNet.ILCompiler.pkgproj">
+      <AdditionalProperties>%(ProjectReference.AdditionalProperties);PackageTargetRuntime=linux-x64</AdditionalProperties>
+    </ProjectReference>
+    <ProjectReference Include="TargetSpecific\Microsoft.DotNet.ILCompiler.pkgproj">
+      <AdditionalProperties>%(ProjectReference.AdditionalProperties);PackageTargetRuntime=osx-x64</AdditionalProperties>
+    </ProjectReference>
+  </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(PackageSourceDirectory)ILCompiler\src\ILCompiler.csproj"/>
-    <ProjectReference Include="$(PackageSourceDirectory)ILCompiler.Compiler\src\ILCompiler.Compiler.csproj"/>
-    <ProjectReference Include="$(PackageSourceDirectory)ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj"/>
-    <ProjectReference Include="$(PackageSourceDirectory)ILCompiler.MetadataTransform\src\ILCompiler.MetadataTransform.csproj"/>
-    <ProjectReference Include="$(PackageSourceDirectory)ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj"/>
-    <ProjectReference Include="$(PackageSourceDirectory)ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj"/>
+    <File Include="$(PackageSourceDirectory)\BuildIntegration\*">
+      <TargetPath>build</TargetPath>
+    </File>
 
-    <Dependency Include="Microsoft.DotNet.ObjectWriter">
-      <Version>1.0.13-prerelease-00001</Version>
-    </Dependency>
-    <Dependency Include="Microsoft.NetCore.Jit">
-      <Version>1.2.0-beta-24815-03</Version>
-    </Dependency>
-    <Dependency Include="System.Collections.Immutable">
-      <Version>1.2.0</Version>
-    </Dependency>
-
-
+    <!-- This assembly is needed so the build tasks can be resolved and run from the metapackage -->
+    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\tools\\ILCompiler.Build.Tasks.dll">
+      <TargetPath>tools</TargetPath>
+    </File>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\src\dir.targets" />

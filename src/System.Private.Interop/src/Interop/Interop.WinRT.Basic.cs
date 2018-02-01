@@ -67,6 +67,7 @@ namespace System.Runtime.InteropServices
 
     public static partial class ExternalInterop
     {
+#if ENABLE_MIN_WINRT
         [DllImport(Libraries.CORE_WINRT)]
         [McgGeneratedNativeCallCodeAttribute]
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
@@ -80,6 +81,7 @@ namespace System.Runtime.InteropServices
                                                                        uint length,
                                                                        HSTRING_HEADER* phstringHeader,
                                                                        void* hstring);
+#endif
 
         [DllImport(Libraries.CORE_COM)]
         [McgGeneratedNativeCallCodeAttribute]
@@ -157,6 +159,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
+#if ENABLE_MIN_WINRT
         internal static unsafe void RoGetActivationFactory(string className, ref Guid iid, out IntPtr ppv)
         {
             fixed (char* unsafe_className = className)
@@ -186,6 +189,7 @@ namespace System.Runtime.InteropServices
                 }
             }
         }
+#endif
 
         public static unsafe int CoGetContextToken(out IntPtr ppToken)
         {

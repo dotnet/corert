@@ -84,5 +84,38 @@ namespace ILCompiler.DependencyAnalysis
 
             return objData.ToObjectData();
         }
+
+        protected internal override int ClassCode => 1887049331;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            NativeLayoutSignatureNode otherSignature = (NativeLayoutSignatureNode)other;
+            if (_identity is MethodDesc)
+            {
+                if (otherSignature._identity is TypeDesc || otherSignature._identity is FieldDesc)
+                    return -1;
+                return comparer.Compare((MethodDesc)_identity, (MethodDesc)((NativeLayoutSignatureNode)other)._identity);
+            }
+            else if (_identity is TypeDesc)
+            {
+                if (otherSignature._identity is MethodDesc)
+                    return 1;
+
+                if (otherSignature._identity is FieldDesc)
+                    return -1;
+
+                return comparer.Compare((TypeDesc)_identity, (TypeDesc)((NativeLayoutSignatureNode)other)._identity);
+            }
+            else if (_identity is FieldDesc)
+            {
+                if (otherSignature._identity is MethodDesc || otherSignature._identity is TypeDesc)
+                    return 1;
+                return comparer.Compare((FieldDesc)_identity, (FieldDesc)((NativeLayoutSignatureNode)other)._identity);
+            }
+            else
+            {
+                throw new NotSupportedException("New type system entity needs a comparison");
+            }
+        }
     }
 }

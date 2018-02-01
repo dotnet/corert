@@ -102,7 +102,7 @@ namespace ILCompiler.DependencyAnalysis
 
             dependencyList.Add(factory.VTable(closestDefType), "VTable");
 
-            if (closestDefType.HasInstantiation)
+            if (closestDefType.HasInstantiation && factory.MetadataManager.SupportsReflection)
             {
                 TypeDesc canonType = _type.ConvertToCanonForm(CanonicalFormKind.Specific);
                 TypeDesc canonClosestDefType = closestDefType.ConvertToCanonForm(CanonicalFormKind.Specific);
@@ -198,5 +198,7 @@ namespace ILCompiler.DependencyAnalysis
             if (!CreationAllowed(type))
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
         }
+
+        protected internal override int ClassCode => 590142654;
     }
 }

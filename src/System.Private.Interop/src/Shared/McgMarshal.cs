@@ -1150,10 +1150,10 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static IntPtr GetCurrentCalleeOpenStaticDelegateFunctionPointer()
         {
-#if RHTESTCL || CORECLR || CORERT
-            throw new NotSupportedException();
-#else
+#if !RHTESTCL && PROJECTN
             return PInvokeMarshal.GetCurrentCalleeOpenStaticDelegateFunctionPointer();
+#else
+            throw new NotSupportedException();
 #endif
         }
 
@@ -1162,10 +1162,10 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static T GetCurrentCalleeDelegate<T>() where T : class // constraint can't be System.Delegate
         {
-#if RHTESTCL || CORECLR || CORERT
-            throw new NotSupportedException();
-#else
+#if !RHTESTCL && PROJECTN
             return PInvokeMarshal.GetCurrentCalleeDelegate<T>();
+#else
+            throw new NotSupportedException();
 #endif
         }
 #endregion

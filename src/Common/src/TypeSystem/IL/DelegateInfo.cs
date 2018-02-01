@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+
 using Internal.IL.Stubs;
 using Internal.TypeSystem;
 
@@ -23,9 +25,9 @@ namespace Internal.IL
         private DelegateThunkCollection _thunks;
 
         /// <summary>
-        /// Gets the Delegate.GetThunk override implementation for this delegate type.
+        /// Gets the synthetic methods that support this delegate type.
         /// </summary>
-        public MethodDesc GetThunkMethod
+        public IEnumerable<MethodDesc> Methods
         {
             get
             {
@@ -34,7 +36,15 @@ namespace Internal.IL
                     Interlocked.CompareExchange(ref _getThunkMethod, new DelegateGetThunkMethodOverride(this), null);
                 }
 
-                return _getThunkMethod;
+                yield return _getThunkMethod;
+
+                DelegateThunkCollection thunks = Thunks;
+                for (DelegateThunkKind kind = 0; kind < DelegateThunkCollection.MaxThunkKind; kind++)
+                {
+                    MethodDesc thunk = thunks[kind];
+                    if (thunk != null)
+                        yield return thunk;
+                }
             }
         }
 
@@ -93,6 +103,8 @@ namespace Internal.IL
     /// </summary>
     public class DelegateThunkCollection
     {
+        public const DelegateThunkKind MaxThunkKind = DelegateThunkKind.ObjectArrayThunk + 1;
+
         private MethodDesc _openStaticThunk;
         private MethodDesc _multicastThunk;
         private MethodDesc _closedStaticThunk;

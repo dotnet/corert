@@ -23,6 +23,7 @@
     <FileToInclude Include="System.Linq.Expressions" />
     <FileToInclude Include="System.Reflection.Primitives" />
     <FileToInclude Include="System.Runtime.InteropServices" />
+    <FileToInclude Include="System.Text.RegularExpressions" />
 
     <FileToInclude Include="System.Private.Reflection.Metadata.Ecma335" />
   </ItemGroup>

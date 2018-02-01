@@ -111,14 +111,16 @@ namespace ILCompiler.DependencyAnalysis
 
         public IEnumerable<TypeGVMEntryInfo> ScanForGenericVirtualMethodEntries()
         {
-            foreach (var method in _associatedType.GetMethods())
+            foreach (MethodDesc decl in _associatedType.EnumAllVirtualSlots())
             {
-                if (!method.IsVirtual || !method.HasInstantiation)
+                // Non-Generic virtual methods are tracked by an orthogonal mechanism.
+                if (!decl.HasInstantiation)
                     continue;
 
-                MethodDesc slotDecl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method);
-                Debug.Assert(slotDecl != null);
-                yield return new TypeGVMEntryInfo(slotDecl, method, null);
+                MethodDesc impl = _associatedType.FindVirtualFunctionTargetMethodOnObjectType(decl);
+
+                if (impl.OwningType == _associatedType)
+                    yield return new TypeGVMEntryInfo(decl, impl, null);
             }
         }
 

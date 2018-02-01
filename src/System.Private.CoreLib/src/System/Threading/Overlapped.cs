@@ -28,6 +28,8 @@ using System.Runtime.ConstrainedExecution;
 using System.Diagnostics;
 using System.Collections.Concurrent;
 
+using Internal.Runtime.CompilerServices;
+
 namespace System.Threading
 {
     #region class _IOCompletionCallback
@@ -129,7 +131,7 @@ namespace System.Threading
             m_iocbHelper = null;
             m_overlapped = null;
             m_userObject = null;
-            Debug.Assert(m_pinSelf.IsNull(), "OverlappedData has not been freed: m_pinSelf");
+            Debug.Assert(m_pinSelf == IntPtr.Zero, "OverlappedData has not been freed: m_pinSelf");
             m_pinSelf = IntPtr.Zero;
             // Reuse m_pinnedData array
             m_nativeOverlapped = default(NativeOverlapped);
@@ -137,7 +139,7 @@ namespace System.Threading
 
         internal unsafe NativeOverlapped* Pack(IOCompletionCallback iocb, Object userData)
         {
-            if (!m_pinSelf.IsNull())
+            if (m_pinSelf != IntPtr.Zero)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_Overlapped_Pack);
             }
@@ -149,7 +151,7 @@ namespace System.Threading
 
         internal unsafe NativeOverlapped* UnsafePack(IOCompletionCallback iocb, Object userData)
         {
-            if (!m_pinSelf.IsNull())
+            if (m_pinSelf != IntPtr.Zero)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_Overlapped_Pack);
             }
@@ -212,7 +214,7 @@ namespace System.Threading
         private void FreeNativeOverlapped()
         {
             IntPtr pinSelf = m_pinSelf;
-            if (!pinSelf.IsNull())
+            if (pinSelf != IntPtr.Zero)
             {
                 if (Interlocked.CompareExchange(ref m_pinSelf, IntPtr.Zero, pinSelf) == pinSelf)
                 {

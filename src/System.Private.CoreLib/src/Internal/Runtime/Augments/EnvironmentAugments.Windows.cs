@@ -60,6 +60,9 @@ namespace Internal.Runtime.Augments
                         // The error message from Win32 is "The filename or extension is too long",
                         // which is not accurate.
                         throw new ArgumentException(SR.Argument_LongEnvVarValue);
+                    case Interop.Errors.ERROR_NOT_ENOUGH_MEMORY:
+                    case Interop.Errors.ERROR_NO_SYSTEM_RESOURCES:
+                        throw new OutOfMemoryException(Interop.Kernel32.GetMessage(errorCode));
                     default:
                         throw new ArgumentException(Interop.Kernel32.GetMessage(errorCode));
                 }
