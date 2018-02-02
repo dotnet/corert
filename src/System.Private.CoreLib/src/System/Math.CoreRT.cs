@@ -20,7 +20,7 @@ namespace System
         [Intrinsic]
         public static float Abs(float value)
         {
-            return RuntimeImports.fabsf(value);
+            return (float)RuntimeImports.fabs(value);
         }
 
         [Intrinsic]
@@ -36,21 +36,9 @@ namespace System
         }
 
         [Intrinsic]
-        public static double Acosh(double d)
-        {
-            return RuntimeImports.acosh(d);
-        }
-
-        [Intrinsic]
         public static double Asin(double d)
         {
             return RuntimeImports.asin(d);
-        }
-
-        [Intrinsic]
-        public static double Asinh(double d)
-        {
-            return RuntimeImports.asinh(d);
         }
 
         [Intrinsic]
@@ -61,20 +49,8 @@ namespace System
 
         [Intrinsic]
         public static double Atan2(double y, double x)
-        {
+        {          
             return RuntimeImports.atan2(y, x);
-        }
-
-        [Intrinsic]
-        public static double Atanh(double d)
-        {
-            return RuntimeImports.atanh(d);
-        }
-
-        [Intrinsic]
-        public static double Cbrt(double d)
-        {
-            return RuntimeImports.cbrt(d);
         }
 
         [Intrinsic]
@@ -97,7 +73,7 @@ namespace System
 
         [Intrinsic]
         public static double Exp(double d)
-        {
+        {  
             return RuntimeImports.exp(d);
         }
 

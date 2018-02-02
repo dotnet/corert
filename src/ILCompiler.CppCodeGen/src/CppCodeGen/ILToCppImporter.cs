@@ -817,7 +817,9 @@ namespace Internal.IL
 
         private void ImportBreak()
         {
-            throw new NotImplementedException("Opcode: break");
+            AppendLine();
+            Append("__debug_break()");
+            AppendSemicolon();
         }
 
         private void ImportLoadVar(int index, bool argument)
@@ -2382,6 +2384,8 @@ namespace Internal.IL
             var index = _stack.Pop();
             var arrayPtr = _stack.Pop();
 
+            // TODO: type check, unless readonly prefix was applied
+
             // Range check
             AppendLine();
             Append("__range_check(");
@@ -2637,7 +2641,7 @@ namespace Internal.IL
 
         private void ImportReadOnlyPrefix()
         {
-            throw new NotImplementedException();
+            _pendingPrefix |= Prefix.ReadOnly;
         }
 
         private void TriggerCctor(TypeDesc type)

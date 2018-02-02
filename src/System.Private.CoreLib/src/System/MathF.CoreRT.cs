@@ -17,142 +17,123 @@ namespace System
 {
     public static partial class MathF
     {
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Acos(float x)
         {
-            return RuntimeImports.acosf(x);
+            return (float)Math.Acos(x);
         }
 
-        [Intrinsic]
-        public static float Acosh(float x)
-        {
-            return RuntimeImports.acoshf(x);
-        }
-
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Asin(float x)
         {
-            return RuntimeImports.asinf(x);
+            return (float)Math.Asin(x);
         }
 
-        [Intrinsic]
-        public static float Asinh(float x)
-        {
-            return RuntimeImports.asinhf(x);
-        }
-
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Atan(float x)
         {
-            return RuntimeImports.atanf(x);
+            return (float)Math.Atan(x);
         }
 
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Atan2(float y, float x)
         {
-            return RuntimeImports.atan2f(y, x);
+            return (float)Math.Atan2(y, x);
         }
 
-        [Intrinsic]
-        public static float Atanh(float x)
-        {
-            return RuntimeImports.atanhf(x);
-        }
-
-        [Intrinsic]
-        public static float Cbrt(float x)
-        {
-            return RuntimeImports.cbrtf(x);
-        }
-
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Ceiling(float x)
         {
-            return RuntimeImports.ceilf(x);
+            return (float)Math.Ceiling(x);
         }
 
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Cos(float x)
         {
-            return RuntimeImports.cosf(x);
+            return (float)Math.Cos(x);
         }
 
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Cosh(float x)
         {
-            return RuntimeImports.coshf(x);
+            return (float)Math.Cosh(x);
         }
 
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Exp(float x)
         {
-            return RuntimeImports.expf(x);
+            return (float)Math.Exp(x);
         }
 
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Floor(float x)
         {
-            return RuntimeImports.floorf(x);
+            return (float)Math.Floor(x);
         }
 
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Log(float x)
         {
-            return RuntimeImports.logf(x);
+            return (float)Math.Log(x);
         }
 
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Log10(float x)
         {
-            return RuntimeImports.log10f(x);
+            return (float)Math.Log10(x);
         }
 
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Pow(float x, float y)
         {
-            return RuntimeImports.powf(x, y);
+            return (float)Math.Pow(x, y);
         }
 
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Sin(float x)
         {
-            return RuntimeImports.sinf(x);
+            return (float)Math.Sin(x);
         }
 
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Sinh(float x)
         {
-            return RuntimeImports.sinhf(x);
+            return (float)Math.Sinh(x);
         }
 
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Sqrt(float x)
         {
-            return RuntimeImports.sqrtf(x);
+            return (float)Math.Sqrt(x);
         }
 
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Tan(float x)
         {
-            return RuntimeImports.tanf(x);
+            return (float)Math.Tan(x);
         }
 
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Tanh(float x)
         {
-            return RuntimeImports.tanhf(x);
+            return (float)Math.Tanh(x);
         }
 
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static float FMod(float x, float y)
         {
-            return RuntimeImports.fmodf(x, y);
+            return (float)RuntimeImports.fmod(x, y);
         }
 
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe float ModF(float x, float* intptr)
         {
-            return RuntimeImports.modff(x, intptr);
+            //todo : https://github.com/dotnet/corert/issues/3167
+            double d = x;
+            double r = RuntimeImports.modf(d, &d);
+
+            *intptr = (float)d;
+            return (float)r;
         }
     }
 }

@@ -1083,16 +1083,6 @@ namespace Internal.Runtime.Augments
             return typeHandle.LastResortToString;
         }
 
-        public static void RhpSetHighLevelDebugFuncEvalHelper(IntPtr highLevelDebugFuncEvalHelper)
-        {
-            RuntimeImports.RhpSetHighLevelDebugFuncEvalHelper(highLevelDebugFuncEvalHelper);
-        }
-
-        public static void RhpSetHighLevelDebugFuncEvalAbortHelper(IntPtr highLevelDebugFuncEvalAbortHelper)
-        {
-            RuntimeImports.RhpSetHighLevelDebugFuncEvalAbortHelper(highLevelDebugFuncEvalAbortHelper);
-        }
-
         public static void RhpSendCustomEventToDebugger(IntPtr payload, int length)
         {
             RuntimeImports.RhpSendCustomEventToDebugger(payload, length);

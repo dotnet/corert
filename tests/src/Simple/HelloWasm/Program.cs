@@ -62,6 +62,18 @@ internal static class Program
         var boxedStruct = (object)new BoxStubTest { Value = "Boxed Stub Test: Ok." };
         PrintLine(boxedStruct.ToString());
 
+        int subResult = tempInt - 1;
+        if (subResult == 8)
+        {
+            PrintLine("Subtraction Test: Ok.");
+        }
+
+        int divResult = tempInt / 3;
+        if (divResult == 3)
+        {
+            PrintLine("Division Test: Ok.");
+        }
+
         var not = Not(0xFFFFFFFF) == 0x00000000;
         if (not)
         {
@@ -159,6 +171,16 @@ internal static class Program
             PrintLine("Small array load/store test: Ok.");
         }
 
+        IntPtr returnedIntPtr = NewobjValueType();
+        if (returnedIntPtr.ToInt32() == 3)
+        {
+            PrintLine("Newobj value type test: Ok.");
+        }
+
+        StackallocTest();
+
+        IntToStringTest();
+
         CastingTestClass castingTest = new DerivedCastingTestClass1();
         if (((DerivedCastingTestClass1)castingTest).GetValue() == 1 && !(castingTest is DerivedCastingTestClass2))
         {
@@ -184,8 +206,7 @@ internal static class Program
     }
 
     private static int StaticDelegateTarget()
-    {
-         
+    {         
         return 7;
     }
 
@@ -254,6 +275,30 @@ internal static class Program
           default:
             return 0;
         }
+    }
+
+    private static IntPtr NewobjValueType()
+    {
+        return new IntPtr(3);
+    }
+
+    private unsafe static void StackallocTest()
+    {
+        int* intSpan = stackalloc int[2];
+        intSpan[0] = 3;
+        intSpan[1] = 7;
+
+        if (intSpan[0] == 3 && intSpan[1] == 7)
+        {
+            PrintLine("Stackalloc test: Ok.");
+        }
+    }
+
+    private static void IntToStringTest()
+    {
+        PrintLine("Int to String Test: Ok if next line says 42.");
+        string intString = 42.ToString();
+        PrintLine(intString);
     }
 
     [DllImport("*")]

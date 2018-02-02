@@ -97,8 +97,6 @@ struct EHClause
     void* m_pTargetType;
 };
 
-// Constants used with RhpGetClasslibFunction, to indicate which classlib function
-// we are interested in. 
 // Note: make sure you change the def in System\Runtime\InternalCalls.cs if you change this!
 enum class ClasslibFunctionId
 {
@@ -109,6 +107,8 @@ enum class ClasslibFunctionId
     CheckStaticClassConstruction = 4,
     GetSystemArrayEEType = 5,
     OnFirstChanceException = 6,
+    DebugFuncEvalHelper = 7,
+    DebugFuncEvalAbortHelper = 8,
 };
 
 enum class AssociatedDataFlags : unsigned char
