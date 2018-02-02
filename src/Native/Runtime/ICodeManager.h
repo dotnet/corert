@@ -97,6 +97,7 @@ struct EHClause
     void* m_pTargetType;
 };
 
+// Note: make sure you change the def in System\Runtime\InternalCalls.cs if you change this!
 enum class ClasslibFunctionId
 {
     GetRuntimeException = 0,

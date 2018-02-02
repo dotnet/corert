@@ -184,16 +184,16 @@ ICodeManager * RuntimeInstance::FindCodeManagerByAddress(PTR_VOID pvAddress)
 // Find the code manager containing the given address, which might be a return address from a managed function. The
 // address may be to another managed function, or it may be to an unmanaged function. The address may also refer to 
 // an EEType.
-ICodeManager * RuntimeInstance::FindCodeManagerForClasslibFunction(void * address)
+ICodeManager * RuntimeInstance::FindCodeManagerForClasslibFunction(PTR_VOID address)
 {
     // Try looking up the code manager assuming the address is for code first. This is expected to be most common.
-    ICodeManager * pCodeManager = this->FindCodeManagerByAddress(address);
+    ICodeManager * pCodeManager = FindCodeManagerByAddress(address);
     if (pCodeManager != NULL)
         return pCodeManager;
 
     // Less common, we will look for the address in any of the sections of the module.  This is slower, but is 
     // necessary for EEType pointers and jump stubs.
-    Module * pModule = this->FindModuleByAddress(address);
+    Module * pModule = FindModuleByAddress(address);
     if (pModule != NULL)
         return pModule;
 
@@ -202,7 +202,7 @@ ICodeManager * RuntimeInstance::FindCodeManagerForClasslibFunction(void * addres
     return NULL;
 }
 
-void * RuntimeInstance::GetClasslibFunctionFromCodeAddress(void * address, ClasslibFunctionId functionId)
+void * RuntimeInstance::GetClasslibFunctionFromCodeAddress(PTR_VOID address, ClasslibFunctionId functionId)
 {
     // Find the code manager for the given address, which is an address into some managed module. It could
     // be code, or it could be an EEType. No matter what, it's an address into a managed module in some non-Rtm
@@ -218,7 +218,7 @@ void * RuntimeInstance::GetClasslibFunctionFromCodeAddress(void * address, Class
     return pCodeManager->GetClasslibFunction(functionId);
 }
 
-#endif
+#endif // DACCESS_COMPILE
 
 PTR_UInt8 RuntimeInstance::GetTargetOfUnboxingAndInstantiatingStub(PTR_VOID ControlPC)
 {
@@ -617,22 +617,22 @@ void RuntimeInstance::Destroy()
 
 bool RuntimeInstance::ShouldHijackLoopForGcStress(UIntNative CallsiteIP)
 {
-#if defined(FEATURE_GC_STRESS) & !defined(DACCESS_COMPILE)
+#ifdef FEATURE_GC_STRESS
     return ShouldHijackForGcStress(CallsiteIP, htLoop);
-#else // FEATURE_GC_STRESS & !DACCESS_COMPILE
+#else // FEATURE_GC_STRESS
     UNREFERENCED_PARAMETER(CallsiteIP);
     return false;
-#endif // FEATURE_GC_STRESS & !DACCESS_COMPILE
+#endif // FEATURE_GC_STRESS
 }
 
 bool RuntimeInstance::ShouldHijackCallsiteForGcStress(UIntNative CallsiteIP)
 {
-#if defined(FEATURE_GC_STRESS) & !defined(DACCESS_COMPILE)
+#ifdef FEATURE_GC_STRESS
     return ShouldHijackForGcStress(CallsiteIP, htCallsite);
-#else // FEATURE_GC_STRESS & !DACCESS_COMPILE
+#else // FEATURE_GC_STRESS
     UNREFERENCED_PARAMETER(CallsiteIP);
     return false;
-#endif // FEATURE_GC_STRESS & !DACCESS_COMPILE
+#endif // FEATURE_GC_STRESS
 }
 
 // This method should only be called during DllMain for modules with GcStress enabled.  The locking done by 
@@ -955,4 +955,4 @@ COOP_PINVOKE_HELPER(PTR_UInt8, RhGetThreadLocalStorageForDynamicType, (UInt32 uO
     return pCurrentThread->AllocateThreadLocalStorageForDynamicType(uOffset, tlsStorageSize, numTlsCells);
 }
 
-#endif
+#endif // DACCESS_COMPILE

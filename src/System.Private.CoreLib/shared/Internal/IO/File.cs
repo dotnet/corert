@@ -2,18 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Diagnostics;
 using System.Security;
+using System.IO;
 
-namespace System.IO
+namespace Internal.IO
 {
-    internal static partial class InternalFile
+    //
+    // Subsetted clone of System.IO.File for internal runtime use.
+    // Keep in sync with https://github.com/dotnet/corefx/tree/master/src/System.IO.FileSystem.
+    //
+    internal static partial class File
     {
         // Tests if a file exists. The result is true if the file
         // given by the specified path exists; otherwise, the result is
         // false.  Note that if path describes a directory,
         // Exists will return true.
-        public static bool Exists(String path)
+        public static bool Exists(string path)
         {
             try
             {
@@ -42,6 +48,30 @@ namespace System.IO
             catch (UnauthorizedAccessException) { }
 
             return false;
+        }
+
+        public static byte[] ReadAllBytes(string path)
+        {
+            // bufferSize == 1 used to avoid unnecessary buffer in FileStream
+            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1))
+            {
+                long fileLength = fs.Length;
+                if (fileLength > int.MaxValue)
+                    throw new IOException(SR.IO_FileTooLong2GB);
+
+                int index = 0;
+                int count = (int)fileLength;
+                byte[] bytes = new byte[count];
+                while (count > 0)
+                {
+                    int n = fs.Read(bytes, index, count);
+                    if (n == 0)
+                        throw Error.GetEndOfFile();
+                    index += n;
+                    count -= n;
+                }
+                return bytes;
+            }
         }
     }
 }

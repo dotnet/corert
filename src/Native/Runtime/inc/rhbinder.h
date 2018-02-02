@@ -206,21 +206,20 @@ struct ModuleHeader
 #ifndef RHDUMP
     // Macro to generate an inline accessor for well known methods (these are all TEXT-based RRAs since they
     // point to code).
-#define DEFINE_WELL_KNOWN_METHOD(_name)                                                                                                                                                   \
-__pragma(warning(push))                                                                                                                                                                   \
-__pragma(warning(disable:4127))                                                                                                                                                           \
-    inline PTR_VOID Get_##_name()                                                                                                                                                         \
-    {                                                                                                                                                                                     \
-        if (WKM_##_name >= MAX_WELL_KNOWN_METHODS)                                                                                                                                        \
-        {                                                                                                                                                                                 \
-            return ExtraWellKnownMethods[WKM_##_name - MAX_WELL_KNOWN_METHODS] == NULL_RRA ? NULL : RegionPtr[TEXT_REGION] + ExtraWellKnownMethods[WKM_##_name - MAX_WELL_KNOWN_METHODS]; \
-        }                                                                                                                                                                                 \
-        else                                                                                                                                                                              \
-        {                                                                                                                                                                                 \
-            return WellKnownMethods[WKM_##_name] == NULL_RRA ? NULL : RegionPtr[TEXT_REGION] + WellKnownMethods[WKM_##_name];                                                             \
-        }                                                                                                                                                                                 \
-    }                                                                                                                                                                                     \
-__pragma(warning(pop))
+#define DEFINE_WELL_KNOWN_METHOD(_name)                                                                                     \
+    inline PTR_VOID Get_##_name()                                                                                           \
+    {                                                                                                                       \
+        unsigned int index = (unsigned int)WKM_##_name;                                                                     \
+        if (index >= MAX_WELL_KNOWN_METHODS)                                                                                \
+        {                                                                                                                   \
+            index = index - MAX_WELL_KNOWN_METHODS;                                                                         \
+            return ExtraWellKnownMethods[index] == NULL_RRA ? NULL : RegionPtr[TEXT_REGION] + ExtraWellKnownMethods[index]; \
+        }                                                                                                                   \
+        else                                                                                                                \
+        {                                                                                                                   \
+            return WellKnownMethods[index] == NULL_RRA ? NULL : RegionPtr[TEXT_REGION] + WellKnownMethods[index];           \
+        }                                                                                                                   \
+    }
 #include "WellKnownMethodList.h"
 #undef DEFINE_WELL_KNOWN_METHOD
 #endif // !RHDUMP

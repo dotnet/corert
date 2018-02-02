@@ -61,6 +61,11 @@ namespace System.Runtime.InteropServices
         {
             return PInvokeMarshal.PtrToStringAnsi(ptr);
         }
+
+        public static unsafe String PtrToStringAnsi(IntPtr ptr, int len)
+        {
+            return PInvokeMarshal.PtrToStringAnsi(ptr, len);
+        }
 #endif
     }
 }

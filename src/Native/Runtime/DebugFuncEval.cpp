@@ -6,7 +6,7 @@
 #include "CommonTypes.h"
 #include "DebugFuncEval.h"
 #include "rhassert.h"
-#include "rwlock.h"
+#include "RWLock.h"
 #include "slist.h"
 #include "RuntimeInstance.h"
 
