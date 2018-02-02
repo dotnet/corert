@@ -154,7 +154,6 @@ private:
     ICodeManager * FindCodeManagerForClasslibFunction(PTR_VOID address);
 
 public:
-
     class ModuleIterator
     {
         ReaderWriterLock::ReadHolder    m_readHolder;

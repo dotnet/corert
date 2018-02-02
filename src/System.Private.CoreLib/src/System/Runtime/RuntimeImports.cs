@@ -773,6 +773,8 @@ namespace System.Runtime
         }
 #endif
 
+        [Intrinsic]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "floor")]
         internal static extern double floor(double x);
 
