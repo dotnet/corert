@@ -10,7 +10,7 @@
 export TestFolderName=$1
 export TestFileName=$(basename ${TestFolderName})
 export TestRootDir=${CoreRT_TestRoot}/CoreFX
-
+export LogDir=$2
 #
 # We're only interested in referencing the xunit runner - the test dlls will be imported by the test wrapper project
 #
@@ -30,7 +30,7 @@ fi
 
 # Copy the artefacts we need to compile and run the xunit exe
 cp -ar ${CoreRT_TestRoot}/CoreFX/runtest/CoreFXTestHarness/. ${TestFolderName}
-__exitcode=$?
+export __exitcode=$?
 if [ ${__exitcode} != 0 ];
 then
     exit ${__exitcode}
@@ -44,16 +44,16 @@ sed -i "s/\*Application\*/${TestFileName}/g" ${TestFolderName}/default.rd.xml
 #${__dotnetclipath}/dotnet restore  
 
 echo ${CoreRT_CliBinDir}/dotnet publish "/p:IlcPath=${CoreRT_ToolchainDir}" "/p:DebugSymbols=false" "/p:Configuration=${CoreRT_BuildType}" "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" /p:DisableFrameworkLibGeneration=true /p:TestRootDir=${TestRootDir} /p:ExecutableName=${TestExecutable} ${TestFolderName}/Test.csproj 
-${CoreRT_CliBinDir}/dotnet restore "/p:IlcPath=${CoreRT_ToolchainDir}" "/p:DebugSymbols=false" "/p:Configuration=${CoreRT_BuildType}" "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" /p:DisableFrameworkLibGeneration=true /p:TestRootDir=${TestRootDir} /p:ExecutableName=${TestExecutable} ${TestFolderName}/Test.csproj 
 
-${CoreRT_CliBinDir}/dotnet build "/p:IlcPath=${CoreRT_ToolchainDir}" "/p:DebugSymbols=false" "/p:Configuration=${CoreRT_BuildType}" "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" /p:DisableFrameworkLibGeneration=true /p:TestRootDir=${TestRootDir} /p:ExecutableName=${TestExecutable} "/p:OutputPath=${TestFolderName}/native" ${TestFolderName}/Test.csproj 
-__exitcode=$?
+${CoreRT_CliBinDir}/dotnet publish "/p:IlcPath=${CoreRT_ToolchainDir}" "/p:DebugSymbols=false" "/p:Configuration=${CoreRT_BuildType}" "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" /p:DisableFrameworkLibGeneration=true /p:TestRootDir=${TestRootDir} /p:ExecutableName=${TestExecutable} "/p:OutputPath=/${TestFolderName}/" ${TestFolderName}/Test.csproj 
+export __exitcode=$?
 if [ ${__exitcode} != 0 ];
 then
     exit ${__exitcode}
 fi
 
-${CoreRT_CliBinDir}/dotnet ${TestFolderName}/native/${TestExecutable}.exe ${TestFileName}.dll -xml res.xml
+chmod +x ${TestFolderName}/publish/${TestExecutable} 
+${TestFolderName}/publish/${TestExecutable} ${TestFolderName}/${TestFileName}.dll -xml ${LogDir}/${TestExecutable}.xml
+export __exitcode=$?
 
-
-exit 0
+exit ${__exitcode}

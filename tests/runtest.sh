@@ -232,22 +232,23 @@ run_corefx_tests()
     FXCustomTestLauncher=${CoreRT_TestRoot}/CoreFX/corerun
     XunitTestBinBase=${CoreRT_TestExtRepo_CoreFX}
     XunitLogDir=${__LogDir}/CoreFX
+    if [ ! -d "${XunitLogDir}" ]; then
+      mkdir ${XunitLogDir}
+    fi
+
     pushd ${CoreRT_TestRoot}/CoreFX/runtest
 
     # TODO Add single test/target test support; add exclude tests argument
     ./runtest.sh --testRootDir=${XunitTestBinBase} --logdir=${XunitLogDir} --testLauncher=${FXCustomTestLauncher}
-
-    # if errorlevel 1 
-    # then
-    #     exit /b 1
     __exitcode=$?
     if [ ${__exitcode} != 0 ];
     then 
         exit ${__exitcode}
-    fi    
+    fi  
 
-    # "%CoreRT_CliDir%\dotnet.exe" !CoreRT_TestingUtilitiesOutputDir!\!CoreRT_XunitHelperName!.dll --logDir "%XunitLogDir%" --pattern "*.xml"
-     
+    echo ${CoreRT_CliBinDir}/dotnet ${CoreRT_TestingUtilitiesOutputDir}/${CoreRT_XunitHelperName}.dll --logDir ${XunitLogDir} --pattern "*.xml"
+
+    ${CoreRT_CliBinDir}/dotnet ${CoreRT_TestingUtilitiesOutputDir}/${CoreRT_XunitHelperName}.dll --logDir ${XunitLogDir} --pattern "*.xml"
     
 }
 

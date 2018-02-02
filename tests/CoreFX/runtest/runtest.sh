@@ -1,28 +1,3 @@
-function check_cpu_architecture {
-    local CPUName=$(uname -m)
-    local __arch=
-
-    case $CPUName in
-        i686)
-            __arch=x86
-            ;;
-        x86_64)
-            __arch=x64
-            ;;
-        armv7l)
-            __arch=arm
-            ;;
-        aarch64)
-            __arch=arm64
-            ;;
-        *)
-            echo "Unknown CPU $CPUName detected, configuring as if for x64"
-            __arch=x64
-            ;;
-    esac
-
-    echo "$__arch"
-}
 
 function print_usage {
     echo ''
@@ -43,14 +18,11 @@ function run_tests_in_directory {
     local testDir=$1
     for testSubDir in ${testDir}/* ; do
       # Build and run each test
-      ${FXCustomTestLauncher} ${testSubDir} ${testRootDir} ${__arch} ${__LogDir} 
+      ${FXCustomTestLauncher} ${testSubDir} ${__LogDir} 
       echo ${testSubDir}
     done
     
 }
-
-ARCH=$(check_cpu_architecture)
-echo "Running on  CPU- $ARCH"
 
 # Exit code constants
 readonly EXIT_CODE_SUCCESS=0       # Script ran normally.
