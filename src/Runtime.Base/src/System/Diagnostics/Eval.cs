@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 
@@ -10,20 +11,13 @@ namespace System.Diagnostics
 {
     public static class Eval
     {
-        private static IntPtr s_highLevelDebugFuncEvalHelper;
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        [RuntimeExport("RhpSetHighLevelDebugFuncEvalHelper")]
-        public static void SetHighLevelDebugFuncEvalHelper(IntPtr ptr)
-        {
-            s_highLevelDebugFuncEvalHelper = ptr;
-        }
-
         [MethodImpl(MethodImplOptions.NoInlining)]
         [RuntimeExport("RhpDebugFuncEvalHelper")]
-        public static void RhpDebugFuncEvalHelper()
+        public unsafe static void RhpDebugFuncEvalHelper(IntPtr unusedTransitionBlock, IntPtr classlibAddress)
         {
-            CalliIntrinsics.CallVoid(s_highLevelDebugFuncEvalHelper);
+            IntPtr pDebugFuncEvalHelper = (IntPtr)InternalCalls.RhpGetClasslibFunctionFromCodeAddress(classlibAddress, ClassLibFunctionId.DebugFuncEvalHelper);
+            Debug.Assert(pDebugFuncEvalHelper != IntPtr.Zero);
+            CalliIntrinsics.CallVoid(pDebugFuncEvalHelper);
         }
     }
 }

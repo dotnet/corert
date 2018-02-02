@@ -824,6 +824,12 @@ void * Module::GetClasslibFunction(ClasslibFunctionId functionId)
     case ClasslibFunctionId::OnFirstChanceException:
         pMethod = m_pModuleHeader->Get_OnFirstChanceException();
         break;
+    case ClasslibFunctionId::DebugFuncEvalHelper:
+        pMethod = m_pModuleHeader->Get_DebugFuncEvalHelper();
+        break;
+    case ClasslibFunctionId::DebugFuncEvalAbortHelper:
+        pMethod = m_pModuleHeader->Get_DebugFuncEvalAbortHelper();
+        break;
     default:
         pMethod = NULL;
         break;
