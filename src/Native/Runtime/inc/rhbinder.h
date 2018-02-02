@@ -209,10 +209,10 @@ struct ModuleHeader
 #define DEFINE_WELL_KNOWN_METHOD(_name)                                                                                     \
     inline PTR_VOID Get_##_name()                                                                                           \
     {                                                                                                                       \
-        int index = (int)WKM_##_name;                                                                                       \
+        unsigned int index = (unsigned int)WKM_##_name;                                                                     \
         if (index >= MAX_WELL_KNOWN_METHODS)                                                                                \
         {                                                                                                                   \
-            index =- MAX_WELL_KNOWN_METHODS;                                                                                \
+            index = index - MAX_WELL_KNOWN_METHODS;                                                                         \
             return ExtraWellKnownMethods[index] == NULL_RRA ? NULL : RegionPtr[TEXT_REGION] + ExtraWellKnownMethods[index]; \
         }                                                                                                                   \
         else                                                                                                                \
