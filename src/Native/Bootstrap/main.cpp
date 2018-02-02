@@ -294,7 +294,9 @@ static const pfn c_classlibFunctions[] = {
     &AppendExceptionStackFrame,
     nullptr, // &CheckStaticClassConstruction,
     &GetSystemArrayEEType,
-    &OnFirstChanceException
+    &OnFirstChanceException,
+    nullptr, // &DebugFuncEvalHelper,
+    nullptr, // &DebugFuncEvalAbortHelper,
 };
 
 #endif // !CPPCODEGEN

@@ -62,7 +62,8 @@ struct ModuleHeader
                                                     // breaking changes
         DELTA_SHORTCUT_TABLE_SIZE   = 16,
         MAX_REGIONS                 = 8,            // Max number of regions described by the Regions array
-        MAX_WELL_KNOWN_METHODS      = 8,            // Max number of methods described by the WellKnownMethods array
+        MAX_WELL_KNOWN_METHODS      = 8,            // Max number of methods described by the WellKnownMethods array 
+        MAX_EXTRA_WELL_KNOWN_METHODS= 8,            // Max number of methods described by the ExtraWellKnownMethods array 
         NULL_RRA                    = 0xffffffff,   // NULL value for region relative addresses (0 is often a
                                                     // legal RRA)
     };
@@ -141,6 +142,9 @@ struct ModuleHeader
 
     UInt32          RraColdToHotMappingInfo;
 
+    UInt32  ExtraWellKnownMethods[MAX_EXTRA_WELL_KNOWN_METHODS];   // Array of methods with well known semantics defined
+                                                                   // in this module
+
     // Macro to generate an inline accessor for RRA-based fields.
 #ifdef RHDUMP
 #define DEFINE_GET_ACCESSOR(_field, _region)\
@@ -202,10 +206,19 @@ struct ModuleHeader
 #ifndef RHDUMP
     // Macro to generate an inline accessor for well known methods (these are all TEXT-based RRAs since they
     // point to code).
-#define DEFINE_WELL_KNOWN_METHOD(_name)                                 \
-    inline PTR_VOID Get_##_name()                                       \
-    {                                                                   \
-        return WellKnownMethods[WKM_##_name] == NULL_RRA ? NULL : RegionPtr[TEXT_REGION] + WellKnownMethods[WKM_##_name]; \
+#define DEFINE_WELL_KNOWN_METHOD(_name)                                                                                     \
+    inline PTR_VOID Get_##_name()                                                                                           \
+    {                                                                                                                       \
+        int index = (int)WKM_##_name;                                                                                       \
+        if (index >= MAX_WELL_KNOWN_METHODS)                                                                                \
+        {                                                                                                                   \
+            index =- MAX_WELL_KNOWN_METHODS;                                                                                \
+            return ExtraWellKnownMethods[index] == NULL_RRA ? NULL : RegionPtr[TEXT_REGION] + ExtraWellKnownMethods[index]; \
+        }                                                                                                                   \
+        else                                                                                                                \
+        {                                                                                                                   \
+            return WellKnownMethods[index] == NULL_RRA ? NULL : RegionPtr[TEXT_REGION] + WellKnownMethods[index];           \
+        }                                                                                                                   \
     }
 #include "WellKnownMethodList.h"
 #undef DEFINE_WELL_KNOWN_METHOD
