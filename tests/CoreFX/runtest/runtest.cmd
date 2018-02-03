@@ -86,7 +86,7 @@ exit /b 0
 :Usage
 echo.
 echo Usage:
-echo   %0 BuildArch BuildType [SkipWrapperGeneration] [Exclude EXCLUSION_TARGETS] [TestEnv TEST_ENV_SCRIPT] [VSVersion] CORE_ROOT
+echo   %0 BuildArch BuildType
 echo where:
 echo.
 echo./? -? /h -h /help -help: view this message.
