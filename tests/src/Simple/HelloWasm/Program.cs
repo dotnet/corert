@@ -181,6 +181,27 @@ internal static class Program
 
         IntToStringTest();
 
+        CastingTestClass castingTest = new DerivedCastingTestClass1();
+        if (((DerivedCastingTestClass1)castingTest).GetValue() == 1 && !(castingTest is DerivedCastingTestClass2))
+        {
+            PrintLine("Type casting with isinst & castclass to class test: Ok.");
+        }
+
+        // Instead of checking the result of `GetValue`, we use null check by now until interface dispatch is implemented.
+        if ((ICastingTest1)castingTest != null && !(castingTest is ICastingTest2))
+        {
+            PrintLine("Type casting with isinst & castclass to interface test: Ok.");
+        }
+
+        object arrayCastingTest = new BoxStubTest[] { new BoxStubTest { Value = "Array" }, new BoxStubTest { Value = "Cast" }, new BoxStubTest { Value = "Test" } };
+        PrintLine(((BoxStubTest[])arrayCastingTest)[0].Value);
+        PrintLine(((BoxStubTest[])arrayCastingTest)[1].Value);
+        PrintLine(((BoxStubTest[])arrayCastingTest)[2].Value);
+        if (!(arrayCastingTest is CastingTestClass[]))
+        {   
+            PrintLine("Type casting with isinst & castclass to array test: Ok.");
+        }
+
         PrintLine("Done");
     }
 
@@ -367,3 +388,27 @@ public class TestDerivedClass : TestClass
     }
 }
 
+public interface ICastingTest1
+{
+    int GetValue();
+}
+
+public interface ICastingTest2
+{
+    int GetValue();
+}
+
+public abstract class CastingTestClass
+{
+    public abstract int GetValue();
+}
+
+public class DerivedCastingTestClass1 : CastingTestClass, ICastingTest1
+{
+    public override int GetValue() => 1;
+}
+
+public class DerivedCastingTestClass2 : CastingTestClass, ICastingTest2
+{
+    public override int GetValue() => 2;
+}

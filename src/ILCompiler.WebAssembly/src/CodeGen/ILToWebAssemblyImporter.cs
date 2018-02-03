@@ -818,6 +818,25 @@ namespace Internal.IL
 
         private void ImportCasting(ILOpcode opcode, int token)
         {
+            TypeDesc type = ResolveTypeToken(token);
+            
+            //TODO: call GetCastingHelperNameForType from JitHelper.cs (needs refactoring)
+            string function;
+            bool throwing = opcode == ILOpcode.castclass;
+            if (type.IsArray)
+                function = throwing ? "CheckCastArray" : "IsInstanceOfArray";
+            else if (type.IsInterface)
+                function = throwing ? "CheckCastInterface" : "IsInstanceOfInterface";
+            else
+                function = throwing ? "CheckCastClass" : "IsInstanceOfClass";
+
+            var arguments = new StackEntry[]
+            {
+                _stack.Pop(),
+                new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(type, true), _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr"))
+            };
+
+            _stack.Push(CallRuntime(_compilation.TypeSystemContext, TypeCast, function, arguments, type));
         }
 
         private void ImportLoadNull()
@@ -2344,6 +2363,7 @@ namespace Internal.IL
         private const string RuntimeExport = "RuntimeExports";
         private const string RuntimeImport = "RuntimeImports";
         private const string InternalCalls = "InternalCalls";
+        private const string TypeCast = "TypeCast";
         private ExpressionEntry CallRuntime(TypeSystemContext context, string className, string methodName, StackEntry[] arguments, TypeDesc forcedReturnType = null)
         {
             MetadataType helperType = context.SystemModule.GetKnownType("System.Runtime", className);
