@@ -100,6 +100,7 @@ namespace Internal.IL
             methodCodeNodeNeedingCode.SetDependencies(ilImporter.GetDependencies());
         }
 
+        static LLVMValueRef DebugtrapFunction = default(LLVMValueRef);
         static LLVMValueRef TrapFunction = default(LLVMValueRef);
         static LLVMValueRef DoNothingFunction = default(LLVMValueRef);
 

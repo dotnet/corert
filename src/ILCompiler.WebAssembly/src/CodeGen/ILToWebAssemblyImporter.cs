@@ -324,6 +324,11 @@ namespace Internal.IL
 
         private void ImportBreak()
         {
+            if (DebugtrapFunction.Pointer == IntPtr.Zero)
+            {
+                DebugtrapFunction = LLVM.AddFunction(Module, "llvm.debugtrap", LLVM.FunctionType(LLVM.VoidType(), Array.Empty<LLVMTypeRef>(), false));
+            }
+            LLVM.BuildCall(_builder, DebugtrapFunction, Array.Empty<LLVMValueRef>(), string.Empty);
         }
 
         private void ImportLoadVar(int index, bool argument)
