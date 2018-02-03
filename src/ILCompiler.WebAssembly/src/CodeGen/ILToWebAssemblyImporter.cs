@@ -392,6 +392,10 @@ namespace Internal.IL
             {
                 return LLVM.BuildSExtOrBitCast(builder, value, type, "SExtOrBitCast");
             }
+            else if (type.GetIntTypeWidth() > LLVM.TypeOf(value).GetIntTypeWidth())
+            {
+                return LLVM.BuildZExtOrBitCast(builder, value, type, "ZExtOrBitCast");
+            }
             else
             {
                 Debug.Assert(typeKind == LLVMTypeKind.LLVMIntegerTypeKind);
@@ -1547,7 +1551,7 @@ namespace Internal.IL
 
             LLVMValueRef pointerElementType = pointer.ValueAsType(type.MakePointerType(), _builder);
             _stack.Push(new LoadExpressionEntry(type != null ? GetStackValueKind(type) : StackValueKind.ByRef, "ldind",
-                pointerElementType, type.MakePointerType()));
+                pointerElementType, type));
         }
 
         private void ImportStoreIndirect(int token)
