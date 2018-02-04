@@ -205,6 +205,8 @@ internal static class Program
         {   
             PrintLine("Type casting with isinst & castclass to array test: Ok.");
         }
+      
+        ldindTest();
 
         PrintLine("Done");
     }
@@ -303,6 +305,35 @@ internal static class Program
         PrintLine("Int to String Test: Ok if next line says 42.");
         string intString = 42.ToString();
         PrintLine(intString);
+    }
+
+    private unsafe static void ldindTest()
+    {
+        var ldindTarget = new TwoByteStr { first = byte.MaxValue, second = byte.MinValue };
+        var ldindField = &ldindTarget.first;
+        if((*ldindField) == byte.MaxValue)
+        {
+            ldindTarget.second = byte.MaxValue;
+            *ldindField = byte.MinValue;
+            //ensure there isnt any overwrite of nearby fields
+            if(ldindTarget.first == byte.MinValue && ldindTarget.second == byte.MaxValue)
+            {
+                PrintLine("ldind test: Ok.");
+            }
+            else if(ldindTarget.first != byte.MinValue)
+            {
+                PrintLine("ldind test: Failed didnt update target.");
+            }
+            else
+            {
+                PrintLine("ldind test: Failed overwrote data");
+            }
+        }
+        else
+        {
+            uint ldindFieldValue = *ldindField;
+            PrintLine("ldind test: Failed." + ldindFieldValue.ToString());
+        }
     }
 
     [DllImport("*")]
