@@ -183,9 +183,9 @@ namespace ILCompiler.DependencyAnalysis
             EmitNativeMain();
             LLVM.WriteBitcodeToFile(Module, _objectFilePath);
 #if DEBUG
-            LLVM.PrintModuleToFile(Module, Path.ChangeExtension(_objectFilePath, ".txt"), out IntPtr unused2);
+            LLVM.PrintModuleToFile(Module, Path.ChangeExtension(_objectFilePath, ".txt"), out string unused2);
 #endif //DEBUG
-            LLVM.VerifyModule(Module, LLVMVerifierFailureAction.LLVMAbortProcessAction, out IntPtr unused);
+            LLVM.VerifyModule(Module, LLVMVerifierFailureAction.LLVMAbortProcessAction, out string unused);
 
             //throw new NotImplementedException(); // This function isn't complete
         }
