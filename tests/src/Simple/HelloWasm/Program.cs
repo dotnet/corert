@@ -4,7 +4,9 @@
 
 using System;
 using System.Runtime.InteropServices;
+#if PLATFORM_WINDOWS
 using CpObj;
+#endif
 
 internal static class Program
 {
@@ -122,6 +124,7 @@ internal static class Program
             PrintLine("SwitchOpDefault test: Ok.");
         }
 
+#if PLATFORM_WINDOWS
         var cpObjTestA = new TestValue { Field = 1234 };
         var cpObjTestB = new TestValue { Field = 5678 };
         CpObjTest.CpObj(ref cpObjTestB, ref cpObjTestA);
@@ -129,6 +132,7 @@ internal static class Program
         {
             PrintLine("CpObj test: Ok.");
         }
+#endif
 
         Func<int> staticDelegate = StaticDelegateTarget;
         if(staticDelegate() == 7)
