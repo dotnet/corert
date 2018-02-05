@@ -185,7 +185,7 @@ namespace System.Runtime.InteropServices
         /// <param name="ex"></param>
         /// <param name="isWinRTScenario"></param>
         /// <returns></returns>
-        internal static int GetHRForExceptionWithErrorPropogationNoThrow(Exception ex, bool isWinRTScenario)
+        internal static int GetHRForExceptionWithErrorPropagationNoThrow(Exception ex, bool isWinRTScenario)
         {
             int hr = ex.HResult;
 
