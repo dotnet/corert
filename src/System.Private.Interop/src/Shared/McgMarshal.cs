@@ -990,7 +990,7 @@ namespace System.Runtime.InteropServices
         public static int GetHRForExceptionWinRT(Exception ex)
         {
 #if ENABLE_WINRT
-            return ExceptionHelpers.GetHRForExceptionWithErrorPropogationNoThrow(ex, true);
+            return ExceptionHelpers.GetHRForExceptionWithErrorPropagationNoThrow(ex, true);
 #else
             // TODO : ExceptionHelpers should be platform specific , move it to
             // seperate source files
@@ -1003,7 +1003,7 @@ namespace System.Runtime.InteropServices
         public static int GetHRForException(Exception ex)
         {
 #if ENABLE_WINRT
-            return ExceptionHelpers.GetHRForExceptionWithErrorPropogationNoThrow(ex, false);
+            return ExceptionHelpers.GetHRForExceptionWithErrorPropagationNoThrow(ex, false);
 #else
             return ex.HResult;
 #endif
