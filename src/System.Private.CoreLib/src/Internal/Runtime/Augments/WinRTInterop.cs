@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 //
-//  System.Private.CoreLib cannot directly interop with WinRT because the interop DLL depends on System.Private.CoreLib which causes circular dependancy. 
+//  System.Private.CoreLib cannot directly interop with WinRT because the interop DLL depends on System.Private.CoreLib which causes circular dependency. 
 //  To enable System.Private.CoreLib to call WinRT, we do have another assembly System.Private.WinRTInterop.CoreLib.dll which does the interop with WinRT 
 //  and to allow System.Private.CoreLib to call System.Private.WinRTInterop.CoreLib we do the following trick
 //      o   RmtGen tool will inject code WinRT.Initialize() to the app before the app Main method while building it 
