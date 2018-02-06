@@ -163,8 +163,8 @@ set Platform=
 set __VCBuildArch=x86_amd64
 if /i "%__BuildArch%" == "x86" (set __VCBuildArch=x86)
 
-set __NugetRuntimeId=win7-x64
-if /i "%__BuildArch%" == "x86" (set __NugetRuntimeId=win7-x86)
+set __NugetRuntimeId=win-x64
+if /i "%__BuildArch%" == "x86" (set __NugetRuntimeId=win-x86)
 
 :Done
 set BUILDVARS_DONE=1
