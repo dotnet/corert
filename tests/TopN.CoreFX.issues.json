@@ -1,5 +1,4 @@
 [
     "System.Collections.Tests",
-    "System.Collections.Immutable.Tests",
-    "System.Net.Security.Tests"
+    "System.Collections.Immutable.Tests"
 ]
