@@ -37,7 +37,7 @@ namespace ILVerify
             _typeSystemContext.SetSystemModule(_typeSystemContext.GetModule(_typeSystemContext._resolver.Resolve(name)));
         }
 
-        public EcmaModule GetModule(PEReader peReader)
+        internal EcmaModule GetModule(PEReader peReader)
         {
             return _typeSystemContext.GetModule(peReader);
         }

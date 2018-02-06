@@ -5,8 +5,8 @@
     <OutputType>Library</OutputType>
 
     <IsPackable>false</IsPackable>
-
-    <AssemblyOriginatorKeyFile>src\ILVerification\StrongNameKeys\ILVerify.snk</AssemblyOriginatorKeyFile>
+    <AssemblyKey></AssemblyKey>
+    <AssemblyOriginatorKeyFile>..\StrongNameKeys\ILVerify.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <ItemGroup>

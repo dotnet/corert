@@ -7,7 +7,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <TargetFramework>netstandard1.3</TargetFramework>
-    <AssemblyOriginatorKeyFile>src\ILVerification\StrongNameKeys\ILVerify.snk</AssemblyOriginatorKeyFile>
+    <AssemblyKey></AssemblyKey>
+    <AssemblyOriginatorKeyFile>..\StrongNameKeys\ILVerify.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -285,12 +286,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\Common\src\CommandLine\CommandLineException.cs">
-      <Link>CommandLine\CommandLineException.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\CommandLine\CommandLineHelpers.cs">
-      <Link>CommandLine\CommandLineHelpers.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\System\NotImplemented.cs">
       <Link>System\NotImplemented.cs</Link>
     </Compile>
