@@ -109,6 +109,12 @@ export __CrossBuild=0
 
 __BuildArch=$__HostArch
 
+# Checking for any clang versions, if there is a symlink
+if [ -x "$(command -v clang)" ]; then
+    __ClangMajorVersion="$(echo | clang -dM -E - | grep __clang_major__ | cut -f3 -d ' ')"
+    __ClangMinorVersion="$(echo | clang -dM -E - | grep __clang_minor__ | cut -f3 -d ' ')"
+fi
+
 while [ "$1" != "" ]; do
         lowerI="$(echo $1 | awk '{print tolower($0)}')"
         case $lowerI in
@@ -171,6 +177,22 @@ while [ "$1" != "" ]; do
             export __ClangMajorVersion=3
             export __ClangMinorVersion=9
             ;;
+        clang4.0)
+            export __ClangMajorVersion=4
+            export __ClangMinorVersion=0
+            ;;
+        clang5.0)
+            export __ClangMajorVersion=5
+            export __ClangMinorVersion=0
+            ;;
+        clang6.0)
+            export __ClangMajorVersion=6
+            export __ClangMinorVersion=0
+            ;;
+        clang7.0)
+            export __ClangMajorVersion=7
+            export __ClangMinorVersion=0
+            ;;
         cross)
             export __CrossBuild=1
             ;;
@@ -225,6 +247,11 @@ case $OSName in
         export __NugetRuntimeId=ubuntu.14.04-x64
         ;;
 esac
+
+# For msbuild
+if [ $__HostOS != "OSX" ]; then
+    export CppCompilerAndLinker=clang-${__ClangMajorVersion}.${__ClangMinorVersion}
+fi
 
 export __BuildOS="$__HostOS"
 
