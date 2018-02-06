@@ -41,6 +41,9 @@ run_test_dir()
     if [ "${__mode}" = "Cpp" ]; then
         __extra_args="${__extra_args} /p:NativeCodeGen=cpp"
     fi
+    if [ "${__mode}" = "Wasm" ]; then
+        __extra_args="${__extra_args} /p:NativeCodeGen=wasm"
+    fi
     if [ -n "${__extra_cxxflags}" ]; then
         __extra_cxxflags="/p:AdditionalCppCompilerFlags=\"${__extra_cxxflags}\""
     fi
@@ -175,6 +178,12 @@ while [ "$1" != "" ]; do
         -?|-h|--help)
             usage
             exit 1
+            ;;
+        wasm)
+            CoreRT_BuildArch=wasm
+            CoreRT_BuildOS=WebAssembly
+            CoreRT_TestCompileMode=wasm
+            CoreRT_TestRun=false
             ;;
         x86)
             CoreRT_BuildArch=x86
@@ -319,7 +328,8 @@ __CppTotalTests=0
 __CppPassedTests=0
 __JitTotalTests=0
 __JitPassedTests=0
-
+__WasmTotalTests=0
+__WasmPassedTests=0
 
 if [ ! -d ${__CoreRTTestBinDir} ]; then
     mkdir -p ${__CoreRTTestBinDir}
@@ -330,20 +340,28 @@ __BuildOsLowcase=$(echo "${CoreRT_BuildOS}" | tr '[:upper:]' '[:lower:]')
 __TestSearchPath=${CoreRT_TestRoot}/src/Simple/${CoreRT_TestName}
 for csproj in $(find ${__TestSearchPath} -name "*.csproj")
 do
-    if [ ! -e `dirname ${csproj}`/no_unix ]; then
-        if [ "${CoreRT_TestCompileMode}" != "cpp" ]; then
+    if [ -e `dirname ${csproj}`/no_unix ]; then continue; fi
+    if [ -e `dirname ${csproj}`/no_linux ] && [ "${CoreRT_HostOS}" != "OSX" ]; then continue; fi
+
+    if [ "${CoreRT_TestCompileMode}" = "ryujit" ] || [ "${CoreRT_TestCompileMode}" = "" ]; then
+        if [ ! -e `dirname ${csproj}`/no_ryujit ]; then
             run_test_dir ${csproj} "Jit"
         fi
+    fi
+    if [ "${CoreRT_TestCompileMode}" = "cpp" ] || [ "${CoreRT_TestCompileMode}" = "" ]; then
         if [ ! -e `dirname ${csproj}`/no_cpp ]; then
-            if [ "${CoreRT_TestCompileMode}" != "ryujit" ]; then
-                run_test_dir ${csproj} "Cpp" "$CoreRT_ExtraCXXFlags" "$CoreRT_ExtraLinkFlags"
-            fi
+            run_test_dir ${csproj} "Cpp" "$CoreRT_ExtraCXXFlags" "$CoreRT_ExtraLinkFlags"
+        fi
+    fi
+    if [ "${CoreRT_TestCompileMode}" = "wasm" ]; then
+        if [ -e `dirname ${csproj}`/wasm ]; then
+            run_test_dir ${csproj} "Wasm"
         fi
     fi
 done
 
-__TotalTests=$((${__JitTotalTests} + ${__CppTotalTests}))
-__PassedTests=$((${__JitPassedTests} + ${__CppPassedTests}))
+__TotalTests=$((${__JitTotalTests} + ${__CppTotalTests} + ${__WasmTotalTests}))
+__PassedTests=$((${__JitPassedTests} + ${__CppPassedTests} + ${__WasmPassedTests}))
 __FailedTests=$((${__TotalTests} - ${__PassedTests}))
 
 if [ "$CoreRT_MultiFileConfiguration" = "MultiModule" ]; then
@@ -366,18 +384,25 @@ echo "</assemblies>"  >> ${__TestResultsLog}
 
 echo "JIT - TOTAL: ${__JitTotalTests} PASSED: ${__JitPassedTests}"
 echo "CPP - TOTAL: ${__CppTotalTests} PASSED: ${__CppPassedTests}"
+echo "WASM - TOTAL: ${__WasmTotalTests} PASSED: ${__WasmPassedTests}"
 
-if [ ${__JitTotalTests} == 0 ]; then
+if [ ${__JitTotalTests} == 0 ] && [ "${CoreRT_TestCompileMode}" != "wasm" ]; then
     exit 1
 fi
-
-if [ ${__CppTotalTests} == 0 ]; then
+if [ ${__CppTotalTests} == 0 ] && [ "${CoreRT_TestCompileMode}" != "wasm" ]; then
     exit 1
 fi
+if [ ${__WasmTotalTests} == 0 ] && [ "${CoreRT_TestCompileMode}" = "wasm" ]; then
+    exit 1
+fi 
+
 if [ ${__JitTotalTests} -gt ${__JitPassedTests} ]; then
     exit 1
 fi
 if [ ${__CppTotalTests} -gt ${__CppPassedTests} ]; then
+    exit 1
+fi
+if [ ${__WasmTotalTests} -gt ${__WasmPassedTests} ]; then
     exit 1
 fi
 

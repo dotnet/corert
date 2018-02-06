@@ -26,7 +26,6 @@ namespace ILCompiler
             : base(dependencyGraph, nodeFactory, GetCompilationRoots(roots, nodeFactory), null, null, logger)
         {
             NodeFactory = nodeFactory;
-            LLVM.LoadLibrary_libLLVM("./libLLVM-x64.dll");
             Module = LLVM.ModuleCreateWithName("netscripten");
             LLVM.SetTarget(Module, "asmjs-unknown-emscripten");
             Options = options;

@@ -4,7 +4,9 @@
 
 using System;
 using System.Runtime.InteropServices;
+#if PLATFORM_WINDOWS
 using CpObj;
+#endif
 
 internal static class Program
 {
@@ -122,6 +124,7 @@ internal static class Program
             PrintLine("SwitchOpDefault test: Ok.");
         }
 
+#if PLATFORM_WINDOWS
         var cpObjTestA = new TestValue { Field = 1234 };
         var cpObjTestB = new TestValue { Field = 5678 };
         CpObjTest.CpObj(ref cpObjTestB, ref cpObjTestA);
@@ -129,6 +132,7 @@ internal static class Program
         {
             PrintLine("CpObj test: Ok.");
         }
+#endif
 
         Func<int> staticDelegate = StaticDelegateTarget;
         if(staticDelegate() == 7)
@@ -201,6 +205,8 @@ internal static class Program
         {   
             PrintLine("Type casting with isinst & castclass to array test: Ok.");
         }
+      
+        ldindTest();
 
         PrintLine("Done");
     }
@@ -299,6 +305,35 @@ internal static class Program
         PrintLine("Int to String Test: Ok if next line says 42.");
         string intString = 42.ToString();
         PrintLine(intString);
+    }
+
+    private unsafe static void ldindTest()
+    {
+        var ldindTarget = new TwoByteStr { first = byte.MaxValue, second = byte.MinValue };
+        var ldindField = &ldindTarget.first;
+        if((*ldindField) == byte.MaxValue)
+        {
+            ldindTarget.second = byte.MaxValue;
+            *ldindField = byte.MinValue;
+            //ensure there isnt any overwrite of nearby fields
+            if(ldindTarget.first == byte.MinValue && ldindTarget.second == byte.MaxValue)
+            {
+                PrintLine("ldind test: Ok.");
+            }
+            else if(ldindTarget.first != byte.MinValue)
+            {
+                PrintLine("ldind test: Failed didnt update target.");
+            }
+            else
+            {
+                PrintLine("ldind test: Failed overwrote data");
+            }
+        }
+        else
+        {
+            uint ldindFieldValue = *ldindField;
+            PrintLine("ldind test: Failed." + ldindFieldValue.ToString());
+        }
     }
 
     [DllImport("*")]

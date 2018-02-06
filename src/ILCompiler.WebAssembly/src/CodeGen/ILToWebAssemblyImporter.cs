@@ -116,15 +116,18 @@ namespace Internal.IL
             }
             catch
             {
+                LLVMBasicBlockRef trapBlock = LLVM.AppendBasicBlock(_llvmFunction, "Trap");
+                
                 // Change the function body to trap
                 foreach (BasicBlock block in _basicBlocks)
                 {
                     if (block != null && block.Block.Pointer != IntPtr.Zero)
                     {
+                        LLVM.ReplaceAllUsesWith(block.Block, trapBlock);
                         LLVM.DeleteBasicBlock(block.Block);
                     }
                 }
-                LLVMBasicBlockRef trapBlock = LLVM.AppendBasicBlock(_llvmFunction, "Trap");
+
                 LLVM.PositionBuilderAtEnd(_builder, trapBlock);
                 EmitTrapCall();
                 LLVM.BuildRetVoid(_builder);
@@ -396,6 +399,10 @@ namespace Internal.IL
             else if (signExtend && type.GetIntTypeWidth() > LLVM.TypeOf(value).GetIntTypeWidth())
             {
                 return LLVM.BuildSExtOrBitCast(builder, value, type, "SExtOrBitCast");
+            }
+            else if (type.GetIntTypeWidth() > LLVM.TypeOf(value).GetIntTypeWidth())
+            {
+                return LLVM.BuildZExtOrBitCast(builder, value, type, "ZExtOrBitCast");
             }
             else
             {
@@ -1571,7 +1578,7 @@ namespace Internal.IL
 
             LLVMValueRef pointerElementType = pointer.ValueAsType(type.MakePointerType(), _builder);
             _stack.Push(new LoadExpressionEntry(type != null ? GetStackValueKind(type) : StackValueKind.ByRef, "ldind",
-                pointerElementType, type.MakePointerType()));
+                pointerElementType, type));
         }
 
         private void ImportStoreIndirect(int token)

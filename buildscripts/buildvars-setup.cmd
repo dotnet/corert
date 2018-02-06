@@ -2,6 +2,7 @@
 set __BuildArch=x64
 set __BuildType=Debug
 set __BuildOS=Windows_NT
+set __HostOS=Windows_NT
 
 :: Set the various build properties here so that CMake and MSBuild can pick them up
 set "__ProjectDir=%~dp0.."
