@@ -6,7 +6,7 @@
 
     <IsPackable>false</IsPackable>
 
-    <AssemblyOriginatorKeyFile>src\BuildIntegration\StrongNameKeys\ILVerification.Tests.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>src\ILVerification\StrongNameKeys\ILVerify.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\BuildIntegration\StrongNameKeys\ILVerification.Tests.snk" Link="ILVerification.Tests.snk" />
+    <None Include="..\..\ILVerification\StrongNameKeys\ILVerify.snk" Link="ILVerify.snk" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

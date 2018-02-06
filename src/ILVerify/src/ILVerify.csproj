@@ -31,7 +31,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\BuildIntegration\StrongNameKeys\ILVerify.snk" Link="ILVerify.snk" />
+    <None Include="..\..\ILVerification\StrongNameKeys\ILVerify.snk" Link="ILVerify.snk" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

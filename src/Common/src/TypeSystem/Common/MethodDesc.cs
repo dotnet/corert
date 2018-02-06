@@ -99,11 +99,6 @@ namespace Internal.TypeSystem
             }
         }
 
-        public bool HasParameters()
-        {
-            return _parameters == null;
-        }
-
         public bool Equals(MethodSignature otherSignature)
         {
             // TODO: Generics, etc.

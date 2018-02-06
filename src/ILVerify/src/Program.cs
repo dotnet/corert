@@ -194,7 +194,7 @@ namespace ILVerify
             Write(method.Name);
             Write("(");
 
-            if (method.Signature.HasParameters() && method.Signature.Length > 0)
+            if (method.Signature.Length > 0)
             {
                 bool first = true;
                 for(int i = 0; i < method.Signature.Length; i++)
