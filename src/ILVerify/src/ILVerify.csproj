@@ -7,8 +7,23 @@
     <CLSCompliant>false</CLSCompliant>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <TargetFramework>netstandard1.5</TargetFramework>
     <AssemblyOriginatorKeyFile>src\BuildIntegration\StrongNameKeys\ILVerify.snk</AssemblyOriginatorKeyFile>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <CopyNugetImplementations>false</CopyNugetImplementations>
+    <!-- Force .dll extension even if output type is exe. -->
+    <TargetExt>.dll</TargetExt>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <Content Include="ilverify.runtimeconfig.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <RunCommand Condition="'$(OS)' == 'Windows_NT'">$(TargetDir)$(AssemblyName).exe</RunCommand>
+    <RunCommand Condition="'$(OS)' != 'Windows_NT'">$(TargetDir)$(AssemblyName)</RunCommand>
+    <RunArguments>$(StartArguments)</RunArguments>
   </PropertyGroup>
 
   <ItemGroup>

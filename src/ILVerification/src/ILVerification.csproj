@@ -6,7 +6,7 @@
     <CLSCompliant>false</CLSCompliant>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <TargetFramework>netstandard1.5</TargetFramework>
+    <TargetFramework>netstandard1.3</TargetFramework>
     <AssemblyOriginatorKeyFile>src\ILVerification\StrongNameKeys\ILVerify.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
@@ -302,7 +302,6 @@
   <ItemGroup>
     <PackageReference Include="System.IO.MemoryMappedFiles" Version="4.3.0" />
     <PackageReference Include="System.Reflection.Metadata" Version="1.4.1" />
-    <PackageReference Include="System.CommandLine" Version="0.1.0-e160909-1" />
   </ItemGroup>
-    <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
