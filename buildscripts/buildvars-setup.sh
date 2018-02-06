@@ -60,7 +60,8 @@ check_native_prereqs()
 get_current_linux_rid() {
     # Construct RID for current distro
 
-    rid=linux
+    # Set default Ubuntu RID
+    rid=ubuntu.14.04
 
     if [ -e /etc/os-release ]; then
         source /etc/os-release
