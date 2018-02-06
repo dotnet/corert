@@ -9,6 +9,7 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <RuntimeIdentifiers>$(NuPkgRid)</RuntimeIdentifiers>
     <RuntimeIdentifiers Condition="'$(NuPkgRid)'=='win-x64'">win7-x64</RuntimeIdentifiers>
+    <RuntimeIdentifiers Condition="'$(NuPkgRid)'=='osx-x64'">osx.10.10-x64</RuntimeIdentifiers>
     <RuntimeIdentifiers Condition="'$(NuPkgRid)'=='linux-x64'">ubuntu.14.04-x64</RuntimeIdentifiers>
     <RidSpecificAssets>true</RidSpecificAssets>
   </PropertyGroup>
