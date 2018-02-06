@@ -68,8 +68,6 @@ get_current_linux_rid() {
             # remove the last version digit
             VERSION_ID=${VERSION_ID%.*}
             rid=alpine.$VERSION_ID
-        elif [[ $ID == "ubuntu" ]]; then
-            rid=$ID.$VERSION_ID
         fi
 
     elif [ -e /etc/redhat-release ]; then
@@ -220,14 +218,14 @@ export OSName=$(uname -s)
 case $OSName in
     Darwin)
         export __HostOS=OSX
-        export __NugetRuntimeId=osx.10.10-x64
+        export __NugetRuntimeId=osx-x64
         ulimit -n 2048
         ;;
 
     FreeBSD)
         export __HostOS=FreeBSD
         # TODO: Add proper FreeBSD target
-        export __NugetRuntimeId=ubuntu.14.04-x64
+        export __NugetRuntimeId=linux-x64
         ;;
 
     Linux)
@@ -238,13 +236,13 @@ case $OSName in
     NetBSD)
         export __HostOS=NetBSD
         # TODO: Add proper NetBSD target
-        export __NugetRuntimeId=ubuntu.14.04-x64
+        export __NugetRuntimeId=linux-x64
         ;;
 
     *)
         echo "Unsupported OS $OSName detected, configuring as if for Linux"
         export __HostOS=Linux
-        export __NugetRuntimeId=ubuntu.14.04-x64
+        export __NugetRuntimeId=linux-x64
         ;;
 esac
 

@@ -8,7 +8,6 @@
   <PropertyGroup>
     <TargetFramework>netstandard1.3</TargetFramework>
     <RuntimeIdentifiers>$(NuPkgRid)</RuntimeIdentifiers>
-    <RuntimeIdentifiers Condition="$(NuPkgRid.StartsWith('ubuntu.'))">ubuntu.14.04-x64</RuntimeIdentifiers>
     <RidSpecificAssets>true</RidSpecificAssets>
   </PropertyGroup>
 
