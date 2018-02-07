@@ -72,7 +72,7 @@ internal static extern bool System.Runtime.RuntimeImports.AreTypesAssignable(Sys
 internal static extern bool System.Runtime.RuntimeImports.AreTypesEquivalent(System.EETypePtr pType1, System.EETypePtr pType2)
 internal static extern double System.Runtime.RuntimeImports.asin(double x)
 internal static extern double System.Runtime.RuntimeImports.atan(double x)
-internal static extern double System.Runtime.RuntimeImports.atan2(double x, double y)
+internal static extern double System.Runtime.RuntimeImports.atan2(double y, double x)
 internal static extern double System.Runtime.RuntimeImports.ceil(double x)
 internal static extern double System.Runtime.RuntimeImports.cos(double x)
 internal static extern double System.Runtime.RuntimeImports.cosh(double x)
