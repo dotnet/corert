@@ -1044,8 +1044,13 @@ extern "C" void LeaveCriticalSection(CRITICAL_SECTION * lpCriticalSection)
 
 extern "C" UInt32_BOOL IsDebuggerPresent()
 {
+#ifdef _WASM_
+    // For now always true since the browser will handle it in case of WASM.
+    return UInt32_TRUE;
+#else
     // UNIXTODO: Implement this function
     return UInt32_FALSE;
+#endif
 }
 
 extern "C" void TerminateProcess(HANDLE arg1, UInt32 arg2)

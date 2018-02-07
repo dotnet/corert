@@ -205,8 +205,10 @@ internal static class Program
         {   
             PrintLine("Type casting with isinst & castclass to array test: Ok.");
         }
-      
+
         ldindTest();
+
+        System.Diagnostics.Debugger.Break();
 
         PrintLine("Done");
     }
