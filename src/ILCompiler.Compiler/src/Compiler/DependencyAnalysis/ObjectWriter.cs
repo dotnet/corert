@@ -279,8 +279,9 @@ namespace ILCompiler.DependencyAnalysis
         private static extern void EmitARMFnStart(IntPtr objWriter);
         public void EmitARMFnStart()
         {
-            Debug.Assert(_frameOpened);
+            Debug.Assert(!_frameOpened);
             EmitARMFnStart(_nativeObjectWriter);
+            _frameOpened = true;
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -289,6 +290,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(_frameOpened);
             EmitARMFnEnd(_nativeObjectWriter);
+            _frameOpened = false;
         }
 
         [DllImport(NativeObjectWriterFileName)]
