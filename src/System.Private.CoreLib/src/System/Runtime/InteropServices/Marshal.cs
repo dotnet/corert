@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices
 
         public static int GetHRForLastWin32Error()
         {
-            return PInvokeMarshal.GetLastWin32Error();
+            return PInvokeMarshal.GetHRForLastWin32Error();
         }
 
         public static unsafe IntPtr AllocHGlobal(IntPtr cb)
