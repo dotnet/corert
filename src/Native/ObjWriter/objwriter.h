@@ -24,6 +24,12 @@
 using namespace llvm;
 using namespace llvm::codeview;
 
+#ifdef _WIN32
+#define DLL_EXPORT extern "C" __declspec(dllexport)
+#else
+#define DLL_EXPORT extern "C" __attribute((visibility("default")))
+#endif
+
 enum CustomSectionAttributes : int32_t {
   CustomSectionAttributes_ReadOnly = 0x0000,
   CustomSectionAttributes_Writeable = 0x0001,
@@ -160,7 +166,7 @@ private:
 
 // When object writer is created/initialized successfully, it is returned.
 // Or null object is returned. Client should check this.
-extern "C" ObjectWriter *InitObjWriter(const char *ObjectFilePath) {
+DLL_EXPORT ObjectWriter *InitObjWriter(const char *ObjectFilePath) {
   ObjectWriter *OW = new ObjectWriter();
   if (OW->Init(ObjectFilePath)) {
     return OW;
@@ -169,20 +175,20 @@ extern "C" ObjectWriter *InitObjWriter(const char *ObjectFilePath) {
   return nullptr;
 }
 
-extern "C" void FinishObjWriter(ObjectWriter *OW) {
+DLL_EXPORT void FinishObjWriter(ObjectWriter *OW) {
   assert(OW && "ObjWriter is null");
   OW->Finish();
   delete OW;
 }
 
-extern "C" void SwitchSection(ObjectWriter *OW, const char *SectionName,
+DLL_EXPORT void SwitchSection(ObjectWriter *OW, const char *SectionName,
                               CustomSectionAttributes attributes,
                               const char *ComdatName) {
   assert(OW && "ObjWriter is null");
   OW->SwitchSection(SectionName, attributes, ComdatName);
 }
 
-extern "C" void SetCodeSectionAttribute(ObjectWriter *OW,
+DLL_EXPORT void SetCodeSectionAttribute(ObjectWriter *OW,
                                         const char *SectionName,
                                         CustomSectionAttributes attributes,
                                         const char *ComdatName) {
@@ -190,80 +196,80 @@ extern "C" void SetCodeSectionAttribute(ObjectWriter *OW,
   OW->SetCodeSectionAttribute(SectionName, attributes, ComdatName);
 }
 
-extern "C" void EmitAlignment(ObjectWriter *OW, int ByteAlignment) {
+DLL_EXPORT void EmitAlignment(ObjectWriter *OW, int ByteAlignment) {
   assert(OW && "ObjWriter is null");
   OW->EmitAlignment(ByteAlignment);
 }
 
-extern "C" void EmitBlob(ObjectWriter *OW, int BlobSize, const char *Blob) {
+DLL_EXPORT void EmitBlob(ObjectWriter *OW, int BlobSize, const char *Blob) {
   assert(OW && "ObjWriter null");
   OW->EmitBlob(BlobSize, Blob);
 }
 
-extern "C" void EmitIntValue(ObjectWriter *OW, uint64_t Value, unsigned Size) {
+DLL_EXPORT void EmitIntValue(ObjectWriter *OW, uint64_t Value, unsigned Size) {
   assert(OW && "ObjWriter is null");
   OW->EmitIntValue(Value, Size);
 }
 
-extern "C" void EmitSymbolDef(ObjectWriter *OW, const char *SymbolName) {
+DLL_EXPORT void EmitSymbolDef(ObjectWriter *OW, const char *SymbolName) {
   assert(OW && "ObjWriter is null");
   OW->EmitSymbolDef(SymbolName);
 }
 
-extern "C" int EmitSymbolRef(ObjectWriter *OW, const char *SymbolName,
+DLL_EXPORT int EmitSymbolRef(ObjectWriter *OW, const char *SymbolName,
                              RelocType RelocType, int Delta) {
   assert(OW && "ObjWriter is null");
   return OW->EmitSymbolRef(SymbolName, RelocType, Delta);
 }
 
-extern "C" void EmitWinFrameInfo(ObjectWriter *OW, const char *FunctionName,
+DLL_EXPORT void EmitWinFrameInfo(ObjectWriter *OW, const char *FunctionName,
                                  int StartOffset, int EndOffset,
                                  const char *BlobSymbolName) {
   assert(OW && "ObjWriter is null");
   OW->EmitWinFrameInfo(FunctionName, StartOffset, EndOffset, BlobSymbolName);
 }
 
-extern "C" void EmitCFIStart(ObjectWriter *OW, int Offset) {
+DLL_EXPORT void EmitCFIStart(ObjectWriter *OW, int Offset) {
   assert(OW && "ObjWriter is null");
   OW->EmitCFIStart(Offset);
 }
 
-extern "C" void EmitCFIEnd(ObjectWriter *OW, int Offset) {
+DLL_EXPORT void EmitCFIEnd(ObjectWriter *OW, int Offset) {
   assert(OW && "ObjWriter is null");
   OW->EmitCFIEnd(Offset);
 }
 
-extern "C" void EmitCFILsda(ObjectWriter *OW, const char *LsdaBlobSymbolName) {
+DLL_EXPORT void EmitCFILsda(ObjectWriter *OW, const char *LsdaBlobSymbolName) {
   assert(OW && "ObjWriter is null");
   OW->EmitCFILsda(LsdaBlobSymbolName);
 }
 
-extern "C" void EmitCFICode(ObjectWriter *OW, int Offset, const char *Blob) {
+DLL_EXPORT void EmitCFICode(ObjectWriter *OW, int Offset, const char *Blob) {
   assert(OW && "ObjWriter is null");
   OW->EmitCFICode(Offset, Blob);
 }
 
-extern "C" void EmitDebugFileInfo(ObjectWriter *OW, int FileId,
+DLL_EXPORT void EmitDebugFileInfo(ObjectWriter *OW, int FileId,
                                   const char *FileName) {
   assert(OW && "ObjWriter is null");
   OW->EmitDebugFileInfo(FileId, FileName);
 }
 
-extern "C" void EmitDebugFunctionInfo(ObjectWriter *OW,
+DLL_EXPORT void EmitDebugFunctionInfo(ObjectWriter *OW,
                                       const char *FunctionName,
                                       int FunctionSize) {
   assert(OW && "ObjWriter is null");
   OW->EmitDebugFunctionInfo(FunctionName, FunctionSize);
 }
 
-extern "C" void EmitDebugVar(ObjectWriter *OW, char *Name, int TypeIndex,
+DLL_EXPORT void EmitDebugVar(ObjectWriter *OW, char *Name, int TypeIndex,
                              bool IsParam, int RangeCount,
                              ICorDebugInfo::NativeVarInfo *Ranges) {
   assert(OW && "ObjWriter is null");
   OW->EmitDebugVar(Name, TypeIndex, IsParam, RangeCount, Ranges);
 }
 
-extern "C" void EmitDebugLoc(ObjectWriter *OW, int NativeOffset, int FileId,
+DLL_EXPORT void EmitDebugLoc(ObjectWriter *OW, int NativeOffset, int FileId,
                              int LineNumber, int ColNumber) {
   assert(OW && "ObjWriter is null");
   OW->EmitDebugLoc(NativeOffset, FileId, LineNumber, ColNumber);
@@ -271,25 +277,25 @@ extern "C" void EmitDebugLoc(ObjectWriter *OW, int NativeOffset, int FileId,
 
 // This should be invoked at the end of module emission to finalize
 // debug module info.
-extern "C" void EmitDebugModuleInfo(ObjectWriter *OW) {
+DLL_EXPORT void EmitDebugModuleInfo(ObjectWriter *OW) {
   assert(OW && "ObjWriter is null");
   OW->EmitDebugModuleInfo();
 }
 
-extern "C" unsigned GetEnumTypeIndex(ObjectWriter *OW,
+DLL_EXPORT unsigned GetEnumTypeIndex(ObjectWriter *OW,
                                      EnumTypeDescriptor TypeDescriptor,
                                      EnumRecordTypeDescriptor *TypeRecords) {
   assert(OW && "ObjWriter is null");
   return OW->GetEnumTypeIndex(TypeDescriptor, TypeRecords);
 }
 
-extern "C" unsigned GetClassTypeIndex(ObjectWriter *OW,
+DLL_EXPORT unsigned GetClassTypeIndex(ObjectWriter *OW,
                                       ClassTypeDescriptor ClassDescriptor) {
   assert(OW && "ObjWriter is null");
   return OW->GetClassTypeIndex(ClassDescriptor);
 }
 
-extern "C" unsigned
+DLL_EXPORT unsigned
 GetCompleteClassTypeIndex(ObjectWriter *OW, ClassTypeDescriptor ClassDescriptor,
                           ClassFieldsTypeDescriptior ClassFieldsDescriptor,
                           DataFieldDescriptor *FieldsDescriptors) {
@@ -298,48 +304,48 @@ GetCompleteClassTypeIndex(ObjectWriter *OW, ClassTypeDescriptor ClassDescriptor,
                                        FieldsDescriptors);
 }
 
-extern "C" unsigned GetArrayTypeIndex(ObjectWriter *OW,
+DLL_EXPORT unsigned GetArrayTypeIndex(ObjectWriter *OW,
                                       ClassTypeDescriptor ClassDescriptor,
                                       ArrayTypeDescriptor ArrayDescriptor) {
   assert(OW && "ObjWriter is null");
   return OW->GetArrayTypeIndex(ClassDescriptor, ArrayDescriptor);
 }
 
-extern "C" unsigned GetPointerTypeIndex(ObjectWriter *OW,
+DLL_EXPORT unsigned GetPointerTypeIndex(ObjectWriter *OW,
     PointerTypeDescriptor PointerDescriptor) {
     assert(OW && "ObjWriter is null");
     return OW->GetPointerTypeIndex(PointerDescriptor);
 }
 
-extern "C" unsigned GetMemberFunctionTypeIndex(ObjectWriter *OW,
+DLL_EXPORT unsigned GetMemberFunctionTypeIndex(ObjectWriter *OW,
     MemberFunctionTypeDescriptor MemberDescriptor,
     uint32_t *ArgumentTypes) {
     assert(OW && "ObjWriter is null");
     return OW->GetMemberFunctionTypeIndex(MemberDescriptor, ArgumentTypes);
 }
 
-extern "C" unsigned GetMemberFunctionIdTypeIndex(ObjectWriter *OW,
+DLL_EXPORT unsigned GetMemberFunctionIdTypeIndex(ObjectWriter *OW,
     MemberFunctionIdTypeDescriptor MemberIdDescriptor) {
     assert(OW && "ObjWriter is null");
     return OW->GetMemberFunctionId(MemberIdDescriptor);
 }
 
-extern "C" void EmitARMFnStart(ObjectWriter *OW) {
+DLL_EXPORT void EmitARMFnStart(ObjectWriter *OW) {
     assert(OW && "ObjWriter is null");
     return OW->EmitARMFnStart();
 }
 
-extern "C" void EmitARMFnEnd(ObjectWriter *OW) {
+DLL_EXPORT void EmitARMFnEnd(ObjectWriter *OW) {
   assert(OW && "ObjWriter is null");
   return OW->EmitARMFnEnd();
 }
 
-extern "C" void EmitARMExIdxLsda(ObjectWriter *OW, const char *Blob) {
+DLL_EXPORT void EmitARMExIdxLsda(ObjectWriter *OW, const char *Blob) {
   assert(OW && "ObjWriter is null");
   return OW->EmitARMExIdxLsda(Blob);
 }
 
-extern "C" void EmitARMExIdxCode(ObjectWriter *OW, int Offset, const char *Blob) {
+DLL_EXPORT void EmitARMExIdxCode(ObjectWriter *OW, int Offset, const char *Blob) {
   assert(OW && "ObjWriter is null");
   return OW->EmitARMExIdxCode(Offset, Blob);
 }
