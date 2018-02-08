@@ -202,6 +202,7 @@ See the LICENSE file in the project root for more information.
       <CustomLinkerArg Include="-o $(NativeBinary)" Condition="'$(OS)' != 'Windows_NT'" />
       <CustomLinkerArg Include="/OUT:$(NativeBinary)" Condition="'$(OS)' == 'Windows_NT'" />
       <CustomLinkerArg Include="/DEF:$(ExportsFile)" Condition="'$(OS)' == 'Windows_NT' and $(ExportsFile) != ''" />
+      <CustomLinkerArg Include="/LIBPATH:&quot;%(AdditionalNativeLibraryDirectories.Identity)&quot;" Condition="'$(OS)' == 'Windows_NT' and '@(AdditionalNativeLibraryDirectories->Count())' &gt; 0" />
       <CustomLinkerArg Include="-exported_symbols_list $(ExportsFile)" Condition="'$(OS)' != 'Windows_NT' and $(ExportsFile) != ''" />
       <CustomLinkerArg Include="@(LinkerArg)" />
     </ItemGroup>

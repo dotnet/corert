@@ -120,7 +120,7 @@ public class ValuesController
 
 ## Restore and Publish your app
 
-Once the package has been successfully added it's time to compile and publish your app! If you're using Windows, make sure you're using `x64 Native Tools Command Prompt for VS 2017` instead of the standard Windows command prompt. In the shell/command prompt window, run the following command:
+Once the package has been successfully added it's time to compile and publish your app! In the shell/command prompt window, run the following command:
 
 ```bash
 > dotnet publish -r <RID> -c <Configuration>

@@ -15,9 +15,14 @@ IF "%vsBase%"=="" GOTO :ERROR
 CALL "%vsBase%\vc\Auxiliary\Build\vcvarsall.bat" %1% > NUL
 
 FOR /F "delims=" %%W IN ('where link') DO (
-    FOR %%A IN ("%%W") DO ECHO %%~dpA
-    EXIT /B 0
+    FOR %%A IN ("%%W") DO ECHO %%~dpA#
+    GOTO :CAPTURE_LIB_PATHS
 )
+
+:CAPTURE_LIB_PATHS
+ECHO %LIB%
+
+EXIT /B 0
 
 ENDLOCAL
 

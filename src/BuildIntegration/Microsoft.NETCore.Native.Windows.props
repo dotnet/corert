@@ -80,12 +80,17 @@ See the LICENSE file in the project root for more information.
       <Output TaskParameter="ExitCode" PropertyName="_WhereCppTools"/>
     </Exec>
 
-    <Exec Condition="'$(_WhereCppTools)' != '0'" Command="&quot;$(MSBuildThisFileDirectory)findvcvarsall.bat&quot; x86_amd64" LogStandardErrorAsError="true" ContinueOnError="false" ConsoleToMSBuild="true">
-      <Output TaskParameter="ConsoleOutput" PropertyName="_CppToolsDirectory"/>
+    <Exec Condition="'$(_WhereCppTools)' != '0'" Command="&quot;$(MSBuildThisFileDirectory)findvcvarsall.bat&quot; amd64" LogStandardErrorAsError="true" ContinueOnError="false" ConsoleToMSBuild="true" StandardOutputImportance="Low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_FindVCVarsallOutput"/>
       <Output TaskParameter="ExitCode" PropertyName="_VCVarsAllFound"/>
     </Exec>
 
+    <ItemGroup Condition="'$(_VCVarsAllFound)' == '0'">
+      <AdditionalNativeLibraryDirectories Include="$(_FindVCVarsallOutput.Split(`#`)[1].Split(';'))" />
+    </ItemGroup>
+
     <PropertyGroup Condition="'$(_VCVarsAllFound)' == '0'">
+      <_CppToolsDirectory>$(_FindVCVarsallOutput.Split(`#`)[0])</_CppToolsDirectory>
       <CppCompiler>"$(_CppToolsDirectory)cl.exe"</CppCompiler>
       <CppLinker>"$(_CppToolsDirectory)link.exe"</CppLinker>
       <CppLibCreator>"$(_CppToolsDirectory)lib.exe"</CppLibCreator>
