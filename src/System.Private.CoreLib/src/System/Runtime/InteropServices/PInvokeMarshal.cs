@@ -40,6 +40,15 @@ namespace System.Runtime.InteropServices
             s_lastWin32Error = errorCode;
         }
 
+        public static int GetHRForLastWin32Error()
+        {
+            int dwLastError = GetLastWin32Error();
+            if ((dwLastError & 0x80000000) == 0x80000000)
+                return dwLastError;
+            else
+                return (dwLastError & 0x0000FFFF) | unchecked((int)0x80070000);
+        }
+
         public static unsafe IntPtr AllocHGlobal(IntPtr cb)
         {
             return MemAlloc(cb);
