@@ -12,6 +12,7 @@ internal static partial class Interop
         internal const string ErrorHandling = "api-ms-win-core-errorhandling-l1-1-0.dll";
         internal const string Handle = "api-ms-win-core-handle-l1-1-0.dll";
         internal const string IO = "api-ms-win-core-io-l1-1-0.dll";
+        internal const string Kernel32 = "kernel32.dll";
         internal const string Memory = "api-ms-win-core-memory-l1-1-0.dll";
         internal const string ProcessEnvironment = "api-ms-win-core-processenvironment-l1-1-0.dll";
         internal const string ProcessThreads = "api-ms-win-core-processthreads-l1-1-0.dll";
