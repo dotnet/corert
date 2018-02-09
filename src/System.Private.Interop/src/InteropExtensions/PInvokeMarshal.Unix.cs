@@ -23,32 +23,6 @@ namespace System.Runtime.InteropServices
             return false;
         }
 
-        public static unsafe String PtrToStringAnsi(IntPtr ptr)
-        {
-            if (IntPtr.Zero == ptr)
-            {
-                return null;
-            }
-
-            int len = Internal.Runtime.CompilerHelpers.InteropHelpers.strlen((byte*)ptr);
-            if (len == 0)
-            {
-                return string.Empty;
-            }
-
-            return System.Text.Encoding.UTF8.GetString((byte*)ptr, len);
-        }
-
-        public static unsafe String PtrToStringAnsi(IntPtr ptr, int len)
-        {
-            if (ptr == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(ptr));
-            if (len < 0)
-                throw new ArgumentException(nameof(len));
-
-            return System.Text.Encoding.UTF8.GetString((byte*)ptr, len);
-        }
-
         // In CoreRT on Unix, there is not yet a BSTR implementation. On Windows, we would use SysAllocStringLen from OleAut32.dll.
         internal static IntPtr AllocBSTR(int length)
         {

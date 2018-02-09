@@ -433,6 +433,16 @@ namespace System.Runtime.InteropServices
             return Marshal.PtrToStringUni(ptr);
         }
         
+        public static unsafe String PtrToStringAnsi(IntPtr ptr)
+        {
+            return Marshal.PtrToStringAnsi(ptr);
+        }
+ 
+        public static unsafe String PtrToStringAnsi(IntPtr ptr, int len)
+        {
+            return Marshal.PtrToStringAnsi(ptr, len);
+        }
+        
         //====================================================================
         // Copy blocks from CLR arrays to native memory.
         //====================================================================
