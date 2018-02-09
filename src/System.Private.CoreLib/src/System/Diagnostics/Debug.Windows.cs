@@ -21,6 +21,12 @@ namespace System.Diagnostics
             }
         }
 
+        private static void ShowDialog(string stackTrace, string message, string detailMessage, string errorSource)
+        {
+            // We can safely ignore errorSource since it's a CoreCLR specific argument for distinguishing calls from Debug.Assert and Environment.FailFast
+            ShowAssertDialog(stackTrace, message, detailMessage);
+        }
+
         private static readonly object s_ForLock = new Object();
 
         private static void WriteCore(string message)

@@ -5,6 +5,7 @@
 using System;
 using System.Runtime;
 using System.Text;
+using System.Reflection;
 
 using Internal.Diagnostics;
 
@@ -202,6 +203,19 @@ namespace System.Diagnostics
         /// </summary>
         public override String ToString()
         {
+            return ToString(TraceFormat.Normal);    // default behavior in RT did not have trailing newline
+        }
+
+        // TraceFormat is Used to specify options for how the 
+        // string-representation of a StackTrace should be generated.
+        internal enum TraceFormat
+        {
+            Normal,
+            TrailingNewLine,        // include a trailing new line character
+        }
+
+        internal String ToString(TraceFormat traceFormat)
+        {
             if (_stackFrames == null)
             {
                 return "";
@@ -212,7 +226,14 @@ namespace System.Diagnostics
             {
                 frame.AppendToStackTrace(builder);
             }
+            
+            if (traceFormat == TraceFormat.TrailingNewLine)
+            {
+                builder.Append(Environment.NewLine);
+            }
+
             return builder.ToString();
         }
+
     }
 }
