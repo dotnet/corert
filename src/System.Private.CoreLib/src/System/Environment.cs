@@ -13,10 +13,12 @@
 ============================================================*/
 
 using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
 using Internal.Runtime.Augments;
+using Internal.DeveloperExperience;
 
 namespace System
 {
@@ -56,6 +58,16 @@ namespace System
         public static void FailFast(String message, Exception exception)
         {
             RuntimeExceptionHelpers.FailFast(message, exception);
+        }
+
+        internal static void FailFast(String message, Exception exception, String errorSource)
+        {
+
+            bool result = DeveloperExperience.Default.OnContractFailure(exception.StackTrace, ContractFailureKind.Assert, message, null, null, null);
+            if (!result)
+            {
+                RuntimeExceptionHelpers.FailFast(message, exception);
+            }
         }
 
         // Still needed by shared\System\Diagnostics\Debug.Unix.cs
