@@ -101,7 +101,24 @@
     <Compile Include="Windows\Foundation\Size.cs" />
     <Compile Include="Windows\Foundation\TokenizerHelper.cs" />
   </ItemGroup>
-  
+
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="InteropExtensions\PInvokeMarshal.Windows.cs" />
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs">
+      <Link>Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SetLastError.cs">
+      <Link>Interop\Windows\mincore\Interop.SetLastError.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\Interop.Libraries.cs">
+      <Link>Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsUnix)'=='true'">
+    <Compile Include="InteropExtensions\PInvokeMarshal.Unix.cs" />
+  </ItemGroup>
+
   <Import Project="System.Private.Interop.Shared.projitems" />
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

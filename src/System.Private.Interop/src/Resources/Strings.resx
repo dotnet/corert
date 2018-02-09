@@ -366,4 +366,10 @@
   <data name="TypeNotDelegate" xml:space="preserve">
     <value>'Type '{0}' is not a delegate type.  EventTokenTable may only be used with delegate types.'</value>
   </data>
+    <data name="WrongSizeArrayInNStruct" xml:space="preserve">
+    <value>Type could not be marshaled because the length of an embedded array instance does not match the declared length in the layout.</value>
+  </data>
+  <data name="Arg_InteropMarshalUnmappableChar" xml:space="preserve">
+    <value>Cannot marshal: Encountered unmappable character.</value>
+  </data>
 </root>

@@ -63,7 +63,24 @@
     <Compile Include="Interop\Interop.WinRT.Basic.cs" />
     <Compile Include="System\Runtime\InteropServices\Variant.cs" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="InteropExtensions\PInvokeMarshal.Windows.cs" />
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs">
+      <Link>Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SetLastError.cs">
+      <Link>Interop\Windows\mincore\Interop.SetLastError.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\Interop.Libraries.cs">
+      <Link>Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+  </ItemGroup>
   
+  <ItemGroup Condition="'$(TargetsUnix)'=='true'">
+    <Compile Include="InteropExtensions\PInvokeMarshal.Unix.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="System\Reflection\DispatchProxy.cs" />
     <Compile Include="System\Reflection\DispatchProxyEntry.cs" />
