@@ -13,14 +13,9 @@ namespace System.Runtime.InteropServices
     /// </summary>
     public partial class PInvokeMarshal
     {
-        public static void SaveLastWin32Error()
-        {
-            s_lastWin32Error = Interop.Sys.GetErrNo();
-        }
-
         public static void ClearLastWin32Error()
         {
-            Interop.Sys.ClearErrNo();
+            // no-op
         }
 
         private static bool IsWin32Atom(IntPtr ptr)
@@ -52,45 +47,6 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(nameof(len));
 
             return System.Text.Encoding.UTF8.GetString((byte*)ptr, len);
-        }
-
-        public static unsafe IntPtr MemAlloc(IntPtr cb)
-        {
-            return Interop.MemAlloc((UIntPtr)(void*)cb);
-        }
-
-        public static void MemFree(IntPtr hglobal)
-        {
-            Interop.MemFree(hglobal);
-        }
-
-        public static unsafe IntPtr MemReAlloc(IntPtr pv, IntPtr cb)
-        {
-            return Interop.MemReAlloc(pv, new UIntPtr((void*)cb));
-        }
-
-        public static IntPtr CoTaskMemAlloc(UIntPtr bytes)
-        {
-            return Interop.MemAlloc(bytes);
-        }
-
-        public static void CoTaskMemFree(IntPtr allocatedMemory)
-        {
-            Interop.MemFree(allocatedMemory);
-        }
-
-        public static unsafe IntPtr CoTaskMemReAlloc(IntPtr pv, IntPtr cb)
-        {
-            return Interop.MemReAlloc(pv, new UIntPtr((void*)cb));
-        }
-
-        public static IntPtr SecureStringToBSTR(SecureString s)
-        {
-            if (s == null)
-            {
-                throw new ArgumentNullException(nameof(s));
-            }
-            throw new PlatformNotSupportedException();
         }
 
         // In CoreRT on Unix, there is not yet a BSTR implementation. On Windows, we would use SysAllocStringLen from OleAut32.dll.

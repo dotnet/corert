@@ -34,12 +34,6 @@ namespace System.Runtime.InteropServices
             long lPtr = (long)ptr;
             return 0 != (lPtr & HIWORDMASK);
         }
-
-        public static void SaveLastWin32Error()
-        {
-            s_lastWin32Error = Marshal.GetLastWin32Error();
-        }
-
         public static void ClearLastWin32Error()
         {
             Interop.mincore.SetLastError(0);

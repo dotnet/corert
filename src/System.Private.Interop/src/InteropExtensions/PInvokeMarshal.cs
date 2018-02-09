@@ -5,12 +5,6 @@
 using Debug = System.Diagnostics.Debug;
 using System.Runtime.CompilerServices;
 
-#if BIT64
-using nuint = System.UInt64;
-#else
-using nuint = System.UInt32;
-#endif
-
 namespace System.Runtime.InteropServices
 {
     /// <summary>
@@ -31,6 +25,11 @@ namespace System.Runtime.InteropServices
         public static void SetLastWin32Error(int errorCode)
         {
             s_lastWin32Error = errorCode;
+        }
+        
+        public static void SaveLastWin32Error()
+        {
+            s_lastWin32Error = Marshal.GetLastWin32Error();
         }
 
         public static IntPtr GetStubForPInvokeDelegate(Delegate del)
