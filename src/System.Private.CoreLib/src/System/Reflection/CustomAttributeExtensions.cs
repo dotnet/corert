@@ -345,7 +345,18 @@ namespace System.Reflection
             }
             int count = attributes.Count;
             Attribute[] result;
-            result = (Attribute[])Array.CreateInstance(actualElementType, count);
+            try
+            {
+                result = (Attribute[])Array.CreateInstance(actualElementType, count);
+            }
+            catch (NotSupportedException) when (actualElementType.ContainsGenericParameters)
+            {
+                // This is here for desktop compatibility (using try-catch as control flow to avoid slowing down the mainline case.)
+                // CustomAttributeExtensions.GetCustomAttributes() normally returns an array of the exact attribute type requested except when
+                // the reqested type is an open type. Its ICustomAttributeProvider counterpart would return an Object[] array but that's
+                // not possible with this api's return type so it returns null instead.
+                return null;
+            }
             attributes.CopyTo(result, 0);
             return result;
         }
