@@ -1047,6 +1047,8 @@ namespace Internal.IL
             return eeTypePointer;
         }
 
+        private int _arrayInitializerHolderCount = 0;
+
         /// <summary>
         /// Implements intrinsic methods instread of calling them
         /// </summary>
@@ -1062,6 +1064,52 @@ namespace Internal.IL
 
             switch (method.Name)
             {
+                case "InitializeArray":
+                    if (metadataType.Namespace == "System.Runtime.CompilerServices" && metadataType.Name == "RuntimeHelpers")
+                    {
+                        var fieldSlot = (LdTokenEntry<FieldDesc>)_stack.Pop();
+                        var arraySlot = _stack.Pop();
+
+                        var fieldDesc = fieldSlot.LdToken;
+                        var dataBlob = _compilation.GetFieldRvaData(fieldDesc).GetData(_compilation.NodeFactory, false);
+                        Debug.Assert(dataBlob.Relocs.Length == 0);
+                        var memBlock = dataBlob.Data;
+
+                        // TODO: Need to do more for arches with different endianness?
+                        LLVMValueRef globalDataHolder = LLVM.AddGlobal(Module, LLVM.ArrayType(LLVM.Int8Type(), (uint)memBlock.Length), $"array.init.{_arrayInitializerHolderCount++}");
+                        var llvmInitValues = new LLVMValueRef[memBlock.Length];
+                        for (int i = 0; i < memBlock.Length; ++i)
+                            llvmInitValues[i] = BuildConstInt8(memBlock[i]);
+                        LLVM.SetInitializer(globalDataHolder, LLVM.ConstArray(LLVM.Int8Type(), llvmInitValues));
+                        LLVM.SetGlobalConstant(globalDataHolder, LLVMMisc.True);
+                        LLVM.SetUnnamedAddr(globalDataHolder, LLVMMisc.True);
+                        LLVM.SetLinkage(globalDataHolder, LLVMLinkage.LLVMPrivateLinkage);
+
+                        var argsType = new LLVMTypeRef[]
+                        {
+                            LLVM.PointerType(LLVM.Int8Type(), 0),
+                            LLVM.PointerType(LLVM.Int8Type(), 0),
+                            LLVM.Int32Type(),
+                            LLVM.Int32Type(),
+                            LLVM.Int1Type()
+                        };
+                        MemcpyI8I8I32Function = GetOrCreateLLVMFunction("llvm.memcpy.p0i8.p0i8.i32", LLVM.FunctionType(LLVM.VoidType(), argsType, false));
+
+                        var args = new LLVMValueRef[]
+                        {
+                            // TODO: Where to get the base size of this array? We don't have the EEType of the array here.
+                            // Currently the base size is assumed to be 8 (while it seems always be).
+                            LLVM.BuildGEP(_builder, arraySlot.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), new LLVMValueRef[] { BuildConstInt32(8) }, String.Empty),
+                            LLVM.BuildBitCast(_builder, globalDataHolder, LLVM.PointerType(LLVM.Int8Type(), 0), "to.ptr.bitcast"),
+                            BuildConstInt32(memBlock.Length),
+                            BuildConstInt32(16),
+                            BuildConstInt1(0)
+                        };
+                        LLVM.BuildCall(_builder, MemcpyI8I8I32Function, args, string.Empty);
+
+                        return true;
+                    }
+                    break;
                 case "get_Value":
                     if (metadataType.IsByReferenceOfT)
                     {
