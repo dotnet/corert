@@ -44,6 +44,7 @@ enum class RelocType {
   IMAGE_REL_BASED_DIR64 = 0x0A,
   IMAGE_REL_BASED_REL32 = 0x10,
   IMAGE_REL_BASED_THUMB_BRANCH24 = 0x13,
+  IMAGE_REL_BASED_RELPTR32 = 0x7C,
 };
 
 class ObjectWriter {
