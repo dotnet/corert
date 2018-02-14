@@ -321,7 +321,7 @@ namespace System.Threading
             // In this case there are three ways to acquire the lock
             // 1- the first way the thread either tries to get the lock if it's free or updates the waiters, if the turn >= the processors count then go to 3 else go to 2
             // 2- In this step the waiter threads spins and tries to acquire the lock, the number of spin iterations and spin count is dependent on the thread turn
-            // the late the thread arrives the more it spins and less frequent it check the lock avilability
+            // the late the thread arrives the more it spins and less frequent it check the lock availability
             // Also the spins count is increases each iteration
             // If the spins iterations finished and failed to acquire the lock, go to step 3
             // 3- This is the yielding step, there are two ways of yielding Thread.Yield and Sleep(1)
