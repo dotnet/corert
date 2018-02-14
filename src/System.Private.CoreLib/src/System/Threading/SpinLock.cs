@@ -337,7 +337,7 @@ namespace System.Threading
             {
                 if (CompareExchange(ref m_owner, observedOwner | 1, observedOwner, ref lockTaken) == observedOwner)
                 {
-                    // Aquired lock
+                    // Acquired lock
                     return;
                 }
 
