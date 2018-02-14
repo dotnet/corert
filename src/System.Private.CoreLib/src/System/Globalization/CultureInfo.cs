@@ -80,7 +80,7 @@ namespace System.Globalization
         // textinfo and compareinfo names are the same as the name
 
         // Note that the name used to be serialized for Everett; it is now serialized
-        // because alernate sorts can have alternate names.
+        // because alternate sorts can have alternate names.
         // This has a de-DE, de-DE_phoneb or fj-FJ style name
         internal string _name;
 
