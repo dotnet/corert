@@ -2860,7 +2860,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 }
 
                 // The constructor should always succeed because of the range check earlier in the function
-                // Althought it is UTC, internally DateTimeOffset does not use this flag
+                // Although it is UTC, internally DateTimeOffset does not use this flag
                 result.parsedDate = new DateTime(utcTicks, DateTimeKind.Utc);
                 result.timeZoneOffset = TimeSpan.Zero;
             }
