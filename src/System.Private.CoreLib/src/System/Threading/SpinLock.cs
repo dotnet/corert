@@ -321,7 +321,7 @@ namespace System.Threading
             // In this case there are three ways to acquire the lock
             // 1- the first way the thread either tries to get the lock if it's free or updates the waiters, if the turn >= the processors count then go to 3 else go to 2
             // 2- In this step the waiter threads spins and tries to acquire the lock, the number of spin iterations and spin count is dependent on the thread turn
-            // the late the thread arrives the more it spins and less frequent it check the lock avilability
+            // the late the thread arrives the more it spins and less frequent it check the lock availability
             // Also the spins count is increases each iteration
             // If the spins iterations finished and failed to acquire the lock, go to step 3
             // 3- This is the yielding step, there are two ways of yielding Thread.Yield and Sleep(1)
@@ -337,19 +337,19 @@ namespace System.Threading
             {
                 if (CompareExchange(ref m_owner, observedOwner | 1, observedOwner, ref lockTaken) == observedOwner)
                 {
-                    // Aquired lock
+                    // Acquired lock
                     return;
                 }
 
                 if (millisecondsTimeout == 0)
                 {
-                    // Did not aquire lock in CompareExchange and timeout is 0 so fail fast
+                    // Did not acquire lock in CompareExchange and timeout is 0 so fail fast
                     return;
                 }
             }
             else if (millisecondsTimeout == 0)
             {
-                // Did not aquire lock as owned and timeout is 0 so fail fast
+                // Did not acquire lock as owned and timeout is 0 so fail fast
                 return;
             }
             else //failed to acquire the lock,then try to update the waiters. If the waiters count reached the maximum, jsut break the loop to avoid overflow

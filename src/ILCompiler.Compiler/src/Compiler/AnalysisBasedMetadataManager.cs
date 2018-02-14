@@ -155,7 +155,7 @@ namespace ILCompiler
 
         void ICompilationRootProvider.AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
-            // We go over all the types and members that need a runtime artiface present in the
+            // We go over all the types and members that need a runtime artifact present in the
             // compiled executable and root it.
 
             const string reason = "Reflection";

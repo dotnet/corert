@@ -250,7 +250,7 @@ namespace System.Runtime.InteropServices
         /// Combined Ref Count of COM and Jupiter
         /// COM takes lower 32-bit while Jupiter takes higher 32-bit.
         /// It's OK for COM ref count to overflow
-        /// Be verycareful when you read this because you can't read this atomicly under x86 directly.
+        /// Be verycareful when you read this because you can't read this atomically under x86 directly.
         /// Only use CombinedRefCount property for thread-safety
         /// </summary>
         long m_lRefCount;

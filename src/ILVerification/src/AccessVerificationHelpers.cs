@@ -149,7 +149,7 @@ namespace ILVerify
                         break;
                     case MethodAttributes.Family:
                     case MethodAttributes.FamANDAssem:
-                        // Assembly acces was already checked earlier, so only need to check family access
+                        // Assembly access was already checked earlier, so only need to check family access
                         if (CanAccessFamily(currentType, targetTypeDef, instance))
                             return true;
                         break;
