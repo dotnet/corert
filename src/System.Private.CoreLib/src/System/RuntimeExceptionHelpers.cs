@@ -201,7 +201,7 @@ namespace System
 
         internal static void FailFast(string message, Exception exception, RhFailFastReason reason, IntPtr pExAddress, IntPtr pExContext)
         {
-            // If this a recursive call to FailFast, avoid all unnecessary and complex actitivy the second time around to avoid the recursion 
+            // If this a recursive call to FailFast, avoid all unnecessary and complex activity the second time around to avoid the recursion 
             // that got us here the first time (Some judgement is required as to what activity is "unnecessary and complex".)
             bool minimalFailFast = InFailFast.Value || (exception is OutOfMemoryException);
             InFailFast.Value = true;
