@@ -44,7 +44,7 @@ namespace System.Runtime.InteropServices
         [DllImport(Libraries.CORE_WINRT)]
         [McgGeneratedNativeCallCodeAttribute]
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static extern unsafe int RoActivateInstance(void* hActivableClassId, out void* ppv);
+        public static extern unsafe int RoActivateInstance(void* hActivatableClassId, out void* ppv);
 
 
         [DllImport(Libraries.CORE_WINRT_ERROR, PreserveSig = true)]
