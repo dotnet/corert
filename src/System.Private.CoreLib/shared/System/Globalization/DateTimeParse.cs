@@ -1200,7 +1200,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     }
                     else if ((!Char.IsWhiteSpace(ch)))
                     {
-                        // Anthyhing other than whitespace outside hashes is invalid
+                        // Anything other than whitespace outside hashes is invalid
                         if (!foundStart || foundEnd)
                         {
                             return false;
