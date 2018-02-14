@@ -249,9 +249,9 @@ namespace System
 #pragma warning disable 414 // field is assigned, but never used -- This is because C# doesn't realize that we
         //                                      copy the field into a buffer.
         /// <summary>
-        /// This is the header that describes our 'error report' buffer to the minidump auxillary provider.
+        /// This is the header that describes our 'error report' buffer to the minidump auxiliary provider.
         /// Its format is know to that system-wide DLL, so do not change it.  The remainder of the buffer is
-        /// opaque to the minidump auxillary provider, so it'll have its own format that is more easily 
+        /// opaque to the minidump auxiliary provider, so it'll have its own format that is more easily 
         /// changed.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
@@ -362,7 +362,7 @@ namespace System
         /// <summary>
         /// This method will call the runtime to gather the Exception objects from every exception dispatch in
         /// progress on the current thread.  It will then serialize them into a new buffer and pass that 
-        /// buffer back to the runtime, which will publish it to a place where a global "minidump auxillary 
+        /// buffer back to the runtime, which will publish it to a place where a global "minidump auxiliary 
         /// provider" will be able to save the buffer's contents into triage dumps.
         /// 
         /// Thread safety information: The guarantee of this method is that the buffer it produces will have
