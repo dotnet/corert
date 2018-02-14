@@ -2702,7 +2702,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
 
             //
             // We have to check day of week before we adjust to the time zone.
-            // Otherwise, the value of day of week may change after adjustting to the time zone.
+            // Otherwise, the value of day of week may change after adjusting to the time zone.
             //
             if (raw.dayOfWeek != -1)
             {
