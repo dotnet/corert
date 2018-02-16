@@ -80,7 +80,9 @@ See the LICENSE file in the project root for more information.
       <Output TaskParameter="ExitCode" PropertyName="_WhereCppTools"/>
     </Exec>
 
-    <Exec Condition="'$(_WhereCppTools)' != '0'" Command="&quot;$(MSBuildThisFileDirectory)findvcvarsall.bat&quot; amd64" LogStandardErrorAsError="true" ContinueOnError="false" ConsoleToMSBuild="true" StandardOutputImportance="Low">
+    <Message Condition="'$(_WhereCppTools)' != '0'" Text="Tools '$(CppCompiler)' and '$(CppLinker)' not found on PATH. Attempting to autodetect." />
+
+    <Exec Condition="'$(_WhereCppTools)' != '0'" Command="&quot;$(MSBuildThisFileDirectory)findvcvarsall.bat&quot; amd64" IgnoreExitCode="true" ConsoleToMSBuild="true" StandardOutputImportance="Low">
       <Output TaskParameter="ConsoleOutput" PropertyName="_FindVCVarsallOutput"/>
       <Output TaskParameter="ExitCode" PropertyName="_VCVarsAllFound"/>
     </Exec>
@@ -96,6 +98,6 @@ See the LICENSE file in the project root for more information.
       <CppLibCreator>"$(_CppToolsDirectory)lib.exe"</CppLibCreator>
     </PropertyGroup>
 
-    <Error Condition="'$(_WhereCppTools)' != '0' AND '$(_VCVarsAllFound)' == '1'" Text="Platform linker not found. Make sure to publish from a x64 Native Tools Command Prompt for VS 2017 with C++ tools installed." />
+    <Error Condition="'$(_WhereCppTools)' != '0' AND '$(_VCVarsAllFound)' == '1'" Text="Platform linker not found. To fix this problem, download and install Visual Studio 2017 from http://visualstudio.com. Make sure to install the Desktop Development for C++ workload." />
   </Target>
 </Project>
