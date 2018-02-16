@@ -989,12 +989,14 @@ bool EECodeManager::UnwindStackFrame(GCInfoHeader * pInfoHeader,
     }
 
     PTR_UIntNative RSP = (PTR_UIntNative)rawRSP;
+    bool restoredIP = false;
 
     if (ebpFrame)
     {
         pContext->pFP = RSP++;
         pContext->SetAddrOfIP((PTR_PCODE)RSP); // save off the return address location
         pContext->SetIP(*RSP++);               // pop the return address
+        restoredIP = true;
     }
 
     if (!pInfoHeader->AreFPLROnTop())
@@ -1013,6 +1015,7 @@ bool EECodeManager::UnwindStackFrame(GCInfoHeader * pInfoHeader,
             ASSERT_MSG(!ebpFrame, "Chained frame cannot have CSR_MASK_LR mask set");
             pContext->SetAddrOfIP((PTR_PCODE)RSP); // save off the return address location
             pContext->SetIP(*RSP++);               // pop the return address
+            restoredIP = true;
         }
         if (regMask & CSR_MASK_X19) { pContext->pX19 = RSP++; }
         if (regMask & CSR_MASK_X20) { pContext->pX20 = RSP++; }
@@ -1025,6 +1028,12 @@ bool EECodeManager::UnwindStackFrame(GCInfoHeader * pInfoHeader,
         if (regMask & CSR_MASK_X27) { pContext->pX27 = RSP++; }
         if (regMask & CSR_MASK_X28) { pContext->pX28 = RSP++; }
         if (regMask & CSR_MASK_FP ) { ASSERT(!ebpFrame); pContext->pFP = RSP++; }
+    }
+
+    if (!restoredIP)
+    {
+        pContext->SetAddrOfIP((PTR_PCODE)pContext->pLR);
+        pContext->SetIP(*pContext->pLR);
     }
 
     UInt8 vfpRegMask = (UInt8)pInfoHeader->GetVfpRegsPushedMask();

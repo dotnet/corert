@@ -23,12 +23,13 @@
         ;; FP and LR registers
         PROLOG_SAVE_REG_PAIR   fp, lr, #-0xA0!            ;; Push down stack pointer and store FP and LR
 
-        ;; Need to save argument registers x0-x7 and the return buffer register x8 (twice just for 16B alignment)
+        ;; Need to save argument registers x0-x7 and the return buffer register x8
+        ;; Also save x9 which may be used for saving indirect call target
         stp         x0, x1, [sp, #0x10]
         stp         x2, x3, [sp, #0x20]
         stp         x4, x5, [sp, #0x30]
         stp         x6, x7, [sp, #0x40]
-        stp         x8, x8, [sp, #0x50]
+        stp         x8, x9, [sp, #0x50]
 
         ;; Save float argument registers as well since they're volatile
         stp         d0, d1, [sp, #0x60]
@@ -49,7 +50,7 @@
         ldp            x2, x3, [sp, #0x20]
         ldp            x4, x5, [sp, #0x30]
         ldp            x6, x7, [sp, #0x40]
-        ldr            x8, [sp, #0x50]
+        ldp            x8, x9, [sp, #0x50]
 
         ;; Restore FP and LR registers, and free the allocated stack block
         EPILOG_RESTORE_REG_PAIR   fp, lr, #0xA0!
