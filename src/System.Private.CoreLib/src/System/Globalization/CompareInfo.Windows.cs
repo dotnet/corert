@@ -178,6 +178,34 @@ namespace System.Globalization
         }
 
         private unsafe int FindString(
+            uint dwFindNLSStringFlags,
+            ReadOnlySpan<char> lpStringSource,
+            ReadOnlySpan<char> lpStringValue,
+            int* pcchFound)
+        {
+            Debug.Assert(!_invariantMode);
+
+            string localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
+
+            fixed (char* pLocaleName = localeName)
+            fixed (char* pSource = &MemoryMarshal.GetReference(lpStringSource))
+            fixed (char* pValue = &MemoryMarshal.GetReference(lpStringValue))
+            {
+                return Interop.Kernel32.FindNLSStringEx(
+                                    pLocaleName,
+                                    dwFindNLSStringFlags,
+                                    pSource,
+                                    lpStringSource.Length,
+                                    pValue,
+                                    lpStringValue.Length,
+                                    pcchFound,
+                                    null,
+                                    null,
+                                    _sortHandle);
+            }
+        }
+
+        private unsafe int FindString(
                     uint dwFindNLSStringFlags,
                     string lpStringSource,
                     int startSource,
@@ -311,6 +339,17 @@ namespace System.Globalization
                                                    null) >= 0;
         }
 
+        private unsafe bool StartsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options)
+        {
+            Debug.Assert(!_invariantMode);
+
+            Debug.Assert(!source.IsEmpty);
+            Debug.Assert(!prefix.IsEmpty);
+            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
+
+            return FindString(FIND_STARTSWITH | (uint)GetNativeCompareFlags(options), source, prefix, null) >= 0;
+        }
+
         private unsafe bool EndsWith(string source, string suffix, CompareOptions options)
         {
             Debug.Assert(!_invariantMode);
@@ -327,6 +366,17 @@ namespace System.Globalization
                                                    0,
                                                    suffix.Length,
                                                    null) >= 0;
+        }
+
+        private unsafe bool EndsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options)
+        {
+            Debug.Assert(!_invariantMode);
+
+            Debug.Assert(!source.IsEmpty);
+            Debug.Assert(!suffix.IsEmpty);
+            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
+
+            return FindString(FIND_ENDSWITH | (uint)GetNativeCompareFlags(options), source, suffix, null) >= 0;
         }
 
         // PAL ends here

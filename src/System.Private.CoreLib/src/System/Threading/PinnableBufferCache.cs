@@ -401,9 +401,9 @@ namespace System.Threading
             else if (m_restockSize < 256)
                 m_restockSize = m_restockSize * 2;                // Grow quickly at small sizes
             else if (m_restockSize < 4096)
-                m_restockSize = m_restockSize * 3 / 2;            // Less agressively at large ones
+                m_restockSize = m_restockSize * 3 / 2;            // Less aggressively at large ones
             else
-                m_restockSize = 4096;                             // Cap how agressive we are
+                m_restockSize = 4096;                             // Cap how aggressive we are
 
             // Ensure we hit our minimums
             if (m_minBufferCount > m_buffersUnderManagement)

@@ -68,8 +68,6 @@ get_current_linux_rid() {
             # remove the last version digit
             VERSION_ID=${VERSION_ID%.*}
             rid=alpine.$VERSION_ID
-        elif [[ $ID == "ubuntu" ]]; then
-            rid=$ID.$VERSION_ID
         fi
 
     elif [ -e /etc/redhat-release ]; then
@@ -108,6 +106,12 @@ export __ClangMinorVersion=9
 export __CrossBuild=0
 
 __BuildArch=$__HostArch
+
+# Checking for any clang versions, if there is a symlink
+if [ -x "$(command -v clang)" ]; then
+    __ClangMajorVersion="$(echo | clang -dM -E - | grep __clang_major__ | cut -f3 -d ' ')"
+    __ClangMinorVersion="$(echo | clang -dM -E - | grep __clang_minor__ | cut -f3 -d ' ')"
+fi
 
 while [ "$1" != "" ]; do
         lowerI="$(echo $1 | awk '{print tolower($0)}')"
@@ -171,6 +175,22 @@ while [ "$1" != "" ]; do
             export __ClangMajorVersion=3
             export __ClangMinorVersion=9
             ;;
+        clang4.0)
+            export __ClangMajorVersion=4
+            export __ClangMinorVersion=0
+            ;;
+        clang5.0)
+            export __ClangMajorVersion=5
+            export __ClangMinorVersion=0
+            ;;
+        clang6.0)
+            export __ClangMajorVersion=6
+            export __ClangMinorVersion=0
+            ;;
+        clang7.0)
+            export __ClangMajorVersion=7
+            export __ClangMinorVersion=0
+            ;;
         cross)
             export __CrossBuild=1
             ;;
@@ -193,41 +213,49 @@ done
 
 export $__BuildArch
 
+# Use uname to determine what the OS is.
+export OSName=$(uname -s)
+case $OSName in
+    Darwin)
+        export __HostOS=OSX
+        export __NugetRuntimeId=osx-x64
+        ulimit -n 2048
+        ;;
+
+    FreeBSD)
+        export __HostOS=FreeBSD
+        # TODO: Add proper FreeBSD target
+        export __NugetRuntimeId=linux-x64
+        ;;
+
+    Linux)
+        export __HostOS=Linux
+        export __NugetRuntimeId=$(get_current_linux_rid)-$__HostArch
+        ;;
+
+    NetBSD)
+        export __HostOS=NetBSD
+        # TODO: Add proper NetBSD target
+        export __NugetRuntimeId=linux-x64
+        ;;
+
+    *)
+        echo "Unsupported OS $OSName detected, configuring as if for Linux"
+        export __HostOS=Linux
+        export __NugetRuntimeId=linux-x64
+        ;;
+esac
+
+# For msbuild
+if [ $__HostOS != "OSX" ]; then
+    export CppCompilerAndLinker=clang-${__ClangMajorVersion}.${__ClangMinorVersion}
+fi
+
+export __BuildOS="$__HostOS"
+
+# Overwrite __BuildOS with WebAssembly if wasm is target build arch, but keep the __NugetRuntimeId to match the Host OS
 if [ $__BuildArch == "wasm" ]; then
     export __BuildOS=WebAssembly
-else
-    # Use uname to determine what the OS is.
-    export OSName=$(uname -s)
-    case $OSName in
-        Darwin)
-            export __BuildOS=OSX
-            export __NugetRuntimeId=osx.10.10-x64
-            ulimit -n 2048
-            ;;
-
-        FreeBSD)
-            export __BuildOS=FreeBSD
-            # TODO: Add proper FreeBSD target
-            export __NugetRuntimeId=ubuntu.14.04-x64
-            ;;
-
-        Linux)
-            export __BuildOS=Linux
-            export __NugetRuntimeId=$(get_current_linux_rid)-$__HostArch
-            ;;
-
-        NetBSD)
-            export __BuildOS=NetBSD
-            # TODO: Add proper NetBSD target
-            export __NugetRuntimeId=ubuntu.14.04-x64
-            ;;
-
-        *)
-            echo "Unsupported OS $OSName detected, configuring as if for Linux"
-            export __BuildOS=Linux
-            export __NugetRuntimeId=ubuntu.14.04-x64
-            ;;
-    esac
 fi
 
 # If neither managed nor native are passed as arguments, default to building both

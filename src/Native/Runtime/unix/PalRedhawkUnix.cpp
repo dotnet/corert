@@ -308,7 +308,7 @@ public:
             TimeSpecAdd(&endTime, milliseconds);
         }
 #else
-#error Don't know how to perfom timed wait on this platform
+#error Don't know how to perform timed wait on this platform
 #endif
 
         int st = 0;
@@ -1044,8 +1044,13 @@ extern "C" void LeaveCriticalSection(CRITICAL_SECTION * lpCriticalSection)
 
 extern "C" UInt32_BOOL IsDebuggerPresent()
 {
+#ifdef _WASM_
+    // For now always true since the browser will handle it in case of WASM.
+    return UInt32_TRUE;
+#else
     // UNIXTODO: Implement this function
     return UInt32_FALSE;
+#endif
 }
 
 extern "C" void TerminateProcess(HANDLE arg1, UInt32 arg2)

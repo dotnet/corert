@@ -2,9 +2,13 @@
   <ItemGroup>
     <Compile Include="*.cs" />
 
-    <ProjectReference Include="CpObj.ilproj" />
-    <IlcArg Include="-r:$(IntermediateOutputPath)\CpObj.dll" />
+    <ProjectReference Include="CpObj.ilproj" Condition="'$(OS)' == 'Windows_NT'" />
+    <IlcArg Include="-r:$(IntermediateOutputPath)\CpObj.dll" Condition="'$(OS)' == 'Windows_NT'" />
   </ItemGroup>
+
+  <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
+    <DefineConstants>PLATFORM_WINDOWS;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), SimpleTest.targets))\SimpleTest.targets" />
 </Project>

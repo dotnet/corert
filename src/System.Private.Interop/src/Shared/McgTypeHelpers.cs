@@ -1213,7 +1213,7 @@ namespace System.Runtime.InteropServices
 #region "CCWTemplate Data"
         internal static string GetCCWRuntimeClassName(this RuntimeTypeHandle ccwType)
         {
-            // Special case for Object type to aligh with desktop behavior
+            // Special case for Object type to align with desktop behavior
             if (ccwType.Equals(typeof(Object).TypeHandle))
                 return default(string);
 

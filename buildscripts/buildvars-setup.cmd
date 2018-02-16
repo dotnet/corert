@@ -2,6 +2,7 @@
 set __BuildArch=x64
 set __BuildType=Debug
 set __BuildOS=Windows_NT
+set __HostOS=Windows_NT
 
 :: Set the various build properties here so that CMake and MSBuild can pick them up
 set "__ProjectDir=%~dp0.."
@@ -162,8 +163,8 @@ set Platform=
 set __VCBuildArch=x86_amd64
 if /i "%__BuildArch%" == "x86" (set __VCBuildArch=x86)
 
-set __NugetRuntimeId=win7-x64
-if /i "%__BuildArch%" == "x86" (set __NugetRuntimeId=win7-x86)
+set __NugetRuntimeId=win-x64
+if /i "%__BuildArch%" == "x86" (set __NugetRuntimeId=win-x86)
 
 :Done
 set BUILDVARS_DONE=1

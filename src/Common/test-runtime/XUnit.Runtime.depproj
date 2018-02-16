@@ -4,7 +4,7 @@
     <!-- Given that xunit packages bring with them part of the framework, we need to specify a runtime in order to get the assets
          This RID value doesn't really matter, since the assets we are copying are not RID specific, so defaulting to Windows here
     -->
-    <RuntimeIdentifiers>win7-x64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <RidSpecificAssets>true</RidSpecificAssets>
     <OutputPath>$(RuntimePath)</OutputPath>

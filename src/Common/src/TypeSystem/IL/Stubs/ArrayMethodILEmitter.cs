@@ -87,7 +87,7 @@ namespace Internal.IL.Stubs
             var rangeExceptionLabel = _emitter.NewCodeLabel();
             ILCodeLabel typeMismatchExceptionLabel = null;
 
-            if (!_elementType.IsValueType)
+            if (_elementType.IsGCPointer)
             {
                 // Type check
                 if (_method.Kind == ArrayMethodKind.Set)

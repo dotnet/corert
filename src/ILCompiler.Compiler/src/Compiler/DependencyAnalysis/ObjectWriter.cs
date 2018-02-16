@@ -19,7 +19,7 @@ using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
-    /// Object writer using https://github.com/dotnet/llilc
+    /// Object writer using src/Native/ObjWriter
     /// </summary>
     internal class ObjectWriter : IDisposable, ITypesDebugInfoWriter
     {
@@ -194,14 +194,16 @@ namespace ILCompiler.DependencyAnalysis
         private static extern int EmitSymbolRef(IntPtr objWriter, byte[] symbolName, RelocType relocType, int delta);
         public int EmitSymbolRef(Utf8StringBuilder symbolName, RelocType relocType, int delta = 0)
         {
-            // Workaround for ObjectWriter's lack of support for IMAGE_REL_BASED_RELPTR32
-            // https://github.com/dotnet/corert/issues/3278
-            if (relocType == RelocType.IMAGE_REL_BASED_RELPTR32)
+            if (_targetPlatform.Architecture != TargetArchitecture.ARMEL && _targetPlatform.Architecture != TargetArchitecture.ARM)
             {
-                relocType = RelocType.IMAGE_REL_BASED_REL32;
-                delta = checked(delta + sizeof(int));
+                // Workaround for ObjectWriter's lack of support for IMAGE_REL_BASED_RELPTR32
+                // https://github.com/dotnet/corert/issues/3278
+                if (relocType == RelocType.IMAGE_REL_BASED_RELPTR32)
+                {
+                    relocType = RelocType.IMAGE_REL_BASED_REL32;
+                    delta = checked(delta + sizeof(int));
+                }
             }
-
             return EmitSymbolRef(_nativeObjectWriter, symbolName.Append('\0').UnderlyingArray, relocType, delta);
         }
 
@@ -279,8 +281,9 @@ namespace ILCompiler.DependencyAnalysis
         private static extern void EmitARMFnStart(IntPtr objWriter);
         public void EmitARMFnStart()
         {
-            Debug.Assert(_frameOpened);
+            Debug.Assert(!_frameOpened);
             EmitARMFnStart(_nativeObjectWriter);
+            _frameOpened = true;
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -289,6 +292,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(_frameOpened);
             EmitARMFnEnd(_nativeObjectWriter);
+            _frameOpened = false;
         }
 
         [DllImport(NativeObjectWriterFileName)]

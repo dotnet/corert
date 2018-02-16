@@ -116,15 +116,18 @@ namespace Internal.IL
             }
             catch
             {
+                LLVMBasicBlockRef trapBlock = LLVM.AppendBasicBlock(_llvmFunction, "Trap");
+                
                 // Change the function body to trap
                 foreach (BasicBlock block in _basicBlocks)
                 {
                     if (block != null && block.Block.Pointer != IntPtr.Zero)
                     {
+                        LLVM.ReplaceAllUsesWith(block.Block, trapBlock);
                         LLVM.DeleteBasicBlock(block.Block);
                     }
                 }
-                LLVMBasicBlockRef trapBlock = LLVM.AppendBasicBlock(_llvmFunction, "Trap");
+
                 LLVM.PositionBuilderAtEnd(_builder, trapBlock);
                 EmitTrapCall();
                 LLVM.BuildRetVoid(_builder);
@@ -324,6 +327,11 @@ namespace Internal.IL
 
         private void ImportBreak()
         {
+            if (DebugtrapFunction.Pointer == IntPtr.Zero)
+            {
+                DebugtrapFunction = LLVM.AddFunction(Module, "llvm.debugtrap", LLVM.FunctionType(LLVM.VoidType(), Array.Empty<LLVMTypeRef>(), false));
+            }
+            LLVM.BuildCall(_builder, DebugtrapFunction, Array.Empty<LLVMValueRef>(), string.Empty);
         }
 
         private void ImportLoadVar(int index, bool argument)
@@ -391,6 +399,10 @@ namespace Internal.IL
             else if (signExtend && type.GetIntTypeWidth() > LLVM.TypeOf(value).GetIntTypeWidth())
             {
                 return LLVM.BuildSExtOrBitCast(builder, value, type, "SExtOrBitCast");
+            }
+            else if (type.GetIntTypeWidth() > LLVM.TypeOf(value).GetIntTypeWidth())
+            {
+                return LLVM.BuildZExtOrBitCast(builder, value, type, "ZExtOrBitCast");
             }
             else
             {
@@ -818,6 +830,25 @@ namespace Internal.IL
 
         private void ImportCasting(ILOpcode opcode, int token)
         {
+            TypeDesc type = ResolveTypeToken(token);
+            
+            //TODO: call GetCastingHelperNameForType from JitHelper.cs (needs refactoring)
+            string function;
+            bool throwing = opcode == ILOpcode.castclass;
+            if (type.IsArray)
+                function = throwing ? "CheckCastArray" : "IsInstanceOfArray";
+            else if (type.IsInterface)
+                function = throwing ? "CheckCastInterface" : "IsInstanceOfInterface";
+            else
+                function = throwing ? "CheckCastClass" : "IsInstanceOfClass";
+
+            var arguments = new StackEntry[]
+            {
+                _stack.Pop(),
+                new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(type, true), _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr"))
+            };
+
+            _stack.Push(CallRuntime(_compilation.TypeSystemContext, TypeCast, function, arguments, type));
         }
 
         private void ImportLoadNull()
@@ -1547,7 +1578,7 @@ namespace Internal.IL
 
             LLVMValueRef pointerElementType = pointer.ValueAsType(type.MakePointerType(), _builder);
             _stack.Push(new LoadExpressionEntry(type != null ? GetStackValueKind(type) : StackValueKind.ByRef, "ldind",
-                pointerElementType, type.MakePointerType()));
+                pointerElementType, type));
         }
 
         private void ImportStoreIndirect(int token)
@@ -2344,6 +2375,7 @@ namespace Internal.IL
         private const string RuntimeExport = "RuntimeExports";
         private const string RuntimeImport = "RuntimeImports";
         private const string InternalCalls = "InternalCalls";
+        private const string TypeCast = "TypeCast";
         private ExpressionEntry CallRuntime(TypeSystemContext context, string className, string methodName, StackEntry[] arguments, TypeDesc forcedReturnType = null)
         {
             MetadataType helperType = context.SystemModule.GetKnownType("System.Runtime", className);

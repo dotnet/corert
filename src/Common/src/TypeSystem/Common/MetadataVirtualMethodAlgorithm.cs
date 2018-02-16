@@ -365,7 +365,7 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Find matching a matching method by name and sig on a type. (Restricted to virtual methods only) Only search amonst methods with the same vtable slot.
+        /// Find matching a matching method by name and sig on a type. (Restricted to virtual methods only) Only search amongst methods with the same vtable slot.
         /// </summary>
         /// <param name="method"></param>
         /// <param name="currentType"></param>

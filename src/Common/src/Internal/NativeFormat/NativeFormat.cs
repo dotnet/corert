@@ -16,7 +16,7 @@ using System;
 //
 // - Naturally compressed: Integers are stored using variable length encoding. Offsets are stored as relative offsets.
 //
-// - Random accesss: Random access to selected information should be fast. It is achieved by using tokens as offsets.
+// - Random access: Random access to selected information should be fast. It is achieved by using tokens as offsets.
 //
 // - Locality: Access to related information should be accessing data that are close to each other.
 //

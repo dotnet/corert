@@ -260,7 +260,7 @@ namespace Internal.NativeFormat
 #endif
             }
 
-            // Aggresive phase that only allows offsets to shrink.
+            // Aggressive phase that only allows offsets to shrink.
             _phase = SavePhase.Shrinking;
             for (; ; )
             {

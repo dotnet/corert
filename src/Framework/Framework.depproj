@@ -8,8 +8,6 @@
     <NuGetTargetMoniker>.NETCoreApp,Version=v2.1</NuGetTargetMoniker>
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <RuntimeIdentifiers>$(NuPkgRid)</RuntimeIdentifiers>
-    <RuntimeIdentifiers Condition="$(NuPkgRid.StartsWith('osx.'))">osx-x64</RuntimeIdentifiers>
-    <RuntimeIdentifiers Condition="$(NuPkgRid.StartsWith('ubuntu.'))">linux-x64</RuntimeIdentifiers>
     <RidSpecificAssets>true</RidSpecificAssets>
   </PropertyGroup>
 
