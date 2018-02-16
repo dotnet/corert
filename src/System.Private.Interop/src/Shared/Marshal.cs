@@ -93,7 +93,8 @@ namespace System.Runtime.InteropServices
                 createCOMException : true,
                 hasErrorInfo: false);
 #else
-            return new Exception(errorCode.ToString());
+            // TODO: Map HR to exeption even without COM interop support?
+            return new COMException(errorCode);
 #endif
         }
     }

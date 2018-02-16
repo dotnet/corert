@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Runtime.Augments;
 
 namespace System.Runtime.InteropServices
 {
@@ -72,5 +73,11 @@ namespace System.Runtime.InteropServices
             return PInvokeMarshal.PtrToStringAnsi(ptr, len);
         }
 #endif
+
+        public static void ThrowExceptionForHR(int errorCode)
+        {
+            if (errorCode < 0)
+                throw RuntimeAugments.Callbacks.GetExceptionForHR(errorCode);
+        }
     }
 }
