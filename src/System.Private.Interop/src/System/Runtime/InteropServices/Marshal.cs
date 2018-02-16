@@ -575,7 +575,7 @@ namespace System.Runtime.InteropServices
                 createCOMException: false,
                 hasErrorInfo: false);
 #else
-            throw new PlatformNotSupportedException("GetExceptionForHR");
+            return new COMException(errorCode);
 #endif // ENABLE_WINRT
         }
 

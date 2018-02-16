@@ -1033,7 +1033,8 @@ namespace System.Runtime.InteropServices
 #elif CORECLR
             return Marshal.GetExceptionForHR(hr);
 #else
-            return new COMException(hr.ToString(), hr);
+            // TODO: Map HR to exeption even without COM interop support?
+            return new COMException(hr);
 #endif
         }
 
