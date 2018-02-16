@@ -27,5 +27,4 @@ EXIT /B 0
 ENDLOCAL
 
 :ERROR
-    ECHO "Visual Studio not found, try to downloading it from https://www.visualstudio.com/ and select Desktop Development for C++ workload."
     EXIT /B 1
