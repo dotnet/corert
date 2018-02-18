@@ -564,7 +564,7 @@ EXTRA_SAVE_SIZE equ (28*8)
 
 #endif ;; FEATURE_GC_STRESS
 
-#if 0 ;; used by the binder only
+#if 0 // used by the binder only
 ;;
 ;; The following functions are _jumped_ to when we need to transfer control from one method to another for EH 
 ;; dispatch. These are needed to properly coordinate with the GC hijacking logic. We are essentially replacing
