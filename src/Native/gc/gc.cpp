@@ -24443,7 +24443,7 @@ void gc_heap::copy_cards_range (uint8_t* dest, uint8_t* src, size_t len, BOOL co
         clear_card_for_addresses (dest, dest + len);
 }
 
-// POPO TODO: We should actually just recover the artifically made gaps here..because when we copy
+// POPO TODO: We should actually just recover the artificially made gaps here..because when we copy
 // we always copy the earlier plugs first which means we won't need the gap sizes anymore. This way
 // we won't need to individually recover each overwritten part of plugs.
 inline
