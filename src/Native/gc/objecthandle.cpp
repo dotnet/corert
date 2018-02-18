@@ -84,7 +84,7 @@ void CALLBACK PromoteRefCounted(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtra
     WRAPPER_NO_CONTRACT;
     UNREFERENCED_PARAMETER(pExtraInfo);
 
-    // there are too many races when asychnronously scanning ref-counted handles so we no longer support it
+    // there are too many races when asynchronously scanning ref-counted handles so we no longer support it
     _ASSERTE(!((ScanContext*)lp1)->concurrent);
 
     LOG((LF_GC, LL_INFO1000, LOG_HANDLE_OBJECT_CLASS("", pObjRef, "causes promotion of ", *pObjRef)));
