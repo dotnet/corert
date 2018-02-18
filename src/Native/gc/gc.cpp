@@ -4893,7 +4893,7 @@ extern "C" uint64_t __rdtsc();
 #elif defined(_TARGET_WASM_)
     static ptrdiff_t get_cycle_count()
     {
-        // @WASMTODO: cycle counter is not exposed to user mode by WebAsssembly. For now (until we can show this
+        // @WASMTODO: cycle counter is not exposed to user mode by WebAssembly. For now (until we can show this
         // makes a difference on the configurations on which we'll run) just return 0. This will result in
         // all buffer access times being reported as equal in access_time().
         return 0;
@@ -21072,7 +21072,7 @@ void gc_heap::compact_loh()
             {
                 if (!heap_segment_read_only_p (seg))
                 {
-                    // We grew the segment to accommondate allocations.
+                    // We grew the segment to accommodate allocations.
                     if (heap_segment_plan_allocated (seg) > heap_segment_allocated (seg))
                     {
                         if ((heap_segment_plan_allocated (seg) - plug_skew)  > heap_segment_used (seg))
@@ -21292,7 +21292,7 @@ void gc_heap::convert_to_pinned_plug (BOOL& last_npinned_plug_p,
     artificial_pinned_size = ps;
 }
 
-// Because we have the artifical pinning, we can't gaurantee that pinned and npinned
+// Because we have the artificial pinning, we can't guarantee that pinned and npinned
 // plugs are always interleaved.
 void gc_heap::store_plug_gap_info (uint8_t* plug_start,
                                    uint8_t* plug_end,
@@ -24443,7 +24443,7 @@ void gc_heap::copy_cards_range (uint8_t* dest, uint8_t* src, size_t len, BOOL co
         clear_card_for_addresses (dest, dest + len);
 }
 
-// POPO TODO: We should actually just recover the artifically made gaps here..because when we copy
+// POPO TODO: We should actually just recover the artificially made gaps here..because when we copy
 // we always copy the earlier plugs first which means we won't need the gap sizes anymore. This way
 // we won't need to individually recover each overwritten part of plugs.
 inline
