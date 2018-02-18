@@ -184,8 +184,7 @@ namespace System.Runtime.InteropServices
 
         public static bool IsDelegate(this RuntimeTypeHandle handle)
         {
-            return InteropExtensions.AreTypesAssignable(handle, typeof(MulticastDelegate).TypeHandle) ||
-                InteropExtensions.AreTypesAssignable(handle, typeof(Delegate).TypeHandle);
+            return InteropExtensions.AreTypesAssignable(handle, typeof(Delegate).TypeHandle);
         }
 
         public static bool AreTypesAssignable(RuntimeTypeHandle sourceType, RuntimeTypeHandle targetType)

@@ -352,7 +352,7 @@ namespace System.Runtime.InteropServices
                     // Pull out Handle from context
                     handle = ((ThunkContextData*)pContext)->Handle;
                 }
-                Delegate target = InteropExtensions.UncheckedCast<Delegate>(handle.Target);
+                Delegate target = Unsafe.As<Delegate>(handle.Target);
 
                 //
                 // The delegate might already been garbage collected
@@ -429,7 +429,7 @@ namespace System.Runtime.InteropServices
 
             }
 
-            T target = InteropExtensions.UncheckedCast<T>(handle.Target);
+            T target = Unsafe.As<T>(handle.Target);
 
             //
             // The delegate might already been garbage collected

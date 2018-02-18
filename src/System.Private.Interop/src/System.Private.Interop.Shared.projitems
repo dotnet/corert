@@ -11,8 +11,6 @@
 
     <Compile Include="System\Runtime\InteropServices\ComWeakReferenceHelpers.cs" />
     <Compile Include="System\Runtime\InteropServices\InteropEventProvider.cs" />
-    <Compile Include="System\Runtime\InteropServices\MarshalAdapter.cs" />
-    <Compile Include="System\Runtime\InteropServices\MarshalImpl.cs" />
 
     <Compile Include="Shared\ComCallableObject.cs" />
     <Compile Include="Shared\ComInterop.cs" />
