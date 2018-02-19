@@ -3620,7 +3620,7 @@ gc_heap* seg_mapping_table_heap_of_worker (uint8_t* o)
 
     gc_heap* hp = ((o > entry->boundary) ? entry->h1 : entry->h0);
 
-    dprintf (2, ("checking obj %Ix, index is %Id, entry: boundry: %Ix, h0: %Ix, seg0: %Ix, h1: %Ix, seg1: %Ix",
+    dprintf (2, ("checking obj %Ix, index is %Id, entry: boundary: %Ix, h0: %Ix, seg0: %Ix, h1: %Ix, seg1: %Ix",
         o, index, (entry->boundary + 1), 
         (uint8_t*)(entry->h0), (uint8_t*)(entry->seg0),
         (uint8_t*)(entry->h1), (uint8_t*)(entry->seg1)));
@@ -3689,7 +3689,7 @@ heap_segment* seg_mapping_table_segment_of (uint8_t* o)
     size_t index = (size_t)o / gc_heap::min_segment_size;
     seg_mapping* entry = &seg_mapping_table[index];
 
-    dprintf (2, ("checking obj %Ix, index is %Id, entry: boundry: %Ix, seg0: %Ix, seg1: %Ix",
+    dprintf (2, ("checking obj %Ix, index is %Id, entry: boundary: %Ix, seg0: %Ix, seg1: %Ix",
         o, index, (entry->boundary + 1), 
         (uint8_t*)(entry->seg0), (uint8_t*)(entry->seg1)));
 
@@ -3701,7 +3701,7 @@ heap_segment* seg_mapping_table_segment_of (uint8_t* o)
 
     if (seg)
     {
-        // Can't assert this when it's callled by everyone (it's true when it's called by mark cards).
+        // Can't assert this when it's called by everyone (it's true when it's called by mark cards).
         //assert (in_range_for_segment (o, seg));
         if (in_range_for_segment (o, seg))
         {
@@ -8281,7 +8281,7 @@ void gc_heap::combine_mark_lists()
         assert (end_of_list < &g_mark_list [n_heaps*mark_list_size]);
         if (end_of_list > &g_mark_list[0])
             _sort (&g_mark_list[0], end_of_list, 0);
-        //adjust the mark_list to the begining of the resulting mark list.
+        //adjust the mark_list to the beginning of the resulting mark list.
         for (int i = 0; i < n_heaps; i++)
         {
             g_heaps [i]->mark_list = g_mark_list;
@@ -8292,7 +8292,7 @@ void gc_heap::combine_mark_lists()
     else
     {
         uint8_t** end_of_list = g_mark_list;
-        //adjust the mark_list to the begining of the resulting mark list.
+        //adjust the mark_list to the beginning of the resulting mark list.
         //put the index beyond the end to turn off mark list processing
         for (int i = 0; i < n_heaps; i++)
         {
@@ -8403,7 +8403,7 @@ class seg_free_spaces
     struct free_space_bucket
     {
         seg_free_space* free_space;
-        ptrdiff_t count_add; // Assigned when we first contruct the array.
+        ptrdiff_t count_add; // Assigned when we first construct the array.
         ptrdiff_t count_fit; // How many items left when we are fitting plugs.
     };
 
@@ -8691,7 +8691,7 @@ public:
         // BARTOKTODO (4841): this code path is disabled (see can_fit_all_blocks_p) until we take alignment requirements into account
         _ASSERTE(requiredAlignment == DATA_ALIGNMENT && false);
 #endif // FEATURE_STRUCTALIGN
-        // TODO: this is also not large alignment ready. We would need to consider alignment when chosing the 
+        // TODO: this is also not large alignment ready. We would need to consider alignment when choosing the 
         // the bucket.
 
         size_t plug_size_to_fit = plug_size;
@@ -10441,7 +10441,7 @@ gc_heap::init_gc_heap (int  h_number)
     {
 #ifndef INTERIOR_POINTERS
         //set the brick_table for large objects
-        //but default value is clearded
+        //but default value is cleared
         //clear_brick_table ((uint8_t*)heap_segment_mem (lseg),
         //                   (uint8_t*)heap_segment_reserved (lseg));
 
@@ -25430,7 +25430,7 @@ BOOL gc_heap::commit_mark_array_bgc_init (uint32_t* mark_array_addr)
 // the mark_array flag for these segments will remain the same.
 BOOL gc_heap::commit_new_mark_array (uint32_t* new_mark_array_addr)
 {
-    dprintf (GC_TABLE_LOG, ("commiting existing segs on MA %Ix", new_mark_array_addr));
+    dprintf (GC_TABLE_LOG, ("committing existing segs on MA %Ix", new_mark_array_addr));
     generation* gen = generation_of (max_generation);
     heap_segment* seg = heap_segment_in_range (generation_start_segment (gen));
     while (1)
@@ -34092,7 +34092,7 @@ BOOL GCHeap::StressHeap(gc_alloc_context * context)
         if (str)
         {
             // Chop off the end of the string and form a new object out of it.
-            // This will 'free' an object at the begining of the heap, which will
+            // This will 'free' an object at the beginning of the heap, which will
             // force data movement.  Note that we can only do this so many times.
             // before we have to move on to the next string.
             unsigned sizeOfNewObj = (unsigned)Align(min_obj_size * 31);
@@ -34924,7 +34924,7 @@ void gc_heap::record_interesting_info_per_heap()
             heap_number,
             (size_t)settings.gc_index,
             settings.condemned_generation,
-            // TEMP - I am just doing this for wks GC 'cuase I wanna see the pattern of doing C/S GCs.
+            // TEMP - I am just doing this for wks GC 'cause I wanna see the pattern of doing C/S GCs.
             (settings.compaction ? (((compact_reason >= 0) && gc_heap_compact_reason_mandatory_p[compact_reason]) ? "M" : "W") : ""), // compaction
             ((expand_mechanism >= 0)? "X" : ""), // EX
             ((expand_mechanism == expand_reuse_normal) ? "X" : ""), // NF
@@ -35466,10 +35466,10 @@ int GCHeap::GetLOHCompactionMode()
     return pGenGCHeap->loh_compaction_mode;
 }
 
-void GCHeap::SetLOHCompactionMode (int newLOHCompactionyMode)
+void GCHeap::SetLOHCompactionMode (int newLOHCompactionMode)
 {
 #ifdef FEATURE_LOH_COMPACTION
-    pGenGCHeap->loh_compaction_mode = (gc_loh_compaction_mode)newLOHCompactionyMode;
+    pGenGCHeap->loh_compaction_mode = (gc_loh_compaction_mode)newLOHCompactionMode;
 #endif //FEATURE_LOH_COMPACTION
 }
 
