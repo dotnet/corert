@@ -344,8 +344,9 @@ internal static class Program
     private static void CkFiniteTests()
     {
         if (CkFiniteTest.CkFinite32(0) && CkFiniteTest.CkFinite32(1) &&
-            CkFiniteTest.CkFinite32(100) && CkFiniteTest.CkFinite32(100) &&
-            CkFiniteTest.CkFinite32(0x7F7FFFBF))
+            CkFiniteTest.CkFinite32(100) && CkFiniteTest.CkFinite32(-100) &&
+            CkFiniteTest.CkFinite32(0x7F7FFFC0) && CkFiniteTest.CkFinite32(0xFF800000) &&
+            CkFiniteTest.CkFinite32(0x7FC00000))
         {
             PrintLine("ckfinite float32 tests: Passed.");
         }
@@ -355,8 +356,9 @@ internal static class Program
         }
 
         if (CkFiniteTest.CkFinite64(0) && CkFiniteTest.CkFinite64(1) &&
-            CkFiniteTest.CkFinite64(100) && CkFiniteTest.CkFinite64(100) &&
-            CkFiniteTest.CkFinite64(0x7F7FFFC0))
+            CkFiniteTest.CkFinite64(100) && CkFiniteTest.CkFinite64(-100) &&
+            CkFiniteTest.CkFinite64(0x7FF0000000000000) && CkFiniteTest.CkFinite64(0xFFF0000000000000) &&
+            CkFiniteTest.CkFinite64(0x7FF8000000000000))
         {
             PrintLine("ckfinite float32 tests: Passed.");
         }
