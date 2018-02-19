@@ -3701,7 +3701,7 @@ heap_segment* seg_mapping_table_segment_of (uint8_t* o)
 
     if (seg)
     {
-        // Can't assert this when it's callled by everyone (it's true when it's called by mark cards).
+        // Can't assert this when it's called by everyone (it's true when it's called by mark cards).
         //assert (in_range_for_segment (o, seg));
         if (in_range_for_segment (o, seg))
         {
