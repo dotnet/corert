@@ -28,6 +28,23 @@ sudo apt-get install cmake clang-3.9 libicu52 libunwind8 uuid-dev libcurl4-opens
 1. Install [Command Line Tools for XCode 8](https://developer.apple.com/xcode/download/) or higher. 
 2. Install [CMake](https://cmake.org/download/) 3.8.0 or later. Launch `/Applications/CMake.app/Contents/MacOS/CMake` GUI. Goto "OSX App Menu -> Tools -> Install For Command Line Use" and follow the steps.
 
+# openSUSE Leap 42.3
+
+First install llvm-3.9. This is a bit cumbersome because the LLVM that comes from the `zypper` feeds is too old.
+
+```sh
+wget http://releases.llvm.org/3.9.0/clang+llvm-3.9.0-x86_64-opensuse13.2.tar.xz
+tar xf clang+llvm-3.9.0-x86_64-opensuse13.2.tar.xz
+cd clang+llvm-3.9.0-x86_64-opensuse13.2
+sudo cp -R * /usr/local/
+```
+
+Next install the rest of the dependencies:
+
+```sh
+sudo zypper install cmake libuuid-devel icu libcurl-devel zlib-devel
+```
+
 # Bash on Ubuntu on Windows (Windows 10 Creators Update or later)
 
 Make sure you run with Ubuntu 16.04 Xenial userland (this is the default after Windows 10 Creators Update, but if you enabled the "Bash on Ubuntu on Windows" feature before the Creators Update, you need to [upgrade manually](https://blogs.msdn.microsoft.com/commandline/2017/04/11/windows-10-creators-update-whats-new-in-bashwsl-windows-console/)). Running `lsb_release -a` will give you the version.
