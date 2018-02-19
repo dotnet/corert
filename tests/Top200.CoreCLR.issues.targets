@@ -125,8 +125,6 @@
     <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Positive\NestedStruct01\NestedStruct01.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Positive\NestedStruct03\NestedStruct03.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\General\Base01b_seq_ser\Base01b_seq_ser.cmd" />
-    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\IL\Unbox002\Unbox002.cmd" />
-    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\IL\Unbox003\Unbox003.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\IL\Unbox005\Unbox005.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\IL\Unbox006\Unbox006.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CctorsWithSideEffects\CctorThrowInlinedStatic\CctorThrowInlinedStatic.cmd" />
