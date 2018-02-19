@@ -8403,7 +8403,7 @@ class seg_free_spaces
     struct free_space_bucket
     {
         seg_free_space* free_space;
-        ptrdiff_t count_add; // Assigned when we first contruct the array.
+        ptrdiff_t count_add; // Assigned when we first construct the array.
         ptrdiff_t count_fit; // How many items left when we are fitting plugs.
     };
 
