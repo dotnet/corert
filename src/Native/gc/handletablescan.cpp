@@ -1630,7 +1630,7 @@ void SegmentScanByTypeChain(PTR_TableSegment pSegment, uint32_t uType, BLOCKSCAN
 
             } while ((uNext == uLast) && (uNext != uHead));
 
-            // call the calback for this group of blocks
+            // call the callback for this group of blocks
             pfnBlockHandler(pSegment, uBlock, (uLast - uBlock), pInfo);
 
             // advance to the next block
@@ -1694,7 +1694,7 @@ void SegmentScanByTypeMap(PTR_TableSegment pSegment, const BOOL *rgTypeInclusion
                 break;
         }
 
-        // call the calback for the group of blocks we found
+        // call the callback for the group of blocks we found
         pfnBlockHandler(pSegment, uFirst, (uBlock - uFirst), pInfo);
 
         // look for another range starting with the next block
