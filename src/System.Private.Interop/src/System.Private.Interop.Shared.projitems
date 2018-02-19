@@ -38,6 +38,7 @@
     <Compile Include="Shared\McgMarshal.cs" />
     <Compile Include="Shared\McgModule.cs" />
     <Compile Include="Shared\McgModuleManager.cs" />
+    <Compile Include="Shared\McgPInvokeData.cs" />
     <Compile Include="Shared\McgPInvokeMarshalStubAttribute.cs" />
     <Compile Include="Shared\McgredirectedMethodAttribute.cs" />
     <Compile Include="Shared\McgRedirectedTypeAttribute.cs" />

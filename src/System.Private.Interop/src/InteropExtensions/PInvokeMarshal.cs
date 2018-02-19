@@ -32,12 +32,12 @@ namespace System.Runtime.InteropServices
             s_lastWin32Error = Marshal.GetLastWin32Error();
         }
 
-        public static IntPtr GetStubForPInvokeDelegate(Delegate del)
+        public static IntPtr GetFunctionPointerForDelegate(Delegate del)
         {
             return IntPtr.Zero;
         }
 
-        public static Delegate GetPInvokeDelegateForStub(IntPtr pStub, RuntimeTypeHandle delegateType)
+        public static Delegate GetDelegateForFunctionPointer(IntPtr pStub, RuntimeTypeHandle delegateType)
         {
             return default(Delegate);
         }

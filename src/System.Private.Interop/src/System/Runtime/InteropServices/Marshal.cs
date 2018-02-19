@@ -1018,7 +1018,7 @@ namespace System.Runtime.InteropServices
             if (d == null)
                 throw new ArgumentNullException(nameof(d));
 
-            return PInvokeMarshal.GetStubForPInvokeDelegate(d);
+            return PInvokeMarshal.GetFunctionPointerForDelegate(d);
         }
 
         public static IntPtr GetFunctionPointerForDelegate<TDelegate>(TDelegate d)
