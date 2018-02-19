@@ -46,7 +46,7 @@ MaskDWORD is also non-zero.
 2. AgeEphemeral. When Ephemeral GC happens, ages for handles which belong to the GC condemned generation should be 
 incremented by 1. The operation is done by calculating a new uint32_t using the old uint32_t value:
     NewGenerationDWORD = COMPUTE_AGED_CLUMPS(OldGenerationDWORD, BuildAgeMask(condemnedGeneration, MaxGen))
-so that if a byte in OldGenerationDWORD is smaller than or equals to condemnedGeneration. the coresponding byte in 
+so that if a byte in OldGenerationDWORD is smaller than or equals to condemnedGeneration. the corresponding byte in 
 NewGenerationDWORD is 1 bigger than the old value, otherwise it remains unchanged.
 
 3. Age. Similar as AgeEphemeral, but we use a special mask if condemned generation is max gen (2):
