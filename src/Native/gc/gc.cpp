@@ -25430,7 +25430,7 @@ BOOL gc_heap::commit_mark_array_bgc_init (uint32_t* mark_array_addr)
 // the mark_array flag for these segments will remain the same.
 BOOL gc_heap::commit_new_mark_array (uint32_t* new_mark_array_addr)
 {
-    dprintf (GC_TABLE_LOG, ("commiting existing segs on MA %Ix", new_mark_array_addr));
+    dprintf (GC_TABLE_LOG, ("committing existing segs on MA %Ix", new_mark_array_addr));
     generation* gen = generation_of (max_generation);
     heap_segment* seg = heap_segment_in_range (generation_start_segment (gen));
     while (1)
