@@ -34924,7 +34924,7 @@ void gc_heap::record_interesting_info_per_heap()
             heap_number,
             (size_t)settings.gc_index,
             settings.condemned_generation,
-            // TEMP - I am just doing this for wks GC 'cuase I wanna see the pattern of doing C/S GCs.
+            // TEMP - I am just doing this for wks GC 'cause I wanna see the pattern of doing C/S GCs.
             (settings.compaction ? (((compact_reason >= 0) && gc_heap_compact_reason_mandatory_p[compact_reason]) ? "M" : "W") : ""), // compaction
             ((expand_mechanism >= 0)? "X" : ""), // EX
             ((expand_mechanism == expand_reuse_normal) ? "X" : ""), // NF
