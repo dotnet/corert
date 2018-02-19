@@ -8691,7 +8691,7 @@ public:
         // BARTOKTODO (4841): this code path is disabled (see can_fit_all_blocks_p) until we take alignment requirements into account
         _ASSERTE(requiredAlignment == DATA_ALIGNMENT && false);
 #endif // FEATURE_STRUCTALIGN
-        // TODO: this is also not large alignment ready. We would need to consider alignment when chosing the 
+        // TODO: this is also not large alignment ready. We would need to consider alignment when choosing the 
         // the bucket.
 
         size_t plug_size_to_fit = plug_size;
