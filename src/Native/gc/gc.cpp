@@ -3620,7 +3620,7 @@ gc_heap* seg_mapping_table_heap_of_worker (uint8_t* o)
 
     gc_heap* hp = ((o > entry->boundary) ? entry->h1 : entry->h0);
 
-    dprintf (2, ("checking obj %Ix, index is %Id, entry: boundry: %Ix, h0: %Ix, seg0: %Ix, h1: %Ix, seg1: %Ix",
+    dprintf (2, ("checking obj %Ix, index is %Id, entry: boundary: %Ix, h0: %Ix, seg0: %Ix, h1: %Ix, seg1: %Ix",
         o, index, (entry->boundary + 1), 
         (uint8_t*)(entry->h0), (uint8_t*)(entry->seg0),
         (uint8_t*)(entry->h1), (uint8_t*)(entry->seg1)));
@@ -3689,7 +3689,7 @@ heap_segment* seg_mapping_table_segment_of (uint8_t* o)
     size_t index = (size_t)o / gc_heap::min_segment_size;
     seg_mapping* entry = &seg_mapping_table[index];
 
-    dprintf (2, ("checking obj %Ix, index is %Id, entry: boundry: %Ix, seg0: %Ix, seg1: %Ix",
+    dprintf (2, ("checking obj %Ix, index is %Id, entry: boundary: %Ix, seg0: %Ix, seg1: %Ix",
         o, index, (entry->boundary + 1), 
         (uint8_t*)(entry->seg0), (uint8_t*)(entry->seg1)));
 
