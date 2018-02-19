@@ -10441,7 +10441,7 @@ gc_heap::init_gc_heap (int  h_number)
     {
 #ifndef INTERIOR_POINTERS
         //set the brick_table for large objects
-        //but default value is clearded
+        //but default value is cleared
         //clear_brick_table ((uint8_t*)heap_segment_mem (lseg),
         //                   (uint8_t*)heap_segment_reserved (lseg));
 
