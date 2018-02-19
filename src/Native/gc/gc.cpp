@@ -8281,7 +8281,7 @@ void gc_heap::combine_mark_lists()
         assert (end_of_list < &g_mark_list [n_heaps*mark_list_size]);
         if (end_of_list > &g_mark_list[0])
             _sort (&g_mark_list[0], end_of_list, 0);
-        //adjust the mark_list to the begining of the resulting mark list.
+        //adjust the mark_list to the beginning of the resulting mark list.
         for (int i = 0; i < n_heaps; i++)
         {
             g_heaps [i]->mark_list = g_mark_list;
@@ -8292,7 +8292,7 @@ void gc_heap::combine_mark_lists()
     else
     {
         uint8_t** end_of_list = g_mark_list;
-        //adjust the mark_list to the begining of the resulting mark list.
+        //adjust the mark_list to the beginning of the resulting mark list.
         //put the index beyond the end to turn off mark list processing
         for (int i = 0; i < n_heaps; i++)
         {
@@ -34092,7 +34092,7 @@ BOOL GCHeap::StressHeap(gc_alloc_context * context)
         if (str)
         {
             // Chop off the end of the string and form a new object out of it.
-            // This will 'free' an object at the begining of the heap, which will
+            // This will 'free' an object at the beginning of the heap, which will
             // force data movement.  Note that we can only do this so many times.
             // before we have to move on to the next string.
             unsigned sizeOfNewObj = (unsigned)Align(min_obj_size * 31);
