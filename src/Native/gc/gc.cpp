@@ -35466,10 +35466,10 @@ int GCHeap::GetLOHCompactionMode()
     return pGenGCHeap->loh_compaction_mode;
 }
 
-void GCHeap::SetLOHCompactionMode (int newLOHCompactionyMode)
+void GCHeap::SetLOHCompactionMode (int newLOHCompactionMode)
 {
 #ifdef FEATURE_LOH_COMPACTION
-    pGenGCHeap->loh_compaction_mode = (gc_loh_compaction_mode)newLOHCompactionyMode;
+    pGenGCHeap->loh_compaction_mode = (gc_loh_compaction_mode)newLOHCompactionMode;
 #endif //FEATURE_LOH_COMPACTION
 }
 
