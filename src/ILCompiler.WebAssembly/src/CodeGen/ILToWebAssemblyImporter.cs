@@ -117,7 +117,7 @@ namespace Internal.IL
             catch
             {
                 LLVMBasicBlockRef trapBlock = LLVM.AppendBasicBlock(_llvmFunction, "Trap");
-                
+
                 // Change the function body to trap
                 foreach (BasicBlock block in _basicBlocks)
                 {
@@ -151,7 +151,7 @@ namespace Internal.IL
             }
 
             int totalLocalSize = 0;
-            foreach(LocalVariableDefinition local in _locals)
+            foreach (LocalVariableDefinition local in _locals)
             {
                 totalLocalSize = PadNextOffset(local.Type, totalLocalSize);
             }
@@ -167,14 +167,14 @@ namespace Internal.IL
 
         private LLVMValueRef CreateLLVMFunction(string mangledName)
         {
-            return LLVM.AddFunction(Module, mangledName , _universalSignature);            
+            return LLVM.AddFunction(Module, mangledName, _universalSignature);
         }
 
         private LLVMValueRef GetOrCreateLLVMFunction(string mangledName)
         {
             LLVMValueRef llvmFunction = LLVM.GetNamedFunction(Module, mangledName);
 
-            if(llvmFunction.Pointer == IntPtr.Zero)
+            if (llvmFunction.Pointer == IntPtr.Zero)
             {
                 return CreateLLVMFunction(mangledName);
             }
@@ -198,7 +198,7 @@ namespace Internal.IL
             ImportCallMemset(targetPointer, value, objectSizeValue);
         }
 
-        private void ImportCallMemset (LLVMValueRef targetPointer, byte value, LLVMValueRef length)
+        private void ImportCallMemset(LLVMValueRef targetPointer, byte value, LLVMValueRef length)
         {
             var memsetSignature = LLVM.FunctionType(LLVM.VoidType(), new LLVMTypeRef[] { LLVM.PointerType(LLVM.Int8Type(), 0), LLVM.Int8Type(), LLVM.Int32Type(), LLVM.Int32Type(), LLVM.Int1Type() }, false);
             LLVM.BuildCall(_builder, GetOrCreateLLVMFunction("llvm.memset.p0i8.i32", memsetSignature), new LLVMValueRef[] { targetPointer, BuildConstInt8(value), length, BuildConstInt32(1), BuildConstInt1(0) }, String.Empty);
@@ -279,15 +279,15 @@ namespace Internal.IL
             }
 
             bool isFirstBlock = false;
-            if(_curBasicBlock.Equals(default(LLVMBasicBlockRef)))
+            if (_curBasicBlock.Equals(default(LLVMBasicBlockRef)))
             {
                 isFirstBlock = true;
             }
             _curBasicBlock = GetLLVMBasicBlockForBlock(basicBlock);
 
             LLVM.PositionBuilderAtEnd(_builder, _curBasicBlock);
-            
-            if(isFirstBlock)
+
+            if (isFirstBlock)
             {
                 GenerateProlog();
             }
@@ -343,7 +343,7 @@ namespace Internal.IL
         private LLVMValueRef LoadTemp(int index)
         {
             LLVMValueRef address = LoadVarAddress(index, LocalVarKind.Temp, out TypeDesc type);
-            return LLVM.BuildLoad(_builder, CastToPointerToTypeDesc(address, type), "ldtemp"); 
+            return LLVM.BuildLoad(_builder, CastToPointerToTypeDesc(address, type), "ldtemp");
         }
 
         internal LLVMValueRef LoadTemp(int index, LLVMTypeRef asType)
@@ -516,7 +516,7 @@ namespace Internal.IL
         private void ImportStoreHelper(LLVMValueRef toStore, LLVMTypeRef valueType, LLVMValueRef basePtr, uint offset)
         {
             LLVMValueRef typedToStore = CastIfNecessary(toStore, valueType);
-            
+
             var storeLocation = LLVM.BuildGEP(_builder, basePtr,
                 new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), offset, LLVMMisc.False) },
                 String.Empty);
@@ -610,7 +610,7 @@ namespace Internal.IL
             {
                 typedToStore = LLVM.BuildFPCast(builder, source, valueType, "CastIfNecessaryFloat");
             }
-            else if ((toStoreKind == LLVMTypeKind.LLVMDoubleTypeKind || toStoreKind == LLVMTypeKind.LLVMFloatTypeKind) && 
+            else if ((toStoreKind == LLVMTypeKind.LLVMDoubleTypeKind || toStoreKind == LLVMTypeKind.LLVMFloatTypeKind) &&
                 valueTypeKind == LLVMTypeKind.LLVMIntegerTypeKind)
             {
                 //TODO: keep track of the TypeDesc so we can call BuildFPToUI when the integer is unsigned
@@ -831,7 +831,7 @@ namespace Internal.IL
         private void ImportCasting(ILOpcode opcode, int token)
         {
             TypeDesc type = ResolveTypeToken(token);
-            
+
             //TODO: call GetCastingHelperNameForType from JitHelper.cs (needs refactoring)
             string function;
             bool throwing = opcode == ILOpcode.castclass;
@@ -928,7 +928,7 @@ namespace Internal.IL
             }
 
             // we don't really have virtual call support, but we'll treat it as direct for now
-            if (opcode != ILOpcode.call && opcode !=  ILOpcode.callvirt && opcode != ILOpcode.newobj)
+            if (opcode != ILOpcode.call && opcode != ILOpcode.callvirt && opcode != ILOpcode.newobj)
             {
                 throw new NotImplementedException();
             }
@@ -970,7 +970,7 @@ namespace Internal.IL
                 return GetOrCreateLLVMFunction(calleeName);
             }
         }
-        
+
         private LLVMValueRef GetOrCreateMethodSlot(MethodDesc method)
         {
             var vtableSlotSymbol = _compilation.NodeFactory.VTableSlot(method);
@@ -1168,7 +1168,7 @@ namespace Internal.IL
                 castShadowStack,
                 castReturnAddress}, string.Empty);
 
-            
+
             if (!returnType.IsVoid)
             {
                 return returnSlot;
@@ -1192,7 +1192,7 @@ namespace Internal.IL
         private void ImportRawPInvoke(MethodDesc method)
         {
             var arguments = new StackEntry[method.Signature.Length];
-            for(int i = 0; i < arguments.Length; i++)
+            for (int i = 0; i < arguments.Length; i++)
             {
                 // Arguments are reversed on the stack
                 // Coerce pointers to the native type
@@ -1298,7 +1298,7 @@ namespace Internal.IL
                     s_shadowStackTop = LLVM.AddGlobal(Module, LLVM.PointerType(LLVM.Int8Type(), 0), "t_pShadowStackTop");
                     LLVM.SetLinkage(s_shadowStackTop, LLVMLinkage.LLVMInternalLinkage);
                     LLVM.SetInitializer(s_shadowStackTop, LLVM.ConstPointerNull(LLVM.PointerType(LLVM.Int8Type(), 0)));
-                    LLVM.SetThreadLocal(s_shadowStackTop, LLVMMisc.True);                    
+                    LLVM.SetThreadLocal(s_shadowStackTop, LLVMMisc.True);
                 }
                 return s_shadowStackTop;
             }
@@ -1399,7 +1399,7 @@ namespace Internal.IL
 
                 default:
                     throw new InvalidOperationException(kind.ToString());
-            }           
+            }
 
         }
 
@@ -1571,7 +1571,7 @@ namespace Internal.IL
             var pointer = _stack.Pop();
             Debug.Assert(pointer is ExpressionEntry || pointer is ConstantEntry);
             var expressionPointer = pointer as ExpressionEntry;
-            if(type == null)
+            if (type == null)
             {
                 type = GetWellKnownType(WellKnownType.Object).MakeByRefType();
             }
@@ -1767,9 +1767,9 @@ namespace Internal.IL
         bool TypeNeedsSignExtension(TypeDesc targetType)
         {
             var enumCleanTargetType = targetType?.UnderlyingType;
-            if(enumCleanTargetType != null && targetType.IsPrimitive)
+            if (enumCleanTargetType != null && targetType.IsPrimitive)
             {
-                if(enumCleanTargetType.IsWellKnownType(WellKnownType.Byte) ||
+                if (enumCleanTargetType.IsWellKnownType(WellKnownType.Byte) ||
                     enumCleanTargetType.IsWellKnownType(WellKnownType.UInt16) ||
                     enumCleanTargetType.IsWellKnownType(WellKnownType.UInt32) ||
                     enumCleanTargetType.IsWellKnownType(WellKnownType.UInt64) ||
@@ -1883,7 +1883,7 @@ namespace Internal.IL
         private void ImportUnaryOperation(ILOpcode opCode)
         {
             var argument = _stack.Pop();
-             
+
             LLVMValueRef result;
             switch (opCode)
             {
@@ -1891,7 +1891,7 @@ namespace Internal.IL
                     if (argument.Kind == StackValueKind.Float)
                     {
                         result = LLVM.BuildFNeg(_builder, argument.ValueForStackKind(argument.Kind, _builder, false), "neg");
-                    }   
+                    }
                     else
                     {
                         result = LLVM.BuildNeg(_builder, argument.ValueForStackKind(argument.Kind, _builder, true), "neg");
@@ -1972,6 +1972,39 @@ namespace Internal.IL
 
         private void ImportCkFinite()
         {
+            StackEntry value = _stack.Pop();
+
+            var targetType = GetLLVMTypeForTypeDesc(value.Type);
+            var width = LLVM.SizeOfTypeInBits(default, targetType);
+            LLVMValueRef exponentMask;
+            LLVMTypeRef intTypeRef;
+
+            if (width == 32)
+            {
+                intTypeRef = LLVM.Int32Type();
+                exponentMask = LLVM.ConstInt(intTypeRef, 0x7F800000, LLVMMisc.False);
+            }
+            else
+            {
+                intTypeRef = LLVM.Int64Type();
+                exponentMask = LLVM.ConstInt(intTypeRef, 0x7FF0000000000000, LLVMMisc.False);
+            }
+
+            var valRef = value.ValueAsType(intTypeRef, _builder);
+            LLVMValueRef exponentBits = LLVM.BuildAnd(_builder, valRef, exponentMask, "and");
+            LLVMValueRef isFinite = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntEQ, exponentBits, exponentMask, "isfinite");
+
+            LLVMBasicBlockRef trapBlock = LLVM.AppendBasicBlock(_llvmFunction, "Trap");
+            LLVMBasicBlockRef afterIf = LLVM.AppendBasicBlock(_llvmFunction, "AfterIf");
+            LLVM.BuildCondBr(_builder, isFinite, trapBlock, afterIf);
+
+            LLVM.PositionBuilderAtEnd(_builder, trapBlock);
+            EmitTrapCall();
+            LLVM.BuildBr(_builder, afterIf);
+            afterIf.MoveBasicBlockAfter(_llvmFunction.GetLastBasicBlock());
+            LLVM.PositionBuilderAtEnd(_builder, afterIf);
+
+            _stack.Push(value);
         }
 
         private void ImportMkRefAny(int token)
@@ -2380,7 +2413,7 @@ namespace Internal.IL
         {
             MetadataType helperType = context.SystemModule.GetKnownType("System.Runtime", className);
             MethodDesc helperMethod = helperType.GetKnownMethod(methodName, null);
-            if((helperMethod.IsInternalCall && helperMethod.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute")))
+            if ((helperMethod.IsInternalCall && helperMethod.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute")))
                 return ImportRawPInvoke(helperMethod, arguments, forcedReturnType: forcedReturnType);
             else
                 return HandleCall(helperMethod, helperMethod.Signature, arguments, forcedReturnType: forcedReturnType);
@@ -2413,7 +2446,7 @@ namespace Internal.IL
             var entryType = entry.Type ?? GetWellKnownType(WellKnownType.Object); //type is required here, currently the only time entry.Type is null is if someone has pushed a null literal
 
             LLVMValueRef addressValue;
-            if(entry is LoadExpressionEntry)
+            if (entry is LoadExpressionEntry)
             {
                 addressValue = ((LoadExpressionEntry)entry).RawLLVMValue;
             }

@@ -6,6 +6,7 @@ using System;
 using System.Runtime.InteropServices;
 #if PLATFORM_WINDOWS
 using CpObj;
+using CkFinite;
 #endif
 
 internal static class Program
@@ -132,9 +133,10 @@ internal static class Program
         {
             PrintLine("CpObj test: Ok.");
         }
+        CkFiniteTests();
 #endif
 
-        Func<int> staticDelegate = StaticDelegateTarget;
+		Func<int> staticDelegate = StaticDelegateTarget;
         if(staticDelegate() == 7)
         {
             PrintLine("Static delegate test: Ok.");
@@ -337,6 +339,33 @@ internal static class Program
             PrintLine("ldind test: Failed." + ldindFieldValue.ToString());
         }
     }
+
+#if PLATFORM_WINDOWS
+    private static void CkFiniteTests()
+    {
+        if (CkFiniteTest.CkFinite32(0) && CkFiniteTest.CkFinite32(1) &&
+            CkFiniteTest.CkFinite32(100) && CkFiniteTest.CkFinite32(100) &&
+            CkFiniteTest.CkFinite32(0x7F7FFFBF))
+        {
+            PrintLine("ckfinite float32 tests: Passed.");
+        }
+        else // TODO: this branch will not hit due to trap until https://github.com/dotnet/corert/issues/4655 is resolved
+        {
+            PrintLine("ckfinite float32 tests: Failed.");
+        }
+
+        if (CkFiniteTest.CkFinite64(0) && CkFiniteTest.CkFinite64(1) &&
+            CkFiniteTest.CkFinite64(100) && CkFiniteTest.CkFinite64(100) &&
+            CkFiniteTest.CkFinite64(0x7F7FFFC0))
+        {
+            PrintLine("ckfinite float32 tests: Passed.");
+        }
+        else // TODO: this branch will not hit due to trap until https://github.com/dotnet/corert/issues/4655 is resolved
+        {
+            PrintLine("ckfinite float32 tests: Failed.");
+        }
+    }
+#endif
 
     [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
