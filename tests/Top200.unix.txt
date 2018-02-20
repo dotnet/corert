@@ -205,7 +205,6 @@ Interop/PrimitiveMarshalling/EnumMarshalling/EnumTest/EnumTest.sh
 Interop/FuncPtrAsDelegateParam/FuncPtrAsDelegateParam/FuncPtrAsDelegateParam.sh
 Interop/MarshalAPI/FunctionPointer/FunctionPtrTest/FunctionPtrTest.sh
 Interop/MarshalAPI/GetObjectsForNativeVariants/GetObjectsForNativeVariants/GetObjectsForNativeVariants.sh
-Interop/StringMarshalling/LPSTR/LPSTRTest/LPSTRTest.sh
 Interop/ArrayMarshalling/BoolArray/MarshalBoolArrayTest/MarshalBoolArrayTest.sh
 Interop/PrimitiveMarshalling/UIntPtr/PInvokeUIntPtrTest/PInvokeUIntPtrTest.sh
 Interop/MarshalAPI/ReadWrite/ReadWriteByte/ReadWriteByte.sh
