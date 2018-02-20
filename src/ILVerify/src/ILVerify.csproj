@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <Compile Include="Program.cs" />
+    <Compile Include="ProcessedMethodTracker.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.CommandLine" Version="0.1.0-e160909-1" />    
