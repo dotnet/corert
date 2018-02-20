@@ -8,8 +8,6 @@
   xmlns="http://schemas.microsoft.com/developer/msbuild/2003" >
   <ItemGroup Condition="'$(XunitTestBinBase)' != ''">
     <IncludeList Include="$(XunitTestBinBase)\baseservices\threading\DeadThreads\DeadThreads\DeadThreads.cmd" />
-    <IncludeList Include="$(XunitTestBinBase)\baseservices\threading\paramthreadstart\ThreadStartBool\ThreadStartBool.cmd" />
-    <IncludeList Include="$(XunitTestBinBase)\baseservices\threading\paramthreadstart\ThreadStartBool_1\ThreadStartBool_1.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\Exceptions\Finalization\Finalizer\Finalizer.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\GC\API\GC\Collect0\Collect0.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\GC\API\GC\Collect1\Collect1.cmd" />
