@@ -38,7 +38,7 @@ if "%CoreRT_BuildArch%" == "x64" (
 
 echo Building %TestFileName%
 
-call "%CoreRT_CliDir%\dotnet.exe" publish %TestFolder%\Test.csproj /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:DebugSymbols=false" "/p:Configuration=%CoreRT_BuildType%" "/p:FrameworkLibPath=%~dp0..\..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /p:DisableFrameworkLibGeneration=true /p:TestRootDir=%~dp0  /p:ExecutableName=%TestExecutable% /nologo
+call "%CoreRT_CliDir%\dotnet.exe" publish %TestFolder%\Test.csproj /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:DebugSymbols=false" "/p:Configuration=%CoreRT_BuildType%" "/p:FrameworkLibPath=%~dp0..\..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /p:DisableFrameworkLibGeneration=true /p:TestRootDir=%~dp0  /p:OSGroup=%CoreRT_BuildOS% /p:ExecutableName=%TestExecutable% /nologo
 if errorlevel 1 (
     echo Building %TestFileName% failed
     exit /b 1

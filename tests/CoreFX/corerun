@@ -29,7 +29,7 @@ if [ ! -e "${TestFolderName}/${TestExecutable}.exe" ]; then
 fi
 
 # Copy the artefacts we need to compile and run the xunit exe
-cp -ar ${CoreRT_TestRoot}/CoreFX/runtest/CoreFXTestHarness/. ${TestFolderName}
+cp -a "${CoreRT_TestRoot}/CoreFX/runtest/CoreFXTestHarness/." "${TestFolderName}"
 export __exitcode=$?
 if [ ${__exitcode} != 0 ];
 then
@@ -38,14 +38,11 @@ fi
 
 # Workaround until we have a better reflection engine
 # Add name of currently executing test to rd.xml
-sed -i "s/\*Application\*/${TestFileName}/g" ${TestFolderName}/default.rd.xml
-
-
-#${__dotnetclipath}/dotnet restore  
+sed -i.bak  "s/\*Application\*/${TestFileName}/g" "${TestFolderName}/default.rd.xml"
 
 echo Building ${TestFileName}
 
-${CoreRT_CliBinDir}/dotnet publish "/p:IlcPath=${CoreRT_ToolchainDir}" "/p:DebugSymbols=false" "/p:Configuration=${CoreRT_BuildType}" "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" /p:DisableFrameworkLibGeneration=true /p:TestRootDir=${TestRootDir} /p:ExecutableName=${TestExecutable} "/p:OutputPath=/${TestFolderName}/" ${TestFolderName}/Test.csproj 
+${CoreRT_CliBinDir}/dotnet publish "/p:IlcPath=${CoreRT_ToolchainDir}" "/p:DebugSymbols=false" /p:OSGroup=${CoreRT_BuildOS} "/p:Configuration=${CoreRT_BuildType}" "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" /p:DisableFrameworkLibGeneration=true /p:TestRootDir=${TestRootDir} /p:ExecutableName=${TestExecutable} "/p:OutputPath=/${TestFolderName}/" ${TestFolderName}/Test.csproj
 export __exitcode=$?
 if [ ${__exitcode} != 0 ];
 then

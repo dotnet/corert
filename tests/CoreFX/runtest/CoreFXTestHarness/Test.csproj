@@ -11,7 +11,6 @@
     </PropertyGroup>
     
     <PropertyGroup>
-        <!-- TODO - need a general way to specify version without relying on the test directory structure being intact, i.e. import dependencies from \tests\ -->
         <ToolsDir>$(FrameworkLibPath)\..\tools\</ToolsDir>
         <TargetFramework>netcoreapp2.0</TargetFramework>
         <!-- Don't warn if some dependencies were rolled forward -->
@@ -54,6 +53,13 @@
     <PropertyGroup>
         <OutputPath>$(MSBuildProjectDirectory)\</OutputPath>
         <IntermediateOutputPath>$(MSBuildProjectDirectory)\</IntermediateOutputPath>
+    </PropertyGroup>
+    
+    <!-- Switch RuntimeIdentifier according to currently running OSGroup -->
+    <PropertyGroup>
+        <RuntimeIdentifier Condition="'$(OSGroup)' == 'Windows_NT'">win-x64</RuntimeIdentifier>
+        <RuntimeIdentifier Condition="'$(OSGroup)' == 'Linux'">linux-x64</RuntimeIdentifier>
+        <RuntimeIdentifier Condition="'$(OSGroup)' == 'OSX'">osx-x64</RuntimeIdentifier>
     </PropertyGroup>
 
     <!-- Import CoreRT build targets -->

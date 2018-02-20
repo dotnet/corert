@@ -18,8 +18,8 @@ function run_tests_in_directory {
     local testDir=$1
     for testSubDir in ${testDir}/* ; do
       # Build and run each test
+      echo Building ${testSubDir}
       ${FXCustomTestLauncher} ${testSubDir} ${__LogDir} 
-      echo ${testSubDir}
     done
     
 }
