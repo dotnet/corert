@@ -1093,7 +1093,7 @@ namespace Internal.IL
                             LLVM.Int32Type(),
                             LLVM.Int1Type()
                         };
-                        MemcpyI8I8I32Function = GetOrCreateLLVMFunction("llvm.memcpy.p0i8.p0i8.i32", LLVM.FunctionType(LLVM.VoidType(), argsType, false));
+                        var memcpyFunction = GetOrCreateLLVMFunction("llvm.memcpy.p0i8.p0i8.i32", LLVM.FunctionType(LLVM.VoidType(), argsType, false));
 
                         var args = new LLVMValueRef[]
                         {
@@ -1105,7 +1105,7 @@ namespace Internal.IL
                             BuildConstInt32(16),
                             BuildConstInt1(0)
                         };
-                        LLVM.BuildCall(_builder, MemcpyI8I8I32Function, args, string.Empty);
+                        LLVM.BuildCall(_builder, memcpyFunction, args, string.Empty);
 
                         return true;
                     }
