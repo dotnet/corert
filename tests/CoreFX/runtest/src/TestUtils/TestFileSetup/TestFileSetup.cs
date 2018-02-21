@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/// <summary>
-/// This helper class is used to fetch CoreFX tests from a specified URL, unarchive them and create a flat directory structure
-/// through which to iterate.
-/// </summary>
- 
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
@@ -19,6 +14,23 @@ using Newtonsoft.Json;
 
 namespace CoreFX.TestUtils.TestFileSetup
 {
+    /// <summary>
+    /// Defines the set of flags that represent exit codes
+    /// </summary>
+    [Flags]
+    public enum ExitCode : int
+    {
+        Success = 0,
+        HttpError = 1,
+        IOError = 2,
+        UnknownError = 10
+
+    }
+
+    /// <summary>
+    /// This helper class is used to fetch CoreFX tests from a specified URL, unarchive them and create a flat directory structure
+    /// through which to iterate.
+    /// </summary>
     public static class TestFileSetup
     {
         private static HttpClient httpClient;
@@ -30,13 +42,39 @@ namespace CoreFX.TestUtils.TestFileSetup
 
         public static void Main(string[] args)
         {
+            ExitCode exitCode = ExitCode.UnknownError;
             ArgumentSyntax argSyntax = ParseCommandLine(args);
+
             if (!Directory.Exists(outputDir))
             {
-                Directory.CreateDirectory(outputDir);
+                try
+                {
+                    Directory.CreateDirectory(outputDir);
+                }
+                catch (IOException)
+                {
+                    exitCode = ExitCode.IOError;
+                    Environment.Exit((int)exitCode);
+                }
             }
+
             // parse args
-            SetupTests(testUrl, outputDir, ReadTestNames(testListPath)).Wait();
+            try
+            {
+                SetupTests(testUrl, outputDir, ReadTestNames(testListPath)).Wait();
+                exitCode = ExitCode.Success;
+
+            }
+            catch (HttpRequestException)
+            {
+                exitCode = ExitCode.HttpError;
+            }
+            catch (IOException)
+            {
+                exitCode = ExitCode.IOError;
+            }
+
+            Environment.Exit((int)exitCode);
         }
 
         public static ArgumentSyntax ParseCommandLine(string[] args)
@@ -64,7 +102,7 @@ namespace CoreFX.TestUtils.TestFileSetup
             {
                 while (jsonReader.Read())
                 {
-                    if(jsonReader.TokenType == JsonToken.String)
+                    if (jsonReader.TokenType == JsonToken.String)
                     {
                         testNames.Add(jsonReader.Value.ToString(), string.Empty);
                     }
@@ -74,31 +112,31 @@ namespace CoreFX.TestUtils.TestFileSetup
             return testNames;
         }
 
-        public static async Task SetupTests(string jsonUrl, string destinationDirectory, Dictionary<string, string> testNames = null)
+        public static async Task SetupTests(string jsonUrl, string destinationDirectory, Dictionary<string, string> testNames = null, bool runAllTests = false)
         {
             Debug.Assert(Directory.Exists(destinationDirectory));
+            Debug.Assert(runAllTests || testNames != null);
 
             string tempDirPath = Path.Combine(destinationDirectory, "temp");
             if (!Directory.Exists(tempDirPath))
             {
                 Directory.CreateDirectory(tempDirPath);
             }
+            Dictionary<string, string> testPayloads = await GetTestUrls(jsonUrl, testNames, runAllTests);
 
-            Dictionary<string, string> testPayloads = await GetTestUrls(jsonUrl, testNames);
             await GetTestArchives(testPayloads, tempDirPath);
             ExpandArchivesInDirectory(tempDirPath, destinationDirectory);
 
             Directory.Delete(tempDirPath);
         }
-
-        public static async Task<Dictionary<string, string>> GetTestUrls(string jsonUrl, Dictionary<string, string> testNames = null)
+        public static async Task<Dictionary<string, string>> GetTestUrls(string jsonUrl, Dictionary<string, string> testNames = null, bool runAllTests = false)
         {
-            if(httpClient is null)
+            if (httpClient is null)
             {
                 httpClient = new HttpClient();
             }
 
-            bool allTests = testNames == null;
+            Debug.Assert(runAllTests || testNames != null);
 
             // Set up the json stream reader
             using (var responseStream = await httpClient.GetStreamAsync(jsonUrl))
@@ -111,7 +149,7 @@ namespace CoreFX.TestUtils.TestFileSetup
 
                 while (jsonReader.Read())
                 {
-                    if(jsonReader.Value != null)
+                    if (jsonReader.Value != null)
                     {
                         switch (jsonReader.TokenType)
                         {
@@ -122,14 +160,13 @@ namespace CoreFX.TestUtils.TestFileSetup
                                 if (currentPropertyName.Equals("WorkItemId"))
                                 {
                                     string currentTestName = jsonReader.Value.ToString();
-                                    // Test if we've added the key
-                                    //// TODO add per test fetching
-                                    if (allTests || testNames.ContainsKey(currentTestName))
+
+                                    if (runAllTests || testNames.ContainsKey(currentTestName))
                                     {
                                         markedTestName = currentTestName;
                                     }
                                 }
-                                else if(currentPropertyName.Equals("PayloadUri") && markedTestName != string.Empty)
+                                else if (currentPropertyName.Equals("PayloadUri") && markedTestName != string.Empty)
                                 {
                                     testNames[markedTestName] = jsonReader.Value.ToString();
                                     markedTestName = string.Empty;
@@ -150,7 +187,7 @@ namespace CoreFX.TestUtils.TestFileSetup
                 httpClient = new HttpClient();
             }
 
-            foreach(string testName in testPayloads.Keys)
+            foreach (string testName in testPayloads.Keys)
             {
                 string payloadUri = testPayloads[testName];
 
@@ -191,7 +228,7 @@ namespace CoreFX.TestUtils.TestFileSetup
             foreach (string archivePath in archives)
             {
                 string destinationDirName = Path.Combine(destinationDirectory, Path.GetFileNameWithoutExtension(archivePath));
-                
+
                 // If doing clean test build - delete existing artefacts
                 if (Directory.Exists(destinationDirName) && cleanTestBuild)
                 {

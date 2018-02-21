@@ -9,7 +9,7 @@
         <TargetExt>.exe</TargetExt>
         <OutputType>Exe</OutputType>
     </PropertyGroup>
-    
+
     <PropertyGroup>
         <ToolsDir>$(FrameworkLibPath)\..\tools\</ToolsDir>
         <TargetFramework>netcoreapp2.0</TargetFramework>
@@ -34,13 +34,16 @@
             <Version>$(XunitPackageVersion)</Version>
         </PackageReference>
         <PackageReference Include="xunit.runner.utility">
-            <Version>$(XunitPackageVersion)</Version>
+            <Version>$(XunitRunnerUtilityVersion)</Version>
         </PackageReference>
         <PackageReference Include="xunit.extensibility.execution">
             <Version>$(XunitPackageVersion)</Version>
         </PackageReference>
         <PackageReference Include="microsoft.xunit.netcore.extensions">
             <Version>$(XunitNetcoreExtensionsVersion)</Version>
+        </PackageReference>
+        <PackageReference Include="CoreFx.Private.TestUtilities">
+            <Version>$(CoreFxTestUtilitiesVersion)</Version>
         </PackageReference>
     </ItemGroup>
     <ItemGroup>
@@ -64,7 +67,7 @@
 
     <!-- Import CoreRT build targets -->
     <Import Project="$(IlcPath)\build\Microsoft.NETCore.Native.targets" />
-
+    
     <!-- Since tests are already compiled, override Compile target to prevent CSC running -->
     <Target Name="Compile" />
 </Project>
