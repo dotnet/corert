@@ -292,7 +292,13 @@ namespace ILVerify
             var namespaceName = metadataReader.GetString(typeDef.Namespace);
             var assemblyName = metadataReader.GetString(metadataReader.GetAssemblyDefinition().Name);
 
-            return $"[{assemblyName}]{namespaceName}.{typeName}.{methodName}";
+            StringBuilder builder = new StringBuilder();
+            builder.Append($"[{assemblyName}]");
+            if (string.IsNullOrEmpty(namespaceName) == false)
+                builder.Append($"{namespaceName}.");
+            builder.Append($"{typeName}.{methodName}");
+
+            return builder.ToString();
         }
 
         private bool ShouldVerifyMethod(string methodName)
