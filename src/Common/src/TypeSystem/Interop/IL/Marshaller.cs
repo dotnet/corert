@@ -1831,7 +1831,7 @@ namespace Internal.TypeSystem.Interop
             LoadManagedValue(codeStream);
 
             codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
-                Context.GetHelperEntryPoint("InteropHelpers", "GetStubForPInvokeDelegate")));
+                Context.GetHelperEntryPoint("InteropHelpers", "GetFunctionPointerForDelegate")));
 
             StoreNativeValue(codeStream);
         }
@@ -1842,7 +1842,7 @@ namespace Internal.TypeSystem.Interop
 
             codeStream.Emit(ILOpcode.ldtoken, _ilCodeStreams.Emitter.NewToken(ManagedType));
             codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
-                Context.GetHelperEntryPoint("InteropHelpers", "GetPInvokeDelegateForStub")));
+                Context.GetHelperEntryPoint("InteropHelpers", "GetDelegateForFunctionPointer")));
 
             StoreManagedValue(codeStream);
         }

@@ -724,11 +724,7 @@ namespace System.Runtime.InteropServices
                     return true;
                 }
             }
-#if ENABLE_WINRT
-           throw new MissingInteropDataException(SR.DelegateMarshalling_MissingInteropData, Type.GetTypeFromHandle(delegateType));
-#else
             return false;
-#endif
         }
 #endregion
 

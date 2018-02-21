@@ -339,20 +339,15 @@ namespace Internal.Runtime.CompilerHelpers
         {
             PInvokeMarshal.CoTaskMemFree((IntPtr)p);
         }
-        /// <summary>
-        /// Returns the stub to the pinvoke marshalling stub
-        /// </summary>
-        public static IntPtr GetStubForPInvokeDelegate(Delegate del)
+
+        public static IntPtr GetFunctionPointerForDelegate(Delegate del)
         {
-            return PInvokeMarshal.GetStubForPInvokeDelegate(del);
+            return PInvokeMarshal.GetFunctionPointerForDelegate(del);
         }
 
-        /// <summary>
-        /// Retrieve the corresponding P/invoke instance from the stub
-        /// </summary>
-        public static Delegate GetPInvokeDelegateForStub(IntPtr pStub, RuntimeTypeHandle delegateType)
+        public static Delegate GetDelegateForFunctionPointer(IntPtr ptr, RuntimeTypeHandle delegateType)
         {
-            return PInvokeMarshal.GetPInvokeDelegateForStub(pStub, delegateType);
+            return PInvokeMarshal.GetDelegateForFunctionPointer(ptr, delegateType);
         }
 
         /// <summary>
