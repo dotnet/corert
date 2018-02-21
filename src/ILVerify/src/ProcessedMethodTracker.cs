@@ -36,14 +36,24 @@ namespace ILVerify
 
         private bool IsEnabled { get { return _verbose || _printStatistics; } }
 
-        internal void NotifyMethodProcessed(EcmaModule module, MethodDefinitionHandle methodHandle, string methodName, bool verified)
+        internal void NotifyMethodProcessing(EcmaModule module, MethodDefinitionHandle methodHandle, string methodName, bool verifying)
         {
             if (!IsEnabled)
                 return;
 
             var method = module.GetMethod(methodHandle);
             ModuleResult result = GetOrCreateModuleResult(module);
-            result.Methods.Add(new MethodResult() { Method = method, Name = methodName, Verified = verified });
+            result.Methods.Add(new MethodResult() { Method = method, Name = methodName, Verified = verifying });
+
+            if (_verbose)
+            {
+                if (verifying)
+                    Write($"Verifying ");
+                else
+                    Write($"Skipping ");
+
+                WriteLine(methodName);
+            }
         }
 
         private ModuleResult GetOrCreateModuleResult(EcmaModule module)
@@ -68,21 +78,6 @@ namespace ILVerify
             {
                 WriteLine($"Methods found: {result.Methods.Count}");
                 WriteLine($"Methods verified: {result.Methods.Count(m => m.Verified)}");
-                WriteLine();
-            }
-
-            if (_verbose)
-            {
-                WriteLine("Method status:");
-                foreach (var methodResult in result.Methods)
-                {
-                    if (methodResult.Verified)
-                        Write($"  Verified ");
-                    else
-                        Write($"  Skipped ");
-
-                    WriteLine(methodResult.Name);
-                }
                 WriteLine();
             }
         }

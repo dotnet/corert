@@ -263,17 +263,16 @@ namespace ILVerify
                 var methodName = GetQualifiedMethodName(metadataReader, methodHandle);
                 if (ShouldVerifyMethod(methodName))
                 {
+                    _tracker.NotifyMethodProcessing(module, methodHandle, methodName, true);
                     var results = _verifier.Verify(peReader, methodHandle);
                     foreach (var result in results)
                     {
                         yield return result;
                     }
-
-                    _tracker.NotifyMethodProcessed(module, methodHandle, methodName, true);
                 }
                 else
                 {
-                    _tracker.NotifyMethodProcessed(module, methodHandle, methodName, false);
+                    _tracker.NotifyMethodProcessing(module, methodHandle, methodName, false);
                 }
             }
         }
