@@ -346,7 +346,7 @@ internal static class Program
         if (CkFiniteTest.CkFinite32(0) && CkFiniteTest.CkFinite32(1) &&
             CkFiniteTest.CkFinite32(100) && CkFiniteTest.CkFinite32(-100) &&
             CkFiniteTest.CkFinite32(0x7F7FFFC0) && CkFiniteTest.CkFinite32(0xFF800000) &&
-            CkFiniteTest.CkFinite32(0x7FC00000))
+            CkFiniteTest.CkFinite32(0x7F800000))
         {
             PrintLine("ckfinite float32 tests: Passed.");
         }
@@ -360,11 +360,11 @@ internal static class Program
             CkFiniteTest.CkFinite64(0x7FF0000000000000) && CkFiniteTest.CkFinite64(0xFFF0000000000000) &&
             CkFiniteTest.CkFinite64(0x7FF8000000000000))
         {
-            PrintLine("ckfinite float32 tests: Passed.");
+            PrintLine("ckfinite float64 tests: Passed.");
         }
         else // TODO: this branch will not hit due to trap until https://github.com/dotnet/corert/issues/4655 is resolved
         {
-            PrintLine("ckfinite float32 tests: Failed.");
+            PrintLine("ckfinite float64 tests: Failed.");
         }
     }
 #endif
