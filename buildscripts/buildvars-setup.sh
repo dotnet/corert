@@ -80,6 +80,10 @@ get_current_linux_rid() {
     echo $rid
 }
 
+# Disable telemetry, first time experience, and global sdk look for the CLI
+export DOTNET_CLI_TELEMETRY_OPTOUT=1
+export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
+export DOTNET_MULTILEVEL_LOOKUP=0
 
 export __scriptpath="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export __ProjectRoot=$__scriptpath/..

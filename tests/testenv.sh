@@ -88,7 +88,7 @@ esac
 export CoreRT_BuildOS=${CoreRT_HostOS}
 
 # Overwrite __BuildOS with WebAssembly if wasm is target build arch, but keep the CoreRT_HostOS to match the Host OS
-if [ $__BuildArch == "wasm" ]; then
+if [ "$__BuildArch" == "wasm" ]; then
     export CoreRT_BuildOS=WebAssembly
 fi
 
