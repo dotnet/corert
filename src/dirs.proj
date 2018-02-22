@@ -17,7 +17,9 @@
     <Project Include="Framework\Framework-uapaot.depproj" />
     <Project Include="Framework\Framework-native.depproj" Condition="$(TargetsUnix) and '$(Platform)' != 'wasm'" />
 
-    <Project Include="ILCompiler\**\*.depproj" />
+    <Project Include="ILCompiler\RyuJIT\RyuJIT.depproj" />
+    <Project Include="ILCompiler\ObjectWriter\ObjectWriter.depproj" />
+    <Project Include="ILCompiler.WebAssembly\src\libLLVMdep.depproj" />
 
     <Project Include="*\src\*.csproj" Exclude="@(ExcludeProjects)" />
     <Project Include="*\src\*.vbproj" Condition="'$(IncludeVbProjects)'!='false'" Exclude="@(ExcludeProjects)" />
