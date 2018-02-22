@@ -672,16 +672,29 @@ namespace Internal.IL
                 case TypeFlags.ValueType:
                 case TypeFlags.Nullable:
                     {
+                        int structSize = type.GetElementSize().AsInt;
+
                         // LLVM thinks certain sizes of struct have a different calling convention than Clang does.
                         // Treating them as ints fixes that and is more efficient in general
-                        if (type.GetElementSize().AsInt == 4)
+                        switch (structSize)
                         {
-                            return LLVM.Int32Type();
+                            case 4:
+                                return LLVM.Int32Type();
                         }
-                        else
+
+                        int numInts = structSize / 4;
+                        int numBytes = structSize - numInts * 4;
+                        LLVMTypeRef[] structMembers = new LLVMTypeRef[numInts + numBytes];
+                        for (int i = 0; i < numInts; i++)
                         {
-                            return LLVM.ArrayType(LLVM.Int8Type(), (uint)type.GetElementSize().AsInt);
+                            structMembers[i] = LLVM.Int32Type();
                         }
+                        for (int i = 0; i < numBytes; i++)
+                        {
+                            structMembers[i + numInts] = LLVM.Int8Type();
+                        }
+
+                        return LLVM.StructType(structMembers, true);
                     }
 
                 case TypeFlags.Enum:
@@ -2140,7 +2153,9 @@ namespace Internal.IL
             else if (ldtokenValue is FieldDesc)
             {
                 ldtokenKind = WellKnownType.RuntimeFieldHandle;
-                value = new LdTokenEntry<FieldDesc>(StackValueKind.ValueType, null, (FieldDesc)ldtokenValue, LLVM.ConstInt(LLVM.Int32Type(), 0, LLVMMisc.False), GetWellKnownType(ldtokenKind));
+                //LLVMTypeRef fieldTokenStruct = LLVM.StructType(new LLVMTypeRef[] { LLVM.Int32Type() }, true);
+                LLVMValueRef fieldHandle = LLVM.ConstStruct(new LLVMValueRef[] { BuildConstInt32(0) }, true);
+                value = new LdTokenEntry<FieldDesc>(StackValueKind.ValueType, null, (FieldDesc)ldtokenValue, fieldHandle, GetWellKnownType(ldtokenKind));
                 _stack.Push(value);
             }
             else if (ldtokenValue is MethodDesc)
@@ -2390,8 +2405,11 @@ namespace Internal.IL
             TypeDesc type = ResolveTypeToken(token);
             var valueEntry = _stack.Pop();
             var llvmType = GetLLVMTypeForTypeDesc(type);
-            if (llvmType.TypeKind == LLVMTypeKind.LLVMArrayTypeKind)
+            if (llvmType.TypeKind == LLVMTypeKind.LLVMStructTypeKind)
+            {
+                // todo: this could do pointer-sized writes instead of memset
                 ImportCallMemset(valueEntry.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), 0, type.GetElementSize().AsInt);
+            }
             else if (llvmType.TypeKind == LLVMTypeKind.LLVMIntegerTypeKind)
                 LLVM.BuildStore(_builder, LLVM.ConstInt(llvmType, 0, LLVMMisc.False), valueEntry.ValueAsType(LLVM.PointerType(llvmType, 0), _builder));
             else if (llvmType.TypeKind == LLVMTypeKind.LLVMPointerTypeKind)
