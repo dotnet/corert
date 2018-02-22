@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace Library
+namespace SharedLibrary
 {
     public class ClassLibrary
     {

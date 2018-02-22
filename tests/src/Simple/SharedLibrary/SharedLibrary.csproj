@@ -13,11 +13,11 @@
   <Target Name="LibNativeCompile" AfterTargets="LinkNative">
 
     <PropertyGroup>
-      <LibNativeObject>$(NativeOutputPath)Library</LibNativeObject>
+      <LibNativeObject>$(NativeOutputPath)SharedLibrary</LibNativeObject>
     </PropertyGroup>
 
     <ItemGroup>
-      <ClCompile Include="Library.cpp" />
+      <ClCompile Include="SharedLibrary.cpp" />
     </ItemGroup>
 
     <ItemGroup>

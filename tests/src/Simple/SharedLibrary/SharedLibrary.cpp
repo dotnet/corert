@@ -1,9 +1,9 @@
 #ifdef _WIN32
-#include <windows.h>
+#include "windows.h"
 #else
-#include <dlfcn.h>
+#include "dlfcn.h"
 #endif
-#include <stdio.h>
+#include "stdio.h"
 
 #ifndef _WIN32
 #define __stdcall
@@ -18,11 +18,11 @@ typedef void(__stdcall *f_EnsureManagedClassLoaders)();
 int main()
 {
 #ifdef _WIN32
-    HINSTANCE handle = LoadLibrary("Library.dll");
+    HINSTANCE handle = LoadLibrary("SharedLibrary.dll");
 #elif __APPLE__
-    void *handle = dlopen("Library.dylib", RTLD_LAZY);
+    void *handle = dlopen("SharedLibrary.dylib", RTLD_LAZY);
 #else
-    void *handle = dlopen("Library.so", RTLD_LAZY);
+    void *handle = dlopen("SharedLibrary.so", RTLD_LAZY);
 #endif
 
     if (!handle)
