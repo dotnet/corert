@@ -188,6 +188,9 @@ internal static class Program
         IntToStringTest();
 
         CastingTestClass castingTest = new DerivedCastingTestClass1();
+
+        PrintLine("interface call test: Ok " + (castingTest as ICastingTest1).GetValue().ToString());
+
         if (((DerivedCastingTestClass1)castingTest).GetValue() == 1 && !(castingTest is DerivedCastingTestClass2))
         {
             PrintLine("Type casting with isinst & castclass to class test: Ok.");
