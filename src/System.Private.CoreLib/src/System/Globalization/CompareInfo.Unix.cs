@@ -634,40 +634,6 @@ namespace System.Globalization
             }
         }
 
-        private unsafe bool EndsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options)
-        {
-            Debug.Assert(!_invariantMode);
-
-            Debug.Assert(!source.IsEmpty);
-            Debug.Assert(!suffix.IsEmpty);
-            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
-            
-            if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options))
-            {
-                if (source.Length < suffix.Length)
-                {
-                    return false;
-                }
-
-                if ((options & CompareOptions.IgnoreCase) == CompareOptions.IgnoreCase)
-                {
-                    return EndsWithOrdinalIgnoreCaseHelper(source, suffix, options);
-                }
-                else
-                {
-                    return EndsWithOrdinalHelper(source, suffix, options);
-                }
-            }
-            else
-            {
-                fixed (char* pSource = &MemoryMarshal.GetReference(source))
-                fixed (char* pSuffix = &MemoryMarshal.GetReference(suffix))
-                {
-                    return Interop.Globalization.EndsWith(_sortHandle, pSuffix, suffix.Length, pSource, source.Length, options);
-                }
-            }
-        }
-
         private unsafe bool EndsWithOrdinalIgnoreCaseHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options)
         {
             Debug.Assert(!_invariantMode);
