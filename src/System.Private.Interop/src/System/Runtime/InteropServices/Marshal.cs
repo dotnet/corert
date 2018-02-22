@@ -2,13 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-// This file provides an implementation of the pieces of the Marshal class which are required by the Interop
-// API contract but are not provided by the version of Marshal which is part of the Redhawk test library.
-// This partial class is combined with the version from the Redhawk test library, in order to provide the
-// Marshal implementation for System.Private.CoreLib.
-//
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -763,7 +756,7 @@ namespace System.Runtime.InteropServices
             {
                 throw new ArgumentNullException(nameof(o));
             }
-            return MarshalAdapter.GetIUnknownForObject(o);
+            return McgMarshal.ObjectToComInterface(o, InternalTypes.IUnknown);
         }
 
         //====================================================================
@@ -775,7 +768,7 @@ namespace System.Runtime.InteropServices
             {
                 throw new ArgumentNullException(nameof(pUnk));
             }
-            return MarshalAdapter.GetObjectForIUnknown(pUnk);
+            return McgMarshal.ComInterfaceToObject(pUnk, InternalTypes.IUnknown);
         }
 
         //====================================================================
@@ -1268,7 +1261,13 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr /* IUnknown* */ GetComInterfaceForObject(Object o, Type T)
         {
-            return MarshalAdapter.GetComInterfaceForObject(o, T);
+            if (o == null)
+                throw new ArgumentNullException(nameof(o));
+
+            if (T == null)
+                throw new ArgumentNullException(nameof(T));
+
+            return McgMarshal.ObjectToComInterface(o, T.TypeHandle);
         }
 
         public static TDelegate GetDelegateForFunctionPointer<TDelegate>(IntPtr ptr)
@@ -1288,13 +1287,12 @@ namespace System.Runtime.InteropServices
             if (t.TypeHandle.IsGenericType() || t.TypeHandle.IsGenericTypeDefinition())
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
 
-            bool isDelegateType = InteropExtensions.AreTypesAssignable(t.TypeHandle, typeof(MulticastDelegate).TypeHandle) ||
-                                  InteropExtensions.AreTypesAssignable(t.TypeHandle, typeof(Delegate).TypeHandle);
+            bool isDelegateType = InteropExtensions.AreTypesAssignable(t.TypeHandle, typeof(Delegate).TypeHandle);
 
             if (!isDelegateType)
                 throw new ArgumentException(SR.Arg_MustBeDelegateType, nameof(t));
 
-            return MarshalAdapter.GetDelegateForFunctionPointer(ptr, t);
+            return McgMarshal.GetPInvokeDelegateForStub(ptr, t.TypeHandle);
         }
 
         //====================================================================
