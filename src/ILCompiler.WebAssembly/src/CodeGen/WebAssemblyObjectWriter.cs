@@ -225,6 +225,19 @@ namespace ILCompiler.DependencyAnalysis
                 throw new NotImplementedException();
         }
 
+        private void EmitReadyToRunHeaderCallback()
+        {
+            LLVMTypeRef intPtr = LLVM.PointerType(LLVM.Int32Type(), 0);
+            LLVMTypeRef intPtrPtr = LLVM.PointerType(intPtr, 0);
+            var callback = LLVM.AddFunction(Module, "RtRHeaderWrapper", LLVM.FunctionType(intPtrPtr, new LLVMTypeRef[0], false));
+            var builder = LLVM.CreateBuilder();
+            var block = LLVM.AppendBasicBlock(callback, "Block");
+            LLVM.PositionBuilderAtEnd(builder, block);
+
+            LLVMValueRef rtrHeaderPtr = GetSymbolValuePointer(Module, _nodeFactory.ReadyToRunHeader, _nodeFactory.NameMangler, false);
+            LLVMValueRef castRtrHeaderPtr = LLVM.BuildPointerCast(builder, rtrHeaderPtr, intPtrPtr, "castRtrHeaderPtr");
+            LLVM.BuildRet(builder, castRtrHeaderPtr);
+        }
 
         private void EmitNativeMain()
         {
@@ -255,6 +268,13 @@ namespace ILCompiler.DependencyAnalysis
             var shadowStack = LLVM.BuildMalloc(builder, LLVM.ArrayType(LLVM.Int8Type(), 1000000), String.Empty);
             var castShadowStack = LLVM.BuildPointerCast(builder, shadowStack, LLVM.PointerType(LLVM.Int8Type(), 0), String.Empty);
             LLVM.BuildStore(builder, castShadowStack, shadowStackTop);
+
+            // Pass on main arguments
+            var argcSlot = LLVM.BuildPointerCast(builder, shadowStack, LLVM.PointerType(LLVM.Int32Type(), 0), "argcSlot");
+            LLVM.BuildStore(builder, LLVM.GetParam(mainFunc, 0), argcSlot);
+            var argvSlot = LLVM.BuildGEP(builder, castShadowStack, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), 4, LLVMMisc.False) }, "argvSlot");
+            LLVM.BuildStore(builder, LLVM.GetParam(mainFunc, 1), LLVM.BuildPointerCast(builder, argvSlot, LLVM.PointerType(LLVM.PointerType(LLVM.Int8Type(), 0), 0), ""));
+
             LLVM.BuildCall(builder, managedMain, new LLVMValueRef[]
             {
                 castShadowStack,
@@ -679,7 +699,7 @@ namespace ILCompiler.DependencyAnalysis
 
             return new ObjectNodeSection(standardSectionPrefix + section.Name, section.Type, key);
         }
-
+        
         public void ResetByteRunInterruptionOffsets(Relocation[] relocs)
         {
             _byteInterruptionOffsets.Clear();
@@ -705,6 +725,7 @@ namespace ILCompiler.DependencyAnalysis
 
             try
             {
+                objectWriter.EmitReadyToRunHeaderCallback();
                 //ObjectNodeSection managedCodeSection = null;
 
                 var listOfOffsets = new List<int>();

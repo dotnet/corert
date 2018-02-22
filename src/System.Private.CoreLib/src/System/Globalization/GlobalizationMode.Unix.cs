@@ -13,12 +13,17 @@ namespace System.Globalization
             bool invariantEnabled = false;
             if (!invariantEnabled)
             {
+                // WASM TODO: There's no WASM build of LibICU. We may be able to cross-compile it ourselves.
+#if WASM
+                return true;
+#else
                 if (Interop.Globalization.LoadICU() == 0)
                 {
                     string message = "Couldn't find a valid ICU package installed on the system. " + 
                                     "Set the configuration flag System.Globalization.Invariant to true if you want to run with no globalization support.";
                     Environment.FailFast(message);
                 }
+#endif // !WASM
             }
             return invariantEnabled;
         }

@@ -121,10 +121,16 @@ namespace Internal.Runtime.CompilerHelpers
             for (int i = 0; i < count; i++)
             {
                 if (pModuleHeaders[i] != IntPtr.Zero)
-                    modules[moduleIndex++] = RuntimeImports.RhpCreateTypeManager(osModule, pModuleHeaders[i], pClasslibFunctions, nClasslibFunctions);
+                    modules[moduleIndex++] = CreateTypeManager(osModule, pModuleHeaders[i], pClasslibFunctions, nClasslibFunctions);
             }
 
             return modules;
+        }
+
+        private static unsafe TypeManagerHandle CreateTypeManager(IntPtr osModule, IntPtr pModuleHeader, IntPtr* pClasslibFunctions, int nClasslibFunctions)
+        {
+            IntPtr returnedPtr = RuntimeImports.RhpCreateTypeManager(osModule, pModuleHeader, pClasslibFunctions, nClasslibFunctions);
+            return new TypeManagerHandle(returnedPtr);
         }
 
         /// <summary>
