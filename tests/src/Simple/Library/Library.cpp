@@ -1,11 +1,11 @@
-#ifdef Windows_NT
+#ifdef _WIN32
 #include <windows.h>
 #else
 #include <dlfcn.h>
 #endif
 #include <stdio.h>
 
-#ifndef Windows_NT
+#ifndef _WIN32
 #define __stdcall
 #endif
 
@@ -17,7 +17,7 @@ typedef void(__stdcall *f_EnsureManagedClassLoaders)();
 
 int main()
 {
-#ifdef Windows_NT
+#ifdef _WIN32
     HINSTANCE handle = LoadLibrary("Library.dll");
 #elif __APPLE__
     void *handle = dlopen("Library.dylib", RTLD_LAZY);
@@ -28,7 +28,7 @@ int main()
     if (!handle)
         return 1;
 
-#ifdef Windows_NT
+#ifdef _WIN32
     f_ReturnsPrimitiveInt returnsPrimitiveInt = (f_ReturnsPrimitiveInt)GetProcAddress(handle, "ReturnsPrimitiveInt");
     f_ReturnsPrimitiveBool returnsPrimitiveBool = (f_ReturnsPrimitiveBool)GetProcAddress(handle, "ReturnsPrimitiveBool");
     f_ReturnsPrimitiveChar returnsPrimitiveChar = (f_ReturnsPrimitiveChar)GetProcAddress(handle, "ReturnsPrimitiveChar");
@@ -50,8 +50,8 @@ int main()
         return 1;
 
     // As long as no unmanaged exception is thrown
-    // managed class loaders were init successfully
+    // managed class loaders were initialized successfully
     ensureManagedClassLoaders();
 
-    return 0;
+    return 100;
 }

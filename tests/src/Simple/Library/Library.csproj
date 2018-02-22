@@ -1,7 +1,36 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <IntermediateOutputPath>$(MSBuildProjectDirectory)\obj\$(Configuration)\$(Platform)\native\</IntermediateOutputPath>
+    <NativeLib>Shared</NativeLib>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="*.cs" />
+  </ItemGroup>
+
+  <Target Name="LibNativeCompile" AfterTargets="LinkNative">
+
+    <PropertyGroup>
+      <LibNativeObject>$(NativeOutputPath)Library</LibNativeObject>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ClCompile Include="Library.cpp" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <LibNativeCompilerArg Include="@(ClCompile)" />
+      <LibNativeCompilerArg Include="/Fo$(LibNativeObject)" Condition="'$(OS)' == 'Windows_NT'" />
+      <LibNativeCompilerArg Include="/Fe$(LibNativeObject)" Condition="'$(OS)' == 'Windows_NT'" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(IntermediateOutputPath)lib_native.rsp" Lines="@(LibNativeCompilerArg)" Overwrite="true"  Condition="'$(OS)' == 'Windows_NT'"/>
+    <Exec Command="$(CppCompiler) @&quot;$(IntermediateOutputPath)lib_native.rsp&quot;" Condition="'$(OS)' == 'Windows_NT'" />
+
+  </Target>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), SimpleTest.targets))\SimpleTest.targets" />
 
 </Project>
