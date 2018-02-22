@@ -1074,6 +1074,8 @@ namespace Internal.IL
                         _dependencies.Add(node);
                         int srcLength = node.GetData(_compilation.NodeFactory, false).Data.Length;
 
+                        LLVMValueRef arrayObjPtr = arraySlot.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder);
+
                         var argsType = new LLVMTypeRef[]
                         {
                             LLVM.PointerType(LLVM.Int8Type(), 0),
@@ -1086,9 +1088,7 @@ namespace Internal.IL
 
                         var args = new LLVMValueRef[]
                         {
-                            // TODO: Where to get the base size of this array? We don't have the EEType of the array here.
-                            // Currently the base size is assumed to be 8 (while it seems always be).
-                            LLVM.BuildGEP(_builder, arraySlot.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), new LLVMValueRef[] { BuildConstInt32(8) }, String.Empty),
+                            LLVM.BuildGEP(_builder, arrayObjPtr, new LLVMValueRef[] { ArrayBaseSize() }, String.Empty),
                             LLVM.BuildBitCast(_builder, src, LLVM.PointerType(LLVM.Int8Type(), 0), String.Empty),
                             BuildConstInt32(srcLength),
                             BuildConstInt32(16),
