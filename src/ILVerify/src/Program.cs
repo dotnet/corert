@@ -156,7 +156,6 @@ namespace ILVerify
                     PrintResult(result, module, kvp.Value);
                 }
 
-
                 if (numErrors > 0)
                     WriteLine(numErrors + " Error(s) Verifying " + kvp.Value);
                 else
@@ -294,7 +293,7 @@ namespace ILVerify
 
             StringBuilder builder = new StringBuilder();
             builder.Append($"[{assemblyName}]");
-            if (string.IsNullOrEmpty(namespaceName) == false)
+            if (!string.IsNullOrEmpty(namespaceName))
                 builder.Append($"{namespaceName}.");
             builder.Append($"{typeName}.{methodName}");
 

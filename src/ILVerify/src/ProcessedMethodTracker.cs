@@ -20,8 +20,10 @@ namespace ILVerify
             public string Name;
             public bool Verified;
         };
-        private class ModuleResult {
-            public IList<MethodResult> Methods = new List<MethodResult>();
+        private class ModuleResult
+        {
+            public int MethodCounter;
+            public int VerifiedMethodCounter;
         }
 
         private bool _verbose;
@@ -34,16 +36,16 @@ namespace ILVerify
             _printStatistics = printStatistics;
         }
 
-        private bool IsEnabled { get { return _verbose || _printStatistics; } }
-
         internal void NotifyMethodProcessing(EcmaModule module, MethodDefinitionHandle methodHandle, string methodName, bool verifying)
         {
-            if (!IsEnabled)
-                return;
-
-            var method = module.GetMethod(methodHandle);
-            ModuleResult result = GetOrCreateModuleResult(module);
-            result.Methods.Add(new MethodResult() { Method = method, Name = methodName, Verified = verifying });
+            if (_printStatistics)
+            {
+                var method = module.GetMethod(methodHandle);
+                ModuleResult result = GetOrCreateModuleResult(module);
+                if (verifying)
+                    result.VerifiedMethodCounter++;
+                result.MethodCounter++;
+            }
 
             if (_verbose)
             {
@@ -70,14 +72,11 @@ namespace ILVerify
 
         internal void PrintResult(EcmaModule module)
         {
-            if (!IsEnabled)
-                return;
-
-            ModuleResult result = _statistics[module];
             if (_printStatistics)
             {
-                WriteLine($"Methods found: {result.Methods.Count}");
-                WriteLine($"Methods verified: {result.Methods.Count(m => m.Verified)}");
+                ModuleResult result = _statistics[module];
+                WriteLine($"Methods found: {result.MethodCounter}");
+                WriteLine($"Methods verified: {result.VerifiedMethodCounter}");
                 WriteLine();
             }
         }
