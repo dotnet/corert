@@ -42,8 +42,10 @@ namespace ILCompiler.DependencyAnalysis
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             string name = WrappedMethodIndirectionCellNode.GetMangledName(nameMangler);
-            Debug.Assert(name.StartsWith("__mrt_"));
-            sb.Append(name.Substring(6));
+            Debug.Assert(name.StartsWith("__mrt__"));
+            // Add a __imp__ prefix to indicate this is a stub to the debugger
+            sb.Append("__imp__");
+            sb.Append(name.Substring("__mrt__".Length));
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);

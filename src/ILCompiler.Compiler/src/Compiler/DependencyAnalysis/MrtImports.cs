@@ -114,7 +114,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override sealed string GetName(NodeFactory factory)
         {
-            string prefix = "MrtImport " + Ordinal.ToStringInvariant() + " __mrt_";
+            string prefix = "MrtImport " + Ordinal.ToStringInvariant() + " __mrt__";
             return prefix + GetNonImportedName(factory.NameMangler);
         }
 
@@ -122,7 +122,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__mrt_").Append(nameMangler.CompilationUnitPrefix).Append(GetNonImportedName(nameMangler));
+            sb.Append("__mrt__").Append(nameMangler.CompilationUnitPrefix).Append(GetNonImportedName(nameMangler));
         }
 
         public bool RepresentsIndirectionCell => true;
