@@ -1091,7 +1091,7 @@ namespace Internal.IL
                             LLVM.BuildGEP(_builder, arrayObjPtr, new LLVMValueRef[] { ArrayBaseSize() }, String.Empty),
                             LLVM.BuildBitCast(_builder, src, LLVM.PointerType(LLVM.Int8Type(), 0), String.Empty),
                             BuildConstInt32(srcLength),
-                            BuildConstInt32(16),
+                            BuildConstInt32(0), // Assume no alignment
                             BuildConstInt1(0)
                         };
                         LLVM.BuildCall(_builder, memcpyFunction, args, string.Empty);
