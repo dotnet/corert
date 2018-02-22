@@ -279,6 +279,13 @@ namespace System.Runtime.CompilerServices
 #else
                 const int Grow = 10;
 #endif
+
+                if (s_cctorGlobalLock == null)
+                {
+                    Interlocked.CompareExchange(ref s_cctorGlobalLock, new Lock(), null);
+                    Interlocked.CompareExchange(ref s_cctorArrays, new Cctor[10][], null);
+                }
+
                 using (LockHolder.Hold(s_cctorGlobalLock))
                 {
                     Cctor[] resultArray = null;
