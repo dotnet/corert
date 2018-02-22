@@ -99,3 +99,13 @@ export CoreRT_BuildOS
 __ScriptDir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 export CoreRT_ToolchainDir=${__ScriptDir}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}
+
+# CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to set.
+# This is needed by CLI to function.
+if [ -z "$HOME" ]; then
+    if [ ! -d "$__ScriptDir/../temp_home" ]; then
+        mkdir "$__ScriptDir/../temp_home"
+    fi
+    export HOME=$__ScriptDir/../temp_home
+    echo "HOME not defined; setting it to $HOME"
+fi
