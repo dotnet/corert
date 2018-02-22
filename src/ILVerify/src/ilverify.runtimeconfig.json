@@ -1,7 +1,5 @@
 {
-  "runtimeOptions": {
-    "configProperties": {
-    	"Microsoft.NETCore.DotNetHostPolicy.SetAppPaths": true
-    }
-  }
+        "configProperties": {
+            "Microsoft.NETCore.DotNetHostPolicy.SetAppPaths": true
+        }
 }
