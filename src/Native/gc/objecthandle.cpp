@@ -1247,7 +1247,7 @@ void Ref_CheckReachable(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
 // strong handle to refer to the secondary as this could case a cycle in the graph if the secondary somehow
 // pointed back to the primary. Can't use weak handle because that would not keep the secondary object alive.
 //
-// The result is that a dependenHandle has the EFFECT of 
+// The result is that a dependentHandle has the EFFECT of 
 //    * long weak handles in both the primary and secondary objects
 //    * a strong reference from the primary object to the secondary one
 //
