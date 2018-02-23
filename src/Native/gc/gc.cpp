@@ -35674,7 +35674,7 @@ Object* GCHeap::GetNextFinalizableObject()
         if (O)
             return O;
     }
-    //return the first non crtitical/critical one in the first queue.
+    //return the first non critical/critical one in the first queue.
     for (int hn = 0; hn < gc_heap::n_heaps; hn++)
     {
         gc_heap* hp = gc_heap::g_heaps [hn];
