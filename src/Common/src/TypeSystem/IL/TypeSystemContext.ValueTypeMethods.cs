@@ -75,16 +75,6 @@ namespace Internal.TypeSystem
             if (valueType.IsEnum)
                 return false;
 
-            // Optimization: if Equals/GetHashCode are overriden, we don't need the helper
-            // TODO: not stricly correct because user code can do
-            // public override int GetHashCode() => base.GetHashCode
-            // and cause us to not be able to provide the implementation anymore
-            // We should probably scope this down to e.g. only framework code.
-            bool overridesEquals = valueType.GetMethod("Equals", _objectEqualsMethod.Signature) != null;
-            bool overridesGetHashCode = valueType.GetMethod("GetHashCode", _objectGetHashCodeMethod.Signature) != null;
-            if (overridesEquals && overridesGetHashCode)
-                return false;
-
             return !CanCompareValueTypeBits(valueType);
         }
 
