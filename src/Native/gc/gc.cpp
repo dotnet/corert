@@ -3065,7 +3065,7 @@ gc_heap::dt_estimate_reclaim_space_p (gc_tuning_point tp, int gen_number)
 }
 
 // DTREVIEW: Right now we only estimate gen2 fragmentation. 
-// on 64-bit though we should consider gen1 or even gen0 fragmentatioin as
+// on 64-bit though we should consider gen1 or even gen0 fragmentation as
 // well 
 inline BOOL 
 gc_heap::dt_estimate_high_frag_p (gc_tuning_point tp, int gen_number, uint64_t available_mem)
