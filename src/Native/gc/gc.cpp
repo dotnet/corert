@@ -35262,7 +35262,7 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
 size_t      GCHeap::GetTotalBytesInUse ()
 {
 #ifdef MULTIPLE_HEAPS
-    //enumarate all the heaps and get their size.
+    //enumerate all the heaps and get their size.
     size_t tot_size = 0;
     for (int i = 0; i < gc_heap::n_heaps; i++)
     {
@@ -35581,7 +35581,7 @@ HRESULT GCHeap::GetGcCounters(int gen, gc_counters* counters)
     counters->promoted_size = 0;
     counters->collection_count = 0;
 
-    //enumarate all the heaps and get their counters.
+    //enumerate all the heaps and get their counters.
     for (int i = 0; i < gc_heap::n_heaps; i++)
     {
         dynamic_data* dd = gc_heap::g_heaps [i]->dynamic_data_of (gen);
