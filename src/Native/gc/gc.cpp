@@ -14703,7 +14703,7 @@ int gc_heap::generation_to_condemn (int n_initial,
         }
     }
 
-    //figure out which ephemeral generation is too fragramented
+    //figure out which ephemeral generation is too fragmented
     temp_gen = n;
     for (i = n+1; i < max_generation; i++)
     {
