@@ -5420,7 +5420,7 @@ public:
     // Supposedly Pinned objects cannot have references but we are seeing some from pinvoke 
     // frames. Also if it's an artificially pinned plug created by us, it can certainly 
     // have references. 
-    // We know these cases will be rare so we can optimize this to be only allocated on decommand. 
+    // We know these cases will be rare so we can optimize this to be only allocated on demand. 
     gap_reloc_pair saved_post_plug_reloc;
 
     // We need to calculate this after we are done with plan phase and before compact
@@ -6217,7 +6217,7 @@ void gc_heap::set_pinned_info (uint8_t* last_pinned_plug, size_t plug_len, gener
 
 size_t gc_heap::deque_pinned_plug ()
 {
-    dprintf (3, ("dequed: %Id", mark_stack_bos));
+    dprintf (3, ("deque: %Id", mark_stack_bos));
     size_t m = mark_stack_bos;
     mark_stack_bos++;
     return m;
@@ -27942,7 +27942,7 @@ void gc_heap::count_plug (size_t last_plug_size, uint8_t*& last_plug)
     {
         deque_pinned_plug();
         update_oldest_pinned_plug();
-        dprintf (3, ("dequed pin,now oldest pin is %Ix", pinned_plug (oldest_pin())));
+        dprintf (3, ("deque pin,now oldest pin is %Ix", pinned_plug (oldest_pin())));
     }
     else
     {

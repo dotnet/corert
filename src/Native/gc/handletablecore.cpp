@@ -242,7 +242,7 @@ BOOL TableCanFreeSegmentNow(HandleTable *pTable, TableSegment *pSegment)
     _ASSERTE(threadId.IsCurrentThread());
 #endif // _DEBUG
 
-    // deterine if any segment is currently being scanned asynchronously
+    // determine if any segment is currently being scanned asynchronously
     TableSegment *pSegmentAsync = NULL;
 
     // do we have async info?
