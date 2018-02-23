@@ -97,13 +97,20 @@ namespace ILCompiler
         private SimpleNameHashtable _simpleNameHashtable = new SimpleNameHashtable();
 
         private SharedGenericsMode _genericsMode;
-
+        
         public CompilerTypeSystemContext(TargetDetails details, SharedGenericsMode genericsMode)
             : base(details)
         {
             _genericsMode = genericsMode;
 
             _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
+
+            GenericsConfig = new SharedGenericsConfiguration();
+        }
+
+        public SharedGenericsConfiguration GenericsConfig
+        {
+            get;
         }
 
         public IReadOnlyDictionary<string, string> InputFilePaths
@@ -473,4 +480,32 @@ namespace ILCompiler
         Disabled,
         CanonicalReferenceTypes,
     }
+
+    public class SharedGenericsConfiguration
+    {
+        //
+        // Universal Shared Generics heuristics magic values determined empirically
+        //
+        public long UniversalCanonGVMReflectionRootHeuristic_InstantiationCount { get; }
+        public long UniversalCanonGVMDepthHeuristic_NonCanonDepth { get; }
+        public long UniversalCanonGVMDepthHeuristic_CanonDepth { get; }
+
+        // Controls how many different instantiations of a generic method, or method on generic type
+        // should be allowed before trying to fall back to only supplying USG in the reflection
+        // method table.
+        public long UniversalCanonReflectionMethodRootHeuristic_InstantiationCount { get; }
+
+        public SharedGenericsConfiguration()
+        {
+            UniversalCanonGVMReflectionRootHeuristic_InstantiationCount = 4;
+            UniversalCanonGVMDepthHeuristic_NonCanonDepth = 2;
+            UniversalCanonGVMDepthHeuristic_CanonDepth = 1;
+
+            // Unlike the GVM heuristics which are intended to kick in aggresively
+            // this heuristic exists to make it so that a fair amount of generic
+            // expansion is allowed. Numbers are chosen to allow a fairly large
+            // amount of generic expansion before trimming.
+            UniversalCanonReflectionMethodRootHeuristic_InstantiationCount = 1024;
+        }
+    };
 }
