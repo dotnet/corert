@@ -389,6 +389,8 @@ namespace System.Reflection.Runtime.TypeInfos
                 ReflectionTrace.TypeInfo_MakeArrayType(this);
 #endif
 
+            CheckIsValidArrayElementType();
+
             // Do not implement this as a call to MakeArrayType(1) - they are not interchangable. MakeArrayType() returns a
             // vector type ("SZArray") while MakeArrayType(1) returns a multidim array of rank 1. These are distinct types
             // in the ECMA model and in CLR Reflection.
@@ -404,6 +406,9 @@ namespace System.Reflection.Runtime.TypeInfos
 
             if (rank <= 0)
                 throw new IndexOutOfRangeException();
+
+            CheckIsValidArrayElementType();
+
             return this.GetMultiDimArrayType(rank);
         }
 
@@ -798,6 +803,12 @@ namespace System.Reflection.Runtime.TypeInfos
                 }
                 return baseType;
             }
+        }
+
+        private void CheckIsValidArrayElementType()
+        {
+            if (this.IsByRef || this.IsByRefLike)
+                throw new TypeLoadException(SR.Format(SR.ArgumentException_InvalidArrayElementType, this));
         }
 
         private string GetDefaultMemberName()
