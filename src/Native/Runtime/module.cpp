@@ -1171,7 +1171,7 @@ void Module::DoCustomImports(ModuleHeader * pModuleHeader)
         // obtain address of indirection cell pointing to the EAT for the exporting module
         UInt32 **ptrPtrEAT = (UInt32 **)(thisBaseAddress + customImportTable[i].RvaEATAddr);
 
-        // obtain the EAT by derefencing
+        // obtain the EAT by dereferencing
         UInt32 *ptrEAT = *ptrPtrEAT;
  
         // obtain the exporting module
