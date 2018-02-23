@@ -29865,7 +29865,7 @@ size_t gc_heap::joined_youngest_desired (size_t new_allocation)
         {
             uint32_t memory_load = 0;
             get_memory_info (&memory_load);
-            dprintf (2, ("Current emory load: %d", memory_load));
+            dprintf (2, ("Current memory load: %d", memory_load));
 
             size_t final_total = 
                 trim_youngest_desired (memory_load, total_new_allocation, total_min_allocation);
