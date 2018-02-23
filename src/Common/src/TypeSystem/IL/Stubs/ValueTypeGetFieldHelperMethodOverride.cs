@@ -103,8 +103,11 @@ namespace Internal.IL.Stubs
                 getFieldStream.Emit(ILOpcode.ret);
             }
 
-            switchStream.EmitLdArg(1);
-            switchStream.EmitSwitch(fieldGetters.ToArray());
+            if (fieldGetters.Count > 0)
+            {
+                switchStream.EmitLdArg(1);
+                switchStream.EmitSwitch(fieldGetters.ToArray());
+            }
 
             switchStream.EmitLdc(fieldGetters.Count);
             

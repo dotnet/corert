@@ -12,6 +12,9 @@ namespace Internal.TypeSystem
 {
     public abstract partial class TypeSystemContext
     {
+        private MethodDesc _objectGetHashCodeMethod;
+        private MethodDesc _objectEqualsMethod;
+
         private class ValueTypeMethodHashtable : LockFreeReaderHashtable<DefType, MethodDesc>
         {
             protected override int GetKeyHashCode(DefType key) => key.GetHashCode();
@@ -30,19 +33,106 @@ namespace Internal.TypeSystem
         protected virtual IEnumerable<MethodDesc> GetAllMethodsForValueType(TypeDesc valueType)
         {
             TypeDesc valueTypeDefinition = valueType.GetTypeDefinition();
-            MethodDesc getFieldHelperMethod = _valueTypeMethodHashtable.GetOrCreateValue((DefType)valueTypeDefinition);
 
-            if (valueType != valueTypeDefinition)
+            if (RequiresGetFieldHelperMethod((MetadataType)valueTypeDefinition))
             {
-                yield return GetMethodForInstantiatedType(getFieldHelperMethod, (InstantiatedType)valueType);
-            }
-            else
-            {
-                yield return getFieldHelperMethod;
+                MethodDesc getFieldHelperMethod = _valueTypeMethodHashtable.GetOrCreateValue((DefType)valueTypeDefinition);
+
+                // Check that System.ValueType has the method we're overriding.
+                Debug.Assert(valueTypeDefinition.BaseType.GetMethod(getFieldHelperMethod.Name, null) != null);
+
+                if (valueType != valueTypeDefinition)
+                {
+                    yield return GetMethodForInstantiatedType(getFieldHelperMethod, (InstantiatedType)valueType);
+                }
+                else
+                {
+                    yield return getFieldHelperMethod;
+                }
             }
 
             foreach (MethodDesc method in valueType.GetMethods())
                 yield return method;
+        }
+
+        private bool RequiresGetFieldHelperMethod(MetadataType valueType)
+        {
+            if (_objectGetHashCodeMethod == null)
+                _objectGetHashCodeMethod = GetWellKnownType(WellKnownType.Object).GetMethod("GetHashCode", null);
+
+            if (_objectEqualsMethod == null)
+                _objectEqualsMethod = GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null);
+
+            // If the classlib doesn't have Object.Equals/Object.GetHashCode, we don't need this.
+            if (_objectEqualsMethod == null && _objectGetHashCodeMethod == null)
+                return false;
+
+            // Byref-like valuetypes cannot be boxed.
+            if (valueType.IsByRefLike)
+                return false;
+
+            // Enums get their overrides from System.Enum.
+            if (valueType.IsEnum)
+                return false;
+
+            return !CanCompareValueTypeBits(valueType);
+        }
+
+        private bool CanCompareValueTypeBits(MetadataType type)
+        {
+            Debug.Assert(type.IsValueType);
+
+            if (type.ContainsGCPointers)
+                return false;
+
+            // TODO: what we're shooting for is overlapping fields
+            // or gaps between fields
+            if (type.IsExplicitLayout || type.GetClassLayout().Size != 0)
+                return false;
+
+            bool result = true;
+            foreach (var field in type.GetFields())
+            {
+                if (field.IsStatic)
+                    continue;
+
+                TypeDesc fieldType = field.FieldType;
+                if (fieldType.IsPrimitive || fieldType.IsEnum || fieldType.IsPointer || fieldType.IsFunctionPointer)
+                {
+                    TypeFlags category = fieldType.UnderlyingType.Category;
+                    if (category == TypeFlags.Single || category == TypeFlags.Double)
+                    {
+                        // Double/Single have weird behaviors around negative/positive zero
+                        result = false;
+                        break;
+                    }
+                }
+                else if (fieldType.IsSignatureVariable)
+                {
+                    return false;
+                }
+                else
+                {
+                    // Would be a suprise if this wasn't a valuetype. We checked ContainsGCPointers above.
+                    Debug.Assert(fieldType.IsValueType);
+
+                    // If the field overrides Equals/GetHashCode, we can't use the fast helper because we need to call the method.
+                    if (fieldType.FindVirtualFunctionTargetMethodOnObjectType(_objectEqualsMethod) != null ||
+                        fieldType.FindVirtualFunctionTargetMethodOnObjectType(_objectGetHashCodeMethod) != null)
+                    {
+                        result = false;
+                        break;
+                    }
+
+                    if (!CanCompareValueTypeBits((MetadataType)fieldType))
+                    {
+                        result = false;
+                        break;
+                    }
+                }
+            }
+
+            return result;
         }
     }
 }

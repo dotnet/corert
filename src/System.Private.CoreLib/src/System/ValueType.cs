@@ -72,7 +72,7 @@ namespace System
             if (numFields == UseFastHelper)
             {
                 // Sanity check - if there are GC references, we should not be comparing bytes
-                Debug.Assert(RuntimeImports.RhGetGCDescSize(this.EETypePtr) == 0);
+                Debug.Assert(!this.EETypePtr.HasPointers);
 
                 // Compare the memory
                 int valueTypeSize = (int)this.EETypePtr.ValueTypeSize;
@@ -111,7 +111,93 @@ namespace System
 
         public override int GetHashCode()
         {
-            throw new NotImplementedException();
+            int hashCode = this.EETypePtr.GetHashCode();
+
+            int numFields = __GetFieldHelper(GetNumFields, out _);
+
+            if (numFields == UseFastHelper)
+            {
+                hashCode ^= FastGetValueTypeHashCodeHelper(this.EETypePtr, ref this.GetRawData());
+            }
+            else
+            {
+                hashCode ^= RegularGetValueTypeHashCode(this.EETypePtr, ref this.GetRawData(), numFields);
+            }
+
+            return hashCode;
+        }
+
+        private static int FastGetValueTypeHashCodeHelper(EETypePtr type, ref byte data)
+        {
+            // Sanity check - if there are GC references, we should not be hashing bytes
+            Debug.Assert(!type.HasPointers);
+
+            int size = (int)type.ValueTypeSize;
+            int hashCode = 0;
+
+            for (int i = 0; i < size / 4; i++)
+            {
+                hashCode ^= Unsafe.As<byte, int>(ref Unsafe.Add(ref data, i * 4));
+            }
+
+            return hashCode;
+        }
+
+        private int RegularGetValueTypeHashCode(EETypePtr type, ref byte data, int numFields)
+        {
+            int hashCode = 0;
+
+            // We only take the hashcode for the first non-null field. That's what the CLR does.
+            for (int i = 0; i < numFields; i++)
+            {
+                int fieldOffset = __GetFieldHelper(i, out EETypePtr fieldType);
+                ref byte fieldData = ref Unsafe.Add(ref data, fieldOffset);
+
+                if (fieldType.IsPointer)
+                {
+                    hashCode = Unsafe.Read<IntPtr>(ref fieldData).GetHashCode();
+                }
+                else if (fieldType.CorElementType == RuntimeImports.RhCorElementType.ELEMENT_TYPE_R4)
+                {
+                    hashCode = Unsafe.Read<float>(ref fieldData).GetHashCode();
+                }
+                else if (fieldType.CorElementType == RuntimeImports.RhCorElementType.ELEMENT_TYPE_R8)
+                {
+                    hashCode = Unsafe.Read<double>(ref fieldData).GetHashCode();
+                }
+                else if (fieldType.IsPrimitive)
+                {
+                    hashCode = FastGetValueTypeHashCodeHelper(fieldType, ref fieldData);
+                }
+                else if (fieldType.IsValueType)
+                {
+                    // We have no option but to box and call regular GetHashCode since this value type could have
+                    // GC pointers (we could find out if we want though), or fields of type Double/Single (we can't
+                    // really find out). Double/Single have weird requirements around -0.0 and +0.0.
+                    // If this boxing becomes a problem, we could build a piece of infrastructure that determines the slot
+                    // of __GetFieldHelper, decodes the unboxing stub pointed to by the slot to the real target
+                    // (we already have that part), and calls the entrypoint that expects a byref `this`, and use the
+                    // data to decide between calling fast or regular hashcode helper.
+                    object fieldValue = RuntimeImports.RhBox(fieldType, ref fieldData);
+                    hashCode = fieldValue.GetHashCode();
+                }
+                else
+                {
+                    object fieldValue = Unsafe.Read<object>(ref fieldData);
+                    if (fieldValue != null)
+                    {
+                        hashCode = fieldValue.GetHashCode();
+                    }
+                    else
+                    {
+                        // null object reference, try next
+                        continue;
+                    }
+                }
+                break;
+            }
+
+            return hashCode;
         }
 #endif
     }
