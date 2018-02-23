@@ -153,11 +153,9 @@ namespace System
                 int fieldOffset = __GetFieldHelper(i, out EETypePtr fieldType);
                 ref byte fieldData = ref Unsafe.Add(ref data, fieldOffset);
 
-                if (fieldType.IsPointer)
-                {
-                    hashCode = Unsafe.Read<IntPtr>(ref fieldData).GetHashCode();
-                }
-                else if (fieldType.CorElementType == RuntimeImports.RhCorElementType.ELEMENT_TYPE_R4)
+                Debug.Assert(!fieldType.IsPointer);
+
+                if (fieldType.CorElementType == RuntimeImports.RhCorElementType.ELEMENT_TYPE_R4)
                 {
                     hashCode = Unsafe.Read<float>(ref fieldData).GetHashCode();
                 }
