@@ -10,27 +10,25 @@
     <Compile Include="*.cs" />
   </ItemGroup>
 
-  <Target Name="LibNativeCompile" AfterTargets="LinkNative">
-
+  <Target Name="NativeRunnerCompile" AfterTargets="LinkNative">
     <PropertyGroup>
-      <LibNativeObject>$(NativeOutputPath)SharedLibrary</LibNativeObject>
+      <NativeRunnerObject>$(NativeOutputPath)SharedLibrary</NativeRunnerObject>
     </PropertyGroup>
 
     <ItemGroup>
-      <ClCompile Include="SharedLibrary.cpp" />
+      <CppCompile Include="SharedLibrary.cpp" />
     </ItemGroup>
 
     <ItemGroup>
-      <LibNativeCompilerArg Include="@(ClCompile)" />
-      <LibNativeCompilerArg Include="-o $(LibNativeObject)" Condition="'$(OS)' != 'Windows_NT'" />
-      <LibNativeCompilerArg Include="/Fo$(LibNativeObject)" Condition="'$(OS)' == 'Windows_NT'" />
-      <LibNativeCompilerArg Include="/Fe$(LibNativeObject)" Condition="'$(OS)' == 'Windows_NT'" />
+      <NativeRunnerCompilerArg Include="@(CppCompile)" />
+      <NativeRunnerCompilerArg Include="-o $(NativeRunnerObject)" Condition="'$(OS)' != 'Windows_NT'" />
+      <NativeRunnerCompilerArg Include="/Fo$(NativeRunnerObject)" Condition="'$(OS)' == 'Windows_NT'" />
+      <NativeRunnerCompilerArg Include="/Fe$(NativeRunnerObject)" Condition="'$(OS)' == 'Windows_NT'" />
     </ItemGroup>
 
-    <Exec Command="$(CppCompiler) @(LibNativeCompilerArg, ' ')" Condition="'$(OS)' != 'Windows_NT'" />
-    <WriteLinesToFile File="$(IntermediateOutputPath)lib_native.rsp" Lines="@(LibNativeCompilerArg)" Overwrite="true"  Condition="'$(OS)' == 'Windows_NT'"/>
+    <Exec Command="$(CppCompiler) @(NativeRunnerCompilerArg, ' ')" Condition="'$(OS)' != 'Windows_NT'" />
+    <WriteLinesToFile File="$(IntermediateOutputPath)lib_native.rsp" Lines="@(NativeRunnerCompilerArg)" Overwrite="true"  Condition="'$(OS)' == 'Windows_NT'"/>
     <Exec Command="$(CppCompiler) @&quot;$(IntermediateOutputPath)lib_native.rsp&quot;" Condition="'$(OS)' == 'Windows_NT'" />
-
   </Target>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), SimpleTest.targets))\SimpleTest.targets" />
