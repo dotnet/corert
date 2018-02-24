@@ -118,7 +118,7 @@ If you change any of those algorithm, please verify it by this program:
                     assert (mask == 0);
                     return;
             }
-            //any generaion bigger than 2 is actually 2
+            //any generation bigger than 2 is actually 2
             if (gen > 2)
                 gen = 2;
 
