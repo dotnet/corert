@@ -1869,7 +1869,7 @@ void SegmentTrimExcessPages(TableSegment *pSegment)
 /*
  * BlockAllocHandlesInMask
  *
- * Attempts to allocate the requested number of handes of the specified type,
+ * Attempts to allocate the requested number of handles of the specified type,
  * from the specified mask of the specified handle block.
  *
  * Returns the number of available handles actually allocated.
@@ -2029,7 +2029,7 @@ uint32_t BlockAllocHandlesInitial(TableSegment *pSegment, uint32_t uType, uint32
 /*
  * BlockAllocHandles
  *
- * Attempts to allocate the requested number of handes of the specified type,
+ * Attempts to allocate the requested number of handles of the specified type,
  * from the specified handle block.
  *
  * Returns the number of available handles actually allocated.
@@ -2087,7 +2087,7 @@ uint32_t BlockAllocHandles(TableSegment *pSegment, uint32_t uBlock, OBJECTHANDLE
 /*
  * SegmentAllocHandlesFromTypeChain
  *
- * Attempts to allocate the requested number of handes of the specified type,
+ * Attempts to allocate the requested number of handles of the specified type,
  * from the specified segment's block chain for the specified type.  This routine
  * ONLY scavenges existing blocks in the type chain.  No new blocks are committed.
  *
@@ -2171,7 +2171,7 @@ uint32_t SegmentAllocHandlesFromTypeChain(TableSegment *pSegment, uint32_t uType
 /*
  * SegmentAllocHandlesFromFreeList
  *
- * Attempts to allocate the requested number of handes of the specified type,
+ * Attempts to allocate the requested number of handles of the specified type,
  * by committing blocks from the free list to that type's type chain.
  *
  * Returns the number of available handles actually allocated.
@@ -2230,7 +2230,7 @@ uint32_t SegmentAllocHandlesFromFreeList(TableSegment *pSegment, uint32_t uType,
 /*
  * SegmentAllocHandles
  *
- * Attempts to allocate the requested number of handes of the specified type,
+ * Attempts to allocate the requested number of handles of the specified type,
  * from the specified segment.
  *
  * Returns the number of available handles actually allocated.
@@ -2268,7 +2268,7 @@ uint32_t SegmentAllocHandles(TableSegment *pSegment, uint32_t uType, OBJECTHANDL
 /*
  * TableAllocBulkHandles
  *
- * Attempts to allocate the requested number of handes of the specified type.
+ * Attempts to allocate the requested number of handles of the specified type.
  *
  * Returns the number of handles that were actually allocated.  This is always
  * the same as the number of handles requested except in out-of-memory conditions,
