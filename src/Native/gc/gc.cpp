@@ -3065,7 +3065,7 @@ gc_heap::dt_estimate_reclaim_space_p (gc_tuning_point tp, int gen_number)
 }
 
 // DTREVIEW: Right now we only estimate gen2 fragmentation. 
-// on 64-bit though we should consider gen1 or even gen0 fragmentatioin as
+// on 64-bit though we should consider gen1 or even gen0 fragmentation as
 // well 
 inline BOOL 
 gc_heap::dt_estimate_high_frag_p (gc_tuning_point tp, int gen_number, uint64_t available_mem)
@@ -7065,7 +7065,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
     if ((la != saved_g_lowest_address ) || (ha != saved_g_highest_address))
     {
         {
-            //modify the higest address so the span covered
+            //modify the highest address so the span covered
             //is twice the previous one.
             uint8_t* top = (uint8_t*)0 + Align (GCToOSInterface::GetVirtualMemoryLimit());
             // On non-Windows systems, we get only an approximate value that can possibly be
@@ -14703,7 +14703,7 @@ int gc_heap::generation_to_condemn (int n_initial,
         }
     }
 
-    //figure out which ephemeral generation is too fragramented
+    //figure out which ephemeral generation is too fragmented
     temp_gen = n;
     for (i = n+1; i < max_generation; i++)
     {
@@ -17404,7 +17404,7 @@ void gc_heap::enque_pinned_plug (uint8_t* plug,
         }
     }
 
-    dprintf (3, ("enquing P #%Id(%Ix): %Ix. oldest: %Id, LO: %Ix, pre: %d", 
+    dprintf (3, ("enqueuing P #%Id(%Ix): %Ix. oldest: %Id, LO: %Ix, pre: %d", 
         mark_stack_tos, &mark_stack_array[mark_stack_tos], plug, mark_stack_bos, last_object_in_last_plug, (save_pre_plug_info_p ? 1 : 0)));
     mark& m = mark_stack_array[mark_stack_tos];
     m.first = plug;
@@ -29865,7 +29865,7 @@ size_t gc_heap::joined_youngest_desired (size_t new_allocation)
         {
             uint32_t memory_load = 0;
             get_memory_info (&memory_load);
-            dprintf (2, ("Current emory load: %d", memory_load));
+            dprintf (2, ("Current memory load: %d", memory_load));
 
             size_t final_total = 
                 trim_youngest_desired (memory_load, total_new_allocation, total_min_allocation);
@@ -35262,7 +35262,7 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
 size_t      GCHeap::GetTotalBytesInUse ()
 {
 #ifdef MULTIPLE_HEAPS
-    //enumarate all the heaps and get their size.
+    //enumerate all the heaps and get their size.
     size_t tot_size = 0;
     for (int i = 0; i < gc_heap::n_heaps; i++)
     {
@@ -35581,7 +35581,7 @@ HRESULT GCHeap::GetGcCounters(int gen, gc_counters* counters)
     counters->promoted_size = 0;
     counters->collection_count = 0;
 
-    //enumarate all the heaps and get their counters.
+    //enumerate all the heaps and get their counters.
     for (int i = 0; i < gc_heap::n_heaps; i++)
     {
         dynamic_data* dd = gc_heap::g_heaps [i]->dynamic_data_of (gen);
@@ -35674,7 +35674,7 @@ Object* GCHeap::GetNextFinalizableObject()
         if (O)
             return O;
     }
-    //return the first non crtitical/critical one in the first queue.
+    //return the first non critical/critical one in the first queue.
     for (int hn = 0; hn < gc_heap::n_heaps; hn++)
     {
         gc_heap* hp = gc_heap::g_heaps [hn];

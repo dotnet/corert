@@ -118,7 +118,7 @@ If you change any of those algorithm, please verify it by this program:
                     assert (mask == 0);
                     return;
             }
-            //any generaion bigger than 2 is actually 2
+            //any generation bigger than 2 is actually 2
             if (gen > 2)
                 gen = 2;
 
@@ -716,10 +716,10 @@ void CALLBACK BlockScanBlocksEphemeral(PTR_TableSegment pSegment, uint32_t uBloc
     uint32_t *pdwGen     = (uint32_t *)pSegment->rgGeneration + uBlock;
     uint32_t *pdwGenLast =             pdwGen                 + uCount;
 
-    // loop over all the blocks, checking for elligible clumps as we go
+    // loop over all the blocks, checking for eligible clumps as we go
     do
     {
-        // determine if any clumps in this block are elligible
+        // determine if any clumps in this block are eligible
         uint32_t dwClumpMask = COMPUTE_CLUMP_MASK(*pdwGen, dwAgeMask);
 
         // if there are any clumps to scan then scan them now
