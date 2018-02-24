@@ -17,6 +17,9 @@
     <Project Include="$(MSBuildThisFileDirectory)Microsoft.TargetingPack.Private.CoreRT\Microsoft.TargetingPack.Private.CoreRT.builds">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
+    <Project Include="$(MSBuildThisFileDirectory)Microsoft.DotNet.ILVerification\Microsoft.DotNet.ILVerification.builds">
+      <OSGroup>Windows_NT</OSGroup>
+    </Project>
   </ItemGroup>
 
   <ItemGroup Condition="'$(SkipManagedPackageBuild)' != 'true'">
