@@ -1,9 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <OutputType>Library</OutputType>
 
     <IsPackable>false</IsPackable>
+    <AssemblyKey></AssemblyKey>
+    <AssemblyOriginatorKeyFile>..\StrongNameKeys\ILVerify.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,4 +27,8 @@
     <Folder Include="ILTests\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="..\..\ILVerification\StrongNameKeys\ILVerify.snk" Link="ILVerify.snk" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

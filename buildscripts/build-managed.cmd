@@ -46,6 +46,11 @@ IF ERRORLEVEL 1 exit /b %ERRORLEVEL%
 "%__DotNetCliPath%\dotnet.exe" publish "%__SourceDir%\ILCompiler\netcoreapp\ilc.csproj" -r %__NugetRuntimeId% -o "%__RootBinDir%\%__BuildOS%.%__BuildArch%.%__BuildType%\tools"
 IF ERRORLEVEL 1 exit /b %ERRORLEVEL%
 
+"%__DotNetCliPath%\dotnet.exe" restore "%__SourceDir%\ILVerify\netcoreapp\ILVerify.csproj" -r %__NugetRuntimeId%
+IF ERRORLEVEL 1 exit /b %ERRORLEVEL%
+"%__DotNetCliPath%\dotnet.exe" publish "%__SourceDir%\ILVerify\netcoreapp\ILVerify.csproj" -r %__NugetRuntimeId% -o "%__RootBinDir%\%__BuildOS%.%__BuildArch%.%__BuildType%\ILVerify"
+IF ERRORLEVEL 1 exit /b %ERRORLEVEL%
+
 :: Set the environment for the managed build
 call "!VS%__VSProductVersion%COMNTOOLS!\VsDevCmd.bat"
 echo Commencing build of managed components for %__BuildOS%.%__BuildArch%.%__BuildType%
