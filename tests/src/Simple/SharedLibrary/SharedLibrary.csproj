@@ -22,10 +22,12 @@
 
     <ItemGroup>
       <LibNativeCompilerArg Include="@(ClCompile)" />
+      <LibNativeCompilerArg Include="-o $(LibNativeObject)" Condition="'$(OS)' != 'Windows_NT'" />
       <LibNativeCompilerArg Include="/Fo$(LibNativeObject)" Condition="'$(OS)' == 'Windows_NT'" />
       <LibNativeCompilerArg Include="/Fe$(LibNativeObject)" Condition="'$(OS)' == 'Windows_NT'" />
     </ItemGroup>
 
+    <Exec Command="$(CppCompiler) @(LibNativeCompilerArg, ' ')" Condition="'$(OS)' != 'Windows_NT'" />
     <WriteLinesToFile File="$(IntermediateOutputPath)lib_native.rsp" Lines="@(LibNativeCompilerArg)" Overwrite="true"  Condition="'$(OS)' == 'Windows_NT'"/>
     <Exec Command="$(CppCompiler) @&quot;$(IntermediateOutputPath)lib_native.rsp&quot;" Condition="'$(OS)' == 'Windows_NT'" />
 

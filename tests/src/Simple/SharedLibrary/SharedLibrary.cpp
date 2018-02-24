@@ -4,6 +4,7 @@
 #include "dlfcn.h"
 #endif
 #include "stdio.h"
+#include "string.h"
 
 #ifndef _WIN32
 #define __stdcall
@@ -15,14 +16,18 @@ typedef bool(__stdcall *f_ReturnsPrimitiveBool)();
 typedef char(__stdcall *f_ReturnsPrimitiveChar)();
 typedef void(__stdcall *f_EnsureManagedClassLoaders)();
 
+#ifdef _WIN32
 int main()
+#else
+int main(int argc, char* argv[])
+#endif
 {
 #ifdef _WIN32
     HINSTANCE handle = LoadLibrary("SharedLibrary.dll");
 #elif __APPLE__
-    void *handle = dlopen("SharedLibrary.dylib", RTLD_LAZY);
+    void *handle = dlopen(strcat(argv[0], ".dylib"), RTLD_LAZY);
 #else
-    void *handle = dlopen("SharedLibrary.so", RTLD_LAZY);
+    void *handle = dlopen(strcat(argv[0], ".so"), RTLD_LAZY);
 #endif
 
     if (!handle)
@@ -34,10 +39,10 @@ int main()
     f_ReturnsPrimitiveChar returnsPrimitiveChar = (f_ReturnsPrimitiveChar)GetProcAddress(handle, "ReturnsPrimitiveChar");
     f_EnsureManagedClassLoaders ensureManagedClassLoaders = (f_EnsureManagedClassLoaders)GetProcAddress(handle, "EnsureManagedClassLoaders");
 #else
-    f_ReturnsPrimitiveInt returnsPrimitiveInt = dlsym(handle, "ReturnsPrimitiveInt");
-    f_ReturnsPrimitiveBool returnsPrimitiveBool = dlsym(handle, "ReturnsPrimitiveBool");
-    f_ReturnsPrimitiveChar returnsPrimitiveChar = dlsym(handle, "ReturnsPrimitiveChar");
-    f_EnsureManagedClassLoaders ensureManagedClassLoaders = dlsym(handle, "EnsureManagedClassLoaders");
+    f_ReturnsPrimitiveInt returnsPrimitiveInt = (f_ReturnsPrimitiveInt)dlsym(handle, "ReturnsPrimitiveInt");
+    f_ReturnsPrimitiveBool returnsPrimitiveBool = (f_ReturnsPrimitiveBool)dlsym(handle, "ReturnsPrimitiveBool");
+    f_ReturnsPrimitiveChar returnsPrimitiveChar = (f_ReturnsPrimitiveChar)dlsym(handle, "ReturnsPrimitiveChar");
+    f_EnsureManagedClassLoaders ensureManagedClassLoaders = (f_EnsureManagedClassLoaders)dlsym(handle, "EnsureManagedClassLoaders");
 #endif
 
     if (returnsPrimitiveInt() != 10)
