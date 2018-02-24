@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <IntermediateOutputPath>$(MSBuildProjectDirectory)\obj\$(Configuration)\$(Platform)\native\</IntermediateOutputPath>
     <NativeLib>Shared</NativeLib>
   </PropertyGroup>
 
@@ -27,8 +26,8 @@
     </ItemGroup>
 
     <Exec Command="$(CppCompiler) @(NativeRunnerCompilerArg, ' ')" Condition="'$(OS)' != 'Windows_NT'" />
-    <WriteLinesToFile File="$(IntermediateOutputPath)lib_native.rsp" Lines="@(NativeRunnerCompilerArg)" Overwrite="true"  Condition="'$(OS)' == 'Windows_NT'"/>
-    <Exec Command="$(CppCompiler) @&quot;$(IntermediateOutputPath)lib_native.rsp&quot;" Condition="'$(OS)' == 'Windows_NT'" />
+    <WriteLinesToFile File="$(NativeIntermediateOutputPath)SharedLibrary.rsp" Lines="@(NativeRunnerCompilerArg)" Overwrite="true"  Condition="'$(OS)' == 'Windows_NT'"/>
+    <Exec Command="$(CppCompiler) @&quot;$(NativeIntermediateOutputPath)SharedLibrary.rsp&quot;" Condition="'$(OS)' == 'Windows_NT'" />
   </Target>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), SimpleTest.targets))\SimpleTest.targets" />
