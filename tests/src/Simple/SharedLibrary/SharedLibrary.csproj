@@ -11,7 +11,7 @@
 
   <Target Name="NativeRunnerCompile" AfterTargets="LinkNative">
     <PropertyGroup>
-      <NativeRunnerObject>$(NativeOutputPath)SharedLibrary</NativeRunnerObject>
+      <NativeRunnerBinary>$(NativeOutputPath)SharedLibrary</NativeRunnerBinary>
     </PropertyGroup>
 
     <ItemGroup>
@@ -20,9 +20,9 @@
 
     <ItemGroup>
       <NativeRunnerCompilerArg Include="@(CppCompile)" />
-      <NativeRunnerCompilerArg Include="-o $(NativeRunnerObject)" Condition="'$(OS)' != 'Windows_NT'" />
-      <NativeRunnerCompilerArg Include="/Fo$(NativeRunnerObject)" Condition="'$(OS)' == 'Windows_NT'" />
-      <NativeRunnerCompilerArg Include="/Fe$(NativeRunnerObject)" Condition="'$(OS)' == 'Windows_NT'" />
+      <NativeRunnerCompilerArg Include="-o $(NativeRunnerBinary)" Condition="'$(OS)' != 'Windows_NT'" />
+      <NativeRunnerCompilerArg Include="/Fo$(NativeRunnerBinary)" Condition="'$(OS)' == 'Windows_NT'" />
+      <NativeRunnerCompilerArg Include="/Fe$(NativeRunnerBinary)" Condition="'$(OS)' == 'Windows_NT'" />
     </ItemGroup>
 
     <Exec Command="$(CppCompiler) @(NativeRunnerCompilerArg, ' ')" Condition="'$(OS)' != 'Windows_NT'" />

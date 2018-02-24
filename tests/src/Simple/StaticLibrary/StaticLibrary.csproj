@@ -1,0 +1,31 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <NativeLib>Static</NativeLib>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="*.cs" />
+  </ItemGroup>
+
+  <Target Name="NativeRunnerCompile" AfterTargets="LinkNative">
+    <PropertyGroup>
+      <NativeRunnerBinary>$(NativeOutputPath)StaticLibrary</NativeRunnerBinary>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <CppCompile Include="StaticLibrary.cpp" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <NativeRunnerCompilerArg Include="@(CppCompile)" />
+      <NativeRunnerCompilerArg Include="-o $(NativeRunnerBinary)" Condition="'$(OS)' != 'Windows_NT'" />
+    </ItemGroup>
+
+    <Exec Command="$(CppCompiler) @(NativeRunnerCompilerArg, ' ') $(NativeBinary) @(NativeLibrary, ' ') -g -Wl,-rpath,'$ORIGIN' -pthread -lstdc++ -ldl -lm -licucore" Condition="'$(OS)' != 'Windows_NT'" />
+  </Target>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), SimpleTest.targets))\SimpleTest.targets" />
+
+</Project>
