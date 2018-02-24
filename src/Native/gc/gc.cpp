@@ -7065,7 +7065,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
     if ((la != saved_g_lowest_address ) || (ha != saved_g_highest_address))
     {
         {
-            //modify the higest address so the span covered
+            //modify the highest address so the span covered
             //is twice the previous one.
             uint8_t* top = (uint8_t*)0 + Align (GCToOSInterface::GetVirtualMemoryLimit());
             // On non-Windows systems, we get only an approximate value that can possibly be
