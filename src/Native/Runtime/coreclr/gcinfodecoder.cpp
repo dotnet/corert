@@ -166,7 +166,7 @@ GcInfoDecoder::GcInfoDecoder(
     if (hasGSCookie)
     {
         // Note that normalization as a code offset can be different than 
-        //  normalization as code legnth
+        //  normalization as code length
         UINT32 normCodeLength = NORMALIZE_CODE_OFFSET(m_CodeLength);
 
         // Decode prolog/epilog information
@@ -330,7 +330,7 @@ GcInfoDecoder::GcInfoDecoder(
     else if(flags & DECODE_FOR_RANGES_CALLBACK)
     {
         // Note that normalization as a code offset can be different than 
-        //  normalization as code legnth
+        //  normalization as code length
         UINT32 normCodeLength = NORMALIZE_CODE_OFFSET(m_CodeLength);
 
         UINT32 numBitsPerOffset = CeilOfLog2(normCodeLength);
