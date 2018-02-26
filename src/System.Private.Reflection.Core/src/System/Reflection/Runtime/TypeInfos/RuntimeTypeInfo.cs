@@ -404,7 +404,6 @@ namespace System.Reflection.Runtime.TypeInfos
 
             if (rank <= 0)
                 throw new IndexOutOfRangeException();
-
             return this.GetMultiDimArrayType(rank);
         }
 
