@@ -12,7 +12,6 @@ namespace Internal.TypeSystem
 {
     public abstract partial class TypeSystemContext
     {
-        private MethodDesc _objectGetHashCodeMethod;
         private MethodDesc _objectEqualsMethod;
 
         private class ValueTypeMethodHashtable : LockFreeReaderHashtable<DefType, MethodDesc>
@@ -57,14 +56,11 @@ namespace Internal.TypeSystem
 
         private bool RequiresGetFieldHelperMethod(MetadataType valueType)
         {
-            if (_objectGetHashCodeMethod == null)
-                _objectGetHashCodeMethod = GetWellKnownType(WellKnownType.Object).GetMethod("GetHashCode", null);
-
             if (_objectEqualsMethod == null)
                 _objectEqualsMethod = GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null);
 
-            // If the classlib doesn't have Object.Equals/Object.GetHashCode, we don't need this.
-            if (_objectEqualsMethod == null && _objectGetHashCodeMethod == null)
+            // If the classlib doesn't have Object.Equals, we don't need this.
+            if (_objectEqualsMethod == null)
                 return false;
 
             // Byref-like valuetypes cannot be boxed.
@@ -85,16 +81,23 @@ namespace Internal.TypeSystem
             if (type.ContainsGCPointers)
                 return false;
 
-            // TODO: what we're shooting for is overlapping fields
-            // or gaps between fields
-            if (type.IsExplicitLayout || type.GetClassLayout().Size != 0)
+            if (type.IsGenericDefinition)
                 return false;
+
+            OverlappingFieldTracker overlappingFieldTracker = new OverlappingFieldTracker(type);
 
             bool result = true;
             foreach (var field in type.GetFields())
             {
                 if (field.IsStatic)
                     continue;
+
+                if (!overlappingFieldTracker.TrackField(field))
+                {
+                    // This field overlaps with another field - can't compare memory
+                    result = false;
+                    break;
+                }
 
                 TypeDesc fieldType = field.FieldType;
                 if (fieldType.IsPrimitive || fieldType.IsEnum || fieldType.IsPointer || fieldType.IsFunctionPointer)
@@ -107,18 +110,13 @@ namespace Internal.TypeSystem
                         break;
                     }
                 }
-                else if (fieldType.IsSignatureVariable)
-                {
-                    return false;
-                }
                 else
                 {
                     // Would be a suprise if this wasn't a valuetype. We checked ContainsGCPointers above.
                     Debug.Assert(fieldType.IsValueType);
 
-                    // If the field overrides Equals/GetHashCode, we can't use the fast helper because we need to call the method.
-                    if (fieldType.FindVirtualFunctionTargetMethodOnObjectType(_objectEqualsMethod) != null ||
-                        fieldType.FindVirtualFunctionTargetMethodOnObjectType(_objectGetHashCodeMethod) != null)
+                    // If the field overrides Equals, we can't use the fast helper because we need to call the method.
+                    if (fieldType.FindVirtualFunctionTargetMethodOnObjectType(_objectEqualsMethod).OwningType == type)
                     {
                         result = false;
                         break;
@@ -132,7 +130,60 @@ namespace Internal.TypeSystem
                 }
             }
 
+            // If there are gaps, we can't memcompare
+            if (result && overlappingFieldTracker.HasGaps)
+                result = false;
+
             return result;
+        }
+
+        private struct OverlappingFieldTracker
+        {
+            private bool[] _usedBytes;
+
+            public OverlappingFieldTracker(MetadataType type)
+            {
+                _usedBytes = new bool[type.InstanceFieldSize.AsInt];
+            }
+
+            public bool TrackField(FieldDesc field)
+            {
+                int fieldBegin = field.Offset.AsInt;
+
+                TypeDesc fieldType = field.FieldType;
+
+                int fieldEnd;
+                if (fieldType.IsPointer || fieldType.IsFunctionPointer)
+                {
+                    fieldEnd = fieldBegin + field.Context.Target.PointerSize;
+                }
+                else
+                {
+                    Debug.Assert(fieldType.IsValueType);
+                    fieldEnd = fieldBegin + ((DefType)fieldType).InstanceFieldSize.AsInt;
+                }
+
+                for (int i = fieldBegin; i < fieldEnd; i++)
+                {
+                    if (_usedBytes[i])
+                        return false;
+                    _usedBytes[i] = true;
+                }
+
+                return true;
+            }
+
+            public bool HasGaps
+            {
+                get
+                {
+                    for (int i = 0; i < _usedBytes.Length; i++)
+                        if (!_usedBytes[i])
+                            return true;
+
+                    return false;
+                }
+            }
         }
     }
 }
