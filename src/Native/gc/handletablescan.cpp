@@ -1434,7 +1434,7 @@ PTR_TableSegment CALLBACK StandardSegmentIterator(PTR_HandleTable pTable, PTR_Ta
     PTR_TableSegment pNextSegment = QuickSegmentIterator(pTable, pPrevSegment);
 
 #ifndef DACCESS_COMPILE
-    // re-sort the block chains if neccessary
+    // re-sort the block chains if necessary
     if (pNextSegment && pNextSegment->fResortChains)
         SegmentResortChains(pNextSegment);
 #endif
