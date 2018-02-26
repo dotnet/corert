@@ -4519,7 +4519,7 @@ gc_heap::soh_get_segment_to_expand()
                     dprintf (GTC_LOG, ("max_gen-1: Found existing segment to expand into %Ix", (size_t)seg));
 
                     // If we return 0 here, the allocator will think since we are short on end
-                    // of seg we neeed to trigger a full compacting GC. So if sustained low latency 
+                    // of seg we need to trigger a full compacting GC. So if sustained low latency 
                     // is set we should acquire a new seg instead, that way we wouldn't be short.
                     // The real solution, of course, is to actually implement seg reuse in gen1.
                     if (settings.pause_mode != pause_sustained_low_latency)
@@ -33921,7 +33921,7 @@ static int32_t GCStressCurCount = 0;
 static int32_t GCStressStartAtJit = -1;
 
 // the maximum number of foreground GCs we'll induce during one BGC
-// (this number does not include "naturally" occuring GCs).
+// (this number does not include "naturally" occurring GCs).
 static int32_t GCStressMaxFGCsPerBGC = -1;
 
 // CLRRandom implementation can produce FPU exceptions if 
