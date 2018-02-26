@@ -113,18 +113,19 @@ namespace System
         {
             int hashCode = this.EETypePtr.GetHashCode();
 
+            hashCode ^= GetHashCodeImpl();
+
+            return hashCode;
+        }
+
+        private int GetHashCodeImpl()
+        {
             int numFields = __GetFieldHelper(GetNumFields, out _);
 
             if (numFields == UseFastHelper)
-            {
-                hashCode ^= FastGetValueTypeHashCodeHelper(this.EETypePtr, ref this.GetRawData());
-            }
-            else
-            {
-                hashCode ^= RegularGetValueTypeHashCode(this.EETypePtr, ref this.GetRawData(), numFields);
-            }
+                return FastGetValueTypeHashCodeHelper(this.EETypePtr, ref this.GetRawData());
 
-            return hashCode;
+            return RegularGetValueTypeHashCode(this.EETypePtr, ref this.GetRawData(), numFields);
         }
 
         private static int FastGetValueTypeHashCodeHelper(EETypePtr type, ref byte data)
@@ -169,15 +170,15 @@ namespace System
                 }
                 else if (fieldType.IsValueType)
                 {
-                    // We have no option but to box and call regular GetHashCode since this value type could have
+                    // We have no option but to box since this value type could have
                     // GC pointers (we could find out if we want though), or fields of type Double/Single (we can't
                     // really find out). Double/Single have weird requirements around -0.0 and +0.0.
                     // If this boxing becomes a problem, we could build a piece of infrastructure that determines the slot
                     // of __GetFieldHelper, decodes the unboxing stub pointed to by the slot to the real target
                     // (we already have that part), and calls the entrypoint that expects a byref `this`, and use the
                     // data to decide between calling fast or regular hashcode helper.
-                    object fieldValue = RuntimeImports.RhBox(fieldType, ref fieldData);
-                    hashCode = fieldValue.GetHashCode();
+                    var fieldValue = (ValueType)RuntimeImports.RhBox(fieldType, ref fieldData);
+                    hashCode = fieldValue.GetHashCodeImpl();
                 }
                 else
                 {
