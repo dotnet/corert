@@ -210,6 +210,9 @@ namespace System.Reflection.Runtime.TypeInfos
             if (elementTypeHandle.IsNull())
                 return default(RuntimeTypeHandle);
 
+            if (elementType.IsByRef || elementType.IsByRefLike)
+                throw new TypeLoadException(SR.Format(SR.ArgumentException_InvalidArrayElementType, elementType));
+
             RuntimeTypeHandle typeHandle;
             if (!multiDim)
             {
