@@ -33921,7 +33921,7 @@ static int32_t GCStressCurCount = 0;
 static int32_t GCStressStartAtJit = -1;
 
 // the maximum number of foreground GCs we'll induce during one BGC
-// (this number does not include "naturally" occuring GCs).
+// (this number does not include "naturally" occurring GCs).
 static int32_t GCStressMaxFGCsPerBGC = -1;
 
 // CLRRandom implementation can produce FPU exceptions if 
