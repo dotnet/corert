@@ -66,14 +66,6 @@ public:
 private:
     TypeManagerList             m_TypeManagerList;
 
-    // Indicates whether the runtime is in standalone exe mode where the only Redhawk module that will be
-    // loaded into the process (besides the runtime's own module) is the exe itself. This flag will be 
-    // correctly initialized once the exe module has loaded.
-    bool                        m_fStandaloneExeMode;
-
-    // If m_fStandaloneExeMode is set this contains a pointer to the exe module. Otherwise it's null.
-    Module *                    m_pStandaloneExeModule;
-
 #ifdef FEATURE_PROFILING
     // The thread writing the profile data is created lazily, whenever
     // a module with a profile section is registered.
@@ -236,16 +228,6 @@ public:
     void WriteProfileInfo();
 #endif // FEATURE_PROFILING
 
-    bool IsInStandaloneExeMode()
-    {
-        return m_fStandaloneExeMode;
-    }
-
-    Module * GetStandaloneExeModule()
-    {
-        ASSERT(IsInStandaloneExeMode());
-        return m_pStandaloneExeModule;
-    }
 };
 typedef DPTR(RuntimeInstance) PTR_RuntimeInstance;
 

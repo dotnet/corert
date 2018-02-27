@@ -349,8 +349,6 @@ Module * RuntimeInstance::FindModuleByOsHandle(HANDLE hOsHandle)
 
 RuntimeInstance::RuntimeInstance() : 
     m_pThreadStore(NULL),
-    m_fStandaloneExeMode(false),
-    m_pStandaloneExeModule(NULL),
     m_pStaticGCRefsDescChunkList(NULL),
     m_pThreadStaticGCRefsDescChunkList(NULL),
     m_pGenericUnificationHashtable(NULL),
@@ -382,13 +380,6 @@ EXTERN_C void REDHAWK_CALLCONV RhpSetHaveNewClasslibs();
 
 bool RuntimeInstance::RegisterModule(ModuleHeader *pModuleHeader)
 {
-    // Determine whether we're in standalone exe mode. If we are we'll see the runtime module load followed by
-    // exactly one additional module (the exe itself). The exe module will have a standalone flag set in its
-    // header.
-    ASSERT(m_fStandaloneExeMode == false);
-    if (pModuleHeader->Flags & ModuleHeader::StandaloneExe)
-        m_fStandaloneExeMode = true;
-
     CreateHolder<Module> pModule = Module::Create(pModuleHeader);
 
     if (NULL == pModule)
@@ -400,9 +391,6 @@ bool RuntimeInstance::RegisterModule(ModuleHeader *pModuleHeader)
         ReaderWriterLock::WriteHolder write(&m_ModuleListLock);
         m_ModuleList.PushHead(pModule);
     }
-
-    if (m_fStandaloneExeMode)
-        m_pStandaloneExeModule = pModule;
 
     if (pModule->IsClasslibModule())
         RhpSetHaveNewClasslibs();
