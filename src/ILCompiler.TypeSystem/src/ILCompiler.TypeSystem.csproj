@@ -379,6 +379,12 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\StructMarshallingThunk.Sorting.cs">
       <Link>IL\Stubs\StructMarshallingThunk.Sorting.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\ValueTypeGetFieldHelperMethodOverride.cs">
+      <Link>IL\Stubs\ValueTypeGetFieldHelperMethodOverride.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\ValueTypeGetFieldHelperMethodOverride.Sorting.cs">
+      <Link>IL\Stubs\ValueTypeGetFieldHelperMethodOverride.Sorting.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.DelegateInfo.cs">
       <Link>IL\TypeSystemContext.DelegateInfo.cs</Link>
     </Compile>
@@ -417,6 +423,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.EnumMethods.cs">
       <Link>IL\TypeSystemContext.EnumMethods.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.ValueTypeMethods.cs">
+      <Link>IL\TypeSystemContext.ValueTypeMethods.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\InlineArrayType.Sorting.cs">
       <Link>TypeSystem\Interop\IL\InlineArrayType.Sorting.cs</Link>
