@@ -18,7 +18,7 @@ namespace Internal.Runtime.CompilerHelpers
         {
             McgModuleManager.GetPInvokeDelegateData(delegateTypeHandle, out McgPInvokeDelegateData data);
             IntPtr pStub = data.ForwardDelegateCreationStub;
-            if (pStup == IntPtr.Zero)
+            if (pStub == IntPtr.Zero)
                 throw new MissingInteropDataException(SR.DelegateMarshalling_MissingInteropData, Type.GetTypeFromHandle(delegateTypeHandle));
             return pStub;
         }
@@ -27,7 +27,7 @@ namespace Internal.Runtime.CompilerHelpers
         {
             McgModuleManager.GetPInvokeDelegateData(delegateTypeHandle, out McgPInvokeDelegateData pinvokeDelegateData);
             IntPtr pStub = openStaticDelegate ? pinvokeDelegateData.ReverseOpenStaticDelegateStub : pinvokeDelegateData.ReverseStub;
-            if (pStup == IntPtr.Zero)
+            if (pStub == IntPtr.Zero)
                 throw new MissingInteropDataException(SR.DelegateMarshalling_MissingInteropData, Type.GetTypeFromHandle(delegateTypeHandle));
             return pStub;
         }
