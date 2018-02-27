@@ -12,7 +12,8 @@ using System.Runtime.CompilerServices;
 namespace Internal.Runtime.Augments
 {
     [ReflectionBlocked]
-    public sealed class EnumInfo
+    [CLSCompliant(false)]
+    public class EnumInfo
     {
         public EnumInfo(Type enumType)
         {
@@ -59,6 +60,14 @@ namespace Internal.Runtime.Augments
             HasFlagsAttribute = enumType.IsDefined(typeof(FlagsAttribute), inherit: false);
         }
 
+        protected EnumInfo(Type underlyingType, KeyValuePair<string, ulong>[] namesAndValues, Array rawValues, bool hasFlagsAttribute)
+        {
+            UnderlyingType = underlyingType;
+            NamesAndValues = namesAndValues;
+            Values = rawValues;
+            HasFlagsAttribute = hasFlagsAttribute;
+        }
+
         internal Type UnderlyingType { get; }
         internal Array Values { get; }
         internal KeyValuePair<string, ulong>[] NamesAndValues { get; }
@@ -82,6 +91,17 @@ namespace Internal.Runtime.Augments
         private static Type ComputeUnderlyingType(Type enumType)
         {
             RuntimeImports.RhCorElementType corElementType = ComputeCorElementType(enumType);
+            return ComputeUnderlyingType(corElementType);
+        }
+
+        protected static Type ComputeLowLevelUnderlyingType(Type enumType)
+        {
+            Debug.Assert(!enumType.ContainsGenericParameters);
+            return ComputeUnderlyingType(enumType.TypeHandle.ToEETypePtr().CorElementType);
+        }
+
+        private static Type ComputeUnderlyingType(RuntimeImports.RhCorElementType corElementType)
+        {
             switch (corElementType)
             {
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
@@ -112,7 +132,7 @@ namespace Internal.Runtime.Augments
         //
         // Sort comparer for NamesAndValues
         //
-        private sealed class NamesAndValueComparer : IComparer<KeyValuePair<string, ulong>>
+        protected sealed class NamesAndValueComparer : IComparer<KeyValuePair<string, ulong>>
         {
             public int Compare(KeyValuePair<string, ulong> kv1, KeyValuePair<string, ulong> kv2)
             {

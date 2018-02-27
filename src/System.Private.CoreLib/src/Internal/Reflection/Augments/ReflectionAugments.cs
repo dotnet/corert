@@ -35,6 +35,7 @@ namespace Internal.Reflection.Augments
         // One time start up initialization - called by Reflection.Core.dll to provide System.Reflection with a way to call back
         // into Reflection.Core.dll.
         //
+        [CLSCompliant(false)]
         public static void Initialize(ReflectionCoreCallbacks reflectionCoreCallbacks)
         {
             s_reflectionCoreCallbacks = reflectionCoreCallbacks;
@@ -125,6 +126,7 @@ namespace Internal.Reflection.Augments
     // of Type.GetTypeInfo() and (on Project N) (Assembly.Load()).
     //
     [System.Runtime.CompilerServices.ReflectionBlocked]
+    [CLSCompliant(false)]
     public abstract class ReflectionCoreCallbacks
     {
         public abstract Assembly Load(AssemblyName refName, bool throwOnFileNotFound);
@@ -165,5 +167,7 @@ namespace Internal.Reflection.Augments
         public abstract Assembly[] GetLoadedAssemblies();
 
         public abstract EnumInfo GetEnumInfo(Type type);
+
+        public abstract EnumInfo GetLowLevelEnumInfo(Type type);
     }
 }

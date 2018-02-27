@@ -76,6 +76,8 @@ namespace System.Reflection.Runtime.TypeInfos
 
             public EnumInfo EnumInfo => _lazyEnumInfo ?? (_lazyEnumInfo = new EnumInfo(_type));
 
+            public EnumInfo LowLevelEnumInfo => _lazyEnumInfo ?? (_lazyEnumInfo = AllocatedEnumInfo.Create(_type));
+
             private static object[] CreatePerNameQueryCaches(RuntimeTypeInfo type, bool ignoreCase)
             {
                 object[] perNameCaches = new object[MemberTypeIndex.Count];
@@ -129,6 +131,92 @@ namespace System.Reflection.Runtime.TypeInfos
                 private readonly RuntimeTypeInfo _type;
                 private readonly bool _ignoreCase;
             }
+        }
+    }
+
+    /// <summary>
+    /// Represents an EnumInfo for a type that is guaranteed to be allocated by the runtime
+    /// (i.e. there's a valid full type handle for it).
+    /// This implementation is low level and takes advantage of that. One reason is runtime perf,
+    /// but the most important reason is reduced size on disk footprint. This code path
+    /// is used in Enum.ToString and is therefore present in any .NET app. It should better
+    /// not drag the entire reflection stack into the executable image (custom attribute
+    /// resolution, field resolution, etc.).
+    /// </summary>
+    class AllocatedEnumInfo : EnumInfo
+    {
+        private AllocatedEnumInfo(Type underlyingType, KeyValuePair<string, ulong>[] namesAndValues, Array rawValues, bool hasFlagsAttribute)
+            : base(underlyingType, namesAndValues, rawValues, hasFlagsAttribute)
+        {
+        }
+
+        public static EnumInfo Create(RuntimeTypeInfo typeInfo)
+        {
+#if ECMA_METADATA_SUPPORT
+            return new EnumInfo(typeInfo);
+#else
+            Type underlyingType = ComputeLowLevelUnderlyingType(typeInfo);
+
+            RuntimeTypeHandle typeHandle = typeInfo.TypeHandle;
+
+            bool success = Internal.Reflection.Core.Execution.ReflectionCoreExecution.ExecutionEnvironment.TryGetMetadataForNamedType(typeHandle, out QTypeDefinition qTypeDef);
+            if (!success)
+                return null;
+
+            var reader = qTypeDef.NativeFormatReader;
+            var typeDef = reader.GetTypeDefinition(qTypeDef.NativeFormatHandle);
+
+            var rawValuesList = new List<object>();
+            var namesAndValuesList = new List<KeyValuePair<string, ulong>>();
+
+            foreach (var fieldHandle in typeDef.Fields)
+            {
+                var field = fieldHandle.GetField(reader);
+                if ((field.Flags & FieldAttributes.Public) == FieldAttributes.Public &&
+                    (field.Flags & FieldAttributes.Static) == FieldAttributes.Static)
+                {
+                    object rawValue = field.DefaultValue.ParseConstantNumericValue(reader);
+                    rawValuesList.Add(rawValue);
+
+                    ulong rawUnboxedValue;
+                    if (rawValue is ulong)
+                    {
+                        rawUnboxedValue = (ulong)rawValue;
+                    }
+                    else
+                    {
+                        // This conversion is this way for compatibility: do a value-preseving cast to long - then store (and compare) as ulong. This affects
+                        // the order in which the Enum apis return names and values.
+                        rawUnboxedValue = (ulong)(((IConvertible)rawValue).ToInt64(null));
+                    }
+
+                    namesAndValuesList.Add(new KeyValuePair<string, ulong>(field.Name.GetString(reader), rawUnboxedValue));
+                }
+            }
+
+            var rawValues = rawValuesList.ToArray();
+            var namesAndValues = namesAndValuesList.ToArray();
+
+            Array.Sort(keys: namesAndValues, items: rawValues, comparer: NamesAndValueComparer.Default);
+
+            // The array element type is the underlying type, not the enum type. (The enum type could be an open generic.)
+            var Values = Array.CreateInstance(underlyingType, rawValues.Length);
+            Array.Copy(rawValues, Values, rawValues.Length);
+
+            // Compat note: we should check the identity of the FlagsAttribute type, but the runtime is pretty lax
+            // about custom attribute type identity otherwise, so it's unlikely to matter here.
+            bool hasFlagsAttribute = false;
+            foreach (var attribute in typeDef.CustomAttributes)
+            {
+                if (attribute.IsCustomAttributeOfType(reader, "System", "FlagsAttribute"))
+                {
+                    hasFlagsAttribute = true;
+                    break;
+                }
+            }
+
+            return new AllocatedEnumInfo(underlyingType, namesAndValues, rawValues, hasFlagsAttribute);
+#endif
         }
     }
 }

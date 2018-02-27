@@ -821,7 +821,7 @@ namespace System
             if (format == null || format.Length == 0)
                 format = "G";
 
-            EnumInfo enumInfo = GetEnumInfo(this.GetType());
+            EnumInfo enumInfo = GetAllocatedEnumInfo(this.GetType());
 
             // Project N port note: If Reflection info isn't available, fallback to ToString() which will substitute a numeric value for the "correct" output.
             // This scenario has been hit frequently when throwing exceptions formatted with error strings containing enum substitations.
@@ -852,6 +852,15 @@ namespace System
             Debug.Assert(enumType.IsEnum);
 
             return ReflectionAugments.ReflectionCoreCallbacks.GetEnumInfo(enumType);
+        }
+
+        private static EnumInfo GetAllocatedEnumInfo(Type enumType)
+        {
+            Debug.Assert(enumType != null);
+            Debug.Assert(enumType.IsRuntimeImplemented());
+            Debug.Assert(enumType.IsEnum);
+
+            return ReflectionAugments.ReflectionCoreCallbacks.GetLowLevelEnumInfo(enumType);
         }
 
         //
