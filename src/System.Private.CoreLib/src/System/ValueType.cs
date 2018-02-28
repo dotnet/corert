@@ -41,7 +41,6 @@ namespace System
         {
             return RuntimeAugments.Callbacks.ValueTypeGetHashCodeUsingReflection(this);
         }
-    }
 #else
         private const int UseFastHelper = -1;
         private const int GetNumFields = -1;
