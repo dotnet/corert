@@ -71,71 +71,125 @@ namespace Internal.TypeSystem
             if (valueType.IsEnum)
                 return false;
 
-            return !CanCompareValueTypeBits(valueType);
+            return !_typeStateHashtable.GetOrCreateValue(valueType).CanCompareValueTypeBits;
         }
 
-        private bool CanCompareValueTypeBits(MetadataType type)
+        private class TypeState
         {
-            Debug.Assert(type.IsValueType);
-
-            if (type.ContainsGCPointers)
-                return false;
-
-            if (type.IsGenericDefinition)
-                return false;
-
-            OverlappingFieldTracker overlappingFieldTracker = new OverlappingFieldTracker(type);
-
-            bool result = true;
-            foreach (var field in type.GetFields())
+            private enum Flags
             {
-                if (field.IsStatic)
-                    continue;
+                CanCompareValueTypeBits         = 0x0000_0001,
+                CanCompareValueTypeBitsComputed = 0x0000_0002,
+            }
 
-                if (!overlappingFieldTracker.TrackField(field))
+            private volatile Flags _flags;
+            private readonly TypeStateHashtable _hashtable;
+
+            public TypeDesc Type { get; }
+
+            public bool CanCompareValueTypeBits
+            {
+                get
                 {
-                    // This field overlaps with another field - can't compare memory
-                    result = false;
-                    break;
-                }
-
-                TypeDesc fieldType = field.FieldType;
-                if (fieldType.IsPrimitive || fieldType.IsEnum || fieldType.IsPointer || fieldType.IsFunctionPointer)
-                {
-                    TypeFlags category = fieldType.UnderlyingType.Category;
-                    if (category == TypeFlags.Single || category == TypeFlags.Double)
+                    Flags flags = _flags;
+                    if ((flags & Flags.CanCompareValueTypeBitsComputed) == 0)
                     {
-                        // Double/Single have weird behaviors around negative/positive zero
-                        result = false;
-                        break;
-                    }
-                }
-                else
-                {
-                    // Would be a suprise if this wasn't a valuetype. We checked ContainsGCPointers above.
-                    Debug.Assert(fieldType.IsValueType);
+                        Debug.Assert(Type.IsValueType);
+                        if (ComputeCanCompareValueTypeBits((MetadataType)Type))
+                            flags |= Flags.CanCompareValueTypeBits;
+                        flags |= Flags.CanCompareValueTypeBitsComputed;
 
-                    // If the field overrides Equals, we can't use the fast helper because we need to call the method.
-                    if (fieldType.FindVirtualFunctionTargetMethodOnObjectType(_objectEqualsMethod).OwningType == type)
-                    {
-                        result = false;
-                        break;
+                        _flags = flags;
                     }
-
-                    if (!CanCompareValueTypeBits((MetadataType)fieldType))
-                    {
-                        result = false;
-                        break;
-                    }
+                    return (flags & Flags.CanCompareValueTypeBits) != 0;
                 }
             }
 
-            // If there are gaps, we can't memcompare
-            if (result && overlappingFieldTracker.HasGaps)
-                result = false;
+            public TypeState(TypeDesc type, TypeStateHashtable hashtable)
+            {
+                Type = type;
+                _hashtable = hashtable;
+            }
 
-            return result;
+            private bool ComputeCanCompareValueTypeBits(MetadataType type)
+            {
+                Debug.Assert(type.IsValueType);
+
+                if (type.ContainsGCPointers)
+                    return false;
+
+                if (type.IsGenericDefinition)
+                    return false;
+
+                OverlappingFieldTracker overlappingFieldTracker = new OverlappingFieldTracker(type);
+
+                bool result = true;
+                foreach (var field in type.GetFields())
+                {
+                    if (field.IsStatic)
+                        continue;
+
+                    if (!overlappingFieldTracker.TrackField(field))
+                    {
+                        // This field overlaps with another field - can't compare memory
+                        result = false;
+                        break;
+                    }
+
+                    TypeDesc fieldType = field.FieldType;
+                    if (fieldType.IsPrimitive || fieldType.IsEnum || fieldType.IsPointer || fieldType.IsFunctionPointer)
+                    {
+                        TypeFlags category = fieldType.UnderlyingType.Category;
+                        if (category == TypeFlags.Single || category == TypeFlags.Double)
+                        {
+                            // Double/Single have weird behaviors around negative/positive zero
+                            result = false;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        // Would be a suprise if this wasn't a valuetype. We checked ContainsGCPointers above.
+                        Debug.Assert(fieldType.IsValueType);
+
+                        MethodDesc objectEqualsMethod = fieldType.Context._objectEqualsMethod;
+
+                        // If the field overrides Equals, we can't use the fast helper because we need to call the method.
+                        if (fieldType.FindVirtualFunctionTargetMethodOnObjectType(objectEqualsMethod).OwningType == fieldType)
+                        {
+                            result = false;
+                            break;
+                        }
+
+                        if (!_hashtable.GetOrCreateValue((MetadataType)fieldType).CanCompareValueTypeBits)
+                        {
+                            result = false;
+                            break;
+                        }
+                    }
+                }
+
+                // If there are gaps, we can't memcompare
+                if (result && overlappingFieldTracker.HasGaps)
+                    result = false;
+
+                return result;
+            }
         }
+
+        private class TypeStateHashtable : LockFreeReaderHashtable<TypeDesc, TypeState>
+        {
+            protected override int GetKeyHashCode(TypeDesc key) => key.GetHashCode();
+            protected override int GetValueHashCode(TypeState value) => value.Type.GetHashCode();
+            protected override bool CompareKeyToValue(TypeDesc key, TypeState value) => key == value.Type;
+            protected override bool CompareValueToValue(TypeState v1, TypeState v2) => v1.Type == v2.Type;
+
+            protected override TypeState CreateValueFromKey(TypeDesc key)
+            {
+                return new TypeState(key, this);
+            }
+        }
+        private TypeStateHashtable _typeStateHashtable = new TypeStateHashtable();
 
         private struct OverlappingFieldTracker
         {
