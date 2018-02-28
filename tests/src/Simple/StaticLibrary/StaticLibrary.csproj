@@ -27,7 +27,7 @@
       <NativeRunnerCompilerArg Include="@(NativeLibrary)" Condition="'$(OS)' == 'Windows_NT'" />      
     </ItemGroup>
 
-    <Exec Command="$(CppCompiler) @(NativeRunnerCompilerArg, ' ') $(NativeBinary) @(NativeLibrary, ' ') -g -Wl,-rpath,'$ORIGIN' -pthread -lstdc++ -ldl -lm -licucore" Condition="'$(OS)' != 'Windows_NT'" />
+    <Exec Command="$(CppCompiler) @(NativeRunnerCompilerArg, ' ') $(NativeBinary) @(NativeLibrary, ' ') -g -Wl,-rpath,'$ORIGIN' -pthread -lstdc++ -ldl -lm" Condition="'$(OS)' != 'Windows_NT'" />
     <WriteLinesToFile File="$(NativeIntermediateOutputPath)SharedLibrary.cl.rsp" Lines="@(NativeRunnerCompilerArg)" Overwrite="true"  Condition="'$(OS)' == 'Windows_NT'"/>
     <Exec Command="$(CppCompiler) @&quot;$(NativeIntermediateOutputPath)SharedLibrary.cl.rsp&quot;" Condition="'$(OS)' == 'Windows_NT'" />
   </Target>
