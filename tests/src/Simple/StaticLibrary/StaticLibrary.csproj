@@ -27,7 +27,22 @@
       <NativeRunnerCompilerArg Include="@(NativeLibrary)" Condition="'$(OS)' == 'Windows_NT'" />      
     </ItemGroup>
 
-    <Exec Command="$(CppCompiler) @(NativeRunnerCompilerArg, ' ') $(NativeBinary) @(NativeLibrary, ' ') -g -Wl,-rpath,'$ORIGIN' -pthread -lstdc++ -ldl -lm" Condition="'$(OS)' != 'Windows_NT'" />
+    <ItemGroup>
+      <NativeRunnerLinkerArg Include="@(NativeLibrary)" />
+      <NativeRunnerLinkerArg Include="-g" />
+      <NativeRunnerLinkerArg Include="-Wl,-rpath,'$ORIGIN'" />
+      <NativeRunnerLinkerArg Include="-pthread" />
+      <NativeRunnerLinkerArg Include="-lstdc++" />
+      <NativeRunnerLinkerArg Include="-ldl" />
+      <NativeRunnerLinkerArg Include="-lm" />
+      <NativeRunnerLinkerArg Include="-lcurl" />
+      <NativeRunnerLinkerArg Include="-lz" />
+      <NativeRunnerLinkerArg Include="-luuid" Condition="'$(TargetOS)' != 'OSX'" />
+      <NativeRunnerLinkerArg Include="-lrt" Condition="'$(TargetOS)' != 'OSX'" />
+      <NativeRunnerLinkerArg Include="-licucore" Condition="'$(TargetOS)' == 'OSX'" />
+    </ItemGroup>
+
+    <Exec Command="$(CppCompiler) @(NativeRunnerCompilerArg, ' ') $(NativeBinary) @(NativeRunnerLinkerArg, ' ')" Condition="'$(OS)' != 'Windows_NT'" />
     <WriteLinesToFile File="$(NativeIntermediateOutputPath)SharedLibrary.cl.rsp" Lines="@(NativeRunnerCompilerArg)" Overwrite="true"  Condition="'$(OS)' == 'Windows_NT'"/>
     <Exec Command="$(CppCompiler) @&quot;$(NativeIntermediateOutputPath)SharedLibrary.cl.rsp&quot;" Condition="'$(OS)' == 'Windows_NT'" />
   </Target>
