@@ -44,3 +44,7 @@ class AsmOffsets
 #include "AsmOffsets.h"
 
 };
+
+#ifdef _MSC_VER
+namespace { char WorkaroundLNK4221Warning; };
+#endif
