@@ -83,7 +83,7 @@ namespace Internal.TypeSystem
             }
 
             private volatile Flags _flags;
-            private TypeStateHashtable _hashtable;
+            private readonly TypeStateHashtable _hashtable;
 
             public TypeDesc Type { get; }
 
