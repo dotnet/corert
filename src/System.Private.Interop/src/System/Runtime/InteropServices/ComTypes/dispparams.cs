@@ -9,7 +9,9 @@ namespace System.Runtime.InteropServices.ComTypes
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct DISPPARAMS
     {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2111:PointersShouldNotBeVisible",  Justification="Backwards compatibility")]
         public IntPtr rgvarg;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2111:PointersShouldNotBeVisible",  Justification="Backwards compatibility")]
         public IntPtr rgdispidNamedArgs;
         public int cArgs;
         public int cNamedArgs;

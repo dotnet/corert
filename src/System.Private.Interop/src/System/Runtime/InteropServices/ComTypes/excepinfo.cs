@@ -18,7 +18,9 @@ namespace System.Runtime.InteropServices.ComTypes
         [MarshalAs(UnmanagedType.BStr)]
         public String bstrHelpFile;
         public int dwHelpContext;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2111:PointersShouldNotBeVisible",  Justification="Backwards compatibility")]
         public IntPtr pvReserved;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2111:PointersShouldNotBeVisible",  Justification="Backwards compatibility")]
         public IntPtr pfnDeferredFillIn;
         public Int32 scode;
     }
