@@ -6,10 +6,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using ILVerify;
 using Internal.TypeSystem.Ecma;
 using Xunit;
 
-namespace ILVerify.Tests
+namespace ILVerification.Tests
 {
     public class ILMethodTester
     {
@@ -48,7 +49,7 @@ namespace ILVerify.Tests
                 foreach (var item in invalidIL.ExpectedVerifierErrors)
                 {
                     var actual = results.Select(e => e.ToString());
-                    Assert.True(results.Where(r => r.Error.Code == item).Count() > 0, $"Actual errors where: {string.Join(',', actual)}");
+                    Assert.True(results.Where(r => r.Error.Code == item).Count() > 0, $"Actual errors where: {string.Join(",", actual)}");
                 }
             }
         }
