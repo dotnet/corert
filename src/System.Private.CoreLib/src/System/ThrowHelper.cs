@@ -317,6 +317,10 @@ namespace System
                     return "comparer";
                 case ExceptionArgument.comparable:
                     return "comparable";
+                case ExceptionArgument.source:
+                    return "source";
+                case ExceptionArgument.state:
+                    return "state";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -408,7 +412,9 @@ namespace System
         format,
         culture,
         comparer,
-        comparable
+        comparable,
+        source,
+        state
     }
 
     //
