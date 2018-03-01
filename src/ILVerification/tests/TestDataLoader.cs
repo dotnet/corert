@@ -170,7 +170,7 @@ namespace ILVerification.Tests
                 simpleNameToPathMap.Add(Path.GetFileNameWithoutExtension(fileName), TESTASSEMBLYPATH + fileName);
             }
 
-            Assembly coreAssembly = typeof(object).Assembly;
+            Assembly coreAssembly = typeof(object).GetTypeInfo().Assembly;
             simpleNameToPathMap.Add(coreAssembly.GetName().Name, coreAssembly.Location);
 
             Assembly systemRuntime = Assembly.Load(new AssemblyName("System.Runtime"));
