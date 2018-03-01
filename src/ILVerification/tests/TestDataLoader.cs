@@ -10,12 +10,13 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Text;
+using ILVerify;
 using Internal.TypeSystem.Ecma;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace ILVerify.Tests
+namespace ILVerification.Tests
 {
     /// <summary>
     /// Parses the methods in the test assemblies. 
@@ -169,10 +170,10 @@ namespace ILVerify.Tests
                 simpleNameToPathMap.Add(Path.GetFileNameWithoutExtension(fileName), TESTASSEMBLYPATH + fileName);
             }
 
-            Assembly coreAssembly = typeof(object).Assembly;
+            Assembly coreAssembly = typeof(object).GetTypeInfo().Assembly;
             simpleNameToPathMap.Add(coreAssembly.GetName().Name, coreAssembly.Location);
 
-            Assembly systemRuntime = Assembly.Load("System.Runtime");
+            Assembly systemRuntime = Assembly.Load(new AssemblyName("System.Runtime"));
             simpleNameToPathMap.Add(systemRuntime.GetName().Name, systemRuntime.Location);
 
             var resolver = new TestResolver(simpleNameToPathMap);

@@ -3,16 +3,21 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
+    <TargetFramework>netstandard1.5</TargetFramework>
 
     <IsPackable>false</IsPackable>
-    <AssemblyKey></AssemblyKey>
-    <AssemblyOriginatorKeyFile>..\StrongNameKeys\ILVerify.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="ILMethodTester.cs" />
+    <Compile Include="TestDataLoader.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.3.0-preview-20170427-09" />
     <PackageReference Include="xunit" Version="2.2.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.2.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
   </ItemGroup>
 
   <ItemGroup>
