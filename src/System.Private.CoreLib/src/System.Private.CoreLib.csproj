@@ -273,6 +273,8 @@
     <Compile Include="System\Runtime\Serialization\SerializationInfo.cs" />
     <Compile Include="System\String.cs" />
     <Compile Include="System\String.Comparison.cs" />
+    <Compile Include="System\String.Construction.cs" />    
+    <Compile Include="System\String.Conversions.cs" />    
     <Compile Include="System\String.Intern.cs" />
     <Compile Include="System\Array.cs" />
     <Compile Include="System\Array.CoreRT.cs" />
