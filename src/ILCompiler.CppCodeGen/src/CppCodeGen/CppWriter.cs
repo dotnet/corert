@@ -316,7 +316,13 @@ namespace ILCompiler.CppCodeGen
 
         public string GetCppFieldName(FieldDesc field)
         {
-            return _compilation.NameMangler.GetMangledFieldName(field).ToString();
+            string name = _compilation.NameMangler.GetMangledFieldName(field).ToString();
+
+            // TODO: name mangling robustness
+            if (name == "register")
+                name = "_" + name + "_";
+
+            return name;
         }
 
         public string GetCppStaticFieldName(FieldDesc field)
@@ -329,7 +335,7 @@ namespace ILCompiler.CppCodeGen
         public string SanitizeCppVarName(string varName)
         {
             // TODO: name mangling robustness
-            if (varName == "errno" || varName == "environ" || varName == "template" || varName == "typename") // some names collide with CRT headers
+            if (varName == "errno" || varName == "environ" || varName == "template" || varName == "typename" || varName == "register") // some names collide with CRT headers
                 return "_" + varName + "_";
 
             return _compilation.NameMangler.SanitizeName(varName);
