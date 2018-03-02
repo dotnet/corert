@@ -17,6 +17,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public InterfaceDispatchMapNode(TypeDesc type)
         {
+            // Multidimensional arrays should not get a sealed vtable or a dispatch map. Runtime should use the 
+            // sealed vtable and dispatch map of the System.Array basetype instead.
+            // Pointer arrays also follow the same path
+            Debug.Assert(!type.IsArrayTypeWithoutGenericInterfaces());
+
             _type = type;
         }
 
@@ -80,7 +85,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         builder.EmitShort(checked((short)interfaceIndex));
                         builder.EmitShort(checked((short)(interfaceMethodSlot + (interfaceType.HasGenericDictionarySlot() ? 1 : 0))));
-                        builder.EmitShort(checked((short)VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, implMethod)));
+                        builder.EmitShort(checked((short)VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, implMethod, _type.GetClosestDefType())));
                         entryCount++;
                     }
                 }

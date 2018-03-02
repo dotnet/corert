@@ -62,7 +62,7 @@ namespace ILCompiler.DependencyAnalysis
             if (!relocsOnly)
             {
                 var tableOffset = EETypeNode.GetVTableOffset(factory.Target.PointerSize) / factory.Target.PointerSize;
-                objData.EmitInt(tableOffset + VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, _targetMethod));
+                objData.EmitInt(tableOffset + VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, _targetMethod, _targetMethod.OwningType));
             }
             return objData.ToObjectData();
         }
