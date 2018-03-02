@@ -263,6 +263,7 @@
     <Compile Include="System\Runtime\InteropServices\GCHandleType.cs" />
     <Compile Include="System\Runtime\InteropServices\InteropExtensions.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeCallableAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\NativeFunctionPointerWrapper.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal.cs" />
     <Compile Include="System\Runtime\InteropServices\SafeHandle.cs" />
@@ -675,9 +676,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgGeneratedNativeCallCodeAttribute.cs">
       <Link>System\Runtime\InteropServices\McgGeneratedNativeCallCodeAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgPInvokeData.cs">
-      <Link>System\Runtime\InteropServices\McgPInvokeData.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\NotImplemented.cs">
       <Link>System\NotImplemented.cs</Link>

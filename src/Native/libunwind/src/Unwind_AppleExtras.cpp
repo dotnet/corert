@@ -191,7 +191,7 @@ bool checkKeyMgrRegisteredFDEs(uintptr_t pc, void *&fde) {
   _Unwind_FunctionContext *fc_ = nullptr;
 #endif
 
-// Accessors to get get/set linked list of frames for sjlj based execeptions.
+// Accessors to get get/set linked list of frames for sjlj based exceptions.
 _LIBUNWIND_HIDDEN
 struct _Unwind_FunctionContext *__Unwind_SjLj_GetTopOfFunctionStack() {
 #ifndef _LIBUNWIND_HAS_NO_THREADS

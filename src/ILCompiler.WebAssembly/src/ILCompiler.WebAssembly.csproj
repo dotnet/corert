@@ -18,10 +18,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
-    <ProjectReference Include="libLLVMdep.depproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
-    </ProjectReference>
     <ProjectReference Include="..\..\ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj" />
     <ProjectReference Include="..\..\ILCompiler.MetadataTransform\src\ILCompiler.MetadataTransform.csproj" />
     <ProjectReference Include="..\..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj" />
@@ -55,17 +51,18 @@
     <Compile Include="CodeGen\NodeDataSection.cs" />
     <Compile Include="CodeGen\ILToWebAssemblyImporter.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Content Include="..\..\..\packages\llvmsharp\5.0.0\lib\netstandard1.1\LLVMSharp.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\..\..\packages\libllvm\4.0.0\runtimes\osx\native\libLLVM.dylib" Condition="'$(HostOS)' == 'OSX'">
+    <Content Include="..\..\..\packages\libllvm\4.0.0\runtimes\osx\native\libLLVM.dylib" Condition="'$(NuPkgRid)' == 'osx-x64'">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\..\..\packages\libllvm\4.0.0\runtimes\linux-x64\native\libLLVM.so" Condition="'$(HostOS)' == 'Linux'">
+    <Content Include="..\..\..\packages\libllvm\4.0.0\runtimes\linux-x64\native\libLLVM.so" Condition="'$(NuPkgRid)' == 'linux-x64'">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\..\..\packages\libllvm\4.0.0\runtimes\win-x64\native\libLLVM.dll" Condition="'$(HostOS)' == 'Windows_NT'">
+    <Content Include="..\..\..\packages\libllvm\4.0.0\runtimes\win-x64\native\libLLVM.dll" Condition="'$(NuPkgRid)' == 'win-x64' or '$(NuPkgRid)' == ''">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

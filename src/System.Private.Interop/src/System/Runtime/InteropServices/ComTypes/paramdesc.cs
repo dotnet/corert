@@ -9,6 +9,7 @@ namespace System.Runtime.InteropServices.ComTypes
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct PARAMDESC
     {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2111:PointersShouldNotBeVisible",  Justification="Backwards compatibility")]
         public IntPtr lpVarValue;
         public PARAMFLAG wParamFlags;
     }

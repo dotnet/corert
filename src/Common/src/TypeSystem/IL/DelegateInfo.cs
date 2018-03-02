@@ -209,7 +209,10 @@ namespace Internal.IL
 
         private static bool IsNativeCallingConventionCompatible(TypeDesc type)
         {
-            if (type.IsPointer || type.IsByRef)
+            if (type.IsPointer)
+                return true;
+
+            if (type.IsByRef)
                 return IsNativeCallingConventionCompatible(((ParameterizedType)type).ParameterType);
 
             if (!type.IsValueType)

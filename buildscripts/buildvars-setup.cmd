@@ -4,6 +4,11 @@ set __BuildType=Debug
 set __BuildOS=Windows_NT
 set __HostOS=Windows_NT
 
+:: Disable telemetry, first time experience, and global sdk look for the CLI
+set DOTNET_CLI_TELEMETRY_OPTOUT=1
+set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
+set DOTNET_MULTILEVEL_LOOKUP=0
+
 :: Set the various build properties here so that CMake and MSBuild can pick them up
 set "__ProjectDir=%~dp0.."
 :: remove trailing slash

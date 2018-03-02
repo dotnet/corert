@@ -11,7 +11,7 @@
 // This isn't something we want, because we're totally fine using non-posix functions.
 #if defined(__APPLE__)
  #define _DARWIN_C_SOURCE
-#endif // definfed(__APPLE__)
+#endif // defined(__APPLE__)
 
 #include <pthread.h>
 #include <signal.h>
@@ -69,7 +69,7 @@ static const int tccMilliSecondsToMicroSeconds = 1000;
 // The number of nanoseconds in a millisecond.
 static const int tccMilliSecondsToNanoSeconds = 1000000;
 
-// The cachced number of logical CPUs observed.
+// The cached number of logical CPUs observed.
 static uint32_t g_logicalCpuCount = 0;
 
 // Helper memory page used by the FlushProcessWriteBuffers

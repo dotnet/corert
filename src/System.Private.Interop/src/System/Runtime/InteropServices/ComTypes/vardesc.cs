@@ -17,6 +17,7 @@ namespace System.Runtime.InteropServices.ComTypes
         {
             [FieldOffset(0)]
             public int oInst;
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2111:PointersShouldNotBeVisible",  Justification="Backwards compatibility")]
             [FieldOffset(0)]
             public IntPtr lpvarValue;
         };

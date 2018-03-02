@@ -25,7 +25,7 @@ copy /Y %~dp0\Test.csproj %TestFolder%
 :: so override if we're doing a 64-bit test run
 ::
 if "%CoreRT_BuildArch%" == "x64" (
-    call "%VS140COMNTOOLS%\..\..\VC\bin\amd64\vcvars64.bat"
+    call "%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build\vcvarsall.bat" x64
 )
 
 echo msbuild /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /p:DisableFrameworkLibGeneration=true %TestFolder%\Test.csproj

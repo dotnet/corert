@@ -194,11 +194,12 @@ namespace ILVerify
             Write(method.Name);
             Write("(");
 
-            if (method.Signature._parameters != null && method.Signature._parameters.Length > 0)
+            if (method.Signature.Length > 0)
             {
                 bool first = true;
-                foreach (Internal.TypeSystem.TypeDesc parameter in method.Signature._parameters)
+                for(int i = 0; i < method.Signature.Length; i++)
                 {
+                    Internal.TypeSystem.TypeDesc parameter = method.Signature[0];
                     if (first)
                     {
                         first = false;

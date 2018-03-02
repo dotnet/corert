@@ -352,6 +352,10 @@ namespace ILCompiler
             {
                 return GetAllMethodsForEnum(type);
             }
+            else if (type.IsValueType)
+            {
+                return GetAllMethodsForValueType(type);
+            }
 
             return type.GetMethods();
         }

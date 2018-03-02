@@ -506,7 +506,7 @@ void ReportScratchRegs(UInt8 firstEncByte, REGDISPLAY * pContext, GCEnumContext 
 }
 
 // Enumerate all live object references in that function using the virtual register set. Same reference 
-// location cannot be enumerated multiple times (but all differenct references pointing to the same object 
+// location cannot be enumerated multiple times (but all different references pointing to the same object 
 // have to be individually enumerated). 
 // Returns success of operation.
 void EECodeManager::EnumGcRefs(MethodGcInfoPointers *   pMethodInfo,
