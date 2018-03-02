@@ -80,7 +80,7 @@ namespace ILCompiler.DependencyAnalysis
 
             DefType closestDefType = _type.GetClosestDefType();
 
-            if (_type.RuntimeInterfaces.Length > 0)
+            if (_type.RuntimeInterfaces.Length > 0 && !_type.IsArrayTypeWithoutGenericInterfaces())
             {
                 dependencyList.Add(factory.InterfaceDispatchMap(_type), "Interface dispatch map");
             }

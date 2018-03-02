@@ -382,6 +382,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new InterfaceDispatchMapNode(type);
             });
 
+            _sealedVtableNodes = new NodeCache<TypeDesc, SealedVTableNode>((TypeDesc type) =>
+            {
+                return new SealedVTableNode(type);
+            });
+
             _runtimeMethodHandles = new NodeCache<MethodDesc, RuntimeMethodHandleNode>((MethodDesc method) =>
             {
                 return new RuntimeMethodHandleNode(method);
@@ -639,6 +644,13 @@ namespace ILCompiler.DependencyAnalysis
         public BlobNode ReadOnlyDataBlob(Utf8String name, byte[] blobData, int alignment)
         {
             return _readOnlyDataBlobs.GetOrAdd(new ReadOnlyDataBlobKey(name, blobData, alignment));
+        }
+
+        private NodeCache<TypeDesc, SealedVTableNode> _sealedVtableNodes;
+
+        internal SealedVTableNode SealedVTable(TypeDesc type)
+        {
+            return _sealedVtableNodes.GetOrAdd(type);
         }
 
         private NodeCache<TypeDesc, InterfaceDispatchMapNode> _interfaceDispatchMaps;

@@ -1059,7 +1059,7 @@ namespace ILCompiler.DependencyAnalysis
                 List<NativeLayoutVertexNode> vtableSignatureNodeEntries = null;
                 int currentVTableIndexUnused = 0;
                 ProcessVTableEntriesForCallingConventionSignatureGeneration(context, VTableEntriesToProcess.AllOnTypesThatShouldProduceFullVTables, ref currentVTableIndexUnused,
-                    (int vtableIndex, MethodDesc declMethod, MethodDesc implMethod) =>
+                    (int vtableIndex, bool isSealedVTableSlot, MethodDesc declMethod, MethodDesc implMethod) =>
                     {
                         if (implMethod.IsAbstract)
                             return;
@@ -1096,7 +1096,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 int currentVTableIndexUnused = 0;
                 ProcessVTableEntriesForCallingConventionSignatureGeneration(context, VTableEntriesToProcess.AllOnTypesThatProducePartialVTables, ref currentVTableIndexUnused,
-                    (int vtableIndex, MethodDesc declMethod, MethodDesc implMethod) =>
+                    (int vtableIndex, bool isSealedVTableSlot, MethodDesc declMethod, MethodDesc implMethod) =>
                     {
                         if (implMethod.IsAbstract)
                             return;
@@ -1236,6 +1236,16 @@ namespace ILCompiler.DependencyAnalysis
             if (typeFlags != default(Internal.NativeFormat.TypeFlags))
                 layoutInfo.AppendUnsigned(BagElementKind.TypeFlags, (uint)typeFlags);
 
+            if (!_type.IsArrayTypeWithoutGenericInterfaces() && ConstructedEETypeNode.CreationAllowed(_type))
+            {
+                SealedVTableNode sealedVTable = factory.SealedVTable(_type.ConvertToCanonForm(CanonicalFormKind.Specific));
+
+                sealedVTable.BuildSealedVTableSlots(factory, relocsOnly: false /* This is the final emission phase */);
+
+                if (sealedVTable.NumSealedVTableEntries > 0)
+                    layoutInfo.AppendUnsigned(BagElementKind.SealedVTableEntries, (uint)sealedVTable.NumSealedVTableEntries);
+            }
+
             if (_type.GetTypeDefinition().HasVariance || factory.TypeSystemContext.IsGenericArrayInterfaceType(_type))
             {
                 // Runtime casting logic relies on all interface types implemented on arrays
@@ -1319,7 +1329,7 @@ namespace ILCompiler.DependencyAnalysis
                 VertexSequence vtableSignaturesSequence = null;
                 
                 ProcessVTableEntriesForCallingConventionSignatureGeneration(factory, VTableEntriesToProcess.AllInVTable, ref currentVTableIndexUnused,
-                    (int vtableIndex, MethodDesc declMethod, MethodDesc implMethod) =>
+                    (int vtableIndex, bool isSealedVTableSlot, MethodDesc declMethod, MethodDesc implMethod) =>
                     {
                         if (implMethod.IsAbstract)
                             return;
@@ -1333,7 +1343,7 @@ namespace ILCompiler.DependencyAnalysis
                             Vertex signatureVertex = GetNativeWriter(factory).GetRelativeOffsetSignature(methodSignature.WriteVertex(factory));
 
                             Vertex vtableSignatureEntry = writer.GetTuple(
-                                writer.GetUnsignedConstant(((uint)vtableIndex) << 1), // We currently do not use sealed vtable entries yet. Update when that happens
+                                writer.GetUnsignedConstant((uint)((vtableIndex << 1) | (isSealedVTableSlot ? 1 : 0))),
                                 factory.MetadataManager.NativeLayoutInfo.TemplatesSection.Place(signatureVertex));
 
                             vtableSignaturesSequence.Append(vtableSignatureEntry);
@@ -1391,7 +1401,7 @@ namespace ILCompiler.DependencyAnalysis
         /// Do not adjust vtable index for generic dictionary slot
         /// The vtable index is only actually valid if whichEntries is set to VTableEntriesToProcess.AllInVTable
         /// </summary>
-        private void ProcessVTableEntriesForCallingConventionSignatureGeneration(NodeFactory factory, VTableEntriesToProcess whichEntries, ref int currentVTableIndex, Action<int, MethodDesc, MethodDesc> operation, TypeDesc implType, TypeDesc declType, TypeDesc templateType)
+        private void ProcessVTableEntriesForCallingConventionSignatureGeneration(NodeFactory factory, VTableEntriesToProcess whichEntries, ref int currentVTableIndex, Action<int, bool, MethodDesc, MethodDesc> operation, TypeDesc implType, TypeDesc declType, TypeDesc templateType)
         {
             if (implType.IsInterface)
                 return;
@@ -1454,6 +1464,8 @@ namespace ILCompiler.DependencyAnalysis
             if (declType.HasGenericDictionarySlot() || templateType.HasGenericDictionarySlot())
                 currentVTableIndex++;
 
+            int sealedVTableSlot = 0;
+
             // Actual vtable slots follow
             foreach (MethodDesc declMethod in vtableEntriesToProcess)
             {
@@ -1462,8 +1474,17 @@ namespace ILCompiler.DependencyAnalysis
 
                 MethodDesc implMethod = implType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(declMethod);
 
-                operation(currentVTableIndex, declMethod, implMethod);
-                currentVTableIndex++;
+                if (implMethod.CanMethodBeInSealedVTable() && !implType.IsArrayTypeWithoutGenericInterfaces())
+                {
+                    // Sealed vtable entries on other types in the hierarchy should not be reported (types read entries
+                    // from their own sealed vtables, and not from the sealed vtables of base types).
+                    if (implMethod.OwningType == implType)
+                        operation(sealedVTableSlot++, true, declMethod, implMethod);
+                }
+                else
+                {
+                    operation(currentVTableIndex++, false, declMethod, implMethod);
+                }
             }
         }
     }
@@ -1714,7 +1735,7 @@ namespace ILCompiler.DependencyAnalysis
             if (method.IsRuntimeDeterminedExactMethod)
                 method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, method);
+            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, method, method.OwningType);
 
             return writer.GetMethodSlotSignature(_signature.WriteVertex(factory), checked((uint)slot));
         }
@@ -1870,8 +1891,8 @@ namespace ILCompiler.DependencyAnalysis
         protected sealed override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
         {
             NativeWriter nativeWriter = GetNativeWriter(factory);
-            
-            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, _slotDefiningMethod);
+
+            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, _slotDefiningMethod, _slotDefiningMethod.OwningType);
             Vertex typeVertex = factory.NativeLayout.TypeSignatureVertex(_slotDefiningMethod.OwningType).WriteVertex(factory);
             return nativeWriter.GetTuple(typeVertex, nativeWriter.GetUnsignedConstant((uint)slot));
         }
@@ -2024,7 +2045,8 @@ namespace ILCompiler.DependencyAnalysis
             {
                 Debug.Assert((SignatureKind == FixupSignatureKind.NonGenericConstrainedMethod) || (SignatureKind == FixupSignatureKind.NonGenericDirectConstrainedMethod));
                 Vertex methodType = factory.NativeLayout.TypeSignatureVertex(_constrainedMethod.OwningType).WriteVertex(factory);
-                int interfaceSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, _constrainedMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
+                var canonConstrainedMethod = _constrainedMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                int interfaceSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, canonConstrainedMethod, canonConstrainedMethod.OwningType);
                 Vertex interfaceSlotVertex = writer.GetUnsignedConstant(checked((uint)interfaceSlot));
                 return writer.GetTuple(constraintType, methodType, interfaceSlotVertex);
             }
