@@ -108,7 +108,7 @@ namespace ILCompiler.DependencyAnalysis
             // Avoid consulting VTable slots until they're guaranteed complete during final data emission
             if (!relocsOnly)
             {
-                objData.EmitNaturalInt(VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, _targetMethod));
+                objData.EmitNaturalInt(VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, _targetMethod, _targetMethod.OwningType));
             }
 
             return objData.ToObjectData();
