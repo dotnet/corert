@@ -210,6 +210,14 @@ namespace System.Reflection.Runtime.TypeInfos
             if (elementTypeHandle.IsNull())
                 return default(RuntimeTypeHandle);
 
+            // The check is here on purpose - one of the implementations of IsByRefLike contains a custom attribute
+            // search and those are very expensive from size on disk footprint perspective. We purposefully
+            // place this call in a path that won't be part of the executable image unless more advanced reflection services
+            // are also needed ("pay for play"). We really don't want a typeof() to push the app into requiring the full reflection
+            // stack to be compiled into the final executable.
+            if (elementType.IsByRefLike)
+                throw new TypeLoadException(SR.Format(SR.ArgumentException_InvalidArrayElementType, elementType));
+
             RuntimeTypeHandle typeHandle;
             if (!multiDim)
             {
@@ -272,7 +280,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             Debug.Assert(multiDim || rank == 1);
 
-            if (elementType.IsByRef || elementType.IsByRefLike)
+            if (elementType.IsByRef)
                 throw new TypeLoadException(SR.Format(SR.ArgumentException_InvalidArrayElementType, elementType));
 
             // We only permit creating parameterized types if the pay-for-play policy specifically allows them *or* if the result

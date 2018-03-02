@@ -528,7 +528,7 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
         p += sizeof(int32_t);
 
-    // Decode the GC info for the current method to detemine its return type
+    // Decode the GC info for the current method to determine its return type
     GcInfoDecoder decoder(
         GCInfoToken(p),
         GcInfoDecoderFlags(DECODE_RETURN_KIND),

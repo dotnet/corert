@@ -1062,6 +1062,63 @@ namespace Internal.IL
 
             switch (method.Name)
             {
+                case "InitializeArray":
+                    if (metadataType.Namespace == "System.Runtime.CompilerServices" && metadataType.Name == "RuntimeHelpers")
+                    {
+                        StackEntry fieldSlot = _stack.Pop();
+                        StackEntry arraySlot = _stack.Pop();
+
+                        // TODO: Does fldHandle always come from ldtoken? If not, what to do with other cases?
+                        if (!(fieldSlot is LdTokenEntry<FieldDesc> checkedFieldSlot) ||
+                            !(_compilation.GetFieldRvaData(checkedFieldSlot.LdToken) is BlobNode fieldNode))
+                            throw new InvalidProgramException("Provided field handle is invalid.");
+
+                        LLVMValueRef src = LoadAddressOfSymbolNode(fieldNode);
+                        _dependencies.Add(fieldNode);
+                        int srcLength = fieldNode.GetData(_compilation.NodeFactory, false).Data.Length;
+
+                        if (arraySlot.Type.IsSzArray)
+                        {
+                            // Handle single dimensional arrays (vectors).
+                            LLVMValueRef arrayObjPtr = arraySlot.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder);
+
+                            var argsType = new LLVMTypeRef[]
+                            {
+                            LLVM.PointerType(LLVM.Int8Type(), 0),
+                            LLVM.PointerType(LLVM.Int8Type(), 0),
+                            LLVM.Int32Type(),
+                            LLVM.Int32Type(),
+                            LLVM.Int1Type()
+                            };
+                            LLVMValueRef memcpyFunction = GetOrCreateLLVMFunction("llvm.memcpy.p0i8.p0i8.i32", LLVM.FunctionType(LLVM.VoidType(), argsType, false));
+
+                            var args = new LLVMValueRef[]
+                            {
+                            LLVM.BuildGEP(_builder, arrayObjPtr, new LLVMValueRef[] { ArrayBaseSize() }, string.Empty),
+                            LLVM.BuildBitCast(_builder, src, LLVM.PointerType(LLVM.Int8Type(), 0), string.Empty),
+                            BuildConstInt32(srcLength), // TODO: Handle destination array length to avoid runtime overflow.
+                            BuildConstInt32(0), // Assume no alignment
+                            BuildConstInt1(0)
+                            };
+                            LLVM.BuildCall(_builder, memcpyFunction, args, string.Empty);
+                        }
+                        else if (arraySlot.Type.IsMdArray)
+                        {
+                            // Handle multidimensional arrays.
+                            // TODO: Add support for multidimensional array.
+                            throw new NotImplementedException();
+                        }
+                        else
+                        {
+                            // Handle object-typed first argument. This include System.Array typed array, and any ill-typed argument.
+                            // TODO: Emit runtime type check code on array argument and further memcpy.
+                            // TODO: Maybe a new runtime interface for this is better than hand-written code emission?
+                            throw new NotImplementedException();
+                        }
+                        
+                        return true;
+                    }
+                    break;
                 case "get_Value":
                     if (metadataType.IsByReferenceOfT)
                     {

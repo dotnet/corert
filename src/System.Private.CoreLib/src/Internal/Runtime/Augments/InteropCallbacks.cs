@@ -12,7 +12,9 @@ namespace Internal.Runtime.Augments
     [System.Runtime.CompilerServices.ReflectionBlocked]
     public abstract class InteropCallbacks
     {
-        public abstract bool TryGetMarshallerDataForDelegate(RuntimeTypeHandle delegateTypeHandle, out McgPInvokeDelegateData  delegateData);
+        public abstract IntPtr GetForwardDelegateCreationStub(RuntimeTypeHandle delegateTypeHandle);
+
+        public abstract IntPtr GetDelegateMarshallingStub(RuntimeTypeHandle delegateTypeHandle, bool openStaticDelegate);
 
         public abstract bool TryGetStructUnmarshalStub(RuntimeTypeHandle structureTypeHandle, out IntPtr unmarshalStub);
 

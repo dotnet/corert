@@ -1056,7 +1056,7 @@ void HndScanHandlesForGC(HHANDLETABLE hTable, HANDLESCANPROC scanProc, uintptr_t
 /*
  * HndResetAgeMap
  *
- * Service to forceably reset the age map for a set of handles.
+ * Service to forcibly reset the age map for a set of handles.
  *
  * Provided for GC-time resetting the handle table's write barrier.  This is not
  * normally advisable, as it increases the amount of work that will be done in

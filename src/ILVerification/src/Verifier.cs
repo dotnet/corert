@@ -18,7 +18,7 @@ namespace ILVerify
     public class Verifier
     {
         private Lazy<ResourceManager> _stringResourceManager =
-            new Lazy<ResourceManager>(() => new ResourceManager("ILVerification.Resources.Strings", Assembly.GetExecutingAssembly()));
+            new Lazy<ResourceManager>(() => new ResourceManager("FxResources.ILVerification.SR", typeof(Verifier).GetTypeInfo().Assembly));
 
         private ILVerifyTypeSystemContext _typeSystemContext;
 

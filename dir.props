@@ -12,7 +12,6 @@
   <PropertyGroup>
     <OSGroup Condition="'$(OSGroup)'==''">$(__BuildOS)</OSGroup>
     <Platform Condition="'$(Platform)'==''">$(__BuildArch)</Platform>
-    <HostOS Condition="'$(HostOS)'==''">$(__HostOS)</HostOS>
     <Configuration Condition="'$(Configuration)'==''">$(__BuildType)</Configuration>
   </PropertyGroup>
 

@@ -13,23 +13,25 @@ namespace Internal.Runtime.CompilerHelpers
 {
     internal partial class RuntimeInteropData
     {
-        public override bool TryGetMarshallerDataForDelegate(RuntimeTypeHandle delegateTypeHandle, out McgPInvokeDelegateData data)
+        public override IntPtr GetForwardDelegateCreationStub(RuntimeTypeHandle delegateTypeHandle)
         {
             IntPtr openStub, closedStub, delegateCreationStub;
-            if (!TryGetMarshallersForDelegate(delegateTypeHandle, out openStub, out closedStub, out delegateCreationStub))
-            {
-                data = default(McgPInvokeDelegateData);
-                return false;
-            }
-
-            data = new global::System.Runtime.InteropServices.McgPInvokeDelegateData()
-            {
-                ReverseOpenStaticDelegateStub = openStub,
-                ReverseStub = closedStub,
-                ForwardDelegateCreationStub = delegateCreationStub
-            };
-            return true;
+            GetMarshallersForDelegate(delegateTypeHandle, out openStub, out closedStub, out delegateCreationStub);
+            if (delegateCreationStub == IntPtr.Zero)
+                throw new MissingInteropDataException(SR.DelegateMarshalling_MissingInteropData, Type.GetTypeFromHandle(delegateTypeHandle));
+            return delegateCreationStub;
         }
+
+        public override IntPtr GetDelegateMarshallingStub(RuntimeTypeHandle delegateTypeHandle, bool openStaticDelegate)
+        {
+            IntPtr openStub, closedStub, delegateCreationStub;
+            GetMarshallersForDelegate(delegateTypeHandle, out openStub, out closedStub, out delegateCreationStub);
+            IntPtr pStub = openStaticDelegate ? openStub : closedStub;
+            if (pStub == IntPtr.Zero)
+                throw new MissingInteropDataException(SR.DelegateMarshalling_MissingInteropData, Type.GetTypeFromHandle(delegateTypeHandle));
+            return pStub;
+        }
+
         #region "Struct Data"
         public override bool TryGetStructUnmarshalStub(RuntimeTypeHandle structureTypeHandle, out IntPtr unmarshalStub)
         {
@@ -112,7 +114,7 @@ namespace Internal.Runtime.CompilerHelpers
             return false;
         }
 
-        private unsafe bool TryGetMarshallersForDelegate(RuntimeTypeHandle delegateTypeHandle, out IntPtr openStub, out IntPtr closedStub, out IntPtr delegateCreationStub)
+        private unsafe bool GetMarshallersForDelegate(RuntimeTypeHandle delegateTypeHandle, out IntPtr openStub, out IntPtr closedStub, out IntPtr delegateCreationStub)
         {
             int delegateHashcode = delegateTypeHandle.GetHashCode();
             openStub = IntPtr.Zero;

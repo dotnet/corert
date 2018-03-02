@@ -918,7 +918,7 @@ COOP_PINVOKE_HELPER(void *, RhNewInterfaceDispatchCell, (EEType * pInterface, In
         return NULL;
 
     // Due to the synchronization mechanism used to update this indirection cell we must ensure the cell's alignment is twice that of a pointer.
-    // Fortunately, Windows heap guarantees this aligment.
+    // Fortunately, Windows heap guarantees this alignment.
     ASSERT(IS_ALIGNED(pCell, 2 * POINTER_SIZE));
     ASSERT(IS_ALIGNED(pInterface, (InterfaceDispatchCell::IDC_CachePointerMask + 1)));
 

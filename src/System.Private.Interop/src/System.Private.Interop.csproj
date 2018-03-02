@@ -144,6 +144,10 @@
 
     <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="Internal\Runtime\CompilerHelpers\RuntimeInteropData.ProjectN.cs"/>
     <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="Internal\Runtime\CompilerHelpers\RuntimeInteropData.CoreRT.cs"/>
+
+    <!-- TODO This should be really only needed for CoreCLR flavor of S.P.Interop. -->
+    <!-- See https://github.com/dotnet/corert/pull/5404 -->
+    <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Runtime\InteropServices\MarshalAdapter.cs" />
   </ItemGroup>
  
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">

@@ -1870,7 +1870,7 @@ COOP_PINVOKE_HELPER(Boolean, RhpSfiInit, (StackFrameIterator* pThis, PAL_LIMITED
     // The stackwalker is intolerant to hijacked threads, as it is largely expecting to be called from C++
     // where the hijack state of the thread is invariant.  Because we've exposed the iterator out to C#, we 
     // need to unhijack every time we callback into C++ because the thread could have been hijacked during our
-    // time exectuing C#.
+    // time executing C#.
     pCurThread->Unhijack();
 
     // Passing NULL is a special-case to request a standard managed stack trace for the current thread.
@@ -1890,7 +1890,7 @@ COOP_PINVOKE_HELPER(Boolean, RhpSfiNext, (StackFrameIterator* pThis, UInt32* puE
     // The stackwalker is intolerant to hijacked threads, as it is largely expecting to be called from C++
     // where the hijack state of the thread is invariant.  Because we've exposed the iterator out to C#, we 
     // need to unhijack every time we callback into C++ because the thread could have been hijacked during our
-    // time exectuing C#.
+    // time executing C#.
     ThreadStore::GetCurrentThread()->Unhijack();
 
     const UInt32 MaxTryRegionIdx = 0xFFFFFFFF;

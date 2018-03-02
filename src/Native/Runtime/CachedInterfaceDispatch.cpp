@@ -510,7 +510,7 @@ COOP_PINVOKE_HELPER(PTR_Code, RhpUpdateDispatchCellCache, (InterfaceDispatchCell
 
     // Publish the new cache by atomically updating both the cache and stub pointers in the indirection
     // cell. This returns us a cache to discard which may be NULL (no previous cache), the previous cache
-    // value or the cache we just allocated (another thread peformed an update first).
+    // value or the cache we just allocated (another thread performed an update first).
     InterfaceDispatchCache * pDiscardedCache = UpdateCellStubAndCache(pCell, pStub, newCacheValue);
     if (pDiscardedCache)
         DiscardCache(pDiscardedCache);

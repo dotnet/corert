@@ -93,6 +93,10 @@ namespace System
         {
             throw new ArgumentException(SR.Argument_DestinationTooShort);
         }
+        internal static void ThrowArgumentException_OverlapAlignmentMismatch()
+        {
+            throw new ArgumentException(SR.Argument_OverlapAlignmentMismatch);
+        }
         internal static void ThrowArgumentOutOfRange_IndexException()
         {
             throw GetArgumentOutOfRangeException(ExceptionArgument.index,
@@ -309,6 +313,10 @@ namespace System
                     return "format";
                 case ExceptionArgument.culture:
                     return "culture";
+                case ExceptionArgument.comparer:
+                    return "comparer";
+                case ExceptionArgument.comparable:
+                    return "comparable";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -398,7 +406,9 @@ namespace System
         pointer,
         start,
         format,
-        culture
+        culture,
+        comparer,
+        comparable
     }
 
     //

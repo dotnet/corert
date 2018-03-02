@@ -54,12 +54,10 @@
     <Compile Include="InteropExtensions\PreInitializedAttribute.cs" />
     <Compile Include="InteropExtensions\PInvokeMarshal.cs" />
     <Compile Include="Interop\Interop.PlatformNotSupported.cs" />
-    <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgPInvokeData.cs">
-      <Link>System\Runtime\InteropServices\McgPInvokeData.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgGeneratedNativeCallCodeAttribute.cs">
       <Link>System\Runtime\InteropServices\McgGeneratedNativeCallCodeAttribute.cs</Link>
     </Compile>
+    <Compile Include="System\Runtime\InteropServices\MarshalAdapter.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">

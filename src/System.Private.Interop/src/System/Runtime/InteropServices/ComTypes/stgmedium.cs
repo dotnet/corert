@@ -9,6 +9,7 @@ namespace System.Runtime.InteropServices.ComTypes
     public struct STGMEDIUM
     {
         public TYMED tymed;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2111:PointersShouldNotBeVisible",  Justification="Backwards compatibility")]
         public IntPtr unionmember;
         [MarshalAs(UnmanagedType.IUnknown)]
         public object pUnkForRelease;

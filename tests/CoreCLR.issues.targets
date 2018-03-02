@@ -2,17 +2,6 @@
   xmlns="http://schemas.microsoft.com/developer/msbuild/2003" >
   <ItemGroup Condition="'$(XunitTestBinBase)' != ''">
 
-    <!-- Tests that fail because they need update from CoreCLR -->
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\NaN\intrinsic_cs_ro\intrinsic_cs_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\NaN\intrinsic_nonf_il_r\intrinsic_nonf_il_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\NaN\intrinsic_cs_d\intrinsic_cs_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\NaN\intrinsic_nonf_il_d\intrinsic_nonf_il_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\NaN\intrinsic_cs_do\intrinsic_cs_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\intrinsic\pow\pow1\pow1.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\NaN\intrinsic_cs_r\intrinsic_cs_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\Samples\gc\gc.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Features\Pinning\PinningOther\PinnedObject\PinnedObject.*" />
-
     <!-- Infinite generic expansion -->
     <!-- https://github.com/dotnet/corert/issues/363 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\inlining\bug505642\test\test.*" />
@@ -51,6 +40,13 @@
 
     <!-- System.Runtime.CompilerServices.Unsafe -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Inline\tests\UnsafeBlockCopy\UnsafeBlockCopy.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\GitHub_16254\GitHub_16254\GitHub_16254.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\GitHub_16210\GitHub_16210_2\GitHub_16210_2.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\GitHub_16210\GitHub_16210_3\GitHub_16210_3.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\GitHub_15237\GitHub_15237\GitHub_15237.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\GitHub_13568\GitHub_13568\GitHub_13568.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\GitHub_11804\GitHub_11804\GitHub_11804.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\BenchmarksGame\mandelbrot\mandelbrot-7\mandelbrot-7.*" />
 
     <!-- These depend on things outside of the .NET Core profile. Need test fixes. -->
     <ExcludeList Include="$(XunitTestBinBase)\Interop\NativeCallable\NativeCallableTest\NativeCallableTest.*" />
@@ -224,6 +220,9 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\SIMD\RayTracer\RayTracer\RayTracer.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\V8\DeltaBlue\DeltaBlue\DeltaBlue.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\V8\Richards\Richards\Richards.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\Span\SpanBench\SpanBench.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\Span\Indexer\Indexer.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\SIMD\SeekUnroll\SeekUnroll\SeekUnroll.*" />
 
     <!-- getTailCallCopyArgsThunk -->
     <!-- https://github.com/dotnet/corert/issues/1683 -->
@@ -607,6 +606,328 @@
     <!-- https://github.com/dotnet/corert/issues/2368 -->
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\MethodImpl\override_override1\override_override1.*" />
 
+    <!-- GVM analysis in multi-module build -->
+    <!-- https://github.com/dotnet/corert/issues/5408 -->
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\BenchmarksGame\fasta\fasta-1\fasta-1.*" />
+
+    <!-- Obsolete Marshal APIs -->
+    <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\ReadWrite\ReadWriteObject\ReadWriteObject.*" />
+
+    <!-- Default interface methods -->
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\DefaultInterfaceMethods\constrainedcall\constrainedcall\constrainedcall.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\DefaultInterfaceMethods\diamondshape\diamondshape_d\diamondshape_d.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\DefaultInterfaceMethods\diamondshape\diamondshape_r\diamondshape_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\DefaultInterfaceMethods\genericmethods\genericmethods\genericmethods.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\DefaultInterfaceMethods\methodimpl\methodimpl\methodimpl.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\DefaultInterfaceMethods\sharedgenerics\sharedgenerics_d\sharedgenerics_d.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\DefaultInterfaceMethods\sharedgenerics\sharedgenerics_r\sharedgenerics_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\DefaultInterfaceMethods\simple\simple\simple.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\DefaultInterfaceMethods\valuetypes\valuetypes\valuetypes.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\reflection\DefaultInterfaceMethods\Emit\Emit.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\reflection\DefaultInterfaceMethods\GetInterfaceMapConsumer\GetInterfaceMapConsumer.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\reflection\DefaultInterfaceMethods\InvokeConsumer\InvokeConsumer.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Regressions\coreclr\15650\interfacecctor\interfacecctor.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\baseservices\compilerservices\RuntimeFeature\DefaultImplementationsOfInterfaces\DefaultImplementationsOfInterfaces.*" />
+
+    <!-- Hardware intrinsics -->
+    <ExcludeList Include="$(XunitTestBinBase)\Interop\StructPacking\StructPacking\StructPacking.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\Arm64\Simd\Simd.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx\Avx_r\Avx_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx\Avx_ro\Avx_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx\HorizontalAdd_r\HorizontalAdd_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx\HorizontalAdd_ro\HorizontalAdd_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx\HorizontalSubtract_r\HorizontalSubtract_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx\HorizontalSubtract_ro\HorizontalSubtract_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx\LoadAlignedVector256_r\LoadAlignedVector256_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx\LoadAlignedVector256_ro\LoadAlignedVector256_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx\LoadDquVector256_r\LoadDquVector256_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx\LoadDquVector256_ro\LoadDquVector256_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx\LoadVector256_r\LoadVector256_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx\LoadVector256_ro\LoadVector256_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx\Sqrt_r\Sqrt_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx\Sqrt_ro\Sqrt_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx\StoreAlignedNonTemporal_r\StoreAlignedNonTemporal_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx\StoreAlignedNonTemporal_ro\StoreAlignedNonTemporal_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx\StoreAligned_r\StoreAligned_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx\StoreAligned_ro\StoreAligned_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx\Store_r\Store_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx\Store_ro\Store_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx\UnpackHigh_r\UnpackHigh_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx\UnpackHigh_ro\UnpackHigh_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx\UnpackLow_r\UnpackLow_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx\UnpackLow_ro\UnpackLow_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx2\AddSaturate_r\AddSaturate_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx2\AddSaturate_ro\AddSaturate_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx2\Avx2_r\Avx2_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx2\Avx2_ro\Avx2_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx2\HorizontalAdd_r\HorizontalAdd_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx2\HorizontalAdd_ro\HorizontalAdd_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx2\HorizontalSubtract_r\HorizontalSubtract_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx2\HorizontalSubtract_ro\HorizontalSubtract_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx2\LoadAlignedVector256NonTemporal_r\LoadAlignedVector256NonTemporal_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx2\LoadAlignedVector256NonTemporal_ro\LoadAlignedVector256NonTemporal_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx2\Multiply_r\Multiply_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx2\Multiply_ro\Multiply_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx2\SubtractSaturate_r\SubtractSaturate_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx2\SubtractSaturate_ro\SubtractSaturate_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx2\UnpackHigh_r\UnpackHigh_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx2\UnpackHigh_ro\UnpackHigh_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx2\UnpackLow_r\UnpackLow_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Avx2\UnpackLow_ro\UnpackLow_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\IsSupported_r\IsSupported_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\IsSupported_ro\IsSupported_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Lzcnt\Lzcnt_r\Lzcnt_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Lzcnt\Lzcnt_ro\Lzcnt_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Popcnt\Popcnt_r\Popcnt_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Popcnt\Popcnt_ro\Popcnt_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\ConvertScalarToVector128Single_r\ConvertScalarToVector128Single_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\ConvertScalarToVector128Single_ro\ConvertScalarToVector128Single_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\ConvertToInt32WithTruncation_r\ConvertToInt32WithTruncation_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\ConvertToInt32WithTruncation_ro\ConvertToInt32WithTruncation_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\ConvertToInt32_r\ConvertToInt32_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\ConvertToInt32_ro\ConvertToInt32_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\ConvertToInt64WithTruncation_r\ConvertToInt64WithTruncation_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\ConvertToInt64WithTruncation_ro\ConvertToInt64WithTruncation_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\ConvertToInt64_r\ConvertToInt64_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\ConvertToInt64_ro\ConvertToInt64_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\ConvertToSingle_r\ConvertToSingle_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\ConvertToSingle_ro\ConvertToSingle_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\LoadAlignedVector128_r\LoadAlignedVector128_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\LoadAlignedVector128_ro\LoadAlignedVector128_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\LoadHigh_r\LoadHigh_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\LoadHigh_ro\LoadHigh_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\LoadLow_r\LoadLow_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\LoadLow_ro\LoadLow_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\LoadScalarVector128_r\LoadScalarVector128_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\LoadScalarVector128_ro\LoadScalarVector128_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\LoadVector128_r\LoadVector128_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\LoadVector128_ro\LoadVector128_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\MoveHighToLow_r\MoveHighToLow_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\MoveHighToLow_ro\MoveHighToLow_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\MoveLowToHigh_r\MoveLowToHigh_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\MoveLowToHigh_ro\MoveLowToHigh_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\MoveMask_r\MoveMask_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\MoveMask_ro\MoveMask_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\MoveScalar_r\MoveScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\MoveScalar_ro\MoveScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\Prefetch_r\Prefetch_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\Prefetch_ro\Prefetch_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\ReciprocalScalar_r\ReciprocalScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\ReciprocalScalar_ro\ReciprocalScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\ReciprocalSqrtScalar_r\ReciprocalSqrtScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\ReciprocalSqrtScalar_ro\ReciprocalSqrtScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\ReciprocalSqrt_r\ReciprocalSqrt_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\ReciprocalSqrt_ro\ReciprocalSqrt_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\Reciprocal_r\Reciprocal_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\Reciprocal_ro\Reciprocal_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\SetAllVector128_r\SetAllVector128_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\SetAllVector128_ro\SetAllVector128_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\SetScalarVector128_r\SetScalarVector128_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\SetScalarVector128_ro\SetScalarVector128_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\SetVector128_r\SetVector128_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\SetVector128_ro\SetVector128_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\SetZeroVector128_r\SetZeroVector128_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\SetZeroVector128_ro\SetZeroVector128_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\Shuffle_r\Shuffle_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\Shuffle_ro\Shuffle_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\SqrtScalar_r\SqrtScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\SqrtScalar_ro\SqrtScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\Sqrt_r\Sqrt_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\Sqrt_ro\Sqrt_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\Sse_r\Sse_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\Sse_ro\Sse_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\StaticCast_r\StaticCast_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\StaticCast_ro\StaticCast_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\StoreAlignedNonTemporal_r\StoreAlignedNonTemporal_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\StoreAlignedNonTemporal_ro\StoreAlignedNonTemporal_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\StoreAligned_r\StoreAligned_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\StoreAligned_ro\StoreAligned_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\StoreFence_r\StoreFence_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\StoreFence_ro\StoreFence_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\StoreHigh_r\StoreHigh_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\StoreHigh_ro\StoreHigh_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\StoreLow_r\StoreLow_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\StoreLow_ro\StoreLow_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\StoreScalar_r\StoreScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\StoreScalar_ro\StoreScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\Store_r\Store_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\Store_ro\Store_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\UnpackHigh_r\UnpackHigh_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\UnpackHigh_ro\UnpackHigh_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\UnpackLow_r\UnpackLow_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\UnpackLow_ro\UnpackLow_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\AddSaturate_r\AddSaturate_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\AddSaturate_ro\AddSaturate_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\AddScalar_r\AddScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\AddScalar_ro\AddScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\Average_r\Average_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\Average_ro\Average_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareEqualOrderedScalar_r\CompareEqualOrderedScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareEqualOrderedScalar_ro\CompareEqualOrderedScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareEqualScalar_r\CompareEqualScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareEqualScalar_ro\CompareEqualScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareEqualUnorderedScalar_r\CompareEqualUnorderedScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareEqualUnorderedScalar_ro\CompareEqualUnorderedScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareGreaterThanOrderedScalar_r\CompareGreaterThanOrderedScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareGreaterThanOrderedScalar_ro\CompareGreaterThanOrderedScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareGreaterThanOrEqualOrderedScalar_r\CompareGreaterThanOrEqualOrderedScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareGreaterThanOrEqualOrderedScalar_ro\CompareGreaterThanOrEqualOrderedScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareGreaterThanOrEqualScalar_r\CompareGreaterThanOrEqualScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareGreaterThanOrEqualScalar_ro\CompareGreaterThanOrEqualScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareGreaterThanOrEqualUnorderedScalar_r\CompareGreaterThanOrEqualUnorderedScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareGreaterThanOrEqualUnorderedScalar_ro\CompareGreaterThanOrEqualUnorderedScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareGreaterThanScalar_r\CompareGreaterThanScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareGreaterThanScalar_ro\CompareGreaterThanScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareGreaterThanUnorderedScalar_r\CompareGreaterThanUnorderedScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareGreaterThanUnorderedScalar_ro\CompareGreaterThanUnorderedScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareLessThanOrderedScalar_r\CompareLessThanOrderedScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareLessThanOrderedScalar_ro\CompareLessThanOrderedScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareLessThanOrEqualOrderedScalar_r\CompareLessThanOrEqualOrderedScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareLessThanOrEqualOrderedScalar_ro\CompareLessThanOrEqualOrderedScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareLessThanOrEqualScalar_r\CompareLessThanOrEqualScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareLessThanOrEqualScalar_ro\CompareLessThanOrEqualScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareLessThanOrEqualUnorderedScalar_r\CompareLessThanOrEqualUnorderedScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareLessThanOrEqualUnorderedScalar_ro\CompareLessThanOrEqualUnorderedScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareLessThanScalar_r\CompareLessThanScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareLessThanScalar_ro\CompareLessThanScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareLessThanUnorderedScalar_r\CompareLessThanUnorderedScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareLessThanUnorderedScalar_ro\CompareLessThanUnorderedScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareNotEqualOrderedScalar_r\CompareNotEqualOrderedScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareNotEqualOrderedScalar_ro\CompareNotEqualOrderedScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareNotEqualScalar_r\CompareNotEqualScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareNotEqualScalar_ro\CompareNotEqualScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareNotEqualUnorderedScalar_r\CompareNotEqualUnorderedScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareNotEqualUnorderedScalar_ro\CompareNotEqualUnorderedScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareNotGreaterThanOrEqualScalar_r\CompareNotGreaterThanOrEqualScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareNotGreaterThanOrEqualScalar_ro\CompareNotGreaterThanOrEqualScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareNotGreaterThanScalar_r\CompareNotGreaterThanScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareNotGreaterThanScalar_ro\CompareNotGreaterThanScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareNotLessThanOrEqualScalar_r\CompareNotLessThanOrEqualScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareNotLessThanOrEqualScalar_ro\CompareNotLessThanOrEqualScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareNotLessThanScalar_r\CompareNotLessThanScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareNotLessThanScalar_ro\CompareNotLessThanScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareOrderedScalar_r\CompareOrderedScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareOrderedScalar_ro\CompareOrderedScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareUnorderedScalar_r\CompareUnorderedScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\CompareUnorderedScalar_ro\CompareUnorderedScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertScalarToVector128Double_r\ConvertScalarToVector128Double_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertScalarToVector128Double_ro\ConvertScalarToVector128Double_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertScalarToVector128Int32_r\ConvertScalarToVector128Int32_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertScalarToVector128Int32_ro\ConvertScalarToVector128Int32_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertScalarToVector128Int64_r\ConvertScalarToVector128Int64_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertScalarToVector128Int64_ro\ConvertScalarToVector128Int64_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertScalarToVector128Single_r\ConvertScalarToVector128Single_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertScalarToVector128Single_ro\ConvertScalarToVector128Single_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertScalarToVector128UInt32_r\ConvertScalarToVector128UInt32_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertScalarToVector128UInt32_ro\ConvertScalarToVector128UInt32_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertScalarToVector128UInt64_r\ConvertScalarToVector128UInt64_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertScalarToVector128UInt64_ro\ConvertScalarToVector128UInt64_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertToDouble_r\ConvertToDouble_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertToDouble_ro\ConvertToDouble_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertToInt32WithTruncation_r\ConvertToInt32WithTruncation_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertToInt32WithTruncation_ro\ConvertToInt32WithTruncation_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertToInt32_r\ConvertToInt32_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertToInt32_ro\ConvertToInt32_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertToInt64WithTruncation_r\ConvertToInt64WithTruncation_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertToInt64WithTruncation_ro\ConvertToInt64WithTruncation_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertToInt64_r\ConvertToInt64_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertToInt64_ro\ConvertToInt64_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertToUInt32_r\ConvertToUInt32_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertToUInt32_ro\ConvertToUInt32_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertToUInt64_r\ConvertToUInt64_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertToUInt64_ro\ConvertToUInt64_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertToVector128Double_r\ConvertToVector128Double_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertToVector128Double_ro\ConvertToVector128Double_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertToVector128Int32WithTruncation_r\ConvertToVector128Int32WithTruncation_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertToVector128Int32WithTruncation_ro\ConvertToVector128Int32WithTruncation_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertToVector128Int32_r\ConvertToVector128Int32_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertToVector128Int32_ro\ConvertToVector128Int32_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertToVector128Single_r\ConvertToVector128Single_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\ConvertToVector128Single_ro\ConvertToVector128Single_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\DivideScalar_r\DivideScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\DivideScalar_ro\DivideScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\LoadAlignedVector128_r\LoadAlignedVector128_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\LoadAlignedVector128_ro\LoadAlignedVector128_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\LoadFence_r\LoadFence_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\LoadFence_ro\LoadFence_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\LoadScalarVector128_r\LoadScalarVector128_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\LoadScalarVector128_ro\LoadScalarVector128_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\LoadVector128_r\LoadVector128_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\LoadVector128_ro\LoadVector128_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\MaxScalar_r\MaxScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\MaxScalar_ro\MaxScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\MemoryFence_r\MemoryFence_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\MemoryFence_ro\MemoryFence_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\MinScalar_r\MinScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\MinScalar_ro\MinScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\MoveMask_r\MoveMask_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\MoveMask_ro\MoveMask_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\MoveScalar_r\MoveScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\MoveScalar_ro\MoveScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\MultiplyHigh_r\MultiplyHigh_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\MultiplyHigh_ro\MultiplyHigh_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\MultiplyHorizontalAdd_r\MultiplyHorizontalAdd_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\MultiplyHorizontalAdd_ro\MultiplyHorizontalAdd_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\MultiplyLow_r\MultiplyLow_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\MultiplyLow_ro\MultiplyLow_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\MultiplyScalar_r\MultiplyScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\MultiplyScalar_ro\MultiplyScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\Multiply_r\Multiply_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\Multiply_ro\Multiply_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\PackSignedSaturate_r\PackSignedSaturate_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\PackSignedSaturate_ro\PackSignedSaturate_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\PackUnsignedSaturate_r\PackUnsignedSaturate_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\PackUnsignedSaturate_ro\PackUnsignedSaturate_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\SetZeroVector128_r\SetZeroVector128_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\SetZeroVector128_ro\SetZeroVector128_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\SqrtScalar_r\SqrtScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\SqrtScalar_ro\SqrtScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\Sqrt_r\Sqrt_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\Sqrt_ro\Sqrt_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\Sse2_r\Sse2_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\Sse2_ro\Sse2_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\StoreAlignedNonTemporal_r\StoreAlignedNonTemporal_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\StoreAlignedNonTemporal_ro\StoreAlignedNonTemporal_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\StoreAligned_r\StoreAligned_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\StoreAligned_ro\StoreAligned_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\StoreHigh_r\StoreHigh_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\StoreHigh_ro\StoreHigh_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\StoreLow_r\StoreLow_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\StoreLow_ro\StoreLow_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\StoreScalar_r\StoreScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\StoreScalar_ro\StoreScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\Store_r\Store_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\Store_ro\Store_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\SubtractSaturate_r\SubtractSaturate_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\SubtractSaturate_ro\SubtractSaturate_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\SubtractScalar_r\SubtractScalar_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\SubtractScalar_ro\SubtractScalar_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\SumAbsoluteDifferences_r\SumAbsoluteDifferences_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\SumAbsoluteDifferences_ro\SumAbsoluteDifferences_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\UnpackHigh_r\UnpackHigh_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\UnpackHigh_ro\UnpackHigh_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\UnpackLow_r\UnpackLow_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse2\UnpackLow_ro\UnpackLow_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse3\LoadAndDuplicateToVector128_r\LoadAndDuplicateToVector128_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse3\LoadAndDuplicateToVector128_ro\LoadAndDuplicateToVector128_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse3\LoadDquVector128_r\LoadDquVector128_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse3\LoadDquVector128_ro\LoadDquVector128_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse41\Multiply_r\Multiply_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse41\Multiply_ro\Multiply_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse41\Sse41_r\Sse41_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse41\Sse41_ro\Sse41_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse42\Crc32_r\Crc32_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse42\Crc32_ro\Crc32_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse42\Sse42_r\Sse42_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse42\Sse42_ro\Sse42_ro.*" />
+
+    <!-- Event tracing -->
+    <ExcludeList Include="$(XunitTestBinBase)\tracing\eventactivityidcontrol\eventactivityidcontrol\eventactivityidcontrol.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\tracing\eventlistener\eventlistener\eventlistener.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\tracing\eventpipesmoke\eventpipesmoke\eventpipesmoke.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\tracing\tracevalidation\inducedgc\inducedgc\inducedgc.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\tracing\tracevalidation\jittingstarted\JittingStarted\JittingStarted.*" />
+
     <!-- NetStandard2: System.Delegate System.Delegate.CreateDelegate -->
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_720779\dev10_720779\dev10_720779.*" />
 
@@ -633,6 +954,7 @@
     <!-- Test infra problem -->
     <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\paramthreadstart\ThreadStartBool_1\ThreadStartBool_1.*" />
     <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\paramthreadstart\ThreadStartBool\ThreadStartBool.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\DevDiv_461649\DevDiv_461649\DevDiv_461649.*" />
 
     <!-- ILDASM tests, not runtime tests -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\BBT\Scenario4\Not-Int32\Not-Int32.*" />
@@ -650,8 +972,8 @@
     <!-- Crossgen tests, not runtime tests -->
     <ExcludeList Include="$(XunitTestBinBase)\readytorun\genericsload\callgenericctor\callgenericctor.*" />
     <ExcludeList Include="$(XunitTestBinBase)\readytorun\genericsload\usegenericfield\usegenericfield.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\readytorun\mainv1\mainv1.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\readytorun\mainv2\mainv2.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\readytorun\tests\mainv1\mainv1.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\readytorun\tests\mainv2\mainv2.*" />
     <ExcludeList Include="$(XunitTestBinBase)\readytorun\generics\generics.*" />
 
     <!-- Superpmi tests, not runtime tests -->

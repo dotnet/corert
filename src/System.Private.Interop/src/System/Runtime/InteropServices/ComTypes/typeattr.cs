@@ -18,6 +18,7 @@ namespace System.Runtime.InteropServices.ComTypes
         public Int32 dwReserved;
         public Int32 memidConstructor;
         public Int32 memidDestructor;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2111:PointersShouldNotBeVisible",  Justification="Backwards compatibility")]
         public IntPtr lpstrSchema;
         public Int32 cbSizeInstance;
         public TYPEKIND typekind;
