@@ -14,5 +14,6 @@ namespace ILCompiler.DependencyAnalysis
         void InitializeEHInfo(ObjectNode.ObjectData ehInfo);
         void InitializeDebugLocInfos(DebugLocInfo[] debugLocInfos);
         void InitializeDebugVarInfos(DebugVarInfo[] debugVarInfos);
+        void InitializeDebugEHClauseInfos(DebugEHClauseInfo[] debugEHClauseInfos);
     }
 }

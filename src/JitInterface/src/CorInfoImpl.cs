@@ -407,10 +407,22 @@ namespace Internal.JitInterface
                                                        _compilation.NodeFactory.Target.MinimumFunctionAlignment,
                                                        new ISymbolDefinitionNode[] { _methodCodeNode });
             ObjectNode.ObjectData ehInfo = _ehClauses != null ? EncodeEHInfo() : null;
+            DebugEHClauseInfo[] debugEHClauseInfos = null;
+            if (_ehClauses != null)
+            {
+                debugEHClauseInfos = new DebugEHClauseInfo[_ehClauses.Length];
+                for (int i = 0; i < _ehClauses.Length; i++)
+                {
+                    var clause = _ehClauses[i];
+                    debugEHClauseInfos[i] = new DebugEHClauseInfo(clause.TryOffset, clause.TryLength,
+                                                        clause.HandlerOffset, clause.HandlerLength);
+                }
+            }
 
             _methodCodeNode.SetCode(objectData);
 
             _methodCodeNode.InitializeFrameInfos(_frameInfos);
+            _methodCodeNode.InitializeDebugEHClauseInfos(debugEHClauseInfos);
             _methodCodeNode.InitializeGCInfo(_gcInfo);
             _methodCodeNode.InitializeEHInfo(ehInfo);
 

@@ -22,6 +22,8 @@ namespace Internal.TypeSystem.TypesDebugInfo
 
         uint GetMemberFunctionId(MemberFunctionIdTypeDescriptor memberIdDescriptor);
 
+        uint GetPrimitiveTypeIndex(TypeDesc type);
+
         string GetMangledName(TypeDesc type);
     }
 
@@ -46,6 +48,7 @@ namespace Internal.TypeSystem.TypesDebugInfo
         public int IsStruct;
         public string Name;
         public uint BaseClassId;
+        public ulong InstanceSize;
     }
 
     [StructLayout(LayoutKind.Sequential)]

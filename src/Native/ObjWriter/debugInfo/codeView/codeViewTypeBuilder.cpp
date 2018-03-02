@@ -1,4 +1,4 @@
-//===---- typeBuilder.cpp --------------------------------*- C++ -*-===//
+//===---- codeViewTypeBuilder.cpp ------------------------*- C++ -*-===//
 //
 // type builder implementation using codeview::TypeTableBuilder
 //
@@ -8,48 +8,36 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "typeBuilder.h"
+#include "codeViewTypeBuilder.h"
 #include "llvm/BinaryFormat/COFF.h"
 #include <sstream>
 #include <vector>
 
-UserDefinedTypesBuilder::UserDefinedTypesBuilder()
-    : Allocator(), TypeTable(Allocator), Streamer(nullptr),
-      TargetPointerSize(0)
+UserDefinedCodeViewTypesBuilder::UserDefinedCodeViewTypesBuilder()
+    : Allocator(), TypeTable(Allocator)
 {
     VFTableShapeRecord vfTableShape(TypeRecordKind::VFTableShape);
     ClassVTableTypeIndex = TypeTable.writeKnownType(vfTableShape);
 }
 
-void UserDefinedTypesBuilder::SetStreamer(MCObjectStreamer *Streamer) {
-  assert(this->Streamer == nullptr);
-  assert(Streamer != nullptr);
-  this->Streamer = Streamer;
-}
-
-void UserDefinedTypesBuilder::SetTargetPointerSize(unsigned TargetPointerSize) {
-  assert(this->TargetPointerSize == 0);
-  assert(TargetPointerSize != 0);
-  this->TargetPointerSize = TargetPointerSize;
-}
-
-void UserDefinedTypesBuilder::EmitCodeViewMagicVersion() {
+void UserDefinedCodeViewTypesBuilder::EmitCodeViewMagicVersion() {
   Streamer->EmitValueToAlignment(4);
   Streamer->AddComment("Debug section magic");
   Streamer->EmitIntValue(COFF::DEBUG_SECTION_MAGIC, 4);
 }
 
-ClassOptions UserDefinedTypesBuilder::GetCommonClassOptions() {
+ClassOptions UserDefinedCodeViewTypesBuilder::GetCommonClassOptions() {
   return ClassOptions();
 }
 
-void UserDefinedTypesBuilder::EmitTypeInformation(
-    MCSection *COFFDebugTypesSection) {
+void UserDefinedCodeViewTypesBuilder::EmitTypeInformation(
+    MCSection *TypeSection,
+    MCSection *StrSection) {
 
   if (TypeTable.empty())
     return;
 
-  Streamer->SwitchSection(COFFDebugTypesSection);
+  Streamer->SwitchSection(TypeSection);
   EmitCodeViewMagicVersion();
 
   TypeTable.ForEachRecord([&](TypeIndex FieldTypeIndex,
@@ -59,7 +47,7 @@ void UserDefinedTypesBuilder::EmitTypeInformation(
   });
 }
 
-unsigned UserDefinedTypesBuilder::GetEnumFieldListType(
+unsigned UserDefinedCodeViewTypesBuilder::GetEnumFieldListType(
     uint64 Count, const EnumRecordTypeDescriptor *TypeRecords) {
   FieldListRecordBuilder FLRB(TypeTable);
   FLRB.begin();
@@ -77,7 +65,7 @@ unsigned UserDefinedTypesBuilder::GetEnumFieldListType(
   return Type.getIndex();
 }
 
-unsigned UserDefinedTypesBuilder::GetEnumTypeIndex(
+unsigned UserDefinedCodeViewTypesBuilder::GetEnumTypeIndex(
     const EnumTypeDescriptor &TypeDescriptor,
     const EnumRecordTypeDescriptor *TypeRecords) {
 
@@ -92,11 +80,11 @@ unsigned UserDefinedTypesBuilder::GetEnumTypeIndex(
                         ElementTypeIndex);
 
   TypeIndex Type = TypeTable.writeKnownType(EnumRecord);
-  UserDefinedTypes.push_back(std::make_pair(TypeDescriptor.Name, Type));
+  UserDefinedTypes.push_back(std::make_pair(TypeDescriptor.Name, Type.getIndex()));
   return Type.getIndex();
 }
 
-unsigned UserDefinedTypesBuilder::GetClassTypeIndex(
+unsigned UserDefinedCodeViewTypesBuilder::GetClassTypeIndex(
     const ClassTypeDescriptor &ClassDescriptor) {
   TypeRecordKind Kind =
       ClassDescriptor.IsStruct ? TypeRecordKind::Struct : TypeRecordKind::Class;
@@ -119,7 +107,7 @@ unsigned UserDefinedTypesBuilder::GetClassTypeIndex(
   return FwdDeclTI.getIndex();
 }
 
-unsigned UserDefinedTypesBuilder::GetCompleteClassTypeIndex(
+unsigned UserDefinedCodeViewTypesBuilder::GetCompleteClassTypeIndex(
     const ClassTypeDescriptor &ClassDescriptor,
     const ClassFieldsTypeDescriptior &ClassFieldsDescriptor,
     const DataFieldDescriptor *FieldsDescriptors) {
@@ -165,12 +153,12 @@ unsigned UserDefinedTypesBuilder::GetCompleteClassTypeIndex(
                  ClassDescriptor.Name, StringRef());
   TypeIndex ClassIndex = TypeTable.writeKnownType(CR);
 
-  UserDefinedTypes.push_back(std::make_pair(ClassDescriptor.Name, ClassIndex));
+  UserDefinedTypes.push_back(std::make_pair(ClassDescriptor.Name, ClassIndex.getIndex()));
 
   return ClassIndex.getIndex();
 }
 
-unsigned UserDefinedTypesBuilder::GetArrayTypeIndex(
+unsigned UserDefinedCodeViewTypesBuilder::GetArrayTypeIndex(
     const ClassTypeDescriptor &ClassDescriptor,
     const ArrayTypeDescriptor &ArrayDescriptor) {
   FieldListRecordBuilder FLBR(TypeTable);
@@ -229,12 +217,12 @@ unsigned UserDefinedTypesBuilder::GetArrayTypeIndex(
                  StringRef());
   TypeIndex ClassIndex = TypeTable.writeKnownType(CR);
 
-  UserDefinedTypes.push_back(std::make_pair(ClassDescriptor.Name, ClassIndex));
+  UserDefinedTypes.push_back(std::make_pair(ClassDescriptor.Name, ClassIndex.getIndex()));
 
   return ClassIndex.getIndex();
 }
 
-unsigned UserDefinedTypesBuilder::GetPointerTypeIndex(const PointerTypeDescriptor& PointerDescriptor)
+unsigned UserDefinedCodeViewTypesBuilder::GetPointerTypeIndex(const PointerTypeDescriptor& PointerDescriptor)
 {
     uint32_t elementType = PointerDescriptor.ElementType;
     PointerKind pointerKind = PointerDescriptor.Is64Bit ? PointerKind::Near64 : PointerKind::Near32;
@@ -246,7 +234,7 @@ unsigned UserDefinedTypesBuilder::GetPointerTypeIndex(const PointerTypeDescripto
     return PointerIndex.getIndex();
 }
 
-unsigned UserDefinedTypesBuilder::GetMemberFunctionTypeIndex(const MemberFunctionTypeDescriptor& MemberDescriptor,
+unsigned UserDefinedCodeViewTypesBuilder::GetMemberFunctionTypeIndex(const MemberFunctionTypeDescriptor& MemberDescriptor,
     uint32_t const *const ArgumentTypes)
 {
     std::vector<TypeIndex> argumentTypes;
@@ -271,14 +259,52 @@ unsigned UserDefinedTypesBuilder::GetMemberFunctionTypeIndex(const MemberFunctio
     return MemberFunctionIndex.getIndex();
 }
 
-unsigned UserDefinedTypesBuilder::GetMemberFunctionId(const MemberFunctionIdTypeDescriptor& MemberIdDescriptor)
+unsigned UserDefinedCodeViewTypesBuilder::GetMemberFunctionId(const MemberFunctionIdTypeDescriptor& MemberIdDescriptor)
 {
     MemberFuncIdRecord MemberFuncId(TypeIndex(MemberIdDescriptor.MemberFunction), TypeIndex(MemberIdDescriptor.ParentClass), MemberIdDescriptor.Name);
     TypeIndex MemberFuncIdIndex = TypeTable.writeKnownType(MemberFuncId);
     return MemberFuncIdIndex.getIndex();
 }
 
-void UserDefinedTypesBuilder::AddBaseClass(FieldListRecordBuilder &FLBR,
+unsigned UserDefinedCodeViewTypesBuilder::GetPrimitiveTypeIndex(PrimitiveTypeFlags Type) {
+  switch (Type) {
+    case PrimitiveTypeFlags::Void:
+      return TypeIndex::Void().getIndex();
+    case PrimitiveTypeFlags::Boolean:
+      return TypeIndex(SimpleTypeKind::Boolean8).getIndex();
+    case PrimitiveTypeFlags::Char:
+      return TypeIndex::WideCharacter().getIndex();
+    case PrimitiveTypeFlags::SByte:
+      return TypeIndex(SimpleTypeKind::SByte).getIndex();
+    case PrimitiveTypeFlags::Byte:
+      return TypeIndex(SimpleTypeKind::Byte).getIndex();
+    case PrimitiveTypeFlags::Int16:
+      return TypeIndex(SimpleTypeKind::Int16).getIndex();
+    case PrimitiveTypeFlags::UInt16:
+      return TypeIndex(SimpleTypeKind::UInt16).getIndex();
+    case PrimitiveTypeFlags::Int32:
+      return TypeIndex::Int32().getIndex();
+    case PrimitiveTypeFlags::UInt32:
+      return TypeIndex::UInt32().getIndex();
+    case PrimitiveTypeFlags::Int64:
+      return TypeIndex::Int64().getIndex();
+    case PrimitiveTypeFlags::UInt64:
+      return TypeIndex::UInt64().getIndex();
+    case PrimitiveTypeFlags::Single:
+      return TypeIndex::Float32().getIndex();
+    case PrimitiveTypeFlags::Double:
+      return TypeIndex::Float64().getIndex();
+    case PrimitiveTypeFlags::IntPtr:
+    case PrimitiveTypeFlags::UIntPtr:
+      return TargetPointerSize == 4 ? TypeIndex::VoidPointer32().getIndex() :
+        TypeIndex::VoidPointer64().getIndex();
+    default:
+      assert(false && "Unexpected type");
+      return 0;
+  }
+}
+
+void UserDefinedCodeViewTypesBuilder::AddBaseClass(FieldListRecordBuilder &FLBR,
                                            unsigned BaseClassId) {
   MemberAttributes def;
   TypeIndex BaseTypeIndex(BaseClassId);
@@ -286,7 +312,7 @@ void UserDefinedTypesBuilder::AddBaseClass(FieldListRecordBuilder &FLBR,
   FLBR.writeMemberType(BCR);
 }
 
-void UserDefinedTypesBuilder::AddClassVTShape(FieldListRecordBuilder &FLBR) {
+void UserDefinedCodeViewTypesBuilder::AddClassVTShape(FieldListRecordBuilder &FLBR) {
   VFPtrRecord VfPtr(ClassVTableTypeIndex);
   FLBR.writeMemberType(VfPtr);
 }

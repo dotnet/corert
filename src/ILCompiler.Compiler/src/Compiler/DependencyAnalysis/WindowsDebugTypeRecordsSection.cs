@@ -98,6 +98,11 @@ namespace ILCompiler.DependencyAnalysis
             return _dbgInfoWriter.GetMemberFunctionId(memberIdDescriptor);
         }
 
+        uint ITypesDebugInfoWriter.GetPrimitiveTypeIndex(TypeDesc type)
+        {
+            return PrimitiveTypeDescriptor.GetPrimitiveTypeIndex(type);
+        }
+
         string ITypesDebugInfoWriter.GetMangledName(TypeDesc type)
         {
             return _nodeFactory.NameMangler.GetMangledTypeName(type);
