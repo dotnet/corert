@@ -321,6 +321,8 @@ namespace System
                     return "source";
                 case ExceptionArgument.state:
                     return "state";
+                case ExceptionArgument.length:
+                    return "length";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -414,7 +416,8 @@ namespace System
         comparer,
         comparable,
         source,
-        state
+        state,
+        length
     }
 
     //
