@@ -323,6 +323,8 @@ namespace System
                     return "state";
                 case ExceptionArgument.length:
                     return "length";
+                case ExceptionArgument.comparisonType:
+                    return "comparisonType";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -371,6 +373,8 @@ namespace System
                     return SR.TaskCompletionSourceT_TrySetException_NullException;
                 case ExceptionResource.TaskCompletionSourceT_TrySetException_NoExceptions:
                     return SR.TaskCompletionSourceT_TrySetException_NoExceptions;
+                case ExceptionResource.NotSupported_StringComparison:
+                    return SR.NotSupported_StringComparison;
                 default:
                     Debug.Assert(false,
                         "The enum value is not defined, please check the ExceptionResource Enum.");
@@ -417,7 +421,8 @@ namespace System
         comparable,
         source,
         state,
-        length
+        length,
+        comparisonType,
     }
 
     //
@@ -444,5 +449,6 @@ namespace System
         TaskT_TransitionToFinal_AlreadyCompleted,
         TaskCompletionSourceT_TrySetException_NullException,
         TaskCompletionSourceT_TrySetException_NoExceptions,
+        NotSupported_StringComparison,
     }
 }
