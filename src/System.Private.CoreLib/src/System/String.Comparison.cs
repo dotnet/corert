@@ -166,7 +166,7 @@ namespace System
         //
         // Common worker for the various Equality methods. The caller must have already ensured that 
         // both strings are non-null and that their lengths are equal. Ther caller should also have
-        // done the Object.ReferenceEquals() fastpath check as we won't repeat it here.
+        // done the object.ReferenceEquals() fastpath check as we won't repeat it here.
         //
         private static unsafe bool EqualsHelper(String strA, String strB)
         {
@@ -436,19 +436,19 @@ namespace System
         {
             if (object.ReferenceEquals(strA, strB))
             {
-                StringSpanHelpers.CheckStringComparison(comparisonType);
+                CheckStringComparison(comparisonType);
                 return 0;
             }
 
             // They can't both be null at this point.
             if (strA == null)
             {
-                StringSpanHelpers.CheckStringComparison(comparisonType);
+                CheckStringComparison(comparisonType);
                 return -1;
             }
             if (strB == null)
             {
-                StringSpanHelpers.CheckStringComparison(comparisonType);
+                CheckStringComparison(comparisonType);
                 return 1;
             }
 
@@ -601,7 +601,7 @@ namespace System
 
         public static int Compare(String strA, int indexA, String strB, int indexB, int length, StringComparison comparisonType)
         {
-            StringSpanHelpers.CheckStringComparison(comparisonType);
+            CheckStringComparison(comparisonType);
 
             if (strA == null || strB == null)
             {
@@ -614,7 +614,6 @@ namespace System
                 return strA == null ? -1 : 1;
             }
 
-            // @TODO: Spec#: Figure out what to do here with the return statement above.
             if (length < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
@@ -805,7 +804,7 @@ namespace System
             return string.Compare(this, strB, StringComparison.CurrentCulture);
         }
 
-        // Determines whether a specified string is a suffix of the the current instance.
+        // Determines whether a specified string is a suffix of the current instance.
         //
         // The case-sensitive and culture-sensitive option is set by options,
         // and the default culture is used.
@@ -825,13 +824,13 @@ namespace System
 
             if ((Object)this == (Object)value)
             {
-                StringSpanHelpers.CheckStringComparison(comparisonType);
+                CheckStringComparison(comparisonType);
                 return true;
             }
 
             if (value.Length == 0)
             {
-                StringSpanHelpers.CheckStringComparison(comparisonType);
+                CheckStringComparison(comparisonType);
                 return true;
             }
 
@@ -872,12 +871,7 @@ namespace System
                 return true;
             }
 
-            CultureInfo referenceCulture;
-            if (culture == null)
-                referenceCulture = CultureInfo.CurrentCulture;
-            else
-                referenceCulture = culture;
-
+            CultureInfo referenceCulture = culture ?? CultureInfo.CurrentCulture;
             return referenceCulture.CompareInfo.IsSuffix(this, value, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
         }
 
@@ -891,10 +885,10 @@ namespace System
 
         public override bool Equals(Object obj)
         {
-            if (Object.ReferenceEquals(this, obj))
+            if (object.ReferenceEquals(this, obj))
                 return true;
 
-            String str = obj as String;
+            string str = obj as string;
             if (str == null)
                 return false;
 
@@ -909,7 +903,7 @@ namespace System
 
         public bool Equals(String value)
         {
-            if (Object.ReferenceEquals(this, value))
+            if (object.ReferenceEquals(this, value))
                 return true;
 
             // NOTE: No need to worry about casting to object here.
@@ -930,13 +924,13 @@ namespace System
         {
             if ((Object)this == (Object)value)
             {
-                StringSpanHelpers.CheckStringComparison(comparisonType);
+                CheckStringComparison(comparisonType);
                 return true;
             }
 
             if ((Object)value == null)
             {
-                StringSpanHelpers.CheckStringComparison(comparisonType);
+                CheckStringComparison(comparisonType);
                 return false;
             }
 
@@ -993,13 +987,13 @@ namespace System
         {
             if ((Object)a == (Object)b)
             {
-                StringSpanHelpers.CheckStringComparison(comparisonType);
+                CheckStringComparison(comparisonType);
                 return true;
             }
 
             if ((Object)a == null || (Object)b == null)
             {
-                StringSpanHelpers.CheckStringComparison(comparisonType);
+                CheckStringComparison(comparisonType);
                 return false;
             }
 
@@ -1037,7 +1031,7 @@ namespace System
 
         public static bool operator ==(String a, String b)
         {
-            if (Object.ReferenceEquals(a, b))
+            if (object.ReferenceEquals(a, b))
                 return true;
             if (a == null || b == null || a.Length != b.Length)
                 return false;
@@ -1046,7 +1040,7 @@ namespace System
 
         public static bool operator !=(String a, String b)
         {
-            if (Object.ReferenceEquals(a, b))
+            if (object.ReferenceEquals(a, b))
                 return false;
             if (a == null || b == null || a.Length != b.Length)
                 return true;
@@ -1135,13 +1129,13 @@ namespace System
 
             if ((Object)this == (Object)value)
             {
-                StringSpanHelpers.CheckStringComparison(comparisonType);
+                CheckStringComparison(comparisonType);
                 return true;
             }
 
             if (value.Length == 0)
             {
-                StringSpanHelpers.CheckStringComparison(comparisonType);
+                CheckStringComparison(comparisonType);
                 return true;
             }
 
@@ -1192,15 +1186,19 @@ namespace System
                 return true;
             }
 
-            CultureInfo referenceCulture;
-            if (culture == null)
-                referenceCulture = CultureInfo.CurrentCulture;
-            else
-                referenceCulture = culture;
-
+            CultureInfo referenceCulture = culture ?? CultureInfo.CurrentCulture;
             return referenceCulture.CompareInfo.IsPrefix(this, value, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
         }
 
         public bool StartsWith(char value) => Length != 0 && _firstChar == value;
+
+        internal static void CheckStringComparison(StringComparison comparisonType)
+        {
+            // Single comparison to check if comparisonType is within [CurrentCulture .. OrdinalIgnoreCase]
+            if ((uint)(comparisonType - StringComparison.CurrentCulture) > (StringComparison.OrdinalIgnoreCase - StringComparison.CurrentCulture))
+            {
+                ThrowHelper.ThrowArgumentException(ExceptionResource.NotSupported_StringComparison, ExceptionArgument.comparisonType);
+            }
+        }
     }
 }
