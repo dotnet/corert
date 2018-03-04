@@ -1202,23 +1202,15 @@ namespace ILCompiler.CppCodeGen
 
             if (typeNode is ConstructedEETypeNode)
             {
-                IReadOnlyList<MethodDesc> virtualSlots = _compilation.NodeFactory.VTable(nodeType.GetClosestDefType()).Slots;
+                DefType closestDefType = nodeType.GetClosestDefType();
 
-                int baseSlots = 0;
-                var baseType = nodeType.BaseType;
-                while (baseType != null)
-                {
-                    IReadOnlyList<MethodDesc> baseVirtualSlots = _compilation.NodeFactory.VTable(baseType).Slots;
-                    if (baseVirtualSlots != null)
-                        baseSlots += baseVirtualSlots.Count;
-                    baseType = baseType.BaseType;
-                }
+                IReadOnlyList<MethodDesc> virtualSlots = _compilation.NodeFactory.VTable(closestDefType).Slots;
 
-                for (int slot = 0; slot < virtualSlots.Count; slot++)
+                foreach (MethodDesc slot in virtualSlots)
                 {
-                    MethodDesc virtualMethod = virtualSlots[slot];
                     typeDefinitions.AppendLine();
-                    typeDefinitions.Append(GetCodeForVirtualMethod(virtualMethod, baseSlots + slot));
+                    int slotNumber = VirtualMethodSlotHelper.GetVirtualMethodSlot(_compilation.NodeFactory, slot, closestDefType);
+                    typeDefinitions.Append(GetCodeForVirtualMethod(slot, slotNumber));
                 }
 
                 if (nodeType.IsDelegate)
