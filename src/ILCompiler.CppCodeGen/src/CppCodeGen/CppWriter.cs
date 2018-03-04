@@ -894,12 +894,12 @@ namespace ILCompiler.CppCodeGen
             {
                 relocCode.Append("dispatchMapModule");
             }
-            else if(reloc.Target is UnboxingStubNode)
+            else if(reloc.Target is CppUnboxingStubNode)
             {
-                var method = reloc.Target as UnboxingStubNode;
+                var method = reloc.Target as CppUnboxingStubNode;
 
                 relocCode.Append("(void*)&");
-                relocCode.Append(GetCppMethodDeclarationName(method.Method.OwningType, UnboxingStubNode.GetMangledName(factory.NameMangler, method.Method), false));
+                relocCode.Append(GetCppMethodDeclarationName(method.Method.OwningType, method.GetMangledName(factory.NameMangler), false));
             }
             else
             {
@@ -1242,7 +1242,7 @@ namespace ILCompiler.CppCodeGen
                     typeDefinitions.AppendLine();
                     AppendCppMethodDeclaration(typeDefinitions, m, false);
                     typeDefinitions.AppendLine();
-                    AppendCppMethodDeclaration(typeDefinitions, m, false, null, null, UnboxingStubNode.GetMangledName(factory.NameMangler, m));
+                    AppendCppMethodDeclaration(typeDefinitions, m, false, null, null, CppUnboxingStubNode.GetMangledName(factory.NameMangler, m));
                 }
             }
 
@@ -1342,13 +1342,13 @@ namespace ILCompiler.CppCodeGen
         /// </summary>
         /// <param name="unboxingStubNode">The unboxing stub node to be output</param>
         /// <param name="methodImplementations">The buffer in which to write out the C++ code</param>
-        private void OutputUnboxingStubNode(UnboxingStubNode unboxingStubNode)
+        private void OutputUnboxingStubNode(CppUnboxingStubNode unboxingStubNode)
         {
             Out.WriteLine();
 
             CppGenerationBuffer sb = new CppGenerationBuffer();
             sb.AppendLine();
-            AppendCppMethodDeclaration(sb, unboxingStubNode.Method, true, null, null, UnboxingStubNode.GetMangledName(_compilation.NameMangler, unboxingStubNode.Method));
+            AppendCppMethodDeclaration(sb, unboxingStubNode.Method, true, null, null, unboxingStubNode.GetMangledName(_compilation.NameMangler));
             sb.AppendLine();
             sb.Append("{");
             sb.Indent();
@@ -1405,8 +1405,8 @@ namespace ILCompiler.CppCodeGen
             {
                 if (node is CppMethodCodeNode)
                     OutputMethodNode(node as CppMethodCodeNode);
-                else if (node is UnboxingStubNode)
-                    OutputUnboxingStubNode(node as UnboxingStubNode);
+                else if (node is CppUnboxingStubNode)
+                    OutputUnboxingStubNode(node as CppUnboxingStubNode);
             }
 
             Out.Dispose();
