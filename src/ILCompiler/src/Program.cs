@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.CommandLine;
 using System.Runtime.InteropServices;
@@ -88,20 +89,20 @@ namespace ILCompiler
 
             switch (RuntimeInformation.ProcessArchitecture)
             {
-            case Architecture.X86:
-                _targetArchitecture = TargetArchitecture.X86;
-                break;
-            case Architecture.X64:
-                _targetArchitecture = TargetArchitecture.X64;
-                break;
-            case Architecture.Arm:
-                _targetArchitecture = TargetArchitecture.ARM;
-                break;
-            case Architecture.Arm64:
-                _targetArchitecture = TargetArchitecture.ARM64;
-                break;
-            default:
-                throw new NotImplementedException();
+                case Architecture.X86:
+                    _targetArchitecture = TargetArchitecture.X86;
+                    break;
+                case Architecture.X64:
+                    _targetArchitecture = TargetArchitecture.X64;
+                    break;
+                case Architecture.Arm:
+                    _targetArchitecture = TargetArchitecture.ARM;
+                    break;
+                case Architecture.Arm64:
+                    _targetArchitecture = TargetArchitecture.ARM64;
+                    break;
+                default:
+                    throw new NotImplementedException();
             }
 
             // Workaround for https://github.com/dotnet/corefx/issues/25267
@@ -190,7 +191,7 @@ namespace ILCompiler
                 Help(syntax.GetHelpText());
                 return 1;
             }
-            
+
             if (_outputFilePath == null)
                 throw new CommandLineException("Output filename must be specified (/out <file>)");
 
@@ -239,7 +240,7 @@ namespace ILCompiler
                 SharedGenericsMode.CanonicalReferenceTypes : SharedGenericsMode.Disabled;
 
             // TODO: compiler switch for SIMD support?
-            var simdVectorLength = (_isCppCodegen || _isWasmCodegen) ? SimdVectorLength.None : SimdVectorLength.Vector128Bit; 
+            var simdVectorLength = (_isCppCodegen || _isWasmCodegen) ? SimdVectorLength.None : SimdVectorLength.Vector128Bit;
             var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, TargetAbi.CoreRT, simdVectorLength);
             var typeSystemContext = new CompilerTypeSystemContext(targetDetails, genericsMode);
 
@@ -315,7 +316,7 @@ namespace ILCompiler
                 }
                 else if (_nativeLib)
                 {
-                    EcmaModule module = (EcmaModule)typeSystemContext.SystemModule;
+                    EcmaModule module = typeSystemContext.GetModuleFromPath(typeSystemContext.InputFilePaths.First().Value);
                     LibraryInitializers libraryInitializers = new LibraryInitializers(typeSystemContext, _isCppCodegen);
                     compilationRoots.Add(new NativeLibraryInitializerRootProvider(module, libraryInitializers.LibraryInitializerMethods));
                 }
