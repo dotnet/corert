@@ -45,7 +45,7 @@ namespace System.Threading
         {
             if (name == null)
             {
-                throw new ArgumentNullException(nameof(name), SR.ArgumentNull_WithParamName);
+                throw new ArgumentNullException(nameof(name));
             }
 
             if (name.Length == 0)
