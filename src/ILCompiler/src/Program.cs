@@ -316,6 +316,8 @@ namespace ILCompiler
                 }
                 else if (_nativeLib)
                 {
+                    // Set owning module of generated native startup method to first input module (any input module is fine),
+                    // to ensure generated native startup method is included in the object file during multimodule mode build
                     EcmaModule module = typeSystemContext.GetModuleFromPath(typeSystemContext.InputFilePaths.First().Value);
                     LibraryInitializers libraryInitializers = new LibraryInitializers(typeSystemContext, _isCppCodegen);
                     compilationRoots.Add(new NativeLibraryInitializerRootProvider(module, libraryInitializers.LibraryInitializerMethods));
