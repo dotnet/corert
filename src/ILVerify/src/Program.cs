@@ -24,8 +24,6 @@ namespace ILVerify
         private bool _verbose;
         private bool _printStatistics;
 
-        private ProcessedMethodTracker _tracker;
-
         private AssemblyName _systemModule = new AssemblyName("mscorlib");
         private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // map of simple name to file path
         private Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // map of simple name to file path
@@ -125,8 +123,6 @@ namespace ILVerify
                     WriteLine($"Using exclude pattern '{pattern}'");
             }
 
-            _tracker = new ProcessedMethodTracker(_verbose, _printStatistics);
-
             return argSyntax;
         }
 
@@ -147,21 +143,7 @@ namespace ILVerify
 
             foreach (var kvp in _inputFilePaths)
             {
-                var results = VerifyAssembly(new AssemblyName(kvp.Key), out EcmaModule module);
-                int numErrors = 0;
-
-                foreach (var result in results)
-                {
-                    numErrors++;
-                    PrintResult(result, module, kvp.Value);
-                }
-
-                if (numErrors > 0)
-                    WriteLine(numErrors + " Error(s) Verifying " + kvp.Value);
-                else
-                    WriteLine("All Classes and Methods in " + kvp.Value + " Verified.");
-
-                _tracker.PrintResult(module);
+                VerifyAssembly(new AssemblyName(kvp.Key), kvp.Value);
             }
 
             return 0;
@@ -245,34 +227,57 @@ namespace ILVerify
             Write(")");
         }
 
-        private IEnumerable<VerificationResult> VerifyAssembly(AssemblyName name, out EcmaModule module)
+        private void VerifyAssembly(AssemblyName name, string path)
         {
             PEReader peReader = Resolve(name);
-            module = _verifier.GetModule(peReader);
+            EcmaModule module = _verifier.GetModule(peReader);
 
-            return VerifyAssembly(peReader, module);
+            VerifyAssembly(peReader, module, path);
         }
 
-        private IEnumerable<VerificationResult> VerifyAssembly(PEReader peReader, EcmaModule module)
+        private void VerifyAssembly(PEReader peReader, EcmaModule module, string path)
         {
+            int numErrors = 0;
+            int verifiedMethodCounter = 0;
+            int methodCounter = 0;
+
             MetadataReader metadataReader = peReader.GetMetadataReader();
             foreach (var methodHandle in metadataReader.MethodDefinitions)
             {
                 // get fully qualified method name
                 var methodName = GetQualifiedMethodName(metadataReader, methodHandle);
-                if (ShouldVerifyMethod(methodName))
+
+                bool verifying = ShouldVerifyMethod(methodName);
+                if (_verbose)
                 {
-                    _tracker.NotifyMethodProcessing(module, methodHandle, methodName, true);
+                    Write(verifying ? "Verifying " : "Skipping ");
+                    WriteLine(methodName);
+                }
+
+                if (verifying)
+                {
                     var results = _verifier.Verify(peReader, methodHandle);
                     foreach (var result in results)
                     {
-                        yield return result;
+                        PrintResult(result, module, path);
+                        numErrors++;
                     }
+
+                    verifiedMethodCounter++;
                 }
-                else
-                {
-                    _tracker.NotifyMethodProcessing(module, methodHandle, methodName, false);
-                }
+
+                methodCounter++;
+            }
+
+            if (numErrors > 0)
+                WriteLine(numErrors + " Error(s) Verifying " + path);
+            else
+                WriteLine("All Classes and Methods in " + path + " Verified.");
+
+            if (_printStatistics)
+            {
+                WriteLine($"Methods found: {methodCounter}");
+                WriteLine($"Methods verified: {verifiedMethodCounter}");
             }
         }
 
