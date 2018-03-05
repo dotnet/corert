@@ -4,6 +4,7 @@
 
 1. Install Emscripten by following the instructions [here](https://kripken.github.io/emscripten-site/docs/getting_started/downloads.html). 
 2. Follow the instructions [here](https://kripken.github.io/emscripten-site/docs/getting_started/downloads.html#updating-the-sdk) to update Emscripten to the latest version.
+3. Install [Firefox](https://www.getfirefox.com) (for testing).
 3. Get CoreRT set up by following the [Visual Studio instructions](how-to-build-and-run-ilcompiler-in-visual-studio.md).
 4. Build the WebAssembly runtime by running ```build.cmd wasm``` from the repo root.
 5. Run the WebAssembly "Hello World" test by running ```C:\corert\tests\runtest.cmd wasm```.
