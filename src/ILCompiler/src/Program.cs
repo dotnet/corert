@@ -314,14 +314,6 @@ namespace ILCompiler
                         new LibraryInitializers(typeSystemContext, _isCppCodegen);
                     compilationRoots.Add(new MainMethodRootProvider(entrypointModule, libraryInitializers.LibraryInitializerMethods));
                 }
-                else if (_nativeLib)
-                {
-                    // Set owning module of generated native startup method to first input module (any input module is fine),
-                    // to ensure generated native startup method is included in the object file during multimodule mode build
-                    EcmaModule module = typeSystemContext.GetModuleFromPath(typeSystemContext.InputFilePaths.First().Value);
-                    LibraryInitializers libraryInitializers = new LibraryInitializers(typeSystemContext, _isCppCodegen);
-                    compilationRoots.Add(new NativeLibraryInitializerRootProvider(module, libraryInitializers.LibraryInitializerMethods));
-                }
 
                 if (_multiFile)
                 {
@@ -347,8 +339,15 @@ namespace ILCompiler
                         throw new Exception("No entrypoint module");
 
                     compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
-
                     compilationGroup = new SingleFileCompilationModuleGroup(typeSystemContext);
+                }
+
+                if (_nativeLib)
+                {
+                    // Set owning module of generated native library startup method to compiler generated module,
+                    // to ensure the startup method is included in the object file during multimodule mode build
+                    LibraryInitializers libraryInitializers = new LibraryInitializers(typeSystemContext, _isCppCodegen);
+                    compilationRoots.Add(new NativeLibraryInitializerRootProvider(compilationGroup.GeneratedAssembly, libraryInitializers.LibraryInitializerMethods));
                 }
 
                 if (_rdXmlFilePaths.Count > 0)
