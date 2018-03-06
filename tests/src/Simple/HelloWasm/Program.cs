@@ -212,17 +212,17 @@ internal static class Program
 
         InterfaceDispatchTest();
 
-        // This test should remain last to get other results before stopping the debugger
-        PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
-        System.Diagnostics.Debugger.Break();
-
-        var testRuntimeHelpersInitArray = new long[] {1, 2, 3};
-        if(testRuntimeHelpersInitArray[0] == 1 &&
+        var testRuntimeHelpersInitArray = new long[] { 1, 2, 3 };
+        if (testRuntimeHelpersInitArray[0] == 1 &&
             testRuntimeHelpersInitArray[1] == 2 &&
             testRuntimeHelpersInitArray[2] == 3)
         {
             PrintLine("Runtime.Helpers array initialization test: Ok.");
         }
+
+        // This test should remain last to get other results before stopping the debugger
+        PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
+        System.Diagnostics.Debugger.Break();
 
         PrintLine("Done");
     }

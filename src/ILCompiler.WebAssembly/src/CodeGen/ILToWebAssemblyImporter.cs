@@ -168,6 +168,15 @@ namespace Internal.IL
                 }
             }
 
+            MetadataType metadataType = (MetadataType)_thisType;
+            if (!metadataType.IsBeforeFieldInit)
+            {
+                if (!_method.IsStaticConstructor && _method.Signature.IsStatic || _method.IsConstructor || (_thisType.IsValueType && !_method.Signature.IsStatic))
+                {
+                    TriggerCctor(metadataType);
+                }
+            }
+
             LLVMBasicBlockRef block0 = GetLLVMBasicBlockForBlock(_basicBlocks[0]);
             LLVM.BuildBr(_builder, block0);
         }
@@ -1190,18 +1199,6 @@ namespace Internal.IL
                 AddMethodReference(callee);
             }
             var pointerSize = _compilation.NodeFactory.Target.PointerSize;
-
-            if (callee != null)
-            {
-                MetadataType calleeType = (MetadataType)callee.OwningType;
-                if (!calleeType.IsBeforeFieldInit)
-                {
-                    if (signature.IsStatic || callee.IsConstructor || (calleeType.IsValueType && !signature.IsStatic))
-                    {
-                        TriggerCctor(calleeType);
-                    }
-                }
-            }
 
             LLVMValueRef returnAddress;
             LLVMValueRef castReturnAddress;
