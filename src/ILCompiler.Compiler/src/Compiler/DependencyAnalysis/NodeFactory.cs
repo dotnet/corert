@@ -379,7 +379,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _interfaceDispatchMaps = new NodeCache<TypeDesc, InterfaceDispatchMapNode>((TypeDesc type) =>
             {
-                return new InterfaceDispatchMapNode(type);
+                return new InterfaceDispatchMapNode(this, type);
             });
 
             _sealedVtableNodes = new NodeCache<TypeDesc, SealedVTableNode>((TypeDesc type) =>
