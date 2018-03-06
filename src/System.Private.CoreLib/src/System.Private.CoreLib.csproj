@@ -223,8 +223,6 @@
     <Compile Include="System\Environment.cs" />
     <Compile Include="System\GC.cs" />
     <Compile Include="System\Globalization\CultureInfo.cs" />
-    <Compile Include="System\Guid.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
-    <Compile Include="System\Guid.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
     <Compile Include="System\Helpers.cs" />
     <Compile Include="System\InsufficientMemoryException.cs" />
     <Compile Include="System\Marvin.cs" />
@@ -529,9 +527,6 @@
     </Compile>
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetSystemDirectory.cs">
       <Link>Interop\Windows\mincore\Interop.GetSystemDirectory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.CoCreateGuid.cs">
-      <Link>Interop\Windows\mincore\Interop.CoCreateGuid.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.QueryUnbiasedInterruptTime.cs">
       <Link>Interop\Windows\mincore\Interop.QueryUnbiasedInterruptTime.cs</Link>
