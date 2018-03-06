@@ -1944,19 +1944,11 @@ namespace Internal.Runtime.TypeLoader
             if (floatingCells == null)
                 return IntPtr.Zero;
 
-            // First, check if the current version of the existing floating dictionary matches the version in the native layout. If so, there
-            // is no need to allocate anything new, and we can just use the existing statically compiled floating portion of the input dictionary.
-
-            // If the fixed dictionary claims to have a floating section
+            // If the floating section is already constructed, then return. This means we are beaten by another thread.
             if (*((IntPtr*)fixedDictionary) != IntPtr.Zero)
             {
-                int currentFloatingVersion = (int)(((IntPtr*)fixedDictionary)[floatingVersionCellIndex]);
-
-                if (currentFloatingVersion == floatingVersionInLayout)
-                {
-                    isNewlyAllocatedDictionary = false;
-                    return fixedDictionary + IntPtr.Size * floatingVersionCellIndex;
-                }
+                isNewlyAllocatedDictionary = false;
+                return *((IntPtr*)fixedDictionary);
             }
 
             GenericTypeDictionary floatingDict = new GenericTypeDictionary(floatingCells);
