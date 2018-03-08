@@ -88,20 +88,20 @@ namespace ILCompiler
 
             switch (RuntimeInformation.ProcessArchitecture)
             {
-            case Architecture.X86:
-                _targetArchitecture = TargetArchitecture.X86;
-                break;
-            case Architecture.X64:
-                _targetArchitecture = TargetArchitecture.X64;
-                break;
-            case Architecture.Arm:
-                _targetArchitecture = TargetArchitecture.ARM;
-                break;
-            case Architecture.Arm64:
-                _targetArchitecture = TargetArchitecture.ARM64;
-                break;
-            default:
-                throw new NotImplementedException();
+                case Architecture.X86:
+                    _targetArchitecture = TargetArchitecture.X86;
+                    break;
+                case Architecture.X64:
+                    _targetArchitecture = TargetArchitecture.X64;
+                    break;
+                case Architecture.Arm:
+                    _targetArchitecture = TargetArchitecture.ARM;
+                    break;
+                case Architecture.Arm64:
+                    _targetArchitecture = TargetArchitecture.ARM64;
+                    break;
+                default:
+                    throw new NotImplementedException();
             }
 
             // Workaround for https://github.com/dotnet/corefx/issues/25267
@@ -190,7 +190,7 @@ namespace ILCompiler
                 Help(syntax.GetHelpText());
                 return 1;
             }
-            
+
             if (_outputFilePath == null)
                 throw new CommandLineException("Output filename must be specified (/out <file>)");
 
@@ -231,6 +231,9 @@ namespace ILCompiler
 
             if (_isWasmCodegen)
                 _targetArchitecture = TargetArchitecture.Wasm32;
+            else if (_isCppCodegen)
+                _targetArchitecture = TargetArchitecture.Cpp64;
+
             //
             // Initialize type system context
             //
@@ -239,7 +242,7 @@ namespace ILCompiler
                 SharedGenericsMode.CanonicalReferenceTypes : SharedGenericsMode.Disabled;
 
             // TODO: compiler switch for SIMD support?
-            var simdVectorLength = (_isCppCodegen || _isWasmCodegen) ? SimdVectorLength.None : SimdVectorLength.Vector128Bit; 
+            var simdVectorLength = (_isCppCodegen || _isWasmCodegen) ? SimdVectorLength.None : SimdVectorLength.Vector128Bit;
             var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, TargetAbi.CoreRT, simdVectorLength);
             var typeSystemContext = new CompilerTypeSystemContext(targetDetails, genericsMode);
 
@@ -313,12 +316,6 @@ namespace ILCompiler
                         new LibraryInitializers(typeSystemContext, _isCppCodegen);
                     compilationRoots.Add(new MainMethodRootProvider(entrypointModule, libraryInitializers.LibraryInitializerMethods));
                 }
-                else if (_nativeLib)
-                {
-                    EcmaModule module = (EcmaModule)typeSystemContext.SystemModule;
-                    LibraryInitializers libraryInitializers = new LibraryInitializers(typeSystemContext, _isCppCodegen);
-                    compilationRoots.Add(new NativeLibraryInitializerRootProvider(module, libraryInitializers.LibraryInitializerMethods));
-                }
 
                 if (_multiFile)
                 {
@@ -344,8 +341,15 @@ namespace ILCompiler
                         throw new Exception("No entrypoint module");
 
                     compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
-
                     compilationGroup = new SingleFileCompilationModuleGroup(typeSystemContext);
+                }
+
+                if (_nativeLib)
+                {
+                    // Set owning module of generated native library startup method to compiler generated module,
+                    // to ensure the startup method is included in the object file during multimodule mode build
+                    LibraryInitializers libraryInitializers = new LibraryInitializers(typeSystemContext, _isCppCodegen);
+                    compilationRoots.Add(new NativeLibraryInitializerRootProvider(compilationGroup.GeneratedAssembly, libraryInitializers.LibraryInitializerMethods));
                 }
 
                 if (_rdXmlFilePaths.Count > 0)

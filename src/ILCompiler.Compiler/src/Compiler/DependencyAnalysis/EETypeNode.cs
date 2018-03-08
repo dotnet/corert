@@ -906,7 +906,12 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeRareFlags.RequiresAlign8Flag;
             }
 
-            if (metadataType != null && metadataType.IsHfa)
+            TargetArchitecture targetArch = _type.Context.Target.Architecture;
+            if (metadataType != null &&
+                (targetArch == TargetArchitecture.ARM ||
+                targetArch == TargetArchitecture.ARMEL ||
+                targetArch == TargetArchitecture.ARM64) &&
+                metadataType.IsHfa)
             {
                 flags |= (uint)EETypeRareFlags.IsHFAFlag;
             }

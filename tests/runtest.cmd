@@ -301,12 +301,19 @@ goto :eof
 
         set __SavedErrorLevel=!ErrorLevel!
         if "%CoreRT_TestRun%"=="false" (goto :SkipTestRun)
-        if "%__Mode%" == "wasm" (goto :SkipTestRun)
+        
+        set __Extension=exe
 
-        if "%__SavedErrorLevel%"=="0" (
+        if "%__Mode%"=="wasm" (
+            REM Skip running if this is WASM build-only testing running in a different architecture's build
+            if /i not "%CoreRT_BuildArch%"=="wasm" (goto :SkipTestRun)
+            set __Extension=html
+         )
+
+        if "!__SavedErrorLevel!"=="0" (
             echo.
             echo Running test !__SourceFileName!
-            call !__SourceFile!.cmd !__SourceFolder!\bin\%CoreRT_BuildType%\%CoreRT_BuildArch%\native !__SourceFileName!.exe
+            call !__SourceFile!.cmd !__SourceFolder!\bin\%CoreRT_BuildType%\%CoreRT_BuildArch%\native !__SourceFileName!.!__Extension!
             set __SavedErrorLevel=!ErrorLevel!
         )
     )

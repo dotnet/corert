@@ -26,7 +26,7 @@
     <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
     <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
     <UseSyncTable>true</UseSyncTable>
-    <DefineConstants>EETYPE_TYPE_MANAGER;ES_BUILD_PN;ES_SESSION_INFO;$(DefineConstants)</DefineConstants>
+    <DefineConstants>netcoreapp;EETYPE_TYPE_MANAGER;ES_BUILD_PN;ES_SESSION_INFO;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
     <DefineConstants Condition="'$(UseSyncTable)' == 'true'">FEATURE_SYNCTABLE;$(DefineConstants)</DefineConstants>
@@ -223,8 +223,6 @@
     <Compile Include="System\Environment.cs" />
     <Compile Include="System\GC.cs" />
     <Compile Include="System\Globalization\CultureInfo.cs" />
-    <Compile Include="System\Guid.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
-    <Compile Include="System\Guid.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
     <Compile Include="System\Helpers.cs" />
     <Compile Include="System\InsufficientMemoryException.cs" />
     <Compile Include="System\Marvin.cs" />
@@ -273,6 +271,7 @@
     <Compile Include="System\Runtime\Serialization\SerializationInfo.cs" />
     <Compile Include="System\String.cs" />
     <Compile Include="System\String.Comparison.cs" />
+    <Compile Include="System\String.CoreRT.cs" />
     <Compile Include="System\String.Intern.cs" />
     <Compile Include="System\Array.cs" />
     <Compile Include="System\Array.CoreRT.cs" />
@@ -528,9 +527,6 @@
     </Compile>
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetSystemDirectory.cs">
       <Link>Interop\Windows\mincore\Interop.GetSystemDirectory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.CoCreateGuid.cs">
-      <Link>Interop\Windows\mincore\Interop.CoCreateGuid.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.QueryUnbiasedInterruptTime.cs">
       <Link>Interop\Windows\mincore\Interop.QueryUnbiasedInterruptTime.cs</Link>

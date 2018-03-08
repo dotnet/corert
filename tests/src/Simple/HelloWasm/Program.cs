@@ -55,6 +55,8 @@ internal static class Program
             PrintLine("thread static int field test: Ok.");
         }
 
+        StaticCtorTest();
+
         var boxedInt = (object)tempInt;
         if(((int)boxedInt) == 9)
         {
@@ -208,15 +210,19 @@ internal static class Program
 
         ldindTest();
 
-        System.Diagnostics.Debugger.Break();
+        InterfaceDispatchTest();
 
-        var testRuntimeHelpersInitArray = new long[] {1, 2, 3};
-        if(testRuntimeHelpersInitArray[0] == 1 &&
+        var testRuntimeHelpersInitArray = new long[] { 1, 2, 3 };
+        if (testRuntimeHelpersInitArray[0] == 1 &&
             testRuntimeHelpersInitArray[1] == 2 &&
             testRuntimeHelpersInitArray[2] == 3)
         {
             PrintLine("Runtime.Helpers array initialization test: Ok.");
         }
+
+        // This test should remain last to get other results before stopping the debugger
+        PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
+        System.Diagnostics.Debugger.Break();
 
         PrintLine("Done");
     }
@@ -346,6 +352,53 @@ internal static class Program
         }
     }
 
+    private static void InterfaceDispatchTest()
+    {
+        ItfStruct itfStruct = new ItfStruct();
+        if (ItfCaller(itfStruct) == 4)
+        {
+            PrintLine("Struct interface test: Ok.");
+        }
+    }
+
+    // Calls the ITestItf interface via a generic to ensure the concrete type is known and
+    // an interface call is generated instead of a virtual or direct call
+    private static int ItfCaller<T>(T obj) where T : ITestItf
+    {
+        return obj.GetValue();
+    }
+
+    private static void StaticCtorTest()
+    {
+        BeforeFieldInitTest.Nop();
+        if (StaticsInited.BeforeFieldInitInited)
+        {
+            PrintLine("BeforeFieldInitType inited too early");
+        }
+        else
+        {
+            int x = BeforeFieldInitTest.TestField;
+            if (StaticsInited.BeforeFieldInitInited)
+            {
+                PrintLine("BeforeFieldInit test: Ok.");
+            }
+            else
+            {
+                PrintLine("BeforeFieldInit cctor not run");
+            }
+        }
+
+        NonBeforeFieldInitTest.Nop();
+        if (StaticsInited.NonBeforeFieldInitInited)
+        {
+            PrintLine("NonBeforeFieldInit test: Ok.");
+        }
+        else
+        { 
+            PrintLine("NonBeforeFieldInitType cctor not run");
+        }
+    }
+
     [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
 }
@@ -433,6 +486,38 @@ public class TestDerivedClass : TestClass
     }
 }
 
+public class StaticsInited
+{
+    public static bool BeforeFieldInitInited;
+    public static bool NonBeforeFieldInitInited;
+}
+
+public class BeforeFieldInitTest
+{
+    public static int TestField = BeforeFieldInit();
+
+    public static void Nop() { }
+
+    static int BeforeFieldInit()
+    {
+        StaticsInited.BeforeFieldInitInited = true;
+        return 3;
+    }
+}
+
+public class NonBeforeFieldInitTest
+{
+    public static int TestField;
+
+    public static void Nop() { }
+
+    static NonBeforeFieldInitTest()
+    {
+        TestField = 4;
+        StaticsInited.NonBeforeFieldInitInited = true;
+    }
+}
+
 public interface ICastingTest1
 {
     int GetValue();
@@ -456,4 +541,17 @@ public class DerivedCastingTestClass1 : CastingTestClass, ICastingTest1
 public class DerivedCastingTestClass2 : CastingTestClass, ICastingTest2
 {
     public override int GetValue() => 2;
+}
+
+public interface ITestItf
+{
+    int GetValue();
+}
+
+public struct ItfStruct : ITestItf
+{
+    public int GetValue()
+    {
+        return 4;
+    }
 }

@@ -242,7 +242,7 @@ namespace System.IO
 
         public virtual ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (destination.TryGetArray(out ArraySegment<byte> array))
+            if (MemoryMarshal.TryGetArray(destination, out ArraySegment<byte> array))
             {
                 return new ValueTask<int>(ReadAsync(array.Array, array.Offset, array.Count, cancellationToken));
             }
@@ -316,17 +316,17 @@ namespace System.IO
                     buffer, offset, count, this);
         }
 
-        public virtual Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (MemoryMarshal.TryGetArray(source, out ArraySegment<byte> array))
             {
-                return WriteAsync(array.Array, array.Offset, array.Count, cancellationToken);
+                return new ValueTask(WriteAsync(array.Array, array.Offset, array.Count, cancellationToken));
             }
             else
             {
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(source.Length);
                 source.Span.CopyTo(buffer);
-                return FinishWriteAsync(WriteAsync(buffer, 0, source.Length, cancellationToken), buffer);
+                return new ValueTask(FinishWriteAsync(WriteAsync(buffer, 0, source.Length, cancellationToken), buffer));
 
                 async Task FinishWriteAsync(Task writeTask, byte[] localBuffer)
                 {
@@ -559,7 +559,7 @@ namespace System.IO
                 cancellationToken.ThrowIfCancellationRequested();
             }
 
-            public override async Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+            public override async ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
             {
                 cancellationToken.ThrowIfCancellationRequested();
             }

@@ -10,6 +10,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+using System.Text;
 using System.Text.RegularExpressions;
 using Internal.CommandLine;
 using Internal.TypeSystem.Ecma;
@@ -20,6 +21,8 @@ namespace ILVerify
     class Program : ResolverBase
     {
         private bool _help;
+        private bool _verbose;
+        private bool _printStatistics;
 
         private AssemblyName _systemModule = new AssemblyName("mscorlib");
         private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // map of simple name to file path
@@ -73,6 +76,8 @@ namespace ILVerify
                 syntax.DefineOption("include-file", ref includeFile, "Same as --include, but the regular expression(s) are declared line by line in the specified file.");
                 syntax.DefineOptionList("e|exclude", ref excludePatterns, "Skip methods/types/namespaces, which match the given regular expression(s)");
                 syntax.DefineOption("exclude-file", ref excludeFile, "Same as --exclude, but the regular expression(s) are declared line by line in the specified file.");
+                syntax.DefineOption("statistics", ref _printStatistics, "Print verification statistics");
+                syntax.DefineOption("v|verbose", ref _verbose, "Verbose output");
 
                 syntax.DefineParameterList("in", ref inputFiles, "Input file(s)");
             });
@@ -99,6 +104,25 @@ namespace ILVerify
             }
             _excludePatterns = StringPatternsToRegexList(excludePatterns);
 
+            if (_verbose)
+            {
+                WriteLine();
+                foreach (var path in _inputFilePaths)
+                    WriteLine($"Using input file '{path.Value}'");
+
+                WriteLine();
+                foreach (var path in _referenceFilePaths)
+                    WriteLine($"Using reference file '{path.Value}'");
+
+                WriteLine();
+                foreach (var pattern in _includePatterns)
+                    WriteLine($"Using include pattern '{pattern}'");
+
+                WriteLine();
+                foreach (var pattern in _excludePatterns)
+                    WriteLine($"Using exclude pattern '{pattern}'");
+            }
+
             return argSyntax;
         }
 
@@ -119,19 +143,7 @@ namespace ILVerify
 
             foreach (var kvp in _inputFilePaths)
             {
-                var results = VerifyAssembly(new AssemblyName(kvp.Key), out EcmaModule module);
-                int numErrors = 0;
-
-                foreach (var result in results)
-                {
-                    numErrors++;
-                    PrintResult(result, module, kvp.Value);
-                }
-
-                if (numErrors > 0)
-                    WriteLine(numErrors + " Error(s) Verifying " + kvp.Value);
-                else
-                    WriteLine("All Classes and Methods in " + kvp.Value + " Verified.");
+                VerifyAssembly(new AssemblyName(kvp.Key), kvp.Value);
             }
 
             return 0;
@@ -216,29 +228,82 @@ namespace ILVerify
             Write(")");
         }
 
-        private IEnumerable<VerificationResult> VerifyAssembly(AssemblyName name, out EcmaModule module)
+        private void VerifyAssembly(AssemblyName name, string path)
         {
             PEReader peReader = Resolve(name);
-            module = _verifier.GetModule(peReader);
+            EcmaModule module = _verifier.GetModule(peReader);
 
-            return VerifyAssembly(peReader);
+            VerifyAssembly(peReader, module, path);
         }
 
-        private IEnumerable<VerificationResult> VerifyAssembly(PEReader peReader)
+        private void VerifyAssembly(PEReader peReader, EcmaModule module, string path)
         {
+            int numErrors = 0;
+            int verifiedMethodCounter = 0;
+            int methodCounter = 0;
+
             MetadataReader metadataReader = peReader.GetMetadataReader();
             foreach (var methodHandle in metadataReader.MethodDefinitions)
             {
-                var methodName = metadataReader.GetString(metadataReader.GetMethodDefinition(methodHandle).Name);
-                if (ShouldVerifyMethod(methodName))
+                // get fully qualified method name
+                var methodName = GetQualifiedMethodName(metadataReader, methodHandle);
+
+                bool verifying = ShouldVerifyMethod(methodName);
+                if (_verbose)
+                {
+                    Write(verifying ? "Verifying " : "Skipping ");
+                    WriteLine(methodName);
+                }
+
+                if (verifying)
                 {
                     var results = _verifier.Verify(peReader, methodHandle);
                     foreach (var result in results)
                     {
-                        yield return result;
+                        PrintResult(result, module, path);
+                        numErrors++;
                     }
+
+                    verifiedMethodCounter++;
                 }
+
+                methodCounter++;
             }
+
+            if (numErrors > 0)
+                WriteLine(numErrors + " Error(s) Verifying " + path);
+            else
+                WriteLine("All Classes and Methods in " + path + " Verified.");
+
+            if (_printStatistics)
+            {
+                WriteLine($"Methods found: {methodCounter}");
+                WriteLine($"Methods verified: {verifiedMethodCounter}");
+            }
+        }
+
+        /// <summary>
+        /// This method returns the fully qualified method name by concatenating assembly, type and method name.
+        /// This method exists to avoid additional assembly resolving, which might be triggered by calling 
+        /// MethodDesc.ToString().
+        /// </summary>
+        private string GetQualifiedMethodName(MetadataReader metadataReader, MethodDefinitionHandle methodHandle)
+        {
+            var methodDef = metadataReader.GetMethodDefinition(methodHandle);
+            var typeDef = metadataReader.GetTypeDefinition(methodDef.GetDeclaringType());
+
+            var methodName = metadataReader.GetString(metadataReader.GetMethodDefinition(methodHandle).Name);
+            var typeName = metadataReader.GetString(typeDef.Name);
+            var namespaceName = metadataReader.GetString(typeDef.Namespace);
+            var assemblyName = metadataReader.GetString(metadataReader.GetAssemblyDefinition().Name);
+
+            StringBuilder builder = new StringBuilder();
+            builder.Append($"[{assemblyName}]");
+            if (!string.IsNullOrEmpty(namespaceName))
+                builder.Append($"{namespaceName}.");
+            builder.Append($"{typeName}.{methodName}");
+
+            return builder.ToString();
         }
 
         private bool ShouldVerifyMethod(string methodName)

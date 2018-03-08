@@ -7,9 +7,9 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class mincore
+    internal static partial class Ole32
     {
-        [DllImport("api-ms-win-core-com-l1-1-0.dll")]
-        internal extern static int CoCreateGuid(out Guid pguid);
+        [DllImport(Interop.Libraries.Ole32)]
+        internal extern static int CoCreateGuid(out Guid guid);
     }
 }

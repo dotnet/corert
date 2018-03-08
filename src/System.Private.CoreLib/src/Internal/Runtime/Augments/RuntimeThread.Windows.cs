@@ -386,5 +386,7 @@ namespace Internal.Runtime.Augments
             STA,
             MTA
         }
+
+        private static int ComputeCurrentProcessorId() => (int)Interop.mincore.GetCurrentProcessorNumber();
     }
 }

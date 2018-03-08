@@ -279,6 +279,19 @@ namespace System.Runtime.CompilerServices
 #else
                 const int Grow = 10;
 #endif
+
+                // WASMTODO: Remove this when the Initialize method gets called by the runtime startup
+#if WASM
+                if (s_cctorGlobalLock == null)
+                {
+                    Interlocked.CompareExchange(ref s_cctorGlobalLock, new Lock(), null);
+                }
+                if (s_cctorArrays == null)
+                {
+                    Interlocked.CompareExchange(ref s_cctorArrays, new Cctor[10][], null);
+                }
+#endif // WASM
+
                 using (LockHolder.Hold(s_cctorGlobalLock))
                 {
                     Cctor[] resultArray = null;

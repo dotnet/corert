@@ -798,9 +798,6 @@
   <data name="ArgumentNull_Waithandles" xml:space="preserve">
     <value>The waitHandles parameter cannot be null.</value>
   </data>
-  <data name="ArgumentNull_WithParamName" xml:space="preserve">
-    <value>Parameter '{0}' cannot be null.</value>
-  </data>
   <data name="ArgumentOutOfRange_AddValue" xml:space="preserve">
     <value>Value to add was out of range.</value>
   </data>
@@ -2724,5 +2721,8 @@
   </data>
   <data name="Arg_NullArgumentNullRef" xml:space="preserve">
     <value>The method was called with a null array argument.</value>
+  </data>
+  <data name="Arg_InsufficientNumberOfElements" xml:space="preserve">
+    <value>At least {0} element(s) are expected in the parameter "{1}".</value>
   </data>
 </root>
