@@ -90,6 +90,8 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        protected override bool IsVisibleFromManagedCode => false;
+
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public ReadyToRunHelperId Id => _id;

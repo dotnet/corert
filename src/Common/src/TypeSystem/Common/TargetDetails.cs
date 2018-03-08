@@ -130,14 +130,27 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Gets the minimum required method alignment.
+        /// Gets the minimum required alignment for methods whose address is visible
+        /// to managed code.
         /// </summary>
         public int MinimumFunctionAlignment
         {
             get
             {
                 // We use a minimum alignment of 4 irrespective of the platform.
+                // This is to prevent confusing the method address with a fat function pointer.
                 return 4;
+            }
+        }
+
+        public int MinimumCodeAlignment
+        {
+            get
+            {
+                return Architecture == TargetArchitecture.ARM ||
+                    Architecture == TargetArchitecture.ARMEL ||
+                    Architecture == TargetArchitecture.ARM64 ?
+                    2 : 1;
             }
         }
 
