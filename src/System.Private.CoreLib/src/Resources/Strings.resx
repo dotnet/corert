@@ -2371,8 +2371,8 @@
   <data name="Arg_InvalidANSIString" xml:space="preserve">
     <value>The ANSI string passed in could not be converted from the default ANSI code page to Unicode.</value>
   </data>
-  <data name="Arg_ExpectedNulTermination" xml:space="preserve">
-    <value>The value passed was not NUL terminated.</value>
+  <data name="Arg_MustBeNullTerminatedString" xml:space="preserve">
+    <value>The string must be null-terminated.</value>
   </data>
   <data name="PlatformNotSupported_ArgIterator" xml:space="preserve">
     <value>ArgIterator is not supported on this platform.</value>

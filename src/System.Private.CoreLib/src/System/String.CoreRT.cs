@@ -16,9 +16,52 @@ using Internal.Runtime.CompilerServices;
 
 namespace System
 {
+    // STRING LAYOUT
+    // -------------
+    // Strings are null-terminated for easy interop with native, but the value returned by String.Length 
+    // does NOT include this null character in its count.  As a result, there's some trickiness here in the 
+    // layout and allocation of strings that needs explanation...
+    //
+    // String is allocated like any other array, using the RhNewArray API.  It is essentially a very special 
+    // char[] object.  In order to be an array, the String EEType must have an 'array element size' of 2, 
+    // which is setup by a special case in the binder.  Strings must also have a typical array instance 
+    // layout, which means that the first field after the m_pEEType field is the 'number of array elements' 
+    // field.  However, here, it is called _stringLength because it contains the number of characters in the
+    // string (NOT including the terminating null element) and, thus, directly represents both the array 
+    // length and String.Length.
+    //
+    // As with all arrays, the GC calculates the size of an object using the following formula:  
+    //
+    //      obj_size = align(base_size + (num_elements * element_size), sizeof(void*))
+    //
+    // The values 'base_size' and 'element_size' are both stored in the EEType for String and 'num_elements'
+    // is _stringLength.
+    //
+    // Our base_size is the size of the fixed portion of the string defined below.  It, therefore, contains 
+    // the size of the _firstChar field in it.  This means that, since our string data actually starts 
+    // inside the fixed 'base_size' area, and our num_elements is equal to String.Length, we end up with one 
+    // extra character at the end.  This is how we get our extra null terminator which allows us to pass a 
+    // pinned string out to native code as a null-terminated string.  This is also why we don't increment the
+    // requested string length by one before passing it to RhNewArray.  There is no need to allocate an extra
+    // array element, it is already allocated here in the fixed layout of the String.
+    //
+    // Typically, the base_size of an array type is aligned up to the nearest pointer size multiple (so that
+    // array elements start out aligned in case they need alignment themselves), but we don't want to do that 
+    // with String because we are allocating String.Length components with RhNewArray and the overall object 
+    // size will then need another alignment, resulting in wasted space.  So the binder specially shrinks the
+    // base_size of String, leaving it unaligned in order to allow the use of that otherwise wasted space.  
+    //
+    // One more note on base_size -- on 64-bit, the base_size ends up being 22 bytes, which is less than the
+    // min_obj_size of (3 * sizeof(void*)).  This is OK because our array allocator will still align up the
+    // overall object size, so a 0-length string will end up with an object size of 24 bytes, which meets the
+    // min_obj_size requirement.
+    //
+    // NOTE: This class is marked EagerStaticClassConstruction because McgCurrentModule class being eagerly
+    // constructed itself depends on this class also being eagerly constructed. Plus, it's nice to have this
+    // eagerly constructed to avoid the cost of defered ctors. I can't imagine any app that doesn't use string
+    //
     [StructLayout(LayoutKind.Sequential)]
     [System.Runtime.CompilerServices.EagerStaticClassConstructionAttribute]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public partial class String
     {
 #if BIT64
@@ -49,9 +92,6 @@ namespace System
 
         public static readonly String Empty = "";
 
-        // Gets the character at a specified position.
-        //
-        // Spec#: Apply the precondition here using a contract assembly.  Potential perf issue.
         [System.Runtime.CompilerServices.IndexerName("Chars")]
         public unsafe char this[int index]
         {
@@ -70,6 +110,11 @@ namespace System
                 return Unsafe.Add(ref _firstChar, index);
             }
 #endif
+        }
+
+        public int Length
+        {
+            get { return _stringLength; }
         }
 
         internal static String FastAllocateString(int length)
