@@ -147,10 +147,16 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return Architecture == TargetArchitecture.ARM ||
-                    Architecture == TargetArchitecture.ARMEL ||
-                    Architecture == TargetArchitecture.ARM64 ?
-                    2 : 1;
+                switch (Architecture)
+                {
+                    case TargetArchitecture.ARM:
+                    case TargetArchitecture.ARMEL:
+                        return 2;
+                    case TargetArchitecture.ARM64:
+                        return 4;
+                    default:
+                        return 1;
+                }
             }
         }
 
