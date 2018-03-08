@@ -187,11 +187,20 @@ namespace Internal.IL.Stubs
 
             // Call a helper to get the actual method target
             codeStream.EmitLdArg(0);
-            codeStream.EmitLdArg(1);
-            if (boxThisType != null)
+
+            if (Signature[0].IsByRef)
             {
-                codeStream.Emit(ILOpcode.box, emitter.NewToken(boxThisType));
+                codeStream.Emit(ILOpcode.ldnull);
             }
+            else
+            {
+                codeStream.EmitLdArg(1);
+                if (boxThisType != null)
+                {
+                    codeStream.Emit(ILOpcode.box, emitter.NewToken(boxThisType));
+                }
+            }
+            
             codeStream.Emit(ILOpcode.call, emitter.NewToken(SystemDelegateType.GetKnownMethod("GetActualTargetFunctionPointer", null)));
 
             MethodSignature targetSignature = new MethodSignature(0, 0, Signature.ReturnType, parameters);
