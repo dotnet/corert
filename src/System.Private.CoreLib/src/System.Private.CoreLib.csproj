@@ -269,7 +269,6 @@
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
     <Compile Include="System\Runtime\Loader\AssemblyLoadContext.cs" />
     <Compile Include="System\Runtime\Serialization\SerializationInfo.cs" />
-    <Compile Include="System\String.cs" />
     <Compile Include="System\String.Comparison.cs" />
     <Compile Include="System\String.CoreRT.cs" />
     <Compile Include="System\String.Intern.cs" />
@@ -426,9 +425,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.Memory.cs">
       <Link>Interop\Windows\kernel32\Interop.Memory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs">
-      <Link>Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.CompletionPort.cs">
       <Link>Interop\Windows\kernel32\Interop.CompletionPort.cs</Link>
