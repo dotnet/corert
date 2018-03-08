@@ -128,7 +128,7 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
             ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
-            objData.RequireInitialPointerAlignment();
+            objData.RequireInitialAlignment(4);
             objData.AddSymbol(this);
 
             if (BuildSealedVTableSlots(factory, relocsOnly))
