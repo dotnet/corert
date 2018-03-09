@@ -49,12 +49,18 @@
     MACRO 
         ALLOC_CALL_FUNCLET_FRAME $extraStackSize
 
-        PROLOG_SAVE_REG_PAIR fp, lr, #-0x60!
+        ; Using below prolog instead of PROLOG_SAVE_REG_PAIR fp,lr, #-60!
+        ; is intentional. Above statement would also emit instruction to save
+        ; sp in fp. If sp is saved in fp in prolog then it is not expected that fp can change in the body
+        ; of method. However, this method needs to be able to change fp before calling funclet.
+        ; This is required to access locals in funclet.
+        PROLOG_SAVE_REG_PAIR_NO_FP fp,lr, #-0x60!
         PROLOG_SAVE_REG_PAIR x19, x20, #0x10
         PROLOG_SAVE_REG_PAIR x21, x22, #0x20
         PROLOG_SAVE_REG_PAIR x23, x24, #0x30
         PROLOG_SAVE_REG_PAIR x25, x26, #0x40
         PROLOG_SAVE_REG_PAIR x27, x28, #0x50
+        PROLOG_NOP mov fp, sp
 
         IF $extraStackSize != 0
             PROLOG_STACK_ALLOC $extraStackSize
