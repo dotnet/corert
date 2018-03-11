@@ -626,7 +626,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return (GetTypeFlags(TypeFlags.IsByRefLike | TypeFlags.IsByRefLikeComputed) & TypeFlags.IsByRefLike) != 0;
+                return (GetTypeFlags(TypeFlags.IsByRefLike | TypeFlags.AttributeCacheComputed) & TypeFlags.IsByRefLike) != 0;
             }
         }
     }
