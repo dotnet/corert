@@ -9617,7 +9617,7 @@ void gc_heap::restart_vm()
 {
     //assert (generation_allocation_pointer (youngest_generation) == 0);
     dprintf (3, ("Restarting EE"));
-    STRESS_LOG0(LF_GC, LL_INFO10000, "Concurrent GC: Retarting EE\n");
+    STRESS_LOG0(LF_GC, LL_INFO10000, "Concurrent GC: Restarting EE\n");
     ee_proceed_event.Set();
 }
 
