@@ -26667,7 +26667,7 @@ BOOL gc_heap::prepare_bgc_thread(gc_heap* gh)
     gh->bgc_threads_timeout_cs.Enter();
     if (!(gh->bgc_thread_running))
     {
-        dprintf (2, ("GC thread not runnning"));
+        dprintf (2, ("GC thread not running"));
         if ((gh->bgc_thread == 0) && create_bgc_thread(gh))
         {
             success = TRUE;
