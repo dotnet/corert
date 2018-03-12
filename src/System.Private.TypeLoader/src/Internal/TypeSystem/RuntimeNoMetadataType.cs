@@ -198,9 +198,9 @@ namespace Internal.TypeSystem.NoMetadata
                 }
             }
 
-            if ((mask & TypeFlags.IsByRefLikeComputed) != 0)
+            if ((mask & TypeFlags.AttributeCacheComputed) != 0)
             {
-                flags |= TypeFlags.IsByRefLikeComputed;
+                flags |= TypeFlags.AttributeCacheComputed;
 
                 unsafe
                 {

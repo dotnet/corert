@@ -287,9 +287,9 @@ namespace Internal.TypeSystem.NativeFormat
                     flags |= TypeFlags.HasFinalizer;
             }
 
-            if ((mask & TypeFlags.IsByRefLikeComputed) != 0)
+            if ((mask & TypeFlags.AttributeCacheComputed) != 0)
             {
-                flags |= TypeFlags.IsByRefLikeComputed;
+                flags |= TypeFlags.AttributeCacheComputed;
 
                 if (IsValueType && HasCustomAttribute("System.Runtime.CompilerServices", "IsByRefLikeAttribute"))
                     flags |= TypeFlags.IsByRefLike;

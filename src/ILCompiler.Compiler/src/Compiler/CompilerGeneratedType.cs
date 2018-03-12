@@ -78,7 +78,7 @@ namespace ILCompiler
                 TypeFlags.HasGenericVarianceComputed |
                 TypeFlags.HasStaticConstructorComputed |
                 TypeFlags.HasFinalizerComputed |
-                TypeFlags.IsByRefLikeComputed;
+                TypeFlags.AttributeCacheComputed;
         }
 
         public override ClassLayoutMetadata GetClassLayout()
