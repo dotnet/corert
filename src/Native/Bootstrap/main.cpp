@@ -279,6 +279,8 @@ extern "C" bool RhRegisterOSModule(void * pModule,
 
 extern "C" void* PalGetModuleHandleFromPointer(void* pointer);
 
+#endif // !CPPCODEGEN
+
 extern "C" void GetRuntimeException();
 extern "C" void FailFast();
 extern "C" void AppendExceptionStackFrame();
@@ -298,8 +300,6 @@ static const pfn c_classlibFunctions[] = {
     nullptr, // &DebugFuncEvalHelper,
     nullptr, // &DebugFuncEvalAbortHelper,
 };
-
-#endif // !CPPCODEGEN
 
 extern "C" void InitializeModules(void* osModule, void ** modules, int count, void ** pClasslibFunctions, int nClasslibFunctions);
 
@@ -344,7 +344,7 @@ static int InitializeRuntime()
     // WASMTODO: Figure out what to do here. This is a NativeCallable method in the runtime
     // and we also would have to figure out what to pass for pModuleHeaders
 #else // !CPPCODEGEN
-    InitializeModules(nullptr, (void**)RtRHeaderWrapper(), 2, nullptr, 0);
+    InitializeModules(nullptr, (void**)RtRHeaderWrapper(), 2, (void **)&c_classlibFunctions, _countof(c_classlibFunctions));
 #endif // !CPPCODEGEN
 
 #ifdef CORERT_DLL
