@@ -15,6 +15,8 @@ using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace ILCompiler.CppCodeGen
 {
     internal class CppWriter
@@ -1011,10 +1013,6 @@ namespace ILCompiler.CppCodeGen
             //RTR header needs to be declared after all modules have already been output
             string rtrHeader = string.Empty;
 
-            // GetData stabilizes the indices of the embedded objects. This must be done manually
-            // for C++ codegen since we don't currently emit the DispatchMapTable node directly.
-            factory.DispatchMapTable.GetData(factory, false);
-
             // Iterate through nodes
             foreach (var node in nodeIterator.GetNodes())
             {
@@ -1022,15 +1020,19 @@ namespace ILCompiler.CppCodeGen
                     OutputTypeNode(node as EETypeNode, factory, typeDefinitions, methodTables);
                 else if ((node is EETypeOptionalFieldsNode || node is TypeManagerIndirectionNode || node is GenericCompositionNode) && !(node as ObjectNode).ShouldSkipEmittingObjectNode(factory))
                     additionalNodes.Append(GetCodeForObjectNode(node as ObjectNode, factory));
-                else if (node is InterfaceDispatchMapNode)
+                else if (node is ArrayOfEmbeddedPointersNode<InterfaceDispatchMapNode> dispatchMap)
                 {
-                    dispatchPointers.Append("(void *)");
-                    dispatchPointers.Append(((ISymbolNode)node).GetMangledName(factory.NameMangler));
-                    dispatchPointers.Append("(),");
-                    dispatchPointers.AppendLine();
-                    dispatchMapCount++;
-                    additionalNodes.Append(GetCodeForObjectNode(node as ObjectNode, factory));
-
+                    var dispatchMapData = dispatchMap.GetData(factory, false);
+                    Debug.Assert(dispatchMapData.Relocs.Length == dispatchMapData.Data.Length / factory.Target.PointerSize);
+                    foreach (Relocation reloc in dispatchMapData.Relocs)
+                    {
+                        dispatchPointers.Append("(void *)");
+                        dispatchPointers.Append(reloc.Target.GetMangledName(factory.NameMangler));
+                        dispatchPointers.Append("(),");
+                        dispatchPointers.AppendLine();
+                        dispatchMapCount++;
+                        additionalNodes.Append(GetCodeForObjectNode(reloc.Target as ObjectNode, factory));
+                    }
                 }
                 else if (node is ReadyToRunHeaderNode)
                     rtrHeader = GetCodeForReadyToRunHeader(node as ReadyToRunHeaderNode, factory);
