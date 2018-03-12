@@ -891,7 +891,7 @@ bool EECodeManager::UnwindStackFrame(GCInfoHeader * pInfoHeader,
     {
         CalleeSavedRegMask regMask = pInfoHeader->GetSavedRegs();
         ASSERT_MSG(ebpFrame || !(regMask & CSR_MASK_RBP), "We should never use EBP as a preserved register");
-        ASSERT_MSG(!(regMask & CSR_MASK_RBX) || !pInfoHeader->HasDynamicAlignment(), "Can't have EBX as preserved regster and dynamic alignment frame pointer")
+        ASSERT_MSG(!(regMask & CSR_MASK_RBX) || !pInfoHeader->HasDynamicAlignment(), "Can't have EBX as preserved register and dynamic alignment frame pointer")
         if (regMask & CSR_MASK_RBX) { pContext->pRbx = (PTR_UIntNative)((PTR_UInt8)RSP - registerSaveDisplacement); ++RSP; } // registers saved at bottom of frame
         if (regMask & CSR_MASK_RSI) { pContext->pRsi = (PTR_UIntNative)((PTR_UInt8)RSP - registerSaveDisplacement); ++RSP; } // registers saved at bottom of frame
         if (regMask & CSR_MASK_RDI) { pContext->pRdi = (PTR_UIntNative)((PTR_UInt8)RSP - registerSaveDisplacement); ++RSP; } // registers saved at bottom of frame

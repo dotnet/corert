@@ -933,7 +933,7 @@ void HndEnumHandles(HHANDLETABLE hTable, const uint32_t *puType, uint32_t uTypeC
  *
  * Multiple type scanning entrypoint for GC.
  *
- * This entrypoint is provided for GC-time scnas of the handle table ONLY.  It
+ * This entrypoint is provided for GC-time scans of the handle table ONLY.  It
  * enables ephemeral scanning of the table, and optionally ages the write barrier
  * as it scans.
  *
