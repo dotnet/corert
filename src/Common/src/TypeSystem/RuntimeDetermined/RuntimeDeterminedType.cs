@@ -137,7 +137,7 @@ namespace Internal.TypeSystem
                 flags |= _rawCanonType.GetTypeFlags(mask);
             }
 
-            if ((mask & TypeFlags.IsByRefLikeComputed) != 0)
+            if ((mask & TypeFlags.AttributeCacheComputed) != 0)
             {
                 flags |= _rawCanonType.GetTypeFlags(mask);
             }

@@ -2,14 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32.SafeHandles;
+using System;
 using System.Runtime.InteropServices;
 
 internal partial class Interop
 {
     internal partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal static extern int GetFileType(SafeHandle hFile);
+        [DllImport(Libraries.Kernel32)]
+        internal static extern unsafe int MultiByteToWideChar(
+            uint CodePage, uint dwFlags,
+            byte* lpMultiByteStr, int cbMultiByte,
+            char* lpWideCharStr, int cchWideChar);
+
+        internal const uint MB_PRECOMPOSED = 0x00000001;
     }
 }

@@ -104,9 +104,9 @@ namespace Internal.TypeSystem
                     flags |= TypeFlags.HasFinalizer;
             }
 
-            if ((mask & TypeFlags.IsByRefLikeComputed) != 0)
+            if ((mask & TypeFlags.AttributeCacheComputed) != 0)
             {
-                flags |= TypeFlags.IsByRefLikeComputed;
+                flags |= TypeFlags.AttributeCacheComputed;
 
                 if (_typeDef.IsByRefLike)
                     flags |= TypeFlags.IsByRefLike;

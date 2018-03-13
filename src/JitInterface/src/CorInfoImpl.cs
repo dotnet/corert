@@ -994,7 +994,7 @@ namespace Internal.JitInterface
         {
             TypeDesc type = HandleToObject(classHnd);
             
-            if (_simdHelper.IsInSimdModule(type))
+            if (_simdHelper.IsSimdType(type))
             {
 #if DEBUG
                 // If this is Vector<T>, make sure the codegen and the type system agree on what instructions/registers

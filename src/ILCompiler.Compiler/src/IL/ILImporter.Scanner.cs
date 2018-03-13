@@ -354,10 +354,14 @@ namespace Internal.IL
                 }
             }
 
-            if (method.OwningType.IsDelegate && method.Name == "Invoke")
+            if (method.OwningType.IsDelegate && method.Name == "Invoke" &&
+                opcode != ILOpcode.ldftn && opcode != ILOpcode.ldvirtftn)
             {
-                // TODO: might not want to do this if scanning for reflection.
-                // This is expanded as an intrinsic, not a function call.
+                // This call is expanded as an intrinsic; it's not an actual function call.
+                // Before codegen realizes this is an intrinsic, it might still ask questions about
+                // the vtable of this virtual method, so let's make sure it's marked in the scanner's
+                // dependency graph.
+                _dependencies.Add(_factory.VTable(method.OwningType), reason);
                 return;
             }
 

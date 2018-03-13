@@ -132,7 +132,7 @@ void Thread::ResetCachedTransitionFrame()
 // This function simulates a PInvoke transition using a frame pointer from somewhere further up the stack that
 // was passed in via the m_pHackPInvokeTunnel field.  It is used to allow us to grandfather-in the set of GC
 // code that runs in cooperative mode without having to rewrite it in managed code.  The result is that the
-// code that calls into this special mode must spill preserved registeres as if it's going to PInvoke, but 
+// code that calls into this special mode must spill preserved registers as if it's going to PInvoke, but 
 // record its transition frame pointer in m_pHackPInvokeTunnel and leave the thread in the cooperative
 // mode.  Later on, when this function is called, we effect the state transition to 'unmanaged' using the 
 // previously setup transition frame.

@@ -498,7 +498,7 @@ namespace ILCompiler
                     // We additionally skip methods in SIMD module because there's just too many intrisics to handle and IL scanner
                     // doesn't expand them. They would show up as noisy diffs.
                     DiffCompilationResults(ref dummy, scanResults.CompiledMethodBodies, compilationResults.CompiledMethodBodies,
-                    "Methods", "scanned", "compiled", method => !(method.GetTypicalMethodDefinition() is EcmaMethod) || simdHelper.IsInSimdModule(method.OwningType));
+                    "Methods", "scanned", "compiled", method => !(method.GetTypicalMethodDefinition() is EcmaMethod) || simdHelper.IsSimdType(method.OwningType));
                     DiffCompilationResults(ref dummy, scanResults.ConstructedEETypes, compilationResults.ConstructedEETypes,
                         "EETypes", "scanned", "compiled", type => !(type.GetTypeDefinition() is EcmaType));
                 }

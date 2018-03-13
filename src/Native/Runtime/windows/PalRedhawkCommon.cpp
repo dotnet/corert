@@ -143,7 +143,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalGetPDBInfo(HANDLE hOsHandle, _Out_ GUID
         if (cbDebugData < size_t(&((CV_INFO_PDB70*)0)->magic) + sizeof(((CV_INFO_PDB70*)0)->magic))
         {
             // raw data too small to contain magic number at expected spot, so its format
-            // is not recognizeable. Skip
+            // is not recognizable. Skip
             continue;
         }
 

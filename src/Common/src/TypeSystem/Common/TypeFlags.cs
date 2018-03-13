@@ -57,7 +57,8 @@ namespace Internal.TypeSystem
         HasFinalizerComputed = 0x1000,
         HasFinalizer         = 0x2000,
 
-        IsByRefLike          = 0x4000,
-        IsByRefLikeComputed  = 0x8000,
+        IsByRefLike            = 0x04000,
+        AttributeCacheComputed = 0x08000,
+        IsIntrinsic            = 0x10000,
     }
 }

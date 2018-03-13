@@ -217,7 +217,7 @@ decode_eht_entry(const uint32_t* data, size_t* off, size_t* len) {
     // only by the personality routine. Fortunately, all existing assembler
     // implementations, including GNU assembler, LLVM integrated assembler,
     // and ARM assembler, assume that the unwind opcodes come after the
-    // personality rountine address.
+    // personality routine address.
     *off = 1; // First byte is size data.
     *len = (((data[1] >> 24) & 0xff) + 1) * 4;
     data++; // Skip the first word, which is the prel31 offset.
