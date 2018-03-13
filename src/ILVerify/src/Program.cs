@@ -295,7 +295,7 @@ namespace ILVerify
             var methodName = metadataReader.GetString(metadataReader.GetMethodDefinition(methodHandle).Name);
             var typeName = metadataReader.GetString(typeDef.Name);
             var namespaceName = metadataReader.GetString(typeDef.Namespace);
-            var assemblyName = metadataReader.GetString(metadataReader.GetAssemblyDefinition().Name);
+            var assemblyName = metadataReader.GetString(metadataReader.IsAssembly ? metadataReader.GetAssemblyDefinition().Name : metadataReader.GetModuleDefinition().Name);
 
             StringBuilder builder = new StringBuilder();
             builder.Append($"[{assemblyName}]");
