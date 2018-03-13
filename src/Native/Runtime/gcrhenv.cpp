@@ -1021,35 +1021,37 @@ uint32_t GCToEEInterface::GetActiveSyncBlockCount()
     return SyncBlockCache::GetSyncBlockCache()->GetActiveCount();
 }
 
-gc_alloc_context * GCToEEInterface::GetAllocContext(Thread * pThread)
+gc_alloc_context * GCToEEInterface::GetAllocContext()
 {
-    return pThread->GetAllocContext();
-}
-
-bool GCToEEInterface::CatchAtSafePoint(Thread * pThread)
-{
-    return pThread->CatchAtSafePoint();
+    return ThreadStore::GetCurrentThread()->GetAllocContext();
 }
 #endif // !DACCESS_COMPILE
 
-bool GCToEEInterface::IsPreemptiveGCDisabled(Thread * pThread)
+bool GCToEEInterface::IsPreemptiveGCDisabled()
 {
-    return pThread->IsCurrentThreadInCooperativeMode();
+    return ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode();
 }
 
-void GCToEEInterface::EnablePreemptiveGC(Thread * pThread)
+bool GCToEEInterface::EnablePreemptiveGC()
 {
 #ifndef DACCESS_COMPILE
-    pThread->EnablePreemptiveMode();
+    Thread* pThread = ThreadStore::GetCurrentThread();
+
+    if (pThread->IsCurrentThreadInCooperativeMode())
+    {
+        pThread->EnablePreemptiveMode();
+        return true;
+    }
 #else
     UNREFERENCED_PARAMETER(pThread);
 #endif
+    return false;
 }
 
-void GCToEEInterface::DisablePreemptiveGC(Thread * pThread)
+void GCToEEInterface::DisablePreemptiveGC()
 {
 #ifndef DACCESS_COMPILE
-    pThread->DisablePreemptiveMode();
+    ThreadStore::GetCurrentThread()->DisablePreemptiveMode();
 #else
     UNREFERENCED_PARAMETER(pThread);
 #endif
@@ -1062,11 +1064,6 @@ Thread* GCToEEInterface::GetThread()
 #else
     return NULL;
 #endif
-}
-
-bool GCToEEInterface::TrapReturningThreads()
-{
-    return !!g_TrapReturningThreads;
 }
 
 #ifndef DACCESS_COMPILE
