@@ -233,10 +233,10 @@ namespace ILVerify
             PEReader peReader = Resolve(name);
             EcmaModule module = _verifier.GetModule(peReader);
 
-            VerifyAssembly(peReader, module, path);
+            VerifyAssembly(name.Name, peReader, module, path);
         }
 
-        private void VerifyAssembly(PEReader peReader, EcmaModule module, string path)
+        private void VerifyAssembly(string moduleName, PEReader peReader, EcmaModule module, string path)
         {
             int numErrors = 0;
             int verifiedMethodCounter = 0;
@@ -246,7 +246,7 @@ namespace ILVerify
             foreach (var methodHandle in metadataReader.MethodDefinitions)
             {
                 // get fully qualified method name
-                var methodName = GetQualifiedMethodName(metadataReader, methodHandle);
+                var methodName = GetQualifiedMethodName(moduleName, metadataReader, methodHandle);
 
                 bool verifying = ShouldVerifyMethod(methodName);
                 if (_verbose)
@@ -287,7 +287,7 @@ namespace ILVerify
         /// This method exists to avoid additional assembly resolving, which might be triggered by calling 
         /// MethodDesc.ToString().
         /// </summary>
-        private string GetQualifiedMethodName(MetadataReader metadataReader, MethodDefinitionHandle methodHandle)
+        private string GetQualifiedMethodName(string moduleName, MetadataReader metadataReader, MethodDefinitionHandle methodHandle)
         {
             var methodDef = metadataReader.GetMethodDefinition(methodHandle);
             var typeDef = metadataReader.GetTypeDefinition(methodDef.GetDeclaringType());
@@ -295,10 +295,9 @@ namespace ILVerify
             var methodName = metadataReader.GetString(metadataReader.GetMethodDefinition(methodHandle).Name);
             var typeName = metadataReader.GetString(typeDef.Name);
             var namespaceName = metadataReader.GetString(typeDef.Namespace);
-            var assemblyName = metadataReader.GetString(metadataReader.GetAssemblyDefinition().Name);
 
             StringBuilder builder = new StringBuilder();
-            builder.Append($"[{assemblyName}]");
+            builder.Append($"[{moduleName}]");
             if (!string.IsNullOrEmpty(namespaceName))
                 builder.Append($"{namespaceName}.");
             builder.Append($"{typeName}.{methodName}");
