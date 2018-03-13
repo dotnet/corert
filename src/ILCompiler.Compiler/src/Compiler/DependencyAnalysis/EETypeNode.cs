@@ -392,6 +392,12 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 AddVirtualMethodUseDependencies(dependencies, factory);
+
+                // Also add the un-normalized vtable slices of implemented interfaces.
+                // This is important to do in the scanning phase so that the compilation phase can find
+                // vtable information for things like IEnumerator<List<__Canon>>.
+                foreach (TypeDesc intface in _type.RuntimeInterfaces)
+                    dependencies.Add(factory.VTable(intface), "Interface vtable slice");
             }
 
             if (factory.CompilationModuleGroup.PresenceOfEETypeImpliesAllMethodsOnType(_type))
