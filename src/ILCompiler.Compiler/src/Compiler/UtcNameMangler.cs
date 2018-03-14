@@ -44,13 +44,15 @@ namespace ILCompiler
 
         private bool HasImport { get; set; }
         private bool HasExport { get; set; }
+        private bool BuildingClassLib { get; }
 
-        public UTCNameMangler(bool hasImport, bool hasExport, ImportExportOrdinals ordinals, TypeSystemContext context, List<EcmaModule> inputModules) : base(new UtcNodeMangler())
+        public UTCNameMangler(bool hasImport, bool hasExport, ImportExportOrdinals ordinals, TypeSystemContext context, List<EcmaModule> inputModules, bool buildingClassLib) : base(new UtcNodeMangler())
         {
             // Do not support both imports and exports for one module
             Debug.Assert(!hasImport || !hasExport);
             HasImport = hasImport;
             HasExport = hasExport;
+            BuildingClassLib = buildingClassLib;
 
             if (hasImport)
             {
@@ -185,7 +187,7 @@ namespace ILCompiler
 
                 if (sb != null)
                 {
-                    if (c == '[' || c == ']' || c == ',' || c == '&' || c == '*' || c == '$' || c == '<' || c == '>')
+                    if (c == '[' || c == ']' || c == '&' || c == '*' || c == '$' || c == '<' || c == '>')
                     {
                         sb.Append(c);
                         continue;
@@ -298,9 +300,14 @@ namespace ILCompiler
 
         private string ComputeMangledModuleName(EcmaAssembly module)
         {
-            int index;
-            if (_inputModuleIndices.TryGetValue(module, out index))
-                return "$" + index;
+            // Do not prepend the module prefix when building pntestcl because the prefix is unknown
+            // when building an app against pntestcl.
+            if (!BuildingClassLib)
+            {
+                int index;
+                if (_inputModuleIndices.TryGetValue(module, out index))
+                    return "$" + index;
+            }
 
             return SanitizeName(module.GetName().Name);
         }
@@ -373,7 +380,7 @@ namespace ILCompiler
 
                     if (type.IsMdArray)
                     {
-                        mangledName += "[" + new string(',', ((ArrayType)type).Rank) + "]"; 
+                        mangledName += "[md" + ((ArrayType)type).Rank.ToString() + "]"; 
                     }
                     else
                     {
