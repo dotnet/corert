@@ -1,3 +1,13 @@
+//===---- dwarfAbbrev.cpp ---------------------------------------*- C++ -*-===//
+//
+// dwarf abbreviations implementation
+//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+//
+//===----------------------------------------------------------------------===//
+
 #include "dwarfAbbrev.h"
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCObjectFileInfo.h"
