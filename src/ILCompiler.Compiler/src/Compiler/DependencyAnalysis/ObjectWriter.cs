@@ -327,7 +327,20 @@ namespace ILCompiler.DependencyAnalysis
         public uint GetPrimitiveTypeIndex(TypeDesc type)
         {
             Debug.Assert(type.IsPrimitive, "it is not a primitive type");
-            return GetPrimitiveTypeIndex(_nativeObjectWriter, (int)type.Category);
+            // OBJWRITER-TODO: Remove this workaround when objwriter will be updated (see https://github.com/dotnet/corert/issues/5177)
+            try
+            {
+                return GetPrimitiveTypeIndex(_nativeObjectWriter, (int)type.Category);
+            }
+            catch
+            {
+                if (_nodeFactory.Target.OperatingSystem == TargetOS.Windows)
+                {
+                    return PrimitiveTypeDescriptor.GetPrimitiveTypeIndex(type);
+                }
+
+                return 0;
+            }
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -385,7 +398,14 @@ namespace ILCompiler.DependencyAnalysis
 
         public void EmitDebugEHClause(DebugEHClauseInfo ehClause)
         {
-            EmitEHClause(_nativeObjectWriter, ehClause.TryOffset, ehClause.TryLength, ehClause.HandlerOffset, ehClause.HandlerLength);
+            // OBJWRITER-TODO: Remove this workaround when objwriter will be updated (see https://github.com/dotnet/corert/issues/5177)
+            try
+            {
+                EmitDebugEHClause(_nativeObjectWriter, ehClause.TryOffset, ehClause.TryLength, ehClause.HandlerOffset, ehClause.HandlerLength);
+            }
+            catch
+            {
+            }
         }
 
         public void EmitDebugEHClauseInfo(ObjectNode node)
@@ -415,7 +435,8 @@ namespace ILCompiler.DependencyAnalysis
             {
                 try
                 {
-                    methodTypeIndex = _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method);
+                    // OBJWRITER-TODO: Remove this workaround when objwriter will be updated (see https://github.com/dotnet/corert/issues/5177)
+                    methodTypeIndex = 0; // _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method);
                 }
                 catch (TypeSystemException)
                 {
@@ -1160,7 +1181,11 @@ namespace ILCompiler.DependencyAnalysis
 
                     if (objectWriter.HasFunctionDebugInfo())
                     {
-                        objectWriter.EmitDebugVarInfo(node);
+                        // OBJWRITER-TODO: Remove this workaround when objwriter will be updated (see https://github.com/dotnet/corert/issues/5177)
+                        if (factory.Target.OperatingSystem == TargetOS.Windows)
+                        {
+                            objectWriter.EmitDebugVarInfo(node);
+                        }
                         objectWriter.EmitDebugEHClauseInfo(node);
                         objectWriter.EmitDebugFunctionInfo(node, nodeContents.Data.Length);
                     }
