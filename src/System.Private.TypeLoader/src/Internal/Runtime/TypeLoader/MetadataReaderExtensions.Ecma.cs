@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 
 using Internal.LowLevelLinq;
 using Internal.Reflection.Core;
@@ -91,10 +92,18 @@ namespace System.Reflection.Runtime.General
                 publicKeyOrTokenByteArray = Array.Empty<byte>();
             }
             
+            string cultureName = culture.GetString(reader);
+            if (!String.IsNullOrEmpty(cultureName))
+            {
+                // Canonicalize spelling and force a CultureNotFoundException if not a valid culture
+                CultureInfo cultureInfo = CultureInfo.GetCultureInfo(cultureName);
+                cultureName = cultureInfo.Name;
+            }
+
             return new RuntimeAssemblyName(
                 name.GetString(reader),
                 version,
-                culture.GetString(reader),
+                cultureName,
                 assemblyNameFlags,
                 publicKeyOrTokenByteArray
                 );
