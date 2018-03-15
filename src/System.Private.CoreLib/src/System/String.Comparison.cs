@@ -1051,7 +1051,7 @@ namespace System
         // they will return the same hash code.
         public override int GetHashCode()
         {
-            return Marvin.ComputeHash32(ref Unsafe.As<char, byte>(ref _firstChar), _stringLength * 2, Marvin.DefaultSeed);
+            return Marvin.ComputeHash32(this.AsSpan().AsBytes(), Marvin.DefaultSeed);
         }
 
         // Gets a hash code for this string and this comparison. If strings A and B and comparison C are such
