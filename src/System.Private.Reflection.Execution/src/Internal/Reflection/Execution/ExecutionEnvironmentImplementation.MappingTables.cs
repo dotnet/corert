@@ -44,10 +44,6 @@ namespace Internal.Reflection.Execution
     //==========================================================================================================
     internal sealed partial class ExecutionEnvironmentImplementation : ExecutionEnvironment
     {
-        private struct MethodTargetAndDictionary { public IntPtr TargetPointer; public IntPtr DictionaryPointer; }
-
-        private LowLevelDictionary<IntPtr, MethodTargetAndDictionary> _callConverterWrappedMethodEntrypoints = new LowLevelDictionary<IntPtr, MethodTargetAndDictionary>();
-
         private RuntimeTypeHandle GetOpenTypeDefinition(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle[] typeArgumentsHandles)
         {
             if (RuntimeAugments.IsGenericType(typeHandle))
@@ -603,22 +599,6 @@ namespace Internal.Reflection.Execution
                     methodHandle.NativeFormatHandle);
             }
 
-            if (methodInvokeMetadata.MethodEntryPoint != methodInvokeMetadata.RawMethodEntryPoint &&
-                !FunctionPointerOps.IsGenericMethodPointer(methodInvokeMetadata.MethodEntryPoint))
-            {
-                // Keep track of the raw method entrypoints for the cases where they get wrapped into a calling convention converter thunk.
-                // This is needed for reverse lookups, like in TryGetMethodForOriginalLdFtnResult
-                Debug.Assert(canonFormKind == CanonicalFormKind.Universal);
-                lock (_callConverterWrappedMethodEntrypoints)
-                {
-                    _callConverterWrappedMethodEntrypoints.LookupOrAdd(methodInvokeMetadata.MethodEntryPoint, new MethodTargetAndDictionary
-                    {
-                        TargetPointer = methodInvokeMetadata.RawMethodEntryPoint,
-                        DictionaryPointer = methodInvokeMetadata.DictionaryComponent
-                    });
-                }
-            }
-
             RuntimeTypeHandle[] dynInvokeMethodArgs = GetDynamicInvokeInstantiationArguments(methodInfo);
 
             IntPtr dynamicInvokeMethod;
@@ -913,26 +893,11 @@ namespace Internal.Reflection.Execution
             }
             else
             {
-                bool isCallConverterWrappedEntrypoint;
-                MethodTargetAndDictionary callConverterWrappedEntrypoint;
-                lock (_callConverterWrappedMethodEntrypoints)
+                // The thunk could have been created by the TypeLoader as a dictionary slot for USG code
+                if (!CallConverterThunk.TryGetCallConversionTargetPointerAndInstantiatingArg(originalLdFtnResult, out canonOriginalLdFtnResult, out instantiationArgument))
                 {
-                    isCallConverterWrappedEntrypoint = _callConverterWrappedMethodEntrypoints.TryGetValue(originalLdFtnResult, out callConverterWrappedEntrypoint);
-                }
-
-                if (isCallConverterWrappedEntrypoint)
-                {
-                    canonOriginalLdFtnResult = callConverterWrappedEntrypoint.TargetPointer;
-                    instantiationArgument = callConverterWrappedEntrypoint.DictionaryPointer;
-                }
-                else
-                {
-                    // The thunk could have been created by the TypeLoader as a dictionary slot for USG code
-                    if (!CallConverterThunk.TryGetCallConversionTargetPointerAndInstantiatingArg(originalLdFtnResult, out canonOriginalLdFtnResult, out instantiationArgument))
-                    {
-                        canonOriginalLdFtnResult = RuntimeAugments.GetCodeTarget(originalLdFtnResult);
-                        instantiationArgument = IntPtr.Zero;
-                    }
+                    canonOriginalLdFtnResult = RuntimeAugments.GetCodeTarget(originalLdFtnResult);
+                    instantiationArgument = IntPtr.Zero;
                 }
             }
         }
