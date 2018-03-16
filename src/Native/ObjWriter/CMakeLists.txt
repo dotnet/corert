@@ -29,9 +29,16 @@ endif()
 add_library(objwriter
    SHARED
    objwriter.cpp
-   typeBuilder.cpp
+   debugInfo/codeView/codeViewTypeBuilder.cpp
+   debugInfo/codeView/codeViewTypeBuilder.h
+   debugInfo/dwarf/dwarfTypeBuilder.cpp
+   debugInfo/dwarf/dwarfTypeBuilder.h
+   debugInfo/dwarf/dwarfGen.cpp
+   debugInfo/dwarf/dwarfGen.h
+   debugInfo/dwarf/dwarfAbbrev.cpp
+   debugInfo/dwarf/dwarfAbbrev.h
+   debugInfo/typeBuilder.h
    objwriter.h # Visual Studio generator doesn't include necessary header files into the project automatically
-   typeBuilder.h
    ${OBJWRITER_EXPORTS_DEF}
 )
 

@@ -1,9 +1,9 @@
-//===---- objwriter.h --------------------------------*- C++ -*-===//
+//===---- objwriter.h ------------------------------------------*- C++ -*-===//
 //
 // object writer
 //
-// Licensed to the.NET Foundation under one or more agreements.
-// The.NET Foundation licenses this file to you under the MIT license.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 //
 //===----------------------------------------------------------------------===//
@@ -19,7 +19,8 @@
 #include "jitDebugInfo.h"
 #include <string>
 #include <set>
-#include "typeBuilder.h"
+#include "debugInfo/typeBuilder.h"
+#include "debugInfo/dwarf/dwarfGen.h"
 
 using namespace llvm;
 using namespace llvm::codeview;
@@ -68,11 +69,13 @@ public:
   int EmitSymbolRef(const char *SymbolName, RelocType RelocType, int Delta);
 
   void EmitDebugFileInfo(int FileId, const char *FileName);
-  void EmitDebugFunctionInfo(const char *FunctionName, int FunctionSize);
+  void EmitDebugFunctionInfo(const char *FunctionName, int FunctionSize, unsigned MethodTypeIndex);
   void EmitDebugVar(char *Name, int TypeIndex, bool IsParm, int RangeCount,
                     const ICorDebugInfo::NativeVarInfo *Ranges);
   void EmitDebugLoc(int NativeOffset, int FileId, int LineNumber,
                     int ColNumber);
+  void EmitDebugEHClause(unsigned TryOffset, unsigned TryLength,
+                         unsigned HandlerOffset, unsigned HandlerLength);
   void EmitDebugModuleInfo();
 
   void EmitCFIStart(int Offset);
@@ -98,6 +101,8 @@ public:
 
   unsigned GetMemberFunctionId(const MemberFunctionIdTypeDescriptor& MemberIdDescriptor);
 
+  unsigned GetPrimitiveTypeIndex(int Type);
+
   void EmitARMFnStart();
   void EmitARMFnEnd();
   void EmitARMExIdxCode(int Offset, const char *Blob);
@@ -113,6 +118,8 @@ private:
   void EmitCVDebugVarInfo(const MCSymbol *Fn, const DebugVarInfo LocInfos[],
                           int NumVarInfos);
   void EmitCVDebugFunctionInfo(const char *FunctionName, int FunctionSize);
+
+  void EmitDwarfFunctionInfo(const char *FunctionName, int FunctionSize, unsigned MethodTypeIndex);
 
   const MCSymbolRefExpr *GetSymbolRefExpr(
       const char *SymbolName,
@@ -149,16 +156,18 @@ private:
   std::unique_ptr<TargetMachine> TMachine;
   std::unique_ptr<AsmPrinter> AssemblerPrinter;
   MCAssembler *Assembler; // Owned by MCStreamer
+  std::unique_ptr<DwarfGen> DwarfGenerator;
 
   std::unique_ptr<raw_fd_ostream> OS;
   MCTargetOptions TargetMOptions;
   bool FrameOpened;
   std::vector<DebugVarInfo> DebugVarInfos;
+  std::vector<DebugEHClauseInfo> DebugEHClauseInfos;
 
   std::set<MCSection *> Sections;
   int FuncId;
 
-  UserDefinedTypesBuilder TypeBuilder;
+  std::unique_ptr<UserDefinedTypesBuilder> TypeBuilder;
 
   std::string TripleName;
 
@@ -258,9 +267,10 @@ DLL_EXPORT void EmitDebugFileInfo(ObjectWriter *OW, int FileId,
 
 DLL_EXPORT void EmitDebugFunctionInfo(ObjectWriter *OW,
                                       const char *FunctionName,
-                                      int FunctionSize) {
+                                      int FunctionSize,
+                                      unsigned MethodTypeIndex) {
   assert(OW && "ObjWriter is null");
-  OW->EmitDebugFunctionInfo(FunctionName, FunctionSize);
+  OW->EmitDebugFunctionInfo(FunctionName, FunctionSize, MethodTypeIndex);
 }
 
 DLL_EXPORT void EmitDebugVar(ObjectWriter *OW, char *Name, int TypeIndex,
@@ -268,6 +278,13 @@ DLL_EXPORT void EmitDebugVar(ObjectWriter *OW, char *Name, int TypeIndex,
                              ICorDebugInfo::NativeVarInfo *Ranges) {
   assert(OW && "ObjWriter is null");
   OW->EmitDebugVar(Name, TypeIndex, IsParam, RangeCount, Ranges);
+}
+
+DLL_EXPORT void EmitDebugEHClause(ObjectWriter *OW, unsigned TryOffset,
+                                  unsigned TryLength, unsigned HandlerOffset,
+                                  unsigned HandlerLength) {
+  assert(OW && "ObjWriter is null");
+  OW->EmitDebugEHClause(TryOffset, TryLength, HandlerOffset, HandlerLength);
 }
 
 DLL_EXPORT void EmitDebugLoc(ObjectWriter *OW, int NativeOffset, int FileId,
@@ -329,6 +346,11 @@ DLL_EXPORT unsigned GetMemberFunctionIdTypeIndex(ObjectWriter *OW,
     MemberFunctionIdTypeDescriptor MemberIdDescriptor) {
     assert(OW && "ObjWriter is null");
     return OW->GetMemberFunctionId(MemberIdDescriptor);
+}
+
+DLL_EXPORT unsigned GetPrimitiveTypeIndex(ObjectWriter *OW, int Type) {
+    assert(OW && "ObjWriter is null");
+    return OW->GetPrimitiveTypeIndex(Type);
 }
 
 DLL_EXPORT void EmitARMFnStart(ObjectWriter *OW) {

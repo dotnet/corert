@@ -24,6 +24,7 @@ namespace ILCompiler.DependencyAnalysis
         private ObjectData _ehInfo;
         private DebugLocInfo[] _debugLocInfos;
         private DebugVarInfo[] _debugVarInfos;
+        private DebugEHClauseInfo[] _debugEHClauseInfos;
 
         public MethodCodeNode(MethodDesc method)
         {
@@ -140,6 +141,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public DebugLocInfo[] DebugLocInfos => _debugLocInfos;
         public DebugVarInfo[] DebugVarInfos => _debugVarInfos;
+        public DebugEHClauseInfo[] DebugEHClauseInfos => _debugEHClauseInfos;
 
         public void InitializeDebugLocInfos(DebugLocInfo[] debugLocInfos)
         {
@@ -151,6 +153,12 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(_debugVarInfos == null);
             _debugVarInfos = debugVarInfos;
+        }
+
+        public void InitializeDebugEHClauseInfos(DebugEHClauseInfo[] debugEHClauseInfos)
+        {
+            Debug.Assert(_debugEHClauseInfos == null);
+            _debugEHClauseInfos = debugEHClauseInfos;
         }
 
         protected internal override int ClassCode => 788492407;
