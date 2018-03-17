@@ -12,38 +12,35 @@ using System.Reflection.PortableExecutable;
 using System.Text;
 using ILVerify;
 using Internal.TypeSystem.Ecma;
-using Newtonsoft.Json;
-using Xunit;
-using Xunit.Abstractions;
 
 namespace ILVerification.Tests
 {
     /// <summary>
-    /// Parses the methods in the test assemblies. 
-    /// It loads all assemblies from the test folder defined in <code>TestDataLoader.TESTASSEMBLYPATH</code>
-    /// This class feeds the xunit Theories
+    /// Parses the methods in a given test assembly.
     /// </summary>
     class TestDataLoader
     {
-        /// <summary>
-        /// The folder with the binaries which are compiled from the test driver IL Code
-        /// Currently the test .il code is built manually, but the plan is to have a ProjectReference and automatically build the .il files.
-        /// See: https://github.com/dotnet/corert/pull/3725#discussion_r118820770
-        /// </summary>
-        public static string TESTASSEMBLYPATH = @"..\..\..\ILTests\";
-
         private const string SPECIALTEST_PREFIX = "special.";
+
+        /// <summary>
+        /// Returns the folder where the test assemblies are located.
+        /// </summary>
+        private static string TestFolder()
+        {
+            string assemblyPath = typeof(ILMethodTester).GetTypeInfo().Assembly.Location;
+            return Path.GetDirectoryName(assemblyPath);
+        }
 
         /// <summary>
         /// Returns all methods that contain valid IL code based on the following naming convention:
         /// [FriendlyName]_Valid
-        /// The method must contain 1 '_'. The part before the '_' is a friendly name describing what the method does. 
-        /// The word after the '_' has to be 'Valid' (Case sensitive) 
+        /// The method must contain 1 '_'. The part before the '_' is a friendly name describing what the method does.
+        /// The word after the '_' has to be 'Valid' (Case sensitive)
         /// E.g.: 'SimpleAdd_Valid'
         /// </summary>
-        public static TheoryData<TestCase> GetMethodsWithValidIL()
+        public static List<ValidILTestCase> GetMethodsWithValidIL(string assemblyName)
         {
-            var methodSelector = new Func<string[], MethodDefinitionHandle, TestCase>((mparams, methodHandle) =>
+            var methodSelector = new Func<string[], MethodDefinitionHandle, ValidILTestCase>((mparams, methodHandle) =>
             {
                 if (mparams.Length == 2 && mparams[1] == "Valid")
                 {
@@ -51,7 +48,7 @@ namespace ILVerification.Tests
                 }
                 return null;
             });
-            return GetTestMethodsFromDll(methodSelector);
+            return GetTestMethodsFromDll(assemblyName, methodSelector);
         }
 
         /// <summary>
@@ -60,12 +57,12 @@ namespace ILVerification.Tests
         /// The method name must contain 2 '_' characters.
         /// 1. part: a friendly name
         /// 2. part: must be the word 'Invalid' (Case sensitive)
-        /// 3. part: the expected VerifierErrors as string separated by '.'.      
+        /// 3. part: the expected VerifierErrors as string separated by '.'.
         /// E.g.: SimpleAdd_Invalid_ExpectedNumericType
-        /// </summary>      
-        public static TheoryData<TestCase> GetMethodsWithInvalidIL()
+        /// </summary>
+        public static List<InvalidILTestCase> GetMethodsWithInvalidIL(string assemblyName)
         {
-            var methodSelector = new Func<string[], MethodDefinitionHandle, TestCase>((mparams, methodHandle) =>
+            var methodSelector = new Func<string[], MethodDefinitionHandle, InvalidILTestCase>((mparams, methodHandle) =>
             {
                 if (mparams.Length == 3 && mparams[1] == "Invalid")
                 {
@@ -91,36 +88,35 @@ namespace ILVerification.Tests
                 }
                 return null;
             });
-            return GetTestMethodsFromDll(methodSelector);
+            return GetTestMethodsFromDll(assemblyName, methodSelector);
         }
 
-        private static TheoryData<TestCase> GetTestMethodsFromDll(Func<string[], MethodDefinitionHandle, TestCase> methodSelector)
+        private static List<T> GetTestMethodsFromDll<T>(string assemblyName, Func<string[], MethodDefinitionHandle, T> methodSelector) where T : TestCase
         {
-            var retVal = new TheoryData<TestCase>();
+            var retVal = new List<T>();
 
-            foreach (var testDllName in GetAllTestDlls())
+            string testDllName = assemblyName + ".dll";
+
+            var testModule = GetModuleForTestAssembly(testDllName);
+
+            foreach (var methodHandle in testModule.MetadataReader.MethodDefinitions)
             {
-                var testModule = GetModuleForTestAssembly(testDllName);
+                var method = (EcmaMethod)testModule.GetMethod(methodHandle);
+                var methodName = method.Name;
 
-                foreach (var methodHandle in testModule.MetadataReader.MethodDefinitions)
+                if (!String.IsNullOrEmpty(methodName) && methodName.Contains("_"))
                 {
-                    var method = (EcmaMethod)testModule.GetMethod(methodHandle);
-                    var methodName = method.Name;
+                    var mparams = methodName.Split('_');
+                    var specialMethodHandle = HandleSpecialTests(mparams, method);
+                    var newItem = methodSelector(mparams, specialMethodHandle);
 
-                    if (!String.IsNullOrEmpty(methodName) && methodName.Contains("_"))
+                    if (newItem != null)
                     {
-                        var mparams = methodName.Split('_');
-                        var specialMethodHandle = HandleSpecialTests(mparams, method);
-                        var newItem = methodSelector(mparams, specialMethodHandle);
+                        newItem.TestName = mparams[0];
+                        newItem.MethodName = methodName;
+                        newItem.ModuleName = testDllName;
 
-                        if (newItem != null)
-                        {
-                            newItem.TestName = mparams[0];
-                            newItem.MethodName = methodName;
-                            newItem.ModuleName = testDllName;
-
-                            retVal.Add(newItem);
-                        }
+                        retVal.Add(newItem);
                     }
                 }
             }
@@ -152,7 +148,7 @@ namespace ILVerification.Tests
 
         private static IEnumerable<string> GetAllTestDlls()
         {
-            foreach (var item in Directory.GetFiles(TESTASSEMBLYPATH))
+            foreach (var item in Directory.GetFiles(TestFolder()))
             {
                 if (item.ToLower().EndsWith(".dll"))
                 {
@@ -167,7 +163,7 @@ namespace ILVerification.Tests
 
             foreach (var fileName in GetAllTestDlls())
             {
-                simpleNameToPathMap.Add(Path.GetFileNameWithoutExtension(fileName), TESTASSEMBLYPATH + fileName);
+                simpleNameToPathMap.Add(Path.GetFileNameWithoutExtension(fileName), Path.Combine(TestFolder(), fileName));
             }
 
             Assembly coreAssembly = typeof(object).GetTypeInfo().Assembly;
@@ -203,28 +199,12 @@ namespace ILVerification.Tests
         }
     }
 
-    abstract class TestCase : IXunitSerializable
+    abstract class TestCase
     {
         public string TestName { get; set; }
         public string MethodName { get; set; }
         public int MetadataToken { get; set; }
         public string ModuleName { get; set; }
-
-        public virtual void Deserialize(IXunitSerializationInfo info)
-        {
-            TestName = info.GetValue<string>(nameof(TestName));
-            MethodName = info.GetValue<string>(nameof(MethodName));
-            MetadataToken = info.GetValue<int>(nameof(MetadataToken));
-            ModuleName = info.GetValue<string>(nameof(ModuleName));
-        }
-
-        public virtual void Serialize(IXunitSerializationInfo info)
-        {
-            info.AddValue(nameof(TestName), TestName);
-            info.AddValue(nameof(MethodName), MethodName);
-            info.AddValue(nameof(MetadataToken), MetadataToken);
-            info.AddValue(nameof(ModuleName), ModuleName);
-        }
 
         public override string ToString()
         {
@@ -235,28 +215,14 @@ namespace ILVerification.Tests
     /// <summary>
     /// Describes a test case with a method that contains valid IL
     /// </summary>
-    class ValidILTestCase : TestCase { }
+    sealed class ValidILTestCase : TestCase { }
 
     /// <summary>
     /// Describes a test case with a method that contains invalid IL with the expected VerifierErrors
     /// </summary>
-    class InvalidILTestCase : TestCase
+    sealed class InvalidILTestCase : TestCase
     {
         public List<VerifierError> ExpectedVerifierErrors { get; set; }
-
-        public override void Serialize(IXunitSerializationInfo info)
-        {
-            base.Serialize(info);
-            var serializedExpectedErrors = JsonConvert.SerializeObject(ExpectedVerifierErrors);
-            info.AddValue(nameof(ExpectedVerifierErrors), serializedExpectedErrors);
-        }
-
-        public override void Deserialize(IXunitSerializationInfo info)
-        {
-            base.Deserialize(info);
-            var serializedExpectedErrors = info.GetValue<string>(nameof(ExpectedVerifierErrors));
-            ExpectedVerifierErrors = JsonConvert.DeserializeObject<List<VerifierError>>(serializedExpectedErrors);
-        }
 
         public override string ToString()
         {
