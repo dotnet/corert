@@ -430,7 +430,7 @@ namespace System
             return Compare(strA, strB, comparisonType);
         }
 
-        // Provides a more flexible function for string comparision. See StringComparison 
+        // Provides a more flexible function for string comparison. See StringComparison 
         // for meaning of different comparisonType.
         public static int Compare(String strA, String strB, StringComparison comparisonType)
         {
