@@ -2613,7 +2613,8 @@ namespace Internal.IL
 
         private void ImportUnalignedPrefix(byte alignment)
         {
-            throw new NotImplementedException();
+            // TODO:
+            // throw new NotImplementedException();
         }
 
         private void ImportVolatilePrefix()
