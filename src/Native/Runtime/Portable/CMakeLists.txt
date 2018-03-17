@@ -1,6 +1,6 @@
 project(PortableRuntime)
 
-# Portable version of the runtime is designed to be used with CppCodeGen only.
+# Portable version of the runtime is designed to be used with CppCodeGen or WASM.
 # It should be written in pure C/C++, with no assembly code.
 
 include_directories(..)
@@ -9,7 +9,13 @@ include_directories(../../gc/env)
 
 add_definitions(-DUSE_PORTABLE_HELPERS)
 
-add_library(PortableRuntime STATIC ${COMMON_RUNTIME_SOURCES} ${PORTABLE_RUNTIME_SOURCES} ${SERVER_GC_SOURCES})
+add_library(PortableRuntime STATIC ${COMMON_RUNTIME_SOURCES} ${PORTABLE_RUNTIME_SOURCES})
+
+if(NOT CLR_CMAKE_PLATFORM_ARCH_WASM)
+    add_library(PortableRuntime.ServerGC STATIC ${COMMON_RUNTIME_SOURCES} ${PORTABLE_RUNTIME_SOURCES} ${SERVER_GC_SOURCES})
+
+    target_compile_definitions(PortableRuntime.ServerGC PRIVATE -DFEATURE_SVR_GC)
+endif()
 
 # Get the current list of definitions
 get_compile_definitions(DEFINITIONS)
@@ -34,6 +40,14 @@ add_custom_command(
 
 # Install the static Runtime library
 install (TARGETS PortableRuntime DESTINATION sdk)
+
+if(NOT CLR_CMAKE_PLATFORM_ARCH_WASM)
+    install (TARGETS PortableRuntime.ServerGC DESTINATION sdk)
+endif()
+
 if(WIN32)
     install (FILES ${CMAKE_CURRENT_BINARY_DIR}/PortableRuntime.dir/$<CONFIG>/PortableRuntime.pdb DESTINATION sdk)
+    if(NOT CLR_CMAKE_PLATFORM_ARCH_WASM)
+        install (FILES ${CMAKE_CURRENT_BINARY_DIR}/PortableRuntime.ServerGC.dir/$<CONFIG>/PortableRuntime.ServerGC.pdb DESTINATION sdk)
+    endif()
 endif()

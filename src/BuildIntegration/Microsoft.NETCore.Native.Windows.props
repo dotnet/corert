@@ -18,6 +18,7 @@ See the LICENSE file in the project root for more information.
     <CppCompiler>cl</CppCompiler>
     <CppLinker>link</CppLinker>
     <CppLibCreator>lib</CppLibCreator>
+    <ServerGCExtension Condition="'$(ServerGarbageCollection)' != ''">.ServerGC</ServerGCExtension>
   </PropertyGroup>
     
   <!-- Part of workaround for lack of secondary build artifact import - https://github.com/Microsoft/msbuild/issues/2807 -->
@@ -36,9 +37,9 @@ See the LICENSE file in the project root for more information.
     <ItemGroup>
       <NativeLibrary Condition="$(NativeCodeGen) == '' and $(NativeLib) == ''" Include="$(IlcPath)\sdk\bootstrapper.lib" />
       <NativeLibrary Condition="$(NativeCodeGen) == '' and $(NativeLib) != ''" Include="$(IlcPath)\sdk\bootstrapperdll.lib" />
-      <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)\sdk\Runtime.lib" />
+      <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)\sdk\Runtime$(ServerGCExtension).lib" />
       <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)\sdk\bootstrappercpp.lib" />
-      <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)\sdk\PortableRuntime.lib" />
+      <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)\sdk\PortableRuntime$(ServerGCExtension).lib" />
       <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)\sdk\bootstrappercpp.lib" />
       <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)\sdk\PortableRuntime.lib" />
       <NativeLibrary Condition="'$(IlcMultiModule)' == 'true' and $(NativeCodeGen) == ''" Include="$(SharedLibrary)" />

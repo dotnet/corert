@@ -36,6 +36,7 @@ See the LICENSE file in the project root for more information.
     <PropertyGroup>
       <NativeLibraryExtension Condition="'$(NativeCodeGen)' != 'wasm'">.a</NativeLibraryExtension>
       <NativeLibraryExtension Condition="'$(NativeCodeGen)' == 'wasm'">.bc</NativeLibraryExtension>
+      <ServerGCExtension Condition="'$(ServerGarbageCollection)' != ''">.ServerGC</ServerGCExtension>
     </PropertyGroup>
 
     <ItemGroup>
@@ -50,9 +51,9 @@ See the LICENSE file in the project root for more information.
       <NativeLibrary Condition="'$(IlcMultiModule)' == 'true' and $(NativeCodeGen) == ''" Include="$(SharedLibrary)" />
       <NativeLibrary Condition="$(NativeCodeGen) == '' and $(NativeLib) == ''" Include="$(IlcPath)/sdk/libbootstrapper.a" />
       <NativeLibrary Condition="$(NativeCodeGen) == '' and $(NativeLib) != ''" Include="$(IlcPath)/sdk/libbootstrapperdll.a" />
-      <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)/sdk/libRuntime.a" />
+      <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)/sdk/libRuntime$(ServerGCExtension).a" />
       <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)/sdk/libbootstrappercpp.a" />
-      <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)/sdk/libPortableRuntime.a" />
+      <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)/sdk/libPortableRuntime$(ServerGCExtension).a" />
       <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)/sdk/libbootstrappercpp.bc" />
       <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)/sdk/libPortableRuntime.bc" />
     </ItemGroup>
