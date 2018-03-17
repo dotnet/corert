@@ -728,7 +728,11 @@ namespace System.Runtime
                 Debug.Assert(isValid, "second-pass EH unwind failed unexpectedly");
                 DebugScanCallFrame(exInfo._passNumber, frameIter.ControlPC, frameIter.SP);
 
-                if (frameIter.SP == handlingFrameSP)
+                if ((frameIter.SP == handlingFrameSP)
+#if ARM64
+                    && (frameIter.ControlPC == prevControlPC)
+#endif
+                    )
                 {
                     // invoke only a partial second-pass here...
                     InvokeSecondPass(ref exInfo, startIdx, catchingTryRegionIdx);
