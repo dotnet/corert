@@ -380,9 +380,44 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
 
 UIntNative CoffNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(MethodInfo * pMethodInfo, REGDISPLAY * pRegisterSet)
 {
-    // @TODO: CORERT: GetConservativeUpperBoundForOutgoingArgs
+#if defined(_TARGET_AMD64_)
+
+    // Return value
+    UIntNative upperBound;
+    CoffNativeMethodInfo* pNativeMethodInfo = (CoffNativeMethodInfo *) pMethodInfo;
+    
+    // Get the method's GC info
+    size_t unwindDataBlobSize;
+    PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pNativeMethodInfo->runtimeFunction, &unwindDataBlobSize);
+    PTR_UInt8 p = dac_cast<PTR_UInt8>(pUnwindDataBlob) + unwindDataBlobSize;
+    uint8_t unwindBlockFlags = *p++;
+    GcInfoDecoder decoder(GCInfoToken(p), DECODE_REVERSE_PINVOKE_VAR);
+    
+    UINT32 stackBasedRegister = decoder.GetStackBaseRegister();
+    // Initialize the base pointer to either  stack or frame pointer
+    TADDR basePointer = stackBasedRegister == NO_STACK_BASE_REGISTER ? dac_cast<TADDR>(pRegisterSet->GetSP()) : dac_cast<TADDR>(pRegisterSet->GetFP());
+    
+    if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0)
+    {
+        // Reverse PInvoke case.  The embedded reverse PInvoke frame is guaranteed to reside above
+        // all outgoing arguments.
+        INT32 slot = decoder.GetReversePInvokeFrameStackSlot();
+        upperBound =  (UIntNative) dac_cast<TADDR>(basePointer + slot);
+    }
+    else
+    {
+        // In amd64, it is guaranteed that there is a pushed RBP
+        // value at the top of the frame which resides above all outgoing arguments.  Unlike x86,
+        // the frame pointer generally points to a location that is separated from the pushed RBP
+        // value by an offset that is recorded in the info header.  Recover the address of the
+        // pushed RBP value by subtracting this offset.
+        upperBound = (UIntNative) dac_cast<TADDR>(basePointer - ((PTR_UNWIND_INFO) pUnwindDataBlob)->FrameOffset);
+    }
+    return upperBound;
+#else
     assert(false);
     return false;
+#endif
 }
 
 bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
