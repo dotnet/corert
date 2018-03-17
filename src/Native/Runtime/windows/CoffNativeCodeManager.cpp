@@ -229,6 +229,7 @@ static int LookupUnwindInfoForMethod(UInt32 relativePc,
         return high;
     }
 
+    ASSERT_UNCONDITIONALLY("Invalid code address");
     return -1;
 }
 
@@ -715,7 +716,7 @@ PTR_VOID CoffNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
     if (dac_cast<TADDR>(ControlPC) < dac_cast<TADDR>(m_pvManagedCodeStartRange) || 
         dac_cast<TADDR>(m_pvManagedCodeStartRange) + m_cbManagedCodeRange <= dac_cast<TADDR>(ControlPC))
     {
-        return false;
+        return NULL;
     }
 
     TADDR relativePC = dac_cast<TADDR>(ControlPC) - m_moduleBase;
