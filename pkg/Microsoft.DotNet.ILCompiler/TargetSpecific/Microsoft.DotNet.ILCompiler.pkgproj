@@ -46,6 +46,12 @@
     <File Condition="Exists('$(BaseOutputPath)\$(OSPlatformConfig)\sdk\PortableRuntime.pdb')" Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\PortableRuntime.pdb">
       <TargetPath>sdk</TargetPath>
     </File>
+    <File Condition="Exists('$(BaseOutputPath)\$(OSPlatformConfig)\sdk\Runtime.ServerGC.pdb')" Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\Runtime.ServerGC.pdb">
+      <TargetPath>sdk</TargetPath>
+    </File>
+    <File Condition="Exists('$(BaseOutputPath)\$(OSPlatformConfig)\sdk\PortableRuntime.ServerGC.pdb')" Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\PortableRuntime.ServerGC.pdb">
+      <TargetPath>sdk</TargetPath>
+    </File>
   </ItemGroup>
   <Target Name="GetPackageDependencies"/>
 
