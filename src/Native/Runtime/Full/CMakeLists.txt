@@ -9,7 +9,7 @@ include_directories(../../gc/env)
 
 add_definitions(-DFEATURE_RX_THUNKS)
 
-add_library(Runtime STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM})
+add_library(Runtime STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${SERVER_GC_SOURCES})
 
 # Get the current list of definitions
 get_compile_definitions(DEFINITIONS)

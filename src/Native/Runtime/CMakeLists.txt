@@ -48,14 +48,17 @@ set(COMMON_RUNTIME_SOURCES
     ../gc/gccommon.cpp
     ../gc/gceewks.cpp
     ../gc/gcwks.cpp
-    ../gc/gceesvr.cpp
-    ../gc/gcsvr.cpp
     ../gc/gcscan.cpp
     ../gc/handletable.cpp
     ../gc/handletablecache.cpp
     ../gc/handletablecore.cpp
     ../gc/handletablescan.cpp
     ../gc/objecthandle.cpp
+)
+
+set(SERVER_GC_SOURCES
+    ../gc/gceesvr.cpp
+    ../gc/gcsvr.cpp
 )
 
 set(FULL_RUNTIME_SOURCES
@@ -221,6 +224,7 @@ convert_to_absolute_path(COMMON_RUNTIME_SOURCES ${COMMON_RUNTIME_SOURCES})
 
 convert_to_absolute_path(FULL_RUNTIME_SOURCES ${FULL_RUNTIME_SOURCES})
 convert_to_absolute_path(PORTABLE_RUNTIME_SOURCES ${PORTABLE_RUNTIME_SOURCES})
+convert_to_absolute_path(SERVER_GC_SOURCES ${SERVER_GC_SOURCES})
 
 convert_to_absolute_path(RUNTIME_SOURCES_ARCH_ASM ${RUNTIME_SOURCES_ARCH_ASM})
 

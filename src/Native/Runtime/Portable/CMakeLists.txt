@@ -9,7 +9,7 @@ include_directories(../../gc/env)
 
 add_definitions(-DUSE_PORTABLE_HELPERS)
 
-add_library(PortableRuntime STATIC ${COMMON_RUNTIME_SOURCES} ${PORTABLE_RUNTIME_SOURCES})
+add_library(PortableRuntime STATIC ${COMMON_RUNTIME_SOURCES} ${PORTABLE_RUNTIME_SOURCES} ${SERVER_GC_SOURCES})
 
 # Get the current list of definitions
 get_compile_definitions(DEFINITIONS)
