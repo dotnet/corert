@@ -203,6 +203,11 @@ namespace System
             throw new InvalidOperationException(SR.InvalidOperation_NoValue);
         }
 
+        internal static void ThrowInvalidOperationException_ConcurrentOperationsNotSupported()
+        {
+            throw new InvalidOperationException(SR.InvalidOperation_ConcurrentOperationsNotSupported);
+        }
+
         internal static void ThrowSerializationException(ExceptionResource resource)
         {
             throw new SerializationException(GetResourceString(resource));
