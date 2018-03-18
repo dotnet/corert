@@ -19,7 +19,7 @@ See the LICENSE file in the project root for more information.
     <CppLinker>link</CppLinker>
     <CppLibCreator>lib</CppLibCreator>
     <FullRuntimeName>Runtime.lib</FullRuntimeName>
-    <FullRuntimeName Condition="'$(ServerGarbageCollection)' != ''">Runtime.ServerGC.lib</FullRuntimeName>
+    <FullRuntimeName Condition="'$(ServerGarbageCollection)' != ''">Runtime.ServerGC</FullRuntimeName>
   </PropertyGroup>
     
   <!-- Part of workaround for lack of secondary build artifact import - https://github.com/Microsoft/msbuild/issues/2807 -->
