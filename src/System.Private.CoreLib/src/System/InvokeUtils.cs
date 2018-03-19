@@ -58,7 +58,11 @@ namespace System
             if (srcObject == null)
             {
                 // null -> default(T) 
-                if (dstEEType.IsValueType && !dstEEType.IsNullable)
+                if (dstEEType.IsPointer)
+                {
+                    return default(IntPtr);
+                }
+                else if (dstEEType.IsValueType && !dstEEType.IsNullable)
                 {
                     if (semantics == CheckArgumentSemantics.SetFieldDirect)
                         throw CreateChangeTypeException(CommonRuntimeTypes.Object.TypeHandle.ToEETypePtr(), dstEEType, semantics);
@@ -730,6 +734,15 @@ namespace System
             return finalObjectToReturn;
         }
 
+        internal static object DynamicInvokeUnmanagedPointerReturn(out DynamicInvokeParamLookupType paramLookupType, object boxedPointerType, int index, RuntimeTypeHandle type, DynamicInvokeParamType paramType)
+        {
+            object finalObjectToReturn = boxedPointerType;
+
+            Debug.Assert(finalObjectToReturn is IntPtr);
+            paramLookupType = DynamicInvokeParamLookupType.ValuetypeObjectReturned;
+            return finalObjectToReturn;
+        }
+
         public static object DynamicInvokeParamHelperCore(RuntimeTypeHandle type, out DynamicInvokeParamLookupType paramLookupType, out int index, DynamicInvokeParamType paramType)
         {
             index = s_curIndex++;
@@ -793,6 +806,11 @@ namespace System
                     System.Diagnostics.Debug.Assert(s_parameters[index] == null || Object.ReferenceEquals(incomingParam, s_parameters[index]));
                 }
                 return DynamicInvokeBoxedValuetypeReturn(out paramLookupType, incomingParam, index, type, paramType);
+            }
+            else if (type.ToEETypePtr().IsPointer)
+            {
+                incomingParam = InvokeUtils.CheckArgument(incomingParam, type.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, s_binderBundle, s_getExactTypeForCustomBinder);
+                return DynamicInvokeUnmanagedPointerReturn(out paramLookupType, incomingParam, index, type, paramType);
             }
             else
             {

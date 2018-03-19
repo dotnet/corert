@@ -1451,9 +1451,16 @@ namespace Internal.Reflection.Execution
                     {
                         Type parameterType = parameters[i].ParameterType;
 
-                        // If the parameter is a pointer type, use IntPtr. Else use the actual parameter type.
+                        // If the parameter is a pointer type, we unwrap it.
                         if (parameterType.IsPointer)
-                            result.Add(CommonRuntimeTypes.IntPtr.TypeHandle);
+                        {
+                            do
+                            {
+                                parameterType = parameterType.GetElementType();
+                            } while (parameterType.IsPointer);
+
+                            result.Add(parameterType.TypeHandle);
+                        }
                         else if (parameterType.IsByRef)
                             result.Add(parameterType.GetElementType().TypeHandle);
                         else if (parameterType.GetTypeInfo().IsEnum && !parameters[i].HasDefaultValue)
