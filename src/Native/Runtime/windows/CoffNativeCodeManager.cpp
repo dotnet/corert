@@ -172,9 +172,11 @@ static PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntim
 
 
 CoffNativeCodeManager::CoffNativeCodeManager(TADDR moduleBase, 
+                                             PTR_VOID pvManagedCodeStartRange, UInt32 cbManagedCodeRange,
                                              PTR_RUNTIME_FUNCTION pRuntimeFunctionTable, UInt32 nRuntimeFunctionTable,
                                              PTR_PTR_VOID pClasslibFunctions, UInt32 nClasslibFunctions)
     : m_moduleBase(moduleBase), 
+      m_pvManagedCodeStartRange(pvManagedCodeStartRange), m_cbManagedCodeRange(cbManagedCodeRange),
       m_pRuntimeFunctionTable(pRuntimeFunctionTable), m_nRuntimeFunctionTable(nRuntimeFunctionTable),
       m_pClasslibFunctions(pClasslibFunctions), m_nClasslibFunctions(nClasslibFunctions)
 {
@@ -192,8 +194,6 @@ static int LookupUnwindInfoForMethod(UInt32 relativePc,
 #ifdef _TARGET_ARM_
     relativePc |= THUMB_CODE;
 #endif 
-
-    // Entries are sorted and terminated by sentinel value (DWORD)-1
 
     // Binary search the RUNTIME_FUNCTION table
     // Use linear search once we get down to a small number of elements
@@ -213,22 +213,23 @@ static int LookupUnwindInfoForMethod(UInt32 relativePc,
        }
     }
 
-    for (int i = low; i <= high; ++i)
+    for (int i = low; i < high; i++)
     {
-        // This is safe because of entries are terminated by sentinel value (DWORD)-1
         PTR_RUNTIME_FUNCTION pNextFunctionEntry = pRuntimeFunctionTable + (i + 1);
-
         if (relativePc < pNextFunctionEntry->BeginAddress)
         {
-            PTR_RUNTIME_FUNCTION pFunctionEntry = pRuntimeFunctionTable + i;
-            if (relativePc >= pFunctionEntry->BeginAddress)
-            {
-                return i;
-            }
+            high = i;
             break;
         }
     }
 
+    PTR_RUNTIME_FUNCTION pFunctionEntry = pRuntimeFunctionTable + high;
+    if (relativePc >= pFunctionEntry->BeginAddress)
+    {
+        return high;
+    }
+
+    ASSERT_UNCONDITIONALLY("Invalid code address");
     return -1;
 }
 
@@ -245,6 +246,13 @@ static_assert(sizeof(CoffNativeMethodInfo) <= sizeof(MethodInfo), "CoffNativeMet
 bool CoffNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC, 
                                            MethodInfo *    pMethodInfoOut)
 {
+    // Stackwalker may call this with ControlPC that does not belong to this code manager
+    if (dac_cast<TADDR>(ControlPC) < dac_cast<TADDR>(m_pvManagedCodeStartRange) ||
+        dac_cast<TADDR>(m_pvManagedCodeStartRange) + m_cbManagedCodeRange <= dac_cast<TADDR>(ControlPC))
+    {
+        return false;
+    }
+
     CoffNativeMethodInfo * pMethodInfo = (CoffNativeMethodInfo *)pMethodInfoOut;
 
     TADDR relativePC = dac_cast<TADDR>(ControlPC) - m_moduleBase;
@@ -705,6 +713,12 @@ void * CoffNativeCodeManager::GetClasslibFunction(ClasslibFunctionId functionId)
 
 PTR_VOID CoffNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
 {
+    if (dac_cast<TADDR>(ControlPC) < dac_cast<TADDR>(m_pvManagedCodeStartRange) || 
+        dac_cast<TADDR>(m_pvManagedCodeStartRange) + m_cbManagedCodeRange <= dac_cast<TADDR>(ControlPC))
+    {
+        return NULL;
+    }
+
     TADDR relativePC = dac_cast<TADDR>(ControlPC) - m_moduleBase;
 
     int MethodIndex = LookupUnwindInfoForMethod((UInt32)relativePC, m_pRuntimeFunctionTable, 0, m_nRuntimeFunctionTable - 1);
@@ -742,6 +756,7 @@ bool RhRegisterOSModule(void * pModule,
     IMAGE_DATA_DIRECTORY * pRuntimeFunctions = &(pNTHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXCEPTION]);
 
     NewHolder<CoffNativeCodeManager> pCoffNativeCodeManager = new (nothrow) CoffNativeCodeManager((TADDR)pModule,
+        pvManagedCodeStartRange, cbManagedCodeRange,
         dac_cast<PTR_RUNTIME_FUNCTION>((TADDR)pModule + pRuntimeFunctions->VirtualAddress),
         pRuntimeFunctions->Size / sizeof(RUNTIME_FUNCTION),
         pClasslibFunctions, nClasslibFunctions);

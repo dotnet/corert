@@ -1,5 +1,9 @@
 # .NET Core Runtime (CoreRT)
-This repo contains the .NET Core runtime optimized for AOT compilation
+This repo contains the .NET Core runtime optimized for ahead of time compilation. The CoreRT compiler can compile a managed .NET Core application into a native (architecture specific) single-file executable that is easy to deploy. It can also produce standalone dynamic or static libraries that can be consumed by applications written in other programming languages. To learn more about CoreRT, see the [intro document](Documentation/intro-to-corert.md).
+
+## Try Our Samples
+
+If you would like to give CoreRT a try, we publish daily snapshots of CoreRT to MyGet. Using CoreRT is as simple as adding a new package reference to your .NET Core project and publishing it. Check out one of our samples: a "[Hello World](samples/HelloWorld)" console app, a simple [ASP.NET Core](samples/WebApi/) app, or a [MonoGame](samples/MonoGame/) game. The `README.md` file in each sample's directory will guide you through the process step by step.
 
 ## Platform Support
 
@@ -12,7 +16,7 @@ This is a work in progress. The current state of platform support:
 ## How to Engage, Contribute and Provide Feedback
 Some of the best ways to contribute are to try things out, file bugs, and join in design conversations.
 
-Looking for something to work on? The [_up for grabs_](https://github.com/dotnet/corert/labels/up-for-grabs) issues are a great place to start or take a look at our [documentation](Documentation).
+Looking for something to work on? The [_up for grabs_](https://github.com/dotnet/corert/labels/up-for-grabs) issues are a great place to start. Take a look at our [documentation](Documentation) to find out about the architecture and learn how to build and test the repo.
 
 This project follows the [.NET Core Contribution Guidelines](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/contributing.md).
 

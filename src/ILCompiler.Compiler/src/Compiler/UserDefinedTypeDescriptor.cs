@@ -81,7 +81,9 @@ namespace ILCompiler
                 descriptor.ReturnType = GetVariableTypeIndex(DebuggerCanonicalize(signature.ReturnType));
                 descriptor.ThisAdjust = 0;
                 descriptor.CallingConvention = 0x4; // Near fastcall
-                descriptor.TypeIndexOfThisPointer = signature.IsStatic ? (uint)PrimitiveTypeDescriptor.TYPE_ENUM.T_VOID : GetThisTypeIndex(method.OwningType);
+                descriptor.TypeIndexOfThisPointer = signature.IsStatic ?
+                    GetPrimitiveTypeIndex(method.OwningType.Context.GetWellKnownType(WellKnownType.Void)) :
+                    GetThisTypeIndex(method.OwningType);
                 descriptor.ContainingClass = GetTypeIndex(method.OwningType, true);
 
                 try
@@ -139,7 +141,7 @@ namespace ILCompiler
             uint variableTypeIndex = 0;
             if (type.IsPrimitive)
             {
-                variableTypeIndex = PrimitiveTypeDescriptor.GetPrimitiveTypeIndex(type);
+                variableTypeIndex = GetPrimitiveTypeIndex(type);
             }
             else
             {
@@ -290,7 +292,7 @@ namespace ILCompiler
             EnumTypeDescriptor enumTypeDescriptor = new EnumTypeDescriptor
             {
                 ElementCount = (ulong)fieldsDescriptors.Count,
-                ElementType = PrimitiveTypeDescriptor.GetPrimitiveTypeIndex(defType.UnderlyingType),
+                ElementType = GetPrimitiveTypeIndex(defType.UnderlyingType),
                 Name = _objectWriter.GetMangledName(type),
             };
             EnumRecordTypeDescriptor[] typeRecords = new EnumRecordTypeDescriptor[enumTypeDescriptor.ElementCount];
@@ -402,11 +404,17 @@ namespace ILCompiler
             {
                 IsStruct = type.IsValueType ? 1 : 0,
                 Name = _objectWriter.GetMangledName(type),
-                BaseClassId = 0
+                BaseClassId = 0,
+                InstanceSize = 0
             };
 
             uint typeIndex = _objectWriter.GetClassTypeIndex(classTypeDescriptor);
             _knownTypes[type] = typeIndex;
+
+            if (!defType.InstanceByteCount.IsIndeterminate)
+            {
+                classTypeDescriptor.InstanceSize = (ulong)defType.InstanceByteCount.AsInt;
+            }
 
             if (type.HasBaseType && !type.IsValueType)
             {
@@ -530,6 +538,21 @@ namespace ILCompiler
             }
         }
 
+        private uint GetPrimitiveTypeIndex(TypeDesc type)
+        {
+            Debug.Assert(type.IsPrimitive, "it is not a primitive type");
+
+            uint typeIndex;
+
+            if (_primitiveTypes.TryGetValue(type, out typeIndex))
+                return typeIndex;
+
+            typeIndex = _objectWriter.GetPrimitiveTypeIndex(type);
+            _primitiveTypes[type] = typeIndex;
+
+            return typeIndex;
+        }
+
         private ITypesDebugInfoWriter _objectWriter;
         private Dictionary<TypeDesc, uint> _knownTypes = new Dictionary<TypeDesc, uint>();
         private Dictionary<TypeDesc, uint> _completeKnownTypes = new Dictionary<TypeDesc, uint>();
@@ -538,6 +561,7 @@ namespace ILCompiler
         private Dictionary<TypeDesc, uint> _enumTypes = new Dictionary<TypeDesc, uint>();
         private Dictionary<TypeDesc, uint> _byRefTypes = new Dictionary<TypeDesc, uint>();
         private Dictionary<TypeDesc, uint> _thisTypes = new Dictionary<TypeDesc, uint>();
+        private Dictionary<TypeDesc, uint> _primitiveTypes = new Dictionary<TypeDesc, uint>();
         private Dictionary<MethodDesc, uint> _methodIndices = new Dictionary<MethodDesc, uint>();
         private Dictionary<MethodDesc, uint> _methodIdIndices = new Dictionary<MethodDesc, uint>();
 

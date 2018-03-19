@@ -40,6 +40,10 @@ typedef DPTR(T_RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
 class CoffNativeCodeManager : public ICodeManager
 {
     TADDR m_moduleBase;
+
+    PTR_VOID m_pvManagedCodeStartRange;
+    UInt32 m_cbManagedCodeRange;
+
     PTR_RUNTIME_FUNCTION m_pRuntimeFunctionTable;
     UInt32 m_nRuntimeFunctionTable;
 
@@ -48,6 +52,7 @@ class CoffNativeCodeManager : public ICodeManager
 
 public:
     CoffNativeCodeManager(TADDR moduleBase, 
+                          PTR_VOID pvManagedCodeStartRange, UInt32 cbManagedCodeRange,
                           PTR_RUNTIME_FUNCTION pRuntimeFunctionTable, UInt32 nRuntimeFunctionTable,
                           PTR_PTR_VOID pClasslibFunctions, UInt32 nClasslibFunctions);
     ~CoffNativeCodeManager();

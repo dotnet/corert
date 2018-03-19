@@ -4,40 +4,42 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-
+using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
+
+#if BIT64
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
 
 namespace System
 {
     internal static class Marvin
     {
         /// <summary>
-        /// Convenience method to compute a Marvin hash and collapse it into a 32-bit hash.
+        /// Compute a Marvin hash and collapse it into a 32-bit hash.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int ComputeHash32(ref byte data, int count, ulong seed)
-        {
-            long hash64 = ComputeHash(ref data, count, seed);
-            return ((int)(hash64 >> 32)) ^ (int)hash64;
-        }
+        public static int ComputeHash32(ReadOnlySpan<byte> data, ulong seed) => ComputeHash32(ref MemoryMarshal.GetReference(data), data.Length, seed);
 
         /// <summary>
-        /// Computes a 64-hash using the Marvin algorithm.
+        /// Compute a Marvin hash and collapse it into a 32-bit hash.
         /// </summary>
-        public static long ComputeHash(ref byte data, int count, ulong seed)
+        public static int ComputeHash32(ref byte data, int count, ulong seed)
         {
-            uint ucount = (uint)count;
+            nuint ucount = (nuint)count;
             uint p0 = (uint)seed;
             uint p1 = (uint)(seed >> 32);
 
-            int byteOffset = 0;  // declared as signed int so we don't have to cast everywhere (it's passed to Unsafe.Add() and used for nothing else.)
+            nuint byteOffset = 0;
 
             while (ucount >= 8)
             {
-                p0 += Unsafe.As<byte, uint>(ref Unsafe.Add(ref data, byteOffset));
+                p0 += Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref data, byteOffset));
                 Block(ref p0, ref p1);
 
-                p0 += Unsafe.As<byte, uint>(ref Unsafe.Add(ref data, byteOffset + 4));
+                p0 += Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref data, byteOffset + 4));
                 Block(ref p0, ref p1);
 
                 byteOffset += 8;
@@ -47,7 +49,7 @@ namespace System
             switch (ucount)
             {
                 case 4:
-                    p0 += Unsafe.As<byte, uint>(ref Unsafe.Add(ref data, byteOffset));
+                    p0 += Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref data, byteOffset));
                     Block(ref p0, ref p1);
                     goto case 0;
 
@@ -56,33 +58,33 @@ namespace System
                     break;
 
                 case 5:
-                    p0 += Unsafe.As<byte, uint>(ref Unsafe.Add(ref data, byteOffset));
+                    p0 += Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref data, byteOffset));
                     byteOffset += 4;
                     Block(ref p0, ref p1);
                     goto case 1;
 
                 case 1:
-                    p0 += 0x8000u | Unsafe.Add(ref data, byteOffset);
+                    p0 += 0x8000u | Unsafe.AddByteOffset(ref data, byteOffset);
                     break;
 
                 case 6:
-                    p0 += Unsafe.As<byte, uint>(ref Unsafe.Add(ref data, byteOffset));
+                    p0 += Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref data, byteOffset));
                     byteOffset += 4;
                     Block(ref p0, ref p1);
                     goto case 2;
 
                 case 2:
-                    p0 += 0x800000u | Unsafe.As<byte, ushort>(ref Unsafe.Add(ref data, byteOffset));
+                    p0 += 0x800000u | Unsafe.ReadUnaligned<ushort>(ref Unsafe.AddByteOffset(ref data, byteOffset));
                     break;
 
                 case 7:
-                    p0 += Unsafe.As<byte, uint>(ref Unsafe.Add(ref data, byteOffset));
+                    p0 += Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref data, byteOffset));
                     byteOffset += 4;
                     Block(ref p0, ref p1);
                     goto case 3;
 
                 case 3:
-                    p0 += 0x80000000u | (((uint)(Unsafe.Add(ref data, byteOffset + 2))) << 16)| (uint)(Unsafe.As<byte, ushort>(ref Unsafe.Add(ref data, byteOffset)));
+                    p0 += 0x80000000u | (((uint)(Unsafe.AddByteOffset(ref data, byteOffset + 2))) << 16)| (uint)(Unsafe.ReadUnaligned<ushort>(ref Unsafe.AddByteOffset(ref data, byteOffset)));
                     break;
 
                 default:
@@ -93,7 +95,7 @@ namespace System
             Block(ref p0, ref p1);
             Block(ref p0, ref p1);
 
-            return (((long)p1) << 32) | p0;
+            return (int)(p1 ^ p0);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -125,17 +127,12 @@ namespace System
             return (value << shift) | (value >> (32 - shift));
         }
 
-        public static ulong DefaultSeed => s_defaultSeed;
+        public static ulong DefaultSeed { get; } = GenerateSeed();
 
-        private static ulong s_defaultSeed = GenerateSeed();
-
-        private static ulong GenerateSeed()
+        private static unsafe ulong GenerateSeed()
         {
             ulong seed;
-            unsafe
-            {
-                Interop.GetRandomBytes((byte*)&seed, sizeof(ulong));
-            }
+            Interop.GetRandomBytes((byte*)&seed, sizeof(ulong));
             return seed;
         }
     }

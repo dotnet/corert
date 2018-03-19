@@ -1,10 +1,10 @@
-//===---- objwriter.cpp --------------------------------*- C++ -*-===//
+//===---- objwriter.cpp -----------------------------------------*- C++ -*-===//
 //
 // object writer
 //
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license.
-// See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -14,6 +14,8 @@
 //===----------------------------------------------------------------------===//
 
 #include "objwriter.h"
+#include "debugInfo/dwarf/dwarfTypeBuilder.h"
+#include "debugInfo/codeView/codeViewTypeBuilder.h"
 #include "llvm/DebugInfo/CodeView/CodeView.h"
 #include "llvm/DebugInfo/CodeView/Line.h"
 #include "llvm/DebugInfo/CodeView/SymbolRecord.h"
@@ -162,9 +164,18 @@ bool ObjectWriter::Init(llvm::StringRef ObjectFilePath) {
   SetCodeSectionAttribute("text", CustomSectionAttributes_Executable, nullptr);
 
   if (ObjFileInfo->getObjectFileType() == ObjFileInfo->IsCOFF) {
-    TypeBuilder.SetStreamer(Streamer);
-    unsigned TargetPointerSize = AssemblerPrinter->getPointerSize();
-    TypeBuilder.SetTargetPointerSize(TargetPointerSize);
+    TypeBuilder.reset(new UserDefinedCodeViewTypesBuilder());
+  } else {
+    TypeBuilder.reset(new UserDefinedDwarfTypesBuilder());
+  }
+
+  TypeBuilder->SetStreamer(Streamer);
+  unsigned TargetPointerSize = AssemblerPrinter->getPointerSize();
+  TypeBuilder->SetTargetPointerSize(TargetPointerSize);
+
+  if (ObjFileInfo->getObjectFileType() == ObjFileInfo->IsELF) {
+    DwarfGenerator.reset(new DwarfGen());
+    DwarfGenerator->SetTypeBuilder(static_cast<UserDefinedDwarfTypesBuilder*>(TypeBuilder.get()));
   }
 
   return true;
@@ -690,6 +701,22 @@ void ObjectWriter::EmitCVDebugFunctionInfo(const char *FunctionName,
   Streamer->EmitCVLinetableDirective(FuncId++, Fn, FnEnd);
 }
 
+void ObjectWriter::EmitDwarfFunctionInfo(const char *FunctionName,
+                                         int FunctionSize,
+                                         unsigned MethodTypeIndex) {
+  if (FuncId == 1) {
+    DwarfGenerator->EmitCompileUnit();
+  }
+
+  DwarfGenerator->EmitSubprogramInfo(FunctionName, FunctionSize,
+      MethodTypeIndex, DebugVarInfos, DebugEHClauseInfos);
+
+  DebugVarInfos.clear();
+  DebugEHClauseInfos.clear();
+
+  FuncId++;
+}
+
 void ObjectWriter::EmitDebugFileInfo(int FileId, const char *FileName) {
   assert(FileId > 0 && "FileId should be greater than 0.");
   if (ObjFileInfo->getObjectFileType() == ObjFileInfo->IsCOFF) {
@@ -700,7 +727,8 @@ void ObjectWriter::EmitDebugFileInfo(int FileId, const char *FileName) {
 }
 
 void ObjectWriter::EmitDebugFunctionInfo(const char *FunctionName,
-                                         int FunctionSize) {
+                                         int FunctionSize,
+                                         unsigned MethodTypeIndex) {
   if (ObjFileInfo->getObjectFileType() == ObjFileInfo->IsCOFF) {
     Streamer->EmitCVFuncIdDirective(FuncId);
     EmitCVDebugFunctionInfo(FunctionName, FunctionSize);
@@ -710,6 +738,7 @@ void ObjectWriter::EmitDebugFunctionInfo(const char *FunctionName,
       Streamer->EmitSymbolAttribute(Sym, MCSA_ELF_TypeFunction);
       Streamer->emitELFSize(Sym,
                             MCConstantExpr::create(FunctionSize, *OutContext));
+      EmitDwarfFunctionInfo(FunctionName, FunctionSize, MethodTypeIndex);
     }
     // TODO: Should test it for Macho.
   }
@@ -729,6 +758,13 @@ void ObjectWriter::EmitDebugVar(char *Name, int TypeIndex, bool IsParm,
   DebugVarInfos.push_back(NewVar);
 }
 
+void ObjectWriter::EmitDebugEHClause(unsigned TryOffset, unsigned TryLength,
+                                unsigned HandlerOffset, unsigned HandlerLength) {
+  if (ObjFileInfo->getObjectFileType() == ObjFileInfo->IsELF) {
+    DebugEHClauseInfos.emplace_back(TryOffset, TryLength, HandlerOffset, HandlerLength);
+  }
+}
+
 void ObjectWriter::EmitDebugLoc(int NativeOffset, int FileId, int LineNumber,
                                 int ColNumber) {
   assert(FileId > 0 && "FileId should be greater than 0.");
@@ -742,7 +778,7 @@ void ObjectWriter::EmitDebugLoc(int NativeOffset, int FileId, int LineNumber,
 }
 
 void ObjectWriter::EmitCVUserDefinedTypesSymbols() {
-  const auto &UDTs = TypeBuilder.GetUDTs();
+  const auto &UDTs = TypeBuilder->GetUDTs();
   if (UDTs.empty()) {
     return;
   }
@@ -755,12 +791,12 @@ void ObjectWriter::EmitCVUserDefinedTypesSymbols() {
   EmitLabelDiff(SymbolsBegin, SymbolsEnd);
   Streamer->EmitLabel(SymbolsBegin);
 
-  for (const std::pair<std::string, codeview::TypeIndex> &UDT : UDTs) {
+  for (const std::pair<std::string, uint32_t> &UDT : UDTs) {
     unsigned NameLength = UDT.first.length() + 1;
     unsigned RecordLength = 2 + 4 + NameLength;
     Streamer->EmitIntValue(RecordLength, 2);
     Streamer->EmitIntValue(unsigned(SymbolKind::S_UDT), 2);
-    Streamer->EmitIntValue(UDT.second.getIndex(), 4);
+    Streamer->EmitIntValue(UDT.second, 4);
     Streamer->EmitBytes(StringRef(UDT.first.c_str(), NameLength));
   }
   Streamer->EmitLabel(SymbolsEnd);
@@ -769,7 +805,7 @@ void ObjectWriter::EmitCVUserDefinedTypesSymbols() {
 
 void ObjectWriter::EmitDebugModuleInfo() {
   if (ObjFileInfo->getObjectFileType() == ObjFileInfo->IsCOFF) {
-    TypeBuilder.EmitTypeInformation(ObjFileInfo->getCOFFDebugTypesSection());
+    TypeBuilder->EmitTypeInformation(ObjFileInfo->getCOFFDebugTypesSection());
     EmitCVUserDefinedTypesSymbols();
   }
 
@@ -783,6 +819,10 @@ void ObjectWriter::EmitDebugModuleInfo() {
     Streamer->SwitchSection(Section);
     Streamer->EmitCVFileChecksumsDirective();
     Streamer->EmitCVStringTableDirective();
+  } else if (ObjFileInfo->getObjectFileType() == ObjFileInfo->IsELF) {
+    DwarfGenerator->EmitAbbrev();
+    DwarfGenerator->EmitAranges();
+    DwarfGenerator->Finish();
   } else {
     OutContext->setGenDwarfForAssembly(true);
   }
@@ -791,56 +831,49 @@ void ObjectWriter::EmitDebugModuleInfo() {
 unsigned
 ObjectWriter::GetEnumTypeIndex(const EnumTypeDescriptor &TypeDescriptor,
                                const EnumRecordTypeDescriptor *TypeRecords) {
-  assert(ObjFileInfo->getObjectFileType() == ObjFileInfo->IsCOFF &&
-         "only COFF is supported now");
-  return TypeBuilder.GetEnumTypeIndex(TypeDescriptor, TypeRecords);
+  return TypeBuilder->GetEnumTypeIndex(TypeDescriptor, TypeRecords);
 }
 
 unsigned
 ObjectWriter::GetClassTypeIndex(const ClassTypeDescriptor &ClassDescriptor) {
-  assert(ObjFileInfo->getObjectFileType() == ObjFileInfo->IsCOFF &&
-         "only COFF is supported now");
-  return TypeBuilder.GetClassTypeIndex(ClassDescriptor);
+  unsigned res = TypeBuilder->GetClassTypeIndex(ClassDescriptor);
+  return res;
 }
 
 unsigned ObjectWriter::GetCompleteClassTypeIndex(
     const ClassTypeDescriptor &ClassDescriptor,
     const ClassFieldsTypeDescriptior &ClassFieldsDescriptor,
     const DataFieldDescriptor *FieldsDescriptors) {
-  assert(ObjFileInfo->getObjectFileType() == ObjFileInfo->IsCOFF &&
-         "only COFF is supported now");
-  return TypeBuilder.GetCompleteClassTypeIndex(
+  unsigned res = TypeBuilder->GetCompleteClassTypeIndex(
       ClassDescriptor, ClassFieldsDescriptor, FieldsDescriptors);
+  return res;
 }
 
 unsigned
 ObjectWriter::GetArrayTypeIndex(const ClassTypeDescriptor &ClassDescriptor,
                                 const ArrayTypeDescriptor &ArrayDescriptor) {
-  assert(ObjFileInfo->getObjectFileType() == ObjFileInfo->IsCOFF &&
-         "only COFF is supported now");
-  return TypeBuilder.GetArrayTypeIndex(ClassDescriptor, ArrayDescriptor);
+  return TypeBuilder->GetArrayTypeIndex(ClassDescriptor, ArrayDescriptor);
 }
 
 unsigned 
 ObjectWriter::GetPointerTypeIndex(const PointerTypeDescriptor& PointerDescriptor) {
-    assert(ObjFileInfo->getObjectFileType() == ObjFileInfo->IsCOFF &&
-        "only COFF is supported now");
-    return TypeBuilder.GetPointerTypeIndex(PointerDescriptor);
+    return TypeBuilder->GetPointerTypeIndex(PointerDescriptor);
 }
 
 unsigned 
 ObjectWriter::GetMemberFunctionTypeIndex(const MemberFunctionTypeDescriptor& MemberDescriptor,
                                          uint32_t const *const ArgumentTypes) {
-    assert(ObjFileInfo->getObjectFileType() == ObjFileInfo->IsCOFF &&
-        "only COFF is supported now");
-    return TypeBuilder.GetMemberFunctionTypeIndex(MemberDescriptor, ArgumentTypes);
+    return TypeBuilder->GetMemberFunctionTypeIndex(MemberDescriptor, ArgumentTypes);
 }
 
 unsigned 
 ObjectWriter::GetMemberFunctionId(const MemberFunctionIdTypeDescriptor& MemberIdDescriptor) {
-    assert(ObjFileInfo->getObjectFileType() == ObjFileInfo->IsCOFF &&
-        "only COFF is supported now");
-    return TypeBuilder.GetMemberFunctionId(MemberIdDescriptor);
+    return TypeBuilder->GetMemberFunctionId(MemberIdDescriptor);
+}
+
+unsigned
+ObjectWriter::GetPrimitiveTypeIndex(int Type) {
+  return TypeBuilder->GetPrimitiveTypeIndex(static_cast<PrimitiveTypeFlags>(Type));
 }
 
 void
