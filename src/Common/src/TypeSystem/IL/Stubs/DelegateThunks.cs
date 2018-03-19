@@ -564,14 +564,13 @@ namespace Internal.IL.Stubs
                     codeStream.EmitLdc(i);
                     codeStream.EmitLdArg(i + 1);
 
-                    TypeDesc boxableParamType = DelegateDynamicInvokeThunk.ConvertToBoxableType(paramType);
-                    ILToken boxableParamToken = emitter.NewToken(boxableParamType);
+                    ILToken paramToken = emitter.NewToken(paramType);
 
                     if (paramIsByRef)
                     {
-                        codeStream.Emit(ILOpcode.ldobj, boxableParamToken);
+                        codeStream.Emit(ILOpcode.ldobj, paramToken);
                     }
-                    codeStream.Emit(ILOpcode.box, boxableParamToken);
+                    codeStream.Emit(ILOpcode.box, paramToken);
                     codeStream.Emit(ILOpcode.stelem_ref);
                 }
             }
@@ -625,16 +624,15 @@ namespace Internal.IL.Stubs
                     if (paramType.IsByRef)
                     {
                         paramType = ((ByRefType)paramType).ParameterType;
-                        TypeDesc boxableParamType = DelegateDynamicInvokeThunk.ConvertToBoxableType(paramType);
-                        ILToken boxableParamToken = emitter.NewToken(boxableParamType);
+                        ILToken paramToken = emitter.NewToken(paramType);
 
                         // Update parameter
                         codeStream.EmitLdArg(i + 1);
                         codeStream.EmitLdLoc(argsLocal);
                         codeStream.EmitLdc(i);
                         codeStream.Emit(ILOpcode.ldelem_ref);
-                        codeStream.Emit(ILOpcode.unbox_any, boxableParamToken);
-                        codeStream.Emit(ILOpcode.stobj, boxableParamToken);
+                        codeStream.Emit(ILOpcode.unbox_any, paramToken);
+                        codeStream.Emit(ILOpcode.stobj, paramToken);
                     }
                 }
                 // ilgen.Emit(OperationCode.Endfinally);
@@ -644,9 +642,8 @@ namespace Internal.IL.Stubs
 
             if (hasReturnValue)
             {
-                TypeDesc boxableReturnType = DelegateDynamicInvokeThunk.ConvertToBoxableType(Signature.ReturnType);
                 codeStream.EmitLdLoc(retLocal);
-                codeStream.Emit(ILOpcode.unbox_any, emitter.NewToken(boxableReturnType));
+                codeStream.Emit(ILOpcode.unbox_any, emitter.NewToken(Signature.ReturnType));
             }
 
             codeStream.Emit(ILOpcode.ret);
@@ -779,6 +776,8 @@ namespace Internal.IL.Stubs
             // calli ReturnType thiscall(TypeOfParameter1, ...)
             // !if ((ReturnType == void)
             //    ldnull
+            // !else if (ReturnType is pointer)
+            //    System.Reflection.Pointer.Box(ReturnType)
             // !else if (ReturnType is a byref)
             //    ldobj StripByRef(ReturnType)
             //    box StripByRef(ReturnType)
@@ -835,23 +834,40 @@ namespace Internal.IL.Stubs
 
             callSiteSetupStream.EmitLdArg(2);
 
-            MethodSignature targetMethodSig = new MethodSignature(0, 0, delegateSignature.ReturnType, targetMethodParameters);
+            TypeDesc returnType = delegateSignature.ReturnType;
+            MethodSignature targetMethodSig = new MethodSignature(0, 0, returnType, targetMethodParameters);
 
             callSiteSetupStream.Emit(ILOpcode.calli, emitter.NewToken(targetMethodSig));
 
-            if (delegateSignature.ReturnType.IsVoid)
+
+            if (returnType.IsVoid)
             {
                 callSiteSetupStream.Emit(ILOpcode.ldnull);
             }
-            else if (delegateSignature.ReturnType.IsByRef)
+            else if (returnType.IsByRef)
             {
-                TypeDesc targetType = ((ByRefType)delegateSignature.ReturnType).ParameterType;
+                TypeDesc targetType = ((ByRefType)returnType).ParameterType;
                 callSiteSetupStream.Emit(ILOpcode.ldobj, emitter.NewToken(targetType));
                 callSiteSetupStream.Emit(ILOpcode.box, emitter.NewToken(targetType));
             }
+            else if (returnType.IsPointer)
+            {
+                callSiteSetupStream.Emit(ILOpcode.ldtoken, emitter.NewToken(returnType));
+                MethodDesc getTypeFromHandleMethod =
+                    Context.SystemModule.GetKnownType("System", "Type").GetKnownMethod("GetTypeFromHandle", null);
+                callSiteSetupStream.Emit(ILOpcode.call, emitter.NewToken(getTypeFromHandleMethod));
+
+                MethodDesc pointerBoxMethod =
+                    Context.SystemModule.GetKnownType("System.Reflection", "Pointer").GetKnownMethod("Box", null);
+                callSiteSetupStream.Emit(ILOpcode.call, emitter.NewToken(pointerBoxMethod));
+            }
+            else if (returnType.IsFunctionPointer)
+            {
+                callSiteSetupStream.Emit(ILOpcode.box, emitter.NewToken(Context.GetWellKnownType(WellKnownType.IntPtr)));
+            }
             else
             {
-                callSiteSetupStream.Emit(ILOpcode.box, emitter.NewToken(delegateSignature.ReturnType));
+                callSiteSetupStream.Emit(ILOpcode.box, emitter.NewToken(returnType));
             }
 
             callSiteSetupStream.Emit(ILOpcode.ret);
@@ -861,7 +877,7 @@ namespace Internal.IL.Stubs
 
         internal static TypeDesc ConvertToBoxableType(TypeDesc type)
         {
-            if (type.IsPointer || type.IsFunctionPointer)
+            if (type.IsFunctionPointer)
             {
                 return type.Context.GetWellKnownType(WellKnownType.IntPtr);
             }

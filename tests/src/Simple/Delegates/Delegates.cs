@@ -4,6 +4,8 @@
 
 using System;
 
+using Pointer = System.Reflection.Pointer;
+
 public class BringUpTests
 {
     const int Pass = 100;
@@ -247,7 +249,10 @@ public class BringUpTests
         unsafe
         {
             GetAndReturnPointerDelegate d = ClassWithPointers.GetAndReturnPointer;
-            if ((IntPtr)d.DynamicInvoke(new object[] { (IntPtr)8 }) != (IntPtr)50)
+            if (Pointer.Unbox(d.DynamicInvoke(new object[] { (IntPtr)8 })) != (void*)50)
+                return false;
+
+            if (Pointer.Unbox(d.DynamicInvoke(new object[] { Pointer.Box((void*)9, typeof(void*)) })) != (void*)51)
                 return false;
         }
 
@@ -390,14 +395,14 @@ static class ExtensionClass
     }
 }
 
-unsafe delegate IntPtr GetAndReturnPointerDelegate(void* ptr);
+unsafe delegate byte* GetAndReturnPointerDelegate(void* ptr);
 unsafe delegate void PassPointerByRefDelegate(ref void* ptr);
 
 unsafe static class ClassWithPointers
 {
-    public static IntPtr GetAndReturnPointer(void* ptr)
+    public static byte* GetAndReturnPointer(void* ptr)
     {
-        return (IntPtr)((byte*)ptr + 42);
+        return (byte*)ptr + 42;
     }
 
     public static void PassPointerByRef(ref void* ptr)
