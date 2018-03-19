@@ -760,7 +760,6 @@ static void DumpEHClause(MCObjectStreamer *Streamer, MCSection *TypeSection, int
 
 void SubprogramInfo::DumpEHClauses(MCObjectStreamer *Streamer, MCSection *TypeSection) {
   MCContext &context = Streamer->getContext();
-  unsigned TargetPointerSize = context.getAsmInfo()->getCodePointerSize();
 
   MCSymbol *Sym = context.getOrCreateSymbol(Twine(Name));
   const MCExpr *SymExpr = MCSymbolRefExpr::create(Sym, MCSymbolRefExpr::VK_None, context);

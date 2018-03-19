@@ -34,7 +34,7 @@ void Dump(MCObjectStreamer *Streamer, uint16_t DwarfVersion, unsigned TargetPoin
       return;
   }
 
-  const char AbbrevTable[] = {
+  const uint16_t AbbrevTable[] = {
     CompileUnit,
         dwarf::DW_TAG_compile_unit, dwarf::DW_CHILDREN_yes,
         dwarf::DW_AT_producer, dwarf::DW_FORM_string,
@@ -275,7 +275,9 @@ void Dump(MCObjectStreamer *Streamer, uint16_t DwarfVersion, unsigned TargetPoin
   MCContext &context = Streamer->getContext();
   Streamer->SwitchSection(context.getObjectFileInfo()->getDwarfAbbrevSection());
 
-  Streamer->EmitBytes(StringRef(AbbrevTable, sizeof(AbbrevTable)));
+  for (uint16_t e : AbbrevTable) {
+      Streamer->EmitULEB128IntValue(e);
+  }
 }
 
 }
