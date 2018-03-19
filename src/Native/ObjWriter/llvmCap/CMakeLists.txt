@@ -127,3 +127,9 @@ ExternalProject_Add_Step(LLVM ObjWriterInjection
   DEPENDEES patch
   USES_TERMINAL 1
   )
+ExternalProject_Add_Step(LLVM forceconfigure
+  COMMAND ${CMAKE_COMMAND} -E echo "Force configure of LLVM"
+  DEPENDEES update
+  DEPENDERS configure
+  ALWAYS 1
+  )
