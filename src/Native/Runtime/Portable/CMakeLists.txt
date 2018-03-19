@@ -1,6 +1,6 @@
 project(PortableRuntime)
 
-# Portable version of the runtime is designed to be used with CppCodeGen only.
+# Portable version of the runtime is designed to be used with CppCodeGen or WASM.
 # It should be written in pure C/C++, with no assembly code.
 
 include_directories(..)
@@ -34,6 +34,7 @@ add_custom_command(
 
 # Install the static Runtime library
 install (TARGETS PortableRuntime DESTINATION sdk)
+
 if(WIN32)
     install (FILES ${CMAKE_CURRENT_BINARY_DIR}/PortableRuntime.dir/$<CONFIG>/PortableRuntime.pdb DESTINATION sdk)
 endif()

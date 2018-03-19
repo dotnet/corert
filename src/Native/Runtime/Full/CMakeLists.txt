@@ -11,6 +11,11 @@ add_definitions(-DFEATURE_RX_THUNKS)
 
 add_library(Runtime STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM})
 
+add_library(Runtime.ServerGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${SERVER_GC_SOURCES})
+
+target_compile_definitions(Runtime.ServerGC PRIVATE -DFEATURE_SVR_GC)
+
+
 # Get the current list of definitions
 get_compile_definitions(DEFINITIONS)
 
@@ -72,7 +77,8 @@ foreach(CONFIG IN LISTS CMAKE_CONFIGURATION_TYPES)
 endforeach()
 
 # Install the static Runtime library
-install (TARGETS Runtime DESTINATION sdk)
+install (TARGETS Runtime Runtime.ServerGC DESTINATION sdk)
 if(WIN32)
     install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Runtime.dir/$<CONFIG>/Runtime.pdb DESTINATION sdk)
+    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Runtime.ServerGC.dir/$<CONFIG>/Runtime.ServerGC.pdb DESTINATION sdk)
 endif()
