@@ -107,6 +107,7 @@ namespace Internal.Runtime.CallConverter
 
         public bool IsNull() { return _eeType == null && !_isByRef; }
         public bool IsValueType() { if (_isByRef) return false; return _eeType->IsValueType; }
+        public bool IsPointerType() { if (_isByRef) return false; return _eeType->IsPointerType; }
 
         public unsafe uint GetSize()
         {
