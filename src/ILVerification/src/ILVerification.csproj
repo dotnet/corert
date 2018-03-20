@@ -11,7 +11,7 @@
     <!-- Suppress signing done by buildtools sign.targets -->
     <SkipSigning>true</SkipSigning>
     <!-- Delete once we pick up fix for https://github.com/dotnet/roslyn/issues/8210 -->
-    <DelaySign Condition="'$(RunningOnUnix)' == 'true'">true</DelaySign>
+    <DelaySign Condition="'$(OS)' != 'Windows_NT'">true</DelaySign>
   </PropertyGroup>
 
   <ItemGroup>
