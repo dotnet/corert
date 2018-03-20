@@ -121,13 +121,48 @@ namespace Internal.IL.Stubs
             {
                 StringBuilder sb = new StringBuilder("InvokeRet");
 
-                if (_targetSignature.HasReturnValue)
-                    sb.Append('O');
-                else
-                    sb.Append('V');
+                switch (_targetSignature.ReturnType)
+                {
+                    case DynamicInvokeMethodParameterKind.None:
+                        sb.Append('V');
+                        break;
+                    case DynamicInvokeMethodParameterKind.Pointer:
+                        sb.Append('P');
+
+                        for (int i = 0; i < _targetSignature.GetNumerOfReturnTypePointerIndirections() - 1; i++)
+                            sb.Append('p');
+
+                        break;
+                    case DynamicInvokeMethodParameterKind.Value:
+                        sb.Append('O');
+                        break;
+                    default:
+                        Debug.Fail("Unreachable");
+                        break;
+                }
 
                 for (int i = 0; i < _targetSignature.Length; i++)
-                    sb.Append(_targetSignature[i] == DynamicInvokeMethodParameterKind.Value ? 'I' : 'R');
+                {
+                    switch (_targetSignature[i])
+                    {
+                        case DynamicInvokeMethodParameterKind.Pointer:
+                            sb.Append('P');
+
+                            for (int j = 0; j < _targetSignature.GetNumberOfParameterPointerIndirections(i) - 1; j++)
+                                sb.Append('p');
+
+                            break;
+                        case DynamicInvokeMethodParameterKind.Reference:
+                            sb.Append("R");
+                            break;
+                        case DynamicInvokeMethodParameterKind.Value:
+                            sb.Append("I");
+                            break;
+                        default:
+                            Debug.Fail("Unreachable");
+                            break;
+                    }
+                }
 
                 return sb.ToString();
             }
@@ -173,6 +208,8 @@ namespace Internal.IL.Stubs
             // calli ReturnType thiscall(TypeOfParameter1, ...)
             // !if ((ReturnType == void)
             //    ldnull
+            // !elif (ReturnType is pointer)
+            //    System.Reflection.Pointer.Box(ReturnType)
             // !else
             //    box ReturnType
             // ret
@@ -190,6 +227,8 @@ namespace Internal.IL.Stubs
             // calli ReturnType (TypeOfParameter1, ...)
             // !if ((ReturnType == void)
             //    ldnull
+            // !elif (ReturnType is pointer)
+            //    System.Reflection.Pointer.Box(ReturnType)
             // !else
             //    box ReturnType
             // ret
@@ -211,6 +250,12 @@ namespace Internal.IL.Stubs
             for (int paramIndex = 0; paramIndex < _targetSignature.Length; paramIndex++)
             {
                 TypeDesc paramType = Context.GetSignatureVariable(paramIndex, true);
+                DynamicInvokeMethodParameterKind paramKind = _targetSignature[paramIndex];
+
+                if (paramKind == DynamicInvokeMethodParameterKind.Pointer)
+                    for (int i = 0; i < _targetSignature.GetNumberOfParameterPointerIndirections(paramIndex); i++)
+                        paramType = paramType.MakePointerType();
+
                 ILToken tokParamType = emitter.NewToken(paramType);
                 ILLocalVariable local = emitter.NewLocal(paramType.MakeByRefType());
 
@@ -219,7 +264,7 @@ namespace Internal.IL.Stubs
 
                 argSetupStream.Emit(ILOpcode.ldtoken, tokParamType);
 
-                if (_targetSignature[paramIndex] == DynamicInvokeMethodParameterKind.Reference)
+                if (paramKind == DynamicInvokeMethodParameterKind.Reference)
                 {
                     argSetupStream.Emit(ILOpcode.call, tokDynamicInvokeParamHelperRef);
 
@@ -243,9 +288,14 @@ namespace Internal.IL.Stubs
             thisCallSiteSetupStream.EmitLdArg(1); // methodToCall
             staticCallSiteSetupStream.EmitLdArg(1); // methodToCall
 
-            TypeDesc returnType = _targetSignature.HasReturnValue ?
+            DynamicInvokeMethodParameterKind returnKind = _targetSignature.ReturnType;
+            TypeDesc returnType = returnKind != DynamicInvokeMethodParameterKind.None ?
                 Context.GetSignatureVariable(_targetSignature.Length, true) :
                 Context.GetWellKnownType(WellKnownType.Void);
+
+            if (returnKind == DynamicInvokeMethodParameterKind.Pointer)
+                for (int i = 0; i < _targetSignature.GetNumerOfReturnTypePointerIndirections(); i++)
+                    returnType = returnType.MakePointerType();
 
             MethodSignature thisCallMethodSig = new MethodSignature(0, 0, returnType, targetMethodSignature);
             thisCallSiteSetupStream.Emit(ILOpcode.calli, emitter.NewToken(thisCallMethodSig));
@@ -253,16 +303,31 @@ namespace Internal.IL.Stubs
             MethodSignature staticCallMethodSig = new MethodSignature(MethodSignatureFlags.Static, 0, returnType, targetMethodSignature);
             staticCallSiteSetupStream.Emit(ILOpcode.calli, emitter.NewToken(staticCallMethodSig));
 
-            if (_targetSignature.HasReturnValue)
-            {
-                ILToken tokReturnType = emitter.NewToken(returnType);
-                thisCallSiteSetupStream.Emit(ILOpcode.box, tokReturnType);
-                staticCallSiteSetupStream.Emit(ILOpcode.box, tokReturnType);
-            }
-            else
+            if (returnKind == DynamicInvokeMethodParameterKind.None)
             {
                 thisCallSiteSetupStream.Emit(ILOpcode.ldnull);
                 staticCallSiteSetupStream.Emit(ILOpcode.ldnull);
+            }
+            else if (returnKind == DynamicInvokeMethodParameterKind.Pointer)
+            {
+                thisCallSiteSetupStream.Emit(ILOpcode.ldtoken, emitter.NewToken(returnType));
+                staticCallSiteSetupStream.Emit(ILOpcode.ldtoken, emitter.NewToken(returnType));
+                MethodDesc getTypeFromHandleMethod =
+                    Context.SystemModule.GetKnownType("System", "Type").GetKnownMethod("GetTypeFromHandle", null);
+                thisCallSiteSetupStream.Emit(ILOpcode.call, emitter.NewToken(getTypeFromHandleMethod));
+                staticCallSiteSetupStream.Emit(ILOpcode.call, emitter.NewToken(getTypeFromHandleMethod));
+
+                MethodDesc pointerBoxMethod =
+                    Context.SystemModule.GetKnownType("System.Reflection", "Pointer").GetKnownMethod("Box", null);
+                thisCallSiteSetupStream.Emit(ILOpcode.call, emitter.NewToken(pointerBoxMethod));
+                staticCallSiteSetupStream.Emit(ILOpcode.call, emitter.NewToken(pointerBoxMethod));
+            }
+            else
+            {
+                Debug.Assert(returnKind == DynamicInvokeMethodParameterKind.Value);
+                ILToken tokReturnType = emitter.NewToken(returnType);
+                thisCallSiteSetupStream.Emit(ILOpcode.box, tokReturnType);
+                staticCallSiteSetupStream.Emit(ILOpcode.box, tokReturnType);
             }
 
             thisCallSiteSetupStream.Emit(ILOpcode.ret);
@@ -309,6 +374,7 @@ namespace Internal.IL.Stubs
         None,
         Value,
         Reference,
+        Pointer,
     }
 
     /// <summary>
@@ -338,9 +404,52 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return _signature[index].IsByRef ?
-                    DynamicInvokeMethodParameterKind.Reference :
-                    DynamicInvokeMethodParameterKind.Value;
+                TypeDesc type = _signature[index];
+
+                if (type.IsByRef)
+                    return DynamicInvokeMethodParameterKind.Reference;
+                else if (type.IsPointer)
+                    return DynamicInvokeMethodParameterKind.Pointer;
+                else
+                    return DynamicInvokeMethodParameterKind.Value;
+            }
+        }
+
+        public static int GetNumberOfIndirections(TypeDesc type)
+        {
+            int result = 0;
+            while (type.IsPointer)
+            {
+                result++;
+                type = ((PointerType)type).ParameterType;
+            }
+
+            return result;
+        }
+
+        public int GetNumberOfParameterPointerIndirections(int paramIndex)
+        {
+            return GetNumberOfIndirections(_signature[paramIndex]);
+        }
+
+        public int GetNumerOfReturnTypePointerIndirections()
+        {
+            return GetNumberOfIndirections(_signature.ReturnType);
+        }
+
+        public DynamicInvokeMethodParameterKind ReturnType
+        {
+            get
+            {
+                Debug.Assert(!_signature.ReturnType.IsByRef);
+
+                TypeDesc type = _signature.ReturnType;
+                if (type.IsPointer)
+                    return DynamicInvokeMethodParameterKind.Pointer;
+                else if (type.IsVoid)
+                    return DynamicInvokeMethodParameterKind.None;
+                else
+                    return DynamicInvokeMethodParameterKind.Value;
             }
         }
 
@@ -359,7 +468,7 @@ namespace Internal.IL.Stubs
 
         public override int GetHashCode()
         {
-            int hashCode = HasReturnValue ? 17 : 23;
+            int hashCode = (int)this.ReturnType * 0x5498341 + 0x832424;
 
             for (int i = 0; i < Length; i++)
             {
@@ -372,7 +481,12 @@ namespace Internal.IL.Stubs
 
         public bool Equals(DynamicInvokeMethodSignature other)
         {
-            if (HasReturnValue != other.HasReturnValue)
+            DynamicInvokeMethodParameterKind thisReturnKind = ReturnType;
+            if (thisReturnKind != other.ReturnType)
+                return false;
+
+            if (thisReturnKind == DynamicInvokeMethodParameterKind.Pointer &&
+                GetNumerOfReturnTypePointerIndirections() != other.GetNumerOfReturnTypePointerIndirections())
                 return false;
             
             if (Length != other.Length)
@@ -380,7 +494,12 @@ namespace Internal.IL.Stubs
 
             for (int i = 0; i < Length; i++)
             {
-                if (this[i] != other[i])
+                DynamicInvokeMethodParameterKind thisParamKind = this[i];
+                if (thisParamKind != other[i])
+                    return false;
+
+                if (thisParamKind == DynamicInvokeMethodParameterKind.Pointer &&
+                    GetNumberOfParameterPointerIndirections(i) != other.GetNumberOfParameterPointerIndirections(i))
                     return false;
             }
 

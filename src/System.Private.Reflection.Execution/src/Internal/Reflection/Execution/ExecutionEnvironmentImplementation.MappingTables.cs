@@ -471,27 +471,17 @@ namespace Internal.Reflection.Execution
             }
         }
 
-        private IntPtr GetDynamicMethodInvokerThunk(RuntimeTypeHandle[] argHandles, MethodBase methodInfo)
+        private IntPtr GetDynamicMethodInvokerThunk(MethodBase methodInfo)
         {
-            ParameterInfo[] parameters = methodInfo.GetParametersNoCopy();
-            // last entry in argHandles is the return type if the type is not typeof(void)
-            Debug.Assert(parameters.Length == argHandles.Length || parameters.Length == (argHandles.Length - 1));
-
-            bool[] byRefParameters = new bool[parameters.Length + 1];
-            RuntimeTypeHandle[] parameterTypeHandles = new RuntimeTypeHandle[parameters.Length + 1];
-
-            // This is either a constructor ("returns" void) or an instance method
-            MethodInfo reflectionMethodInfo = methodInfo as MethodInfo;
-            parameterTypeHandles[0] = (reflectionMethodInfo != null ? reflectionMethodInfo.ReturnType.TypeHandle : CommonRuntimeTypes.Void.TypeHandle);
-            byRefParameters[0] = false;
-
-            for (int i = 0; i < parameters.Length; i++)
-            {
-                parameterTypeHandles[i + 1] = argHandles[i];
-                byRefParameters[i + 1] = parameters[i].ParameterType.IsByRef;
-            }
-
-            return CallConverterThunk.MakeThunk(ThunkKind.ReflectionDynamicInvokeThunk, IntPtr.Zero, IntPtr.Zero, false, parameterTypeHandles, byRefParameters, null);
+            MethodParametersInfo methodParamsInfo = new MethodParametersInfo(methodInfo);
+            return CallConverterThunk.MakeThunk(
+                ThunkKind.ReflectionDynamicInvokeThunk,
+                IntPtr.Zero,
+                IntPtr.Zero,
+                false,
+                methodParamsInfo.ReturnTypeAndParameterTypeHandles.ToArray(),
+                methodParamsInfo.ReturnTypeAndParametersByRefFlags,
+                null);
         }
 
         private RuntimeTypeHandle[] GetDynamicInvokeInstantiationArguments(MethodBase reflectionMethodBase)
@@ -509,6 +499,17 @@ namespace Internal.Reflection.Execution
             // Only use the return type if it's not void
             if (!returnType.Equals(CommonRuntimeTypes.Void))
                 dynamicInvokeMethodGenArguments.Add(returnType.TypeHandle);
+
+            for (int i = 0; i < dynamicInvokeMethodGenArguments.Count; i++)
+            {
+                // We can't instantiate over pointer types, so the DynamicInvoke method compensates for it already.
+                RuntimeTypeHandle type = dynamicInvokeMethodGenArguments[i];
+                while (RuntimeAugments.IsUnmanagedPointerType(type))
+                {
+                    type = RuntimeAugments.GetRelatedParameterTypeHandle(type);
+                }
+                dynamicInvokeMethodGenArguments[i] = type;
+            }
 
             return dynamicInvokeMethodGenArguments.ToArray();
         }
@@ -599,17 +600,17 @@ namespace Internal.Reflection.Execution
                     methodHandle.NativeFormatHandle);
             }
 
-            RuntimeTypeHandle[] dynInvokeMethodArgs = GetDynamicInvokeInstantiationArguments(methodInfo);
-
             IntPtr dynamicInvokeMethod;
             IntPtr dynamicInvokeMethodGenericDictionary;
             if ((methodInvokeMetadata.InvokeTableFlags & InvokeTableFlags.NeedsParameterInterpretation) != 0)
             {
-                dynamicInvokeMethod = GetDynamicMethodInvokerThunk(dynInvokeMethodArgs, methodInfo);
+                dynamicInvokeMethod = GetDynamicMethodInvokerThunk(methodInfo);
                 dynamicInvokeMethodGenericDictionary = IntPtr.Zero;
             }
             else
             {
+                RuntimeTypeHandle[] dynInvokeMethodArgs = GetDynamicInvokeInstantiationArguments(methodInfo);
+
                 GetDynamicMethodInvokeMethodInfo(
                     methodInvokeMetadata.MappingTableModule,
                     methodInvokeMetadata.DynamicInvokeCookie,
@@ -1451,10 +1452,7 @@ namespace Internal.Reflection.Execution
                     {
                         Type parameterType = parameters[i].ParameterType;
 
-                        // If the parameter is a pointer type, use IntPtr. Else use the actual parameter type.
-                        if (parameterType.IsPointer)
-                            result.Add(CommonRuntimeTypes.IntPtr.TypeHandle);
-                        else if (parameterType.IsByRef)
+                        if (parameterType.IsByRef)
                             result.Add(parameterType.GetElementType().TypeHandle);
                         else if (parameterType.GetTypeInfo().IsEnum && !parameters[i].HasDefaultValue)
                             result.Add(Enum.GetUnderlyingType(parameterType).TypeHandle);

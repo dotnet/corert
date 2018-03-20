@@ -226,13 +226,6 @@ namespace ILCompiler
         {
             var signature = method.Signature;
 
-            // ----------------------------------------------------------------
-            // TODO: support for methods returning pointer types - https://github.com/dotnet/corert/issues/2113
-            // ----------------------------------------------------------------
-
-            if (signature.ReturnType.IsPointer)
-                return false;
-
             for (int i = 0; i < signature.Length; i++)
                 if (signature[i].IsByRef && ((ByRefType)signature[i]).ParameterType.IsPointer)
                     return false;
@@ -483,10 +476,12 @@ namespace ILCompiler
 
                     Debug.Assert(!parameterType.IsPointer); // TODO: support for methods returning pointer types - https://github.com/dotnet/corert/issues/2113
                 }
-                else if (parameterType.IsPointer || parameterType.IsFunctionPointer)
+                else if (parameterType.IsPointer)
                 {
-                    // For pointer typed parameters, instantiate the method over IntPtr
-                    parameterType = context.GetWellKnownType(WellKnownType.IntPtr);
+                    // Strip off all the pointers. Pointers are not valid instantiation arguments and the thunk compensates for that
+                    // by being specialized for the specific pointer depth.
+                    while (parameterType.IsPointer)
+                        parameterType = ((PointerType)parameterType).ParameterType;
                 }
                 else if (parameterType.IsEnum)
                 {
@@ -525,6 +520,11 @@ namespace ILCompiler
                 {
                     returnType = context.GetWellKnownType(WellKnownType.Object);
                 }
+
+                // Strip off all the pointers. Pointers are not valid instantiation arguments and the thunk compensates for that
+                // by being specialized for the specific pointer depth.
+                while (returnType.IsPointer)
+                    returnType = ((PointerType)returnType).ParameterType;
 
                 instantiation[sig.Length] = returnType;
             }

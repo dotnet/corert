@@ -89,9 +89,34 @@ internal class ReflectionTest
             {
                 return "Hello " + _world;
             }
+
+#if OPTIMIZED_MODE_WITHOUT_SCANNER
+            [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+#endif
+            public static unsafe string GetHelloPointer(char* ptr)
+            {
+                return "Hello " + unchecked((int)ptr);
+            }
+
+#if OPTIMIZED_MODE_WITHOUT_SCANNER
+            [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+#endif
+            public static unsafe string GetHelloPointerToo(char** ptr)
+            {
+                return "Hello " + unchecked((int)ptr);
+            }
+
+#if OPTIMIZED_MODE_WITHOUT_SCANNER
+            [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+#endif
+            public static unsafe bool* GetPointer(void* ptr, object dummyJustToMakeThisUseSharedThunk)
+            {
+                return (bool*)ptr;
+            }
+
         }
 
-        public static void Run()
+        public static unsafe void Run()
         {
             Console.WriteLine(nameof(TestReflectionInvoke));
 
@@ -102,6 +127,9 @@ internal class ReflectionTest
                 InvokeTests.GetHello(null);
                 InvokeTests.GetHelloGeneric<int>(0);
                 InvokeTests.GetHelloGeneric<double>(0);
+                InvokeTests.GetHelloPointer(null);
+                InvokeTests.GetHelloPointerToo(null);
+                InvokeTests.GetPointer(null, null);
                 string unused;
                 InvokeTests.GetHelloByRef(null, out unused);
                 unused.ToString();
@@ -126,6 +154,31 @@ internal class ReflectionTest
                 object[] args = new object[] { "world", null };
                 helloByRefMethod.Invoke(null, args);
                 if ((string)args[1] != "Hello world")
+                    throw new Exception();
+            }
+
+            {
+                MethodInfo helloPointerMethod = typeof(InvokeTests).GetTypeInfo().GetDeclaredMethod("GetHelloPointer");
+                string resultNull = (string)helloPointerMethod.Invoke(null, new object[] { null });
+                if (resultNull != "Hello 0")
+                    throw new Exception();
+
+                string resultVal = (string)helloPointerMethod.Invoke(null, new object[] { Pointer.Box((void*)42, typeof(char*)) });
+                if (resultVal != "Hello 42")
+                    throw new Exception();
+            }
+
+            {
+                MethodInfo helloPointerTooMethod = typeof(InvokeTests).GetTypeInfo().GetDeclaredMethod("GetHelloPointerToo");
+                string result = (string)helloPointerTooMethod.Invoke(null, new object[] { Pointer.Box((void*)85, typeof(char**)) });
+                if (result != "Hello 85")
+                    throw new Exception();
+            }
+
+            {
+                MethodInfo getPointerMethod = typeof(InvokeTests).GetTypeInfo().GetDeclaredMethod("GetPointer");
+                object result = getPointerMethod.Invoke(null, new object[] { Pointer.Box((void*)2018, typeof(void*)), null });
+                if (Pointer.Unbox(result) != (void*)2018)
                     throw new Exception();
             }
         }
