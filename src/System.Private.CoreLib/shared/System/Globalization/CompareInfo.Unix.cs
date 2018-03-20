@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -224,7 +225,7 @@ namespace System.Globalization
 
             if (target.Length == 0)
             {
-                if(matchLengthPtr != null)
+                if (matchLengthPtr != null)
                     *matchLengthPtr = 0;
                 return startIndex;
             }
@@ -232,25 +233,27 @@ namespace System.Globalization
             if (options == CompareOptions.Ordinal)
             {
                 index = IndexOfOrdinal(source, target, startIndex, count, ignoreCase: false);
-                if(index != -1)
+                if (index != -1)
                 {
-                    if(matchLengthPtr != null)
+                    if (matchLengthPtr != null)
                         *matchLengthPtr = target.Length;
                 }
                 return index;
             }
+
 #if CORECLR
             if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsFastSort() && target.IsFastSort())
             {
                 index = IndexOf(source, target, startIndex, count, GetOrdinalCompareOptions(options));
-                if(index != -1)
+                if (index != -1)
                 {
-                    if(matchLengthPtr != null)
+                    if (matchLengthPtr != null)
                         *matchLengthPtr = target.Length;
                 }
                 return index;
             }
 #endif
+
             fixed (char* pSource = source)
             {
                 index = Interop.Globalization.IndexOf(_sortHandle, target, target.Length, pSource + startIndex, count, options, matchLengthPtr);
@@ -599,7 +602,7 @@ namespace System.Globalization
 
             return Interop.Globalization.EndsWith(_sortHandle, suffix, suffix.Length, source, source.Length, options);
         }
-        
+
         private unsafe bool EndsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options)
         {
             Debug.Assert(!_invariantMode);
@@ -738,14 +741,17 @@ namespace System.Globalization
 
                 fixed (byte* pSortKey = keyData)
                 {
-                    Interop.Globalization.GetSortKey(_sortHandle, source, source.Length, pSortKey, sortKeyLength, options);
+                    if (Interop.Globalization.GetSortKey(_sortHandle, source, source.Length, pSortKey, sortKeyLength, options) != sortKeyLength)
+                    {
+                        throw new ArgumentException(SR.Arg_ExternalException);
+                    }
                 }
             }
 
             return new SortKey(Name, source, options, keyData);
         }       
 
-        private unsafe static bool IsSortable(char *text, int length)
+        private static unsafe bool IsSortable(char *text, int length)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
@@ -802,45 +808,28 @@ namespace System.Globalization
 
             int sortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, source, source.Length, null, 0, options);
 
-            // As an optimization, for small sort keys we allocate the buffer on the stack.
-            if (sortKeyLength <= 256)
+            byte[] borrowedArr = null;
+            Span<byte> span = sortKeyLength <= 512 ?
+                stackalloc byte[512] :
+                (borrowedArr = ArrayPool<byte>.Shared.Rent(sortKeyLength));
+
+            fixed (byte* pSortKey = &MemoryMarshal.GetReference(span))
             {
-                byte* pSortKey = stackalloc byte[sortKeyLength];
-                Interop.Globalization.GetSortKey(_sortHandle, source, source.Length, pSortKey, sortKeyLength, options);
-                return InternalHashSortKey(pSortKey, sortKeyLength);
+                if (Interop.Globalization.GetSortKey(_sortHandle, source, source.Length, pSortKey, sortKeyLength, options) != sortKeyLength)
+                {
+                    throw new ArgumentException(SR.Arg_ExternalException);
+                }
             }
 
-            byte[] sortKey = new byte[sortKeyLength];
+            int hash = Marvin.ComputeHash32(span.Slice(0, sortKeyLength), Marvin.DefaultSeed);
 
-            fixed (byte* pSortKey = &sortKey[0])
+            // Return the borrowed array if necessary.
+            if (borrowedArr != null)
             {
-                Interop.Globalization.GetSortKey(_sortHandle, source, source.Length, pSortKey, sortKeyLength, options);
-                return InternalHashSortKey(pSortKey, sortKeyLength);
-            }
-        }
-
-        private static unsafe int InternalHashSortKey(byte* sortKey, int sortKeyLength)
-        {
-            // TODO: Random hashing is yet to be done
-            // Active Issue: https://github.com/dotnet/corert/issues/2588
-
-            int hash1 = 5381;
-            int hash2 = hash1;
-            if (sortKeyLength == 0)
-            {
-                return 0;
-            }
-            if (sortKeyLength == 1)
-            {
-                return (((hash1 << 5) + hash1) ^ sortKey[0]) + (hash2 * 1566083941);
+                ArrayPool<byte>.Shared.Return(borrowedArr);
             }
 
-            for (int i = 0; i < (sortKeyLength & ~1); i += 2) 
-            {
-                hash1 = ((hash1 << 5) + hash1) ^ sortKey[i];
-                hash2 = ((hash2 << 5) + hash2) ^ sortKey[i+1];
-            }
-            return hash1 + (hash2 * 1566083941);
+            return hash;
         }
 
         private static CompareOptions GetOrdinalCompareOptions(CompareOptions options)
