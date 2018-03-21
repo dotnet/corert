@@ -4,8 +4,12 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>ILVerify</RootNamespace>
     <AssemblyName>ILVerify</AssemblyName>
-    <AssemblyKey></AssemblyKey>
     <AssemblyOriginatorKeyFile>..\..\ILVerification\StrongNameKeys\ILVerify.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+    <!-- Suppress signing done by buildtools sign.targets -->
+    <SkipSigning>true</SkipSigning>
+    <!-- Delete once we pick up fix for https://github.com/dotnet/roslyn/issues/8210 -->
+    <DelaySign Condition="'$(OS)' != 'Windows_NT'">true</DelaySign>
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <CopyNugetImplementations>false</CopyNugetImplementations>
     <!-- Force .dll extension even if output type is exe. -->
