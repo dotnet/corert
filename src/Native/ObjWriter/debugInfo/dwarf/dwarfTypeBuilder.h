@@ -55,7 +55,7 @@ protected:
                          const MCExpr *OffsetExpr,
                          unsigned Size);
 
-  static void EmitInfoOffset(MCObjectStreamer *Streamer, DwarfInfo *Info, unsigned Size);
+  static void EmitInfoOffset(MCObjectStreamer *Streamer, const DwarfInfo *Info, unsigned Size);
 
   MCSymbol *StrSymbol;
   MCSymbol *InfoSymbol;
@@ -129,25 +129,45 @@ public:
   DwarfDataField(const DataFieldDescriptor &Descriptor) :
       Name(Descriptor.Name),
       TypeIndex(Descriptor.FieldTypeIndex),
-      Offset(Descriptor.Offset),
-      IsStatic(Offset == 0xFFFFFFFF) {}
+      Offset(Descriptor.Offset) {}
 
   void DumpTypes(UserDefinedDwarfTypesBuilder *TypeBuilder, MCObjectStreamer *Streamer,
       MCSection *TypeSection, MCSection *StrSection) override;
 
   uint32_t GetTypeIndex() const { return TypeIndex; }
 
-  bool IsStaticMethod() const { return IsStatic; }
+  const std::string &GetName() const { return Name; }
 
 protected:
   void DumpStrings(MCObjectStreamer *Streamer) override;
   void DumpTypeInfo(MCObjectStreamer *Streamer, UserDefinedDwarfTypesBuilder *TypeBuilder) override;
 
-private:
   std::string Name;
   uint32_t TypeIndex;
   uint64 Offset;
-  bool IsStatic;
+};
+
+class DwarfStaticDataField : public DwarfDataField
+{
+public:
+  DwarfStaticDataField(const DataFieldDescriptor &Descriptor,
+                       const StaticDataFieldDescriptor &StaticDescriptor) :
+                       DwarfDataField(Descriptor),
+                       StaticDataName(StaticDescriptor.StaticDataName),
+                       StaticOffset(StaticDescriptor.StaticOffset),
+                       StaticDataInObject(StaticDescriptor.IsStaticDataInObject) {}
+
+  const std::string &GetStaticDataName() const { return StaticDataName; }
+  uint64 GetStaticOffset() const { return StaticOffset; }
+  bool IsStaticDataInObject() const { return StaticDataInObject; }
+
+protected:
+  void DumpTypeInfo(MCObjectStreamer *Streamer, UserDefinedDwarfTypesBuilder *TypeBuilder) override;
+
+private:
+  std::string StaticDataName;
+  uint64 StaticOffset;
+  bool StaticDataInObject;
 };
 
 class DwarfMemberFunctionIdTypeInfo;
@@ -164,7 +184,8 @@ public:
 
   DwarfClassTypeInfo(const ClassTypeDescriptor &ClassDescriptor,
                      const ClassFieldsTypeDescriptior &ClassFieldsDescriptor,
-                     const DataFieldDescriptor *FieldsDescriptors);
+                     const DataFieldDescriptor *FieldsDescriptors,
+                     const StaticDataFieldDescriptor *StaticsDescriptors);
 
   void Dump(UserDefinedDwarfTypesBuilder *TypeBuilder, MCObjectStreamer *Streamer,
       MCSection *TypeSection, MCSection *StrSection) override;
@@ -175,6 +196,10 @@ public:
   void AddMemberFunction(DwarfMemberFunctionIdTypeInfo* TypeInfo) {
     MemberFunctions.push_back(TypeInfo);
   }
+
+  const std::vector<DwarfStaticDataField> &GetStaticFields() const { return StaticFields; }
+
+  const std::string &GetName() const { return Name; }
 
 protected:
   void DumpStrings(MCObjectStreamer *Streamer) override;
@@ -187,6 +212,7 @@ private:
   uint64 Size;
   bool IsForwardDecl;
   std::vector<DwarfDataField> Fields;
+  std::vector<DwarfStaticDataField> StaticFields;
   std::vector<DwarfMemberFunctionIdTypeInfo*> MemberFunctions;
 };
 
@@ -305,7 +331,8 @@ public:
   unsigned GetCompleteClassTypeIndex(
       const ClassTypeDescriptor &ClassDescriptor,
       const ClassFieldsTypeDescriptior &ClassFieldsDescriptor,
-      const DataFieldDescriptor *FieldsDescriptors) override;
+      const DataFieldDescriptor *FieldsDescriptors,
+      const StaticDataFieldDescriptor *StaticsDescriptors) override;
 
   unsigned GetArrayTypeIndex(const ClassTypeDescriptor &ClassDescriptor,
                              const ArrayTypeDescriptor &ArrayDescriptor) override;
@@ -323,6 +350,8 @@ public:
 
   unsigned GetSimpleArrayTypeIndex(unsigned ElemIndex, unsigned Size);
 
+  const std::vector<DwarfClassTypeInfo*> &GetClassesWithStaticFields() const { return ClassesWithStaticFields; }
+
 private:
   static const unsigned StartTypeIndex = 1; // Make TypeIndex 0 - Invalid
   static unsigned TypeIndexToArrayIndex(unsigned TypeIndex) { return TypeIndex - StartTypeIndex; }
@@ -332,4 +361,6 @@ private:
   std::unordered_map<PrimitiveTypeFlags, uint32_t, EnumHash<PrimitiveTypeFlags>> PrimitiveDwarfTypes;
   // map[ElemTypeIndex][Size] -> ArrTypeIndex
   std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t>> SimpleArrayDwarfTypes;
+
+  std::vector<DwarfClassTypeInfo*> ClassesWithStaticFields;
 };

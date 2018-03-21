@@ -843,9 +843,10 @@ ObjectWriter::GetClassTypeIndex(const ClassTypeDescriptor &ClassDescriptor) {
 unsigned ObjectWriter::GetCompleteClassTypeIndex(
     const ClassTypeDescriptor &ClassDescriptor,
     const ClassFieldsTypeDescriptior &ClassFieldsDescriptor,
-    const DataFieldDescriptor *FieldsDescriptors) {
-  unsigned res = TypeBuilder->GetCompleteClassTypeIndex(
-      ClassDescriptor, ClassFieldsDescriptor, FieldsDescriptors);
+    const DataFieldDescriptor *FieldsDescriptors,
+    const StaticDataFieldDescriptor *StaticsDescriptors) {
+  unsigned res = TypeBuilder->GetCompleteClassTypeIndex(ClassDescriptor,
+      ClassFieldsDescriptor, FieldsDescriptors, StaticsDescriptors);
   return res;
 }
 

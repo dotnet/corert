@@ -89,7 +89,8 @@ public:
   unsigned GetCompleteClassTypeIndex(
       const ClassTypeDescriptor &ClassDescriptor,
       const ClassFieldsTypeDescriptior &ClassFieldsDescriptor,
-      const DataFieldDescriptor *FieldsDescriptors);
+      const DataFieldDescriptor *FieldsDescriptors,
+      const StaticDataFieldDescriptor *StaticsDescriptors);
 
   unsigned GetArrayTypeIndex(const ClassTypeDescriptor &ClassDescriptor,
                              const ArrayTypeDescriptor &ArrayDescriptor);
@@ -316,10 +317,11 @@ DLL_EXPORT unsigned GetClassTypeIndex(ObjectWriter *OW,
 DLL_EXPORT unsigned
 GetCompleteClassTypeIndex(ObjectWriter *OW, ClassTypeDescriptor ClassDescriptor,
                           ClassFieldsTypeDescriptior ClassFieldsDescriptor,
-                          DataFieldDescriptor *FieldsDescriptors) {
+                          DataFieldDescriptor *FieldsDescriptors,
+                          StaticDataFieldDescriptor *StaticsDescriptors) {
   assert(OW && "ObjWriter is null");
   return OW->GetCompleteClassTypeIndex(ClassDescriptor, ClassFieldsDescriptor,
-                                       FieldsDescriptors);
+                                       FieldsDescriptors, StaticsDescriptors);
 }
 
 DLL_EXPORT unsigned GetArrayTypeIndex(ObjectWriter *OW,
