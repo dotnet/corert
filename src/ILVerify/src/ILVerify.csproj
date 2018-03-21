@@ -4,7 +4,8 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>ILVerify</RootNamespace>
     <AssemblyName>ILVerify</AssemblyName>
-    <KeyOriginatorFile>..\..\ILVerification\StrongNameKeys\ILVerify.snk</KeyOriginatorFile>
+    <AssemblyOriginatorKeyFile>..\..\ILVerification\StrongNameKeys\ILVerify.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
     <!-- Suppress signing done by buildtools sign.targets -->
     <SkipSigning>true</SkipSigning>
     <!-- Delete once we pick up fix for https://github.com/dotnet/roslyn/issues/8210 -->
