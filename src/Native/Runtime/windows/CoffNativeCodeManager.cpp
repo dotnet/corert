@@ -406,8 +406,8 @@ UIntNative CoffNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Metho
     }
     else
     {
-        // In amd64, it is guaranteed that there is a pushed RBP
-        // value at the top of the frame which resides above all outgoing arguments.  Unlike x86,
+        // In amd64, it is guaranteed that if there is a pushed RBP
+        // value at the top of the frame it resides above all outgoing arguments.  Unlike x86,
         // the frame pointer generally points to a location that is separated from the pushed RBP
         // value by an offset that is recorded in the info header.  Recover the address of the
         // pushed RBP value by subtracting this offset.
