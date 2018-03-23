@@ -167,7 +167,7 @@ namespace System.Threading
         /// </remarks>
         /// <param name="callback">The delegate to be executed when the <see cref="T:System.Threading.CancellationToken">CancellationToken</see> is canceled.</param>
         /// <returns>The <see cref="T:System.Threading.CancellationTokenRegistration"/> instance that can 
-        /// be used to deregister the callback.</returns>
+        /// be used to unregister the callback.</returns>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The associated <see
         /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
@@ -200,7 +200,7 @@ namespace System.Threading
         /// the current <see cref="T:System.Threading.SynchronizationContext">SynchronizationContext</see> and use it
         /// when invoking the <paramref name="callback"/>.</param>
         /// <returns>The <see cref="T:System.Threading.CancellationTokenRegistration"/> instance that can 
-        /// be used to deregister the callback.</returns>
+        /// be used to unregister the callback.</returns>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
         public CancellationTokenRegistration Register(Action callback, bool useSynchronizationContext)
         {
@@ -229,7 +229,7 @@ namespace System.Threading
         /// <param name="callback">The delegate to be executed when the <see cref="T:System.Threading.CancellationToken">CancellationToken</see> is canceled.</param>
         /// <param name="state">The state to pass to the <paramref name="callback"/> when the delegate is invoked.  This may be null.</param>
         /// <returns>The <see cref="T:System.Threading.CancellationTokenRegistration"/> instance that can 
-        /// be used to deregister the callback.</returns>
+        /// be used to unregister the callback.</returns>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
         public CancellationTokenRegistration Register(Action<Object> callback, Object state)
         {
@@ -265,7 +265,7 @@ namespace System.Threading
         /// the current <see cref="T:System.Threading.SynchronizationContext">SynchronizationContext</see> and use it
         /// when invoking the <paramref name="callback"/>.</param>
         /// <returns>The <see cref="T:System.Threading.CancellationTokenRegistration"/> instance that can 
-        /// be used to deregister the callback.</returns>
+        /// be used to unregister the callback.</returns>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The associated <see
         /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
@@ -308,7 +308,7 @@ namespace System.Threading
         /// the current <see cref="T:System.Threading.SynchronizationContext">SynchronizationContext</see> and use it
         /// when invoking the <paramref name="callback"/>.</param>
         /// <returns>The <see cref="T:System.Threading.CancellationTokenRegistration"/> instance that can 
-        /// be used to deregister the callback.</returns>
+        /// be used to unregister the callback.</returns>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The associated <see
         /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
