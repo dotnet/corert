@@ -191,6 +191,12 @@ namespace System.Threading
             Debug.Assert(!data._completed);
             data._completed = true;
 
+            if (data._executionContext == null)
+            {
+                data._callback(errorCode, bytesWritten, ToNativeOverlapped(overlapped));
+                return;
+            }
+
             ContextCallback callback = s_executionContextCallback;
             if (callback == null)
                 s_executionContextCallback = callback = OnExecutionContextCallback;
