@@ -527,7 +527,7 @@ namespace System.Threading
 
             if (disposing && !m_disposed)
             {
-                //NOTE: We specifically tolerate that a callback can be deregistered
+                //NOTE: We specifically tolerate that a callback can be unregistered
                 //      after the CTS has been disposed and/or concurrently with cts.Dispose().
                 //      This is safe without locks because the reg.Dispose() only
                 //      mutates a sparseArrayFragment and then reads from properties of the CTS that are not
@@ -665,9 +665,9 @@ namespace System.Threading
 
                 // If a cancellation has since come in, we will try to undo the registration and run the callback ourselves.
                 // (this avoids leaving the callback orphaned)
-                bool deregisterOccurred = registration.TryDeregister();
+                bool unregisterOccurred = registration.Unregister();
 
-                if (!deregisterOccurred)
+                if (!unregisterOccurred)
                 {
                     // The thread that is running Cancel() snagged our callback for execution.
                     // So we don't need to run it, but we do return the registration so that 
@@ -1114,7 +1114,7 @@ namespace System.Threading
         /// If no slots are available, the array is grown.  The method doesn't return until successful.
         /// </summary>
         /// <param name="element">The element to add.</param>
-        /// <returns>Information about where the add happened, to enable O(1) deregistration.</returns>
+        /// <returns>Information about where the add happened, to enable O(1) unregistration.</returns>
         internal SparselyPopulatedArrayAddInfo<T> Add(T element)
         {
             while (true)
@@ -1137,7 +1137,7 @@ namespace System.Threading
                         int c = curr.Length;
 
                         // We'll compute a start offset based on how many free slots we think there
-                        // are.  This optimizes for ordinary the LIFO deregistration pattern, and is
+                        // are.  This optimizes for ordinary the LIFO unregistration pattern, and is
                         // far from perfect due to the non-threadsafe ++ and -- of the free counter.
                         int start = ((c - curr.m_freeCount) % c);
                         if (start < 0)

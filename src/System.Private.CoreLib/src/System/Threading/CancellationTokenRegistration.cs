@@ -37,12 +37,13 @@ namespace System.Threading
         public CancellationToken Token => m_callbackInfo?.CancellationTokenSource.Token ?? default(CancellationToken);
 
         /// <summary>
-        /// Attempts to deregister the item. If it's already being run, this may fail.
+        /// Attempts to unregister the item. If it's already being run, this may fail.
         /// Entails a full memory fence.
         /// </summary>
-        /// <returns>True if the callback was found and deregistered, false otherwise.</returns>
+        /// <returns>True if the callback was found and unregistered, false otherwise.</returns>
+        // Called from System.Runtime.WindowsRuntime. Also see the proposal at https://github.com/dotnet/corefx/issues/14903.
         //[FriendAccessAllowed]
-        internal bool TryDeregister()
+        public bool Unregister()
         {
             if (m_registrationInfo.Source == null)  //can be null for dummy registrations.
                 return false;
@@ -61,14 +62,14 @@ namespace System.Threading
         /// <summary>
         /// Disposes of the registration and unregisters the target callback from the associated 
         /// <see cref="T:System.Threading.CancellationToken">CancellationToken</see>.
-        /// If the target callback is currently executing this method will wait until it completes, except
-        /// in the degenerate cases where a callback method deregisters itself.
+        /// If the target callback is currently executing, this method will wait until it completes, except
+        /// in the degenerate cases where a callback method unregisters itself.
         /// </summary>
         public void Dispose()
         {
             // Remove the entry from the array.
             // This call includes a full memory fence which prevents potential reorderings of the reads below
-            bool deregisterOccured = TryDeregister();
+            bool unregisterOccured = Unregister();
 
             // We guarantee that we will not return if the callback is being executed (assuming we are not currently called by the callback itself)
             // We achieve this by the following rules:
@@ -76,8 +77,8 @@ namespace System.Threading
             //       - if the currently executing callback is this CTR, then waiting would deadlock. (We choose to return rather than deadlock)
             //       - if not, then this CTR cannot be the one executing, hence no need to wait
             //
-            //    2. if deregistration failed, and we are on a different thread, then the callback may be running under control of cts.Cancel()
-            //       => poll until cts.ExecutingCallback is not the one we are trying to deregister.
+            //    2. if unregistration failed, and we are on a different thread, then the callback may be running under control of cts.Cancel()
+            //       => poll until cts.ExecutingCallback is not the one we are trying to unregister.
 
             var callbackInfo = m_callbackInfo;
             if (callbackInfo != null)
@@ -85,7 +86,7 @@ namespace System.Threading
                 var tokenSource = callbackInfo.CancellationTokenSource;
                 if (tokenSource.IsCancellationRequested && //running callbacks has commenced.
                     !tokenSource.IsCancellationCompleted && //running callbacks hasn't finished
-                    !deregisterOccured && //deregistration failed (ie the callback is missing from the list)
+                    !unregisterOccured && //unregistration failed (ie the callback is missing from the list)
                     tokenSource.ThreadIDExecutingCallbacks != Environment.CurrentManagedThreadId) //the executingThreadID is not this threadID.
                 {
                     // Callback execution is in progress, the executing thread is different to us and has taken the callback for execution

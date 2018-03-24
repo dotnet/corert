@@ -1465,6 +1465,7 @@ namespace ILCompiler.DependencyAnalysis
                 currentVTableIndex++;
 
             int sealedVTableSlot = 0;
+            DefType closestDefType = implType.GetClosestDefType();
 
             // Actual vtable slots follow
             foreach (MethodDesc declMethod in vtableEntriesToProcess)
@@ -1472,13 +1473,13 @@ namespace ILCompiler.DependencyAnalysis
                 // No generic virtual methods can appear in the vtable!
                 Debug.Assert(!declMethod.HasInstantiation);
 
-                MethodDesc implMethod = implType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(declMethod);
+                MethodDesc implMethod = closestDefType.FindVirtualFunctionTargetMethodOnObjectType(declMethod);
 
                 if (implMethod.CanMethodBeInSealedVTable() && !implType.IsArrayTypeWithoutGenericInterfaces())
                 {
                     // Sealed vtable entries on other types in the hierarchy should not be reported (types read entries
                     // from their own sealed vtables, and not from the sealed vtables of base types).
-                    if (implMethod.OwningType == implType)
+                    if (implMethod.OwningType == closestDefType)
                         operation(sealedVTableSlot++, true, declMethod, implMethod);
                 }
                 else
