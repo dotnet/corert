@@ -669,7 +669,18 @@ namespace Internal.IL
 
                 case TypeFlags.ValueType:
                 case TypeFlags.Nullable:
-                    return LLVM.ArrayType(LLVM.Int8Type(), (uint)type.GetElementSize().AsInt);
+                    {
+                        // LLVM thinks certain sizes of struct have a different calling convention than Clang does.
+                        // Treating them as ints fixes that and is more efficient in general
+                        if (type.GetElementSize().AsInt == 4)
+                        {
+                            return LLVM.Int32Type();
+                        }
+                        else
+                        {
+                            return LLVM.ArrayType(LLVM.Int8Type(), (uint)type.GetElementSize().AsInt);
+                        }
+                    }
 
                 case TypeFlags.Enum:
                     return GetLLVMTypeForTypeDesc(type.UnderlyingType);
