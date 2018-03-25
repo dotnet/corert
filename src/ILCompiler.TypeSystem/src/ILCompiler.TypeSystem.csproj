@@ -364,6 +364,12 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateThunks.Sorting.cs">
       <Link>IL\Stubs\DelegateThunks.Sorting.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DynamicInvokeMethodThunk.cs">
+      <Link>IL\Stubs\DynamicInvokeMethodThunk.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DynamicInvokeMethodThunk.Sorting.cs">
+      <Link>IL\Stubs\DynamicInvokeMethodThunk.Sorting.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\EnumThunks.cs">
       <Link>IL\Stubs\EnumThunks.cs</Link>
     </Compile>
@@ -390,6 +396,15 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.DelegateInfo.cs">
       <Link>IL\TypeSystemContext.DelegateInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.DynamicInvoke.cs">
+      <Link>IL\TypeSystemContext.DynamicInvoke.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.GeneratedAssembly.cs">
+      <Link>IL\TypeSystemContext.GeneratedAssembly.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.GeneratedAssembly.Sorting.cs">
+      <Link>IL\TypeSystemContext.GeneratedAssembly.Sorting.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\EcmaMethodIL.cs">
       <Link>IL\EcmaMethodIL.cs</Link>

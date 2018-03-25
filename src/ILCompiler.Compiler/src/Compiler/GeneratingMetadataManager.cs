@@ -9,7 +9,6 @@ using System.Text;
 
 using Internal.IL.Stubs;
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 using Internal.Metadata.NativeFormat.Writer;
 
 using ILCompiler.Metadata;
@@ -26,20 +25,14 @@ namespace ILCompiler
     {
         protected readonly string _metadataLogFile;
         protected readonly StackTraceEmissionPolicy _stackTraceEmissionPolicy;
-        private readonly Dictionary<DynamicInvokeMethodSignature, MethodDesc> _dynamicInvokeThunks;
         private readonly ModuleDesc _generatedAssembly;
 
-        public GeneratingMetadataManager(ModuleDesc generatedAssembly, CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy, string logFile, StackTraceEmissionPolicy stackTracePolicy)
+        public GeneratingMetadataManager(CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy, string logFile, StackTraceEmissionPolicy stackTracePolicy)
             : base(typeSystemContext, blockingPolicy)
         {
             _metadataLogFile = logFile;
             _stackTraceEmissionPolicy = stackTracePolicy;
-            _generatedAssembly = generatedAssembly;
-
-            if (DynamicInvokeMethodThunk.SupportsThunks(typeSystemContext))
-            {
-                _dynamicInvokeThunks = new Dictionary<DynamicInvokeMethodSignature, MethodDesc>();
-            }
+            _generatedAssembly = typeSystemContext.GeneratedAssembly;
         }
 
         public sealed override bool WillUseMetadataTokenToReferenceMethod(MethodDesc method)
@@ -182,9 +175,6 @@ namespace ILCompiler
         {
             Debug.Assert(IsReflectionInvokable(method));
 
-            if (_dynamicInvokeThunks == null)
-                return false;
-
             // Place an upper limit on how many parameters a method can have to still get a static stub.
             // From the past experience, methods taking 8000+ parameters get a stub that can hit various limitations
             // in the codegen. On Project N, we were limited to 256 parameters because of MDIL limitations.
@@ -199,17 +189,9 @@ namespace ILCompiler
         /// </summary>
         public sealed override MethodDesc GetCanonicalReflectionInvokeStub(MethodDesc method)
         {
-            TypeSystemContext context = method.Context;
-            var sig = method.Signature;
-
             // Get a generic method that can be used to invoke method with this shape.
-            MethodDesc thunk;
-            var lookupSig = new DynamicInvokeMethodSignature(sig);
-            if (!_dynamicInvokeThunks.TryGetValue(lookupSig, out thunk))
-            {
-                thunk = new DynamicInvokeMethodThunk(_generatedAssembly.GetGlobalModuleType(), lookupSig);
-                _dynamicInvokeThunks.Add(lookupSig, thunk);
-            }
+            var lookupSig = new DynamicInvokeMethodSignature(method.Signature);
+            MethodDesc thunk = _typeSystemContext.GetDynamicInvokeThunk(lookupSig);
 
             return InstantiateCanonicalDynamicInvokeMethodForMethod(thunk, method);
         }
