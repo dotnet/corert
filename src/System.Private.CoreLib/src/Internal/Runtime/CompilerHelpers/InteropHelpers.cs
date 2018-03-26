@@ -328,16 +328,17 @@ namespace Internal.Runtime.CompilerHelpers
 
             int nameLength = strlen(methodName);
 
-            byte* probedMethodName = stackalloc byte[nameLength + 1];
+            // We need to add an extra byte for the suffix, and an extra byte for the null terminator
+            byte* probedMethodName = stackalloc byte[nameLength + 2];
 
             for (int i = 0; i < nameLength; i++)
             {
                 probedMethodName[i] = methodName[i];
             }
 
-            probedMethodName[nameLength] = (charSetMangling == CharSet.Ansi) ? (byte)'A' : (byte)'U';
+            probedMethodName[nameLength] = (charSetMangling == CharSet.Ansi) ? (byte)'A' : (byte)'W';
 
-            IntPtr probedMethod = Interop.mincore.GetProcAddress(hModule, methodName);
+            IntPtr probedMethod = Interop.mincore.GetProcAddress(hModule, probedMethodName);
             if (probedMethod != IntPtr.Zero)
             {
                 return probedMethod;
