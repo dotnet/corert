@@ -102,7 +102,7 @@ namespace ILCompiler
             {
                 var pInvokeFixup = (PInvokeLazyFixupField)field;
                 PInvokeMetadata metadata = pInvokeFixup.PInvokeMetadata;
-                return NodeFactory.PInvokeMethodFixup(metadata.Module, metadata.Name);
+                return NodeFactory.PInvokeMethodFixup(metadata.Module, metadata.Name, metadata.Flags.ExactSpelling, metadata.Flags.CharSet);
             }
             else
             {

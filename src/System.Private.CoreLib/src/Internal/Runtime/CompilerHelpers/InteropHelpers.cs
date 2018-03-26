@@ -305,7 +305,7 @@ namespace Internal.Runtime.CompilerHelpers
             byte* methodName = (byte*)pCell->MethodName;
 
 #if !PLATFORM_UNIX
-            pCell->Target = Interop.mincore.GetProcAddress(hModule, methodName);
+            pCell->Target = GetProcAddress(hModule, methodName, pCell->CharSetMangling);
 #else
             pCell->Target = Interop.Sys.GetProcAddress(hModule, methodName);
 #endif
@@ -315,6 +315,37 @@ namespace Internal.Runtime.CompilerHelpers
                 throw new EntryPointNotFoundException(SR.Format(SR.Arg_EntryPointNotFoundExceptionParameterized, entryPointName, GetModuleName(pCell->Module)));
             }
         }
+
+#if !PLATFORM_UNIX
+        private static unsafe IntPtr GetProcAddress(IntPtr hModule, byte* methodName, CharSet charSetMangling)
+        {
+            var exactMatch = Interop.mincore.GetProcAddress(hModule, methodName);
+
+            if ((charSetMangling == CharSet.Ansi && exactMatch != IntPtr.Zero) || charSetMangling == 0)
+            {
+                return exactMatch;
+            }
+
+            int nameLength = strlen(methodName);
+
+            byte* probedMethodName = stackalloc byte[nameLength + 1];
+
+            for (int i = 0; i < nameLength; i++)
+            {
+                probedMethodName[i] = methodName[i];
+            }
+
+            probedMethodName[nameLength] = (charSetMangling == CharSet.Ansi) ? (byte)'A' : (byte)'U';
+
+            IntPtr probedMethod = Interop.mincore.GetProcAddress(hModule, methodName);
+            if (probedMethod != IntPtr.Zero)
+            {
+                return probedMethod;
+            }
+
+            return exactMatch;
+        }
+#endif
 
         internal static unsafe int strlen(byte* pString)
         {
@@ -379,6 +410,7 @@ namespace Internal.Runtime.CompilerHelpers
             public IntPtr Target;
             public IntPtr MethodName;
             public ModuleFixupCell* Module;
+            public CharSet CharSetMangling;
         }
     }
 }
