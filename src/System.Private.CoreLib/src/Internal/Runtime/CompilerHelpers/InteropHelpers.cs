@@ -319,6 +319,10 @@ namespace Internal.Runtime.CompilerHelpers
 #if !PLATFORM_UNIX
         private static unsafe IntPtr GetProcAddress(IntPtr hModule, byte* methodName, CharSet charSetMangling)
         {
+            // First look for the unmangled name.  If it is unicode function, we are going
+            // to need to check for the 'W' API because it takes precedence over the
+            // unmangled one (on NT some APIs have unmangled ANSI exports).
+            
             var exactMatch = Interop.mincore.GetProcAddress(hModule, methodName);
 
             if ((charSetMangling == CharSet.Ansi && exactMatch != IntPtr.Zero) || charSetMangling == 0)
