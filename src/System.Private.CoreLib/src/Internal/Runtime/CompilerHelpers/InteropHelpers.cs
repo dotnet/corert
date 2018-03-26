@@ -304,7 +304,7 @@ namespace Internal.Runtime.CompilerHelpers
         {
             byte* methodName = (byte*)pCell->MethodName;
 
-#if !PLATFORM_UNIX
+#if PLATFORM_WINDOWS
             pCell->Target = GetProcAddress(hModule, methodName, pCell->CharSetMangling);
 #else
             pCell->Target = Interop.Sys.GetProcAddress(hModule, methodName);
@@ -316,7 +316,7 @@ namespace Internal.Runtime.CompilerHelpers
             }
         }
 
-#if !PLATFORM_UNIX
+#if PLATFORM_WINDOWS
         private static unsafe IntPtr GetProcAddress(IntPtr hModule, byte* methodName, CharSet charSetMangling)
         {
             // First look for the unmangled name.  If it is unicode function, we are going
@@ -339,6 +339,8 @@ namespace Internal.Runtime.CompilerHelpers
             {
                 probedMethodName[i] = methodName[i];
             }
+
+            probedMethodName[nameLength + 1] = 0;
 
             probedMethodName[nameLength] = (charSetMangling == CharSet.Ansi) ? (byte)'A' : (byte)'W';
 
