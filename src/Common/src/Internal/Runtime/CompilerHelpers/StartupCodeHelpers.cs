@@ -101,36 +101,7 @@ namespace Internal.Runtime.CompilerHelpers
             s_modules[s_moduleCount] = newModuleHandle;
             s_moduleCount++;
         }
-
-        private struct TwoByteStr
-        {
-            public byte first;
-            public byte second;
-        }
-
-        [DllImport("*")]
-        private static unsafe extern int printf(byte* str, byte* unused);
-
-        private static unsafe void PrintString(string s)
-        {
-            int length = s.Length;
-            fixed (char* curChar = s)
-            {
-                for (int i = 0; i < length; i++)
-                {
-                    TwoByteStr curCharStr = new TwoByteStr();
-                    curCharStr.first = (byte)(*(curChar + i));
-                    printf((byte*)&curCharStr, null);
-                }
-            }
-        }
-
-        private static void PrintLine(string s)
-        {
-            PrintString(s);
-            PrintString("\n");
-        }
-
+        
         private static unsafe TypeManagerHandle[] CreateTypeManagers(IntPtr osModule, IntPtr* pModuleHeaders, int count, IntPtr* pClasslibFunctions, int nClasslibFunctions)
         {
             // Count the number of modules so we can allocate an array to hold the TypeManager objects.
@@ -151,33 +122,12 @@ namespace Internal.Runtime.CompilerHelpers
             {
                 if (pModuleHeaders[i] != IntPtr.Zero)
                 {
-                    TypeManagerHandle handle = CreateTypeManager(osModule, pModuleHeaders[i], pClasslibFunctions, nClasslibFunctions);
-                    //PrintString("CreateTypeManagers returned handle: ");
-                    //PrintLine(((uint)handle.GetIntPtrUNSAFE()).ToString());
-                    // todo morganb: this was previously modules[moduleIndex++], but that used the dup opcode, which was reloading the value after storing the incremented one 
-                    modules[moduleIndex] = handle;
+                    modules[moduleIndex] = RuntimeImports.RhpCreateTypeManager(osModule, pModuleHeaders[i], pClasslibFunctions, nClasslibFunctions);
                     moduleIndex++;
-                    //PrintString("Handle from array: ");
-                    //PrintLine(((uint)(modules[moduleIndex - 1].GetIntPtrUNSAFE())).ToString());
                 }
             }
 
             return modules;
-        }
-
-        private static unsafe TypeManagerHandle CreateTypeManager(IntPtr osModule, IntPtr pModuleHeader, IntPtr* pClasslibFunctions, int nClasslibFunctions)
-        {
-            IntPtr returnedPtr = RuntimeImports.RhpCreateTypeManager(osModule, pModuleHeader, pClasslibFunctions, nClasslibFunctions);
-            //PrintString("CreateTypeManager returned intptr ");
-            //PrintLine(((uint)returnedPtr).ToString());
-            TypeManagerHandle handle = new TypeManagerHandle(returnedPtr);
-            //PrintString("From handle prop ");
-            //PrintLine(((uint)handle.GetIntPtrUNSAFE()).ToString());
-            //PrintString("From coerced handle ");
-            //TypeManagerHandle* pHandle = &handle;
-            //uint* pCoercedHandle = (uint*)pHandle;
-            //PrintLine((*pCoercedHandle).ToString());
-            return handle;
         }
 
         /// <summary>
