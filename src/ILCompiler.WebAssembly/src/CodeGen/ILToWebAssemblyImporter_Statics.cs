@@ -53,8 +53,7 @@ namespace Internal.IL
                 string mangledName;
 
                 // TODO: Better detection of the StartupCodeMain method
-                //if (methodCodeNodeNeedingCode.Method.Signature.IsStatic && methodCodeNodeNeedingCode.Method.Name == "StartupCodeMain")
-                if (methodCodeNodeNeedingCode.Method.Signature.IsStatic && methodCodeNodeNeedingCode.Method.Name == "Main")
+                if (methodCodeNodeNeedingCode.Method.Signature.IsStatic && methodCodeNodeNeedingCode.Method.Name == "StartupCodeMain")
                 {
                     mangledName = "StartupCodeMain";
                 }

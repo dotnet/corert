@@ -141,6 +141,11 @@ namespace Internal.IL
                 {
                     EcmaMethod ecmaMethod = ((EcmaMethod)_method);
                     string exportName = ecmaMethod.IsRuntimeExport ? ecmaMethod.GetRuntimeExportName() : ecmaMethod.GetNativeCallableExportName();
+                    if (exportName == null)
+                    {
+                        exportName = ecmaMethod.Name;
+                    }
+
                     EmitNativeToManagedThunk(_compilation, _method, exportName, _llvmFunction);
                 }
             }
@@ -1324,7 +1329,15 @@ namespace Internal.IL
 
             string realMethodName = method.Name;
 
-            if (!method.IsPInvoke && method is TypeSystem.Ecma.EcmaMethod)
+            if (method.IsPInvoke)
+            {
+                string entrypointName = method.GetPInvokeMethodMetadata().Name;
+                if(!String.IsNullOrEmpty(entrypointName))
+                {
+                    realMethodName = entrypointName;
+                }
+            }
+            else if (!method.IsPInvoke && method is TypeSystem.Ecma.EcmaMethod)
             {
                 realMethodName = ((TypeSystem.Ecma.EcmaMethod)method).GetRuntimeImportName() ?? method.Name;
             }
