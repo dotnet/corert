@@ -93,9 +93,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             var exactMatchCompare = _exactMatchOnly.CompareTo(((PInvokeMethodFixupNode)other)._exactMatchOnly);
             if (exactMatchCompare != 0)
-            {
                 return exactMatchCompare;
-            }
 
             var charSetCompare = ((int)_charSet).CompareTo((int)((PInvokeMethodFixupNode)other)._charSet);
 
