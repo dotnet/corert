@@ -193,7 +193,7 @@ private:
 class DwarfSimpleArrayTypeInfo : public DwarfInfo
 {
 public:
-  DwarfSimpleArrayTypeInfo(uint32_t ArrayElementType, uint32_t Size) :
+  DwarfSimpleArrayTypeInfo(uint32_t ArrayElementType, uint64_t Size) :
                            ElementType(ArrayElementType),
                            Size(Size) {}
 
@@ -206,7 +206,7 @@ protected:
 
 private:
   uint32_t ElementType;
-  uint32_t Size;
+  uint64_t Size;
 };
 
 class DwarfPointerTypeInfo : public DwarfInfo

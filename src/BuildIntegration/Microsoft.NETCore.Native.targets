@@ -180,9 +180,9 @@ See the LICENSE file in the project root for more information.
       DependsOnTargets="IlcCompile">
 
     <ItemGroup>
-      <CompilerArg Include="$(IlcCompileOutput)" />
-      <CompilerArg Include="/Fo$(NativeObject)" Condition="'$(OS)' == 'Windows_NT'" />
-      <CompilerArg Include="-o $(NativeObject)" Condition="'$(OS)' != 'Windows_NT'" />
+      <CompilerArg Include="&quot;$(IlcCompileOutput)&quot;" />
+      <CompilerArg Include="/Fo&quot;$(NativeObject)&quot;" Condition="'$(OS)' == 'Windows_NT'" />
+      <CompilerArg Include="-o &quot;$(NativeObject)&quot;" Condition="'$(OS)' != 'Windows_NT'" />
       <CompilerArg Include="@(CppCompilerAndLinkerArg)" />
     </ItemGroup>
 
@@ -198,19 +198,19 @@ See the LICENSE file in the project root for more information.
       DependsOnTargets="$(LinkNativeDependsOn)">
 
     <ItemGroup>
-      <CustomLinkerArg Include="$(NativeObject)" />
-      <CustomLinkerArg Include="-o $(NativeBinary)" Condition="'$(OS)' != 'Windows_NT'" />
-      <CustomLinkerArg Include="/OUT:$(NativeBinary)" Condition="'$(OS)' == 'Windows_NT'" />
-      <CustomLinkerArg Include="/DEF:$(ExportsFile)" Condition="'$(OS)' == 'Windows_NT' and $(ExportsFile) != ''" />
+      <CustomLinkerArg Include="&quot;$(NativeObject)&quot;" />
+      <CustomLinkerArg Include="-o &quot;$(NativeBinary)&quot;" Condition="'$(OS)' != 'Windows_NT'" />
+      <CustomLinkerArg Include="/OUT:&quot;$(NativeBinary)&quot;" Condition="'$(OS)' == 'Windows_NT'" />
+      <CustomLinkerArg Include="/DEF:&quot;$(ExportsFile)&quot;" Condition="'$(OS)' == 'Windows_NT' and $(ExportsFile) != ''" />
       <CustomLinkerArg Include="/LIBPATH:&quot;%(AdditionalNativeLibraryDirectories.Identity)&quot;" Condition="'$(OS)' == 'Windows_NT' and '@(AdditionalNativeLibraryDirectories->Count())' &gt; 0" />
-      <CustomLinkerArg Include="-exported_symbols_list $(ExportsFile)" Condition="'$(OS)' != 'Windows_NT' and $(ExportsFile) != ''" />
+      <CustomLinkerArg Include="-exported_symbols_list &quot;$(ExportsFile)&quot;" Condition="'$(OS)' != 'Windows_NT' and $(ExportsFile) != ''" />
       <CustomLinkerArg Include="@(LinkerArg)" />
     </ItemGroup>
 
     <ItemGroup>
-      <CustomLibArg Include="-crs $(NativeBinary)" Condition="'$(OS)' != 'Windows_NT'" />
-      <CustomLibArg Include="/OUT:$(NativeBinary)" Condition="'$(OS)' == 'Windows_NT'" />
-      <CustomLibArg Include="$(NativeObject)" />
+      <CustomLibArg Include="-crs &quot;$(NativeBinary)&quot;" Condition="'$(OS)' != 'Windows_NT'" />
+      <CustomLibArg Include="/OUT:&quot;$(NativeBinary)&quot;" Condition="'$(OS)' == 'Windows_NT'" />
+      <CustomLibArg Include="&quot;$(NativeObject)&quot;" />
     </ItemGroup>
 
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(NativeBinary)))" />

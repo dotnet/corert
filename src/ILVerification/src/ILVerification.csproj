@@ -7,8 +7,12 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <TargetFramework>netstandard1.3</TargetFramework>
-    <AssemblyKey></AssemblyKey>
     <AssemblyOriginatorKeyFile>..\StrongNameKeys\ILVerify.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+    <!-- Suppress signing done by buildtools sign.targets -->
+    <SkipSigning>true</SkipSigning>
+    <!-- Delete once we pick up fix for https://github.com/dotnet/roslyn/issues/8210 -->
+    <DelaySign Condition="'$(OS)' != 'Windows_NT'">true</DelaySign>
   </PropertyGroup>
 
   <ItemGroup>
