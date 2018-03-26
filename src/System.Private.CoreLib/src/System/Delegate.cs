@@ -378,12 +378,14 @@ namespace System
 #else
                 IntPtr genericDictionary = IntPtr.Zero;
                 if (FunctionPointerOps.IsGenericMethodPointer(invokeThunk))
+                {
                     unsafe
                     {
                         GenericMethodDescriptor* descriptor = FunctionPointerOps.ConvertToGenericDescriptor(invokeThunk);
                         genericDictionary = descriptor->InstantiationArgument;
                         invokeThunk = descriptor->MethodFunctionPointer;
                     }
+                }
 
                 object result = InvokeUtils.CallDynamicInvokeMethod(this.m_firstParameter, this.m_functionPointer, null, invokeThunk, genericDictionary, this, args, binderBundle: null, wrapInTargetInvocationException: true, invokeMethodHelperIsThisCall: false);
 #endif
