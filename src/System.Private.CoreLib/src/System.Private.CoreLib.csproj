@@ -268,7 +268,6 @@
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
     <Compile Include="System\Runtime\Loader\AssemblyLoadContext.cs" />
     <Compile Include="System\Runtime\Serialization\SerializationInfo.cs" />
-    <Compile Include="System\String.Comparison.cs" />
     <Compile Include="System\String.CoreRT.cs" />
     <Compile Include="System\String.Intern.cs" />
     <Compile Include="System\Array.cs" />
