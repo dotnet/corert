@@ -24,7 +24,9 @@
       <NativeRunnerCompilerArg Include="/Fo$(NativeRunnerBinary)" Condition="'$(OS)' == 'Windows_NT'" />
       <NativeRunnerCompilerArg Include="/Fe$(NativeRunnerBinary)" Condition="'$(OS)' == 'Windows_NT'" />
       <NativeRunnerCompilerArg Include="$(NativeBinary)" Condition="'$(OS)' == 'Windows_NT'" />
-      <NativeRunnerCompilerArg Include="@(NativeLibrary)" Condition="'$(OS)' == 'Windows_NT'" />      
+      <NativeRunnerCompilerArg Include="@(NativeLibrary)" Condition="'$(OS)' == 'Windows_NT'" />
+      <NativeRunnerCompilerArg Include="/MTd" Condition="'$(OS)' == 'Windows_NT' and '$(Configuration)' == 'Debug'" />
+      <NativeRunnerCompilerArg Include="/MT" Condition="'$(OS)' == 'Windows_NT' and '$(Configuration)' != 'Debug'" />
     </ItemGroup>
 
     <ItemGroup>
