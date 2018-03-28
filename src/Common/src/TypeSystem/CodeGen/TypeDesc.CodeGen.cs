@@ -18,4 +18,13 @@ namespace Internal.TypeSystem
             }
         }
     }
+
+    partial class InstantiatedType
+    {
+        partial void AddComputedIntrinsicFlag(ref TypeFlags flags)
+        {
+            if (_typeDef.IsIntrinsic)
+                flags |= TypeFlags.IsIntrinsic;
+        }
+    }
 }
