@@ -17,12 +17,11 @@ namespace ILCompiler
         private HashSet<ModuleDesc> _compilationModuleSet;
 
         public MultiFileCompilationModuleGroup(TypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
-            : base(context)
         {
             _compilationModuleSet = new HashSet<ModuleDesc>(compilationModuleSet);
 
             // The fake assembly that holds compiler generated types is part of the compilation.
-            _compilationModuleSet.Add(this.GeneratedAssembly);
+            _compilationModuleSet.Add(context.GeneratedAssembly);
         }
 
         public sealed override bool ContainsType(TypeDesc type)

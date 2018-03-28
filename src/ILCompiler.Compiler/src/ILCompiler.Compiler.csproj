@@ -58,9 +58,6 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\ComparerIntrinsics.cs">
       <Link>IL\Stubs\ComparerIntrinsics.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DynamicInvokeMethodThunk.Sorting.cs">
-      <Link>IL\Stubs\DynamicInvokeMethodThunk.Sorting.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\GetCanonTypeIntrinsic.cs">
       <Link>IL\Stubs\GetCanonTypeIntrinsic.cs</Link>
     </Compile>
@@ -72,9 +69,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateMethodILEmitter.cs">
       <Link>IL\Stubs\DelegateMethodILEmitter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DynamicInvokeMethodThunk.cs">
-      <Link>IL\Stubs\DynamicInvokeMethodThunk.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\EETypePtrOfIntrinsic.cs">
       <Link>IL\Stubs\EETypePtrOfIntrinsic.cs</Link>
@@ -100,8 +94,6 @@
     <Compile Include="Compiler\AnalysisBasedMetadataManager.cs" />
     <Compile Include="Compiler\BlockedInternalsBlockingPolicy.cs" />
     <Compile Include="Compiler\CodeGenerationFailedException.cs" />
-    <Compile Include="Compiler\CompilerGeneratedType.cs" />
-    <Compile Include="Compiler\CompilerGeneratedType.Sorting.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.BoxedTypes.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Mangling.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Sorting.cs" />

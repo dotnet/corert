@@ -661,232 +661,6 @@ namespace Internal.IL.Stubs
     }
 
     /// <summary>
-    /// Delegate thunk that supports Delegate.DynamicInvoke. This thunk has heavy dependencies on the
-    /// general dynamic invocation infrastructure in System.InvokeUtils and gets called from there
-    /// at runtime. See comments in System.InvokeUtils for a more thorough explanation.
-    /// </summary>
-    public sealed partial class DelegateDynamicInvokeThunk : ILStubMethod
-    {
-        private DelegateInfo _delegateInfo;
-        private MethodSignature _signature;
-
-        public DelegateDynamicInvokeThunk(DelegateInfo delegateInfo)
-        {
-            _delegateInfo = delegateInfo;
-        }
-
-        public override TypeSystemContext Context
-        {
-            get
-            {
-                return _delegateInfo.Type.Context;
-            }
-        }
-
-        public override TypeDesc OwningType
-        {
-            get
-            {
-                return _delegateInfo.Type;
-            }
-        }
-
-        public override MethodSignature Signature
-        {
-            get
-            {
-                if (_signature == null)
-                {
-                    _signature = new MethodSignature(0, 0,
-                        Context.GetWellKnownType(WellKnownType.Object),
-                        new TypeDesc[] {
-                            Context.GetWellKnownType(WellKnownType.Object),
-                            Context.GetWellKnownType(WellKnownType.IntPtr),
-                            ArgSetupStateType.MakeByRefType() });
-                }
-                return _signature;
-            }
-        }
-
-        public override Instantiation Instantiation
-        {
-            get
-            {
-                return Instantiation.Empty;
-            }
-        }
-
-        public override string Name
-        {
-            get
-            {
-                return "DynamicInvokeImpl";
-            }
-        }
-
-        private MetadataType InvokeUtilsType
-        {
-            get
-            {
-                return Context.SystemModule.GetKnownType("System", "InvokeUtils");
-            }
-        }
-
-        private MetadataType ArgSetupStateType
-        {
-            get
-            {
-                return InvokeUtilsType.GetNestedType("ArgSetupState");
-            }
-        }
-
-        public override MethodIL EmitIL()
-        {
-            ILEmitter emitter = new ILEmitter();
-            ILCodeStream argSetupStream = emitter.NewCodeStream();
-            ILCodeStream callSiteSetupStream = emitter.NewCodeStream();
-
-            // This function will look like
-            //
-            // !For each parameter to the delegate
-            //    !if (parameter is In Parameter)
-            //       localX is TypeOfParameterX&
-            //       ldtoken TypeOfParameterX
-            //       call DynamicInvokeParamHelperIn(RuntimeTypeHandle)
-            //       stloc localX
-            //    !else
-            //       localX is TypeOfParameter
-            //       ldtoken TypeOfParameterX
-            //       call DynamicInvokeParamHelperRef(RuntimeTypeHandle)
-            //       stloc localX
-
-            // ldarg.3
-            // call DynamicInvokeArgSetupComplete(ref ArgSetupState)
-
-            // *** Second instruction stream starts here ***
-
-            // ldarg.1 // Load this pointer
-            // !For each parameter
-            //    !if (parameter is In Parameter)
-            //       ldloc localX
-            //       ldobj TypeOfParameterX
-            //    !else
-            //       ldloc localX
-            // ldarg.1
-            // calli ReturnType thiscall(TypeOfParameter1, ...)
-            // !if ((ReturnType == void)
-            //    ldnull
-            // !else if (ReturnType is pointer)
-            //    System.Reflection.Pointer.Box(ReturnType)
-            // !else if (ReturnType is a byref)
-            //    ldobj StripByRef(ReturnType)
-            //    box StripByRef(ReturnType)
-            // !else
-            //    box ReturnType
-            // ret
-
-            callSiteSetupStream.EmitLdArg(1);
-
-            MethodSignature delegateSignature = _delegateInfo.Signature;
-
-            TypeDesc[] targetMethodParameters = new TypeDesc[delegateSignature.Length];
-
-            for (int paramIndex = 0; paramIndex < delegateSignature.Length; paramIndex++)
-            {
-                TypeDesc paramType = delegateSignature[paramIndex];
-                TypeDesc localType = paramType;
-
-                targetMethodParameters[paramIndex] = paramType;
-
-                if (localType.IsByRef)
-                {
-                    // Strip ByRef
-                    localType = ((ByRefType)localType).ParameterType;
-                }
-                else
-                {
-                    // Only if this is not a ByRef, convert the parameter type to something boxable.
-                    // Everything but pointer types are boxable.
-                    localType = ConvertToBoxableType(localType);
-                }
-
-                ILLocalVariable local = emitter.NewLocal(localType.MakeByRefType());
-
-                callSiteSetupStream.EmitLdLoc(local);
-
-                argSetupStream.Emit(ILOpcode.ldtoken, emitter.NewToken(localType));
-
-                if (paramType.IsByRef)
-                {
-                    argSetupStream.Emit(ILOpcode.call, emitter.NewToken(InvokeUtilsType.GetKnownMethod("DynamicInvokeParamHelperRef", null)));
-                }
-                else
-                {
-                    argSetupStream.Emit(ILOpcode.call, emitter.NewToken(InvokeUtilsType.GetKnownMethod("DynamicInvokeParamHelperIn", null)));
-
-                    callSiteSetupStream.Emit(ILOpcode.ldobj, emitter.NewToken(paramType));
-                }
-                argSetupStream.EmitStLoc(local);
-            }
-
-            argSetupStream.EmitLdArg(3);
-            argSetupStream.Emit(ILOpcode.call, emitter.NewToken(InvokeUtilsType.GetKnownMethod("DynamicInvokeArgSetupComplete", null)));
-
-            callSiteSetupStream.EmitLdArg(2);
-
-            TypeDesc returnType = delegateSignature.ReturnType;
-            MethodSignature targetMethodSig = new MethodSignature(0, 0, returnType, targetMethodParameters);
-
-            callSiteSetupStream.Emit(ILOpcode.calli, emitter.NewToken(targetMethodSig));
-
-
-            if (returnType.IsVoid)
-            {
-                callSiteSetupStream.Emit(ILOpcode.ldnull);
-            }
-            else if (returnType.IsByRef)
-            {
-                TypeDesc targetType = ((ByRefType)returnType).ParameterType;
-                callSiteSetupStream.Emit(ILOpcode.ldobj, emitter.NewToken(targetType));
-                callSiteSetupStream.Emit(ILOpcode.box, emitter.NewToken(targetType));
-            }
-            else if (returnType.IsPointer)
-            {
-                callSiteSetupStream.Emit(ILOpcode.ldtoken, emitter.NewToken(returnType));
-                MethodDesc getTypeFromHandleMethod =
-                    Context.SystemModule.GetKnownType("System", "Type").GetKnownMethod("GetTypeFromHandle", null);
-                callSiteSetupStream.Emit(ILOpcode.call, emitter.NewToken(getTypeFromHandleMethod));
-
-                MethodDesc pointerBoxMethod =
-                    Context.SystemModule.GetKnownType("System.Reflection", "Pointer").GetKnownMethod("Box", null);
-                callSiteSetupStream.Emit(ILOpcode.call, emitter.NewToken(pointerBoxMethod));
-            }
-            else if (returnType.IsFunctionPointer)
-            {
-                callSiteSetupStream.Emit(ILOpcode.box, emitter.NewToken(Context.GetWellKnownType(WellKnownType.IntPtr)));
-            }
-            else
-            {
-                callSiteSetupStream.Emit(ILOpcode.box, emitter.NewToken(returnType));
-            }
-
-            callSiteSetupStream.Emit(ILOpcode.ret);
-
-            return emitter.Link(this);
-        }
-
-        internal static TypeDesc ConvertToBoxableType(TypeDesc type)
-        {
-            if (type.IsFunctionPointer)
-            {
-                return type.Context.GetWellKnownType(WellKnownType.IntPtr);
-            }
-
-            return type;
-        }
-    }
-
-    /// <summary>
     /// Synthetic method override of "IntPtr Delegate.GetThunk(Int32)". This method is injected
     /// into all delegate types and provides means for System.Delegate to access the various thunks
     /// generated by the compiler.
@@ -964,7 +738,25 @@ namespace Internal.IL.Stubs
                 {
                     codeStream.EmitLabel(labels[(int)i]);
 
-                    codeStream.Emit(ILOpcode.ldftn, emitter.NewToken(thunk.InstantiateAsOpen()));
+                    if (i == DelegateThunkKind.DelegateInvokeThunk)
+                    {
+                        // Dynamic invoke thunk is special since we're calling into a shared helper
+                        MethodDesc targetMethod;
+                        if (thunk.HasInstantiation)
+                        {
+                            TypeDesc[] inst = DynamicInvokeMethodThunk.GetThunkInstantiationForMethod(_delegateInfo.Type.InstantiateAsOpen().GetMethod("Invoke", null));
+                            targetMethod = Context.GetInstantiatedMethod(thunk, new Instantiation(inst));
+                        }
+                        else
+                        {
+                            targetMethod = thunk;
+                        }
+                        codeStream.Emit(ILOpcode.ldftn, emitter.NewToken(targetMethod));
+                    }
+                    else
+                    {
+                        codeStream.Emit(ILOpcode.ldftn, emitter.NewToken(thunk.InstantiateAsOpen()));
+                    }
                     codeStream.Emit(ILOpcode.ret);
                 }
             }

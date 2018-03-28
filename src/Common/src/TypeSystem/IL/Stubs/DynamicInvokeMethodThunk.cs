@@ -18,7 +18,7 @@ namespace Internal.IL.Stubs
     /// dependencies on the general dynamic invocation infrastructure in System.InvokeUtils and gets called from there
     /// at runtime. See comments in System.InvokeUtils for a more thorough explanation.
     /// </summary>
-    internal partial class DynamicInvokeMethodThunk : ILStubMethod
+    public partial class DynamicInvokeMethodThunk : ILStubMethod
     {
         private TypeDesc _owningType;
         private DynamicInvokeMethodSignature _targetSignature;
@@ -32,9 +32,123 @@ namespace Internal.IL.Stubs
             _targetSignature = signature;
         }
 
-        public static bool SupportsThunks(TypeSystemContext context)
+        internal static bool SupportsDynamicInvoke(TypeSystemContext context)
         {
             return context.SystemModule.GetType("System", "InvokeUtils", false) != null;
+        }
+
+        public static bool SupportsSignature(MethodSignature signature)
+        {
+            for (int i = 0; i < signature.Length; i++)
+                if (signature[i].IsByRef && ((ByRefType)signature[i]).ParameterType.IsPointer)
+                    return false;
+
+            // ----------------------------------------------------------------
+            // TODO: function pointer types are odd: https://github.com/dotnet/corert/issues/1929
+            // ----------------------------------------------------------------
+
+            if (signature.ReturnType.IsFunctionPointer)
+                return false;
+
+            for (int i = 0; i < signature.Length; i++)
+                if (signature[i].IsFunctionPointer)
+                    return false;
+
+            // ----------------------------------------------------------------
+            // Methods with ByRef returns can't be reflection invoked
+            // ----------------------------------------------------------------
+
+            if (signature.ReturnType.IsByRef)
+                return false;
+
+            // ----------------------------------------------------------------
+            // Methods that return ByRef-like types or take them by reference can't be reflection invoked
+            // ----------------------------------------------------------------
+
+            if (!signature.ReturnType.IsSignatureVariable && signature.ReturnType.IsByRefLike)
+                return false;
+
+            for (int i = 0; i < signature.Length; i++)
+            {
+                ByRefType paramType = signature[i] as ByRefType;
+                if (paramType != null && !paramType.ParameterType.IsSignatureVariable && paramType.ParameterType.IsByRefLike)
+                    return false;
+            }
+
+            return true;
+        }
+
+        public static TypeDesc[] GetThunkInstantiationForMethod(MethodDesc method)
+        {
+            MethodSignature sig = method.Signature;
+
+            ParameterMetadata[] paramMetadata = null;
+            TypeDesc[] instantiation = new TypeDesc[sig.ReturnType.IsVoid ? sig.Length : sig.Length + 1];
+
+            for (int i = 0; i < sig.Length; i++)
+            {
+                TypeDesc parameterType = sig[i];
+                if (parameterType.IsByRef)
+                {
+                    // strip ByRefType off the parameter (the method already has ByRef in the signature)
+                    parameterType = ((ByRefType)parameterType).ParameterType;
+
+                    Debug.Assert(!parameterType.IsPointer); // TODO: support for methods returning pointer types - https://github.com/dotnet/corert/issues/2113
+                }
+                else if (parameterType.IsPointer)
+                {
+                    // Strip off all the pointers. Pointers are not valid instantiation arguments and the thunk compensates for that
+                    // by being specialized for the specific pointer depth.
+                    while (parameterType.IsPointer)
+                        parameterType = ((PointerType)parameterType).ParameterType;
+                }
+                else if (parameterType.IsEnum)
+                {
+                    // If the invoke method takes an enum as an input parameter and there is no default value for
+                    // that paramter, we don't need to specialize on the exact enum type (we only need to specialize
+                    // on the underlying integral type of the enum.)
+                    if (paramMetadata == null)
+                        paramMetadata = method.GetParameterMetadata();
+
+                    bool hasDefaultValue = false;
+                    foreach (var p in paramMetadata)
+                    {
+                        // Parameter metadata indexes are 1-based (0 is reserved for return "parameter")
+                        if (p.Index == (i + 1) && p.HasDefault)
+                        {
+                            hasDefaultValue = true;
+                            break;
+                        }
+                    }
+
+                    if (!hasDefaultValue)
+                        parameterType = parameterType.UnderlyingType;
+                }
+
+                instantiation[i] = parameterType;
+            }
+
+            if (!sig.ReturnType.IsVoid)
+            {
+                TypeDesc returnType = sig.ReturnType;
+                Debug.Assert(!returnType.IsByRef);
+
+                // If the invoke method return an object reference, we don't need to specialize on the
+                // exact type of the object reference, as the behavior is not different.
+                if ((returnType.IsDefType && !returnType.IsValueType) || returnType.IsArray)
+                {
+                    returnType = method.Context.GetWellKnownType(WellKnownType.Object);
+                }
+
+                // Strip off all the pointers. Pointers are not valid instantiation arguments and the thunk compensates for that
+                // by being specialized for the specific pointer depth.
+                while (returnType.IsPointer)
+                    returnType = ((PointerType)returnType).ParameterType;
+
+                instantiation[sig.Length] = returnType;
+            }
+
+            return instantiation;
         }
 
         public override TypeSystemContext Context
@@ -66,6 +180,14 @@ namespace Internal.IL.Stubs
             get
             {
                 return InvokeUtilsType.GetNestedType("ArgSetupState");
+            }
+        }
+
+        public DynamicInvokeMethodSignature TargetSignature
+        {
+            get
+            {
+                return _targetSignature;
             }
         }
 
@@ -380,9 +502,11 @@ namespace Internal.IL.Stubs
     /// <summary>
     /// Wraps a <see cref="MethodSignature"/> to reduce it's fidelity.
     /// </summary>
-    internal struct DynamicInvokeMethodSignature : IEquatable<DynamicInvokeMethodSignature>
+    public struct DynamicInvokeMethodSignature : IEquatable<DynamicInvokeMethodSignature>
     {
         private MethodSignature _signature;
+
+        public TypeSystemContext Context => _signature.ReturnType.Context;
 
         public bool HasReturnValue
         {
@@ -400,7 +524,7 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public DynamicInvokeMethodParameterKind this[int index]
+        internal DynamicInvokeMethodParameterKind this[int index]
         {
             get
             {
@@ -437,7 +561,7 @@ namespace Internal.IL.Stubs
             return GetNumberOfIndirections(_signature.ReturnType);
         }
 
-        public DynamicInvokeMethodParameterKind ReturnType
+        internal DynamicInvokeMethodParameterKind ReturnType
         {
             get
             {
@@ -455,9 +579,7 @@ namespace Internal.IL.Stubs
 
         public DynamicInvokeMethodSignature(MethodSignature concreteSignature)
         {
-            // ByRef returns should have been filtered out elsewhere. We don't handle them
-            // because reflection can't invoke such methods.
-            Debug.Assert(!concreteSignature.ReturnType.IsByRef);
+            Debug.Assert(DynamicInvokeMethodThunk.SupportsSignature(concreteSignature));
             _signature = concreteSignature;
         }
 

@@ -25,7 +25,6 @@ namespace ILCompiler
         private readonly Dictionary<FieldDesc, MetadataCategory> _reflectableFields = new Dictionary<FieldDesc, MetadataCategory>();
 
         public AnalysisBasedMetadataManager(
-            ModuleDesc generatedAssembly,
             CompilerTypeSystemContext typeSystemContext,
             MetadataBlockingPolicy blockingPolicy,
             string logFile,
@@ -34,7 +33,7 @@ namespace ILCompiler
             IEnumerable<ReflectableEntity<TypeDesc>> reflectableTypes,
             IEnumerable<ReflectableEntity<MethodDesc>> reflectableMethods,
             IEnumerable<ReflectableEntity<FieldDesc>> reflectableFields)
-            : base(generatedAssembly, typeSystemContext, blockingPolicy, logFile, stackTracePolicy)
+            : base(typeSystemContext, blockingPolicy, logFile, stackTracePolicy)
         {
             _modulesWithMetadata = new List<ModuleDesc>(modulesWithMetadata);
             

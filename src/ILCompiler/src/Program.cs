@@ -17,6 +17,8 @@ namespace ILCompiler
 {
     internal class Program
     {
+        private const string DefaultSystemModule = "System.Private.CoreLib";
+
         private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
@@ -37,7 +39,7 @@ namespace ILCompiler
         private OptimizationMode _optimizationMode;
         private bool _enableDebugInfo;
         private string _ilDump;
-        private string _systemModuleName = "System.Private.CoreLib";
+        private string _systemModuleName = DefaultSystemModule;
         private bool _multiFile;
         private bool _nativeLib;
         private string _exportsFile;
@@ -341,7 +343,7 @@ namespace ILCompiler
                         throw new Exception("No entrypoint module");
 
                     compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
-                    compilationGroup = new SingleFileCompilationModuleGroup(typeSystemContext);
+                    compilationGroup = new SingleFileCompilationModuleGroup();
                 }
 
                 if (_nativeLib)
@@ -349,7 +351,7 @@ namespace ILCompiler
                     // Set owning module of generated native library startup method to compiler generated module,
                     // to ensure the startup method is included in the object file during multimodule mode build
                     LibraryInitializers libraryInitializers = new LibraryInitializers(typeSystemContext, _isCppCodegen);
-                    compilationRoots.Add(new NativeLibraryInitializerRootProvider(compilationGroup.GeneratedAssembly, libraryInitializers.LibraryInitializerMethods));
+                    compilationRoots.Add(new NativeLibraryInitializerRootProvider(typeSystemContext.GeneratedAssembly, libraryInitializers.LibraryInitializerMethods));
                 }
 
                 if (_rdXmlFilePaths.Count > 0)
@@ -392,7 +394,9 @@ namespace ILCompiler
 
             useScanner &= !_noScanner;
 
-            MetadataManager compilationMetadataManager = _isWasmCodegen ? (MetadataManager)new EmptyMetadataManager(typeSystemContext) : metadataManager;
+            bool supportsReflection = !_isWasmCodegen && !_isCppCodegen && _systemModuleName == DefaultSystemModule;
+
+            MetadataManager compilationMetadataManager = supportsReflection ? metadataManager : (MetadataManager)new EmptyMetadataManager(typeSystemContext);
             ILScanResults scanResults = null;
             if (useScanner)
             {

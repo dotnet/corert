@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 
 using Internal.IL.Stubs;
@@ -17,12 +18,18 @@ namespace Internal.IL
     /// </summary>
     public class DelegateInfo
     {
-        private TypeDesc _delegateType;
+        private readonly TypeDesc _delegateType;
+        private readonly DelegateFeature _supportedFeatures;
 
         private MethodSignature _signature;
 
         private MethodDesc _getThunkMethod;
         private DelegateThunkCollection _thunks;
+
+        public static bool SupportsDynamicInvoke(TypeSystemContext context)
+        {
+            return DynamicInvokeMethodThunk.SupportsDynamicInvoke(context);
+        }
 
         /// <summary>
         /// Gets the synthetic methods that support this delegate type.
@@ -78,6 +85,14 @@ namespace Internal.IL
             }
         }
 
+        public DelegateFeature SupportedFeatures
+        {
+            get
+            {
+                return _supportedFeatures;
+            }
+        }
+
         /// <summary>
         /// Gets the type of the delegate.
         /// </summary>
@@ -89,12 +104,13 @@ namespace Internal.IL
             }
         }
 
-        public DelegateInfo(TypeDesc delegateType)
+        public DelegateInfo(TypeDesc delegateType, DelegateFeature features)
         {
             Debug.Assert(delegateType.IsDelegate);
             Debug.Assert(delegateType.IsTypeDefinition);
 
             _delegateType = delegateType;
+            _supportedFeatures = features;
         }
     }
 
@@ -119,7 +135,6 @@ namespace Internal.IL
             _openStaticThunk = new DelegateInvokeOpenStaticThunk(owningDelegate);
             _multicastThunk = new DelegateInvokeMulticastThunk(owningDelegate);
             _closedStaticThunk = new DelegateInvokeClosedStaticThunk(owningDelegate);
-            _invokeThunk = new DelegateDynamicInvokeThunk(owningDelegate);
             _closedInstanceOverGeneric = new DelegateInvokeInstanceClosedOverGenericMethodThunk(owningDelegate);
 
             // Methods that have a byref-like type in the signature cannot be invoked with the object array thunk.
@@ -151,12 +166,20 @@ namespace Internal.IL
             if (normalizedReturnType.IsPointer || normalizedReturnType.IsFunctionPointer)
                 generateObjectArrayThunk = false;
 
-            if (generateObjectArrayThunk)
+            if ((owningDelegate.SupportedFeatures & DelegateFeature.ObjectArrayThunk) != 0 && generateObjectArrayThunk)
                 _invokeObjectArrayThunk = new DelegateInvokeObjectArrayThunk(owningDelegate);
+
+            //
+            // Check whether we have a reverse p/invoke thunk
+            //
 
             if (!owningDelegate.Type.HasInstantiation && IsNativeCallingConventionCompatible(delegateSignature))
                 _reversePInvokeThunk = new DelegateReversePInvokeThunk(owningDelegate);
             
+            //
+            // Check whether we have an open instance thunk
+            //
+
             if (delegateSignature.Length > 0)
             {
                 TypeDesc firstParam = delegateSignature[0];
@@ -193,6 +216,16 @@ namespace Internal.IL
                 }
             }
 
+            //
+            // Check whether we have a dynamic invoke stub
+            //
+
+            if ((owningDelegate.SupportedFeatures & DelegateFeature.DynamicInvoke) != 0 &&
+                DynamicInvokeMethodThunk.SupportsSignature(delegateSignature))
+            {
+                var sig = new DynamicInvokeMethodSignature(delegateSignature);
+                _invokeThunk = owningDelegate.Type.Context.GetDynamicInvokeThunk(sig);
+            }
         }
 
         #region Temporary interop logic
@@ -284,5 +317,12 @@ namespace Internal.IL
         OpenInstanceThunk = 5,        // This may not exist
         ReversePinvokeThunk = 6,       // This may not exist
         ObjectArrayThunk = 7,         // This may not exist
+    }
+
+    [Flags]
+    public enum DelegateFeature
+    {
+        DynamicInvoke = 0x1,
+        ObjectArrayThunk = 0x2,
     }
 }
