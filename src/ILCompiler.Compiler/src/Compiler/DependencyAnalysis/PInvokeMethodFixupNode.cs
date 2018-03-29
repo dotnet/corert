@@ -37,6 +37,8 @@ namespace ILCompiler.DependencyAnalysis
                 sb.Append("__");
                 sb.Append(_flags.CharSet.ToString());
             }
+            sb.Append("__");
+            sb.Append(((int)_flags.Attributes).ToString());
         }
         public int Offset => 0;
         public override bool IsShareable => true;

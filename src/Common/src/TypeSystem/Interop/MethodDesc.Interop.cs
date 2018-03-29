@@ -292,7 +292,7 @@ namespace Internal.TypeSystem
 
         public override bool Equals(object obj)
         {
-            return obj is PInvokeAttributes other && Equals(other);
+            return obj is PInvokeFlags other && Equals(other);
         }
 
         public override int GetHashCode()
