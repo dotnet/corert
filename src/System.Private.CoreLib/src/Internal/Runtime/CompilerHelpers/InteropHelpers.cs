@@ -304,8 +304,8 @@ namespace Internal.Runtime.CompilerHelpers
         {
             byte* methodName = (byte*)pCell->MethodName;
 
-#if !PLATFORM_UNIX
-            pCell->Target = Interop.mincore.GetProcAddress(hModule, methodName);
+#if PLATFORM_WINDOWS
+            pCell->Target = GetProcAddress(hModule, methodName, pCell->CharSetMangling);
 #else
             pCell->Target = Interop.Sys.GetProcAddress(hModule, methodName);
 #endif
@@ -315,6 +315,44 @@ namespace Internal.Runtime.CompilerHelpers
                 throw new EntryPointNotFoundException(SR.Format(SR.Arg_EntryPointNotFoundExceptionParameterized, entryPointName, GetModuleName(pCell->Module)));
             }
         }
+
+#if PLATFORM_WINDOWS
+        private static unsafe IntPtr GetProcAddress(IntPtr hModule, byte* methodName, CharSet charSetMangling)
+        {
+            // First look for the unmangled name.  If it is unicode function, we are going
+            // to need to check for the 'W' API because it takes precedence over the
+            // unmangled one (on NT some APIs have unmangled ANSI exports).
+            
+            var exactMatch = Interop.mincore.GetProcAddress(hModule, methodName);
+
+            if ((charSetMangling == CharSet.Ansi && exactMatch != IntPtr.Zero) || charSetMangling == 0)
+            {
+                return exactMatch;
+            }
+
+            int nameLength = strlen(methodName);
+
+            // We need to add an extra byte for the suffix, and an extra byte for the null terminator
+            byte* probedMethodName = stackalloc byte[nameLength + 2];
+
+            for (int i = 0; i < nameLength; i++)
+            {
+                probedMethodName[i] = methodName[i];
+            }
+
+            probedMethodName[nameLength + 1] = 0;
+
+            probedMethodName[nameLength] = (charSetMangling == CharSet.Ansi) ? (byte)'A' : (byte)'W';
+
+            IntPtr probedMethod = Interop.mincore.GetProcAddress(hModule, probedMethodName);
+            if (probedMethod != IntPtr.Zero)
+            {
+                return probedMethod;
+            }
+
+            return exactMatch;
+        }
+#endif
 
         internal static unsafe int strlen(byte* pString)
         {
@@ -379,6 +417,7 @@ namespace Internal.Runtime.CompilerHelpers
             public IntPtr Target;
             public IntPtr MethodName;
             public ModuleFixupCell* Module;
+            public CharSet CharSetMangling;
         }
     }
 }

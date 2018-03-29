@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 using ILCompiler.DependencyAnalysisFramework;
@@ -282,9 +283,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new PInvokeModuleFixupNode(name);
             });
 
-            _pInvokeMethodFixups = new NodeCache<Tuple<string, string>, PInvokeMethodFixupNode>((Tuple<string, string> key) =>
+            _pInvokeMethodFixups = new NodeCache<Tuple<string, string, PInvokeFlags>, PInvokeMethodFixupNode>((Tuple<string, string, PInvokeFlags> key) =>
             {
-                return new PInvokeMethodFixupNode(key.Item1, key.Item2);
+                return new PInvokeMethodFixupNode(key.Item1, key.Item2, key.Item3);
             });
 
             _methodEntrypoints = new NodeCache<MethodDesc, IMethodNode>(CreateMethodEntrypointNode);
@@ -688,11 +689,11 @@ namespace ILCompiler.DependencyAnalysis
             return _pInvokeModuleFixups.GetOrAdd(moduleName);
         }
 
-        private NodeCache<Tuple<string, string>, PInvokeMethodFixupNode> _pInvokeMethodFixups;
+        private NodeCache<Tuple<string, string, PInvokeFlags>, PInvokeMethodFixupNode> _pInvokeMethodFixups;
 
-        public PInvokeMethodFixupNode PInvokeMethodFixup(string moduleName, string entryPointName)
+        public PInvokeMethodFixupNode PInvokeMethodFixup(string moduleName, string entryPointName, PInvokeFlags flags)
         {
-            return _pInvokeMethodFixups.GetOrAdd(new Tuple<string, string>(moduleName, entryPointName));
+            return _pInvokeMethodFixups.GetOrAdd(Tuple.Create(moduleName, entryPointName, flags));
         }
 
         private NodeCache<TypeDesc, VTableSliceNode> _vTableNodes;
