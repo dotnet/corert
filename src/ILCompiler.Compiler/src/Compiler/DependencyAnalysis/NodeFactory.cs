@@ -283,9 +283,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new PInvokeModuleFixupNode(name);
             });
 
-            _pInvokeMethodFixups = new NodeCache<Tuple<string, string, bool, CharSet>, PInvokeMethodFixupNode>((Tuple<string, string, bool, CharSet> key) =>
+            _pInvokeMethodFixups = new NodeCache<Tuple<string, string, PInvokeFlags>, PInvokeMethodFixupNode>((Tuple<string, string, PInvokeFlags> key) =>
             {
-                return new PInvokeMethodFixupNode(key.Item1, key.Item2, key.Item3, key.Item4);
+                return new PInvokeMethodFixupNode(key.Item1, key.Item2, key.Item3);
             });
 
             _methodEntrypoints = new NodeCache<MethodDesc, IMethodNode>(CreateMethodEntrypointNode);
@@ -689,11 +689,11 @@ namespace ILCompiler.DependencyAnalysis
             return _pInvokeModuleFixups.GetOrAdd(moduleName);
         }
 
-        private NodeCache<Tuple<string, string, bool, CharSet>, PInvokeMethodFixupNode> _pInvokeMethodFixups;
+        private NodeCache<Tuple<string, string, PInvokeFlags>, PInvokeMethodFixupNode> _pInvokeMethodFixups;
 
-        public PInvokeMethodFixupNode PInvokeMethodFixup(string moduleName, string entryPointName, bool exactSpelling, CharSet charSet)
+        public PInvokeMethodFixupNode PInvokeMethodFixup(string moduleName, string entryPointName, PInvokeFlags flags)
         {
-            return _pInvokeMethodFixups.GetOrAdd(Tuple.Create(moduleName, entryPointName, exactSpelling, charSet));
+            return _pInvokeMethodFixups.GetOrAdd(Tuple.Create(moduleName, entryPointName, flags));
         }
 
         private NodeCache<TypeDesc, VTableSliceNode> _vTableNodes;

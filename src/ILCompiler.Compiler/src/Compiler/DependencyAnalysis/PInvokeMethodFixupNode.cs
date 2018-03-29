@@ -17,15 +17,13 @@ namespace ILCompiler.DependencyAnalysis
     {
         private string _moduleName;
         private string _entryPointName;
-        private bool _exactMatchOnly;
-        private CharSet _charSet;
+        private PInvokeFlags _flags;
 
-        public PInvokeMethodFixupNode(string moduleName, string entryPointName, bool exactSpelling, CharSet charSet)
+        public PInvokeMethodFixupNode(string moduleName, string entryPointName, PInvokeFlags flags)
         {
             _moduleName = moduleName;
             _entryPointName = entryPointName;
-            _exactMatchOnly = exactSpelling;
-            _charSet = charSet;
+            _flags = flags;
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -34,10 +32,10 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(_moduleName);
             sb.Append("__");
             sb.Append(_entryPointName);
-            if(!_exactMatchOnly)
+            if(!_flags.ExactSpelling)
             {
-                sb.Append("_");
-                sb.Append(_charSet.ToString());
+                sb.Append("__");
+                sb.Append(_flags.CharSet.ToString());
             }
         }
         public int Offset => 0;
@@ -82,7 +80,7 @@ namespace ILCompiler.DependencyAnalysis
             // Module fixup cell
             builder.EmitPointerReloc(factory.PInvokeModuleFixup(_moduleName));
 
-            builder.EmitInt(_exactMatchOnly ? 0 : (int)_charSet);
+            builder.EmitInt(_flags.ExactSpelling ? 0 : (int)_flags.CharSet);
 
             return builder.ToObjectData();
         }
@@ -91,14 +89,9 @@ namespace ILCompiler.DependencyAnalysis
 
         protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
         {
-            var exactMatchCompare = _exactMatchOnly.CompareTo(((PInvokeMethodFixupNode)other)._exactMatchOnly);
-            if (exactMatchCompare != 0)
-                return exactMatchCompare;
-
-            var charSetCompare = ((int)_charSet).CompareTo((int)((PInvokeMethodFixupNode)other)._charSet);
-
-            if (charSetCompare != 0)
-                return charSetCompare;
+            var flagsCompare = _flags.CompareTo(((PInvokeMethodFixupNode)other)._flags);
+            if (flagsCompare != 0)
+                return flagsCompare;
 
             var moduleCompare = string.Compare(_moduleName, ((PInvokeMethodFixupNode)other)._moduleName);
             if (moduleCompare != 0)
