@@ -63,15 +63,19 @@ namespace CoreFX.TestUtils.TestFileSetup
             {
                 SetupTests(testUrl, outputDir, ReadTestNames(testListPath)).Wait();
                 exitCode = ExitCode.Success;
-
             }
-            catch (HttpRequestException)
+            
+            catch (AggregateException e)
             {
-                exitCode = ExitCode.HttpError;
-            }
-            catch (IOException)
-            {
-                exitCode = ExitCode.IOError;
+                Exception inner = e.InnerException;
+                if(inner is HttpRequestException)
+                {
+                    exitCode = ExitCode.HttpError;
+                }
+                else if(inner is IOException)
+                {
+                    exitCode = ExitCode.IOError;
+                }
             }
 
             Environment.Exit((int)exitCode);
@@ -124,6 +128,11 @@ namespace CoreFX.TestUtils.TestFileSetup
             }
             Dictionary<string, string> testPayloads = await GetTestUrls(jsonUrl, testNames, runAllTests);
 
+            if (testPayloads == null)
+            {
+                return;
+            }
+
             await GetTestArchives(testPayloads, tempDirPath);
             ExpandArchivesInDirectory(tempDirPath, destinationDirectory);
 
@@ -137,45 +146,53 @@ namespace CoreFX.TestUtils.TestFileSetup
             }
 
             Debug.Assert(runAllTests || testNames != null);
-
-            // Set up the json stream reader
-            using (var responseStream = await httpClient.GetStreamAsync(jsonUrl))
-            using (var streamReader = new StreamReader(responseStream))
-            using (var jsonReader = new JsonTextReader(streamReader))
+            try
             {
-                // Manual parsing - we only need to key-value pairs from each object and this avoids deserializing all of the work items into objects
-                string markedTestName = string.Empty;
-                string currentPropertyName = string.Empty;
-
-                while (jsonReader.Read())
+                // Set up the json stream reader
+                using (var responseStream = await httpClient.GetStreamAsync(jsonUrl))
+                using (var streamReader = new StreamReader(responseStream))
+                using (var jsonReader = new JsonTextReader(streamReader))
                 {
-                    if (jsonReader.Value != null)
-                    {
-                        switch (jsonReader.TokenType)
-                        {
-                            case JsonToken.PropertyName:
-                                currentPropertyName = jsonReader.Value.ToString();
-                                break;
-                            case JsonToken.String:
-                                if (currentPropertyName.Equals("WorkItemId"))
-                                {
-                                    string currentTestName = jsonReader.Value.ToString();
+                    // Manual parsing - we only need to key-value pairs from each object and this avoids deserializing all of the work items into objects
+                    string markedTestName = string.Empty;
+                    string currentPropertyName = string.Empty;
 
-                                    if (runAllTests || testNames.ContainsKey(currentTestName))
+                    while (jsonReader.Read())
+                    {
+                        if (jsonReader.Value != null)
+                        {
+                            switch (jsonReader.TokenType)
+                            {
+                                case JsonToken.PropertyName:
+                                    currentPropertyName = jsonReader.Value.ToString();
+                                    break;
+                                case JsonToken.String:
+                                    if (currentPropertyName.Equals("WorkItemId"))
                                     {
-                                        markedTestName = currentTestName;
+                                        string currentTestName = jsonReader.Value.ToString();
+
+                                        if (runAllTests || testNames.ContainsKey(currentTestName))
+                                        {
+                                            markedTestName = currentTestName;
+                                        }
                                     }
-                                }
-                                else if (currentPropertyName.Equals("PayloadUri") && markedTestName != string.Empty)
-                                {
-                                    testNames[markedTestName] = jsonReader.Value.ToString();
-                                    markedTestName = string.Empty;
-                                }
-                                break;
+                                    else if (currentPropertyName.Equals("PayloadUri") && markedTestName != string.Empty)
+                                    {
+                                        testNames[markedTestName] = jsonReader.Value.ToString();
+                                        markedTestName = string.Empty;
+                                    }
+                                    break;
+                            }
                         }
                     }
-                }
 
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine("Error downloading tests from: " + jsonUrl);
+                Console.WriteLine(ex.Message);
+                throw ex;
             }
             return testNames;
         }

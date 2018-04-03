@@ -51,7 +51,7 @@ fi
 
 echo Executing ${TestFileName} - writing logs to ${LogDir}/${TestFileName}.xml
 chmod +x ${TestFolderName}/publish/${TestExecutable} 
-${TestFolderName}/publish/${TestExecutable} ${TestFolderName}/${TestFileName}.dll -xml ${LogDir}/${TestFileName}.xml
+${TestFolderName}/publish/${TestExecutable} ${TestFolderName}/${TestFileName}.dll -xml ${LogDir}/${TestFileName}.xml -notrait category=nonnetcoreapptests -notrait category=nonwindowstests  -notrait category=failing
 export __exitcode=$?
 
 exit ${__exitcode}
