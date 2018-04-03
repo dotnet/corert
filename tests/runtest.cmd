@@ -476,7 +476,7 @@ goto :eof
 :TestExtRepoCoreFX
     
     set CoreRT_TestExtRepo_CoreFX=%CoreRT_TestRoot%\..\tests_downloaded\CoreFX
-    set CoreRT_TestingUtilitiesOutputDir=%CoreRT_TestExtRepo_CoreFX%\Utilities
+    set CoreRT_TestingUtilitiesOutputDir=%CoreRT_TestExtRepo_CoreFX%\..\CoreFXUtilities
 
     :: Set paths to helpers
     set CoreRT_TestFileHelperName=CoreFX.TestUtils.TestFileSetup
