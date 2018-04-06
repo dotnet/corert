@@ -101,7 +101,7 @@ namespace Internal.Runtime.CompilerHelpers
             s_modules[s_moduleCount] = newModuleHandle;
             s_moduleCount++;
         }
-        
+
         private static unsafe TypeManagerHandle[] CreateTypeManagers(IntPtr osModule, IntPtr* pModuleHeaders, int count, IntPtr* pClasslibFunctions, int nClasslibFunctions)
         {
             // Count the number of modules so we can allocate an array to hold the TypeManager objects.

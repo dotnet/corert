@@ -246,11 +246,7 @@ extern "C" void RhpUniversalTransition_DebugStepTailCall()
     throw "RhpUniversalTransition_DebugStepTailCall";
 }
 
-#if defined(_WASM_)
 extern "C" void* RtRHeaderWrapper();
-#else // _WASM_
-void* RtRHeaderWrapper();
-#endif //_WASM_
 #endif // CPPCODEGEN
 
 // This works around System.Private.Interop's references to Interop.Native.

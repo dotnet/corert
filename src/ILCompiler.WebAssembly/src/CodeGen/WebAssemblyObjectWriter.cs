@@ -275,14 +275,17 @@ namespace ILCompiler.DependencyAnalysis
             var argvSlot = LLVM.BuildGEP(builder, castShadowStack, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), 4, LLVMMisc.False) }, "argvSlot");
             LLVM.BuildStore(builder, LLVM.GetParam(mainFunc, 1), LLVM.BuildPointerCast(builder, argvSlot, LLVM.PointerType(LLVM.PointerType(LLVM.Int8Type(), 0), 0), ""));
 
+            // StartupCodeMain will always return a value whether the user's main does or not
+            LLVMValueRef returnValueSlot = LLVM.BuildAlloca(builder, LLVM.Int32Type(), "returnValue");
+
             LLVM.BuildCall(builder, managedMain, new LLVMValueRef[]
             {
                 castShadowStack,
-                LLVM.ConstPointerNull(LLVM.PointerType(LLVM.Int8Type(), 0))
+                LLVM.BuildPointerCast(builder, returnValueSlot, LLVM.PointerType(LLVM.Int8Type(), 0), String.Empty) 
             },
             String.Empty);
 
-            LLVM.BuildRet(builder, LLVM.ConstInt(LLVM.Int32Type(), 42, LLVMMisc.False));
+            LLVM.BuildRet(builder, LLVM.BuildLoad(builder, returnValueSlot, String.Empty));
             LLVM.SetLinkage(mainFunc, LLVMLinkage.LLVMExternalLinkage);
         }
 
@@ -699,7 +702,7 @@ namespace ILCompiler.DependencyAnalysis
 
             return new ObjectNodeSection(standardSectionPrefix + section.Name, section.Type, key);
         }
-        
+
         public void ResetByteRunInterruptionOffsets(Relocation[] relocs)
         {
             _byteInterruptionOffsets.Clear();
