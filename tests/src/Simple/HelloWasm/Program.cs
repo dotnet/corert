@@ -13,7 +13,7 @@ internal static class Program
     private static int staticInt;
     [ThreadStatic]
     private static int threadStaticInt;
-    private static unsafe void Main(string[] args)
+    private static unsafe int Main(string[] args)
     {
         Add(1, 2);
         int tempInt = 0;
@@ -225,6 +225,7 @@ internal static class Program
         System.Diagnostics.Debugger.Break();
 
         PrintLine("Done");
+        return 100;
     }
 
     private static int StaticDelegateTarget()
