@@ -1027,6 +1027,11 @@ gc_alloc_context * GCToEEInterface::GetAllocContext()
 }
 #endif // !DACCESS_COMPILE
 
+uint8_t* GCToEEInterface::GetLoaderAllocatorObjectForGC(Object* pObject)
+{
+    return nullptr;
+}
+
 bool GCToEEInterface::IsPreemptiveGCDisabled()
 {
     return ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode();
