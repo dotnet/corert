@@ -218,51 +218,8 @@ namespace ILCompiler
         /// </summary>
         public virtual bool IsReflectionInvokable(MethodDesc method)
         {
-            return IsMethodSignatureSupportedInReflectionInvoke(method)
+            return Internal.IL.Stubs.DynamicInvokeMethodThunk.SupportsSignature(method.Signature)
                 && IsMethodSupportedInReflectionInvoke(method);
-        }
-
-        protected bool IsMethodSignatureSupportedInReflectionInvoke(MethodDesc method)
-        {
-            var signature = method.Signature;
-
-            for (int i = 0; i < signature.Length; i++)
-                if (signature[i].IsByRef && ((ByRefType)signature[i]).ParameterType.IsPointer)
-                    return false;
-
-            // ----------------------------------------------------------------
-            // TODO: function pointer types are odd: https://github.com/dotnet/corert/issues/1929
-            // ----------------------------------------------------------------
-
-            if (signature.ReturnType.IsFunctionPointer)
-                return false;
-
-            for (int i = 0; i < signature.Length; i++)
-                if (signature[i].IsFunctionPointer)
-                    return false;
-
-            // ----------------------------------------------------------------
-            // Methods with ByRef returns can't be reflection invoked
-            // ----------------------------------------------------------------
-
-            if (signature.ReturnType.IsByRef)
-                return false;
-
-            // ----------------------------------------------------------------
-            // Methods that return ByRef-like types or take them by reference can't be reflection invoked
-            // ----------------------------------------------------------------
-
-            if (signature.ReturnType.IsByRefLike)
-                return false;
-
-            for (int i = 0; i < signature.Length; i++)
-            {
-                ByRefType paramType = signature[i] as ByRefType;
-                if (paramType != null && paramType.ParameterType.IsByRefLike)
-                    return false;
-            }
-
-            return true;
         }
 
         protected bool IsMethodSupportedInReflectionInvoke(MethodDesc method)
@@ -463,72 +420,7 @@ namespace ILCompiler
             // Instantiate the generic thunk over the parameters and the return type of the target method
             //
 
-            ParameterMetadata[] paramMetadata = null;
-            TypeDesc[] instantiation = new TypeDesc[sig.ReturnType.IsVoid ? sig.Length : sig.Length + 1];
-            Debug.Assert(thunk.Instantiation.Length == instantiation.Length);
-            for (int i = 0; i < sig.Length; i++)
-            {
-                TypeDesc parameterType = sig[i];
-                if (parameterType.IsByRef)
-                {
-                    // strip ByRefType off the parameter (the method already has ByRef in the signature)
-                    parameterType = ((ByRefType)parameterType).ParameterType;
-
-                    Debug.Assert(!parameterType.IsPointer); // TODO: support for methods returning pointer types - https://github.com/dotnet/corert/issues/2113
-                }
-                else if (parameterType.IsPointer)
-                {
-                    // Strip off all the pointers. Pointers are not valid instantiation arguments and the thunk compensates for that
-                    // by being specialized for the specific pointer depth.
-                    while (parameterType.IsPointer)
-                        parameterType = ((PointerType)parameterType).ParameterType;
-                }
-                else if (parameterType.IsEnum)
-                {
-                    // If the invoke method takes an enum as an input parameter and there is no default value for
-                    // that paramter, we don't need to specialize on the exact enum type (we only need to specialize
-                    // on the underlying integral type of the enum.)
-                    if (paramMetadata == null)
-                        paramMetadata = method.GetParameterMetadata();
-
-                    bool hasDefaultValue = false;
-                    foreach (var p in paramMetadata)
-                    {
-                        // Parameter metadata indexes are 1-based (0 is reserved for return "parameter")
-                        if (p.Index == (i + 1) && p.HasDefault)
-                        {
-                            hasDefaultValue = true;
-                            break;
-                        }
-                    }
-
-                    if (!hasDefaultValue)
-                        parameterType = parameterType.UnderlyingType;
-                }
-
-                instantiation[i] = parameterType;
-            }
-
-            if (!sig.ReturnType.IsVoid)
-            {
-                TypeDesc returnType = sig.ReturnType;
-                Debug.Assert(!returnType.IsByRef);
-
-                // If the invoke method return an object reference, we don't need to specialize on the
-                // exact type of the object reference, as the behavior is not different.
-                if ((returnType.IsDefType && !returnType.IsValueType) || returnType.IsArray)
-                {
-                    returnType = context.GetWellKnownType(WellKnownType.Object);
-                }
-
-                // Strip off all the pointers. Pointers are not valid instantiation arguments and the thunk compensates for that
-                // by being specialized for the specific pointer depth.
-                while (returnType.IsPointer)
-                    returnType = ((PointerType)returnType).ParameterType;
-
-                instantiation[sig.Length] = returnType;
-            }
-
+            TypeDesc[] instantiation = Internal.IL.Stubs.DynamicInvokeMethodThunk.GetThunkInstantiationForMethod(method);
             Debug.Assert(thunk.Instantiation.Length == instantiation.Length);
 
             // Check if at least one of the instantiation arguments is a universal canonical type, and if so, we 

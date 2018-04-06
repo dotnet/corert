@@ -331,7 +331,13 @@ namespace ILCompiler
                     }
                     else
                     {
+                        // This is a type definition. Since we didn't fall in the `is EcmaType` case above,
+                        // it's likely a compiler-generated type.
                         mangledName = SanitizeName(((DefType)type).GetFullName(), true);
+
+                        // Always generate a fully qualified name
+                        if (_mangleForCplusPlus)
+                            mangledName = "::" + mangledName;
                     }
                     break;
             }

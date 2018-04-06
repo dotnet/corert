@@ -36,7 +36,7 @@ namespace ILCompiler
             MetadataBlockingPolicy blockingPolicy,
             string logFile,
             StackTraceEmissionPolicy stackTracePolicy)
-            : base(group.GeneratedAssembly, typeSystemContext, blockingPolicy, logFile, stackTracePolicy)
+            : base(typeSystemContext, blockingPolicy, logFile, stackTracePolicy)
         {
             // We use this to mark places that would behave differently if we tracked exact fields used. 
             _hasPreciseFieldUsageInformation = false;
@@ -353,7 +353,7 @@ namespace ILCompiler
                 }
             }
 
-            return new AnalysisBasedMetadataManager(_compilationModuleGroup.GeneratedAssembly,
+            return new AnalysisBasedMetadataManager(
                 _typeSystemContext, _blockingPolicy, _metadataLogFile, _stackTraceEmissionPolicy,
                 _modulesWithMetadata, reflectableTypes.ToEnumerable(), reflectableMethods.ToEnumerable(),
                 reflectableFields.ToEnumerable());

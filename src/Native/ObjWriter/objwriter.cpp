@@ -305,7 +305,11 @@ void ObjectWriter::EmitAlignment(int ByteAlignment) {
 }
 
 void ObjectWriter::EmitBlob(int BlobSize, const char *Blob) {
-  Streamer->EmitBytes(StringRef(Blob, BlobSize));
+  if (Streamer->getCurrentSectionOnly()->getKind().isText()) {
+    Streamer->EmitInstructionBytes(StringRef(Blob, BlobSize));
+  } else {
+    Streamer->EmitBytes(StringRef(Blob, BlobSize));
+  }
 }
 
 void ObjectWriter::EmitIntValue(uint64_t Value, unsigned Size) {

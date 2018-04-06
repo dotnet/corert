@@ -32,7 +32,7 @@ namespace ILCompiler.Compiler.Tests
 
         private DevirtualizationManager GetDevirtualizationManagerFromScan(MethodDesc method)
         {
-            CompilationModuleGroup compilationGroup = new SingleFileCompilationModuleGroup(_context);
+            CompilationModuleGroup compilationGroup = new SingleFileCompilationModuleGroup();
 
             CompilationBuilder builder = new RyuJitCompilationBuilder(_context, compilationGroup);
             IILScanner scanner = builder.GetILScannerBuilder()
