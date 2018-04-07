@@ -3,7 +3,7 @@ setlocal
 
 call emrun --browser=firefox --browser_args=-headless --safe_firefox_profile --silence_timeout 10 "%1\%2" 
 
-IF "%errorlevel%"=="42" (
+IF "%errorlevel%"=="100" (
     echo %~n0: Pass
     EXIT /b 0
 ) ELSE (
