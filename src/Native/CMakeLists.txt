@@ -228,7 +228,6 @@ if(NOT WIN32)
     add_subdirectory(System.Private.CoreLib.Native)
 endif(NOT WIN32)
 
-# Build ObjWriter on Linux only
-if(CMAKE_SYSTEM_NAME STREQUAL Linux AND OBJWRITER_BUILD)
+if(OBJWRITER_BUILD)
     add_subdirectory(ObjWriter/llvmCap)
 endif()

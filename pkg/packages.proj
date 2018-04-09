@@ -28,7 +28,13 @@
       <AdditionalProperties>$(AdditionalProperties);BuildIdentityPackage=$(BuildIdentityPackage)</AdditionalProperties>
     </Project>
   </ItemGroup>
-  
+
+  <ItemGroup Condition="'$(SkipManagedPackageBuild)' != 'true' AND '$(ObjWriterBuild)' == 'true'">
+    <Project Include="$(MSBuildThisFileDirectory)Microsoft.DotNet.ObjectWriter\Microsoft.DotNet.ObjectWriter.builds">
+      <OSGroup>AnyOS</OSGroup>
+      <AdditionalProperties>$(AdditionalProperties);BuildIdentityPackage=$(BuildIdentityPackage)</AdditionalProperties>
+    </Project>
+  </ItemGroup>
+
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
-

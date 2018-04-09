@@ -162,6 +162,7 @@ while [ "$1" != "" ]; do
             ;;
         objwriter)
             export __ObjWriterBuild=1
+            export __ExtraMsBuildArgs="$__ExtraMsBuildArgs /p:ObjWriterBuild=true"
             ;;
         clang3.6)
             export __ClangMajorVersion=3
