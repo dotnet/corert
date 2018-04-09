@@ -383,7 +383,9 @@ goto :eof
     )
 
     "%CoreRT_CliDir%\dotnet.exe" !CoreRT_TestingUtilitiesOutputDir!\%CoreRT_TestFileHelperName%.dll --clean --outputDirectory !CoreRT_TestExtRepo_CoreFX! --testListJsonPath "%TEST_LIST%" --testUrl "%TESTS_REMOTE_URL%"
-
+    if errorlevel 1 (
+        exit /b 1
+    )
 
     exit /b 0
 
@@ -474,7 +476,7 @@ goto :eof
 :TestExtRepoCoreFX
     
     set CoreRT_TestExtRepo_CoreFX=%CoreRT_TestRoot%\..\tests_downloaded\CoreFX
-    set CoreRT_TestingUtilitiesOutputDir=%CoreRT_TestExtRepo_CoreFX%\Utilities
+    set CoreRT_TestingUtilitiesOutputDir=%CoreRT_TestExtRepo_CoreFX%\..\CoreFXUtilities
 
     :: Set paths to helpers
     set CoreRT_TestFileHelperName=CoreFX.TestUtils.TestFileSetup
@@ -492,6 +494,10 @@ goto :eof
     set FXCustomTestLauncher=%CoreRT_TestRoot%\CoreFX\build-and-run-test.cmd
     set XunitTestBinBase=%CoreRT_TestExtRepo_CoreFX%
     set XunitLogDir= %__LogDir%\CoreFX
+    
+    :: Clean up existing logs
+    if exist "%XunitLogDir%" rmdir /S /Q "%XunitLogDir%"
+    mkdir "%XunitLogDir%"
     pushd %CoreRT_TestRoot%\CoreFX\runtest
 
     :: TODO Add single test/target test support; add exclude tests argument

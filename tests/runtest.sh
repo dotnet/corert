@@ -206,7 +206,7 @@ run_coreclr_tests()
 run_corefx_tests()
 {
     CoreRT_TestExtRepo_CoreFX=${CoreRT_TestRoot}/../tests_downloaded/CoreFX
-    CoreRT_TestingUtilitiesOutputDir=${CoreRT_TestExtRepo_CoreFX}/Utilities
+    CoreRT_TestingUtilitiesOutputDir=${CoreRT_TestExtRepo_CoreFX}/../CoreFXUtilities
 
     export CoreRT_TestRoot
     export CoreRT_EnableCoreDumps
@@ -235,9 +235,12 @@ run_corefx_tests()
     FXCustomTestLauncher=${CoreRT_TestRoot}/CoreFX/corerun
     XunitTestBinBase=${CoreRT_TestExtRepo_CoreFX}
     XunitLogDir=${__LogDir}/CoreFX
-    if [ ! -d "${XunitLogDir}" ]; then
-      mkdir ${XunitLogDir}
+
+    # Clean up existing logs
+    if [ -d "${XunitLogDir}" ]; then
+        rm -rf "${XunitLogDir}"
     fi
+    mkdir ${XunitLogDir}
 
     pushd ${CoreRT_TestRoot}/CoreFX/runtest
 

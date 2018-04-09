@@ -45,52 +45,58 @@ namespace CoreFX.TestUtils.TestFileSetup
             ExitCode exitCode = ExitCode.UnknownError;
             ArgumentSyntax argSyntax = ParseCommandLine(args);
 
-            if (!Directory.Exists(outputDir))
-            {
-                try
-                {
-                    Directory.CreateDirectory(outputDir);
-                }
-                catch (IOException)
-                {
-                    exitCode = ExitCode.IOError;
-                    Environment.Exit((int)exitCode);
-                }
-            }
-
-            // parse args
             try
             {
+                if (!Directory.Exists(outputDir))
+                    Directory.CreateDirectory(outputDir);
+
+                if (cleanTestBuild)
+                {
+                    CleanBuild(outputDir);
+                }
+
                 SetupTests(testUrl, outputDir, ReadTestNames(testListPath)).Wait();
                 exitCode = ExitCode.Success;
+            }
 
-            }
-            catch (HttpRequestException)
+            catch (AggregateException e)
             {
-                exitCode = ExitCode.HttpError;
-            }
-            catch (IOException)
-            {
-                exitCode = ExitCode.IOError;
+                e.Handle(innerExc =>
+                {
+                    if (innerExc is HttpRequestException)
+                    {
+                        exitCode = ExitCode.HttpError;
+                        Console.WriteLine("Error downloading tests from: " + testUrl);
+                        Console.WriteLine(innerExc.Message);
+                        return true;
+                    }
+                    else if (innerExc is IOException)
+                    {
+                        exitCode = ExitCode.IOError;
+                        Console.WriteLine(innerExc.Message);
+                        return true;
+                    }
+                    return false;
+                });
             }
 
             Environment.Exit((int)exitCode);
         }
 
-        public static ArgumentSyntax ParseCommandLine(string[] args)
+        private static ArgumentSyntax ParseCommandLine(string[] args)
         {
             ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>
             {
                 syntax.DefineOption("out|outDir|outputDirectory", ref outputDir, "Directory where tests are downloaded");
                 syntax.DefineOption("testUrl", ref testUrl, "URL, pointing to the list of tests");
                 syntax.DefineOption("testListJsonPath", ref testListPath, "JSON-formatted list of test assembly names to download");
-                syntax.DefineOption("clean", ref cleanTestBuild, "Remove all previously built test assemblies");
+                syntax.DefineOption("clean|cleanOutputDir", ref cleanTestBuild, "Clean test assembly output directory");
             });
 
             return argSyntax;
         }
 
-        public static Dictionary<string, string> ReadTestNames(string testFilePath)
+        private static Dictionary<string, string> ReadTestNames(string testFilePath)
         {
             Debug.Assert(File.Exists(testFilePath));
 
@@ -112,7 +118,7 @@ namespace CoreFX.TestUtils.TestFileSetup
             return testNames;
         }
 
-        public static async Task SetupTests(string jsonUrl, string destinationDirectory, Dictionary<string, string> testNames = null, bool runAllTests = false)
+        private static async Task SetupTests(string jsonUrl, string destinationDirectory, Dictionary<string, string> testNames = null, bool runAllTests = false)
         {
             Debug.Assert(Directory.Exists(destinationDirectory));
             Debug.Assert(runAllTests || testNames != null);
@@ -124,12 +130,18 @@ namespace CoreFX.TestUtils.TestFileSetup
             }
             Dictionary<string, string> testPayloads = await GetTestUrls(jsonUrl, testNames, runAllTests);
 
+            if (testPayloads == null)
+            {
+                return;
+            }
+
             await GetTestArchives(testPayloads, tempDirPath);
             ExpandArchivesInDirectory(tempDirPath, destinationDirectory);
 
             Directory.Delete(tempDirPath);
         }
-        public static async Task<Dictionary<string, string>> GetTestUrls(string jsonUrl, Dictionary<string, string> testNames = null, bool runAllTests = false)
+
+        private static async Task<Dictionary<string, string>> GetTestUrls(string jsonUrl, Dictionary<string, string> testNames = null, bool runAllTests = false)
         {
             if (httpClient is null)
             {
@@ -137,7 +149,6 @@ namespace CoreFX.TestUtils.TestFileSetup
             }
 
             Debug.Assert(runAllTests || testNames != null);
-
             // Set up the json stream reader
             using (var responseStream = await httpClient.GetStreamAsync(jsonUrl))
             using (var streamReader = new StreamReader(responseStream))
@@ -180,7 +191,7 @@ namespace CoreFX.TestUtils.TestFileSetup
             return testNames;
         }
 
-        public static async Task GetTestArchives(Dictionary<string, string> testPayloads, string downloadDir)
+        private static async Task GetTestArchives(Dictionary<string, string> testPayloads, string downloadDir)
         {
             if (httpClient is null)
             {
@@ -218,7 +229,7 @@ namespace CoreFX.TestUtils.TestFileSetup
             }
         }
 
-        public static void ExpandArchivesInDirectory(string archiveDirectory, string destinationDirectory, bool cleanup = true)
+        private static void ExpandArchivesInDirectory(string archiveDirectory, string destinationDirectory, bool cleanup = true)
         {
             Debug.Assert(Directory.Exists(archiveDirectory));
             Debug.Assert(Directory.Exists(destinationDirectory));
@@ -228,12 +239,6 @@ namespace CoreFX.TestUtils.TestFileSetup
             foreach (string archivePath in archives)
             {
                 string destinationDirName = Path.Combine(destinationDirectory, Path.GetFileNameWithoutExtension(archivePath));
-
-                // If doing clean test build - delete existing artefacts
-                if (Directory.Exists(destinationDirName) && cleanTestBuild)
-                {
-                    Directory.Delete(destinationDirName, true);
-                }
 
                 ZipFile.ExtractToDirectory(archivePath, destinationDirName);
 
@@ -246,6 +251,21 @@ namespace CoreFX.TestUtils.TestFileSetup
             }
         }
 
+        private static void CleanBuild(string directoryToClean)
+        {
+            Debug.Assert(Directory.Exists(directoryToClean));
+            DirectoryInfo dirInfo = new DirectoryInfo(directoryToClean);
+
+            foreach (FileInfo file in dirInfo.EnumerateFiles())
+            {
+                file.Delete();
+            }
+
+            foreach (DirectoryInfo dir in dirInfo.EnumerateDirectories())
+            {
+                dir.Delete(true);
+            }
+        }
 
     }
 }
