@@ -23,11 +23,17 @@
     <ObjWriterLibrary Condition="'$(OSGroup)' == 'OSX'">libobjwriter.dylib</ObjWriterLibrary>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(OSGroup)' == 'Windows_NT'">
+    <File Include="$(ObjDir)Native\$(OSPlatformConfig)\ObjWriter\llvmCap\LLVM-prefix\src\LLVM-build\bin\$(ConfigurationGroup)\$(ObjWriterLibrary)">
+      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+    </File>
+  </ItemGroup>
+  <ItemGroup Condition="'$(OSGroup)' != 'Windows_NT'">
     <File Include="$(ObjDir)Native\$(OSPlatformConfig)\ObjWriter\llvmCap\LLVM-prefix\src\LLVM-build\lib\$(ObjWriterLibrary)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </File>
   </ItemGroup>
+
   <Target Name="GetPackageDependencies"/>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\src\dir.targets" />
