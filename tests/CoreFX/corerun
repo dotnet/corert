@@ -53,16 +53,15 @@ echo Executing ${TestFileName} - writing logs to ${LogDir}/${TestFileName}.xml
 chmod +x ${TestFolderName}/publish/${TestExecutable} 
 
 case "$(uname -s)" in 
-    # Check if we're running under OSX
-    Darwin)
+    # Check if we're running under Linux
+    Linux)
     export OSCategory="nonlinuxtests"
     ;;
     # Check if we're running under OSX
     Darwin)
     export OSCategory="nonosxtests"
     ;;
-
-    # Default to Linux
+    # Default to Linux if we don't recognize the OS
     *)
     export OSCategory="nonlinuxtests"
     ;;
