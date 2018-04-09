@@ -234,6 +234,11 @@ namespace ILCompiler
             if (method.IsFinalizer)
                 return false;
 
+            // Instance methods on byref-like types cannot be reflection invoked
+            // because one can't box them.
+            if (!method.Signature.IsStatic && owningType.IsByRefLike)
+                return false;
+
             // Static constructors are not reflection invokable
             if (method.IsStaticConstructor)
                 return false;
