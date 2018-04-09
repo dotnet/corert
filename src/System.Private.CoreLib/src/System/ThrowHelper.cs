@@ -330,6 +330,8 @@ namespace System
                     return "length";
                 case ExceptionArgument.comparisonType:
                     return "comparisonType";
+                case ExceptionArgument.manager:
+                    return "manager";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -428,6 +430,7 @@ namespace System
         state,
         length,
         comparisonType,
+        manager
     }
 
     //
