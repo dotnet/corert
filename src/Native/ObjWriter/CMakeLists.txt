@@ -2,7 +2,15 @@ project(objwriter)
 
 set(CMAKE_BUILD_TYPE "${OBJWRITER_BUILD_TYPE}")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OBJWRITER_C_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OBJWRITER_CXX_FLAGS} -std=c++11 -fno-rtti")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OBJWRITER_CXX_FLAGS}")
+
+if(WIN32)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
+endif()
+
+if(NOT WIN32)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fno-rtti")
+endif()
 
 message(STATUS "ObjWriter configuring with (${CMAKE_BUILD_TYPE}) build type and (${LLVM_DEFAULT_TARGET_TRIPLE}) default target triple")
 
