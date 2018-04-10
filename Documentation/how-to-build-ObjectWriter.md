@@ -3,7 +3,7 @@
 ObjWriter is based on LLVM, so it requires recent CMake and GCC/Clang to build LLVM.
 See [LLVM requirements](http://llvm.org/docs/GettingStarted.html#requirements) for more details.
 
-`build.cmd`/`build.sh` script downloads a pre-built ObjWriter NuGet package. ObjWriter library is not built by default because of
+`build.cmd`/`build.sh` script downloads a pre-built ObjWriter NuGet package. ObjWriter library is not built by default because
 it takes a long time and changes rarely.
 
 To build a fresh ObjWriter, pass additional `objwriter` argument to the `build.cmd`/`build.sh` script. It will cause the build to clone
