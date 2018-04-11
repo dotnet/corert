@@ -109,8 +109,12 @@ if [[ -n "$CROSSCOMPILE" ]]; then
         echo "ROOTFS_DIR not set for crosscompile"
         exit 1
     fi
-    cmake_extra_defines="$cmake_extra_defines -C $1/cross/$build_arch/tryrun.cmake"
-    cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$1/cross/$build_arch/toolchain.cmake"
+    if [[ -z $CONFIG_DIR ]]; then
+        CONFIG_DIR="$1/cross"
+    fi
+    export TARGET_BUILD_ARCH=$build_arch
+    cmake_extra_defines="$cmake_extra_defines -C $CONFIG_DIR/tryrun.cmake"
+    cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$CONFIG_DIR/toolchain.cmake"
 fi
 
 if [ $build_arch == "wasm" ]; then
