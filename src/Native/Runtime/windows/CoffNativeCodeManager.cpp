@@ -415,7 +415,6 @@ UIntNative CoffNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Metho
         INT32 slot = decoder.GetReversePInvokeFrameStackSlot();
         upperBound =  (UIntNative) dac_cast<TADDR>(basePointer + slot);
     }
-
     else
     {
         bool rbp = GetFramePointer(pMethodInfo, pRegisterSet) == NULL;
@@ -439,7 +438,7 @@ UIntNative CoffNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Metho
                             &EstablisherFrame,
                             NULL);
 
-            upperBound = dac_cast<TADDR>(context.Rsp - 2 * sizeof (PVOID));
+            upperBound = dac_cast<TADDR>(context.Rsp - sizeof (PVOID));
         }
         else
         {
