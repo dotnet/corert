@@ -2,15 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#include "pal_common.h"
 #include <dlfcn.h>
 #include <string.h>
-#include "pal_common.h"
 
 #if HAVE_GNU_LIBNAMES_H
 #include <gnu/lib-names.h>
 #endif
-
-#define LIBC_NAME_WITHOUT_EXTENSION "libc"
 
 extern "C" void* CoreLibNative_LoadLibrary(const char* filename)
 {
@@ -23,7 +21,7 @@ extern "C" void* CoreLibNative_LoadLibrary(const char* filename)
     // * For macOS, use constant value absolute path "/usr/lib/libc.dylib".
     // * For FreeBSD, use constant value "libc.so.7".
     // * For rest of Unices, use constant value "libc.so".
-    if (strcmp(filename, LIBC_NAME_WITHOUT_EXTENSION) == 0)
+    if (strcmp(filename, "libc") == 0)
     {
 #if defined(__APPLE__)
         filename = "/usr/lib/libc.dylib";
