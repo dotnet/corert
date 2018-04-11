@@ -852,4 +852,123 @@ Abort
 
     INLINE_GETTHREAD_CONSTANT_POOL
 
+;; Trap to GC.
+;; Set up the P/Invoke transition frame with the return address as the safe point.
+;; All registers, both volatile and non-volatile, are preserved.
+;; The function should be called not jumped because it's expecting the return address
+    NESTED_ENTRY RhpTrapToGC, _TEXT
+;;
+        ;; What we want to get to: 
+        ;;
+        ;;   [sp +  ]   -> m_FramePointer                  -------|
+        ;;   [sp + 8]   -> m_RIP                                  |
+        ;;   [sp + 10]  -> m_pThread                              |
+        ;;   [sp + 18]  -> m_Flags / m_dwAlignPad2                |
+        ;;   [sp + 20]  -> x19 save                               |
+        ;;   [sp + 28]  -> x20 save                               |
+        ;;   [sp + 30]  -> x21 save                               |
+        ;;   [sp + 38]  -> x22 save                               |
+        ;;   [sp + 40]  -> x23 save                               |
+        ;;   [sp + 48]  -> x24 save                               | PInvokeTransitionFrame
+        ;;   [sp + 50]  -> x25 save                               |
+        ;;   [sp + 58]  -> x26 save                               |
+        ;;   [sp + 60]  -> x27 save                               |
+        ;;   [sp + 68]  -> x28 save                               |
+        ;;   [sp + 70]  -> sp save  ;caller sp                    |
+        ;;   [sp + 78]  -> x0 save                                |
+        ;;   [sp + 80]  -> x1 save                                |
+        ;;   [sp + 88]  -> x2 save                                |
+        ;;   [sp + 90]  -> x3 save                                |
+        ;;   [sp + 98]  -> x4 save                                |
+        ;;   [sp + a0]  -> x5 save                                |
+        ;;   [sp + a8]  -> x6 save                                |
+        ;;   [sp + b0]  -> x7 save                                |
+        ;;   [sp + b8]  -> x8 save                                |
+        ;;   [sp + c0]  -> x9 save                                |
+        ;;   [sp + c8]  -> x10 save                               |
+        ;;   [sp + d0]  -> x11 save                               |
+        ;;   [sp + d8]  -> x12 save                               |
+        ;;   [sp + e0]  -> x13 save                               |
+        ;;   [sp + e8]  -> x14 save                               |
+        ;;   [sp + f0]  -> x15 save                               |
+        ;;   [sp + f8]  -> x16 save                               |
+        ;;   [sp + 100]  -> x17 save                              |
+        ;;   [sp + 108]  -> x18 save                              |
+        ;;   [sp + 110]  -> lr save                        -------|
+        ;;
+        ;;   [sp + 118]  -> NZCV
+        ;;
+        ;;   [sp + 120]  -> d0, d1, d2, d3
+        ;;   [sp + 140]  -> d4 ... d31
+        ;;
+
+        ALLOC_LOOP_HIJACK_FRAME
+
+        ;; Slot at [sp, #0x118] is reserved for NZCV
+        mrs         x1, NZCV
+        str         x1, [sp, #m_SavedNZCV]
+
+        ;; x4 <- GetThread(), TRASHES x1
+        INLINE_GETTHREAD x4, x1
+        INIT_PROBE_FRAME x4, x1, #PROBE_SAVE_FLAGS_EVERYTHING, 0, (PROBE_FRAME_SIZE + EXTRA_SAVE_SIZE)
+        
+        ; Early out if GC stress is currently suppressed. Do this after we have computed the real address to
+        ; return to but before we link the transition frame onto m_pHackPInvokeTunnel (because hitting this
+        ; condition implies we're running restricted callouts during a GC itself and we could end up
+        ; overwriting a co-op frame set by the code that caused the GC in the first place, e.g. a GC.Collect
+        ; call).
+        ldr         w1, [x4, #OFFSETOF__Thread__m_ThreadStateFlags]
+        tst         w1, #TSF_SuppressGcStress__OR__TSF_DoNotTriggerGC
+        bne         DoNotTriggerGC
+
+        ; link the frame into the Thread
+        add         x1, sp, xzr
+        str         x1, [x4, #OFFSETOF__Thread__m_pHackPInvokeTunnel]
+
+        ;;
+        ;; Unhijack this thread, if necessary.
+        ;;
+        INLINE_THREAD_UNHIJACK x4, x1, x2       ;; trashes x1, x2
+
+#ifdef FEATURE_GC_STRESS
+
+        ldr         x1, =g_fGcStressStarted
+        ldr         w1, [x1]
+        cbnz        w1, SkipGcStress
+
+        mov         x1, x0
+        ldr         x0, =$g_pTheRuntimeInstance
+        ldr         x0, [x0]
+        bl          $RuntimeInstance__ShouldHijackLoopForGcStress
+        cbnz        x0, SkipGcStress
+
+        bl          $REDHAWKGCINTERFACE__STRESSGC
+SkipGcStress
+#endif ;; FEATURE_GC_STRESS
+
+        add         x9, sp, xzr ; sp is address of PInvokeTransitionFrame
+        bl          RhpWaitForGCNoAbort
+
+DoNotTriggerGC
+        ldr         x1, [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
+        tbnz        x1, #PTFF_THREAD_ABORT_BIT, ToAbort
+        
+        ; restore condition codes
+        ldr         x1, [sp, #m_SavedNZCV]
+        msr         NZCV, x1
+
+        FREE_LOOP_HIJACK_FRAME
+        EPILOG_RETURN
+
+ToAbort
+        FREE_LOOP_HIJACK_FRAME
+        EPILOG_NOP mov w0, #STATUS_REDHAWK_THREAD_ABORT
+        EPILOG_NOP mov x1, lr    ; hijack target address as exception PC
+        EPILOG_NOP b RhpThrowHwEx
+
+    NESTED_END RhpTrapToGC
+
+    INLINE_GETTHREAD_CONSTANT_POOL
+
     end
+
