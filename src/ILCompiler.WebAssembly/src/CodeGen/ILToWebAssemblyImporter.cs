@@ -1001,11 +1001,6 @@ namespace Internal.IL
                     {
                         targetMethod = parameterType.ResolveInterfaceMethodTarget(callee);
                     }
-                    else
-                    {
-                        //TODO: needs runtime support for DispatchByInterface
-                        throw new NotImplementedException("Interface call");
-                    }
                 }
                 else
                 {
@@ -1021,7 +1016,7 @@ namespace Internal.IL
                     return GetOrCreateLLVMFunction(_compilation.NameMangler.GetMangledMethodName(targetMethod).ToString());
                 }
 
-                return GetCallableVirtualMethod(thisPointer.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), callee);
+                return GetCallableVirtualMethod(thisPointer, callee);
 
             }
             else
