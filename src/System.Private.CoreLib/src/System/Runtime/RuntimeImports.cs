@@ -381,6 +381,7 @@ namespace System.Runtime
         [DllImport(RuntimeLibrary, EntryPoint = "RhFlushProcessWriteBuffers", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         internal static extern void RhFlushProcessWriteBuffers();
 
+#if !PLATFORM_UNIX
         // Wait for any object to be signalled, in a way that's compatible with the CLR's behavior in an STA.
         // ExactSpelling = 'true' to force MCG to resolve it to default
         [DllImport(RuntimeLibrary, ExactSpelling = true)]
@@ -395,6 +396,7 @@ namespace System.Runtime
         {
             return RhCompatibleReentrantWaitAny(alertable ? 1 : 0, timeout, count, handles);
         }
+#endif
 
         //
         // EEType interrogation methods.
