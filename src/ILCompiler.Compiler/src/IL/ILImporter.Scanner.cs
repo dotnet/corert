@@ -19,6 +19,7 @@ namespace Internal.IL
     partial class ILImporter
     {
         private readonly MethodIL _methodIL;
+        private readonly MethodIL _canonMethodIL;
         private readonly ILScanner _compilation;
         private readonly ILScanNodeFactory _factory;
 
@@ -83,6 +84,8 @@ namespace Internal.IL
             _factory = (ILScanNodeFactory)compilation.NodeFactory;
             
             _ilBytes = methodIL.GetILBytes();
+
+            _canonMethodIL = methodIL;
 
             // Get the runtime determined method IL so that this works right in shared code
             // and tokens in shared code resolve to runtime determined types.
@@ -266,11 +269,10 @@ namespace Internal.IL
         
         private void ImportCall(ILOpcode opcode, int token)
         {
-            // Strip runtime determined characteristics off of the method (because that's how RyuJIT operates)
+            // We get both the canonical and runtime determined form - JitInterface mostly operates
+            // on the canonical form.
             var runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
-            MethodDesc method = runtimeDeterminedMethod;
-            if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
-                method = runtimeDeterminedMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            var method = (MethodDesc)_canonMethodIL.GetObject(token);
 
             if (method.IsRawPInvoke())
             {

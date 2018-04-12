@@ -32,6 +32,7 @@ class Program
         TestFieldAccess.Run();
         TestNativeLayoutGeneration.Run();
         TestInterfaceVTableTracking.Run();
+        TestClassVTableTracking.Run();
 
         return 100;
     }
@@ -2119,6 +2120,30 @@ class Program
             s_foo = new Derived<string>();
             Array arr = s_foo.Frob();
             arr.SetValue(new Gen<Gen<string>>(), new int[] { 0, 0 });
+        }
+    }
+
+    class TestClassVTableTracking
+    {
+        class Unit { }
+
+        class Gen<T, U>
+        {
+            public virtual int Test()
+            {
+                return 42;
+            }
+        }
+
+        static int Call<T>()
+        {
+            return new Gen<T, Unit>().Test();
+        }
+
+        public static void Run()
+        {
+            // This only really tests whether we can compile this.
+            Call<object>();
         }
     }
 }
