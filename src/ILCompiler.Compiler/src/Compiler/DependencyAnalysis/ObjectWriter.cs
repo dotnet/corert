@@ -194,16 +194,6 @@ namespace ILCompiler.DependencyAnalysis
         private static extern int EmitSymbolRef(IntPtr objWriter, byte[] symbolName, RelocType relocType, int delta);
         public int EmitSymbolRef(Utf8StringBuilder symbolName, RelocType relocType, int delta = 0)
         {
-            if (_targetPlatform.Architecture != TargetArchitecture.ARMEL && _targetPlatform.Architecture != TargetArchitecture.ARM)
-            {
-                // Workaround for ObjectWriter's lack of support for IMAGE_REL_BASED_RELPTR32
-                // https://github.com/dotnet/corert/issues/3278
-                if (relocType == RelocType.IMAGE_REL_BASED_RELPTR32)
-                {
-                    relocType = RelocType.IMAGE_REL_BASED_REL32;
-                    delta = checked(delta + sizeof(int));
-                }
-            }
             return EmitSymbolRef(_nativeObjectWriter, symbolName.Append('\0').UnderlyingArray, relocType, delta);
         }
 
@@ -327,20 +317,7 @@ namespace ILCompiler.DependencyAnalysis
         public uint GetPrimitiveTypeIndex(TypeDesc type)
         {
             Debug.Assert(type.IsPrimitive, "it is not a primitive type");
-            // OBJWRITER-TODO: Remove this workaround when objwriter will be updated (see https://github.com/dotnet/corert/issues/5177)
-            try
-            {
-                return GetPrimitiveTypeIndex(_nativeObjectWriter, (int)type.Category);
-            }
-            catch
-            {
-                if (_nodeFactory.Target.OperatingSystem == TargetOS.Windows)
-                {
-                    return PrimitiveTypeDescriptor.GetPrimitiveTypeIndex(type);
-                }
-
-                return 0;
-            }
+            return GetPrimitiveTypeIndex(_nativeObjectWriter, (int)type.Category);
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -398,14 +375,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void EmitDebugEHClause(DebugEHClauseInfo ehClause)
         {
-            // OBJWRITER-TODO: Remove this workaround when objwriter will be updated (see https://github.com/dotnet/corert/issues/5177)
-            try
-            {
-                EmitDebugEHClause(_nativeObjectWriter, ehClause.TryOffset, ehClause.TryLength, ehClause.HandlerOffset, ehClause.HandlerLength);
-            }
-            catch
-            {
-            }
+            EmitDebugEHClause(_nativeObjectWriter, ehClause.TryOffset, ehClause.TryLength, ehClause.HandlerOffset, ehClause.HandlerLength);
         }
 
         public void EmitDebugEHClauseInfo(ObjectNode node)
@@ -433,14 +403,7 @@ namespace ILCompiler.DependencyAnalysis
             var methodNode = node as IMethodNode;
             if (methodNode != null)
             {
-                try
-                {
-                    // OBJWRITER-TODO: Remove this workaround when objwriter will be updated (see https://github.com/dotnet/corert/issues/5177)
-                    methodTypeIndex = 0; // _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method);
-                }
-                catch (TypeSystemException)
-                {
-                }
+                methodTypeIndex = _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method);
             }
 
             EmitDebugFunctionInfo(_nativeObjectWriter, _currentNodeZeroTerminatedName.UnderlyingArray, methodSize, methodTypeIndex);
@@ -1181,11 +1144,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     if (objectWriter.HasFunctionDebugInfo())
                     {
-                        // OBJWRITER-TODO: Remove this workaround when objwriter will be updated (see https://github.com/dotnet/corert/issues/5177)
-                        if (factory.Target.OperatingSystem == TargetOS.Windows)
-                        {
-                            objectWriter.EmitDebugVarInfo(node);
-                        }
+                        objectWriter.EmitDebugVarInfo(node);
                         objectWriter.EmitDebugEHClauseInfo(node);
                         objectWriter.EmitDebugFunctionInfo(node, nodeContents.Data.Length);
                     }
