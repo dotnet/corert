@@ -215,6 +215,10 @@ run_corefx_tests()
     export CoreRT_TestingUtilitiesOutputDir
     export CoreRT_CliBinDir
 
+    if [ ! -d "${CoreRT_TestExtRepo_CoreFX}" ]; then
+        mkdir ${CoreRT_TestExtRepo_CoreFX}
+    fi
+
     # Set paths to helpers
     CoreRT_TestFileHelperName=CoreFX.TestUtils.TestFileSetup
     CoreRT_TestFileHelperProjectPath="${CoreRT_TestRoot}/CoreFX/runtest/src/TestUtils/TestFileSetup/${CoreRT_TestFileHelperName}.csproj"
