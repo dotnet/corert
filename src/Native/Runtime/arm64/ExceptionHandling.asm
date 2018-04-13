@@ -15,15 +15,16 @@
 ;; Macro used to create frame of exception throwing helpers (RhpThrowEx, RhpThrowHwEx)
     MACRO
         ALLOC_THROW_FRAME $exceptionType
- 
-        PROLOG_NOP mov x3, sp
 
+        PROLOG_NOP mov x3, sp
+ 
         ;; Setup a PAL_LIMITED_CONTEXT on the stack {
-        PROLOG_STACK_ALLOC 0x50
         IF $exceptionType == HARDWARE_EXCEPTION
+            PROLOG_NOP sub sp,sp,#0x50
             PROLOG_NOP stp x3, x1, [sp]   ; x3 is the SP and x1 is the IP of the fault site 
             PROLOG_PUSH_MACHINE_FRAME
         ELSE
+            PROLOG_STACK_ALLOC 0x50
             PROLOG_NOP stp x3, lr, [sp]   ; x3 is the SP and lr is the IP of the fault site 
         ENDIF
         PROLOG_NOP stp d8, d9, [sp, #0x10]
