@@ -49,10 +49,10 @@ namespace Internal.JitInterface
 
         private ExceptionDispatchInfo _lastException;
 
-        [DllImport("clrjitilc")]
+        [DllImport("clrjitilc", CallingConvention=CallingConvention.StdCall)] // stdcall in CoreCLR!
         private extern static IntPtr jitStartup(IntPtr host);
 
-        [DllImport("clrjitilc")]
+        [DllImport("clrjitilc", CallingConvention=CallingConvention.StdCall)]
         private extern static IntPtr getJit();
 
         [DllImport("jitinterface")]

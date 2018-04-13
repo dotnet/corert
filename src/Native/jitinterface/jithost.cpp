@@ -6,27 +6,15 @@
 
 #include "dllexport.h"
 
-#ifdef _X86_
-#ifdef PLATFORM_UNIX
-#define DEFAULT_CALL_CONV __cdecl
-#else
-#define DEFAULT_CALL_CONV __stdcall
-#endif
-#else
-#define DEFAULT_CALL_CONV
-#define __cdecl
-#define __stdcall
-#endif
-
 class JitConfigProvider
 {
 public:
-    virtual int DEFAULT_CALL_CONV getIntConfigValue(
+    virtual int getIntConfigValue(
         const wchar_t* name, 
         int defaultValue
         ) = 0;
 
-    virtual int DEFAULT_CALL_CONV getStringConfigValue(
+    virtual int getStringConfigValue(
         const wchar_t* name,
         wchar_t* retBuffer,
         int retBufferLength
