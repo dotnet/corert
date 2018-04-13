@@ -43,20 +43,6 @@ clean()
     fi
 }
 
-
-# Check the system to ensure the right pre-reqs are in place
-
-check_native_prereqs()
-{
-    echo "Checking pre-requisites..."
-
-    # Check presence of CMake on the path
-    hash cmake 2>/dev/null || { echo >&2 "Please install cmake before running this script"; exit 1; }
-
-    # Check for clang
-    hash clang-$__ClangMajorVersion.$__ClangMinorVersion 2>/dev/null ||  hash clang$__ClangMajorVersion$__ClangMinorVersion 2>/dev/null ||  hash clang 2>/dev/null || { echo >&2 "Please install clang before running this script"; exit 1; }
-}
-
 get_current_linux_rid() {
     # Construct RID for current distro
 
@@ -105,17 +91,9 @@ export __UnprocessedBuildArgs=
 export __CleanBuild=0
 export __VerboseBuild=0
 export __ObjWriterBuild=0
-export __ClangMajorVersion=3
-export __ClangMinorVersion=9
 export __CrossBuild=0
 
 __BuildArch=$__HostArch
-
-# Checking for any clang versions, if there is a symlink
-if [ -x "$(command -v clang)" ]; then
-    __ClangMajorVersion="$(echo | clang -dM -E - | grep __clang_major__ | cut -f3 -d ' ')"
-    __ClangMinorVersion="$(echo | clang -dM -E - | grep __clang_minor__ | cut -f3 -d ' ')"
-fi
 
 while [ "$1" != "" ]; do
         lowerI="$(echo $1 | awk '{print tolower($0)}')"
@@ -129,24 +107,6 @@ while [ "$1" != "" ]; do
             ;;
         native)
             export __buildnative=true
-            ;;
-        x86)
-            __BuildArch=x86
-            ;;
-        x64)
-            __BuildArch=x64
-            ;;
-        arm)
-            __BuildArch=arm
-            ;;
-        arm64)
-            __BuildArch=arm64
-            ;;
-        armel)
-            __BuildArch=armel
-            ;;
-        wasm)
-            __BuildArch=wasm
             ;;
         debug)
             export __BuildType=Debug
@@ -164,38 +124,6 @@ while [ "$1" != "" ]; do
             export __ObjWriterBuild=1
             export __ExtraMsBuildArgs="$__ExtraMsBuildArgs /p:ObjWriterBuild=true"
             ;;
-        clang3.6)
-            export __ClangMajorVersion=3
-            export __ClangMinorVersion=6
-            ;;
-        clang3.7)
-            export __ClangMajorVersion=3
-            export __ClangMinorVersion=7
-            ;;
-        clang3.8)
-            export __ClangMajorVersion=3
-            export __ClangMinorVersion=8
-            ;;
-        clang3.9)
-            export __ClangMajorVersion=3
-            export __ClangMinorVersion=9
-            ;;
-        clang4.0)
-            export __ClangMajorVersion=4
-            export __ClangMinorVersion=0
-            ;;
-        clang5.0)
-            export __ClangMajorVersion=5
-            export __ClangMinorVersion=0
-            ;;
-        clang6.0)
-            export __ClangMajorVersion=6
-            export __ClangMinorVersion=0
-            ;;
-        clang7.0)
-            export __ClangMajorVersion=7
-            export __ClangMinorVersion=0
-            ;;
         cross)
             export __CrossBuild=1
             ;;
@@ -210,11 +138,36 @@ while [ "$1" != "" ]; do
         skiptests)
             export __SkipTests=true
             ;;
+        x86|x64|arm|arm64|armel|wasm)
+            __BuildArch=$lowerI
+            ;;
+        clang*)
+            export __ClangMajorVersion=${lowerI:5:1}
+            export __ClangMinorVersion=${lowerI:7:1}
+            ;;
         *)
-          export __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
+            export __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
     esac
     shift
 done
+
+if [ -z "$__ClangMajorVersion" ] || [ -z "$__ClangMinorVersion" ]; then
+    # Checking for any clang versions, if there is a symlink
+    if [ -x "$(command -v clang)" ]; then
+        export __ClangMajorVersion="$(echo | clang -dM -E - | grep __clang_major__ | cut -f3 -d ' ')"
+        export __ClangMinorVersion="$(echo | clang -dM -E - | grep __clang_minor__ | cut -f3 -d ' ')"
+        if [ "${__HostOS}" != "OSX" ]; then
+            export CppCompilerAndLinker=clang
+        fi
+    else
+        export __ClangMajorVersion=3
+        export __ClangMinorVersion=9
+    fi
+fi
+
+if [ "${__HostOS}" != "OSX" ] && [ -z "$CppCompilerAndLinker" ]; then
+    export CppCompilerAndLinker=clang-${__ClangMajorVersion}.${__ClangMinorVersion}
+fi
 
 export $__BuildArch
 
@@ -250,11 +203,6 @@ case $OSName in
         export __NugetRuntimeId=linux-x64
         ;;
 esac
-
-# For msbuild
-if [ $__HostOS != "OSX" ]; then
-    export CppCompilerAndLinker=clang-${__ClangMajorVersion}.${__ClangMinorVersion}
-fi
 
 export __BuildOS="$__HostOS"
 
