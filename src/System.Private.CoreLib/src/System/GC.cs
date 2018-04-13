@@ -631,5 +631,20 @@ namespace System
         {
             return RuntimeImports.RhGetAllocatedBytesForCurrentThread();
         }
+
+        internal static void GetMemoryInfo(out uint highMemLoadThreshold,
+                                           out ulong totalPhysicalMem,
+                                           out uint lastRecordedMemLoad,
+                                           // The next two are size_t
+                                           out UIntPtr lastRecordedHeapSize,
+                                           out UIntPtr lastRecordedFragmentation)
+        {
+            // TODO: https://github.com/dotnet/corert/issues/5680
+            highMemLoadThreshold = default;
+            totalPhysicalMem = default;
+            lastRecordedMemLoad = default;
+            lastRecordedHeapSize = default;
+            lastRecordedFragmentation = default;
+        }
     }
 }

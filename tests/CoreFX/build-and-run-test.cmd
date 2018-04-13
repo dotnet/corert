@@ -51,4 +51,4 @@ if not exist "%TestFolder%\native\%TestExecutable%".exe (
     exit /b 1
 )
 
-call %TestFolder%\native\%TestExecutable% %TestFolder%\%TestFileName%.dll -xml %XunitLogDir%\%TestFileName%.xml 
+call %TestFolder%\native\%TestExecutable% %TestFolder%\%TestFileName%.dll -xml %XunitLogDir%\%TestFileName%.xml -notrait category=nonnetcoreapptests -notrait category=nonwindowstests  -notrait category=failing

@@ -38,55 +38,72 @@ namespace CoreFX.TestUtils.XUnit
             int failed = 0;
             int skipped = 0;
             ulong timeElapsed = 0;
+            bool printTotals = false;
 
-            foreach(string logFile in logFiles)
+            foreach (string logFile in logFiles)
             {
-                // XMLReader escapes the character sequence \\.. as just a single backslash \ - Is this intended behavior? 
-                using (XmlReader reader = XmlReader.Create(logFile.Replace(@"\\..", @"\..")))
+                try
                 {
-                    reader.MoveToContent();
-                    reader.ReadToDescendant("collection");
-                    do
+
+                    // XMLReader escapes the character sequence \\.. as just a single backslash \ - Is this intended behavior? 
+                    using (XmlReader reader = XmlReader.Create(logFile.Replace(@"\\..", @"\..")))
                     {
-                        // Get total tests in current element
-                        string totalAttr = reader.GetAttribute("total");
-                        int currentTotal;
-                        Int32.TryParse(totalAttr, out currentTotal);
-                        total += currentTotal;
+                        reader.MoveToContent();
+                        reader.ReadToDescendant("collection");
+                        do
+                        {
+                            // Get total tests in current element
+                            string totalAttr = reader.GetAttribute("total");
+                            int currentTotal;
+                            Int32.TryParse(totalAttr, out currentTotal);
 
-                        // Get passed tests 
-                        string passedAttr = reader.GetAttribute("passed");
-                        int currentPassed;
-                        Int32.TryParse(passedAttr, out currentPassed);
-                        passed += currentPassed;
+                            // Get passed tests 
+                            string passedAttr = reader.GetAttribute("passed");
+                            int currentPassed;
+                            Int32.TryParse(passedAttr, out currentPassed);
 
-                        // Get failed tests
-                        string failedAttr = reader.GetAttribute("failed");
-                        int currentFailed;
-                        Int32.TryParse(failedAttr, out currentFailed);
-                        failed += currentFailed;
+                            // Get failed tests
+                            string failedAttr = reader.GetAttribute("failed");
+                            int currentFailed;
+                            Int32.TryParse(failedAttr, out currentFailed);
 
-                        // Get skipped tests
-                        string skippedAttr = reader.GetAttribute("skipped");
-                        int currentSkipped;
-                        Int32.TryParse(skippedAttr, out currentSkipped);
-                        skipped += currentSkipped;
+                            // Get skipped tests
+                            string skippedAttr = reader.GetAttribute("skipped");
+                            int currentSkipped;
+                            Int32.TryParse(skippedAttr, out currentSkipped);
 
-                        // Get time elapsed
-                        string timeAttr = reader.GetAttribute("time");
-                        ulong currentTime;
-                        UInt64.TryParse(timeAttr, out currentTime);
-                        timeElapsed += currentTime;
+                            // Get time elapsed
+                            string timeAttr = reader.GetAttribute("time");
+                            ulong currentTime;
+                            UInt64.TryParse(timeAttr, out currentTime);
 
-                    } while (reader.ReadToNextSibling("collection"));
+                            // Update running total only once current element has been parsed
+                            total += currentTotal;
+                            passed += currentPassed;
+                            failed += currentFailed;
+                            skipped += currentSkipped;
+                            timeElapsed += currentTime;
 
+                        } while (reader.ReadToNextSibling("collection"));
+
+                        // If we've fully parsed a log, print totals
+                        printTotals = true;
+                    }
+                }
+                catch (XmlException exc)
+                {
+                    Console.WriteLine("Malformed Log: {0} ", logFile);
+                    Console.WriteLine("Reason: {0} ", exc.Message);
+                    continue;
                 }
             }
 
-            Console.WriteLine("=== CoreFX TEST EXECUTION SUMMARY ===: ");
-            Console.WriteLine(String.Format("Total: {0}, Passed: {1}, Failed: {2}, Skipped: {3}", total, passed, failed, timeElapsed));
-            Console.WriteLine("Detailed logs written to: " + logDir);
-
+            if (printTotals)
+            {
+                Console.WriteLine("=== CoreFX TEST EXECUTION SUMMARY ===: ");
+                Console.WriteLine(String.Format("Total: {0}, Passed: {1}, Failed: {2}, Skipped: {3}", total, passed, failed, timeElapsed));
+                Console.WriteLine("Detailed logs written to: " + logDir);
+            }
         }
 
         private static ArgumentSyntax ParseCommandLine(string[] args)
@@ -106,7 +123,7 @@ namespace CoreFX.TestUtils.XUnit
             Debug.Assert(Directory.Exists(logDirectory));
             Console.WriteLine(logDirectory);
             var logFiles = Directory.EnumerateFiles(logDirectory, logPattern, SearchOption.AllDirectories);
-            
+
             return logFiles;
         }
 

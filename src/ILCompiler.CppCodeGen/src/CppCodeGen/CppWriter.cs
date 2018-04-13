@@ -1268,7 +1268,7 @@ namespace ILCompiler.CppCodeGen
 
             rtrHeader.Append(GetCodeForObjectNode(headerNode, factory));
             rtrHeader.AppendLine();
-            rtrHeader.Append("void* RtRHeaderWrapper() {");
+            rtrHeader.Append("extern \"C\" void* RtRHeaderWrapper() {");
             rtrHeader.Indent();
             rtrHeader.AppendLine();
             rtrHeader.Append("static struct {");

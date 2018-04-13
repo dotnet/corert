@@ -116,17 +116,29 @@ ExternalProject_Add(LLVM
 ExternalProject_Get_Property(LLVM source_dir)
 set(LLVM_SOURCE_DIR ${source_dir})
 ExternalProject_Add_Step(LLVM PatchingLLVM
-  COMMAND git apply --3way ${OBJWRITER_ROOT}/llvm.patch COMMENT "Applying LLVM patch with ObjWriter fixes"
+  COMMAND git checkout -- .
+  COMMAND git apply ${OBJWRITER_ROOT}/llvm.patch COMMENT "Applying LLVM patch with ObjWriter fixes"
   WORKING_DIRECTORY ${LLVM_SOURCE_DIR}
   DEPENDEES patch
   USES_TERMINAL 1
   )
+
+if(CMAKE_HOST_WIN32)
+ExternalProject_Add_Step(LLVM ObjWriterInjection
+  COMMAND ${CMAKE_COMMAND} -E copy_directory ${OBJWRITER_ROOT} ${OBJWRITER_LLVM_POINT} COMMENT "copy ${OBJWRITER_ROOT} -> ${OBJWRITER_LLVM_POINT}"
+  WORKING_DIRECTORY ${LLVM_SOURCE_DIR}
+  DEPENDEES patch
+  USES_TERMINAL 1
+  )
+else()
 ExternalProject_Add_Step(LLVM ObjWriterInjection
   COMMAND ${CMAKE_COMMAND} -E create_symlink ${OBJWRITER_ROOT} ${OBJWRITER_LLVM_POINT} COMMENT "mklink ${OBJWRITER_ROOT} -> ${OBJWRITER_LLVM_POINT}"
   WORKING_DIRECTORY ${LLVM_SOURCE_DIR}
   DEPENDEES patch
   USES_TERMINAL 1
   )
+endif()
+
 ExternalProject_Add_Step(LLVM forceconfigure
   COMMAND ${CMAKE_COMMAND} -E echo "Force configure of LLVM"
   DEPENDEES update

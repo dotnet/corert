@@ -60,6 +60,8 @@ int main(void)
 }" HAVE_SCHED_GETCPU)
 set(CMAKE_REQUIRED_LIBRARIES)
 
+check_include_files(gnu/lib-names.h HAVE_GNU_LIBNAMES_H)
+
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/config.h)

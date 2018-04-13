@@ -29,15 +29,6 @@
     <PackageIndex Include="$(PackageProjectDirectory)packageIndex.json" />
   </ItemGroup>
 
-    <!--
-      Building packages fails for two reasons.
-      First, nuget doesn't like the paths in the nuspec having backslashes as directory separators.
-      Second, we aren't yet building pdbs, which the nuspecs specify.
-  <PropertyGroup Condition="'$(OsEnvironment)'=='Unix'">
-    <SkipBuildPackages>true</SkipBuildPackages>
-  </PropertyGroup>
-    -->
-
   <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">
     <!-- Add required legal files to packages -->
     <File Condition="'$(PackageIsEmpty)' != 'true' AND Exists('$(PackageLicenseFile)')"

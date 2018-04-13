@@ -3,6 +3,14 @@
 ObjWriter is based on LLVM, so it requires recent CMake and GCC/Clang to build LLVM.
 See [LLVM requirements](http://llvm.org/docs/GettingStarted.html#requirements) for more details.
 
+`build.cmd`/`build.sh` script downloads a pre-built ObjWriter NuGet package. ObjWriter library is not built by default because
+it takes a long time and changes rarely.
+
+To build a fresh ObjWriter, pass additional `objwriter` argument to the `build.cmd`/`build.sh` script. It will cause the build to clone
+a matching copy of LLVM and use it to build ObjWriter library.
+
+The following manual steps are useful for troubleshooting ObjWriter build issues.
+
 1. Clone LLVM from official LLVM mirror github git repository:
 
     ```
@@ -12,7 +20,7 @@ See [LLVM requirements](http://llvm.org/docs/GettingStarted.html#requirements) f
 2. Copy ObjWriter directory from CoreRT into LLVM tree
 
     ```
-    cp -r CoreRT/src/Native/ObjWriter llvm/tools/
+    cp -r corert/src/Native/ObjWriter llvm/tools/
     ```
 
 3. Apply the patch to LLVM:

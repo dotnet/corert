@@ -9,6 +9,7 @@ namespace ILCompiler.DependencyAnalysis
 {
     public static class ARMDebug
     {
+        [System.Diagnostics.Conditional("DEBUG")]
         public static void EmitNYIAssert(NodeFactory factory, ref ARMEmitter encoder, string message,
                                          [System.Runtime.CompilerServices.CallerFilePath] string sourceFilePath = null,
                                          [System.Runtime.CompilerServices.CallerMemberName] string memberName = null,
@@ -21,6 +22,7 @@ namespace ILCompiler.DependencyAnalysis
             encoder.EmitJMP(NYI_Assert);
         }
 
+       [System.Diagnostics.Conditional("DEBUG")]
         public static void EmitHelperNYIAssert(NodeFactory factory, ref ARMEmitter encoder, ReadyToRunHelperId hId,
                                                [System.Runtime.CompilerServices.CallerFilePath] string sourceFilePath = null,
                                                [System.Runtime.CompilerServices.CallerMemberName] string memberName = null,

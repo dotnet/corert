@@ -121,7 +121,10 @@ namespace Internal.Runtime.CompilerHelpers
             for (int i = 0; i < count; i++)
             {
                 if (pModuleHeaders[i] != IntPtr.Zero)
-                    modules[moduleIndex++] = RuntimeImports.RhpCreateTypeManager(osModule, pModuleHeaders[i], pClasslibFunctions, nClasslibFunctions);
+                {
+                    modules[moduleIndex] = RuntimeImports.RhpCreateTypeManager(osModule, pModuleHeaders[i], pClasslibFunctions, nClasslibFunctions);
+                    moduleIndex++;
+                }
             }
 
             return modules;

@@ -141,6 +141,11 @@ namespace Internal.IL
                 {
                     EcmaMethod ecmaMethod = ((EcmaMethod)_method);
                     string exportName = ecmaMethod.IsRuntimeExport ? ecmaMethod.GetRuntimeExportName() : ecmaMethod.GetNativeCallableExportName();
+                    if (exportName == null)
+                    {
+                        exportName = ecmaMethod.Name;
+                    }
+
                     EmitNativeToManagedThunk(_compilation, _method, exportName, _llvmFunction);
                 }
             }
@@ -669,7 +674,18 @@ namespace Internal.IL
 
                 case TypeFlags.ValueType:
                 case TypeFlags.Nullable:
-                    return LLVM.ArrayType(LLVM.Int8Type(), (uint)type.GetElementSize().AsInt);
+                    {
+                        // LLVM thinks certain sizes of struct have a different calling convention than Clang does.
+                        // Treating them as ints fixes that and is more efficient in general
+                        if (type.GetElementSize().AsInt == 4)
+                        {
+                            return LLVM.Int32Type();
+                        }
+                        else
+                        {
+                            return LLVM.ArrayType(LLVM.Int8Type(), (uint)type.GetElementSize().AsInt);
+                        }
+                    }
 
                 case TypeFlags.Enum:
                     return GetLLVMTypeForTypeDesc(type.UnderlyingType);
@@ -1313,7 +1329,15 @@ namespace Internal.IL
 
             string realMethodName = method.Name;
 
-            if (!method.IsPInvoke && method is TypeSystem.Ecma.EcmaMethod)
+            if (method.IsPInvoke)
+            {
+                string entrypointName = method.GetPInvokeMethodMetadata().Name;
+                if(!String.IsNullOrEmpty(entrypointName))
+                {
+                    realMethodName = entrypointName;
+                }
+            }
+            else if (!method.IsPInvoke && method is TypeSystem.Ecma.EcmaMethod)
             {
                 realMethodName = ((TypeSystem.Ecma.EcmaMethod)method).GetRuntimeImportName() ?? method.Name;
             }

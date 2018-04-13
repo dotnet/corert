@@ -15,7 +15,7 @@ namespace System.Runtime.CompilerServices
     /// <summary>Provides an awaiter for a <see cref="ValueTask"/>.</summary>
     public readonly struct ValueTaskAwaiter : ICriticalNotifyCompletion
 #if CORECLR
-            , IValueTaskAwaiter
+            , IStateMachineBoxAwareAwaiter
 #endif
     {
         /// <summary>Shim used to invoke an <see cref="Action"/> passed as the state argument to a <see cref="Action{Object}"/>.</summary>
@@ -90,7 +90,7 @@ namespace System.Runtime.CompilerServices
         }
 
 #if CORECLR
-        void IValueTaskAwaiter.AwaitUnsafeOnCompleted(IAsyncStateMachineBox box)
+        void IStateMachineBoxAwareAwaiter.AwaitUnsafeOnCompleted(IAsyncStateMachineBox box)
         {
             object obj = _value._obj;
             Debug.Assert(obj == null || obj is Task || obj is IValueTaskSource);
@@ -126,7 +126,7 @@ namespace System.Runtime.CompilerServices
     /// <summary>Provides an awaiter for a <see cref="ValueTask{TResult}"/>.</summary>
     public readonly struct ValueTaskAwaiter<TResult> : ICriticalNotifyCompletion
 #if CORECLR
-            , IValueTaskAwaiter
+            , IStateMachineBoxAwareAwaiter
 #endif
     {
         /// <summary>The value being awaited.</summary>
@@ -190,7 +190,7 @@ namespace System.Runtime.CompilerServices
         }
 
 #if CORECLR
-        void IValueTaskAwaiter.AwaitUnsafeOnCompleted(IAsyncStateMachineBox box)
+        void IStateMachineBoxAwareAwaiter.AwaitUnsafeOnCompleted(IAsyncStateMachineBox box)
         {
             object obj = _value._obj;
             Debug.Assert(obj == null || obj is Task<TResult> || obj is IValueTaskSource<TResult>);
@@ -212,8 +212,8 @@ namespace System.Runtime.CompilerServices
     }
 
 #if CORECLR
-    /// <summary>Internal interface used to enable optimizations from <see cref="AsyncTaskMethodBuilder"/> on <see cref="ValueTask"/>.</summary>>
-    internal interface IValueTaskAwaiter
+    /// <summary>Internal interface used to enable optimizations from <see cref="AsyncTaskMethodBuilder"/>.</summary>>
+    internal interface IStateMachineBoxAwareAwaiter
     {
         /// <summary>Invoked to set <see cref="ITaskCompletionAction.Invoke"/> of the <paramref name="box"/> as the awaiter's continuation.</summary>
         /// <param name="box">The box object.</param>
