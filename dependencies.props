@@ -1,7 +1,7 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <RyuJITVersion>2.1.0-preview3-26412-01</RyuJITVersion>
-    <ObjectWriterVersion>1.0.19-prerelease-00001</ObjectWriterVersion>
+    <ObjectWriterVersion>1.0.0-alpha-26412-0</ObjectWriterVersion>
     <CoreFxVersion>4.5.0-preview3-26403-04</CoreFxVersion>
     <CoreFxUapVersion>4.6.0-preview3-26403-04</CoreFxUapVersion>
     <MicrosoftNETCoreNativeVersion>2.1.0-preview3-26404-06</MicrosoftNETCoreNativeVersion>
