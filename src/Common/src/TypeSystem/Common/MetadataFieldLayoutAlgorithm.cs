@@ -293,7 +293,7 @@ namespace Internal.TypeSystem
 
             var layoutMetadata = type.GetClassLayout();
 
-            int packingSize = ComputePackingSize(type);
+            int packingSize = ComputePackingSize(type, layoutMetadata);
             LayoutInt largestAlignmentRequired = LayoutInt.One;
 
             var offsets = new FieldAndOffset[numInstanceFields];
@@ -353,9 +353,11 @@ namespace Internal.TypeSystem
             // For types inheriting from another type, field offsets continue on from where they left off
             LayoutInt cumulativeInstanceFieldPos = ComputeBytesUsedInParentType(type);
 
+            var layoutMetadata = type.GetClassLayout();
+
             LayoutInt largestAlignmentRequirement = LayoutInt.One;
             int fieldOrdinal = 0;
-            int packingSize = ComputePackingSize(type);
+            int packingSize = ComputePackingSize(type, layoutMetadata);
 
             foreach (var field in type.GetFields())
             {
@@ -375,7 +377,6 @@ namespace Internal.TypeSystem
 
             if (type.IsValueType)
             {
-                var layoutMetadata = type.GetClassLayout();
                 cumulativeInstanceFieldPos = LayoutInt.Max(cumulativeInstanceFieldPos, new LayoutInt(layoutMetadata.Size));
             }
 
@@ -442,10 +443,8 @@ namespace Internal.TypeSystem
             return result;
         }
 
-        private static int ComputePackingSize(MetadataType type)
+        private static int ComputePackingSize(MetadataType type, ClassLayoutMetadata layoutMetadata)
         {
-            var layoutMetadata = type.GetClassLayout();
-
             // If a type contains pointers then the metadata specified packing size is ignored (On desktop this is disqualification from ManagedSequential)
             if (layoutMetadata.PackingSize == 0 || type.ContainsGCPointers)
                 return type.Context.Target.DefaultPackingSize;

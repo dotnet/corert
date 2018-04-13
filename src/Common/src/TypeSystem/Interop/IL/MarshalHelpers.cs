@@ -66,8 +66,12 @@ namespace Internal.TypeSystem.Interop
                 typeDesc = typeDesc.GetParameterType();
             }
 
-            if (typeDesc.Category != TypeFlags.ValueType)
+            typeDesc = typeDesc.UnderlyingType;
+
+            if (typeDesc.IsPrimitive)
+            {
                 return false;
+            }
 
             MetadataType type = typeDesc as MetadataType;
             if (type == null)

@@ -14,7 +14,7 @@ namespace Internal.IL.Stubs
     public enum StructMarshallingThunkType : byte
     {
         ManagedToNative = 1,
-        NativeToManage = 2,
+        NativeToManaged = 2,
         Cleanup = 4
     }
 
@@ -72,19 +72,29 @@ namespace Internal.IL.Stubs
             {
                 if (_signature == null)
                 {
-                    TypeDesc[] parameters;
-                    if (ThunkType == StructMarshallingThunkType.Cleanup)
+                    TypeDesc[] parameters = null;
+                    switch (ThunkType)
                     {
-                        parameters = new TypeDesc[] {
-                            NativeType.MakeByRefType()
-                        };
-                    }
-                    else
-                    {
-                        parameters = new TypeDesc[] {
-                            ManagedType.MakeByRefType(),
-                            NativeType.MakeByRefType()
-                        };
+                        case StructMarshallingThunkType.ManagedToNative:
+                            parameters = new TypeDesc[] {
+                                ManagedType.IsValueType ? (TypeDesc)ManagedType.MakeByRefType() : ManagedType,
+                                NativeType.MakeByRefType()
+                            };
+                            break;
+                        case StructMarshallingThunkType.NativeToManaged:
+                            parameters = new TypeDesc[] {
+                                NativeType.MakeByRefType(),
+                                ManagedType.IsValueType ? (TypeDesc)ManagedType.MakeByRefType() : ManagedType
+                            };
+                            break;
+                        case StructMarshallingThunkType.Cleanup:
+                            parameters = new TypeDesc[] {
+                                NativeType.MakeByRefType()
+                            };
+                            break;
+                        default:
+                            System.Diagnostics.Debug.Fail("Unexpected Struct marshalling thunk type");
+                            break;
                     }
                     _signature = new MethodSignature(MethodSignatureFlags.Static, 0, Context.GetWellKnownType(WellKnownType.Void), parameters);
                 }
@@ -100,7 +110,7 @@ namespace Internal.IL.Stubs
                 {
                     case StructMarshallingThunkType.ManagedToNative:
                         return "ManagedToNative";
-                    case StructMarshallingThunkType.NativeToManage:
+                    case StructMarshallingThunkType.NativeToManaged:
                         return "NativeToManaged";
                     case StructMarshallingThunkType.Cleanup:
                         return "Cleanup";
@@ -147,7 +157,7 @@ namespace Internal.IL.Stubs
                 marshallers[index] = Marshaller.CreateMarshaller(field.FieldType,
                                                                     MarshallerType.Field,
                                                                     marshalAsDescriptors[index],
-                                                                    (ThunkType == StructMarshallingThunkType.NativeToManage) ? MarshalDirection.Reverse : MarshalDirection.Forward,
+                                                                    (ThunkType == StructMarshallingThunkType.NativeToManaged) ? MarshalDirection.Reverse : MarshalDirection.Forward,
                                                                     marshallers,
                                                                     _interopStateManager,
                                                                     index,
@@ -204,9 +214,9 @@ namespace Internal.IL.Stubs
                     {
                         LoadFieldValueFromArg(0, managedField, pInvokeILCodeStreams);
                     }
-                    else if (ThunkType == StructMarshallingThunkType.NativeToManage)
+                    else if (ThunkType == StructMarshallingThunkType.NativeToManaged)
                     {
-                        LoadFieldValueFromArg(1, nativeField, pInvokeILCodeStreams);
+                        LoadFieldValueFromArg(0, nativeField, pInvokeILCodeStreams);
                     }
 
                     _marshallers[index++].EmitMarshallingIL(pInvokeILCodeStreams);
@@ -215,9 +225,9 @@ namespace Internal.IL.Stubs
                     {
                         StoreFieldValueFromArg(1, nativeField, pInvokeILCodeStreams);
                     }
-                    else if (ThunkType == StructMarshallingThunkType.NativeToManage)
+                    else if (ThunkType == StructMarshallingThunkType.NativeToManaged)
                     {
-                        StoreFieldValueFromArg(0, managedField, pInvokeILCodeStreams);
+                        StoreFieldValueFromArg(1, managedField, pInvokeILCodeStreams);
                     }
                 }
             }
