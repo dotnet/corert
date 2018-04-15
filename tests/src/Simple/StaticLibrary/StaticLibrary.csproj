@@ -44,8 +44,8 @@
     </ItemGroup>
 
     <Exec Command="$(CppCompiler) @(NativeRunnerCompilerArg, ' ') $(NativeBinary) @(NativeRunnerLinkerArg, ' ')" Condition="'$(OS)' != 'Windows_NT'" />
-    <WriteLinesToFile File="$(NativeIntermediateOutputPath)SharedLibrary.cl.rsp" Lines="@(NativeRunnerCompilerArg)" Overwrite="true"  Condition="'$(OS)' == 'Windows_NT'"/>
-    <Exec Command="$(CppCompiler) @&quot;$(NativeIntermediateOutputPath)SharedLibrary.cl.rsp&quot;" Condition="'$(OS)' == 'Windows_NT'" />
+    <WriteLinesToFile File="$(NativeIntermediateOutputPath)StaticLibrary.cl.rsp" Lines="@(NativeRunnerCompilerArg)" Overwrite="true"  Condition="'$(OS)' == 'Windows_NT'"/>
+    <Exec Command="$(CppCompiler) @&quot;$(NativeIntermediateOutputPath)StaticLibrary.cl.rsp&quot;" Condition="'$(OS)' == 'Windows_NT'" />
   </Target>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), SimpleTest.targets))\SimpleTest.targets" />
