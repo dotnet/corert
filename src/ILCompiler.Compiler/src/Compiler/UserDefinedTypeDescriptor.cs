@@ -182,6 +182,10 @@ namespace ILCompiler
                     variableTypeIndex = GetEnumTypeIndex(type);
 
                     GetTypeIndex(type, false); // Ensure regular structure record created
+
+                    _enumTypes[type] = variableTypeIndex;
+
+                    return variableTypeIndex;
                 }
 
                 variableTypeIndex = GetTypeIndex(type, needsCompleteIndex);
