@@ -71,7 +71,7 @@ namespace ILCompiler.DependencyAnalysis
                     writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(structEntry.UnmarshallingThunk))),
                     writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(structEntry.CleanupThunk))));
 
-                uint size = (uint)nativeType.InstanceByteCount.AsInt;
+                uint size = (uint)nativeType.InstanceFieldSize.AsInt;
                 uint mask = (uint)(nativeType.Fields.Length << 1)  | (uint)(nativeType.HasInvalidLayout ? 1 : 0);
 
                 Vertex data = writer.GetTuple(
