@@ -53,6 +53,10 @@
     <!-- Fail with descriptive error message for common mistake. -->
     <Error Condition="'$(RuntimeIdentifier)' == ''" Text="RuntimeIdentifier is required for native compilation. Try running dotnet publish with the -r option value specified." />
 
+    <!-- Fail with descriptive error message for common unsupported case. -->
+    <Error Condition="'$(OS)' == 'Windows_NT' and !$(RuntimeIdentifier.StartsWith('win'))" Text="Cross-compilation is not supported yet. https://github.com/dotnet/corert/issues/5458" />
+    <Error Condition="'$(OS)' != 'Windows_NT' and $(RuntimeIdentifier.StartsWith('win'))" Text="Cross-compilation is not supported yet. https://github.com/dotnet/corert/issues/5458" />
+
     <!-- CoreRT SDK and Framework Assemblies need to be defined to avoid CoreCLR implementations being set as compiler inputs -->  
     <Error Condition="'@(PrivateSdkAssemblies)' == ''" Text="The PrivateSdkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
     <Error Condition="'@(FrameworkAssemblies)' == ''" Text="The FrameworkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
