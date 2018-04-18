@@ -4,8 +4,12 @@
 // ----------------------------------------------------------------------------------
 // Interop library code
 //
-// Marshalling helpers used by MCG
-//
+// Marshalling helpers used by MCG generated stub
+// McgMarshal covers full marshalling surface area and is entrypoint for all marshalling support.
+// In long term:
+//  1. MCG generated code should  call McgMarshal to do marshalling
+//  2. Public Marhshal API should call McgMarshal to do marshalling
+
 // NOTE:
 //   These source code are being published to InternalAPIs and consumed by RH builds
 //   Use PublishInteropAPI.bat to keep the InternalAPI copies in sync
@@ -363,6 +367,115 @@ namespace System.Runtime.InteropServices
         public static unsafe string ByValAnsiStringToString(byte* pchBuffer, int charCount)
         {
             return PInvokeMarshal.ByValAnsiStringToString(pchBuffer, charCount);
+        }
+
+        /// <summary>
+        /// CoTaskMemAlloc + ZeroMemory
+        /// @TODO - we can probably optimize the zero memory part later
+        /// </summary>
+        public unsafe static void* CoTaskMemAllocAndZeroMemory(System.IntPtr size)
+        {
+            void *ptr = (void*)PInvokeMarshal.CoTaskMemAlloc(new UIntPtr((void*)size));
+            if (ptr == null)
+                return ptr;
+
+            byte *pByte = (byte*)ptr;
+            long lSize = size.ToInt64();
+            while (lSize > 0)
+            {
+                lSize--;
+                (*pByte++) = 0;
+            }
+
+            return ptr;
+        }
+
+        /// <summary>
+        /// Allocate a buffer with enough size to store the unicode characters saved in source
+        /// Buffer is allocated with CoTaskMemAlloc
+        /// </summary>
+        public unsafe static void *AllocUnicodeBuffer(string source)
+        {
+            if (source == null)
+                return null;
+
+            int byteLen = checked((source.Length + 1) * 2);
+
+            char* pBuf = (char*)PInvokeMarshal.CoTaskMemAlloc(new UIntPtr((uint)byteLen));
+            if (pBuf == null)
+                throw new System.OutOfMemoryException();
+
+            return pBuf;
+        }
+
+        /// <summary>
+        /// Copy unicode characters in source into dest, and terminating with null
+        /// </summary>
+        public unsafe static void CopyUnicodeString(string source, void* _dest)
+        {
+            if (source == null)
+                return;
+
+            char* dest = (char *)_dest;
+            fixed (char* pSource = source)
+            {
+                int len = source.Length;
+                char* src = pSource;
+
+                // Copy characters one by one, including the null terminator
+                for (int i = 0; i <= len; ++i)
+                {
+                    *(dest++) = *(src++);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Convert String to BSTR 
+        /// </summary>
+        public unsafe static ushort* ConvertStringToBSTR(
+                ushort* ptrToFirstCharInBSTR,
+                string strManaged)
+        {
+            if (strManaged == null)
+                return null;
+
+            if (ptrToFirstCharInBSTR == null)
+            {
+                // If caller don't provided buffer, allocate the buffer and create string using SysAllocStringLen
+                fixed (char* ch = strManaged)
+                {
+                    return (ushort*) ExternalInterop.SysAllocStringLen(ch, (uint)strManaged.Length);
+                }
+            }
+            else 
+            {
+                // If caller provided a buffer, construct the BSTR manually. 
+
+                // set length
+                *((int*)ptrToFirstCharInBSTR - 1) = checked(strManaged.Length * 2);
+
+                // copy characters from the managed string
+                fixed (char* ch = strManaged)
+                {
+                    InteropExtensions.Memcpy(
+                        (System.IntPtr)ptrToFirstCharInBSTR,
+                        (System.IntPtr)ch,
+                        (strManaged.Length + 1) * 2);
+                }
+
+                return ptrToFirstCharInBSTR;
+            }
+        }
+
+        /// <summary>
+        /// Convert BSTR to String 
+        /// </summary>
+        public unsafe static string ConvertBSTRToString(ushort* bstr)
+        {
+            if (bstr == null)
+                return null;
+            return new string((char*)bstr, 0, (int)ExternalInterop.SysStringLen(bstr));
         }
 #endif
 
