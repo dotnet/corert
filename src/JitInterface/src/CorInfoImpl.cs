@@ -3355,6 +3355,7 @@ namespace Internal.JitInterface
                 else
                 {
                     pResult.exactContextNeedsRuntimeLookup = false;
+                    targetMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
                     // Get the slot defining method to make sure our virtual method use tracking gets this right.
                     // For normal C# code the targetMethod will always be newslot.

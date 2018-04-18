@@ -80,11 +80,17 @@ namespace ILCompiler.DependencyAnalysis
                     }
                     break;
                 case ReadyToRunHelperId.VirtualCall:
+                case ReadyToRunHelperId.ResolveVirtualFunction:
                     {
                         // Make sure we aren't trying to callvirt Object.Finalize
                         MethodDesc method = (MethodDesc)target;
                         if (method.IsFinalizer)
                             ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramCallVirtFinalize, method);
+
+                        // Method should be in fully canonical form. Otherwise we're being wasteful and generate more
+                        // helpers than needed.
+                        Debug.Assert(!method.IsCanonicalMethod(CanonicalFormKind.Any) ||
+                            method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method);
                     }
                     break;
             }
