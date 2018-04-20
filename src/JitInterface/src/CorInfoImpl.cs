@@ -1412,7 +1412,7 @@ namespace Internal.JitInterface
         private uint getClassAlignmentRequirement(CORINFO_CLASS_STRUCT_* cls, bool fDoubleAlignHint)
         {
             DefType type = (DefType)HandleToObject(cls);
-            return (uint)type.InstanceByteAlignment.AsInt;
+            return (uint)type.InstanceFieldAlignment.AsInt;
         }
 
         private int GatherClassGCLayout(TypeDesc type, byte* gcPtrs)
@@ -1490,7 +1490,7 @@ namespace Internal.JitInterface
 
             int pointerSize = PointerSize;
 
-            int ptrsCount = AlignmentHelper.AlignUp(type.InstanceByteCount.AsInt, pointerSize) / pointerSize;
+            int ptrsCount = AlignmentHelper.AlignUp(type.InstanceFieldSize.AsInt, pointerSize) / pointerSize;
 
             // Assume no GC pointers at first
             for (int i = 0; i < ptrsCount; i++)
@@ -3355,6 +3355,7 @@ namespace Internal.JitInterface
                 else
                 {
                     pResult.exactContextNeedsRuntimeLookup = false;
+                    targetMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
                     // Get the slot defining method to make sure our virtual method use tracking gets this right.
                     // For normal C# code the targetMethod will always be newslot.
@@ -3439,8 +3440,13 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("GetDelegateCtor"); }
         private void MethodCompileComplete(CORINFO_METHOD_STRUCT_* methHnd)
         { throw new NotImplementedException("MethodCompileComplete"); }
+
         private void* getTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags)
-        { throw new NotImplementedException("getTailCallCopyArgsThunk"); }
+        {
+            // Slow tailcalls are not supported yet
+            // https://github.com/dotnet/corert/issues/1683
+            return null;
+        }
 
         private void* getMemoryManager()
         {

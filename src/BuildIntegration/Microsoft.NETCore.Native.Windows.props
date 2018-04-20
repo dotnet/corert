@@ -67,6 +67,7 @@ See the LICENSE file in the project root for more information.
       <LinkerArg Include="/NOLOGO /DEBUG /MANIFEST:NO" />
       <!-- The runtime is not compatible with jump stubs inserted by incremental linking. -->
       <LinkerArg Include="/INCREMENTAL:NO" />
+      <LinkerArg Condition="'$(OutputType)' == 'WinExe'" Include="/SUBSYSTEM:WINDOWS /ENTRY:wmainCRTStartup" />
     </ItemGroup>
   
     <ItemGroup>

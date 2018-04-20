@@ -155,8 +155,7 @@ namespace Internal.TypeSystem
 
             Debug.Assert(managedType is MetadataType);
 
-
-            var methodKey = new StructMarshallingThunkKey((MetadataType)managedType, StructMarshallingThunkType.NativeToManage);
+            var methodKey = new StructMarshallingThunkKey((MetadataType)managedType, StructMarshallingThunkType.NativeToManaged);
             return _structMarshallingThunkHashtable.GetOrCreateValue(methodKey);
         }
 
@@ -171,7 +170,6 @@ namespace Internal.TypeSystem
             }
 
             Debug.Assert(managedType is MetadataType);
-
 
             var methodKey = new StructMarshallingThunkKey((MetadataType)managedType, StructMarshallingThunkType.Cleanup);
             return _structMarshallingThunkHashtable.GetOrCreateValue(methodKey);

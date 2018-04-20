@@ -125,16 +125,16 @@ namespace System.Runtime.InteropServices
 
         public static int SizeOf<T>(T structure)
         {
-            return SizeOf<T>();
+            return SizeOf((object)structure);
         }
 
-        public static int SizeOf(Object structure)
+        public static int SizeOf(object structure)
         {
             if (structure == null)
                 throw new ArgumentNullException(nameof(structure));
             // we never had a check for generics here
 
-            return SizeOfHelper(structure.GetType(), true);
+            return SizeOfHelper(structure.GetType());
         }
 
         public static int SizeOf(Type t)
@@ -144,27 +144,27 @@ namespace System.Runtime.InteropServices
             if (t.TypeHandle.IsGenericType() || t.TypeHandle.IsGenericTypeDefinition())
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
 
-            return SizeOfHelper(t, true);
+            return SizeOfHelper(t);
         }
 
-        private static int SizeOfHelper(Type t, bool throwIfNotMarshalable)
+        private static int SizeOfHelper(Type t)
         {
             RuntimeTypeHandle typeHandle = t.TypeHandle;
 
-            int size;
-            if (RuntimeInteropData.Instance.TryGetStructUnsafeStructSize(typeHandle, out size))
+            if (RuntimeInteropData.Instance.TryGetStructUnsafeStructSize(typeHandle, out int size))
             {
                 return size;
             }
 
-            if (!typeHandle.IsBlittable() && !typeHandle.IsValueType())
-            {
-                throw new MissingInteropDataException(SR.StructMarshalling_MissingInteropData, t);
-            }
-            else
+            // IsBlittable() checks whether the type contains GC references. It is approximate check with false positives.
+            // This fallback path will return incorrect answer for types that do not contain GC references, but that are 
+            // not actually blittable; e.g. for types with bool fields.
+            if (typeHandle.IsBlittable() && typeHandle.IsValueType())
             {
                 return typeHandle.GetValueTypeSize();
             }
+
+            throw new MissingInteropDataException(SR.StructMarshalling_MissingInteropData, t);
         }
 
         //====================================================================
@@ -181,15 +181,7 @@ namespace System.Runtime.InteropServices
             if (t.TypeHandle.IsGenericType() || t.TypeHandle.IsGenericTypeDefinition())
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
 
-
-            return OffsetOfHelper(t, fieldName);
-        }
-
-        private static IntPtr OffsetOfHelper(Type t, String fieldName)
-        {
-            bool structExists;
-            uint offset;
-            if (RuntimeInteropData.Instance.TryGetStructFieldOffset(t.TypeHandle, fieldName, out structExists, out offset))
+            if (RuntimeInteropData.Instance.TryGetStructFieldOffset(t.TypeHandle, fieldName, out bool structExists, out uint offset))
             {
                 return new IntPtr(offset);
             }
@@ -199,10 +191,8 @@ namespace System.Runtime.InteropServices
             {
                 throw new ArgumentException(SR.Format(SR.Argument_OffsetOfFieldNotFound, t.TypeHandle.GetDisplayName()), nameof(fieldName));
             }
-            else
-            {
-                throw new MissingInteropDataException(SR.StructMarshalling_MissingInteropData, t);
-            }
+
+            throw new MissingInteropDataException(SR.StructMarshalling_MissingInteropData, t);
         }
 
         public static IntPtr OffsetOf<T>(String fieldName)
@@ -1029,8 +1019,27 @@ namespace System.Runtime.InteropServices
 
             // Boxed struct start at offset 1 (EEType* at offset 0) while class start at offset 0
             int offset = structureTypeHandle.IsValueType() ? 1 : 0;
+            bool useMemCpy = false;
 
-            if (structureTypeHandle.IsBlittable() && structureTypeHandle.IsValueType())
+            if (RuntimeInteropData.Instance.TryGetStructUnmarshalStub(structureTypeHandle, out IntPtr unmarshalStub))
+            {
+                if (unmarshalStub != IntPtr.Zero)
+                {
+                    InteropExtensions.PinObjectAndCall(structure,
+                        unboxedStructPtr =>
+                        {
+                            CalliIntrinsics.Call<int>(
+                                unmarshalStub,
+                                (void*)ptr,                                     // unsafe (no need to adjust as it is always struct)
+                                ((void*)((IntPtr*)unboxedStructPtr + offset))   // safe (need to adjust offset as it could be class)
+                            );
+                        });
+                    return;
+                }
+                useMemCpy = true;
+            }
+
+            if (useMemCpy || structureTypeHandle.IsBlittable())
             {
                 int structSize = Marshal.SizeOf(structure);
                 InteropExtensions.PinObjectAndCall(structure,
@@ -1045,21 +1054,6 @@ namespace System.Runtime.InteropServices
                 return;
             }
 
-            IntPtr unmarshalStub;
-            if (RuntimeInteropData.Instance.TryGetStructUnmarshalStub(structureTypeHandle, out unmarshalStub))
-            {
-                InteropExtensions.PinObjectAndCall(structure,
-                    unboxedStructPtr =>
-                    {
-                        CalliIntrinsics.Call<int>(
-                            unmarshalStub,
-                            (void*)ptr,                                     // unsafe (no need to adjust as it is always struct)
-                            ((void*)((IntPtr*)unboxedStructPtr + offset))   // safe (need to adjust offset as it could be class)
-                        );
-                    });
-                return;
-            }
-
             throw new MissingInteropDataException(SR.StructMarshalling_MissingInteropData, structure.GetType());
         }
 
@@ -1067,12 +1061,8 @@ namespace System.Runtime.InteropServices
         // Creates a new instance of "structuretype" and marshals data from a
         // native memory block to it.
         //====================================================================
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public static Object PtrToStructure(IntPtr ptr, Type structureType)
         {
-            // Boxing the struct here is important to ensure that the original copy is written to,
-            // not the autoboxed copy
-
             if (ptr == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(ptr));
 
@@ -1138,10 +1128,9 @@ namespace System.Runtime.InteropServices
 
             // Boxed struct start at offset 1 (EEType* at offset 0) while class start at offset 0
             int offset = structureTypeHandle.IsValueType() ? 1 : 0;
+            bool useMemCpy = false;
 
-            bool isBlittable = false; // whether Mcg treat this struct as blittable struct
-            IntPtr marshalStub;
-            if (RuntimeInteropData.Instance.TryGetStructMarshalStub(structureTypeHandle, out marshalStub))
+            if (RuntimeInteropData.Instance.TryGetStructMarshalStub(structureTypeHandle, out IntPtr marshalStub))
             {
                 if (marshalStub != IntPtr.Zero)
                 {
@@ -1156,13 +1145,10 @@ namespace System.Runtime.InteropServices
                         });
                     return;
                 }
-                else
-                {
-                    isBlittable = true;
-                }
+                useMemCpy = true;
             }
 
-            if (isBlittable || structureTypeHandle.IsBlittable()) // blittable
+            if (useMemCpy || structureTypeHandle.IsBlittable())
             {
                 int structSize = Marshal.SizeOf(structure);
                 InteropExtensions.PinObjectAndCall(structure,
@@ -1189,7 +1175,7 @@ namespace System.Runtime.InteropServices
         // DestroyStructure()
         //
         //====================================================================
-        public static void DestroyStructure(IntPtr ptr, Type structuretype)
+        public static unsafe void DestroyStructure(IntPtr ptr, Type structuretype)
         {
             if (ptr == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(ptr));
@@ -1209,14 +1195,6 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, structureTypeHandle.GetDisplayName());
             }
 
-
-            DestroyStructureHelper(ptr, structuretype);
-        }
-
-        private static unsafe void DestroyStructureHelper(IntPtr ptr, Type structuretype)
-        {
-            RuntimeTypeHandle structureTypeHandle = structuretype.TypeHandle;
-
             // Boxed struct start at offset 1 (EEType* at offset 0) while class start at offset 0
             int offset = structureTypeHandle.IsValueType() ? 1 : 0;
 
@@ -1226,9 +1204,7 @@ namespace System.Runtime.InteropServices
                 return;
             }
 
-            IntPtr destroyStructureStub;
-            bool hasInvalidLayout;
-            if (RuntimeInteropData.Instance.TryGetDestroyStructureStub(structureTypeHandle, out destroyStructureStub, out hasInvalidLayout))
+            if (RuntimeInteropData.Instance.TryGetDestroyStructureStub(structureTypeHandle, out IntPtr destroyStructureStub, out bool hasInvalidLayout))
             {
                 if (hasInvalidLayout)
                     throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, structureTypeHandle.GetDisplayName());

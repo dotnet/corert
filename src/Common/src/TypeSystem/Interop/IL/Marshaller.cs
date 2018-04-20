@@ -1877,8 +1877,8 @@ namespace Internal.TypeSystem.Interop
 
         protected override void TransformNativeToManaged(ILCodeStream codeStream)
         {
-            LoadManagedAddr(codeStream);
             LoadNativeAddr(codeStream);
+            LoadManagedAddr(codeStream);
             codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
                 InteropStateManager.GetStructMarshallingNativeToManagedThunk(ManagedType)));
         }
@@ -2072,7 +2072,7 @@ namespace Internal.TypeSystem.Interop
             var managedElementType = ((ArrayType)ManagedType).ElementType;
 
             ILLocalVariable vLength = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
-            codeStream.EmitLdArg(0);
+            codeStream.EmitLdArg(1);
             // load the length
             EmitElementCount(codeStream, MarshalDirection.Reverse);
             codeStream.EmitStLoc(vLength);
@@ -2092,13 +2092,13 @@ namespace Internal.TypeSystem.Interop
             codeStream.EmitLabel(lLoopHeader);
 
             // load managed type
-            codeStream.EmitLdArg(0);
+            codeStream.EmitLdArg(1);
             codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(_managedField));
 
             codeStream.EmitLdLoc(vIndex);
 
             // load native type
-            codeStream.EmitLdArg(1);
+            codeStream.EmitLdArg(0);
             codeStream.Emit(ILOpcode.ldflda, emitter.NewToken(_nativeField));
             codeStream.EmitLdLoc(vIndex);
 
@@ -2172,9 +2172,9 @@ namespace Internal.TypeSystem.Interop
             ILEmitter emitter = _ilCodeStreams.Emitter;
             ILCodeStream codeStream = _ilCodeStreams.UnmarshallingCodestream;
 
-            codeStream.EmitLdArg(0);
-
             codeStream.EmitLdArg(1);
+
+            codeStream.EmitLdArg(0);
             codeStream.Emit(ILOpcode.ldflda, emitter.NewToken(_nativeField));
             codeStream.Emit(ILOpcode.conv_u);
 
