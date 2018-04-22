@@ -2015,26 +2015,12 @@ namespace Internal.IL
         private void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned)
         {
             StackEntry value = _stack.Pop();
-            LLVMValueRef convertedValue;
             TypeDesc destType = GetWellKnownType(wellKnownType);
 
-            //conv.u for a pointer should change to a int8*
-            if (wellKnownType == WellKnownType.UIntPtr)
-            {
-                if (value.Kind == StackValueKind.Int32)
-                {
-                    convertedValue = LLVM.BuildIntToPtr(_builder, value.ValueAsInt32(_builder, false), LLVM.PointerType(LLVM.Int8Type(), 0), "conv.u");
-                }
-                else
-                {
-                    convertedValue = value.ValueAsType(destType, _builder);
-                }
-            }
-            else
-            {
-                convertedValue = value.ValueAsType(destType, _builder);
-            }
-            PushExpression(GetStackValueKind(destType), "conv", convertedValue, destType);
+            // Load the value and then convert it instead of using ValueAsType to avoid loading the incorrect size
+            LLVMValueRef loadedValue = value.ValueAsType(value.Type, _builder);
+            LLVMValueRef converted = CastIfNecessary(loadedValue, GetLLVMTypeForTypeDesc(destType));
+            PushExpression(GetStackValueKind(destType), "conv", converted, destType);
         }
 
         private void ImportUnaryOperation(ILOpcode opCode)
