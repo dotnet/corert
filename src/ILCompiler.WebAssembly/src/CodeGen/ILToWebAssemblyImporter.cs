@@ -678,8 +678,14 @@ namespace Internal.IL
                         // Treating them as ints fixes that and is more efficient in general
                         switch (structSize)
                         {
+                            case 1:
+                                return LLVM.Int8Type();
+                            case 2:
+                                return LLVM.Int16Type();
                             case 4:
                                 return LLVM.Int32Type();
+                            case 8:
+                                return LLVM.Int64Type();
                         }
 
                         int numInts = structSize / 4;
