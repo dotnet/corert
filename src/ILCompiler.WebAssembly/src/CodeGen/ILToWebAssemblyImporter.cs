@@ -2264,7 +2264,6 @@ namespace Internal.IL
             else if (ldtokenValue is FieldDesc)
             {
                 ldtokenKind = WellKnownType.RuntimeFieldHandle;
-                //LLVMTypeRef fieldTokenStruct = LLVM.StructType(new LLVMTypeRef[] { LLVM.Int32Type() }, true);
                 LLVMValueRef fieldHandle = LLVM.ConstStruct(new LLVMValueRef[] { BuildConstInt32(0) }, true);
                 value = new LdTokenEntry<FieldDesc>(StackValueKind.ValueType, null, (FieldDesc)ldtokenValue, fieldHandle, GetWellKnownType(ldtokenKind));
                 _stack.Push(value);
@@ -2518,7 +2517,6 @@ namespace Internal.IL
             var llvmType = GetLLVMTypeForTypeDesc(type);
             if (llvmType.TypeKind == LLVMTypeKind.LLVMStructTypeKind)
             {
-                // todo: this could do pointer-sized writes instead of memset
                 ImportCallMemset(valueEntry.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), 0, type.GetElementSize().AsInt);
             }
             else if (llvmType.TypeKind == LLVMTypeKind.LLVMIntegerTypeKind)
