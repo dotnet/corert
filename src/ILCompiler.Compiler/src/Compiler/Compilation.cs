@@ -90,6 +90,12 @@ namespace ILCompiler
 
         public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target, bool followVirtualDispatch)
         {
+            // If we're creating a delegate to a virtual method that cannot be overriden, devirtualize.
+            // This is not just an optimization - it's required for correctness in the presence of sealed
+            // vtable slots.
+            if (followVirtualDispatch && (target.IsFinal || target.OwningType.IsSealed()))
+                followVirtualDispatch = false;
+
             return DelegateCreationInfo.Create(delegateType, target, NodeFactory, followVirtualDispatch);
         }
 
