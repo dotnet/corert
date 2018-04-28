@@ -588,17 +588,17 @@ namespace ILCompiler.CppCodeGen
 
             if (explicitLayout || hasSize)
             {
-                if (classLayoutMetadata.Size > 0)
-                {
-                    sb.AppendLine();
-                    sb.Append("struct { char __sizePadding[" + classLayoutMetadata.Size + "]; };");
-                }
-
                 if (!explicitLayout)
                 {
                     sb.Exdent();
                     sb.AppendLine();
                     sb.Append("};");
+                }
+
+                if (classLayoutMetadata.Size > 0)
+                {
+                    sb.AppendLine();
+                    sb.Append("struct { char __sizePadding[" + classLayoutMetadata.Size + "]; };");
                 }
 
                 sb.Exdent();
