@@ -224,12 +224,14 @@ C_FUNC(\Name):
 
 .macro EXPORT_POINTER_TO_ADDRESS Name
 
-1:
+// NOTE: The label is intentionally left as 2 - otherwise on OSX 0b or 1b will be incorrectly interpreted as binary integers
+
+2:
 
         .data
         .align      8
 C_FUNC(\Name):
-        .quad       1b
+        .quad       2b
         .global     C_FUNC(\Name)
         .text
 

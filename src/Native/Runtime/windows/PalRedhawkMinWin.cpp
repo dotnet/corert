@@ -218,21 +218,28 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalMarkThunksAsValidCallTargets(
 
 REDHAWK_PALEXPORT UInt32 REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, UInt32 timeout, UInt32 handleCount, HANDLE* pHandles, UInt32_BOOL allowReentrantWait)
 {
-    DWORD index;
-    SetLastError(ERROR_SUCCESS); // recommended by MSDN.
-    HRESULT hr = CoWaitForMultipleHandles(alertable ? COWAIT_ALERTABLE : 0, timeout, handleCount, pHandles, &index);
-
-    switch (hr)
+    if (!allowReentrantWait)
     {
-    case S_OK:
-        return index;
+        return WaitForMultipleObjectsEx(handleCount, pHandles, FALSE, timeout, alertable);
+    }
+    else
+    {
+        DWORD index;
+        SetLastError(ERROR_SUCCESS); // recommended by MSDN.
+        HRESULT hr = CoWaitForMultipleHandles(alertable ? COWAIT_ALERTABLE : 0, timeout, handleCount, pHandles, &index);
 
-    case RPC_S_CALLPENDING:
-        return WAIT_TIMEOUT;
+        switch (hr)
+        {
+        case S_OK:
+            return index;
 
-    default:
-        SetLastError(HRESULT_CODE(hr));
-        return WAIT_FAILED;
+        case RPC_S_CALLPENDING:
+            return WAIT_TIMEOUT;
+
+        default:
+            SetLastError(HRESULT_CODE(hr));
+            return WAIT_FAILED;
+        }
     }
 }
 

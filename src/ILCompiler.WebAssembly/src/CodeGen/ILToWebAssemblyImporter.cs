@@ -313,7 +313,7 @@ namespace Internal.IL
                 {
                     if (_basicBlocks[_currentOffset].StartOffset == 0)
                         throw new InvalidProgramException();
-
+                    MarkBasicBlock(_basicBlocks[_currentOffset]);
                     LLVM.BuildBr(_builder, GetLLVMBasicBlockForBlock(_basicBlocks[_currentOffset]));
                 }
             }
@@ -1001,11 +1001,6 @@ namespace Internal.IL
                     {
                         targetMethod = parameterType.ResolveInterfaceMethodTarget(callee);
                     }
-                    else
-                    {
-                        //TODO: needs runtime support for DispatchByInterface
-                        throw new NotImplementedException("Interface call");
-                    }
                 }
                 else
                 {
@@ -1021,14 +1016,15 @@ namespace Internal.IL
                     return GetOrCreateLLVMFunction(_compilation.NameMangler.GetMangledMethodName(targetMethod).ToString());
                 }
 
-                return GetCallableVirtualMethod(thisPointer.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), callee);
+                return GetCallableVirtualMethod(thisPointer, callee);
+
             }
             else
             {
                 return GetOrCreateLLVMFunction(calleeName);
             }
         }
-        
+
         private LLVMValueRef GetOrCreateMethodSlot(MethodDesc method)
         {
             var vtableSlotSymbol = _compilation.NodeFactory.VTableSlot(method);
@@ -1037,24 +1033,30 @@ namespace Internal.IL
             return LLVM.BuildLoad(_builder, slot, string.Empty);
         }
 
-        private LLVMValueRef GetCallableVirtualMethod(LLVMValueRef objectPtr, MethodDesc method)
+        private LLVMValueRef GetCallableVirtualMethod(StackEntry objectPtr, MethodDesc method)
         {
             Debug.Assert(method.IsVirtual);
+            LLVMValueRef slot = GetOrCreateMethodSlot(method);
+            var pointerSize = method.Context.Target.PointerSize;
+            LLVMTypeRef universalSignature = LLVM.FunctionType(LLVM.VoidType(), new LLVMTypeRef[] { LLVM.PointerType(LLVM.Int8Type(), 0), LLVM.PointerType(LLVM.Int8Type(), 0) }, false);
+            LLVMValueRef functionPtr;
             if (method.OwningType.IsInterface)
             {
-                throw new NotImplementedException();
+                var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
+                var interfaceEEType = new LoadExpressionEntry(StackValueKind.ValueType, "interfaceEEType", GetEETypePointerForTypeDesc(method.OwningType, true), eeTypeDesc);
+                var eeTypeExpression = new LoadExpressionEntry(StackValueKind.ValueType, "eeType", objectPtr.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), eeTypeDesc);
+                var targetEntry = CallRuntime(_compilation.TypeSystemContext, DispatchResolve, "FindInterfaceMethodImplementationTarget", new StackEntry[] { eeTypeExpression, interfaceEEType, new ExpressionEntry(StackValueKind.Int32, "slot", slot, GetWellKnownType(WellKnownType.UInt16)) });
+                functionPtr = targetEntry.ValueAsType(LLVM.PointerType(universalSignature, 0), _builder);
             }
             else
             {
-                LLVMValueRef slot = GetOrCreateMethodSlot(method);
-                var pointerSize = method.Context.Target.PointerSize;
-                LLVMTypeRef universalSignature = LLVM.FunctionType(LLVM.VoidType(), new LLVMTypeRef[] { LLVM.PointerType(LLVM.Int8Type(), 0), LLVM.PointerType(LLVM.Int8Type(), 0) }, false);
-                var rawObjectPtr = CastIfNecessary(objectPtr, LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(universalSignature, 0), 0), 0));
+                var rawObjectPtr = CastIfNecessary(objectPtr.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(universalSignature, 0), 0), 0));
                 var eeType = LLVM.BuildLoad(_builder, rawObjectPtr, "ldEEType");
                 var slotPtr = LLVM.BuildGEP(_builder, eeType, new LLVMValueRef[] { slot }, "__getslot__");
-                var functionPtr = LLVM.BuildLoad(_builder, slotPtr, "ld__getslot__");
-                return functionPtr;
+                functionPtr = LLVM.BuildLoad(_builder, slotPtr, "ld__getslot__");
             }
+
+            return functionPtr;
         }
 
         private ExpressionEntry AllocateObject(TypeDesc type)
@@ -2015,26 +2017,12 @@ namespace Internal.IL
         private void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned)
         {
             StackEntry value = _stack.Pop();
-            LLVMValueRef convertedValue;
             TypeDesc destType = GetWellKnownType(wellKnownType);
 
-            //conv.u for a pointer should change to a int8*
-            if (wellKnownType == WellKnownType.UIntPtr)
-            {
-                if (value.Kind == StackValueKind.Int32)
-                {
-                    convertedValue = LLVM.BuildIntToPtr(_builder, value.ValueAsInt32(_builder, false), LLVM.PointerType(LLVM.Int8Type(), 0), "conv.u");
-                }
-                else
-                {
-                    convertedValue = value.ValueAsType(destType, _builder);
-                }
-            }
-            else
-            {
-                convertedValue = value.ValueAsType(destType, _builder);
-            }
-            PushExpression(GetStackValueKind(destType), "conv", convertedValue, destType);
+            // Load the value and then convert it instead of using ValueAsType to avoid loading the incorrect size
+            LLVMValueRef loadedValue = value.ValueAsType(value.Type, _builder);
+            LLVMValueRef converted = CastIfNecessary(loadedValue, GetLLVMTypeForTypeDesc(destType));
+            PushExpression(GetStackValueKind(destType), "conv", converted, destType);
         }
 
         private void ImportUnaryOperation(ILOpcode opCode)
@@ -2596,6 +2584,7 @@ namespace Internal.IL
         private const string RuntimeImport = "RuntimeImports";
         private const string InternalCalls = "InternalCalls";
         private const string TypeCast = "TypeCast";
+        private const string DispatchResolve = "DispatchResolve";
         private ExpressionEntry CallRuntime(TypeSystemContext context, string className, string methodName, StackEntry[] arguments, TypeDesc forcedReturnType = null)
         {
             MetadataType helperType = context.SystemModule.GetKnownType("System.Runtime", className);

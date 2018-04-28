@@ -107,6 +107,14 @@ public class BringUpTests
                 return false;
         }
 
+        {
+            // This will end up being a delegate to a sealed virtual method.
+            ClassWithIFoo t = new ClassWithIFoo("Class");
+            Func<int, string> d = t.DoFoo;
+            if (d(987) != "Class987")
+                return false;       
+        }
+
         Console.WriteLine("OK");
         return true;
     }
