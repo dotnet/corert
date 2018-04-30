@@ -37,23 +37,33 @@ namespace System.Runtime.InteropServices
 #endif //TARGET_CORE_API_SET
         }
 
-#if CORECLR
+        [DllImport(Libraries.CORE_COM_AUT)]
+        [McgGeneratedNativeCallCodeAttribute]
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static extern unsafe void SysFreeString(void* pBSTR);
 
-        public static unsafe uint SysStringLen(void* pBSTR)
+        public static unsafe void SysFreeString(IntPtr pBstr)
         {
-            throw new PlatformNotSupportedException("SysStringLen");
+            SysFreeString((void*)pBstr);
         }
 
+        [DllImport(Libraries.CORE_COM_AUT)]
+        [McgGeneratedNativeCallCodeAttribute]
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static extern unsafe uint SysStringLen(void* pBSTR);
         public static unsafe uint SysStringLen(IntPtr pBSTR)
         {
-            throw new PlatformNotSupportedException("SysStringLen");
+            return SysStringLen((void*)pBSTR);
         }
 
-        // Do nothing
-        internal static unsafe void OutputDebugString(string outputString)
-        {
+        [DllImport(Libraries.CORE_COM_AUT)]
+        [McgGeneratedNativeCallCodeAttribute]
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static extern unsafe IntPtr SysAllocString(IntPtr pStrIn);
 
-        }
-#endif //CORECLR
+        [DllImport(Libraries.CORE_COM_AUT)]
+        [McgGeneratedNativeCallCodeAttribute]
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static extern unsafe char* SysAllocStringLen(char* pStrIn, uint len);
     }
 }

@@ -935,7 +935,7 @@ namespace System.Runtime.InteropServices
         {
             if (IsNotWin32Atom(ptr))
             {
-                ExternalInterop.SysFreeString(ptr);
+                McgMarshal.SysFreeString(ptr);
             }
         }
 
