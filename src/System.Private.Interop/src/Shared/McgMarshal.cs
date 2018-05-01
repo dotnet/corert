@@ -373,7 +373,7 @@ namespace System.Runtime.InteropServices
         /// CoTaskMemAlloc + ZeroMemory
         /// @TODO - we can probably optimize the zero memory part later
         /// </summary>
-        public unsafe static void* CoTaskMemAllocAndZeroMemory(System.IntPtr size)
+        public unsafe static void* CoTaskMemAllocAndZeroMemory(IntPtr size)
         {
             void *ptr = (void*)PInvokeMarshal.CoTaskMemAlloc(new UIntPtr((void*)size));
             if (ptr == null)
@@ -388,6 +388,24 @@ namespace System.Runtime.InteropServices
             }
 
             return ptr;
+        }
+
+        /// <summary>
+        /// Free allocated memory. The allocated memory should be allocated by CoTaskMemAlloc
+        /// </summary>
+        public static void SafeCoTaskMemFree(IntPtr allocatedMemory)
+        {
+            if (allocatedMemory != IntPtr.Zero)
+                PInvokeMarshal.CoTaskMemFree(allocatedMemory);
+        }
+
+        /// <summary>
+        /// Free allocated memory. The allocated memory should be allocated by CoTaskMemAlloc
+        /// </summary>
+        public static unsafe void SafeCoTaskMemFree(void* pv)
+        {
+            if (pv != null)
+                PInvokeMarshal.CoTaskMemFree(new IntPtr(pv));
         }
 
         /// <summary>
@@ -477,6 +495,22 @@ namespace System.Runtime.InteropServices
                 return null;
             return new string((char*)bstr, 0, (int)ExternalInterop.SysStringLen(bstr));
         }
+
+        /// <summary>
+        /// Free Allocated BSTR
+        /// </summary>
+        public static unsafe void SysFreeString(void* pBSTR)
+        {
+            SysFreeString(new IntPtr(pBSTR));
+        }
+
+        /// <summary>
+        /// Free Allocated BSTR
+        /// </summary>
+        public unsafe static void SysFreeString(IntPtr pBSTR)
+        {
+            ExternalInterop.SysFreeString(pBSTR);
+        } 
 #endif
 
 #if ENABLE_MIN_WINRT

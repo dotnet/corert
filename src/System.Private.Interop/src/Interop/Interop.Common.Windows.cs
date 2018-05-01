@@ -32,13 +32,6 @@ namespace System.Runtime.InteropServices
         internal const string CORE_DEBUG = "kernel32.dll";
 #endif //TARGET_CORE_API_SET
         }
-#if CORECLR
-        
-        internal static int GetLastWin32Error()
-        {
-           return 0;
-        }
-#else
 
         [DllImport(Libraries.CORE_DEBUG, EntryPoint = "OutputDebugStringW")]
         [McgGeneratedNativeCallCodeAttribute]
@@ -51,6 +44,5 @@ namespace System.Runtime.InteropServices
                 OutputDebugString(pOutputString);
             }
         }
-#endif 
     }
 }
