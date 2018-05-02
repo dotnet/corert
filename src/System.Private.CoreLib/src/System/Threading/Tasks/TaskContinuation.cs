@@ -36,7 +36,6 @@ namespace System.Threading.Tasks
             Debug.Assert(action is Action<Task> || action is Action<Task, object>,
                 "Invalid delegate type in ContinuationTaskFromTask");
             m_antecedent = antecedent;
-            PossiblyCaptureContext();
         }
 
         /// <summary>
@@ -84,7 +83,6 @@ namespace System.Threading.Tasks
             Debug.Assert(function is Func<Task, TResult> || function is Func<Task, object, TResult>,
                 "Invalid delegate type in ContinuationResultTaskFromTask");
             m_antecedent = antecedent;
-            PossiblyCaptureContext();
         }
 
         /// <summary>
@@ -132,7 +130,6 @@ namespace System.Threading.Tasks
             Debug.Assert(action is Action<Task<TAntecedentResult>> || action is Action<Task<TAntecedentResult>, object>,
                 "Invalid delegate type in ContinuationTaskFromResultTask");
             m_antecedent = antecedent;
-            PossiblyCaptureContext();
         }
 
         /// <summary>
@@ -180,7 +177,6 @@ namespace System.Threading.Tasks
             Debug.Assert(function is Func<Task<TAntecedentResult>, TResult> || function is Func<Task<TAntecedentResult>, object, TResult>,
                 "Invalid delegate type in ContinuationResultTaskFromResultTask");
             m_antecedent = antecedent;
-            PossiblyCaptureContext();
         }
 
         /// <summary>
