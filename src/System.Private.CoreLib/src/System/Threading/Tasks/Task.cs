@@ -576,7 +576,10 @@ namespace System.Threading.Tasks
                 AssignCancellationToken(cancellationToken, null, null);
             }
 
-            PossiblyCaptureContext();
+            Debug.Assert(m_contingentProperties == null || m_contingentProperties.m_capturedContext == null,
+                "Captured an ExecutionContext when one was already captured.");
+
+            CapturedContext = ExecutionContext.Capture();
         }
 
         /// <summary>
@@ -767,19 +770,6 @@ namespace System.Threading.Tasks
                 return "0x" + fptr.ToString("x");
                 //return d != null ? d.Method.ToString() : "{null}";
             }
-        }
-
-        /// <summary>
-        /// Captures the ExecutionContext so long as flow isn't suppressed.
-        /// </summary>
-        /// <param name="stackMark">A stack crawl mark pointing to the frame of the caller.</param>
-
-        internal void PossiblyCaptureContext()
-        {
-            Debug.Assert(m_contingentProperties == null || m_contingentProperties.m_capturedContext == null,
-                "Captured an ExecutionContext when one was already captured.");
-
-            CapturedContext = ExecutionContext.Capture();
         }
 
         // Internal property to process TaskCreationOptions access and mutation.
