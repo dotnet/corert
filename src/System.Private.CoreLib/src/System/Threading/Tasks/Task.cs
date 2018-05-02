@@ -471,11 +471,6 @@ namespace System.Threading.Tasks
         {
         }
 
-        internal Task(Action<object> action, object state, Task parent, CancellationToken cancellationToken,
-            TaskCreationOptions creationOptions, InternalTaskOptions internalOptions, TaskScheduler scheduler)
-            : this((Delegate)action, state, parent, cancellationToken, creationOptions, internalOptions, scheduler)
-        {
-        }
 
         /// <summary>
         /// An internal constructor used by the factory methods on task and its descendent(s).
