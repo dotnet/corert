@@ -128,7 +128,6 @@ namespace System.Threading.Tasks
             : this(function, null, default(CancellationToken),
                 TaskCreationOptions.None, InternalTaskOptions.None, null)
         {
-            PossiblyCaptureContext();
         }
 
 
@@ -150,7 +149,6 @@ namespace System.Threading.Tasks
             : this(function, null, cancellationToken,
                 TaskCreationOptions.None, InternalTaskOptions.None, null)
         {
-            PossiblyCaptureContext();
         }
 
         /// <summary>
@@ -174,7 +172,6 @@ namespace System.Threading.Tasks
         public Task(Func<TResult> function, TaskCreationOptions creationOptions)
             : this(function, Task.InternalCurrentIfAttached(creationOptions), default(CancellationToken), creationOptions, InternalTaskOptions.None, null)
         {
-            PossiblyCaptureContext();
         }
 
         /// <summary>
@@ -202,7 +199,6 @@ namespace System.Threading.Tasks
         public Task(Func<TResult> function, CancellationToken cancellationToken, TaskCreationOptions creationOptions)
             : this(function, Task.InternalCurrentIfAttached(creationOptions), cancellationToken, creationOptions, InternalTaskOptions.None, null)
         {
-            PossiblyCaptureContext();
         }
 
         /// <summary>
@@ -220,7 +216,6 @@ namespace System.Threading.Tasks
             : this(function, state, null, default(CancellationToken),
                 TaskCreationOptions.None, InternalTaskOptions.None, null)
         {
-            PossiblyCaptureContext();
         }
 
         /// <summary>
@@ -242,7 +237,6 @@ namespace System.Threading.Tasks
             : this(function, state, null, cancellationToken,
                     TaskCreationOptions.None, InternalTaskOptions.None, null)
         {
-            PossiblyCaptureContext();
         }
 
         /// <summary>
@@ -268,7 +262,6 @@ namespace System.Threading.Tasks
             : this(function, state, Task.InternalCurrentIfAttached(creationOptions), default(CancellationToken),
                     creationOptions, InternalTaskOptions.None, null)
         {
-            PossiblyCaptureContext();
         }
 
 
@@ -299,7 +292,6 @@ namespace System.Threading.Tasks
             : this(function, state, Task.InternalCurrentIfAttached(creationOptions), cancellationToken,
                     creationOptions, InternalTaskOptions.None, null)
         {
-            PossiblyCaptureContext();
         }
 
         /// <summary>
@@ -315,7 +307,6 @@ namespace System.Threading.Tasks
             TaskCreationOptions creationOptions, InternalTaskOptions internalOptions, TaskScheduler scheduler) :
             base(valueSelector, null, parent, cancellationToken, creationOptions, internalOptions, scheduler)
         {
-            PossiblyCaptureContext();
         }
 
 
@@ -333,7 +324,6 @@ namespace System.Threading.Tasks
             TaskCreationOptions creationOptions, InternalTaskOptions internalOptions, TaskScheduler scheduler) :
             base(valueSelector, state, parent, cancellationToken, creationOptions, internalOptions, scheduler)
         {
-            PossiblyCaptureContext();
         }
 
 
