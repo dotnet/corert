@@ -408,7 +408,7 @@ namespace System.Threading.Tasks
         /// The <paramref name="action"/> argument is null.
         /// </exception>
         public Task(Action<object> action, object state)
-            : this(action, state, null, default(CancellationToken), TaskCreationOptions.None, InternalTaskOptions.None, null)
+            : this((Delegate)action, state, null, default(CancellationToken), TaskCreationOptions.None, InternalTaskOptions.None, null)
         {
             PossiblyCaptureContext();
         }
@@ -426,7 +426,7 @@ namespace System.Threading.Tasks
         /// has already been disposed.
         /// </exception>
         public Task(Action<object> action, object state, CancellationToken cancellationToken)
-            : this(action, state, null, cancellationToken, TaskCreationOptions.None, InternalTaskOptions.None, null)
+            : this((Delegate)action, state, null, cancellationToken, TaskCreationOptions.None, InternalTaskOptions.None, null)
         {
             PossiblyCaptureContext();
         }
@@ -448,7 +448,7 @@ namespace System.Threading.Tasks
         /// cref="T:System.Threading.Tasks.TaskCreationOptions"/>.
         /// </exception>
         public Task(Action<object> action, object state, TaskCreationOptions creationOptions)
-            : this(action, state, Task.InternalCurrentIfAttached(creationOptions), default(CancellationToken), creationOptions, InternalTaskOptions.None, null)
+            : this((Delegate)action, state, Task.InternalCurrentIfAttached(creationOptions), default(CancellationToken), creationOptions, InternalTaskOptions.None, null)
         {
             PossiblyCaptureContext();
         }
@@ -474,7 +474,7 @@ namespace System.Threading.Tasks
         /// has already been disposed.
         /// </exception>
         public Task(Action<object> action, object state, CancellationToken cancellationToken, TaskCreationOptions creationOptions)
-            : this(action, state, Task.InternalCurrentIfAttached(creationOptions), cancellationToken, creationOptions, InternalTaskOptions.None, null)
+            : this((Delegate)action, state, Task.InternalCurrentIfAttached(creationOptions), cancellationToken, creationOptions, InternalTaskOptions.None, null)
         {
             PossiblyCaptureContext();
         }
