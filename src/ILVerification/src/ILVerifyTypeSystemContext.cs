@@ -27,20 +27,21 @@ namespace ILVerify
             _resolver = resolver;
         }
 
-        public override ModuleDesc ResolveAssembly(AssemblyName name, bool throwIfNotFound = true)
+        public override ModuleDesc ResolveModule(string simpleName, bool throwIfNotFound = true)
         {
-            PEReader peReader = _resolver.Resolve(name);
+            // Note: we use simple names instead of full names to resolve, because we can't get a full name from an assembly without reading it
+            PEReader peReader = _resolver.Resolve(simpleName);
             if (peReader == null && throwIfNotFound)
             {
-                throw new VerifierException("Assembly or module not found: " + name.Name);
+                throw new VerifierException("Assembly or module not found: " + simpleName);
             }
 
             var module = GetModule(peReader);
-            VerifyModuleName(name, module);
+            VerifyModuleName(simpleName, module);
             return module;
         }
 
-        private static void VerifyModuleName(AssemblyName name, EcmaModule module)
+        private static void VerifyModuleName(string simpleName, EcmaModule module)
         {
             MetadataReader metadataReader = module.MetadataReader;
             StringHandle nameHandle = metadataReader.IsAssembly
@@ -48,9 +49,9 @@ namespace ILVerify
                 : metadataReader.GetModuleDefinition().Name;
 
             string actualSimpleName = metadataReader.GetString(nameHandle);
-            if (!actualSimpleName.Equals(name.Name, StringComparison.OrdinalIgnoreCase))
+            if (!actualSimpleName.Equals(simpleName, StringComparison.OrdinalIgnoreCase))
             {
-                throw new VerifierException($"Actual PE name '{actualSimpleName}' does not match provided name '{name}'");
+                throw new VerifierException($"Actual PE name '{actualSimpleName}' does not match provided name '{simpleName}'");
             }
         }
 
