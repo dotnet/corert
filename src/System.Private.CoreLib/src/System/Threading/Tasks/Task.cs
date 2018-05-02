@@ -333,7 +333,6 @@ namespace System.Threading.Tasks
         public Task(Action action)
             : this(action, null, null, default(CancellationToken), TaskCreationOptions.None, InternalTaskOptions.None, null)
         {
-            PossiblyCaptureContext();
         }
 
         /// <summary>
@@ -349,7 +348,6 @@ namespace System.Threading.Tasks
         public Task(Action action, CancellationToken cancellationToken)
             : this(action, null, null, cancellationToken, TaskCreationOptions.None, InternalTaskOptions.None, null)
         {
-            PossiblyCaptureContext();
         }
 
         /// <summary>
@@ -370,7 +368,6 @@ namespace System.Threading.Tasks
         public Task(Action action, TaskCreationOptions creationOptions)
             : this(action, null, Task.InternalCurrentIfAttached(creationOptions), default(CancellationToken), creationOptions, InternalTaskOptions.None, null)
         {
-            PossiblyCaptureContext();
         }
 
         /// <summary>
@@ -395,7 +392,6 @@ namespace System.Threading.Tasks
         public Task(Action action, CancellationToken cancellationToken, TaskCreationOptions creationOptions)
             : this(action, null, Task.InternalCurrentIfAttached(creationOptions), cancellationToken, creationOptions, InternalTaskOptions.None, null)
         {
-            PossiblyCaptureContext();
         }
 
 
@@ -408,9 +404,8 @@ namespace System.Threading.Tasks
         /// The <paramref name="action"/> argument is null.
         /// </exception>
         public Task(Action<object> action, object state)
-            : this((Delegate)action, state, null, default(CancellationToken), TaskCreationOptions.None, InternalTaskOptions.None, null)
+            : this(action, state, null, default(CancellationToken), TaskCreationOptions.None, InternalTaskOptions.None, null)
         {
-            PossiblyCaptureContext();
         }
 
         /// <summary>
@@ -426,9 +421,8 @@ namespace System.Threading.Tasks
         /// has already been disposed.
         /// </exception>
         public Task(Action<object> action, object state, CancellationToken cancellationToken)
-            : this((Delegate)action, state, null, cancellationToken, TaskCreationOptions.None, InternalTaskOptions.None, null)
+            : this(action, state, null, cancellationToken, TaskCreationOptions.None, InternalTaskOptions.None, null)
         {
-            PossiblyCaptureContext();
         }
 
         /// <summary>
@@ -448,9 +442,8 @@ namespace System.Threading.Tasks
         /// cref="T:System.Threading.Tasks.TaskCreationOptions"/>.
         /// </exception>
         public Task(Action<object> action, object state, TaskCreationOptions creationOptions)
-            : this((Delegate)action, state, Task.InternalCurrentIfAttached(creationOptions), default(CancellationToken), creationOptions, InternalTaskOptions.None, null)
+            : this(action, state, Task.InternalCurrentIfAttached(creationOptions), default(CancellationToken), creationOptions, InternalTaskOptions.None, null)
         {
-            PossiblyCaptureContext();
         }
 
         /// <summary>
@@ -474,16 +467,14 @@ namespace System.Threading.Tasks
         /// has already been disposed.
         /// </exception>
         public Task(Action<object> action, object state, CancellationToken cancellationToken, TaskCreationOptions creationOptions)
-            : this((Delegate)action, state, Task.InternalCurrentIfAttached(creationOptions), cancellationToken, creationOptions, InternalTaskOptions.None, null)
+            : this(action, state, Task.InternalCurrentIfAttached(creationOptions), cancellationToken, creationOptions, InternalTaskOptions.None, null)
         {
-            PossiblyCaptureContext();
         }
 
         internal Task(Action<object> action, object state, Task parent, CancellationToken cancellationToken,
             TaskCreationOptions creationOptions, InternalTaskOptions internalOptions, TaskScheduler scheduler)
             : this((Delegate)action, state, parent, cancellationToken, creationOptions, internalOptions, scheduler)
         {
-            PossiblyCaptureContext();
         }
 
         /// <summary>
@@ -590,6 +581,8 @@ namespace System.Threading.Tasks
 
                 AssignCancellationToken(cancellationToken, null, null);
             }
+
+            PossiblyCaptureContext();
         }
 
         /// <summary>
@@ -1273,7 +1266,6 @@ namespace System.Threading.Tasks
             // Create and schedule the task. This throws an InvalidOperationException if already shut down.
             // Here we add the InternalTaskOptions.QueuedByRuntime to the internalOptions, so that TaskConstructorCore can skip the cancellation token registration
             Task t = new Task(action, state, creatingTask, cancellationToken, options, internalOptions | InternalTaskOptions.QueuedByRuntime, scheduler);
-            t.PossiblyCaptureContext();
 
             t.ScheduleAndStart(false);
             return t;
