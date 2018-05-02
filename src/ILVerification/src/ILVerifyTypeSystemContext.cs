@@ -27,9 +27,27 @@ namespace ILVerify
             _resolver = resolver;
         }
 
-        public override ModuleDesc ResolveModule(string simpleName, bool throwIfNotFound = true)
+        public override ModuleDesc ResolveAssembly(AssemblyName name, bool throwIfNotFound = true)
         {
             // Note: we use simple names instead of full names to resolve, because we can't get a full name from an assembly without reading it
+            string simpleName = name.Name;
+            return ResolveAssemblyOrNetmodule(simpleName, throwIfNotFound);
+        }
+
+        public override ModuleDesc ResolveModule(ModuleDesc referencingModule, string name, bool throwIfNotFound = true)
+        {
+            // The referencing module is not getting verified currently.
+            // However, netmodules are resolved in the context of assembly, not in the global context.
+            EcmaModule module = ResolveAssemblyOrNetmodule(name, throwIfNotFound);
+            if (module.MetadataReader.IsAssembly)
+            {
+                throw new VerifierException($"Assembly '{name}' is expected to be a .netmodule");
+            }
+            return module;
+        }
+
+        private EcmaModule ResolveAssemblyOrNetmodule(string simpleName, bool throwIfNotFound)
+        {
             PEReader peReader = _resolver.Resolve(simpleName);
             if (peReader == null && throwIfNotFound)
             {

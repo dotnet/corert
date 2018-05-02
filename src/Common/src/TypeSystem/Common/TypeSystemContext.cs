@@ -61,12 +61,12 @@ namespace Internal.TypeSystem
 
         public virtual ModuleDesc ResolveAssembly(AssemblyName name, bool throwIfNotFound = true)
         {
-            // Note: we use simple names instead of full names to resolve, because we can't get a full name from an assembly without reading it
-            string simpleName = name.Name;
-            return ResolveModule(simpleName, throwIfNotFound);
+            if (throwIfNotFound)
+                throw new NotSupportedException();
+            return null;
         }
 
-        public virtual ModuleDesc ResolveModule(string simpleName, bool throwIfNotFound = true)
+        public virtual ModuleDesc ResolveModule(ModuleDesc referencingModule, string simpleName, bool throwIfNotFound = true)
         {
             if (throwIfNotFound)
                 throw new NotSupportedException();
