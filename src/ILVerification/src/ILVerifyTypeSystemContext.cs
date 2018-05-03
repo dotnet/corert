@@ -41,7 +41,7 @@ namespace ILVerify
             EcmaModule module = ResolveAssemblyOrNetmodule(name, throwIfNotFound);
             if (module.MetadataReader.IsAssembly)
             {
-                throw new VerifierException($"Assembly '{name}' is expected to be a .netmodule");
+                throw new VerifierException($"The module '{name}' is not expected to be an assembly");
             }
             return module;
         }
