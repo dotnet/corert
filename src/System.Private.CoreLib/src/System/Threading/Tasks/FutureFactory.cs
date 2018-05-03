@@ -679,10 +679,10 @@ namespace System.Threading.Tasks
             // Just specify this task as detached. No matter what happens, we want endMethod 
             // to be called -- even if the parent is canceled.  So we don't want to flow 
             // RespectParentCancellation.
-            Task t = new Task(delegate
+            Task t = new Task(new Action<object>(delegate
                 {
                     FromAsyncCoreLogic(asyncResult, endFunction, endAction, promise, requiresSynchronization: true);
-                },
+                }),
                 (object)null, null,
                 default(CancellationToken), TaskCreationOptions.None, InternalTaskOptions.None, null);
 

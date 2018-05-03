@@ -333,7 +333,6 @@ namespace System.Threading.Tasks
         public Task(Action action)
             : this(action, null, null, default(CancellationToken), TaskCreationOptions.None, InternalTaskOptions.None, null)
         {
-            PossiblyCaptureContext();
         }
 
         /// <summary>
@@ -349,7 +348,6 @@ namespace System.Threading.Tasks
         public Task(Action action, CancellationToken cancellationToken)
             : this(action, null, null, cancellationToken, TaskCreationOptions.None, InternalTaskOptions.None, null)
         {
-            PossiblyCaptureContext();
         }
 
         /// <summary>
@@ -370,7 +368,6 @@ namespace System.Threading.Tasks
         public Task(Action action, TaskCreationOptions creationOptions)
             : this(action, null, Task.InternalCurrentIfAttached(creationOptions), default(CancellationToken), creationOptions, InternalTaskOptions.None, null)
         {
-            PossiblyCaptureContext();
         }
 
         /// <summary>
@@ -395,7 +392,6 @@ namespace System.Threading.Tasks
         public Task(Action action, CancellationToken cancellationToken, TaskCreationOptions creationOptions)
             : this(action, null, Task.InternalCurrentIfAttached(creationOptions), cancellationToken, creationOptions, InternalTaskOptions.None, null)
         {
-            PossiblyCaptureContext();
         }
 
 
@@ -410,7 +406,6 @@ namespace System.Threading.Tasks
         public Task(Action<object> action, object state)
             : this(action, state, null, default(CancellationToken), TaskCreationOptions.None, InternalTaskOptions.None, null)
         {
-            PossiblyCaptureContext();
         }
 
         /// <summary>
@@ -428,7 +423,6 @@ namespace System.Threading.Tasks
         public Task(Action<object> action, object state, CancellationToken cancellationToken)
             : this(action, state, null, cancellationToken, TaskCreationOptions.None, InternalTaskOptions.None, null)
         {
-            PossiblyCaptureContext();
         }
 
         /// <summary>
@@ -450,7 +444,6 @@ namespace System.Threading.Tasks
         public Task(Action<object> action, object state, TaskCreationOptions creationOptions)
             : this(action, state, Task.InternalCurrentIfAttached(creationOptions), default(CancellationToken), creationOptions, InternalTaskOptions.None, null)
         {
-            PossiblyCaptureContext();
         }
 
         /// <summary>
@@ -476,19 +469,11 @@ namespace System.Threading.Tasks
         public Task(Action<object> action, object state, CancellationToken cancellationToken, TaskCreationOptions creationOptions)
             : this(action, state, Task.InternalCurrentIfAttached(creationOptions), cancellationToken, creationOptions, InternalTaskOptions.None, null)
         {
-            PossiblyCaptureContext();
         }
 
-        internal Task(Action<object> action, object state, Task parent, CancellationToken cancellationToken,
-            TaskCreationOptions creationOptions, InternalTaskOptions internalOptions, TaskScheduler scheduler)
-            : this((Delegate)action, state, parent, cancellationToken, creationOptions, internalOptions, scheduler)
-        {
-            PossiblyCaptureContext();
-        }
 
         /// <summary>
         /// An internal constructor used by the factory methods on task and its descendent(s).
-        /// This variant does not capture the ExecutionContext; it is up to the caller to do that.
         /// </summary>
         /// <param name="action">An action to execute.</param>
         /// <param name="state">Optional state to pass to the action.</param>
@@ -590,6 +575,11 @@ namespace System.Threading.Tasks
 
                 AssignCancellationToken(cancellationToken, null, null);
             }
+
+            Debug.Assert(m_contingentProperties == null || m_contingentProperties.m_capturedContext == null,
+                "Captured an ExecutionContext when one was already captured.");
+
+            CapturedContext = ExecutionContext.Capture();
         }
 
         /// <summary>
@@ -780,19 +770,6 @@ namespace System.Threading.Tasks
                 return "0x" + fptr.ToString("x");
                 //return d != null ? d.Method.ToString() : "{null}";
             }
-        }
-
-        /// <summary>
-        /// Captures the ExecutionContext so long as flow isn't suppressed.
-        /// </summary>
-        /// <param name="stackMark">A stack crawl mark pointing to the frame of the caller.</param>
-
-        internal void PossiblyCaptureContext()
-        {
-            Debug.Assert(m_contingentProperties == null || m_contingentProperties.m_capturedContext == null,
-                "Captured an ExecutionContext when one was already captured.");
-
-            CapturedContext = ExecutionContext.Capture();
         }
 
         // Internal property to process TaskCreationOptions access and mutation.
@@ -1273,7 +1250,6 @@ namespace System.Threading.Tasks
             // Create and schedule the task. This throws an InvalidOperationException if already shut down.
             // Here we add the InternalTaskOptions.QueuedByRuntime to the internalOptions, so that TaskConstructorCore can skip the cancellation token registration
             Task t = new Task(action, state, creatingTask, cancellationToken, options, internalOptions | InternalTaskOptions.QueuedByRuntime, scheduler);
-            t.PossiblyCaptureContext();
 
             t.ScheduleAndStart(false);
             return t;
