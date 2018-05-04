@@ -170,8 +170,8 @@ namespace Internal.TypeSystem.Ecma
         private object ResolveModuleReference(ModuleReferenceHandle handle)
         {
             ModuleReference moduleReference = _metadataReader.GetModuleReference(handle);
-            string simpleName = _metadataReader.GetString(moduleReference.Name);
-            return Context.ResolveModule(this, simpleName);
+            string fileName = _metadataReader.GetString(moduleReference.Name);
+            return Context.ResolveModule(this, fileName);
         }
 
         private LockFreeReaderHashtable<EntityHandle, IEntityHandleObject> _resolvedTokens;
