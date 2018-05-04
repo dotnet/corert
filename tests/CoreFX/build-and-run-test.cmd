@@ -32,8 +32,11 @@ if not exist %TestFolder%\%TestExecutable%.exe (
 :: Add name of currently executing test to rd.xml
 powershell -Command "(Get-Content %TestFolder%\default.rd.xml).replace('*Application*', '%TestFileName%') | Set-Content  %TestFolder%\default.rd.xml"
 
+::
+:: Force environment to 64-bit if we're doing an x64 test run
+::
 if "%CoreRT_BuildArch%" == "x64" (
-    call "%VS140COMNTOOLS%\..\..\VC\bin\amd64\vcvars64.bat" >nul
+    call "%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build\vcvarsall.bat" x64 >nul
 )
 
 echo Building %TestFileName%

@@ -111,6 +111,44 @@ namespace System.Runtime.InteropServices
             return PtrToStringUni(ptr);
         }
 
+        public static unsafe String PtrToStringUTF8(IntPtr ptr)
+        {
+            if (IntPtr.Zero == ptr)
+            {
+                return null;
+            }
+            else
+            {
+                int nbBytes = lstrlenA(ptr);
+                return PtrToStringUTF8(ptr, nbBytes);
+            }
+        }
+
+        public static unsafe String PtrToStringUTF8(IntPtr ptr, int byteLen)
+        {
+            if (byteLen < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(byteLen), SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
+            else if (IntPtr.Zero == ptr)
+            {
+                return null;
+            }
+            else if (IsWin32Atom(ptr))
+            {
+                return null;
+            }
+            else if (byteLen == 0)
+            {
+                return string.Empty;
+            }
+            else
+            {
+                byte* pByte = (byte*)ptr.ToPointer();
+                return Encoding.UTF8.GetString(pByte, byteLen);
+            }
+        }
+
         //====================================================================
         // SizeOf()
         //====================================================================
@@ -803,6 +841,35 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        public static unsafe IntPtr StringToCoTaskMemUTF8(String s)
+        {
+            if (s == null)
+            {
+                return IntPtr.Zero;
+            }
+            else
+            {
+                int nb = Encoding.UTF8.GetMaxByteCount(s.Length);
+
+                IntPtr pMem = PInvokeMarshal.CoTaskMemAlloc(new UIntPtr((uint)nb + 1));
+
+                if (pMem == IntPtr.Zero)
+                {
+                    throw new OutOfMemoryException();
+                }
+                else
+                {
+                    fixed (char* firstChar = s)
+                    {
+                        byte* pbMem = (byte*)pMem;
+                        int nbWritten = Encoding.UTF8.GetBytes(firstChar, s.Length, pbMem, nb);
+                        pbMem[nbWritten] = 0;
+                    }
+                    return pMem;
+                }
+            }
+        }
+
         public static unsafe IntPtr StringToCoTaskMemAnsi(String s)
         {
             if (s == null)
@@ -978,6 +1045,12 @@ namespace System.Runtime.InteropServices
         public static void ZeroFreeCoTaskMemUnicode(IntPtr s)
         {
             SecureZeroMemory(s, lstrlenW(s));
+            FreeCoTaskMem(s);
+        }
+
+        public static unsafe void ZeroFreeCoTaskMemUTF8(IntPtr s)
+        {
+            SecureZeroMemory(s, lstrlenA(s));
             FreeCoTaskMem(s);
         }
 
