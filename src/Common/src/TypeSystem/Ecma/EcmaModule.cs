@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -171,9 +170,7 @@ namespace Internal.TypeSystem.Ecma
         private object ResolveModuleReference(ModuleReferenceHandle handle)
         {
             ModuleReference moduleReference = _metadataReader.GetModuleReference(handle);
-            // Referenced modules are stored without their extension (see CommandLineHelpers.cs), so we have to drop
-            // the extension here as well to find a match.
-            string simpleName = Path.GetFileNameWithoutExtension(_metadataReader.GetString(moduleReference.Name));
+            string simpleName = _metadataReader.GetString(moduleReference.Name);
             return Context.ResolveModule(this, simpleName);
         }
 
