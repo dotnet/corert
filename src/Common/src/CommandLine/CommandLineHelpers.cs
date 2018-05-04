@@ -29,11 +29,8 @@ namespace Internal.CommandLine
                 foreach (string fileName in Directory.EnumerateFiles(directoryName, searchPattern))
                 {
                     string fullFileName = Path.GetFullPath(fileName);
-                    string simpleName = Path.GetFileName(fullFileName);
-                    if (Path.GetExtension(fullFileName) != ".netmodule")
-                    {
-                        simpleName = Path.GetFileNameWithoutExtension(fileName);
-                    }
+
+                    string simpleName = Path.GetFileNameWithoutExtension(fileName);
 
                     if (dictionary.ContainsKey(simpleName))
                     {
