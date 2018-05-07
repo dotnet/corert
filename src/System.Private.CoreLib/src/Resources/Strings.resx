@@ -2749,4 +2749,7 @@
   <data name="InvalidOperation_ConcurrentOperationsNotSupported" xml:space="preserve">
     <value>Operations that change non-concurrent collections must have exclusive access. A concurrent update was performed on this collection and corrupted its state. The collection's state is no longer correct.</value>
   </data>
+  <data name="Thread_Operation_RequiresCurrentThread" xml:space="preserve">
+    <value>This operation must be performed on the same thread as that represented by the Thread instance.</value>
+  </data>
 </root>
