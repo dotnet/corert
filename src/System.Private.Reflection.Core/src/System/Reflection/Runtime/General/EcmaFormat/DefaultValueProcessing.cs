@@ -60,7 +60,7 @@ namespace System.Reflection.Runtime.General.EcmaFormat
         private static object ConstantValueAsObject(ConstantHandle constantHandle, MetadataReader metadataReader, Type declaredType, bool raw)
         {
             object defaultValue = ConstantValueAsRawObject(constantHandle, metadataReader);
-            if ((!raw) && declaredType.IsEnum)
+            if ((!raw) && declaredType.IsEnum && defaultValue != null)
                 defaultValue = Enum.ToObject(declaredType, defaultValue);
             return defaultValue;
         }
