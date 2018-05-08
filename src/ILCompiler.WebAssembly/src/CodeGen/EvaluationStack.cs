@@ -451,7 +451,7 @@ namespace Internal.IL
 
         public override StackEntry Duplicate(LLVMBuilderRef builder)
         {
-            return new ExpressionEntry(Kind, "dulicate_" + Name, ILImporter.LoadValue(builder, RawLLVMValue, Type, ILImporter.GetLLVMTypeForTypeDesc(Type), false, "load_duplicate_" + Name), Type);
+            return new ExpressionEntry(Kind, "duplicate_" + Name, ILImporter.LoadValue(builder, RawLLVMValue, Type, ILImporter.GetLLVMTypeForTypeDesc(Type), false, "load_duplicate_" + Name), Type);
         }
 
         protected override LLVMValueRef ValueAsTypeInternal(LLVMTypeRef type, LLVMBuilderRef builder, bool signExtend)

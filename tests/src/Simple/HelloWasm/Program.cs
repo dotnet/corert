@@ -17,10 +17,19 @@ internal static class Program
     {
         Add(1, 2);
         int tempInt = 0;
+        int tempInt2 = 0;
         (*(&tempInt)) = 9;
         if(tempInt == 9)
         {
             PrintLine("Hello from C#!");
+        }
+
+        int* targetAddr = (tempInt > 0) ? (&tempInt2) : (&tempInt);
+
+        (*targetAddr) = 1;
+        if(tempInt2 == 1 && tempInt == 9)
+        {
+            PrintLine("basic block stack entry Test: Ok.");
         }
 
         TestClass tempObj = new TestDerivedClass(1337);
@@ -162,6 +171,8 @@ internal static class Program
         int ii = 0;
         arrayTest[ii++].Value = "dup ref test: Ok.";
         PrintLine(arrayTest[0].Value);
+        
+
 
         var largeArrayTest = new long[] { Int64.MaxValue, 0, Int64.MinValue, 0 };
         if(largeArrayTest[0] == Int64.MaxValue &&

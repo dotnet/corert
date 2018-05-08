@@ -838,7 +838,7 @@ namespace Internal.IL
         {
             var entry = _stack.Pop();
             _stack.Push(entry.Duplicate(_builder));
-            _stack.Push(entry);
+            _stack.Push(entry.Duplicate(_builder));
         }
 
         private void ImportPop()
