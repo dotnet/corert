@@ -295,7 +295,7 @@ namespace Internal.IL
                 int n = entryStack.Length;
                 for (int i = 0; i < n; i++)
                 {
-                    _stack.Push(entryStack[i].Duplicate());
+                    _stack.Push(entryStack[i].Duplicate(_builder));
                 }
             }
 
@@ -365,19 +365,19 @@ namespace Internal.IL
             LLVM.BuildStore(_builder, CastToTypeDesc(value, type), CastToPointerToTypeDesc(address, type));
         }
 
-        internal static LLVMValueRef LoadValue(LLVMBuilderRef builder, LLVMValueRef address, TypeDesc sourceType, LLVMTypeRef targetType, bool signExtend)
+        internal static LLVMValueRef LoadValue(LLVMBuilderRef builder, LLVMValueRef address, TypeDesc sourceType, LLVMTypeRef targetType, bool signExtend, string loadName = null)
         {
             var underlyingSourceType = sourceType.UnderlyingType;
             if (targetType.TypeKind == LLVMTypeKind.LLVMIntegerTypeKind && underlyingSourceType.IsPrimitive && !underlyingSourceType.IsPointer)
             {
                 var sourceLLVMType = ILImporter.GetLLVMTypeForTypeDesc(underlyingSourceType);
                 var typedAddress = CastIfNecessary(builder, address, LLVM.PointerType(sourceLLVMType, 0));
-                return CastIntValue(builder, LLVM.BuildLoad(builder, typedAddress, "ldvalue"), targetType, signExtend);
+                return CastIntValue(builder, LLVM.BuildLoad(builder, typedAddress, loadName ?? "ldvalue"), targetType, signExtend);
             }
             else
             {
                 var typedAddress = CastIfNecessary(builder, address, LLVM.PointerType(targetType, 0));
-                return LLVM.BuildLoad(builder, typedAddress, "ldvalue");
+                return LLVM.BuildLoad(builder, typedAddress, loadName ?? "ldvalue");
             }
         }
 
@@ -836,7 +836,9 @@ namespace Internal.IL
 
         private void ImportDup()
         {
-            _stack.Push(_stack.Peek().Duplicate());
+            var entry = _stack.Pop();
+            _stack.Push(entry.Duplicate(_builder));
+            _stack.Push(entry);
         }
 
         private void ImportPop()
