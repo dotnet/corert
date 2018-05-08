@@ -5,7 +5,6 @@
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
 //
-
 //
 // A pair of schedulers that together support concurrent (reader) / exclusive (writer) 
 // task scheduling.  Using just the exclusive scheduler can be used to simulate a serial
@@ -39,10 +38,10 @@ namespace System.Threading.Tasks
         private readonly TaskScheduler m_underlyingTaskScheduler;
         /// <summary>
         /// The maximum number of tasks allowed to run concurrently.  This only applies to concurrent tasks, 
-        /// since exlusive tasks are inherently limited to 1.
+        /// since exclusive tasks are inherently limited to 1.
         /// </summary>
         private readonly int m_maxConcurrencyLevel;
-        /// <summary>The maximum number of tasks we can process before recyling our runner tasks.</summary>
+        /// <summary>The maximum number of tasks we can process before recycling our runner tasks.</summary>
         private readonly int m_maxItemsPerTask;
         /// <summary>
         /// If positive, it represents the number of concurrently running concurrent tasks.
@@ -64,7 +63,7 @@ namespace System.Threading.Tasks
         private static Int32 DefaultMaxConcurrencyLevel { get { return Environment.ProcessorCount; } }
 
         /// <summary>Gets the sync obj used to protect all state on this instance.</summary>
-        private readonly Lock ValueLock = new Lock();
+        private object ValueLock { get { return m_threadProcessingMode; } }
 
         /// <summary>
         /// Initializes the ConcurrentExclusiveSchedulerPair.
@@ -130,7 +129,7 @@ namespace System.Threading.Tasks
         /// </remarks>
         public void Complete()
         {
-            using (LockHolder.Hold(ValueLock))
+            lock (ValueLock)
             {
                 if (!CompletionRequested)
                 {
@@ -210,19 +209,21 @@ namespace System.Threading.Tasks
                 cs.m_completionQueued = true;
                 ThreadPool.QueueUserWorkItem(state =>
                 {
-                    var localCs = (CompletionState)state; // don't use 'cs', as it'll force a closure
-                    Debug.Assert(!localCs.Task.IsCompleted, "Completion should only happen once.");
+                    var localThis = (ConcurrentExclusiveSchedulerPair)state;
+                    Debug.Assert(!localThis.m_completionState.Task.IsCompleted, "Completion should only happen once.");
 
-                    var exceptions = localCs.m_exceptions;
+                    List<Exception> exceptions = localThis.m_completionState.m_exceptions;
                     bool success = (exceptions != null && exceptions.Count > 0) ?
-                        localCs.TrySetException(exceptions) :
-                        localCs.TrySetResult(default(VoidTaskResult));
+                        localThis.m_completionState.TrySetException(exceptions) :
+                        localThis.m_completionState.TrySetResult(default);
                     Debug.Assert(success, "Expected to complete completion task.");
-                }, cs);
+
+                    localThis.m_threadProcessingMode.Dispose();
+                }, this);
             }
         }
 
-        /// <summary>Initiatites scheduler shutdown due to a worker task faulting..</summary>
+        /// <summary>Initiates scheduler shutdown due to a worker task faulting.</summary>
         /// <param name="faultedTask">The faulted worker task that's initiating the shutdown.</param>
         private void FaultWithTask(Task faultedTask)
         {
@@ -232,7 +233,7 @@ namespace System.Threading.Tasks
 
             // Store the faulted task's exceptions
             var cs = EnsureCompletionStateInitialized();
-            if (cs.m_exceptions == null) cs.m_exceptions = new LowLevelListWithIList<Exception>();
+            if (cs.m_exceptions == null) cs.m_exceptions = new List<Exception>();
             cs.m_exceptions.AddRange(faultedTask.Exception.InnerExceptions);
 
             // Now that we're doomed, request completion
@@ -372,7 +373,7 @@ namespace System.Threading.Tasks
                     "Somehow we ended up escaping exclusive mode.");
                 m_threadProcessingMode.Value = ProcessingMode.NotCurrentlyProcessing;
 
-                using (LockHolder.Hold(ValueLock))
+                lock (ValueLock)
                 {
                     // When this task was launched, we tracked it by setting m_processingCount to WRITER_IN_PROGRESS.
                     // now reset it to 0.  Then check to see whether there's more processing to be done.
@@ -419,7 +420,7 @@ namespace System.Threading.Tasks
                     // before entering the loop an exclusive task arrives.  If we didn't execute at
                     // least one task, we would have spent all of the overhead to launch a
                     // task but with none of the benefit.  There's of course also an inherent
-                    // race here with regards to exclusive tasks arriving, and we're ok with
+                    // race condition here with regards to exclusive tasks arriving, and we're ok with
                     // executing one more concurrent task than we should before giving priority to exclusive tasks.
                     if (!m_exclusiveTaskScheduler.m_tasks.IsEmpty) break;
                 }
@@ -431,7 +432,7 @@ namespace System.Threading.Tasks
                     "Somehow we ended up escaping concurrent mode.");
                 m_threadProcessingMode.Value = ProcessingMode.NotCurrentlyProcessing;
 
-                using (LockHolder.Hold(ValueLock))
+                lock (ValueLock)
                 {
                     // When this task was launched, we tracked it with a positive processing count;
                     // decrement that count.  Then check to see whether there's more processing to be done.
@@ -461,7 +462,7 @@ namespace System.Threading.Tasks
             /// <summary>Whether completion processing has been queued.</summary>
             internal bool m_completionQueued;
             /// <summary>Unrecoverable exceptions incurred while processing.</summary>
-            internal LowLevelListWithIList<Exception> m_exceptions;
+            internal List<Exception> m_exceptions;
         }
 
         /// <summary>
@@ -512,7 +513,7 @@ namespace System.Threading.Tasks
             protected internal override void QueueTask(Task task)
             {
                 Debug.Assert(task != null, "Infrastructure should have provided a non-null task.");
-                using (LockHolder.Hold(m_pair.ValueLock))
+                lock (m_pair.ValueLock)
                 {
                     // If the scheduler has already had completion requested, no new work is allowed to be scheduled
                     if (m_pair.CompletionRequested) throw new InvalidOperationException(GetType().ToString());
@@ -557,7 +558,7 @@ namespace System.Threading.Tasks
                 // since it'll only allow inlining if it can find the task in the local queue).
                 // As such, if we're not on a thread pool thread, we know for sure the
                 // task won't be inlined, so let's not even try.
-                if (isDefaultScheduler && taskWasPreviouslyQueued && !ThreadPool.IsThreadPoolThread)
+                if (isDefaultScheduler && taskWasPreviouslyQueued && !Thread.CurrentThread.IsThreadPoolThread)
                 {
                     return false;
                 }
@@ -612,6 +613,7 @@ namespace System.Threading.Tasks
                     var ignored = t.Exception;
                     throw;
                 }
+                finally { t.Dispose(); }
             }
 
             /// <summary>Shim used to invoke this.TryExecuteTask(task).</summary>
@@ -705,14 +707,14 @@ namespace System.Threading.Tasks
             }
         }
 
-        /// <summary>Asserts that a given Lock object is either held or not held.</summary>
-        /// <param name="syncObj">The Lock object to check.</param>
+        /// <summary>Asserts that a given synchronization object is either held or not held.</summary>
+        /// <param name="syncObj">The monitor to check.</param>
         /// <param name="held">Whether we want to assert that it's currently held or not held.</param>
         [Conditional("DEBUG")]
-        private static void ContractAssertMonitorStatus(Lock syncObj, bool held)
+        private static void ContractAssertMonitorStatus(object syncObj, bool held)
         {
-            Debug.Assert(syncObj != null, "The Lock object to check must be provided.");
-            Debug.Assert(syncObj.IsAcquired == held, "The locking scheme was not correctly followed.");
+            Debug.Assert(syncObj != null, "The monitor object to check must be provided.");
+            Debug.Assert(Monitor.IsEntered(syncObj) == held, "The locking scheme was not correctly followed.");
         }
 
         /// <summary>Gets the options to use for tasks.</summary>
@@ -724,16 +726,14 @@ namespace System.Threading.Tasks
         /// <returns>The options to use.</returns>
         internal static TaskCreationOptions GetCreationOptionsForTask(bool isReplacementReplica = false)
         {
-            TaskCreationOptions options =
-                TaskCreationOptions.DenyChildAttach;
-
+            TaskCreationOptions options = TaskCreationOptions.DenyChildAttach;
             if (isReplacementReplica) options |= TaskCreationOptions.PreferFairness;
             return options;
         }
 
         /// <summary>Provides an enumeration that represents the current state of the scheduler pair.</summary>
         [Flags]
-        internal enum ProcessingMode : byte
+        private enum ProcessingMode : byte
         {
             /// <summary>The scheduler pair is currently dormant, with no work scheduled.</summary>
             NotCurrentlyProcessing = 0x0,
