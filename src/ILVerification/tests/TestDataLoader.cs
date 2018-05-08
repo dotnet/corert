@@ -178,9 +178,9 @@ namespace ILVerification.Tests
 
             var resolver = new TestResolver(simpleNameToPathMap);
             var typeSystemContext = new ILVerifyTypeSystemContext(resolver);
-            typeSystemContext.SetSystemModule(typeSystemContext.GetModule(resolver.Resolve(coreAssembly.GetName())));
+            typeSystemContext.SetSystemModule(typeSystemContext.GetModule(resolver.Resolve(coreAssembly.GetName().Name)));
 
-            return typeSystemContext.GetModule(resolver.Resolve(new AssemblyName(Path.GetFileNameWithoutExtension(assemblyName))));
+            return typeSystemContext.GetModule(resolver.Resolve(new AssemblyName(Path.GetFileNameWithoutExtension(assemblyName)).Name));
         }
 
         private sealed class TestResolver : ResolverBase
@@ -191,9 +191,9 @@ namespace ILVerification.Tests
                 _simpleNameToPathMap = simpleNameToPathMap;
             }
 
-            protected override PEReader ResolveCore(AssemblyName name)
+            protected override PEReader ResolveCore(string simpleName)
             {
-                if (_simpleNameToPathMap.TryGetValue(name.Name, out string path))
+                if (_simpleNameToPathMap.TryGetValue(simpleName, out string path))
                 {
                     return new PEReader(File.OpenRead(path));
                 }

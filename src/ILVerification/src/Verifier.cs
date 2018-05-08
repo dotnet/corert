@@ -34,7 +34,7 @@ namespace ILVerify
 
         public void SetSystemModuleName(AssemblyName name)
         {
-            _typeSystemContext.SetSystemModule(_typeSystemContext.GetModule(_typeSystemContext._resolver.Resolve(name)));
+            _typeSystemContext.SetSystemModule(_typeSystemContext.GetModule(_typeSystemContext._resolver.Resolve(name.Name)));
         }
 
         internal EcmaModule GetModule(PEReader peReader)

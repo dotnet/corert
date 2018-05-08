@@ -230,7 +230,7 @@ namespace ILVerify
 
         private void VerifyAssembly(AssemblyName name, string path)
         {
-            PEReader peReader = Resolve(name);
+            PEReader peReader = Resolve(name.Name);
             EcmaModule module = _verifier.GetModule(peReader);
 
             VerifyAssembly(peReader, module, path);
@@ -321,11 +321,8 @@ namespace ILVerify
             return true;
         }
 
-        protected override PEReader ResolveCore(AssemblyName name)
+        protected override PEReader ResolveCore(string simpleName)
         {
-            // Note: we use simple names instead of full names to resolve, because we can't get a full name from an assembly without reading it
-            string simpleName = name.Name;
-
             string path = null;
             if (_inputFilePaths.TryGetValue(simpleName, out path) || _referenceFilePaths.TryGetValue(simpleName, out path))
             {
