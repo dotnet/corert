@@ -32,6 +32,16 @@ internal static class Program
             PrintLine("basic block stack entry Test: Ok.");
         }
 
+        if(ILHelpers.ILHelpersTest.InlineAssignByte() == 100)
+        {
+            PrintLine("Inline assign byte Test: Ok.");
+        }
+
+        if(ILHelpers.ILHelpersTest.DupTest(ref tempInt) == 209 && tempInt == 209)
+        {
+            PrintLine("dup test: Ok.");
+        }
+
         TestClass tempObj = new TestDerivedClass(1337);
         tempObj.TestMethod("Hello");
         tempObj.TestVirtualMethod("Hello");
