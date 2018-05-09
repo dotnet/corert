@@ -54,18 +54,47 @@ ret
   }
  .method public static int32 DupTest(int32&)
  {
+   .locals init (
+     int32 local,
+     int32 local2
+   )
 	ldarg.0
 	dup
+  dup
+  dup
 	dup
 	dup
-	ldind.i4
+  ldind.i4
+  ldc.i4 10
+  clt
+  brtrue target
+  pop
+  dup
+  target: ldind.i4
 	box int32
 	call void ILHelpers.ILHelpersTest::EatArg(object)
 	ldind.i4 
-	ldc.i4 200
+	ldc.i4 1
 	add
+  stloc.0
+  ldind.i4
+  ldc.i4 200
+  add
 	stind.i4
-	ldind.i4
+  ldloc.0
+  dup
+  add
+  dup
+  stloc.1
+  ldloc.0
+  ceq
+  //if the added value equals the source value we've got something writing to its original StackEntry instead of a dup
+  brtrue failure
+  ldind.i4
 	ret
+  failure:
+  pop
+  ldc.i4 0
+  ret
  }
 }
