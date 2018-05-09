@@ -182,8 +182,6 @@ internal static class Program
         arrayTest[ii++].Value = "dup ref test: Ok.";
         PrintLine(arrayTest[0].Value);
         
-
-
         var largeArrayTest = new long[] { Int64.MaxValue, 0, Int64.MinValue, 0 };
         if(largeArrayTest[0] == Int64.MaxValue &&
             largeArrayTest[1] == 0 &&
