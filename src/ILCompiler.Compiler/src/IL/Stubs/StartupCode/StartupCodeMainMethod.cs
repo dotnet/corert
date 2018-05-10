@@ -21,9 +21,9 @@ namespace Internal.IL.Stubs.StartupCode
         private TypeDesc _owningType;
         private MainMethodWrapper _mainMethod;
         private MethodSignature _signature;
-        private IList<MethodDesc> _libraryInitializers;
+        private IReadOnlyCollection<MethodDesc> _libraryInitializers;
 
-        public StartupCodeMainMethod(TypeDesc owningType, MethodDesc mainMethod, IList<MethodDesc> libraryInitializers)
+        public StartupCodeMainMethod(TypeDesc owningType, MethodDesc mainMethod, IReadOnlyCollection<MethodDesc> libraryInitializers)
         {
             _owningType = owningType;
             _mainMethod = new MainMethodWrapper(owningType, mainMethod);
