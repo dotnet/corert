@@ -551,7 +551,18 @@ namespace System
 
             Array values = GetEnumInfo(enumType).Values;
             int count = values.Length;
+#if PROJECTN
             Array result = Array.CreateInstance(enumType, count);
+#else
+            // Without universal shared generics, chances are slim that we'll have the appropriate
+            // array type available. Offer an escape hatch that avoids a MissingMetadataException
+            // at the cost of a small appcompat risk.
+            Array result;
+            if (AppContext.TryGetSwitch("Switch.System.Enum.RelaxedGetValues", out bool isRelaxed) && isRelaxed)
+                result = Array.CreateInstance(Enum.GetUnderlyingType(enumType), count);
+            else
+                result = Array.CreateInstance(enumType, count);
+#endif
             Array.CopyImplValueTypeArrayNoInnerGcRefs(values, 0, result, 0, count);
             return result;
         }
