@@ -58,6 +58,8 @@ namespace ILCompiler
 
         private IReadOnlyList<string> _rdXmlFilePaths = Array.Empty<string>();
 
+        private IReadOnlyList<string> _initAssemblies = Array.Empty<string>();
+
         private bool _help;
 
         private Program()
@@ -155,6 +157,7 @@ namespace ILCompiler
                 syntax.DefineOption("noscan", ref _noScanner, "Do not use IL scanner to generate optimized code");
                 syntax.DefineOption("ildump", ref _ilDump, "Dump IL assembly listing for compiler-generated IL");
                 syntax.DefineOption("stacktracedata", ref _emitStackTraceData, "Emit data to support generating stack trace strings at runtime");
+                syntax.DefineOptionList("initassembly", ref _initAssemblies, "Assembly(ies) with a library initializer");
 
                 syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
                 syntax.DefineOption("targetos", ref _targetOSStr, "Target OS for cross compilation");
@@ -180,6 +183,21 @@ namespace ILCompiler
                 Helpers.AppendExpandedPaths(_referenceFilePaths, reference, false);
 
             return argSyntax;
+        }
+
+        private IReadOnlyCollection<MethodDesc> CreateInitializerList(TypeSystemContext context)
+        {
+            List<ModuleDesc> assembliesWithInitalizers = new List<ModuleDesc>();
+
+            foreach (string initAssemblyName in _initAssemblies)
+            {
+                ModuleDesc assembly = context.ResolveAssembly(new AssemblyName(initAssemblyName));
+                assembliesWithInitalizers.Add(assembly);
+            }
+
+            var initializers = new LibraryInitializers(context, assembliesWithInitalizers);
+
+            return initializers.LibraryInitializerMethods;
         }
 
         private int Run(string[] args)
@@ -314,9 +332,7 @@ namespace ILCompiler
 
                 if (entrypointModule != null)
                 {
-                    LibraryInitializers libraryInitializers =
-                        new LibraryInitializers(typeSystemContext, _isCppCodegen);
-                    compilationRoots.Add(new MainMethodRootProvider(entrypointModule, libraryInitializers.LibraryInitializerMethods));
+                    compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext)));
                 }
 
                 if (_multiFile)
@@ -350,8 +366,7 @@ namespace ILCompiler
                 {
                     // Set owning module of generated native library startup method to compiler generated module,
                     // to ensure the startup method is included in the object file during multimodule mode build
-                    LibraryInitializers libraryInitializers = new LibraryInitializers(typeSystemContext, _isCppCodegen);
-                    compilationRoots.Add(new NativeLibraryInitializerRootProvider(typeSystemContext.GeneratedAssembly, libraryInitializers.LibraryInitializerMethods));
+                    compilationRoots.Add(new NativeLibraryInitializerRootProvider(typeSystemContext.GeneratedAssembly, CreateInitializerList(typeSystemContext)));
                 }
 
                 if (_rdXmlFilePaths.Count > 0)

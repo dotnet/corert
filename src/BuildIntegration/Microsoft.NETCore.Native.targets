@@ -79,6 +79,15 @@ See the LICENSE file in the project root for more information.
   </PropertyGroup>
 
   <ItemGroup>
+    <AutoInitializedAssemblies Include="System.Private.CoreLib" />
+    <AutoInitializedAssemblies Include="System.Private.TypeLoader" />
+    <AutoInitializedAssemblies Include="System.Private.Reflection.Execution" />
+    <AutoInitializedAssemblies Include="System.Private.DeveloperExperience.Console" />
+    <AutoInitializedAssemblies Include="System.Private.Interop" />
+    <AutoInitializedAssemblies Include="System.Private.StackTraceMetadata" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PrivateSdkAssemblies Include="$(IlcPath)\sdk\*.dll" />
   </ItemGroup>
   <ItemGroup>
@@ -160,6 +169,7 @@ See the LICENSE file in the project root for more information.
       <IlcArg Condition="$(OutputType) == 'Library' and $(NativeLib) != ''" Include="--nativelib" />
       <IlcArg Condition="$(ExportsFile) != ''" Include="--exportsfile:$(ExportsFile)" />
       <ILcArg Condition="'$(Platform)' == 'wasm'" Include="--wasm" />
+      <IlcArg Include="@(AutoInitializedAssemblies->'--initassembly:%(Identity)')" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />
