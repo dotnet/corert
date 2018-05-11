@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
@@ -29,18 +30,39 @@ namespace ILVerify
 
         public override ModuleDesc ResolveAssembly(AssemblyName name, bool throwIfNotFound = true)
         {
-            PEReader peReader = _resolver.Resolve(name);
-            if (peReader == null && throwIfNotFound)
-            {
-                throw new VerifierException("Assembly or module not found: " + name.Name);
-            }
+            // Note: we use simple names instead of full names to resolve, because we can't get a full name from an assembly without reading it
+            string simpleName = name.Name;
+            return ResolveAssemblyOrNetmodule(simpleName, simpleName, throwIfNotFound);
+        }
 
-            var module = GetModule(peReader);
-            VerifyModuleName(name, module);
+        internal override ModuleDesc ResolveModule(ModuleDesc referencingModule, string fileName, bool throwIfNotFound = true)
+        {
+            // Referenced modules are stored without their extension (see CommandLineHelpers.cs), so we have to drop
+            // the extension here as well to find a match.
+            string simpleName = Path.GetFileNameWithoutExtension(fileName);
+            // The referencing module is not getting verified currently.
+            // However, netmodules are resolved in the context of assembly, not in the global context.
+            EcmaModule module = ResolveAssemblyOrNetmodule(simpleName, fileName, throwIfNotFound);
+            if (module.MetadataReader.IsAssembly)
+            {
+                throw new VerifierException($"The module '{fileName}' is not expected to be an assembly");
+            }
             return module;
         }
 
-        private static void VerifyModuleName(AssemblyName name, EcmaModule module)
+        private EcmaModule ResolveAssemblyOrNetmodule(string simpleName, string verificationName, bool throwIfNotFound)
+        {
+            PEReader peReader = _resolver.Resolve(simpleName);
+            if (peReader == null && throwIfNotFound)
+            {
+                throw new VerifierException("Assembly or module not found: " + simpleName);
+            }
+            var module = GetModule(peReader);
+            VerifyModuleName(verificationName, module);
+            return module;
+        }
+
+        private static void VerifyModuleName(string simpleName, EcmaModule module)
         {
             MetadataReader metadataReader = module.MetadataReader;
             StringHandle nameHandle = metadataReader.IsAssembly
@@ -48,9 +70,9 @@ namespace ILVerify
                 : metadataReader.GetModuleDefinition().Name;
 
             string actualSimpleName = metadataReader.GetString(nameHandle);
-            if (!actualSimpleName.Equals(name.Name, StringComparison.OrdinalIgnoreCase))
+            if (!actualSimpleName.Equals(simpleName, StringComparison.OrdinalIgnoreCase))
             {
-                throw new VerifierException($"Actual PE name '{actualSimpleName}' does not match provided name '{name}'");
+                throw new VerifierException($"Actual PE name '{actualSimpleName}' does not match provided name '{simpleName}'");
             }
         }
 

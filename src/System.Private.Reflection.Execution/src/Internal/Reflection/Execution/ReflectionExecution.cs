@@ -98,15 +98,12 @@ namespace Internal.Reflection.Execution
             methodHandle = default(MethodHandle);
 
             RuntimeTypeHandle declaringTypeHandle = default(RuntimeTypeHandle);
-            if (!ExecutionEnvironment.TryGetMethodForOriginalLdFtnResult(methodStartAddress,
-                ref declaringTypeHandle, out QMethodDefinition qMethodDefinition, out _))
+            if (!ExecutionEnvironment.TryGetMethodForStartAddress(methodStartAddress,
+                ref declaringTypeHandle, out QMethodDefinition qMethodDefinition))
                 return false;
 
             if (!qMethodDefinition.IsNativeFormatMetadataBased)
                 return false;
-
-            if (RuntimeAugments.IsGenericType(declaringTypeHandle))
-                declaringTypeHandle = RuntimeAugments.GetGenericDefinition(declaringTypeHandle);
 
             if (!ExecutionEnvironment.TryGetMetadataForNamedType(declaringTypeHandle, out QTypeDefinition qTypeDefinition))
                 return false;
