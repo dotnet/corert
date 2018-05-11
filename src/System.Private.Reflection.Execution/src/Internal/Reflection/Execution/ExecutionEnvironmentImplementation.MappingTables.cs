@@ -990,7 +990,7 @@ namespace Internal.Reflection.Execution
                     for (int curIndex = startIndex; curIndex <= endIndex; curIndex++)
                     {
                         uint parserOffset = perModuleLookup.Value.Data[curIndex].Offset;
-                        if (TryGetMethodForOriginalLdFtnResult_InvokeMap_Inner(perModuleLookup.Key, true, methodStartAddress, IntPtr.Zero, parserOffset, ref declaringTypeHandle, out methodHandle, out _))
+                        if (TryGetMethodForOriginalLdFtnResult_InvokeMap_Inner(perModuleLookup.Key, forStartAddress: true, methodStartAddress, IntPtr.Zero, parserOffset, ref declaringTypeHandle, out methodHandle, out _))
                         {
                             if (RuntimeAugments.IsGenericType(declaringTypeHandle))
                                 declaringTypeHandle = RuntimeAugments.GetGenericDefinition(declaringTypeHandle);
