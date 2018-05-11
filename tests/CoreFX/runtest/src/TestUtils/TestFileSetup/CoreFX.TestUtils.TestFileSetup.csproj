@@ -8,6 +8,9 @@
     <PackageReference Include="Newtonsoft.Json">
       <Version>$(NewtonsoftJsonVersion)</Version>
     </PackageReference>
+    <PackageReference Include="Newtonsoft.Json.Schema">
+      <Version>$(NewtonsoftJsonSchemaVersion)</Version>
+    </PackageReference>
     <PackageReference Include="System.CommandLine">
       <Version>$(SystemCommandLineVersion)</Version>
     </PackageReference>

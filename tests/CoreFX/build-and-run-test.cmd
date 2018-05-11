@@ -54,4 +54,15 @@ if not exist "%TestFolder%\native\%TestExecutable%".exe (
     exit /b 1
 )
 
-call %TestFolder%\native\%TestExecutable% %TestFolder%\%TestFileName%.dll -xml %XunitLogDir%\%TestFileName%.xml -notrait category=nonnetcoreapptests -notrait category=nonwindowstests  -notrait category=failing
+call %TestFolder%\native\%TestExecutable% %TestFolder%\%TestFileName%.dll @"%TestFolder%\%TestFileName%.rsp" -xml %XunitLogDir%\%TestFileName%.xml -notrait category=nonnetcoreapptests -notrait category=nonwindowstests  -notrait category=failing
+set TestExitCode=!ERRORLEVEL!
+::Cleanup
+
+::
+:: We must clean up the native artifacts (binary, obj, pdb) as we go. Across the ~7000 
+:: CoreCLR pri-0 tests at ~50MB of native artifacts per test, we can easily use 300GB
+:: of disk space and clog up the CI machines
+::
+::rd /s /q %TestFolder%\native
+
+exit /b %TestExitCode%
