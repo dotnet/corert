@@ -1,3 +1,16 @@
 [
-    "System.Collections.Tests",
+    {
+        "name": "System.Collections.Tests",
+        "exclusions": {
+            "namespaces": [
+                { 
+                    "name":"System.Collections.Tests",
+                    "reason":"testing CI"
+                }
+            ],
+            "classes": [],
+            "methods": []
+        }
+    }
+  
 ]

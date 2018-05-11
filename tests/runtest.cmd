@@ -504,8 +504,10 @@ goto :eof
 
     echo runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% LogsDir %XunitLogDir%
     call runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% LogsDir %XunitLogDir% 
-    if errorlevel 1 (
-        exit /b 1
-    )
+
+    set __SavedErrorLevel=%ErrorLevel%
+    popd
 
     "%CoreRT_CliDir%\dotnet.exe" !CoreRT_TestingUtilitiesOutputDir!\!CoreRT_XunitHelperName!.dll --logDir "%XunitLogDir%" --pattern "*.xml"
+    exit /b %__SavedErrorLevel%
+

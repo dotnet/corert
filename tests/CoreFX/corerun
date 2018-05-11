@@ -67,7 +67,7 @@ case "$(uname -s)" in
     ;;
 esac
 
-${TestFolderName}/publish/${TestExecutable} ${TestFolderName}/${TestFileName}.dll -xml ${LogDir}/${TestFileName}.xml -notrait category=nonnetcoreapptests -notrait category=${OSCategory}  -notrait category=failing
+${TestFolderName}/native/${TestExecutable} ${TestFolderName}/${TestFileName}.dll @${TestFolderName}/${TestFileName}.rsp -xml ${LogDir}/${TestFileName}.xml -notrait category=nonnetcoreapptests -notrait category=${OSCategory}  -notrait category=failing
 export __exitcode=$?
 
 exit ${__exitcode}
