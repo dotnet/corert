@@ -104,16 +104,10 @@ namespace Internal.Reflection.Execution
         {
             RuntimeTypeHandle declaringTypeHandle = default(RuntimeTypeHandle);
             QMethodDefinition methodHandle;
-            RuntimeTypeHandle[] genericMethodTypeArgumentHandles;
-            if (!ReflectionExecution.ExecutionEnvironment.TryGetMethodForOriginalLdFtnResult(methodStartAddress,
-                ref declaringTypeHandle, out methodHandle, out genericMethodTypeArgumentHandles))
+            if (!ReflectionExecution.ExecutionEnvironment.TryGetMethodForStartAddress(methodStartAddress,
+                ref declaringTypeHandle, out methodHandle))
             {
                 return null;
-            }
-
-            if (RuntimeAugments.IsGenericType(declaringTypeHandle))
-            {
-                declaringTypeHandle = RuntimeAugments.GetGenericDefinition(declaringTypeHandle);
             }
 
             // We don't use the type argument handles as we want the uninstantiated method info
