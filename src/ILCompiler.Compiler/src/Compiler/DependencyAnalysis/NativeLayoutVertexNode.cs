@@ -1069,7 +1069,7 @@ namespace ILCompiler.DependencyAnalysis
                             if (vtableSignatureNodeEntries == null)
                                 vtableSignatureNodeEntries = new List<NativeLayoutVertexNode>();
 
-                            vtableSignatureNodeEntries.Add(context.NativeLayout.MethodSignatureVertex(implMethod.GetTypicalMethodDefinition().Signature));
+                            vtableSignatureNodeEntries.Add(context.NativeLayout.MethodSignatureVertex(declMethod.GetTypicalMethodDefinition().Signature));
                         }
                     }
                     , _type, _type, _type);
@@ -1107,7 +1107,7 @@ namespace ILCompiler.DependencyAnalysis
                                 conditionalDependencies = new List<CombinedDependencyListEntry>();
 
                             conditionalDependencies.Add(
-                                new CombinedDependencyListEntry(context.NativeLayout.MethodSignatureVertex(implMethod.GetTypicalMethodDefinition().Signature),
+                                new CombinedDependencyListEntry(context.NativeLayout.MethodSignatureVertex(declMethod.GetTypicalMethodDefinition().Signature),
                                                                 context.VirtualMethodUse(declMethod),
                                                                 "conditional vtable cctor sig"));
                         }
@@ -1339,7 +1339,7 @@ namespace ILCompiler.DependencyAnalysis
                             if (vtableSignaturesSequence == null)
                                 vtableSignaturesSequence = new VertexSequence();
 
-                            NativeLayoutVertexNode methodSignature = factory.NativeLayout.MethodSignatureVertex(implMethod.GetTypicalMethodDefinition().Signature);
+                            NativeLayoutVertexNode methodSignature = factory.NativeLayout.MethodSignatureVertex(declMethod.GetTypicalMethodDefinition().Signature);
                             Vertex signatureVertex = GetNativeWriter(factory).GetRelativeOffsetSignature(methodSignature.WriteVertex(factory));
 
                             Vertex vtableSignatureEntry = writer.GetTuple(
