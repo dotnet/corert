@@ -62,7 +62,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>..\..\..\bin\obj\Windows_NT.x64.Debug\repro\native\repro.obj;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;bcrypt.lib;%(AdditionalDependencies);..\..\..\bin\Windows_NT.x64.Debug\sdk\Runtime.lib</AdditionalDependencies>
+      <AdditionalDependencies>..\..\..\bin\obj\Windows_NT.x64.Debug\repro\native\repro.obj;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;bcrypt.lib;%(AdditionalDependencies);..\..\..\bin\Windows_NT.x64.Debug\sdk\Runtime.lib;..\..\..\bin\Windows_NT.x64.Debug\sdk\System.Private.TypeLoader.Native.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -84,7 +84,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>..\..\..\bin\obj\Windows_NT.x64.Release\repro\native\repro.obj;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;bcrypt.lib;%(AdditionalDependencies);..\..\..\bin\Windows_NT.x64.Release\sdk\Runtime.lib</AdditionalDependencies>
+      <AdditionalDependencies>..\..\..\bin\obj\Windows_NT.x64.Release\repro\native\repro.obj;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;bcrypt.lib;%(AdditionalDependencies);..\..\..\bin\Windows_NT.x64.Release\sdk\Runtime.lib;..\..\..\bin\Windows_NT.x64.Release\sdk\System.Private.TypeLoader.Native.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
