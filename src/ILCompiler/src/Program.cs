@@ -60,6 +60,8 @@ namespace ILCompiler
 
         private IReadOnlyList<string> _initAssemblies = Array.Empty<string>();
 
+        private IReadOnlyList<string> _appContextSwitches = Array.Empty<string>();
+
         private bool _help;
 
         private Program()
@@ -158,6 +160,7 @@ namespace ILCompiler
                 syntax.DefineOption("ildump", ref _ilDump, "Dump IL assembly listing for compiler-generated IL");
                 syntax.DefineOption("stacktracedata", ref _emitStackTraceData, "Emit data to support generating stack trace strings at runtime");
                 syntax.DefineOptionList("initassembly", ref _initAssemblies, "Assembly(ies) with a library initializer");
+                syntax.DefineOptionList("appcontextswitch", ref _appContextSwitches, "System.AppContext switches to set");
 
                 syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
                 syntax.DefineOption("targetos", ref _targetOSStr, "Target OS for cross compilation");
@@ -189,15 +192,27 @@ namespace ILCompiler
         {
             List<ModuleDesc> assembliesWithInitalizers = new List<ModuleDesc>();
 
+            // Build a list of assemblies that have an initializer that needs to run before
+            // any user code runs.
             foreach (string initAssemblyName in _initAssemblies)
             {
                 ModuleDesc assembly = context.ResolveAssembly(new AssemblyName(initAssemblyName));
                 assembliesWithInitalizers.Add(assembly);
             }
 
-            var initializers = new LibraryInitializers(context, assembliesWithInitalizers);
+            var libraryInitializers = new LibraryInitializers(context, assembliesWithInitalizers);
 
-            return initializers.LibraryInitializerMethods;
+            List<MethodDesc> initializerList = new List<MethodDesc>(libraryInitializers.LibraryInitializerMethods);
+
+            // If there are any AppContext switches the user wishes to enable, generate code that sets them.
+            if (_appContextSwitches.Count > 0)
+            {
+                MethodDesc appContextInitMethod = new Internal.IL.Stubs.StartupCode.AppContextInitializerMethod(
+                    context.GeneratedAssembly.GetGlobalModuleType(), _appContextSwitches);
+                initializerList.Add(appContextInitMethod);
+            }
+
+            return initializerList;
         }
 
         private int Run(string[] args)

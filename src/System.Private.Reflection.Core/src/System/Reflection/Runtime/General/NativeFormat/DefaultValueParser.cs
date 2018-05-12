@@ -14,7 +14,7 @@ namespace System.Reflection.Runtime.General.NativeFormat
             if (!(constantHandle.IsNull(reader)))
             {
                 defaultValue = constantHandle.ParseConstantValue(reader);
-                if ((!raw) && declaredType.IsEnum)
+                if ((!raw) && declaredType.IsEnum && defaultValue != null)
                     defaultValue = Enum.ToObject(declaredType, defaultValue);
                 return true;
             }
