@@ -433,7 +433,7 @@ namespace Internal.IL
         protected override LLVMValueRef ValueAsTypeInternal(LLVMTypeRef type, LLVMBuilderRef builder, bool signExtend)
         {
             //TODO: deal with sign extension here
-            return ILImporter.CastIfNecessary(builder, RawLLVMValue, type);
+            return ILImporter.CastIfNecessary(builder, RawLLVMValue, type, Name);
         }
     }
 
@@ -456,7 +456,7 @@ namespace Internal.IL
 
         protected override LLVMValueRef ValueAsTypeInternal(LLVMTypeRef type, LLVMBuilderRef builder, bool signExtend)
         {
-            return ILImporter.LoadValue(builder, RawLLVMValue, Type, type, signExtend);
+            return ILImporter.LoadValue(builder, RawLLVMValue, Type, type, signExtend, $"Load{Name}");
         }
     }
 
@@ -479,7 +479,7 @@ namespace Internal.IL
 
         protected override LLVMValueRef ValueAsTypeInternal(LLVMTypeRef type, LLVMBuilderRef builder, bool signExtend)
         {
-            return ILImporter.CastIfNecessary(builder, RawLLVMValue, type);
+            return ILImporter.CastIfNecessary(builder, RawLLVMValue, type, Name);
         }
     }
 
@@ -529,7 +529,7 @@ namespace Internal.IL
             if (RawLLVMValue.Pointer == IntPtr.Zero)
                 throw new NullReferenceException();
 
-            return ILImporter.CastIfNecessary(builder, RawLLVMValue, type);
+            return ILImporter.CastIfNecessary(builder, RawLLVMValue, type, Name);
         }
     }
 
@@ -579,6 +579,14 @@ namespace Internal.IL
         public override StackEntry Duplicate(LLVMBuilderRef builder)
         {
             return new SpilledExpressionEntry(Kind, Name, Type, LocalIndex, _importer);
+        }
+    }
+
+    internal static class StackEntryExtensions
+    {
+        public static string Name(this StackEntry entry)
+        {
+            return (entry as ExpressionEntry)?.Name;
         }
     }
 }
