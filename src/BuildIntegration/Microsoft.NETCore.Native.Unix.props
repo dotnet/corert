@@ -61,7 +61,7 @@ See the LICENSE file in the project root for more information.
 
     <ItemGroup>
       <NativeLibrary Include="$(IlcPath)/sdk/libSystem.Private.CoreLib.Native$(NativeLibraryExtension)" />
-      <NativeLibrary Condition="$(NativeCodeGen) == '' Include="$(IlcPath)/sdk/libSystem.Private.TypeLoader.Native$(NativeLibraryExtension)" />
+      <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)/sdk/libSystem.Private.TypeLoader.Native$(NativeLibraryExtension)" />
       <NativeLibrary Include="$(IlcPath)/framework/System.Native$(NativeLibraryExtension)" />
       <NativeLibrary Include="$(IlcPath)/framework/System.Globalization.Native$(NativeLibraryExtension)" />
       <NativeLibrary Include="$(IlcPath)/framework/System.IO.Compression.Native$(NativeLibraryExtension)" />
