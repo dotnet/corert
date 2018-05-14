@@ -73,7 +73,7 @@ See the LICENSE file in the project root for more information.
     <ItemGroup Condition="'$(TargetOS)' == 'OSX'">
       <NativeFramework Include="CoreFoundation" />
       <NativeFramework Include="Security" />
-      <NativeFramework Include="gss" />
+      <NativeFramework Include="GSS" />
     </ItemGroup>
 
     <ItemGroup>
