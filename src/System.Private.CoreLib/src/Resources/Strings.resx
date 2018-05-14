@@ -2755,4 +2755,7 @@
   <data name="Thread_Operation_RequiresCurrentThread" xml:space="preserve">
     <value>This operation must be performed on the same thread as that represented by the Thread instance.</value>
   </data>
+  <data name="ConcurrentCollection_SyncRoot_NotSupported" xml:space="preserve">
+    <value>The SyncRoot property may not be used for the synchronization of concurrent collections.</value>
+  </data>
 </root>

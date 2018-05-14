@@ -385,7 +385,7 @@ namespace System.Threading
             }
         }
 
-        internal readonly LowLevelConcurrentQueue<IThreadPoolWorkItem> workItems = new LowLevelConcurrentQueue<IThreadPoolWorkItem>();
+        internal readonly ConcurrentQueue<IThreadPoolWorkItem> workItems = new ConcurrentQueue<IThreadPoolWorkItem>();
         
         private volatile int numOutstandingThreadRequests = 0;
 
