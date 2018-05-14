@@ -245,6 +245,10 @@ extern "C" void RhpUniversalTransition_DebugStepTailCall()
 {
     throw "RhpUniversalTransition_DebugStepTailCall";
 }
+extern "C" void ConstrainedCallSupport_GetStubs()
+{
+    throw "ConstrainedCallSupport_GetStubs";
+}
 
 extern "C" void* RtRHeaderWrapper();
 #endif // CPPCODEGEN

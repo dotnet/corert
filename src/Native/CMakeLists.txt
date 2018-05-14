@@ -228,6 +228,8 @@ if(NOT WIN32)
     add_subdirectory(System.Private.CoreLib.Native)
 endif(NOT WIN32)
 
+add_subdirectory(System.Private.TypeLoader.Native)
+
 if(OBJWRITER_BUILD)
     add_subdirectory(ObjWriter/llvmCap)
 endif()
