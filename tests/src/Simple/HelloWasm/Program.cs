@@ -15,7 +15,6 @@ internal static class Program
     private static int threadStaticInt;
     private static unsafe int Main(string[] args)
     {
-//        var d = new Random().NextDouble();
         Add(1, 2);
         int tempInt = 0;
         int tempInt2 = 0;
@@ -247,25 +246,26 @@ internal static class Program
             PrintLine("Runtime.Helpers array initialization test: Ok.");
         }
 
-        int toDoubleInt = 1;
-//        short int16s = 1;
-        double castedDouble = (double)toDoubleInt;
+        int intToCast = 1;
+        double castedDouble = (double)intToCast;
         if (castedDouble == 1d)
         {
-            PrintLine("(double) cast test : Ok.");
+            PrintLine("(double) cast test: Ok.");
         }
         else
         {
             var toInt = (int)castedDouble;
-//            PrintLine("expected 1m, but was " + castedDouble.ToString());
+//            PrintLine("expected 1m, but was " + castedDouble.ToString());  // double.ToString is not compiling at the time of writing, but this would be better output
             PrintLine($"(double) cast test : Failed. Back to int on next line");
             PrintLine(toInt.ToString());
-//            PrintLine(castedDouble.ToString());
             return 0;
         }
 
-        var arr = new byte[10];
-        Span<byte> bytes = arr;
+        if (1f < 2d && 1d < 2f && 1f == 1d)
+        {
+            PrintLine("different width float comparisons: Ok.");
+        }
+
 
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
