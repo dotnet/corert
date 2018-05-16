@@ -1988,18 +1988,18 @@ namespace Internal.IL
             }
             else
             {
-                if (op1.Type.Category != op2.Type.Category)
-                {
-                    // cast up
-                    if (op1.Type.Category > op2.Type.Category)
-                    {
-                        typeSaneOp2 = LLVM.BuildFPExt(_builder, typeSaneOp2, GetLLVMTypeForTypeDesc(op1.Type), $"cast up for FCmp {opcode} {op1.Name()}");
-                    }
-                    else
-                    {
-                        typeSaneOp1 = LLVM.BuildFPExt(_builder, typeSaneOp1, GetLLVMTypeForTypeDesc(op2.Type), $"cast up for FCmp {opcode} {op2.Name()}");
-                    }
-                }
+//                if (op1.Type.Category != op2.Type.Category)
+//                {
+//                    // cast up
+//                    if (op1.Type.Category > op2.Type.Category)
+//                    {
+//                        typeSaneOp2 = LLVM.BuildFPExt(_builder, typeSaneOp2, GetLLVMTypeForTypeDesc(op1.Type), $"cast up for FCmp {opcode} {op1.Name()}");
+//                    }
+//                    else
+//                    {
+//                        typeSaneOp1 = LLVM.BuildFPExt(_builder, typeSaneOp1, GetLLVMTypeForTypeDesc(op2.Type), $"cast up for FCmp {opcode} {op2.Name()}");
+//                    }
+//                }
                 switch (opcode)
                 {
                     case ILOpcode.ceq:
