@@ -192,14 +192,14 @@ namespace Internal.IL
             return ValueAsType(ILImporter.GetLLVMTypeForTypeDesc(type), builder);
         }
 
-        public LLVMValueRef ValueForStackKind(StackValueKind kind, LLVMBuilderRef builder, bool signExtend, bool isDouble)
+        public LLVMValueRef ValueForStackKind(StackValueKind kind, LLVMBuilderRef builder, bool signExtend)
         {
             if (kind == StackValueKind.Int32)
                 return ValueAsInt32(builder, signExtend);
             else if (kind == StackValueKind.Int64)
                 return ValueAsInt64(builder, signExtend);
             else if (kind == StackValueKind.Float)
-                return isDouble ? ValueAsType(LLVM.DoubleType(), builder) : ValueAsType(LLVM.FloatType(), builder);
+                return ValueAsType(LLVM.DoubleType(), builder);
             else if (kind == StackValueKind.NativeInt || kind == StackValueKind.ByRef || kind == StackValueKind.ObjRef)
                 return ValueAsInt32(builder, false);
             else

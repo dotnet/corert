@@ -1195,7 +1195,7 @@ namespace Internal.IL
                         StackEntry byRefHolder = _stack.Pop();
 
                         TypeDesc byRefType = metadataType.Instantiation[0].MakeByRefType();
-                        PushLoadExpression(StackValueKind.ByRef, "byref", byRefHolder.ValueForStackKind(StackValueKind.ByRef, _builder, false, false), byRefType);
+                        PushLoadExpression(StackValueKind.ByRef, "byref", byRefHolder.ValueForStackKind(StackValueKind.ByRef, _builder, false), byRefType);
                         return true;
                     }
                     break;
@@ -1627,8 +1627,8 @@ namespace Internal.IL
                         kind = op2.Kind;
                     }
 
-                    LLVMValueRef right = op1.ValueForStackKind(kind, _builder, false, TypeIsDouble(op1.Type));
-                    LLVMValueRef left = op2.ValueForStackKind(kind, _builder, false, TypeIsDouble(op2.Type));
+                    LLVMValueRef right = op1.ValueForStackKind(kind, _builder, false);
+                    LLVMValueRef left = op2.ValueForStackKind(kind, _builder, false);
 
                     if (kind != StackValueKind.Float)
                     {
@@ -1803,8 +1803,8 @@ namespace Internal.IL
             }
 
             LLVMValueRef result;
-            LLVMValueRef left = op2.ValueForStackKind(kind, _builder, false, TypeIsDouble(type));
-            LLVMValueRef right = op1.ValueForStackKind(kind, _builder, false, TypeIsDouble(type));
+            LLVMValueRef left = op2.ValueForStackKind(kind, _builder, false);
+            LLVMValueRef right = op1.ValueForStackKind(kind, _builder, false);
             if (kind == StackValueKind.Float)
             {
                 switch (opcode)
@@ -1912,7 +1912,7 @@ namespace Internal.IL
             StackEntry numBitsToShift = _stack.Pop();
             StackEntry valueToShift = _stack.Pop();
 
-            LLVMValueRef valueToShiftValue = valueToShift.ValueForStackKind(valueToShift.Kind, _builder, false, TypeIsDouble(valueToShift.Type));
+            LLVMValueRef valueToShiftValue = valueToShift.ValueForStackKind(valueToShift.Kind, _builder, false);
 
             switch (opcode)
             {
@@ -1930,11 +1930,6 @@ namespace Internal.IL
             }
 
             PushExpression(valueToShift.Kind, "shiftop", result, valueToShift.Type);
-        }
-
-        bool TypeIsDouble(TypeDesc targetType)
-        {
-            return targetType?.UnderlyingType != null && targetType.UnderlyingType.IsWellKnownType(WellKnownType.Double) ;
         }
 
         bool TypeNeedsSignExtension(TypeDesc targetType)
@@ -1976,8 +1971,8 @@ namespace Internal.IL
             }
 
             LLVMValueRef result;
-            LLVMValueRef typeSaneOp1 = op1.ValueForStackKind(kind, _builder, TypeNeedsSignExtension(op1.Type), TypeIsDouble(op1.Type));
-            LLVMValueRef typeSaneOp2 = op2.ValueForStackKind(kind, _builder, TypeNeedsSignExtension(op2.Type), TypeIsDouble(op2.Type));
+            LLVMValueRef typeSaneOp1 = op1.ValueForStackKind(kind, _builder, TypeNeedsSignExtension(op1.Type));
+            LLVMValueRef typeSaneOp2 = op2.ValueForStackKind(kind, _builder, TypeNeedsSignExtension(op2.Type));
 
             if (kind != StackValueKind.Float)
             {
@@ -2062,15 +2057,15 @@ namespace Internal.IL
                 case ILOpcode.neg:
                     if (argument.Kind == StackValueKind.Float)
                     {
-                        result = LLVM.BuildFNeg(_builder, argument.ValueForStackKind(argument.Kind, _builder, false, TypeIsDouble(argument.Type)), "neg");
+                        result = LLVM.BuildFNeg(_builder, argument.ValueForStackKind(argument.Kind, _builder, false), "neg");
                     }   
                     else
                     {
-                        result = LLVM.BuildNeg(_builder, argument.ValueForStackKind(argument.Kind, _builder, true, false), "neg");
+                        result = LLVM.BuildNeg(_builder, argument.ValueForStackKind(argument.Kind, _builder, true), "neg");
                     }
                     break;
                 case ILOpcode.not:
-                    result = LLVM.BuildNot(_builder, argument.ValueForStackKind(argument.Kind, _builder, true, TypeIsDouble(argument.Type)), "not");
+                    result = LLVM.BuildNot(_builder, argument.ValueForStackKind(argument.Kind, _builder, true), "not");
                     break;
                 default:
                     throw new NotSupportedException(); // unreachable
@@ -2664,7 +2659,7 @@ namespace Internal.IL
                 if (entry is ExpressionEntry)
                     StoreTemp(entryIndex, ((ExpressionEntry)entry).RawLLVMValue);
                 else
-                    StoreTemp(entryIndex, entry.ValueForStackKind(entry.Kind, _builder, false, TypeIsDouble(entry.Type)));
+                    StoreTemp(entryIndex, entry.ValueForStackKind(entry.Kind, _builder, false));
 
                 addressValue = LoadVarAddress(entryIndex, LocalVarKind.Temp, out TypeDesc type);
             }
