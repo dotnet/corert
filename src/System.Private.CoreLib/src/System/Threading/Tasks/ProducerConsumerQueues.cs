@@ -64,7 +64,7 @@ namespace System.Threading.Tasks
     /// </summary>
     /// <typeparam name="T">Specifies the type of data contained in the queue.</typeparam>
     [DebuggerDisplay("Count = {Count}")]
-    internal sealed class MultiProducerMultiConsumerQueue<T> : LowLevelConcurrentQueue<T>, IProducerConsumerQueue<T>
+    internal sealed class MultiProducerMultiConsumerQueue<T> : ConcurrentQueue<T>, IProducerConsumerQueue<T>
     {
         /// <summary>Enqueues an item into the queue.</summary>
         /// <param name="item">The item to enqueue.</param>

@@ -25,10 +25,8 @@ namespace Internal.Runtime.TypeLoader
         private delegate IntPtr ResolveCallOnValueTypeDel(IntPtr thisPtr, IntPtr callDescIntPtr);
 #endif
 
-#if PROJECTN
         [DllImport("*", ExactSpelling = true, EntryPoint = "ConstrainedCallSupport_GetStubs")]
         private extern static unsafe void ConstrainedCallSupport_GetStubs(out IntPtr constrainedCallSupport_DerefThisAndCall_CommonCallingStub, out IntPtr constrainedCallSupport_DirectConstrainedCall_CommonCallingStub);
-#endif
 
         private static IntPtr s_constrainedCallSupport_DerefThisAndCall_CommonCallingStub;
         private static IntPtr s_constrainedCallSupport_DirectConstrainedCall_CommonCallingStub;
@@ -42,14 +40,8 @@ namespace Internal.Runtime.TypeLoader
 
         static ConstrainedCallSupport()
         {
-            // TODO: export this unmanaged API in CoreRT
-#if PROJECTN
             ConstrainedCallSupport_GetStubs(out s_constrainedCallSupport_DerefThisAndCall_CommonCallingStub,
                                             out s_constrainedCallSupport_DirectConstrainedCall_CommonCallingStub);
-#else
-            s_constrainedCallSupport_DerefThisAndCall_CommonCallingStub = IntPtr.Zero;
-            s_constrainedCallSupport_DirectConstrainedCall_CommonCallingStub = IntPtr.Zero;
-#endif
         }
 
         // There are multiple possible paths here.
