@@ -258,7 +258,6 @@ internal static class Program
 //            PrintLine("expected 1m, but was " + castedDouble.ToString());  // double.ToString is not compiling at the time of writing, but this would be better output
             PrintLine($"(double) cast test : Failed. Back to int on next line");
             PrintLine(toInt.ToString());
-            return 0;
         }
 
         if (1f < 2d && 1d < 2f && 1f == 1d)
@@ -266,6 +265,16 @@ internal static class Program
             PrintLine("different width float comparisons: Ok.");
         }
 
+        // floats are 7 digits precision, so check some double more precise to make sure there is no loss occurring through some inadvertent cast to float
+        if (10.23456789d != 10.234567891d)
+        {
+            PrintLine("double precision comparison: Ok.");
+        }
+
+        if (12.34567f == 12.34567f && 12.34567f != 12.34568f)
+        {
+            PrintLine("float comparison: Ok.");
+        }
 
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
