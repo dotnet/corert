@@ -615,19 +615,8 @@ namespace Internal.IL
             }
             else if (toStoreKind == LLVMTypeKind.LLVMIntegerTypeKind && (valueTypeKind == LLVMTypeKind.LLVMDoubleTypeKind || valueTypeKind == LLVMTypeKind.LLVMFloatTypeKind))
             {
-                //                var width = LLVM.GetIntTypeWidth(LLVM.TypeOf(source));
-                //                if (width == 32)
-                //                {
+                //TODO: keep track of the TypeDesc so we can call BuildUIToFP when the integer is unsigned
                 typedToStore = LLVM.BuildSIToFP(builder, source, valueType, "CastSIToFloat" + (name ?? ""));
-                //                }
-                //                else
-                //                {
-                //                    throw new NotImplementedException($"trying to cast {toStoreKind} to {valueTypeKind}");
-                //                }
-            }
-            else if (toStoreKind == LLVMTypeKind.LLVMFloatTypeKind && valueTypeKind == LLVMTypeKind.LLVMFloatTypeKind)
-            {
-                typedToStore = LLVM.BuildFPCast(builder, source, valueType, "CastFloat" + (name ?? ""));
             }
             else if ((toStoreKind == LLVMTypeKind.LLVMDoubleTypeKind || toStoreKind == LLVMTypeKind.LLVMFloatTypeKind) && 
                 valueTypeKind == LLVMTypeKind.LLVMIntegerTypeKind)
