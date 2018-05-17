@@ -563,7 +563,7 @@ namespace Internal.IL
             if (sourceType.Pointer == valueType.Pointer)
                 return source;
 
-            LLVMTypeKind toStoreKind = LLVM.GetTypeKind(LLVM.TypeOf(source));
+            LLVMTypeKind toStoreKind = LLVM.GetTypeKind(sourceType);
             LLVMTypeKind valueTypeKind = LLVM.GetTypeKind(valueType);
 
             LLVMValueRef typedToStore = source;
@@ -613,19 +613,16 @@ namespace Internal.IL
                 Debug.Assert(toStoreKind != LLVMTypeKind.LLVMPointerTypeKind && valueTypeKind != LLVMTypeKind.LLVMPointerTypeKind);
                 typedToStore = LLVM.BuildIntCast(builder, source, valueType, "CastInt" + (name ?? ""));
             }
-            else if (toStoreKind != LLVMTypeKind.LLVMFloatTypeKind && valueTypeKind == LLVMTypeKind.LLVMFloatTypeKind)
+            else if (toStoreKind == LLVMTypeKind.LLVMIntegerTypeKind && (valueTypeKind == LLVMTypeKind.LLVMDoubleTypeKind || valueTypeKind == LLVMTypeKind.LLVMFloatTypeKind))
             {
-                typedToStore = LLVM.BuildFPCast(builder, source, valueType, "CastFloat" + (name ?? ""));
+                //TODO: keep track of the TypeDesc so we can call BuildUIToFP when the integer is unsigned
+                typedToStore = LLVM.BuildSIToFP(builder, source, valueType, "CastSIToFloat" + (name ?? ""));
             }
             else if ((toStoreKind == LLVMTypeKind.LLVMDoubleTypeKind || toStoreKind == LLVMTypeKind.LLVMFloatTypeKind) && 
                 valueTypeKind == LLVMTypeKind.LLVMIntegerTypeKind)
             {
                 //TODO: keep track of the TypeDesc so we can call BuildFPToUI when the integer is unsigned
-                typedToStore = LLVM.BuildFPToSI(builder, source, valueType, "CastFloat" + (name ?? ""));
-            }
-            else if (toStoreKind == LLVMTypeKind.LLVMIntegerTypeKind && valueTypeKind == LLVMTypeKind.LLVMDoubleTypeKind)
-            {
-                throw new NotImplementedException();
+                typedToStore = LLVM.BuildFPToSI(builder, source, valueType, "CastFloatSI" + (name ?? ""));
             }
 
             return typedToStore;
