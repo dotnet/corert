@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
     /// with the class constructor context if the type has a class constructor that
     /// needs to be triggered before the type members can be accessed.
     /// </summary>
-    public class NonGCStaticsNode : ObjectNode, IExportableSymbolNode, ISortableSymbolNode
+    public class NonGCStaticsNode : ObjectNode, IExportableSymbolNode, ISortableSymbolNode, ISymbolNodeWithDebugInfo
     {
         private MetadataType _type;
         private NodeFactory _factory;
@@ -68,6 +68,8 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
         }
+
+        public IDebugInfo DebugInfo => NullTypeIndexDebugInfo.Instance;
 
         public override bool IsShareable => EETypeNode.IsTypeNodeShareable(_type);
 
