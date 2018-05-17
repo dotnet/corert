@@ -228,7 +228,9 @@ if(NOT WIN32)
     add_subdirectory(System.Private.CoreLib.Native)
 endif(NOT WIN32)
 
-add_subdirectory(System.Private.TypeLoader.Native)
+if(NOT CLR_CMAKE_PLATFORM_WASM)
+    add_subdirectory(System.Private.TypeLoader.Native)
+endif(NOT CLR_CMAKE_PLATFORM_WASM)
 
 if(OBJWRITER_BUILD)
     add_subdirectory(ObjWriter/llvmCap)
