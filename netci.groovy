@@ -38,7 +38,7 @@ Constants.scenarios.each { scenario ->
                 // the second parameter is the base name for the job, and the last parameter
                 // is a boolean indicating whether the job will be a PR job.  If true, the
                 // suffix _prtest will be appended.
-                def newJobName = Utilities.getFullJobName(project, lowercaseConfiguration + '_' + os.toLowerCase(), isPR)
+                def newJobName = Utilities.getFullJobName(project, lowercaseConfiguration + '_' + os.toLowerCase() + "--" + scenario, isPR)
                 def buildString = "";
                 def prJobDescription = "${os} ${configuration}";
                 if (configuration == 'Debug') {
