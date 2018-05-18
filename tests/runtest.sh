@@ -227,6 +227,21 @@ run_corefx_tests()
     CoreRT_XunitHelperProjectPath="${CoreRT_TestRoot}/CoreFX/runtest/src/TestUtils/XUnit/${CoreRT_XunitHelperName}.csproj"    
     
     TESTS_REMOTE_URL=$(<${CoreRT_TestRoot}/CoreFXTestListURL.txt)
+    case "$(uname -s)" in 
+        # Check if we're running under Linux
+        Linux)
+            TESTS_REMOTE_URL=$(<${CoreRT_TestRoot}/CoreFXTestListURL_Linux.txt)
+        ;;
+    # Check if we're running under OSX
+        Darwin)
+            TESTS_REMOTE_URL=$(<${CoreRT_TestRoot}/CoreFXTestListURL_OSX.txt)
+        ;;
+    # Default to Linux if we don't recognize the OS
+        *)
+            TESTS_REMOTE_URL=$(<${CoreRT_TestRoot}/CoreFXTestListURL_Linux.txt)
+        ;;
+    esac
+
     TEST_LIST_JSON=${CoreRT_TestRoot}/TopN.CoreFX.issues.json
 
     download_and_unzip_corefx_tests_artifacts ${TESTS_REMOTE_URL} ${TEST_LIST_JSON}
