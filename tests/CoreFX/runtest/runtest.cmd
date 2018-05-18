@@ -72,6 +72,8 @@ if not defined FXCustomTestLauncher (
     exit /b 1
 )
 
+set TestExitCode=0
+
 :: Iterate through unzipped CoreFX tests 
 for /D %%i in ("%XunitTestBinBase%\*" ) do (
     set TestFolderName=%%i
@@ -79,9 +81,12 @@ for /D %%i in ("%XunitTestBinBase%\*" ) do (
 
     echo %FXCustomTestLauncher% !TestFolderName! !TestFileName!
     call %FXCustomTestLauncher% !TestFolderName! !TestFileName!
+    if errorlevel 1 (
+        set TestExitCode=1
+    )
 )
 
-exit /b 0
+exit /b %TestExitCode%
 
 :Usage
 echo.

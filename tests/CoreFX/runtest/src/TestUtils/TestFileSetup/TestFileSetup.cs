@@ -9,8 +9,11 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Schema;
+using Newtonsoft.Json.Schema.Generation;
 
 namespace CoreFX.TestUtils.TestFileSetup
 {
@@ -23,6 +26,7 @@ namespace CoreFX.TestUtils.TestFileSetup
         Success = 0,
         HttpError = 1,
         IOError = 2,
+        JsonSchemaValidationError = 3,
         UnknownError = 10
 
     }
@@ -55,7 +59,10 @@ namespace CoreFX.TestUtils.TestFileSetup
                     CleanBuild(outputDir);
                 }
 
-                SetupTests(testUrl, outputDir, ReadTestNames(testListPath)).Wait();
+                // Map test names to their definitions
+                Dictionary<string, XUnitTestAssembly> testAssemblyDefinitions = DeserializeTestJson(testListPath);
+
+                SetupTests(testUrl, outputDir, testAssemblyDefinitions).Wait();
                 exitCode = ExitCode.Success;
             }
 
@@ -63,6 +70,7 @@ namespace CoreFX.TestUtils.TestFileSetup
             {
                 e.Handle(innerExc =>
                 {
+
                     if (innerExc is HttpRequestException)
                     {
                         exitCode = ExitCode.HttpError;
@@ -73,6 +81,13 @@ namespace CoreFX.TestUtils.TestFileSetup
                     else if (innerExc is IOException)
                     {
                         exitCode = ExitCode.IOError;
+                        Console.WriteLine(innerExc.Message);
+                        return true;
+                    }
+                    else if (innerExc is JSchemaValidationException || innerExc is JsonSerializationException)
+                    {
+                        exitCode = ExitCode.JsonSchemaValidationError;
+                        Console.WriteLine("Error validating test list: ");
                         Console.WriteLine(innerExc.Message);
                         return true;
                     }
@@ -96,39 +111,72 @@ namespace CoreFX.TestUtils.TestFileSetup
             return argSyntax;
         }
 
-        private static Dictionary<string, string> ReadTestNames(string testFilePath)
+        private static Dictionary<string, XUnitTestAssembly> DeserializeTestJson(string testDefinitionFilePath)
         {
-            Debug.Assert(File.Exists(testFilePath));
+            JSchemaGenerator jsonGenerator = new JSchemaGenerator();
 
-            Dictionary<string, string> testNames = new Dictionary<string, string>();
+            JSchema testDefinitionSchema = jsonGenerator.Generate(typeof(IList<XUnitTestAssembly>));
+            IList<XUnitTestAssembly> testAssemblies = new List<XUnitTestAssembly>();
 
-            // We're being a passed a list of test assembly names, so anything that's not a string is invalid
-            using (var sr = new StreamReader(testFilePath))
+            IList<string> validationMessages = new List<string>();
+
+            using (var sr = new StreamReader(testDefinitionFilePath))
             using (var jsonReader = new JsonTextReader(sr))
+            using (var jsonValidationReader = new JSchemaValidatingReader(jsonReader))
             {
-                while (jsonReader.Read())
+                // Create schema validator
+                jsonValidationReader.Schema = testDefinitionSchema;
+                jsonValidationReader.ValidationEventHandler += (o, a) => validationMessages.Add(a.Message);
+
+                // Deserialize json test assembly definitions
+                JsonSerializer serializer = new JsonSerializer();
+                try
                 {
-                    if (jsonReader.TokenType == JsonToken.String)
-                    {
-                        testNames.Add(jsonReader.Value.ToString(), string.Empty);
-                    }
+                    testAssemblies = serializer.Deserialize<List<XUnitTestAssembly>>(jsonValidationReader);
+                }
+                catch (JsonSerializationException ex)
+                {
+                    throw new AggregateException(ex);
                 }
             }
 
-            return testNames;
+            // TODO - ABORT AND WARN
+            if (validationMessages.Count != 0)
+            {
+                StringBuilder aggregateExceptionMessage = new StringBuilder();
+                foreach (string validationMessage in validationMessages)
+                {
+                    aggregateExceptionMessage.Append("JSON Validation Error: ");
+                    aggregateExceptionMessage.Append(validationMessage);
+                    aggregateExceptionMessage.AppendLine();
+                }
+
+                throw new AggregateException(new JSchemaValidationException(aggregateExceptionMessage.ToString()));
+
+            }
+
+            var nameToTestAssemblyDef = new Dictionary<string, XUnitTestAssembly>();
+
+            // Map test names to their definitions
+            foreach (XUnitTestAssembly assembly in testAssemblies)
+            {
+                nameToTestAssemblyDef.Add(assembly.Name, assembly);
+            }
+
+            return nameToTestAssemblyDef;
         }
 
-        private static async Task SetupTests(string jsonUrl, string destinationDirectory, Dictionary<string, string> testNames = null, bool runAllTests = false)
+        private static async Task SetupTests(string jsonUrl, string destinationDirectory, Dictionary<string, XUnitTestAssembly> testDefinitions = null, bool runAllTests = false)
         {
             Debug.Assert(Directory.Exists(destinationDirectory));
-            Debug.Assert(runAllTests || testNames != null);
+            Debug.Assert(runAllTests || testDefinitions != null);
 
             string tempDirPath = Path.Combine(destinationDirectory, "temp");
             if (!Directory.Exists(tempDirPath))
             {
                 Directory.CreateDirectory(tempDirPath);
             }
-            Dictionary<string, string> testPayloads = await GetTestUrls(jsonUrl, testNames, runAllTests);
+            Dictionary<string, XUnitTestAssembly> testPayloads = await GetTestUrls(jsonUrl, testDefinitions, runAllTests);
 
             if (testPayloads == null)
             {
@@ -138,17 +186,23 @@ namespace CoreFX.TestUtils.TestFileSetup
             await GetTestArchives(testPayloads, tempDirPath);
             ExpandArchivesInDirectory(tempDirPath, destinationDirectory);
 
+            RSPGenerator rspGenerator = new RSPGenerator();
+            foreach (XUnitTestAssembly assembly in testDefinitions.Values)
+            {
+                rspGenerator.GenerateRSPFile(assembly, Path.Combine(destinationDirectory, assembly.Name));
+            }
+
             Directory.Delete(tempDirPath);
         }
 
-        private static async Task<Dictionary<string, string>> GetTestUrls(string jsonUrl, Dictionary<string, string> testNames = null, bool runAllTests = false)
+        private static async Task<Dictionary<string, XUnitTestAssembly>> GetTestUrls(string jsonUrl, Dictionary<string, XUnitTestAssembly> testDefinitions = null, bool runAllTests = false)
         {
             if (httpClient is null)
             {
                 httpClient = new HttpClient();
             }
 
-            Debug.Assert(runAllTests || testNames != null);
+            Debug.Assert(runAllTests || testDefinitions != null);
             // Set up the json stream reader
             using (var responseStream = await httpClient.GetStreamAsync(jsonUrl))
             using (var streamReader = new StreamReader(responseStream))
@@ -172,14 +226,18 @@ namespace CoreFX.TestUtils.TestFileSetup
                                 {
                                     string currentTestName = jsonReader.Value.ToString();
 
-                                    if (runAllTests || testNames.ContainsKey(currentTestName))
+                                    if (runAllTests || testDefinitions.ContainsKey(currentTestName))
                                     {
                                         markedTestName = currentTestName;
                                     }
                                 }
                                 else if (currentPropertyName.Equals("PayloadUri") && markedTestName != string.Empty)
                                 {
-                                    testNames[markedTestName] = jsonReader.Value.ToString();
+                                    if (!testDefinitions.ContainsKey(markedTestName))
+                                    {
+                                        testDefinitions[markedTestName] = new XUnitTestAssembly() { Name = markedTestName };
+                                    }
+                                    testDefinitions[markedTestName].Url = jsonReader.Value.ToString();
                                     markedTestName = string.Empty;
                                 }
                                 break;
@@ -188,10 +246,10 @@ namespace CoreFX.TestUtils.TestFileSetup
                 }
 
             }
-            return testNames;
+            return testDefinitions;
         }
 
-        private static async Task GetTestArchives(Dictionary<string, string> testPayloads, string downloadDir)
+        private static async Task GetTestArchives(Dictionary<string, XUnitTestAssembly> testPayloads, string downloadDir)
         {
             if (httpClient is null)
             {
@@ -200,7 +258,7 @@ namespace CoreFX.TestUtils.TestFileSetup
 
             foreach (string testName in testPayloads.Keys)
             {
-                string payloadUri = testPayloads[testName];
+                string payloadUri = testPayloads[testName].Url;
 
                 if (!Uri.IsWellFormedUriString(payloadUri, UriKind.Absolute))
                     continue;
