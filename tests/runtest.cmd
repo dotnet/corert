@@ -49,7 +49,7 @@ if /i "%1" == "/coreclr"  (
 :ExtRepoTestsOk
     goto ArgLoop
 )
-if /i "%1" == "/corefx" (set CoreRT_RunCoreFXTests=true&shift&goto ArgLoop)
+if /i "%1" == "/corefx" exit /b 0
 if /i "%1" == "/coreclrsingletest" (set CoreRT_RunCoreCLRTests=true&set CoreRT_CoreCLRTest=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/mode" (set CoreRT_TestCompileMode=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/test" (set CoreRT_TestName=%2&shift&shift&goto ArgLoop)
