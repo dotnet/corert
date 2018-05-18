@@ -493,7 +493,9 @@ goto :eof
 
     set FXCustomTestLauncher=%CoreRT_TestRoot%\CoreFX\build-and-run-test.cmd
     set XunitTestBinBase=%CoreRT_TestExtRepo_CoreFX%
-    set XunitLogDir= %__LogDir%\CoreFX
+    
+    :: Place test logs so they can be found by CI
+    set XunitLogDir= %__CoreRTTestBinDir%\CoreFX
     
     :: Clean up existing logs
     if exist "%XunitLogDir%" rmdir /S /Q "%XunitLogDir%"
@@ -507,7 +509,6 @@ goto :eof
 
     set __SavedErrorLevel=%ErrorLevel%
     popd
-
-    "%CoreRT_CliDir%\dotnet.exe" !CoreRT_TestingUtilitiesOutputDir!\!CoreRT_XunitHelperName!.dll --logDir "%XunitLogDir%" --pattern "*.xml"
+    
     exit /b %__SavedErrorLevel%
 
