@@ -8,20 +8,24 @@ def project = GithubProject
 // The input branch name (e.g. master)
 def branch = GithubBranchName
 
-def imageVersionMap = ['Windows_NT':'latest-or-auto',
-                       'OSX10.12':'latest-or-auto',
-                       'Ubuntu':'20170118']
+class Constants {
 
-def scenarios = ['normal', 'corefx']
- 
-// Innerloop build OS's
-def osList = ['Ubuntu', 'OSX10.12', 'Windows_NT']
+    def static imageVersionMap = ['Windows_NT':'latest-or-auto',
+                           'OSX10.12':'latest-or-auto',
+                           'Ubuntu':'20170118']
+
+    def static scenarios = ['coreclr', 'corefx']
+    
+    // Innerloop build OS's
+    def static osList = ['Ubuntu', 'OSX10.12', 'Windows_NT']
+
+}
 
 // Generate the builds for debug and release, commit and PRJob
 Constants.scenarios.each { scenario ->
     [true, false].each { isPR -> // Defines a closure over true and false, value assigned to isPR
         ['Debug', 'Release'].each { configuration ->
-            osList.each { os ->
+            Constants.osList.each { os ->
 
                 if ((configuration == 'Release' || os != 'Windows_NT') && scenario == 'corefx') {
                     return
@@ -38,7 +42,7 @@ Constants.scenarios.each { scenario ->
                 def buildString = "";
                 def prJobDescription = "${os} ${configuration}";
                 if (configuration == 'Debug') {
-                    if (scenario == 'normal') {
+                    if (scenario == 'coreclr') {
                         prJobDescription += " and CoreCLR tests"
                     }
                     if (scenario == 'corefx') {
@@ -46,7 +50,7 @@ Constants.scenarios.each { scenario ->
                     }
                 }
                 
-                def buildCommands = calculateBuildCommands(os, configuration, scenario)
+                def buildCommands = calculateBuildCommands(os, configuration, scenario, isPR)
 
                 // Create a new job with the specified name.  The brace opens a new closure
                 // and calls made within that closure apply to the newly created job.
@@ -69,7 +73,7 @@ Constants.scenarios.each { scenario ->
 
                 // This call performs test run checks for the CI.
                 Utilities.addXUnitDotNETResults(newJob, '**/testResults.xml')
-                Utilities.setMachineAffinity(newJob, os, imageVersionMap[os])
+                Utilities.setMachineAffinity(newJob, os, Constants.imageVersionMap[os])
                 Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
                 if (isPR) {
                     Utilities.addGithubPRTriggerForBranch(newJob, branch, prJobDescription)
@@ -88,6 +92,7 @@ def static calculateBuildCommands(def os, def configuration, def scenario, def i
     
     def buildCommands = []
     def lowercaseConfiguration = configuration.toLowerCase()
+    def testScriptString= ''
 
     if (os == 'Windows_NT') {
         // Calculate the build commands
@@ -97,7 +102,7 @@ def static calculateBuildCommands(def os, def configuration, def scenario, def i
         buildCommands += "tests\\runtest.cmd ${configuration} /multimodule"
         if (configuration == 'Debug')
         {
-            if (scenario == 'normal'){
+            if (scenario == 'coreclr'){
                 testScriptString = "tests\\runtest.cmd ${configuration} /coreclr "
                 if (isPR) {
                     // Run a small set of BVTs during PR validation
@@ -108,7 +113,7 @@ def static calculateBuildCommands(def os, def configuration, def scenario, def i
                     buildCommands += testScriptString + "KnownGood /multimodule"
                 }
             }
-            else if (scenario = 'corefx')
+            else if (scenario == 'corefx')
             {
                 testScriptString = "tests\\runtest.cmd ${configuration} /corefx "
                 
@@ -124,7 +129,7 @@ def static calculateBuildCommands(def os, def configuration, def scenario, def i
         // Calculate the test commands
         if (configuration == 'Debug')
         {
-            if (scenario == 'normal')
+            if (scenario == 'coreclr')
             {
                 testScriptString = "tests/runtest.sh ${configuration} -coredumps -coreclr "
                 if (isPR) {
