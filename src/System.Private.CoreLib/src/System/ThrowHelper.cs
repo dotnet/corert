@@ -382,6 +382,8 @@ namespace System
                     return SR.TaskCompletionSourceT_TrySetException_NoExceptions;
                 case ExceptionResource.NotSupported_StringComparison:
                     return SR.NotSupported_StringComparison;
+                case ExceptionResource.ConcurrentCollection_SyncRoot_NotSupported:
+                    return SR.ConcurrentCollection_SyncRoot_NotSupported;
                 default:
                     Debug.Assert(false,
                         "The enum value is not defined, please check the ExceptionResource Enum.");
@@ -458,5 +460,6 @@ namespace System
         TaskCompletionSourceT_TrySetException_NullException,
         TaskCompletionSourceT_TrySetException_NoExceptions,
         NotSupported_StringComparison,
+        ConcurrentCollection_SyncRoot_NotSupported,
     }
 }

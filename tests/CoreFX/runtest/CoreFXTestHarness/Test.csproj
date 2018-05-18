@@ -19,6 +19,7 @@
 
     <ItemGroup>
         <RdXmlFile Include="default.rd.xml" />
+        <AppContextSwitchOverrides Include="Switch.System.Enum.RelaxedGetValues" />
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="xunit.abstractions">
