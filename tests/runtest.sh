@@ -447,7 +447,6 @@ if [ ${CoreRT_RunCoreCLRTests} ]; then
 fi
 
 if [ ${CoreRT_RunCoreFXTests} ]; then
-    exit 0
     run_corefx_tests 
     exit $?
 fi
