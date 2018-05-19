@@ -417,8 +417,8 @@ UIntNative CoffNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Metho
     }
     else
     {
-        bool rbp = GetFramePointer(pMethodInfo, pRegisterSet) == NULL;
-        if (!rbp) 
+        // Check for a pushed RBP value
+        if (GetFramePointer(pMethodInfo, pRegisterSet) == NULL)
         {
             // Unwind the current method context to get the caller's stack pointer
             // and obtain the upper bound of the callee is the value just below the caller's return address on the stack
