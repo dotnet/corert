@@ -39,6 +39,7 @@
     <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.Experimental.csproj" />
     <ProjectReference Include="..\..\System.Private.Reflection.Core\src\System.Private.Reflection.Core.Experimental.csproj" />
     <ProjectReference Include="..\..\System.Private.Jit\src\System.Private.Jit.csproj" />
+    <ProjectReference Include="..\..\System.Private.Interpreter\src\System.Private.Interpreter.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
