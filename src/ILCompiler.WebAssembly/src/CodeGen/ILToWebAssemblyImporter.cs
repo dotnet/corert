@@ -44,6 +44,7 @@ namespace Internal.IL
         private LLVMBasicBlockRef _curBasicBlock;
         private LLVMBuilderRef _builder;
         private readonly LocalVariableDefinition[] _locals;
+        private readonly LLVMValueRef[] _localSlots;
         private List<SpilledExpressionEntry> _spilledExpressions = new List<SpilledExpressionEntry>();
         private int _pointerSize;
         private readonly byte[] _ilBytes;
@@ -92,6 +93,7 @@ namespace Internal.IL
             _methodIL = methodIL;
             _ilBytes = methodIL.GetILBytes();
             _locals = methodIL.GetLocals();
+            _localSlots = new LLVMValueRef[_locals.Length];
             _signature = method.Signature;
             _thisType = method.OwningType;
 
@@ -156,20 +158,68 @@ namespace Internal.IL
             LLVMBasicBlockRef prologBlock = LLVM.AppendBasicBlock(_llvmFunction, "Prolog");
             LLVM.PositionBuilderAtEnd(_builder, prologBlock);
 
+            for (int i = 0; i < _locals.Length; i++)
+            {
+                if (CanStoreTypeOnStack(_locals[i].Type))
+                {
+                    LLVMValueRef localStackSlot = LLVM.BuildAlloca(_builder, GetLLVMTypeForTypeDesc(_locals[i].Type), $"local{i}_");
+                    _localSlots[i] = localStackSlot;
+                }
+            }
+
             if (_methodIL.IsInitLocals)
             {
-                int totalLocalSize = 0;
-                foreach (LocalVariableDefinition local in _locals)
+                for(int i = 0; i < _locals.Length; i++)
                 {
-                    totalLocalSize = PadNextOffset(local.Type, totalLocalSize);
-                }
+                    LLVMValueRef localAddr = LoadVarAddress(i, LocalVarKind.Local, out TypeDesc localType);
+                    if(CanStoreTypeOnStack(localType))
+                    {
+                        LLVMTypeRef llvmType = GetLLVMTypeForTypeDesc(localType);
+                        LLVMTypeKind typeKind = LLVM.GetTypeKind(llvmType);
+                        switch (typeKind)
+                        {
+                            case LLVMTypeKind.LLVMIntegerTypeKind:
+                                if (llvmType.Equals(LLVM.Int1Type()))
+                                {
+                                    LLVM.BuildStore(_builder, BuildConstInt1(0), localAddr);
+                                }
+                                else if (llvmType.Equals(LLVM.Int8Type()))
+                                {
+                                    LLVM.BuildStore(_builder, BuildConstInt8(0), localAddr);
+                                }
+                                else if (llvmType.Equals(LLVM.Int16Type()))
+                                {
+                                    LLVM.BuildStore(_builder, BuildConstInt16(0), localAddr);
+                                }
+                                else if (llvmType.Equals(LLVM.Int32Type()))
+                                {
+                                    LLVM.BuildStore(_builder, BuildConstInt32(0), localAddr);
+                                }
+                                else if (llvmType.Equals(LLVM.Int64Type()))
+                                {
+                                    LLVM.BuildStore(_builder, BuildConstInt64(0), localAddr);
+                                }
+                                else
+                                {
+                                    throw new Exception("Unexpected LLVM int type");
+                                }
+                                break;
 
-                var sp = LLVM.GetFirstParam(_llvmFunction);
-                int paramOffset = GetTotalParameterOffset();
-                for (int i = 0; i < totalLocalSize; i++)
-                {
-                    var stackOffset = LLVM.BuildGEP(_builder, sp, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (ulong)(paramOffset + i), LLVMMisc.False) }, String.Empty);
-                    LLVM.BuildStore(_builder, LLVM.ConstInt(LLVM.Int8Type(), 0, LLVMMisc.False), stackOffset);
+                            case LLVMTypeKind.LLVMPointerTypeKind:
+                                LLVM.BuildStore(_builder, LLVM.ConstPointerNull(llvmType), localAddr);
+                                break;
+
+                            default:
+                                LLVMValueRef castAddr = LLVM.BuildPointerCast(_builder, localAddr, LLVM.PointerType(LLVM.Int8Type(), 0), $"cast_local{i}_");
+                                ImportCallMemset(castAddr, 0, localType.GetElementSize().AsInt);
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        LLVMValueRef castAddr = LLVM.BuildPointerCast(_builder, localAddr, LLVM.PointerType(LLVM.Int8Type(), 0), $"cast_local{i}_");
+                        ImportCallMemset(castAddr, 0, localType.GetElementSize().AsInt);
+                    }
                 }
             }
 
@@ -456,6 +506,11 @@ namespace Internal.IL
                 GetLocalSizeAndOffsetAtIndex(index, out int localSize, out varOffset);
                 valueType = GetLLVMTypeForTypeDesc(_locals[index].Type);
                 type = _locals[index].Type;
+                if(varOffset == -1)
+                {
+                    Debug.Assert(_localSlots[index].Pointer != IntPtr.Zero);
+                    return _localSlots[index];
+                }
             }
             else
             {
@@ -672,16 +727,35 @@ namespace Internal.IL
                 case TypeFlags.ValueType:
                 case TypeFlags.Nullable:
                     {
+                        int structSize = type.GetElementSize().AsInt;
+
                         // LLVM thinks certain sizes of struct have a different calling convention than Clang does.
                         // Treating them as ints fixes that and is more efficient in general
-                        if (type.GetElementSize().AsInt == 4)
+                        switch (structSize)
                         {
-                            return LLVM.Int32Type();
+                            case 1:
+                                return LLVM.Int8Type();
+                            case 2:
+                                return LLVM.Int16Type();
+                            case 4:
+                                return LLVM.Int32Type();
+                            case 8:
+                                return LLVM.Int64Type();
                         }
-                        else
+
+                        int numInts = structSize / 4;
+                        int numBytes = structSize - numInts * 4;
+                        LLVMTypeRef[] structMembers = new LLVMTypeRef[numInts + numBytes];
+                        for (int i = 0; i < numInts; i++)
                         {
-                            return LLVM.ArrayType(LLVM.Int8Type(), (uint)type.GetElementSize().AsInt);
+                            structMembers[i] = LLVM.Int32Type();
                         }
+                        for (int i = 0; i < numBytes; i++)
+                        {
+                            structMembers[i + numInts] = LLVM.Int8Type();
+                        }
+
+                        return LLVM.StructType(structMembers, true);
                     }
 
                 case TypeFlags.Enum:
@@ -710,9 +784,39 @@ namespace Internal.IL
             int offset = 0;
             for (int i = 0; i < _locals.Length; i++)
             {
-                offset = PadNextOffset(_locals[i].Type, offset);
+                TypeDesc localType = _locals[i].Type;
+                if (!CanStoreTypeOnStack(localType))
+                {
+                    offset = PadNextOffset(localType, offset);
+                }
             }
             return offset.AlignUp(_pointerSize);
+        }
+
+        /// <summary>
+        /// Returns true if the type can be stored on the local stack
+        /// instead of the shadow stack in this method.
+        /// </summary>
+        private bool CanStoreTypeOnStack(TypeDesc localType)
+        {
+            // Keep all locals on the shadow stack if there is exception
+            // handling so funclets can access them
+            if (_exceptionRegions.Length == 0)
+            {
+                if (localType is DefType)
+                {
+                    if (!((DefType)localType).ContainsGCPointers)
+                    {
+                        return true;
+                    }
+                }
+                else if (localType is PointerType)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private int GetTotalParameterOffset()
@@ -772,12 +876,22 @@ namespace Internal.IL
             LocalVariableDefinition local = _locals[index];
             size = local.Type.GetElementSize().AsInt;
 
-            offset = 0;
-            for (int i = 0; i < index; i++)
+            if (CanStoreTypeOnStack(local.Type))
             {
-                offset = PadNextOffset(_locals[i].Type, offset);
+                offset = -1;
             }
-            offset = PadOffset(local.Type, offset);
+            else
+            {
+                offset = 0;
+                for (int i = 0; i < index; i++)
+                {
+                    if (!CanStoreTypeOnStack(_locals[i].Type))
+                    {
+                        offset = PadNextOffset(_locals[i].Type, offset);
+                    }
+                }
+                offset = PadOffset(local.Type, offset);
+            }
         }
 
         private void GetSpillSizeAndOffsetAtIndex(int index, out int size, out int offset)
@@ -1078,9 +1192,19 @@ namespace Internal.IL
             return LLVM.ConstInt(LLVM.Int8Type(), number, LLVMMisc.False);
         }
 
+        private static LLVMValueRef BuildConstInt16(byte number)
+        {
+            return LLVM.ConstInt(LLVM.Int16Type(), number, LLVMMisc.False);
+        }
+
         private static LLVMValueRef BuildConstInt32(int number)
         {
             return LLVM.ConstInt(LLVM.Int32Type(), (ulong)number, LLVMMisc.False);
+        }
+
+        private static LLVMValueRef BuildConstInt64(long number)
+        {
+            return LLVM.ConstInt(LLVM.Int64Type(), (ulong)number, LLVMMisc.False);
         }
 
         private LLVMValueRef GetEETypeForTypeDesc(TypeDesc target, bool constructed)
@@ -2140,7 +2264,8 @@ namespace Internal.IL
             else if (ldtokenValue is FieldDesc)
             {
                 ldtokenKind = WellKnownType.RuntimeFieldHandle;
-                value = new LdTokenEntry<FieldDesc>(StackValueKind.ValueType, null, (FieldDesc)ldtokenValue, LLVM.ConstInt(LLVM.Int32Type(), 0, LLVMMisc.False), GetWellKnownType(ldtokenKind));
+                LLVMValueRef fieldHandle = LLVM.ConstStruct(new LLVMValueRef[] { BuildConstInt32(0) }, true);
+                value = new LdTokenEntry<FieldDesc>(StackValueKind.ValueType, null, (FieldDesc)ldtokenValue, fieldHandle, GetWellKnownType(ldtokenKind));
                 _stack.Push(value);
             }
             else if (ldtokenValue is MethodDesc)
@@ -2390,8 +2515,10 @@ namespace Internal.IL
             TypeDesc type = ResolveTypeToken(token);
             var valueEntry = _stack.Pop();
             var llvmType = GetLLVMTypeForTypeDesc(type);
-            if (llvmType.TypeKind == LLVMTypeKind.LLVMArrayTypeKind)
+            if (llvmType.TypeKind == LLVMTypeKind.LLVMStructTypeKind)
+            {
                 ImportCallMemset(valueEntry.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), 0, type.GetElementSize().AsInt);
+            }
             else if (llvmType.TypeKind == LLVMTypeKind.LLVMIntegerTypeKind)
                 LLVM.BuildStore(_builder, LLVM.ConstInt(llvmType, 0, LLVMMisc.False), valueEntry.ValueAsType(LLVM.PointerType(llvmType, 0), _builder));
             else if (llvmType.TypeKind == LLVMTypeKind.LLVMPointerTypeKind)
