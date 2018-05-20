@@ -810,7 +810,7 @@ namespace Internal.IL
                         return true;
                     }
                 }
-                else if(localType is PointerType)
+                else if (localType is PointerType)
                 {
                     return true;
                 }
