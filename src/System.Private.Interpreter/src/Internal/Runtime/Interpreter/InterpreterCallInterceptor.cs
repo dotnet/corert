@@ -3,9 +3,9 @@ using Internal.Runtime.CallInterceptor;
 
 namespace Internal.Runtime.Interpreter
 {
-    public class MethodCallInterceptor : CallInterceptor.CallInterceptor
+    public class InterpreterCallInterceptor : CallInterceptor.CallInterceptor
     {
-        protected MethodCallInterceptor(bool nativeToManaged) : base(nativeToManaged) { }
+        protected InterpreterCallInterceptor(bool nativeToManaged) : base(nativeToManaged) { }
 
         public override LocalVariableType[] ArgumentAndReturnTypes => throw new System.NotImplementedException();
 
