@@ -81,7 +81,7 @@ Constants.scenarios.each { scenario ->
                 Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
 
                 if (scenario == 'corefx') {
-                    Utilities.addArchival(newJob, 'bin/tests/CoreFX/**/testResults.xml');
+                    Utilities.addArchival(newJob, '**/testResults.xml');
                 }
                 
                 if (isPR) {
