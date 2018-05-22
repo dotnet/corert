@@ -216,7 +216,7 @@ run_corefx_tests()
     export CoreRT_CliBinDir
 
     if [ ! -d "${CoreRT_TestExtRepo_CoreFX}" ]; then
-        mkdir ${CoreRT_TestExtRepo_CoreFX}
+        mkdir ${CoreRT_TestExtRepo_CoreFX} -p
     fi
 
     # Set paths to helpers
@@ -253,7 +253,7 @@ run_corefx_tests()
 
     FXCustomTestLauncher=${CoreRT_TestRoot}/CoreFX/corerun
     XunitTestBinBase=${CoreRT_TestExtRepo_CoreFX}
-    XunitLogDir=${__LogDir}/CoreFX
+    XunitLogDir=${CoreRT_TestRoot}/../bin/tests/CoreFX
 
     # Clean up existing logs
     if [ -d "${XunitLogDir}" ]; then

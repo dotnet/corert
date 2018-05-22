@@ -49,8 +49,12 @@ then
     exit ${__exitcode}
 fi
 
+if [ ! -d "${LogDir}/${TestFileName}" ]; then
+    mkdir -p "${LogDir}/${TestFileName}"
+fi
+
 echo Executing ${TestFileName} - writing logs to ${LogDir}/${TestFileName}.xml
-chmod +x ${TestFolderName}/publish/${TestExecutable} 
+chmod +x ${TestFolderName}/native/${TestExecutable} 
 
 case "$(uname -s)" in 
     # Check if we're running under Linux
