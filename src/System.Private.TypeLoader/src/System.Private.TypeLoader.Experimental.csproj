@@ -3,6 +3,7 @@
     <AssemblyName>System.Private.TypeLoader.Experimental</AssemblyName>
     <EcmaMetadataSupport>true</EcmaMetadataSupport>
     <JitSupport>true</JitSupport>
+    <InterpreterSupport>true</InterpreterSupport>
   </PropertyGroup>
 
   <Import Project="System.Private.TypeLoader.csproj" />
