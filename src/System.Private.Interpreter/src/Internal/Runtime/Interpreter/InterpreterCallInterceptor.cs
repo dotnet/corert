@@ -59,7 +59,8 @@ namespace Internal.Runtime.Interpreter
 
         public override void ThunkExecute(ref CallInterceptorArgs callInterceptorArgs)
         {
-            throw new System.NotImplementedException();
+            ILInterpreter interpreter = new ILInterpreter(_method, _methodIL);
+            interpreter.Interpret(ref callInterceptorArgs);
         }
     }
 }
