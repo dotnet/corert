@@ -9,9 +9,19 @@
     <EcmaMetadataSupport>true</EcmaMetadataSupport>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
+    </ProjectReference>
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Private.Reflection.Metadata.Ecma335.dll" />
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
     <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
     <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.Experimental.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\EcmaMethodIL.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\Runtime\Interpreter\ILInterpreter.cs" />
