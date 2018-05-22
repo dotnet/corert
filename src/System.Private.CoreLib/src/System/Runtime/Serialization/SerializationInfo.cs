@@ -325,17 +325,17 @@ namespace System.Runtime.Serialization
                 return null;
             }
 
-            Debug.Assert(index < _values.Length, "[SerializationInfo.GetElement]index<m_data.Length");
-            Debug.Assert(index < _types.Length, "[SerializationInfo.GetElement]index<m_types.Length");
+            Debug.Assert(index < _values.Length, "[SerializationInfo.GetElement]index<_values.Length");
+            Debug.Assert(index < _types.Length, "[SerializationInfo.GetElement]index<_types.Length");
 
             foundType = _types[index];
-            Debug.Assert(foundType != null, "[SerializationInfo.GetElement]foundType!=null");
+            Debug.Assert((object)foundType != null, "[SerializationInfo.GetElement]foundType!=null");
             return _values[index];
         }
 
         public object GetValue(string name, Type type)
         {
-            if (type == null)
+            if ((object)type == null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -367,7 +367,7 @@ namespace System.Runtime.Serialization
                 return value;
             }
 
-            Debug.Assert(_converter != null, "[SerializationInfo.GetValue]m_converter!=null");
+            Debug.Assert(_converter != null, "[SerializationInfo.GetValue]_converter!=null");
             return _converter.Convert(value, type);
         }
 
