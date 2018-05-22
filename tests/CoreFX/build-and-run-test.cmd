@@ -21,7 +21,7 @@ set TestFileName=%2
 copy /Y "%~dp0\runtest\CoreFXTestHarness\*" "%TestFolder%" >nul
 
 if "%CoreRT_TestLogFileName%"=="" (
-    set CoreRT_TestLogFileName=testresults.xml
+    set CoreRT_TestLogFileName=testResults.xml
 )
 
 :: Create log dir if it doesn't exist

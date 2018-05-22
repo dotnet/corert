@@ -12,7 +12,7 @@ set CoreRT_TestCompileMode=
 set CoreRT_RunCoreCLRTests=
 set CoreRT_RunCoreFXTests=
 set CoreRT_CoreCLRTargetsFile=
-set CoreRT_TestLogFileName=testresults.xml
+set CoreRT_TestLogFileName=testResults.xml
 set CoreRT_TestName=*
 
 :ArgLoop
