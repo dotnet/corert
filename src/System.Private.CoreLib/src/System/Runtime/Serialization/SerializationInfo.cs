@@ -2,9 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+/*============================================================
+**
+**
+**
+** Purpose: The structure for holding all of the data needed
+**          for object serialization and deserialization.
+**
+**
+===========================================================*/
+
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
 
 namespace System.Runtime.Serialization
 {
@@ -19,19 +28,26 @@ namespace System.Runtime.Serialization
         private Type[] _types;
         private int _count;
         private Dictionary<string, int> _nameToIndex;
-
         private IFormatterConverter _converter;
         private string _rootTypeName;
         private string _rootTypeAssemblyName;
         private Type _rootType;
+        private bool requireSameTokenInPartialTrust;
 
         [CLSCompliant(false)]
         public SerializationInfo(Type type, IFormatterConverter converter)
+            : this(type, converter, false)
+        {
+        }
+
+        [CLSCompliant(false)]
+        public SerializationInfo(Type type, IFormatterConverter converter, bool requireSameTokenInPartialTrust)
         {
             if ((object)type == null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
+
             if (converter == null)
             {
                 throw new ArgumentNullException(nameof(converter));
@@ -44,15 +60,13 @@ namespace System.Runtime.Serialization
             _names = new string[DefaultSize];
             _values = new object[DefaultSize];
             _types = new Type[DefaultSize];
-            _nameToIndex = new Dictionary<string, int>();
-            _converter = converter;
-        }
 
-        [CLSCompliant(false)]
-        public SerializationInfo(Type type, IFormatterConverter converter, bool requireSameTokenInPartialTrust)
-            : this(type, converter)
-        {
+            _nameToIndex = new Dictionary<string, int>();
+
+            _converter = converter;
+			
             // requireSameTokenInPartialTrust is a vacuous parameter in a platform that does not support partial trust.
+			requireSameTokenInPartialTrust = requireSameTokenInPartialTrust;
         }
 
         public string FullTypeName
@@ -79,7 +93,10 @@ namespace System.Runtime.Serialization
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
-
+                if (requireSameTokenInPartialTrust)
+                {
+                    DemandForUnsafeAssemblyNameAssignments(_rootTypeAssemblyName, value);
+                }
                 _rootTypeAssemblyName = value;
                 IsAssemblyNameSetExplicit = true;
             }
@@ -96,7 +113,12 @@ namespace System.Runtime.Serialization
                 throw new ArgumentNullException(nameof(type));
             }
 
-            if (!ReferenceEquals(_rootType, type))
+            if (requireSameTokenInPartialTrust)
+            {
+                DemandForUnsafeAssemblyNameAssignments(this.ObjectType.Assembly.FullName, type.Assembly.FullName);
+            }
+
+            if (!object.ReferenceEquals(_rootType, type))
             {
                 _rootType = type;
                 _rootTypeName = type.FullName;
@@ -104,6 +126,10 @@ namespace System.Runtime.Serialization
                 IsFullTypeNameSetExplicit = false;
                 IsAssemblyNameSetExplicit = false;
             }
+        }
+
+        internal static void DemandForUnsafeAssemblyNameAssignments(string originalAssemblyName, string newAssemblyName)
+        {
         }
 
         public int MemberCount => _count;
@@ -129,17 +155,17 @@ namespace System.Runtime.Serialization
             }
 
             // Allocate more space and copy the data
-
             string[] newMembers = new string[newSize];
-            Array.Copy(_names, 0, newMembers, 0, _count);
-            _names = newMembers;
-
             object[] newData = new object[newSize];
-            Array.Copy(_values, 0, newData, 0, _count);
-            _values = newData;
-
             Type[] newTypes = new Type[newSize];
-            Array.Copy(_types, 0, newTypes, 0, _count);
+
+            Array.Copy(_names, newMembers, _count);
+            Array.Copy(_values, newData, _count);
+            Array.Copy(_types, newTypes, _count);
+
+            // Assign the new arrys back to the member vars.
+            _names = newMembers;
+            _values = newData;
             _types = newTypes;
         }
 
@@ -265,6 +291,20 @@ namespace System.Runtime.Serialization
             _count++;
         }
 
+        /*=================================UpdateValue==================================
+        **Action: Finds the value if it exists in the current data.  If it does, we replace
+        **        the values, if not, we append it to the end.  This is useful to the 
+        **        ObjectManager when it's performing fixups.
+        **Returns: void
+        **Arguments: name  -- the name of the data to be updated.
+        **           value -- the new value.
+        **           type  -- the type of the data being added.
+        **Exceptions: None.  All error checking is done with asserts. Although public in coreclr,
+        **            it's not exposed in a contract and is only meant to be used by corefx.
+        ==============================================================================*/
+        // This should not be used by clients: exposing out this functionality would allow children
+        // to overwrite their parent's values. It is public in order to give corefx access to it for
+        // its ObjectManager implementation, but it should not be exposed out of a contract.
         // This isn't a public API, but it gets invoked dynamically by 
         // BinaryFormatter
         public void UpdateValue(string name, object value, Type type)
@@ -291,7 +331,6 @@ namespace System.Runtime.Serialization
             {
                 throw new ArgumentNullException(nameof(name));
             }
-
             int index;
             if (_nameToIndex.TryGetValue(name, out index))
             {
@@ -300,6 +339,16 @@ namespace System.Runtime.Serialization
             return -1;
         }
 
+        /*==================================GetElement==================================
+        **Action: Use FindElement to get the location of a particular member and then return
+        **        the value of the element at that location.  The type of the member is
+        **        returned in the foundType field.
+        **Returns: The value of the element at the position associated with name.
+        **Arguments: name -- the name of the element to find.
+        **           foundType -- the type of the element associated with the given name.
+        **Exceptions: None.  FindElement does null checking and throws for elements not 
+        **            found.
+        ==============================================================================*/
         private object GetElement(string name, out Type foundType)
         {
             int index = FindElement(name);
@@ -339,6 +388,10 @@ namespace System.Runtime.Serialization
             {
                 throw new ArgumentNullException(nameof(type));
             }
+
+            RuntimeType rt = type as RuntimeType;
+            if (rt == null)
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType);
 
             Type foundType;
             object value;
