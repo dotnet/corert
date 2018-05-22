@@ -6,14 +6,6 @@
             "classes": null,
             "methods": [
                 {
-                    "name": "System.Collections.Tests.SortedList_Generic_Tests_string_string.ICollection_Generic_Remove_DefaultValueContainedInCollection",
-                    "reason": "$BlockedFromReflection_0_5b449e4c"
-                },
-                {
-                    "name": "System.Collections.Tests.SortedList_Generic_Tests_string_string.Enumerator_MoveNext_AfterDisposal",
-                    "reason": "$BlockedFromReflection_0_5b449e4c"
-                },
-                {
                     "name": "System.Collections.Tests.SortedList_Generic_Tests_string_string.ICollection_Generic_Contains_DefaultValueOnCollectionContainingDefaultValue",
                     "reason": "$BlockedFromReflection_0_5b449e4c"
                 },
