@@ -28,7 +28,7 @@ namespace System.Runtime.Serialization
         [CLSCompliant(false)]
         public SerializationInfo(Type type, IFormatterConverter converter)
         {
-            if (type == null)
+            if ((object)type == null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -91,7 +91,7 @@ namespace System.Runtime.Serialization
 
         public void SetType(Type type)
         {
-            if (type == null)
+            if ((object)type == null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -170,7 +170,7 @@ namespace System.Runtime.Serialization
                 throw new ArgumentNullException(nameof(name));
             }
 
-            if (type == null)
+            if ((object)type == null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -192,76 +192,76 @@ namespace System.Runtime.Serialization
 
         public void AddValue(string name, bool value)
         {
-            AddValue(name, value, typeof(bool));
+            AddValue(name, (object)value, typeof(bool));
         }
 
         public void AddValue(string name, char value)
         {
-            AddValue(name, value, typeof(char));
+            AddValue(name, (object)value, typeof(char));
         }
 
         [CLSCompliant(false)]
         public void AddValue(string name, sbyte value)
         {
-            AddValue(name, value, typeof(sbyte));
+            AddValue(name, (object)value, typeof(sbyte));
         }
 
         public void AddValue(string name, byte value)
         {
-            AddValue(name, value, typeof(byte));
+            AddValue(name, (object)value, typeof(byte));
         }
 
         public void AddValue(string name, short value)
         {
-            AddValue(name, value, typeof(short));
+            AddValue(name, (object)value, typeof(short));
         }
 
         [CLSCompliant(false)]
         public void AddValue(string name, ushort value)
         {
-            AddValue(name, value, typeof(ushort));
+            AddValue(name, (object)value, typeof(ushort));
         }
 
         public void AddValue(string name, int value)
         {
-            AddValue(name, value, typeof(int));
+            AddValue(name, (object)value, typeof(int));
         }
 
         [CLSCompliant(false)]
         public void AddValue(string name, uint value)
         {
-            AddValue(name, value, typeof(uint));
+            AddValue(name, (object)value, typeof(uint));
         }
 
         public void AddValue(string name, long value)
         {
-            AddValue(name, value, typeof(long));
+            AddValue(name, (object)value, typeof(long));
         }
 
         [CLSCompliant(false)]
         public void AddValue(string name, ulong value)
         {
-            AddValue(name, value, typeof(ulong));
+            AddValue(name, (object)value, typeof(ulong));
         }
 
         public void AddValue(string name, float value)
         {
-            AddValue(name, value, typeof(float));
+            AddValue(name, (object)value, typeof(float));
         }
 
         public void AddValue(string name, double value)
         {
-            AddValue(name, value, typeof(double));
+            AddValue(name, (object)value, typeof(double));
         }
 
         public void AddValue(string name, decimal value)
         {
-            AddValue(name, value, typeof(decimal));
+            AddValue(name, (object)value, typeof(decimal));
         }
 
         public void AddValue(string name, DateTime value)
         {
-            AddValue(name, value, typeof(DateTime));
+            AddValue(name, (object)value, typeof(DateTime));
         }
 
         internal void AddValueInternal(string name, object value, Type type)
