@@ -1,13 +1,17 @@
 ﻿using System;
 using Internal.Runtime.TypeLoader;
+using Internal.TypeSystem;
 
 namespace Internal.Runtime.Interpreter
 {
     class InterpreterExecutionStrategy : MethodExecutionStrategy
     {
-        public override IntPtr OnEntryPoint(MethodEntrypointPtr entrypointInfo, IntPtr callerArgumentsInfo)
+        public override IntPtr OnEntryPoint(MethodEntrypointPtr methodEntrypointPtr, IntPtr callerArgumentsInfo)
         {
-            throw new NotImplementedException();
+            var context = TypeSystemContextFactory.Create();
+            MethodDesc method = methodEntrypointPtr.MethodIdentifier.ToMethodDesc(context);
+            InterpreterCallInterceptor callInterceptor = new InterpreterCallInterceptor(method);
+            return callInterceptor.GetThunkAddress();
         }
     }
 }
