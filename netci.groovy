@@ -77,6 +77,8 @@ Constants.scenarios.each { scenario ->
 
                 // This call performs test run checks for the CI.
                 Utilities.addXUnitDotNETResults(newJob, '**/testResults.xml')
+                Utilities.addArchival(newJob, "${workspaceRelativeFxRootLinux}/bin/**/testResults.xml")
+                Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRootLinux}/bin/**/testResults.xml")
                 Utilities.setMachineAffinity(newJob, os, Constants.imageVersionMap[os])
                 Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
 
@@ -124,6 +126,8 @@ def static calculateBuildCommands(def os, def configuration, def scenario, def i
             }
             else if (scenario == 'corefx')
             {
+                // Disable Simple tests when running a CoreFX scenario
+                buildCommands.last() += "skiptests "
                 testScriptString = "tests\\runtest.cmd ${configuration} /corefx "
                 
                 //Todo: Add json config files for different testing scenarios

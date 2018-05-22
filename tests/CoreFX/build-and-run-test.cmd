@@ -20,8 +20,14 @@ set TestFileName=%2
 :: Copy the artefacts we need to compile and run the xunit exe
 copy /Y "%~dp0\runtest\CoreFXTestHarness\*" "%TestFolder%" >nul
 
+if "%CoreRT_TestLogFileName%"=="" (
+    set CoreRT_TestLogFileName=testResults.xml
+)
+
 :: Create log dir if it doesn't exist
 if not exist %XunitLogDir% md %XunitLogDir%
+
+if not exist %XunitLogDir%\%TestFileName% md %XunitLogDir%\%TestFileName%
 
 if not exist %TestFolder%\%TestExecutable%.exe ( 
     :: Not a test we support, exit silently
@@ -47,11 +53,14 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo Executing %TestFileName% - writing logs to %XunitLogDir%\%TestFileName%.xml
+echo Executing %TestFileName% - writing logs to %XunitLogDir%\%TestFileName%\%CoreRT_TestLogFileName%
 
 if not exist "%TestFolder%\native\%TestExecutable%".exe (
     echo ERROR:Native binary not found Unable to run test.
     exit /b 1
 )
 
-call %TestFolder%\native\%TestExecutable% %TestFolder%\%TestFileName%.dll -xml %XunitLogDir%\%TestFileName%.xml -notrait category=nonnetcoreapptests -notrait category=nonwindowstests  -notrait category=failing
+call %TestFolder%\native\%TestExecutable% %TestFolder%\%TestFileName%.dll @"%TestFolder%\%TestFileName%.rsp" -xml %XunitLogDir%\%TestFileName%\%CoreRT_TestLogFileName% -notrait category=nonnetcoreapptests -notrait category=nonwindowstests  -notrait category=failing
+set TestExitCode=!ERRORLEVEL!
+
+exit /b %TestExitCode%

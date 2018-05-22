@@ -12,7 +12,7 @@ set CoreRT_TestCompileMode=
 set CoreRT_RunCoreCLRTests=
 set CoreRT_RunCoreFXTests=
 set CoreRT_CoreCLRTargetsFile=
-set CoreRT_TestLogFileName=testresults.xml
+set CoreRT_TestLogFileName=testResults.xml
 set CoreRT_TestName=*
 
 :ArgLoop
@@ -49,7 +49,7 @@ if /i "%1" == "/coreclr"  (
 :ExtRepoTestsOk
     goto ArgLoop
 )
-if /i "%1" == "/corefx" exit /b 0
+if /i "%1" == "/corefx" (set CoreRT_RunCoreFXTests=true&shift&goto ArgLoop)
 if /i "%1" == "/coreclrsingletest" (set CoreRT_RunCoreCLRTests=true&set CoreRT_CoreCLRTest=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/mode" (set CoreRT_TestCompileMode=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/test" (set CoreRT_TestName=%2&shift&shift&goto ArgLoop)
@@ -493,7 +493,9 @@ goto :eof
 
     set FXCustomTestLauncher=%CoreRT_TestRoot%\CoreFX\build-and-run-test.cmd
     set XunitTestBinBase=%CoreRT_TestExtRepo_CoreFX%
-    set XunitLogDir= %__LogDir%\CoreFX
+    
+    :: Place test logs so they can be found by CI
+    set XunitLogDir= %__CoreRTTestBinDir%\CoreFX
     
     :: Clean up existing logs
     if exist "%XunitLogDir%" rmdir /S /Q "%XunitLogDir%"
@@ -504,8 +506,9 @@ goto :eof
 
     echo runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% LogsDir %XunitLogDir%
     call runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% LogsDir %XunitLogDir% 
-    if errorlevel 1 (
-        exit /b 1
-    )
 
-    "%CoreRT_CliDir%\dotnet.exe" !CoreRT_TestingUtilitiesOutputDir!\!CoreRT_XunitHelperName!.dll --logDir "%XunitLogDir%" --pattern "*.xml"
+    set __SavedErrorLevel=%ErrorLevel%
+    popd
+    
+    exit /b %__SavedErrorLevel%
+
