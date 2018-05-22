@@ -115,7 +115,7 @@ namespace System.Runtime.Serialization
         private void ExpandArrays()
         {
             int newSize;
-            Debug.Assert(_names.Length == _count);
+            Debug.Assert(_names.Length == _count, "[SerializationInfo.ExpandArrays]_names.Length == _count");
 
             newSize = (_count * 2);
 
@@ -141,26 +141,6 @@ namespace System.Runtime.Serialization
             Type[] newTypes = new Type[newSize];
             Array.Copy(_types, 0, newTypes, 0, _count);
             _types = newTypes;
-        }
-
-        // This isn't a public API, but it gets invoked dynamically by 
-        // BinaryFormatter
-        public void UpdateValue(string name, object value, Type type)
-        {
-            Debug.Assert(null != name, "[SerializationInfo.UpdateValue]name!=null");
-            Debug.Assert(null != value, "[SerializationInfo.UpdateValue]value!=null");
-            Debug.Assert(null != type, "[SerializationInfo.UpdateValue]type!=null");
-
-            int index = FindElement(name);
-            if (index < 0)
-            {
-                AddValueInternal(name, value, type);
-            }
-            else
-            {
-                _values[index] = value;
-                _types[index] = type;
-            }
         }
 
         public void AddValue(string name, object value, Type type)
@@ -285,6 +265,26 @@ namespace System.Runtime.Serialization
             _count++;
         }
 
+        // This isn't a public API, but it gets invoked dynamically by 
+        // BinaryFormatter
+        public void UpdateValue(string name, object value, Type type)
+        {
+            Debug.Assert(null != name, "[SerializationInfo.UpdateValue]name!=null");
+            Debug.Assert(null != value, "[SerializationInfo.UpdateValue]value!=null");
+            Debug.Assert(null != (object)type, "[SerializationInfo.UpdateValue]type!=null");
+
+            int index = FindElement(name);
+            if (index < 0)
+            {
+                AddValueInternal(name, value, type);
+            }
+            else
+            {
+                _values[index] = value;
+                _types[index] = type;
+            }
+        }
+
         private int FindElement(string name)
         {
             if (null == name)
@@ -308,11 +308,11 @@ namespace System.Runtime.Serialization
                 throw new SerializationException(SR.Format(SR.Serialization_NotFound, name));
             }
 
-            Debug.Assert(index < _values.Length);
-            Debug.Assert(index < _types.Length);
+            Debug.Assert(index < _values.Length, "[SerializationInfo.GetElement]index<_values.Length");
+            Debug.Assert(index < _types.Length, "[SerializationInfo.GetElement]index<_types.Length");
 
             foundType = _types[index];
-            Debug.Assert(foundType != null);
+            Debug.Assert((object)foundType != null, "[SerializationInfo.GetElement]foundType!=null");
             return _values[index];
         }
 
@@ -344,30 +344,35 @@ namespace System.Runtime.Serialization
             object value;
 
             value = GetElement(name, out foundType);
-            if (ReferenceEquals(foundType, type) || type.IsAssignableFrom(foundType) || value == null)
-            {
-                return value;
-            }
 
-            Debug.Assert(_converter != null);
-            return _converter.Convert(value, type);
-        }
-
-        internal object GetValueNoThrow(string name, Type type)
-        {
-            Debug.Assert(type != null, "[SerializationInfo.GetValue]type ==null");
-
-            Type foundType;
-            object value = GetElementNoThrow(name, out foundType);
-            if (value == null)
-                return null;
-
-            if (ReferenceEquals(foundType, type) || type.IsAssignableFrom(foundType) || value == null)
+            if (object.ReferenceEquals(foundType, type) || type.IsAssignableFrom(foundType) || value == null)
             {
                 return value;
             }
 
             Debug.Assert(_converter != null, "[SerializationInfo.GetValue]_converter!=null");
+            return _converter.Convert(value, type);
+        }
+
+        internal object GetValueNoThrow(string name, Type type)
+        {
+            Type foundType;
+            object value;
+
+            Debug.Assert((object)type != null, "[SerializationInfo.GetValue]type ==null");
+            Debug.Assert(type is RuntimeType, "[SerializationInfo.GetValue]type is not a runtime type");
+
+            value = GetElementNoThrow(name, out foundType);
+            if (value == null)
+                return null;
+
+            if (object.ReferenceEquals(foundType, type) || type.IsAssignableFrom(foundType) || value == null)
+            {
+                return value;
+            }
+
+            Debug.Assert(_converter != null, "[SerializationInfo.GetValue]_converter!=null");
+
             return _converter.Convert(value, type);
         }
 
