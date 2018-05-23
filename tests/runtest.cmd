@@ -375,7 +375,7 @@ goto :eof
     )
 
     set /p TESTS_REMOTE_URL=< "%~dp0/CoreFXTestListURL.txt"
-    set TEST_LIST="%~dp0/TopN.CoreFX.issues.json"
+    set TEST_LIST="%~dp0/TopN.CoreFX.Windows.issues.json"
 
     if not exist !CoreRT_TestingUtilitiesOutputDir!\%CoreRT_TestFileHelperName%.dll (
         echo File !CoreRT_TestingUtilitiesOutputDir!\%CoreRT_TestFileHelperName%.dll not found.

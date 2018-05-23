@@ -231,18 +231,20 @@ run_corefx_tests()
         # Check if we're running under Linux
         Linux)
             TESTS_REMOTE_URL=$(<${CoreRT_TestRoot}/CoreFXTestListURL_Linux.txt)
+            TEST_LIST_JSON=${CoreRT_TestRoot}/TopN.CoreFX.Linux.issues.json
         ;;
     # Check if we're running under OSX
         Darwin)
             TESTS_REMOTE_URL=$(<${CoreRT_TestRoot}/CoreFXTestListURL_OSX.txt)
+            TEST_LIST_JSON=${CoreRT_TestRoot}/TopN.CoreFX.OSX.issues.json
         ;;
     # Default to Linux if we don't recognize the OS
         *)
             TESTS_REMOTE_URL=$(<${CoreRT_TestRoot}/CoreFXTestListURL_Linux.txt)
+            TEST_LIST_JSON=${CoreRT_TestRoot}/TopN.CoreFX.Linux.issues.json
         ;;
     esac
 
-    TEST_LIST_JSON=${CoreRT_TestRoot}/TopN.CoreFX.issues.json
 
     download_and_unzip_corefx_tests_artifacts ${TESTS_REMOTE_URL} ${TEST_LIST_JSON}
     __exitcode=$?
