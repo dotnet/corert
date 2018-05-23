@@ -106,14 +106,14 @@ def static calculateBuildCommands(def os, def configuration, def scenario, def i
 
     if (os == 'Windows_NT') {
         // Calculate the build commands
-        buildCommands += "build.cmd ${lowercaseConfiguration}"
+        buildCommands += "build.cmd ${lowercaseConfiguration} skiptests"
 
-        // Calculate the test commands
-        buildCommands += "tests\\runtest.cmd ${configuration} /multimodule"
         if (configuration == 'Debug')
         {
             if (scenario == 'coreclr'){
-                // Run multimodule tests only under CoreCLR mode
+                // Run simple tests and multimodule tests only under CoreCLR mode
+                buildCommands += "tests\\runtest.cmd ${configuration} "
+
                 buildCommands += "tests\\runtest.cmd ${configuration} /multimodule"
 
                 // Run CoreCLR tests
@@ -129,10 +129,6 @@ def static calculateBuildCommands(def os, def configuration, def scenario, def i
             }
             else if (scenario == 'corefx')
             {
-                // Disable Simple tests when running a CoreFX scenario
-                buildCommands[0] = buildCommands[0].concat(" skiptests")
-                testScriptString = "tests\\runtest.cmd ${configuration} /corefx "
-                
                 //Todo: Add json config files for different testing scenarios
                 buildCommands += testScriptString 
             }
