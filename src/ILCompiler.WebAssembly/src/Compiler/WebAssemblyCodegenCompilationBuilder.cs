@@ -33,7 +33,7 @@ namespace ILCompiler
         {
             var interopStubManager = new CompilerGeneratedInteropStubManager(_compilationGroup, _context, new InteropStateManager(_context.GeneratedAssembly));
             WebAssemblyCodegenNodeFactory factory = new WebAssemblyCodegenNodeFactory(_context, _compilationGroup, _metadataManager, interopStubManager, _nameMangler, _vtableSliceProvider, _dictionaryLayoutProvider);
-            DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);
+            DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory, new ObjectNode.ObjectNodeComparer(new CompilerComparer()));
 
             return new WebAssemblyCodegenCompilation(graph, factory, _compilationRoots, _logger, _config);
         }
