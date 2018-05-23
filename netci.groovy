@@ -81,10 +81,6 @@ Constants.scenarios.each { scenario ->
                 Utilities.setMachineAffinity(newJob, os, Constants.imageVersionMap[os])
                 Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
 
-                if (scenario == 'corefx') {
-                    Utilities.addArchival(newJob, '**/testResults.xml');
-                }
-                
                 if (isPR) {
                     Utilities.addGithubPRTriggerForBranch(newJob, branch, prJobDescription)
                 }
