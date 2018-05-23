@@ -77,8 +77,7 @@ Constants.scenarios.each { scenario ->
 
                 // This call performs test run checks for the CI.
                 Utilities.addXUnitDotNETResults(newJob, '**/testResults.xml')
-                Utilities.addArchival(newJob, "${workspaceRelativeFxRootLinux}/bin/**/testResults.xml")
-                Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRootLinux}/bin/**/testResults.xml")
+                Utilities.addArchival(newJob, "**/testResults.xml")
                 Utilities.setMachineAffinity(newJob, os, Constants.imageVersionMap[os])
                 Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
 
@@ -114,6 +113,10 @@ def static calculateBuildCommands(def os, def configuration, def scenario, def i
         if (configuration == 'Debug')
         {
             if (scenario == 'coreclr'){
+                // Run multimodule tests only under CoreCLR mode
+                buildCommands += "tests\\runtest.cmd ${configuration} /multimodule"
+
+                // Run CoreCLR tests
                 testScriptString = "tests\\runtest.cmd ${configuration} /coreclr "
                 if (isPR) {
                     // Run a small set of BVTs during PR validation
@@ -127,7 +130,7 @@ def static calculateBuildCommands(def os, def configuration, def scenario, def i
             else if (scenario == 'corefx')
             {
                 // Disable Simple tests when running a CoreFX scenario
-                buildCommands.last() += "skiptests "
+                buildCommands[0] = buildCommands[0].concat(" skiptests")
                 testScriptString = "tests\\runtest.cmd ${configuration} /corefx "
                 
                 //Todo: Add json config files for different testing scenarios
