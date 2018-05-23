@@ -1,6 +1,6 @@
 # Testing CoreRT
 
-The CoreRT test harness can run in two modes - with the tests local to the CoreRT repo, or with tests from the [CoreCLR](http://github.com/dotnet/coreclr) repo. The local tests only provide basic sanity testing and it's recommended to run the CoreCLR tests which are much more thorough.
+The CoreRT test harness can run in two modes - with the tests local to the CoreRT repo, with tests from the [CoreCLR](https://github.com/dotnet/coreclr) repo or the tests from the [CoreFX](https://github.com/dotnet/corefx) repo. The local tests only provide basic sanity testing and it's recommended to run the CoreCLR and CoreFX tests which are much more thorough.
 
 The tests exercise both the runtime and the ILC compiler, which compiles IL into native code. The harness can test both the RyuJIT code generation backend, or the C++ backend of the ILC compiler.
 
@@ -122,7 +122,7 @@ The tests assemblies to run are defined in `TopN.CoreFX.issues.json` with their 
 
 ### Reproducing test failures
 
-If you need to reproduce a failing test, from the repo root navigate to ```test_downloaded\CoreFX``` and then to the folder of the failing test - each test suite is located in its own folder. From the repo root run the following:
+If you need to reproduce a failing test, navigate to ```test_downloaded\CoreFX``` and then to the folder of the failing test - each test suite is located in its own folder. From the test suite directory run the following:
 
 On Windows:
 
