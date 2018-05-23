@@ -27,7 +27,7 @@ Constants.scenarios.each { scenario ->
         ['Debug', 'Release'].each { configuration ->
             Constants.osList.each { os ->
 
-                if ((configuration == 'Release' || os != 'Windows_NT') && scenario == 'corefx') {
+                if (configuration == 'Release' && scenario == 'corefx') {
                     return
                 }
 
