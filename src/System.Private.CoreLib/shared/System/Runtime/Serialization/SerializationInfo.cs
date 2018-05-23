@@ -4,10 +4,10 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
 
 namespace System.Runtime.Serialization
 {
+    /// <summary>The structure for holding all of the data needed for object serialization and deserialization.</summary>
     public sealed class SerializationInfo
     {
         private const int DefaultSize = 4;
@@ -19,7 +19,6 @@ namespace System.Runtime.Serialization
         private Type[] _types;
         private int _count;
         private Dictionary<string, int> _nameToIndex;
-
         private IFormatterConverter _converter;
         private string _rootTypeName;
         private string _rootTypeAssemblyName;
@@ -28,10 +27,11 @@ namespace System.Runtime.Serialization
         [CLSCompliant(false)]
         public SerializationInfo(Type type, IFormatterConverter converter)
         {
-            if (type == null)
+            if ((object)type == null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
+
             if (converter == null)
             {
                 throw new ArgumentNullException(nameof(converter));
@@ -44,7 +44,9 @@ namespace System.Runtime.Serialization
             _names = new string[DefaultSize];
             _values = new object[DefaultSize];
             _types = new Type[DefaultSize];
+
             _nameToIndex = new Dictionary<string, int>();
+
             _converter = converter;
         }
 
@@ -79,7 +81,6 @@ namespace System.Runtime.Serialization
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
-
                 _rootTypeAssemblyName = value;
                 IsAssemblyNameSetExplicit = true;
             }
@@ -91,7 +92,7 @@ namespace System.Runtime.Serialization
 
         public void SetType(Type type)
         {
-            if (type == null)
+            if ((object)type == null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -115,7 +116,7 @@ namespace System.Runtime.Serialization
         private void ExpandArrays()
         {
             int newSize;
-            Debug.Assert(_names.Length == _count);
+            Debug.Assert(_names.Length == _count, "[SerializationInfo.ExpandArrays]_names.Length == _count");
 
             newSize = (_count * 2);
 
@@ -129,38 +130,18 @@ namespace System.Runtime.Serialization
             }
 
             // Allocate more space and copy the data
-
             string[] newMembers = new string[newSize];
-            Array.Copy(_names, 0, newMembers, 0, _count);
-            _names = newMembers;
-
             object[] newData = new object[newSize];
-            Array.Copy(_values, 0, newData, 0, _count);
-            _values = newData;
-
             Type[] newTypes = new Type[newSize];
-            Array.Copy(_types, 0, newTypes, 0, _count);
+
+            Array.Copy(_names, newMembers, _count);
+            Array.Copy(_values, newData, _count);
+            Array.Copy(_types, newTypes, _count);
+
+            // Assign the new arrays back to the member vars.
+            _names = newMembers;
+            _values = newData;
             _types = newTypes;
-        }
-
-        // This isn't a public API, but it gets invoked dynamically by 
-        // BinaryFormatter
-        public void UpdateValue(string name, object value, Type type)
-        {
-            Debug.Assert(null != name, "[SerializationInfo.UpdateValue]name!=null");
-            Debug.Assert(null != value, "[SerializationInfo.UpdateValue]value!=null");
-            Debug.Assert(null != type, "[SerializationInfo.UpdateValue]type!=null");
-
-            int index = FindElement(name);
-            if (index < 0)
-            {
-                AddValueInternal(name, value, type);
-            }
-            else
-            {
-                _values[index] = value;
-                _types[index] = type;
-            }
         }
 
         public void AddValue(string name, object value, Type type)
@@ -170,7 +151,7 @@ namespace System.Runtime.Serialization
                 throw new ArgumentNullException(nameof(name));
             }
 
-            if (type == null)
+            if ((object)type == null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -192,76 +173,76 @@ namespace System.Runtime.Serialization
 
         public void AddValue(string name, bool value)
         {
-            AddValue(name, value, typeof(bool));
+            AddValue(name, (object)value, typeof(bool));
         }
 
         public void AddValue(string name, char value)
         {
-            AddValue(name, value, typeof(char));
+            AddValue(name, (object)value, typeof(char));
         }
 
         [CLSCompliant(false)]
         public void AddValue(string name, sbyte value)
         {
-            AddValue(name, value, typeof(sbyte));
+            AddValue(name, (object)value, typeof(sbyte));
         }
 
         public void AddValue(string name, byte value)
         {
-            AddValue(name, value, typeof(byte));
+            AddValue(name, (object)value, typeof(byte));
         }
 
         public void AddValue(string name, short value)
         {
-            AddValue(name, value, typeof(short));
+            AddValue(name, (object)value, typeof(short));
         }
 
         [CLSCompliant(false)]
         public void AddValue(string name, ushort value)
         {
-            AddValue(name, value, typeof(ushort));
+            AddValue(name, (object)value, typeof(ushort));
         }
 
         public void AddValue(string name, int value)
         {
-            AddValue(name, value, typeof(int));
+            AddValue(name, (object)value, typeof(int));
         }
 
         [CLSCompliant(false)]
         public void AddValue(string name, uint value)
         {
-            AddValue(name, value, typeof(uint));
+            AddValue(name, (object)value, typeof(uint));
         }
 
         public void AddValue(string name, long value)
         {
-            AddValue(name, value, typeof(long));
+            AddValue(name, (object)value, typeof(long));
         }
 
         [CLSCompliant(false)]
         public void AddValue(string name, ulong value)
         {
-            AddValue(name, value, typeof(ulong));
+            AddValue(name, (object)value, typeof(ulong));
         }
 
         public void AddValue(string name, float value)
         {
-            AddValue(name, value, typeof(float));
+            AddValue(name, (object)value, typeof(float));
         }
 
         public void AddValue(string name, double value)
         {
-            AddValue(name, value, typeof(double));
+            AddValue(name, (object)value, typeof(double));
         }
 
         public void AddValue(string name, decimal value)
         {
-            AddValue(name, value, typeof(decimal));
+            AddValue(name, (object)value, typeof(decimal));
         }
 
         public void AddValue(string name, DateTime value)
         {
-            AddValue(name, value, typeof(DateTime));
+            AddValue(name, (object)value, typeof(DateTime));
         }
 
         internal void AddValueInternal(string name, object value, Type type)
@@ -285,13 +266,48 @@ namespace System.Runtime.Serialization
             _count++;
         }
 
+        /// <summary>
+        /// Finds the value if it exists in the current data. If it does, we replace
+        /// the values, if not, we append it to the end. This is useful to the 
+        /// ObjectManager when it's performing fixups.
+        /// 
+        /// All error checking is done with asserts. Although public in coreclr,
+        /// it's not exposed in a contract and is only meant to be used by corefx.
+        ///
+        /// This isn't a public API, but it gets invoked dynamically by 
+        /// BinaryFormatter
+        ///
+        /// This should not be used by clients: exposing out this functionality would allow children
+        /// to overwrite their parent's values. It is public in order to give corefx access to it for
+        /// its ObjectManager implementation, but it should not be exposed out of a contract.
+        /// </summary>
+        /// <param name="name"> The name of the data to be updated.</param>
+        /// <param name="value"> The new value.</param>
+        /// <param name="type"> The type of the data being added.</param>
+        public void UpdateValue(string name, object value, Type type)
+        {
+            Debug.Assert(null != name, "[SerializationInfo.UpdateValue]name!=null");
+            Debug.Assert(null != value, "[SerializationInfo.UpdateValue]value!=null");
+            Debug.Assert(null != (object)type, "[SerializationInfo.UpdateValue]type!=null");
+
+            int index = FindElement(name);
+            if (index < 0)
+            {
+                AddValueInternal(name, value, type);
+            }
+            else
+            {
+                _values[index] = value;
+                _types[index] = type;
+            }
+        }
+
         private int FindElement(string name)
         {
             if (null == name)
             {
                 throw new ArgumentNullException(nameof(name));
             }
-
             int index;
             if (_nameToIndex.TryGetValue(name, out index))
             {
@@ -300,6 +316,14 @@ namespace System.Runtime.Serialization
             return -1;
         }
 
+        /// <summary>
+        /// Gets the location of a particular member and then returns
+        /// the value of the element at that location.  The type of the member is
+        /// returned in the foundType field.
+        /// </summary>
+        /// <param name="name"> The name of the element to find.</param>
+        /// <param name="foundType"> The type of the element associated with the given name.</param>
+        /// <returns>The value of the element at the position associated with name.</returns>
         private object GetElement(string name, out Type foundType)
         {
             int index = FindElement(name);
@@ -308,11 +332,11 @@ namespace System.Runtime.Serialization
                 throw new SerializationException(SR.Format(SR.Serialization_NotFound, name));
             }
 
-            Debug.Assert(index < _values.Length);
-            Debug.Assert(index < _types.Length);
+            Debug.Assert(index < _values.Length, "[SerializationInfo.GetElement]index<_values.Length");
+            Debug.Assert(index < _types.Length, "[SerializationInfo.GetElement]index<_types.Length");
 
             foundType = _types[index];
-            Debug.Assert(foundType != null);
+            Debug.Assert((object)foundType != null, "[SerializationInfo.GetElement]foundType!=null");
             return _values[index];
         }
 
@@ -325,40 +349,46 @@ namespace System.Runtime.Serialization
                 return null;
             }
 
-            Debug.Assert(index < _values.Length, "[SerializationInfo.GetElement]index<m_data.Length");
-            Debug.Assert(index < _types.Length, "[SerializationInfo.GetElement]index<m_types.Length");
+            Debug.Assert(index < _values.Length, "[SerializationInfo.GetElement]index<_values.Length");
+            Debug.Assert(index < _types.Length, "[SerializationInfo.GetElement]index<_types.Length");
 
             foundType = _types[index];
-            Debug.Assert(foundType != null, "[SerializationInfo.GetElement]foundType!=null");
+            Debug.Assert((object)foundType != null, "[SerializationInfo.GetElement]foundType!=null");
             return _values[index];
         }
 
         public object GetValue(string name, Type type)
         {
-            if (type == null)
+            if ((object)type == null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
 
+            if (!type.IsRuntimeImplemented())
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType);
             Type foundType;
             object value;
 
             value = GetElement(name, out foundType);
+
             if (ReferenceEquals(foundType, type) || type.IsAssignableFrom(foundType) || value == null)
             {
                 return value;
             }
 
-            Debug.Assert(_converter != null);
+            Debug.Assert(_converter != null, "[SerializationInfo.GetValue]_converter!=null");
             return _converter.Convert(value, type);
         }
 
         internal object GetValueNoThrow(string name, Type type)
         {
-            Debug.Assert(type != null, "[SerializationInfo.GetValue]type ==null");
-
             Type foundType;
-            object value = GetElementNoThrow(name, out foundType);
+            object value;
+
+            Debug.Assert((object)type != null, "[SerializationInfo.GetValue]type ==null");
+            Debug.Assert(type.IsRuntimeImplemented(), "[SerializationInfo.GetValue]type is not a runtime type");
+
+            value = GetElementNoThrow(name, out foundType);
             if (value == null)
                 return null;
 
@@ -367,7 +397,8 @@ namespace System.Runtime.Serialization
                 return value;
             }
 
-            Debug.Assert(_converter != null, "[SerializationInfo.GetValue]m_converter!=null");
+            Debug.Assert(_converter != null, "[SerializationInfo.GetValue]_converter!=null");
+
             return _converter.Convert(value, type);
         }
 
