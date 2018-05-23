@@ -107,15 +107,13 @@ def static calculateBuildCommands(def os, def configuration, def scenario, def i
     if (os == 'Windows_NT') {
         // Calculate the build commands
         buildCommands += "build.cmd ${lowercaseConfiguration} skiptests"
-
-        if (configuration == 'Debug')
-        {
-            if (scenario == 'coreclr'){
-                // Run simple tests and multimodule tests only under CoreCLR mode
-                buildCommands += "tests\\runtest.cmd ${configuration} "
-
-                buildCommands += "tests\\runtest.cmd ${configuration} /multimodule"
-
+    
+        if (scenario == 'coreclr'){
+            // Run simple tests and multimodule tests only under CoreCLR mode
+            buildCommands += "tests\\runtest.cmd ${configuration} "
+            buildCommands += "tests\\runtest.cmd ${configuration} /multimodule"
+            if (configuration == 'Debug')
+            {
                 // Run CoreCLR tests
                 testScriptString = "tests\\runtest.cmd ${configuration} /coreclr "
                 if (isPR) {
@@ -127,21 +125,27 @@ def static calculateBuildCommands(def os, def configuration, def scenario, def i
                     buildCommands += testScriptString + "KnownGood /multimodule"
                 }
             }
-            else if (scenario == 'corefx')
-            {
-                //Todo: Add json config files for different testing scenarios
-                buildCommands += testScriptString 
-            }
+        }
+        else if (scenario == 'corefx')
+        {
+            // CoreFX tests are currently run only under Debug, so skip the configuration check
+            testScriptString = "tests\\runtest.cmd ${configuration} /corefx "
+            
+            //Todo: Add json config files for different testing scenarios
+            buildCommands += testScriptString 
         }
     }
     else {
         // Calculate the build commands        
-        buildCommands += "./build.sh ${lowercaseConfiguration}"
+        buildCommands += "./build.sh ${lowercaseConfiguration} skiptests"
         
         // Calculate the test commands
-        if (configuration == 'Debug')
+        if (scenario == 'coreclr' )
         {
-            if (scenario == 'coreclr')
+            // Run simple tests and multimodule tests only under CoreCLR mode
+            buildCommands += "tests/runtest.sh ${configuration} "
+
+            if (configuration == 'Debug')
             {
                 testScriptString = "tests/runtest.sh ${configuration} -coredumps -coreclr "
                 if (isPR) {
@@ -157,6 +161,7 @@ def static calculateBuildCommands(def os, def configuration, def scenario, def i
             }
             else if (scenario == 'corefx')
             {
+                // CoreFX tests are currently run only under Debug, so skip the configuration check
                 testScriptString = "tests/runtest.sh ${configuration} -corefx "
                 
                 //Todo: Add json config files for different testing scenarios
