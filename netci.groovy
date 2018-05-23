@@ -14,7 +14,7 @@ class Constants {
                            'OSX10.12':'latest-or-auto',
                            'Ubuntu':'20170118']
 
-    def static scenarios = ['coreclr', 'corefx']
+    def static scenarios = ['coreclr', 'corefx', 'wasm']
     
     // Innerloop build OS's
     def static osList = ['Ubuntu', 'OSX10.12', 'Windows_NT']
@@ -28,6 +28,9 @@ Constants.scenarios.each { scenario ->
             Constants.osList.each { os ->
 
                 if (configuration == 'Release' && scenario == 'corefx') {
+                    return
+                }
+                if (os != 'Windows_NT' && scenario=='wasm') {
                     return
                 }
 
@@ -54,6 +57,10 @@ Constants.scenarios.each { scenario ->
                     }
                 }
                 
+                if (scenario == 'wasm') {
+                    prJobDescription += " WebAssembly"
+                }
+                
                 def buildCommands = calculateBuildCommands(os, configuration, scenario, isPR)
 
                 // Create a new job with the specified name.  The brace opens a new closure
@@ -78,7 +85,12 @@ Constants.scenarios.each { scenario ->
                 // This call performs test run checks for the CI.
                 Utilities.addXUnitDotNETResults(newJob, '**/testResults.xml')
                 Utilities.addArchival(newJob, "**/testResults.xml")
-                Utilities.setMachineAffinity(newJob, os, Constants.imageVersionMap[os])
+                if(scenario != 'wasm') {
+                    Utilities.setMachineAffinity(newJob, os, Constants.imageVersionMap[os])
+                }
+                else {
+                    Utilities.setMachineAffinity(newJob, os, 'Windows.10.Wasm.Open')
+                }
                 Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
 
                 if (isPR) {
@@ -102,33 +114,38 @@ def static calculateBuildCommands(def os, def configuration, def scenario, def i
 
     if (os == 'Windows_NT') {
         // Calculate the build commands
-        buildCommands += "build.cmd ${lowercaseConfiguration} skiptests"
+        if (scenario != 'wasm') {
+            buildCommands += "build.cmd ${lowercaseConfiguration} skiptests"
     
-        if (scenario == 'coreclr'){
-            // Run simple tests and multimodule tests only under CoreCLR mode
-            buildCommands += "tests\\runtest.cmd ${configuration} "
-            buildCommands += "tests\\runtest.cmd ${configuration} /multimodule"
-            if (configuration == 'Debug')
-            {
-                // Run CoreCLR tests
-                testScriptString = "tests\\runtest.cmd ${configuration} /coreclr "
-                if (isPR) {
-                    // Run a small set of BVTs during PR validation
-                    buildCommands += testScriptString + "Top200"
-                }
-                else {
-                    // Run the full set of known passing tests in the post-commit job
-                    buildCommands += testScriptString + "KnownGood /multimodule"
+            if (scenario == 'coreclr'){
+                // Run simple tests and multimodule tests only under CoreCLR mode
+                buildCommands += "tests\\runtest.cmd ${configuration} "
+                buildCommands += "tests\\runtest.cmd ${configuration} /multimodule"
+                if (configuration == 'Debug')
+                {
+                    // Run CoreCLR tests
+                    testScriptString = "tests\\runtest.cmd ${configuration} /coreclr "
+                    if (isPR) {
+                        // Run a small set of BVTs during PR validation
+                        buildCommands += testScriptString + "Top200"
+                    }
+                    else {
+                        // Run the full set of known passing tests in the post-commit job
+                        buildCommands += testScriptString + "KnownGood /multimodule"
+                    }
                 }
             }
-        }
-        else if (scenario == 'corefx')
-        {
-            // CoreFX tests are currently run only under Debug, so skip the configuration check
-            testScriptString = "tests\\runtest.cmd ${configuration} /corefx "
+            else if (scenario == 'corefx')
+            {
+                // CoreFX tests are currently run only under Debug, so skip the configuration check
+                testScriptString = "tests\\runtest.cmd ${configuration} /corefx "
             
-            //Todo: Add json config files for different testing scenarios
-            buildCommands += testScriptString 
+                //Todo: Add json config files for different testing scenarios
+                buildCommands += testScriptString 
+            }
+        }
+        else {
+            buildCommands += "build.cmd wasm ${lowercaseConfiguration}"
         }
     }
     else {
