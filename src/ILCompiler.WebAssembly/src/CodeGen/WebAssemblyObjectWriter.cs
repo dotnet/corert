@@ -503,13 +503,15 @@ namespace ILCompiler.DependencyAnalysis
                 delta = checked(delta + sizeof(int));
             }
 
+            int totalOffset = checked(delta + offsetFromSymbolName);
+
             EmitBlob(new byte[this._nodeFactory.Target.PointerSize]);
             if (relocType == RelocType.IMAGE_REL_BASED_REL32)
             {
                 return this._nodeFactory.Target.PointerSize;
             }
 
-            _currentObjectSymbolRefs.Add(symbolStartOffset, new SymbolRefData(isFunction, realSymbolName, delta));
+            _currentObjectSymbolRefs.Add(symbolStartOffset, new SymbolRefData(isFunction, realSymbolName, totalOffset));
             return _nodeFactory.Target.PointerSize;
         }
 
