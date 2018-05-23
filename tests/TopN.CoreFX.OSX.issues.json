@@ -463,6 +463,70 @@
             "classes": null,
             "methods": [
                 {
+                    "name": "System.Tests.GetEnvironmentVariable.VariableNamesAreCaseInsensitiveAsAppropriate",
+                    "reason": "System.NotImplementedException"
+                },
+                {
+                    "name": "System.Tests.GetEnvironmentVariable.CanGetAllVariablesIndividually",
+                    "reason": "System.NotImplementedException"
+                },
+                {
+                    "name": "System.Tests.GetEnvironmentVariable.EnumerateEnvironmentVariables",
+                    "reason": "System.NotImplementedException"
+                },
+                {
+                    "name": "System.Tests.SetEnvironmentVariable.NonInitialNullCharacterInVariableName",
+                    "reason": "System.NotImplementedException"
+                },
+                {
+                    "name": "System.Tests.SetEnvironmentVariable.DeleteEnvironmentVariableInitialNullInValue",
+                    "reason": "System.NotImplementedException"
+                },
+                {
+                    "name": "System.Tests.SetEnvironmentVariable.NonInitialNullCharacterInValue",
+                    "reason": "System.NotImplementedException"
+                },
+                {
+                    "name": "System.Tests.SetEnvironmentVariable.AllowAnyVariableLengths",
+                    "reason": "System.NotImplementedException"
+                },
+                {
+                    "name": "System.Tests.SetEnvironmentVariable.DeleteEnvironmentVariable",
+                    "reason": "System.NotImplementedException"
+                },
+                {
+                    "name": "System.Tests.SetEnvironmentVariable.ModifyEnvironmentVariable_AndEnumerate",
+                    "reason": "System.NotImplementedException"
+                },
+                {
+                    "name": "System.Tests.SetEnvironmentVariable.ModifyEnvironmentVariable",
+                    "reason": "System.NotImplementedException"
+                },
+                {
+                    "name": "System.Tests.SetEnvironmentVariable.DeleteEnvironmentVariableNonInitialNullInName",
+                    "reason": "System.NotImplementedException"
+                },
+                {
+                    "name": "System.Tests.SetEnvironmentVariable.DeleteNonExistentEnvironmentVariable",
+                    "reason": "System.NotImplementedException"
+                },
+                {
+                    "name": "System.Tests.SetEnvironmentVariable.Default",
+                    "reason": "System.NotImplementedException"
+                },
+                {
+                    "name": "System.Tests.SetEnvironmentVariable.AllowAnyVariableValueLengths",
+                    "reason": "System.NotImplementedException"
+                },
+                {
+                    "name": "System.Tests.ExpandEnvironmentVariables.PotentiallyAmbiguousInputIsHandledCorrectly",
+                    "reason": "System.NotImplementedException"
+                },
+                {
+                    "name": "System.Tests.ExpandEnvironmentVariables.ExpansionOfVariableSucceeds",
+                    "reason": "System.NotImplementedException"
+                },
+                {
                     "name": "System.Reflection.Tests.AssemblyNameProxyTests.GetAssemblyName_AssemblyNameProxy",
                     "reason": "Xunit.Sdk.ThrowsException"
                 },
@@ -775,6 +839,18 @@
             "namespaces": null,
             "classes": null,
             "methods": [
+                {
+                    "name": "System.Runtime.Tests.MemoryFailPointTests.Ctor_Negative_ThrowsArgumentOutOfRangeException",
+                    "reason": "Xunit.Sdk.ThrowsException"
+                },
+                {
+                    "name": "System.Runtime.Tests.MemoryFailPointTests.Ctor_Dispose_Success",
+                    "reason": "System.TypeLoadException"
+                },
+                {
+                    "name": "System.Threading.Tests.WaitHandleTests.SignalAndWait",
+                    "reason": "Xunit.Sdk.ThrowsException"
+                },
                 {
                     "name": "System.Reflection.Tests.MethodInfoTests.TestEquality2",
                     "reason": "Xunit.Sdk.EqualException"
@@ -1954,6 +2030,47 @@
             "namespaces": null,
             "classes": null,
             "methods": [
+                
+                {
+                    "name": "System.Threading.Tests.EtwTests.TestEtw",
+                    "reason": "Xunit.Sdk.EqualException"
+                },
+                {
+                    "name": "System.Threading.Tests.MutexTests.AbandonExisting",
+                    "reason": "System.AggregateException"
+                },
+                {
+                    "name": "System.Threading.Tests.MutexTests.Ctor_InvalidName",
+                    "reason": "Xunit.Sdk.ThrowsException"
+                },
+                {
+                    "name": "System.Threading.Tests.MutexTests.OpenExisting_InvalidNames",
+                    "reason": "Xunit.Sdk.ThrowsException"
+                },
+                {
+                    "name": "System.Threading.Tests.MutexTests.OpenExisting_UnavailableName",
+                    "reason": "Xunit.Sdk.ThrowsException"
+                },
+                {
+                    "name": "System.Threading.Tests.MutexTests.Ctor_ValidName",
+                    "reason": "System.PlatformNotSupportedException"
+                },
+                {
+                    "name": "System.Threading.Tests.MutexTests.OpenExisting",
+                    "reason": "System.PlatformNotSupportedException"
+                },
+                {
+                    "name": "System.Threading.Tests.SynchronizationContextTests.WaitTest_ChangedInDotNetCore",
+                    "reason": "Xunit.Sdk.ThrowsException"
+                },
+                {
+                    "name": "System.Threading.Tests.SynchronizationContextTests.WaitTest",
+                    "reason": "System.MissingMethodException"
+                },
+                {
+                    "name": "System.Threading.Tests.SynchronizationContextTests.WaitNotificationTest",
+                    "reason": "System.AggregateException"
+                },
                 {
                     "name": "System.Threading.Tests.EventWaitHandleTests.PingPong",
                     "reason": "System.TypeInitializationException"
