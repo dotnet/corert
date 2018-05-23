@@ -133,7 +133,7 @@ download_and_unzip_corefx_tests_artifacts()
     if [ ${__exitcode} != 0 ]; then
         exit ${__exitcode}
     fi
-    
+
    ${CoreRT_CliBinDir}/dotnet build /m /ConsoleLoggerParameters:ForceNoAlign /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:Platform=${CoreRT_BuildArch} /p:OSGroup=${CoreRT_BuildOS} /p:RepoLocalBuild=true "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" "/p:OutputPath=${CoreRT_TestingUtilitiesOutputDir}" "${CoreRT_XunitHelperProjectPath}" 
     __exitcode=$?
     if [ ${__exitcode} != 0 ]; then
@@ -216,7 +216,7 @@ run_corefx_tests()
     export CoreRT_CliBinDir
 
     if [ ! -d "${CoreRT_TestExtRepo_CoreFX}" ]; then
-        mkdir ${CoreRT_TestExtRepo_CoreFX} -p
+        mkdir -p ${CoreRT_TestExtRepo_CoreFX}
     fi
 
     # Set paths to helpers
