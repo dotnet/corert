@@ -54,6 +54,7 @@ if errorlevel 1 (
 )
 
 echo Executing %TestFileName% - writing logs to %XunitLogDir%\%TestFileName%\%CoreRT_TestLogFileName%
+echo To repro directly, run call %TestFolder%\native\%TestExecutable% %TestFolder%\%TestFileName%.dll @"%TestFolder%\%TestFileName%.rsp" -xml %XunitLogDir%\%TestFileName%\%CoreRT_TestLogFileName% -notrait category=nonnetcoreapptests -notrait category=nonwindowstests  -notrait category=failing
 
 if not exist "%TestFolder%\native\%TestExecutable%".exe (
     echo ERROR:Native binary not found Unable to run test.
