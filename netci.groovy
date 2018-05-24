@@ -89,7 +89,7 @@ Constants.scenarios.each { scenario ->
                     Utilities.setMachineAffinity(newJob, os, Constants.imageVersionMap[os])
                 }
                 else {
-                    Utilities.setMachineAffinity(newJob, os, 'Windows.10.Wasm.Open')
+                    Utilities.setMachineAffinity(newJob, 'Windows.10.Wasm.Open', 'latest-or-auto')
                 }
                 Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
 
