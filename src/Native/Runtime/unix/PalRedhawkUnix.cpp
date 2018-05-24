@@ -834,10 +834,10 @@ bool QueryCacheSize()
 bool QueryLogicalProcessorCount()
 {
 #if HAVE_SYSCONF
-    g_cLogicalCpus = sysconf(_SC_NPROCESSORS_ONLN);
+    g_cLogicalCpus = sysconf(_SC_NPROCESSORS_CONF);
     if (g_cLogicalCpus < 1)
     {
-        ASSERT_UNCONDITIONALLY("sysconf failed for _SC_NPROCESSORS_ONLN\n");
+        ASSERT_UNCONDITIONALLY("sysconf failed for _SC_NPROCESSORS_CONF\n");
         return false;
     }
 #elif HAVE_SYSCTL
@@ -1268,10 +1268,10 @@ bool InitializeSystemInfo()
     int nrcpus = 0;
 
 #if HAVE_SYSCONF
-    nrcpus = sysconf(_SC_NPROCESSORS_ONLN);
+    nrcpus = sysconf(_SC_NPROCESSORS_CONF);
     if (nrcpus < 1)
     {
-        ASSERT_UNCONDITIONALLY("sysconf failed for _SC_NPROCESSORS_ONLN\n");
+        ASSERT_UNCONDITIONALLY("sysconf failed for _SC_NPROCESSORS_CONF\n");
         return false;
     }
 #elif HAVE_SYSCTL

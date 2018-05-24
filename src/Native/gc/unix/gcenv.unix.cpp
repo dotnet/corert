@@ -84,7 +84,7 @@ static pthread_mutex_t g_flushProcessWriteBuffersMutex;
 bool GCToOSInterface::Initialize()
 {
     // Calculate and cache the number of processors on this machine
-    int cpuCount = sysconf(_SC_NPROCESSORS_ONLN);
+    int cpuCount = sysconf(_SC_NPROCESSORS_CONF);
     if (cpuCount == -1)
     {
         return false;
