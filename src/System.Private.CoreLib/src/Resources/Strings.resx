@@ -666,6 +666,9 @@
   <data name="Argument_MustBeFalse" xml:space="preserve">
     <value>Argument must be initialized to false</value>
   </data>
+  <data name="Argument_MustBeRuntimeType" xml:space="preserve">
+    <value>Type must be a runtime Type object.</value>
+  </data>
   <data name="Argument_NoEra" xml:space="preserve">
     <value>No Era was supplied.</value>
   </data>

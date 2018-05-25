@@ -49,8 +49,13 @@ then
     exit ${__exitcode}
 fi
 
-echo Executing ${TestFileName} - writing logs to ${LogDir}/${TestFileName}.xml
-chmod +x ${TestFolderName}/publish/${TestExecutable} 
+if [ ! -d "${LogDir}/${TestFileName}" ]; then
+    mkdir -p "${LogDir}/${TestFileName}"
+fi
+
+echo Executing ${TestFileName} - writing logs to ${LogDir}/${TestFileName}/testResults.xml
+echo To repro directly, run ${TestFolderName}/native/${TestExecutable} ${TestFolderName}/${TestFileName}.dll @${TestFolderName}/${TestFileName}.rsp -xml ${LogDir}/${TestFileName}/testResults.xml -notrait category=nonnetcoreapptests -notrait category=${OSCategory}  -notrait category=failing
+chmod +x ${TestFolderName}/native/${TestExecutable} 
 
 case "$(uname -s)" in 
     # Check if we're running under Linux
@@ -67,7 +72,7 @@ case "$(uname -s)" in
     ;;
 esac
 
-${TestFolderName}/publish/${TestExecutable} ${TestFolderName}/${TestFileName}.dll -xml ${LogDir}/${TestFileName}.xml -notrait category=nonnetcoreapptests -notrait category=${OSCategory}  -notrait category=failing
+${TestFolderName}/native/${TestExecutable} ${TestFolderName}/${TestFileName}.dll @${TestFolderName}/${TestFileName}.rsp -xml ${LogDir}/${TestFileName}/testResults.xml -notrait category=nonnetcoreapptests -notrait category=${OSCategory}  -notrait category=failing
 export __exitcode=$?
 
 exit ${__exitcode}

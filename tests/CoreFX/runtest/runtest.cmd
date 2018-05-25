@@ -72,6 +72,7 @@ if not defined FXCustomTestLauncher (
     exit /b 1
 )
 
+
 :: Iterate through unzipped CoreFX tests 
 for /D %%i in ("%XunitTestBinBase%\*" ) do (
     set TestFolderName=%%i
@@ -79,6 +80,7 @@ for /D %%i in ("%XunitTestBinBase%\*" ) do (
 
     echo %FXCustomTestLauncher% !TestFolderName! !TestFileName!
     call %FXCustomTestLauncher% !TestFolderName! !TestFileName!
+
 )
 
 exit /b 0

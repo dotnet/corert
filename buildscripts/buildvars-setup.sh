@@ -51,9 +51,7 @@ get_current_linux_rid() {
     if [ -e /etc/os-release ]; then
         source /etc/os-release
         if [[ $ID == "alpine" ]]; then
-            # remove the last version digit
-            VERSION_ID=${VERSION_ID%.*}
-            rid=alpine.$VERSION_ID
+            rid="linux-musl"
         fi
 
     elif [ -e /etc/redhat-release ]; then
