@@ -2,308 +2,142 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text;
+
 using System;
-using System.IO;
 using System.Reflection;
+using System.Runtime;
+using System.Text;
+
+using Internal.DeveloperExperience;
+using Internal.Diagnostics;
 
 namespace System.Diagnostics
 {
     /// <summary>
+    /// Stack frame represents a single frame in a stack trace; frames
+    /// corresponding to methods with available symbolic information
+    /// provide source file / line information. Some frames may provide IL
+    /// offset information and / or MethodBase reflection information.
     /// There is no good reason for the methods of this class to be virtual.
     /// </summary>
     public partial class StackFrame
     {
         /// <summary>
-        /// Reflection information for the method if available, null otherwise.
+        /// IP address representing this stack frame.
         /// </summary>
-        private MethodBase _method;
+        private IntPtr _ipAddress;
 
         /// <summary>
-        /// Native offset of the current instruction within the current method if available,
-        /// OFFSET_UNKNOWN otherwise.
+        /// File info flag to use for stack trace-style formatting.
         /// </summary>
-        private int _nativeOffset;
+        private bool _needFileInfo;
 
         /// <summary>
-        /// IL offset of the current instruction within the current method if available,
-        /// OFFSET_UNKNOWN otherwise.
+        /// Constructs a StackFrame corresponding to a given IP address.
         /// </summary>
-        private int _ilOffset;
-
-        /// <summary>
-        /// Source file name representing the current code location if available, null otherwise.
-        /// </summary>
-        private string _fileName;
-
-        /// <summary>
-        /// Line number representing the current code location if available, 0 otherwise.
-        /// </summary>
-        private int _lineNumber;
-
-        /// <summary>
-        /// Column number representing the current code location if available, 0 otherwise.
-        /// </summary>
-        private int _columnNumber;
-
-#if CORECLR
-        [System.Runtime.Serialization.OptionalField]
-#endif
-		/// <summary>
-        /// This flag is set to true when the frame represents a rethrow marker.
-        /// </summary>
-        private bool _isLastFrameFromForeignExceptionStackTrace;
-
-        internal void InitMembers()
+        internal StackFrame(IntPtr ipAddress, bool needFileInfo)
         {
-            _method = null;
-            _nativeOffset = OFFSET_UNKNOWN;
-            _ilOffset = OFFSET_UNKNOWN;
-            _fileName = null;
-            _lineNumber = 0;
-            _columnNumber = 0;
-            _isLastFrameFromForeignExceptionStackTrace = false;
+            InitializeForIpAddress(ipAddress, needFileInfo);
         }
 
         /// <summary>
-        /// Constructs a StackFrame corresponding to the active stack frame.
+        /// Internal stack frame initialization based on IP address.
         /// </summary>
-        public StackFrame()
+        private void InitializeForIpAddress(IntPtr ipAddress, bool needFileInfo)
         {
-            InitMembers();
-            BuildStackFrame(0 + StackTrace.METHODS_TO_SKIP, false);
-        }
-
-        /// <summary>
-        /// Constructs a StackFrame corresponding to the active stack frame.
-        /// </summary>
-        public StackFrame(bool needFileInfo)
-        {
-            InitMembers();
-            BuildStackFrame(0 + StackTrace.METHODS_TO_SKIP, needFileInfo);
-        }
-
-        /// <summary>
-        /// Constructs a StackFrame corresponding to a calling stack frame.
-        /// </summary>
-        public StackFrame(int skipFrames)
-        {
-            InitMembers();
-            BuildStackFrame(skipFrames + StackTrace.METHODS_TO_SKIP, false);
-        }
-
-        /// <summary>
-        /// Constructs a StackFrame corresponding to a calling stack frame.
-        /// </summary>
-        public StackFrame(int skipFrames, bool needFileInfo)
-        {
-            InitMembers();
-            BuildStackFrame(skipFrames + StackTrace.METHODS_TO_SKIP, needFileInfo);
-        }
-
-        /// <summary>
-        /// Constructs a "fake" stack frame, just containing the given file
-        /// name and line number.  Use when you don't want to use the
-        /// debugger's line mapping logic.
-        /// </summary>
-        public StackFrame(string fileName, int lineNumber)
-        {
-            InitMembers();
-            BuildStackFrame(StackTrace.METHODS_TO_SKIP, false);
-            _fileName = fileName;
-            _lineNumber = lineNumber;
-            _columnNumber = 0;
-        }
-
-        /// <summary>
-        /// Constructs a "fake" stack frame, just containing the given file
-        /// name, line number and column number.  Use when you don't want to
-        /// use the debugger's line mapping logic.
-        /// </summary>
-        public StackFrame(string fileName, int lineNumber, int colNumber)
-        {
-            InitMembers();
-            BuildStackFrame(StackTrace.METHODS_TO_SKIP, false);
-            _fileName = fileName;
-            _lineNumber = lineNumber;
-            _columnNumber = colNumber;
-        }
-
-        /// <summary>
-        /// Constant returned when the native or IL offset is unknown
-        /// </summary>
-        public const int OFFSET_UNKNOWN = -1;
-
-        internal virtual void SetMethodBase(MethodBase mb)
-        {
-            _method = mb;
-        }
-
-        internal virtual void SetOffset(int iOffset)
-        {
-            _nativeOffset = iOffset;
-        }
-
-        internal virtual void SetILOffset(int iOffset)
-        {
-            _ilOffset = iOffset;
-        }
-
-        internal virtual void SetFileName(string strFName)
-        {
-            _fileName = strFName;
-        }
-
-        internal virtual void SetLineNumber(int iLine)
-        {
-            _lineNumber = iLine;
-        }
-
-        internal virtual void SetColumnNumber(int iCol)
-        {
-            _columnNumber = iCol;
-        }
-
-        internal virtual void SetIsLastFrameFromForeignExceptionStackTrace(bool fIsLastFrame)
-        {
-            _isLastFrameFromForeignExceptionStackTrace = fIsLastFrame;
-        }
-
-        internal virtual bool GetIsLastFrameFromForeignExceptionStackTrace()
-        {
-            return _isLastFrameFromForeignExceptionStackTrace;
-        }
-
-        /// <summary>
-        /// Returns the method the frame is executing
-        /// </summary>
-        public virtual MethodBase GetMethod()
-        {
-            return _method;
-        }
-
-        /// <summary>
-        /// Returns the offset from the start of the native (jitted) code for the
-        /// method being executed
-        /// </summary>
-        public virtual int GetNativeOffset()
-        {
-            return _nativeOffset;
-        }
-
-
-        /// <summary>
-        /// Returns the offset from the start of the IL code for the
-        /// method being executed.  This offset may be approximate depending
-        /// on whether the jitter is generating debuggable code or not.
-        /// </summary>
-        public virtual int GetILOffset()
-        {
-            return _ilOffset;
-        }
-
-        /// <summary>
-        /// Returns the file name containing the code being executed.  This
-        /// information is normally extracted from the debugging symbols
-        /// for the executable.
-        /// </summary>
-        public virtual string GetFileName()
-        {
-            return _fileName;
-        }
-
-        /// <summary>
-        /// Returns the line number in the file containing the code being executed.
-        /// This information is normally extracted from the debugging symbols
-        /// for the executable.
-        /// </summary>
-        public virtual int GetFileLineNumber()
-        {
-            return _lineNumber;
-        }
-
-        /// <summary>
-        /// Returns the column number in the line containing the code being executed.
-        /// This information is normally extracted from the debugging symbols
-        /// for the executable.
-        /// </summary>
-        public virtual int GetFileColumnNumber()
-        {
-            return _columnNumber;
-        }
-
-        /// <summary>
-        /// Builds a readable representation of the stack frame
-        /// </summary>
-        public override string ToString()
-        {
-            StringBuilder sb = new StringBuilder(255);
-#if !CORECLR
-            bool includeFileInfoIfAvailable;
-#endif
-
-            if (_method != null)
+            _ipAddress = ipAddress;
+            _needFileInfo = needFileInfo;
+            
+            if (_ipAddress == StackTraceHelper.SpecialIP.EdiSeparator)
             {
-                sb.Append(_method.Name);
+                SetIsLastFrameFromForeignExceptionStackTrace(true);
+            }
+            else if (_ipAddress != IntPtr.Zero)
+            {
+                IntPtr methodStartAddress = RuntimeImports.RhFindMethodStartAddress(ipAddress);
 
-                // deal with the generic portion of the method
-                if (_method is MethodInfo methodInfo && methodInfo.IsGenericMethod)
+                _nativeOffset = (int)(_ipAddress.ToInt64() - methodStartAddress.ToInt64());
+
+                DeveloperExperience.Default.TryGetILOffsetWithinMethod(_ipAddress, out _ilOffset);
+                DeveloperExperience.Default.TryGetMethodBase(methodStartAddress, out _method);
+
+                if (needFileInfo)
                 {
-                    Type[] typars = methodInfo.GetGenericArguments();
-
-                    sb.Append('<');
-                    int k = 0;
-                    bool fFirstTyParam = true;
-                    while (k < typars.Length)
-                    {
-                        if (fFirstTyParam == false)
-                            sb.Append(',');
-                        else
-                            fFirstTyParam = false;
-
-                        sb.Append(typars[k].Name);
-                        k++;
-                    }
-
-                    sb.Append('>');
+                    DeveloperExperience.Default.TryGetSourceLineInfo(
+                        _ipAddress,
+                        out _fileName,
+                        out _lineNumber,
+                        out _columnNumber);
                 }
-#if !CORECLR
-                includeFileInfoIfAvailable = true;
+            }
+        }
+
+        /// <summary>
+        /// Internal stack frame initialization based on frame index within the stack of the current thread.
+        /// </summary>
+        private void BuildStackFrame(int frameIndex, bool needFileInfo)
+        {
+            IntPtr ipAddress = LocateIpAddressForStackFrame(frameIndex);
+            InitializeForIpAddress(ipAddress, needFileInfo);
+        }
+        
+        /// <summary>
+        /// Locate IP address corresponding to a given frame. Ignore .NET Native-specific rethrow markers.
+        /// </summary>
+        private IntPtr LocateIpAddressForStackFrame(int frameIndex)
+        {
+            IntPtr[] frameArray = new IntPtr[frameIndex + 1];
+            int returnedFrameCount = RuntimeImports.RhGetCurrentThreadStackTrace(frameArray);
+            int realFrameCount = (returnedFrameCount >= 0 ? returnedFrameCount : frameArray.Length);
+            if (frameIndex < realFrameCount)
+            {
+                return frameArray[frameIndex];
+            }
+
+            // No more frames are available
+            return IntPtr.Zero;
+        }
+
+        /// <summary>
+        /// Return native IP address for this stack frame.
+        /// </summary>
+        internal IntPtr GetNativeIPAddress()
+        {
+            return _ipAddress;
+        }
+
+        /// <summary>
+        /// Check whether method info is available.
+        /// </summary>
+        internal bool HasMethod()
+        {
+            return _method != null;
+        }
+
+        /// <summary>
+        /// Format stack frame without MethodBase info. Return true if the stack info
+        /// is valid and line information should be appended if available.
+        /// </summary>
+        private bool AppendStackFrameWithoutMethodBase(StringBuilder builder)
+        {
+            builder.Append(DeveloperExperience.Default.CreateStackTraceString(_ipAddress, includeFileInfo: false));
+            return true;
+        }
+
+        /// <summary>
+        /// Builds a representation of the stack frame for use in the stack trace.
+        /// </summary>
+        internal void AppendToStackTrace(StringBuilder builder)
+        {
+            if (_ipAddress == StackTraceHelper.SpecialIP.EdiSeparator)
+            {
+                builder.AppendLine(SR.StackTrace_EndStackTraceFromPreviousThrow);
             }
             else
             {
-                includeFileInfoIfAvailable = AppendStackFrameWithoutMethodBase(sb);
+                builder.Append(SR.StackTrace_AtWord);
+                builder.AppendLine(DeveloperExperience.Default.CreateStackTraceString(_ipAddress, _needFileInfo));
             }
-
-            if (includeFileInfoIfAvailable)
-            {
-#endif
-                sb.Append(" at offset ");
-                if (_nativeOffset == OFFSET_UNKNOWN)
-                    sb.Append("<offset unknown>");
-                else
-                    sb.Append(_nativeOffset);
-
-                sb.Append(" in file:line:column ");
-
-                bool useFileName = (_fileName != null);
-
-                if (!useFileName)
-                    sb.Append("<filename unknown>");
-                else
-                    sb.Append(_fileName);
-                sb.Append(':');
-                sb.Append(_lineNumber);
-                sb.Append(':');
-                sb.Append(_columnNumber);
-            }
-            else
-            {
-                sb.Append("<null>");
-            }
-            sb.Append(Environment.NewLine);
-
-            return sb.ToString();
         }
     }
 }
