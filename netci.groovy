@@ -78,7 +78,12 @@ Constants.scenarios.each { scenario ->
                 // This call performs test run checks for the CI.
                 Utilities.addXUnitDotNETResults(newJob, '**/testResults.xml')
                 Utilities.addArchival(newJob, "**/testResults.xml")
-                Utilities.setMachineAffinity(newJob, os, Constants.imageVersionMap[os])
+                if (os == 'Windows_NT') {
+                    Utilities.setMachineAffinity(newJob, 'Windows.10.Wasm.Open')
+                }
+                else {
+                    Utilities.setMachineAffinity(newJob, os, Constants.imageVersionMap[os])
+                }
                 Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
 
                 if (isPR) {
