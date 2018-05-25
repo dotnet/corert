@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
 using System.Text;
 using System;
 using System.IO;
@@ -47,7 +46,10 @@ namespace System.Diagnostics
         /// </summary>
         private int _columnNumber;
 
-        /// <summary>
+#if CORECLR
+        [System.Runtime.Serialization.OptionalField]
+#endif
+		/// <summary>
         /// This flag is set to true when the frame represents a rethrow marker.
         /// </summary>
         private bool _isLastFrameFromForeignExceptionStackTrace;
@@ -236,7 +238,9 @@ namespace System.Diagnostics
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder(255);
+#if !CORECLR
             bool includeFileInfoIfAvailable;
+#endif
 
             if (_method != null)
             {
@@ -263,6 +267,7 @@ namespace System.Diagnostics
 
                     sb.Append('>');
                 }
+#if !CORECLR
                 includeFileInfoIfAvailable = true;
             }
             else
@@ -272,6 +277,7 @@ namespace System.Diagnostics
 
             if (includeFileInfoIfAvailable)
             {
+#endif
                 sb.Append(" at offset ");
                 if (_nativeOffset == OFFSET_UNKNOWN)
                     sb.Append("<offset unknown>");
