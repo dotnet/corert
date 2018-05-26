@@ -20,7 +20,8 @@ namespace Internal.Runtime.Interpreter
 
         public void Interpret(ref CallInterceptorArgs callInterceptorArgs)
         {
-
+            ILDisassembler disassembler = new ILDisassembler(_methodIL);
+            ILInstruction instruction = disassembler.GetNextILInstruction();
         }
     }
 }
