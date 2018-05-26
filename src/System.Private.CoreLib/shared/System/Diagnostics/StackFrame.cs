@@ -46,9 +46,6 @@ namespace System.Diagnostics
         /// </summary>
         private int _columnNumber;
 
-#if CORECLR
-        [System.Runtime.Serialization.OptionalField]
-#endif
 		/// <summary>
         /// This flag is set to true when the frame represents a rethrow marker.
         /// </summary>
