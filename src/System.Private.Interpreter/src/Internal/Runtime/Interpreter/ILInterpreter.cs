@@ -26,7 +26,7 @@ namespace Internal.Runtime.Interpreter
             ILInstruction instruction = disassembler.GetNextILInstruction();
             while (instruction != null)
             {
-                Evaluator.EvaluateInstruction(instruction, _stack, ref callInterceptorArgs);
+                ILEvaluator.EvaluateInstruction(instruction, _stack, ref callInterceptorArgs);
                 instruction = disassembler.GetNextILInstruction();
             }
         }

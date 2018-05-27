@@ -23,7 +23,7 @@
     <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelStack.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Internal\Runtime\Interpreter\Evaluator.cs" />
+    <Compile Include="Internal\Runtime\Interpreter\ILEvaluator.cs" />
     <Compile Include="Internal\Runtime\Interpreter\ILInterpreter.cs" />
     <Compile Include="Internal\Runtime\Interpreter\InterpreterCallInterceptor.cs" />
     <Compile Include="Internal\Runtime\Interpreter\InterpreterExecutionStrategy.cs" />
