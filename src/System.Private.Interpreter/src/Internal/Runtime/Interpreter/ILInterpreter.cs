@@ -7,7 +7,7 @@ using Internal.TypeSystem;
 
 namespace Internal.Runtime.Interpreter
 {
-    class ILInterpreter
+    internal class ILInterpreter
     {
         private readonly MethodDesc _method;
         private readonly MethodIL _methodIL;
@@ -26,6 +26,7 @@ namespace Internal.Runtime.Interpreter
             ILInstruction instruction = disassembler.GetNextILInstruction();
             while (instruction != null)
             {
+                Evaluator.EvaluateInstruction(instruction, _stack, ref callInterceptorArgs);
                 instruction = disassembler.GetNextILInstruction();
             }
         }

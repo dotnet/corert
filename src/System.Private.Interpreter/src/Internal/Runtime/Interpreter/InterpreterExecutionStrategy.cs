@@ -4,7 +4,7 @@ using Internal.TypeSystem;
 
 namespace Internal.Runtime.Interpreter
 {
-    class InterpreterExecutionStrategy : MethodExecutionStrategy
+    public class InterpreterExecutionStrategy : MethodExecutionStrategy
     {
         public override IntPtr OnEntryPoint(MethodEntrypointPtr methodEntrypointPtr, IntPtr callerArgumentsInfo)
         {
