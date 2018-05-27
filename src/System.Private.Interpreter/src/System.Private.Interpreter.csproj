@@ -22,6 +22,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\TypeSystem\IL\EcmaMethodIL.cs" />
+    <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelStack.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\Runtime\Interpreter\ILInterpreter.cs" />
