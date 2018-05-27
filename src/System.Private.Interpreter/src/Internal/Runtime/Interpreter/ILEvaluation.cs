@@ -7,7 +7,7 @@ using Internal.Runtime.CallInterceptor;
 
 namespace Internal.Runtime.Interpreter
 {
-    internal static class ILEvaluator
+    internal static class ILEvaluation
     {
         public static void EvaluateInstruction(ILInstruction instruction, LowLevelStack<object> stack, ref CallInterceptorArgs callInterceptorArgs)
         {
