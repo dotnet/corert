@@ -357,6 +357,7 @@ while [ "$1" != "" ]; do
             fi
             ;;
         -corefx)
+            exit 0
             CoreRT_RunCoreFXTests=true;
             shift
             ;;
