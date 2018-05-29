@@ -139,7 +139,5 @@ namespace System.Diagnostics
                 builder.AppendLine(DeveloperExperience.Default.CreateStackTraceString(_ipAddress, _needFileInfo));
             }
         }
-
-        private bool IncludeFileInfoIfAvailable() => (_method != null) || AppendStackFrameWithoutMethodBase(sb);
     }
 }

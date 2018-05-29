@@ -235,6 +235,7 @@ namespace System.Diagnostics
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder(255);
+            bool includeFileInfoIfAvailable;
 
             if (_method != null)
             {
@@ -261,9 +262,14 @@ namespace System.Diagnostics
 
                     sb.Append('>');
                 }
+                includeFileInfoIfAvailable = true;
+            }
+            else
+            {
+                includeFileInfoIfAvailable = AppendStackFrameWithoutMethodBase(sb);
             }
 
-            if (IncludeFileInfoIfAvailable())
+            if (includeFileInfoIfAvailable)
             {
                 sb.Append(" at offset ");
                 if (_nativeOffset == OFFSET_UNKNOWN)
@@ -283,6 +289,7 @@ namespace System.Diagnostics
                 sb.Append(_lineNumber);
                 sb.Append(':');
                 sb.Append(_columnNumber);
+                
             }
             else
             {
