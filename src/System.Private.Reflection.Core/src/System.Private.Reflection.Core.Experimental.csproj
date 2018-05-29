@@ -3,6 +3,7 @@
     <AssemblyName>System.Private.Reflection.Core.Experimental</AssemblyName>
     <EcmaMetadataSupport>true</EcmaMetadataSupport>
     <JitSupport>true</JitSupport>
+    <InterpreterSupport>true</InterpreterSupport>
   </PropertyGroup>
 
   <Import Project="System.Private.Reflection.Core.csproj" />
