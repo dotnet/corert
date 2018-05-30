@@ -151,6 +151,15 @@ namespace ILCompiler.DependencyAnalysis
 
             factory.InteropStubManager.AddInterestingInteropConstructedTypeDependencies(ref dependencyList, factory, _type);
 
+            // Keep track of the default constructor map dependency for this type if it has a default constructor
+            MethodDesc defaultCtor = closestDefType.GetDefaultConstructor();
+            if (defaultCtor != null)
+            {
+                dependencyList.Add(new DependencyListEntry(
+                    factory.MethodEntrypoint(defaultCtor.GetCanonMethodTarget(CanonicalFormKind.Specific), closestDefType.IsValueType), 
+                    "DefaultConstructorNode"));
+            }
+
             return dependencyList;
         }
 

@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Linq;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -15,7 +16,7 @@ using ILCompiler.DependencyAnalysisFramework;
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
-    /// Dependency analysis node used to keep track of types needing an entry in the default
+    /// Dependency analysis node used to keep track of types used by lazy generics, needing an entry in the default
     /// constructor map hashtable
     /// </summary>
     internal sealed class DefaultConstructorFromLazyNode : DependencyNodeCore<NodeFactory>
@@ -96,19 +97,22 @@ namespace ILCompiler.DependencyAnalysis
             Section defaultConstructorHashtableSection = writer.NewSection();
             defaultConstructorHashtableSection.Place(defaultConstructorHashtable);
 
-            foreach (var ctorNeeded in factory.MetadataManager.GetDefaultConstructorsNeeded())
+            foreach (var type in factory.MetadataManager.GetTypesWithConstructedEETypes().Union(GetTypesNeedingDefaultConstructors(factory)))
             {
-                MethodDesc defaultCtor = ctorNeeded.TypeNeedingDefaultCtor.GetDefaultConstructor();
-                Debug.Assert(defaultCtor != null);
+                MethodDesc defaultCtor = type.GetDefaultConstructor();
+                if (defaultCtor == null)
+                    continue;
 
-                ISymbolNode typeNode = factory.NecessaryTypeSymbol(ctorNeeded.TypeNeedingDefaultCtor);
+                defaultCtor = defaultCtor.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+                ISymbolNode typeNode = factory.NecessaryTypeSymbol(type);
                 ISymbolNode defaultCtorNode = factory.MethodEntrypoint(defaultCtor, false);
 
                 Vertex vertex = writer.GetTuple(
                     writer.GetUnsignedConstant(_externalReferences.GetIndex(typeNode)),
                     writer.GetUnsignedConstant(_externalReferences.GetIndex(defaultCtorNode)));
 
-                int hashCode = ctorNeeded.TypeNeedingDefaultCtor.GetHashCode();
+                int hashCode = type.GetHashCode();
                 defaultConstructorHashtable.Append((uint)hashCode, defaultConstructorHashtableSection.Place(vertex));
             }
 
@@ -117,6 +121,12 @@ namespace ILCompiler.DependencyAnalysis
             _endSymbol.SetSymbolOffset(hashTableBytes.Length);
 
             return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
+        }
+
+        private IEnumerable<TypeDesc> GetTypesNeedingDefaultConstructors(NodeFactory factory)
+        {
+            foreach (var ctorNeeded in factory.MetadataManager.GetDefaultConstructorsNeeded())
+                yield return ctorNeeded.TypeNeedingDefaultCtor;
         }
     }
 }
