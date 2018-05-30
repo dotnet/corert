@@ -118,7 +118,7 @@ On Linux / macOS:
 tests/runtest.sh -corefx
 ```
 
-The tests assemblies to run are defined in `TopN.CoreFX.issues.json` with their respectively excluded test methods, classes or namespaces.
+The tests assemblies to run are defined in `TopN.CoreFX.[Windows/Unix].issues.json` with their respectively excluded test methods, classes or namespaces.
 
 ### Reproducing test failures
 
@@ -149,7 +149,7 @@ Open Command Promps and run:
 
 ### Enabling tests
 
-To enable a new CoreFX test project to run against CoreRT add its fully qualified name to `TopN.CoreFX.issues.json`.
+To enable a new CoreFX test project to run against CoreRT add its fully qualified name to `TopN.CoreFX.[Windows/Unix].issues.json`.
 To remove a test from a test project which is already enabled, in the same file find and delete the definition containing its name.
 
 ### Disabling tests
