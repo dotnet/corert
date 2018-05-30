@@ -28,7 +28,7 @@ namespace System.Threading
                     {
                         int error = Marshal.GetLastWin32Error();
                         var exception = new OutOfMemoryException();
-                        exception.SetErrorCode(error);
+                        exception.HResult = error;
                         throw exception;
                     }
 

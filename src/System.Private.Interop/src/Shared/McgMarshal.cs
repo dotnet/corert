@@ -147,11 +147,6 @@ namespace System.Runtime.InteropServices
         }
 
 #if ENABLE_MIN_WINRT
-        public static unsafe void SetExceptionErrorCode(Exception exception, int errorCode)
-        {
-            InteropExtensions.SetExceptionErrorCode(exception, errorCode);
-        }
-
         /// <summary>
         /// Used in Marshalling code
         /// Gets the handle of the CriticalHandle
