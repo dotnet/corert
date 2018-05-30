@@ -559,7 +559,7 @@ namespace System
             if (array.Length - index < length)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
-            return ArraySortHelper<T>.BinarySearch(array, index, length, value, comparer);
+            return ArraySortHelper<T>.Default.BinarySearch(array, index, length, value, comparer);
         }
 
         // Returns the index of the first occurrence of a given value in an array.
@@ -1094,7 +1094,7 @@ namespace System
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
             if (length > 1)
-                ArraySortHelper<T>.Sort(array, index, length, comparer);
+                ArraySortHelper<T>.Default.Sort(array, index, length, comparer);
         }
 
         public static void Sort<T>(T[] array, Comparison<T> comparison)
