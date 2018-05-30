@@ -17,14 +17,6 @@ namespace System
 {
     public partial class MissingMemberException : MemberAccessException
     {
-        public override string Message
-        {
-            get
-            {
-                return ClassName == null ? base.Message : SR.Format(SR.MissingMember_Name, ClassName + "." + MemberName + (Signature != null ? " " + FormatSignature(Signature) : string.Empty));
-            }
-        }
-
         internal static string FormatSignature(byte[] signature)
         {
             // This is not the correct implementation, however, it's probably not worth the time to port given that 
