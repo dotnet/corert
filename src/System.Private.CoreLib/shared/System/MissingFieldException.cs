@@ -15,7 +15,7 @@ namespace System
 {
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public class MissingFieldException : MissingMemberException
+    public partial class MissingFieldException : MissingMemberException
     {
         public MissingFieldException()
             : base(SR.Arg_MissingFieldException)
@@ -44,14 +44,6 @@ namespace System
         protected MissingFieldException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-        }
-
-        public override String Message
-        {
-            get
-            {
-                return ClassName == null ? base.Message : SR.Format(SR.MissingField_Name, ClassName + "." + MemberName + (Signature != null ? " " + FormatSignature(Signature) : string.Empty));
-            }
         }
     }
 }
