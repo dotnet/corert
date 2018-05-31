@@ -340,7 +340,7 @@ namespace System
         public int HResult
         {
             get { return _HResult; }
-            protected set { _HResult = value; }
+            set { _HResult = value; }
         }
 
         // Returns the stack trace as a string.  If no stack trace is
