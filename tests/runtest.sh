@@ -133,7 +133,7 @@ download_and_unzip_corefx_tests_artifacts()
     if [ ${__exitcode} != 0 ]; then
         exit ${__exitcode}
     fi
-    
+
    ${CoreRT_CliBinDir}/dotnet build /m /ConsoleLoggerParameters:ForceNoAlign /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:Platform=${CoreRT_BuildArch} /p:OSGroup=${CoreRT_BuildOS} /p:RepoLocalBuild=true "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" "/p:OutputPath=${CoreRT_TestingUtilitiesOutputDir}" "${CoreRT_XunitHelperProjectPath}" 
     __exitcode=$?
     if [ ${__exitcode} != 0 ]; then
@@ -216,7 +216,7 @@ run_corefx_tests()
     export CoreRT_CliBinDir
 
     if [ ! -d "${CoreRT_TestExtRepo_CoreFX}" ]; then
-        mkdir ${CoreRT_TestExtRepo_CoreFX} -p
+        mkdir -p ${CoreRT_TestExtRepo_CoreFX}
     fi
 
     # Set paths to helpers
@@ -226,7 +226,7 @@ run_corefx_tests()
     CoreRT_XunitHelperName=CoreFX.TestUtils.XUnit
     CoreRT_XunitHelperProjectPath="${CoreRT_TestRoot}/CoreFX/runtest/src/TestUtils/XUnit/${CoreRT_XunitHelperName}.csproj"    
     
-    TESTS_REMOTE_URL=$(<${CoreRT_TestRoot}/CoreFXTestListURL.txt)
+    TEST_LIST_JSON=${CoreRT_TestRoot}/TopN.CoreFX.Unix.issues.json
     case "$(uname -s)" in 
         # Check if we're running under Linux
         Linux)
@@ -242,7 +242,6 @@ run_corefx_tests()
         ;;
     esac
 
-    TEST_LIST_JSON=${CoreRT_TestRoot}/TopN.CoreFX.issues.json
 
     download_and_unzip_corefx_tests_artifacts ${TESTS_REMOTE_URL} ${TEST_LIST_JSON}
     __exitcode=$?
@@ -357,7 +356,6 @@ while [ "$1" != "" ]; do
             fi
             ;;
         -corefx)
-            exit 0
             CoreRT_RunCoreFXTests=true;
             shift
             ;;
