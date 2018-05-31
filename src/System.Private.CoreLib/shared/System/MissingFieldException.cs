@@ -2,20 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*=============================================================================
-**
-**
-** Purpose: The exception class for class loading failures.
-**
-=============================================================================*/
-
 using System.Runtime.Serialization;
 
 namespace System
 {
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public class MissingFieldException : MissingMemberException
+    public class MissingFieldException : MissingMemberException, ISerializable
     {
         public MissingFieldException()
             : base(SR.Arg_MissingFieldException)
@@ -46,11 +39,19 @@ namespace System
         {
         }
 
-        public override String Message
+        public override string Message
         {
             get
             {
-                return ClassName == null ? base.Message : SR.Format(SR.MissingField_Name, ClassName + "." + MemberName + (Signature != null ? " " + FormatSignature(Signature) : string.Empty));
+                if (ClassName == null)
+                {
+                    return base.Message;
+                }
+                else
+                {
+                    // do any desired fixups to classname here.
+                    return SR.Format(SR.MissingField_Name, (Signature != null ? FormatSignature(Signature) + " " : "") + ClassName + "." + MemberName);
+                }
             }
         }
     }
