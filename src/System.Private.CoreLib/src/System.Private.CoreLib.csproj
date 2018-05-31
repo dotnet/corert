@@ -224,8 +224,7 @@
     <Compile Include="System\Helpers.cs" />
     <Compile Include="System\Math.CoreRT.cs" />
     <Compile Include="System\MathF.CoreRT.cs" />
-    <Compile Include="System\MissingFieldException.cs" />
-    <Compile Include="System\MissingMemberException.cs" />
+    <Compile Include="System\MissingMemberException.CoreRT.cs" />
     <Compile Include="System\MulticastDelegate.cs" />
     <Compile Include="System\Number.CoreRT.cs" />
     <Compile Include="System\Object.cs" />
