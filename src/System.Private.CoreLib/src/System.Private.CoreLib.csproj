@@ -183,6 +183,7 @@
     <Compile Include="System\AppContext.cs" />
     <Compile Include="System\AppContextConfigHelper.cs" />
     <Compile Include="System\AppContextDefaultValues.cs" />
+    <Compile Include="System\AppContextSwitches.cs" />
     <Compile Include="System\Buffer.cs" />
     <Compile Include="System\ByReference.cs" />
     <Compile Include="System\Collections\Generic\ArraySortHelper.CoreRT.cs" />
