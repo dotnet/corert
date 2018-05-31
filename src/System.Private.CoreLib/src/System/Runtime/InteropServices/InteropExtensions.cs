@@ -358,12 +358,11 @@ namespace System.Runtime.InteropServices
             return RuntimeImports.RhHandleCompareExchangeVariableType(handle, oldType, newType);
         }
         
-#if PROJECTN
-         public static void SetExceptionErrorCode(Exception exception, int hr)
-         {
-             // TODO: delete
-         }
-#endif
+        public static void SetExceptionErrorCode(Exception exception, int hr)
+        {
+            exception.HResult = hr;
+        }
+        
         public static void SetExceptionMessage(Exception exception, string message)
         {
             exception.SetMessage(message);

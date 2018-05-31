@@ -374,6 +374,11 @@ namespace System.Runtime.InteropServices
         {
             throw new NotSupportedException("RuntimeHandleCompareExchangeVariableType");
         }
+        
+        public static void SetExceptionErrorCode(Exception exception, int hr)
+        {
+            throw new NotSupportedException("SetExceptionErrorCode");
+        }
 
         public static Exception CreateDataMisalignedException(string message)
         {
