@@ -2761,4 +2761,19 @@
   <data name="ConcurrentCollection_SyncRoot_NotSupported" xml:space="preserve">
     <value>The SyncRoot property may not be used for the synchronization of concurrent collections.</value>
   </data>
+  <data name="Arg_WrongAsyncResult" xml:space="preserve">
+    <value>IAsyncResult object did not come from the corresponding async method on this type.</value>
+  </data>
+  <data name="InvalidOperation_EndReadCalledMultiple" xml:space="preserve">
+    <value>EndRead can only be called once for each asynchronous operation.</value>
+  </data>
+  <data name="InvalidOperation_EndWriteCalledMultiple" xml:space="preserve">
+    <value>EndWrite can only be called once for each asynchronous operation.</value>
+  </data>
+  <data name="InvalidOperation_WrongAsyncResultOrEndReadCalledMultiple" xml:space="preserve">
+    <value>Either the IAsyncResult object did not come from the corresponding async method on this type, or EndRead was called multiple times with the same IAsyncResult.</value>
+  </data>
+  <data name="InvalidOperation_WrongAsyncResultOrEndWriteCalledMultiple" xml:space="preserve">
+    <value>Either the IAsyncResult object did not come from the corresponding async method on this type, or EndWrite was called multiple times with the same IAsyncResult.</value>
+  </data>
 </root>
