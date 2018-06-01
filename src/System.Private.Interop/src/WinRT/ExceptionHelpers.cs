@@ -719,7 +719,7 @@ namespace System.Runtime.InteropServices
                 InteropExtensions.SetExceptionMessage(exception, message);
             }
 
-            InteropExtensions.SetExceptionErrorCode(exception, errorCode);
+            exception.HResult = errorCode;
 
             return exception;
         }

@@ -177,14 +177,6 @@ namespace System
         }
 
         /// <summary>
-        /// Allow System.Private.Interop to set HRESULT of an exception
-        /// </summary>
-        internal void SetErrorCode(int hr)
-        {
-            HResult = hr;
-        }
-
-        /// <summary>
         /// Allow System.Private.Interop to set message of an exception
         /// </summary>
         internal void SetMessage(string msg)

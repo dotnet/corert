@@ -99,7 +99,7 @@ namespace Internal.Runtime.Augments
             // Throw an ApplicationException for compatibility with CoreCLR. First save the error code.
             int errorCode = Marshal.GetLastWin32Error();
             var ex = new ApplicationException();
-            ex.SetErrorCode(errorCode);
+            ex.HResult = errorCode;
             throw ex;
         }
 

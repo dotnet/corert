@@ -51,7 +51,7 @@ namespace System.Threading
                 if (lastError != Interop.Errors.ERROR_TIMEOUT)
                 {
                     var exception = new OutOfMemoryException();
-                    exception.SetErrorCode(lastError);
+                    exception.HResult = lastError;
                     throw exception;
                 }
             }
