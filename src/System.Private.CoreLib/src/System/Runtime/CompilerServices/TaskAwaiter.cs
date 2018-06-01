@@ -54,10 +54,18 @@ namespace System.Runtime.CompilerServices
 {
     /// <summary>Provides an awaiter for awaiting a <see cref="System.Threading.Tasks.Task"/>.</summary>
     /// <remarks>This type is intended for compiler use only.</remarks>
-    public readonly struct TaskAwaiter : ICriticalNotifyCompletion
+    public readonly struct TaskAwaiter : ICriticalNotifyCompletion, ITaskAwaiter
     {
+        // WARNING: Unsafe.As is used to access the generic TaskAwaiter<> as TaskAwaiter.
+        // Its layout must remain the same.
+
         /// <summary>The task being awaited.</summary>
-        private readonly Task m_task;
+#if CORECLR
+        internal
+#else
+        private
+#endif
+        readonly Task m_task;
 
         /// <summary>Initializes the <see cref="TaskAwaiter"/>.</summary>
         /// <param name="task">The <see cref="System.Threading.Tasks.Task"/> to be awaited.</param>
@@ -99,7 +107,7 @@ namespace System.Runtime.CompilerServices
         /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
         /// <exception cref="System.Threading.Tasks.TaskCanceledException">The task was canceled.</exception>
         /// <exception cref="System.Exception">The task completed in a Faulted state.</exception>
-        [StackTraceHidden] 
+        [StackTraceHidden]
         public void GetResult()
         {
             ValidateEnd(m_task);
@@ -110,7 +118,7 @@ namespace System.Runtime.CompilerServices
         /// prior to completing the await.
         /// </summary>
         /// <param name="task">The awaited task.</param>
-        [StackTraceHidden] 
+        [StackTraceHidden]
         internal static void ValidateEnd(Task task)
         {
             // Fast checks that can be inlined.
@@ -139,7 +147,7 @@ namespace System.Runtime.CompilerServices
             // but where for one reason or another synchronous rather than asynchronous waiting is needed.
             if (!task.IsCompleted)
             {
-                bool taskCompleted = task.InternalWait(Timeout.Infinite, default(CancellationToken));
+                bool taskCompleted = task.InternalWait(Timeout.Infinite, default);
                 Debug.Assert(taskCompleted, "With an infinite timeout, the task should have always completed.");
             }
 
@@ -195,6 +203,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="task">The task being awaited.</param>
         /// <param name="continuation">The action to invoke when the await operation completes.</param>
         /// <param name="continueOnCapturedContext">Whether to capture and marshal back to the current context.</param>
+        /// <param name="flowExecutionContext">Whether to flow ExecutionContext across the await.</param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
         /// <remarks>This method is intended for compiler user rather than use directly in code.</remarks>
@@ -257,8 +266,11 @@ namespace System.Runtime.CompilerServices
 
     /// <summary>Provides an awaiter for awaiting a <see cref="System.Threading.Tasks.Task{TResult}"/>.</summary>
     /// <remarks>This type is intended for compiler use only.</remarks>
-    public readonly struct TaskAwaiter<TResult> : ICriticalNotifyCompletion
+    public readonly struct TaskAwaiter<TResult> : ICriticalNotifyCompletion, ITaskAwaiter
     {
+        // WARNING: Unsafe.As is used to access TaskAwaiter<> as the non-generic TaskAwaiter.
+        // Its layout must remain the same.
+
         /// <summary>The task being awaited.</summary>
         private readonly Task<TResult> m_task;
 
@@ -311,6 +323,20 @@ namespace System.Runtime.CompilerServices
         }
     }
 
+    /// <summary>
+    /// Marker interface used to know whether a particular awaiter is either a
+    /// TaskAwaiter or a TaskAwaiter`1.  It must not be implemented by any other
+    /// awaiters.
+    /// </summary>
+    internal interface ITaskAwaiter { }
+
+    /// <summary>
+    /// Marker interface used to know whether a particular awaiter is either a
+    /// CTA.ConfiguredTaskAwaiter or a CTA`1.ConfiguredTaskAwaiter.  It must not
+    /// be implemented by any other awaiters.
+    /// </summary>
+    internal interface IConfiguredTaskAwaiter { }
+
     /// <summary>Provides an awaitable object that allows for configured awaits on <see cref="System.Threading.Tasks.Task"/>.</summary>
     /// <remarks>This type is intended for compiler use only.</remarks>
     public readonly struct ConfiguredTaskAwaitable
@@ -338,12 +364,25 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Provides an awaiter for a <see cref="ConfiguredTaskAwaitable"/>.</summary>
         /// <remarks>This type is intended for compiler use only.</remarks>
-        public readonly struct ConfiguredTaskAwaiter : ICriticalNotifyCompletion
+        public readonly struct ConfiguredTaskAwaiter : ICriticalNotifyCompletion, IConfiguredTaskAwaiter
         {
+            // WARNING: Unsafe.As is used to access the generic ConfiguredTaskAwaiter as this.
+            // Its layout must remain the same.
+
             /// <summary>The task being awaited.</summary>
-            private readonly Task m_task;
+#if CORECLR
+            internal
+#else
+            private
+#endif
+            readonly Task m_task; 
             /// <summary>Whether to attempt marshaling back to the original context.</summary>
-            private readonly bool m_continueOnCapturedContext;
+#if CORECLR
+            internal
+#else
+            private
+#endif
+            readonly bool m_continueOnCapturedContext; 
 
             /// <summary>Initializes the <see cref="ConfiguredTaskAwaiter"/>.</summary>
             /// <param name="task">The <see cref="System.Threading.Tasks.Task"/> to await.</param>
@@ -425,8 +464,11 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Provides an awaiter for a <see cref="ConfiguredTaskAwaitable{TResult}"/>.</summary>
         /// <remarks>This type is intended for compiler use only.</remarks>
-        public readonly struct ConfiguredTaskAwaiter : ICriticalNotifyCompletion
+        public readonly struct ConfiguredTaskAwaiter : ICriticalNotifyCompletion, IConfiguredTaskAwaiter
         {
+            // WARNING: Unsafe.As is used to access this as the non-generic ConfiguredTaskAwaiter.
+            // Its layout must remain the same.
+
             /// <summary>The task being awaited.</summary>
             private readonly Task<TResult> m_task;
             /// <summary>Whether to attempt marshaling back to the original context.</summary>
