@@ -5,6 +5,9 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+#if CORECLR
+using X86 = System.Runtime.Intrinsics.X86;
+#endif
 
 namespace System
 {
@@ -540,7 +543,11 @@ PosRem:
                 if (iHiRes > 2)
                 {
                     iNewScale = (int)iHiRes * 32 - 64 - 1;
-                    iNewScale -= LeadingZeroCount(rgulRes[iHiRes]);
+                    iNewScale -=
+#if CORECLR
+                        X86.Lzcnt.IsSupported ? (int)X86.Lzcnt.LeadingZeroCount(rgulRes[iHiRes]) :
+#endif
+                        LeadingZeroCount(rgulRes[iHiRes]);
 
                     // Multiply bit position by log10(2) to figure it's power of 10.
                     // We scale the log by 256.  log(2) = .30103, * 256 = 77.  Doing this 
@@ -759,11 +766,6 @@ ThrowOverflow:
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static int LeadingZeroCount(uint value)
             {
-#if CORECLR
-                if (System.Runtime.Intrinsics.X86.Lzcnt.IsSupported)
-                    return (int)System.Runtime.Intrinsics.X86.Lzcnt.LeadingZeroCount(value);
-#endif
-
                 int c = 1;
                 if ((value & 0xFFFF0000) == 0)
                 {
@@ -1601,10 +1603,19 @@ ReturnZero:
 
                 // Round to integer
                 //
-                uint ulMant = (uint)dbl;
-                dbl -= (double)ulMant;  // difference between input & integer
-                if (dbl > 0.5 || dbl == 0.5 && (ulMant & 1) != 0)
-                    ulMant++;
+                uint ulMant;
+#if CORECLR
+                // with SSE4.1 support ROUNDSD can be used
+                if (X86.Sse41.IsSupported)
+                    ulMant = (uint)(int)Math.Round(dbl);
+                else
+#endif
+                {
+                    ulMant = (uint)(int)dbl;
+                    dbl -= (int)ulMant;  // difference between input & integer
+                    if (dbl > 0.5 || dbl == 0.5 && (ulMant & 1) != 0)
+                        ulMant++;
+                }
 
                 if (ulMant == 0)
                     return;  // result should be zeroed out
@@ -1770,10 +1781,19 @@ ThrowOverflow:
 
                 // Round to int64
                 //
-                ulong ulMant = (ulong)dbl;
-                dbl -= (double)ulMant;  // difference between input & integer
-                if (dbl > 0.5 || dbl == 0.5 && (ulMant & 1) != 0)
-                    ulMant++;
+                ulong ulMant;
+#if CORECLR
+                // with SSE4.1 support ROUNDSD can be used
+                if (X86.Sse41.IsSupported)
+                    ulMant = (ulong)(long)Math.Round(dbl);
+                else
+#endif
+                {
+                    ulMant = (ulong)(long)dbl;
+                    dbl -= (long)ulMant;  // difference between input & integer
+                    if (dbl > 0.5 || dbl == 0.5 && (ulMant & 1) != 0)
+                        ulMant++;
+                }
 
                 if (ulMant == 0)
                     return;  // result should be zeroed out
@@ -2021,7 +2041,11 @@ ThrowOverflow:
                     if (ulTmp == 0)
                         ulTmp = d2.Mid;
 
-                    iCurScale = LeadingZeroCount(ulTmp);
+                    iCurScale =
+#if CORECLR
+                        X86.Lzcnt.IsSupported ? (int)X86.Lzcnt.LeadingZeroCount(ulTmp) :
+#endif
+                        LeadingZeroCount(ulTmp);
 
                     // Shift both dividend and divisor left by iCurScale.
                     // 
