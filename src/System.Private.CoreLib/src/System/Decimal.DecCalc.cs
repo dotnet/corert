@@ -1892,7 +1892,7 @@ ThrowOverflow:
             //**********************************************************************
             internal static double VarR8FromDec(ref Decimal pdecIn)
             {
-                // Value taken via reverse engineering the double that corrisponds to 2^65. (oleaut32 has ds2to64 = DEFDS(0, 0, DBLBIAS + 65, 0))
+                // Value taken via reverse engineering the double that corresponds to 2^64. (oleaut32 has ds2to64 = DEFDS(0, 0, DBLBIAS + 65, 0))
                 const double ds2to64 = 1.8446744073709552e+019;
 
                 double dbl = ((double)pdecIn.Low64 +
