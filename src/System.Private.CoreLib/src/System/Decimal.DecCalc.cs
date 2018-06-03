@@ -246,9 +246,9 @@ namespace System
                 ulong div = tmp / ulDen;
                 bufNum.High64 = div;
                 tmp = ((tmp - div * ulDen) << 32) | bufNum.U0;
-                uint div32 = (uint)(tmp / ulDen);
-                bufNum.U0 = div32;
-                return (uint)tmp - div32 * ulDen;
+                ulong div32 = tmp / ulDen;
+                bufNum.U0 = (uint)div32;
+                return (uint)(tmp - div32 * ulDen);
             }
 
             private static uint Div96ByConst10000(ref Buf12 bufNum)
@@ -258,9 +258,9 @@ namespace System
                 ulong div = tmp / ulDen;
                 bufNum.High64 = div;
                 tmp = ((tmp - div * ulDen) << 32) | bufNum.U0;
-                uint div32 = (uint)(tmp / ulDen);
-                bufNum.U0 = div32;
-                return (uint)tmp - div32 * ulDen;
+                ulong div32 = tmp / ulDen;
+                bufNum.U0 = (uint)div32;
+                return (uint)(tmp - div32 * ulDen);
             }
 
             private static uint Div96ByConst100(ref Buf12 bufNum)
@@ -270,9 +270,9 @@ namespace System
                 ulong div = tmp / ulDen;
                 bufNum.High64 = div;
                 tmp = ((tmp - div * ulDen) << 32) | bufNum.U0;
-                uint div32 = (uint)(tmp / ulDen);
-                bufNum.U0 = div32;
-                return (uint)tmp - div32 * ulDen;
+                ulong div32 = tmp / ulDen;
+                bufNum.U0 = (uint)div32;
+                return (uint)(tmp - div32 * ulDen);
             }
 
             private static uint Div96ByConst10(ref Buf12 bufNum)
@@ -282,9 +282,9 @@ namespace System
                 ulong div = tmp / ulDen;
                 bufNum.High64 = div;
                 tmp = ((tmp - div * ulDen) << 32) | bufNum.U0;
-                uint div32 = (uint)(tmp / ulDen);
-                bufNum.U0 = div32;
-                return (uint)tmp - div32 * ulDen;
+                ulong div32 = tmp / ulDen;
+                bufNum.U0 = (uint)div32;
+                return (uint)(tmp - div32 * ulDen);
             }
 
             /***
