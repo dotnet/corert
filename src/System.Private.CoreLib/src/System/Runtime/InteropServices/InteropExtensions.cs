@@ -357,12 +357,12 @@ namespace System.Runtime.InteropServices
         {
             return RuntimeImports.RhHandleCompareExchangeVariableType(handle, oldType, newType);
         }
-
+        
         public static void SetExceptionErrorCode(Exception exception, int hr)
         {
-            exception.SetErrorCode(hr);
+            exception.HResult = hr;
         }
-
+        
         public static void SetExceptionMessage(Exception exception, string message)
         {
             exception.SetMessage(message);

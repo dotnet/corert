@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
 using System.Text;
 using System;
 using System.IO;
@@ -35,7 +34,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Source file name representing the current code location if available, null otherwise.
         /// </summary>
-        private String _fileName;
+        private string _fileName;
 
         /// <summary>
         /// Line number representing the current code location if available, 0 otherwise.
@@ -52,7 +51,7 @@ namespace System.Diagnostics
         /// </summary>
         private bool _isLastFrameFromForeignExceptionStackTrace;
 
-        internal void InitMembers()
+        private void InitMembers()
         {
             _method = null;
             _nativeOffset = OFFSET_UNKNOWN;
@@ -104,7 +103,7 @@ namespace System.Diagnostics
         /// name and line number.  Use when you don't want to use the
         /// debugger's line mapping logic.
         /// </summary>
-        public StackFrame(String fileName, int lineNumber)
+        public StackFrame(string fileName, int lineNumber)
         {
             InitMembers();
             BuildStackFrame(StackTrace.METHODS_TO_SKIP, false);
@@ -118,7 +117,7 @@ namespace System.Diagnostics
         /// name, line number and column number.  Use when you don't want to
         /// use the debugger's line mapping logic.
         /// </summary>
-        public StackFrame(String fileName, int lineNumber, int colNumber)
+        public StackFrame(string fileName, int lineNumber, int colNumber)
         {
             InitMembers();
             BuildStackFrame(StackTrace.METHODS_TO_SKIP, false);
@@ -147,7 +146,7 @@ namespace System.Diagnostics
             _ilOffset = iOffset;
         }
 
-        internal virtual void SetFileName(String strFName)
+        internal virtual void SetFileName(string strFName)
         {
             _fileName = strFName;
         }
@@ -205,7 +204,7 @@ namespace System.Diagnostics
         /// information is normally extracted from the debugging symbols
         /// for the executable.
         /// </summary>
-        public virtual String GetFileName()
+        public virtual string GetFileName()
         {
             return _fileName;
         }
@@ -233,7 +232,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Builds a readable representation of the stack frame
         /// </summary>
-        public override String ToString()
+        public override string ToString()
         {
             StringBuilder sb = new StringBuilder(255);
             bool includeFileInfoIfAvailable;

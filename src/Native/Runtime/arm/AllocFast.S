@@ -469,7 +469,7 @@ LOCAL_LABEL(BoxAlloc8Failed):
         // finalization.
         mov         r0, r4 // restore EEType
         mov         r1, #(GC_ALLOC_ALIGN8 | GC_ALLOC_ALIGN8_BIAS)
-        EPILOG_POP  "{r4,pc}"
+        EPILOG_POP  "{r4,lr}"
         b           C_FUNC(RhpNewObject)
 
 LEAF_END RhpNewFastMisalign, _TEXT

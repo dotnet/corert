@@ -17,16 +17,15 @@ class Program
     {
         SimpleReadWriteThreadStaticTest.Run(42, "SimpleReadWriteThreadStatic");
 
-        // TODO: After issue https://github.com/dotnet/corert/issues/2695 is fixed, move FinalizeTest to run at the end
-        if (FinalizeTest.Run() != Pass)
-            return Fail;
-
         ThreadStaticsTestWithTasks.Run();
 
         if (ThreadTest.Run() != Pass)
             return Fail;
 
         if (TimerTest.Run() != Pass)
+            return Fail;
+        
+        if (FinalizeTest.Run() != Pass)
             return Fail;
 
         return Pass;

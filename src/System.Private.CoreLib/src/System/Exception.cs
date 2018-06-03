@@ -177,14 +177,6 @@ namespace System
         }
 
         /// <summary>
-        /// Allow System.Private.Interop to set HRESULT of an exception
-        /// </summary>
-        internal void SetErrorCode(int hr)
-        {
-            HResult = hr;
-        }
-
-        /// <summary>
         /// Allow System.Private.Interop to set message of an exception
         /// </summary>
         internal void SetMessage(string msg)
@@ -340,7 +332,7 @@ namespace System
         public int HResult
         {
             get { return _HResult; }
-            protected set { _HResult = value; }
+            set { _HResult = value; }
         }
 
         // Returns the stack trace as a string.  If no stack trace is

@@ -260,7 +260,7 @@ namespace System.Threading
 
                 default:
                     var ex = new Exception();
-                    ex.SetErrorCode(errorCode);
+                    ex.HResult = errorCode;
                     throw ex;
             }
         }
@@ -300,7 +300,7 @@ namespace System.Threading
 
                 default:
                     Exception ex = new Exception();
-                    ex.SetErrorCode(errorCode);
+                    ex.HResult = errorCode;
                     throw ex;
             }
         }

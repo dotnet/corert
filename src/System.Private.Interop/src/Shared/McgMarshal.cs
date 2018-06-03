@@ -147,7 +147,7 @@ namespace System.Runtime.InteropServices
         }
 
 #if ENABLE_MIN_WINRT
-        public static unsafe void SetExceptionErrorCode(Exception exception, int errorCode)
+        public static unsafe void SetExceptionErrorCode(Exception exception, int errorCode)	
         {
             InteropExtensions.SetExceptionErrorCode(exception, errorCode);
         }

@@ -374,7 +374,7 @@ namespace System.Runtime.InteropServices
         {
             throw new NotSupportedException("RuntimeHandleCompareExchangeVariableType");
         }
-
+        
         public static void SetExceptionErrorCode(Exception exception, int hr)
         {
             throw new NotSupportedException("SetExceptionErrorCode");

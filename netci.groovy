@@ -27,7 +27,7 @@ Constants.scenarios.each { scenario ->
         ['Debug', 'Release'].each { configuration ->
             Constants.osList.each { os ->
 
-                if ((configuration == 'Release' || os != 'Windows_NT') && scenario == 'corefx') {
+                if (configuration == 'Release' && scenario == 'corefx') {
                     return
                 }
 
@@ -155,14 +155,14 @@ def static calculateBuildCommands(def os, def configuration, def scenario, def i
                     // shell(testScriptString + "KnownGood")
                 }
             }
-            else if (scenario == 'corefx')
-            {
-                // CoreFX tests are currently run only under Debug, so skip the configuration check
-                testScriptString = "tests/runtest.sh ${configuration} -corefx "
-                
-                //Todo: Add json config files for different testing scenarios
-                buildCommands += testScriptString                 
-            }
+        }
+        else if (scenario == 'corefx')
+        {
+            // CoreFX tests are currently run only under Debug, so skip the configuration check
+            testScriptString = "tests/runtest.sh ${configuration} -corefx "
+            
+            //Todo: Add json config files for different testing scenarios
+            buildCommands += testScriptString                 
         }
     }
 

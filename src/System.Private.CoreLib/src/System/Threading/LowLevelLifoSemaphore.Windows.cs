@@ -27,7 +27,7 @@ namespace System.Threading
             {
                 var error = Marshal.GetLastWin32Error();
                 var exception = new OutOfMemoryException();
-                exception.SetErrorCode(error);
+                exception.HResult = error;
                 throw exception;
             }
             Release(initialSignalCount);
@@ -48,7 +48,7 @@ namespace System.Threading
                 {
                     var lastError = Marshal.GetLastWin32Error();
                     var exception = new OutOfMemoryException();
-                    exception.SetErrorCode(lastError);
+                    exception.HResult = lastError;
                     throw exception;
                 }
             }

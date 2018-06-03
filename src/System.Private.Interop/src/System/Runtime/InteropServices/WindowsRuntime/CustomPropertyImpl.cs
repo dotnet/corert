@@ -133,7 +133,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                     );
 
                     // We need to make sure it has the same HR that we were returning in desktop
-                    InteropExtensions.SetExceptionErrorCode(ex, __HResults.COR_E_METHODACCESS);
+                    ex.HResult = __HResults.COR_E_METHODACCESS;
                     throw ex;
                 }
             }

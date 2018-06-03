@@ -201,7 +201,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Builds a readable representation of the stack trace
         /// </summary>
-        public override String ToString()
+        public override string ToString()
         {
             return ToString(TraceFormat.Normal);    // default behavior in RT did not have trailing newline
         }
@@ -214,7 +214,7 @@ namespace System.Diagnostics
             TrailingNewLine,        // include a trailing new line character
         }
 
-        internal String ToString(TraceFormat traceFormat)
+        internal string ToString(TraceFormat traceFormat)
         {
             if (_stackFrames == null)
             {
