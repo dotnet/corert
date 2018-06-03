@@ -223,7 +223,7 @@ namespace System
                     tmp = bufNum.High64;
                     div = tmp / ulDen;
                     bufNum.High64 = div;
-                    tmp = ((tmp - div * ulDen) << 32) | bufNum.U0;
+                    tmp = ((tmp - (uint)div * ulDen) << 32) | bufNum.U0;
                     if (tmp == 0)
                         return 0;
                     uint div32 = (uint)(tmp / ulDen);
@@ -239,52 +239,54 @@ namespace System
                 return (uint)(tmp - div * ulDen);
             }
 
-            private static uint Div96ByConst100000000(ref Buf12 bufNum)
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static bool Div96ByConst(ref ulong high64, ref uint low, uint pow)
             {
-                const uint ulDen = 100000000;
-                ulong tmp = bufNum.High64;
-                ulong div = tmp / ulDen;
-                bufNum.High64 = div;
-                tmp = ((tmp - div * ulDen) << 32) | bufNum.U0;
-                uint div32 = (uint)(tmp / ulDen);
-                bufNum.U0 = div32;
-                return (uint)tmp - div32 * ulDen;
+                ulong div64;
+#if !BIT64
+                if (high64 <= uint.MaxValue)
+                {
+                    div64 = ((high64 << 32) | low) / pow;
+                    if (low == (uint)div64 * pow)
+                    {
+                        low = (uint)div64;
+                        high64 = div64 >> 32;
+                        return true;
+                    }
+                    return false;
+                }
+#endif
+                div64 = high64 / pow;
+                uint div = (uint)((((high64 - (uint)div64 * pow) << 32) | low) / pow);
+                if (low == div * pow)
+                {
+                    high64 = div64;
+                    low = div;
+                    return true;
+                }
+                return false;
             }
 
-            private static uint Div96ByConst10000(ref Buf12 bufNum)
+            // Normalize (unscale) the number by trying to divide out 10^8, 10^4, 10^2, and 10^1.
+            // If a division by one of these powers returns a zero remainder, then we keep the quotient.
+            // 
+            // Since 10 = 2 * 5, there must be a factor of 2 for every power of 10 we can extract. 
+            // We use this as a quick test on whether to try a given power.
+            // 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static void Unscale(ref uint low, ref ulong high64, ref int scale)
             {
-                const uint ulDen = 10000;
-                ulong tmp = bufNum.High64;
-                ulong div = tmp / ulDen;
-                bufNum.High64 = div;
-                tmp = ((tmp - div * ulDen) << 32) | bufNum.U0;
-                uint div32 = (uint)(tmp / ulDen);
-                bufNum.U0 = div32;
-                return (uint)tmp - div32 * ulDen;
-            }
+                while ((byte)low == 0 && scale >= 8 && Div96ByConst(ref high64, ref low, 100000000))
+                    scale -= 8;
 
-            private static uint Div96ByConst100(ref Buf12 bufNum)
-            {
-                const uint ulDen = 100;
-                ulong tmp = bufNum.High64;
-                ulong div = tmp / ulDen;
-                bufNum.High64 = div;
-                tmp = ((tmp - div * ulDen) << 32) | bufNum.U0;
-                uint div32 = (uint)(tmp / ulDen);
-                bufNum.U0 = div32;
-                return (uint)tmp - div32 * ulDen;
-            }
+                if ((low & 0xF) == 0 && scale >= 4 && Div96ByConst(ref high64, ref low, 10000))
+                    scale -= 4;
 
-            private static uint Div96ByConst10(ref Buf12 bufNum)
-            {
-                const uint ulDen = 10;
-                ulong tmp = bufNum.High64;
-                ulong div = tmp / ulDen;
-                bufNum.High64 = div;
-                tmp = ((tmp - div * ulDen) << 32) | bufNum.U0;
-                uint div32 = (uint)(tmp / ulDen);
-                bufNum.U0 = div32;
-                return (uint)tmp - div32 * ulDen;
+                if ((low & 3) == 0 && scale >= 2 && Div96ByConst(ref high64, ref low, 100))
+                    scale -= 2;
+
+                if ((low & 1) == 0 && scale >= 1 && Div96ByConst(ref high64, ref low, 10))
+                    scale--;
             }
 
             /***
@@ -1924,6 +1926,25 @@ ThrowOverflow:
                 return dbl;
             }
 
+            internal static int GetHashCode(ref decimal d)
+            {
+                if ((d.Low | d.Mid | d.High) == 0)
+                    return 0;
+
+                uint flags = d.uflags;
+                if ((flags & ScaleMask) == 0 || (d.Low & 1) != 0)
+                    return (int)(flags ^ d.High ^ d.Mid ^ d.Low);
+
+                int scale = (byte)(flags >> ScaleShift);
+                uint low = d.Low;
+                ulong high64 = ((ulong)d.High << 32) | d.Mid;
+
+                Unscale(ref low, ref high64, ref scale);
+
+                flags = ((flags) & ~ScaleMask) | (uint)scale << ScaleShift;
+                return (int)(flags ^ (uint)(high64 >> 32) ^ (uint)high64 ^ low);
+            }
+
             // VarDecAdd divides two decimal values.  On return, d1 contains the result
             // of the operation
             internal static void VarDecAdd(ref Decimal d1, ref Decimal d2)
@@ -2184,78 +2205,22 @@ ThrowOverflow:
                 }
 
 Unscale:
-                ulong low64 = bufQuo.Low64;
-                uint high = bufQuo.U2;
-                // We need to unscale if and only if we have a non-zero remainder
                 if (fUnscale)
                 {
-                    // Try extracting any extra powers of 10 we may have 
-                    // added.  We do this by trying to divide out 10^8, 10^4, 10^2, and 10^1.
-                    // If a division by one of these powers returns a zero remainder, then
-                    // we keep the quotient.  If the remainder is not zero, then we restore
-                    // the previous value.
-                    // 
-                    // Since 10 = 2 * 5, there must be a factor of 2 for every power of 10
-                    // we can extract.  We use this as a quick test on whether to try a
-                    // given power.
-                    // 
-                    while ((byte)low64 == 0 && iScale >= 8)
-                    {
-                        if (Div96ByConst100000000(ref bufQuo) == 0)
-                        {
-                            low64 = bufQuo.Low64;
-                            high = bufQuo.U2;
-                            iScale -= 8;
-                        }
-                        else
-                        {
-                            bufQuo.Low64 = low64;
-                            bufQuo.U2 = high;
-                            break;
-                        }
-                    }
-
-                    if (((uint)low64 & 0xF) == 0 && iScale >= 4)
-                    {
-                        if (Div96ByConst10000(ref bufQuo) == 0)
-                        {
-                            low64 = bufQuo.Low64;
-                            high = bufQuo.U2;
-                            iScale -= 4;
-                        }
-                        else
-                        {
-                            bufQuo.Low64 = low64;
-                            bufQuo.U2 = high;
-                        }
-                    }
-
-                    if (((uint)low64 & 3) == 0 && iScale >= 2)
-                    {
-                        if (Div96ByConst100(ref bufQuo) == 0)
-                        {
-                            low64 = bufQuo.Low64;
-                            high = bufQuo.U2;
-                            iScale -= 2;
-                        }
-                        else
-                        {
-                            bufQuo.Low64 = low64;
-                            bufQuo.U2 = high;
-                        }
-                    }
-
-                    if (((uint)low64 & 1) == 0 && iScale >= 1 && Div96ByConst10(ref bufQuo) == 0)
-                    {
-                        low64 = bufQuo.Low64;
-                        high = bufQuo.U2;
-                        iScale -= 1;
-                    }
+                    uint low = bufQuo.U0;
+                    ulong high64 = bufQuo.High64;
+                    Unscale(ref low, ref high64, ref iScale);
+                    d1.Low = low;
+                    d1.Mid = (uint)high64;
+                    d1.High = (uint)(high64 >> 32);
+                }
+                else
+                {
+                    d1.Low64 = bufQuo.Low64;
+                    d1.High = bufQuo.U2;
                 }
 
                 d1.uflags = ((d1.uflags ^ d2.uflags) & SignMask) | ((uint)iScale << ScaleShift);
-                d1.High = high;
-                d1.Low64 = low64;
                 return;
 
 RoundUp:
