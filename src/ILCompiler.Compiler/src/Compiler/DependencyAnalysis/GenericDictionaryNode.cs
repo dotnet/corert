@@ -134,11 +134,11 @@ namespace ILCompiler.DependencyAnalysis
                 foreach (var arg in _owningType.Instantiation)
                 {
                     // Skip types that do not have a default constructor (not interesting).
-                    if (arg.IsValueType || arg.GetDefaultConstructor() == null)
+                    if (arg.IsValueType || arg.GetDefaultConstructor() == null || !ConstructedEETypeNode.CreationAllowed(arg))
                         continue;
 
                     result.Add(new DependencyListEntry(
-                        factory.DefaultConstructorFromLazy(arg.ConvertToCanonForm(CanonicalFormKind.Specific)),
+                        factory.ConstructedTypeSymbol(arg.ConvertToCanonForm(CanonicalFormKind.Specific)),
                         "Default constructor for lazy generics"));
                 }
             }
@@ -218,21 +218,21 @@ namespace ILCompiler.DependencyAnalysis
                 foreach (var arg in _owningMethod.OwningType.Instantiation)
                 {
                     // Skip types that do not have a default constructor (not interesting).
-                    if (arg.IsValueType || arg.GetDefaultConstructor() == null)
+                    if (arg.IsValueType || arg.GetDefaultConstructor() == null || !ConstructedEETypeNode.CreationAllowed(arg))
                         continue;
 
                     dependencies.Add(new DependencyListEntry(
-                        factory.DefaultConstructorFromLazy(arg.ConvertToCanonForm(CanonicalFormKind.Specific)),
+                        factory.ConstructedTypeSymbol(arg.ConvertToCanonForm(CanonicalFormKind.Specific)),
                         "Default constructor for lazy generics"));
                 }
                 foreach (var arg in _owningMethod.Instantiation)
                 {
                     // Skip types that do not have a default constructor (not interesting).
-                    if (arg.IsValueType || arg.GetDefaultConstructor() == null)
+                    if (arg.IsValueType || arg.GetDefaultConstructor() == null || !ConstructedEETypeNode.CreationAllowed(arg))
                         continue;
 
                     dependencies.Add(new DependencyListEntry(
-                        factory.DefaultConstructorFromLazy(arg.ConvertToCanonForm(CanonicalFormKind.Specific)),
+                        factory.ConstructedTypeSymbol(arg.ConvertToCanonForm(CanonicalFormKind.Specific)),
                         "Default constructor for lazy generics"));
                 }
             }

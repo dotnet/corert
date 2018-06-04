@@ -480,11 +480,6 @@ namespace ILCompiler.DependencyAnalysis
                 return new StringAllocatorMethodNode(constructor);
             });
 
-            _defaultConstructorFromLazyNodes = new NodeCache<TypeDesc, DefaultConstructorFromLazyNode>(type =>
-            {
-                return new DefaultConstructorFromLazyNode(type);
-            });
-
             NativeLayout = new NativeLayoutHelper(this);
             WindowsDebugData = new WindowsDebugDataHelper(this);
         }
@@ -799,12 +794,6 @@ namespace ILCompiler.DependencyAnalysis
         public IMethodNode RuntimeDeterminedMethod(MethodDesc method)
         {
             return _runtimeDeterminedMethods.GetOrAdd(method);
-        }
-
-        private NodeCache<TypeDesc, DefaultConstructorFromLazyNode> _defaultConstructorFromLazyNodes;
-        internal DefaultConstructorFromLazyNode DefaultConstructorFromLazy(TypeDesc type)
-        {
-            return _defaultConstructorFromLazyNodes.GetOrAdd(type);
         }
 
         private static readonly string[][] s_helperEntrypointNames = new string[][] {
