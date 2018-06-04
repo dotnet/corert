@@ -8,8 +8,8 @@ namespace System
 {
     // ByReference<T> is meant to be used to represent "ref T" fields. It is working
     // around lack of first class support for byref fields in C# and IL. The JIT and 
-    // type loader have special handling for it that turns it into a thin wrapper around ref T.
-    [System.Runtime.CompilerServices.DependencyReductionRoot] // TODO: put this in System.Private.ILToolchain contract instead
+    // type loader has special handling for it that turns it into a thin wrapper around ref T.
+    [DependencyReductionRoot] // TODO: put this in System.Private.ILToolchain contract instead
     internal ref struct ByReference<T>
     {
         // CS0169: The private field '{blah}' is never used
@@ -23,7 +23,7 @@ namespace System
             // Implemented as a JIT intrinsic - This default implementation is for 
             // completeness and to provide a concrete error if called via reflection
             // or if intrinsic is missed.
-            throw new NotSupportedException();
+            throw new System.PlatformNotSupportedException();
         }
 
         public ref T Value
@@ -34,7 +34,7 @@ namespace System
                 // Implemented as a JIT intrinsic - This default implementation is for 
                 // completeness and to provide a concrete error if called via reflection
                 // or if the intrinsic is missed.
-                throw new NotSupportedException();
+                throw new System.PlatformNotSupportedException();
             }
         }
     }
