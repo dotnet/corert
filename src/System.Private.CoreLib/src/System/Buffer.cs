@@ -6,12 +6,12 @@
 #define HAS_CUSTOM_BLOCKS
 #endif
 
+//Only contains static methods.  Does not require serialization
 using System;
 using System.Runtime;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-
 using Internal.Runtime.CompilerServices;
 
 #if BIT64
@@ -184,14 +184,14 @@ namespace System
             Memmove((byte*)destination, (byte*)source, checked((nuint)sourceBytesToCopy));
         }
 
-        internal unsafe static void Memcpy(byte* dest, byte* src, int len)
+        internal static unsafe void Memcpy(byte* dest, byte* src, int len)
         {
             Debug.Assert(len >= 0, "Negative length in memcpy!");
             Memmove(dest, src, (nuint)len);
         }
 
         // This method has different signature for x64 and other platforms and is done for performance reasons.
-        internal unsafe static void Memmove(byte* dest, byte* src, nuint len)
+        internal static unsafe void Memmove(byte* dest, byte* src, nuint len)
         {
 #if AMD64 || (BIT32 && !ARM)
             const nuint CopyThreshold = 2048;
@@ -615,7 +615,7 @@ PInvoke:
         // Non-inlinable wrapper around the QCall that avoids polluting the fast path
         // with P/Invoke prolog/epilog.
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        private unsafe static void _Memmove(ref byte dest, ref byte src, nuint len)
+        private static unsafe void _Memmove(ref byte dest, ref byte src, nuint len)
         {
             fixed (byte* pDest = &dest)
             fixed (byte* pSrc = &src)
