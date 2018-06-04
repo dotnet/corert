@@ -5,7 +5,6 @@
 using System;
 using System.Diagnostics;
 using System.Collections.Generic;
-using System.Linq;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -15,43 +14,6 @@ using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    /// <summary>
-    /// Dependency analysis node used to keep track of types used by lazy generics, needing an entry in the default
-    /// constructor map hashtable
-    /// </summary>
-    internal sealed class DefaultConstructorFromLazyNode : DependencyNodeCore<NodeFactory>
-    {
-        public TypeDesc TypeNeedingDefaultCtor { get; }
-
-        public DefaultConstructorFromLazyNode(TypeDesc type)
-        {
-            Debug.Assert(!type.IsRuntimeDeterminedSubtype);
-            Debug.Assert(type == type.ConvertToCanonForm(CanonicalFormKind.Specific));
-            Debug.Assert(type.GetDefaultConstructor() != null && !type.IsValueType);
-
-            TypeNeedingDefaultCtor = type;
-        }
-
-        public override bool HasDynamicDependencies => false;
-        public override bool HasConditionalStaticDependencies => false;
-        public override bool InterestingForDynamicDependencyAnalysis => false;
-        public override bool StaticDependenciesAreComputed => true;
-        protected override string GetName(NodeFactory factory) => "__DefaultConstructorFromLazyNode_" + factory.NameMangler.GetMangledTypeName(TypeNeedingDefaultCtor);
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
-
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
-        {
-            yield return new DependencyListEntry(
-                context.MaximallyConstructableType(TypeNeedingDefaultCtor),
-                "DefaultConstructorNode type");
-
-            yield return new DependencyListEntry(
-                context.MethodEntrypoint(TypeNeedingDefaultCtor.GetDefaultConstructor(), TypeNeedingDefaultCtor.IsValueType), 
-                "DefaultConstructorNode");
-        }
-    }
-
     /// <summary>
     /// DefaultConstructorMap blob, containing information on default constructor entrypoints of all types used 
     /// by lazy generic instantiations.
@@ -97,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis
             Section defaultConstructorHashtableSection = writer.NewSection();
             defaultConstructorHashtableSection.Place(defaultConstructorHashtable);
 
-            foreach (var type in factory.MetadataManager.GetTypesWithConstructedEETypes().Union(GetTypesNeedingDefaultConstructors(factory)))
+            foreach (var type in factory.MetadataManager.GetTypesWithConstructedEETypes())
             {
                 MethodDesc defaultCtor = type.GetDefaultConstructor();
                 if (defaultCtor == null)
@@ -121,12 +83,6 @@ namespace ILCompiler.DependencyAnalysis
             _endSymbol.SetSymbolOffset(hashTableBytes.Length);
 
             return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
-        }
-
-        private IEnumerable<TypeDesc> GetTypesNeedingDefaultConstructors(NodeFactory factory)
-        {
-            foreach (var ctorNeeded in factory.MetadataManager.GetDefaultConstructorsNeeded())
-                yield return ctorNeeded.TypeNeedingDefaultCtor;
         }
     }
 }

@@ -50,7 +50,6 @@ namespace ILCompiler
         private HashSet<GenericDictionaryNode> _genericDictionariesGenerated = new HashSet<GenericDictionaryNode>();
         private HashSet<IMethodBodyNode> _methodBodiesGenerated = new HashSet<IMethodBodyNode>();
         private List<TypeGVMEntriesNode> _typeGVMEntries = new List<TypeGVMEntriesNode>();
-        private HashSet<DefaultConstructorFromLazyNode> _defaultConstructorsNeeded = new HashSet<DefaultConstructorFromLazyNode>();
 
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
         internal DynamicInvokeTemplateDataNode DynamicInvokeTemplateData { get; private set; }
@@ -204,12 +203,6 @@ namespace ILCompiler
             if (dictionaryNode != null)
             {
                 _genericDictionariesGenerated.Add(dictionaryNode);
-            }
-
-            var ctorFromLazyGenericsNode = obj as DefaultConstructorFromLazyNode;
-            if (ctorFromLazyGenericsNode != null)
-            {
-                _defaultConstructorsNeeded.Add(ctorFromLazyGenericsNode);
             }
         }
 
@@ -573,11 +566,6 @@ namespace ILCompiler
         internal IEnumerable<IMethodBodyNode> GetCompiledMethodBodies()
         {
             return _methodBodiesGenerated;
-        }
-
-        internal IEnumerable<DefaultConstructorFromLazyNode> GetDefaultConstructorsNeeded()
-        {
-            return _defaultConstructorsNeeded;
         }
 
         internal bool TypeGeneratesEEType(TypeDesc type)
