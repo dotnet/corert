@@ -75,9 +75,9 @@ namespace ILCompiler.DependencyAnalysis
             BlockReflectionTypeMapNode,
             StaticsInfoHashtableNode,
             ReflectionVirtualInvokeMapNode,
-            ExternalReferencesTableNode,
             ArrayOfEmbeddedPointersNode,
             DefaultConstructorMapNode,
+            ExternalReferencesTableNode,
             StackTraceEmbeddedMetadataNode,
             StackTraceMethodMappingNode,
             ArrayOfEmbeddedDataNode
