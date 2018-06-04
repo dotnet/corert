@@ -835,7 +835,7 @@ bool QueryLogicalProcessorCount()
 {
 #if HAVE_SYSCONF
     int sysConfName;
-#if defined(_TARGET_WASM_)
+#if defined(_WASM_)
     sysConfName = _SC_NPROCESSORS_ONLN;
 #else
     sysConfName = _SC_NPROCESSORS_CONF;
@@ -1276,7 +1276,7 @@ bool InitializeSystemInfo()
 
 #if HAVE_SYSCONF
     int sysConfName;
-#if defined(_TARGET_WASM_)
+#if defined(_WASM_)
     sysConfName = _SC_NPROCESSORS_ONLN;
 #else
     sysConfName = _SC_NPROCESSORS_CONF;
