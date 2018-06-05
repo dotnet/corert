@@ -4,13 +4,14 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
     public sealed partial class Semaphore
     {
-        private const uint AccessRights = (uint)(Interop.Constants.MaximumAllowed | Interop.Constants.Synchronize | Interop.Constants.SemaphoreModifyState);
+        private const uint AccessRights = (uint)Win32Native.MAXIMUM_ALLOWED | Win32Native.SYNCHRONIZE | Win32Native.MUTEX_MODIFY_STATE;
 
         private Semaphore(SafeWaitHandle handle)
         {

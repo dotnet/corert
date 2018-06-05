@@ -233,6 +233,10 @@ namespace Microsoft.Win32
         internal const string KERNEL32 = "kernel32.dll";
         internal const string ADVAPI32 = "advapi32.dll";
 
+        internal const int MAXIMUM_ALLOWED = 0x02000000;
+        internal const int SYNCHRONIZE = 0x00100000;
+        internal const int MUTEX_MODIFY_STATE = 0x00000001;
+
         [System.Security.SecuritySafeCritical]
         // Gets an error message for a Win32 error code.
         internal static String GetMessage(int errorCode)

@@ -4,13 +4,14 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
     public partial class EventWaitHandle
     {
-        private const uint AccessRights = (uint)(Interop.Constants.MaximumAllowed | Interop.Constants.Synchronize | Interop.Constants.EventModifyState);
+        private const uint AccessRights = (uint)Win32Native.MAXIMUM_ALLOWED | Win32Native.SYNCHRONIZE | Win32Native.MUTEX_MODIFY_STATE;
 
         private EventWaitHandle(SafeWaitHandle handle)
         {
