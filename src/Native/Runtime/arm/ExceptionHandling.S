@@ -109,7 +109,7 @@ NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
         // where the tail-calling thread had saved LR, which may not match where we have saved LR.
 
         ldr         r1, [r0, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
-        cbz         r1, LOCAL_LABEL(NotHijacked)
+        cbz         r1, LOCAL_LABEL(NotHiJacked)
 
         ldr         r3, [r0, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
 
