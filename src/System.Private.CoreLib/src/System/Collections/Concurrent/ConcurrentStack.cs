@@ -3,12 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
-using System.Collections.Generic;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-namespace System
+namespace System.Collections.Generic
 {
     // Reduced copy of System.Collections.Concurrent.ConcurrentStack<T>
     internal class ConcurrentStack<T>
