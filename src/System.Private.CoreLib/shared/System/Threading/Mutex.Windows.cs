@@ -25,16 +25,6 @@ namespace System.Threading
         private const int WaitHandleNameMax = Interop.Kernel32.MAX_PATH;
 #endif
 
-        private static void VerifyNameForCreate(string name)
-        {
-#if !PLATFORM_UNIX
-            if (name != null && (Interop.Kernel32.MAX_PATH < name.Length))
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, name, Interop.Kernel32.MAX_PATH), nameof(name));
-            }
-#endif
-        }
-
         private void CreateMutexCore(bool initiallyOwned, string name, out bool createdNew)
         {
             Debug.Assert(name == null);
@@ -72,7 +62,6 @@ namespace System.Threading
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
             }
 
-            VerifyNameForCreate(name);
             result = null;
             // To allow users to view & edit the ACL's, call OpenMutex
             // with parameters to allow us to view & edit the ACL.  This will
@@ -105,7 +94,6 @@ namespace System.Threading
             return OpenExistingResult.Success;
         }
 
-#if !CORECLR
         private static void ReleaseMutexCore(SafeWaitHandle handle)
         {
             if (!Interop.Kernel32.ReleaseMutex(handle))
@@ -113,6 +101,5 @@ namespace System.Threading
                 ThrowSignalOrUnsignalException();
             }    
         }
-#endif
     }
 }

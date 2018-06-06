@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.IO;
 
@@ -9,17 +10,12 @@ namespace System.Threading
 {
     public sealed partial class Mutex
     {
-        private static void VerifyNameForCreate(string name)
+        private void CreateMutexCore(bool initiallyOwned, string name, out bool createdNew)
         {
             if (name != null)
             {
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
             }
-        }
-
-        private void CreateMutexCore(bool initiallyOwned, string name, out bool createdNew)
-        {
-            Debug.Assert(name == null);
 
             SafeWaitHandle = WaitSubsystem.NewMutex(initiallyOwned);
             createdNew = true;
@@ -30,9 +26,9 @@ namespace System.Threading
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
         }
 
-        private static void ReleaseMutexCore(IntPtr handle)
+        private static void ReleaseMutexCore(SafeWaitHandle handle)
         {
-            WaitSubsystem.ReleaseMutex(handle);
+            WaitSubsystem.ReleaseMutex(handle.DangerousGetHandle());
         }
     }
 }
