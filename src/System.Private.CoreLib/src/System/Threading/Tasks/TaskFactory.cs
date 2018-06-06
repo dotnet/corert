@@ -42,10 +42,10 @@ namespace System.Threading.Tasks
     public class TaskFactory
     {
         // member variables
-        private CancellationToken m_defaultCancellationToken;
-        private TaskScheduler m_defaultScheduler;
-        private TaskCreationOptions m_defaultCreationOptions;
-        private TaskContinuationOptions m_defaultContinuationOptions;
+        private readonly CancellationToken m_defaultCancellationToken;
+        private readonly TaskScheduler m_defaultScheduler;
+        private readonly TaskCreationOptions m_defaultCreationOptions;
+        private readonly TaskContinuationOptions m_defaultContinuationOptions;
 
 
         private TaskScheduler DefaultScheduler
@@ -88,7 +88,7 @@ namespace System.Threading.Tasks
         /// cref="System.Threading.Tasks.TaskScheduler.Current">TaskScheduler.Current</see>).
         /// </remarks>
         public TaskFactory()
-            : this(default(CancellationToken), TaskCreationOptions.None, TaskContinuationOptions.None, null)
+            : this(default, TaskCreationOptions.None, TaskContinuationOptions.None, null)
         {
         }
 
@@ -133,7 +133,7 @@ namespace System.Threading.Tasks
         /// cref="System.Threading.Tasks.TaskScheduler.Current">TaskScheduler.Current</see>).
         /// </remarks>
         public TaskFactory(TaskScheduler scheduler) // null means to use TaskScheduler.Current
-            : this(default(CancellationToken), TaskCreationOptions.None, TaskContinuationOptions.None, scheduler)
+            : this(default, TaskCreationOptions.None, TaskContinuationOptions.None, scheduler)
         {
         }
 
@@ -164,7 +164,7 @@ namespace System.Threading.Tasks
         /// cref="System.Threading.Tasks.TaskScheduler.Current">TaskScheduler.Current</see>).
         /// </remarks>
         public TaskFactory(TaskCreationOptions creationOptions, TaskContinuationOptions continuationOptions)
-            : this(default(CancellationToken), creationOptions, continuationOptions, null)
+            : this(default, creationOptions, continuationOptions, null)
         {
         }
 
@@ -1603,6 +1603,8 @@ namespace System.Threading.Tasks
                 Debug.Assert(_count >= 0, "Count should never go below 0");
             }
 
+            public bool InvokeMayRunArbitraryCode { get { return true; } }
+
             /// <summary>
             /// Returns whether we should notify the debugger of a wait completion.  This returns 
             /// true iff at least one constituent task has its bit set.
@@ -1616,8 +1618,6 @@ namespace System.Threading.Tasks
                         Task.AnyTaskRequiresNotifyDebuggerOfWaitCompletion(_tasks);
                 }
             }
-
-            public bool InvokeMayRunArbitraryCode { get { return true; } }
         }
 
         // Performs some logic common to all ContinueWhenAll() overloads
@@ -1675,6 +1675,8 @@ namespace System.Threading.Tasks
                 Debug.Assert(_count >= 0, "Count should never go below 0");
             }
 
+            public bool InvokeMayRunArbitraryCode { get { return true; } }
+
             /// <summary>
             /// Returns whether we should notify the debugger of a wait completion.  This returns 
             /// true iff at least one constituent task has its bit set.
@@ -1688,8 +1690,6 @@ namespace System.Threading.Tasks
                         Task.AnyTaskRequiresNotifyDebuggerOfWaitCompletion(_tasks);
                 }
             }
-
-            public bool InvokeMayRunArbitraryCode { get { return true; } }
         }
 
 

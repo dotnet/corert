@@ -278,7 +278,6 @@
     <Compile Include="System\ModuleHandle.cs" />
     <Compile Include="System\RuntimeFieldHandle.cs" />
     <Compile Include="System\Runtime\CompilerServices\AsyncMethodBuilder.cs" />
-    <Compile Include="System\Runtime\CompilerServices\TaskAwaiter.cs" />
     <Compile Include="System\Text\EncodingData.cs" />
     <Compile Include="System\Text\EncodingTable.cs" />
     <Compile Include="System\Text\StringBuilder.CoreRT.cs" />
