@@ -28,7 +28,7 @@ namespace System.Threading
         internal const int MaxWaitHandles = 64;
         protected static readonly IntPtr InvalidHandle = Interop.InvalidHandleValue;
 
-        internal SafeWaitHandle _waitHandle;
+        internal SafeWaitHandle safeWaitHandle;
 
         internal enum OpenExistingResult
         {
@@ -47,7 +47,7 @@ namespace System.Threading
         {
             get
             {
-                return _waitHandle == null ? InvalidHandle : _waitHandle.DangerousGetHandle();
+                return safeWaitHandle == null ? InvalidHandle : safeWaitHandle.DangerousGetHandle();
             }
             set
             {
@@ -59,15 +59,15 @@ namespace System.Threading
                     // ideally do these things:
                     // *) Expose a settable SafeHandle property on WaitHandle.
                     // *) Expose a settable OwnsHandle property on SafeHandle.
-                    if (_waitHandle != null)
+                    if (safeWaitHandle != null)
                     {
-                        _waitHandle.SetHandleAsInvalid();
-                        _waitHandle = null;
+                        safeWaitHandle.SetHandleAsInvalid();
+                        safeWaitHandle = null;
                     }
                 }
                 else
                 {
-                    _waitHandle = new SafeWaitHandle(value, true);
+                    safeWaitHandle = new SafeWaitHandle(value, true);
                 }
             }
         }
@@ -76,15 +76,15 @@ namespace System.Threading
         {
             get
             {
-                if (_waitHandle == null)
+                if (safeWaitHandle == null)
                 {
-                    _waitHandle = new SafeWaitHandle(InvalidHandle, false);
+                    safeWaitHandle = new SafeWaitHandle(InvalidHandle, false);
                 }
-                return _waitHandle;
+                return safeWaitHandle;
             }
 
             set
-            { _waitHandle = value; }
+            { safeWaitHandle = value; }
         }
 
         internal static int ToTimeoutMilliseconds(TimeSpan timeout)
@@ -113,7 +113,7 @@ namespace System.Threading
 
             // The field value is modifiable via the public <see cref="WaitHandle.SafeWaitHandle"/> property, save it locally
             // to ensure that one instance is used in all places in this method
-            SafeWaitHandle waitHandle = _waitHandle;
+            SafeWaitHandle waitHandle = safeWaitHandle;
             if (waitHandle == null)
             {
                 // Throw ObjectDisposedException for backward compatibility even though it is not be representative of the issue
@@ -169,7 +169,7 @@ namespace System.Threading
                         throw new ArgumentNullException("waitHandles[" + i + ']', SR.ArgumentNull_ArrayElement);
                     }
 
-                    SafeWaitHandle safeWaitHandle = waitHandle._waitHandle;
+                    SafeWaitHandle safeWaitHandle = waitHandle.safeWaitHandle;
                     if (safeWaitHandle == null)
                     {
                         // Throw ObjectDisposedException for backward compatibility even though it is not be representative of the issue
@@ -347,8 +347,8 @@ namespace System.Threading
 
             // The field value is modifiable via the public <see cref="WaitHandle.SafeWaitHandle"/> property, save it locally
             // to ensure that one instance is used in all places in this method
-            SafeWaitHandle safeWaitHandleToSignal = toSignal._waitHandle;
-            SafeWaitHandle safeWaitHandleToWaitOn = toWaitOn._waitHandle;
+            SafeWaitHandle safeWaitHandleToSignal = toSignal.safeWaitHandle;
+            SafeWaitHandle safeWaitHandleToWaitOn = toWaitOn.safeWaitHandle;
             if (safeWaitHandleToSignal == null || safeWaitHandleToWaitOn == null)
             {
                 // Throw ObjectDisposedException for backward compatibility even though it is not be representative of the issue
@@ -391,9 +391,9 @@ namespace System.Threading
 
         protected virtual void Dispose(bool explicitDisposing)
         {
-            if (_waitHandle != null)
+            if (safeWaitHandle != null)
             {
-                _waitHandle.Close();
+                safeWaitHandle.Close();
             }
         }
 

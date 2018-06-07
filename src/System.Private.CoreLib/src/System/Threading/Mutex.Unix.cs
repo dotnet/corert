@@ -5,6 +5,7 @@
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
@@ -26,9 +27,26 @@ namespace System.Threading
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
         }
 
-        private static void ReleaseMutexCore(SafeWaitHandle handle)
+        public void ReleaseMutex()
         {
-            WaitSubsystem.ReleaseMutex(handle.DangerousGetHandle());
+            // The field value is modifiable via the public <see cref="WaitHandle.SafeWaitHandle"/> property, save it locally
+            // to ensure that one instance is used in all places in this method
+            SafeWaitHandle waitHandle = safeWaitHandle;
+            if (waitHandle == null)
+            {
+                ThrowInvalidHandleException();
+            }
+
+            waitHandle.DangerousAddRef();
+            try
+            {
+                WaitSubsystem.ReleaseMutex(waitHandle.DangerousGetHandle());
+            }
+            finally
+            {
+                waitHandle.DangerousRelease();
+            }
+
         }
     }
 }

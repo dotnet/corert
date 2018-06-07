@@ -94,12 +94,15 @@ namespace System.Threading
             return OpenExistingResult.Success;
         }
 
-        private static void ReleaseMutexCore(SafeWaitHandle handle)
+        // Note: To call ReleaseMutex, you must have an ACL granting you
+        // MUTEX_MODIFY_STATE rights (0x0001). The other interesting value
+        // in a Mutex's ACL is MUTEX_ALL_ACCESS (0x1F0001).
+        public void ReleaseMutex()
         {
-            if (!Interop.Kernel32.ReleaseMutex(handle))
+            if (!Interop.Kernel32.ReleaseMutex(safeWaitHandle))
             {
-                ThrowSignalOrUnsignalException();
-            }    
+                throw new ApplicationException(SR.Arg_SynchronizationLockException);
+            }
         }
     }
 }
