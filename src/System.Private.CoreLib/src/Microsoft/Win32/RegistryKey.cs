@@ -553,4 +553,16 @@ namespace Microsoft.Win32
             return key;
         }
     }
+
+    [Flags]
+#if REGISTRY_ASSEMBLY
+    public
+#else
+    internal
+#endif
+    enum RegistryValueOptions
+    {
+        None = 0,
+        DoNotExpandEnvironmentNames = 1
+    }
 }

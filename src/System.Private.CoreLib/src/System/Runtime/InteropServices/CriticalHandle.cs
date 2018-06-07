@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-
-//
-
 /*============================================================
 **
 **
@@ -50,18 +46,19 @@
 ===========================================================*/
 
 using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
+using System.IO;
 using System.Reflection;
-using System.Threading;
+using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
+using System.Runtime.Versioning;
+using System.Threading;
 
 /*
   Problems addressed by the CriticalHandle class:
   1) Critical finalization - ensure we never leak OS resources in SQL.  Done
      without running truly arbitrary & unbounded amounts of managed code.
   2) Reduced graph promotion - during finalization, keep object graph small
-  3) GC.KeepAlive behavior - P/Invoke vs. finalizer thread race (HandleRef)
+  3) GC.KeepAlive behavior - P/Invoke vs. finalizer thread race condition (HandleRef)
   4) Enforcement of the above via the type system - Don't use IntPtr anymore.
 
   Subclasses of CriticalHandle will implement the ReleaseHandle
@@ -240,7 +237,7 @@ namespace System.Runtime.InteropServices
         // that no jit allocations etc. will occur, but don't allocate memory unless
         // you can deal with the failure and still free the handle).
         // The boolean returned should be true for success and false if a
-        // catastrophic error occured and you wish to trigger a diagnostic for
+        // catastrophic error occurred and you wish to trigger a diagnostic for
         // debugging purposes (the SafeHandleCriticalFailure MDA).
         protected abstract bool ReleaseHandle();
     }

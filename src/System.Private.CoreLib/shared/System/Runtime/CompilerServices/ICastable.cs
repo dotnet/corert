@@ -2,16 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-// Support for dynamic interface casting. Specifically implementing this interface on a type will allow the
-// type to support interfaces (for the purposes of casting and interface dispatch) that do not appear in its
-// interface map.
-//
-
 using System;
 
 namespace System.Runtime.CompilerServices
 {
+    /// <summary>
+    /// Support for dynamic interface casting. Specifically implementing this interface on a type will allow the
+    /// type to support interfaces (for the purposes of casting and interface dispatch) that do not appear in its
+    /// interface map.
+    /// </summary>
     public interface ICastable
     {
         // This is called if casting this object to the given interface type would otherwise fail. Casting
