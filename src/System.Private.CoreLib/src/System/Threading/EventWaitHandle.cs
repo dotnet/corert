@@ -84,7 +84,7 @@ namespace System.Threading
         {
             // The field value is modifiable via <see cref="SafeWaitHandle"/>, save it locally to ensure that ref modification
             // is done on the same instance
-            SafeWaitHandle waitHandle = safeWaitHandle;
+            SafeWaitHandle waitHandle = _waitHandle;
             if (waitHandle == null)
             {
                 ThrowInvalidHandleException();
@@ -93,7 +93,7 @@ namespace System.Threading
             waitHandle.DangerousAddRef();
             try
             {
-                return ResetCore(safeWaitHandle.DangerousGetHandle());
+                return ResetCore(_waitHandle.DangerousGetHandle());
             }
             finally
             {
@@ -105,7 +105,7 @@ namespace System.Threading
         {
             // The field value is modifiable via the public <see cref="WaitHandle.SafeWaitHandle"/> property, save it locally
             // to ensure that one instance is used in all places in this method
-            SafeWaitHandle waitHandle = safeWaitHandle;
+            SafeWaitHandle waitHandle = _waitHandle;
             if (waitHandle == null)
             {
                 ThrowInvalidHandleException();
