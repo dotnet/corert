@@ -64,7 +64,7 @@ See the LICENSE file in the project root for more information.
     
     <ItemGroup>
       <LinkerArg Condition="$(NativeLib) == 'Shared'" Include="/DLL" />
-      <LinkerArg Include="@(NativeLibrary)" />
+      <LinkerArg Include="@(NativeLibrary->'&quot;%(Identity)&quot;')" />
       <LinkerArg Include="/NOLOGO /DEBUG /MANIFEST:NO" />
       <!-- The runtime is not compatible with jump stubs inserted by incremental linking. -->
       <LinkerArg Include="/INCREMENTAL:NO" />
