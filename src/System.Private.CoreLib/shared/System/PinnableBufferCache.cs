@@ -1,167 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+#define ENABLE
+#define MINBUFFERS
 
-//#define ENABLE
-//#define MINBUFFERS
-
-using System.Collections.Generic;
-using System.Runtime.ConstrainedExecution;
+using System;
 using System.Runtime.InteropServices;
+using System.Runtime.ConstrainedExecution;
+using System.Collections.Generic;
+using System.Collections.Concurrent;
+using System.Threading;
+using System.Runtime.CompilerServices;
+using System.Diagnostics;
 
-namespace System.Threading
+namespace System
 {
-    // Reduced copy of System.Collections.Concurrent.ConcurrentStack<T>
-    internal class ConcurrentStack<T>
-    {
-        private class Node
-        {
-            internal readonly T _value; // Value of the node.
-            internal Node _next; // Next pointer.
-
-            internal Node(T value)
-            {
-                _value = value;
-                _next = null;
-            }
-        }
-
-        private volatile Node _head; // The stack is a singly linked list, and only remembers the head.
-
-        private const int BACKOFF_MAX_YIELDS = 8; // Arbitrary number to cap backoff.
-
-        public int Count
-        {
-            get
-            {
-                int count = 0;
-
-                for (Node curr = _head; curr != null; curr = curr._next)
-                {
-                    count++; //we don't handle overflow, to be consistent with existing generic collection types in CLR
-                }
-
-                return count;
-            }
-        }
-
-        public void Push(T item)
-        {
-            Node newNode = new Node(item);
-            newNode._next = _head;
-            if (Interlocked.CompareExchange(ref _head, newNode, newNode._next) == newNode._next)
-            {
-                return;
-            }
-
-            // If we failed, go to the slow path and loop around until we succeed.
-            PushCore(newNode, newNode);
-        }
-
-        private void PushCore(Node head, Node tail)
-        {
-            SpinWait spin = new SpinWait();
-
-            // Keep trying to CAS the existing head with the new node until we succeed.
-            do
-            {
-                spin.SpinOnce();
-                // Reread the head and link our new node.
-                tail._next = _head;
-            }
-            while (Interlocked.CompareExchange(
-                ref _head, head, tail._next) != tail._next);
-        }
-
-        public bool TryPop(out T result)
-        {
-            Node head = _head;
-            //stack is empty
-            if (head == null)
-            {
-                result = default(T);
-                return false;
-            }
-            if (Interlocked.CompareExchange(ref _head, head._next, head) == head)
-            {
-                result = head._value;
-                return true;
-            }
-
-            // Fall through to the slow path.
-            return TryPopCore(out result);
-        }
-
-        private bool TryPopCore(out T result)
-        {
-            Node poppedNode;
-
-            if (TryPopCore(1, out poppedNode) == 1)
-            {
-                result = poppedNode._value;
-                return true;
-            }
-
-            result = default(T);
-            return false;
-        }
-
-        private int TryPopCore(int count, out Node poppedHead)
-        {
-            SpinWait spin = new SpinWait();
-
-            // Try to CAS the head with its current next.  We stop when we succeed or
-            // when we notice that the stack is empty, whichever comes first.
-            Node head;
-            Node next;
-            int backoff = 1;
-            Random r = null;
-            while (true)
-            {
-                head = _head;
-                // Is the stack empty?
-                if (head == null)
-                {
-                    poppedHead = null;
-                    return 0;
-                }
-                next = head;
-                int nodesCount = 1;
-                for (; nodesCount < count && next._next != null; nodesCount++)
-                {
-                    next = next._next;
-                }
-
-                // Try to swap the new head.  If we succeed, break out of the loop.
-                if (Interlocked.CompareExchange(ref _head, next._next, head) == head)
-                {
-                    // Return the popped Node.
-                    poppedHead = head;
-                    return nodesCount;
-                }
-
-                // We failed to CAS the new head.  Spin briefly and retry.
-                for (int i = 0; i < backoff; i++)
-                {
-                    spin.SpinOnce();
-                }
-
-                if (spin.NextSpinWillYield)
-                {
-                    if (r == null)
-                    {
-                        r = new Random();
-                    }
-                    backoff = r.Next(1, BACKOFF_MAX_YIELDS);
-                }
-                else
-                {
-                    backoff *= 2;
-                }
-            }
-        }
-    }
-
     internal sealed class PinnableBufferCache
     {
         /// <summary>
@@ -232,7 +85,7 @@ namespace System.Threading
             if (!m_FreeList.TryPop(out returnBuffer))
                 Restock(out returnBuffer);
 
-#if LOGGING
+#if CORECLR || LOGGING
             // Computing free count is expensive enough that we don't want to compute it unless logging is on.
             if (PinnableBufferCacheEventSource.Log.IsEnabled())
             {
@@ -355,7 +208,7 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// See if we can promote the buffers to the free list.  Returns true if sucessful. 
+        /// See if we can promote the buffers to the free list.  Returns true if successful. 
         /// </summary>
         private bool AgePendingBuffers()
         {
@@ -401,9 +254,9 @@ namespace System.Threading
             else if (m_restockSize < 256)
                 m_restockSize = m_restockSize * 2;                // Grow quickly at small sizes
             else if (m_restockSize < 4096)
-                m_restockSize = m_restockSize * 3 / 2;            // Less aggressively at large ones
+                m_restockSize = m_restockSize * 3 / 2;            // Less agressively at large ones
             else
-                m_restockSize = 4096;                             // Cap how aggressive we are
+                m_restockSize = 4096;                             // Cap how agressive we are
 
             // Ensure we hit our minimums
             if (m_minBufferCount > m_buffersUnderManagement)
@@ -538,7 +391,7 @@ namespace System.Threading
         private Func<object> m_factory;
 
         /// <summary>
-        /// Contains 'good' buffers to reuse.  They are guarenteed to be Gen 2 ENFORCED!
+        /// Contains 'good' buffers to reuse.  They are guaranteed to be Gen 2 ENFORCED!
         /// </summary>
         private ConcurrentStack<object> m_FreeList = new ConcurrentStack<object>();
         /// <summary>
@@ -548,7 +401,7 @@ namespace System.Threading
         /// </summary>
         private List<object> m_NotGen2;
         /// <summary>
-        /// What whas the gen 1 count the last time re restocked?  If it is now greater, then
+        /// What was the gen 1 count the last time re restocked?  If it is now greater, then
         /// we know that all objects are in Gen 2 so we don't have to check.  Should be updated
         /// every time something gets added to the m_NotGen2 list.
         /// </summary>
@@ -576,47 +429,16 @@ namespace System.Threading
         /// Did we put some buffers into m_NotGen2 to see if we can trim?
         /// </summary>
         private bool m_trimmingExperimentInProgress;
-#pragma warning disable 0649
         /// <summary>
         /// A forced minimum number of buffers.
         /// </summary>
         private int m_minBufferCount;
-#pragma warning restore 0649
-#if LOGGING
+#if CORECLR || LOGGING
         /// <summary>
         /// The number of calls to Allocate.
         /// </summary>
         private int m_numAllocCalls;
 #endif
-
         #endregion
-    }
-
-    internal sealed class PinnableBufferCacheEventSource
-    {
-        public static readonly PinnableBufferCacheEventSource Log = new PinnableBufferCacheEventSource();
-
-        public bool IsEnabled() { return false; }
-        public void DebugMessage(string message) { }
-        public void Create(string cacheName) { }
-        public void AllocateBuffer(string cacheName, ulong objectId, int objectHash, int objectGen, int freeCountAfter) { }
-        public void AllocateBufferFromNotGen2(string cacheName, int notGen2CountAfter) { }
-        public void AllocateBufferCreatingNewBuffers(string cacheName, int totalBuffsBefore, int objectCount) { }
-        public void AllocateBufferAged(string cacheName, int agedCount) { }
-        public void AllocateBufferFreeListEmpty(string cacheName, int notGen2CountBefore) { }
-        public void FreeBuffer(string cacheName, ulong objectId, int objectHash, int freeCountBefore) { }
-        public void FreeBufferStillTooYoung(string cacheName, int notGen2CountBefore) { }
-        public void TrimCheck(string cacheName, int totalBuffs, bool neededMoreThanFreeList, int deltaMSec) { }
-        public void TrimFree(string cacheName, int totalBuffs, int freeListCount, int toBeFreed) { }
-        public void TrimExperiment(string cacheName, int totalBuffs, int freeListCount, int numTrimTrial) { }
-        public void TrimFreeSizeOK(string cacheName, int totalBuffs, int freeListCount) { }
-        public void TrimFlush(string cacheName, int totalBuffs, int freeListCount, int notGen2CountBefore) { }
-        public void AgePendingBuffersResults(string cacheName, int promotedToFreeListCount, int heldBackCount) { }
-        public void WalkFreeListResult(string cacheName, int freeListCount, int gen0BuffersInFreeList) { }
-
-        static internal ulong AddressOf(object obj)
-        {
-            return 0;
-        }
     }
 }

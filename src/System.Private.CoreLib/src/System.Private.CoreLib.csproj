@@ -185,6 +185,7 @@
     <Compile Include="System\AppContextSwitches.cs" />
     <Compile Include="System\Buffer.cs" />
     <Compile Include="System\ByReference.cs" />
+    <Compile Include="System\Collections\Concurrent\ConcurrentStack.cs" />
     <Compile Include="System\Collections\Generic\ArraySortHelper.CoreRT.cs" />
     <Compile Include="System\Collections\Generic\Comparer.cs" />
     <Compile Include="System\Collections\Generic\CompatibilityEqualityComparers.cs" />
@@ -297,7 +298,6 @@
     <Compile Include="System\Threading\NativeOverlapped.cs" />
     <Compile Include="System\Threading\ObjectHeader.cs" Condition="'$(UseSyncTable)' == 'true'" />
     <Compile Include="System\Threading\Overlapped.cs" />
-    <Compile Include="System\Threading\PinnableBufferCache.cs" />
     <Compile Include="System\Threading\Semaphore.cs" />
     <Compile Include="System\Threading\SemaphoreSlim.cs" />
     <Compile Include="System\Threading\SpinLock.cs" />
