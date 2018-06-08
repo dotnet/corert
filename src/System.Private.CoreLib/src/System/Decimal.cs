@@ -409,25 +409,7 @@ namespace System
 
         // Returns the hash code for this Decimal.
         //
-        public unsafe override int GetHashCode()
-        {
-            double dbl = DecCalc.VarR8FromDec(ref this);
-            if (dbl == 0.0)
-                // Ensure 0 and -0 have the same hash code
-                return 0;
-
-            // conversion to double is lossy and produces rounding errors so we mask off the lowest 4 bits
-            // 
-            // For example these two numerically equal decimals with different internal representations produce
-            // slightly different results when converted to double:
-            //
-            // decimal a = new decimal(new int[] { 0x76969696, 0x2fdd49fa, 0x409783ff, 0x00160000 });
-            //                     => (decimal)1999021.176470588235294117647000000000 => (double)1999021.176470588
-            // decimal b = new decimal(new int[] { 0x3f0f0f0f, 0x1e62edcc, 0x06758d33, 0x00150000 }); 
-            //                     => (decimal)1999021.176470588235294117647000000000 => (double)1999021.1764705882
-            //
-            return (int)(((((uint*)&dbl)[0]) & 0xFFFFFFF0) ^ ((uint*)&dbl)[1]);
-        }
+        public override int GetHashCode() => DecCalc.GetHashCode(ref this);
 
         // Compares two Decimal values for equality. Returns true if the two
         // Decimal values are equal, or false if they are not equal.
