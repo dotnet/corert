@@ -6,9 +6,9 @@
             <Type Name="Microsoft.AspNetCore.Server.Kestrel.Core.Internal.KestrelServerOptionsSetup" Dynamic="Required All" />
         </Assembly>
         <Assembly Name="Microsoft.AspNetCore.Server.Kestrel" Dynamic="Required All"/>
-        <Assembly Name="Microsoft.AspNetCore.Server.Kestrel.Transport.Libuv">
-            <Type Name="Microsoft.AspNetCore.Server.Kestrel.Transport.Libuv.LibuvTransportFactory" Dynamic="Required All" />
-            <Type Name="Microsoft.AspNetCore.Server.Kestrel.Transport.Libuv.LibuvTransportOptions" Dynamic="Required All" />
+        <Assembly Name="Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets">
+            <Type Name="Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets.SocketTransportFactory" Dynamic="Required All" />
+            <Type Name="Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets.SocketTransportOptions" Dynamic="Required All" />
         </Assembly>
         <Assembly Name="Microsoft.Extensions.DependencyInjection" Dynamic="Required All">
             <Type Name="Microsoft.Extensions.DependencyInjection.DefaultServiceProviderFactory" Dynamic="Required All" />
