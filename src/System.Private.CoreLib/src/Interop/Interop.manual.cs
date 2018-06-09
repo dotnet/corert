@@ -14,7 +14,6 @@ internal partial class Interop
         ExceptionNonContinuable = 0x1u,
         CreateMutexInitialOwner = 0x1u,
         CreateEventManualReset = 0x1u,
-        MutexModifyState = 0x1u,
         CreateEventInitialSet = 0x2u,
         SemaphoreModifyState = 0x2u,
         EventModifyState = 0x2u,
@@ -23,8 +22,6 @@ internal partial class Interop
         WaitAbandoned0 = 0x80u,
         WaitTimeout = 0x102u,
         StackSizeParamIsAReservation = 0x10000u,
-        Synchronize = 0x100000u,
-        MaximumAllowed = 0x02000000u,
         WaitFailed = 0xFFFFFFFFu,
     }
 
