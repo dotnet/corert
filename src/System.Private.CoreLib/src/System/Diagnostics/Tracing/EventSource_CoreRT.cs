@@ -178,7 +178,9 @@ namespace System.Diagnostics.Tracing
                 this.Tags = tags;
                 this.EnabledForAnyListener = enabledForAnyListener;
                 this.EnabledForETW = enabledForETW;
+#if FEATURE_PERFTRACING
                 this.EnabledForEventPipe = false;
+#endif
                 this.TriggersActivityTracking = 0;
                 this.Name = name;
                 this.Message = message;
