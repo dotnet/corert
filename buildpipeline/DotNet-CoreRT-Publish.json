@@ -225,7 +225,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "f9d96d25-0c81-4e77-8282-1ad1f785cbb4",
-        "versionSpec": "1.*",
+        "versionSpec": "0.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -246,7 +246,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "f9d96d25-0c81-4e77-8282-1ad1f785cbb4",
-        "versionSpec": "1.*",
+        "versionSpec": "0.*",
         "definitionType": "task"
       },
       "inputs": {
