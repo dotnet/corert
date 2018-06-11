@@ -605,10 +605,10 @@ namespace System
             return ref DecCalc.VarDecCmp(ref d1, ref d2) < 0 ? ref d1 : ref d2;
         }
 
-
         public static Decimal Remainder(Decimal d1, Decimal d2)
         {
-            return DecCalc.VarDecMod(ref d1, ref d2);
+            DecCalc.VarDecMod(ref d1, ref d2);
+            return d1;
         }
 
         // Multiplies two Decimal values.
