@@ -9,17 +9,12 @@ namespace System.Threading
 {
     public sealed partial class Semaphore
     {
-        private static void VerifyNameForCreate(string name)
+        private void CreateSemaphoreCore(int initialCount, int maximumCount, string name, out bool createdNew)
         {
             if (name != null)
             {
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
             }
-        }
-
-        private void CreateSemaphoreCore(int initialCount, int maximumCount, string name, out bool createdNew)
-        {
-            Debug.Assert(name == null);
 
             SafeWaitHandle = WaitSubsystem.NewSemaphore(initialCount, maximumCount);
             createdNew = true;

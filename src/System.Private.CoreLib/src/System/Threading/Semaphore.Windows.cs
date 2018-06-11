@@ -17,20 +17,11 @@ namespace System.Threading
             SafeWaitHandle = handle;
         }
 
-        private static void VerifyNameForCreate(string name)
-        {
-            if (null != name && Interop.Kernel32.MAX_PATH < name.Length)
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Interop.Kernel32.MAX_PATH), nameof(name));
-            }
-        }
-
         private void CreateSemaphoreCore(int initialCount, int maximumCount, string name, out bool createdNew)
         {
             Debug.Assert(initialCount >= 0);
             Debug.Assert(maximumCount >= 1);
             Debug.Assert(initialCount <= maximumCount);
-            Debug.Assert(name == null || name.Length <= Interop.Kernel32.MAX_PATH);
 
             SafeWaitHandle myHandle = Interop.mincore.CreateSemaphoreEx(IntPtr.Zero, initialCount, maximumCount, name, 0, AccessRights);
 
@@ -63,10 +54,6 @@ namespace System.Threading
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
-            }
-            if (null != name && Interop.Kernel32.MAX_PATH < name.Length)
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Interop.Kernel32.MAX_PATH), nameof(name));
             }
 
             result = null;

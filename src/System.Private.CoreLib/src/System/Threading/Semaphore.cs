@@ -26,7 +26,6 @@ namespace System.Threading
         public Semaphore(int initialCount, int maximumCount, string name)
         {
             VerifyCounts(initialCount, maximumCount);
-            VerifyNameForCreate(name);
 
             bool createdNew;
             CreateSemaphoreCore(initialCount, maximumCount, name, out createdNew);
@@ -35,7 +34,6 @@ namespace System.Threading
         public Semaphore(int initialCount, int maximumCount, string name, out bool createdNew)
         {
             VerifyCounts(initialCount, maximumCount);
-            VerifyNameForCreate(name);
 
             CreateSemaphoreCore(initialCount, maximumCount, name, out createdNew);
         }

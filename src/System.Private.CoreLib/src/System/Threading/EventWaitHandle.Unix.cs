@@ -8,17 +8,12 @@ namespace System.Threading
 {
     public partial class EventWaitHandle
     {
-        private static void VerifyNameForCreate(string name)
+        private void CreateEventCore(bool initialState, EventResetMode mode, string name, out bool createdNew)
         {
             if (name != null)
             {
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
             }
-        }
-
-        private void CreateEventCore(bool initialState, EventResetMode mode, string name, out bool createdNew)
-        {
-            Debug.Assert(name == null);
 
             SafeWaitHandle = WaitSubsystem.NewEvent(initialState, mode);
             createdNew = true;
