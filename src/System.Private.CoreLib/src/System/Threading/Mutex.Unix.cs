@@ -11,17 +11,12 @@ namespace System.Threading
 {
     public sealed partial class Mutex
     {
-        private static void VerifyNameForCreate(string name)
+        private void CreateMutexCore(bool initiallyOwned, string name, out bool createdNew)
         {
             if (name != null)
             {
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
             }
-        }
-
-        private void CreateMutexCore(bool initiallyOwned, string name, out bool createdNew)
-        {
-            Debug.Assert(name == null);
 
             SafeWaitHandle = WaitSubsystem.NewMutex(initiallyOwned);
             createdNew = true;

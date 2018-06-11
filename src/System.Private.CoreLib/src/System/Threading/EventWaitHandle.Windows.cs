@@ -17,14 +17,6 @@ namespace System.Threading
             SafeWaitHandle = handle;
         }
 
-        private static void VerifyNameForCreate(string name)
-        {
-            if (null != name && Interop.Kernel32.MAX_PATH < name.Length)
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Interop.Kernel32.MAX_PATH), nameof(name));
-            }
-        }
-
         private void CreateEventCore(bool initialState, EventResetMode mode, string name, out bool createdNew)
         {
             Debug.Assert((mode == EventResetMode.AutoReset) || (mode == EventResetMode.ManualReset));
@@ -69,11 +61,6 @@ namespace System.Threading
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
-            }
-
-            if (null != name && Interop.Kernel32.MAX_PATH < name.Length)
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Interop.Kernel32.MAX_PATH), nameof(name));
             }
 
             result = null;
