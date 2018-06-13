@@ -10,7 +10,7 @@ namespace System.Threading
 {
     public partial class EventWaitHandle
     {
-        private const uint AccessRights = (uint)Interop.Kernel32.MAXIMUM_ALLOWED | Interop.Kernel32.SYNCHRONIZE | Interop.Kernel32.MUTEX_MODIFY_STATE;
+        private const uint AccessRights = Interop.Kernel32.MAXIMUM_ALLOWED | Interop.Kernel32.SYNCHRONIZE | (uint)Interop.Constants.EventModifyState;
 
         private EventWaitHandle(SafeWaitHandle handle)
         {
