@@ -110,7 +110,8 @@ unsigned UserDefinedCodeViewTypesBuilder::GetClassTypeIndex(
 unsigned UserDefinedCodeViewTypesBuilder::GetCompleteClassTypeIndex(
     const ClassTypeDescriptor &ClassDescriptor,
     const ClassFieldsTypeDescriptior &ClassFieldsDescriptor,
-    const DataFieldDescriptor *FieldsDescriptors) {
+    const DataFieldDescriptor *FieldsDescriptors,
+    const StaticDataFieldDescriptor *StaticsDescriptors) {
 
   FieldListRecordBuilder FLBR(TypeTable);
   FLBR.begin();

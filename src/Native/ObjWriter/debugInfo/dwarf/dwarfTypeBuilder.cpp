@@ -97,7 +97,7 @@ void DwarfInfo::EmitOffset(MCObjectStreamer *Streamer,
   Streamer->EmitValue(OffsetExpr, Size);
 }
 
-void DwarfInfo::EmitInfoOffset(MCObjectStreamer *Streamer, DwarfInfo *Info, unsigned Size) {
+void DwarfInfo::EmitInfoOffset(MCObjectStreamer *Streamer, const DwarfInfo *Info, unsigned Size) {
   uint64_t Offset = Info->InfoSymbol->getOffset();
   if (Offset != 0) {
     Streamer->EmitIntValue(Offset, Size);
@@ -299,7 +299,7 @@ void DwarfDataField::DumpTypes(UserDefinedDwarfTypesBuilder *TypeBuilder, MCObje
 
 void DwarfDataField::DumpTypeInfo(MCObjectStreamer *Streamer, UserDefinedDwarfTypesBuilder *TypeBuilder) {
   // Abbrev Number
-  Streamer->EmitULEB128IntValue(IsStatic ? DwarfAbbrev::ClassMemberStatic : DwarfAbbrev::ClassMember);
+  Streamer->EmitULEB128IntValue(DwarfAbbrev::ClassMember);
 
   // DW_AT_name
   EmitSectionOffset(Streamer, StrSymbol, 4);
@@ -309,24 +309,43 @@ void DwarfDataField::DumpTypeInfo(MCObjectStreamer *Streamer, UserDefinedDwarfTy
   assert(MemberTypeInfo != nullptr);
   EmitInfoOffset(Streamer, MemberTypeInfo, 4);
 
-  if (!IsStatic) {
-    // DW_AT_data_member_location
-    Streamer->EmitIntValue(Offset, 4);
-  }
+  // DW_AT_data_member_location
+  Streamer->EmitIntValue(Offset, 4);
+}
+
+// DwarfStaticDataField
+
+void DwarfStaticDataField::DumpTypeInfo(MCObjectStreamer *Streamer, UserDefinedDwarfTypesBuilder *TypeBuilder) {
+  // Abbrev Number
+  Streamer->EmitULEB128IntValue(DwarfAbbrev::ClassMemberStatic);
+
+  // DW_AT_name
+  EmitSectionOffset(Streamer, StrSymbol, 4);
+
+  // DW_AT_type
+  DwarfInfo *MemberTypeInfo = TypeBuilder->GetTypeInfoByIndex(TypeIndex);
+  assert(MemberTypeInfo != nullptr);
+  EmitInfoOffset(Streamer, MemberTypeInfo, 4);
 }
 
 // DwarfClassTypeInfo
 
 DwarfClassTypeInfo::DwarfClassTypeInfo(const ClassTypeDescriptor &ClassDescriptor,
                                        const ClassFieldsTypeDescriptior &ClassFieldsDescriptor,
-                                       const DataFieldDescriptor *FieldsDescriptors) :
+                                       const DataFieldDescriptor *FieldsDescriptors,
+                                       const StaticDataFieldDescriptor *StaticsDescriptors) :
                                        Name(ClassDescriptor.Name),
                                        IsStruct(ClassDescriptor.IsStruct),
                                        BaseClassId(ClassDescriptor.BaseClassId),
                                        Size(ClassDescriptor.InstanceSize),
                                        IsForwardDecl(false) {
+  int32_t staticIdx = 0;
   for (int32_t i = 0; i < ClassFieldsDescriptor.FieldsCount; i++) {
-    Fields.emplace_back(FieldsDescriptors[i]);
+    if (FieldsDescriptors[i].Offset == 0xFFFFFFFF) {
+      StaticFields.emplace_back(FieldsDescriptors[i], StaticsDescriptors[staticIdx++]);
+    } else {
+      Fields.emplace_back(FieldsDescriptors[i]);
+    }
   }
 }
 
@@ -348,6 +367,10 @@ void DwarfClassTypeInfo::DumpTypes(UserDefinedDwarfTypesBuilder *TypeBuilder, MC
     Field.DumpTypes(TypeBuilder, Streamer, TypeSection, StrSection);
   }
 
+  for (auto &StaticField : StaticFields) {
+    StaticField.DumpTypes(TypeBuilder, Streamer, TypeSection, StrSection);
+  }
+
   for (auto *Function : MemberFunctions) {
     Function->DumpTypes(TypeBuilder, Streamer, TypeSection, StrSection);
   }
@@ -365,6 +388,10 @@ void DwarfClassTypeInfo::Dump(UserDefinedDwarfTypesBuilder *TypeBuilder, MCObjec
 
   for (auto &Field : Fields) {
     Field.Dump(TypeBuilder, Streamer, TypeSection, StrSection);
+  }
+
+  for (auto &StaticField : StaticFields) {
+    StaticField.Dump(TypeBuilder, Streamer, TypeSection, StrSection);
   }
 
   for (auto *Function : MemberFunctions) {
@@ -634,10 +661,20 @@ unsigned UserDefinedDwarfTypesBuilder::GetClassTypeIndex(
 unsigned UserDefinedDwarfTypesBuilder::GetCompleteClassTypeIndex(
     const ClassTypeDescriptor &ClassDescriptor,
     const ClassFieldsTypeDescriptior &ClassFieldsDescriptor,
-    const DataFieldDescriptor *FieldsDescriptors) {
+    const DataFieldDescriptor *FieldsDescriptors,
+    const StaticDataFieldDescriptor *StaticsDescriptors) {
   unsigned TypeIndex = ArrayIndexToTypeIndex(DwarfTypes.size());
   UserDefinedTypes.push_back(std::make_pair(ClassDescriptor.Name, TypeIndex));
-  DwarfTypes.push_back(make_unique<DwarfClassTypeInfo>(ClassDescriptor, ClassFieldsDescriptor, FieldsDescriptors));
+
+  DwarfClassTypeInfo *ClassTypeInfo = new DwarfClassTypeInfo(ClassDescriptor, ClassFieldsDescriptor,
+      FieldsDescriptors, StaticsDescriptors);
+
+  DwarfTypes.push_back(std::unique_ptr<DwarfClassTypeInfo>(ClassTypeInfo));
+
+  if (ClassTypeInfo->GetStaticFields().size() > 0) {
+    ClassesWithStaticFields.push_back(ClassTypeInfo);
+  }
+
   return TypeIndex;
 }
 
@@ -669,7 +706,7 @@ unsigned UserDefinedDwarfTypesBuilder::GetArrayTypeIndex(
 
   unsigned TypeIndex = ArrayIndexToTypeIndex(DwarfTypes.size());
   UserDefinedTypes.push_back(std::make_pair(ArrayClassDescriptor.Name, TypeIndex));
-  DwarfTypes.push_back(make_unique<DwarfClassTypeInfo>(ArrayClassDescriptor, FieldsTypeDesc, FieldDescs.data()));
+  DwarfTypes.push_back(make_unique<DwarfClassTypeInfo>(ArrayClassDescriptor, FieldsTypeDesc, FieldDescs.data(), nullptr));
 
   return TypeIndex;
 }

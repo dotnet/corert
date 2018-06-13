@@ -429,6 +429,12 @@ namespace ILCompiler
             List<DataFieldDescriptor> nonGcStaticFields = new List<DataFieldDescriptor>();
             List<DataFieldDescriptor> gcStaticFields = new List<DataFieldDescriptor>();
             List<DataFieldDescriptor> threadStaticFields = new List<DataFieldDescriptor>();
+            List<StaticDataFieldDescriptor> staticsDescs = new List<StaticDataFieldDescriptor>();
+
+            string nonGcStaticDataName = NodeFactory.NameMangler.NodeMangler.NonGCStatics(type);
+            string gcStaticDataName = NodeFactory.NameMangler.NodeMangler.GCStatics(type);
+            string threadStaticDataName = NodeFactory.NameMangler.NodeMangler.ThreadStatics(type);
+            bool IsCoreRTAbi = Abi == TargetAbi.CoreRT;
 
             bool isCanonical = defType.IsCanonicalSubtype(CanonicalFormKind.Any);
 
@@ -451,6 +457,30 @@ namespace ILCompiler
 
                 if (fieldDesc.IsStatic)
                 {
+                    if (NodeFactory.Target.OperatingSystem != TargetOS.Windows)
+                    {
+                        StaticDataFieldDescriptor staticDesc = new StaticDataFieldDescriptor
+                        {
+                            StaticOffset = (ulong)fieldOffsetEmit
+                        };
+
+                        // Mark field as static
+                        field.Offset = 0xFFFFFFFF;
+
+                        if (fieldDesc.IsThreadStatic) {
+                            staticDesc.StaticDataName = threadStaticDataName;
+                            staticDesc.IsStaticDataInObject = IsCoreRTAbi ? 1 : 0;
+                        } else if (fieldDesc.HasGCStaticBase) {
+                            staticDesc.StaticDataName = gcStaticDataName;
+                            staticDesc.IsStaticDataInObject = IsCoreRTAbi ? 1 : 0;
+                        } else {
+                            staticDesc.StaticDataName = nonGcStaticDataName;
+                            staticDesc.IsStaticDataInObject = 0;
+                        }
+
+                        staticsDescs.Add(staticDesc);
+                    }
+
                     if (fieldDesc.IsThreadStatic)
                         threadStaticFields.Add(field);
                     else if (fieldDesc.HasGCStaticBase)
@@ -464,9 +494,18 @@ namespace ILCompiler
                 }
             }
 
-            InsertStaticFieldRegionMember(fieldsDescs, defType, nonGcStaticFields, WindowsNodeMangler.NonGCStaticMemberName, "__type_" + WindowsNodeMangler.NonGCStaticMemberName, false);
-            InsertStaticFieldRegionMember(fieldsDescs, defType, gcStaticFields, WindowsNodeMangler.GCStaticMemberName, "__type_" + WindowsNodeMangler.GCStaticMemberName, Abi == TargetAbi.CoreRT);
-            InsertStaticFieldRegionMember(fieldsDescs, defType, threadStaticFields, WindowsNodeMangler.ThreadStaticMemberName, "__type_" + WindowsNodeMangler.ThreadStaticMemberName, Abi == TargetAbi.CoreRT);
+            if (NodeFactory.Target.OperatingSystem == TargetOS.Windows)
+            {
+                InsertStaticFieldRegionMember(fieldsDescs, defType, nonGcStaticFields, WindowsNodeMangler.NonGCStaticMemberName, "__type_" + WindowsNodeMangler.NonGCStaticMemberName, false);
+                InsertStaticFieldRegionMember(fieldsDescs, defType, gcStaticFields, WindowsNodeMangler.GCStaticMemberName, "__type_" + WindowsNodeMangler.GCStaticMemberName, IsCoreRTAbi);
+                InsertStaticFieldRegionMember(fieldsDescs, defType, threadStaticFields, WindowsNodeMangler.ThreadStaticMemberName, "__type_" + WindowsNodeMangler.ThreadStaticMemberName, IsCoreRTAbi);
+            }
+            else
+            {
+                fieldsDescs.AddRange(nonGcStaticFields);
+                fieldsDescs.AddRange(gcStaticFields);
+                fieldsDescs.AddRange(threadStaticFields);
+            }
 
             DataFieldDescriptor[] fields = new DataFieldDescriptor[fieldsDescs.Count];
             for (int i = 0; i < fieldsDescs.Count; ++i)
@@ -474,15 +513,21 @@ namespace ILCompiler
                 fields[i] = fieldsDescs[i];
             }
 
+            StaticDataFieldDescriptor[] statics = new StaticDataFieldDescriptor[staticsDescs.Count];
+            for (int i = 0; i < staticsDescs.Count; ++i)
+            {
+                statics[i] = staticsDescs[i];
+            }
+
             LayoutInt elementSize = defType.GetElementSize();
             int elementSizeEmit = elementSize.IsIndeterminate ? 0xBAAD : elementSize.AsInt;
             ClassFieldsTypeDescriptor fieldsDescriptor = new ClassFieldsTypeDescriptor
             {
                 Size = (ulong)elementSizeEmit,
-                FieldsCount = fieldsDescs.Count
+                FieldsCount = fieldsDescs.Count,
             };
 
-            uint completeTypeIndex = _objectWriter.GetCompleteClassTypeIndex(classTypeDescriptor, fieldsDescriptor, fields);
+            uint completeTypeIndex = _objectWriter.GetCompleteClassTypeIndex(classTypeDescriptor, fieldsDescriptor, fields, statics);
             _completeKnownTypes[type] = completeTypeIndex;
 
             if (needsCompleteType)
@@ -514,7 +559,7 @@ namespace ILCompiler
                     classTypeDescriptor.BaseClassId = GetTypeIndex(defType.Context.GetWellKnownType(WellKnownType.Object), true);
                 }
 
-                uint staticFieldRegionTypeIndex = _objectWriter.GetCompleteClassTypeIndex(classTypeDescriptor, fieldsDescriptor, staticFields.ToArray());
+                uint staticFieldRegionTypeIndex = _objectWriter.GetCompleteClassTypeIndex(classTypeDescriptor, fieldsDescriptor, staticFields.ToArray(), null);
                 uint staticFieldRegionSymbolTypeIndex = staticFieldRegionTypeIndex;
 
                 // This means that access to this static region is done via a double indirection
