@@ -10,7 +10,6 @@ namespace ILCompiler.DependencyAnalysis
 {
     public sealed class ReadyToRunCodegenNodeFactory : NodeFactory
     {
-        
         public ReadyToRunCodegenNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager,
             InteropStubManager interopStubManager, NameMangler nameMangler, VTableSliceProvider vtableSliceProvider, DictionaryLayoutProvider dictionaryLayoutProvider)
             : base(context, 

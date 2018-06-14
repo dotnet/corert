@@ -27,7 +27,7 @@ namespace ILCompiler
         {
         }
 
-        public static KeyValuePair<string, string>[] ParseJitOptions(IEnumerable<string> options)
+        public override CompilationBuilder UseBackendOptions(IEnumerable<string> options)
         {
             var builder = new ArrayBuilder<KeyValuePair<string, string>>();
 
@@ -47,12 +47,7 @@ namespace ILCompiler
                 builder.Add(new KeyValuePair<string, string>(name, value));
             }
 
-            return builder.ToArray();
-        }
-
-        public override CompilationBuilder UseBackendOptions(IEnumerable<string> options)
-        {
-            _ryujitOptions = ParseJitOptions(options);
+            _ryujitOptions = builder.ToArray();
 
             return this;
         }

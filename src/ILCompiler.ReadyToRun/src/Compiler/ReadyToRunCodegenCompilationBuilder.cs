@@ -29,7 +29,25 @@ namespace ILCompiler
 
         public override CompilationBuilder UseBackendOptions(IEnumerable<string> options)
         {
-            _ryujitOptions = RyuJitCompilationBuilder.ParseJitOptions(options);
+            var builder = new ArrayBuilder<KeyValuePair<string, string>>();
+
+            foreach (string param in options)
+            {
+                int indexOfEquals = param.IndexOf('=');
+
+                // We're skipping bad parameters without reporting.
+                // This is not a mainstream feature that would need to be friendly.
+                // Besides, to really validate this, we would also need to check that the config name is known.
+                if (indexOfEquals < 1)
+                    continue;
+
+                string name = param.Substring(0, indexOfEquals);
+                string value = param.Substring(indexOfEquals + 1);
+
+                builder.Add(new KeyValuePair<string, string>(name, value));
+            }
+
+            _ryujitOptions = builder.ToArray();
 
             return this;
         }
