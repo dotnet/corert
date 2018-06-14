@@ -96,6 +96,9 @@
       <Project>{5d796936-ccc1-4e9d-b1a9-36a5aba9b499}</Project>
       <Name>ILCompiler.WebAssembly</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\ILCompiler.ReadyToRun\src\ILCompiler.ReadyToRun.csproj">
+      <Name>ILCompiler.ReadyToRun</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\..\..\bin\Windows_NT.$(Platform).$(Configuration)\tools\jitinterface.dll">

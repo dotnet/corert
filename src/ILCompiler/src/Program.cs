@@ -25,6 +25,7 @@ namespace ILCompiler
         private string _outputFilePath;
         private bool _isCppCodegen;
         private bool _isWasmCodegen;
+        private bool _isReadyToRunCodeGen;
         private bool _isVerbose;
 
         private string _dgmlLogFileName;
@@ -140,6 +141,7 @@ namespace ILCompiler
                 syntax.DefineOption("g", ref _enableDebugInfo, "Emit debugging information");
                 syntax.DefineOption("cpp", ref _isCppCodegen, "Compile for C++ code-generation");
                 syntax.DefineOption("wasm", ref _isWasmCodegen, "Compile for WebAssembly code-generation");
+                syntax.DefineOption("readytorun", ref _isReadyToRunCodeGen, "Compile for ready-to-run code-generation");
                 syntax.DefineOption("nativelib", ref _nativeLib, "Compile as static or shared library");
                 syntax.DefineOption("exportsfile", ref _exportsFile, "File to write exported method definitions");
                 syntax.DefineOption("dgmllog", ref _dgmlLogFileName, "Save result of dependency analysis as DGML");
@@ -399,6 +401,21 @@ namespace ILCompiler
             CompilationBuilder builder;
             if (_isWasmCodegen)
                 builder = new WebAssemblyCodegenCompilationBuilder(typeSystemContext, compilationGroup);
+            else if (_isReadyToRunCodeGen)
+            {
+                if (typeSystemContext.InputFilePaths.Count > 1)
+                {
+                    // Since ready-to-run currently adds to an existing IL image, we expect a single input
+                    throw new CommandLineException("Ready-to-run compilation only supports a single input assembly");
+                }
+
+                string inputFilePath = "";
+                foreach (var input in typeSystemContext.InputFilePaths)
+                {
+                    inputFilePath = input.Value;
+                }
+                builder = new ReadyToRunCodegenCompilationBuilder(typeSystemContext, compilationGroup, inputFilePath);
+            }
             else if (_isCppCodegen)
                 builder = new CppCodegenCompilationBuilder(typeSystemContext, compilationGroup);
             else
