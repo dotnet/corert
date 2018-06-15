@@ -251,16 +251,18 @@ namespace ILCompiler
 
         public GCStaticDescRegionNode GCStaticDescRegion = new GCStaticDescRegionNode(
             CompilationUnitPrefix + "__GCStaticDescStart", 
-            CompilationUnitPrefix + "__GCStaticDescEnd");
+            CompilationUnitPrefix + "__GCStaticDescEnd",
+            new SortableDependencyNode.EmbeddedObjectNodeComparer(new CompilerComparer()));
 
         public GCStaticDescRegionNode ThreadStaticGCDescRegion = new GCStaticDescRegionNode(
             CompilationUnitPrefix + "__ThreadStaticGCDescStart", 
-            CompilationUnitPrefix + "__ThreadStaticGCDescEnd");
+            CompilationUnitPrefix + "__ThreadStaticGCDescEnd",
+            new SortableDependencyNode.EmbeddedObjectNodeComparer(new CompilerComparer()));
 
         public ArrayOfEmbeddedDataNode<ThreadStaticsOffsetNode> ThreadStaticsOffsetRegion = new ArrayOfEmbeddedDataNode<ThreadStaticsOffsetNode>(
             CompilationUnitPrefix + "__ThreadStaticOffsetRegionStart",
             CompilationUnitPrefix + "__ThreadStaticOffsetRegionEnd",
-            null);
+            new SortableDependencyNode.EmbeddedObjectNodeComparer(new CompilerComparer()));
 
         public ThreadStaticsIndexNode ThreadStaticsIndex;
 
