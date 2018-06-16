@@ -158,7 +158,12 @@ namespace System.Threading
                 }
 
                 _pNativeOverlapped = (NativeOverlapped*)Interop.MemAlloc((UIntPtr)(sizeof(NativeOverlapped) + sizeof(GCHandle)));
-                *_pNativeOverlapped = default(NativeOverlapped);
+
+                _pNativeOverlapped->InternalLow = default;
+                _pNativeOverlapped->InternalHigh = default;
+                _pNativeOverlapped->OffsetLow = _offsetLow;
+                _pNativeOverlapped->OffsetHigh = _offsetHigh;
+                _pNativeOverlapped->EventHandle = _eventHandle;
 
                 GCHandle *pHandle = (GCHandle*)(_pNativeOverlapped + 1);
                 *pHandle = default(GCHandle);
