@@ -23,9 +23,50 @@ namespace ILCompiler.PEWriter
     public class R2RPEBuilder : PEBuilder
     {
         /// <summary>
+        /// This structure describes how a particular section moved between the original MSIL
+        /// and the output PE file. It holds beginning and end RVA of the input (MSIL) section
+        /// and a delta between the input and output starting RVA of the section.
+        /// </summary>
+        struct SectionRVADelta
+        {
+            /// <summary>
+            /// Starting RVA of the section in the input MSIL PE.
+            /// </summary>
+            readonly public int StartRVA;
+
+            /// <summary>
+            /// End RVA (one plus the last RVA in the section) of the section in the input MSIL PE.
+            /// </summary>
+            readonly public int EndRVA;
+
+            /// <summary>
+            /// Starting RVA of the section in the output PE minus its starting RVA in the input MSIL.
+            /// </summary>
+            readonly public int DeltaRVA;
+
+            /// <summary>
+            /// Initialize the section RVA delta information.
+            /// </summary>
+            /// <param name="startRVA">Starting RVA of the section in the input MSIL</param>
+            /// <param name="endRVA">End RVA of the section in the input MSIL</param>
+            /// <param name="deltaRVA">Output RVA of the section minus input RVA of the section</param>
+            public SectionRVADelta(int startRVA, int endRVA, int deltaRVA)
+            {
+                StartRVA = startRVA;
+                EndRVA = endRVA;
+                DeltaRVA = deltaRVA;
+            }
+        }
+
+        /// <summary>
         /// PE reader representing the input MSIL PE file we're copying to the output composite PE file.
         /// </summary>
         private PEReader _peReader;
+        
+        /// <summary>
+        /// Custom sections explicitly injected by the caller.
+        /// </summary>
+        private HashSet<string> _customSections;
         
         /// <summary>
         /// Complete list of section names includes the sections present in the input MSIL file
@@ -40,11 +81,17 @@ namespace ILCompiler.PEWriter
         private Func<string, SectionLocation, BlobBuilder> _sectionSerializer;
 
         /// <summary>
+        /// Optional callback can be used to adjust the default directory table obtained by relocating
+        /// the directory table from input MSIL PE file.
+        /// </summary>
+        private Action<PEDirectoriesBuilder> _directoriesUpdater;
+
+        /// <summary>
         /// For each copied section, we store its initial and end RVA in the source PE file
         /// and the RVA difference between the old and new file. We use this table to relocate
         /// directory entries in the PE file header.
         /// </summary>
-        private List<Tuple<int, int, int>> _sectionRvaDeltas;
+        private List<SectionRVADelta> _sectionRvaDeltas;
 
         /// <summary>
         /// Constructor initializes the various control structures and combines the section list.
@@ -54,14 +101,18 @@ namespace ILCompiler.PEWriter
         /// <param name="sectionSerializer">Callback for emission of data for the individual sections</param>
         public R2RPEBuilder(
             PEReader peReader,
-            IEnumerable<Tuple<string, SectionCharacteristics>> sectionNames = null,
-            Func<string, SectionLocation, BlobBuilder> sectionSerializer = null)
+            IEnumerable<(string SectionName, SectionCharacteristics Characteristics)> sectionNames = null,
+            Func<string, SectionLocation, BlobBuilder> sectionSerializer = null,
+            Action<PEDirectoriesBuilder> directoriesUpdater = null)
             : base(PEHeaderCopier.Copy(peReader.PEHeaders), deterministicIdProvider: null)
         {
             _peReader = peReader;
             _sectionSerializer = sectionSerializer;
+            _directoriesUpdater = directoriesUpdater;
             
-            _sectionRvaDeltas = new List<Tuple<int, int, int>>();
+            _customSections = new HashSet<string>(sectionNames.Select((sn) => sn.SectionName));
+            
+            _sectionRvaDeltas = new List<SectionRVADelta>();
             
             PEHeaders headers = peReader.PEHeaders;
 
@@ -79,7 +130,7 @@ namespace ILCompiler.PEWriter
 
             if (sectionNames != null)
             {
-                foreach (Tuple<string, SectionCharacteristics> nameCharPair in sectionNames)
+                foreach ((string SectionName, SectionCharacteristics Characteristics) nameCharPair in sectionNames)
                 {
                     if (!peReader.PEHeaders.SectionHeaders.Any((header) => header.Name == nameCharPair.Item1))
                     {
@@ -123,6 +174,12 @@ namespace ILCompiler.PEWriter
             builder.ImportAddressTable = RelocateDirectoryEntry(_peReader.PEHeaders.PEHeader.ImportAddressTableDirectory);
             builder.DelayImportTable = RelocateDirectoryEntry(_peReader.PEHeaders.PEHeader.DelayImportTableDirectory);
             builder.CorHeaderTable = RelocateDirectoryEntry(_peReader.PEHeaders.PEHeader.CorHeaderTableDirectory);
+
+            if (_directoriesUpdater != null)
+            {
+                _directoriesUpdater(builder);
+            }
+
             return builder;
         }
 
@@ -148,12 +205,12 @@ namespace ILCompiler.PEWriter
                 // Zero RVA is normally used as NULL
                 return rva;
             }
-            foreach (Tuple<int, int, int> rangeMap in _sectionRvaDeltas)
+            foreach (SectionRVADelta sectionRvaDelta in _sectionRvaDeltas)
             {
-                if (rva >= rangeMap.Item1 && rva < rangeMap.Item2)
+                if (rva >= sectionRvaDelta.StartRVA && rva < sectionRvaDelta.EndRVA)
                 {
                     // We found the input section holding the RVA, apply its specific delt (output RVA - input RVA).
-                    return rva + rangeMap.Item3;
+                    return rva + sectionRvaDelta.DeltaRVA;
                 }
             }
             Debug.Assert(false, "RVA is not within any of the input sections - output PE may be inconsistent");
@@ -179,7 +236,8 @@ namespace ILCompiler.PEWriter
         /// <returns>Blob builder representing the section data</returns>
         protected override BlobBuilder SerializeSection(string name, SectionLocation location)
         {
-            BlobBuilder sectionDataBuilder = new BlobBuilder();
+            BlobBuilder sectionDataBuilder = null;
+            bool haveCustomSection = _customSections.Contains(name);
             int sectionIndex = _peReader.PEHeaders.SectionHeaders.Count() - 1;
             while (sectionIndex >= 0 && _peReader.PEHeaders.SectionHeaders[sectionIndex].Name != name)
             {
@@ -191,10 +249,10 @@ namespace ILCompiler.PEWriter
                 int sectionOffset = (_peReader.IsLoadedImage ? sectionHeader.VirtualAddress : sectionHeader.PointerToRawData);
                 int rvaDelta = location.RelativeVirtualAddress - sectionHeader.VirtualAddress;
                 
-                _sectionRvaDeltas.Add(new Tuple<int, int, int>(
-                    sectionHeader.VirtualAddress,
-                    sectionHeader.VirtualAddress + Math.Max(sectionHeader.VirtualSize, sectionHeader.SizeOfRawData),
-                    rvaDelta));
+                _sectionRvaDeltas.Add(new SectionRVADelta(
+                    startRVA: sectionHeader.VirtualAddress,
+                    endRVA: sectionHeader.VirtualAddress + Math.Max(sectionHeader.VirtualSize, sectionHeader.SizeOfRawData),
+                    deltaRVA: rvaDelta));
                 
                 unsafe
                 {
@@ -210,31 +268,45 @@ namespace ILCompiler.PEWriter
                     }
                     else
                     {
+                        sectionDataBuilder = new BlobBuilder();
                         sectionDataBuilder.WriteBytes(inputSectionReader.StartPointer, bytesToRead);
                     }
 
-                    if (sectionHeader.VirtualSize > bytesToRead)
+                    int alignedSize = sectionHeader.VirtualSize;
+                    
+                    // When custom section data is present, align the section size to 4K to avoid
+                    // pre-generated MSIL relocations from tampering with native relocations.
+                    if (_customSections.Contains(name))
+                    {
+                        alignedSize = (alignedSize + 0xFFF) & ~0xFFF;
+                    }
+
+                    if (alignedSize > bytesToRead)
                     {
                         // If the number of bytes read from the source PE file is less than the virtual size,
                         // zero pad to the end of virtual size before emitting extra section data
-                        sectionDataBuilder.WriteBytes(0, sectionHeader.VirtualSize - bytesToRead);
+                        sectionDataBuilder.WriteBytes(0, alignedSize - bytesToRead);
                     }
                     location = new SectionLocation(
                         location.RelativeVirtualAddress + sectionDataBuilder.Count,
                         location.PointerToRawData + sectionDataBuilder.Count);
                 }
             }
+
             if (_sectionSerializer != null)
             {
                 BlobBuilder extraData = _sectionSerializer(name, location);
-                if (sectionIndex < 0)
+                if (extraData != null)
                 {
-                    // See above - there's a bug due to which LinkSuffix to an empty BlobBuilder screws up the blob content.
-                    sectionDataBuilder = extraData;
-                }
-                else
-                {
-                    sectionDataBuilder.LinkSuffix(extraData);
+                    if (sectionDataBuilder == null)
+                    {
+                        // See above - there's a bug due to which LinkSuffix to an empty BlobBuilder screws up the blob content.
+                        sectionDataBuilder = extraData;
+                    }
+                    else
+                    {
+                        sectionDataBuilder.LinkSuffix(extraData);
+                    }
                 }
             }
             
