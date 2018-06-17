@@ -34,7 +34,7 @@ namespace ILCompiler.DependencyAnalysis
         bool _hasCompiledBody;
 
         public NonExternMethodSymbolNode(NodeFactory factory, MethodDesc method, bool isUnboxing)
-            : base(isUnboxing ? UnboxingStubNode.GetMangledName(factory.NameMangler, method) :
+             : base(isUnboxing ? UnboxingStubNode.GetMangledName(factory.NameMangler, method) :
                   factory.NameMangler.GetMangledMethodName(method))
         {
             _isUnboxing = isUnboxing;
@@ -147,6 +147,22 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return dependencies;
+        }
+
+        protected sealed internal override int ClassCode => -2124588118;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            NonExternMethodSymbolNode otherMethod = (NonExternMethodSymbolNode)other;
+            var result = _isUnboxing.CompareTo(otherMethod._isUnboxing);
+            return result != 0 ? result : comparer.Compare(_method, otherMethod._method);
+        }
+
+        int ISortableSymbolNode.ClassCode => ClassCode;
+
+        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
+        {
+            return CompareToImpl((SortableDependencyNode)other, comparer);
         }
 
         private class FuncletSymbol : ISymbolNodeWithFuncletId

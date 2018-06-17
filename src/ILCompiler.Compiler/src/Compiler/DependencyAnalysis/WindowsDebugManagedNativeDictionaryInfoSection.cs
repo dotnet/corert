@@ -30,7 +30,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public int Offset => 0;
 
-        protected internal override int ClassCode => 1502860768;
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+        protected internal override int ClassCode => (int)ObjectNodeOrder.WindowsDebugManagedNativeDictionaryInfoSectionNode;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {

@@ -13,7 +13,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class GCStaticDescNode : EmbeddedObjectNode, ISymbolDefinitionNode
+    public class GCStaticDescNode : EmbeddedObjectNode, ISymbolDefinitionNode, ISortableSymbolNode
     {
         private MetadataType _type;
         private GCPointerMap _gcMap;
@@ -177,20 +177,29 @@ namespace ILCompiler.DependencyAnalysis
             return compare != 0 ? compare : comparer.Compare(_type, other._type);
         }
 
-        protected internal override int ClassCode => 2142332918;
-
+        protected sealed internal override int ClassCode => 2142332918;
+        
         protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
         {
-            return comparer.Compare(_type, ((GCStaticDescNode)other)._type);
+            return CompareTo((GCStaticDescNode)other, comparer);
+        }
+
+        int ISortableSymbolNode.ClassCode => ClassCode;
+
+        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
+        {
+            return CompareToImpl((SortableDependencyNode)other, comparer);
         }
     }
 
     public class GCStaticDescRegionNode : ArrayOfEmbeddedDataNode<GCStaticDescNode>
     {
-        public GCStaticDescRegionNode(string startSymbolMangledName, string endSymbolMangledName)
-            : base(startSymbolMangledName, endSymbolMangledName, null)
+        public GCStaticDescRegionNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<GCStaticDescNode> nodeSorter)
+            : base(startSymbolMangledName, endSymbolMangledName, nodeSorter)
         {
         }
+
+        protected internal override int ClassCode => 1312891560;
 
         protected override void GetElementDataForNodes(ref ObjectDataBuilder builder, NodeFactory factory, bool relocsOnly)
         {

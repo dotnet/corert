@@ -74,14 +74,14 @@ namespace ILCompiler.DependencyAnalysis
             builder.EmitReloc(factory.TypeThreadStaticsSymbol(_type), RelocType.IMAGE_REL_SECREL);
         }
 
-        protected internal override int ClassCode => 419394032;
+        sealed protected internal override int ClassCode => 419394032;
 
         protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
         {
             return comparer.Compare(_type, ((ThreadStaticsOffsetNode)other)._type);
         }
 
-        int ISortableSymbolNode.ClassCode => 419394032;
+        int ISortableSymbolNode.ClassCode => ClassCode;
 
         int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
         {
