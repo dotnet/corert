@@ -49,6 +49,7 @@ namespace ILCompiler
         private bool _emitStackTraceData;
         private string _mapFileName;
         private string _metadataLogFileName;
+        private bool _noMetadataBlocking;
 
         private string _singleMethodTypeName;
         private string _singleMethodName;
@@ -155,6 +156,7 @@ namespace ILCompiler
                 syntax.DefineOptionList("rdxml", ref _rdXmlFilePaths, "RD.XML file(s) for compilation");
                 syntax.DefineOption("map", ref _mapFileName, "Generate a map file");
                 syntax.DefineOption("metadatalog", ref _metadataLogFileName, "Generate a metadata log file");
+                syntax.DefineOption("nometadatablocking", ref _noMetadataBlocking, "Ignore metadata blocking for internal implementation details");
                 syntax.DefineOption("scan", ref _useScanner, "Use IL scanner to generate optimized code (implied by -O)");
                 syntax.DefineOption("noscan", ref _noScanner, "Do not use IL scanner to generate optimized code");
                 syntax.DefineOption("ildump", ref _ilDump, "Dump IL assembly listing for compiler-generated IL");
@@ -407,10 +409,13 @@ namespace ILCompiler
             var stackTracePolicy = _emitStackTraceData ?
                 (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
 
+            MetadataBlockingPolicy mdBlockingPolicy = _noMetadataBlocking ?
+                (MetadataBlockingPolicy)new NoBlockingPolicy() : new BlockedInternalsBlockingPolicy();
+
             UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager(
                 compilationGroup,
                 typeSystemContext,
-                new BlockedInternalsBlockingPolicy(),
+                mdBlockingPolicy,
                 _metadataLogFileName,
                 stackTracePolicy);
 
