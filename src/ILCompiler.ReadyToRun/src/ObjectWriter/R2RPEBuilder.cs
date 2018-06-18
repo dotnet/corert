@@ -32,17 +32,17 @@ namespace ILCompiler.PEWriter
             /// <summary>
             /// Starting RVA of the section in the input MSIL PE.
             /// </summary>
-            readonly public int StartRVA;
+            public readonly int StartRVA;
 
             /// <summary>
             /// End RVA (one plus the last RVA in the section) of the section in the input MSIL PE.
             /// </summary>
-            readonly public int EndRVA;
+            public readonly int EndRVA;
 
             /// <summary>
             /// Starting RVA of the section in the output PE minus its starting RVA in the input MSIL.
             /// </summary>
-            readonly public int DeltaRVA;
+            public readonly int DeltaRVA;
 
             /// <summary>
             /// Initialize the section RVA delta information.
@@ -132,9 +132,9 @@ namespace ILCompiler.PEWriter
             {
                 foreach ((string SectionName, SectionCharacteristics Characteristics) nameCharPair in sectionNames)
                 {
-                    if (!peReader.PEHeaders.SectionHeaders.Any((header) => header.Name == nameCharPair.Item1))
+                    if (!peReader.PEHeaders.SectionHeaders.Any((header) => header.Name == nameCharPair.SectionName))
                     {
-                        sectionListBuilder.Add(new Section(nameCharPair.Item1, nameCharPair.Item2));
+                        sectionListBuilder.Add(new Section(nameCharPair.SectionName, nameCharPair.Characteristics));
                     }
                 }
             }
@@ -269,7 +269,22 @@ namespace ILCompiler.PEWriter
                     else
                     {
                         sectionDataBuilder = new BlobBuilder();
-                        sectionDataBuilder.WriteBytes(inputSectionReader.StartPointer, bytesToRead);
+                        
+                        int offset = _peReader.PEHeaders.PEHeader.CorHeaderTableDirectory.RelativeVirtualAddress - location.RelativeVirtualAddress;
+                        
+                        if (offset >= 0 && offset < bytesToRead)
+                        {
+                            // Patch CorHeader.Flags at offset 16 by removing the ILOnly flag, otherwise the Windows PE loader
+                            // doesn't relocate the image and sets all sections to be non-executable and read-only.
+                            offset += 16;
+                            sectionDataBuilder.WriteBytes(inputSectionReader.CurrentPointer, offset);
+                            inputSectionReader.Offset = offset;
+                            uint corFlags = inputSectionReader.ReadUInt32();
+                            corFlags &= ~(uint)CorFlags.ILOnly;
+                            sectionDataBuilder.WriteUInt32(corFlags);
+                        }
+                        
+                        sectionDataBuilder.WriteBytes(inputSectionReader.CurrentPointer, inputSectionReader.RemainingBytes);
                     }
 
                     int alignedSize = sectionHeader.VirtualSize;
@@ -309,7 +324,19 @@ namespace ILCompiler.PEWriter
                     }
                 }
             }
-            
+
+            // Make sure the section has at least 1 byte, otherwise the PE emitter goes mad,
+            // messes up the section map and corrups the output executable.
+            if (sectionDataBuilder == null)
+            {
+                sectionDataBuilder = new BlobBuilder();
+            }
+
+            if (sectionDataBuilder.Count == 0)
+            {
+                sectionDataBuilder.WriteByte(0);
+            }
+
             return sectionDataBuilder;
         }
     }

@@ -16,6 +16,77 @@ using System.Runtime.CompilerServices;
 
 namespace ILCompiler.PEWriter
 {
+    public static class RelocType
+    {
+        /// <summary>
+        /// No relocation required
+        /// </summary>
+        public const ushort IMAGE_REL_BASED_ABSOLUTE = 0x00;
+
+        /// <summary>
+        /// The 32-bit address without an image base (RVA)
+        /// </summary>
+        public const ushort IMAGE_REL_BASED_ADDR32NB = 0x02;
+
+        /// <summary>
+        /// 32 bit address base
+        /// </summary>
+        public const ushort IMAGE_REL_BASED_HIGHLOW = 0x03;
+
+        /// <summary>
+        /// Thumb2: based MOVW/MOVT
+        /// </summary>
+        public const ushort IMAGE_REL_BASED_THUMB_MOV32 = 0x07;
+
+        /// <summary>
+        /// 64 bit address base
+        /// </summary>
+        public const ushort IMAGE_REL_BASED_DIR64 = 0x0A;
+
+        /// <summary>
+        /// 32-bit relative address from byte following reloc
+        /// </summary>
+        public const ushort IMAGE_REL_BASED_REL32 = 0x10;
+
+        /// <summary>
+        /// Thumb2: based B, BL
+        /// </summary>
+        public const ushort IMAGE_REL_BASED_THUMB_BRANCH24 = 0x13;
+
+        /// <summary>
+        /// Arm64: B, BL
+        /// </summary>
+        public const ushort IMAGE_REL_BASED_ARM64_BRANCH26 = 0x14;
+
+        /// <summary>
+        /// 32-bit relative address from byte starting reloc
+        /// This is a special NGEN-specific relocation type
+        /// for relative pointer (used to make NGen relocation
+        /// section smaller)
+        /// </summary>
+        public const ushort IMAGE_REL_BASED_RELPTR32 = 0x7C;
+
+        /// <summary>
+        /// 32 bit offset from base of section containing target
+        /// </summary>
+        public const ushort IMAGE_REL_SECREL = 0x80;
+
+        /// <summary>
+        /// ADRP
+        /// </summary>
+        public const ushort IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 = 0x81;
+
+        /// <summary>
+        /// ADD/ADDS (immediate) with zero shift, for page offset
+        /// </summary>
+        public const ushort IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A = 0x82;
+
+        /// <summary>
+        /// LDR (indexed, unsigned immediate), for page offset
+        /// </summary>
+        public const ushort IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L = 0x83;
+    }
+
     /// <summary>
     /// Opaque key representing a single block.
     /// </summary>
@@ -138,20 +209,47 @@ namespace ILCompiler.PEWriter
         public const byte FlagContainsFileRelocations = 0x20;
         
         /// <summary>
-        /// RVA is filled in during section serialization
+        /// Relative offset from the beginning of the subsection
         /// </summary>
-        public int RVAWhenPlaced;
-
-        /// <summary>
-        /// Binary block content (also implies block length)
-        /// </summary>
-        public BlobBuilder Content;
+        public int SubsectionOffset;
 
         /// <summary>
         /// List of relocations for the block, may be null. If there are multiple relocations
         /// for a single block, they must be ordered by source offset.
         /// </summary>
         public Relocation[] Relocations;
+    }
+
+    /// <summary>
+    /// This class represents a single subsection within a section.
+    /// </summary>
+    public class Subsection
+    {
+        /// <summary>
+        /// Default alignment of subsections within a section.
+        /// </summary>
+        public const int DefaultAlignment = 16;
+        
+        /// <summary>
+        /// List of blocks comprising a subsection.
+        /// </summary>
+        public readonly List<Block> Blocks;
+
+        /// <summary>
+        /// Subsection content.
+        /// </summary>
+        public readonly BlobBuilder Content;
+
+        /// <summary>
+        /// RVA of the subsection gets set after serialization.
+        /// </summary>
+        public int RVAWhenPlaced;
+        
+        public Subsection()
+        {
+            Blocks = new List<Block>();
+            Content = new BlobBuilder();
+        }
     }
 
     /// <summary>
@@ -175,6 +273,12 @@ namespace ILCompiler.PEWriter
         public readonly SectionCharacteristics Characteristics;
 
         /// <summary>
+        /// Alignment of subsections within the section. Blocks cannot request bigger alignment
+        /// than is the alignment of the section they reside in.
+        /// </summary>
+        public readonly int SubsectionAlignment;
+
+        /// <summary>
         /// RVA gets filled in during section serialization.
         /// </summary>
         public int RVAWhenPlaced;
@@ -190,13 +294,14 @@ namespace ILCompiler.PEWriter
         /// <param name="index">Zero-based section index</param>
         /// <param name="name">Section name</param>
         /// <param name="characteristics">Section characteristics</param>
-        public SectionInfo(int index, string name, SectionCharacteristics characteristics)
+        public SectionInfo(int index, string name, SectionCharacteristics characteristics, int subsectionAlignment)
         {
             Index = index;
             Name = name;
             Characteristics = characteristics;
             RVAWhenPlaced = 0;
             FilePosWhenPlaced = 0;
+            SubsectionAlignment = subsectionAlignment;
         }
     }
 
@@ -257,7 +362,7 @@ namespace ILCompiler.PEWriter
         /// of subsections within the particular section, and each subsection contains a list
         /// of blocks.
         /// </summary>
-        List<List<List<Block>>> _sectionSubsectionBlockLists;
+        List<List<Subsection>> _sectionSubsections;
 
         /// <summary>
         /// Map from block handles to final block objects is used when applying relocations.
@@ -273,6 +378,11 @@ namespace ILCompiler.PEWriter
         /// Symbols to export from the PE file.
         /// </summary>
         List<ExportSymbol> _exportSymbols;
+
+        /// <summary>
+        /// Optional block representing an entrypoint override.
+        /// </summary>
+        Block _entryPointBlock;
 
         /// <summary>
         /// Export directory entry when available.
@@ -294,7 +404,7 @@ namespace ILCompiler.PEWriter
         /// </summary>
         public SectionBuilder()
         {
-            _sectionSubsectionBlockLists = new List<List<List<Block>>>();
+            _sectionSubsections = new List<List<Subsection>>();
             _blockDictionary = new Dictionary<BlockHandle, Block>();
             _sections = new List<SectionInfo>();
             _exportSymbols = new List<ExportSymbol>();
@@ -307,12 +417,13 @@ namespace ILCompiler.PEWriter
         /// </summary>
         /// <param name="name">Section name</param>
         /// <param name="characteristics">Section characteristics</param>
+        /// <param name="subsectionAlignment">Alignment for subsections within the section</param>
         /// <returns>Zero-based index of the added section</returns>
-        public int AddSection(string name, SectionCharacteristics characteristics)
+        public int AddSection(string name, SectionCharacteristics characteristics, int subsectionAlignment = Subsection.DefaultAlignment)
         {
             int sectionIndex = _sections.Count;
             Debug.Assert(FindSection(name) == null, "Duplicate section");
-            _sections.Add(new SectionInfo(sectionIndex, name, characteristics));
+            _sections.Add(new SectionInfo(sectionIndex, name, characteristics, subsectionAlignment));
             return sectionIndex;
         }
 
@@ -350,17 +461,27 @@ namespace ILCompiler.PEWriter
         }
 
         /// <summary>
+        /// Override entry point for the app.
+        /// </summary>
+        /// <param name="entryPointBlock">Block representing the new entry point</param>
+        public void SetEntryPoint(Block entryPointBlock)
+        {
+            _entryPointBlock = entryPointBlock;
+        }
+
+        /// <summary>
         /// Add a block to a given section / subsection.
         /// </summary>
         /// <param name="block">Block to add</param>
-        public void AddBlock(Block block)
+        /// <param name="content">Data content for the block</param>
+        public void AddBlock(Block block, BlobBuilder content)
         {
             if (block.Relocations != null)
             {
                 // Check the presence of file-level relocations and set the appropriate AlignmentAndFlags bit.
                 foreach (Relocation relocation in block.Relocations)
                 {
-                    if (Relocator.GetFileRelocationType(relocation.Type) != RelocType.IMAGE_REL_BASED_ABSOLUTE)
+                    if (GetFileRelocationType(relocation.Type) != RelocType.IMAGE_REL_BASED_ABSOLUTE)
                     {
                         // Block has file-level relocations
                         block.AlignmentAndFlags |= Block.FlagContainsFileRelocations;
@@ -369,17 +490,29 @@ namespace ILCompiler.PEWriter
                 }
             }
             
-            while (_sectionSubsectionBlockLists.Count <= block.SectionIndex)
+            while (_sectionSubsections.Count <= block.SectionIndex)
             {
-                _sectionSubsectionBlockLists.Add(new List<List<Block>>());
+                _sectionSubsections.Add(new List<Subsection>());
             }
-            List<List<Block>> subsectionBlockLists = _sectionSubsectionBlockLists[block.SectionIndex];
-            while (subsectionBlockLists.Count <= block.SubsectionIndex)
+            List<Subsection> subsections = _sectionSubsections[block.SectionIndex];
+            while (subsections.Count <= block.SubsectionIndex)
             {
-                subsectionBlockLists.Add(new List<Block>());
+                subsections.Add(new Subsection());
             }
-            List<Block> blockList = subsectionBlockLists[block.SubsectionIndex];
-            blockList.Add(block);
+            Subsection subsection = subsections[block.SubsectionIndex];
+    
+            // Calculate alignment padding
+            int alignmentValue = 1 << (block.AlignmentAndFlags & Block.AlignmentMask);
+            int alignedRva = (subsection.Content.Count + alignmentValue - 1) & -alignmentValue;
+            int padding = alignedRva - subsection.Content.Count;
+            if (padding > 0)
+            {
+                subsection.Content.WriteBytes(0, padding);
+            }
+            block.SubsectionOffset = alignedRva;
+            subsection.Blocks.Add(block);
+            content.WriteContentTo(subsection.Content);
+
             _blockDictionary.Add(block.Handle, block);
         }
 
@@ -434,50 +567,47 @@ namespace ILCompiler.PEWriter
             }
 
             // Place the section
-            _sections[sectionIndex].RVAWhenPlaced = sectionLocation.RelativeVirtualAddress;
-            _sections[sectionIndex].FilePosWhenPlaced = sectionLocation.PointerToRawData;
+            SectionInfo section = _sections[sectionIndex];
+            section.RVAWhenPlaced = sectionLocation.RelativeVirtualAddress;
+            section.FilePosWhenPlaced = sectionLocation.PointerToRawData;
 
-            if (_sectionSubsectionBlockLists.Count < sectionIndex)
+            if (_sectionSubsections.Count <= sectionIndex)
             {
                 // Section is empty
                 return null;
             }
 
-            List<List<Block>> subsectionBlockLists = _sectionSubsectionBlockLists[sectionIndex];
-            foreach (List<Block> blockList in subsectionBlockLists)
+            List<Subsection> subsections = _sectionSubsections[sectionIndex];
+            foreach (Subsection subsection in subsections)
             {
-                foreach (Block block in blockList)
+                int alignedRva = (sectionLocation.RelativeVirtualAddress + section.SubsectionAlignment - 1) & -section.SubsectionAlignment;
+                int padding = alignedRva - sectionLocation.RelativeVirtualAddress;
+                if (padding > 0)
                 {
-                    // Calculate alignment padding
-                    int alignmentValue = 1 << (block.AlignmentAndFlags & Block.AlignmentMask);
-                    int alignedRva = (sectionLocation.RelativeVirtualAddress + alignmentValue - 1) & -alignmentValue;
-                    int padding = alignedRva - sectionLocation.RelativeVirtualAddress;
-                    if (padding > 0)
-                    {
-                        if (serializedSection == null)
-                        {
-                            serializedSection = new BlobBuilder();
-                        }
-                        serializedSection.WriteBytes(0, padding);
-                        sectionLocation = new SectionLocation(
-                            sectionLocation.RelativeVirtualAddress + padding,
-                            sectionLocation.PointerToRawData + padding);
-                    }
-                    block.RVAWhenPlaced = alignedRva;
-                    int length = block.Content.Count;
                     if (serializedSection == null)
                     {
-                        serializedSection = block.Content;
+                        serializedSection = new BlobBuilder();
                     }
-                    else
-                    {
-                        serializedSection.LinkSuffix(block.Content);
-                    }
+                    serializedSection.WriteBytes(0, padding);
                     sectionLocation = new SectionLocation(
-                        sectionLocation.RelativeVirtualAddress + length,
-                        sectionLocation.PointerToRawData + length);
+                        sectionLocation.RelativeVirtualAddress + padding,
+                        sectionLocation.PointerToRawData + padding);
                 }
+                subsection.RVAWhenPlaced = alignedRva;
+                int length = subsection.Content.Count;
+                if (serializedSection == null)
+                {
+                    serializedSection = subsection.Content;
+                }
+                else
+                {
+                    serializedSection.LinkSuffix(subsection.Content);
+                }
+                sectionLocation = new SectionLocation(
+                    sectionLocation.RelativeVirtualAddress + length,
+                    sectionLocation.PointerToRawData + length);
             }
+
             return serializedSection;
         }
 
@@ -500,25 +630,25 @@ namespace ILCompiler.PEWriter
             // By now, all "normal" sections with relocations should already have been laid out
             foreach (SectionInfo sectionInfo in _sections.OrderBy((sec) => sec.RVAWhenPlaced))
             {
-                if (_sectionSubsectionBlockLists.Count <= sectionInfo.Index)
+                if (_sectionSubsections.Count <= sectionInfo.Index)
                 {
                     // No blocks in section
                     continue;
                 }
                 
-                foreach (List<Block> blockList in _sectionSubsectionBlockLists[sectionInfo.Index])
+                foreach (Subsection subsection in _sectionSubsections[sectionInfo.Index])
                 {
-                    foreach (Block block in blockList)
+                    foreach (Block block in subsection.Blocks)
                     {
                         if ((block.AlignmentAndFlags & Block.FlagContainsFileRelocations) != 0)
                         {
                             // Found block with file relocations
                             foreach (Relocation relocation in block.Relocations)
                             {
-                                ushort fileRelocationType = Relocator.GetFileRelocationType(relocation.Type);
+                                ushort fileRelocationType = GetFileRelocationType(relocation.Type);
                                 if (fileRelocationType != RelocType.IMAGE_REL_BASED_ABSOLUTE)
                                 {
-                                    int relocationRVA = block.RVAWhenPlaced + relocation.SourceOffset;
+                                    int relocationRVA = subsection.RVAWhenPlaced + block.SubsectionOffset + relocation.SourceOffset;
                                     if (offsetsAndTypes != null && relocationRVA - baseRVA > MaxRelativeOffsetInBlock)
                                     {
                                         // Need to flush relocation block as the current RVA is too far from base RVA
@@ -615,7 +745,8 @@ namespace ILCompiler.PEWriter
             foreach (ExportSymbol symbol in _exportSymbols)
             {
                 builder.WriteInt32(symbol.NameRVAWhenPlaced);
-                addressTable[symbol.Ordinal - minOrdinal] = symbol.Block.RVAWhenPlaced + symbol.Offset;
+                Subsection subsection = _sectionSubsections[symbol.Block.SectionIndex][symbol.Block.SubsectionIndex];
+                addressTable[symbol.Ordinal - minOrdinal] = subsection.RVAWhenPlaced + symbol.Block.SubsectionOffset + symbol.Offset;
             }
 
             // Emit the ordinal table
@@ -677,6 +808,12 @@ namespace ILCompiler.PEWriter
             directoriesBuilder.BaseRelocationTable = new DirectoryEntry(
                 directoriesBuilder.BaseRelocationTable.RelativeVirtualAddress,
                 directoriesBuilder.BaseRelocationTable.Size + _relocationDirectoryExtraSize);
+            if (_entryPointBlock != null)
+            {
+                Subsection subsection = _sectionSubsections[_entryPointBlock.SectionIndex][_entryPointBlock.SubsectionIndex];
+                Debug.Assert(subsection.RVAWhenPlaced != 0);
+                directoriesBuilder.AddressOfEntryPoint = subsection.RVAWhenPlaced + _entryPointBlock.SubsectionOffset;
+            }
         }
 
         /// <summary>
@@ -692,23 +829,23 @@ namespace ILCompiler.PEWriter
             // Traverse relocations in all sections in their RVA order
             foreach (SectionInfo sectionInfo in _sections.OrderBy((sec) => sec.RVAWhenPlaced))
             {
-                if (_sectionSubsectionBlockLists.Count < sectionInfo.Index)
+                if (_sectionSubsections.Count <= sectionInfo.Index)
                 {
                     // Empty tail section
                     continue;
                 }
 
                 int rvaToFilePosDelta = sectionInfo.FilePosWhenPlaced - sectionInfo.RVAWhenPlaced;
-                foreach (List<Block> blockList in _sectionSubsectionBlockLists[sectionInfo.Index])
+                foreach (Subsection subsection in _sectionSubsections[sectionInfo.Index])
                 {
-                    foreach (Block block in blockList)
+                    foreach (Block block in subsection.Blocks)
                     {
                         if (block.Relocations != null)
                         {
                             foreach (Relocation relocation in block.Relocations)
                             {
                                 // Process a single relocation
-                                int relocationRVA = block.RVAWhenPlaced + relocation.SourceOffset;
+                                int relocationRVA = subsection.RVAWhenPlaced + block.SubsectionOffset + relocation.SourceOffset;
                                 int relocationFilePos = relocationRVA + rvaToFilePosDelta;
 
                                 // Flush parts of PE file before the relocation to the output stream
@@ -719,7 +856,8 @@ namespace ILCompiler.PEWriter
                                 if (!relocation.Target.IsNull)
                                 {
                                     Block targetBlock = _blockDictionary[relocation.Target];
-                                    targetRVA += targetBlock.RVAWhenPlaced;
+                                    Subsection targetSubsection = _sectionSubsections[targetBlock.SectionIndex][targetBlock.SubsectionIndex];
+                                    targetRVA += targetSubsection.RVAWhenPlaced + targetBlock.SubsectionOffset;
                                 }
 
                                 relocationHelper.ProcessRelocation(relocation.Type, relocationRVA, targetRVA);
@@ -734,204 +872,23 @@ namespace ILCompiler.PEWriter
         }
 
         /// <summary>
-        /// Helper used to copy the produced PE file from a BlobBuilder to an output stream,
-        /// applying relocations along the way. It's mostly a linear copier that occasionally stops,
-        /// patches a few bytes and then continues.
+        /// Return file relocation type for the given relocation type. If the relocation
+        /// doesn't require a file-level relocation entry in the .reloc section, 0 is returned
+        /// corresponding to the IMAGE_REL_BASED_ABSOLUTE no-op relocation record.
         /// </summary>
-        private class RelocationHelper
+        /// <param name="relocationType">Relocation type</param>
+        /// <returns>File-level relocation type or 0 (IMAGE_REL_BASED_ABSOLUTE) if none is required</returns>
+        private static ushort GetFileRelocationType(ushort relocationType)
         {
-            /// <summary>
-            /// Enumerator of blobs within the blob builder.
-            /// </summary>
-            private BlobBuilder.Blobs _peFileBlobs;
-
-            /// <summary>
-            /// Blob length is used at the end to verify that the relocated file hasn't changed length.
-            /// </summary>
-            private int _peFileLength;
-
-            /// <summary>
-            /// Backing array for the ArraySegment of the current blob.
-            /// </summary>
-            private byte[] _currentBlob;
-
-            /// <summary>
-            /// Current offset within the active blob.
-            /// </summary>
-            private int _blobOffset;
-
-            /// <summary>
-            /// Remaining number of bytes unprocessed in the active blob.
-            /// </summary>
-            private int _remainingLength;
-
-            /// <summary>
-            /// Preferred image load address is needed to properly fix up absolute relocation types.
-            /// </summary>
-            private ulong _defaultImageBase;
-
-            /// <summary>
-            /// Output stream to receive the relocated file
-            /// </summary>
-            private Stream _outputStream;
-
-            /// <summary>
-            /// Current position in the output file
-            /// </summary>
-            private int _outputFilePos;
-
-            /// <summary>
-            /// Relocation helper stores the output stream and initializes the PE blob builder enumerator.
-            /// </summary>
-            /// <param name="outputStream">Output stream for the relocated PE file</param>
-            /// <param name="peFileBuilder">PE file blob builder</param>
-            public RelocationHelper(Stream outputStream, ulong defaultImageBase, BlobBuilder peFileBuilder)
+            switch (relocationType)
             {
-                _outputStream = outputStream;
-                _outputFilePos = 0;
-                
-                _defaultImageBase = defaultImageBase;
-
-                _peFileLength = peFileBuilder.Count;
-                _peFileBlobs = peFileBuilder.GetBlobs();
-                FetchNextBlob();
-            }
-
-            /// <summary>
-            /// Copy data from the PE file builder to the output stream, stopping at given file position.
-            /// </summary>
-            /// <param name="filePos">Output PE file position to stop at</param>
-            public void CopyToFilePosition(int filePos)
-            {
-                CopyBytesToOutput(filePos - _outputFilePos);
-            }
-
-            /// <summary>
-            /// Copy all unprocessed data (after the last relocation) into the output file
-            /// without any further modifications.
-            /// </summary>
-            public void CopyRestOfFile()
-            {
-                do
-                {
-                    CopyBytesToOutput(_remainingLength);
-                }
-                while (TryFetchNextBlob());
-                
-                if (_outputFilePos != _peFileLength)
-                {
-                    // Input / output PE file length mismatch - internal error in the relocator
-                    throw new BadImageFormatException();
-                }
-            }
-
-            /// <summary>
-            /// Process a single relocation by copying the required number of bytes into a
-            /// buffer, applying the relocation and writing it to the output file.
-            /// </summary>
-            /// <param name="relocationType">Type of relocation to apply</param>
-            /// <param name="sourceRVA">RVA representing the address to relocate</param>
-            /// <param name="targetRVA">RVA representing the relocation target</param>
-            public void ProcessRelocation(ushort relocationType, int sourceRVA, int targetRVA)
-            {
-                Relocator relocator = Relocator.GetRelocator(relocationType);
-                int relocationLength = relocator.GetLength();
-                byte[] relocationBuffer = new byte[relocationLength];
-                CopyBytesToBuffer(relocationBuffer);
-
-                // Apply the relocation
-                relocator.Relocate(
-                    bytes: relocationBuffer,
-                    sourceRVA: sourceRVA,
-                    targetRVA: targetRVA,
-                    defaultImageBase: _defaultImageBase);
-
-                // Write the relocated bytes to the output file
-                _outputStream.Write(relocationBuffer, 0, relocationLength);
-                _outputFilePos += relocationLength;
-            }
-
-            /// <summary>
-            /// Read next blob from the PE blob builder. Throw exception of no more data is available
-            /// (indicates an inconsistent PE file).
-            /// </summary>
-            private void FetchNextBlob()
-            {
-                if (!TryFetchNextBlob())
-                {
-                    throw new BadImageFormatException();
-                }
-            }
-
-            /// <summary>
-            /// Try to fetch next blob from the PE blob builder, return false on EOF.
-            /// </summary>
-            /// <returns>True when another blob was successfully fetched, false on EOF</returns>
-            private bool TryFetchNextBlob()
-            {
-                if (!_peFileBlobs.MoveNext())
-                {
-                    return false;
-                }
-
-                ArraySegment<byte> blobContent = _peFileBlobs.Current.GetBytes();
-                _currentBlob = blobContent.Array;
-                _blobOffset = blobContent.Offset;
-                _remainingLength = blobContent.Count;
-                return true;
-            }
-
-            /// <summary>
-            /// Copy a given number of bytes from the PE blob builder to the output stream.
-            /// </summary>
-            /// <param name="length">Number of bytes to copy</param>
-            private void CopyBytesToOutput(int length)
-            {
-                Debug.Assert(length >= 0);
-
-                while (length > 0)
-                {
-                    if (_remainingLength == 0)
-                    {
-                        FetchNextBlob();
-                    }
-
-                    int part = Math.Min(length, _remainingLength);
-                    _outputStream.Write(_currentBlob, _blobOffset, part);
-                    _outputFilePos += part;
-                    _blobOffset += part;
-                    _remainingLength -= part;
-                    length -= part;
-                }
-            }
-
-            /// <summary>
-            /// Copy bytes from the PE blob builder to the given byte buffer;
-            /// the number of bytes to copy equals the length of the buffer.
-            /// </summary>
-            /// <param name="buffer">Buffer to fill in from the blob builder</param>
-            public void CopyBytesToBuffer(byte[] buffer)
-            {
-                int offset = 0;
-                while (offset < buffer.Length)
-                {
-                    if (_remainingLength == 0)
-                    {
-                        FetchNextBlob();
-                    }
-
-                    int part = Math.Min(buffer.Length - offset, _remainingLength);
-                    Array.Copy(
-                        sourceArray: _currentBlob,
-                        sourceIndex: _blobOffset,
-                        destinationArray: buffer,
-                        destinationIndex: offset,
-                        length: part);
-
-                    _blobOffset += part;
-                    _remainingLength -= part;
-                    offset += part;
-                }
+                case RelocType.IMAGE_REL_BASED_HIGHLOW:
+                case RelocType.IMAGE_REL_BASED_DIR64:
+                case RelocType.IMAGE_REL_BASED_THUMB_MOV32:
+                    return relocationType;
+                    
+                default:
+                    return RelocType.IMAGE_REL_BASED_ABSOLUTE;
             }
         }
     }

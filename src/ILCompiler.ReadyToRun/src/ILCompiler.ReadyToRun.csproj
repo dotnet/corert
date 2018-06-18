@@ -33,7 +33,7 @@
     <Compile Include="Compiler\ReadyToRunNodeMangler.cs" />
     <Compile Include="ObjectWriter\SectionBuilder.cs" />
     <Compile Include="ObjectWriter\R2RPEBuilder.cs" />
-    <Compile Include="ObjectWriter\Relocator.cs" />
+    <Compile Include="ObjectWriter\RelocationHelper.cs" />
     <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
       <Link>Common\ArrayBuilder.cs</Link>
     </Compile>
