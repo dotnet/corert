@@ -102,6 +102,15 @@ namespace ILCompiler.PEWriter
         }
 
         /// <summary>
+        /// Advance output position in case of external writes to the output stream.
+        /// </summary>
+        /// <param name="delta">Number of bytes advance output by</param>
+        public void AdvanceOutputPos(int delta)
+        {
+            _outputFilePos += delta;
+        }
+
+        /// <summary>
         /// Copy all unprocessed data (after the last relocation) into the output file
         /// without any further modifications.
         /// </summary>

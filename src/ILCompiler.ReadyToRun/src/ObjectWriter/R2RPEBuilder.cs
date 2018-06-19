@@ -109,6 +109,27 @@ namespace ILCompiler.PEWriter
         private List<SectionRVADelta> _sectionRvaDeltas;
 
         /// <summary>
+        /// COR header builder is populated from the input MSIL and possibly updated during final
+        /// relocation of the output file.
+        /// </summary>
+        private CorHeaderBuilder _corHeaderBuilder;
+
+        /// <summary>
+        /// File offset of the COR header in the output file.
+        /// </summary>
+        private int _corHeaderFileOffset;
+
+        /// <summary>
+        /// COR header decoded from the input MSIL file.
+        /// </summary>
+        public CorHeaderBuilder CorHeader => _corHeaderBuilder;
+        
+        /// <summary>
+        /// File offset of the COR header in the output file.
+        /// </summary>
+        public int CorHeaderFileOffset => _corHeaderFileOffset;
+
+        /// <summary>
         /// Constructor initializes the various control structures and combines the section list.
         /// </summary>
         /// <param name="peReader">Input MSIL PE file reader</param>
@@ -236,7 +257,7 @@ namespace ILCompiler.PEWriter
         /// </summary>
         /// <param name="entry">Directory entry to allocate</param>
         /// <returns>Relocated directory entry</returns>
-        private DirectoryEntry RelocateDirectoryEntry(DirectoryEntry entry)
+        public DirectoryEntry RelocateDirectoryEntry(DirectoryEntry entry)
         {
             return new DirectoryEntry(RelocateRVA(entry.RelativeVirtualAddress), entry.Size);
         }
@@ -316,28 +337,21 @@ namespace ILCompiler.PEWriter
                     else
                     {
                         sectionDataBuilder = new BlobBuilder();
-                        
-                        int offset = _peReader.PEHeaders.PEHeader.CorHeaderTableDirectory.RelativeVirtualAddress - location.RelativeVirtualAddress;
-                        
-                        if (offset >= 0 && offset < bytesToRead)
-                        {
-                            // Patch CorHeader.Flags at offset 16 by removing the ILOnly flag, otherwise the Windows PE loader
-                            // doesn't relocate the image and sets all sections to be non-executable and read-only.
-                            // Also add the ILLibrary flag so that the R2R image is properly recognized by the loader.
-                            offset += 16;
-                            sectionDataBuilder.WriteBytes(inputSectionReader.CurrentPointer, offset);
-                            inputSectionReader.Offset = offset;
-                            uint corFlags = inputSectionReader.ReadUInt32();
-                            corFlags = (corFlags & ~(uint)CorFlags.ILOnly) | (uint)CorFlags.ILLibrary;
-                            sectionDataBuilder.WriteUInt32(corFlags);
-                        }
-                        
                         sectionDataBuilder.WriteBytes(inputSectionReader.CurrentPointer, inputSectionReader.RemainingBytes);
+                        
+                        int corHeaderRvaDelta = _peReader.PEHeaders.PEHeader.CorHeaderTableDirectory.RelativeVirtualAddress - sectionHeader.VirtualAddress;
+                        if (corHeaderRvaDelta >= 0 && corHeaderRvaDelta < bytesToRead)
+                        {
+                            // Assume COR header resides in this section, deserialize it and store its location
+                            _corHeaderFileOffset = location.PointerToRawData + corHeaderRvaDelta;
+                            inputSectionReader.Offset = corHeaderRvaDelta;
+                            _corHeaderBuilder = new CorHeaderBuilder(ref inputSectionReader);
+                        }
                     }
 
                     int alignedSize = sectionHeader.VirtualSize;
                     
-                    // When custom section data is present, align the section size to 4K to avoid
+                    // When custom section data is present, align the section size to 4K to prevent
                     // pre-generated MSIL relocations from tampering with native relocations.
                     if (_customSections.Contains(name))
                     {

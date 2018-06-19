@@ -217,6 +217,16 @@ namespace ILCompiler.PEWriter
         DirectoryEntry _relocationDirectoryEntry;
 
         /// <summary>
+        /// Symbol representing the ready-to-run header table.
+        /// </summary>
+        ISymbolNode _readyToRunHeaderSymbol;
+
+        /// <summary>
+        /// Size of the ready-to-run header table in bytes.
+        /// </summary>
+        int _readyToRunHeaderSize;
+
+        /// <summary>
         /// For PE files with exports, this is the "DLL name" string to store in the export directory table.
         /// </summary>
         string _dllNameForExportDirectoryTable;
@@ -288,6 +298,17 @@ namespace ILCompiler.PEWriter
         public void SetEntryPoint(ISymbolNode symbol)
         {
             _entryPointSymbol = symbol;
+        }
+
+        /// <summary>
+        /// Set up the ready-to-run header table location.
+        /// </summary>
+        /// <param name="symbol">Symbol representing the ready-to-run header</param>
+        /// <param name="headerSize">Size of the ready-to-run header</param>
+        public void SetReadyToRunHeaderTable(ISymbolNode symbol, int headerSize)
+        {
+            _readyToRunHeaderSymbol = symbol;
+            _readyToRunHeaderSize = headerSize;
         }
 
         /// <summary>
@@ -625,14 +646,52 @@ namespace ILCompiler.PEWriter
         }
 
         /// <summary>
+        /// Update the COR header.
+        /// </summary>
+        /// <param name="corHeader">COR header builder to update</param>
+        public void UpdateCorHeader(CorHeaderBuilder corHeader)
+        {
+            if (_readyToRunHeaderSymbol != null)
+            {
+                SymbolTarget headerTarget = _symbolMap[_readyToRunHeaderSymbol];
+                Section headerSection = _sections[headerTarget.SectionIndex];
+                Debug.Assert(headerSection.RVAWhenPlaced != 0);
+                int r2rHeaderRVA = headerSection.RVAWhenPlaced + headerTarget.Offset;
+                corHeader.ManagedNativeHeaderDirectory = new DirectoryEntry(r2rHeaderRVA, _readyToRunHeaderSize);
+            }
+        }
+
+        /// <summary>
         /// Relocate the produced PE file and output the result into a given stream.
         /// </summary>
         /// <param name="peFile">Blob builder representing the complete PE file</param>
-        /// <param name="defaultImageBase">Default image load address</param>
+        /// <param name="defaultImageBase">Default load address for the image</param>
+        /// <param name="corHeaderBuilder">COR header</param>
+        /// <param name="corHeaderFileOffset">File position of the COR header</param>
         /// <param name="outputStream">Stream to receive the relocated PE file</param>
-        public void RelocateOutputFile(BlobBuilder peFile, ulong defaultImageBase, Stream outputStream)
+        public void RelocateOutputFile(
+            BlobBuilder peFile,
+            ulong defaultImageBase,
+            CorHeaderBuilder corHeaderBuilder,
+            int corHeaderFileOffset,
+            Stream outputStream)
         {
             RelocationHelper relocationHelper = new RelocationHelper(outputStream, defaultImageBase, peFile);
+
+            if (corHeaderBuilder != null)
+            {
+                relocationHelper.CopyToFilePosition(corHeaderFileOffset);
+                UpdateCorHeader(corHeaderBuilder);
+                BlobBuilder corHeaderBlob = new BlobBuilder();
+                corHeaderBuilder.WriteTo(corHeaderBlob);
+                int writtenSize = corHeaderBlob.Count;
+                corHeaderBlob.WriteContentTo(outputStream);
+                relocationHelper.AdvanceOutputPos(writtenSize);
+
+                // Just skip the bytes that were emitted by the COR header writer
+                byte[] skipBuffer = new byte[writtenSize];
+                relocationHelper.CopyBytesToBuffer(skipBuffer, writtenSize);
+            }
 
             // Traverse relocations in all sections in their RVA order
             foreach (Section section in _sections.OrderBy((sec) => sec.RVAWhenPlaced))
@@ -687,6 +746,91 @@ namespace ILCompiler.PEWriter
     }
     
     /// <summary>
+    /// This class has been mostly copied over from corefx as the corefx CorHeader class
+    /// is well protected against being useful in more general scenarios as its only
+    /// constructor is internal.
+    /// </summary>
+    public sealed class CorHeaderBuilder
+    {
+        public int CorHeaderSize;
+        public ushort MajorRuntimeVersion;
+        public ushort MinorRuntimeVersion;
+        public DirectoryEntry MetadataDirectory;
+        public CorFlags Flags;
+        public int EntryPointTokenOrRelativeVirtualAddress;
+        public DirectoryEntry ResourcesDirectory;
+        public DirectoryEntry StrongNameSignatureDirectory;
+        public DirectoryEntry CodeManagerTableDirectory;
+        public DirectoryEntry VtableFixupsDirectory;
+        public DirectoryEntry ExportAddressTableJumpsDirectory;
+        public DirectoryEntry ManagedNativeHeaderDirectory;
+
+        public CorHeaderBuilder(ref BlobReader reader)
+        {
+            // byte count
+            CorHeaderSize = reader.ReadInt32();
+
+            MajorRuntimeVersion = reader.ReadUInt16();
+            MinorRuntimeVersion = reader.ReadUInt16();
+            MetadataDirectory = ReadDirectoryEntry(ref reader);
+            Flags = (CorFlags)reader.ReadUInt32();
+            EntryPointTokenOrRelativeVirtualAddress = reader.ReadInt32();
+            ResourcesDirectory = ReadDirectoryEntry(ref reader);
+            StrongNameSignatureDirectory = ReadDirectoryEntry(ref reader);
+            CodeManagerTableDirectory = ReadDirectoryEntry(ref reader);
+            VtableFixupsDirectory = ReadDirectoryEntry(ref reader);
+            ExportAddressTableJumpsDirectory = ReadDirectoryEntry(ref reader);
+            ManagedNativeHeaderDirectory = ReadDirectoryEntry(ref reader);
+        }
+        
+        /// <summary>
+        /// Helper method to serialize CorHeader into a BlobBuilder.
+        /// </summary>
+        /// <param name="builder">Target blob builder to receive the serialized data</param>
+        public void WriteTo(BlobBuilder builder)
+        {
+            builder.WriteInt32(CorHeaderSize);
+
+            builder.WriteUInt16(MajorRuntimeVersion);
+            builder.WriteUInt16(MinorRuntimeVersion);
+
+            WriteDirectoryEntry(MetadataDirectory, builder);
+
+            builder.WriteUInt32((uint)Flags);
+            builder.WriteInt32(EntryPointTokenOrRelativeVirtualAddress);
+
+            WriteDirectoryEntry(ResourcesDirectory, builder);
+            WriteDirectoryEntry(StrongNameSignatureDirectory, builder);
+            WriteDirectoryEntry(CodeManagerTableDirectory, builder);
+            WriteDirectoryEntry(VtableFixupsDirectory, builder);
+            WriteDirectoryEntry(ExportAddressTableJumpsDirectory, builder);
+            WriteDirectoryEntry(ManagedNativeHeaderDirectory, builder);
+        }
+
+        /// <summary>
+        /// Deserialize a directory entry from a blob reader.
+        /// </summary>
+        /// <param name="reader">Reader to deserialize directory entry from</param>
+        private static DirectoryEntry ReadDirectoryEntry(ref BlobReader reader)
+        {
+            int rva = reader.ReadInt32();
+            int size = reader.ReadInt32();
+            return new DirectoryEntry(rva, size);
+        }
+
+        /// <summary>
+        /// Serialize a directory entry into an output blob builder.
+        /// </summary>
+        /// <param name="directoryEntry">Directory entry to serialize</param>
+        /// <param name="builder">Output blob builder to receive the serialized entry</param>
+        private static void WriteDirectoryEntry(DirectoryEntry directoryEntry, BlobBuilder builder)
+        {
+            builder.WriteInt32(directoryEntry.RelativeVirtualAddress);
+            builder.WriteInt32(directoryEntry.Size);
+        }
+    }
+    
+    /// <summary>
     /// Section builder extensions for R2R PE builder.
     /// </summary>
     public static class SectionBuilderExtensions
@@ -708,7 +852,28 @@ namespace ILCompiler.PEWriter
             BlobBuilder outputPeFile = new BlobBuilder();
             r2rBuilder.Serialize(outputPeFile);
 
-            builder.RelocateOutputFile(outputPeFile, inputReader.PEHeaders.PEHeader.ImageBase, outputStream);
+            CorHeaderBuilder corHeader = r2rBuilder.CorHeader;
+            if (corHeader != null)
+            {
+                corHeader.Flags = (r2rBuilder.CorHeader.Flags & ~CorFlags.ILOnly) | CorFlags.ILLibrary;
+
+                corHeader.MetadataDirectory = r2rBuilder.RelocateDirectoryEntry(corHeader.MetadataDirectory);
+                corHeader.ResourcesDirectory = r2rBuilder.RelocateDirectoryEntry(corHeader.ResourcesDirectory);
+                corHeader.StrongNameSignatureDirectory = r2rBuilder.RelocateDirectoryEntry(corHeader.StrongNameSignatureDirectory);
+                corHeader.CodeManagerTableDirectory = r2rBuilder.RelocateDirectoryEntry(corHeader.CodeManagerTableDirectory);
+                corHeader.VtableFixupsDirectory = r2rBuilder.RelocateDirectoryEntry(corHeader.VtableFixupsDirectory);
+                corHeader.ExportAddressTableJumpsDirectory = r2rBuilder.RelocateDirectoryEntry(corHeader.ExportAddressTableJumpsDirectory);
+                corHeader.ManagedNativeHeaderDirectory = r2rBuilder.RelocateDirectoryEntry(corHeader.ManagedNativeHeaderDirectory);
+
+                builder.UpdateCorHeader(corHeader);
+            }
+
+            builder.RelocateOutputFile(
+                outputPeFile,
+                inputReader.PEHeaders.PEHeader.ImageBase,
+                corHeader,
+                r2rBuilder.CorHeaderFileOffset,
+                outputStream);
         }
     }
 }
