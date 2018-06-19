@@ -257,8 +257,7 @@ namespace ILCompiler.PEWriter
                 unsafe
                 {
                     int bytesToRead = Math.Min(sectionHeader.SizeOfRawData, sectionHeader.VirtualSize);
-                    BlobReader inputSectionReader = _peReader.GetEntireImage()
-                        .GetReader(sectionOffset, sectionHeader.SizeOfRawData);
+                    BlobReader inputSectionReader = _peReader.GetEntireImage().GetReader(sectionOffset, bytesToRead);
                         
                     if (name == ".rsrc")
                     {
@@ -276,11 +275,12 @@ namespace ILCompiler.PEWriter
                         {
                             // Patch CorHeader.Flags at offset 16 by removing the ILOnly flag, otherwise the Windows PE loader
                             // doesn't relocate the image and sets all sections to be non-executable and read-only.
+                            // Also add the ILLibrary flag so that the R2R image is properly recognized by the loader.
                             offset += 16;
                             sectionDataBuilder.WriteBytes(inputSectionReader.CurrentPointer, offset);
                             inputSectionReader.Offset = offset;
                             uint corFlags = inputSectionReader.ReadUInt32();
-                            corFlags &= ~(uint)CorFlags.ILOnly;
+                            corFlags = (corFlags & ~(uint)CorFlags.ILOnly) | (uint)CorFlags.ILLibrary;
                             sectionDataBuilder.WriteUInt32(corFlags);
                         }
                         

@@ -14,6 +14,8 @@ using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 
+using ILCompiler.DependencyAnalysis;
+
 namespace ILCompiler.PEWriter
 {
     /// <summary>
@@ -122,12 +124,13 @@ namespace ILCompiler.PEWriter
         /// Process a single relocation by copying the required number of bytes into a
         /// buffer, applying the relocation and writing it to the output file.
         /// </summary>
-        /// <param name="relocationType">Type of relocation to apply</param>
+        /// <param name="relocationType">Relocation type to process</param>
         /// <param name="sourceRVA">RVA representing the address to relocate</param>
         /// <param name="targetRVA">RVA representing the relocation target</param>
-        public void ProcessRelocation(ushort relocationType, int sourceRVA, int targetRVA)
+        public void ProcessRelocation(RelocType relocationType, int sourceRVA, int targetRVA)
         {
             int relocationLength = 0;
+            long delta = 0;
 
             switch (relocationType)
             {
@@ -139,54 +142,35 @@ namespace ILCompiler.PEWriter
                 case RelocType.IMAGE_REL_BASED_ADDR32NB:
                     {
                         relocationLength = 4;
-                        CopyBytesToBuffer(_relocationBuffer, relocationLength);
-                        int location = unchecked(BitConverter.ToInt32(_relocationBuffer, 0) + targetRVA + (int)_defaultImageBase);
-                        WriteInt32(location, _relocationBuffer, 0);
+                        delta = unchecked(targetRVA + (int)_defaultImageBase);
                         break;
                     }
                 
                 case RelocType.IMAGE_REL_BASED_REL32:
                     {
                         relocationLength = 4;
-                        CopyBytesToBuffer(_relocationBuffer, relocationLength);
-                        int location = BitConverter.ToInt32(_relocationBuffer, 0) + (targetRVA - sourceRVA);
-                        WriteInt32(location, _relocationBuffer, 0);
+                        delta = targetRVA - sourceRVA;
                         break;
                     }
                     
                 case RelocType.IMAGE_REL_BASED_DIR64:
                     {
                         relocationLength = 8;
-                        CopyBytesToBuffer(_relocationBuffer, relocationLength);
-                        long location = unchecked(BitConverter.ToInt64(_relocationBuffer, 0) + targetRVA + (long)_defaultImageBase);
-                        WriteInt64(location, _relocationBuffer, 0);
+                        delta = unchecked(targetRVA + (long)_defaultImageBase);
                         break;
                     }
                     
                 case RelocType.IMAGE_REL_BASED_THUMB_MOV32:
                     {
                         relocationLength = 8;
-                        CopyBytesToBuffer(_relocationBuffer, relocationLength);
-
-                        int location = GetThumb2Mov32(_relocationBuffer);
-                        location = unchecked(location + targetRVA + (int)_defaultImageBase);
-                        
-                        PutThumb2Imm16(unchecked((ushort)location), _relocationBuffer, 0);
-                        PutThumb2Imm16(unchecked((ushort)(location >> 16)), _relocationBuffer, 4);
-            
-                        Debug.Assert((uint)GetThumb2Mov32(_relocationBuffer) == location);
+                        delta = unchecked(targetRVA + (int)_defaultImageBase);
                         break;
                     }
                     
                 case RelocType.IMAGE_REL_BASED_THUMB_BRANCH24:
                     {
                         relocationLength = 4;
-                        CopyBytesToBuffer(_relocationBuffer, relocationLength);
-
-                        // Target location is relative to the byte after the branch instruction
-                        int location = GetThumb2BlRel24(_relocationBuffer, 0) + targetRVA - sourceRVA - 4;
-                        
-                        PutThumb2BlRel24(location, _relocationBuffer, 0);
+                        delta = targetRVA - sourceRVA - 4;
                         break;
                     }
                     
@@ -196,6 +180,16 @@ namespace ILCompiler.PEWriter
             
             if (relocationLength > 0)
             {
+                CopyBytesToBuffer(_relocationBuffer, relocationLength);
+                unsafe
+                {
+                    fixed (byte *bufferContent = _relocationBuffer)
+                    {
+                        long value = Relocation.ReadValue(relocationType, bufferContent);
+                        Relocation.WriteValue(relocationType, bufferContent, unchecked(value + delta));
+                    }
+                }
+
                 // Write the relocated bytes to the output file
                 _outputStream.Write(_relocationBuffer, 0, relocationLength);
                 _outputFilePos += relocationLength;

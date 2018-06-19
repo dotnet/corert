@@ -14,248 +14,69 @@ using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 
+using ILCompiler.DependencyAnalysis;
+
 namespace ILCompiler.PEWriter
 {
-    public static class RelocType
-    {
-        /// <summary>
-        /// No relocation required
-        /// </summary>
-        public const ushort IMAGE_REL_BASED_ABSOLUTE = 0x00;
-
-        /// <summary>
-        /// The 32-bit address without an image base (RVA)
-        /// </summary>
-        public const ushort IMAGE_REL_BASED_ADDR32NB = 0x02;
-
-        /// <summary>
-        /// 32 bit address base
-        /// </summary>
-        public const ushort IMAGE_REL_BASED_HIGHLOW = 0x03;
-
-        /// <summary>
-        /// Thumb2: based MOVW/MOVT
-        /// </summary>
-        public const ushort IMAGE_REL_BASED_THUMB_MOV32 = 0x07;
-
-        /// <summary>
-        /// 64 bit address base
-        /// </summary>
-        public const ushort IMAGE_REL_BASED_DIR64 = 0x0A;
-
-        /// <summary>
-        /// 32-bit relative address from byte following reloc
-        /// </summary>
-        public const ushort IMAGE_REL_BASED_REL32 = 0x10;
-
-        /// <summary>
-        /// Thumb2: based B, BL
-        /// </summary>
-        public const ushort IMAGE_REL_BASED_THUMB_BRANCH24 = 0x13;
-
-        /// <summary>
-        /// Arm64: B, BL
-        /// </summary>
-        public const ushort IMAGE_REL_BASED_ARM64_BRANCH26 = 0x14;
-
-        /// <summary>
-        /// 32-bit relative address from byte starting reloc
-        /// This is a special NGEN-specific relocation type
-        /// for relative pointer (used to make NGen relocation
-        /// section smaller)
-        /// </summary>
-        public const ushort IMAGE_REL_BASED_RELPTR32 = 0x7C;
-
-        /// <summary>
-        /// 32 bit offset from base of section containing target
-        /// </summary>
-        public const ushort IMAGE_REL_SECREL = 0x80;
-
-        /// <summary>
-        /// ADRP
-        /// </summary>
-        public const ushort IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 = 0x81;
-
-        /// <summary>
-        /// ADD/ADDS (immediate) with zero shift, for page offset
-        /// </summary>
-        public const ushort IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A = 0x82;
-
-        /// <summary>
-        /// LDR (indexed, unsigned immediate), for page offset
-        /// </summary>
-        public const ushort IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L = 0x83;
-    }
-
-    /// <summary>
-    /// Opaque key representing a single block.
-    /// </summary>
-    public struct BlockHandle : IEquatable<BlockHandle>, IEqualityComparer<BlockHandle>
-    {
-        /// <summary>
-        /// Internal block handle.
-        /// </summary>
-        private int _value;
-
-        /// <summary>
-        /// Construct the block handle for a given key
-        /// </summary>
-        /// <param name="value">Key value to store in the block handle</param>
-        public BlockHandle(int value)
-        {
-            _value = value;
-        }
-
-        /// <summary>
-        /// True when the block handle is empty.
-        /// </summary>
-        public bool IsNull { get => (_value == default(int)); }
-
-        /// <summary>
-        /// Retrieve value of the block handle
-        /// </summary>
-        /// <returns></returns>
-        public int GetValue()
-        {
-            return _value;
-        }
-
-        bool IEquatable<BlockHandle>.Equals(BlockHandle handle)
-        {
-            return _value == handle._value;
-        }
-
-        bool IEqualityComparer<BlockHandle>.Equals(BlockHandle handle1, BlockHandle handle2)
-        {
-            return handle1._value == handle2._value;
-        }
-
-        int IEqualityComparer<BlockHandle>.GetHashCode(BlockHandle handle)
-        {
-            return handle._value.GetHashCode();
-        }
-    }
-
-    /// <summary>
-    /// A single relocation entry within a block.
-    /// </summary>
-    public struct Relocation
-    {
-        /// <summary>
-        /// Offset within the block content to relocate.
-        /// </summary>
-        public readonly int SourceOffset;
-
-        /// <summary>
-        /// Target block for the relocation
-        /// </summary>
-        public readonly BlockHandle Target;
-        
-        /// <summary>
-        /// Offset within the target block
-        /// </summary>
-        public readonly int TargetOffset;
-
-        /// <summary>
-        /// Relocation type
-        /// </summary>
-        public readonly ushort Type;
-        
-        public Relocation(int sourceOffset, BlockHandle target, int targetOffset, ushort type)
-        {
-            SourceOffset = sourceOffset;
-            Target = target;
-            TargetOffset = targetOffset;
-            Type = type;
-        }
-    }
-
-    /// <summary>
-    /// Block is the minimum section composition unit. The section builder accumulates blocks
-    /// and splits them into sections and subsections. Subsequently, during section serialization,
-    /// the blocks are enumerated in the proper order and used to actually lay out the sections.
-    /// </summary>
-    public class Block
-    {
-        /// <summary>
-        /// Block handle (key)
-        /// </summary>
-        public BlockHandle Handle;
-
-        /// <summary>
-        /// Section in which the block resides
-        /// </summary>
-        public ushort SectionIndex;
-
-        /// <summary>
-        /// Subsection in which the block resides
-        /// </summary>
-        public byte SubsectionIndex;
-
-        /// <summary>
-        /// Block alignment and flags.
-        /// </summary>
-        public byte AlignmentAndFlags;
-        
-        /// <summary>
-        /// Bottom 5 bits represent alignment encoded as dyadic logarithm of the actual
-        /// alignment value, thus ranging from 2 &lt;&lt;0 thru 2 &lt;&lt; 31.
-        /// </summary>
-        public const byte AlignmentMask = 0x1F;
-        
-        /// <summary>
-        /// True when the block contains file-level relocations.
-        /// </summary>
-        public const byte FlagContainsFileRelocations = 0x20;
-        
-        /// <summary>
-        /// Relative offset from the beginning of the subsection
-        /// </summary>
-        public int SubsectionOffset;
-
-        /// <summary>
-        /// List of relocations for the block, may be null. If there are multiple relocations
-        /// for a single block, they must be ordered by source offset.
-        /// </summary>
-        public Relocation[] Relocations;
-    }
-
     /// <summary>
     /// This class represents a single subsection within a section.
     /// </summary>
-    public class Subsection
+    public struct SymbolTarget
     {
         /// <summary>
-        /// Default alignment of subsections within a section.
+        /// Index of the section holding the symbol target.
         /// </summary>
-        public const int DefaultAlignment = 16;
+        public readonly int SectionIndex;
         
         /// <summary>
-        /// List of blocks comprising a subsection.
+        /// Offset of the symbol within the section.
         /// </summary>
-        public readonly List<Block> Blocks;
-
-        /// <summary>
-        /// Subsection content.
-        /// </summary>
-        public readonly BlobBuilder Content;
-
-        /// <summary>
-        /// RVA of the subsection gets set after serialization.
-        /// </summary>
-        public int RVAWhenPlaced;
+        public readonly int Offset;
         
-        public Subsection()
+        /// <summary>
+        /// Initialize symbol target with section and offset.
+        /// </summary>
+        /// <param name="sectionIndex">Section index where the symbol target resides</param>
+        /// <param name="offset">Offset of the target within the section</param>
+        public SymbolTarget(int sectionIndex, int offset)
         {
-            Blocks = new List<Block>();
-            Content = new BlobBuilder();
+            SectionIndex = sectionIndex;
+            Offset = offset;
         }
     }
-
+    
     /// <summary>
-    /// Descriptive information for a single section
+    /// After placing an ObjectData within a section, we use this helper structure to record
+    /// its relocation information for the final relocation pass.
     /// </summary>
-    public class SectionInfo
+    public struct ObjectDataRelocations
+    {
+        /// <summary>
+        /// Offset of the ObjectData block within the section
+        /// </summary>
+        public readonly int Offset;
+
+        /// <summary>
+        /// List of relocations for the data block
+        /// </summary>
+        public readonly Relocation[] Relocs;
+        
+        /// <summary>
+        /// Initialize the list of relocations for a given location within the section.
+        /// </summary>
+        /// <param name="offset">Offset within the section</param>
+        /// <param name="relocs">List of relocations to apply at the offset</param>
+        public ObjectDataRelocations(int offset, Relocation[] relocs)
+        {
+            Offset = offset;
+            Relocs = relocs;
+        }
+    }
+    
+    /// <summary>
+    /// Section represents a contiguous area of code or data with the same characteristics.
+    /// </summary>
+    public class Section
     {
         /// <summary>
         /// Index within the internal section table used by the section builder
@@ -273,10 +94,21 @@ namespace ILCompiler.PEWriter
         public readonly SectionCharacteristics Characteristics;
 
         /// <summary>
-        /// Alignment of subsections within the section. Blocks cannot request bigger alignment
-        /// than is the alignment of the section they reside in.
+        /// Alignment to apply when combining multiple builder sections into a single
+        /// physical output section (typically when combining hot and cold code into
+        /// the output code section).
         /// </summary>
-        public readonly int SubsectionAlignment;
+        public readonly int Alignment;
+        
+        /// <summary>
+        /// Blob builder representing the section content.
+        /// </summary>
+        public readonly BlobBuilder Content;
+
+        /// <summary>
+        /// Relocations to apply to the section
+        /// </summary>
+        public readonly List<ObjectDataRelocations> Relocations;
 
         /// <summary>
         /// RVA gets filled in during section serialization.
@@ -289,19 +121,22 @@ namespace ILCompiler.PEWriter
         public int FilePosWhenPlaced;
 
         /// <summary>
-        /// Construct a new session description object.
+        /// Construct a new session object.
         /// </summary>
         /// <param name="index">Zero-based section index</param>
         /// <param name="name">Section name</param>
         /// <param name="characteristics">Section characteristics</param>
-        public SectionInfo(int index, string name, SectionCharacteristics characteristics, int subsectionAlignment)
+        /// <param name="alignment">Alignment for combining multiple logical sections</param>
+        public Section(int index, string name, SectionCharacteristics characteristics, int alignment)
         {
             Index = index;
             Name = name;
             Characteristics = characteristics;
+            Alignment = alignment;
+            Content = new BlobBuilder();
+            Relocations = new List<ObjectDataRelocations>();
             RVAWhenPlaced = 0;
             FilePosWhenPlaced = 0;
-            SubsectionAlignment = subsectionAlignment;
         }
     }
 
@@ -326,28 +161,21 @@ namespace ILCompiler.PEWriter
         public readonly int Ordinal;
 
         /// <summary>
-        /// Block containing the symbol
+        /// Symbol to export
         /// </summary>
-        public readonly Block Block;
+        public readonly ISymbolNode Symbol;
 
-        /// <summary>
-        /// Offset of the export symbol within the block
-        /// </summary>
-        public readonly int Offset;
-        
         /// <summary>
         /// Construct the export symbol instance filling in its arguments
         /// </summary>
         /// <param name="name">Export symbol identifier</param>
         /// <param name="ordinal">Ordinal ID of the export symbol</param>
-        /// <param name="block">Block containing the symbol</param>
-        /// <param name="offset">Offset of the export symbol within the block</param>
-        public ExportSymbol(string name, int ordinal, Block block, int offset)
+        /// <param name="symbol">Symbol to export</param>
+        public ExportSymbol(string name, int ordinal, ISymbolNode symbol)
         {
             Name = name;
             Ordinal = ordinal;
-            Block = block;
-            Offset = offset;
+            Symbol = symbol;
         }
     }
 
@@ -358,21 +186,14 @@ namespace ILCompiler.PEWriter
     public class SectionBuilder
     {
         /// <summary>
-        /// The top list is indexed by section index; each of its element contains a list
-        /// of subsections within the particular section, and each subsection contains a list
-        /// of blocks.
+        /// Map from symbols to their target sections and offsets.
         /// </summary>
-        List<List<Subsection>> _sectionSubsections;
-
-        /// <summary>
-        /// Map from block handles to final block objects is used when applying relocations.
-        /// </summary>
-        Dictionary<BlockHandle, Block> _blockDictionary;
+        Dictionary<ISymbolNode, SymbolTarget> _symbolMap;
 
         /// <summary>
         /// List of sections defined in the builder
         /// </summary>
-        List<SectionInfo> _sections;
+        List<Section> _sections;
 
         /// <summary>
         /// Symbols to export from the PE file.
@@ -380,9 +201,9 @@ namespace ILCompiler.PEWriter
         List<ExportSymbol> _exportSymbols;
 
         /// <summary>
-        /// Optional block representing an entrypoint override.
+        /// Optional symbol representing an entrypoint override.
         /// </summary>
-        Block _entryPointBlock;
+        ISymbolNode _entryPointSymbol;
 
         /// <summary>
         /// Export directory entry when available.
@@ -404,10 +225,10 @@ namespace ILCompiler.PEWriter
         /// </summary>
         public SectionBuilder()
         {
-            _sectionSubsections = new List<List<Subsection>>();
-            _blockDictionary = new Dictionary<BlockHandle, Block>();
-            _sections = new List<SectionInfo>();
+            _symbolMap = new Dictionary<ISymbolNode, SymbolTarget>();
+            _sections = new List<Section>();
             _exportSymbols = new List<ExportSymbol>();
+            _entryPointSymbol = null;
             _exportDirectoryEntry = default(DirectoryEntry);
             _relocationDirectoryExtraSize = 0;
         }
@@ -417,20 +238,21 @@ namespace ILCompiler.PEWriter
         /// </summary>
         /// <param name="name">Section name</param>
         /// <param name="characteristics">Section characteristics</param>
-        /// <param name="subsectionAlignment">Alignment for subsections within the section</param>
+        /// <param name="alignment">
+        /// Alignment for composing multiple builder sections into one physical output section
+        /// </param>
         /// <returns>Zero-based index of the added section</returns>
-        public int AddSection(string name, SectionCharacteristics characteristics, int subsectionAlignment = Subsection.DefaultAlignment)
+        public int AddSection(string name, SectionCharacteristics characteristics, int alignment)
         {
             int sectionIndex = _sections.Count;
-            Debug.Assert(FindSection(name) == null, "Duplicate section");
-            _sections.Add(new SectionInfo(sectionIndex, name, characteristics, subsectionAlignment));
+            _sections.Add(new Section(sectionIndex, name, characteristics, alignment));
             return sectionIndex;
         }
 
         /// <summary>
         /// Try to look up a pre-existing section in the builder; returns null if not found.
         /// </summary>
-        public SectionInfo FindSection(string name)
+        public Section FindSection(string name)
         {
             return _sections.FirstOrDefault((sec) => sec.Name == name);
         }
@@ -440,15 +262,13 @@ namespace ILCompiler.PEWriter
         /// </summary>
         /// <param name="name">Export symbol identifier</param>
         /// <param name="ordinal">Ordinal ID of the export symbol</param>
-        /// <param name="block">Block containing the symbol</param>
-        /// <param name="offset">Offset of the export symbol within the block</param>
-        public void AddExportSymbol(string name, int ordinal, Block block, int offset)
+        /// <param name="symbol">Symbol to export</param>
+        public void AddExportSymbol(string name, int ordinal, ISymbolNode symbol)
         {
             _exportSymbols.Add(new ExportSymbol(
                 name: name,
                 ordinal: ordinal,
-                block: block,
-                offset: offset));
+                symbol: symbol));
         }
 
         /// <summary>
@@ -463,73 +283,70 @@ namespace ILCompiler.PEWriter
         /// <summary>
         /// Override entry point for the app.
         /// </summary>
-        /// <param name="entryPointBlock">Block representing the new entry point</param>
-        public void SetEntryPoint(Block entryPointBlock)
+        /// <param name="symbol">Symbol representing the new entry point</param>
+        public void SetEntryPoint(ISymbolNode symbol)
         {
-            _entryPointBlock = entryPointBlock;
+            _entryPointSymbol = symbol;
         }
 
         /// <summary>
-        /// Add a block to a given section / subsection.
+        /// Add an ObjectData block to a given section.
         /// </summary>
-        /// <param name="block">Block to add</param>
-        /// <param name="content">Data content for the block</param>
-        public void AddBlock(Block block, BlobBuilder content)
+        /// <param name="data">Block to add</param>
+        /// <param name="sectionIndex">Section index</param>
+        public void AddObjectData(ObjectNode.ObjectData objectData, int sectionIndex)
         {
-            if (block.Relocations != null)
-            {
-                // Check the presence of file-level relocations and set the appropriate AlignmentAndFlags bit.
-                foreach (Relocation relocation in block.Relocations)
-                {
-                    if (GetFileRelocationType(relocation.Type) != RelocType.IMAGE_REL_BASED_ABSOLUTE)
-                    {
-                        // Block has file-level relocations
-                        block.AlignmentAndFlags |= Block.FlagContainsFileRelocations;
-                        break;
-                    }
-                }
-            }
-            
-            while (_sectionSubsections.Count <= block.SectionIndex)
-            {
-                _sectionSubsections.Add(new List<Subsection>());
-            }
-            List<Subsection> subsections = _sectionSubsections[block.SectionIndex];
-            while (subsections.Count <= block.SubsectionIndex)
-            {
-                subsections.Add(new Subsection());
-            }
-            Subsection subsection = subsections[block.SubsectionIndex];
-    
+            Section section = _sections[sectionIndex];
+
             // Calculate alignment padding
-            int alignmentValue = 1 << (block.AlignmentAndFlags & Block.AlignmentMask);
-            int alignedRva = (subsection.Content.Count + alignmentValue - 1) & -alignmentValue;
-            int padding = alignedRva - subsection.Content.Count;
+            int alignedOffset = (section.Content.Count + objectData.Alignment - 1) & -objectData.Alignment;
+            int padding = alignedOffset - section.Content.Count;
+
             if (padding > 0)
             {
-                subsection.Content.WriteBytes(0, padding);
+                section.Content.WriteBytes(0, padding);
             }
-            block.SubsectionOffset = alignedRva;
-            subsection.Blocks.Add(block);
-            content.WriteContentTo(subsection.Content);
 
-            _blockDictionary.Add(block.Handle, block);
+            section.Content.WriteBytes(objectData.Data);
+
+            if (objectData.DefinedSymbols != null)
+            {
+                foreach (ISymbolDefinitionNode symbol in objectData.DefinedSymbols)
+                {
+                    _symbolMap.Add(symbol, new SymbolTarget(
+                        sectionIndex: sectionIndex,
+                        offset: alignedOffset + symbol.Offset));
+                }
+            }
+
+            if (objectData.Relocs != null)
+            {
+                section.Relocations.Add(new ObjectDataRelocations(alignedOffset, objectData.Relocs));
+            }
         }
 
         /// <summary>
         /// Get the list of sections that need to be emitted to the output PE file.
+        /// We filter out name duplicates as we'll end up merging builder sections with the same name
+        /// into a single output physical section.
         /// </summary>
         public IEnumerable<(string SectionName, SectionCharacteristics Characteristics)> GetSections()
         {
-            IEnumerable<(string SectionName, SectionCharacteristics Characteristics)> sectionList =
-                _sections.Select((sec) => (SectionName: sec.Name, Characteristics: sec.Characteristics));
+            List<(string SectionName, SectionCharacteristics Characteristics)> sectionList =
+                new List<(string SectionName, SectionCharacteristics Characteristics)>();
+            foreach (Section section in _sections)
+            {
+                if (!sectionList.Any((sc) => sc.SectionName == section.Name))
+                {
+                    sectionList.Add((SectionName: section.Name, Characteristics: section.Characteristics));
+                }
+            }
+
             if (_exportSymbols.Count != 0 && FindSection(".edata") == null)
             {
-                sectionList = sectionList.Concat(new (string SectionName, SectionCharacteristics Characteristics)[]
-                {
-                    (SectionName: ".edata", Characteristics: SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead)
-                });
+                sectionList.Add((SectionName: ".edata", Characteristics: SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead));
             }
+
             return sectionList;
         }
 
@@ -552,36 +369,14 @@ namespace ILCompiler.PEWriter
                 return SerializeExportSection(sectionLocation);
             }
 
-            // Locate logical section index by name
-            int sectionIndex = _sections.Count - 1;
-            while (sectionIndex >= 0 && _sections[sectionIndex].Name != name)
-            {
-                sectionIndex--;
-            }
-
             BlobBuilder serializedSection = null;
-            if (sectionIndex < 0)
-            {
-                // Section not available
-                return null;
-            }
 
-            // Place the section
-            SectionInfo section = _sections[sectionIndex];
-            section.RVAWhenPlaced = sectionLocation.RelativeVirtualAddress;
-            section.FilePosWhenPlaced = sectionLocation.PointerToRawData;
-
-            if (_sectionSubsections.Count <= sectionIndex)
+            // Locate logical section index by name
+            foreach (Section section in _sections.Where((sec) => sec.Name == name))
             {
-                // Section is empty
-                return null;
-            }
-
-            List<Subsection> subsections = _sectionSubsections[sectionIndex];
-            foreach (Subsection subsection in subsections)
-            {
-                int alignedRva = (sectionLocation.RelativeVirtualAddress + section.SubsectionAlignment - 1) & -section.SubsectionAlignment;
-                int padding = alignedRva - sectionLocation.RelativeVirtualAddress;
+                // Calculate alignment padding
+                int alignedRVA = (sectionLocation.RelativeVirtualAddress + section.Alignment - 1) & -section.Alignment;
+                int padding = alignedRVA - sectionLocation.RelativeVirtualAddress;
                 if (padding > 0)
                 {
                     if (serializedSection == null)
@@ -593,19 +388,26 @@ namespace ILCompiler.PEWriter
                         sectionLocation.RelativeVirtualAddress + padding,
                         sectionLocation.PointerToRawData + padding);
                 }
-                subsection.RVAWhenPlaced = alignedRva;
-                int length = subsection.Content.Count;
-                if (serializedSection == null)
+
+                // Place the section
+                section.RVAWhenPlaced = sectionLocation.RelativeVirtualAddress;
+                section.FilePosWhenPlaced = sectionLocation.PointerToRawData;
+
+                if (section.Content.Count != 0)
                 {
-                    serializedSection = subsection.Content;
+                    sectionLocation = new SectionLocation(
+                        sectionLocation.RelativeVirtualAddress + section.Content.Count,
+                        sectionLocation.PointerToRawData + section.Content.Count);
+
+                    if (serializedSection == null)
+                    {
+                        serializedSection = section.Content;
+                    }
+                    else
+                    {
+                        serializedSection.LinkSuffix(section.Content);
+                    }
                 }
-                else
-                {
-                    serializedSection.LinkSuffix(subsection.Content);
-                }
-                sectionLocation = new SectionLocation(
-                    sectionLocation.RelativeVirtualAddress + length,
-                    sectionLocation.PointerToRawData + length);
             }
 
             return serializedSection;
@@ -622,49 +424,42 @@ namespace ILCompiler.PEWriter
             // There are 12 bits for the relative offset
             const int RelocationTypeShift = 12;
             const int MaxRelativeOffsetInBlock = (1 << RelocationTypeShift) - 1;
+
+            // Even though the format doesn't dictate it, it seems customary
+            // to align the base RVA's on 4K boundaries.
+            const int BaseRVAAlignment = 1 << RelocationTypeShift;
             
             BlobBuilder builder = new BlobBuilder();
             int baseRVA = 0;
             List<ushort> offsetsAndTypes = null;
+
             // Traverse relocations in all sections in their RVA order
             // By now, all "normal" sections with relocations should already have been laid out
-            foreach (SectionInfo sectionInfo in _sections.OrderBy((sec) => sec.RVAWhenPlaced))
+            foreach (Section section in _sections.OrderBy((sec) => sec.RVAWhenPlaced))
             {
-                if (_sectionSubsections.Count <= sectionInfo.Index)
+                foreach (ObjectDataRelocations objectDataRelocs in section.Relocations)
                 {
-                    // No blocks in section
-                    continue;
-                }
-                
-                foreach (Subsection subsection in _sectionSubsections[sectionInfo.Index])
-                {
-                    foreach (Block block in subsection.Blocks)
+                    for (int relocIndex = 0; relocIndex < objectDataRelocs.Relocs.Length; relocIndex++)
                     {
-                        if ((block.AlignmentAndFlags & Block.FlagContainsFileRelocations) != 0)
+                        RelocType relocType = objectDataRelocs.Relocs[relocIndex].RelocType;
+                        RelocType fileRelocType = GetFileRelocationType(relocType);
+                        if (fileRelocType != RelocType.IMAGE_REL_BASED_ABSOLUTE)
                         {
-                            // Found block with file relocations
-                            foreach (Relocation relocation in block.Relocations)
+                            int relocationRVA = section.RVAWhenPlaced + objectDataRelocs.Offset + objectDataRelocs.Relocs[relocIndex].Offset;
+                            if (offsetsAndTypes != null && relocationRVA - baseRVA > MaxRelativeOffsetInBlock)
                             {
-                                ushort fileRelocationType = GetFileRelocationType(relocation.Type);
-                                if (fileRelocationType != RelocType.IMAGE_REL_BASED_ABSOLUTE)
-                                {
-                                    int relocationRVA = subsection.RVAWhenPlaced + block.SubsectionOffset + relocation.SourceOffset;
-                                    if (offsetsAndTypes != null && relocationRVA - baseRVA > MaxRelativeOffsetInBlock)
-                                    {
-                                        // Need to flush relocation block as the current RVA is too far from base RVA
-                                        FlushRelocationBlock(builder, baseRVA, offsetsAndTypes);
-                                        offsetsAndTypes = null;
-                                    }
-                                    if (offsetsAndTypes == null)
-                                    {
-                                        // Create new relocation block
-                                        baseRVA = relocationRVA;
-                                        offsetsAndTypes = new List<ushort>();
-                                    }
-                                    ushort offsetAndType = (ushort)((fileRelocationType << RelocationTypeShift) | (relocationRVA - baseRVA));
-                                    offsetsAndTypes.Add(offsetAndType);
-                                }
+                                // Need to flush relocation block as the current RVA is too far from base RVA
+                                FlushRelocationBlock(builder, baseRVA, offsetsAndTypes);
+                                offsetsAndTypes = null;
                             }
+                            if (offsetsAndTypes == null)
+                            {
+                                // Create new relocation block
+                                baseRVA = relocationRVA & -BaseRVAAlignment;
+                                offsetsAndTypes = new List<ushort>();
+                            }
+                            ushort offsetAndType = (ushort)(((ushort)fileRelocType << RelocationTypeShift) | (relocationRVA - baseRVA));
+                            offsetsAndTypes.Add(offsetAndType);
                         }
                     }
                 }
@@ -745,8 +540,10 @@ namespace ILCompiler.PEWriter
             foreach (ExportSymbol symbol in _exportSymbols)
             {
                 builder.WriteInt32(symbol.NameRVAWhenPlaced);
-                Subsection subsection = _sectionSubsections[symbol.Block.SectionIndex][symbol.Block.SubsectionIndex];
-                addressTable[symbol.Ordinal - minOrdinal] = subsection.RVAWhenPlaced + symbol.Block.SubsectionOffset + symbol.Offset;
+                SymbolTarget symbolTarget = _symbolMap[symbol.Symbol];
+                Section symbolSection = _sections[symbolTarget.SectionIndex];
+                Debug.Assert(symbolSection.RVAWhenPlaced != 0);
+                addressTable[symbol.Ordinal - minOrdinal] = symbolSection.RVAWhenPlaced + symbolTarget.Offset;
             }
 
             // Emit the ordinal table
@@ -808,11 +605,12 @@ namespace ILCompiler.PEWriter
             directoriesBuilder.BaseRelocationTable = new DirectoryEntry(
                 directoriesBuilder.BaseRelocationTable.RelativeVirtualAddress,
                 directoriesBuilder.BaseRelocationTable.Size + _relocationDirectoryExtraSize);
-            if (_entryPointBlock != null)
+            if (_entryPointSymbol != null)
             {
-                Subsection subsection = _sectionSubsections[_entryPointBlock.SectionIndex][_entryPointBlock.SubsectionIndex];
-                Debug.Assert(subsection.RVAWhenPlaced != 0);
-                directoriesBuilder.AddressOfEntryPoint = subsection.RVAWhenPlaced + _entryPointBlock.SubsectionOffset;
+                SymbolTarget symbolTarget = _symbolMap[_entryPointSymbol];
+                Section section = _sections[symbolTarget.SectionIndex];
+                Debug.Assert(section.RVAWhenPlaced != 0);
+                directoriesBuilder.AddressOfEntryPoint = section.RVAWhenPlaced + symbolTarget.Offset;
             }
         }
 
@@ -827,42 +625,27 @@ namespace ILCompiler.PEWriter
             RelocationHelper relocationHelper = new RelocationHelper(outputStream, defaultImageBase, peFile);
 
             // Traverse relocations in all sections in their RVA order
-            foreach (SectionInfo sectionInfo in _sections.OrderBy((sec) => sec.RVAWhenPlaced))
+            foreach (Section section in _sections.OrderBy((sec) => sec.RVAWhenPlaced))
             {
-                if (_sectionSubsections.Count <= sectionInfo.Index)
+                int rvaToFilePosDelta = section.FilePosWhenPlaced - section.RVAWhenPlaced;
+                foreach (ObjectDataRelocations objectDataRelocs in section.Relocations)
                 {
-                    // Empty tail section
-                    continue;
-                }
-
-                int rvaToFilePosDelta = sectionInfo.FilePosWhenPlaced - sectionInfo.RVAWhenPlaced;
-                foreach (Subsection subsection in _sectionSubsections[sectionInfo.Index])
-                {
-                    foreach (Block block in subsection.Blocks)
+                    foreach (Relocation relocation in objectDataRelocs.Relocs)
                     {
-                        if (block.Relocations != null)
-                        {
-                            foreach (Relocation relocation in block.Relocations)
-                            {
-                                // Process a single relocation
-                                int relocationRVA = subsection.RVAWhenPlaced + block.SubsectionOffset + relocation.SourceOffset;
-                                int relocationFilePos = relocationRVA + rvaToFilePosDelta;
+                        // Process a single relocation
+                        int relocationRVA = section.RVAWhenPlaced + objectDataRelocs.Offset + relocation.Offset;
+                        int relocationFilePos = relocationRVA + rvaToFilePosDelta;
 
-                                // Flush parts of PE file before the relocation to the output stream
-                                relocationHelper.CopyToFilePosition(relocationFilePos);
+                        // Flush parts of PE file before the relocation to the output stream
+                        relocationHelper.CopyToFilePosition(relocationFilePos);
 
-                                // Look up relocation target
-                                int targetRVA = relocation.TargetOffset;
-                                if (!relocation.Target.IsNull)
-                                {
-                                    Block targetBlock = _blockDictionary[relocation.Target];
-                                    Subsection targetSubsection = _sectionSubsections[targetBlock.SectionIndex][targetBlock.SubsectionIndex];
-                                    targetRVA += targetSubsection.RVAWhenPlaced + targetBlock.SubsectionOffset;
-                                }
+                        // Look up relocation target
+                        SymbolTarget relocationTarget = _symbolMap[relocation.Target];
+                        Section targetSection = _sections[relocationTarget.SectionIndex];
+                        int targetRVA = targetSection.RVAWhenPlaced + relocationTarget.Offset;
 
-                                relocationHelper.ProcessRelocation(relocation.Type, relocationRVA, targetRVA);
-                            }
-                        }
+                        // Apply the relocation
+                        relocationHelper.ProcessRelocation(relocation.RelocType, relocationRVA, targetRVA);
                     }
                 }
             }
@@ -878,7 +661,7 @@ namespace ILCompiler.PEWriter
         /// </summary>
         /// <param name="relocationType">Relocation type</param>
         /// <returns>File-level relocation type or 0 (IMAGE_REL_BASED_ABSOLUTE) if none is required</returns>
-        private static ushort GetFileRelocationType(ushort relocationType)
+        private static RelocType GetFileRelocationType(RelocType relocationType)
         {
             switch (relocationType)
             {
