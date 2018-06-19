@@ -19,7 +19,8 @@ using ILCompiler.DependencyAnalysis;
 namespace ILCompiler.PEWriter
 {
     /// <summary>
-    /// This class represents a single subsection within a section.
+    /// For a given symbol, this structure represents its target section and offset
+    /// within the containing section.
     /// </summary>
     public struct SymbolTarget
     {
@@ -211,9 +212,9 @@ namespace ILCompiler.PEWriter
         DirectoryEntry _exportDirectoryEntry;
 
         /// <summary>
-        /// Relocation directory extra size corresponds to extra file-level relocation entries.
+        /// Directory entry representing the extra relocation records.
         /// </summary>
-        int _relocationDirectoryExtraSize;
+        DirectoryEntry _relocationDirectoryEntry;
 
         /// <summary>
         /// For PE files with exports, this is the "DLL name" string to store in the export directory table.
@@ -230,7 +231,7 @@ namespace ILCompiler.PEWriter
             _exportSymbols = new List<ExportSymbol>();
             _entryPointSymbol = null;
             _exportDirectoryEntry = default(DirectoryEntry);
-            _relocationDirectoryExtraSize = 0;
+            _relocationDirectoryEntry = default(DirectoryEntry);
         }
 
         /// <summary>
@@ -344,7 +345,9 @@ namespace ILCompiler.PEWriter
 
             if (_exportSymbols.Count != 0 && FindSection(".edata") == null)
             {
-                sectionList.Add((SectionName: ".edata", Characteristics: SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead));
+                sectionList.Add((SectionName: ".edata", Characteristics:
+                    SectionCharacteristics.ContainsInitializedData |
+                    SectionCharacteristics.MemRead));
             }
 
             return sectionList;
@@ -470,7 +473,7 @@ namespace ILCompiler.PEWriter
                 FlushRelocationBlock(builder, baseRVA, offsetsAndTypes);
             }
 
-            _relocationDirectoryExtraSize = builder.Count;
+            _relocationDirectoryEntry = new DirectoryEntry(sectionLocation.RelativeVirtualAddress, builder.Count);
 
             return builder;
         }
@@ -602,9 +605,16 @@ namespace ILCompiler.PEWriter
             {
                 directoriesBuilder.ExportTable = _exportDirectoryEntry;
             }
+            
+            int relocationTableRVA = directoriesBuilder.BaseRelocationTable.RelativeVirtualAddress;
+            if (relocationTableRVA == 0)
+            {
+                relocationTableRVA = _relocationDirectoryEntry.RelativeVirtualAddress;
+            }
             directoriesBuilder.BaseRelocationTable = new DirectoryEntry(
-                directoriesBuilder.BaseRelocationTable.RelativeVirtualAddress,
-                directoriesBuilder.BaseRelocationTable.Size + _relocationDirectoryExtraSize);
+                relocationTableRVA,
+                directoriesBuilder.BaseRelocationTable.Size + _relocationDirectoryEntry.Size);
+
             if (_entryPointSymbol != null)
             {
                 SymbolTarget symbolTarget = _symbolMap[_entryPointSymbol];

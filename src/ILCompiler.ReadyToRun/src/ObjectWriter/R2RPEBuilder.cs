@@ -59,6 +59,21 @@ namespace ILCompiler.PEWriter
         }
 
         /// <summary>
+        /// Name of the text section.
+        /// </summary>
+        public const string TextSectionName = ".text";
+        
+        /// <summary>
+        /// Name of the resource section.
+        /// </summary>
+        public const string RsrcSectionName = ".rsrc";
+        
+        /// <summary>
+        /// Name of the relocation section.
+        /// </summary>
+        public const string RelocSectionName = ".reloc";
+
+        /// <summary>
         /// PE reader representing the input MSIL PE file we're copying to the output composite PE file.
         /// </summary>
         private PEReader _peReader;
@@ -120,31 +135,64 @@ namespace ILCompiler.PEWriter
 
             ImmutableArray<Section>.Builder sectionListBuilder = ImmutableArray.CreateBuilder<Section>();
 
-            foreach (SectionHeader sectionHeader in peReader.PEHeaders.SectionHeaders)
+            int textSectionIndex = -1;
+            int rsrcSectionIndex = -1;
+            int relocSectionIndex = -1;
+            
+            for (int sectionIndex = 0; sectionIndex < peReader.PEHeaders.SectionHeaders.Length; sectionIndex++)
             {
-                if (sectionHeader.Name == ".text")
+                switch (peReader.PEHeaders.SectionHeaders[sectionIndex].Name)
                 {
-                    sectionListBuilder.Add(new Section(sectionHeader.Name, sectionHeader.SectionCharacteristics));
+                    case TextSectionName:
+                        textSectionIndex = sectionIndex;
+                        break;
+                    
+                    case RsrcSectionName:
+                        rsrcSectionIndex = sectionIndex;
+                        break;
+                        
+                    case RelocSectionName:
+                        relocSectionIndex = sectionIndex;
+                        break;
+                    
+                    default:
+                        // Unexpected section in MSIL file
+                        throw new NotSupportedException();
                 }
+            }
+
+            if (textSectionIndex >= 0 && !sectionNames.Any((sc) => sc.SectionName == TextSectionName))
+            {
+                SectionHeader sectionHeader = peReader.PEHeaders.SectionHeaders[textSectionIndex];
+                sectionListBuilder.Add(new Section(sectionHeader.Name, sectionHeader.SectionCharacteristics));
             }
 
             if (sectionNames != null)
             {
                 foreach ((string SectionName, SectionCharacteristics Characteristics) nameCharPair in sectionNames)
                 {
-                    if (!peReader.PEHeaders.SectionHeaders.Any((header) => header.Name == nameCharPair.SectionName))
-                    {
-                        sectionListBuilder.Add(new Section(nameCharPair.SectionName, nameCharPair.Characteristics));
-                    }
+                    sectionListBuilder.Add(new Section(nameCharPair.SectionName, nameCharPair.Characteristics));
                 }
             }
 
-            foreach (SectionHeader sectionHeader in peReader.PEHeaders.SectionHeaders)
+            if (rsrcSectionIndex >= 0 && !sectionNames.Any((sc) => sc.SectionName == RsrcSectionName))
             {
-                if (sectionHeader.Name != ".text")
-                {
-                    sectionListBuilder.Add(new Section(sectionHeader.Name, sectionHeader.SectionCharacteristics));
-                }
+                SectionHeader sectionHeader = peReader.PEHeaders.SectionHeaders[rsrcSectionIndex];
+                sectionListBuilder.Add(new Section(sectionHeader.Name, sectionHeader.SectionCharacteristics));
+            }
+            
+            if (relocSectionIndex >= 0)
+            {
+                SectionHeader sectionHeader = peReader.PEHeaders.SectionHeaders[relocSectionIndex];
+                sectionListBuilder.Add(new Section(sectionHeader.Name, sectionHeader.SectionCharacteristics));
+            }
+            else
+            {
+                // Always inject the relocation section to the end of section list
+                sectionListBuilder.Add(new Section(RelocSectionName,
+                    SectionCharacteristics.ContainsInitializedData |
+                    SectionCharacteristics.MemRead |
+                    SectionCharacteristics.MemDiscardable));
             }
             
             _sections = sectionListBuilder.ToImmutable();
