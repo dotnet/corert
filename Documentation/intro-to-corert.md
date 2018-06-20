@@ -1,15 +1,16 @@
-Intro to .NET Native and CoreRT
-===============================
+Intro to CoreRT
+===============
 
 Native (AOT) compilation is a great scenario addition to .NET Core apps on Windows, OS X and Linux. We've seen significant startup and throughput benefits of native compilation for Windows UWP apps, using .NET Native. Today, many native apps and tools benefit from being compiled by a C++ compiler, and not as much by being written in C++. CoreRT brings much of the performance and all of the deployment benefits of native compilation, while retaining your ability to write in your favorite .NET programming language.
 
 Architecture
 ============
 
-[CoreRT](https://github.com/dotnet/corert) (for .Net Core) and [.NET Native](https://msdn.microsoft.com/library/dn584397.aspx) (for UWP) are native toolchains that compile [CIL byte code](https://en.wikipedia.org/wiki/Common_Intermediate_Language) to machine code (e.g. X64 instructions). By default, CoreRT uses RyuJIT as an ahead-of-time (AOT) compiler, the same one that CoreCLR uses as a just-in-time (JIT) compiler. CoreRT can also be used with other compilers, such as [LLILC](https://github.com/dotnet/llilc), and [IL to CPP](https://github.com/dotnet/corert/tree/master/src/ILCompiler.CppCodeGen/src/CppCodeGen) (an IL to textual C++ compiler we have built as a reference prototype). .NET Native uses the UTC compiler.
+[CoreRT](https://github.com/dotnet/corert) is a native toolchain that compiles [CIL byte code](https://en.wikipedia.org/wiki/Common_Intermediate_Language) to machine code (e.g. X64 instructions). By default, CoreRT uses RyuJIT as an ahead-of-time (AOT) compiler, the same one that CoreCLR uses as a just-in-time (JIT) compiler. CoreRT can also be used with other compilers, such as [LLILC](https://github.com/dotnet/llilc), and [IL to CPP](https://github.com/dotnet/corert/tree/master/src/ILCompiler.CppCodeGen/src/CppCodeGen) (an IL to textual C++ compiler we have built as a reference prototype). [.NET Native](https://docs.microsoft.com/en-us/dotnet/framework/net-native/index) uses CoreRT in conjunction with the UTC compiler to provide native compilation for UWP apps.
 
-[CoreRT](https://github.com/dotnet/corert) is a refactored and layered .Net Core runtime. The base is a small native execution engine that provides services such as garbage collection(GC). This is the same GC used in CoreCLR. Many other parts of the traditional .NET runtime, such as the [type system](https://github.com/dotnet/corert/tree/master/src/Common/src/TypeSystem), are implemented in C#. We've always wanted to implement runtime functionality in C#. We now have the infrastructure to do that. In addition, library implementations that were built deep into CoreCLR, have also been cleanly refactored and implemented as C# libraries.
+CoreRT is a refactored and layered .Net Core runtime. The base is a small native execution engine that provides services such as garbage collection(GC). This is the same GC used in CoreCLR. Many other parts of the traditional .NET runtime, such as the [type system](https://github.com/dotnet/corert/tree/master/src/Common/src/TypeSystem), are implemented in C#. We've always wanted to implement runtime functionality in C#. We now have the infrastructure to do that. In addition, library implementations that were built deep into CoreCLR, have also been cleanly refactored and implemented as C# libraries.
 
+For more information about the architecture, see http://mattwarren.org/2018/06/07/CoreRT-.NET-Runtime-for-AOT/ .
 
 Experience
 ==========
