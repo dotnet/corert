@@ -3448,6 +3448,12 @@ namespace Internal.JitInterface
             return null;
         }
 
+        private bool convertPInvokeCalliToCall(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool mustConvert)
+        {
+            Debug.Assert(!mustConvert);
+            return false;
+        }
+
         private void* getMemoryManager()
         {
             // This method is completely handled by the C++ wrapper to the JIT-EE interface,

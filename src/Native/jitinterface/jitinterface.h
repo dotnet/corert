@@ -164,6 +164,7 @@ struct JitInterfaceCallbacks
     void* (* GetDelegateCtor)(void * thisHandle, CorInfoException** ppException, void* methHnd, void* clsHnd, void* targetMethodHnd, void* pCtorData);
     void (* MethodCompileComplete)(void * thisHandle, CorInfoException** ppException, void* methHnd);
     void* (* getTailCallCopyArgsThunk)(void * thisHandle, CorInfoException** ppException, void* pSig, int flags);
+    bool (* convertPInvokeCalliToCall)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, bool mustConvert);
     void* (* getMemoryManager)(void * thisHandle, CorInfoException** ppException);
     void (* allocMem)(void * thisHandle, CorInfoException** ppException, unsigned int hotCodeSize, unsigned int coldCodeSize, unsigned int roDataSize, unsigned int xcptnsCount, int flag, void** hotCodeBlock, void** coldCodeBlock, void** roDataBlock);
     void (* reserveUnwindInfo)(void * thisHandle, CorInfoException** ppException, int isFunclet, int isColdCode, unsigned int unwindSize);
@@ -1511,6 +1512,15 @@ public:
     {
         CorInfoException* pException = nullptr;
         void* _ret = _callbacks->getTailCallCopyArgsThunk(_thisHandle, &pException, pSig, flags);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual bool convertPInvokeCalliToCall(void* pResolvedToken, bool mustConvert)
+    {
+        CorInfoException* pException = nullptr;
+        bool _ret = _callbacks->convertPInvokeCalliToCall(_thisHandle, &pException, pResolvedToken, mustConvert);
         if (pException != nullptr)
             throw pException;
         return _ret;
