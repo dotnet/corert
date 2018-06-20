@@ -59,7 +59,7 @@ where `<Configuration>` is your project configuration (such as Debug or Release)
 > dotnet publish -r win-x64 -c release
 ```
 
-Once completed, you can find the native executable in the root folder of your project under `/bin/x64/<Configuration>/netcoreapp2.0/publish/`. Navigate to `/bin/x64/<Configuration>/netcoreapp2.0/publish/` in your project folder and run the produced native executable.
+Once completed, you can find the native executable in the root folder of your project under `/bin/x64/<Configuration>/netcoreapp2.1/publish/`. Navigate to `/bin/x64/<Configuration>/netcoreapp2.1/publish/` in your project folder and run the produced native executable.
 
 ## Try MonoGame sample game
 
@@ -73,7 +73,7 @@ MonoGame samples include project files for number of targets, but not for .NET C
 
 ```bash
 > dotnet publish -r win-x64 -c release Platformer2D.csproj
-> bin\x64\Release\netcoreapp2.0\publish\Platformer2D.exe
+> bin\x64\Release\netcoreapp2.1\publish\Platformer2D.exe
 ```
 
 The NeonShooter sample works on Windows-only due to https://github.com/MonoGame/MonoGame/issues/3270.

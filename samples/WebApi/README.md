@@ -83,9 +83,9 @@ where path_to_rdxml_file is the location of the file on your disk.
 Under the second `<ItemGroup>` remove the line containing a reference to `Microsoft.AspNetCore.All` and substitute it with:
 
 ```xml
-<PackageReference Include="Microsoft.AspNetCore" Version="2.0.1" />
-<PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.0.1" />
-<PackageReference Include="Microsoft.AspNetCore.Mvc.Formatters.Json" Version="2.0.1" />
+<PackageReference Include="Microsoft.AspNetCore" Version="2.1.0" />
+<PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.1.0" />
+<PackageReference Include="Microsoft.AspNetCore.Mvc.Formatters.Json" Version="2.1.0" />
 ```
 
 This substitution removes unnecessary package references added by AspNetCore.All, which will remove them from your application's published files and avoid encountering unsupported features, as described in [the section above](#add-core-mvc-services)
@@ -129,12 +129,12 @@ where `<Configuration>` is your project configuration (such as Debug or Release)
 > dotnet publish -r win-x64 -c release
 ```
 
-Once completed, you can find the native executable in the root folder of your project under `/bin/x64/<Configuration>/netcoreapp2.0/publish/`
+Once completed, you can find the native executable in the root folder of your project under `/bin/x64/<Configuration>/netcoreapp2.1/publish/`
 
 ## Try it out!
 
 If you are running macOS, make sure you have [libuv](https://github.com/libuv/libuv) installed, as ASP.NET is built on top of libuv. You can use [homebrew](https://brew.sh/) to get it (`brew install libuv`).
 
-Navigate to `/bin/x64/<Configuration>/netcoreapp2.0/publish/` in your project folder and run the produced executable. It should display "Now listening on: http://localhost:XXXX" with XXXX being a port on your machine. Open your browser and navigate to that URL. You should see "Hello World!" displayed in your browser.
+Navigate to `/bin/x64/<Configuration>/netcoreapp2.1/publish/` in your project folder and run the produced executable. It should display "Now listening on: http://localhost:XXXX" with XXXX being a port on your machine. Open your browser and navigate to that URL. You should see "Hello World!" displayed in your browser.
 
 Feel free to modify the sample application and experiment. However, keep in mind some functionality might not yet be supported in CoreRT. Let us know on the [Issues page](https://github.com/dotnet/corert/issues/).
