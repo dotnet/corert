@@ -19,7 +19,7 @@ namespace ILCompiler
     {
         private readonly string _fileName;
         private SHA256 _sha256;
-        private XmlWriter _writer;
+        protected XmlWriter _writer;
 
         public ObjectDumper(string fileName)
         {
@@ -55,7 +55,7 @@ namespace ILCompiler
             return name;
         }
 
-        void IObjectDumper.DumpObjectNode(NameMangler mangler, ObjectNode node, ObjectData objectData)
+        public virtual void DumpObjectNode(NameMangler mangler, ObjectNode node, ObjectData objectData)
         {
             string name = null;
 
@@ -73,28 +73,9 @@ namespace ILCompiler
             _writer.WriteAttributeString("Length", objectData.Data.Length.ToStringInvariant());
             _writer.WriteAttributeString("Hash", HashData(objectData.Data));
             _writer.WriteEndElement();
-
-            var nodeWithCodeInfo = node as INodeWithCodeInfo;
-            if (nodeWithCodeInfo != null)
-            {
-                _writer.WriteStartElement("GCInfo");
-                _writer.WriteAttributeString("Name", name);
-                _writer.WriteAttributeString("Length", nodeWithCodeInfo.GCInfo.Length.ToStringInvariant());
-                _writer.WriteAttributeString("Hash", HashData(nodeWithCodeInfo.GCInfo));
-                _writer.WriteEndElement();
-
-                if (nodeWithCodeInfo.EHInfo != null)
-                {
-                    _writer.WriteStartElement("EHInfo");
-                    _writer.WriteAttributeString("Name", name);
-                    _writer.WriteAttributeString("Length", nodeWithCodeInfo.EHInfo.Data.Length.ToStringInvariant());
-                    _writer.WriteAttributeString("Hash", HashData(nodeWithCodeInfo.EHInfo.Data));
-                    _writer.WriteEndElement();
-                }
-            }
         }
 
-        private string HashData(byte[] data)
+        protected string HashData(byte[] data)
         {
             return BitConverter.ToString(_sha256.ComputeHash(data)).Replace("-", "").ToLower();
         }

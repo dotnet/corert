@@ -39,6 +39,7 @@
     <TypeLoaderBasePath>..\..\System.Private.TypeLoader\src</TypeLoaderBasePath>
     <CommonBasePath>..\..\Common\src</CommonBasePath>
     <ILCompilerBasePath>..\..\ILCompiler.Compiler\src</ILCompilerBasePath>
+    <ILCompilerRyuJitBasePath>..\..\ILCompiler.RyuJit\src</ILCompilerRyuJitBasePath>
     <DependencyAnalysisFrameworkBasePath>..\..\ILCompiler.DependencyAnalysisFramework\src</DependencyAnalysisFrameworkBasePath>
     <JitInterfaceBasePath>..\..\JitInterface\src</JitInterfaceBasePath>
   </PropertyGroup>
@@ -112,11 +113,8 @@
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Target_ARM\ARMDebug.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\AssemblyStubNode.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\HelperEntrypoint.cs" />
-    <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\INodeWithDebugInfo.cs" />
-    <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\INodeWithCodeInfo.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\ISymbolNode.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\IMethodNode.cs" />
-    <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\IMethodCodeNode.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\IEETypeNode.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\ObjectDataBuilder.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\BlobNode.cs" />
@@ -138,6 +136,9 @@
     <Compile Include="$(ILCompilerBasePath)\Compiler\NodeMangler.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DevirtualizationManager.cs" />
     <Compile Include="$(ILCompilerBasePath)\IL\Stubs\PInvokeILProvider.cs" />
+    <Compile Include="$(ILCompilerRyuJitBasePath)\Compiler\DependencyAnalysis\INodeWithDebugInfo.cs" />
+    <Compile Include="$(ILCompilerRyuJitBasePath)\Compiler\DependencyAnalysis\INodeWithCodeInfo.cs" />
+    <Compile Include="$(ILCompilerRyuJitBasePath)\Compiler\DependencyAnalysis\IMethodCodeNode.cs" />
     <Compile Include="$(DependencyAnalysisFrameworkBasePath)\IDependencyNode.cs" />
     <Compile Include="$(DependencyAnalysisFrameworkBasePath)\DependencyNode.cs" />
     <Compile Include="$(DependencyAnalysisFrameworkBasePath)\DependencyNodeCore.cs" />

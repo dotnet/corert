@@ -161,9 +161,9 @@ namespace ILCompiler.DependencyAnalysis
             _debugEHClauseInfos = debugEHClauseInfos;
         }
 
-        protected internal override int ClassCode => 788492407;
+        protected override int ClassCode => 788492407;
 
-        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        protected override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
         {
             return comparer.Compare(_method, ((MethodCodeNode)other)._method);
         }
