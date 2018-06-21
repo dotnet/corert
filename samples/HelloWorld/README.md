@@ -50,6 +50,6 @@ where `<Configuration>` is your project configuration (such as Debug or Release)
 > dotnet publish -r win-x64 -c release
 ```
 
-Once completed, you can find the native executable in the root folder of your project under `/bin/x64/<Configuration>/netcoreapp2.0/publish/`. Navigate to `/bin/x64/<Configuration>/netcoreapp2.0/publish/` in your project folder and run the produced native executable.
+Once completed, you can find the native executable in the root folder of your project under `/bin/x64/<Configuration>/netcoreapp2.1/publish/`. Navigate to `/bin/x64/<Configuration>/netcoreapp2.1/publish/` in your project folder and run the produced native executable.
 
 Feel free to modify the sample application and experiment. However, keep in mind some functionality might not yet be supported in CoreRT. Let us know on the [Issues page](https://github.com/dotnet/corert/issues/).

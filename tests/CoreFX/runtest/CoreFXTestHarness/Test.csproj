@@ -12,7 +12,7 @@
 
     <PropertyGroup>
         <ToolsDir>$(FrameworkLibPath)\..\tools\</ToolsDir>
-        <TargetFramework>netcoreapp2.0</TargetFramework>
+        <TargetFramework>netcoreapp2.1</TargetFramework>
         <!-- Don't warn if some dependencies were rolled forward -->
         <NoWarn>$(NoWarn);NU1603</NoWarn>
     </PropertyGroup>
