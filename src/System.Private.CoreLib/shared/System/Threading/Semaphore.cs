@@ -2,12 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.IO;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
+using System.IO;
 using System.Runtime.InteropServices;
-using System.Threading;
-using System.Runtime.Versioning;
 
 namespace System.Threading
 {
@@ -15,13 +13,7 @@ namespace System.Threading
     {
         // creates a nameless semaphore object
         // Win32 only takes maximum count of Int32.MaxValue
-        public Semaphore(int initialCount, int maximumCount)
-        {
-            VerifyCounts(initialCount, maximumCount);
-
-            bool createdNew;
-            CreateSemaphoreCore(initialCount, maximumCount, null, out createdNew);
-        }
+        public Semaphore(int initialCount, int maximumCount) : this(initialCount, maximumCount, null) { }
 
         public Semaphore(int initialCount, int maximumCount, string name)
         {
@@ -41,19 +33,13 @@ namespace System.Threading
         private static void VerifyCounts(int initialCount, int maximumCount)
         {
             if (initialCount < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(initialCount), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
-            }
+                throw new ArgumentOutOfRangeException(nameof(initialCount), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (maximumCount < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(maximumCount), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
-            }
+                throw new ArgumentOutOfRangeException(nameof(maximumCount), SR.ArgumentOutOfRange_NeedPosNum);
 
             if (initialCount > maximumCount)
-            {
                 throw new ArgumentException(SR.Argument_SemaphoreInitialMaximum);
-            }
         }
 
         public static Semaphore OpenExisting(string name)
@@ -75,40 +61,15 @@ namespace System.Threading
         public static bool TryOpenExisting(string name, out Semaphore result) =>
             OpenExistingWorker(name, out result) == OpenExistingResult.Success;
 
-        // increase the count on a semaphore, returns previous count
         public int Release() => ReleaseCore(1);
 
         // increase the count on a semaphore, returns previous count
         public int Release(int releaseCount)
         {
             if (releaseCount < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(releaseCount), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
-            }
+                throw new ArgumentOutOfRangeException(nameof(releaseCount), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             return ReleaseCore(releaseCount);
         }
-
-        private int ReleaseCore(int releaseCount)
-        {
-            // The field value is modifiable via the public <see cref="WaitHandle.SafeWaitHandle"/> property, save it locally
-            // to ensure that one instance is used in all places in this method
-            SafeWaitHandle waitHandle = _waitHandle;
-            if (waitHandle == null)
-            {
-                ThrowInvalidHandleException();
-            }
-
-            waitHandle.DangerousAddRef();
-            try
-            {
-                return ReleaseCore(waitHandle.DangerousGetHandle(), releaseCount);
-            }
-            finally
-            {
-                waitHandle.DangerousRelease();
-            }
-        }
     }
 }
-
