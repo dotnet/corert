@@ -25,9 +25,25 @@ namespace System.Threading
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
         }
 
-        private static int ReleaseCore(IntPtr handle, int releaseCount)
+        private int ReleaseCore(int releaseCount)
         {
-            return WaitSubsystem.ReleaseSemaphore(handle, releaseCount);
+            // The field value is modifiable via the public <see cref="WaitHandle.SafeWaitHandle"/> property, save it locally
+            // to ensure that one instance is used in all places in this method
+            SafeWaitHandle waitHandle = _waitHandle;
+            if (waitHandle == null)
+            {
+                ThrowInvalidHandleException();
+            }
+
+            waitHandle.DangerousAddRef();
+            try
+            {
+                return WaitSubsystem.ReleaseSemaphore(handle, releaseCount);
+            }
+            finally
+            {
+                waitHandle.DangerousRelease();
+            }
         }
     }
 }
