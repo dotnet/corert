@@ -839,11 +839,13 @@ namespace ILCompiler.PEWriter
         /// Emit built sections using the R2R PE writer.
         /// </summary>
         /// <param name="builder">Section builder to emit</param>
+        /// <param name="machine">Target machine architecture</param>
         /// <param name="inputReader">Input MSIL reader</param>
         /// <param name="outputStream">Output stream for the final R2R PE file</param>
-        public static void EmitR2R(this SectionBuilder builder, PEReader inputReader, Stream outputStream)
+        public static void EmitR2R(this SectionBuilder builder, Machine machine, PEReader inputReader, Stream outputStream)
         {
             R2RPEBuilder r2rBuilder = new R2RPEBuilder(
+                machine: machine,
                 peReader: inputReader,
                 sectionNames: builder.GetSections(),
                 sectionSerializer: builder.SerializeSection,

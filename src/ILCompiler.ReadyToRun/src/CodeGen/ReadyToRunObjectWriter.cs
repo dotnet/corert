@@ -35,7 +35,8 @@ namespace ILCompiler.DependencyAnalysis
             using (FileStream sr = File.OpenRead(_inputFilePath))
             {
                 PEReader peReader = new PEReader(sr);
-                R2RPEBuilder peBuilder = new R2RPEBuilder(peReader);
+                // TODO: properly propagate target architecture
+                R2RPEBuilder peBuilder = new R2RPEBuilder(Machine.Amd64, peReader);
                 
                 var peBlob = new BlobBuilder();
                 peBuilder.Serialize(peBlob);

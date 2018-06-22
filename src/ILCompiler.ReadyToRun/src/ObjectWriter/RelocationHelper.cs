@@ -148,10 +148,16 @@ namespace ILCompiler.PEWriter
                     return;
                     
                 case RelocType.IMAGE_REL_BASED_HIGHLOW:
-                case RelocType.IMAGE_REL_BASED_ADDR32NB:
                     {
                         relocationLength = 4;
                         delta = unchecked(targetRVA + (int)_defaultImageBase);
+                        break;
+                    }
+
+                case RelocType.IMAGE_REL_BASED_ADDR32NB:
+                    {
+                        relocationLength = 4;
+                        delta = targetRVA;
                         break;
                     }
                 

@@ -132,15 +132,17 @@ namespace ILCompiler.PEWriter
         /// <summary>
         /// Constructor initializes the various control structures and combines the section list.
         /// </summary>
+        /// <param name="machine">Target machine architecture</param>
         /// <param name="peReader">Input MSIL PE file reader</param>
         /// <param name="sectionNames">Custom section names to add to the output PE</param>
         /// <param name="sectionSerializer">Callback for emission of data for the individual sections</param>
         public R2RPEBuilder(
+            Machine machine,
             PEReader peReader,
             IEnumerable<(string SectionName, SectionCharacteristics Characteristics)> sectionNames = null,
             Func<string, SectionLocation, BlobBuilder> sectionSerializer = null,
             Action<PEDirectoriesBuilder> directoriesUpdater = null)
-            : base(PEHeaderCopier.Copy(peReader.PEHeaders), deterministicIdProvider: null)
+            : base(PEHeaderCopier.Copy(peReader.PEHeaders, machine), deterministicIdProvider: null)
         {
             _peReader = peReader;
             _sectionSerializer = sectionSerializer;
@@ -150,10 +152,6 @@ namespace ILCompiler.PEWriter
             
             _sectionRvaDeltas = new List<SectionRVADelta>();
             
-            PEHeaders headers = peReader.PEHeaders;
-
-            PEHeaderBuilder peHeaderBuilder = PEHeaderCopier.Copy(headers);
-
             ImmutableArray<Section>.Builder sectionListBuilder = ImmutableArray.CreateBuilder<Section>();
 
             int textSectionIndex = -1;
@@ -576,10 +574,11 @@ namespace ILCompiler.PEWriter
         /// Copy PE headers into a PEHeaderBuilder used by PEBuilder.
         /// </summary>
         /// <param name="peHeaders">Headers to copy</param>
-        public static PEHeaderBuilder Copy(PEHeaders peHeaders)
+        /// <param name="targetMachineOverride">Target architecture to set in the header</param>
+        public static PEHeaderBuilder Copy(PEHeaders peHeaders, Machine  targetMachineOverride)
         {
             return new PEHeaderBuilder(
-                machine: peHeaders.CoffHeader.Machine,
+                machine: targetMachineOverride,
                 sectionAlignment: peHeaders.PEHeader.SectionAlignment,
                 fileAlignment: peHeaders.PEHeader.FileAlignment,
                 imageBase: peHeaders.PEHeader.ImageBase,
