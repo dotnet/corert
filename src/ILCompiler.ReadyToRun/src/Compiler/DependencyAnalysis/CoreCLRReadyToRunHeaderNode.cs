@@ -30,13 +30,13 @@ namespace ILCompiler.DependencyAnalysis
                 StartSymbol = startSymbol;
             }
 
-            readonly public ReadyToRunSectionType Id;
-            readonly public ObjectNode Node;
-            readonly public ISymbolNode StartSymbol;
+            public readonly ReadyToRunSectionType Id;
+            public readonly ObjectNode Node;
+            public readonly ISymbolNode StartSymbol;
         }
 
-        List<HeaderItem> _items = new List<HeaderItem>();
-        TargetDetails _target;
+        private List<HeaderItem> _items = new List<HeaderItem>();
+        private TargetDetails _target;
 
         public CoreCLRReadyToRunHeaderNode(TargetDetails target)
         {
@@ -104,12 +104,14 @@ namespace ILCompiler.DependencyAnalysis
                 builder.EmitInt((int)item.Id);
                 
                 builder.EmitReloc(item.StartSymbol, RelocType.IMAGE_REL_BASED_ADDR32NB);
-                builder.EmitInt(item.Node.GetData(factory).Data.Length);
+
+                if (!relocsOnly)
+                    builder.EmitInt(item.Node.GetData(factory).Data.Length);
                 
                 count++;
             }
 
-            builder.EmitInt(sectionCountReservation, checked(count));
+            builder.EmitInt(sectionCountReservation, count);
             
             return builder.ToObjectData();
         }

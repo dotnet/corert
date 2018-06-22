@@ -49,7 +49,6 @@ namespace ILCompiler.DependencyAnalysis
 
             var compilerIdentifierNode = new CompilerIdentifierNode();
             CoreCLRReadyToRunHeader.Add(Internal.Runtime.ReadyToRunSectionType.CompilerIdentifier, compilerIdentifierNode, compilerIdentifierNode);
-            graph.AddRoot(compilerIdentifierNode, "CompilerIdentifierNode is always generated");
         }
     }
 }
