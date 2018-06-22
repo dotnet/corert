@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="14.0">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" Condition="'$(IsProjectNLibrary)' != 'true'" />
   <PropertyGroup>
@@ -27,7 +27,9 @@
   
   <ItemGroup>
     <Compile Include="CodeGen\ReadyToRunObjectWriter.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\CompilerIdentifierNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunCodegenNodeFactory.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\CoreCLRReadyToRunHeaderNode.cs" />
     <Compile Include="Compiler\ReadyToRunCodegenCompilation.cs" />
     <Compile Include="Compiler\ReadyToRunCodegenCompilationBuilder.cs" />
     <Compile Include="Compiler\ReadyToRunNodeMangler.cs" />
