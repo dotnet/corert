@@ -44,7 +44,7 @@ namespace ILCompiler
 
             var nodes = _dependencyGraph.MarkedNodeList;
 
-            ReadyToRunObjectWriter.EmitObject(_inputFilePath, outputFile, nodes, NodeFactory, this, dumper);
+            ReadyToRunObjectWriter.EmitObject(_inputFilePath, outputFile, nodes, NodeFactory);
         }
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)

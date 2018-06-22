@@ -282,7 +282,7 @@ namespace ILCompiler
 
             // TODO: compiler switch for SIMD support?
             var simdVectorLength = (_isCppCodegen || _isWasmCodegen) ? SimdVectorLength.None : SimdVectorLength.Vector128Bit;
-            var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, TargetAbi.CoreRT, simdVectorLength);
+            var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, _isReadyToRunCodeGen ? TargetAbi.Jit : TargetAbi.CoreRT, simdVectorLength);
             var typeSystemContext = new CompilerTypeSystemContext(targetDetails, genericsMode);
 
             //
@@ -351,7 +351,14 @@ namespace ILCompiler
 
                 if (entrypointModule != null)
                 {
-                    compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext)));
+                    if (_isReadyToRunCodeGen)
+                    {
+                        compilationRoots.Add(new ManagedEntryPointRootProvider(entrypointModule));
+                    }
+                    else
+                    {
+                        compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext)));
+                    }
                 }
 
                 if (_multiFile)

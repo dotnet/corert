@@ -25,6 +25,8 @@ namespace ILCompiler.DependencyAnalysis
             
         }
 
+        public CoreCLRReadyToRunHeaderNode CoreCLRReadyToRunHeader;
+
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
         {
             throw new NotImplementedException();
@@ -42,7 +44,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
+            CoreCLRReadyToRunHeader = new CoreCLRReadyToRunHeaderNode(Target);
+            graph.AddRoot(CoreCLRReadyToRunHeader, "ReadyToRunHeader is always generated");
 
+            var compilerIdentifierNode = new CompilerIdentifierNode();
+            CoreCLRReadyToRunHeader.Add(Internal.Runtime.ReadyToRunSectionType.CompilerIdentifier, compilerIdentifierNode, compilerIdentifierNode);
         }
     }
 }
