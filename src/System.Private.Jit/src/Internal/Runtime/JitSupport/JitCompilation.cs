@@ -15,7 +15,7 @@ namespace ILCompiler
     /// <summary>
     /// Version of Compilation class used for JIT compilation. Should probably be merged with the Compilation class used in AOT compilation
     /// </summary>
-    internal class Compilation
+    public class Compilation
     {
         public Compilation(TypeSystemContext context)
         {
