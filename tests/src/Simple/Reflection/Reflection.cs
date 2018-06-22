@@ -437,7 +437,23 @@ internal class ReflectionTest
             }
         }
 
+        ref struct ByRefLike<T>
+        {
+            public readonly T Value;
+
+            public ByRefLike(T value)
+            {
+                Value = value;
+            }
+
+            public override string ToString()
+            {
+                return Value.ToString() + " " + typeof(T).ToString();
+            }
+        }
+
         delegate string ToStringDelegate(ref ByRefLike thisObj);
+        delegate string ToStringDelegate<T>(ref ByRefLike<T> thisObj);
 
         public static void Run()
         {
@@ -449,15 +465,40 @@ internal class ReflectionTest
                 default(ByRefLike).ToString();
                 ToStringDelegate s = null;
                 s = s.Invoke;
+                default(ByRefLike<object>).ToString();
+                ToStringDelegate<object> s2 = null;
+                s2 = s2.Invoke;
             }
 
-            Type byRefLikeType = GetTestType(nameof(TestByRefLikeTypeMethod), nameof(ByRefLike));
-            MethodInfo toStringMethod = byRefLikeType.GetMethod("ToString");
-            var toString = (ToStringDelegate)toStringMethod.CreateDelegate(typeof(ToStringDelegate));
+            {
+                Type byRefLikeType = GetTestType(nameof(TestByRefLikeTypeMethod), nameof(ByRefLike));
+                MethodInfo toStringMethod = byRefLikeType.GetMethod("ToString");
+                var toString = (ToStringDelegate)toStringMethod.CreateDelegate(typeof(ToStringDelegate));
 
-            ByRefLike foo = new ByRefLike(123);
-            if (toString(ref foo) != "123")
-                throw new Exception();
+                ByRefLike foo = new ByRefLike(123);
+                if (toString(ref foo) != "123")
+                    throw new Exception();
+            }
+
+            {
+                Type byRefLikeGenericType = typeof(ByRefLike<string>);
+                MethodInfo toStringGenericMethod = byRefLikeGenericType.GetMethod("ToString");
+                var toStringGeneric = (ToStringDelegate<string>)toStringGenericMethod.CreateDelegate(typeof(ToStringDelegate<string>));
+
+                ByRefLike<string> fooGeneric = new ByRefLike<string>("Hello");
+                if (toStringGeneric(ref fooGeneric) != "Hello System.String")
+                    throw new Exception();
+            }
+
+            {
+                Type byRefLikeGenericType = typeof(ByRefLike<object>);
+                MethodInfo toStringGenericMethod = byRefLikeGenericType.GetMethod("ToString");
+                var toStringGeneric = (ToStringDelegate<object>)toStringGenericMethod.CreateDelegate(typeof(ToStringDelegate<object>));
+
+                ByRefLike<object> fooGeneric = new ByRefLike<object>("Hello");
+                if (toStringGeneric(ref fooGeneric) != "Hello System.Object")
+                    throw new Exception();
+            }
         }
     }
 
