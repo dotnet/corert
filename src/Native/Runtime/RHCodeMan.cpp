@@ -1200,37 +1200,24 @@ PTR_PTR_VOID EECodeManager::GetReturnAddressLocationForHijack(
     }
 
 #ifdef _ARM_
-    // We cannot get the return address unless LR has 
-    // be saved in the prolog.
+    // We cannot get the return address unless LR has been saved in the prolog.
     if (!pHeader->IsRegSaved(CSR_MASK_LR))
         return NULL;
 #elif defined(_ARM64_)
-    // We can get return address if LR was saved either with FP or on its own:
-    bool ebpFrame = pHeader->HasFramePointer();
-    if (!ebpFrame && !pHeader->IsRegSaved(CSR_MASK_LR)) {
+    // We can get return address if LR was saved either with FP or on its own.
+    if (!pHeader->HasFramePointer() && !pHeader->IsRegSaved(CSR_MASK_LR))
         return NULL;
-    }
 #endif // _ARM_
-
-    void ** ppvResult;
 
     UInt32 epilogOffset = 0;
     UInt32 epilogSize = 0;
     if (GetEpilogOffset(pGCInfoHeader, cbMethodCodeSize, pbEpilogTable, codeOffset, &epilogOffset, &epilogSize)) 
     {
-#ifdef _ARM_
-        // Disable hijacking from epilogs on ARM until we implement GetReturnAddressLocationFromEpilog.
-        return NULL;
-#elif defined(_ARM64_)
-        // Disable hijacking from epilogs on ARM64:
+#if defined(_ARM_) || defined(_ARM64_)
+        // Disable hijacking from epilogs until we implement GetReturnAddressLocationFromEpilog.
         return NULL;
 #else
-        ppvResult = GetReturnAddressLocationFromEpilog(pHeader, pContext, epilogOffset, epilogSize);
-        // Early out if GetReturnAddressLocationFromEpilog indicates a non-hijackable epilog (e.g. exception
-        // throw epilog or tail call).
-        if (ppvResult == NULL)
-            return NULL;
-        goto Finished;
+        return GetReturnAddressLocationFromEpilog(pHeader, pContext, epilogOffset, epilogSize);
 #endif
     }
 
@@ -1238,11 +1225,7 @@ PTR_PTR_VOID EECodeManager::GetReturnAddressLocationForHijack(
     // ARM always sets up R11 as an OS frame chain pointer to enable fast ETW stack walking (except in the
     // case where LR is not pushed, but that was handled above). The protocol specifies that the return
     // address is pushed at [r11, #4].
-    ppvResult = (void **)((*pContext->pR11) + sizeof(void *));
-    goto Finished;
-#elif _ARM64_
-    ppvResult = (void **)(pContext->pLR);
-    goto Finished;
+    return (void **)((*pContext->pR11) + sizeof(void *));
 #else
 
     // We are in the body of the method, so just find the return address using the unwind info.
@@ -1254,8 +1237,7 @@ PTR_PTR_VOID EECodeManager::GetReturnAddressLocationForHijack(
             // In this case, we have the normal EBP frame pointer, but also an EBX frame pointer.  Use the EBX
             // one, because the return address associated with that frame pointer is the one we're actually 
             // going to return to.  The other one (next to EBP) is only for EBP-chain-walking.
-            ppvResult = (void **)((*pContext->pRbx) + sizeof(void *));
-            goto Finished;
+            return (void **)((*pContext->pRbx) + sizeof(void *));
         }
 #endif
 
@@ -1263,25 +1245,24 @@ PTR_PTR_VOID EECodeManager::GetReturnAddressLocationForHijack(
 #ifdef _AMD64_
         framePointerOffset = pHeader->GetFramePointerOffset();
 #endif
-        ppvResult = (void **)((*pContext->pRbp) + sizeof(void *) - framePointerOffset);
-        goto Finished;
+        return (void **)(pContext->GetFP() + sizeof(void *) - framePointerOffset);
     }
 
     {
         // We do not have a frame pointer, but we are also not in the prolog or epilog
 
-        UInt8 * RSP = (UInt8 *)pContext->GetSP();
-        RSP += pHeader->GetFrameSize();
+        UIntNative RSP = pContext->GetSP() + pHeader->GetFrameSize();
+#if _ARM64_
+        // LR is saved at the bottom of the preserved registers area
+        ASSERT(pHeader->IsRegSaved(CSR_MASK_LR));
+#else
         RSP += pHeader->GetPreservedRegsSaveSize();
-
-        // RSP should point to the return address now.
-        ppvResult = (void**)RSP;
-    }
-    goto Finished;
 #endif
 
-  Finished:
-    return ppvResult;
+        // RSP should point to the return address now.
+        return (void**)RSP;
+    }
+#endif
 }
 
 #endif

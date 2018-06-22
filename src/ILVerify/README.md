@@ -17,7 +17,7 @@ Historically on Full Framework IL generators used PEVerify to make sure that the
 - Fast spin up/tear down.
 
 ## The codebase
-The project targets netcoreapp2.0 and uses the new .csproj based project format. If you want to open and compile it with Visual Studio then you need a version, which supports .NET Core 2.0 tooling. This is supported in Visual Studio 2017 Update 3  (Version 15.3) or later. The other option is to use command (with .NET Core 2.0 tooling).
+The project targets netcoreapp2.1 and uses the new .csproj based project format. If you want to open and compile it with Visual Studio then you need a version, which supports .NET Core 2.1 tooling. This is supported in Visual Studio 2017 Version 15.8 or later. The other option is to use command (with .NET Core 2.1 tooling).
 The code is split into three projects:
 - ILVerification is the library with the core verification logic,
 - ILVerification.Tests contains the tests for ILVerification,

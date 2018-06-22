@@ -60,7 +60,8 @@ if [ -z "$__DOTNET_PKG" ]; then
             __PKG_RID=linux
             ;;
   esac
-  __DOTNET_PKG=dotnet-sdk-${__DOTNET_TOOLS_VERSION}-$__PKG_RID-$__HostArch
+  __PKG_RID=$__PKG_RID-$__HostArch
+  __DOTNET_PKG=dotnet-sdk-${__DOTNET_TOOLS_VERSION}-$__PKG_RID
 fi
 
 display_error_message()
@@ -145,7 +146,7 @@ if [ ! -e $__INIT_TOOLS_DONE_MARKER ]; then
     ls $__scriptpath/Tools/*.sh | xargs chmod +x
     ls $__scriptpath/Tools/scripts/docker/*.sh | xargs chmod +x
 
-    Tools/crossgen.sh $__scriptpath/Tools
+    Tools/crossgen.sh $__scriptpath/Tools $__PKG_RID
 
     # CoreRT does not use special copy of the shared runtime for testing
     cp $__TOOLRUNTIME_DIR/csc.runtimeconfig.json $__TOOLRUNTIME_DIR/xunit.console.netcore.runtimeconfig.json

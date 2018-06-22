@@ -47,7 +47,10 @@ namespace ILCompiler
 
         public sealed override string ThreadStatics(TypeDesc type)
         {
-            return NameMangler.CompilationUnitPrefix + NameMangler.GetMangledTypeName(type) + "::" + ThreadStaticMemberName;
+            if (type.Context.Target.Abi == TargetAbi.ProjectN)
+                return NameMangler.GetMangledTypeName(type) + "::" + ThreadStaticMemberName;
+            else
+                return NameMangler.CompilationUnitPrefix + NameMangler.GetMangledTypeName(type) + "::" + ThreadStaticMemberName;
         }
 
         public sealed override string TypeGenericDictionary(TypeDesc type)

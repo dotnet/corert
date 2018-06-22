@@ -28,5 +28,7 @@ namespace ILCompiler.DependencyAnalysis
                 return _method;
             }
         }
+
+        protected internal override int ClassCode => -729061105;
     }
 }
