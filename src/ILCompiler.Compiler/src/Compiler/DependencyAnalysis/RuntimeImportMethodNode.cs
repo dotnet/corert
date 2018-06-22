@@ -27,5 +27,12 @@ namespace ILCompiler.DependencyAnalysis
                 return _method;
             }
         }
+
+        protected internal override int ClassCode => -1173492615;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(_method, ((RuntimeImportMethodNode)other)._method);
+        }
     }
 }

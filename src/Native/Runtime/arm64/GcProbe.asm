@@ -321,7 +321,7 @@ EXTRA_SAVE_SIZE equ (32*16)
         tst         w2, #TSF_SuppressGcStress__OR__TSF_DoNotTriggerGC
         bne         %ft0
 
-        ldr         x2, [x4, #OFFSETOF__Thread__m_pHackPInvokeTunnel]
+        ldr         x9, [x4, #OFFSETOF__Thread__m_pHackPInvokeTunnel]
         bl          RhpWaitForGCNoAbort
 0
     MEND
@@ -393,7 +393,6 @@ EXTRA_SAVE_SIZE equ (32*16)
 #endif ;; FEATURE_GC_STRESS
 
     LEAF_ENTRY RhpGcProbe
-        brk 0xf000 ;; TODO: remove after debugging/testing stub
         ldr         x3, =RhpTrapThreads
         ldr         w3, [x3]
         tbnz        x3, #TrapThreadsFlags_TrapThreads_Bit, RhpGcProbeRare
@@ -403,7 +402,6 @@ EXTRA_SAVE_SIZE equ (32*16)
     EXTERN RhpThrowHwEx
 
     NESTED_ENTRY RhpGcProbeRare
-        brk 0xf000 ;; TODO: remove after debugging/testing stub
         PROLOG_PROBE_FRAME x2, x3, x12, 
 
         mov         x4, x2
@@ -835,7 +833,7 @@ Success
 NoGcStress
 #endif ;; FEATURE_GC_STRESS
 
-        add         x2, sp, xzr ; sp is address of PInvokeTransitionFrame
+        mov         x9, sp ; sp is address of PInvokeTransitionFrame
         bl          RhpWaitForGCNoAbort
 
 DoneWaitingForGc
@@ -956,7 +954,7 @@ Abort
 SkipGcStress
 #endif ;; FEATURE_GC_STRESS
 
-        add         x9, sp, xzr ; sp is address of PInvokeTransitionFrame
+        mov         x9, sp ; sp is address of PInvokeTransitionFrame
         bl          RhpWaitForGCNoAbort
 
 DoNotTriggerGC

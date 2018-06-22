@@ -30,7 +30,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public int Offset => 0;
 
-        protected internal override int ClassCode => -2063194124;
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+        protected internal override int ClassCode => (int)ObjectNodeOrder.WindowsDebugMethodSignatureMapSectionNode;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -177,9 +178,6 @@ namespace ILCompiler.DependencyAnalysis
             // This node does not trigger generation of other nodes.
             if (relocsOnly)
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
-
-            if (factory.WindowsDebugData.DebugTypeRecordsSection != null)
-                factory.WindowsDebugData.DebugTypeRecordsSection.Neuter();
 
             List<Relocation> relocations = new List<Relocation>();
             DebugInfoBlob debugData = GetDebugMethodRVAToTokenMap(factory.WindowsDebugData.DebugPseudoAssemblySection.PseudoAssembly, factory.MetadataManager.GetCompiledMethodBodies(), out relocations);

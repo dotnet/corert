@@ -7,7 +7,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class UtcThreadStaticsNode : ObjectNode, ISymbolDefinitionNode
+    public class UtcThreadStaticsNode : ObjectNode, ISymbolDefinitionNode, ISymbolNodeWithDebugInfo, ISortableSymbolNode
     {
         private MetadataType _type;
 
@@ -25,6 +25,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public int Offset => 0;
         public MetadataType Type => _type;
+
+        public IDebugInfo DebugInfo => NullTypeIndexDebugInfo.Instance;
 
         public static string GetMangledName(TypeDesc type, NameMangler nameMangler)
         {
@@ -61,6 +63,19 @@ namespace ILCompiler.DependencyAnalysis
             return builder.ToObjectData();
         }
 
-        protected internal override int ClassCode => -1421136129;
+        protected sealed internal override int ClassCode => -1421136129;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(_type, ((UtcThreadStaticsNode)other)._type);
+        }
+
+        int ISortableSymbolNode.ClassCode => ClassCode;
+
+        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
+        {
+            return CompareToImpl((ObjectNode)other, comparer);
+        }
+
     }
 }

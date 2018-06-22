@@ -254,7 +254,7 @@
 
   <PropertyGroup>
     <PrereleaseResolveNuGetPackages>true</PrereleaseResolveNuGetPackages>
-    <NuGetTargetMoniker Condition="'$(NuGetTargetFramework)' == ''">.NETCoreApp,Version=v2.0</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(NuGetTargetFramework)' == ''">.NETCoreApp,Version=v2.1</NuGetTargetMoniker>
     <BuildPackageLibraryReferences>false</BuildPackageLibraryReferences>
   </PropertyGroup>
 

@@ -35,7 +35,7 @@ namespace ILCompiler.DependencyAnalysis
             else
             {
                 Debug.Assert(x.GetType() != y.GetType());
-                return codeX > codeY ? -1 : 1;
+                return codeY > codeX ? -1 : 1;
             }
         }
     }

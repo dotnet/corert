@@ -8,7 +8,7 @@
     <RootNamespace>ILCompiler</RootNamespace>
     <AssemblyName>ilc</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
     <CopyNugetImplementations>false</CopyNugetImplementations>
     <!-- Force .dll extension even if output type is exe. -->
     <TargetExt>.dll</TargetExt>
