@@ -8,7 +8,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -26,7 +26,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -44,14 +44,15 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "30666190-6959-11e5-9f96-f56098202fef",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
         "signType": "$(SignType)",
         "zipSources": "false",
         "version": "",
-        "feedSource": "https://devdiv.pkgs.visualstudio.com/DefaultCollection/_packaging/MicroBuildToolset/nuget/v3/index.json"
+        "feedSource": "https://devdiv.pkgs.visualstudio.com/DefaultCollection/_packaging/MicroBuildToolset/nuget/v3/index.json",
+        "legacySigning": "false"
       }
     },
     {
@@ -62,7 +63,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -80,7 +81,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -98,7 +99,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -116,7 +117,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -134,7 +135,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -152,7 +153,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -166,7 +167,28 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Publish symbols path: \\\\cpvsbuild\\drops\\DotNetCore\\$(Build.DefinitionName)\\$(Build.BuildNumber)\\symbols",
+      "displayName": "Copy Files to: $(Build.ArtifactStagingDirectory)/symbols",
+      "timeoutInMinutes": 0,
+      "condition": "succeeded()",
+      "task": {
+        "id": "5bfb729a-a7c8-4a78-a7c3-8d717bb7c13c",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "SourceFolder": "$(Build.SourcesDirectory)\\$(SourceFolder)\\bin\\Windows_NT.$(Platform).$(Configuration)",
+        "Contents": "**\\*.+(pdb|exe|dll)",
+        "TargetFolder": "$(Build.ArtifactStagingDirectory)/symbols",
+        "CleanTargetFolder": "false",
+        "OverWrite": "false",
+        "flattenFolders": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Index sources and publish symbols",
       "timeoutInMinutes": 0,
       "task": {
         "id": "0675668a-7bba-4ccb-901d-5ad6554ca653",
@@ -174,9 +196,9 @@
         "definitionType": "task"
       },
       "inputs": {
-        "SymbolsPath": "\\\\cpvsbuild\\drops\\DotNetCore\\$(Build.DefinitionName)\\$(Build.BuildNumber)\\symbols",
+        "SymbolsPath": "",
         "SearchPattern": "**\\*.pdb",
-        "SymbolsFolder": "$(Build.SourcesDirectory)\\$(SourceFolder)\\bin\\Windows_NT.$(Platform).$(Configuration)",
+        "SymbolsFolder": "$(Build.ArtifactStagingDirectory)/symbols",
         "SkipIndexing": "false",
         "TreatNotIndexedAsWarning": "false",
         "SymbolsMaximumWaitTime": "",
@@ -189,50 +211,35 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Index Symbols on Symweb",
+      "displayName": "Publish Symbols to Artifact Services",
       "timeoutInMinutes": 0,
-      "task": {
-        "id": "af503aa3-9d06-44b6-a549-d063a544a5c5",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "symbolStore": "\\\\cpvsbuild\\drops\\DotNetCore\\$(Build.DefinitionName)\\$(Build.BuildNumber)\\symbols",
-        "contacts": "crummel;simonn;michals",
-        "project": "DDE"
-      }
-    },
-    {
-      "enabled": false,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Publish to Symbols to Artifact Services",
-      "timeoutInMinutes": 0,
+      "condition": "succeeded()",
       "task": {
         "id": "29827cd1-5c33-4ff0-a817-abd46970ffc4",
-        "versionSpec": "*",
+        "versionSpec": "0.*",
         "definitionType": "task"
       },
       "inputs": {
-        "symbolServiceURI": "https://devdiv.artifacts.visualstudio.com/DefaultCollection",
+        "symbolServiceURI": "https://microsoft.artifacts.visualstudio.com/DefaultCollection",
         "requestName": "$(system.teamProject)/$(Build.BuildNumber)/$(Build.BuildId)",
-        "sourcePath": "$(Build.SourcesDirectory)\\corert\\bin",
+        "sourcePath": "$(Build.ArtifactStagingDirectory)/symbols",
         "assemblyPath": "",
         "toLowerCase": "true",
-        "detailedLog": "true",
+        "detailedLog": "false",
         "expirationInDays": "",
-        "usePat": "true"
+        "usePat": "false",
+        "append": "true"
       }
     },
     {
       "enabled": true,
       "continueOnError": false,
-      "alwaysRun": true,
+      "alwaysRun": false,
       "displayName": "Perform Cleanup Tasks",
       "timeoutInMinutes": 0,
       "task": {
         "id": "521a94ea-9e68-468a-8167-6dcf361ea776",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {}
@@ -240,12 +247,12 @@
     {
       "enabled": true,
       "continueOnError": false,
-      "alwaysRun": true,
+      "alwaysRun": false,
       "displayName": "Copy Publish Artifact: BuildLogs",
       "timeoutInMinutes": 0,
       "task": {
         "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -264,7 +271,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "dc66d2f0-a7ba-11e5-ae62-3deab86d85e3",
-        "versionSpec": "*",
+        "versionSpec": "0.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -281,7 +288,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -300,49 +307,19 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
         "CopyRoot": "",
-        "Contents": "bin\\*$(Platform).$(Configuration)\\**\\*.dll\nbin\\*$(Platform).$(Configuration)\\**\\*.pdb",
+        "Contents": "$(Build.ArtifactStagingDirectory)/symbols/**/*.+(pdb|dll)\n",
         "ArtifactName": "symbols",
         "ArtifactType": "FilePath",
         "TargetPath": "\\\\cpvsbuild\\drops\\DotNetCore\\$(Build.DefinitionName)\\$(Build.BuildNumber)\\FullSymbols"
       }
-    },
-    {
-      "enabled": false,
-      "continueOnError": true,
-      "alwaysRun": true,
-      "displayName": "Final clean to remove any lingering process",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "$(Build.SourcesDirectory)\\$(SourceFolder)\\buildscripts\\clean.cmd",
-        "arguments": "",
-        "workingFolder": "$(SourceFolder)",
-        "failOnStandardError": "false"
-      }
     }
   ],
   "options": [
-    {
-      "enabled": false,
-      "definition": {
-        "id": "7c555368-ca64-4199-add6-9ebaf0b0137d"
-      },
-      "inputs": {
-        "multipliers": "[]",
-        "parallel": "false",
-        "continueOnError": "true",
-        "additionalFields": "{}"
-      }
-    },
     {
       "enabled": false,
       "definition": {
@@ -357,95 +334,95 @@
     {
       "enabled": false,
       "definition": {
-        "id": "57578776-4c22-4526-aeb0-86b6da17ee9c"
+        "id": "5d58cc01-7c75-450c-be18-a388ddb129ec"
       },
       "inputs": {
+        "branchFilters": "[\"+refs/heads/*\"]",
         "additionalFields": "{}"
       }
     }
   ],
   "variables": {
-    "system.debug": {
-      "value": "false",
+    "BuildTag": {
+      "value": "corert-alpha",
       "allowOverride": true
+    },
+    "CloudDropAccessToken": {
+      "value": null,
+      "isSecret": true
+    },
+    "CloudDropAccountName": {
+      "value": "dotnetbuildoutput"
     },
     "Configuration": {
       "value": "Release",
       "allowOverride": true
     },
-    "Platform": {
-      "value": "x64",
-      "allowOverride": true
+    "CustomNuGetDownloadPath": {
+      "value": "$(Build.StagingDirectory)\\tool-download"
     },
-    "TeamName": {
-      "value": "DotNetCore"
+    "CustomNuGetPath": {
+      "value": "$(Build.StagingDirectory)\\NuGet.exe"
     },
-    "SignType": {
-      "value": "test",
-      "allowOverride": true
+    "Git": {
+      "value": "$(ProgramFiles)\\Git\\cmd\\git.exe"
     },
-    "OfficialBuildId": {
-      "value": "$(Build.BuildNumber)",
-      "allowOverride": true
-    },
-    "BuildTag": {
-      "value": "corert-alpha",
+    "GitUrl": {
+      "value": "https://github.com/dotnet/corert",
       "allowOverride": true
     },
     "Label": {
       "value": "$(BuildTag)-$(Build.BuildNumber)",
       "allowOverride": true
     },
-    "SourceVersion": {
-      "value": "HEAD",
+    "MyGetApiKey": {
+      "value": null,
+      "allowOverride": true,
+      "isSecret": true
+    },
+    "MyGetFeedUrl": {
+      "value": "https://dotnet.myget.org/F/dotnet-core/api/v2/package"
+    },
+    "OfficialBuildId": {
+      "value": "$(Build.BuildNumber)",
       "allowOverride": true
     },
-    "GitUrl": {
-      "value": "https://github.com/dotnet/corert",
+    "Platform": {
+      "value": "x64",
+      "allowOverride": true
+    },
+    "SignType": {
+      "value": "test",
       "allowOverride": true
     },
     "SourceBranch": {
       "value": "master",
       "allowOverride": true
     },
-    "Git": {
-      "value": "$(ProgramFiles)\\Git\\cmd\\git.exe"
+    "SourceFolder": {
+      "value": "corert_$(Build.BuildId)"
     },
-    "CustomNuGetPath": {
-      "value": "$(Build.StagingDirectory)\\NuGet.exe"
-    },
-    "CustomNuGetDownloadPath": {
-      "value": "$(Build.StagingDirectory)\\tool-download"
-    },
-    "MyGetFeedUrl": {
-      "value": "https://dotnet.myget.org/F/dotnet-core/api/v2/package"
-    },
-    "MyGetApiKey": {
-      "value": null,
-      "isSecret": true,
+    "SourceVersion": {
+      "value": "HEAD",
       "allowOverride": true
     },
-    "SourceFolder": {
-      "value": "corert_$(Build.BuildId)",
-      "allowOverride": false
+    "system.debug": {
+      "value": "false",
+      "allowOverride": true
     },
-    "CloudDropAccountName": {
-      "value": "dotnetbuildoutput"
-    },
-    "CloudDropAccessToken": {
-      "value": null,
-      "isSecret": true
+    "TeamName": {
+      "value": "DotNetCore"
     },
     "UpdatePublishedVersions.AuthToken": {
       "value": null,
       "isSecret": true
     },
-    "VersionsRepoOwner": {
-      "value": "crummel",
-      "allowOverride": true
-    },
     "VersionsRepo": {
       "value": "dotnet_versions",
+      "allowOverride": true
+    },
+    "VersionsRepoOwner": {
+      "value": "crummel",
       "allowOverride": true
     }
   },
@@ -470,6 +447,7 @@
   "buildNumberFormat": "$(date:yyyyMMdd)$(rev:-rr)",
   "jobAuthorizationScope": "projectCollection",
   "jobTimeoutInMinutes": 120,
+  "jobCancelTimeoutInMinutes": 5,
   "repository": {
     "properties": {
       "labelSources": "0",
@@ -477,7 +455,9 @@
       "fetchDepth": "0",
       "gitLfsSupport": "false",
       "skipSyncSource": "false",
-      "cleanOptions": "3"
+      "cleanOptions": "3",
+      "checkoutNestedSubmodules": "false",
+      "labelSourcesFormat": "$(build.buildNumber)"
     },
     "id": "0a2b2664-c1be-429c-9b40-8a24dee27a4a",
     "type": "TfsGit",
@@ -487,27 +467,35 @@
     "clean": "true",
     "checkoutSubmodules": false
   },
+  "processParameters": {},
   "quality": "definition",
-  "defaultBranch": "refs/heads/master",
+  "drafts": [],
   "queue": {
+    "_links": {
+      "self": {
+        "href": "https://devdiv.visualstudio.com/_apis/build/Queues/330"
+      }
+    },
+    "id": 330,
+    "name": "DotNetCore-Build",
+    "url": "https://devdiv.visualstudio.com/_apis/build/Queues/330",
     "pool": {
       "id": 97,
       "name": "DotNetCore-Build"
-    },
-    "id": 330,
-    "name": "DotNetCore-Build"
+    }
   },
-  "path": "\\",
-  "type": "build",
   "id": 4508,
   "name": "DotNet-CoreRT-Windows",
-  "url": "https://devdiv.visualstudio.com/DefaultCollection/0bdbc590-a062-4c3f-b0f6-9383f67865ee/_apis/build/Definitions/4508",
+  "path": "\\",
+  "type": "build",
+  "queueStatus": "enabled",
   "project": {
     "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "name": "DevDiv",
-    "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
-    "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
+    "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items for Visual Studio and most active DevDiv products are in this account.",
+    "url": "https://devdiv.visualstudio.com/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418097423
+    "revision": 418099610,
+    "visibility": "organization"
   }
 }

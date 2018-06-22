@@ -540,7 +540,8 @@ namespace Internal.TypeSystem.TypesDebugInfo
             return classTypeIndex;
         }
 
-        public uint GetCompleteClassTypeIndex(ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptor classFieldsTypeDescriptior, DataFieldDescriptor[] fields)
+        public uint GetCompleteClassTypeIndex(ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptor classFieldsTypeDescriptior,
+                                              DataFieldDescriptor[] fields, StaticDataFieldDescriptor[] statics)
         {
             FieldListInProgress fieldList = default(FieldListInProgress);
             if ((classTypeDescriptor.BaseClassId != 0) || (fields != null && fields.Length > 0) || (classTypeDescriptor.IsStruct == 0))

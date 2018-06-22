@@ -40,7 +40,8 @@ public:
   unsigned GetCompleteClassTypeIndex(
       const ClassTypeDescriptor &ClassDescriptor,
       const ClassFieldsTypeDescriptior &ClassFieldsDescriptor,
-      const DataFieldDescriptor *FieldsDescriptors) override;
+      const DataFieldDescriptor *FieldsDescriptors,
+      const StaticDataFieldDescriptor *StaticsDescriptors) override;
 
   unsigned GetArrayTypeIndex(const ClassTypeDescriptor &ClassDescriptor,
                              const ArrayTypeDescriptor &ArrayDescriptor) override;

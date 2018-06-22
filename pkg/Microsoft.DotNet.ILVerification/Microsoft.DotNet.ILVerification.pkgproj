@@ -8,7 +8,7 @@
     <PackagePlatforms>x64;</PackagePlatforms>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>$(PackageSourceDirectory)\BuildIntegration\StrongNameKeys\ILVerify.snk</AssemblyOriginatorKeyFile>
-    <PackageTargetFramework>netcoreapp2.0</PackageTargetFramework>
+    <PackageTargetFramework>netcoreapp2.1</PackageTargetFramework>
     <!-- Override this property so that the package name won't look like runtime.[RID].[TFM].[ID] -->
     <PackageTargetRuntime></PackageTargetRuntime>
   </PropertyGroup>

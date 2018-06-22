@@ -33,7 +33,6 @@ namespace System.Threading
 
         public EventWaitHandle(bool initialState, EventResetMode mode, string name)
         {
-            VerifyNameForCreate(name);
             VerifyMode(mode);
 
             bool createdNew;
@@ -42,7 +41,6 @@ namespace System.Threading
 
         public EventWaitHandle(bool initialState, EventResetMode mode, string name, out bool createdNew)
         {
-            VerifyNameForCreate(name);
             VerifyMode(mode);
 
             CreateEventCore(initialState, mode, name, out createdNew);

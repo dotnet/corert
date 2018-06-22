@@ -10,19 +10,11 @@ namespace System.Threading
 {
     public partial class EventWaitHandle
     {
-        private const uint AccessRights = (uint)(Interop.Constants.MaximumAllowed | Interop.Constants.Synchronize | Interop.Constants.EventModifyState);
+        private const uint AccessRights = Interop.Kernel32.MAXIMUM_ALLOWED | Interop.Kernel32.SYNCHRONIZE | (uint)Interop.Constants.EventModifyState;
 
         private EventWaitHandle(SafeWaitHandle handle)
         {
             SafeWaitHandle = handle;
-        }
-
-        private static void VerifyNameForCreate(string name)
-        {
-            if (null != name && Interop.Kernel32.MAX_PATH < name.Length)
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Interop.Kernel32.MAX_PATH), nameof(name));
-            }
         }
 
         private void CreateEventCore(bool initialState, EventResetMode mode, string name, out bool createdNew)
@@ -69,11 +61,6 @@ namespace System.Threading
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
-            }
-
-            if (null != name && Interop.Kernel32.MAX_PATH < name.Length)
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Interop.Kernel32.MAX_PATH), nameof(name));
             }
 
             result = null;

@@ -10,7 +10,7 @@
     <SkipSigning>true</SkipSigning>
     <!-- Delete once we pick up fix for https://github.com/dotnet/roslyn/issues/8210 -->
     <DelaySign Condition="'$(OS)' != 'Windows_NT'">true</DelaySign>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
     <CopyNugetImplementations>false</CopyNugetImplementations>
     <!-- Force .dll extension even if output type is exe. -->
     <TargetExt>.dll</TargetExt>

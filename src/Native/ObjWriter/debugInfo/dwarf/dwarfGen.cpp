@@ -541,6 +541,84 @@ void LexicalScope::Dump(UserDefinedDwarfTypesBuilder *TypeBuilder, MCObjectStrea
   }
 }
 
+// StaticVarInfo
+
+class StaticVarInfo : public DwarfInfo
+{
+public:
+  StaticVarInfo(const DwarfStaticDataField *StaticField) : StaticField(StaticField) {}
+
+  void Dump(UserDefinedDwarfTypesBuilder *TypeBuilder, MCObjectStreamer *Streamer,
+      MCSection *TypeSection, MCSection *StrSection) override;
+
+protected:
+  void DumpStrings(MCObjectStreamer *Streamer) override {};
+  void DumpTypeInfo(MCObjectStreamer *Streamer, UserDefinedDwarfTypesBuilder *TypeBuilder) override;
+
+private:
+  const DwarfStaticDataField *StaticField;
+
+  void EmitLocation(MCObjectStreamer *Streamer);
+};
+
+void StaticVarInfo::Dump(UserDefinedDwarfTypesBuilder *TypeBuilder, MCObjectStreamer *Streamer,
+    MCSection *TypeSection, MCSection *StrSection) {
+  MCContext &context = Streamer->getContext();
+  MCSymbol *Sym = context.getOrCreateSymbol(Twine(StaticField->GetStaticDataName()));
+  if (Sym->isUndefined())
+    return;
+
+  DwarfInfo::Dump(TypeBuilder, Streamer, TypeSection, StrSection);
+}
+
+void StaticVarInfo::DumpTypeInfo(MCObjectStreamer *Streamer, UserDefinedDwarfTypesBuilder *TypeBuilder) {
+  // Abbrev Number
+  Streamer->EmitULEB128IntValue(DwarfAbbrev::VariableStatic);
+
+  // DW_AT_specification
+  EmitInfoOffset(Streamer, StaticField, 4);
+
+  // DW_AT_location
+  EmitLocation(Streamer);
+}
+
+void StaticVarInfo::EmitLocation(MCObjectStreamer *Streamer) {
+  MCContext &context = Streamer->getContext();
+  unsigned TargetPointerSize = context.getAsmInfo()->getCodePointerSize();
+
+  MCSymbol *Sym = context.getOrCreateSymbol(Twine(StaticField->GetStaticDataName()));
+
+  SmallString<128> Tmp;
+  raw_svector_ostream OSE(Tmp);
+  encodeULEB128(StaticField->GetStaticOffset(), OSE);
+  StringRef OffsetRepr = OSE.str();
+
+  unsigned Len = 1 /* DW_OP_addr */ + TargetPointerSize;
+
+  // Need double deref
+  if (StaticField->IsStaticDataInObject()) {
+    Len += (1 /* DW_OP_deref */) * 2;
+  }
+
+  if (StaticField->GetStaticOffset() != 0) {
+    Len += 1 /* DW_OP_plus_uconst */ + OffsetRepr.size();
+  }
+
+  Streamer->EmitULEB128IntValue(Len);
+  Streamer->EmitIntValue(dwarf::DW_OP_addr, 1);
+  Streamer->EmitSymbolValue(Sym, TargetPointerSize);
+
+  if (StaticField->IsStaticDataInObject()) {
+    Streamer->EmitIntValue(dwarf::DW_OP_deref, 1);
+    Streamer->EmitIntValue(dwarf::DW_OP_deref, 1);
+  }
+
+  if (StaticField->GetStaticOffset() != 0) {
+    Streamer->EmitIntValue(dwarf::DW_OP_plus_uconst, 1);
+    Streamer->EmitBytes(OffsetRepr);
+  }
+}
+
 // VarInfo
 
 VarInfo::VarInfo(const DebugVarInfo &Info, bool IsThis) :
@@ -842,7 +920,7 @@ void DwarfGen::EmitCompileUnit() {
 #ifdef FEATURE_LANGID_CS
   Streamer->EmitIntValue(DW_LANG_MICROSOFT_CSHARP, 2);
 #else
-  Streamer->EmitIntValue(dwarf::DW_LANG_C89, 2);
+  Streamer->EmitIntValue(dwarf::DW_LANG_C_plus_plus, 2);
 #endif
 
   // DW_AT_stmt_list
@@ -910,7 +988,7 @@ void DwarfGen::EmitAranges() {
   // The 4 byte length not including the 4 byte value for the length.
   Streamer->EmitIntValue(Length - 4, 4);
 
-  // he 2 byte version, which is 2.
+  // The 2 byte version, which is 2.
   Streamer->EmitIntValue(2, 2);
 
   // The 4 byte offset to the compile unit in the .debug_info from the start
@@ -963,6 +1041,15 @@ void DwarfGen::Finish() {
 
   for (auto &Subprogram : Subprograms) {
     Subprogram.Dump(TypeBuilder, Streamer, InfoSection, StrSection, LocSection);
+  }
+
+  // Dump static vars
+
+  for (const auto *ClassTypeInfo : TypeBuilder->GetClassesWithStaticFields()) {
+    for (const auto &StaticField : ClassTypeInfo->GetStaticFields()) {
+      StaticVarInfo Info(&StaticField);
+      Info.Dump(TypeBuilder, Streamer, InfoSection, StrSection);
+    }
   }
 
   // Add the NULL terminating the Compile Unit DIE's.

@@ -74,9 +74,10 @@ namespace ILCompiler.DependencyAnalysis
             return _dbgInfoWriter.GetClassTypeIndex(classTypeDescriptor);
         }
 
-        uint ITypesDebugInfoWriter.GetCompleteClassTypeIndex(ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptor classFieldsTypeDescriptior, DataFieldDescriptor[] fields)
+        uint ITypesDebugInfoWriter.GetCompleteClassTypeIndex(ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptor classFieldsTypeDescriptior,
+                                                             DataFieldDescriptor[] fields, StaticDataFieldDescriptor[] statics)
         {
-            return _dbgInfoWriter.GetCompleteClassTypeIndex(classTypeDescriptor, classFieldsTypeDescriptior, fields);
+            return _dbgInfoWriter.GetCompleteClassTypeIndex(classTypeDescriptor, classFieldsTypeDescriptior, fields, statics);
         }
 
         uint ITypesDebugInfoWriter.GetArrayTypeIndex(ClassTypeDescriptor classDescriptor, ArrayTypeDescriptor arrayTypeDescriptor)

@@ -5,9 +5,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if CORECLR
 using X86 = System.Runtime.Intrinsics.X86;
-#endif
 
 namespace System
 {
@@ -79,14 +77,6 @@ namespace System
         /// </summary>
         private static class DecCalc
         {
-            // Constant representing the negative number that is the closest possible
-            // Decimal value to -0m.
-            private const Decimal NearNegativeZero = -0.000000000000000000000000001m;
-
-            // Constant representing the positive number that is the closest possible
-            // Decimal value to +0m.
-            private const Decimal NearPositiveZero = +0.000000000000000000000000001m;
-
             private const int DEC_SCALE_MAX = 28;
 
             private const uint TenToPowerNine = 1000000000;
@@ -545,11 +535,7 @@ PosRem:
                 if (iHiRes > 2)
                 {
                     iNewScale = (int)iHiRes * 32 - 64 - 1;
-                    iNewScale -=
-#if CORECLR
-                        X86.Lzcnt.IsSupported ? (int)X86.Lzcnt.LeadingZeroCount(rgulRes[iHiRes]) :
-#endif
-                        LeadingZeroCount(rgulRes[iHiRes]);
+                    iNewScale -= X86.Lzcnt.IsSupported ? (int)X86.Lzcnt.LeadingZeroCount(rgulRes[iHiRes]) : LeadingZeroCount(rgulRes[iHiRes]);
 
                     // Multiply bit position by log10(2) to figure it's power of 10.
                     // We scale the log by 256.  log(2) = .30103, * 256 = 77.  Doing this 
@@ -1606,12 +1592,10 @@ ReturnZero:
                 // Round to integer
                 //
                 uint ulMant;
-#if CORECLR
                 // with SSE4.1 support ROUNDSD can be used
                 if (X86.Sse41.IsSupported)
                     ulMant = (uint)(int)Math.Round(dbl);
                 else
-#endif
                 {
                     ulMant = (uint)(int)dbl;
                     dbl -= (int)ulMant;  // difference between input & integer
@@ -1784,12 +1768,10 @@ ThrowOverflow:
                 // Round to int64
                 //
                 ulong ulMant;
-#if CORECLR
                 // with SSE4.1 support ROUNDSD can be used
                 if (X86.Sse41.IsSupported)
                     ulMant = (ulong)(long)Math.Round(dbl);
                 else
-#endif
                 {
                     ulMant = (ulong)(long)dbl;
                     dbl -= (long)ulMant;  // difference between input & integer
@@ -1979,7 +1961,7 @@ ThrowOverflow:
                     //
                     uint den = d2.Low;
                     if (den == 0)
-                        throw new DivideByZeroException(SR.Overflow_Decimal);
+                        throw new DivideByZeroException();
 
                     bufQuo.Low64 = d1.Low64;
                     bufQuo.U2 = d1.High;
@@ -2062,11 +2044,7 @@ ThrowOverflow:
                     if (ulTmp == 0)
                         ulTmp = d2.Mid;
 
-                    iCurScale =
-#if CORECLR
-                        X86.Lzcnt.IsSupported ? (int)X86.Lzcnt.LeadingZeroCount(ulTmp) :
-#endif
-                        LeadingZeroCount(ulTmp);
+                    iCurScale = X86.Lzcnt.IsSupported ? (int)X86.Lzcnt.LeadingZeroCount(ulTmp) : LeadingZeroCount(ulTmp);
 
                     // Shift both dividend and divisor left by iCurScale.
                     // 
@@ -2239,52 +2217,60 @@ ThrowOverflow:
             //**********************************************************************
             // VarDecMod - Computes the remainder between two decimals
             //**********************************************************************
-            internal static Decimal VarDecMod(ref Decimal d1, ref Decimal d2)
+            internal static void VarDecMod(ref Decimal d1, ref Decimal d2)
             {
-                // OleAut doesn't provide a VarDecMod.            
+                if ((d2.lo | d2.mid | d2.hi) == 0)
+                    throw new DivideByZeroException();
+
+                if ((d1.lo | d1.mid | d1.hi) == 0)
+                    return;
 
                 // In the operation x % y the sign of y does not matter. Result will have the sign of x.
                 d2.uflags = (d2.uflags & ~SignMask) | (d1.uflags & SignMask);
 
+                int cmp = VarDecCmpSub(ref d1, ref d2);
+                if (cmp == 0)
+                {
+                    d1.lo = 0;
+                    d1.mid = 0;
+                    d1.hi = 0;
+                    if (d2.uflags > d1.uflags)
+                        d1.uflags = d2.uflags;
+                    return;
+                }
+                if ((cmp ^ (int)(d1.uflags & SignMask)) < 0)
+                    return;
 
                 // This piece of code is to work around the fact that Dividing a decimal with 28 digits number by decimal which causes
                 // causes the result to be 28 digits, can cause to be incorrectly rounded up.
                 // eg. Decimal.MaxValue / 2 * Decimal.MaxValue will overflow since the division by 2 was rounded instead of being truncked.
-                if (Math.Abs(d1) < Math.Abs(d2))
-                {
-                    return d1;
-                }
-                d1 -= d2;
-
-                if (d1 == 0)
-                {
-                    // The sign of D1 will be wrong here. Fall through so that we still get a DivideByZeroException
-                    d1.uflags = (d1.uflags & ~SignMask) | (d2.uflags & SignMask);
-                }
+                Decimal tmp = d2;
+                DecAddSub(ref d1, ref tmp, true);
 
                 // Formula:  d1 - (RoundTowardsZero(d1 / d2) * d2)            
-                Decimal dividedResult = Truncate(d1 / d2);
-                Decimal multipliedResult = dividedResult * d2;
-                Decimal result = d1 - multipliedResult;
+                tmp = d1;
+                VarDecDiv(ref tmp, ref d2);
+                Truncate(ref tmp);
+                VarDecMul(ref tmp, ref d2);
+                uint flags = d1.uflags;
+                DecAddSub(ref d1, ref tmp, true);
                 // See if the result has crossed 0
-                if ((d1.uflags & SignMask) != (result.uflags & SignMask))
+                if (((flags ^ d1.uflags) & SignMask) != 0)
                 {
-                    if (NearNegativeZero <= result && result <= NearPositiveZero)
+                    if ((d1.Low | d1.Mid | d1.High) == 0 || d1.Scale == DEC_SCALE_MAX && d1.Low64 == 1 && d1.High == 0)
                     {
                         // Certain Remainder operations on decimals with 28 significant digits round
-                        // to [+-]0.000000000000000000000000001m instead of [+-]0m during the intermediate calculations. 
+                        // to [+-]0.0000000000000000000000000001m instead of [+-]0m during the intermediate calculations. 
                         // 'zero' results just need their sign corrected.
-                        result.uflags = (result.uflags & ~SignMask) | (d1.uflags & SignMask);
+                        d1.uflags ^= SignMask;
                     }
                     else
                     {
                         // If the division rounds up because it runs out of digits, the multiplied result can end up with a larger
                         // absolute value and the result of the formula crosses 0. To correct it can add the divisor back.
-                        result += d2;
+                        DecAddSub(ref d1, ref d2, false);
                     }
                 }
-
-                return result;
             }
 
             internal enum RoundingMode

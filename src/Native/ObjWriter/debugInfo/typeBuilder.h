@@ -65,6 +65,12 @@ extern "C" struct DataFieldDescriptor {
   const char *Name;
 };
 
+extern "C" struct StaticDataFieldDescriptor {
+  const char *StaticDataName;
+  uint64 StaticOffset;
+  int IsStaticDataInObject;
+};
+
 extern "C" struct ClassFieldsTypeDescriptior {
   uint64 Size;
   int32_t FieldsCount;
@@ -125,7 +131,8 @@ public:
   virtual unsigned GetCompleteClassTypeIndex(
       const ClassTypeDescriptor &ClassDescriptor,
       const ClassFieldsTypeDescriptior &ClassFieldsDescriptor,
-      const DataFieldDescriptor *FieldsDescriptors) = 0;
+      const DataFieldDescriptor *FieldsDescriptors,
+      const StaticDataFieldDescriptor *StaticsDescriptors) = 0;
 
   virtual unsigned GetArrayTypeIndex(const ClassTypeDescriptor &ClassDescriptor,
                                      const ArrayTypeDescriptor &ArrayDescriptor) = 0;

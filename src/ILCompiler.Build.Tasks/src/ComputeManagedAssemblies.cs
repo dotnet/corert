@@ -24,7 +24,7 @@ namespace Build.Tasks
         }
 
         /// <summary>
-        /// The CoreRT-specific System.Private.* assemblies that must be used instead of the netcoreapp2.0 versions.
+        /// The CoreRT-specific System.Private.* assemblies that must be used instead of the netcoreapp2.1 versions.
         /// </summary>
         [Required]
         public ITaskItem[] SdkAssemblies

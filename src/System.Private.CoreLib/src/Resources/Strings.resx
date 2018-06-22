@@ -2779,4 +2779,7 @@
   <data name="InvalidOperation_WrongAsyncResultOrEndWriteCalledMultiple" xml:space="preserve">
     <value>Either the IAsyncResult object did not come from the corresponding async method on this type, or EndWrite was called multiple times with the same IAsyncResult.</value>
   </data>
+  <data name="ArgumentOutOfRange_Week_ISO" xml:space="preserve">
+    <value>The week parameter must be in the range 1 through 53.</value>
+  </data>
 </root>
