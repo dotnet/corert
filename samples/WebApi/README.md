@@ -48,7 +48,9 @@ services.AddMvc();
 to
 
 ```csharp
-services.Add(new ServiceDescriptor(typeof(ApplicationPartManager), new ApplicationPartManager()));
+var applicationPartManager = new ApplicationPartManager();
+applicationPartManager.ApplicationParts.Add(new AssemblyPart(typeof(Startup).Assembly));
+services.Add(new ServiceDescriptor(typeof(ApplicationPartManager), applicationPartManager));
 
 services.AddMvcCore().AddJsonFormatters();
 ```
