@@ -206,7 +206,7 @@ namespace System.Threading
             {
                 if (handleValue != IntPtr.Zero && handleValue != (IntPtr)(-1))
                 {
-                    EventWaitHandle.Set(handleValue);
+                    EventWaitHandle.Set(handle);
                 }
             }
             finally
