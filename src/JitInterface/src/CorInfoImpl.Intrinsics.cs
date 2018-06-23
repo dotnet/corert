@@ -9,7 +9,7 @@ using Internal.TypeSystem;
 
 namespace Internal.JitInterface
 {
-    internal unsafe partial class CorInfoImpl
+    public unsafe partial class CorInfoImpl
     {
         private struct IntrinsicKey
         {

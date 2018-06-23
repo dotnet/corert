@@ -282,7 +282,7 @@ namespace ILCompiler
 
             // TODO: compiler switch for SIMD support?
             var simdVectorLength = (_isCppCodegen || _isWasmCodegen) ? SimdVectorLength.None : SimdVectorLength.Vector128Bit;
-            var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, _isReadyToRunCodeGen ? TargetAbi.Jit : TargetAbi.CoreRT, simdVectorLength);
+            var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, TargetAbi.CoreRT, simdVectorLength);
             var typeSystemContext = new CompilerTypeSystemContext(targetDetails, genericsMode);
 
             //
@@ -346,7 +346,8 @@ namespace ILCompiler
                         entrypointModule = module;
                     }
 
-                    compilationRoots.Add(new ExportedMethodsRootProvider(module));
+                    if (!_isReadyToRunCodeGen)
+                        compilationRoots.Add(new ExportedMethodsRootProvider(module));
                 }
 
                 if (entrypointModule != null)
@@ -384,7 +385,8 @@ namespace ILCompiler
                     if (entrypointModule == null && !_nativeLib)
                         throw new Exception("No entrypoint module");
 
-                    compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
+                    if (!_isReadyToRunCodeGen)
+                        compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
                     compilationGroup = new SingleFileCompilationModuleGroup();
                 }
 
@@ -453,7 +455,7 @@ namespace ILCompiler
 
             useScanner &= !_noScanner;
 
-            bool supportsReflection = !_isWasmCodegen && !_isCppCodegen && _systemModuleName == DefaultSystemModule;
+            bool supportsReflection = !_isReadyToRunCodeGen && !_isWasmCodegen && !_isCppCodegen && _systemModuleName == DefaultSystemModule;
 
             MetadataManager compilationMetadataManager = supportsReflection ? metadataManager : (MetadataManager)new EmptyMetadataManager(typeSystemContext);
             ILScanResults scanResults = null;

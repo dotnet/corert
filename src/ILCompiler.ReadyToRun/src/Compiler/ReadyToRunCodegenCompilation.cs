@@ -14,6 +14,7 @@ namespace ILCompiler
 {
     public sealed class ReadyToRunCodegenCompilation : Compilation
     {
+        private CorInfoImpl _corInfo;
         private JitConfigProvider _jitConfigProvider;
         string _inputFilePath;
 
@@ -22,10 +23,12 @@ namespace ILCompiler
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             ReadyToRunCodegenNodeFactory nodeFactory,
             IEnumerable<ICompilationRootProvider> roots,
+            DebugInformationProvider debugInformationProvider,
             Logger logger,
+            DevirtualizationManager devirtualizationManager,
             JitConfigProvider configProvider,
             string inputFilePath)
-            : base(dependencyGraph, nodeFactory, GetCompilationRoots(roots, nodeFactory), null, null, logger)
+            : base(dependencyGraph, nodeFactory, roots, debugInformationProvider, devirtualizationManager, logger)
         {
             NodeFactory = nodeFactory;
             _jitConfigProvider = configProvider;
@@ -40,17 +43,50 @@ namespace ILCompiler
 
         protected override void CompileInternal(string outputFile, ObjectDumper dumper)
         {
-            _dependencyGraph.ComputeMarkedNodes();
+            _corInfo = new CorInfoImpl(this, _jitConfigProvider);
 
+            _dependencyGraph.ComputeMarkedNodes();
             var nodes = _dependencyGraph.MarkedNodeList;
 
+            NodeFactory.SetMarkingComplete();
             ReadyToRunObjectWriter.EmitObject(_inputFilePath, outputFile, nodes, NodeFactory);
         }
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
-            // Prevent the CoreRT NodeFactory adding various tables that aren't needed for ready-to-run images.
-            // Ie, module header, metadata table, various type system tables.
+            foreach (DependencyNodeCore<NodeFactory> dependency in obj)
+            {
+                var methodCodeNodeNeedingCode = dependency as MethodCodeNode;
+                if (methodCodeNodeNeedingCode == null)
+                {
+                    // To compute dependencies of the shadow method that tracks dictionary
+                    // dependencies we need to ensure there is code for the canonical method body.
+                    var dependencyMethod = (ShadowConcreteMethodNode)dependency;
+                    methodCodeNodeNeedingCode = (MethodCodeNode)dependencyMethod.CanonicalMethodNode;
+                }
+
+                // We might have already compiled this method.
+                if (methodCodeNodeNeedingCode.StaticDependenciesAreComputed)
+                    continue;
+
+                MethodDesc method = methodCodeNodeNeedingCode.Method;
+
+                if (Logger.IsVerbose)
+                {
+                    string methodName = method.ToString();
+                    Logger.Writer.WriteLine("Compiling " + methodName);
+                }
+
+                try
+                {
+                    _corInfo.CompileMethod(methodCodeNodeNeedingCode);
+                }
+                catch (TypeSystemException ex)
+                {
+                    // If compilation fails, don't emit code for this method. It will be Jitted at runtime
+                    Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because: {ex.Message}");
+                }
+            }
         }
     }
 }

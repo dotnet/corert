@@ -59,7 +59,7 @@ namespace ILCompiler
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);
             var jitConfig = new JitConfigProvider(Enumerable.Empty<CorJitFlag>(), _ryujitOptions);
 
-            return new ReadyToRunCodegenCompilation(graph, factory, _compilationRoots, _logger, jitConfig, _inputFilePath);
+            return new ReadyToRunCodegenCompilation(graph, factory, _compilationRoots, _debugInformationProvider, _logger, _devirtualizationManager, jitConfig, _inputFilePath);
         }
     }
 }
