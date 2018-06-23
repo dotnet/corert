@@ -371,6 +371,7 @@ namespace Internal.Runtime.Augments
             return JoinInternal(millisecondsTimeout);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
         public static void Sleep(int millisecondsTimeout) => SleepInternal(VerifyTimeoutMilliseconds(millisecondsTimeout));
 
         /// <summary>
@@ -382,6 +383,8 @@ namespace Internal.Runtime.Augments
         internal static readonly int OptimalMaxSpinWaitsPerSpinIteration = 64;
 
         public static void SpinWait(int iterations) => RuntimeImports.RhSpinWait(iterations);
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
         public static bool Yield() => RuntimeImports.RhYield();
 
         public void Start() => StartInternal(null);
