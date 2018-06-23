@@ -136,6 +136,7 @@ namespace System.Threading
         {
             Debug.Assert(_pinnedData == null);
 
+            bool success = false;
             try
             {
                 if (_userObject != null)
@@ -157,7 +158,9 @@ namespace System.Threading
                     }
                 }
 
-                _pNativeOverlapped = (NativeOverlapped*)Interop.MemAlloc((UIntPtr)(sizeof(NativeOverlapped) + sizeof(GCHandle)));
+                NativeOverlapped* pNativeOverlapped = (NativeOverlapped*)Interop.MemAlloc((UIntPtr)(sizeof(NativeOverlapped) + sizeof(GCHandle)));
+                *(GCHandle*)(pNativeOverlapped + 1) = default(GCHandle);
+                _pNativeOverlapped = pNativeOverlapped;
 
                 _pNativeOverlapped->InternalLow = default;
                 _pNativeOverlapped->InternalHigh = default;
@@ -165,16 +168,15 @@ namespace System.Threading
                 _pNativeOverlapped->OffsetHigh = _offsetHigh;
                 _pNativeOverlapped->EventHandle = _eventHandle;
 
-                GCHandle *pHandle = (GCHandle*)(_pNativeOverlapped + 1);
-                *pHandle = default(GCHandle);
+                *(GCHandle*)(_pNativeOverlapped + 1) = GCHandle.Alloc(this);
 
-                *pHandle = GCHandle.Alloc(this);
-
+                success = true;
                 return _pNativeOverlapped;
             }
             finally
             {
-                FreeNativeOverlapped();
+                if (!success)
+                    FreeNativeOverlapped();
             }
         }
 
