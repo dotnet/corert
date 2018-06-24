@@ -7,21 +7,21 @@ using Internal.TypeSystem;
 
 namespace Internal.IL.Stubs
 {
-    public partial class DelegateMarshallingMethodThunk : IPrefixMangledType
+    public partial class CalliMarshallingMethodThunk : IPrefixMangledSignature
     {
-        TypeDesc IPrefixMangledType.BaseType
+        MethodSignature IPrefixMangledSignature.BaseSignature
         {
             get
             {
-                return _delegateType;
+                return _targetSignature;
             }
         }
 
-        string IPrefixMangledType.Prefix
+        string IPrefixMangledSignature.Prefix
         {
             get
             {
-                return NamePrefix;
+                return "Calli";
             }
         }
     }
