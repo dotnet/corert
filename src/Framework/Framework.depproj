@@ -5,8 +5,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <NuGetTargetMoniker>.NETCoreApp,Version=v2.2</NuGetTargetMoniker>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <NuGetTargetMoniker>.NETCoreApp,Version=v3.0</NuGetTargetMoniker>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
     <RuntimeIdentifiers>$(NuPkgRid)</RuntimeIdentifiers>
     <RidSpecificAssets>true</RidSpecificAssets>
   </PropertyGroup>
