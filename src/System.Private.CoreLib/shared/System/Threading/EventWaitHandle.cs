@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.IO;
 
 namespace System.Threading
@@ -23,6 +24,8 @@ namespace System.Threading
         {
             if (mode != EventResetMode.AutoReset && mode != EventResetMode.ManualReset)
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(mode));
+
+            Debug.Assert(name == null);
 
             CreateEventCore(initialState, mode, name, out createdNew);
         }
