@@ -10,21 +10,6 @@ internal static partial class Interop
 {
     internal static partial class mincore
     {
-        [DllImport(Libraries.Kernel32, EntryPoint = "CreateEventExW", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal extern static SafeWaitHandle CreateEventEx(IntPtr lpEventAttributes, string lpName, uint dwFlags, uint dwDesiredAccess);
-
-        [DllImport(Libraries.Kernel32, EntryPoint = "OpenEventW", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal extern static SafeWaitHandle OpenEvent(uint dwDesiredAccess, bool bInheritHandle, string lpName);
-
-        [DllImport(Libraries.Kernel32)]
-        internal extern static bool ResetEvent(IntPtr hEvent);
-
-        [DllImport(Libraries.Kernel32)]
-        internal extern static bool SetEvent(IntPtr hEvent);
-
-        [DllImport(Libraries.Kernel32)]
-        internal extern static bool SetEvent(SafeWaitHandle hEvent);
-
         [DllImport(Libraries.Kernel32)]
         internal extern static uint WaitForMultipleObjectsEx(uint nCount, IntPtr lpHandles, bool bWaitAll, uint dwMilliseconds, bool bAlertable);
 

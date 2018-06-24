@@ -186,7 +186,7 @@ namespace System.Threading
 
             if ((safeWaitHandle != null) && !safeWaitHandle.IsInvalid)
             {
-                Interop.mincore.SetEvent(safeWaitHandle);
+                Interop.Kernel32.SetEvent(safeWaitHandle);
             }
         }
 
