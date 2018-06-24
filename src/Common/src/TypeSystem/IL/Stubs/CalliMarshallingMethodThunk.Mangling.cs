@@ -7,9 +7,6 @@ using Internal.TypeSystem;
 
 namespace Internal.IL.Stubs
 {
-    /// <summary>
-    /// contains functionality related to name mangling
-    /// </summary>
     public partial class CalliMarshallingMethodThunk : IPrefixMangledSignature
     {
         MethodSignature IPrefixMangledSignature.BaseSignature

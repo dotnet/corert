@@ -11,7 +11,7 @@ using Internal.TypeSystem.Ecma;
 namespace Internal.IL.Stubs
 {
     /// <summary>
-    /// Thunk to marshal delegate parameters and invoke the appropriate delegate function pointer
+    /// Thunk to marshal calli PInvoke parameters and invoke the appropriate function pointer
     /// </summary>
     public partial class CalliMarshallingMethodThunk : ILStubMethod
     {
