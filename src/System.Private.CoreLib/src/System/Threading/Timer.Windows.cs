@@ -66,7 +66,7 @@ namespace System.Threading
     {
         private void SignalNoCallbacksRunning()
         {
-            Interop.mincore.SetEvent(_notifyWhenNoCallbacksRunning.SafeWaitHandle);
+            Interop.Kernel32.SetEvent(_notifyWhenNoCallbacksRunning.SafeWaitHandle);
         }
     }
 }
