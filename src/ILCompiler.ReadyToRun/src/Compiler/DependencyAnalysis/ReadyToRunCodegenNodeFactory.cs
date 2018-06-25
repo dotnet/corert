@@ -31,9 +31,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public RuntimeFunctionsTableNode RuntimeFunctionsTable;
 
-        public EntryPointTableNode MethodEntryPointTable;
+        public MethodEntryPointTableNode MethodEntryPointTable;
 
-        public EntryPointTableNode InstanceEntryPointTable;
+        public InstanceEntryPointTableNode InstanceEntryPointTable;
 
         public TypesTableNode TypesTable;
 
@@ -65,10 +65,10 @@ namespace ILCompiler.DependencyAnalysis
             RuntimeFunctionsTable = new RuntimeFunctionsTableNode(Target);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.RuntimeFunctions, RuntimeFunctionsTable, RuntimeFunctionsTable);
 
-            MethodEntryPointTable = new EntryPointTableNode(Target, instanceEntryPoints: false);
+            MethodEntryPointTable = new MethodEntryPointTableNode(Target);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.MethodDefEntryPoints, MethodEntryPointTable, MethodEntryPointTable);
 
-            InstanceEntryPointTable = new EntryPointTableNode(Target, instanceEntryPoints: true);
+            InstanceEntryPointTable = new InstanceEntryPointTableNode(Target);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.InstanceMethodEntryPoints, InstanceEntryPointTable, InstanceEntryPointTable);
 
             TypesTable = new TypesTableNode(Target);

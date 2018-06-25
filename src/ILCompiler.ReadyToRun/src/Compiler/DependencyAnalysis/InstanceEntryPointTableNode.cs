@@ -16,7 +16,7 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class EntryPointTableNode : HeaderTableNode
+    public class InstanceEntryPointTableNode : HeaderTableNode
     {
         private struct EntryPoint
         {
@@ -38,8 +38,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        bool _instanceEntryPoints;
-        
         List<EntryPoint> _ridToEntryPoint;
 
         List<byte[]> _uniqueFixups;
@@ -48,11 +46,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         List<byte[]> _uniqueSignatures;
         Dictionary<byte[], int> _uniqueSignatureIndex;
         
-        public EntryPointTableNode(TargetDetails target, bool instanceEntryPoints)
+        public InstanceEntryPointTableNode(TargetDetails target)
             : base(target)
         {
-            _instanceEntryPoints = instanceEntryPoints;
-
             _ridToEntryPoint = new List<EntryPoint>();
 
             _uniqueFixups = new List<byte[]>();
@@ -65,7 +61,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append(_instanceEntryPoints ? "__ReadyToRunInstanceEntryPointTable" : "__ReadyToRunMethodEntryPointTable");
+            sb.Append("__ReadyToRunInstanceEntryPointTable");
         }
 
         public void Add(MethodCodeNode methodNode, int methodIndex)
@@ -122,42 +118,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            return _instanceEntryPoints ? GetInstanceTableData(factory, relocsOnly) : GetMethodTableData(factory, relocsOnly);
-        }
-
-        private ObjectData GetMethodTableData(NodeFactory factory, bool relocOnly)
-        {
-            NativeWriter arrayWriter = new NativeWriter();
-
-            Section arraySection = arrayWriter.NewSection();
-            VertexArray vertexArray = new VertexArray(arraySection);
-            arraySection.Place(vertexArray);
-            BlobVertex[] fixupBlobs = PlaceBlobs(arraySection, _uniqueFixups);
-
-            for (int rid = 0; rid < _ridToEntryPoint.Count; rid++)
-            {
-                EntryPoint entryPoint = _ridToEntryPoint[rid];
-                if (!entryPoint.IsNull)
-                {
-                    BlobVertex fixupBlobVertex = (entryPoint.FixupIndex >= 0 ? fixupBlobs[entryPoint.FixupIndex] : null);
-                    EntryPointVertex entryPointVertex = new EntryPointVertex((uint)entryPoint.MethodIndex, fixupBlobVertex);
-                    vertexArray.Set(rid, entryPointVertex);
-                }
-            }
-
-            vertexArray.ExpandLayout();
-
-            MemoryStream arrayContent = new MemoryStream();
-            arrayWriter.Save(arrayContent);
-            return new ObjectData(
-                data: arrayContent.ToArray(),
-                relocs: null,
-                alignment: 8,
-                definedSymbols: new ISymbolDefinitionNode[] { this });
-        }
-
-        private ObjectData GetInstanceTableData(NodeFactory factory, bool relocOnly)
-        {
             NativeWriter hashtableWriter = new NativeWriter();
 
             Section hashtableSection = hashtableWriter.NewSection();
@@ -201,6 +161,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return blobVertices;
         }
 
-        protected override int ClassCode => 787556329;
+        protected override int ClassCode => -348722540;
     }
 }
