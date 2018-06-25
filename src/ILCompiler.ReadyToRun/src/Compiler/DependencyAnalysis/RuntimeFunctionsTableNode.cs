@@ -14,41 +14,20 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class RuntimeFunctionsTableNode : ObjectNode, ISymbolDefinitionNode
+    public class RuntimeFunctionsTableNode : HeaderTableNode
     {
-        TargetDetails _target;
-        
         List<MethodCodeNode> _methodNodes;
         
         public RuntimeFunctionsTableNode(TargetDetails target)
+            : base(target)
         {
-            _target = target;
             _methodNodes = new List<MethodCodeNode>();
         }
         
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
             sb.Append("__ReadyToRunRuntimeFunctionsTable");
-        }
-
-        public int Offset => 0;
-
-        public override bool IsShareable => false;
-
-        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
-
-        public override bool StaticDependenciesAreComputed => true;
-
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                if (_target.IsWindows)
-                    return ObjectNodeSection.ReadOnlyDataSection;
-                else
-                    return ObjectNodeSection.DataSection;
-            }
         }
 
         public int Add(MethodCodeNode method)
@@ -65,7 +44,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Add the symbol representing this object node
             runtimeFunctionsBuilder.AddSymbol(this);
 
-            int gcInfoGlobalOffset = (_target.Architecture == TargetArchitecture.X64 ? 3 : 2) * sizeof(int) * _methodNodes.Count;
+            int gcInfoGlobalOffset = (Target.Architecture == TargetArchitecture.X64 ? 3 : 2) * sizeof(int) * _methodNodes.Count;
             ArrayBuilder<byte> uniqueGCInfoBuilder = new ArrayBuilder<byte>();
             Dictionary<byte[], int> uniqueGCInfoOffsets = new Dictionary<byte[], int>(ByteArrayComparer.Instance);
 
@@ -73,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 // StartOffset of the runtime function
                 runtimeFunctionsBuilder.EmitReloc(methodNode, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: 0);
-                if (_target.Architecture == TargetArchitecture.X64)
+                if (Target.Architecture == TargetArchitecture.X64)
                 {
                     // On Amd64, the 2nd word contains the EndOffset of the runtime function
                     int methodLength = methodNode.GetData(factory, relocsOnly).Data.Length;

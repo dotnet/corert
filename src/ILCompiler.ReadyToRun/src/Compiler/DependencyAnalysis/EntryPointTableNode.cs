@@ -16,7 +16,7 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class EntryPointTableNode : ObjectNode, ISymbolDefinitionNode
+    public class EntryPointTableNode : HeaderTableNode
     {
         private struct EntryPoint
         {
@@ -38,7 +38,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        TargetDetails _target;
         bool _instanceEntryPoints;
         
         List<EntryPoint> _ridToEntryPoint;
@@ -50,8 +49,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         Dictionary<byte[], int> _uniqueSignatureIndex;
         
         public EntryPointTableNode(TargetDetails target, bool instanceEntryPoints)
+            : base(target)
         {
-            _target = target;
             _instanceEntryPoints = instanceEntryPoints;
 
             _ridToEntryPoint = new List<EntryPoint>();
@@ -63,29 +62,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _uniqueSignatureIndex = new Dictionary<byte[], int>(ByteArrayComparer.Instance);
         }
         
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
             sb.Append(_instanceEntryPoints ? "__ReadyToRunInstanceEntryPointTable" : "__ReadyToRunMethodEntryPointTable");
-        }
-
-        public int Offset => 0;
-
-        public override bool IsShareable => false;
-
-        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
-
-        public override bool StaticDependenciesAreComputed => true;
-
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                if (_target.IsWindows)
-                    return ObjectNodeSection.ReadOnlyDataSection;
-                else
-                    return ObjectNodeSection.DataSection;
-            }
         }
 
         public void Add(MethodCodeNode methodNode, int methodIndex)

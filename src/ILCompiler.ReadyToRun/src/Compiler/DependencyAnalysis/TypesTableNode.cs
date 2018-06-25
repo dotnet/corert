@@ -16,41 +16,20 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class TypesTableNode : ObjectNode, ISymbolDefinitionNode
+    public class TypesTableNode : HeaderTableNode
     {
-        TargetDetails _target;
-        
         List<(int Rid, EETypeNode Node)> _eeTypeNodes;
         
         public TypesTableNode(TargetDetails target)
+            : base(target)
         {
-            _target = target;
             _eeTypeNodes = new List<(int Rid, EETypeNode Node)>();
         }
         
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
             sb.Append("__ReadyToRunAvailableTypesTable");
-        }
-
-        public int Offset => 0;
-
-        public override bool IsShareable => false;
-
-        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
-
-        public override bool StaticDependenciesAreComputed => true;
-
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                if (_target.IsWindows)
-                    return ObjectNodeSection.ReadOnlyDataSection;
-                else
-                    return ObjectNodeSection.DataSection;
-            }
         }
 
         public int Add(EETypeNode eeTypeNode)

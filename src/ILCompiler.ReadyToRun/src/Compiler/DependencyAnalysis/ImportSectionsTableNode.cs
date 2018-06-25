@@ -64,42 +64,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         };
     };
     
-    public class ImportSectionsTableNode : ObjectNode, ISymbolDefinitionNode
+    public class ImportSectionsTableNode : HeaderTableNode
     {
-        TargetDetails _target;
-        
         List<CorCompileImportSection> _importSections;
         
         public ImportSectionsTableNode(TargetDetails target)
+            : base(target)
         {
-            _target = target;
-
             _importSections = new List<CorCompileImportSection>();
         }
         
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
             sb.Append("__CorCompileImportSections");
-        }
-
-        public int Offset => 0;
-
-        public override bool IsShareable => false;
-
-        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
-
-        public override bool StaticDependenciesAreComputed => true;
-
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                if (_target.IsWindows)
-                    return ObjectNodeSection.ReadOnlyDataSection;
-                else
-                    return ObjectNodeSection.DataSection;
-            }
         }
 
         public void Add(int sectionIndex, ushort flags, byte type, byte entrySize, ISymbolNode signatures, ISymbolNode auxiliaryData)

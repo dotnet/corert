@@ -59,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis
             Header = new HeaderNode(Target);
             graph.AddRoot(Header, "ReadyToRunHeader is always generated");
 
-            var compilerIdentifierNode = new CompilerIdentifierNode();
+            var compilerIdentifierNode = new CompilerIdentifierNode(Target);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.CompilerIdentifier, compilerIdentifierNode, compilerIdentifierNode);
 
             RuntimeFunctionsTable = new RuntimeFunctionsTableNode(Target);

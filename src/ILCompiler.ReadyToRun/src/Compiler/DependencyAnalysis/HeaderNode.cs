@@ -19,6 +19,37 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public const ushort CurrentMinorVersion = 1;
     }
 
+    public abstract class HeaderTableNode : ObjectNode, ISymbolDefinitionNode
+    {
+        public TargetDetails Target { get; private set; }
+        
+        public HeaderTableNode(TargetDetails target)
+        {
+            Target = target;
+        }
+
+        public abstract void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb);
+
+        public int Offset => 0;
+
+        public override bool IsShareable => false;
+
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
+
+        public override bool StaticDependenciesAreComputed => true;
+
+        public override ObjectNodeSection Section
+        {
+            get
+            {
+                if (Target.IsWindows)
+                    return ObjectNodeSection.ReadOnlyDataSection;
+                else
+                    return ObjectNodeSection.DataSection;
+            }
+        }
+    }
+
     public class HeaderNode : ObjectNode, ISymbolDefinitionNode
     {
         struct HeaderItem
