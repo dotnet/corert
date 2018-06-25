@@ -1596,7 +1596,7 @@ namespace Internal.NativeFormat
 #endif
     class EntryPointWithBlobVertex : EntryPointVertex
     {
-        BlobVertex _blob;
+        private BlobVertex _blob;
     
         public EntryPointWithBlobVertex(uint methodIndex, BlobVertex fixups, BlobVertex blob)
             : base(methodIndex, fixups)
