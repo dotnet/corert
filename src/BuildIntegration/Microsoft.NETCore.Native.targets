@@ -91,7 +91,8 @@ See the LICENSE file in the project root for more information.
     <PrivateSdkAssemblies Include="$(IlcPath)\sdk\*.dll" />
   </ItemGroup>
   <ItemGroup>
-    <FrameworkAssemblies Include="$(IlcPath)\framework\*.dll" />
+    <!-- Exclude clrcompression.dll for now https://github.com/dotnet/corert/issues/5496 -->
+    <FrameworkAssemblies Include="$(IlcPath)\framework\*.dll" Exclude="$(IlcPath)\framework\clrcompression.dll" />
   </ItemGroup>
 
   <ItemGroup>
