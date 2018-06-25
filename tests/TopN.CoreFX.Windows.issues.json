@@ -776,6 +776,18 @@
             "classes": null,
             "methods": [
                 {
+                    "name": "System.Tests.TupleTests.CompareTo",
+                    "reason": "Access Violation"
+                },
+                {
+                    "name": "System.Tests.TupleTests.Equals_GetHashCode",
+                    "reason": "Access Violation"
+                },
+                {
+                    "name": "System.Tests.ArrayTests.Sort_Array_Array_NonGeneric",
+                    "reason": "Access Violation"
+                },
+                {
                     "name": "System.Reflection.Tests.MethodInfoTests.TestEquality2",
                     "reason": "Xunit.Sdk.EqualException"
                 },
