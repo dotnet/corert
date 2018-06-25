@@ -14,6 +14,7 @@
     <ProjectReference Include="..\..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj" />
     <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj" />
     <ProjectReference Include="..\..\ILCompiler.Compiler\src\ILCompiler.Compiler.csproj" />
+    <ProjectReference Include="..\..\System.Private.Reflection.Metadata\System.Private.Reflection.Metadata.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -30,6 +31,11 @@
     <Compile Include="Compiler\DependencyAnalysis\CompilerIdentifierNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunCodegenNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CoreCLRReadyToRunHeaderNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\CoreCLRReadyToRunRuntimeFunctionsTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\CoreCLRReadyToRunEntryPointTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\CoreCLRReadyToRunTypesTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\CoreCLRReadyToRunImportSectionsTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ByteArrayComparer.cs" />
     <Compile Include="Compiler\ReadyToRunCodegenCompilation.cs" />
     <Compile Include="Compiler\ReadyToRunCodegenCompilationBuilder.cs" />
     <Compile Include="Compiler\ReadyToRunNodeMangler.cs" />
