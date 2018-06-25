@@ -21,7 +21,6 @@
   <ItemGroup>
     <!-- Pickup a few selected aot-specific files from uapaot instead -->
     <FileToInclude Include="System.Linq.Expressions" />
-    <FileToInclude Include="System.Reflection.Primitives" />
     <FileToInclude Include="System.Runtime.InteropServices" />
     <FileToInclude Include="System.Text.RegularExpressions" />
     <FileToInclude Include="System.Private.Xml" />

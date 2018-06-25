@@ -31,15 +31,14 @@
   <ItemGroup>
     <!-- Pickup a few selected aot-specific files from uapaot instead -->
     <FileToExclude Include="System.Linq.Expressions" />
-    <FileToExclude Include="System.Reflection.Primitives" />
     <FileToExclude Include="System.Runtime.InteropServices" />
     <FileToExclude Include="System.Text.RegularExpressions" />
+    <FileToExclude Include="System.Private.Xml" />
+    <FileToExclude Include="System.Private.Xml.Linq" />
 
     <!-- TODO: Upstack framework -->
     <FileToExclude Include="System.Private.DataContractSerialization" />
-    <FileToExclude Include="System.Private.Xml" />
     <FileToExclude Include="System.Reflection.DispatchProxy" />
-    <FileToExclude Include="System.Private.Xml.Linq" />
     <FileToExclude Include="System.Data.Common" />
     <FileToExclude Include="System.Diagnostics.StackTrace" />
 
