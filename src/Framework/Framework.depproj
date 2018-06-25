@@ -42,8 +42,8 @@
     <FileToExclude Include="System.Data.Common" />
     <FileToExclude Include="System.Diagnostics.StackTrace" />
 
-    <!-- TODO: Unmanaged -->
-    <FileToExclude Include="clrcompression" />
+    <!-- TODO: https://github.com/dotnet/corert/issues/5496 -->
+    <!-- <FileToExclude Include="clrcompression" /> -->
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
