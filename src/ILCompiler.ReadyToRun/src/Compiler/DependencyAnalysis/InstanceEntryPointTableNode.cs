@@ -66,21 +66,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void Add(MethodCodeNode methodNode, int methodIndex)
         {
-            if (methodNode.Method is EcmaMethod ecmaMethod)
-            {
-                // Strip away the token type bits, keep just the low 24 bits RID
-                int rid = MetadataTokens.GetToken(ecmaMethod.Handle) & 0x00FFFFFF;
-                Debug.Assert(rid != 0);
-                
-                // TODO: how to synthesize method fixups blob?
-                byte[] fixups = null;
-                Add(rid - 1, methodIndex, fixups, signature: null, methodHashCode: 0);
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
-
             // TODO: method instance table
         }
 
