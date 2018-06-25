@@ -29,7 +29,9 @@ namespace SampleWebApi
         public void ConfigureServices(IServiceCollection services)
         {
             // Override automatic discovery of Application parts done by MVC. It is not compatible with single file compilation.
-            services.Add(new ServiceDescriptor(typeof(ApplicationPartManager), new ApplicationPartManager()));
+            var applicationPartManager = new ApplicationPartManager();
+            applicationPartManager.ApplicationParts.Add(new AssemblyPart(typeof(Startup).Assembly));
+            services.Add(new ServiceDescriptor(typeof(ApplicationPartManager), applicationPartManager));
 
             services.AddMvcCore().AddJsonFormatters();
         }

@@ -32,7 +32,7 @@ namespace System.Threading
         private static ConditionalWeakTable<object, Condition> s_conditionTable = new ConditionalWeakTable<object, Condition>();
         private static ConditionalWeakTable<object, Condition>.CreateValueCallback s_createCondition = (o) => new Condition(GetLock(o));
 
-        internal static Lock GetLock(Object obj)
+        internal static Lock GetLock(object obj)
         {
             if (obj == null)
                 throw new ArgumentNullException(nameof(obj));
@@ -47,7 +47,7 @@ namespace System.Threading
 #endif
         }
 
-        private static Condition GetCondition(Object obj)
+        private static Condition GetCondition(object obj)
         {
             Debug.Assert(
                 !(obj is Condition || obj is Lock),
@@ -58,7 +58,7 @@ namespace System.Threading
 
         #region Public Enter/Exit methods
 
-        public static void Enter(Object obj)
+        public static void Enter(object obj)
         {
             Lock lck = GetLock(obj);
             if (lck.TryAcquire(0))
@@ -66,7 +66,7 @@ namespace System.Threading
             TryAcquireContended(lck, obj, Timeout.Infinite);
         }
 
-        public static void Enter(Object obj, ref bool lockTaken)
+        public static void Enter(object obj, ref bool lockTaken)
         {
             if (lockTaken)
                 throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
@@ -81,12 +81,12 @@ namespace System.Threading
             lockTaken = true;
         }
 
-        public static bool TryEnter(Object obj)
+        public static bool TryEnter(object obj)
         {
             return GetLock(obj).TryAcquire(0);
         }
 
-        public static void TryEnter(Object obj, ref bool lockTaken)
+        public static void TryEnter(object obj, ref bool lockTaken)
         {
             if (lockTaken)
                 throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
@@ -94,7 +94,7 @@ namespace System.Threading
             lockTaken = GetLock(obj).TryAcquire(0);
         }
 
-        public static bool TryEnter(Object obj, int millisecondsTimeout)
+        public static bool TryEnter(object obj, int millisecondsTimeout)
         {
             if (millisecondsTimeout < -1)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
@@ -105,7 +105,7 @@ namespace System.Threading
             return TryAcquireContended(lck, obj, millisecondsTimeout);
         }
 
-        public static void TryEnter(Object obj, int millisecondsTimeout, ref bool lockTaken)
+        public static void TryEnter(object obj, int millisecondsTimeout, ref bool lockTaken)
         {
             if (lockTaken)
                 throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
@@ -121,18 +121,18 @@ namespace System.Threading
             lockTaken = TryAcquireContended(lck, obj, millisecondsTimeout);
         }
 
-        public static bool TryEnter(Object obj, TimeSpan timeout) =>
+        public static bool TryEnter(object obj, TimeSpan timeout) =>
             TryEnter(obj, WaitHandle.ToTimeoutMilliseconds(timeout));
 
-        public static void TryEnter(Object obj, TimeSpan timeout, ref bool lockTaken) =>
+        public static void TryEnter(object obj, TimeSpan timeout, ref bool lockTaken) =>
             TryEnter(obj, WaitHandle.ToTimeoutMilliseconds(timeout), ref lockTaken);
 
-        public static void Exit(Object obj)
+        public static void Exit(object obj)
         {
             GetLock(obj).Release();
         }
 
-        public static bool IsEntered(Object obj)
+        public static bool IsEntered(object obj)
         {
             return GetLock(obj).IsAcquired;
         }
@@ -142,14 +142,14 @@ namespace System.Threading
         #region Public Wait/Pulse methods
 
         // Remoting is not supported, ignore exitContext
-        public static bool Wait(Object obj, int millisecondsTimeout, bool exitContext) =>
+        public static bool Wait(object obj, int millisecondsTimeout, bool exitContext) =>
             Wait(obj, millisecondsTimeout);
 
         // Remoting is not supported, ignore exitContext
-        public static bool Wait(Object obj, TimeSpan timeout, bool exitContext) =>
+        public static bool Wait(object obj, TimeSpan timeout, bool exitContext) =>
             Wait(obj, WaitHandle.ToTimeoutMilliseconds(timeout));
 
-        public static bool Wait(Object obj, int millisecondsTimeout)
+        public static bool Wait(object obj, int millisecondsTimeout)
         {
             Condition condition = GetCondition(obj);
             DebugBlockingItem blockingItem;
@@ -160,9 +160,9 @@ namespace System.Threading
             }
         }
 
-        public static bool Wait(Object obj, TimeSpan timeout) => Wait(obj, WaitHandle.ToTimeoutMilliseconds(timeout));
+        public static bool Wait(object obj, TimeSpan timeout) => Wait(obj, WaitHandle.ToTimeoutMilliseconds(timeout));
 
-        public static bool Wait(Object obj) => Wait(obj, Timeout.Infinite);
+        public static bool Wait(object obj) => Wait(obj, Timeout.Infinite);
 
         public static void Pulse(object obj)
         {
@@ -178,7 +178,7 @@ namespace System.Threading
 
         #region Slow path for Entry/TryEnter methods.
 
-        internal static bool TryAcquireContended(Lock lck, Object obj, int millisecondsTimeout)
+        internal static bool TryAcquireContended(Lock lck, object obj, int millisecondsTimeout)
         {
             DebugBlockingItem blockingItem;
 

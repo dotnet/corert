@@ -15,9 +15,9 @@ internal partial class Interop
         [DllImport(Libraries.Registry_L1, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegCreateKeyExW")]
         internal static extern int RegCreateKeyEx(
             SafeRegistryHandle hKey,
-            String lpSubKey,
+            string lpSubKey,
             int Reserved,
-            String lpClass,
+            string lpClass,
             int dwOptions,
             int samDesired,
             ref Kernel32.SECURITY_ATTRIBUTES secAttrs,

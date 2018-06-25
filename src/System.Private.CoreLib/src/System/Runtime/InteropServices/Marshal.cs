@@ -12,12 +12,12 @@ namespace System.Runtime.InteropServices
     /// </summary>
     internal class Marshal
     {
-        public static unsafe String PtrToStringUni(IntPtr ptr, int len)
+        public static unsafe string PtrToStringUni(IntPtr ptr, int len)
         {
             return PInvokeMarshal.PtrToStringUni(ptr, len);
         }
 
-        public static unsafe String PtrToStringUni(IntPtr ptr)
+        public static unsafe string PtrToStringUni(IntPtr ptr)
         {
             return PInvokeMarshal.PtrToStringUni(ptr);
         }

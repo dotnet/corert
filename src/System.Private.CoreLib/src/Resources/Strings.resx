@@ -714,9 +714,6 @@
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>
   </data>
-  <data name="ArgumentOutOfRange_NeedNonNegNumRequired" xml:space="preserve">
-    <value>Non-negative number required.</value>
-  </data>
   <data name="ArgumentOutOfRange_NeedValidId" xml:space="preserve">
     <value>The ID parameter must be in the range {0} through {1}.</value>
   </data>

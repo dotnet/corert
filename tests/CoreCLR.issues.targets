@@ -2,6 +2,12 @@
   xmlns="http://schemas.microsoft.com/developer/msbuild/2003" >
   <ItemGroup Condition="'$(XunitTestBinBase)' != ''">
 
+    <!-- Pinvoke calli -->
+    <!-- https://github.com/dotnet/corert/issues/5587 -->
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Invoke\SEH\_il_dbgcatchfinally_ind\_il_dbgcatchfinally_ind.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Invoke\SEH\_il_relcatchfinally_ind\_il_relcatchfinally_ind.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-RTM\b487364\b487364\b487364.*" />
+
     <!-- Infinite generic expansion -->
     <!-- https://github.com/dotnet/corert/issues/363 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\inlining\bug505642\test\test.*" />

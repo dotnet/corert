@@ -18,7 +18,7 @@ namespace System
         internal MulticastDelegate() { }
 
         // V1 API: Create closed instance delegates. Method name matching is case sensitive.
-        protected MulticastDelegate(Object target, String method)
+        protected MulticastDelegate(object target, string method)
         {
             // This constructor cannot be used by application code. To create a delegate by specifying the name of a method, an
             // overload of the public static CreateDelegate method is used. This will eventually end up calling into the internal
@@ -28,7 +28,7 @@ namespace System
         }
 
         // V1 API: Create open static delegates. Method name matching is case insensitive.
-        protected MulticastDelegate(Type target, String method)
+        protected MulticastDelegate(Type target, string method)
         {
             // This constructor cannot be used by application code. To create a delegate by specifying the name of a method, an
             // overload of the public static CreateDelegate method is used. This will eventually end up calling into the internal
@@ -54,7 +54,7 @@ namespace System
             return true;
         }
 
-        public override sealed bool Equals(Object obj)
+        public override sealed bool Equals(object obj)
         {
             if (obj == null)
                 return false;
@@ -79,7 +79,7 @@ namespace System
             }
             else
             {
-                if (!Object.ReferenceEquals(m_helperObject, d.m_helperObject) ||
+                if (!object.ReferenceEquals(m_helperObject, d.m_helperObject) ||
                     (!FunctionPointerOps.Compare(m_extraFunctionPointerOrData, d.m_extraFunctionPointerOrData)) ||
                     (!FunctionPointerOps.Compare(m_functionPointer, d.m_functionPointer)))
                 {
@@ -88,12 +88,12 @@ namespace System
 
                 // Those delegate kinds with thunks put themselves into the m_firstParamter, so we can't 
                 // blindly compare the m_firstParameter fields for equality.
-                if (Object.ReferenceEquals(m_firstParameter, this))
+                if (object.ReferenceEquals(m_firstParameter, this))
                 {
-                    return Object.ReferenceEquals(d.m_firstParameter, d);
+                    return object.ReferenceEquals(d.m_firstParameter, d);
                 }
 
-                return Object.ReferenceEquals(m_firstParameter, d.m_firstParameter);
+                return object.ReferenceEquals(m_firstParameter, d.m_firstParameter);
             }
         }
 

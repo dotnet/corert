@@ -5,8 +5,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <NuGetTargetMoniker>.NETCoreApp,Version=v2.2</NuGetTargetMoniker>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <NuGetTargetMoniker>.NETCoreApp,Version=v3.0</NuGetTargetMoniker>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
     <RuntimeIdentifiers>$(NuPkgRid)</RuntimeIdentifiers>
     <RidSpecificAssets>true</RidSpecificAssets>
   </PropertyGroup>
@@ -31,20 +31,19 @@
   <ItemGroup>
     <!-- Pickup a few selected aot-specific files from uapaot instead -->
     <FileToExclude Include="System.Linq.Expressions" />
-    <FileToExclude Include="System.Reflection.Primitives" />
     <FileToExclude Include="System.Runtime.InteropServices" />
     <FileToExclude Include="System.Text.RegularExpressions" />
+    <FileToExclude Include="System.Private.Xml" />
+    <FileToExclude Include="System.Private.Xml.Linq" />
 
     <!-- TODO: Upstack framework -->
     <FileToExclude Include="System.Private.DataContractSerialization" />
-    <FileToExclude Include="System.Private.Xml" />
     <FileToExclude Include="System.Reflection.DispatchProxy" />
-    <FileToExclude Include="System.Private.Xml.Linq" />
     <FileToExclude Include="System.Data.Common" />
     <FileToExclude Include="System.Diagnostics.StackTrace" />
 
-    <!-- TODO: Unmanaged -->
-    <FileToExclude Include="clrcompression" />
+    <!-- TODO: https://github.com/dotnet/corert/issues/5496 -->
+    <!-- <FileToExclude Include="clrcompression" /> -->
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

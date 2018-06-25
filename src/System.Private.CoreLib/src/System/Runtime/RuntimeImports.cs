@@ -71,9 +71,9 @@ namespace System.Runtime
         // Mark an object instance as already finalized.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhSuppressFinalize")]
-        internal static extern void RhSuppressFinalize(Object obj);
+        internal static extern void RhSuppressFinalize(object obj);
 
-        internal static void RhReRegisterForFinalize(Object obj)
+        internal static void RhReRegisterForFinalize(object obj)
         {
             if (!_RhReRegisterForFinalize(obj))
                 throw new OutOfMemoryException();
@@ -81,7 +81,7 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhReRegisterForFinalize")]
-        private static extern bool _RhReRegisterForFinalize(Object obj);
+        private static extern bool _RhReRegisterForFinalize(object obj);
 
         // Wait for all pending finalizers. This must be a p/invoke to avoid starving the GC.
         [DllImport(RuntimeLibrary, ExactSpelling = true)]
@@ -109,7 +109,7 @@ namespace System.Runtime
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetGeneration")]
-        internal static extern int RhGetGeneration(Object obj);
+        internal static extern int RhGetGeneration(object obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetGcLatencyMode")]
@@ -207,9 +207,9 @@ namespace System.Runtime
         // Allocate handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpHandleAlloc")]
-        private static extern IntPtr RhpHandleAlloc(Object value, GCHandleType type);
+        private static extern IntPtr RhpHandleAlloc(object value, GCHandleType type);
 
-        internal static IntPtr RhHandleAlloc(Object value, GCHandleType type)
+        internal static IntPtr RhHandleAlloc(object value, GCHandleType type)
         {
             IntPtr h = RhpHandleAlloc(value, type);
             if (h == IntPtr.Zero)
@@ -220,9 +220,9 @@ namespace System.Runtime
         // Allocate handle for dependent handle case where a secondary can be set at the same time.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpHandleAllocDependent")]
-        private static extern IntPtr RhpHandleAllocDependent(Object primary, Object secondary);
+        private static extern IntPtr RhpHandleAllocDependent(object primary, object secondary);
 
-        internal static IntPtr RhHandleAllocDependent(Object primary, Object secondary)
+        internal static IntPtr RhHandleAllocDependent(object primary, object secondary)
         {
             IntPtr h = RhpHandleAllocDependent(primary, secondary);
             if (h == IntPtr.Zero)
@@ -233,9 +233,9 @@ namespace System.Runtime
         // Allocate variable handle with its initial type.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpHandleAllocVariable")]
-        private static extern IntPtr RhpHandleAllocVariable(Object value, uint type);
+        private static extern IntPtr RhpHandleAllocVariable(object value, uint type);
 
-        internal static IntPtr RhHandleAllocVariable(Object value, uint type)
+        internal static IntPtr RhHandleAllocVariable(object value, uint type)
         {
             IntPtr h = RhpHandleAllocVariable(value, type);
             if (h == IntPtr.Zero)
@@ -251,9 +251,9 @@ namespace System.Runtime
         // Get object reference from handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhHandleGet")]
-        private static extern Object _RhHandleGet(IntPtr handle);
+        private static extern object _RhHandleGet(IntPtr handle);
 
-        internal static unsafe Object RhHandleGet(IntPtr handle)
+        internal static unsafe object RhHandleGet(IntPtr handle)
         {
 #if DEBUG
             // The runtime performs additional checks in debug builds
@@ -266,17 +266,17 @@ namespace System.Runtime
         // Get primary and secondary object references from dependent handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhHandleGetDependent")]
-        internal static extern Object RhHandleGetDependent(IntPtr handle, out Object secondary);
+        internal static extern object RhHandleGetDependent(IntPtr handle, out object secondary);
 
         // Set object reference into handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhHandleSet")]
-        internal static extern void RhHandleSet(IntPtr handle, Object value);
+        internal static extern void RhHandleSet(IntPtr handle, object value);
 
         // Set the secondary object reference into a dependent handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhHandleSetDependentSecondary")]
-        internal static extern void RhHandleSetDependentSecondary(IntPtr handle, Object secondary);
+        internal static extern void RhHandleSetDependentSecondary(IntPtr handle, object secondary);
 
         // Get the handle type associated with a variable handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -308,7 +308,7 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_CheckArrayStore")]
-        internal static extern void RhCheckArrayStore(Object array, Object obj);
+        internal static extern void RhCheckArrayStore(object array, object obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOf")]
@@ -346,7 +346,7 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewString")]
-        internal static extern String RhNewString(EETypePtr pEEType, int length);
+        internal static extern string RhNewString(EETypePtr pEEType, int length);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhBox")]
@@ -561,11 +561,11 @@ namespace System.Runtime
 #if !PROJECTN
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetThreadStaticStorageForModule")]
-        internal static unsafe extern Array RhGetThreadStaticStorageForModule(Int32 moduleIndex);
+        internal static unsafe extern Array RhGetThreadStaticStorageForModule(int moduleIndex);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhSetThreadStaticStorageForModule")]
-        internal static unsafe extern bool RhSetThreadStaticStorageForModule(Array storage, Int32 moduleIndex);
+        internal static unsafe extern bool RhSetThreadStaticStorageForModule(Array storage, int moduleIndex);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCurrentNativeThreadId")]
@@ -717,7 +717,7 @@ namespace System.Runtime
         //
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpETWLogLiveCom")]
-        internal extern static void RhpETWLogLiveCom(int eventType, IntPtr CCWHandle, IntPtr objectID, IntPtr typeRawValue, IntPtr IUnknown, IntPtr VTable, Int32 comRefCount, Int32 jupiterRefCount, Int32 flags);
+        internal extern static void RhpETWLogLiveCom(int eventType, IntPtr CCWHandle, IntPtr objectID, IntPtr typeRawValue, IntPtr IUnknown, IntPtr VTable, int comRefCount, int jupiterRefCount, int flags);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpETWShouldWalkCom")]

@@ -322,7 +322,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class
         {
-            return Unsafe.As<T>(RuntimeImports.InterlockedCompareExchange(ref Unsafe.As<T, Object>(ref location1), value, comparand));
+            return Unsafe.As<T>(RuntimeImports.InterlockedCompareExchange(ref Unsafe.As<T, object>(ref location1), value, comparand));
         }
 
         [Intrinsic]
@@ -394,7 +394,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Exchange<T>(ref T location1, T value) where T : class
         {
-            return Unsafe.As<T>(RuntimeImports.InterlockedExchange(ref Unsafe.As<T, Object>(ref location1), value));
+            return Unsafe.As<T>(RuntimeImports.InterlockedExchange(ref Unsafe.As<T, object>(ref location1), value));
         }
 
         [Intrinsic]

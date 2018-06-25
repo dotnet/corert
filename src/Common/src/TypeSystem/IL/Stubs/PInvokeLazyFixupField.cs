@@ -109,5 +109,13 @@ namespace Internal.IL.Stubs
         {
             return false;
         }
+
+        public override string Name
+        {
+            get
+            {
+                return _targetMethod.Name;
+            }
+        }
     }
 }

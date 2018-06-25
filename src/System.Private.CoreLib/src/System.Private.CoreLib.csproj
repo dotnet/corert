@@ -301,7 +301,6 @@
     <Compile Include="System\Threading\ManagedThreadId.cs" />
     <Compile Include="System\Threading\Lock.cs" />
     <Compile Include="System\Threading\Condition.cs" />
-    <Compile Include="System\Threading\EventWaitHandle.cs" />
     <Compile Include="System\Threading\FirstLevelSpinWaiter.cs" />
     <Compile Include="System\Threading\Interlocked.cs" />
     <Compile Include="System\Threading\IOCompletionCallback.cs" />
@@ -312,7 +311,6 @@
     <Compile Include="System\Threading\Monitor.cs" />
     <Compile Include="System\Threading\ObjectHeader.cs" Condition="'$(UseSyncTable)' == 'true'" />
     <Compile Include="System\Threading\Overlapped.cs" />
-    <Compile Include="System\Threading\Semaphore.cs" />
     <Compile Include="System\Threading\SemaphoreSlim.cs" />
     <Compile Include="System\Threading\SpinLock.cs" />
     <Compile Include="System\Threading\SynchronizationContext.cs" />
@@ -496,10 +494,8 @@
       <Link>Interop\Windows\mincore\Interop.DynamicLoad.cs</Link>
     </Compile>
     <Compile Include="System\HighPerformanceCounter.Windows.cs" />
-    <Compile Include="System\Threading\EventWaitHandle.Windows.cs" />
     <Compile Include="System\Threading\LowLevelMonitor.Windows.cs" />
     <Compile Include="System\Threading\LowLevelLifoSemaphore.Windows.cs" />
-    <Compile Include="System\Threading\Semaphore.Windows.cs" />
     <Compile Include="System\Threading\ThreadPool.Windows.cs" Condition="'$(FeaturePortableThreadPool)' != 'true'" />
     <Compile Include="System\Threading\WaitHandle.Windows.cs" />
     <Compile Include="System\Threading\Win32ThreadPoolBoundHandle.cs" />

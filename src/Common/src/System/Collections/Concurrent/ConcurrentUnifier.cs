@@ -102,7 +102,7 @@ namespace System.Collections.Concurrent
                     // State of a key must never go from found to not found, and only one value may exist per key.
                     Debug.Assert(checkedFound);
                     if (default(V) == null)  // No good way to do the "only one value" check for value types.
-                        Debug.Assert(Object.ReferenceEquals(checkedValue, value));
+                        Debug.Assert(object.ReferenceEquals(checkedValue, value));
                 }
             }
 #endif //DEBUG

@@ -949,7 +949,7 @@ namespace System.Runtime.CompilerServices
         [DependencyReductionRoot]
         internal static Action TryGetStateMachineForDebugger(Action action)
         {
-            Object target = action.Target;
+            object target = action.Target;
             MoveNextRunner runner = target as MoveNextRunner;
             if (runner != null)
                 return runner.m_stateMachine.MoveNext;

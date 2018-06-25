@@ -397,15 +397,15 @@ namespace Microsoft.Win32
                     byte[] blob = new byte[size];
                     while (Interop.Errors.ERROR_MORE_DATA == (r = Interop.mincore.RegQueryValueEx(_hkey, name, null, ref type, blob, ref sizeInput)))
                     {
-                        if (size == Int32.MaxValue)
+                        if (size == int.MaxValue)
                         {
-                            // ERROR_MORE_DATA was returned however we cannot increase the buffer size beyond Int32.MaxValue
+                            // ERROR_MORE_DATA was returned however we cannot increase the buffer size beyond int.MaxValue
                             Win32Error(r, name);
                         }
-                        else if (size > (Int32.MaxValue / 2))
+                        else if (size > (int.MaxValue / 2))
                         {
                             // at this point in the loop "size * 2" would cause an overflow
-                            size = Int32.MaxValue;
+                            size = int.MaxValue;
                         }
                         else
                         {

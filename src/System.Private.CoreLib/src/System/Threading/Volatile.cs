@@ -17,76 +17,76 @@ namespace System.Threading
     public static unsafe class Volatile
     {
         #region Boolean
-        private struct VolatileBoolean { public volatile Boolean Value; }
+        private struct VolatileBoolean { public volatile bool Value; }
 
-        public static Boolean Read(ref Boolean location)
+        public static bool Read(ref bool location)
         {
-            return Unsafe.As<Boolean, VolatileBoolean>(ref location).Value;
+            return Unsafe.As<bool, VolatileBoolean>(ref location).Value;
         }
 
-        public static void Write(ref Boolean location, Boolean value)
+        public static void Write(ref bool location, bool value)
         {
-            Unsafe.As<Boolean, VolatileBoolean>(ref location).Value = value;
+            Unsafe.As<bool, VolatileBoolean>(ref location).Value = value;
         }
         #endregion
 
         #region Byte
-        private struct VolatileByte { public volatile Byte Value; }
+        private struct VolatileByte { public volatile byte Value; }
 
-        public static Byte Read(ref Byte location)
+        public static byte Read(ref byte location)
         {
-            return Unsafe.As<Byte, VolatileByte>(ref location).Value;
+            return Unsafe.As<byte, VolatileByte>(ref location).Value;
         }
 
-        public static void Write(ref Byte location, Byte value)
+        public static void Write(ref byte location, byte value)
         {
-            Unsafe.As<Byte, VolatileByte>(ref location).Value = value;
+            Unsafe.As<byte, VolatileByte>(ref location).Value = value;
         }
         #endregion
 
         #region Double
-        public static Double Read(ref Double location)
+        public static double Read(ref double location)
         {
-            Int64 result = Read(ref Unsafe.As<Double, Int64>(ref location));
+            long result = Read(ref Unsafe.As<double, long>(ref location));
             return *(double*)&result;
         }
 
-        public static void Write(ref Double location, Double value)
+        public static void Write(ref double location, double value)
         {
-            Write(ref Unsafe.As<Double, Int64>(ref location), *(Int64*)&value);
+            Write(ref Unsafe.As<double, long>(ref location), *(long*)&value);
         }
         #endregion
 
         #region Int16
-        private struct VolatileInt16 { public volatile Int16 Value; }
+        private struct VolatileInt16 { public volatile short Value; }
 
-        public static Int16 Read(ref Int16 location)
+        public static short Read(ref short location)
         {
-            return Unsafe.As<Int16, VolatileInt16>(ref location).Value;
+            return Unsafe.As<short, VolatileInt16>(ref location).Value;
         }
 
-        public static void Write(ref Int16 location, Int16 value)
+        public static void Write(ref short location, short value)
         {
-            Unsafe.As<Int16, VolatileInt16>(ref location).Value = value;
+            Unsafe.As<short, VolatileInt16>(ref location).Value = value;
         }
         #endregion
 
         #region Int32
-        private struct VolatileInt32 { public volatile Int32 Value; }
+        private struct VolatileInt32 { public volatile int Value; }
 
-        public static Int32 Read(ref Int32 location)
+        public static int Read(ref int location)
         {
-            return Unsafe.As<Int32, VolatileInt32>(ref location).Value;
+            return Unsafe.As<int, VolatileInt32>(ref location).Value;
         }
 
-        public static void Write(ref Int32 location, Int32 value)
+        public static void Write(ref int location, int value)
         {
-            Unsafe.As<Int32, VolatileInt32>(ref location).Value = value;
+            Unsafe.As<int, VolatileInt32>(ref location).Value = value;
         }
         #endregion
 
         #region Int64
-        public static Int64 Read(ref Int64 location)
+        public static long Read(ref long location)
         {
 #if BIT64
             return (Int64)Unsafe.As<Int64, VolatileIntPtr>(ref location).Value;
@@ -95,7 +95,7 @@ namespace System.Threading
 #endif
         }
 
-        public static void Write(ref Int64 location, Int64 value)
+        public static void Write(ref long location, long value)
         {
 #if BIT64
             Unsafe.As<Int64, VolatileIntPtr>(ref location).Value = (IntPtr)value;
@@ -123,78 +123,78 @@ namespace System.Threading
         #endregion
 
         #region SByte
-        private struct VolatileSByte { public volatile SByte Value; }
+        private struct VolatileSByte { public volatile sbyte Value; }
 
         [CLSCompliant(false)]
-        public static SByte Read(ref SByte location)
+        public static sbyte Read(ref sbyte location)
         {
-            return Unsafe.As<SByte, VolatileSByte>(ref location).Value;
+            return Unsafe.As<sbyte, VolatileSByte>(ref location).Value;
         }
 
         [CLSCompliant(false)]
-        public static void Write(ref SByte location, SByte value)
+        public static void Write(ref sbyte location, sbyte value)
         {
-            Unsafe.As<SByte, VolatileSByte>(ref location).Value = value;
+            Unsafe.As<sbyte, VolatileSByte>(ref location).Value = value;
         }
         #endregion
 
         #region Single
-        private struct VolatileSingle { public volatile Single Value; }
+        private struct VolatileSingle { public volatile float Value; }
 
-        public static Single Read(ref Single location)
+        public static float Read(ref float location)
         {
-            return Unsafe.As<Single, VolatileSingle>(ref location).Value;
+            return Unsafe.As<float, VolatileSingle>(ref location).Value;
         }
 
-        public static void Write(ref Single location, Single value)
+        public static void Write(ref float location, float value)
         {
-            Unsafe.As<Single, VolatileSingle>(ref location).Value = value;
+            Unsafe.As<float, VolatileSingle>(ref location).Value = value;
         }
         #endregion
 
         #region UInt16
-        private struct VolatileUInt16 { public volatile UInt16 Value; }
+        private struct VolatileUInt16 { public volatile ushort Value; }
 
         [CLSCompliant(false)]
-        public static UInt16 Read(ref UInt16 location)
+        public static ushort Read(ref ushort location)
         {
-            return Unsafe.As<UInt16, VolatileUInt16>(ref location).Value;
+            return Unsafe.As<ushort, VolatileUInt16>(ref location).Value;
         }
 
         [CLSCompliant(false)]
-        public static void Write(ref UInt16 location, UInt16 value)
+        public static void Write(ref ushort location, ushort value)
         {
-            Unsafe.As<UInt16, VolatileUInt16>(ref location).Value = value;
+            Unsafe.As<ushort, VolatileUInt16>(ref location).Value = value;
         }
         #endregion
 
         #region UInt32
-        private struct VolatileUInt32 { public volatile UInt32 Value; }
+        private struct VolatileUInt32 { public volatile uint Value; }
 
         [CLSCompliant(false)]
-        public static UInt32 Read(ref UInt32 location)
+        public static uint Read(ref uint location)
         {
-            return Unsafe.As<UInt32, VolatileUInt32>(ref location).Value;
+            return Unsafe.As<uint, VolatileUInt32>(ref location).Value;
         }
 
         [CLSCompliant(false)]
-        public static void Write(ref UInt32 location, UInt32 value)
+        public static void Write(ref uint location, uint value)
         {
-            Unsafe.As<UInt32, VolatileUInt32>(ref location).Value = value;
+            Unsafe.As<uint, VolatileUInt32>(ref location).Value = value;
         }
         #endregion
 
         #region UInt64
         [CLSCompliant(false)]
-        public static UInt64 Read(ref UInt64 location)
+        public static ulong Read(ref ulong location)
         {
-            return (UInt64)Read(ref Unsafe.As<UInt64, Int64>(ref location));
+            return (ulong)Read(ref Unsafe.As<ulong, long>(ref location));
         }
 
         [CLSCompliant(false)]
-        public static void Write(ref UInt64 location, UInt64 value)
+        public static void Write(ref ulong location, ulong value)
         {
-            Write(ref Unsafe.As<UInt64, Int64>(ref location), (Int64)value);
+            Write(ref Unsafe.As<ulong, long>(ref location), (long)value);
         }
         #endregion
 
@@ -215,7 +215,7 @@ namespace System.Threading
         #endregion
 
         #region T
-        private struct VolatileObject { public volatile Object Value; }
+        private struct VolatileObject { public volatile object Value; }
 
         public static T Read<T>(ref T location) where T : class
         {

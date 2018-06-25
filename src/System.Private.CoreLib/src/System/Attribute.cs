@@ -20,7 +20,7 @@ namespace System
         //
         // This implementation implements the .NET Core behavior.
         //
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             if (obj == null)
                 return false;
@@ -28,14 +28,14 @@ namespace System
             if (this.GetType() != obj.GetType())
                 return false;
 
-            Object[] thisFieldValues = this.ReadFields();
-            Object[] thatfieldValues = ((Attribute)obj).ReadFields();
+            object[] thisFieldValues = this.ReadFields();
+            object[] thatfieldValues = ((Attribute)obj).ReadFields();
 
             for (int i = 0; i < thisFieldValues.Length; i++)
             {
                 // Visibility check and consistency check are not necessary.
-                Object thisResult = thisFieldValues[i];
-                Object thatResult = thatfieldValues[i];
+                object thisResult = thisFieldValues[i];
+                object thatResult = thatfieldValues[i];
 
                 if (!AreFieldValuesEqual(thisResult, thatResult))
                 {
@@ -47,7 +47,7 @@ namespace System
         }
 
         // Compares values of custom-attribute fields.    
-        private static bool AreFieldValuesEqual(Object thisValue, Object thatValue)
+        private static bool AreFieldValuesEqual(object thisValue, object thatValue)
         {
             if (thisValue == null && thatValue == null)
                 return true;
@@ -97,12 +97,12 @@ namespace System
 
         public override int GetHashCode()
         {
-            Object vThis = null;
+            object vThis = null;
 
-            Object[] fieldValues = this.ReadFields();
+            object[] fieldValues = this.ReadFields();
             for (int i = 0; i < fieldValues.Length; i++)
             {
-                Object fieldValue = fieldValues[i];
+                object fieldValue = fieldValues[i];
 
                 // The hashcode of an array ignores the contents of the array, so it can produce 
                 // different hashcodes for arrays with the same contents.
@@ -150,7 +150,7 @@ namespace System
         // offset inside a caller-supplied array. Attribute.ReadFields() calls _ILT_GetNumFields() to figure out how large an array is needed.
         //
         [CLSCompliant(false)]
-        protected virtual void _ILT_ReadFields(Object[] destination, int offset)
+        protected virtual void _ILT_ReadFields(object[] destination, int offset)
         {
         }
 
@@ -158,10 +158,10 @@ namespace System
         // ProjectN: Unlike the desktop, low level code such as Attributes cannot go running off to Reflection to fetch the FieldInfo's.
         // Instead, we use the ILTransform to generate a method that returns the relevant field values, which we then compare as the desktop does.
         //
-        private Object[] ReadFields()
+        private object[] ReadFields()
         {
             int numFields = _ILT_GetNumFields();
-            Object[] fieldValues = new Object[numFields];
+            object[] fieldValues = new object[numFields];
             _ILT_ReadFields(fieldValues, 0);
             return fieldValues;
         }

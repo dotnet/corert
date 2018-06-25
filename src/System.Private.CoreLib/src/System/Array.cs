@@ -78,7 +78,7 @@ namespace System
         bool IList.IsReadOnly
         { get { return false; } }
 
-        Object IList.this[int index]
+        object IList.this[int index]
         {
             get
             {
@@ -91,12 +91,12 @@ namespace System
             }
         }
 
-        int IList.Add(Object value)
+        int IList.Add(object value)
         {
             throw new NotSupportedException(SR.NotSupported_FixedSizeCollection);
         }
 
-        bool IList.Contains(Object value)
+        bool IList.Contains(object value)
         {
             return Array.IndexOf(this, value) >= 0;
         }
@@ -106,17 +106,17 @@ namespace System
             Array.Clear(this, GetLowerBound(0), this.Length);
         }
 
-        int IList.IndexOf(Object value)
+        int IList.IndexOf(object value)
         {
             return Array.IndexOf(this, value);
         }
 
-        void IList.Insert(int index, Object value)
+        void IList.Insert(int index, object value)
         {
             throw new NotSupportedException(SR.NotSupported_FixedSizeCollection);
         }
 
-        void IList.Remove(Object value)
+        void IList.Remove(object value)
         {
             throw new NotSupportedException(SR.NotSupported_FixedSizeCollection);
         }
@@ -144,12 +144,12 @@ namespace System
 
         // Make a new array which is a deep copy of the original array.
         // 
-        public Object Clone()
+        public object Clone()
         {
             return MemberwiseClone();
         }
 
-        Int32 IStructuralComparable.CompareTo(Object other, IComparer comparer)
+        int IStructuralComparable.CompareTo(object other, IComparer comparer)
         {
             if (other == null)
             {
@@ -178,14 +178,14 @@ namespace System
             return c;
         }
 
-        Boolean IStructuralEquatable.Equals(Object other, IEqualityComparer comparer)
+        bool IStructuralEquatable.Equals(object other, IEqualityComparer comparer)
         {
             if (other == null)
             {
                 return false;
             }
 
-            if (Object.ReferenceEquals(this, other))
+            if (object.ReferenceEquals(this, other))
             {
                 return true;
             }
@@ -247,7 +247,7 @@ namespace System
         // negative result to produce the index of the first element (if any) that
         // is larger than the given search value.
         // 
-        public static int BinarySearch(Array array, Object value)
+        public static int BinarySearch(Array array, object value)
         {
             if (array == null)
                 throw new ArgumentNullException(nameof(array));
@@ -272,7 +272,7 @@ namespace System
 
         public static void Copy(Array sourceArray, Array destinationArray, long length)
         {
-            if (length > Int32.MaxValue || length < Int32.MinValue)
+            if (length > int.MaxValue || length < int.MinValue)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_HugeArrayNotSupported);
 
             Array.Copy(sourceArray, destinationArray, (int)length);
@@ -280,11 +280,11 @@ namespace System
 
         public static void Copy(Array sourceArray, long sourceIndex, Array destinationArray, long destinationIndex, long length)
         {
-            if (sourceIndex > Int32.MaxValue || sourceIndex < Int32.MinValue)
+            if (sourceIndex > int.MaxValue || sourceIndex < int.MinValue)
                 throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_HugeArrayNotSupported);
-            if (destinationIndex > Int32.MaxValue || destinationIndex < Int32.MinValue)
+            if (destinationIndex > int.MaxValue || destinationIndex < int.MinValue)
                 throw new ArgumentOutOfRangeException(nameof(destinationIndex), SR.ArgumentOutOfRange_HugeArrayNotSupported);
-            if (length > Int32.MaxValue || length < Int32.MinValue)
+            if (length > int.MaxValue || length < int.MinValue)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_HugeArrayNotSupported);
 
             Array.Copy(sourceArray, (int)sourceIndex, destinationArray, (int)destinationIndex, (int)length);
@@ -292,7 +292,7 @@ namespace System
 
         public void CopyTo(Array array, long index)
         {
-            if (index > Int32.MaxValue || index < Int32.MinValue)
+            if (index > int.MaxValue || index < int.MinValue)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_HugeArrayNotSupported);
 
             this.CopyTo(array, (int)index);
@@ -334,37 +334,37 @@ namespace System
             return GetLength(dimension);
         }
 
-        public Object GetValue(long index)
+        public object GetValue(long index)
         {
-            if (index > Int32.MaxValue || index < Int32.MinValue)
+            if (index > int.MaxValue || index < int.MinValue)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_HugeArrayNotSupported);
 
             return this.GetValue((int)index);
         }
 
-        public Object GetValue(long index1, long index2)
+        public object GetValue(long index1, long index2)
         {
-            if (index1 > Int32.MaxValue || index1 < Int32.MinValue)
+            if (index1 > int.MaxValue || index1 < int.MinValue)
                 throw new ArgumentOutOfRangeException(nameof(index1), SR.ArgumentOutOfRange_HugeArrayNotSupported);
-            if (index2 > Int32.MaxValue || index2 < Int32.MinValue)
+            if (index2 > int.MaxValue || index2 < int.MinValue)
                 throw new ArgumentOutOfRangeException(nameof(index2), SR.ArgumentOutOfRange_HugeArrayNotSupported);
 
             return this.GetValue((int)index1, (int)index2);
         }
 
-        public Object GetValue(long index1, long index2, long index3)
+        public object GetValue(long index1, long index2, long index3)
         {
-            if (index1 > Int32.MaxValue || index1 < Int32.MinValue)
+            if (index1 > int.MaxValue || index1 < int.MinValue)
                 throw new ArgumentOutOfRangeException(nameof(index1), SR.ArgumentOutOfRange_HugeArrayNotSupported);
-            if (index2 > Int32.MaxValue || index2 < Int32.MinValue)
+            if (index2 > int.MaxValue || index2 < int.MinValue)
                 throw new ArgumentOutOfRangeException(nameof(index2), SR.ArgumentOutOfRange_HugeArrayNotSupported);
-            if (index3 > Int32.MaxValue || index3 < Int32.MinValue)
+            if (index3 > int.MaxValue || index3 < int.MinValue)
                 throw new ArgumentOutOfRangeException(nameof(index3), SR.ArgumentOutOfRange_HugeArrayNotSupported);
 
             return this.GetValue((int)index1, (int)index2, (int)index3);
         }
 
-        public Object GetValue(params long[] indices)
+        public object GetValue(params long[] indices)
         {
             if (indices == null)
                 throw new ArgumentNullException(nameof(indices));
@@ -376,7 +376,7 @@ namespace System
             for (int i = 0; i < indices.Length; ++i)
             {
                 long index = indices[i];
-                if (index > Int32.MaxValue || index < Int32.MinValue)
+                if (index > int.MaxValue || index < int.MinValue)
                     throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_HugeArrayNotSupported);
                 intIndices[i] = (int)index;
             }
@@ -396,7 +396,7 @@ namespace System
 
         // Returns an object appropriate for synchronizing access to this 
         // Array.
-        public Object SyncRoot { get { return this; } }
+        public object SyncRoot { get { return this; } }
 
         // Searches a section of an array for a given element using a binary search
         // algorithm. Elements of the array are compared to the search value using
@@ -411,7 +411,7 @@ namespace System
         // negative result to produce the index of the first element (if any) that
         // is larger than the given search value.
         // 
-        public static int BinarySearch(Array array, int index, int length, Object value)
+        public static int BinarySearch(Array array, int index, int length, object value)
         {
             return BinarySearch(array, index, length, value, null);
         }
@@ -430,7 +430,7 @@ namespace System
         // negative result to produce the index of the first element (if any) that
         // is larger than the given search value.
         // 
-        public static int BinarySearch(Array array, Object value, IComparer comparer)
+        public static int BinarySearch(Array array, object value, IComparer comparer)
         {
             if (array == null)
                 throw new ArgumentNullException(nameof(array));
@@ -452,7 +452,7 @@ namespace System
         // negative result to produce the index of the first element (if any) that
         // is larger than the given search value.
         // 
-        public static int BinarySearch(Array array, int index, int length, Object value, IComparer comparer)
+        public static int BinarySearch(Array array, int index, int length, object value, IComparer comparer)
         {
             if (array == null)
                 throw new ArgumentNullException(nameof(array));
@@ -468,7 +468,7 @@ namespace System
 
             int lo = index;
             int hi = index + length - 1;
-            Object[] objArray = array as Object[];
+            object[] objArray = array as object[];
             if (objArray != null)
             {
                 while (lo <= hi)
@@ -566,7 +566,7 @@ namespace System
         // The array is searched forwards, and the elements of the array are
         // compared to the given value using the Object.Equals method.
         // 
-        public static int IndexOf(Array array, Object value)
+        public static int IndexOf(Array array, object value)
         {
             if (array == null)
             {
@@ -582,7 +582,7 @@ namespace System
         // elements of the array are compared to the given value using the
         // Object.Equals method.
         // 
-        public static int IndexOf(Array array, Object value, int startIndex)
+        public static int IndexOf(Array array, object value, int startIndex)
         {
             if (array == null)
             {
@@ -599,7 +599,7 @@ namespace System
         // elements of the array are compared to the given value using the
         // Object.Equals method.
         // 
-        public static int IndexOf(Array array, Object value, int startIndex, int count)
+        public static int IndexOf(Array array, object value, int startIndex, int count)
         {
             if (array == null)
                 throw new ArgumentNullException(nameof(array));
@@ -611,7 +611,7 @@ namespace System
             if (count < 0 || count > array.Length - startIndex + lb)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
 
-            Object[] objArray = array as Object[];
+            object[] objArray = array as object[];
             int endIndex = startIndex + count;
             if (objArray != null)
             {
@@ -626,7 +626,7 @@ namespace System
                 {
                     for (int i = startIndex; i < endIndex; i++)
                     {
-                        Object obj = objArray[i];
+                        object obj = objArray[i];
                         if (obj != null && obj.Equals(value)) return i;
                     }
                 }
@@ -635,7 +635,7 @@ namespace System
             {
                 for (int i = startIndex; i < endIndex; i++)
                 {
-                    Object obj = array.GetValue(i);
+                    object obj = array.GetValue(i);
                     if (obj == null)
                     {
                         if (value == null) return i;
@@ -694,7 +694,7 @@ namespace System
             return IndexOfImpl(array, value, startIndex, count);
         }
 
-        public static int LastIndexOf(Array array, Object value)
+        public static int LastIndexOf(Array array, object value)
         {
             if (array == null)
                 throw new ArgumentNullException(nameof(array));
@@ -707,7 +707,7 @@ namespace System
         // startIndex and ending at index 0. The elements of the array are
         // compared to the given value using the Object.Equals method.
         // 
-        public static int LastIndexOf(Array array, Object value, int startIndex)
+        public static int LastIndexOf(Array array, object value, int startIndex)
         {
             if (array == null)
                 throw new ArgumentNullException(nameof(array));
@@ -721,7 +721,7 @@ namespace System
         // the array are compared to the given value using the Object.Equals
         // method.
         // 
-        public static int LastIndexOf(Array array, Object value, int startIndex, int count)
+        public static int LastIndexOf(Array array, object value, int startIndex, int count)
         {
             if (array == null)
                 throw new ArgumentNullException(nameof(array));
@@ -740,7 +740,7 @@ namespace System
             if (array.Rank != 1)
                 throw new RankException(SR.Rank_MultiDimNotSupported);
 
-            Object[] objArray = array as Object[];
+            object[] objArray = array as object[];
             int endIndex = startIndex - count + 1;
             if (objArray != null)
             {
@@ -755,7 +755,7 @@ namespace System
                 {
                     for (int i = startIndex; i >= endIndex; i--)
                     {
-                        Object obj = objArray[i];
+                        object obj = objArray[i];
                         if (obj != null && obj.Equals(value)) return i;
                     }
                 }
@@ -764,7 +764,7 @@ namespace System
             {
                 for (int i = startIndex; i >= endIndex; i--)
                 {
-                    Object obj = array.GetValue(i);
+                    object obj = array.GetValue(i);
                     if (obj == null)
                     {
                         if (value == null) return i;
@@ -871,7 +871,7 @@ namespace System
             if (array.Rank != 1)
                 throw new RankException(SR.Rank_MultiDimNotSupported);
 
-            Object[] objArray = array as Object[];
+            object[] objArray = array as object[];
             if (objArray != null)
             {
                 Array.Reverse<object>(objArray, index, length);
@@ -882,7 +882,7 @@ namespace System
                 int j = index + length - 1;
                 while (i < j)
                 {
-                    Object temp = array.GetValue(i);
+                    object temp = array.GetValue(i);
                     array.SetValue(array.GetValue(j), i);
                     array.SetValue(temp, j);
                     i++;
