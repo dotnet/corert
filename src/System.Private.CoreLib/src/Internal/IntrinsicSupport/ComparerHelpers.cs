@@ -175,7 +175,7 @@ namespace System.Collections.Generic
         }
 
         // Equals method for the comparer itself. 
-        public sealed override bool Equals(Object obj) => obj != null && GetType() == obj.GetType();
+        public sealed override bool Equals(object obj) => obj != null && GetType() == obj.GetType();
 
         public sealed override int GetHashCode() => GetType().GetHashCode();
     }
@@ -201,7 +201,7 @@ namespace System.Collections.Generic
         }
 
         // Equals method for the comparer itself. 
-        public sealed override bool Equals(Object obj) => obj != null && GetType() == obj.GetType();
+        public sealed override bool Equals(object obj) => obj != null && GetType() == obj.GetType();
 
         public sealed override int GetHashCode() => GetType().GetHashCode();
     }
@@ -216,7 +216,7 @@ namespace System.Collections.Generic
         }
 
         // Equals method for the comparer itself. 
-        public sealed override bool Equals(Object obj) => obj != null && GetType() == obj.GetType();
+        public sealed override bool Equals(object obj) => obj != null && GetType() == obj.GetType();
 
         public sealed override int GetHashCode() => GetType().GetHashCode();
     }

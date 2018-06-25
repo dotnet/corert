@@ -125,7 +125,7 @@ namespace System.Collections.Concurrent
                     // Since this DEBUG code is holding a strong reference to "value", state of a key must never go from found to not found, 
                     // and only one value may exist per key.
                     Debug.Assert(checkedFound);
-                    Debug.Assert(Object.ReferenceEquals(checkedValue, value));
+                    Debug.Assert(object.ReferenceEquals(checkedValue, value));
                     GC.KeepAlive(value);
                 }
             }

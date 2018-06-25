@@ -55,17 +55,17 @@ namespace System
 
         #region APIs need by number formatting.
 
-        internal static uint DecDivMod1E9(ref Decimal value)
+        internal static uint DecDivMod1E9(ref decimal value)
         {
             return DecCalc.DecDivMod1E9(ref value);
         }
 
-        internal static void DecAddInt32(ref Decimal value, uint i)
+        internal static void DecAddInt32(ref decimal value, uint i)
         {
             DecCalc.DecAddInt32(ref value, i);
         }
 
-        internal static void DecMul10(ref Decimal value)
+        internal static void DecMul10(ref decimal value)
         {
             DecCalc.DecMul10(ref value);
         }
@@ -83,12 +83,12 @@ namespace System
             private const ulong TenToPowerEighteen = 1000000000000000000;
 
             // The maximum power of 10 that a 32 bit integer can store
-            private const Int32 MaxInt32Scale = 9;
+            private const int MaxInt32Scale = 9;
             // The maximum power of 10 that a 64 bit integer can store
-            private const Int32 MaxInt64Scale = 19;
+            private const int MaxInt64Scale = 19;
 
             // Fast access for 10^n where n is 0-9        
-            private static readonly UInt32[] s_powers10 = new UInt32[] {
+            private static readonly uint[] s_powers10 = new uint[] {
                 1,
                 10,
                 100,
@@ -922,7 +922,7 @@ ThrowOverflow:
 
             // DecAddSub adds or subtracts two decimal values.  On return, d1 contains the result
             // of the operation.  Passing in true for bSign means subtract and false means add.
-            private static unsafe void DecAddSub(ref Decimal d1, ref Decimal d2, bool bSign)
+            private static unsafe void DecAddSub(ref decimal d1, ref decimal d2, bool bSign)
             {
                 ulong low64 = d1.Low64;
                 uint high = d1.High, flags = d1.uflags, d2flags = d2.uflags;
@@ -1244,7 +1244,7 @@ ReturnResult:
             //**********************************************************************
             // VarCyFromDec - Convert Currency to Decimal (similar to OleAut32 api.)
             //**********************************************************************
-            internal static long VarCyFromDec(ref Decimal pdecIn)
+            internal static long VarCyFromDec(ref decimal pdecIn)
             {
                 long value;
 
@@ -1289,7 +1289,7 @@ ThrowOverflow:
             //**********************************************************************
             // VarDecCmp - Decimal Compare updated to return values similar to ICompareTo
             //**********************************************************************
-            internal static int VarDecCmp(ref Decimal pdecL, ref Decimal pdecR)
+            internal static int VarDecCmp(ref decimal pdecL, ref decimal pdecR)
             {
                 if ((pdecR.Low | pdecR.Mid | pdecR.High) == 0)
                 {
@@ -1306,7 +1306,7 @@ ThrowOverflow:
                 return VarDecCmpSub(ref pdecL, ref pdecR);
             }
 
-            private static int VarDecCmpSub(ref Decimal d1, ref Decimal d2)
+            private static int VarDecCmpSub(ref decimal d1, ref decimal d2)
             {
                 int flags = d2.flags;
                 int sign = (flags >> 31) | 1;
@@ -1377,7 +1377,7 @@ ThrowOverflow:
             //**********************************************************************
             // VarDecMul - Decimal Multiply
             //**********************************************************************
-            internal static unsafe void VarDecMul(ref Decimal pdecL, ref Decimal pdecR)
+            internal static unsafe void VarDecMul(ref decimal pdecL, ref decimal pdecR)
             {
                 int iScale = (byte)(pdecL.uflags + pdecR.uflags >> ScaleShift);
 
@@ -1523,15 +1523,15 @@ ThrowOverflow:
                 return;
 
 ReturnZero:
-                pdecL = default(Decimal);
+                pdecL = default(decimal);
             }
 
             //**********************************************************************
             // VarDecFromR4 - Convert float to Decimal
             //**********************************************************************
-            internal static void VarDecFromR4(float input, out Decimal pdecOut)
+            internal static void VarDecFromR4(float input, out decimal pdecOut)
             {
-                pdecOut = new Decimal();
+                pdecOut = new decimal();
 
                 // The most we can scale by is 10^28, which is just slightly more
                 // than 2^93.  So a float with an exponent of -94 could just
@@ -1705,9 +1705,9 @@ ThrowOverflow:
             //**********************************************************************
             // VarDecFromR8 - Convert double to Decimal
             //**********************************************************************
-            internal static void VarDecFromR8(double input, out Decimal pdecOut)
+            internal static void VarDecFromR8(double input, out decimal pdecOut)
             {
-                pdecOut = new Decimal();
+                pdecOut = new decimal();
 
                 // The most we can scale by is 10^28, which is just slightly more
                 // than 2^93.  So a float with an exponent of -94 could just
@@ -1886,7 +1886,7 @@ ThrowOverflow:
             //**********************************************************************
             // VarR4ToDec - Convert Decimal to float
             //**********************************************************************
-            internal static float VarR4FromDec(ref Decimal pdecIn)
+            internal static float VarR4FromDec(ref decimal pdecIn)
             {
                 return (float)VarR8FromDec(ref pdecIn);
             }
@@ -1894,7 +1894,7 @@ ThrowOverflow:
             //**********************************************************************
             // VarR8ToDec - Convert Decimal to double
             //**********************************************************************
-            internal static double VarR8FromDec(ref Decimal pdecIn)
+            internal static double VarR8FromDec(ref decimal pdecIn)
             {
                 // Value taken via reverse engineering the double that corresponds to 2^64. (oleaut32 has ds2to64 = DEFDS(0, 0, DBLBIAS + 65, 0))
                 const double ds2to64 = 1.8446744073709552e+019;
@@ -1929,21 +1929,21 @@ ThrowOverflow:
 
             // VarDecAdd divides two decimal values.  On return, d1 contains the result
             // of the operation
-            internal static void VarDecAdd(ref Decimal d1, ref Decimal d2)
+            internal static void VarDecAdd(ref decimal d1, ref decimal d2)
             {
                 DecAddSub(ref d1, ref d2, false);
             }
 
             // VarDecSub divides two decimal values.  On return, d1 contains the result
             // of the operation.
-            internal static void VarDecSub(ref Decimal d1, ref Decimal d2)
+            internal static void VarDecSub(ref decimal d1, ref decimal d2)
             {
                 DecAddSub(ref d1, ref d2, true);
             }
 
             // VarDecDiv divides two decimal values.  On return, d1 contains the result
             // of the operation.
-            internal static unsafe void VarDecDiv(ref Decimal d1, ref Decimal d2)
+            internal static unsafe void VarDecDiv(ref decimal d1, ref decimal d2)
             {
                 Buf12 bufQuo, bufDivisor;
                 _ = &bufQuo; // workaround for CS0165
@@ -2217,7 +2217,7 @@ ThrowOverflow:
             //**********************************************************************
             // VarDecMod - Computes the remainder between two decimals
             //**********************************************************************
-            internal static void VarDecMod(ref Decimal d1, ref Decimal d2)
+            internal static void VarDecMod(ref decimal d1, ref decimal d2)
             {
                 if ((d2.lo | d2.mid | d2.hi) == 0)
                     throw new DivideByZeroException();
@@ -2244,7 +2244,7 @@ ThrowOverflow:
                 // This piece of code is to work around the fact that Dividing a decimal with 28 digits number by decimal which causes
                 // causes the result to be 28 digits, can cause to be incorrectly rounded up.
                 // eg. Decimal.MaxValue / 2 * Decimal.MaxValue will overflow since the division by 2 was rounded instead of being truncked.
-                Decimal tmp = d2;
+                decimal tmp = d2;
                 DecAddSub(ref d1, ref tmp, true);
 
                 // Formula:  d1 - (RoundTowardsZero(d1 / d2) * d2)            
@@ -2283,7 +2283,7 @@ ThrowOverflow:
             }
 
             // Does an in-place round by the specified scale
-            internal static void InternalRound(ref Decimal d, uint scale, RoundingMode mode)
+            internal static void InternalRound(ref decimal d, uint scale, RoundingMode mode)
             {
                 // the scale becomes the desired decimal count
                 d.uflags -= scale << ScaleShift;
@@ -2412,7 +2412,7 @@ done:
                 return (uint)(n % 1000000000);
             }
 
-            internal static uint DecDivMod1E9(ref Decimal value)
+            internal static uint DecDivMod1E9(ref decimal value)
             {
                 return D32DivMod1E9(D32DivMod1E9(D32DivMod1E9(0,
                                                               ref value.uhi),
@@ -2420,7 +2420,7 @@ done:
                                     ref value.ulo);
             }
 
-            internal static void DecAddInt32(ref Decimal value, uint i)
+            internal static void DecAddInt32(ref decimal value, uint i)
             {
                 if (D32AddCarry(ref value.ulo, i))
                 {
@@ -2437,16 +2437,16 @@ done:
                 return (sum < v) || (sum < i);
             }
 
-            internal static void DecMul10(ref Decimal value)
+            internal static void DecMul10(ref decimal value)
             {
-                Decimal d = value;
+                decimal d = value;
                 DecShiftLeft(ref value);
                 DecShiftLeft(ref value);
                 DecAdd(ref value, d);
                 DecShiftLeft(ref value);
             }
 
-            private static void DecShiftLeft(ref Decimal value)
+            private static void DecShiftLeft(ref decimal value)
             {
                 uint c0 = (value.Low & 0x80000000) != 0 ? 1u : 0u;
                 uint c1 = (value.Mid & 0x80000000) != 0 ? 1u : 0u;
@@ -2455,7 +2455,7 @@ done:
                 value.High = (value.High << 1) | c1;
             }
 
-            private static void DecAdd(ref Decimal value, Decimal d)
+            private static void DecAdd(ref decimal value, decimal d)
             {
                 if (D32AddCarry(ref value.ulo, d.Low))
                 {

@@ -18,7 +18,7 @@ namespace System.Reflection
     [System.Runtime.CompilerServices.ReflectionBlocked]
     public static class AssemblyNameParser
     {
-        public static void Parse(AssemblyName blank, String s)
+        public static void Parse(AssemblyName blank, string s)
         {
             if (s == null)
                 throw new ArgumentNullException(nameof(s));
@@ -26,7 +26,7 @@ namespace System.Reflection
             runtimeAssemblyName.CopyToAssemblyName(blank);
         }
 
-        public static RuntimeAssemblyName Parse(String s)
+        public static RuntimeAssemblyName Parse(string s)
         {
             Debug.Assert(s != null);
 
@@ -39,26 +39,26 @@ namespace System.Reflection
             AssemblyNameLexer lexer = new AssemblyNameLexer(s);
 
             // Name must come first.
-            String name;
+            string name;
             AssemblyNameLexer.Token token = lexer.GetNext(out name);
             if (token != AssemblyNameLexer.Token.String)
                 throw new FileLoadException(SR.InvalidAssemblyName);
 
-            if (name == String.Empty || name.IndexOfAny(s_illegalCharactersInSimpleName) != -1)
+            if (name == string.Empty || name.IndexOfAny(s_illegalCharactersInSimpleName) != -1)
                 throw new FileLoadException(SR.InvalidAssemblyName);
 
             Version version = null;
-            String cultureName = null;
+            string cultureName = null;
             byte[] pkt = null;
             AssemblyNameFlags flags = 0;
 
-            LowLevelList<String> alreadySeen = new LowLevelList<String>();
+            LowLevelList<string> alreadySeen = new LowLevelList<string>();
             token = lexer.GetNext();
             while (token != AssemblyNameLexer.Token.End)
             {
                 if (token != AssemblyNameLexer.Token.Comma)
                     throw new FileLoadException(SR.InvalidAssemblyName);
-                String attributeName;
+                string attributeName;
 
                 token = lexer.GetNext(out attributeName);
                 if (token != AssemblyNameLexer.Token.String)
@@ -73,12 +73,12 @@ namespace System.Reflection
 
                 if (token != AssemblyNameLexer.Token.Equals)
                     throw new FileLoadException(SR.InvalidAssemblyName);
-                String attributeValue;
+                string attributeValue;
                 token = lexer.GetNext(out attributeValue);
                 if (token != AssemblyNameLexer.Token.String)
                     throw new FileLoadException(SR.InvalidAssemblyName);
 
-                if (attributeName == String.Empty)
+                if (attributeName == string.Empty)
                     throw new FileLoadException(SR.InvalidAssemblyName);
 
                 for (int i = 0; i < alreadySeen.Count; i++)
@@ -134,9 +134,9 @@ namespace System.Reflection
             return new RuntimeAssemblyName(name, version, cultureName, flags, pkt);
         }
 
-        private static Version ParseVersion(String attributeValue)
+        private static Version ParseVersion(string attributeValue)
         {
-            String[] parts = attributeValue.Split('.');
+            string[] parts = attributeValue.Split('.');
             if (parts.Length > 4)
                 throw new FileLoadException(SR.InvalidAssemblyName);
             ushort[] versionNumbers = new ushort[4];
@@ -149,7 +149,7 @@ namespace System.Reflection
                     // Desktop compat: TryParse is a little more forgiving than Fusion.
                     for (int j = 0; j < parts[i].Length; j++)
                     {
-                        if (!Char.IsDigit(parts[i][j]))
+                        if (!char.IsDigit(parts[i][j]))
                             throw new FileLoadException(SR.InvalidAssemblyName);
                     }
                     if (!(ushort.TryParse(parts[i], out versionNumbers[i])))
@@ -168,7 +168,7 @@ namespace System.Reflection
             return new Version(versionNumbers[0], versionNumbers[1], versionNumbers[2], versionNumbers[3]);
         }
 
-        private static String ParseCulture(String attributeValue)
+        private static string ParseCulture(string attributeValue)
         {
             if (attributeValue.Equals("Neutral", StringComparison.OrdinalIgnoreCase))
             {
@@ -181,9 +181,9 @@ namespace System.Reflection
             }
         }
 
-        private static byte[] ParsePKT(String attributeValue)
+        private static byte[] ParsePKT(string attributeValue)
         {
-            if (attributeValue.Equals("null", StringComparison.OrdinalIgnoreCase) || attributeValue == String.Empty)
+            if (attributeValue.Equals("null", StringComparison.OrdinalIgnoreCase) || attributeValue == string.Empty)
                 return Array.Empty<byte>();
 
             if (attributeValue.Length != 8 * 2)
@@ -200,7 +200,7 @@ namespace System.Reflection
             return pkt;
         }
 
-        private static ProcessorArchitecture ParseProcessorArchitecture(String attributeValue)
+        private static ProcessorArchitecture ParseProcessorArchitecture(string attributeValue)
         {
             if (attributeValue.Equals("msil", StringComparison.OrdinalIgnoreCase))
                 return ProcessorArchitecture.MSIL;

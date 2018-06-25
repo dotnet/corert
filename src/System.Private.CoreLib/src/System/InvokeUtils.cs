@@ -39,7 +39,7 @@ namespace System
         // This method is targeted by the Delegate ILTransformer.
         //    
         //
-        public static Object CheckArgument(Object srcObject, RuntimeTypeHandle dstType, BinderBundle binderBundle)
+        public static object CheckArgument(object srcObject, RuntimeTypeHandle dstType, BinderBundle binderBundle)
         {
             EETypePtr dstEEType = dstType.ToEETypePtr();
             return CheckArgument(srcObject, dstEEType, CheckArgumentSemantics.DynamicInvoke, binderBundle, getExactTypeForCustomBinder: null);
@@ -53,7 +53,7 @@ namespace System
             SetFieldDirect,      // Throws ArgumentException - other than that, like DynamicInvoke except that enums and integers cannot be intermingled, and null cannot substitute for default(valuetype).
         }
 
-        internal static Object CheckArgument(Object srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, BinderBundle binderBundle, Func<Type> getExactTypeForCustomBinder = null)
+        internal static object CheckArgument(object srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, BinderBundle binderBundle, Func<Type> getExactTypeForCustomBinder = null)
         {
             if (srcObject == null)
             {
@@ -803,7 +803,7 @@ namespace System
                 incomingParam = InvokeUtils.CheckArgument(incomingParam, type.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, s_binderBundle, s_getExactTypeForCustomBinder);
                 if (s_binderBundle == null)
                 {
-                    System.Diagnostics.Debug.Assert(s_parameters[index] == null || Object.ReferenceEquals(incomingParam, s_parameters[index]));
+                    System.Diagnostics.Debug.Assert(s_parameters[index] == null || object.ReferenceEquals(incomingParam, s_parameters[index]));
                 }
                 return DynamicInvokeBoxedValuetypeReturn(out paramLookupType, incomingParam, index, type, paramType);
             }
@@ -818,7 +818,7 @@ namespace System
                 paramLookupType = DynamicInvokeParamLookupType.IndexIntoObjectArrayReturned;
                 if (s_binderBundle == null)
                 {
-                    System.Diagnostics.Debug.Assert(Object.ReferenceEquals(incomingParam, s_parameters[index]));
+                    System.Diagnostics.Debug.Assert(object.ReferenceEquals(incomingParam, s_parameters[index]));
                     return s_parameters;
                 }
                 else

@@ -94,9 +94,9 @@ namespace System
             return true;
         }
 
-        private TimeZoneInfo(TimeZoneInformation zone, Boolean dstDisabled)
+        private TimeZoneInfo(TimeZoneInformation zone, bool dstDisabled)
         {
-            if (String.IsNullOrEmpty(zone.StandardName))
+            if (string.IsNullOrEmpty(zone.StandardName))
             {
                 _id = LocalId;  // the ID must contain at least 1 character - initialize m_id to "Local"
             }
@@ -134,9 +134,9 @@ namespace System
 
             public unsafe TimeZoneInformation(TIME_DYNAMIC_ZONE_INFORMATION dtzi)
             {
-                StandardName = new String(dtzi.StandardName);
-                DaylightName = new String(dtzi.DaylightName);
-                TimeZoneKeyName = new String(dtzi.TimeZoneKeyName);
+                StandardName = new string(dtzi.StandardName);
+                DaylightName = new string(dtzi.DaylightName);
+                TimeZoneKeyName = new string(dtzi.TimeZoneKeyName);
                 Dtzi = dtzi;
             }
         }
@@ -150,7 +150,7 @@ namespace System
         //
         // assumes cachedData lock is taken
         //
-        private static TimeZoneInfoResult TryGetTimeZone(ref TimeZoneInformation timeZoneInformation, Boolean dstDisabled, out TimeZoneInfo value, out Exception e, CachedData cachedData)
+        private static TimeZoneInfoResult TryGetTimeZone(ref TimeZoneInformation timeZoneInformation, bool dstDisabled, out TimeZoneInfo value, out Exception e, CachedData cachedData)
         {
             TimeZoneInfoResult result = TimeZoneInfoResult.Success;
             e = null;
@@ -822,10 +822,10 @@ namespace System
                 {
                     string s = new String(tdzi.StandardName);
 
-                    if (!String.IsNullOrEmpty(s) &&
+                    if (!string.IsNullOrEmpty(s) &&
                         EqualStandardDates(timeZoneInformation, ref tdzi) &&
                         (notSupportedDaylightSaving || EqualDaylightDates(timeZoneInformation, ref tdzi)) &&
-                        String.Compare(s, timeZoneInformation.StandardName, StringComparison.Ordinal) == 0)
+                        string.Compare(s, timeZoneInformation.StandardName, StringComparison.Ordinal) == 0)
                     {
                         // found a match
                         timeZoneInformation.TimeZoneKeyName = s;
@@ -861,10 +861,10 @@ namespace System
                 return CreateCustomTimeZone(LocalId, TimeSpan.Zero, LocalId, LocalId);
             }
 
-            Boolean dstDisabled = timeZoneInformation.Dtzi.DynamicDaylightTimeDisabled != 0;
+            bool dstDisabled = timeZoneInformation.Dtzi.DynamicDaylightTimeDisabled != 0;
 
             //// check to see if we can use the key name returned from the API call
-            if (!String.IsNullOrEmpty(timeZoneInformation.TimeZoneKeyName) || FindMatchToCurrentTimeZone(timeZoneInformation))
+            if (!string.IsNullOrEmpty(timeZoneInformation.TimeZoneKeyName) || FindMatchToCurrentTimeZone(timeZoneInformation))
             {
                 TimeZoneInfo zone = null;
                 Exception ex;

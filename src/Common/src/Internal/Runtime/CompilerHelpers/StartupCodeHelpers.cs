@@ -304,6 +304,6 @@ namespace Internal.Runtime.CompilerHelpers
     internal unsafe struct TypeManagerSlot
     {
         public TypeManagerHandle TypeManager;
-        public Int32 ModuleIndex;
+        public int ModuleIndex;
     }
 }

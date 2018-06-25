@@ -519,7 +519,7 @@ namespace System.Resources
                     char c = cultureName[i];
                     // TODO: NLS Arrowhead - This is broken, names can only be RFC4646 names (ie: a-zA-Z0-9).
                     // TODO: NLS Arrowhead - This allows any unicode letter/digit
-                    if (Char.IsLetterOrDigit(c) || c == '-' || c == '_')
+                    if (char.IsLetterOrDigit(c) || c == '-' || c == '_')
                     {
                         continue;
                     }
@@ -702,7 +702,7 @@ namespace System.Resources
                 ResourceSet lostRace;
                 if (localResourceSets.TryGetValue(cultureName, out lostRace))
                 {
-                    if (!Object.ReferenceEquals(lostRace, rs))
+                    if (!object.ReferenceEquals(lostRace, rs))
                     {
                         // Note: In certain cases, we can be trying to add a ResourceSet for multiple
                         // cultures on one thread, while a second thread added another ResourceSet for one
@@ -753,7 +753,7 @@ namespace System.Resources
                 // SatelliteContractVersionAttribute contains bogus values.
                 // If this assert fires, please fix the build process for the
                 // BCL directory.
-                if (a == typeof(Object).GetTypeInfo().Assembly)
+                if (a == typeof(object).GetTypeInfo().Assembly)
                 {
                     Debug.Fail(System.CoreLib.Name + "'s SatelliteContractVersionAttribute is a malformed version string!");
                     return null;
@@ -793,7 +793,7 @@ namespace System.Resources
 
             // Now, compare assembly display names (IGNORES VERSION AND PROCESSORARCHITECTURE)
             // also, for  mscorlib ignores everything, since that's what the binder is going to do
-            while (Char.IsWhiteSpace(asmTypeName1[++comma])) ;
+            while (char.IsWhiteSpace(asmTypeName1[++comma])) ;
 
             // case insensitive
             AssemblyName an1 = new AssemblyName(asmTypeName1.Substring(comma));
@@ -1051,7 +1051,7 @@ namespace System.Resources
                     // match, since CultureInfo objects can't represent all the different languages the AppX resource model supports.
                     // For classic resources, this causes us to ignore the languages list and instead use the older Win32 behavior,
                     // which is the design choice we've made. (See the call a little later to GetCurrentUICultureNoAppX()).
-                    if (Object.ReferenceEquals(culture, CultureInfo.CurrentUICulture))
+                    if (object.ReferenceEquals(culture, CultureInfo.CurrentUICulture))
                     {
                         culture = null;
                     }
@@ -1139,7 +1139,7 @@ namespace System.Resources
         // current thread's CultureInfo, and if not found, all parent CultureInfos.
         // Returns null if the resource wasn't found.
         // 
-        public virtual Object GetObject(string name)
+        public virtual object GetObject(string name)
         {
             return GetObject(name, (CultureInfo)null, true);
         }
@@ -1147,12 +1147,12 @@ namespace System.Resources
         // Looks up a resource value for a particular name.  Looks in the 
         // specified CultureInfo, and if not found, all parent CultureInfos.
         // Returns null if the resource wasn't found.
-        public virtual Object GetObject(string name, CultureInfo culture)
+        public virtual object GetObject(string name, CultureInfo culture)
         {
             return GetObject(name, culture, true);
         }
 
-        private Object GetObject(string name, CultureInfo culture, bool wrapUnmanagedMemStream)
+        private object GetObject(string name, CultureInfo culture, bool wrapUnmanagedMemStream)
         {
             if (null == name)
                 throw new ArgumentNullException(nameof(name));
@@ -1163,7 +1163,7 @@ namespace System.Resources
                  // If the caller explictily passed in a culture that was obtained by calling CultureInfo.CurrentUICulture,
                  // null it out, so that we re-compute it based on the Win32 value and not the AppX language list value.
                  // (See the call a little later to GetCurrentUICultureNoAppX()).
-                 if(Object.ReferenceEquals(culture, CultureInfo.CurrentUICulture))
+                 if (object.ReferenceEquals(culture, CultureInfo.CurrentUICulture))
                  {
                      culture = null;
                  }              
@@ -1180,7 +1180,7 @@ namespace System.Resources
             ResourceSet last = GetFirstResourceSet(culture);
             if (last != null)
             {
-                Object value = last.GetObject(name, _ignoreCase);
+                object value = last.GetObject(name, _ignoreCase);
 
                 if (value != null)
                 {
@@ -1205,7 +1205,7 @@ namespace System.Resources
 
                 if (rs != last)
                 {
-                    Object value = rs.GetObject(name, _ignoreCase);
+                    object value = rs.GetObject(name, _ignoreCase);
                     if (value != null)
                     {
                         // update the last used ResourceSet
@@ -1239,7 +1239,7 @@ namespace System.Resources
 
         public UnmanagedMemoryStream GetStream(string name, CultureInfo culture)
         {
-            Object obj = GetObject(name, culture, false);
+            object obj = GetObject(name, culture, false);
             UnmanagedMemoryStream ums = obj as UnmanagedMemoryStream;
             if (ums == null && obj != null)
                 throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ResourceNotStream_Name, name));

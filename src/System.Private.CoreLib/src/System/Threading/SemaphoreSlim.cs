@@ -76,7 +76,7 @@ namespace System.Threading
             new Task<bool>(false, false, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default(CancellationToken));
 
         // No maximum constant
-        private const int NO_MAXIMUM = Int32.MaxValue;
+        private const int NO_MAXIMUM = int.MaxValue;
 
         // Task in a linked list of asynchronous waiters
         private sealed class TaskNode : Task<bool>, IThreadPoolWorkItem
@@ -233,8 +233,8 @@ namespace System.Threading
         public bool Wait(TimeSpan timeout)
         {
             // Validate the timeout
-            Int64 totalMilliseconds = (Int64)timeout.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > Int32.MaxValue)
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
             {
                 throw new System.ArgumentOutOfRangeException(
                     nameof(timeout), timeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
@@ -263,8 +263,8 @@ namespace System.Threading
         public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
         {
             // Validate the timeout
-            Int64 totalMilliseconds = (Int64)timeout.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > Int32.MaxValue)
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
             {
                 throw new System.ArgumentOutOfRangeException(
                     nameof(timeout), timeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
@@ -568,8 +568,8 @@ namespace System.Threading
         public Task<bool> WaitAsync(TimeSpan timeout, CancellationToken cancellationToken)
         {
             // Validate the timeout
-            Int64 totalMilliseconds = (Int64)timeout.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > Int32.MaxValue)
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
             {
                 throw new System.ArgumentOutOfRangeException(
                     nameof(timeout), timeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
@@ -861,7 +861,7 @@ namespace System.Threading
         /// <param name="disposing">true to release both managed and unmanaged resources;
         /// false to release only unmanaged resources.</param>
         /// <remarks>
-        /// Unlike most of the members of <see cref="SemaphoreSlim"/>, <see cref="Dispose(Boolean)"/> is not
+        /// Unlike most of the members of <see cref="SemaphoreSlim"/>, <see cref="Dispose(bool)"/> is not
         /// thread-safe and may not be used concurrently with other members of this instance.
         /// </remarks>
         protected virtual void Dispose(bool disposing)

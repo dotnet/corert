@@ -235,7 +235,7 @@ namespace Microsoft.Win32
 
         [System.Security.SecuritySafeCritical]
         // Gets an error message for a Win32 error code.
-        internal static String GetMessage(int errorCode)
+        internal static string GetMessage(int errorCode)
         {
 #if FEATURE_MANAGED_ETW
             return Interop.Kernel32.GetMessage(errorCode);

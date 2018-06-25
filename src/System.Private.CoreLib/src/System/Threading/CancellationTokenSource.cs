@@ -267,7 +267,7 @@ namespace System.Threading
         public CancellationTokenSource(TimeSpan delay)
         {
             long totalMilliseconds = (long)delay.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > Int32.MaxValue)
+            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
             {
                 throw new ArgumentOutOfRangeException(nameof(delay));
             }
@@ -294,7 +294,7 @@ namespace System.Threading
         /// canceled already.
         /// </para>
         /// </remarks>
-        public CancellationTokenSource(Int32 millisecondsDelay)
+        public CancellationTokenSource(int millisecondsDelay)
         {
             if (millisecondsDelay < -1)
             {
@@ -305,7 +305,7 @@ namespace System.Threading
         }
 
         // Common initialization logic when constructing a CTS with a delay parameter
-        private void InitializeWithTimer(Int32 millisecondsDelay)
+        private void InitializeWithTimer(int millisecondsDelay)
         {
             m_state = NOT_CANCELED;
             m_timer = new Timer(s_timerCallback, this, millisecondsDelay, -1);
@@ -398,7 +398,7 @@ namespace System.Threading
         public void CancelAfter(TimeSpan delay)
         {
             long totalMilliseconds = (long)delay.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > Int32.MaxValue)
+            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
             {
                 throw new ArgumentOutOfRangeException(nameof(delay));
             }
@@ -430,7 +430,7 @@ namespace System.Threading
         /// canceled already.
         /// </para>
         /// </remarks>
-        public void CancelAfter(Int32 millisecondsDelay)
+        public void CancelAfter(int millisecondsDelay)
         {
             ThrowIfDisposed();
 

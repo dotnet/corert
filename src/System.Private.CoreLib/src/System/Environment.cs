@@ -50,17 +50,17 @@ namespace System
         //// another managed helper method, unless you consult with some CLR Watson experts.
 
 
-        public static void FailFast(String message)
+        public static void FailFast(string message)
         {
             RuntimeExceptionHelpers.FailFast(message);
         }
 
-        public static void FailFast(String message, Exception exception)
+        public static void FailFast(string message, Exception exception)
         {
             RuntimeExceptionHelpers.FailFast(message, exception);
         }
 
-        internal static void FailFast(String message, Exception exception, String errorSource)
+        internal static void FailFast(string message, Exception exception, string errorSource)
         {
             // TODO: errorSource originates from CoreCLR (See: https://github.com/dotnet/coreclr/pull/15895)
             // For now, we ignore errorSource on CoreRT but we should distinguish the way FailFast prints exception message using errorSource
@@ -98,7 +98,7 @@ namespace System
         **Arguments: None.
         **Exceptions: None.
         ==============================================================================*/
-        public static String NewLine
+        public static string NewLine
         {
             get
             {
@@ -110,7 +110,7 @@ namespace System
             }
         }
 
-        public static String StackTrace
+        public static string StackTrace
         {
             // Disable inlining to have predictable stack frame that EnvironmentAugments can skip
             [MethodImpl(MethodImplOptions.NoInlining)]

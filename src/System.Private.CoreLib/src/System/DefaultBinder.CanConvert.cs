@@ -16,7 +16,7 @@ namespace System
         }
 
         // CanChangePrimitiveObjectToType
-        private static bool CanChangePrimitiveObjectToType(Object source, Type type)
+        private static bool CanChangePrimitiveObjectToType(object source, Type type)
         {
             return CanPrimitiveWiden(source.GetType(), type);
         }

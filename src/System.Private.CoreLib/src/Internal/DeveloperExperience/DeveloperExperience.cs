@@ -34,13 +34,13 @@ namespace Internal.DeveloperExperience
             return disableMetadata;
         }
 
-        public virtual void WriteLine(String s)
+        public virtual void WriteLine(string s)
         {
             Debug.WriteLine(s);
             return;
         }
 
-        public virtual String CreateStackTraceString(IntPtr ip, bool includeFileInfo)
+        public virtual string CreateStackTraceString(IntPtr ip, bool includeFileInfo)
         {
             if (!IsMetadataStackTraceResolutionDisabled())
             {
@@ -74,7 +74,7 @@ namespace Internal.DeveloperExperience
             }
 
             StringBuilder sb = new StringBuilder();
-            String fileNameWithoutExtension = GetFileNameWithoutExtension(moduleFullFileName);
+            string fileNameWithoutExtension = GetFileNameWithoutExtension(moduleFullFileName);
             int rva = RuntimeAugments.ConvertIpToRva(ip);
             sb.Append(fileNameWithoutExtension);
             sb.Append("!<BaseAddress>+0x");
@@ -107,7 +107,7 @@ namespace Internal.DeveloperExperience
             }
         }
 
-        public virtual bool OnContractFailure(String stackTrace, ContractFailureKind contractFailureKind, String displayMessage, String userMessage, String conditionText, Exception innerException)
+        public virtual bool OnContractFailure(string stackTrace, ContractFailureKind contractFailureKind, string displayMessage, string userMessage, string conditionText, Exception innerException)
         {
             Debug.WriteLine("Assertion failed: " + (displayMessage == null ? "" : displayMessage));
             if (Debugger.IsAttached)
@@ -131,7 +131,7 @@ namespace Internal.DeveloperExperience
             }
         }
 
-        private static String GetFileNameWithoutExtension(String path)
+        private static string GetFileNameWithoutExtension(string path)
         {
             path = GetFileName(path);
             int i;
@@ -141,7 +141,7 @@ namespace Internal.DeveloperExperience
                 return path.Substring(0, i);
         }
 
-        private static String GetFileName(String path)
+        private static string GetFileName(string path)
         {
             int length = path.Length;
             for (int i = length; --i >= 0;)

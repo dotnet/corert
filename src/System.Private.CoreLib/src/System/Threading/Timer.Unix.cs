@@ -32,7 +32,7 @@ namespace System.Threading
 
             // Note: AutoResetEvent.WaitOne takes an Int32 value as a timeout.
             // The TimerQueue code ensures that timer duration is not greater than max Int32 value
-            Debug.Assert(actualDuration <= (uint)Int32.MaxValue);
+            Debug.Assert(actualDuration <= (uint)int.MaxValue);
             s_nextTimerDuration = (int)actualDuration;
 
             // If this is the first time the timer is set then we need to create a thread that

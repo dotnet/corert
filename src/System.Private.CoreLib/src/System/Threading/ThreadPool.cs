@@ -673,9 +673,9 @@ namespace System.Threading
         }
     }
 
-    public delegate void WaitCallback(Object state);
+    public delegate void WaitCallback(object state);
 
-    public delegate void WaitOrTimerCallback(Object state, bool timedOut);  // signalled or timed out
+    public delegate void WaitOrTimerCallback(object state, bool timedOut);  // signalled or timed out
 
     //
     // Interface to something that can be queued to the TP.  This is implemented by 
@@ -887,11 +887,11 @@ namespace System.Threading
     {
         private WaitOrTimerCallback _waitOrTimerCallback;
         private ExecutionContext _executionContext;
-        private Object _state;
+        private object _state;
         private static readonly ContextCallback _ccbt = new ContextCallback(WaitOrTimerCallback_Context_t);
         private static readonly ContextCallback _ccbf = new ContextCallback(WaitOrTimerCallback_Context_f);
 
-        internal _ThreadPoolWaitOrTimerCallback(WaitOrTimerCallback waitOrTimerCallback, Object state, bool flowExecutionContext)
+        internal _ThreadPoolWaitOrTimerCallback(WaitOrTimerCallback waitOrTimerCallback, object state, bool flowExecutionContext)
         {
             _waitOrTimerCallback = waitOrTimerCallback;
             _state = state;
@@ -903,13 +903,13 @@ namespace System.Threading
             }
         }
 
-        private static void WaitOrTimerCallback_Context_t(Object state) =>
+        private static void WaitOrTimerCallback_Context_t(object state) =>
             WaitOrTimerCallback_Context(state, timedOut: true);
 
-        private static void WaitOrTimerCallback_Context_f(Object state) =>
+        private static void WaitOrTimerCallback_Context_f(object state) =>
             WaitOrTimerCallback_Context(state, timedOut: false);
 
-        private static void WaitOrTimerCallback_Context(Object state, bool timedOut)
+        private static void WaitOrTimerCallback_Context(object state, bool timedOut)
         {
             _ThreadPoolWaitOrTimerCallback helper = (_ThreadPoolWaitOrTimerCallback)state;
             helper._waitOrTimerCallback(helper._state, timedOut);
@@ -938,7 +938,7 @@ namespace System.Threading
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
-             Object state,
+             object state,
              uint millisecondsTimeOutInterval,
              bool executeOnlyOnce)
         {
@@ -951,7 +951,7 @@ namespace System.Threading
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
-             Object state,
+             object state,
              uint millisecondsTimeOutInterval,
              bool executeOnlyOnce)
         {
@@ -963,71 +963,71 @@ namespace System.Threading
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
-             Object state,
+             object state,
              int millisecondsTimeOutInterval,
              bool executeOnlyOnce)
         {
             if (millisecondsTimeOutInterval < -1)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)millisecondsTimeOutInterval, executeOnlyOnce, true);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, true);
         }
 
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
-             Object state,
+             object state,
              int millisecondsTimeOutInterval,
              bool executeOnlyOnce)
         {
             if (millisecondsTimeOutInterval < -1)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)millisecondsTimeOutInterval, executeOnlyOnce, false);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
 
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
             WaitHandle waitObject,
             WaitOrTimerCallback callBack,
-            Object state,
+            object state,
             long millisecondsTimeOutInterval,
             bool executeOnlyOnce)
         {
             if (millisecondsTimeOutInterval < -1 || millisecondsTimeOutInterval > int.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)millisecondsTimeOutInterval, executeOnlyOnce, true);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, true);
         }
 
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
             WaitHandle waitObject,
             WaitOrTimerCallback callBack,
-            Object state,
+            object state,
             long millisecondsTimeOutInterval,
             bool executeOnlyOnce)
         {
             if (millisecondsTimeOutInterval < -1 || millisecondsTimeOutInterval > int.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)millisecondsTimeOutInterval, executeOnlyOnce, false);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
 
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
             WaitHandle waitObject,
             WaitOrTimerCallback callBack,
-            Object state,
+            object state,
             TimeSpan timeout,
             bool executeOnlyOnce)
         {
             int tm = WaitHandle.ToTimeoutMilliseconds(timeout);
-            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)tm, executeOnlyOnce, true);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)tm, executeOnlyOnce, true);
         }
 
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
             WaitHandle waitObject,
             WaitOrTimerCallback callBack,
-            Object state,
+            object state,
             TimeSpan timeout,
             bool executeOnlyOnce)
         {
             int tm = WaitHandle.ToTimeoutMilliseconds(timeout);
-            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)tm, executeOnlyOnce, false);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)tm, executeOnlyOnce, false);
         }
 
         public static bool QueueUserWorkItem(WaitCallback callBack) =>
@@ -1069,7 +1069,7 @@ namespace System.Threading
             return true;
         }
 
-        public static bool UnsafeQueueUserWorkItem(WaitCallback callBack, Object state)
+        public static bool UnsafeQueueUserWorkItem(WaitCallback callBack, object state)
         {
             if (callBack == null)
             {
