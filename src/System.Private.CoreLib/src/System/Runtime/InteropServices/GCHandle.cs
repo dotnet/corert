@@ -31,7 +31,7 @@ namespace System.Runtime.InteropServices
         private const GCHandleType MaxHandleType = GCHandleType.Pinned;
 
         // Allocate a handle storing the object and the type.
-        internal GCHandle(Object value, GCHandleType type)
+        internal GCHandle(object value, GCHandleType type)
         {
             // Make sure the type parameter is within the valid range for the enum.
             if ((uint)type > (uint)MaxHandleType)
@@ -61,12 +61,12 @@ namespace System.Runtime.InteropServices
         // type - The type of GC handle to create.
         // 
         // returns a new GC handle that protects the object.
-        public static GCHandle Alloc(Object value)
+        public static GCHandle Alloc(object value)
         {
             return new GCHandle(value, GCHandleType.Normal);
         }
 
-        public static GCHandle Alloc(Object value, GCHandleType type)
+        public static GCHandle Alloc(object value, GCHandleType type)
         {
             return new GCHandle(value, type);
         }
@@ -95,7 +95,7 @@ namespace System.Runtime.InteropServices
         }
 
         // Target property - allows getting / updating of the handle's referent.
-        public Object Target
+        public object Target
         {
             get
             {
@@ -145,12 +145,12 @@ namespace System.Runtime.InteropServices
                 // Get the address of the pinned object.
                 // The layout of String and Array is different from Object
 
-                Object target = this.Target;
+                object target = this.Target;
 
                 if (target == null)
                     return default(IntPtr);
 
-                if (target is String targetAsString)
+                if (target is string targetAsString)
                 {
                     return (IntPtr)Unsafe.AsPointer(ref targetAsString.GetRawStringData());
                 }
@@ -206,7 +206,7 @@ namespace System.Runtime.InteropServices
             return _handle.GetHashCode();
         }
 
-        public override bool Equals(Object o)
+        public override bool Equals(object o)
         {
             GCHandle hnd;
 
@@ -256,7 +256,7 @@ namespace System.Runtime.InteropServices
 #endif
         }
 
-        private static void GCHandleValidatePinnedObject(Object obj)
+        private static void GCHandleValidatePinnedObject(object obj)
         {
             if (obj != null && !obj.IsBlittable())
                 throw new ArgumentException(SR.Argument_NotIsomorphic);

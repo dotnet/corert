@@ -147,7 +147,7 @@ namespace System.Threading
         /* Methods */
 
 
-        private static readonly Action<Object> s_ActionToActionObjShunt = new Action<Object>(ActionToActionObjShunt);
+        private static readonly Action<object> s_ActionToActionObjShunt = new Action<object>(ActionToActionObjShunt);
         private static void ActionToActionObjShunt(object obj)
         {
             Action action = obj as Action;
@@ -231,7 +231,7 @@ namespace System.Threading
         /// <returns>The <see cref="T:System.Threading.CancellationTokenRegistration"/> instance that can 
         /// be used to unregister the callback.</returns>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
-        public CancellationTokenRegistration Register(Action<Object> callback, Object state)
+        public CancellationTokenRegistration Register(Action<object> callback, object state)
         {
             if (callback == null)
                 throw new ArgumentNullException(nameof(callback));
@@ -269,7 +269,7 @@ namespace System.Threading
         /// <exception cref="T:System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The associated <see
         /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
-        public CancellationTokenRegistration Register(Action<Object> callback, Object state, bool useSynchronizationContext)
+        public CancellationTokenRegistration Register(Action<object> callback, object state, bool useSynchronizationContext)
         {
             return Register(
                 callback,
@@ -281,7 +281,7 @@ namespace System.Threading
 
         // helper for internal registration needs that don't require an EC capture (e.g. creating linked token sources, or registering unstarted TPL tasks)
         // has a handy signature, and skips capturing execution context.
-        internal CancellationTokenRegistration InternalRegisterWithoutEC(Action<object> callback, Object state)
+        internal CancellationTokenRegistration InternalRegisterWithoutEC(Action<object> callback, object state)
         {
             return Register(
                 callback,
@@ -313,7 +313,7 @@ namespace System.Threading
         /// <exception cref="T:System.ObjectDisposedException">The associated <see
         /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public CancellationTokenRegistration Register(Action<Object> callback, Object state, bool useSynchronizationContext, bool useExecutionContext)
+        public CancellationTokenRegistration Register(Action<object> callback, object state, bool useSynchronizationContext, bool useExecutionContext)
         {
             if (callback == null)
                 throw new ArgumentNullException(nameof(callback));
@@ -386,7 +386,7 @@ namespace System.Threading
         /// from public CancellationToken constructors and their <see cref="IsCancellationRequested"/> values are equal.</returns>
         /// <exception cref="T:System.ObjectDisposedException">An associated <see
         /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
-        public override bool Equals(Object other)
+        public override bool Equals(object other)
         {
             if (other is CancellationToken)
             {
@@ -400,7 +400,7 @@ namespace System.Threading
         /// Serves as a hash function for a <see cref="T:System.Threading.CancellationToken">CancellationToken</see>.
         /// </summary>
         /// <returns>A hash code for the current <see cref="T:System.Threading.CancellationToken">CancellationToken</see> instance.</returns>
-        public override Int32 GetHashCode()
+        public override int GetHashCode()
         {
             if (m_source == null)
             {

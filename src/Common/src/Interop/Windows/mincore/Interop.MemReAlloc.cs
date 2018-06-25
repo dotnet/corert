@@ -11,7 +11,7 @@ internal static partial class Interop
     internal static unsafe partial class mincore
     {
         [DllImport("api-ms-win-core-heap-l1-1-0.dll")]
-        internal static extern unsafe IntPtr HeapReAlloc(IntPtr hHeap, UInt32 dwFlags, IntPtr lpMem, UIntPtr dwBytes);
+        internal static extern unsafe IntPtr HeapReAlloc(IntPtr hHeap, uint dwFlags, IntPtr lpMem, UIntPtr dwBytes);
     }
 
     internal static unsafe IntPtr MemReAlloc(IntPtr ptr, UIntPtr newSize)

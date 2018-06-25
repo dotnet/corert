@@ -134,7 +134,7 @@ namespace System
         /// and gets\create a new RCW in case it is alive.
         /// </summary>
         /// <returns></returns>
-        private Object TryGetComTarget()
+        private object TryGetComTarget()
         {
 #if ENABLE_WINRT
             WinRTInteropCallbacks callbacks = WinRTInterop.UnsafeCallbacks;

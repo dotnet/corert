@@ -37,28 +37,28 @@ namespace System
         internal static Type Void { get { return s_void; } }
         internal static Type MulticastDelegate { get { return s_multicastDelegate; } }
 
-        private static Type s_object = typeof(Object);
+        private static Type s_object = typeof(object);
         private static Type s_valuetype = typeof(ValueType);
         private static Type s_type = typeof(Type);
         private static Type s_attribute = typeof(Attribute);
-        private static Type s_string = typeof(String);
+        private static Type s_string = typeof(string);
         private static Type s_array = typeof(Array);
         private static Type s_enum = typeof(Enum);
-        private static Type s_boolean = typeof(Boolean);
-        private static Type s_char = typeof(Char);
-        private static Type s_byte = typeof(Byte);
-        private static Type s_sByte = typeof(SByte);
-        private static Type s_uInt16 = typeof(UInt16);
-        private static Type s_int16 = typeof(Int16);
-        private static Type s_uInt32 = typeof(UInt32);
-        private static Type s_int32 = typeof(Int32);
-        private static Type s_uInt64 = typeof(UInt64);
-        private static Type s_int64 = typeof(Int64);
+        private static Type s_boolean = typeof(bool);
+        private static Type s_char = typeof(char);
+        private static Type s_byte = typeof(byte);
+        private static Type s_sByte = typeof(sbyte);
+        private static Type s_uInt16 = typeof(ushort);
+        private static Type s_int16 = typeof(short);
+        private static Type s_uInt32 = typeof(uint);
+        private static Type s_int32 = typeof(int);
+        private static Type s_uInt64 = typeof(ulong);
+        private static Type s_int64 = typeof(long);
         private static Type s_uIntPtr = typeof(UIntPtr);
         private static Type s_intPtr = typeof(IntPtr);
-        private static Type s_single = typeof(Single);
-        private static Type s_double = typeof(Double);
-        private static Type s_decimal = typeof(Decimal);
+        private static Type s_single = typeof(float);
+        private static Type s_double = typeof(double);
+        private static Type s_decimal = typeof(decimal);
         private static Type s_datetime = typeof(DateTime);
         private static Type s_nullable = typeof(Nullable<>);
         private static Type s_void = typeof(void);

@@ -32,7 +32,7 @@ namespace System.Text
         /// </summary>
         internal unsafe void ReplaceBuffer(char* newBuffer)
         {
-            int len = String.wcslen(newBuffer);
+            int len = string.wcslen(newBuffer);
 
             // the '+1' is for back-compat with desktop CLR in terms of length calculation because desktop
             // CLR had '\0'

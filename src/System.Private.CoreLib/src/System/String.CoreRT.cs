@@ -90,7 +90,7 @@ namespace System
 
 #pragma warning restore
 
-        public static readonly String Empty = "";
+        public static readonly string Empty = "";
 
         [System.Runtime.CompilerServices.IndexerName("Chars")]
         public unsafe char this[int index]
@@ -117,7 +117,7 @@ namespace System
             get { return _stringLength; }
         }
 
-        internal static String FastAllocateString(int length)
+        internal static string FastAllocateString(int length)
         {
             // We allocate one extra char as an interop convenience so that our strings are null-
             // terminated, however, we don't pass the extra +1 to the string allocation because the base

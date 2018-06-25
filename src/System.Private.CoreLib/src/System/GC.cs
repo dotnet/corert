@@ -61,7 +61,7 @@ namespace System
 
     public static class GC
     {
-        public static int GetGeneration(Object obj)
+        public static int GetGeneration(object obj)
         {
             if (obj == null)
             {
@@ -84,7 +84,7 @@ namespace System
         {
             // note - this throws an NRE if given a null weak reference. This isn't
             // documented, but it's the behavior of Desktop and CoreCLR.
-            Object handleRef = RuntimeImports.RhHandleGet(wo.m_handle);
+            object handleRef = RuntimeImports.RhHandleGet(wo.m_handle);
             if (handleRef == null)
             {
                 throw new ArgumentNullException(nameof(wo));
@@ -170,14 +170,14 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(maxGenerationThreshold),
-                    String.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 1, 99));
+                    string.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 1, 99));
             }
 
             if (largeObjectHeapThreshold < 1 || largeObjectHeapThreshold > 99)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(largeObjectHeapThreshold),
-                    String.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 1, 99));
+                    string.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 1, 99));
             }
 
             // This is not documented on MSDN, but CoreCLR throws when the GC's
@@ -394,7 +394,7 @@ namespace System
             RuntimeImports.RhWaitForPendingFinalizers(RuntimeThread.ReentrantWaitsEnabled);
         }
 
-        public static void SuppressFinalize(Object obj)
+        public static void SuppressFinalize(object obj)
         {
             if (obj == null)
             {
@@ -404,7 +404,7 @@ namespace System
             RuntimeImports.RhSuppressFinalize(obj);
         }
 
-        public static void ReRegisterForFinalize(Object obj)
+        public static void ReRegisterForFinalize(object obj)
         {
             if (obj == null)
                 throw new ArgumentNullException(nameof(obj));
@@ -414,7 +414,7 @@ namespace System
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // disable optimizations
-        public static void KeepAlive(Object obj)
+        public static void KeepAlive(object obj)
         {
         }
 
@@ -516,7 +516,7 @@ namespace System
             }
 
 #if !BIT64
-            if (bytesAllocated > Int32.MaxValue)
+            if (bytesAllocated > int.MaxValue)
             {
                 throw new ArgumentOutOfRangeException(nameof(bytesAllocated),
                         SR.ArgumentOutOfRange_MustBeNonNegInt32);
@@ -585,7 +585,7 @@ namespace System
             }
 
 #if !BIT64
-            if (bytesAllocated > Int32.MaxValue)
+            if (bytesAllocated > int.MaxValue)
             {
                 throw new ArgumentOutOfRangeException(nameof(bytesAllocated),
                         SR.ArgumentOutOfRange_MustBeNonNegInt32);

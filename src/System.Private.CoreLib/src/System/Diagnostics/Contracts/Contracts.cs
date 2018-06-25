@@ -161,14 +161,14 @@ namespace System.Diagnostics.Contracts
     [SuppressMessage("Microsoft.Design", "CA1019:DefineAccessorsForAttributeArguments", Justification = "Thank you very much, but we like the names we've defined for the accessors")]
     public sealed class ContractPublicPropertyNameAttribute : Attribute
     {
-        private String _publicName;
+        private string _publicName;
 
-        public ContractPublicPropertyNameAttribute(String name)
+        public ContractPublicPropertyNameAttribute(string name)
         {
             _publicName = name;
         }
 
-        public String Name
+        public string Name
         {
             get { return _publicName; }
         }
@@ -200,31 +200,31 @@ namespace System.Diagnostics.Contracts
     [Conditional("CONTRACTS_FULL")]
     public sealed class ContractOptionAttribute : Attribute
     {
-        private String _category;
-        private String _setting;
+        private string _category;
+        private string _setting;
         private bool _enabled;
-        private String _value;
+        private string _value;
 
-        public ContractOptionAttribute(String category, String setting, bool enabled)
+        public ContractOptionAttribute(string category, string setting, bool enabled)
         {
             _category = category;
             _setting = setting;
             _enabled = enabled;
         }
 
-        public ContractOptionAttribute(String category, String setting, String value)
+        public ContractOptionAttribute(string category, string setting, string value)
         {
             _category = category;
             _setting = setting;
             _value = value;
         }
 
-        public String Category
+        public string Category
         {
             get { return _category; }
         }
 
-        public String Setting
+        public string Setting
         {
             get { return _setting; }
         }
@@ -234,7 +234,7 @@ namespace System.Diagnostics.Contracts
             get { return _enabled; }
         }
 
-        public String Value
+        public string Value
         {
             get { return _value; }
         }
@@ -293,7 +293,7 @@ namespace System.Diagnostics.Contracts
 #if FEATURE_RELIABILITY_CONTRACTS
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
-        public static void Assume(bool condition, String userMessage)
+        public static void Assume(bool condition, string userMessage)
         {
             if (!condition)
             {
@@ -332,7 +332,7 @@ namespace System.Diagnostics.Contracts
 #if FEATURE_RELIABILITY_CONTRACTS
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
-        public static void Assert(bool condition, String userMessage)
+        public static void Assert(bool condition, string userMessage)
         {
             if (!condition)
                 ReportFailure(ContractFailureKind.Assert, userMessage, null, null);
@@ -376,7 +376,7 @@ namespace System.Diagnostics.Contracts
 #if FEATURE_RELIABILITY_CONTRACTS
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
-        public static void Requires(bool condition, String userMessage)
+        public static void Requires(bool condition, string userMessage)
         {
             AssertMustUseRewriter(ContractFailureKind.Precondition, "Requires");
         }
@@ -418,7 +418,7 @@ namespace System.Diagnostics.Contracts
 #if FEATURE_RELIABILITY_CONTRACTS
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
-        public static void Requires<TException>(bool condition, String userMessage) where TException : Exception
+        public static void Requires<TException>(bool condition, string userMessage) where TException : Exception
         {
             AssertMustUseRewriter(ContractFailureKind.Precondition, "Requires<TException>");
         }
@@ -461,7 +461,7 @@ namespace System.Diagnostics.Contracts
 #if FEATURE_RELIABILITY_CONTRACTS
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
-        public static void Ensures(bool condition, String userMessage)
+        public static void Ensures(bool condition, string userMessage)
         {
             AssertMustUseRewriter(ContractFailureKind.Postcondition, "Ensures");
         }
@@ -504,7 +504,7 @@ namespace System.Diagnostics.Contracts
 #if FEATURE_RELIABILITY_CONTRACTS
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
-        public static void EnsuresOnThrow<TException>(bool condition, String userMessage) where TException : Exception
+        public static void EnsuresOnThrow<TException>(bool condition, string userMessage) where TException : Exception
         {
             AssertMustUseRewriter(ContractFailureKind.PostconditionOnException, "EnsuresOnThrow");
         }
@@ -598,7 +598,7 @@ namespace System.Diagnostics.Contracts
 #if FEATURE_RELIABILITY_CONTRACTS
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
-        public static void Invariant(bool condition, String userMessage)
+        public static void Invariant(bool condition, string userMessage)
         {
             AssertMustUseRewriter(ContractFailureKind.Invariant, "Invariant");
         }
@@ -733,7 +733,7 @@ namespace System.Diagnostics.Contracts
         /// The runtime value is 2^64 - 1 or 2^32 - 1.
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1802", Justification = "FxCop is confused")]
-        static readonly ulong MaxWritableExtent = (UIntPtr.Size == 4) ? UInt32.MaxValue : UInt64.MaxValue;
+        static readonly ulong MaxWritableExtent = (UIntPtr.Size == 4) ? uint.MaxValue : ulong.MaxValue;
 
         /// <summary>
         /// Allows specifying a writable extent for a UIntPtr, similar to SAL's writable extent.
@@ -851,13 +851,13 @@ namespace System.Diagnostics.Contracts
         /// System.Runtime.CompilerServices.ContractHelper.RaiseContractFailedEvent, followed by 
         /// System.Runtime.CompilerServices.ContractHelper.TriggerFailure.
         /// </summary>
-        static partial void ReportFailure(ContractFailureKind failureKind, String userMessage, String conditionText, Exception innerException);
+        static partial void ReportFailure(ContractFailureKind failureKind, string userMessage, string conditionText, Exception innerException);
 
         /// <summary>
         /// This method is used internally to trigger a failure indicating to the "programmer" that he is using the interface incorrectly.
         /// It is NEVER used to indicate failure of actual contracts at runtime.
         /// </summary>
-        static partial void AssertMustUseRewriter(ContractFailureKind kind, String contractKind);
+        static partial void AssertMustUseRewriter(ContractFailureKind kind, string contractKind);
         #endregion
     }
 
@@ -936,9 +936,9 @@ namespace System.Runtime.CompilerServices
 #if FEATURE_RELIABILITY_CONTRACTS
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
-        public static string RaiseContractFailedEvent(ContractFailureKind failureKind, String userMessage, String conditionText, Exception innerException)
+        public static string RaiseContractFailedEvent(ContractFailureKind failureKind, string userMessage, string conditionText, Exception innerException)
         {
-            String resultFailureMessage = "Contract failed"; // default in case implementation does not assign anything.
+            string resultFailureMessage = "Contract failed"; // default in case implementation does not assign anything.
             RaiseContractFailedEventImplementation(failureKind, userMessage, conditionText, innerException, ref resultFailureMessage);
             return resultFailureMessage;
         }
@@ -951,7 +951,7 @@ namespace System.Runtime.CompilerServices
 #if FEATURE_RELIABILITY_CONTRACTS
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
 #endif
-        public static void TriggerFailure(ContractFailureKind kind, String displayMessage, String userMessage, String conditionText, Exception innerException)
+        public static void TriggerFailure(ContractFailureKind kind, string displayMessage, string userMessage, string conditionText, Exception innerException)
         {
             TriggerFailureImplementation(kind, displayMessage, userMessage, conditionText, innerException);
         }
@@ -971,12 +971,12 @@ namespace System.Runtime.CompilerServices
         /// <param name="resultFailureMessage">Should really be out (or the return value), but partial methods are not flexible enough.
         /// On exit: null if the event was handled and should not trigger a failure.
         ///          Otherwise, returns the localized failure message</param>
-        static partial void RaiseContractFailedEventImplementation(ContractFailureKind failureKind, String userMessage, String conditionText, Exception innerException, ref string resultFailureMessage);
+        static partial void RaiseContractFailedEventImplementation(ContractFailureKind failureKind, string userMessage, string conditionText, Exception innerException, ref string resultFailureMessage);
 
         /// <summary>
         /// Implements the default failure behavior of the platform. Under the BCL, it triggers an Assert box.
         /// </summary>
-        static partial void TriggerFailureImplementation(ContractFailureKind kind, String displayMessage, String userMessage, String conditionText, Exception innerException);
+        static partial void TriggerFailureImplementation(ContractFailureKind kind, string displayMessage, string userMessage, string conditionText, Exception innerException);
         #endregion Implementation Stubs
     }
 }  // namespace System.Runtime.CompilerServices

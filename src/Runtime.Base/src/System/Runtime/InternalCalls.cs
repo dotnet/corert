@@ -72,13 +72,13 @@ namespace System.Runtime
         private static extern long RhpGetGcTotalMemory();
 
         [RuntimeExport("RhStartNoGCRegion")]
-        internal static Int32 RhStartNoGCRegion(Int64 totalSize, bool hasLohSize, Int64 lohSize, bool disallowFullBlockingGC)
+        internal static int RhStartNoGCRegion(long totalSize, bool hasLohSize, long lohSize, bool disallowFullBlockingGC)
         {
             return RhpStartNoGCRegion(totalSize, hasLohSize, lohSize, disallowFullBlockingGC);
         }
 
         [RuntimeExport("RhEndNoGCRegion")]
-        internal static Int32 RhEndNoGCRegion()
+        internal static int RhEndNoGCRegion()
         {
             return RhpEndNoGCRegion();
         }
@@ -91,7 +91,7 @@ namespace System.Runtime
         [RuntimeImport(Redhawk.BaseName, "RhpGetNextFinalizableObject")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal static extern Object RhpGetNextFinalizableObject();
+        internal static extern object RhpGetNextFinalizableObject();
 
         //
         // internalcalls for System.Runtime.InteropServices.GCHandle.
@@ -101,29 +101,29 @@ namespace System.Runtime
         [RuntimeImport(Redhawk.BaseName, "RhpHandleAlloc")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal static extern IntPtr RhpHandleAlloc(Object value, GCHandleType type);
+        internal static extern IntPtr RhpHandleAlloc(object value, GCHandleType type);
 
         // Allocate dependent handle.
         [RuntimeImport(Redhawk.BaseName, "RhpHandleAllocDependent")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal static extern IntPtr RhpHandleAllocDependent(Object primary, Object secondary);
+        internal static extern IntPtr RhpHandleAllocDependent(object primary, object secondary);
 
         // Allocate variable handle.
         [RuntimeImport(Redhawk.BaseName, "RhpHandleAllocVariable")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal static extern IntPtr RhpHandleAllocVariable(Object value, uint type);
+        internal static extern IntPtr RhpHandleAllocVariable(object value, uint type);
 
         [RuntimeImport(Redhawk.BaseName, "RhHandleGet")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal static extern Object RhHandleGet(IntPtr handle);
+        internal static extern object RhHandleGet(IntPtr handle);
 
         [RuntimeImport(Redhawk.BaseName, "RhHandleSet")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal static extern IntPtr RhHandleSet(IntPtr handle, Object value);
+        internal static extern IntPtr RhHandleSet(IntPtr handle, object value);
 
         //
         // internal calls for allocation
@@ -188,7 +188,7 @@ namespace System.Runtime
         [RuntimeImport(Redhawk.BaseName, "RhpAssignRef")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal extern static unsafe void RhpAssignRef(ref Object address, object obj);
+        internal extern static unsafe void RhpAssignRef(ref object address, object obj);
 
 #if FEATURE_GC_STRESS
         //
@@ -289,7 +289,7 @@ namespace System.Runtime
         [RuntimeImport(Redhawk.BaseName, "RhpGetEETypeRareFlags")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal extern static unsafe UInt32 RhpGetEETypeRareFlags(EEType* pEEType);
+        internal extern static unsafe uint RhpGetEETypeRareFlags(EEType* pEEType);
 
         // Retrieve the offset of the value embedded in a Nullable<T>.
         [RuntimeImport(Redhawk.BaseName, "RhpGetNullableEETypeValueOffset")]
@@ -428,7 +428,7 @@ namespace System.Runtime
         // Block the current thread until at least one object needs to be finalized (returns true) or
         // memory is low (returns false and the finalizer thread should initiate a garbage collection).
         [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern UInt32 RhpWaitForFinalizerRequest();
+        internal static extern uint RhpWaitForFinalizerRequest();
 
         // Indicate that the current round of finalizations is complete.
         [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
@@ -455,11 +455,11 @@ namespace System.Runtime
         // Enters a no GC region, possibly doing a blocking GC if there is not enough
         // memory available to satisfy the caller's request.
         [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern Int32 RhpStartNoGCRegion(Int64 totalSize, bool hasLohSize, Int64 lohSize, bool disallowFullBlockingGC);
+        internal static extern int RhpStartNoGCRegion(long totalSize, bool hasLohSize, long lohSize, bool disallowFullBlockingGC);
 
         // Exits a no GC region, possibly doing a GC to clean up the garbage that
         // the caller allocated.
         [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern Int32 RhpEndNoGCRegion();
+        internal static extern int RhpEndNoGCRegion();
     }
 }
