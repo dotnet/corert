@@ -9,7 +9,7 @@ using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
 
-namespace ILCompiler.DependencyAnalysis
+namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     internal struct ReadyToRunHeaderConstants
     {
@@ -19,7 +19,7 @@ namespace ILCompiler.DependencyAnalysis
         public const ushort CurrentMinorVersion = 1;
     }
 
-    public class CoreCLRReadyToRunHeaderNode : ObjectNode, ISymbolDefinitionNode
+    public class HeaderNode : ObjectNode, ISymbolDefinitionNode
     {
         struct HeaderItem
         {
@@ -38,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis
         private List<HeaderItem> _items = new List<HeaderItem>();
         private TargetDetails _target;
 
-        public CoreCLRReadyToRunHeaderNode(TargetDetails target)
+        public HeaderNode(TargetDetails target)
         {
             _target = target;
         }

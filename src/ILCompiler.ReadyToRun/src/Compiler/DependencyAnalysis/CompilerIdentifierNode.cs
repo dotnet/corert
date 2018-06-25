@@ -10,7 +10,7 @@ using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
 
-namespace ILCompiler.DependencyAnalysis
+namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     internal class CompilerIdentifierNode : ObjectNode, ISymbolDefinitionNode
     {

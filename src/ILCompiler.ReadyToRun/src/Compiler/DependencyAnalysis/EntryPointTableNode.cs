@@ -4,16 +4,19 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Reflection.Metadata.Ecma335;
 
 using Internal.NativeFormat;
 using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
-namespace ILCompiler.DependencyAnalysis
+namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class CoreCLRReadyToRunEntryPointTableNode : ObjectNode, ISymbolDefinitionNode
+    public class EntryPointTableNode : ObjectNode, ISymbolDefinitionNode
     {
         private struct EntryPoint
         {
@@ -46,7 +49,7 @@ namespace ILCompiler.DependencyAnalysis
         List<byte[]> _uniqueSignatures;
         Dictionary<byte[], int> _uniqueSignatureIndex;
         
-        public CoreCLRReadyToRunEntryPointTableNode(TargetDetails target, bool instanceEntryPoints)
+        public EntryPointTableNode(TargetDetails target, bool instanceEntryPoints)
         {
             _target = target;
             _instanceEntryPoints = instanceEntryPoints;
@@ -85,7 +88,27 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public void Add(int rid, int methodIndex, byte[] fixups, byte[] signature, int methodHashCode)
+        public void Add(MethodCodeNode methodNode, int methodIndex)
+        {
+            if (methodNode.Method is EcmaMethod ecmaMethod)
+            {
+                // Strip away the token type bits, keep just the low 24 bits RID
+                int rid = MetadataTokens.GetToken(ecmaMethod.Handle) & 0x00FFFFFF;
+                Debug.Assert(rid != 0);
+                
+                // TODO: how to synthesize method fixups blob?
+                byte[] fixups = null;
+                Add(rid - 1, methodIndex, fixups, signature: null, methodHashCode: 0);
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+
+            // TODO: method instance table
+        }
+
+        private void Add(int rid, int methodIndex, byte[] fixups, byte[] signature, int methodHashCode)
         {
             while (_ridToEntryPoint.Count <= rid)
             {

@@ -12,15 +12,15 @@ using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
 
-namespace ILCompiler.DependencyAnalysis
+namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class CoreCLRReadyToRunRuntimeFunctionsTableNode : ObjectNode, ISymbolDefinitionNode
+    public class RuntimeFunctionsTableNode : ObjectNode, ISymbolDefinitionNode
     {
         TargetDetails _target;
         
         List<MethodCodeNode> _methodNodes;
         
-        public CoreCLRReadyToRunRuntimeFunctionsTableNode(TargetDetails target)
+        public RuntimeFunctionsTableNode(TargetDetails target)
         {
             _target = target;
             _methodNodes = new List<MethodCodeNode>();

@@ -6,6 +6,8 @@ using System;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem;
 
+using ILCompiler.DependencyAnalysis.ReadyToRun;
+
 namespace ILCompiler.DependencyAnalysis
 {
     public sealed class ReadyToRunCodegenNodeFactory : NodeFactory
@@ -25,17 +27,17 @@ namespace ILCompiler.DependencyAnalysis
             
         }
 
-        public CoreCLRReadyToRunHeaderNode CoreCLRReadyToRunHeader;
+        public HeaderNode Header;
 
-        public CoreCLRReadyToRunRuntimeFunctionsTableNode CoreCLRReadyToRunRuntimeFunctionsTable;
+        public RuntimeFunctionsTableNode RuntimeFunctionsTable;
 
-        public CoreCLRReadyToRunEntryPointTableNode CoreCLRReadyToRunMethodEntryPointTable;
+        public EntryPointTableNode MethodEntryPointTable;
 
-        public CoreCLRReadyToRunEntryPointTableNode CoreCLRReadyToRunInstanceEntryPointTable;
+        public EntryPointTableNode InstanceEntryPointTable;
 
-        public CoreCLRReadyToRunTypesTableNode CoreCLRReadyToRunTypesTable;
+        public TypesTableNode TypesTable;
 
-        public CoreCLRReadyToRunImportSectionsTableNode CoreCLRReadyToRunImportSectionsTable;
+        public ImportSectionsTableNode ImportSectionsTable;
 
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
         {
@@ -54,46 +56,26 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
-            CoreCLRReadyToRunHeader = new CoreCLRReadyToRunHeaderNode(Target);
-            graph.AddRoot(CoreCLRReadyToRunHeader, "ReadyToRunHeader is always generated");
+            Header = new HeaderNode(Target);
+            graph.AddRoot(Header, "ReadyToRunHeader is always generated");
 
             var compilerIdentifierNode = new CompilerIdentifierNode();
-            CoreCLRReadyToRunHeader.Add(Internal.Runtime.ReadyToRunSectionType.CompilerIdentifier, compilerIdentifierNode, compilerIdentifierNode);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.CompilerIdentifier, compilerIdentifierNode, compilerIdentifierNode);
 
-            CoreCLRReadyToRunRuntimeFunctionsTable = new CoreCLRReadyToRunRuntimeFunctionsTableNode(Target);
-            graph.AddRoot(CoreCLRReadyToRunRuntimeFunctionsTable, "ReadyToRunRuntimeFunctionsTable is always generated");
-            CoreCLRReadyToRunHeader.Add(
-                Internal.Runtime.ReadyToRunSectionType.RuntimeFunctions,
-                CoreCLRReadyToRunRuntimeFunctionsTable,
-                CoreCLRReadyToRunRuntimeFunctionsTable);
+            RuntimeFunctionsTable = new RuntimeFunctionsTableNode(Target);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.RuntimeFunctions, RuntimeFunctionsTable, RuntimeFunctionsTable);
 
-            CoreCLRReadyToRunMethodEntryPointTable = new CoreCLRReadyToRunEntryPointTableNode(Target, instanceEntryPoints: false);
-            graph.AddRoot(CoreCLRReadyToRunMethodEntryPointTable, "ReadyToRunMethodEntryPointTable is always generated");
-            CoreCLRReadyToRunHeader.Add(
-                Internal.Runtime.ReadyToRunSectionType.MethodDefEntryPoints,
-                CoreCLRReadyToRunMethodEntryPointTable,
-                CoreCLRReadyToRunMethodEntryPointTable);
+            MethodEntryPointTable = new EntryPointTableNode(Target, instanceEntryPoints: false);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.MethodDefEntryPoints, MethodEntryPointTable, MethodEntryPointTable);
 
-            CoreCLRReadyToRunInstanceEntryPointTable = new CoreCLRReadyToRunEntryPointTableNode(Target, instanceEntryPoints: true);
-            graph.AddRoot(CoreCLRReadyToRunInstanceEntryPointTable, "ReadyToRunInstanceEntryPointTable is always generated");
-            CoreCLRReadyToRunHeader.Add(
-                Internal.Runtime.ReadyToRunSectionType.InstanceMethodEntryPoints,
-                CoreCLRReadyToRunInstanceEntryPointTable,
-                CoreCLRReadyToRunInstanceEntryPointTable);
+            InstanceEntryPointTable = new EntryPointTableNode(Target, instanceEntryPoints: true);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.InstanceMethodEntryPoints, InstanceEntryPointTable, InstanceEntryPointTable);
 
-            CoreCLRReadyToRunTypesTable = new CoreCLRReadyToRunTypesTableNode(Target);
-            graph.AddRoot(CoreCLRReadyToRunTypesTable, "ReadyToRunTypesTable is always generated");
-            CoreCLRReadyToRunHeader.Add(
-                Internal.Runtime.ReadyToRunSectionType.AvailableTypes,
-                CoreCLRReadyToRunTypesTable,
-                CoreCLRReadyToRunTypesTable);
+            TypesTable = new TypesTableNode(Target);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.AvailableTypes, TypesTable, TypesTable);
 
-            CoreCLRReadyToRunImportSectionsTable = new CoreCLRReadyToRunImportSectionsTableNode(Target);
-            graph.AddRoot(CoreCLRReadyToRunImportSectionsTable, "ReadyToRunImportSectionsTable is always generated");
-            CoreCLRReadyToRunHeader.Add(
-                Internal.Runtime.ReadyToRunSectionType.ImportSections,
-                CoreCLRReadyToRunImportSectionsTable,
-                CoreCLRReadyToRunImportSectionsTable);
+            ImportSectionsTable = new ImportSectionsTableNode(Target);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.ImportSections, ImportSectionsTable, ImportSectionsTable);
         }
     }
 }

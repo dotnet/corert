@@ -12,7 +12,7 @@ using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
 
-namespace ILCompiler.DependencyAnalysis
+namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     /// <summary>
     /// CorCompileImportSection describes image range with references to other assemblies or runtime data structures
@@ -64,13 +64,13 @@ namespace ILCompiler.DependencyAnalysis
         };
     };
     
-    public class CoreCLRReadyToRunImportSectionsTableNode : ObjectNode, ISymbolDefinitionNode
+    public class ImportSectionsTableNode : ObjectNode, ISymbolDefinitionNode
     {
         TargetDetails _target;
         
         List<CorCompileImportSection> _importSections;
         
-        public CoreCLRReadyToRunImportSectionsTableNode(TargetDetails target)
+        public ImportSectionsTableNode(TargetDetails target)
         {
             _target = target;
 

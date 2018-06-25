@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 
 using Internal.NativeFormat;
@@ -14,22 +13,35 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class CoreCLRReadyToRunTypesTableNode : ObjectNode, ISymbolDefinitionNode
+    internal class CoreCLRReadyToRunGCInfoNode : ObjectNode, ISymbolDefinitionNode
     {
         TargetDetails _target;
+        ArrayBuilder<byte> _gcInfoBuilder;
+        Dictionary<byte[], int> _gcInfoToOffset;
         
-        List<(int Rid, EETypeNode Node)> _eeTypeNodes;
-        
-        public CoreCLRReadyToRunTypesTableNode(TargetDetails target)
+        public CoreCLRReadyToRunGCInfoNode(TargetDetails target, byte[] gcInfo)
         {
             _target = target;
-            _eeTypeNodes = new List<(int Rid, EETypeNode Node)>();
+            _gcInfoBuilder = new ArrayBuilder<byte>();
+            _gcInfo = new Dictionary<byte[], int>(ByteArrayComparer.Instance);
         }
         
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__ReadyToRunAvailableTypesTable");
+            sb.Append("__GCInfo");
+        }
+        
+        public int Add(byte[] gcInfo)
+        {
+            int gcInfoOffset;
+            if (!_gcInfoToOffset.TryGetValue(gcInfo, out gcInfoOffset))
+            {
+                gcInfoOffset = _gcInfoBuilder.Count;
+                _gcInfoBuilder.Append(gcInfo);
+                _gcInfoToOffset.Add(gcInfo, gcInfoOffset);
+            }
+            return gcInfoOffset;
         }
 
         public int Offset => 0;
@@ -51,37 +63,15 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public int Add(int rid, EETypeNode eeTypeNode)
-        {
-            int eeTypeIndex = _eeTypeNodes.Count;
-            _eeTypeNodes.Add((Rid: rid, Node: eeTypeNode));
-            return eeTypeIndex;
-        }
-
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            NativeWriter writer = new NativeWriter();
-            Section section = writer.NewSection();
-
-            VertexHashtable typesHashtable = new VertexHashtable();
-            section.Place(typesHashtable);
-            
-            foreach ((int Rid, EETypeNode Node) eeTypeNode in _eeTypeNodes)
-            {
-                int hashCode = eeTypeNode.Node.Type.GetHashCode();
-                typesHashtable.Append(unchecked((uint)hashCode), section.Place(new UnsignedConstant((uint)eeTypeNode.Rid << 1)));
-            }
-
-            MemoryStream writerContent = new MemoryStream();
-            writer.Save(writerContent);
-
             return new ObjectData(
-                data: writerContent.ToArray(),
+                data: _gcInfoBuilder.ToArray(),
                 relocs: null,
-                alignment: 8,
+                alignment: 1,
                 definedSymbols: new ISymbolDefinitionNode[] { this });
         }
 
-        protected override int ClassCode => -944318825;
+        protected override int ClassCode => 348729518;
     }
 }

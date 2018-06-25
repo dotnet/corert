@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 
 using ILCompiler.DependencyAnalysis;
@@ -58,33 +57,19 @@ namespace ILCompiler.DependencyAnalysis
                 var sectionBuilder = new SectionBuilder();
 
                 _headerSectionIndex = sectionBuilder.AddSection(R2RPEBuilder.TextSectionName, SectionCharacteristics.ContainsCode | SectionCharacteristics.MemExecute | SectionCharacteristics.MemRead, 512);
-                sectionBuilder.SetReadyToRunHeaderTable(_nodeFactory.CoreCLRReadyToRunHeader, _nodeFactory.CoreCLRReadyToRunHeader.GetData(_nodeFactory).Data.Length);
+                sectionBuilder.SetReadyToRunHeaderTable(_nodeFactory.Header, _nodeFactory.Header.GetData(_nodeFactory).Data.Length);
 
                 foreach (var depNode in _nodes)
                 {
                     if (depNode is MethodCodeNode methodNode)
                     {
-                        int methodIndex = _nodeFactory.CoreCLRReadyToRunRuntimeFunctionsTable.Add(methodNode);
-                        if (methodNode.Method is EcmaMethod ecmaMethod)
-                        {
-                            // Strip away the token type bits, keep just the low 24 bits RID
-                            int rid = MetadataTokens.GetToken(ecmaMethod.Handle) & 0x00FFFFFF;
-                            Debug.Assert(rid != 0);
-                            
-                            // TODO: how to synthesize method fixups blob?
-                            byte[] fixups = null;
-                            _nodeFactory.CoreCLRReadyToRunMethodEntryPointTable.Add(rid - 1, methodIndex, fixups, signature: null, methodHashCode: 0);
-                        }
-
-                        // TODO: method instance table
+                        int methodIndex = _nodeFactory.RuntimeFunctionsTable.Add(methodNode);
+                        _nodeFactory.MethodEntryPointTable.Add(methodNode, methodIndex);
                     }
-                    if (depNode is EETypeNode eeTypeNode &&
-                        eeTypeNode.Type is EcmaType ecmaType)
+
+                    if (depNode is EETypeNode eeTypeNode)
                     {
-                        int rid = MetadataTokens.GetToken(ecmaType.Handle) & 0x00FFFFFF;
-                        Debug.Assert(rid != 0);
-                        _nodeFactory.CoreCLRReadyToRunTypesTable.Add(rid, eeTypeNode);
-                        
+                        _nodeFactory.TypesTable.Add(eeTypeNode);
                     }
                 }
 
