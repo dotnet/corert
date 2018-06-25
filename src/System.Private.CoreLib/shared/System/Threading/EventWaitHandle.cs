@@ -4,7 +4,6 @@
 
 using System;
 using System.IO;
-using System.Diagnostics;
 
 namespace System.Threading
 {
@@ -24,8 +23,7 @@ namespace System.Threading
         {
             if (mode != EventResetMode.AutoReset && mode != EventResetMode.ManualReset)
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(mode));
-            // Added to test CI Failure
-            Debug.Assert(name == null);
+
             CreateEventCore(initialState, mode, name, out createdNew);
         }
 
