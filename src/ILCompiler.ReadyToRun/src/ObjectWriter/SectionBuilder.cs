@@ -320,13 +320,17 @@ namespace ILCompiler.PEWriter
         {
             Section section = _sections[sectionIndex];
 
-            // Calculate alignment padding
-            int alignedOffset = (section.Content.Count + objectData.Alignment - 1) & -objectData.Alignment;
-            int padding = alignedOffset - section.Content.Count;
-
-            if (padding > 0)
+            // Calculate alignment padding - apparently ObjectDataBuilder can produce an alignment of 0
+            int alignedOffset = section.Content.Count;
+            if (objectData.Alignment > 1)
             {
-                section.Content.WriteBytes(0, padding);
+                alignedOffset = (section.Content.Count + objectData.Alignment - 1) & -objectData.Alignment;
+                int padding = alignedOffset - section.Content.Count;
+
+                if (padding > 0)
+                {
+                    section.Content.WriteBytes(0, padding);
+                }
             }
 
             section.Content.WriteBytes(objectData.Data);
@@ -341,7 +345,7 @@ namespace ILCompiler.PEWriter
                 }
             }
 
-            if (objectData.Relocs != null)
+            if (objectData.Relocs != null && objectData.Relocs.Length != 0)
             {
                 section.Relocations.Add(new ObjectDataRelocations(alignedOffset, objectData.Relocs));
             }

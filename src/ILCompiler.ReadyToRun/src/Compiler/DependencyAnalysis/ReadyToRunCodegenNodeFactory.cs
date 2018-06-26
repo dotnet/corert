@@ -75,7 +75,15 @@ namespace ILCompiler.DependencyAnalysis
             Header.Add(Internal.Runtime.ReadyToRunSectionType.AvailableTypes, TypesTable, TypesTable);
 
             ImportSectionsTable = new ImportSectionsTableNode(Target);
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.ImportSections, ImportSectionsTable, ImportSectionsTable);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.ImportSections, ImportSectionsTable, ImportSectionsTable.StartSymbol);
+
+            ImportSectionNode eagerImports = new ImportSectionNode(CorCompileImportType.CORCOMPILE_IMPORT_TYPE_UNKNOWN, CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_EAGER, (byte)Target.PointerSize);
+            ImportSectionsTable.AddEmbeddedObject(eagerImports);
+
+            // All ready-to-run images have a module import helper which gets patched by the runtime on image load
+            var moduleImport = new ModuleImport();
+            eagerImports.AddImport(this, moduleImport);
+            graph.AddRoot(moduleImport, "Module import is always generated");
         }
     }
 }

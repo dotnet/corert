@@ -64,63 +64,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         };
     };
     
-    public class ImportSectionsTableNode : HeaderTableNode
-    {
-        List<CorCompileImportSection> _importSections;
-        
+    public class ImportSectionsTableNode : ArrayOfEmbeddedDataNode<ImportSectionNode>
+    {   
         public ImportSectionsTableNode(TargetDetails target)
-            : base(target)
+            : base("ImportSectionsTableStart", "ImportSectionsTableEnd", null)
         {
-            _importSections = new List<CorCompileImportSection>();
         }
         
-        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        protected override void GetElementDataForNodes(ref ObjectDataBuilder builder, NodeFactory factory, bool relocsOnly)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__CorCompileImportSections");
-        }
+            builder.RequireInitialPointerAlignment();
 
-        public void Add(int sectionIndex, ushort flags, byte type, byte entrySize, ISymbolNode signatures, ISymbolNode auxiliaryData)
-        {
-            _importSections.Add(new CorCompileImportSection(sectionIndex, flags, type, entrySize, signatures, auxiliaryData));
-        }
-
-        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
-        {
-            ObjectDataBuilder dataBuilder = new ObjectDataBuilder();
-            dataBuilder.AddSymbol(this);
-            
-            foreach (CorCompileImportSection section in _importSections)
+            foreach (ImportSectionNode node in NodesList)
             {
-                // TODO: resolve the appropriate section range
-                // This will require putting the import section to a late PE section
-                // to make sure all the interesting sections have been placed beforehand.
-                // Alternatively we'd have to implement a new type of section-relative selocations.
-                DirectoryEntry sectionRange = new DirectoryEntry();
-                dataBuilder.EmitInt(sectionRange.RelativeVirtualAddress);
-                dataBuilder.EmitInt(sectionRange.Size);
-                dataBuilder.EmitShort(unchecked((short)section.Flags));
-                dataBuilder.EmitByte(section.Type);
-                dataBuilder.EmitByte(section.EntrySize);
-                if (section.Signatures != null)
-                {
-                    dataBuilder.EmitReloc(section.Signatures, RelocType.IMAGE_REL_BASED_ADDR32NB, 0);
-                }
-                else
-                {
-                    dataBuilder.EmitUInt(0);
-                }
-                if (section.AuxiliaryData != null)
-                {
-                    dataBuilder.EmitReloc(section.AuxiliaryData, RelocType.IMAGE_REL_BASED_ADDR32NB, 0);
-                }
-                else
-                {
-                    dataBuilder.EmitUInt(0);
-                }
+                if (!relocsOnly)
+                    node.InitializeOffsetFromBeginningOfArray(builder.CountBytes);
+
+                node.EncodeData(ref builder, factory, relocsOnly);
             }
-            
-            return dataBuilder.ToObjectData();
         }
 
         protected override int ClassCode => 787556329;
