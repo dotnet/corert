@@ -777,15 +777,15 @@
             "methods": [
                 {
                     "name": "System.Tests.TupleTests.CompareTo",
-                    "reason": "Access Violation"
+                    "reason": "https://github.com/dotnet/corert/issues/6015"
                 },
                 {
                     "name": "System.Tests.TupleTests.Equals_GetHashCode",
-                    "reason": "Access Violation"
+                    "reason": "https://github.com/dotnet/corert/issues/6015"
                 },
                 {
                     "name": "System.Tests.ArrayTests.Sort_Array_Array_NonGeneric",
-                    "reason": "Access Violation"
+                    "reason": "https://github.com/dotnet/corert/issues/6016"
                 },
                 {
                     "name": "System.Reflection.Tests.MethodInfoTests.TestEquality2",
