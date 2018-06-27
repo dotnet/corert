@@ -541,7 +541,7 @@ namespace System.Threading
         public void Exit(bool useMemoryBarrier)
         {
             // This is the fast path for the thread tracking is diabled and not to use memory barrier, otherwise go to the slow path
-            // The reason not to add else statement if the usememorybarrier is that it will add more barnching in the code and will prevent
+            // The reason not to add else statement if the usememorybarrier is that it will add more branching in the code and will prevent
             // method inlining, so this is optimized for useMemoryBarrier=false and Exit() overload optimized for useMemoryBarrier=true.
             int tmpOwner = m_owner;
             if ((tmpOwner & LOCK_ID_DISABLE_MASK) != 0 & !useMemoryBarrier)
