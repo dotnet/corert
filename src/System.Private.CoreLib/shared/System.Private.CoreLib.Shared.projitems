@@ -813,6 +813,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.CREATEFILE2_EXTENDED_PARAMETERS.cs" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetsWindows) or '$(FeaturePal)'=='true'">
+    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeWaitHandle.Windows.cs" /> 
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.Constants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Interop.Errors.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.FormatMessage.cs" />

@@ -552,6 +552,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.Unix.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeWaitHandle.Unix.cs" />
     <Compile Include="System\AppContext.Unix.cs" />
     <Compile Include="System\DateTime.Unix.CoreRT.cs" />
     <Compile Include="System\Environment.Unix.cs" />
