@@ -17,7 +17,7 @@ class Constants {
     def static scenarios = ['coreclr', 'corefx']
     
     // Innerloop build OS's
-    def static osList = ['Ubuntu', 'OSX10.12', 'Windows_NT']
+    def static osList = ['Ubuntu', 'OSX10.12', 'Windows_NT', 'Windows_NT_Wasm']
 
 }
 
@@ -78,8 +78,9 @@ Constants.scenarios.each { scenario ->
                 // This call performs test run checks for the CI.
                 Utilities.addXUnitDotNETResults(newJob, '**/testResults.xml')
                 Utilities.addArchival(newJob, "**/testResults.xml")
-                if (os == 'Windows_NT') {
+                if (os == 'Windows_NT_Wasm') {
                     Utilities.setMachineAffinity(newJob, 'Windows.10.Wasm.Open')
+                    prJobDescription += " WebAssembly"
                 }
                 else {
                     Utilities.setMachineAffinity(newJob, os, Constants.imageVersionMap[os])
@@ -135,6 +136,9 @@ def static calculateBuildCommands(def os, def configuration, def scenario, def i
             //Todo: Add json config files for different testing scenarios
             buildCommands += testScriptString 
         }
+    }
+    else if (os == 'Windows_NT_Wasm') {
+        buildCommands += "build.cmd wasm ${lowercaseConfiguration}"
     }
     else {
         // Calculate the build commands        
