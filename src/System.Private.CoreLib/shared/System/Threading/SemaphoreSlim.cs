@@ -333,14 +333,25 @@ namespace System.Threading
             CancellationTokenRegistration cancellationTokenRegistration = cancellationToken.InternalRegisterWithoutEC(s_cancellationTokenCanceledEventHandler, this);
             try
             {
-                // Perf: first spin wait for the count to be positive, but only up to the first planned yield.
+                // Perf: first spin wait for the count to be positive.
                 // This additional amount of spinwaiting in addition
                 // to Monitor.Enter()’s spinwaiting has shown measurable perf gains in test scenarios.
-                SpinWait spin = new SpinWait();
-                while (m_currentCount == 0 && !spin.NextSpinWillYield)
+                // Monitor.Enter followed by Monitor.Wait is much more expensive than waiting on an event as it involves another
+                // spin, contention, etc. The usual number of spin iterations that would otherwise be used here is increased to
+                // lessen that extra expense of doing a proper wait.
+                var spinner = new SpinWait();
+#if CORECLR
+                int spinCount = SpinWait.SpinCountforSpinBeforeWait * 4;
+                while (m_currentCount == 0 && spinner.Count < spinCount)
                 {
-                    spin.SpinOnce();
+                    spinner.SpinOnce(SpinWait.Sleep1ThresholdForSpinBeforeWait * 4);
                 }
+#else
+                while (m_currentCount == 0 && !spinner.NextSpinWillYield)
+                {
+                    spinner.SpinOnce();
+                }             
+#endif
                 // entering the lock and incrementing waiters must not suffer a thread-abort, else we cannot
                 // clean up m_waitCount correctly, which may lead to deadlock due to non-woken waiters.
                 try { }
