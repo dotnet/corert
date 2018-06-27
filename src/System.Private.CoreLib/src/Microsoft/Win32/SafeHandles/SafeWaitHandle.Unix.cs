@@ -8,7 +8,10 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeWaitHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        WaitSubsystem.DeleteHandle(handle);
-		return true;
+        protected override bool ReleaseHandle()
+        {
+            WaitSubsystem.DeleteHandle(handle);
+		    return true;
+        }
     }
 }
