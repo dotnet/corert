@@ -98,27 +98,40 @@ namespace ILCompiler.DependencyAnalysis
 
             for (int i = 0; i < virtualSlots.Count; i++)
             {
-                MethodDesc implMethod = _type.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(virtualSlots[i]);
+                MethodDesc implMethod = declType.FindVirtualFunctionTargetMethodOnObjectType(virtualSlots[i]);
 
                 if (implMethod.CanMethodBeInSealedVTable())
                     _sealedVTableEntries.Add(implMethod);
             }
 
-            for (int interfaceIndex = 0; interfaceIndex < _type.RuntimeInterfaces.Length; interfaceIndex++)
+            // Catch any runtime interface collapsing. We shouldn't have any
+            Debug.Assert(declType.RuntimeInterfaces.Length == declType.GetTypeDefinition().RuntimeInterfaces.Length);
+
+            for (int interfaceIndex = 0; interfaceIndex < declType.RuntimeInterfaces.Length; interfaceIndex++)
             {
-                var interfaceType = _type.RuntimeInterfaces[interfaceIndex];
+                var interfaceType = declType.GetTypeDefinition().RuntimeInterfaces[interfaceIndex];
 
                 virtualSlots = factory.VTable(interfaceType).Slots;
 
                 for (int interfaceMethodSlot = 0; interfaceMethodSlot < virtualSlots.Count; interfaceMethodSlot++)
                 {
                     MethodDesc declMethod = virtualSlots[interfaceMethodSlot];
-                    var implMethod = _type.GetClosestDefType().ResolveInterfaceMethodToVirtualMethodOnType(declMethod);
+                    var implMethod = declType.GetTypeDefinition().ResolveInterfaceMethodToVirtualMethodOnType(declMethod);
 
                     // Interface methods first implemented by a base type in the hierarchy will return null for the implMethod (runtime interface
                     // dispatch will walk the inheritance chain).
-                    if (implMethod != null && implMethod.CanMethodBeInSealedVTable() && implMethod.OwningType != _type)
-                        _sealedVTableEntries.Add(implMethod);
+                    if (implMethod != null && implMethod.CanMethodBeInSealedVTable() && !implMethod.OwningType.HasSameTypeDefinition(declType))
+                    {
+                        TypeDesc implType = declType;
+                        while (!implType.HasSameTypeDefinition(implMethod.OwningType))
+                            implType = implType.BaseType;
+
+                        MethodDesc targetMethod = implMethod;
+                        if (!implType.IsTypeDefinition)
+                            targetMethod = factory.TypeSystemContext.GetMethodForInstantiatedType(implMethod.GetTypicalMethodDefinition(), (InstantiatedType)implType);
+
+                        _sealedVTableEntries.Add(targetMethod);
+                    }
                 }
             }
 
