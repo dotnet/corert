@@ -61,7 +61,7 @@ Constants.scenarios.each { scenario ->
                 def newJob = job(newJobName) {
                     // This opens the set of build steps that will be run.
                     steps {
-                        if (os == 'Windows_NT') {
+                        if (os.startsWith('Windows_NT')) {
                         // Indicates that a batch script should be run with each build command
                             buildCommands.each { buildCommand -> 
                                 batchFile(buildCommand) 
