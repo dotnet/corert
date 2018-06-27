@@ -505,7 +505,7 @@ namespace ILCompiler
             UniversalCanonGVMDepthHeuristic_NonCanonDepth = 2;
             UniversalCanonGVMDepthHeuristic_CanonDepth = 1;
 
-            // Unlike the GVM heuristics which are intended to kick in aggresively
+            // Unlike the GVM heuristics which are intended to kick in aggressively
             // this heuristic exists to make it so that a fair amount of generic
             // expansion is allowed. Numbers are chosen to allow a fairly large
             // amount of generic expansion before trimming.
