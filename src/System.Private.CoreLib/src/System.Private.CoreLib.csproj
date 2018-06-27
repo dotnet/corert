@@ -148,7 +148,6 @@
     <Compile Include="Internal\Threading\Tasks\Tracing\TaskTrace.cs" />
     <Compile Include="Interop\Interop.manual.cs" />
     <Compile Include="Interop\Interop.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeWaitHandle.cs" />
     <Compile Include="System\Runtime\CompilerServices\CastableObject.cs" />
     <Compile Include="System\Reflection\AssemblyNameHelpers.StrongName.cs" />
     <Compile Include="System\Reflection\AssemblyNameHelpers.cs" />
@@ -295,7 +294,6 @@
     <Compile Include="System\Text\EncodingData.cs" />
     <Compile Include="System\Text\EncodingTable.cs" />
     <Compile Include="System\Text\StringBuilder.CoreRT.cs" />
-    <Compile Include="System\Threading\CancellationToken.cs" />
     <Compile Include="System\Threading\CancellationTokenRegistration.cs" />
     <Compile Include="System\Threading\CancellationTokenSource.cs" />
     <Compile Include="System\Threading\ManagedThreadId.cs" />
