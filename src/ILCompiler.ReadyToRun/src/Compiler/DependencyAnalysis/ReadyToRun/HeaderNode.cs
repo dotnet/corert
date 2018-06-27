@@ -9,7 +9,7 @@ using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
 
-namespace ILCompiler.DependencyAnalysis
+namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     internal struct ReadyToRunHeaderConstants
     {
@@ -19,7 +19,38 @@ namespace ILCompiler.DependencyAnalysis
         public const ushort CurrentMinorVersion = 1;
     }
 
-    public class CoreCLRReadyToRunHeaderNode : ObjectNode, ISymbolDefinitionNode
+    public abstract class HeaderTableNode : ObjectNode, ISymbolDefinitionNode
+    {
+        public TargetDetails Target { get; private set; }
+        
+        public HeaderTableNode(TargetDetails target)
+        {
+            Target = target;
+        }
+
+        public abstract void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb);
+
+        public int Offset => 0;
+
+        public override bool IsShareable => false;
+
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
+
+        public override bool StaticDependenciesAreComputed => true;
+
+        public override ObjectNodeSection Section
+        {
+            get
+            {
+                if (Target.IsWindows)
+                    return ObjectNodeSection.ReadOnlyDataSection;
+                else
+                    return ObjectNodeSection.DataSection;
+            }
+        }
+    }
+
+    public class HeaderNode : ObjectNode, ISymbolDefinitionNode
     {
         struct HeaderItem
         {
@@ -38,7 +69,7 @@ namespace ILCompiler.DependencyAnalysis
         private List<HeaderItem> _items = new List<HeaderItem>();
         private TargetDetails _target;
 
-        public CoreCLRReadyToRunHeaderNode(TargetDetails target)
+        public HeaderNode(TargetDetails target)
         {
             _target = target;
         }

@@ -10,21 +10,22 @@ using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
 
-namespace ILCompiler.DependencyAnalysis
+namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    internal class CompilerIdentifierNode : ObjectNode, ISymbolDefinitionNode
+    internal class CompilerIdentifierNode : HeaderTableNode
     {
         private static readonly string _compilerIdentifier = "CoreRT Ready-To-Run Compiler";
+
         public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
 
-        public override bool IsShareable => false;
-
-        public override bool StaticDependenciesAreComputed => true;
-
-        public int Offset => 0;
-        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
         protected override int ClassCode => 230053202;
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+
+        public CompilerIdentifierNode(TargetDetails target)
+            : base(target)
+        {
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append("__ReadyToRunHeader_CompilerIdentifier");
         }

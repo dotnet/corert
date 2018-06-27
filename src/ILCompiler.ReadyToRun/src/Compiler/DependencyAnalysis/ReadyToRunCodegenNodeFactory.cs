@@ -6,6 +6,8 @@ using System;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem;
 
+using ILCompiler.DependencyAnalysis.ReadyToRun;
+
 namespace ILCompiler.DependencyAnalysis
 {
     public sealed class ReadyToRunCodegenNodeFactory : NodeFactory
@@ -25,7 +27,17 @@ namespace ILCompiler.DependencyAnalysis
             
         }
 
-        public CoreCLRReadyToRunHeaderNode CoreCLRReadyToRunHeader;
+        public HeaderNode Header;
+
+        public RuntimeFunctionsTableNode RuntimeFunctionsTable;
+
+        public MethodEntryPointTableNode MethodEntryPointTable;
+
+        public InstanceEntryPointTableNode InstanceEntryPointTable;
+
+        public TypesTableNode TypesTable;
+
+        public ImportSectionsTableNode ImportSectionsTable;
 
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
         {
@@ -44,11 +56,26 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
-            CoreCLRReadyToRunHeader = new CoreCLRReadyToRunHeaderNode(Target);
-            graph.AddRoot(CoreCLRReadyToRunHeader, "ReadyToRunHeader is always generated");
+            Header = new HeaderNode(Target);
+            graph.AddRoot(Header, "ReadyToRunHeader is always generated");
 
-            var compilerIdentifierNode = new CompilerIdentifierNode();
-            CoreCLRReadyToRunHeader.Add(Internal.Runtime.ReadyToRunSectionType.CompilerIdentifier, compilerIdentifierNode, compilerIdentifierNode);
+            var compilerIdentifierNode = new CompilerIdentifierNode(Target);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.CompilerIdentifier, compilerIdentifierNode, compilerIdentifierNode);
+
+            RuntimeFunctionsTable = new RuntimeFunctionsTableNode(Target);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.RuntimeFunctions, RuntimeFunctionsTable, RuntimeFunctionsTable);
+
+            MethodEntryPointTable = new MethodEntryPointTableNode(Target);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.MethodDefEntryPoints, MethodEntryPointTable, MethodEntryPointTable);
+
+            InstanceEntryPointTable = new InstanceEntryPointTableNode(Target);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.InstanceMethodEntryPoints, InstanceEntryPointTable, InstanceEntryPointTable);
+
+            TypesTable = new TypesTableNode(Target);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.AvailableTypes, TypesTable, TypesTable);
+
+            ImportSectionsTable = new ImportSectionsTableNode(Target);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.ImportSections, ImportSectionsTable, ImportSectionsTable);
         }
     }
 }

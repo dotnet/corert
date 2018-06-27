@@ -15,6 +15,9 @@ using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.PEWriter;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
+using Internal.Metadata.NativeFormat;
+using Internal.TypeSystem.Ecma;
+
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
@@ -54,7 +57,21 @@ namespace ILCompiler.DependencyAnalysis
                 var sectionBuilder = new SectionBuilder();
 
                 _headerSectionIndex = sectionBuilder.AddSection(R2RPEBuilder.TextSectionName, SectionCharacteristics.ContainsCode | SectionCharacteristics.MemExecute | SectionCharacteristics.MemRead, 512);
-                sectionBuilder.SetReadyToRunHeaderTable(_nodeFactory.CoreCLRReadyToRunHeader, _nodeFactory.CoreCLRReadyToRunHeader.GetData(_nodeFactory).Data.Length);
+                sectionBuilder.SetReadyToRunHeaderTable(_nodeFactory.Header, _nodeFactory.Header.GetData(_nodeFactory).Data.Length);
+
+                foreach (var depNode in _nodes)
+                {
+                    if (depNode is MethodCodeNode methodNode)
+                    {
+                        int methodIndex = _nodeFactory.RuntimeFunctionsTable.Add(methodNode);
+                        _nodeFactory.MethodEntryPointTable.Add(methodNode, methodIndex);
+                    }
+
+                    if (depNode is EETypeNode eeTypeNode)
+                    {
+                        _nodeFactory.TypesTable.Add(eeTypeNode);
+                    }
+                }
 
                 foreach (var depNode in _nodes)
                 {
