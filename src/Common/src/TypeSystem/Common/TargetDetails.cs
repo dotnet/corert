@@ -16,7 +16,6 @@ namespace Internal.TypeSystem
         ARM,
         ARMEL,
         ARM64,
-        Cpp64,
         X64,
         X86,
         Wasm32,
@@ -91,7 +90,6 @@ namespace Internal.TypeSystem
                 {
                     case TargetArchitecture.ARM64:
                     case TargetArchitecture.X64:
-                    case TargetArchitecture.Cpp64:
                         return 8;
                     case TargetArchitecture.ARM:
                     case TargetArchitecture.ARMEL:
@@ -235,7 +233,6 @@ namespace Internal.TypeSystem
                         return new LayoutInt(8);
                 case TargetArchitecture.X64:
                 case TargetArchitecture.ARM64:
-                case TargetArchitecture.Cpp64:
                     return new LayoutInt(8);
                 case TargetArchitecture.X86:
                 case TargetArchitecture.Wasm32:

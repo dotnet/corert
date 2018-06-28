@@ -268,8 +268,6 @@ namespace ILCompiler
 
             if (_isWasmCodegen)
                 _targetArchitecture = TargetArchitecture.Wasm32;
-            else if (_isCppCodegen)
-                _targetArchitecture = TargetArchitecture.Cpp64;
 
             //
             // Initialize type system context
