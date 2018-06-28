@@ -67,7 +67,7 @@ namespace ILCompiler
             }
             else
             {
-                return new PrecomputedMetadataManager(compilationModuleGroup, context, FindMetadataDescribingModuleInInputSet(inputModules), inputModules, inputMetadataOnlyAssemblies, ReadBytesFromFile(metadataFile), new UtcStackTraceEmissionPolicy());
+                return new PrecomputedMetadataManager(compilationModuleGroup, context, FindMetadataDescribingModuleInInputSet(inputModules), inputModules, inputMetadataOnlyAssemblies, ReadBytesFromFile(metadataFile), new UtcStackTraceEmissionPolicy(), new NoManifestResourceBlockingPolicy());
             }
         }
 
