@@ -1,22 +1,13 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
-//
-//
 
-//
-// A lightweight semahore class that contains the basic semaphore functions plus some useful functions like interrupt
-// and wait handle exposing to allow waiting on multiple semaphores.
-//
-// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-
-// The class will be part of the current System.Threading namespace
 
 namespace System.Threading
 {
@@ -52,11 +43,16 @@ namespace System.Threading
         // The number of synchronously waiting threads, it is set to zero in the constructor and increments before blocking the
         // threading and decrements it back after that. It is used as flag for the release call to know if there are
         // waiting threads in the monitor or not.
-        private volatile int m_waitCount;
+        private int m_waitCount;
+
+        /// <summary>
+        /// This is used to help prevent waking more waiters than necessary. It's not perfect and sometimes more waiters than
+        /// necessary may still be woken, see <see cref="WaitUntilCountOrTimeout"/>.
+        /// </summary>
+        private int m_countOfWaitersPulsedToWake;
 
         // Dummy object used to in lock statements to protect the semaphore count, wait handle and cancelation
-        private Lock m_lock;
-        private Condition m_condition;
+        private object m_lockObj;
 
         // Act as the semaphore wait handle, it's lazily initialized if needed, the first WaitHandle call initialize it
         // and wait an release sets and resets it respectively as long as it is not null
@@ -70,10 +66,10 @@ namespace System.Threading
 
         // A pre-completed task with Result==true
         private static readonly Task<bool> s_trueTask =
-            new Task<bool>(false, true, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default(CancellationToken));
+            new Task<bool>(false, true, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default);
         // A pre-completed task with Result==false
         private readonly static Task<bool> s_falseTask =
-            new Task<bool>(false, false, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default(CancellationToken));
+            new Task<bool>(false, false, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default);
 
         // No maximum constant
         private const int NO_MAXIMUM = int.MaxValue;
@@ -89,6 +85,9 @@ namespace System.Threading
                 bool setSuccessfully = TrySetResult(true);
                 Debug.Assert(setSuccessfully, "Should have been able to complete task");
             }
+#if CORECLR
+            void IThreadPoolWorkItem.MarkAborted(ThreadAbortException tae) { /* nop */ } 
+#endif
         }
         #endregion
 
@@ -127,7 +126,7 @@ namespace System.Threading
                     return m_waitHandle;
 
                 //lock the count to avoid multiple threads initializing the handle if it is null
-                using (LockHolder.Hold(m_lock))
+                lock (m_lockObj)
                 {
                     if (m_waitHandle == null)
                     {
@@ -183,8 +182,7 @@ namespace System.Threading
             }
 
             m_maxCount = maxCount;
-            m_lock = new Lock();
-            m_condition = new Condition(m_lock);
+            m_lockObj = new object();
             m_currentCount = initialCount;
         }
 
@@ -338,22 +336,34 @@ namespace System.Threading
             CancellationTokenRegistration cancellationTokenRegistration = cancellationToken.InternalRegisterWithoutEC(s_cancellationTokenCanceledEventHandler, this);
             try
             {
-                // Perf: first spin wait for the count to be positive, but only up to the first planned yield.
-                //       This additional amount of spinwaiting in addition
-                //       to Monitor.Enter()’s spinwaiting has shown measurable perf gains in test scenarios.
-                //
-                SpinWait spin = new SpinWait();
-                while (m_currentCount == 0 && !spin.NextSpinWillYield)
+                // Perf: first spin wait for the count to be positive.
+                // This additional amount of spinwaiting in addition
+                // to Monitor.Enter()’s spinwaiting has shown measurable perf gains in test scenarios.
+                if (m_currentCount == 0)
                 {
-                    spin.SpinOnce();
+                    // Monitor.Enter followed by Monitor.Wait is much more expensive than waiting on an event as it involves another
+                    // spin, contention, etc. The usual number of spin iterations that would otherwise be used here is increased to
+                    // lessen that extra expense of doing a proper wait.
+                    int spinCount = SpinWait.SpinCountforSpinBeforeWait * 4;
+                    const int Sleep1Threshold = SpinWait.Sleep1ThresholdForSpinBeforeWait * 4;
+
+                    var spinner = new SpinWait();
+                    while (spinner.Count < spinCount)
+                    {
+                        spinner.SpinOnce(Sleep1Threshold);
+
+                        if (m_currentCount != 0)
+                        {
+                            break;
+                        }
+                    }
                 }
                 // entering the lock and incrementing waiters must not suffer a thread-abort, else we cannot
                 // clean up m_waitCount correctly, which may lead to deadlock due to non-woken waiters.
                 try { }
                 finally
                 {
-                    m_lock.Acquire();
-                    lockTaken = true;
+                    Monitor.Enter(m_lockObj, ref lockTaken);
                     if (lockTaken)
                     {
                         m_waitCount++;
@@ -422,7 +432,7 @@ namespace System.Threading
                 if (lockTaken)
                 {
                     m_waitCount--;
-                    m_lock.Release();
+                    Monitor.Exit(m_lockObj);
                 }
 
                 // Unregister the cancellation callback.
@@ -439,13 +449,13 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// Local helper function, waits on the monitor until the monitor recieves signal or the
+        /// Local helper function, waits on the monitor until the monitor receives signal or the
         /// timeout is expired
         /// </summary>
         /// <param name="millisecondsTimeout">The maximum timeout</param>
         /// <param name="startTime">The start ticks to calculate the elapsed time</param>
         /// <param name="cancellationToken">The CancellationToken to observe.</param>
-        /// <returns>true if the monitor recieved a signal, false if the timeout expired</returns>
+        /// <returns>true if the monitor received a signal, false if the timeout expired</returns>
         private bool WaitUntilCountOrTimeout(int millisecondsTimeout, uint startTime, CancellationToken cancellationToken)
         {
             int remainingWaitMilliseconds = Timeout.Infinite;
@@ -466,7 +476,20 @@ namespace System.Threading
                     }
                 }
                 // ** the actual wait **
-                if (!m_condition.Wait(remainingWaitMilliseconds))
+                bool waitSuccessful = Monitor.Wait(m_lockObj, remainingWaitMilliseconds);
+
+                // This waiter has woken up and this needs to be reflected in the count of waiters pulsed to wake. Since we
+                // don't have thread-specific pulse state, there is not enough information to tell whether this thread woke up
+                // because it was pulsed. For instance, this thread may have timed out and may have been waiting to reacquire
+                // the lock before returning from Monitor.Wait, in which case we don't know whether this thread got pulsed. So
+                // in any woken case, decrement the count if possible. As such, timeouts could cause more waiters to wake than
+                // necessary.
+                if (m_countOfWaitersPulsedToWake != 0)
+                {
+                    --m_countOfWaitersPulsedToWake;
+                }
+
+                if (!waitSuccessful)
                 {
                     return false;
                 }
@@ -481,7 +504,7 @@ namespace System.Threading
         /// <returns>A task that will complete when the semaphore has been entered.</returns>
         public Task WaitAsync()
         {
-            return WaitAsync(Timeout.Infinite, default(CancellationToken));
+            return WaitAsync(Timeout.Infinite, default);
         }
 
         /// <summary>
@@ -518,7 +541,7 @@ namespace System.Threading
         /// </exception>
         public Task<bool> WaitAsync(int millisecondsTimeout)
         {
-            return WaitAsync(millisecondsTimeout, default(CancellationToken));
+            return WaitAsync(millisecondsTimeout, default);
         }
 
         /// <summary>
@@ -546,7 +569,7 @@ namespace System.Threading
         /// </exception>
         public Task<bool> WaitAsync(TimeSpan timeout)
         {
-            return WaitAsync(timeout, default(CancellationToken));
+            return WaitAsync(timeout, default);
         }
 
         /// <summary>
@@ -610,9 +633,9 @@ namespace System.Threading
 
             // Bail early for cancellation
             if (cancellationToken.IsCancellationRequested)
-                return Task.FromCancellation<bool>(cancellationToken);
+                return Task.FromCanceled<bool>(cancellationToken);
 
-            using (LockHolder.Hold(m_lock))
+            lock (m_lockObj)
             {
                 // If there are counts available, allow this waiter to succeed.
                 if (m_currentCount > 0)
@@ -644,7 +667,7 @@ namespace System.Threading
         /// <returns>The created task.</returns>
         private TaskNode CreateAndAddAsyncWaiter()
         {
-            Debug.Assert(m_lock.IsAcquired, "Requires the lock be held");
+            Debug.Assert(Monitor.IsEntered(m_lockObj), "Requires the lock be held");
 
             // Create the task
             var task = new TaskNode();
@@ -674,7 +697,7 @@ namespace System.Threading
         private bool RemoveAsyncWaiter(TaskNode task)
         {
             Debug.Assert(task != null, "Expected non-null task");
-            Debug.Assert(m_lock.IsAcquired, "Requires the lock be held");
+            Debug.Assert(Monitor.IsEntered(m_lockObj), "Requires the lock be held");
 
             // Is the task in the list?  To be in the list, either it's the head or it has a predecessor that's in the list.
             bool wasInList = m_asyncHead == task || task.Prev != null;
@@ -700,14 +723,14 @@ namespace System.Threading
         private async Task<bool> WaitUntilCountOrTimeoutAsync(TaskNode asyncWaiter, int millisecondsTimeout, CancellationToken cancellationToken)
         {
             Debug.Assert(asyncWaiter != null, "Waiter should have been constructed");
-            Debug.Assert(m_lock.IsAcquired, "Requires the lock be held");
+            Debug.Assert(Monitor.IsEntered(m_lockObj), "Requires the lock be held");
 
             // Wait until either the task is completed, timeout occurs, or cancellation is requested.
             // We need to ensure that the Task.Delay task is appropriately cleaned up if the await
             // completes due to the asyncWaiter completing, so we use our own token that we can explicitly
             // cancel, and we chain the caller's supplied token into it.
             using (var cts = cancellationToken.CanBeCanceled ?
-                CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, default(CancellationToken)) :
+                CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, default) :
                 new CancellationTokenSource())
             {
                 var waitCompleted = Task.WhenAny(asyncWaiter, Task.Delay(millisecondsTimeout, cts.Token));
@@ -722,7 +745,7 @@ namespace System.Threading
 
             // If the await completed synchronously, we still hold the lock.  If it didn't,
             // we no longer hold the lock.  As such, acquire it.
-            using (LockHolder.Hold(m_lock))
+            lock (m_lockObj)
             {
                 // Remove the task from the list.  If we're successful in doing so,
                 // we know that no one else has tried to complete this waiter yet,
@@ -773,7 +796,7 @@ namespace System.Threading
             }
             int returnCount;
 
-            using (LockHolder.Hold(m_lock))
+            lock (m_lockObj)
             {
                 // Read the m_currentCount into a local variable to avoid unnecessary volatile accesses inside the lock.
                 int currentCount = m_currentCount;
@@ -788,13 +811,27 @@ namespace System.Threading
                 // Increment the count by the actual release count
                 currentCount += releaseCount;
 
-                // Signal to any synchronous waiters
+                // Signal to any synchronous waiters, taking into account how many waiters have previously been pulsed to wake
+                // but have not yet woken
                 int waitCount = m_waitCount;
-
-                int waitersToNotify = Math.Min(releaseCount, waitCount);
-                for (int i = 0; i < waitersToNotify; i++)
+                Debug.Assert(m_countOfWaitersPulsedToWake <= waitCount);
+                int waitersToNotify = Math.Min(currentCount, waitCount) - m_countOfWaitersPulsedToWake;
+                if (waitersToNotify > 0)
                 {
-                    m_condition.SignalOne();
+                    // Ideally, limiting to a maximum of releaseCount would not be necessary and could be an assert instead, but
+                    // since WaitUntilCountOrTimeout() does not have enough information to tell whether a woken thread was
+                    // pulsed, it's possible for m_countOfWaitersPulsedToWake to be less than the number of threads that have
+                    // actually been pulsed to wake.
+                    if (waitersToNotify > releaseCount)
+                    {
+                        waitersToNotify = releaseCount;
+                    }
+
+                    m_countOfWaitersPulsedToWake += waitersToNotify;
+                    for (int i = 0; i < waitersToNotify; i++)
+                    {
+                        Monitor.Pulse(m_lockObj);
+                    }
                 }
 
                 // Now signal to any asynchronous waiters, if there are any.  While we've already
@@ -873,14 +910,11 @@ namespace System.Threading
                     m_waitHandle.Dispose();
                     m_waitHandle = null;
                 }
-                m_lock = null;
-                m_condition = null;
+                m_lockObj = null;
                 m_asyncHead = null;
                 m_asyncTail = null;
             }
         }
-
-
 
         /// <summary>
         /// Private helper method to wake up waiters when a cancellationToken gets canceled.
@@ -890,9 +924,9 @@ namespace System.Threading
         {
             SemaphoreSlim semaphore = obj as SemaphoreSlim;
             Debug.Assert(semaphore != null, "Expected a SemaphoreSlim");
-            using (LockHolder.Hold(semaphore.m_lock))
+            lock (semaphore.m_lockObj)
             {
-                semaphore.m_condition.SignalAll(); //wake up all waiters.
+                Monitor.PulseAll(semaphore.m_lockObj); //wake up all waiters.
             }
         }
 
@@ -902,15 +936,11 @@ namespace System.Threading
         /// </summary>
         private void CheckDispose()
         {
-            if (m_lock == null)
+            if (m_lockObj == null)
             {
                 throw new ObjectDisposedException(null, SR.SemaphoreSlim_Disposed);
             }
         }
-        /// <summary>
-        /// local helper function to retrieve the exception string message from the resource file
-        /// </summary>
-        /// <param name="str">The key string</param>
         #endregion
     }
 }

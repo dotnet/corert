@@ -19,7 +19,7 @@ namespace System.Runtime.InteropServices
     /// Functions:
     ///   1. GetString converts compressed string represented by an index to original System.String
     ///   2. StableStringHash computes hash code without decoding to System.String
-    ///   3. IsStringEqual compares compressed string represented by anindex with System.String
+    ///   3. IsStringEqual compares compressed string represented by an index with System.String
     ///
     /// TODO:
     ///   1. More string reuse

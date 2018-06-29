@@ -42,6 +42,7 @@ namespace ILCompiler
 
         protected readonly CompilerTypeSystemContext _typeSystemContext;
         protected readonly MetadataBlockingPolicy _blockingPolicy;
+        protected readonly ManifestResourceBlockingPolicy _resourceBlockingPolicy;
 
         private List<NonGCStaticsNode> _cctorContextsGenerated = new List<NonGCStaticsNode>();
         private HashSet<TypeDesc> _typesWithEETypesGenerated = new HashSet<TypeDesc>();
@@ -55,10 +56,11 @@ namespace ILCompiler
         internal DynamicInvokeTemplateDataNode DynamicInvokeTemplateData { get; private set; }
         public virtual bool SupportsReflection => true;
 
-        public MetadataManager(CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy)
+        public MetadataManager(CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy, ManifestResourceBlockingPolicy resourceBlockingPolicy)
         {
             _typeSystemContext = typeSystemContext;
             _blockingPolicy = blockingPolicy;
+            _resourceBlockingPolicy = resourceBlockingPolicy;
         }
 
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
@@ -655,6 +657,11 @@ namespace ILCompiler
             }
 
             return _blockingPolicy.IsBlocked(typicalMethodDefinition);
+        }
+
+        public bool IsManifestResourceBlocked(ModuleDesc module, string resourceName)
+        {
+            return _resourceBlockingPolicy.IsManifestResourceBlocked(module, resourceName);
         }
 
         public bool CanGenerateMetadata(MetadataType type)
