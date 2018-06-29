@@ -27,8 +27,8 @@ namespace ILCompiler
         protected readonly StackTraceEmissionPolicy _stackTraceEmissionPolicy;
         private readonly ModuleDesc _generatedAssembly;
 
-        public GeneratingMetadataManager(CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy, string logFile, StackTraceEmissionPolicy stackTracePolicy)
-            : base(typeSystemContext, blockingPolicy)
+        public GeneratingMetadataManager(CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy, ManifestResourceBlockingPolicy resourceBlockingPolicy, string logFile, StackTraceEmissionPolicy stackTracePolicy)
+            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy)
         {
             _metadataLogFile = logFile;
             _stackTraceEmissionPolicy = stackTracePolicy;
