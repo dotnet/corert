@@ -117,7 +117,8 @@ namespace ILCompiler.DependencyAnalysis
 
             for (int interfaceIndex = 0; interfaceIndex < declType.RuntimeInterfaces.Length; interfaceIndex++)
             {
-                var interfaceType = declType.GetTypeDefinition().RuntimeInterfaces[interfaceIndex];
+                var interfaceType = declType.RuntimeInterfaces[interfaceIndex];
+                var interfaceDefinitionType = declType.GetTypeDefinition().RuntimeInterfaces[interfaceIndex];
                 Debug.Assert(interfaceType.IsInterface);
 
                 IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(interfaceType).Slots;
@@ -125,6 +126,9 @@ namespace ILCompiler.DependencyAnalysis
                 for (int interfaceMethodSlot = 0; interfaceMethodSlot < virtualSlots.Count; interfaceMethodSlot++)
                 {
                     MethodDesc declMethod = virtualSlots[interfaceMethodSlot];
+                    if(!interfaceType.IsTypeDefinition)
+                        declMethod = factory.TypeSystemContext.GetMethodForInstantiatedType(declMethod.GetTypicalMethodDefinition(), (InstantiatedType)interfaceDefinitionType);
+
                     var implMethod = declType.GetTypeDefinition().ResolveInterfaceMethodToVirtualMethodOnType(declMethod);
 
                     // Interface methods first implemented by a base type in the hierarchy will return null for the implMethod (runtime interface
