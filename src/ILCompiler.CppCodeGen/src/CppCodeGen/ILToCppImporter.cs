@@ -1004,7 +1004,7 @@ namespace Internal.IL
                     {
                         var thisRef = _stack.Pop();
 
-                        PushExpression(StackValueKind.ValueType, ((ExpressionEntry)thisRef).Name + "->_value", method.Signature.ReturnType);
+                        PushExpression(StackValueKind.ByRef, ((ExpressionEntry)thisRef).Name + "->_value", method.Signature.ReturnType);
                         return true;
                     }
                     break;
