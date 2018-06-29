@@ -278,7 +278,8 @@ namespace ILCompiler
 
             // TODO: compiler switch for SIMD support?
             var simdVectorLength = (_isCppCodegen || _isWasmCodegen) ? SimdVectorLength.None : SimdVectorLength.Vector128Bit;
-            var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, TargetAbi.CoreRT, simdVectorLength);
+            var targetAbi = _isCppCodegen ? TargetAbi.CppCodegen : TargetAbi.CoreRT;
+            var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, targetAbi, simdVectorLength);
             var typeSystemContext = new CompilerTypeSystemContext(targetDetails, genericsMode);
 
             //

@@ -78,6 +78,16 @@ namespace Internal.IL
                             return GetCanonTypeIntrinsic.EmitIL(method);
                     }
                     break;
+                case "EEType":
+                    {
+                        if (owningType.Namespace == "Internal.Runtime" && method.Name == "get_SupportsRelativePointers")
+                        {
+                            ILOpcode value = method.Context.Target.SupportsRelativePointers ?
+                                ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0;
+                            return new ILStubMethodIL(method, new byte[] { (byte)value, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
+                        }
+                    }
+                    break;
             }
 
             return null;
