@@ -166,24 +166,26 @@ namespace System
                 return (ulong)a * (ulong)b;
             }
 
-            private static ulong UInt64x64To128(ulong a, ulong b, out ulong dlHi)
+            private static void UInt64x64To128(ulong a, ulong b, ref decimal pdecOut)
             {
-                ulong low = (uint)a * (ulong)(uint)b; // lo partial prod
-                ulong mid = (uint)a * (b >> 32); // mid 1 partial prod
-                ulong high = (a >> 32) * (b >> 32);
+                ulong low = UInt32x32To64((uint)a, (uint)b); // lo partial prod
+                ulong mid = UInt32x32To64((uint)a, (uint)(b >> 32)); // mid 1 partial prod
+                ulong high = UInt32x32To64((uint)(a >> 32), (uint)(b >> 32));
                 high += mid >> 32;
                 low += mid <<= 32;
                 if (low < mid)  // test for carry
                     high++;
 
-                mid = (a >> 32) * (uint)b;
+                mid = UInt32x32To64((uint)(a >> 32), (uint)b);
                 high += mid >> 32;
                 low += mid <<= 32;
                 if (low < mid)  // test for carry
                     high++;
 
-                dlHi = high;
-                return low;
+                if (high > uint.MaxValue)
+                    throw new OverflowException(SR.Overflow_Decimal);
+                pdecOut.Low64 = low;
+                pdecOut.High = (uint)high;
             }
 
             /***
@@ -1531,7 +1533,7 @@ ReturnZero:
             //**********************************************************************
             internal static void VarDecFromR4(float input, out decimal pdecOut)
             {
-                pdecOut = new decimal();
+                pdecOut = default;
 
                 // The most we can scale by is 10^28, which is just slightly more
                 // than 2^93.  So a float with an exponent of -94 could just
@@ -1543,7 +1545,7 @@ ReturnZero:
                     return; // result should be zeroed out
 
                 if (iExp > 96)
-                    goto ThrowOverflow;
+                    throw new OverflowException(SR.Overflow_Decimal);
 
                 uint flags = 0;
                 if (input < 0)
@@ -1622,12 +1624,7 @@ ReturnZero:
                         if (iPower > 18)
                         {
                             ulong low64 = UInt32x32To64(ulMant, s_powers10[iPower - 18]);
-                            low64 = UInt64x64To128(low64, TenToPowerEighteen, out ulong tmplong);
-                            ulong hi64 = tmplong;
-                            if (hi64 > uint.MaxValue)
-                                goto ThrowOverflow;
-                            pdecOut.Low64 = low64;
-                            pdecOut.High = (uint)hi64;
+                            UInt64x64To128(low64, TenToPowerEighteen, ref pdecOut);
                         }
                         else
                         {
@@ -1696,10 +1693,6 @@ ReturnZero:
                 }
 
                 pdecOut.uflags = flags;
-                return;
-
-ThrowOverflow:
-                throw new OverflowException(SR.Overflow_Decimal);
             }
 
             //**********************************************************************
@@ -1707,7 +1700,7 @@ ThrowOverflow:
             //**********************************************************************
             internal static void VarDecFromR8(double input, out decimal pdecOut)
             {
-                pdecOut = new decimal();
+                pdecOut = default;
 
                 // The most we can scale by is 10^28, which is just slightly more
                 // than 2^93.  So a float with an exponent of -94 could just
@@ -1719,7 +1712,7 @@ ThrowOverflow:
                     return; // result should be zeroed out
 
                 if (iExp > 96)
-                    goto ThrowOverflow;
+                    throw new OverflowException(SR.Overflow_Decimal);
 
                 uint flags = 0;
                 if (input < 0)
@@ -1803,12 +1796,7 @@ ThrowOverflow:
                         // Have a big power of 10.
                         //
                         Debug.Assert(iPower <= 14);
-                        ulong low64 = UInt64x64To128(ulMant, s_ulongPowers10[iPower - 1], out ulong tmplong);
-                        ulong hi64 = tmplong;
-                        if (hi64 > uint.MaxValue)
-                            goto ThrowOverflow;
-                        pdecOut.Low64 = low64;
-                        pdecOut.High = (uint)hi64;
+                        UInt64x64To128(ulMant, s_ulongPowers10[iPower - 1], ref pdecOut);
                     }
                 }
                 else
@@ -1829,7 +1817,7 @@ ThrowOverflow:
                     {
                         const uint den = 100000000;
                         ulong div = ulMant / den;
-                        if (ulMant == div * den)
+                        if ((uint)ulMant == (uint)(div * den))
                         {
                             ulMant = div;
                             iPower -= 8;
@@ -1841,7 +1829,7 @@ ThrowOverflow:
                     {
                         const uint den = 10000;
                         ulong div = ulMant / den;
-                        if (ulMant == div * den)
+                        if ((uint)ulMant == (uint)(div * den))
                         {
                             ulMant = div;
                             iPower -= 4;
@@ -1853,7 +1841,7 @@ ThrowOverflow:
                     {
                         const uint den = 100;
                         ulong div = ulMant / den;
-                        if (ulMant == div * den)
+                        if ((uint)ulMant == (uint)(div * den))
                         {
                             ulMant = div;
                             iPower -= 2;
@@ -1865,7 +1853,7 @@ ThrowOverflow:
                     {
                         const uint den = 10;
                         ulong div = ulMant / den;
-                        if (ulMant == div * den)
+                        if ((uint)ulMant == (uint)(div * den))
                         {
                             ulMant = div;
                             iPower--;
@@ -1877,10 +1865,6 @@ ThrowOverflow:
                 }
 
                 pdecOut.uflags = flags;
-                return;
-
-ThrowOverflow:
-                throw new OverflowException(SR.Overflow_Decimal);
             }
 
             //**********************************************************************
