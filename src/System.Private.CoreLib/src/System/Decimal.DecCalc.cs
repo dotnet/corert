@@ -234,28 +234,67 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static bool Div96ByConst(ref ulong high64, ref uint low, uint pow)
             {
-                ulong div64;
-#if !BIT64
-                if (high64 <= uint.MaxValue)
-                {
-                    div64 = ((high64 << 32) | low) / pow;
-                    if (low == (uint)div64 * pow)
-                    {
-                        low = (uint)div64;
-                        high64 = div64 >> 32;
-                        return true;
-                    }
-                    return false;
-                }
-#endif
-                div64 = high64 / pow;
-                uint div = (uint)((((high64 - (uint)div64 * pow) << 32) | low) / pow);
+#if BIT64
+                ulong div64 = high64 / pow;
+                uint div = (uint)((((high64 - div64 * pow) << 32) + low) / pow);
                 if (low == div * pow)
                 {
                     high64 = div64;
                     low = div;
                     return true;
                 }
+#else
+                // 32-bit RyuJIT doesn't convert 64-bit division by constant into multiplication by reciprocal. Do half-width divisions instead.
+                Debug.Assert(pow <= ushort.MaxValue);
+                uint num, mid32, low16, div;
+                if (high64 <= uint.MaxValue)
+                {
+                    num = (uint)high64;
+                    mid32 = num / pow;
+                    num = (num - mid32 * pow) << 16;
+
+                    num += low >> 16;
+                    low16 = num / pow;
+                    num = (num - low16 * pow) << 16;
+
+                    num += (ushort)low;
+                    div = num / pow;
+                    if (num == div * pow)
+                    {
+                        high64 = mid32;
+                        low = (low16 << 16) + div;
+                        return true;
+                    }
+                }
+                else
+                {
+                    num = (uint)(high64 >> 32);
+                    uint high32 = num / pow;
+                    num = (num - high32 * pow) << 16;
+
+                    num += (uint)high64 >> 16;
+                    mid32 = num / pow;
+                    num = (num - mid32 * pow) << 16;
+
+                    num += (ushort)high64;
+                    div = num / pow;
+                    num = (num - div * pow) << 16;
+                    mid32 = div + (mid32 << 16);
+
+                    num += low >> 16;
+                    low16 = num / pow;
+                    num = (num - low16 * pow) << 16;
+
+                    num += (ushort)low;
+                    div = num / pow;
+                    if (num == div * pow)
+                    {
+                        high64 = ((ulong)high32 << 32) | mid32;
+                        low = (low16 << 16) + div;
+                        return true;
+                    }
+                }
+#endif
                 return false;
             }
 
@@ -268,11 +307,16 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static void Unscale(ref uint low, ref ulong high64, ref int scale)
             {
+#if BIT64
                 while ((byte)low == 0 && scale >= 8 && Div96ByConst(ref high64, ref low, 100000000))
                     scale -= 8;
 
                 if ((low & 0xF) == 0 && scale >= 4 && Div96ByConst(ref high64, ref low, 10000))
                     scale -= 4;
+#else
+                while ((low & 0xF) == 0 && scale >= 4 && Div96ByConst(ref high64, ref low, 10000))
+                    scale -= 4;
+#endif
 
                 if ((low & 3) == 0 && scale >= 2 && Div96ByConst(ref high64, ref low, 100))
                     scale -= 2;
