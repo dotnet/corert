@@ -329,7 +329,7 @@ namespace System
         //
         public static decimal Add(decimal d1, decimal d2)
         {
-            DecCalc.VarDecAdd(ref d1, ref d2);
+            DecCalc.DecAddSub(ref d1, ref d2, false);
             return d1;
         }
 
@@ -670,7 +670,7 @@ namespace System
         //
         public static decimal Subtract(decimal d1, decimal d2)
         {
-            DecCalc.VarDecSub(ref d1, ref d2);
+            DecCalc.DecAddSub(ref d1, ref d2, true);
             return d1;
         }
 
