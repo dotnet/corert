@@ -193,6 +193,7 @@ namespace Internal.JitInterface
     // Constant Lookups are either:
     //     IAT_VALUE: immediate (relocatable) values,
     //     IAT_PVALUE: immediate values access via an indirection through an immediate (relocatable) address
+    //     IAT_RELPVALUE: immediate values access via a relative indirection through an immediate offset
     //     IAT_PPVALUE: immediate values access via a double indirection through an immediate (relocatable) address
     //
     // Runtime Lookups
@@ -220,6 +221,7 @@ namespace Internal.JitInterface
         // If accessType is
         //     IAT_VALUE   --> "handle" stores the real handle or "addr " stores the computed address
         //     IAT_PVALUE  --> "addr" stores a pointer to a location which will hold the real handle
+        //     IAT_RELPVALUE --> "addr" stores a relative pointer to a location which will hold the real handle
         //     IAT_PPVALUE --> "addr" stores a double indirection to a location which will hold the real handle
 
         public InfoAccessType accessType;
@@ -301,6 +303,7 @@ namespace Internal.JitInterface
         // Otherwise, it's a representative...  If accessType is
         //     IAT_VALUE --> "handle" stores the real handle or "addr " stores the computed address
         //     IAT_PVALUE --> "addr" stores a pointer to a location which will hold the real handle
+        //     IAT_RELPVALUE --> "addr" stores a relative pointer to a location which will hold the real handle
         //     IAT_PPVALUE --> "addr" stores a double indirection to a location which will hold the real handle
         public ref CORINFO_CONST_LOOKUP constLookup
         {
@@ -495,7 +498,8 @@ namespace Internal.JitInterface
     {
         IAT_VALUE,      // The info value is directly available
         IAT_PVALUE,     // The value needs to be accessed via an       indirection
-        IAT_PPVALUE     // The value needs to be accessed via a double indirection
+        IAT_PPVALUE,    // The value needs to be accessed via a double indirection
+        IAT_RELPVALUE   // The value needs to be accessed via a relative indirection
     }
 
     public enum CorInfoGCType
@@ -1464,7 +1468,7 @@ namespace Internal.JitInterface
         CORJIT_FLAG_UNUSED3 = 10,
         CORJIT_FLAG_UNUSED4 = 11,
         CORJIT_FLAG_UNUSED5 = 12,
-        CORJIT_FLAG_USE_SSE3_4 = 13,
+        CORJIT_FLAG_UNUSED6 = 13,
         CORJIT_FLAG_USE_AVX = 14,
         CORJIT_FLAG_USE_AVX2 = 15,
         CORJIT_FLAG_USE_AVX_512 = 16,
@@ -1508,7 +1512,7 @@ namespace Internal.JitInterface
         CORJIT_FLAG_HAS_ARM64_LRCPC         = 52, // ID_AA64ISAR1_EL1.LRCPC is 1 or better
         CORJIT_FLAG_HAS_ARM64_PMULL         = 53, // ID_AA64ISAR0_EL1.AES is 2 or better
         CORJIT_FLAG_HAS_ARM64_SHA1          = 54, // ID_AA64ISAR0_EL1.SHA1 is 1 or better
-        CORJIT_FLAG_HAS_ARM64_SHA2          = 55, // ID_AA64ISAR0_EL1.SHA2 is 1 or better
+        CORJIT_FLAG_HAS_ARM64_SHA256        = 55, // ID_AA64ISAR0_EL1.SHA2 is 1 or better
         CORJIT_FLAG_HAS_ARM64_SHA512        = 56, // ID_AA64ISAR0_EL1.SHA2 is 2 or better
         CORJIT_FLAG_HAS_ARM64_SHA3          = 57, // ID_AA64ISAR0_EL1.SHA3 is 1 or better
         CORJIT_FLAG_HAS_ARM64_SIMD          = 58, // ID_AA64PFR0_EL1.AdvSIMD is 0 or better

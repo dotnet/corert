@@ -72,7 +72,7 @@ internal static extern bool System.Runtime.RuntimeImports.AreTypesAssignable(Sys
 internal static extern bool System.Runtime.RuntimeImports.AreTypesEquivalent(System.EETypePtr pType1, System.EETypePtr pType2)
 internal static extern double System.Runtime.RuntimeImports.asin(double x)
 internal static extern double System.Runtime.RuntimeImports.atan(double x)
-internal static extern double System.Runtime.RuntimeImports.atan2(double x, double y)
+internal static extern double System.Runtime.RuntimeImports.atan2(double y, double x)
 internal static extern double System.Runtime.RuntimeImports.ceil(double x)
 internal static extern double System.Runtime.RuntimeImports.cos(double x)
 internal static extern double System.Runtime.RuntimeImports.cosh(double x)
@@ -215,11 +215,10 @@ public string System.IntPtr.ToString(string format)
 private static System.Text.StringBuilder System.Text.StringBuilderCache.t_cachedInstance
 private int string._stringLength
 private char string._firstChar
-private void* System.IntPtr._value
-private static volatile System.Collections.Generic.ArraySortHelper<TKey, TValue> System.Collections.Generic.ArraySortHelper<TKey, TValue>.s_defaultArraySortHelper
+private readonly void* System.IntPtr._value
 private static volatile System.Globalization.CultureInfo System.Globalization.CultureInfo.s_DefaultThreadCurrentCulture
 private static volatile System.Globalization.CultureInfo System.Globalization.CultureInfo.s_DefaultThreadCurrentUICulture
-private static volatile System.Globalization.CultureInfo System.Globalization.CultureInfo.s_InvariantCultureInfo
+private static readonly System.Globalization.CultureInfo System.Globalization.CultureInfo.s_InvariantCultureInfo
 private System.Threading.Tasks.Task System.Runtime.CompilerServices.AsyncVoidMethodBuilder.m_task
 private System.Threading.Tasks.Task<System.Threading.Tasks.VoidTaskResult> System.Runtime.CompilerServices.AsyncTaskMethodBuilder.m_task
 private System.Threading.Tasks.Task<TResult> System.Runtime.CompilerServices.AsyncTaskMethodBuilder<TResult>.m_task

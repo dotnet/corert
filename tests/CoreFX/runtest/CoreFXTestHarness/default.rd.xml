@@ -1,0 +1,41 @@
+<Directives 
+    xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+    <Application>
+        <Assembly Name="*Application*" Dynamic="Required All" />
+        <Assembly Name="xunit.abstractions" Dynamic="Required All" />
+        <Assembly Name="System.Private.CoreLib">
+            <Type Name="System.Runtime.CompilerServices.CompilationRelaxationsAttribute" Dynamic="Required All" />
+            <Type Name="System.Runtime.CompilerServices.RuntimeCompatibilityAttribute" Dynamic="Required All" />
+            <Type Name="System.Runtime.CompilerServices.ExtensionAttribute" Dynamic="Required All" />
+            <Type Name="System.Runtime.CompilerServices.IntrinsicAttribute" Dynamic="Required All" />
+            <Type Name="System.Diagnostics.DebuggableAttribute" Dynamic="Required All" />
+            <Type Name="System.Reflection.AssemblyInformationalVersionAttribute" Dynamic="Required All" />
+            <Type Name="System.Reflection.AssemblyTitleAttribute" Dynamic="Required All" />
+            <Type Name="System.Reflection.AssemblyFileVersionAttribute" Dynamic="Required All" />
+            <Type Name="System.Reflection.AssemblyDescriptionAttribute" Dynamic="Required All" />
+            <Type Name="System.Reflection.AssemblyCompanyAttribute" Dynamic="Required All" />
+            <Type Name="System.Reflection.AssemblyCopyrightAttribute" Dynamic="Required All" />
+            <Type Name="System.Reflection.AssemblyProductAttribute" Dynamic="Required All" />
+            <Type Name="System.Reflection.AssemblyDefaultAliasAttribute" Dynamic="Required All" />
+            <Type Name="System.Reflection.AssemblyMetadataAttribute" Dynamic="Required All" />
+            <Type Name="System.AttributeUsageAttribute" Dynamic="Required All" />
+            <Type Name="System.AttributeUsageAttribute[]" Dynamic="Required All" />
+            <Type Name="System.Runtime.InteropServices.ComVisibleAttribute" Dynamic="Required All" />
+            <Type Name="System.CLSCompliantAttribute" Dynamic="Required All" />
+        </Assembly>
+        <Assembly Name="mscorlib">
+            <Type Name="System.IO.File" Dynamic="Required All"/>
+            <Type Name="System.Threading.ExecutionContext" Dynamic="Required All"/>
+            <Type Name="System.Threading.ContextCallback" Dynamic="Required All"/>
+        </Assembly>
+        <Assembly Name="xunit.core" Dynamic="Required All" />
+        <Assembly Name="xunit.runner.utility.dotnet" Dynamic="Required All" />
+        <Assembly Name="xunit.execution.dotnet" Dynamic="Required All" />
+        <Assembly Name="xunit.abstractions" Dynamic="Required All" />
+        <Assembly Name="xunit.core" Dynamic="Required All">
+            <Type Name="Xunit.Sdk.BeforeAfterTestAttribute[]" Dynamic="Required All" />
+        </Assembly>
+        <Assembly Name="Xunit.NetCore.Extensions" Dynamic="Required All" />
+        <Assembly Name="System.Linq.Expressions" Dynamic="Required All" />
+    </Application>
+</Directives>

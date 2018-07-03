@@ -12,13 +12,18 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
-    class EmptyMetadataManager : MetadataManager
+    public class EmptyMetadataManager : MetadataManager
     {
         public override bool SupportsReflection => false;
 
-        public EmptyMetadataManager(CompilationModuleGroup group, CompilerTypeSystemContext typeSystemContext)
-            : base(group, typeSystemContext, new FullyBlockedMetadataPolicy())
+        public EmptyMetadataManager(CompilerTypeSystemContext typeSystemContext)
+            : base(typeSystemContext, new FullyBlockedMetadataPolicy(), new FullyBlockedManifestResourcePolicy())
         {
+        }
+
+        public override void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory, ExternalReferencesTableNode commonFixupsTableNode)
+        {
+            // We don't attach any metadata blobs.
         }
 
         public override IEnumerable<ModuleDesc> GetCompilationModulesWithMetadata()
@@ -100,6 +105,14 @@ namespace ILCompiler
             public override bool IsBlocked(FieldDesc field)
             {
                 Debug.Assert(field.IsTypicalFieldDefinition);
+                return true;
+            }
+        }
+
+        private sealed class FullyBlockedManifestResourcePolicy : ManifestResourceBlockingPolicy
+        {
+            public override bool IsManifestResourceBlocked(ModuleDesc module, string resourceName)
+            {
                 return true;
             }
         }

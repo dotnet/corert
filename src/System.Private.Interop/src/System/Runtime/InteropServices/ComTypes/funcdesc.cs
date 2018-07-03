@@ -10,7 +10,9 @@ namespace System.Runtime.InteropServices.ComTypes
     public struct FUNCDESC
     {
         public int memid;                   //MEMBERID memid;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2111:PointersShouldNotBeVisible",  Justification="Backwards compatibility")]
         public IntPtr lprgscode;            // /* [size_is(cScodes)] */ SCODE RPC_FAR *lprgscode;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2111:PointersShouldNotBeVisible",  Justification="Backwards compatibility")]
         public IntPtr lprgelemdescParam;    // /* [size_is(cParams)] */ ELEMDESC __RPC_FAR *lprgelemdescParam;
         public FUNCKIND funckind;           //FUNCKIND funckind;
         public INVOKEKIND invkind;          //INVOKEKIND invkind;

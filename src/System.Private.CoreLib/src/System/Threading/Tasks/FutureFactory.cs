@@ -401,7 +401,7 @@ namespace System.Threading.Tasks
         /// However, unless creation and scheduling must be separated, StartNew is the recommended approach
         /// for both simplicity and performance.
         /// </remarks>
-        public Task<TResult> StartNew(Func<Object, TResult> function, Object state)
+        public Task<TResult> StartNew(Func<object, TResult> function, object state)
         {
             Task currTask = Task.InternalCurrent;
             return Task<TResult>.StartNew(currTask, function, state, m_defaultCancellationToken,
@@ -430,7 +430,7 @@ namespace System.Threading.Tasks
         /// However, unless creation and scheduling must be separated, StartNew is the recommended approach
         /// for both simplicity and performance.
         /// </remarks>
-        public Task<TResult> StartNew(Func<Object, TResult> function, Object state, CancellationToken cancellationToken)
+        public Task<TResult> StartNew(Func<object, TResult> function, object state, CancellationToken cancellationToken)
         {
             Task currTask = Task.InternalCurrent;
             return Task<TResult>.StartNew(currTask, function, state, cancellationToken,
@@ -461,7 +461,7 @@ namespace System.Threading.Tasks
         /// However, unless creation and scheduling must be separated, StartNew is the recommended approach
         /// for both simplicity and performance.
         /// </remarks>
-        public Task<TResult> StartNew(Func<Object, TResult> function, Object state, TaskCreationOptions creationOptions)
+        public Task<TResult> StartNew(Func<object, TResult> function, object state, TaskCreationOptions creationOptions)
         {
             Task currTask = Task.InternalCurrent;
             return Task<TResult>.StartNew(currTask, function, state, m_defaultCancellationToken,
@@ -503,7 +503,7 @@ namespace System.Threading.Tasks
         /// However, unless creation and scheduling must be separated, StartNew is the recommended approach
         /// for both simplicity and performance.
         /// </remarks>
-        public Task<TResult> StartNew(Func<Object, TResult> function, Object state, CancellationToken cancellationToken, TaskCreationOptions creationOptions, TaskScheduler scheduler)
+        public Task<TResult> StartNew(Func<object, TResult> function, object state, CancellationToken cancellationToken, TaskCreationOptions creationOptions, TaskScheduler scheduler)
         {
             return Task<TResult>.StartNew(Task.InternalCurrentIfAttached(creationOptions), function, state, cancellationToken,
                 creationOptions, InternalTaskOptions.None, scheduler);
@@ -679,10 +679,10 @@ namespace System.Threading.Tasks
             // Just specify this task as detached. No matter what happens, we want endMethod 
             // to be called -- even if the parent is canceled.  So we don't want to flow 
             // RespectParentCancellation.
-            Task t = new Task(delegate
+            Task t = new Task(new Action<object>(delegate
                 {
                     FromAsyncCoreLogic(asyncResult, endFunction, endAction, promise, requiresSynchronization: true);
-                },
+                }),
                 (object)null, null,
                 default(CancellationToken), TaskCreationOptions.None, InternalTaskOptions.None, null);
 

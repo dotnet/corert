@@ -117,14 +117,14 @@ namespace ILCompiler.Metadata
                     return new ConstantUInt64Value { Value = (ulong)value };
             }
 
-            if (type.IsString)
-            {
-                return HandleString((string)value);
-            }
-
             if (value == null)
             {
                 return new ConstantReferenceValue();
+            }
+
+            if (type.IsString)
+            {
+                return HandleString((string)value);
             }
 
             if (type.IsSzArray)

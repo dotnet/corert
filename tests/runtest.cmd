@@ -10,8 +10,9 @@ set CoreRT_BuildOS=Windows_NT
 set CoreRT_TestRun=true
 set CoreRT_TestCompileMode=
 set CoreRT_RunCoreCLRTests=
+set CoreRT_RunCoreFXTests=
 set CoreRT_CoreCLRTargetsFile=
-set CoreRT_TestLogFileName=testresults.xml
+set CoreRT_TestLogFileName=testResults.xml
 set CoreRT_TestName=*
 
 :ArgLoop
@@ -48,6 +49,7 @@ if /i "%1" == "/coreclr"  (
 :ExtRepoTestsOk
     goto ArgLoop
 )
+if /i "%1" == "/corefx" (set CoreRT_RunCoreFXTests=true&shift&goto ArgLoop)
 if /i "%1" == "/coreclrsingletest" (set CoreRT_RunCoreCLRTests=true&set CoreRT_CoreCLRTest=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/mode" (set CoreRT_TestCompileMode=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/test" (set CoreRT_TestName=%2&shift&shift&goto ArgLoop)
@@ -67,6 +69,7 @@ echo     /mode         : Optionally restrict to a single code generator. Specify
 echo     /test         : Run a single test by folder name (ie, BasicThreading)
 echo     /runtest      : Should just compile or run compiled binary? Specify: true/false. Default: true.
 echo     /coreclr      : Download and run the CoreCLR repo tests
+echo     /corefx      : Download and run the CoreFX repo tests
 echo     /coreclrsingletest ^<absolute\path\to\test.exe^>
 echo                   : Run a single CoreCLR repo test
 echo     /multimodule  : Compile the framework as a .lib and link tests against it (only supports ryujit)
@@ -121,7 +124,8 @@ call "%_VSCOMNTOOLS%\VsDevCmd.bat"
 :RunVCVars
 
 call "!VS150COMNTOOLS!\..\..\VC\Auxiliary\Build\vcvarsall.bat" %CoreRT_HostArch%
-if "%CoreRT_RunCoreCLRTests%"=="true" goto :TestExtRepo
+if "%CoreRT_RunCoreCLRTests%"=="true" goto :TestExtRepoCoreCLR
+if "%CoreRT_RunCoreFXTests%"=="true" goto :TestExtRepoCoreFX
 
 if /i "%__BuildType%"=="Debug" (
     set __LinkLibs=msvcrtd.lib
@@ -301,12 +305,19 @@ goto :eof
 
         set __SavedErrorLevel=!ErrorLevel!
         if "%CoreRT_TestRun%"=="false" (goto :SkipTestRun)
-        if "%__Mode%" == "wasm" (goto :SkipTestRun)
+        
+        set __Extension=exe
 
-        if "%__SavedErrorLevel%"=="0" (
+        if "%__Mode%"=="wasm" (
+            REM Skip running if this is WASM build-only testing running in a different architecture's build
+            if /i not "%CoreRT_BuildArch%"=="wasm" (goto :SkipTestRun)
+            set __Extension=html
+         )
+
+        if "!__SavedErrorLevel!"=="0" (
             echo.
             echo Running test !__SourceFileName!
-            call !__SourceFile!.cmd !__SourceFolder!\bin\%CoreRT_BuildType%\%CoreRT_BuildArch%\native !__SourceFileName!.exe
+            call !__SourceFile!.cmd !__SourceFolder!\bin\%CoreRT_BuildType%\%CoreRT_BuildArch%\native !__SourceFileName!.!__Extension!
             set __SavedErrorLevel=!ErrorLevel!
         )
     )
@@ -333,9 +344,54 @@ goto :eof
     powershell -Command Write-Host %1 -foreground "red"
     exit /b -1
 
+:RestoreCoreFXTests
+
+    :: Explicitly restore the test helper project
+    "%CoreRT_CliDir%\dotnet.exe" msbuild /t:Restore "%CoreRT_TestFileHelperProjectPath%"
+    if errorlevel 1 (
+        exit /b 1
+    )
+    "%CoreRT_CliDir%\dotnet.exe" msbuild /t:Restore "%CoreRT_XunitHelperProjectPath%"    
+    if errorlevel 1 (
+        exit /b 1
+    )
+
+    :: Build the test helper projects
+    "%CoreRT_CliDir%\dotnet.exe" msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:OSGroup=%CoreRT_BuildOS%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%CoreRT_TestRoot%..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" "/p:OutputPath=%CoreRT_TestingUtilitiesOutputDir%" /p:RepoLocalBuild=true "%CoreRT_TestFileHelperProjectPath%" 
+        if errorlevel 1 (
+        exit /b 1
+    )
+
+    "%CoreRT_CliDir%\dotnet.exe" msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:OSGroup=%CoreRT_BuildOS%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%CoreRT_TestRoot%..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" "/p:OutputPath=%CoreRT_TestingUtilitiesOutputDir%" /p:RepoLocalBuild=true "%CoreRT_XunitHelperProjectPath%" 
+    if errorlevel 1 (
+        exit /b 1
+    )
+
+    set TESTS_SEMAPHORE=%CoreRT_TestExtRepo_CoreFX%\init-tests.completed
+    :: If sempahore exists do nothing
+    if exist "%TESTS_SEMAPHORE%" (
+      echo Tests are already initialized.
+      goto :EOF
+    )
+
+    set /p TESTS_REMOTE_URL=< "%~dp0/CoreFXTestListURL.txt"
+    set TEST_LIST="%~dp0/TopN.CoreFX.Windows.issues.json"
+
+    if not exist !CoreRT_TestingUtilitiesOutputDir!\%CoreRT_TestFileHelperName%.dll (
+        echo File !CoreRT_TestingUtilitiesOutputDir!\%CoreRT_TestFileHelperName%.dll not found.
+        exit /b 1
+    )
+
+    "%CoreRT_CliDir%\dotnet.exe" !CoreRT_TestingUtilitiesOutputDir!\%CoreRT_TestFileHelperName%.dll --clean --outputDirectory !CoreRT_TestExtRepo_CoreFX! --testListJsonPath "%TEST_LIST%" --testUrl "%TESTS_REMOTE_URL%"
+    if errorlevel 1 (
+        exit /b 1
+    )
+
+    exit /b 0
+
 :RestoreCoreCLRTests
 
-    set TESTS_SEMAPHORE=%CoreRT_TestExtRepo%\init-tests.completed
+    set TESTS_SEMAPHORE=%CoreRT_TestExtRepo_CoreCLR%\init-tests.completed
 
     :: If sempahore exists do nothing
     if exist "%TESTS_SEMAPHORE%" (
@@ -343,15 +399,15 @@ goto :eof
       goto :EOF
     )
 
-    if exist "%CoreRT_TestExtRepo%" rmdir /S /Q "%CoreRT_TestExtRepo%"
-    mkdir "%CoreRT_TestExtRepo%"
+    if exist "%CoreRT_TestExtRepo_CoreCLR%" rmdir /S /Q "%CoreRT_TestExtRepo_CoreCLR%"
+    mkdir "%CoreRT_TestExtRepo_CoreCLR%"
 
     set /p TESTS_REMOTE_URL=< "%~dp0\CoreCLRTestsURL.txt"
-    set TESTS_LOCAL_ZIP=%CoreRT_TestExtRepo%\tests.zip
+    set TESTS_LOCAL_ZIP=%CoreRT_TestExtRepo_CoreCLR%\tests.zip
     set INIT_TESTS_LOG=%~dp0..\init-tests.log
     echo Restoring tests (this may take a few minutes)..
     echo Installing '%TESTS_REMOTE_URL%' to '%TESTS_LOCAL_ZIP%' >> "%INIT_TESTS_LOG%"
-    powershell -NoProfile -ExecutionPolicy unrestricted -Command "$retryCount = 0; $success = $false; do { try { [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; (New-Object Net.WebClient).DownloadFile('%TESTS_REMOTE_URL%', '%TESTS_LOCAL_ZIP%'); $success = $true; } catch { if ($retryCount -ge 6) { throw; } else { $retryCount++; Start-Sleep -Seconds (5 * $retryCount); } } } while ($success -eq $false); Add-Type -Assembly 'System.IO.Compression.FileSystem' -ErrorVariable AddTypeErrors; if ($AddTypeErrors.Count -eq 0) { [System.IO.Compression.ZipFile]::ExtractToDirectory('%TESTS_LOCAL_ZIP%', '%CoreRT_TestExtRepo%') } else { (New-Object -com shell.application).namespace('%CoreRT_TestExtRepo%').CopyHere((new-object -com shell.application).namespace('%TESTS_LOCAL_ZIP%').Items(),16) }" >> "%INIT_TESTS_LOG%"
+    powershell -NoProfile -ExecutionPolicy unrestricted -Command "$retryCount = 0; $success = $false; do { try { [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; (New-Object Net.WebClient).DownloadFile('%TESTS_REMOTE_URL%', '%TESTS_LOCAL_ZIP%'); $success = $true; } catch { if ($retryCount -ge 6) { throw; } else { $retryCount++; Start-Sleep -Seconds (5 * $retryCount); } } } while ($success -eq $false); Add-Type -Assembly 'System.IO.Compression.FileSystem' -ErrorVariable AddTypeErrors; if ($AddTypeErrors.Count -eq 0) { [System.IO.Compression.ZipFile]::ExtractToDirectory('%TESTS_LOCAL_ZIP%', '%CoreRT_TestExtRepo_CoreCLR%') } else { (New-Object -com shell.application).namespace('%CoreRT_TestExtRepo_CoreCLR%').CopyHere((new-object -com shell.application).namespace('%TESTS_LOCAL_ZIP%').Items(),16) }" >> "%INIT_TESTS_LOG%"
     if errorlevel 1 (
       echo ERROR: Could not download CoreCLR tests correctly. See '%INIT_TESTS_LOG%' for more details. 1>&2
       exit /b 1
@@ -361,7 +417,7 @@ goto :eof
     echo CoreCLR tests restored from %TESTS_REMOTE_URL% > %TESTS_SEMAPHORE%
     exit /b 0
 
-:TestExtRepo
+:TestExtRepoCoreCLR
     :: Omit the exclude parameter to CoreCLR's test harness if we're running all tests
     set CoreCLRExcludeText=exclude
     if "%CoreRT_CoreCLRTargetsFile%" == "" (
@@ -369,15 +425,15 @@ goto :eof
     )
 
     echo Running external tests
-    if "%CoreRT_TestExtRepo%" == "" (
-        set CoreRT_TestExtRepo=%CoreRT_TestRoot%\..\tests_downloaded\CoreCLR
+    if "%CoreRT_TestExtRepo_CoreCLR%" == "" (
+        set CoreRT_TestExtRepo_CoreCLR=%CoreRT_TestRoot%\..\tests_downloaded\CoreCLR
         call :RestoreCoreCLRTests
         if errorlevel 1 (
             exit /b 1
         )
     )
 
-    if not exist "%CoreRT_TestExtRepo%" ((call :Fail "%CoreRT_TestExtRepo% does not exist") & exit /b 1)
+    if not exist "%CoreRT_TestExtRepo_CoreCLR%" ((call :Fail "%CoreRT_TestExtRepo_CoreCLR% does not exist") & exit /b 1)
 
     if "%CoreRT_MultiFileConfiguration%" == "MultiModule" (
         set IlcMultiModule=true
@@ -389,7 +445,7 @@ goto :eof
 
     echo.
     set CLRCustomTestLauncher=%CoreRT_TestRoot%\CoreCLR\build-and-run-test.cmd
-    set XunitTestBinBase=!CoreRT_TestExtRepo!
+    set XunitTestBinBase=!CoreRT_TestExtRepo_CoreCLR!
     pushd %CoreRT_TestRoot%\CoreCLR\runtest
 
     "%CoreRT_CliDir%\dotnet.exe" msbuild /t:Restore /p:RepoLocalBuild=true src\TestWrappersConfig\XUnitTooling.depproj
@@ -416,3 +472,43 @@ goto :eof
     set __SavedErrorLevel=%ErrorLevel%
     popd
     exit /b %__SavedErrorLevel%
+
+:TestExtRepoCoreFX
+    
+    set CoreRT_TestExtRepo_CoreFX=%CoreRT_TestRoot%\..\tests_downloaded\CoreFX
+    set CoreRT_TestingUtilitiesOutputDir=%CoreRT_TestExtRepo_CoreFX%\..\CoreFXUtilities
+
+    :: Set paths to helpers
+    set CoreRT_TestFileHelperName=CoreFX.TestUtils.TestFileSetup
+    set CoreRT_TestFileHelperProjectPath="%CoreRT_TestRoot%\CoreFX\runtest\src\TestUtils\TestFileSetup\%CoreRT_TestFileHelperName%.csproj"
+
+    set CoreRT_XunitHelperName=CoreFX.TestUtils.XUnit
+    set CoreRT_XunitHelperProjectPath="%CoreRT_TestRoot%\CoreFX\runtest\src\TestUtils\XUnit\%CoreRT_XunitHelperName%.csproj"    
+    
+    :: TODO Check if each requested test has already been restored
+    call :RestoreCoreFXTests
+    if errorlevel 1 (
+        exit /b 1
+    )
+
+    set FXCustomTestLauncher=%CoreRT_TestRoot%\CoreFX\build-and-run-test.cmd
+    set XunitTestBinBase=%CoreRT_TestExtRepo_CoreFX%
+    
+    :: Place test logs so they can be found by CI
+    set XunitLogDir= %__CoreRTTestBinDir%\CoreFX
+    
+    :: Clean up existing logs
+    if exist "%XunitLogDir%" rmdir /S /Q "%XunitLogDir%"
+    mkdir "%XunitLogDir%"
+    pushd %CoreRT_TestRoot%\CoreFX\runtest
+
+    :: TODO Add single test/target test support; add exclude tests argument
+
+    echo runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% LogsDir %XunitLogDir%
+    call runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% LogsDir %XunitLogDir% 
+
+    set __SavedErrorLevel=%ErrorLevel%
+    popd
+    
+    exit /b %__SavedErrorLevel%
+

@@ -56,11 +56,11 @@ namespace System.Runtime.InteropServices
                 finally
                 {
                     if (pErrDes != IntPtr.Zero)
-                        ExternalInterop.SysFreeString(pErrDes);
+                        McgMarshal.SysFreeString(pErrDes);
                     if (pResErrDes != IntPtr.Zero)
-                        ExternalInterop.SysFreeString(pResErrDes);
+                        McgMarshal.SysFreeString(pResErrDes);
                     if (pErrCapSid != IntPtr.Zero)
-                        ExternalInterop.SysFreeString(pErrCapSid);
+                        McgMarshal.SysFreeString(pErrCapSid);
                 }
 
                 return result >= 0;
@@ -88,7 +88,7 @@ namespace System.Runtime.InteropServices
                 finally
                 {
                     if (pReference != IntPtr.Zero)
-                        ExternalInterop.SysFreeString(pReference);
+                        McgMarshal.SysFreeString(pReference);
                 }
             }
         }
@@ -185,7 +185,7 @@ namespace System.Runtime.InteropServices
         /// <param name="ex"></param>
         /// <param name="isWinRTScenario"></param>
         /// <returns></returns>
-        internal static int GetHRForExceptionWithErrorPropogationNoThrow(Exception ex, bool isWinRTScenario)
+        internal static int GetHRForExceptionWithErrorPropagationNoThrow(Exception ex, bool isWinRTScenario)
         {
             int hr = ex.HResult;
 
@@ -719,7 +719,7 @@ namespace System.Runtime.InteropServices
                 InteropExtensions.SetExceptionMessage(exception, message);
             }
 
-            InteropExtensions.SetExceptionErrorCode(exception, errorCode);
+            exception.HResult = errorCode;
 
             return exception;
         }

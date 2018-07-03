@@ -58,9 +58,8 @@ namespace ILCompiler.DependencyAnalysis
                 result.Add(factory.VirtualMethodUse(_targetMethod), "Interface method use");
             }
 
-            // TODO: https://github.com/dotnet/corert/issues/3224 
-            result.Add(factory.ReflectableMethod(_targetMethod), "Abstract reflectable method");
-
+            factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref result, factory, _targetMethod);
+            
             return result;
         }
 
@@ -109,7 +108,7 @@ namespace ILCompiler.DependencyAnalysis
             // Avoid consulting VTable slots until they're guaranteed complete during final data emission
             if (!relocsOnly)
             {
-                objData.EmitNaturalInt(VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, _targetMethod));
+                objData.EmitNaturalInt(VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, _targetMethod, _targetMethod.OwningType));
             }
 
             return objData.ToObjectData();

@@ -24,4 +24,14 @@
     "Description":"Provides the toolchain to compile managed code to native",
     "CommonTypes": [],
   },
+  {
+    "Name": "Microsoft.DotNet.ILVerification",
+    "Description":"Provides a library, containing a cross platform, open-source tool that is capable of verifying MSIL code based on ECMA-335",
+    "CommonTypes": [],
+  },
+  {
+    "Name": "Microsoft.DotNet.ObjectWriter",
+    "Description":"Provides object writer to the managed to native code-generator",
+    "CommonTypes": [],
+  },
 ]

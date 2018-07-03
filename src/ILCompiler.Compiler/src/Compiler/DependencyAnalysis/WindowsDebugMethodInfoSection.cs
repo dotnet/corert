@@ -102,7 +102,7 @@ namespace ILCompiler.DependencyAnalysis
                         // find virtual method slot.
                         MethodDesc declaringMethodForSlot =
                             MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(md.GetTypicalMethodDefinition());
-                        int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, declaringMethodForSlot);
+                        int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, declaringMethodForSlot, type);
                         if (slot != -1 && !methodList.ContainsKey(methodToken))
                             methodList.Add(methodToken, slot);
                     }

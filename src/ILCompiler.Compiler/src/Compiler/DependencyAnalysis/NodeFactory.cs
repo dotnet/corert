@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 using ILCompiler.DependencyAnalysisFramework;
@@ -282,9 +283,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new PInvokeModuleFixupNode(name);
             });
 
-            _pInvokeMethodFixups = new NodeCache<Tuple<string, string>, PInvokeMethodFixupNode>((Tuple<string, string> key) =>
+            _pInvokeMethodFixups = new NodeCache<Tuple<string, string, PInvokeFlags>, PInvokeMethodFixupNode>((Tuple<string, string, PInvokeFlags> key) =>
             {
-                return new PInvokeMethodFixupNode(key.Item1, key.Item2);
+                return new PInvokeMethodFixupNode(key.Item1, key.Item2, key.Item3);
             });
 
             _methodEntrypoints = new NodeCache<MethodDesc, IMethodNode>(CreateMethodEntrypointNode);
@@ -379,7 +380,12 @@ namespace ILCompiler.DependencyAnalysis
 
             _interfaceDispatchMaps = new NodeCache<TypeDesc, InterfaceDispatchMapNode>((TypeDesc type) =>
             {
-                return new InterfaceDispatchMapNode(type);
+                return new InterfaceDispatchMapNode(this, type);
+            });
+
+            _sealedVtableNodes = new NodeCache<TypeDesc, SealedVTableNode>((TypeDesc type) =>
+            {
+                return new SealedVTableNode(type);
             });
 
             _runtimeMethodHandles = new NodeCache<MethodDesc, RuntimeMethodHandleNode>((MethodDesc method) =>
@@ -477,11 +483,6 @@ namespace ILCompiler.DependencyAnalysis
             _stringAllocators = new NodeCache<MethodDesc, IMethodNode>(constructor =>
             {
                 return new StringAllocatorMethodNode(constructor);
-            });
-
-            _defaultConstructorFromLazyNodes = new NodeCache<TypeDesc, DefaultConstructorFromLazyNode>(type =>
-            {
-                return new DefaultConstructorFromLazyNode(type);
             });
 
             NativeLayout = new NativeLayoutHelper(this);
@@ -646,6 +647,13 @@ namespace ILCompiler.DependencyAnalysis
             return _readOnlyDataBlobs.GetOrAdd(new ReadOnlyDataBlobKey(name, blobData, alignment));
         }
 
+        private NodeCache<TypeDesc, SealedVTableNode> _sealedVtableNodes;
+
+        internal SealedVTableNode SealedVTable(TypeDesc type)
+        {
+            return _sealedVtableNodes.GetOrAdd(type);
+        }
+
         private NodeCache<TypeDesc, InterfaceDispatchMapNode> _interfaceDispatchMaps;
 
         internal InterfaceDispatchMapNode InterfaceDispatchMap(TypeDesc type)
@@ -681,11 +689,11 @@ namespace ILCompiler.DependencyAnalysis
             return _pInvokeModuleFixups.GetOrAdd(moduleName);
         }
 
-        private NodeCache<Tuple<string, string>, PInvokeMethodFixupNode> _pInvokeMethodFixups;
+        private NodeCache<Tuple<string, string, PInvokeFlags>, PInvokeMethodFixupNode> _pInvokeMethodFixups;
 
-        public PInvokeMethodFixupNode PInvokeMethodFixup(string moduleName, string entryPointName)
+        public PInvokeMethodFixupNode PInvokeMethodFixup(string moduleName, string entryPointName, PInvokeFlags flags)
         {
-            return _pInvokeMethodFixups.GetOrAdd(new Tuple<string, string>(moduleName, entryPointName));
+            return _pInvokeMethodFixups.GetOrAdd(Tuple.Create(moduleName, entryPointName, flags));
         }
 
         private NodeCache<TypeDesc, VTableSliceNode> _vTableNodes;
@@ -791,12 +799,6 @@ namespace ILCompiler.DependencyAnalysis
         public IMethodNode RuntimeDeterminedMethod(MethodDesc method)
         {
             return _runtimeDeterminedMethods.GetOrAdd(method);
-        }
-
-        private NodeCache<TypeDesc, DefaultConstructorFromLazyNode> _defaultConstructorFromLazyNodes;
-        internal DefaultConstructorFromLazyNode DefaultConstructorFromLazy(TypeDesc type)
-        {
-            return _defaultConstructorFromLazyNodes.GetOrAdd(type);
         }
 
         private static readonly string[][] s_helperEntrypointNames = new string[][] {
@@ -1068,6 +1070,7 @@ namespace ILCompiler.DependencyAnalysis
             InteropStubManager.AddToReadyToRunHeader(ReadyToRunHeader, this, commonFixupsTableNode);
             MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader, this, commonFixupsTableNode);
             MetadataManager.AttachToDependencyGraph(graph);
+            ReadyToRunHeader.Add(MetadataManager.BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable), commonFixupsTableNode, commonFixupsTableNode, commonFixupsTableNode.EndSymbol);
         }
 
         protected struct MethodKey : IEquatable<MethodKey>

@@ -42,10 +42,10 @@ namespace System.Threading.Tasks
     public class TaskFactory
     {
         // member variables
-        private CancellationToken m_defaultCancellationToken;
-        private TaskScheduler m_defaultScheduler;
-        private TaskCreationOptions m_defaultCreationOptions;
-        private TaskContinuationOptions m_defaultContinuationOptions;
+        private readonly CancellationToken m_defaultCancellationToken;
+        private readonly TaskScheduler m_defaultScheduler;
+        private readonly TaskCreationOptions m_defaultCreationOptions;
+        private readonly TaskContinuationOptions m_defaultContinuationOptions;
 
 
         private TaskScheduler DefaultScheduler
@@ -88,7 +88,7 @@ namespace System.Threading.Tasks
         /// cref="System.Threading.Tasks.TaskScheduler.Current">TaskScheduler.Current</see>).
         /// </remarks>
         public TaskFactory()
-            : this(default(CancellationToken), TaskCreationOptions.None, TaskContinuationOptions.None, null)
+            : this(default, TaskCreationOptions.None, TaskContinuationOptions.None, null)
         {
         }
 
@@ -133,7 +133,7 @@ namespace System.Threading.Tasks
         /// cref="System.Threading.Tasks.TaskScheduler.Current">TaskScheduler.Current</see>).
         /// </remarks>
         public TaskFactory(TaskScheduler scheduler) // null means to use TaskScheduler.Current
-            : this(default(CancellationToken), TaskCreationOptions.None, TaskContinuationOptions.None, scheduler)
+            : this(default, TaskCreationOptions.None, TaskContinuationOptions.None, scheduler)
         {
         }
 
@@ -164,7 +164,7 @@ namespace System.Threading.Tasks
         /// cref="System.Threading.Tasks.TaskScheduler.Current">TaskScheduler.Current</see>).
         /// </remarks>
         public TaskFactory(TaskCreationOptions creationOptions, TaskContinuationOptions continuationOptions)
-            : this(default(CancellationToken), creationOptions, continuationOptions, null)
+            : this(default, creationOptions, continuationOptions, null)
         {
         }
 
@@ -416,7 +416,7 @@ namespace System.Threading.Tasks
         /// However, unless creation and scheduling must be separated, StartNew is the recommended approach
         /// for both simplicity and performance.
         /// </remarks>
-        public Task StartNew(Action<Object> action, Object state)
+        public Task StartNew(Action<object> action, object state)
         {
             Task currTask = Task.InternalCurrent;
             return Task.InternalStartNew(currTask, action, state, m_defaultCancellationToken, GetDefaultScheduler(currTask),
@@ -445,7 +445,7 @@ namespace System.Threading.Tasks
         /// However, unless creation and scheduling must be separated, StartNew is the recommended approach
         /// for both simplicity and performance.
         /// </remarks>
-        public Task StartNew(Action<Object> action, Object state, CancellationToken cancellationToken)
+        public Task StartNew(Action<object> action, object state, CancellationToken cancellationToken)
         {
             Task currTask = Task.InternalCurrent;
             return Task.InternalStartNew(currTask, action, state, cancellationToken, GetDefaultScheduler(currTask),
@@ -475,7 +475,7 @@ namespace System.Threading.Tasks
         /// However, unless creation and scheduling must be separated, StartNew is the recommended approach
         /// for both simplicity and performance.
         /// </remarks>
-        public Task StartNew(Action<Object> action, Object state, TaskCreationOptions creationOptions)
+        public Task StartNew(Action<object> action, object state, TaskCreationOptions creationOptions)
         {
             Task currTask = Task.InternalCurrent;
             return Task.InternalStartNew(currTask, action, state, m_defaultCancellationToken, GetDefaultScheduler(currTask),
@@ -516,7 +516,7 @@ namespace System.Threading.Tasks
         /// However, unless creation and scheduling must be separated, StartNew is the recommended approach
         /// for both simplicity and performance.
         /// </remarks>
-        public Task StartNew(Action<Object> action, Object state, CancellationToken cancellationToken,
+        public Task StartNew(Action<object> action, object state, CancellationToken cancellationToken,
                             TaskCreationOptions creationOptions, TaskScheduler scheduler)
         {
             return Task.InternalStartNew(
@@ -677,7 +677,7 @@ namespace System.Threading.Tasks
         /// However, unless creation and scheduling must be separated, StartNew is the recommended approach
         /// for both simplicity and performance.
         /// </remarks>
-        public Task<TResult> StartNew<TResult>(Func<Object, TResult> function, Object state)
+        public Task<TResult> StartNew<TResult>(Func<object, TResult> function, object state)
         {
             Task currTask = Task.InternalCurrent;
             return Task<TResult>.StartNew(currTask, function, state, m_defaultCancellationToken,
@@ -710,7 +710,7 @@ namespace System.Threading.Tasks
         /// However, unless creation and scheduling must be separated, StartNew is the recommended approach
         /// for both simplicity and performance.
         /// </remarks>
-        public Task<TResult> StartNew<TResult>(Func<Object, TResult> function, Object state, CancellationToken cancellationToken)
+        public Task<TResult> StartNew<TResult>(Func<object, TResult> function, object state, CancellationToken cancellationToken)
         {
             Task currTask = Task.InternalCurrent;
             return Task<TResult>.StartNew(currTask, function, state, cancellationToken,
@@ -744,7 +744,7 @@ namespace System.Threading.Tasks
         /// However, unless creation and scheduling must be separated, StartNew is the recommended approach
         /// for both simplicity and performance.
         /// </remarks>
-        public Task<TResult> StartNew<TResult>(Func<Object, TResult> function, Object state, TaskCreationOptions creationOptions)
+        public Task<TResult> StartNew<TResult>(Func<object, TResult> function, object state, TaskCreationOptions creationOptions)
         {
             Task currTask = Task.InternalCurrent;
             return Task<TResult>.StartNew(currTask, function, state, m_defaultCancellationToken,
@@ -789,7 +789,7 @@ namespace System.Threading.Tasks
         /// However, unless creation and scheduling must be separated, StartNew is the recommended approach
         /// for both simplicity and performance.
         /// </remarks>
-        public Task<TResult> StartNew<TResult>(Func<Object, TResult> function, Object state, CancellationToken cancellationToken,
+        public Task<TResult> StartNew<TResult>(Func<object, TResult> function, object state, CancellationToken cancellationToken,
             TaskCreationOptions creationOptions, TaskScheduler scheduler)
         {
             return Task<TResult>.StartNew(
@@ -1603,6 +1603,8 @@ namespace System.Threading.Tasks
                 Debug.Assert(_count >= 0, "Count should never go below 0");
             }
 
+            public bool InvokeMayRunArbitraryCode { get { return true; } }
+
             /// <summary>
             /// Returns whether we should notify the debugger of a wait completion.  This returns 
             /// true iff at least one constituent task has its bit set.
@@ -1616,8 +1618,6 @@ namespace System.Threading.Tasks
                         Task.AnyTaskRequiresNotifyDebuggerOfWaitCompletion(_tasks);
                 }
             }
-
-            public bool InvokeMayRunArbitraryCode { get { return true; } }
         }
 
         // Performs some logic common to all ContinueWhenAll() overloads
@@ -1675,6 +1675,8 @@ namespace System.Threading.Tasks
                 Debug.Assert(_count >= 0, "Count should never go below 0");
             }
 
+            public bool InvokeMayRunArbitraryCode { get { return true; } }
+
             /// <summary>
             /// Returns whether we should notify the debugger of a wait completion.  This returns 
             /// true iff at least one constituent task has its bit set.
@@ -1688,8 +1690,6 @@ namespace System.Threading.Tasks
                         Task.AnyTaskRequiresNotifyDebuggerOfWaitCompletion(_tasks);
                 }
             }
-
-            public bool InvokeMayRunArbitraryCode { get { return true; } }
         }
 
 

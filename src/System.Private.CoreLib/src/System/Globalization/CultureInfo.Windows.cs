@@ -56,5 +56,36 @@ namespace System.Globalization
 
             return temp;
         }
+
+        private static CultureInfo GetUserDefaultUICulture()
+        {
+#if !ENABLE_WINRT
+            if (GlobalizationMode.Invariant)
+                return CultureInfo.InvariantCulture;
+
+            const uint MUI_LANGUAGE_NAME = 0x8;    // Use ISO language (culture) name convention
+            uint langCount = 0;
+            uint bufLen = 0;
+
+            if (Interop.Kernel32.GetUserPreferredUILanguages(MUI_LANGUAGE_NAME, out langCount, null, ref bufLen))
+            {
+                char[] languages = new char[bufLen];
+                if (Interop.Kernel32.GetUserPreferredUILanguages(MUI_LANGUAGE_NAME, out langCount, languages, ref bufLen))
+                {
+                    int index = 0;
+                    while (languages[index] != (char)0 && index < languages.Length)
+                    {
+                        index++;
+                    }
+
+                    CultureInfo temp = GetCultureByName(new string(languages, 0, index), true);
+                    temp._isReadOnly = true;
+                    return temp;
+                }
+            }
+#endif
+
+            return s_userDefaultCulture ?? InitializeUserDefaultCulture();
+        }
     }
 }

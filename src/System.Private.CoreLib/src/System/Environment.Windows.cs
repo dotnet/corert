@@ -12,8 +12,6 @@ namespace System
 
         internal static long TickCount64 => (long)Interop.mincore.GetTickCount64();
 
-        private static int ComputeExecutionId() => (int)Interop.mincore.GetCurrentProcessorNumber();
-
         public static string ExpandEnvironmentVariables(string name)
         {
             if (name == null)

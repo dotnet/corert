@@ -29,26 +29,27 @@ namespace ILCompiler.DependencyAnalysis
         }
         public int Offset => 0;
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
-        public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
         public override bool IsShareable => false;
         public override bool StaticDependenciesAreComputed => true;
+
+        public override ObjectNodeSection Section
+        {
+            get
+            {
+                if (_targetField.Context.Target.IsWindows)
+                    return ObjectNodeSection.ReadOnlyDataSection;
+                else
+                    return ObjectNodeSection.DataSection;
+            }
+        }
 
         private static Utf8String s_NativeLayoutSignaturePrefix = new Utf8String("__RFHSignature_");
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            // TODO: https://github.com/dotnet/corert/issues/3224
-            // We should figure out reflectable fields when scanning for reflection
-            FieldDesc fieldDefinition = _targetField.GetTypicalFieldDefinition();
-            if (factory.MetadataManager.CanGenerateMetadata(fieldDefinition))
-            {
-                return new DependencyList
-                {
-                    new DependencyListEntry(factory.FieldMetadata(fieldDefinition), "LDTOKEN")
-                };
-            }
-
-            return null;
+            DependencyList result = null;
+            factory.MetadataManager.GetDependenciesDueToLdToken(ref result, factory, _targetField);
+            return result;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)

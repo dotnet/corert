@@ -578,21 +578,10 @@ inline DynamicModule * EEType::get_DynamicModule()
 // represented - instead the classlib has a common one for all arrays
 inline EEType * EEType::GetArrayBaseType()
 {
-    RuntimeInstance * pRuntimeInstance = GetRuntimeInstance();
-    Module * pModule = NULL;
-    if (pRuntimeInstance->IsInStandaloneExeMode())
-    {
-        // With dynamically created types, there is no home module to use to find System.Array. That's okay
-        // for now, but when we support multi-module, we'll have to do something more clever here.
-        pModule = pRuntimeInstance->GetStandaloneExeModule();
-    }
-    else
-    {
-        EEType *pEEType = this;
-        if (pEEType->IsDynamicType())
-            pEEType = pEEType->get_DynamicTemplateType();
-        pModule = GetRuntimeInstance()->FindModuleByReadOnlyDataAddress(pEEType);
-    }
+    EEType *pEEType = this;
+    if (pEEType->IsDynamicType())
+        pEEType = pEEType->get_DynamicTemplateType();
+    Module * pModule = GetRuntimeInstance()->FindModuleByReadOnlyDataAddress(pEEType);
     EEType * pArrayBaseType = pModule->GetArrayBaseType();
     return pArrayBaseType;
 }

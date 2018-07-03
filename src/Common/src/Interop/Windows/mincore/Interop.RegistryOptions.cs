@@ -14,12 +14,6 @@ internal partial class Interop
             internal const int REG_OPTION_BACKUP_RESTORE = 0x0004;  // Use SE_BACKUP_NAME process special privileges
         }
 
-        internal partial class RegistryView
-        {
-            internal const int KEY_WOW64_64KEY = 0x0100;
-            internal const int KEY_WOW64_32KEY = 0x0200;
-        }
-
         internal partial class RegistryOperations
         {
             internal const int KEY_QUERY_VALUE = 0x0001;
@@ -45,21 +39,6 @@ internal partial class Interop
             internal const int READ_CONTROL = 0x00020000;
             internal const int STANDARD_RIGHTS_READ = READ_CONTROL;
             internal const int STANDARD_RIGHTS_WRITE = READ_CONTROL;
-        }
-
-        internal partial class RegistryValues
-        {
-            internal const int REG_NONE = 0;                // No value type
-            internal const int REG_SZ = 1;                  // Unicode nul terminated string
-            internal const int REG_EXPAND_SZ = 2;           // Unicode nul terminated string
-            // (with environment variable references)
-            internal const int REG_BINARY = 3;              // Free form binary
-            internal const int REG_DWORD = 4;               // 32-bit number
-            internal const int REG_DWORD_LITTLE_ENDIAN = 4; // 32-bit number (same as REG_DWORD)
-            internal const int REG_DWORD_BIG_ENDIAN = 5;    // 32-bit number
-            internal const int REG_LINK = 6;                // Symbolic Link (Unicode)
-            internal const int REG_MULTI_SZ = 7;            // Multiple Unicode strings
-            internal const int REG_QWORD = 11;             // 64-bit number
         }
     }
 }

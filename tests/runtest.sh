@@ -6,6 +6,7 @@ usage()
     echo "    -mode         : Compilation mode. Specify cpp/ryujit. Default: ryujit"
     echo "    -test         : Run a single test by folder name (ie, BasicThreading)"
     echo "    -runtest      : Should just compile or run compiled binary? Specify: true/false. Default: true."
+    echo "    -corefx       : Download and run the CoreFX repo tests"
     echo "    -coreclr      : Download and run the CoreCLR repo tests"
     echo "    -multimodule  : Compile the framework as a .so and link tests against it (ryujit only)"
     echo "    -coredumps    : [For CI use] Enables core dump generation, and analyzes and possibly stores/uploads"
@@ -41,6 +42,9 @@ run_test_dir()
     if [ "${__mode}" = "Cpp" ]; then
         __extra_args="${__extra_args} /p:NativeCodeGen=cpp"
     fi
+    if [ "${__mode}" = "Wasm" ]; then
+        __extra_args="${__extra_args} /p:NativeCodeGen=wasm"
+    fi
     if [ -n "${__extra_cxxflags}" ]; then
         __extra_cxxflags="/p:AdditionalCppCompilerFlags=\"${__extra_cxxflags}\""
     fi
@@ -55,8 +59,8 @@ run_test_dir()
 
     local __msbuild_dir=${CoreRT_TestRoot}/../Tools
 
-    echo ${__msbuild_dir}/dotnetcli/dotnet ${__msbuild_dir}/MSBuild.dll /ds /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:Platform=${CoreRT_BuildArch} /p:RepoLocalBuild=true "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" ${__extra_args} "${__extra_cxxflags}" "${__extra_linkflags}" ${__dir_path}/${__filename}.csproj
-    ${__msbuild_dir}/dotnetcli/dotnet ${__msbuild_dir}/MSBuild.dll /ds /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:Platform=${CoreRT_BuildArch} /p:OSGroup=${CoreRT_BuildOS} /p:RepoLocalBuild=true "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" ${__extra_args} "${__extra_cxxflags}" "${__extra_linkflags}" ${__dir_path}/${__filename}.csproj
+    echo ${__msbuild_dir}/msbuild.sh /ds /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:Platform=${CoreRT_BuildArch} /p:RepoLocalBuild=true "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" ${__extra_args} ${__extra_cxxflags} ${__extra_linkflags} ${__dir_path}/${__filename}.csproj
+    ${__msbuild_dir}/msbuild.sh /ds /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:Platform=${CoreRT_BuildArch} /p:OSGroup=${CoreRT_BuildOS} /p:RepoLocalBuild=true "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" ${__extra_args} ${__extra_cxxflags} ${__extra_linkflags} ${__dir_path}/${__filename}.csproj
 
     local __exitcode=$?
 
@@ -81,7 +85,7 @@ run_test_dir()
     return $?
 }
 
-download_and_unzip_tests_artifacts()
+download_and_unzip_coreclr_tests_artifacts()
 {
     url=$1
     location=$2
@@ -101,6 +105,49 @@ download_and_unzip_tests_artifacts()
     fi
 }
 
+download_and_unzip_corefx_tests_artifacts()
+{    
+    url=$1
+    test_list=$2
+    #semaphore=${CoreRT_TestExtRepo_CoreFX}/init-tests.completed
+    
+    local __msbuild_dir=${CoreRT_CliBinDir}/..
+
+    # Build and restore test helper projects
+    ${CoreRT_CliBinDir}/dotnet restore "${CoreRT_TestFileHelperProjectPath}"
+    local __exitcode=$?
+    if [ ${__exitcode} != 0 ]; then
+        exit ${__exitcode}
+    fi
+
+    ${CoreRT_CliBinDir}/dotnet restore "${CoreRT_XunitHelperProjectPath}"    
+    __exitcode=$?
+    if [ ${__exitcode} != 0 ]; then
+        exit ${__exitcode}
+    fi
+
+    # Build the test helper projects
+    ${CoreRT_CliBinDir}/dotnet build /m /ConsoleLoggerParameters:ForceNoAlign /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:Platform=${CoreRT_BuildArch} /p:OSGroup=${CoreRT_BuildOS} /p:RepoLocalBuild=true "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" "/p:OutputPath=${CoreRT_TestingUtilitiesOutputDir}" "${CoreRT_TestFileHelperProjectPath}" 
+    
+    __exitcode=$?
+    if [ ${__exitcode} != 0 ]; then
+        exit ${__exitcode}
+    fi
+
+   ${CoreRT_CliBinDir}/dotnet build /m /ConsoleLoggerParameters:ForceNoAlign /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:Platform=${CoreRT_BuildArch} /p:OSGroup=${CoreRT_BuildOS} /p:RepoLocalBuild=true "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" "/p:OutputPath=${CoreRT_TestingUtilitiesOutputDir}" "${CoreRT_XunitHelperProjectPath}" 
+    __exitcode=$?
+    if [ ${__exitcode} != 0 ]; then
+        exit ${__exitcode}
+    fi
+
+    ${CoreRT_CliBinDir}/dotnet ${CoreRT_TestingUtilitiesOutputDir}/${CoreRT_TestFileHelperName}.dll --clean --outputDirectory ${CoreRT_TestExtRepo_CoreFX} --testListJsonPath ${test_list} --testUrl ${url}
+    __exitcode=$?
+    if [ ${__exitcode} != 0 ]; then
+        exit ${__exitcode}
+    fi
+}
+
+
 restore_coreclr_tests()
 {
     CoreRT_Test_Download_Semaphore=${CoreRT_TestExtRepo}/init-tests.completed
@@ -115,10 +162,10 @@ restore_coreclr_tests()
     CoreRT_NativeArtifactRepo=${CoreRT_TestExtRepo}/native
 
     echo "Restoring tests (this may take a few minutes).."
-    download_and_unzip_tests_artifacts ${TESTS_REMOTE_URL}  ${CoreRT_TestExtRepo} ${CoreRT_Test_Download_Semaphore}
+    download_and_unzip_coreclr_tests_artifacts ${TESTS_REMOTE_URL}  ${CoreRT_TestExtRepo} ${CoreRT_Test_Download_Semaphore}
 
     echo "Restoring native test artifacts..."
-    download_and_unzip_tests_artifacts ${NATIVE_REMOTE_URL}  ${CoreRT_NativeArtifactRepo} ${CoreRT_NativeArtifact_Download_Semaphore}
+    download_and_unzip_coreclr_tests_artifacts ${NATIVE_REMOTE_URL}  ${CoreRT_NativeArtifactRepo} ${CoreRT_NativeArtifact_Download_Semaphore}
 }
 
 run_coreclr_tests()
@@ -156,6 +203,79 @@ run_coreclr_tests()
     ./runtest.sh --testRootDir=${CoreRT_TestExtRepo} --coreOverlayDir=${CoreRT_TestRoot}/CoreCLR ${CoreRT_TestSelectionArg} --logdir=$__LogDir --disableEventLogging
 }
 
+run_corefx_tests()
+{
+    CoreRT_TestExtRepo_CoreFX=${CoreRT_TestRoot}/../tests_downloaded/CoreFX
+    CoreRT_TestingUtilitiesOutputDir=${CoreRT_TestExtRepo_CoreFX}/../CoreFXUtilities
+
+    export CoreRT_TestRoot
+    export CoreRT_EnableCoreDumps
+    
+    export CoreRT_TestExtRepo_CoreFX
+    export CoreRT_TestingUtilitiesOutputDir
+    export CoreRT_CliBinDir
+
+    if [ ! -d "${CoreRT_TestExtRepo_CoreFX}" ]; then
+        mkdir -p ${CoreRT_TestExtRepo_CoreFX}
+    fi
+
+    # Set paths to helpers
+    CoreRT_TestFileHelperName=CoreFX.TestUtils.TestFileSetup
+    CoreRT_TestFileHelperProjectPath="${CoreRT_TestRoot}/CoreFX/runtest/src/TestUtils/TestFileSetup/${CoreRT_TestFileHelperName}.csproj"
+
+    CoreRT_XunitHelperName=CoreFX.TestUtils.XUnit
+    CoreRT_XunitHelperProjectPath="${CoreRT_TestRoot}/CoreFX/runtest/src/TestUtils/XUnit/${CoreRT_XunitHelperName}.csproj"    
+    
+    TEST_LIST_JSON=${CoreRT_TestRoot}/TopN.CoreFX.Unix.issues.json
+    case "$(uname -s)" in 
+        # Check if we're running under Linux
+        Linux)
+            TESTS_REMOTE_URL=$(<${CoreRT_TestRoot}/CoreFXTestListURL_Linux.txt)
+        ;;
+    # Check if we're running under OSX
+        Darwin)
+            TESTS_REMOTE_URL=$(<${CoreRT_TestRoot}/CoreFXTestListURL_OSX.txt)
+        ;;
+    # Default to Linux if we don't recognize the OS
+        *)
+            TESTS_REMOTE_URL=$(<${CoreRT_TestRoot}/CoreFXTestListURL_Linux.txt)
+        ;;
+    esac
+
+
+    download_and_unzip_corefx_tests_artifacts ${TESTS_REMOTE_URL} ${TEST_LIST_JSON}
+    __exitcode=$?
+    if [ ${__exitcode} != 0 ];
+    then
+        exit ${__exitcode}
+    fi
+
+    FXCustomTestLauncher=${CoreRT_TestRoot}/CoreFX/corerun
+    XunitTestBinBase=${CoreRT_TestExtRepo_CoreFX}
+    XunitLogDir=${CoreRT_TestRoot}/../bin/tests/CoreFX
+
+    # Clean up existing logs
+    if [ -d "${XunitLogDir}" ]; then
+        rm -rf "${XunitLogDir}"
+    fi
+    mkdir ${XunitLogDir}
+
+    pushd ${CoreRT_TestRoot}/CoreFX/runtest
+
+    # TODO Add single test/target test support; add exclude tests argument
+    ./runtest.sh --testRootDir=${XunitTestBinBase} --logdir=${XunitLogDir} --testLauncher=${FXCustomTestLauncher}
+    __exitcode=$?
+    if [ ${__exitcode} != 0 ];
+    then 
+        exit ${__exitcode}
+    fi  
+
+    echo ${CoreRT_CliBinDir}/dotnet ${CoreRT_TestingUtilitiesOutputDir}/${CoreRT_XunitHelperName}.dll --logDir ${XunitLogDir} --pattern "*.xml"
+
+    ${CoreRT_CliBinDir}/dotnet ${CoreRT_TestingUtilitiesOutputDir}/${CoreRT_XunitHelperName}.dll --logDir ${XunitLogDir} --pattern "*.xml"
+    
+}
+
 CoreRT_TestRoot="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CoreRT_CliBinDir=${CoreRT_TestRoot}/../Tools/dotnetcli
 CoreRT_BuildArch=x64
@@ -175,6 +295,12 @@ while [ "$1" != "" ]; do
         -?|-h|--help)
             usage
             exit 1
+            ;;
+        wasm)
+            CoreRT_BuildArch=wasm
+            CoreRT_BuildOS=WebAssembly
+            CoreRT_TestCompileMode=wasm
+            CoreRT_TestRun=false
             ;;
         x86)
             CoreRT_BuildArch=x86
@@ -228,6 +354,10 @@ while [ "$1" != "" ]; do
                 echo "Error: Invalid CoreCLR test selection."
                 exit -1
             fi
+            ;;
+        -corefx)
+            CoreRT_RunCoreFXTests=true;
+            shift
             ;;
         -multimodule)
             CoreRT_MultiFileConfiguration=MultiModule;
@@ -315,11 +445,17 @@ if [ ${CoreRT_RunCoreCLRTests} ]; then
     exit $?
 fi
 
+if [ ${CoreRT_RunCoreFXTests} ]; then
+    run_corefx_tests 
+    exit $?
+fi
+
 __CppTotalTests=0
 __CppPassedTests=0
 __JitTotalTests=0
 __JitPassedTests=0
-
+__WasmTotalTests=0
+__WasmPassedTests=0
 
 if [ ! -d ${__CoreRTTestBinDir} ]; then
     mkdir -p ${__CoreRTTestBinDir}
@@ -327,23 +463,31 @@ fi
 echo > ${__CoreRTTestBinDir}/testResults.tmp
 
 __BuildOsLowcase=$(echo "${CoreRT_BuildOS}" | tr '[:upper:]' '[:lower:]')
-__TestSearchPath=src/Simple/${CoreRT_TestName}
+__TestSearchPath=${CoreRT_TestRoot}/src/Simple/${CoreRT_TestName}
 for csproj in $(find ${__TestSearchPath} -name "*.csproj")
 do
-    if [ ! -e `dirname ${csproj}`/no_unix ]; then
-        if [ "${CoreRT_TestCompileMode}" != "cpp" ]; then
+    if [ -e `dirname ${csproj}`/no_unix ]; then continue; fi
+    if [ -e `dirname ${csproj}`/no_linux ] && [ "${CoreRT_HostOS}" != "OSX" ]; then continue; fi
+
+    if [ "${CoreRT_TestCompileMode}" = "ryujit" ] || [ "${CoreRT_TestCompileMode}" = "" ]; then
+        if [ ! -e `dirname ${csproj}`/no_ryujit ]; then
             run_test_dir ${csproj} "Jit"
         fi
+    fi
+    if [ "${CoreRT_TestCompileMode}" = "cpp" ] || [ "${CoreRT_TestCompileMode}" = "" ]; then
         if [ ! -e `dirname ${csproj}`/no_cpp ]; then
-            if [ "${CoreRT_TestCompileMode}" != "ryujit" ]; then
-                run_test_dir ${csproj} "Cpp" "$CoreRT_ExtraCXXFlags" "$CoreRT_ExtraLinkFlags"
-            fi
+            run_test_dir ${csproj} "Cpp" "$CoreRT_ExtraCXXFlags" "$CoreRT_ExtraLinkFlags"
+        fi
+    fi
+    if [ "${CoreRT_TestCompileMode}" = "wasm" ]; then
+        if [ -e `dirname ${csproj}`/wasm ]; then
+            run_test_dir ${csproj} "Wasm"
         fi
     fi
 done
 
-__TotalTests=$((${__JitTotalTests} + ${__CppTotalTests}))
-__PassedTests=$((${__JitPassedTests} + ${__CppPassedTests}))
+__TotalTests=$((${__JitTotalTests} + ${__CppTotalTests} + ${__WasmTotalTests}))
+__PassedTests=$((${__JitPassedTests} + ${__CppPassedTests} + ${__WasmPassedTests}))
 __FailedTests=$((${__TotalTests} - ${__PassedTests}))
 
 if [ "$CoreRT_MultiFileConfiguration" = "MultiModule" ]; then
@@ -366,18 +510,25 @@ echo "</assemblies>"  >> ${__TestResultsLog}
 
 echo "JIT - TOTAL: ${__JitTotalTests} PASSED: ${__JitPassedTests}"
 echo "CPP - TOTAL: ${__CppTotalTests} PASSED: ${__CppPassedTests}"
+echo "WASM - TOTAL: ${__WasmTotalTests} PASSED: ${__WasmPassedTests}"
 
-if [ ${__JitTotalTests} == 0 ]; then
+if [ ${__JitTotalTests} == 0 ] && [ "${CoreRT_TestCompileMode}" != "wasm" ]; then
     exit 1
 fi
-
-if [ ${__CppTotalTests} == 0 ]; then
+if [ ${__CppTotalTests} == 0 ] && [ "${CoreRT_TestCompileMode}" != "wasm" ]; then
     exit 1
 fi
+if [ ${__WasmTotalTests} == 0 ] && [ "${CoreRT_TestCompileMode}" = "wasm" ]; then
+    exit 1
+fi 
+
 if [ ${__JitTotalTests} -gt ${__JitPassedTests} ]; then
     exit 1
 fi
 if [ ${__CppTotalTests} -gt ${__CppPassedTests} ]; then
+    exit 1
+fi
+if [ ${__WasmTotalTests} -gt ${__WasmPassedTests} ]; then
     exit 1
 fi
 

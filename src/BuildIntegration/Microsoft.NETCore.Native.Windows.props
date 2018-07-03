@@ -18,6 +18,8 @@ See the LICENSE file in the project root for more information.
     <CppCompiler>cl</CppCompiler>
     <CppLinker>link</CppLinker>
     <CppLibCreator>lib</CppLibCreator>
+    <FullRuntimeName>Runtime</FullRuntimeName>
+    <FullRuntimeName Condition="'$(ServerGarbageCollection)' != ''">Runtime.ServerGC</FullRuntimeName>
   </PropertyGroup>
     
   <!-- Part of workaround for lack of secondary build artifact import - https://github.com/Microsoft/msbuild/issues/2807 -->
@@ -36,7 +38,8 @@ See the LICENSE file in the project root for more information.
     <ItemGroup>
       <NativeLibrary Condition="$(NativeCodeGen) == '' and $(NativeLib) == ''" Include="$(IlcPath)\sdk\bootstrapper.lib" />
       <NativeLibrary Condition="$(NativeCodeGen) == '' and $(NativeLib) != ''" Include="$(IlcPath)\sdk\bootstrapperdll.lib" />
-      <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)\sdk\Runtime.lib" />
+      <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)\sdk\$(FullRuntimeName).lib" />
+      <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)\sdk\System.Private.TypeLoader.Native.lib" />
       <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)\sdk\bootstrappercpp.lib" />
       <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)\sdk\PortableRuntime.lib" />
       <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)\sdk\bootstrappercpp.lib" />
@@ -45,28 +48,27 @@ See the LICENSE file in the project root for more information.
     </ItemGroup>
   
     <ItemGroup>
-      <AdditionalNativeLibrary Include="kernel32.lib" />
-      <AdditionalNativeLibrary Include="user32.lib" />
-      <AdditionalNativeLibrary Include="gdi32.lib" />
-      <AdditionalNativeLibrary Include="winspool.lib" />
-      <AdditionalNativeLibrary Include="comdlg32.lib" />
-      <AdditionalNativeLibrary Include="advapi32.lib" />
-      <AdditionalNativeLibrary Include="shell32.lib" />
-      <AdditionalNativeLibrary Include="ole32.lib" />
-      <AdditionalNativeLibrary Include="oleaut32.lib" />
-      <AdditionalNativeLibrary Include="uuid.lib" />
-      <AdditionalNativeLibrary Include="bcrypt.lib" />
-      <AdditionalNativeLibrary Include="normaliz.lib" />
+      <NativeLibrary Include="kernel32.lib" />
+      <NativeLibrary Include="user32.lib" />
+      <NativeLibrary Include="gdi32.lib" />
+      <NativeLibrary Include="winspool.lib" />
+      <NativeLibrary Include="comdlg32.lib" />
+      <NativeLibrary Include="advapi32.lib" />
+      <NativeLibrary Include="shell32.lib" />
+      <NativeLibrary Include="ole32.lib" />
+      <NativeLibrary Include="oleaut32.lib" />
+      <NativeLibrary Include="uuid.lib" />
+      <NativeLibrary Include="bcrypt.lib" />
+      <NativeLibrary Include="normaliz.lib" />
     </ItemGroup>
     
     <ItemGroup>
       <LinkerArg Condition="$(NativeLib) == 'Shared'" Include="/DLL" />
-      <LinkerArg Condition="$(DefFile) != ''" Include="/DEF:$(DefFile)" />
-      <LinkerArg Include="@(NativeLibrary)" />
-      <LinkerArg Include="@(AdditionalNativeLibrary)" />
+      <LinkerArg Include="@(NativeLibrary->'&quot;%(Identity)&quot;')" />
       <LinkerArg Include="/NOLOGO /DEBUG /MANIFEST:NO" />
       <!-- The runtime is not compatible with jump stubs inserted by incremental linking. -->
       <LinkerArg Include="/INCREMENTAL:NO" />
+      <LinkerArg Condition="'$(OutputType)' == 'WinExe'" Include="/SUBSYSTEM:WINDOWS /ENTRY:wmainCRTStartup" />
     </ItemGroup>
   
     <ItemGroup>
@@ -77,5 +79,29 @@ See the LICENSE file in the project root for more information.
       <LinkerArg Include="/OPT:REF" />
       <LinkerArg Include="/OPT:ICF" />
     </ItemGroup>
+
+    <Exec Command="where /Q $(CppCompiler) &amp;&amp; where /Q $(CppLinker)" IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="_WhereCppTools"/>
+    </Exec>
+
+    <Message Condition="'$(_WhereCppTools)' != '0'" Text="Tools '$(CppCompiler)' and '$(CppLinker)' not found on PATH. Attempting to autodetect." />
+
+    <Exec Condition="'$(_WhereCppTools)' != '0'" Command="&quot;$(MSBuildThisFileDirectory)findvcvarsall.bat&quot; amd64" IgnoreExitCode="true" ConsoleToMSBuild="true" StandardOutputImportance="Low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_FindVCVarsallOutput"/>
+      <Output TaskParameter="ExitCode" PropertyName="_VCVarsAllFound"/>
+    </Exec>
+
+    <ItemGroup Condition="'$(_VCVarsAllFound)' == '0'">
+      <AdditionalNativeLibraryDirectories Include="$(_FindVCVarsallOutput.Split(`#`)[1].Split(';'))" />
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(_VCVarsAllFound)' == '0'">
+      <_CppToolsDirectory>$(_FindVCVarsallOutput.Split(`#`)[0])</_CppToolsDirectory>
+      <CppCompiler>"$(_CppToolsDirectory)cl.exe"</CppCompiler>
+      <CppLinker>"$(_CppToolsDirectory)link.exe"</CppLinker>
+      <CppLibCreator>"$(_CppToolsDirectory)lib.exe"</CppLibCreator>
+    </PropertyGroup>
+
+    <Error Condition="'$(_WhereCppTools)' != '0' AND '$(_VCVarsAllFound)' == '1'" Text="Platform linker not found. To fix this problem, download and install Visual Studio 2017 from http://visualstudio.com. Make sure to install the Desktop Development for C++ workload." />
   </Target>
 </Project>

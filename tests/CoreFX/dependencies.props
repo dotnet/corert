@@ -1,0 +1,18 @@
+<Project DefaultTargets="Build" 
+    xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <Import Project="..\..\dependencies.props" />
+ 
+    <!-- Package version dependencies in test helper projects. -->
+    <PropertyGroup>
+        <SystemCommandLineVersion>0.1.0-e160909-1</SystemCommandLineVersion>
+        <NewtonsoftJsonVersion>11.0.2</NewtonsoftJsonVersion>
+        <NewtonsoftJsonSchemaVersion>3.0.10</NewtonsoftJsonSchemaVersion>
+        <XunitPackageVersion>2.3.0-beta1-build3642</XunitPackageVersion>     
+        <!-- Due to an API surface mismatch, if the xunit.netcore executable attempts to run the wrong version of the
+        runner utility, running the tests wil break, so separate both into different version definitions  -->   
+        <XunitRunnerUtilityVersion>2.2.0-beta2-build3300</XunitRunnerUtilityVersion>                
+        <XunitAbstractionsVersion>2.0.1</XunitAbstractionsVersion>
+        <XunitNetcoreExtensionsVersion>2.1.0-preview2-02516-02</XunitNetcoreExtensionsVersion>
+        <CoreFxTestUtilitiesVersion>4.5.0-preview2-26219-0</CoreFxTestUtilitiesVersion>
+    </PropertyGroup>
+</Project>

@@ -13,30 +13,52 @@ using Internal.Runtime.Augments;
 
 namespace Internal.DeveloperExperience
 {
+    [System.Runtime.CompilerServices.ReflectionBlocked]
     public class DeveloperExperience
     {
-        public virtual void WriteLine(String s)
+        /// <summary>
+        /// Check the AppCompat switch 'Diagnostics.DisableMetadataStackTraceResolution'.
+        /// Some customers use DIA-based tooling to translate stack traces in the raw format
+        /// (module)+RVA - for them, stack trace and reflection metadata-based resolution
+        /// constitutes technically a regression because these two resolution methods today cannot
+        /// provide file name and line number information; PDB-based tooling can easily do that
+        /// based on the RVA information.
+        ///
+        /// Note: a related switch 'Diagnostics.DisableDiaStackTraceResolution' controls whether
+        /// runtime may try to use DIA for PDB-based stack frame resolution.
+        /// </summary>
+        private static bool IsMetadataStackTraceResolutionDisabled()
+        {
+            bool disableMetadata = false;
+            AppContext.TryGetSwitch("Diagnostics.DisableMetadataStackTraceResolution", out disableMetadata);
+            return disableMetadata;
+        }
+
+        public virtual void WriteLine(string s)
         {
             Debug.WriteLine(s);
             return;
         }
 
-        public virtual String CreateStackTraceString(IntPtr ip, bool includeFileInfo)
+        public virtual string CreateStackTraceString(IntPtr ip, bool includeFileInfo)
         {
-            StackTraceMetadataCallbacks stackTraceCallbacks = RuntimeAugments.StackTraceCallbacksIfAvailable;
-            if (stackTraceCallbacks != null)
+            if (!IsMetadataStackTraceResolutionDisabled())
             {
-                IntPtr methodStart = RuntimeImports.RhFindMethodStartAddress(ip);
-                if (methodStart != IntPtr.Zero)
+                StackTraceMetadataCallbacks stackTraceCallbacks = RuntimeAugments.StackTraceCallbacksIfAvailable;
+                if (stackTraceCallbacks != null)
                 {
-                    string methodName = stackTraceCallbacks.TryGetMethodNameFromStartAddress(methodStart);
-                    if (methodName != null)
+                    IntPtr methodStart = RuntimeImports.RhFindMethodStartAddress(ip);
+                    if (methodStart != IntPtr.Zero)
                     {
-                        if (ip != methodStart)
+                        string methodName = stackTraceCallbacks.TryGetMethodNameFromStartAddress(methodStart);
+                        if (methodName != null)
                         {
-                            methodName += " + 0x" + (ip.ToInt64() - methodStart.ToInt64()).ToString("x");
+                            if (ip != methodStart)
+                            {
+                                methodName += " + 0x" + (ip.ToInt64() - methodStart.ToInt64()).ToString("x");
+                            }
+                            return methodName;
                         }
-                        return methodName;
                     }
                 }
             }
@@ -52,7 +74,7 @@ namespace Internal.DeveloperExperience
             }
 
             StringBuilder sb = new StringBuilder();
-            String fileNameWithoutExtension = GetFileNameWithoutExtension(moduleFullFileName);
+            string fileNameWithoutExtension = GetFileNameWithoutExtension(moduleFullFileName);
             int rva = RuntimeAugments.ConvertIpToRva(ip);
             sb.Append(fileNameWithoutExtension);
             sb.Append("!<BaseAddress>+0x");
@@ -85,7 +107,7 @@ namespace Internal.DeveloperExperience
             }
         }
 
-        public virtual bool OnContractFailure(String stackTrace, ContractFailureKind contractFailureKind, String displayMessage, String userMessage, String conditionText, Exception innerException)
+        public virtual bool OnContractFailure(string stackTrace, ContractFailureKind contractFailureKind, string displayMessage, string userMessage, string conditionText, Exception innerException)
         {
             Debug.WriteLine("Assertion failed: " + (displayMessage == null ? "" : displayMessage));
             if (Debugger.IsAttached)
@@ -109,7 +131,7 @@ namespace Internal.DeveloperExperience
             }
         }
 
-        private static String GetFileNameWithoutExtension(String path)
+        private static string GetFileNameWithoutExtension(string path)
         {
             path = GetFileName(path);
             int i;
@@ -119,7 +141,7 @@ namespace Internal.DeveloperExperience
                 return path.Substring(0, i);
         }
 
-        private static String GetFileName(String path)
+        private static string GetFileName(string path)
         {
             int length = path.Length;
             for (int i = length; --i >= 0;)

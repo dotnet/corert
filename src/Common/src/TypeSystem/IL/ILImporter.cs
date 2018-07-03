@@ -317,6 +317,7 @@ namespace Internal.IL
         private void ImportBasicBlocks()
         {
             _pendingBasicBlocks = _basicBlocks[0];
+            _basicBlocks[0].State = BasicBlock.ImportState.IsPending;
             while (_pendingBasicBlocks != null)
             {
                 BasicBlock basicBlock = _pendingBasicBlocks;

@@ -4,9 +4,6 @@
 
 /*============================================================
 **
-** 
-** 
-**
 **
 ** Purpose: Searches for resources on disk, used for file-
 ** based resource lookup.
@@ -14,19 +11,16 @@
 ** 
 ===========================================================*/
 
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Threading;
+
+using Internal.IO;
+
 namespace System.Resources
 {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Globalization;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.Versioning;
-    using System.Text;
-    using System.Threading;
-    using System.Diagnostics;
-    
     internal class FileBasedResourceGroveler : IResourceGroveler
     {
         private ResourceManager.ResourceManagerMediator _mediator;
@@ -40,16 +34,16 @@ namespace System.Resources
         // Consider modifying IResourceGroveler interface (hence this method signature) when we figure out 
         // serialization compat story for moving ResourceManager members to either file-based or 
         // manifest-based classes. Want to continue tightening the design to get rid of unused params.
-        public ResourceSet GrovelForResourceSet(CultureInfo culture, Dictionary<String, ResourceSet> localResourceSets, bool tryParents, bool createIfNotExists)
+        public ResourceSet GrovelForResourceSet(CultureInfo culture, Dictionary<string, ResourceSet> localResourceSets, bool tryParents, bool createIfNotExists)
         {
             Debug.Assert(culture != null, "culture shouldn't be null; check caller");
 
-            String fileName = null;
+            string fileName = null;
             ResourceSet rs = null;
 
             // Don't use Assembly manifest, but grovel on disk for a file.
             // Create new ResourceSet, if a file exists on disk for it.
-            String tempFileName = _mediator.GetResourceFileName(culture);
+            string tempFileName = _mediator.GetResourceFileName(culture);
             fileName = FindResourceFile(culture, tempFileName);
             if (fileName == null)
             {
@@ -79,7 +73,7 @@ namespace System.Resources
         // diretory or the module dir wasn't provided, look in the current
         // directory.
 
-        private String FindResourceFile(CultureInfo culture, String fileName)
+        private string FindResourceFile(CultureInfo culture, string fileName)
         {
             Debug.Assert(culture != null, "culture shouldn't be null; check caller");
             Debug.Assert(fileName != null, "fileName shouldn't be null; check caller");
@@ -88,37 +82,32 @@ namespace System.Resources
             // qualified name, append path to that.
             if (_mediator.ModuleDir != null)
             {
-                String path = Path.Combine(_mediator.ModuleDir, fileName);
-                if (InternalFile.Exists(path))
+                string path = Path.Combine(_mediator.ModuleDir, fileName);
+                if (File.Exists(path))
                 {
                     return path;
                 }
             }
 
             // look in .
-            if (InternalFile.Exists(fileName))
+            if (File.Exists(fileName))
                 return fileName;
-                
+
             return null;  // give up.
         }
 
-        // Constructs a new ResourceSet for a given file name.  The logic in
-        // here avoids a ReflectionPermission check for our RuntimeResourceSet
-        // for perf and working set reasons.
-        private ResourceSet CreateResourceSet(String file)
+        // Constructs a new ResourceSet for a given file name.
+        private ResourceSet CreateResourceSet(string file)
         {
             Debug.Assert(file != null, "file shouldn't be null; check caller");
 
             if (_mediator.UserResourceSet == null)
             {
-                // Explicitly avoid CreateInstance if possible, because it
-                // requires ReflectionPermission to call private & protected
-                // constructors.  
                 return new RuntimeResourceSet(file);
             }
             else
             {
-                Object[] args = new Object[1];
+                object[] args = new object[1];
                 args[0] = file;
                 try
                 {

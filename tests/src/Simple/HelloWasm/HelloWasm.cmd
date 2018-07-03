@@ -1,14 +1,13 @@
 @echo off
 setlocal
-set ErrorCode=100
-for /f "usebackq delims=;" %%F in (`"%1\%2" world`) do (
-    if "%%F"=="Hello world" set ErrorCode=0
-)
-IF "%ErrorCode%"=="0" (
-    echo %~n0: pass
+
+call emrun --browser=firefox --browser_args=-headless --safe_firefox_profile --silence_timeout 10 "%1\%2" 
+
+IF "%errorlevel%"=="100" (
+    echo %~n0: Pass
     EXIT /b 0
 ) ELSE (
-    echo %~n0: fail - %ErrorCode%
+    echo %~n0: fail - %ErrorLevel%
     EXIT /b 1
 )
 endlocal

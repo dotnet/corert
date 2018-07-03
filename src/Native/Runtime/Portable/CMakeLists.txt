@@ -1,6 +1,6 @@
 project(PortableRuntime)
 
-# Portable version of the runtime is designed to be used with CppCodeGen only.
+# Portable version of the runtime is designed to be used with CppCodeGen or WASM.
 # It should be written in pure C/C++, with no assembly code.
 
 include_directories(..)
@@ -26,14 +26,15 @@ else()
 endif()
 
 add_custom_command(
-    # The AsmOffsets.cs is consumed later by the managed build
+    # The AsmOffsetsPortable.cs is consumed later by the managed build
     TARGET PortableRuntime
-    COMMAND ${CMAKE_CXX_COMPILER} ${COMPILER_LANGUAGE} ${DEFINITIONS} ${PREPROCESSOR_FLAGS} -I"${ARCH_SOURCES_DIR}" "${ASM_OFFSETS_CSPP}" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.cs"
+    COMMAND ${CMAKE_CXX_COMPILER} ${COMPILER_LANGUAGE} ${DEFINITIONS} ${PREPROCESSOR_FLAGS} -I"${ARCH_SOURCES_DIR}" "${ASM_OFFSETS_CSPP}" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsetsPortable.cs"
     DEPENDS "${RUNTIME_DIR}/AsmOffsets.cpp" "${RUNTIME_DIR}/AsmOffsets.h"
 )
 
 # Install the static Runtime library
 install (TARGETS PortableRuntime DESTINATION sdk)
+
 if(WIN32)
     install (FILES ${CMAKE_CURRENT_BINARY_DIR}/PortableRuntime.dir/$<CONFIG>/PortableRuntime.pdb DESTINATION sdk)
 endif()

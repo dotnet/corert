@@ -16,7 +16,7 @@ namespace System.Reflection
     //
     internal struct AssemblyNameLexer
     {
-        internal AssemblyNameLexer(String s)
+        internal AssemblyNameLexer(string s)
         {
             // Convert string to char[] with NUL terminator. (An actual NUL terminator in the input string will be treated
             // as an actual end of string: this is compatible with desktop behavior.)
@@ -32,7 +32,7 @@ namespace System.Reflection
         //
         internal Token GetNext()
         {
-            String ignore;
+            string ignore;
             return GetNext(out ignore);
         }
 
@@ -40,10 +40,10 @@ namespace System.Reflection
         // Return the next token in assembly name. If the result is DisplayNameToken.String, 
         // sets "tokenString" to the tokenized string.
         //
-        internal Token GetNext(out String tokenString)
+        internal Token GetNext(out string tokenString)
         {
             tokenString = null;
-            while (Char.IsWhiteSpace(_chars[_index]))
+            while (char.IsWhiteSpace(_chars[_index]))
                 _index++;
 
             char c = _chars[_index++];
@@ -87,7 +87,7 @@ namespace System.Reflection
                 {
                     c = _chars[_index++];
                     bool matched = false;
-                    foreach (KeyValuePair<char, String> kv in AssemblyNameFormatter.EscapeSequences)
+                    foreach (KeyValuePair<char, string> kv in AssemblyNameFormatter.EscapeSequences)
                     {
                         if (c == kv.Key)
                         {

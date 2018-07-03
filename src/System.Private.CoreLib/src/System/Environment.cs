@@ -13,10 +13,12 @@
 ============================================================*/
 
 using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
 using Internal.Runtime.Augments;
+using Internal.DeveloperExperience;
 
 namespace System
 {
@@ -48,14 +50,25 @@ namespace System
         //// another managed helper method, unless you consult with some CLR Watson experts.
 
 
-        public static void FailFast(String message)
+        public static void FailFast(string message)
         {
             RuntimeExceptionHelpers.FailFast(message);
         }
 
-        public static void FailFast(String message, Exception exception)
+        public static void FailFast(string message, Exception exception)
         {
             RuntimeExceptionHelpers.FailFast(message, exception);
+        }
+
+        internal static void FailFast(string message, Exception exception, string errorSource)
+        {
+            // TODO: errorSource originates from CoreCLR (See: https://github.com/dotnet/coreclr/pull/15895)
+            // For now, we ignore errorSource on CoreRT but we should distinguish the way FailFast prints exception message using errorSource
+            bool result = DeveloperExperience.Default.OnContractFailure(exception.StackTrace, ContractFailureKind.Assert, message, null, null, null);
+            if (!result)
+            {
+                RuntimeExceptionHelpers.FailFast(message, exception);
+            }
         }
 
         // Still needed by shared\System\Diagnostics\Debug.Unix.cs
@@ -66,43 +79,6 @@ namespace System
             get
             {
                 return ManagedThreadId.Current;
-            }
-        }
-
-        // The upper bits of t_executionIdCache are the executionId. The lower bits of
-        // the t_executionIdCache are counting down to get it periodically refreshed.
-        // TODO: Consider flushing the executionIdCache on Wait operations or similar 
-        // actions that are likely to result in changing the executing core
-        [ThreadStatic]
-        private static int t_executionIdCache;
-
-        private const int ExecutionIdCacheShift = 16;
-        private const int ExecutionIdCacheCountDownMask = (1 << ExecutionIdCacheShift) - 1;
-        private const int ExecutionIdRefreshRate = 5000;
-
-        private static int RefreshExecutionId()
-        {
-            int executionId = ComputeExecutionId();
-
-            Debug.Assert(ExecutionIdRefreshRate <= ExecutionIdCacheCountDownMask);
-
-            // Mask with Int32.MaxValue to ensure the execution Id is not negative
-            t_executionIdCache = ((executionId << ExecutionIdCacheShift) & Int32.MaxValue) + ExecutionIdRefreshRate;
-
-            return executionId;
-        }
-
-        // Cached processor number used as a hint for which per-core stack to access. It is periodically
-        // refreshed to trail the actual thread core affinity.
-        internal static int CurrentExecutionId
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                int executionIdCache = t_executionIdCache--;
-                if ((executionIdCache & ExecutionIdCacheCountDownMask) == 0)
-                    return RefreshExecutionId();
-                return (executionIdCache >> ExecutionIdCacheShift);
             }
         }
 
@@ -122,7 +98,7 @@ namespace System
         **Arguments: None.
         **Exceptions: None.
         ==============================================================================*/
-        public static String NewLine
+        public static string NewLine
         {
             get
             {
@@ -134,7 +110,7 @@ namespace System
             }
         }
 
-        public static String StackTrace
+        public static string StackTrace
         {
             // Disable inlining to have predictable stack frame that EnvironmentAugments can skip
             [MethodImpl(MethodImplOptions.NoInlining)]

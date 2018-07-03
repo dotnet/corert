@@ -18,7 +18,7 @@ namespace Internal.IL.Stubs
     /// dependencies on the general dynamic invocation infrastructure in System.InvokeUtils and gets called from there
     /// at runtime. See comments in System.InvokeUtils for a more thorough explanation.
     /// </summary>
-    internal partial class DynamicInvokeMethodThunk : ILStubMethod
+    public partial class DynamicInvokeMethodThunk : ILStubMethod
     {
         private TypeDesc _owningType;
         private DynamicInvokeMethodSignature _targetSignature;
@@ -32,9 +32,123 @@ namespace Internal.IL.Stubs
             _targetSignature = signature;
         }
 
-        public static bool SupportsThunks(TypeSystemContext context)
+        internal static bool SupportsDynamicInvoke(TypeSystemContext context)
         {
             return context.SystemModule.GetType("System", "InvokeUtils", false) != null;
+        }
+
+        public static bool SupportsSignature(MethodSignature signature)
+        {
+            for (int i = 0; i < signature.Length; i++)
+                if (signature[i].IsByRef && ((ByRefType)signature[i]).ParameterType.IsPointer)
+                    return false;
+
+            // ----------------------------------------------------------------
+            // TODO: function pointer types are odd: https://github.com/dotnet/corert/issues/1929
+            // ----------------------------------------------------------------
+
+            if (signature.ReturnType.IsFunctionPointer)
+                return false;
+
+            for (int i = 0; i < signature.Length; i++)
+                if (signature[i].IsFunctionPointer)
+                    return false;
+
+            // ----------------------------------------------------------------
+            // Methods with ByRef returns can't be reflection invoked
+            // ----------------------------------------------------------------
+
+            if (signature.ReturnType.IsByRef)
+                return false;
+
+            // ----------------------------------------------------------------
+            // Methods that return ByRef-like types or take them by reference can't be reflection invoked
+            // ----------------------------------------------------------------
+
+            if (!signature.ReturnType.IsSignatureVariable && signature.ReturnType.IsByRefLike)
+                return false;
+
+            for (int i = 0; i < signature.Length; i++)
+            {
+                ByRefType paramType = signature[i] as ByRefType;
+                if (paramType != null && !paramType.ParameterType.IsSignatureVariable && paramType.ParameterType.IsByRefLike)
+                    return false;
+            }
+
+            return true;
+        }
+
+        public static TypeDesc[] GetThunkInstantiationForMethod(MethodDesc method)
+        {
+            MethodSignature sig = method.Signature;
+
+            ParameterMetadata[] paramMetadata = null;
+            TypeDesc[] instantiation = new TypeDesc[sig.ReturnType.IsVoid ? sig.Length : sig.Length + 1];
+
+            for (int i = 0; i < sig.Length; i++)
+            {
+                TypeDesc parameterType = sig[i];
+                if (parameterType.IsByRef)
+                {
+                    // strip ByRefType off the parameter (the method already has ByRef in the signature)
+                    parameterType = ((ByRefType)parameterType).ParameterType;
+
+                    Debug.Assert(!parameterType.IsPointer); // TODO: support for methods returning pointer types - https://github.com/dotnet/corert/issues/2113
+                }
+                else if (parameterType.IsPointer)
+                {
+                    // Strip off all the pointers. Pointers are not valid instantiation arguments and the thunk compensates for that
+                    // by being specialized for the specific pointer depth.
+                    while (parameterType.IsPointer)
+                        parameterType = ((PointerType)parameterType).ParameterType;
+                }
+                else if (parameterType.IsEnum)
+                {
+                    // If the invoke method takes an enum as an input parameter and there is no default value for
+                    // that paramter, we don't need to specialize on the exact enum type (we only need to specialize
+                    // on the underlying integral type of the enum.)
+                    if (paramMetadata == null)
+                        paramMetadata = method.GetParameterMetadata();
+
+                    bool hasDefaultValue = false;
+                    foreach (var p in paramMetadata)
+                    {
+                        // Parameter metadata indexes are 1-based (0 is reserved for return "parameter")
+                        if (p.Index == (i + 1) && p.HasDefault)
+                        {
+                            hasDefaultValue = true;
+                            break;
+                        }
+                    }
+
+                    if (!hasDefaultValue)
+                        parameterType = parameterType.UnderlyingType;
+                }
+
+                instantiation[i] = parameterType;
+            }
+
+            if (!sig.ReturnType.IsVoid)
+            {
+                TypeDesc returnType = sig.ReturnType;
+                Debug.Assert(!returnType.IsByRef);
+
+                // If the invoke method return an object reference, we don't need to specialize on the
+                // exact type of the object reference, as the behavior is not different.
+                if ((returnType.IsDefType && !returnType.IsValueType) || returnType.IsArray)
+                {
+                    returnType = method.Context.GetWellKnownType(WellKnownType.Object);
+                }
+
+                // Strip off all the pointers. Pointers are not valid instantiation arguments and the thunk compensates for that
+                // by being specialized for the specific pointer depth.
+                while (returnType.IsPointer)
+                    returnType = ((PointerType)returnType).ParameterType;
+
+                instantiation[sig.Length] = returnType;
+            }
+
+            return instantiation;
         }
 
         public override TypeSystemContext Context
@@ -66,6 +180,14 @@ namespace Internal.IL.Stubs
             get
             {
                 return InvokeUtilsType.GetNestedType("ArgSetupState");
+            }
+        }
+
+        public DynamicInvokeMethodSignature TargetSignature
+        {
+            get
+            {
+                return _targetSignature;
             }
         }
 
@@ -121,13 +243,48 @@ namespace Internal.IL.Stubs
             {
                 StringBuilder sb = new StringBuilder("InvokeRet");
 
-                if (_targetSignature.HasReturnValue)
-                    sb.Append('O');
-                else
-                    sb.Append('V');
+                switch (_targetSignature.ReturnType)
+                {
+                    case DynamicInvokeMethodParameterKind.None:
+                        sb.Append('V');
+                        break;
+                    case DynamicInvokeMethodParameterKind.Pointer:
+                        sb.Append('P');
+
+                        for (int i = 0; i < _targetSignature.GetNumerOfReturnTypePointerIndirections() - 1; i++)
+                            sb.Append('p');
+
+                        break;
+                    case DynamicInvokeMethodParameterKind.Value:
+                        sb.Append('O');
+                        break;
+                    default:
+                        Debug.Fail("Unreachable");
+                        break;
+                }
 
                 for (int i = 0; i < _targetSignature.Length; i++)
-                    sb.Append(_targetSignature[i] == DynamicInvokeMethodParameterKind.Value ? 'I' : 'R');
+                {
+                    switch (_targetSignature[i])
+                    {
+                        case DynamicInvokeMethodParameterKind.Pointer:
+                            sb.Append('P');
+
+                            for (int j = 0; j < _targetSignature.GetNumberOfParameterPointerIndirections(i) - 1; j++)
+                                sb.Append('p');
+
+                            break;
+                        case DynamicInvokeMethodParameterKind.Reference:
+                            sb.Append("R");
+                            break;
+                        case DynamicInvokeMethodParameterKind.Value:
+                            sb.Append("I");
+                            break;
+                        default:
+                            Debug.Fail("Unreachable");
+                            break;
+                    }
+                }
 
                 return sb.ToString();
             }
@@ -173,6 +330,8 @@ namespace Internal.IL.Stubs
             // calli ReturnType thiscall(TypeOfParameter1, ...)
             // !if ((ReturnType == void)
             //    ldnull
+            // !elif (ReturnType is pointer)
+            //    System.Reflection.Pointer.Box(ReturnType)
             // !else
             //    box ReturnType
             // ret
@@ -190,6 +349,8 @@ namespace Internal.IL.Stubs
             // calli ReturnType (TypeOfParameter1, ...)
             // !if ((ReturnType == void)
             //    ldnull
+            // !elif (ReturnType is pointer)
+            //    System.Reflection.Pointer.Box(ReturnType)
             // !else
             //    box ReturnType
             // ret
@@ -211,6 +372,12 @@ namespace Internal.IL.Stubs
             for (int paramIndex = 0; paramIndex < _targetSignature.Length; paramIndex++)
             {
                 TypeDesc paramType = Context.GetSignatureVariable(paramIndex, true);
+                DynamicInvokeMethodParameterKind paramKind = _targetSignature[paramIndex];
+
+                if (paramKind == DynamicInvokeMethodParameterKind.Pointer)
+                    for (int i = 0; i < _targetSignature.GetNumberOfParameterPointerIndirections(paramIndex); i++)
+                        paramType = paramType.MakePointerType();
+
                 ILToken tokParamType = emitter.NewToken(paramType);
                 ILLocalVariable local = emitter.NewLocal(paramType.MakeByRefType());
 
@@ -219,7 +386,7 @@ namespace Internal.IL.Stubs
 
                 argSetupStream.Emit(ILOpcode.ldtoken, tokParamType);
 
-                if (_targetSignature[paramIndex] == DynamicInvokeMethodParameterKind.Reference)
+                if (paramKind == DynamicInvokeMethodParameterKind.Reference)
                 {
                     argSetupStream.Emit(ILOpcode.call, tokDynamicInvokeParamHelperRef);
 
@@ -243,9 +410,14 @@ namespace Internal.IL.Stubs
             thisCallSiteSetupStream.EmitLdArg(1); // methodToCall
             staticCallSiteSetupStream.EmitLdArg(1); // methodToCall
 
-            TypeDesc returnType = _targetSignature.HasReturnValue ?
+            DynamicInvokeMethodParameterKind returnKind = _targetSignature.ReturnType;
+            TypeDesc returnType = returnKind != DynamicInvokeMethodParameterKind.None ?
                 Context.GetSignatureVariable(_targetSignature.Length, true) :
                 Context.GetWellKnownType(WellKnownType.Void);
+
+            if (returnKind == DynamicInvokeMethodParameterKind.Pointer)
+                for (int i = 0; i < _targetSignature.GetNumerOfReturnTypePointerIndirections(); i++)
+                    returnType = returnType.MakePointerType();
 
             MethodSignature thisCallMethodSig = new MethodSignature(0, 0, returnType, targetMethodSignature);
             thisCallSiteSetupStream.Emit(ILOpcode.calli, emitter.NewToken(thisCallMethodSig));
@@ -253,16 +425,31 @@ namespace Internal.IL.Stubs
             MethodSignature staticCallMethodSig = new MethodSignature(MethodSignatureFlags.Static, 0, returnType, targetMethodSignature);
             staticCallSiteSetupStream.Emit(ILOpcode.calli, emitter.NewToken(staticCallMethodSig));
 
-            if (_targetSignature.HasReturnValue)
-            {
-                ILToken tokReturnType = emitter.NewToken(returnType);
-                thisCallSiteSetupStream.Emit(ILOpcode.box, tokReturnType);
-                staticCallSiteSetupStream.Emit(ILOpcode.box, tokReturnType);
-            }
-            else
+            if (returnKind == DynamicInvokeMethodParameterKind.None)
             {
                 thisCallSiteSetupStream.Emit(ILOpcode.ldnull);
                 staticCallSiteSetupStream.Emit(ILOpcode.ldnull);
+            }
+            else if (returnKind == DynamicInvokeMethodParameterKind.Pointer)
+            {
+                thisCallSiteSetupStream.Emit(ILOpcode.ldtoken, emitter.NewToken(returnType));
+                staticCallSiteSetupStream.Emit(ILOpcode.ldtoken, emitter.NewToken(returnType));
+                MethodDesc getTypeFromHandleMethod =
+                    Context.SystemModule.GetKnownType("System", "Type").GetKnownMethod("GetTypeFromHandle", null);
+                thisCallSiteSetupStream.Emit(ILOpcode.call, emitter.NewToken(getTypeFromHandleMethod));
+                staticCallSiteSetupStream.Emit(ILOpcode.call, emitter.NewToken(getTypeFromHandleMethod));
+
+                MethodDesc pointerBoxMethod =
+                    Context.SystemModule.GetKnownType("System.Reflection", "Pointer").GetKnownMethod("Box", null);
+                thisCallSiteSetupStream.Emit(ILOpcode.call, emitter.NewToken(pointerBoxMethod));
+                staticCallSiteSetupStream.Emit(ILOpcode.call, emitter.NewToken(pointerBoxMethod));
+            }
+            else
+            {
+                Debug.Assert(returnKind == DynamicInvokeMethodParameterKind.Value);
+                ILToken tokReturnType = emitter.NewToken(returnType);
+                thisCallSiteSetupStream.Emit(ILOpcode.box, tokReturnType);
+                staticCallSiteSetupStream.Emit(ILOpcode.box, tokReturnType);
             }
 
             thisCallSiteSetupStream.Emit(ILOpcode.ret);
@@ -309,14 +496,17 @@ namespace Internal.IL.Stubs
         None,
         Value,
         Reference,
+        Pointer,
     }
 
     /// <summary>
     /// Wraps a <see cref="MethodSignature"/> to reduce it's fidelity.
     /// </summary>
-    internal struct DynamicInvokeMethodSignature : IEquatable<DynamicInvokeMethodSignature>
+    public struct DynamicInvokeMethodSignature : IEquatable<DynamicInvokeMethodSignature>
     {
         private MethodSignature _signature;
+
+        public TypeSystemContext Context => _signature.ReturnType.Context;
 
         public bool HasReturnValue
         {
@@ -334,21 +524,62 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public DynamicInvokeMethodParameterKind this[int index]
+        internal DynamicInvokeMethodParameterKind this[int index]
         {
             get
             {
-                return _signature[index].IsByRef ?
-                    DynamicInvokeMethodParameterKind.Reference :
-                    DynamicInvokeMethodParameterKind.Value;
+                TypeDesc type = _signature[index];
+
+                if (type.IsByRef)
+                    return DynamicInvokeMethodParameterKind.Reference;
+                else if (type.IsPointer)
+                    return DynamicInvokeMethodParameterKind.Pointer;
+                else
+                    return DynamicInvokeMethodParameterKind.Value;
+            }
+        }
+
+        public static int GetNumberOfIndirections(TypeDesc type)
+        {
+            int result = 0;
+            while (type.IsPointer)
+            {
+                result++;
+                type = ((PointerType)type).ParameterType;
+            }
+
+            return result;
+        }
+
+        public int GetNumberOfParameterPointerIndirections(int paramIndex)
+        {
+            return GetNumberOfIndirections(_signature[paramIndex]);
+        }
+
+        public int GetNumerOfReturnTypePointerIndirections()
+        {
+            return GetNumberOfIndirections(_signature.ReturnType);
+        }
+
+        internal DynamicInvokeMethodParameterKind ReturnType
+        {
+            get
+            {
+                Debug.Assert(!_signature.ReturnType.IsByRef);
+
+                TypeDesc type = _signature.ReturnType;
+                if (type.IsPointer)
+                    return DynamicInvokeMethodParameterKind.Pointer;
+                else if (type.IsVoid)
+                    return DynamicInvokeMethodParameterKind.None;
+                else
+                    return DynamicInvokeMethodParameterKind.Value;
             }
         }
 
         public DynamicInvokeMethodSignature(MethodSignature concreteSignature)
         {
-            // ByRef returns should have been filtered out elsewhere. We don't handle them
-            // because reflection can't invoke such methods.
-            Debug.Assert(!concreteSignature.ReturnType.IsByRef);
+            Debug.Assert(DynamicInvokeMethodThunk.SupportsSignature(concreteSignature));
             _signature = concreteSignature;
         }
 
@@ -359,7 +590,7 @@ namespace Internal.IL.Stubs
 
         public override int GetHashCode()
         {
-            int hashCode = HasReturnValue ? 17 : 23;
+            int hashCode = (int)this.ReturnType * 0x5498341 + 0x832424;
 
             for (int i = 0; i < Length; i++)
             {
@@ -372,7 +603,12 @@ namespace Internal.IL.Stubs
 
         public bool Equals(DynamicInvokeMethodSignature other)
         {
-            if (HasReturnValue != other.HasReturnValue)
+            DynamicInvokeMethodParameterKind thisReturnKind = ReturnType;
+            if (thisReturnKind != other.ReturnType)
+                return false;
+
+            if (thisReturnKind == DynamicInvokeMethodParameterKind.Pointer &&
+                GetNumerOfReturnTypePointerIndirections() != other.GetNumerOfReturnTypePointerIndirections())
                 return false;
             
             if (Length != other.Length)
@@ -380,7 +616,12 @@ namespace Internal.IL.Stubs
 
             for (int i = 0; i < Length; i++)
             {
-                if (this[i] != other[i])
+                DynamicInvokeMethodParameterKind thisParamKind = this[i];
+                if (thisParamKind != other[i])
+                    return false;
+
+                if (thisParamKind == DynamicInvokeMethodParameterKind.Pointer &&
+                    GetNumberOfParameterPointerIndirections(i) != other.GetNumberOfParameterPointerIndirections(i))
                     return false;
             }
 

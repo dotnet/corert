@@ -24,7 +24,8 @@ namespace ILCompiler.DependencyAnalysis
             _factory = factory;
         }
 
-        public event Action<int, IExportableSymbolNode> ReportExportedItem;
+        public event Func<uint, IExportableSymbolNode, bool> ReportExportedItem;
+        public event Func<uint> GetInitialExportOrdinal;
 
         public void AddExportableSymbol(IExportableSymbolNode exportableSymbol)
         {
@@ -75,12 +76,13 @@ namespace ILCompiler.DependencyAnalysis
             builder.EmitInt(1); // Export table version 1
             builder.EmitInt(symbolNodes.Length); // Count of exported symbols in this table
 
-            int index = 1;
+            uint index = GetInitialExportOrdinal == null ? 1 : GetInitialExportOrdinal();
             foreach (ISortableSymbolNode symbol in symbolNodes)
             {
                 builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_REL32);
-                ReportExportedItem?.Invoke(index, (IExportableSymbolNode)symbol);
-                index++;
+                bool? baselineOrdinalFound = ReportExportedItem?.Invoke(index, (IExportableSymbolNode)symbol);
+                if (baselineOrdinalFound.HasValue && !baselineOrdinalFound.Value)
+                    index++;
             }
 
             return builder.ToObjectData();

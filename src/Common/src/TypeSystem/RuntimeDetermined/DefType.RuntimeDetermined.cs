@@ -10,6 +10,10 @@ namespace Internal.TypeSystem
         {
             get
             {
+                // Handles situation when shared code refers to uninstantiated generic
+                // type definitions (think: LDTOKEN).
+                // Walking the instantiation would make us assert. This is simply
+                // not a runtime determined type.
                 if (IsGenericDefinition)
                     return false;
 

@@ -89,7 +89,13 @@ namespace System.Reflection.Runtime.FieldInfos
         {
             get
             {
-                return this.FieldRuntimeType;
+                Type fieldType = _lazyFieldType;
+                if (fieldType == null)
+                {
+                    _lazyFieldType = fieldType = this.FieldRuntimeType;
+                }
+
+                return fieldType;
             }
         }
 
@@ -291,6 +297,8 @@ namespace System.Reflection.Runtime.FieldInfos
         protected readonly RuntimeTypeInfo _reflectedType;
 
         private volatile FieldAccessor _lazyFieldAccessor = null;
+
+        private volatile Type _lazyFieldType = null;
 
         private String _debugName;
     }

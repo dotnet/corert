@@ -63,6 +63,8 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        protected override bool IsVisibleFromManagedCode => false;
+
         protected sealed override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
         public override bool IsShareable => true;
 
@@ -88,7 +90,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public IEnumerable<DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
-            ArrayBuilder<DependencyListEntry> result = new ArrayBuilder<DependencyListEntry>();
+            DependencyList result = new DependencyList();
 
             var lookupContext = new GenericLookupResultContext(_dictionaryOwner, typeInstantiation, methodInstantiation);
 
@@ -125,11 +127,7 @@ namespace ILCompiler.DependencyAnalysis
                                         "Dictionary dependency"));
                             }
 
-                            // TODO: https://github.com/dotnet/corert/issues/3224 
-                            if (instantiatedTargetMethod.IsAbstract)
-                            {
-                                result.Add(new DependencyListEntry(factory.ReflectableMethod(instantiatedTargetMethod), "Abstract reflectable method"));
-                            }
+                            factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref result, factory, instantiatedTargetMethod);
                         }
                     }
                     break;
@@ -172,6 +170,9 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasConditionalStaticDependencies => true;
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
+            if (!factory.MetadataManager.SupportsReflection)
+                return Array.Empty<CombinedDependencyListEntry>();
+
             List<CombinedDependencyListEntry> conditionalDependencies = new List<CombinedDependencyListEntry>();
             NativeLayoutSavedVertexNode templateLayout;
             if (_dictionaryOwner is MethodDesc)

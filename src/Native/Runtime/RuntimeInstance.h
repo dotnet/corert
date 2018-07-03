@@ -14,6 +14,8 @@ enum GenericVarianceType : UInt8;
 struct GenericUnificationDesc;
 class GenericUnificationHashtable;
 
+#include "ICodeManager.h"
+
 class RuntimeInstance
 {
     friend class AsmOffsets;
@@ -38,7 +40,6 @@ public:
 private:
     OsModuleList                m_OsModuleList;
 
-#ifdef FEATURE_DYNAMIC_CODE
     struct CodeManagerEntry;
     typedef DPTR(CodeManagerEntry) PTR_CodeManagerEntry;
 
@@ -52,7 +53,6 @@ private:
 
     typedef SList<CodeManagerEntry> CodeManagerList;
     CodeManagerList             m_CodeManagerList;
-#endif
 
 public:
     struct TypeManagerEntry
@@ -65,14 +65,6 @@ public:
     
 private:
     TypeManagerList             m_TypeManagerList;
-
-    // Indicates whether the runtime is in standalone exe mode where the only Redhawk module that will be
-    // loaded into the process (besides the runtime's own module) is the exe itself. This flag will be 
-    // correctly initialized once the exe module has loaded.
-    bool                        m_fStandaloneExeMode;
-
-    // If m_fStandaloneExeMode is set this contains a pointer to the exe module. Otherwise it's null.
-    Module *                    m_pStandaloneExeModule;
 
 #ifdef FEATURE_PROFILING
     // The thread writing the profile data is created lazily, whenever
@@ -151,6 +143,8 @@ private:
 
     bool BuildGenericTypeHashTable();
 
+    ICodeManager * FindCodeManagerForClasslibFunction(PTR_VOID address);
+
 public:
     class ModuleIterator
     {
@@ -178,11 +172,11 @@ public:
     void EnableConservativeStackReporting();
     bool IsConservativeStackReportingEnabled() { return m_conservativeStackReportingEnabled; }
 
-#ifdef FEATURE_DYNAMIC_CODE
     bool RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, UInt32 cbRange);
     void UnregisterCodeManager(ICodeManager * pCodeManager);
-#endif
+
     ICodeManager * FindCodeManagerByAddress(PTR_VOID ControlPC);
+    PTR_VOID GetClasslibFunctionFromCodeAddress(PTR_VOID address, ClasslibFunctionId functionId);
 
     bool RegisterTypeManager(TypeManager * pTypeManager);
     TypeManagerList& GetTypeManagerList();
@@ -234,16 +228,6 @@ public:
     void WriteProfileInfo();
 #endif // FEATURE_PROFILING
 
-    bool IsInStandaloneExeMode()
-    {
-        return m_fStandaloneExeMode;
-    }
-
-    Module * GetStandaloneExeModule()
-    {
-        ASSERT(IsInStandaloneExeMode());
-        return m_pStandaloneExeModule;
-    }
 };
 typedef DPTR(RuntimeInstance) PTR_RuntimeInstance;
 

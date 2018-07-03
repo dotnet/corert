@@ -95,7 +95,7 @@ namespace System.Reflection
 
             //@todo: App-compat: You can use double or single quotes to quote a name, and Fusion (or rather the IdentityAuthority) picks one
             // by some algorithm. Rather than guess at it, I'll just use double-quote consistently.
-            if (s != s.Trim() || s.Contains("\"") || s.Contains("\'"))
+            if (s != s.Trim() || s.Contains('\"') || s.Contains('\''))
                 needsQuoting = true;
 
             if (needsQuoting)
@@ -111,8 +111,7 @@ namespace System.Reflection
                         continue;
                     if ((s.Length - i) < escapeReplacement.Length)
                         continue;
-                    string prefix = s.Substring(i, escapeReplacement.Length);
-                    if (prefix == escapeReplacement)
+                    if (s.AsSpan(i, escapeReplacement.Length).SequenceEqual(escapeReplacement))
                     {
                         sb.Append('\\');
                         sb.Append(kv.Key);

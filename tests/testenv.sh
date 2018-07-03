@@ -14,6 +14,9 @@ for i in "$@"
 			usage
 			exit 1
 			;;
+		wasm)
+			CoreRT_BuildArch=wasm
+			;;
 		x86)
 			CoreRT_BuildArch=x86
 			;;
@@ -47,7 +50,7 @@ for i in "$@"
 done
 
 if [ -z ${CoreRT_BuildArch} ]; then
-    echo "Set CoreRT_BuildArch to x86/x64/arm/arm64"
+    echo "Set CoreRT_BuildArch to x86/x64/arm/arm64/wasm"
     exit -1
 fi
 
@@ -56,30 +59,38 @@ if [ -z ${CoreRT_BuildType} ]; then
     exit -1
 fi
 
+
 # Use uname to determine what the OS is.
-OSName=$(uname -s)
+export OSName=$(uname -s)
 case $OSName in
-    Darwin)
-        CoreRT_BuildOS=OSX
-        ;;
+	Darwin)
+		export CoreRT_HostOS=OSX
+		;;
 
-    FreeBSD)
-        CoreRT_BuildOS=FreeBSD
-        ;;
+	FreeBSD)
+		export CoreRT_HostOS=FreeBSD
+		;;
 
-    Linux)
-        CoreRT_BuildOS=Linux
-        ;;
+	Linux)
+		export CoreRT_HostOS=Linux
+		;;
 
-    NetBSD)
-        CoreRT_BuildOS=NetBSD
-        ;;
+	NetBSD)
+		export CoreRT_HostOS=NetBSD
+		;;
 
-    *)
-        echo "Unsupported OS $OSName detected, configuring as if for Linux"
-        CoreRT_BuildOS=Linux
-        ;;
+	*)
+		echo "Unsupported OS $OSName detected, configuring as if for Linux"
+		export CoreRT_HostOS=Linux
+		;;
 esac
+
+export CoreRT_BuildOS=${CoreRT_HostOS}
+
+# Overwrite __BuildOS with WebAssembly if wasm is target build arch, but keep the CoreRT_HostOS to match the Host OS
+if [ "$__BuildArch" == "wasm" ]; then
+    export CoreRT_BuildOS=WebAssembly
+fi
 
 export CoreRT_BuildArch
 export CoreRT_BuildType
@@ -88,3 +99,13 @@ export CoreRT_BuildOS
 __ScriptDir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 export CoreRT_ToolchainDir=${__ScriptDir}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}
+
+# CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to set.
+# This is needed by CLI to function.
+if [ -z "$HOME" ]; then
+    if [ ! -d "$__ScriptDir/../temp_home" ]; then
+        mkdir "$__ScriptDir/../temp_home"
+    fi
+    export HOME=$__ScriptDir/../temp_home
+    echo "HOME not defined; setting it to $HOME"
+fi

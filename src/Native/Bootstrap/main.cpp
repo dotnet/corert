@@ -98,6 +98,7 @@ extern "C" void * RhTypeCast_CheckCast(void * pObject, MethodTable * pMT);
 extern "C" void RhpStelemRef(void * pArray, int index, void * pObj);
 extern "C" void * RhpLdelemaRef(void * pArray, int index, MethodTable * pMT);
 extern "C" __NORETURN void RhpThrowEx(void * pEx);
+extern "C" void RhDebugBreak();
 
 extern "C" Object * __allocate_object(MethodTable * pMT)
 {
@@ -132,6 +133,11 @@ extern "C" void* __ldelema_ref(void * pArray, unsigned idx, MethodTable * type)
 extern "C" void __throw_exception(void * pEx)
 {
     RhpThrowEx(pEx);
+}
+
+extern "C" void __debug_break()
+{
+    RhDebugBreak();
 }
 
 void __range_check_fail()
@@ -239,9 +245,12 @@ extern "C" void RhpUniversalTransition_DebugStepTailCall()
 {
     throw "RhpUniversalTransition_DebugStepTailCall";
 }
+extern "C" void ConstrainedCallSupport_GetStubs()
+{
+    throw "ConstrainedCallSupport_GetStubs";
+}
 
-void* RtRHeaderWrapper();
-
+extern "C" void* RtRHeaderWrapper();
 #endif // CPPCODEGEN
 
 // This works around System.Private.Interop's references to Interop.Native.
@@ -273,6 +282,8 @@ extern "C" bool RhRegisterOSModule(void * pModule,
 
 extern "C" void* PalGetModuleHandleFromPointer(void* pointer);
 
+#endif // !CPPCODEGEN
+
 extern "C" void GetRuntimeException();
 extern "C" void FailFast();
 extern "C" void AppendExceptionStackFrame();
@@ -288,10 +299,10 @@ static const pfn c_classlibFunctions[] = {
     &AppendExceptionStackFrame,
     nullptr, // &CheckStaticClassConstruction,
     &GetSystemArrayEEType,
-    &OnFirstChanceException
+    &OnFirstChanceException,
+    nullptr, // &DebugFuncEvalHelper,
+    nullptr, // &DebugFuncEvalAbortHelper,
 };
-
-#endif // !CPPCODEGEN
 
 extern "C" void InitializeModules(void* osModule, void ** modules, int count, void ** pClasslibFunctions, int nClasslibFunctions);
 
@@ -318,6 +329,7 @@ static int InitializeRuntime()
 
 #ifndef CPPCODEGEN
     void * osModule = PalGetModuleHandleFromPointer((void*)&CORERT_ENTRYPOINT);
+
     // TODO: pass struct with parameters instead of the large signature of RhRegisterOSModule
     if (!RhRegisterOSModule(
         osModule,
@@ -331,8 +343,10 @@ static int InitializeRuntime()
 
 #ifndef CPPCODEGEN
     InitializeModules(osModule, __modules_a, (int)((__modules_z - __modules_a)), (void **)&c_classlibFunctions, _countof(c_classlibFunctions));
+#elif defined _WASM_
+    InitializeModules(nullptr, (void**)RtRHeaderWrapper(), 1, nullptr, 0);
 #else // !CPPCODEGEN
-    InitializeModules(nullptr, (void**)RtRHeaderWrapper(), 2, nullptr, 0);
+    InitializeModules(nullptr, (void**)RtRHeaderWrapper(), 2, (void **)&c_classlibFunctions, _countof(c_classlibFunctions));
 #endif // !CPPCODEGEN
 
 #ifdef CORERT_DLL
@@ -369,7 +383,6 @@ int main(int argc, char* argv[])
         retval = -1;
     }
 #endif
-
     RhpShutdown();
 
     return retval;

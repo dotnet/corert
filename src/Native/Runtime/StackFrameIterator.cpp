@@ -250,15 +250,11 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
 
     if (pFrame->m_Flags & PTFF_SAVE_LR) { m_RegDisplay.pLR = pPreservedRegsCursor++; }
 
-    if (pFrame->m_Flags & PTFF_X0_IS_GCREF)
+    GCRefKind retValueKind = TransitionFrameFlagsToReturnKind(pFrame->m_Flags);
+    if (retValueKind != GCRK_Scalar)
     {
         m_pHijackedReturnValue = (PTR_RtuObjectRef)m_RegDisplay.pX0;
-        m_HijackedReturnValueKind = GCRK_Object;
-    }
-    if (pFrame->m_Flags & PTFF_X0_IS_BYREF)
-    {
-        m_pHijackedReturnValue = (PTR_RtuObjectRef)m_RegDisplay.pX0;
-        m_HijackedReturnValueKind = GCRK_Byref;
+        m_HijackedReturnValueKind = retValueKind;
     }
 
 #else // _TARGET_ARM_
@@ -1728,7 +1724,7 @@ bool StackFrameIterator::GetHijackedReturnValueLocation(PTR_RtuObjectRef * pLoca
     if (GCRK_Unknown == m_HijackedReturnValueKind)
         return false;
 
-    ASSERT((GCRK_Object == m_HijackedReturnValueKind) || (GCRK_Byref == m_HijackedReturnValueKind));
+    ASSERT((GCRK_Scalar < m_HijackedReturnValueKind) && (m_HijackedReturnValueKind <= GCRK_LastValid));
 
     *pLocation = m_pHijackedReturnValue;
     *pKind = m_HijackedReturnValueKind;
@@ -1874,7 +1870,7 @@ COOP_PINVOKE_HELPER(Boolean, RhpSfiInit, (StackFrameIterator* pThis, PAL_LIMITED
     // The stackwalker is intolerant to hijacked threads, as it is largely expecting to be called from C++
     // where the hijack state of the thread is invariant.  Because we've exposed the iterator out to C#, we 
     // need to unhijack every time we callback into C++ because the thread could have been hijacked during our
-    // time exectuing C#.
+    // time executing C#.
     pCurThread->Unhijack();
 
     // Passing NULL is a special-case to request a standard managed stack trace for the current thread.
@@ -1894,7 +1890,7 @@ COOP_PINVOKE_HELPER(Boolean, RhpSfiNext, (StackFrameIterator* pThis, UInt32* puE
     // The stackwalker is intolerant to hijacked threads, as it is largely expecting to be called from C++
     // where the hijack state of the thread is invariant.  Because we've exposed the iterator out to C#, we 
     // need to unhijack every time we callback into C++ because the thread could have been hijacked during our
-    // time exectuing C#.
+    // time executing C#.
     ThreadStore::GetCurrentThread()->Unhijack();
 
     const UInt32 MaxTryRegionIdx = 0xFFFFFFFF;

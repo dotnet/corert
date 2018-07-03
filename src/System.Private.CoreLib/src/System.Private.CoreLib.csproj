@@ -26,7 +26,7 @@
     <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
     <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
     <UseSyncTable>true</UseSyncTable>
-    <DefineConstants>EETYPE_TYPE_MANAGER;ES_BUILD_PN;ES_SESSION_INFO;$(DefineConstants)</DefineConstants>
+    <DefineConstants>netcoreapp;EETYPE_TYPE_MANAGER;ES_BUILD_PN;ES_SESSION_INFO;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
     <DefineConstants Condition="'$(UseSyncTable)' == 'true'">FEATURE_SYNCTABLE;$(DefineConstants)</DefineConstants>
@@ -148,7 +148,6 @@
     <Compile Include="Internal\Threading\Tasks\Tracing\TaskTrace.cs" />
     <Compile Include="Interop\Interop.manual.cs" />
     <Compile Include="Interop\Interop.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeWaitHandle.cs" />
     <Compile Include="System\Runtime\CompilerServices\CastableObject.cs" />
     <Compile Include="System\Reflection\AssemblyNameHelpers.StrongName.cs" />
     <Compile Include="System\Reflection\AssemblyNameHelpers.cs" />
@@ -162,6 +161,23 @@
     <Compile Include="System\Reflection\CustomAttributeExtensions.cs" />
     <Compile Include="System\Reflection\CustomAttributeNamedArgument.cs" />
     <Compile Include="System\Reflection\CustomAttributeTypedArgument.cs" />
+    <Compile Include="System\Reflection\Emit\AssemblyBuilder.cs" />
+    <Compile Include="System\Reflection\Emit\ConstructorBuilder.cs" />
+    <Compile Include="System\Reflection\Emit\CustomAttributeBuilder.cs" />
+    <Compile Include="System\Reflection\Emit\DynamicMethod.cs" />
+    <Compile Include="System\Reflection\Emit\EnumBuilder.cs" />
+    <Compile Include="System\Reflection\Emit\EventBuilder.cs" />
+    <Compile Include="System\Reflection\Emit\FieldBuilder.cs" />
+    <Compile Include="System\Reflection\Emit\GenericTypeParameterBuilder.cs" />
+    <Compile Include="System\Reflection\Emit\ILGenerator.cs" />
+    <Compile Include="System\Reflection\Emit\LocalBuilder.cs" />
+    <Compile Include="System\Reflection\Emit\MethodBuilder.cs" />
+    <Compile Include="System\Reflection\Emit\ModuleBuilder.cs" />
+    <Compile Include="System\Reflection\Emit\ParameterBuilder.cs" />
+    <Compile Include="System\Reflection\Emit\PropertyBuilder.cs" />
+    <Compile Include="System\Reflection\Emit\ReflectionEmitThrower.cs" />
+    <Compile Include="System\Reflection\Emit\SignatureHelper.cs" />
+    <Compile Include="System\Reflection\Emit\TypeBuilder.cs" />
     <Compile Include="System\Reflection\ExceptionHandlingClause.cs" />
     <Compile Include="System\Reflection\FieldInfo.CoreRT.cs" />
     <Compile Include="System\Reflection\LegacyCustomAttributeApis.cs" />
@@ -169,7 +185,6 @@
     <Compile Include="System\Reflection\MethodBase.CoreRT.cs" />
     <Compile Include="System\Reflection\MethodBody.cs" />
     <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimeImplementedCustomAttributeData.cs" />
-    <Compile Include="System\Resources\FastResourceComparer.cs" />
     <Compile Include="System\Resources\FileBasedResourceGroveler.cs" />
     <Compile Include="System\Resources\IResourceGroveler.cs" />
     <Compile Include="System\Resources\ManifestBasedResourceGroveler.cs" />
@@ -183,16 +198,14 @@
     <Compile Include="System\AppContext.cs" />
     <Compile Include="System\AppContextConfigHelper.cs" />
     <Compile Include="System\AppContextDefaultValues.cs" />
+    <Compile Include="System\AppContextSwitches.cs" />
     <Compile Include="System\Buffer.cs" />
     <Compile Include="System\ByReference.cs" />
-    <Compile Include="System\Collections\Concurrent\LowLevelConcurrentQueue.cs" />
-    <Compile Include="System\Collections\Generic\ArraySortHelper.cs" />
+    <Compile Include="System\Collections\Generic\ArraySortHelper.CoreRT.cs" />
     <Compile Include="System\Collections\Generic\Comparer.cs" />
     <Compile Include="System\Collections\Generic\CompatibilityEqualityComparers.cs" />
     <Compile Include="System\Collections\Generic\EqualityComparer.cs" />
     <Compile Include="System\Collections\Generic\EqualOnlyComparer.cs" />
-    <Compile Include="System\Collections\LowLevelComparer.cs" />
-    <Compile Include="System\CurrentSystemTimeZone.Cache.cs" />
     <Compile Include="System\Decimal.DecCalc.cs" />
     <Compile Include="System\DefaultBinder.CanConvert.cs" />
     <Compile Include="System\Diagnostics\Contracts\ContractsBCL.cs" />
@@ -203,20 +216,17 @@
     <Compile Include="System\Guid.CoreRT.cs" />
     <Compile Include="System\InvokeUtils.cs" />
     <Compile Include="System\IO\BinaryReader.cs" />
-    <Compile Include="System\IO\InternalFile.cs" />
-    <Compile Include="System\IO\InternalFile.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
-    <Compile Include="System\IO\InternalFile.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
     <Compile Include="System\IO\FileLoadException.CoreRT.cs" />
-    <Compile Include="System\IO\Stream.cs" />
+    <Compile Include="System\IO\Stream.CoreRT.cs" />
     <Compile Include="System\RuntimeMethodHandle.cs" />
     <Compile Include="System\Decimal.cs" />
     <Compile Include="System\Diagnostics\Contracts\Contracts.cs" />
     <Compile Include="System\Diagnostics\Debug.CoreRT.cs" />
     <Compile Include="System\Diagnostics\Debug.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
     <Compile Include="System\Diagnostics\Debugger.cs" />
+    <Compile Include="System\Diagnostics\LowLevelDebugFuncEval.cs" />
     <Compile Include="System\Diagnostics\DebuggerGuidedStepThroughAttribute.cs" />
     <Compile Include="System\Diagnostics\DebugAnnotations.cs" />
-    <Compile Include="System\Diagnostics\StackFrame.cs" />
     <Compile Include="System\Diagnostics\StackFrame.CoreRT.cs" />
     <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
     <Compile Include="System\Diagnostics\StackTrace.cs" />
@@ -225,21 +235,14 @@
     <Compile Include="System\Enum.cs" />
     <Compile Include="System\Environment.cs" />
     <Compile Include="System\GC.cs" />
-    <Compile Include="System\Globalization\CultureData.cs" />
     <Compile Include="System\Globalization\CultureInfo.cs" />
-    <Compile Include="System\Guid.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
-    <Compile Include="System\Guid.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
     <Compile Include="System\Helpers.cs" />
-    <Compile Include="System\InsufficientMemoryException.cs" />
-    <Compile Include="System\Marvin.cs" />
     <Compile Include="System\Math.CoreRT.cs" />
     <Compile Include="System\MathF.CoreRT.cs" />
-    <Compile Include="System\MissingFieldException.cs" />
-    <Compile Include="System\MissingMemberException.cs" />
+    <Compile Include="System\MissingMemberException.CoreRT.cs" />
     <Compile Include="System\MulticastDelegate.cs" />
     <Compile Include="System\Number.CoreRT.cs" />
     <Compile Include="System\Object.cs" />
-    <Compile Include="System\OutOfMemoryException.cs" />
     <Compile Include="System\Reflection\MissingMetadataException.cs" />
     <Compile Include="System\RuntimeArgumentHandle.cs" />
     <Compile Include="System\Runtime\CompilerServices\ConditionalWeakTable.cs" />
@@ -250,15 +253,12 @@
     <Compile Include="System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ForceDictionaryLookupsAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ILTransformInjectedAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\ICastable.cs" />
     <Compile Include="System\Runtime\CompilerServices\InitializedDataAttributes.cs" />
     <Compile Include="System\Runtime\CompilerServices\InternalCompilerAttributes.cs" />
     <Compile Include="System\Runtime\CompilerServices\ReflectionBlockedAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
     <Compile Include="System\Runtime\CompilerServices\NetNativeToolsVersionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\FakeElementAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\YieldAwaitable.cs" />
-    <Compile Include="System\Runtime\ConstrainedExecution\CriticalFinalizerObject.cs" />
     <Compile Include="System\Runtime\ExceptionIDs.cs" />
     <Compile Include="System\Runtime\ExceptionServices\ExceptionDispatchInfo.cs" />
     <Compile Include="System\Runtime\GcSettings.cs" />
@@ -268,17 +268,15 @@
     <Compile Include="System\Runtime\InteropServices\GCHandleType.cs" />
     <Compile Include="System\Runtime\InteropServices\InteropExtensions.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeCallableAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\NativeFunctionPointerWrapper.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal.cs" />
     <Compile Include="System\Runtime\InteropServices\SafeHandle.cs" />
     <Compile Include="System\Runtime\InteropServices\UnsafeGCHandle.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
     <Compile Include="System\Runtime\Loader\AssemblyLoadContext.cs" />
-    <Compile Include="System\Runtime\Serialization\SerializationInfo.cs" />
-    <Compile Include="System\String.cs" />
-    <Compile Include="System\String.Comparison.cs" />
+    <Compile Include="System\String.CoreRT.cs" />
     <Compile Include="System\String.Intern.cs" />
-    <Compile Include="System\String.Manipulation.cs" />
     <Compile Include="System\Array.cs" />
     <Compile Include="System\Array.CoreRT.cs" />
     <Compile Include="System\MDArray.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
@@ -293,18 +291,14 @@
     <Compile Include="System\ModuleHandle.cs" />
     <Compile Include="System\RuntimeFieldHandle.cs" />
     <Compile Include="System\Runtime\CompilerServices\AsyncMethodBuilder.cs" />
-    <Compile Include="System\Runtime\CompilerServices\TaskAwaiter.cs" />
     <Compile Include="System\Text\EncodingData.cs" />
     <Compile Include="System\Text\EncodingTable.cs" />
     <Compile Include="System\Text\StringBuilder.CoreRT.cs" />
-    <Compile Include="System\Text\StringBuilderCache.cs" />
-    <Compile Include="System\Threading\CancellationToken.cs" />
     <Compile Include="System\Threading\CancellationTokenRegistration.cs" />
     <Compile Include="System\Threading\CancellationTokenSource.cs" />
     <Compile Include="System\Threading\ManagedThreadId.cs" />
     <Compile Include="System\Threading\Lock.cs" />
     <Compile Include="System\Threading\Condition.cs" />
-    <Compile Include="System\Threading\EventWaitHandle.cs" />
     <Compile Include="System\Threading\FirstLevelSpinWaiter.cs" />
     <Compile Include="System\Threading\Interlocked.cs" />
     <Compile Include="System\Threading\IOCompletionCallback.cs" />
@@ -313,19 +307,13 @@
     <Compile Include="System\Threading\LowLevelMonitor.cs" />
     <Compile Include="System\Threading\ManualResetEventSlim.cs" />
     <Compile Include="System\Threading\Monitor.cs" />
-    <Compile Include="System\Threading\Mutex.cs" />
-    <Compile Include="System\Threading\NativeOverlapped.cs" />
     <Compile Include="System\Threading\ObjectHeader.cs" Condition="'$(UseSyncTable)' == 'true'" />
     <Compile Include="System\Threading\Overlapped.cs" />
-    <Compile Include="System\Threading\PinnableBufferCache.cs" />
-    <Compile Include="System\Threading\Semaphore.cs" />
-    <Compile Include="System\Threading\SemaphoreSlim.cs" />
     <Compile Include="System\Threading\SpinLock.cs" />
     <Compile Include="System\Threading\SynchronizationContext.cs" />
     <Compile Include="System\Threading\SynchronizationContext.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
     <Compile Include="System\Threading\SynchronizationContext.Dummy.cs" Condition="'$(EnableWinRT)' != 'true'" />
     <Compile Include="System\Threading\SyncTable.cs" Condition="'$(UseSyncTable)' == 'true'" />
-    <Compile Include="System\Threading\Tasks\ConcurrentExclusiveSchedulerPair.cs" />
     <Compile Include="System\Threading\Tasks\DebuggerSupport.cs" />
     <Compile Include="System\Threading\Tasks\DebuggerSupport.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
     <Compile Include="System\Threading\Tasks\DebuggerSupport.Dummy.cs" Condition="'$(EnableWinRT)' != 'true'" />
@@ -338,7 +326,6 @@
     <Compile Include="System\Threading\Tasks\TaskFactory.cs" />
     <Compile Include="System\Threading\Tasks\TaskScheduler.cs" />
     <Compile Include="System\Threading\Tasks\ThreadPoolTaskScheduler.cs" />
-    <Compile Include="System\Threading\ThreadInterruptedException.cs" />
     <Compile Include="System\Threading\ThreadLocal.cs" />
     <Compile Include="System\Threading\ThreadPool.cs" />
     <Compile Include="System\Threading\ThreadPoolCallbackWrapper.cs" />
@@ -347,7 +334,6 @@
     <Compile Include="System\Threading\WaitHandle.cs" />
     <Compile Include="System\Threading\WaitHandleArray.cs" />
     <Compile Include="System\ThrowHelper.cs" />
-    <Compile Include="System\TimeZoneInfo.cs" />
     <Compile Include="System\Type.CoreRT.cs" />
     <Compile Include="System\Type.Internal.cs" />
     <Compile Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'=='true'" Include="System\Type.WinRt.cs" />
@@ -377,9 +363,6 @@
     <Compile Include="Microsoft\Win32\RegistryKey.cs" />
     <Compile Include="Microsoft\Win32\RegistryKey.Windows.cs" />
     <Compile Include="Microsoft\Win32\RegistryOptions.cs" />
-    <Compile Include="Microsoft\Win32\RegistryValueKind.cs" />
-    <Compile Include="Microsoft\Win32\RegistryValueOptions.cs" />
-    <Compile Include="Microsoft\Win32\RegistryView.cs" />
     <Compile Include="Microsoft\Win32\ThrowHelper.cs" />
     <Compile Include="System\Security\AccessControl\RegistryRights.cs" />
     <Compile Include="..\..\Common\src\Interop\Windows\advapi32\Interop.RegDeleteValue.cs">
@@ -421,10 +404,8 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.Windows.cs" />
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeFindHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeThreadPoolIOHandle.cs" />
     <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\TimeZoneInfo.WinRT.cs" />
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\TimeZoneInfo.Win32.cs" />
     <Compile Include="System\AppContext.Windows.cs" />
     <Compile Include="System\DateTime.Windows.CoreRT.cs" />
     <Compile Include="System\Number.Windows.cs" />
@@ -435,9 +416,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.Memory.cs">
       <Link>Interop\Windows\kernel32\Interop.Memory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs">
-      <Link>Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.CompletionPort.cs">
       <Link>Interop\Windows\kernel32\Interop.CompletionPort.cs</Link>
@@ -469,9 +447,6 @@
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\kernel32\Interop.VirtualAlloc.cs">
       <Link>Interop\Windows\kernel32\Interop.VirtualAlloc.cs</Link>
     </Compile>
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.MUI.cs">
-      <Link>Interop\Windows\mincore\Interop.MUI.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.DateTime.cs">
       <Link>Interop\Windows\mincore\Interop.DateTime.cs</Link>
     </Compile>
@@ -484,11 +459,15 @@
     <Compile Include="..\..\Common\src\Interop\Windows\ole32\Interop.CoTaskMemAllocFree.cs">
       <Link>Interop\Windows\ole32\Interop.CoTaskMemAllocFree.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\ole32\Interop.CoGetApartmentType.cs">
+      <Link>Interop\Windows\ole32\Interop.CoGetApartmentType.cs</Link>
+    </Compile>
     <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Runtime\CommandLine.Windows.cs" />
     <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.CommandLine.cs">
       <Link>Interop\Windows\mincore\Interop.CommandLine.cs</Link>
     </Compile>
     <Compile Include="System\Environment.Windows.cs" />
+    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\Environment.Win32.cs" />
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetTickCount64.cs">
       <Link>Interop\Windows\mincore\Interop.GetTickCount64.cs</Link>
     </Compile>
@@ -512,11 +491,8 @@
       <Link>Interop\Windows\mincore\Interop.DynamicLoad.cs</Link>
     </Compile>
     <Compile Include="System\HighPerformanceCounter.Windows.cs" />
-    <Compile Include="System\Threading\EventWaitHandle.Windows.cs" />
     <Compile Include="System\Threading\LowLevelMonitor.Windows.cs" />
     <Compile Include="System\Threading\LowLevelLifoSemaphore.Windows.cs" />
-    <Compile Include="System\Threading\Mutex.Windows.cs" />
-    <Compile Include="System\Threading\Semaphore.Windows.cs" />
     <Compile Include="System\Threading\ThreadPool.Windows.cs" Condition="'$(FeaturePortableThreadPool)' != 'true'" />
     <Compile Include="System\Threading\WaitHandle.Windows.cs" />
     <Compile Include="System\Threading\Win32ThreadPoolBoundHandle.cs" />
@@ -527,11 +503,24 @@
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.ThreadPoolIO.cs">
       <Link>Interop\Windows\mincore\Interop.ThreadPoolIO.cs</Link>
     </Compile>
+    <Compile Condition="'$(EnableWinRT)' == 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.TimeZone.cs">
+      <Link>Interop\Windows\mincore\Interop.TimeZone.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\Interop.Libraries.cs">
+      <Link>Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetLastError.cs">
+      <Link>Interop\Windows\mincore\Interop.GetLastError.cs</Link>
+    </Compile>
+    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetSystemDirectory.cs">
+      <Link>Interop\Windows\mincore\Interop.GetSystemDirectory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.QueryUnbiasedInterruptTime.cs">
+      <Link>Interop\Windows\mincore\Interop.QueryUnbiasedInterruptTime.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true' And '$(EnableDummyGlobalizationImplementation)' != 'true'">
     <Compile Include="System\Globalization\CultureInfo.Windows.cs" />
-    <Compile Include="System\Globalization\CompareInfo.Windows.cs" />
-    <Compile Include="System\Globalization\CultureData.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeaturePortableThreadPool)' == 'true'">
     <Compile Include="System\Threading\ThreadPool.Portable.cs" />
@@ -545,30 +534,6 @@
     <Compile Include="System\Threading\ClrThreadPool.WorkerThread.cs" />
     <Compile Include="System\Threading\ClrThreadPool.CpuUtilizationReader.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
     <Compile Include="System\Threading\ClrThreadPool.CpuUtilizationReader.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
-  </ItemGroup>
-  <ItemGroup>
-    <!-- CORERT-TODO: Port to Unix -->
-    <Compile Include="..\..\Common\src\Interop\Windows\Interop.Libraries.cs">
-      <Link>Interop\Windows\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetLastError.cs">
-      <Link>Interop\Windows\mincore\Interop.GetLastError.cs</Link>
-    </Compile>
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetSystemDirectory.cs">
-      <Link>Interop\Windows\mincore\Interop.GetSystemDirectory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.TimeZone.cs">
-      <Link>Interop\Windows\mincore\Interop.TimeZone.cs</Link>
-    </Compile>
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.TimeZone.Win32.cs">
-      <Link>Interop\Windows\mincore\Interop.TimeZone.Win32.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.CoCreateGuid.cs">
-      <Link>Interop\Windows\mincore\Interop.CoCreateGuid.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.QueryUnbiasedInterruptTime.cs">
-      <Link>Interop\Windows\mincore\Interop.QueryUnbiasedInterruptTime.cs</Link>
-    </Compile>
   </ItemGroup>
   <!-- Dummy globalization implementation -->
   <ItemGroup Condition="'$(EnableDummyGlobalizationImplementation)' == 'true'">
@@ -584,12 +549,11 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' And '$(EnableDummyGlobalizationImplementation)' != 'true'">
     <Compile Include="System\Globalization\CultureInfo.Unix.cs" />
-    <Compile Include="System\Globalization\CompareInfo.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.Unix.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeWaitHandle.Unix.cs" />
     <Compile Include="System\AppContext.Unix.cs" />
-    <Compile Include="System\TimeZoneInfo.Unix.cs" />
     <Compile Include="System\DateTime.Unix.CoreRT.cs" />
     <Compile Include="System\Environment.Unix.cs" />
     <Compile Include="System\Number.Unix.cs" />
@@ -611,9 +575,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.GetSystemTimeAsTicks.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetSystemTimeAsTicks.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.CreateGuid.cs">
-      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.CreateGuid.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Exit.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Exit.cs</Link>
@@ -694,9 +655,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgGeneratedNativeCallCodeAttribute.cs">
       <Link>System\Runtime\InteropServices\McgGeneratedNativeCallCodeAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgPInvokeData.cs">
-      <Link>System\Runtime\InteropServices\McgPInvokeData.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\NotImplemented.cs">
       <Link>System\NotImplemented.cs</Link>
@@ -784,7 +742,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">
     <Compile Condition="'$(Platform)'!='wasm'" Include="$(BaseIntermediateOutputPath)\Native\$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)\Runtime\Full\AsmOffsets.cs" />
-    <Compile Condition="'$(Platform)'=='wasm'" Include="$(BaseIntermediateOutputPath)\Native\$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)\Runtime\Portable\AsmOffsets.cs" />
+    <Compile Condition="'$(Platform)'=='wasm'" Include="$(BaseIntermediateOutputPath)\Native\$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)\Runtime\Portable\AsmOffsetsPortable.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml">

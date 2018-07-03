@@ -12,9 +12,9 @@ namespace Internal.IL.Stubs
     // Functionality related to determinstic ordering of types
     partial class DynamicInvokeMethodThunk
     {
-        protected override int ClassCode => -1980933220;
+        protected internal override int ClassCode => -1980933220;
 
-        protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
+        protected internal override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
         {
             return CompareTo((DynamicInvokeMethodThunk)other);
         }
@@ -25,15 +25,31 @@ namespace Internal.IL.Stubs
             if (result != 0)
                 return result;
 
-            result = (_targetSignature.HasReturnValue ? 1 : 0) - (otherMethod._targetSignature.HasReturnValue ? 1 : 0);
+            DynamicInvokeMethodParameterKind thisReturnType = _targetSignature.ReturnType;
+            result = (int)thisReturnType - (int)otherMethod._targetSignature.ReturnType;
             if (result != 0)
                 return result;
 
-            for (int i = 0; i < _targetSignature.Length; i++)
+            if (thisReturnType == DynamicInvokeMethodParameterKind.Pointer)
             {
-                result = (int)_targetSignature[i] - (int)otherMethod._targetSignature[i];
+                result = _targetSignature.GetNumerOfReturnTypePointerIndirections() - otherMethod._targetSignature.GetNumerOfReturnTypePointerIndirections();
                 if (result != 0)
                     return result;
+            }
+
+            for (int i = 0; i < _targetSignature.Length; i++)
+            {
+                DynamicInvokeMethodParameterKind thisParamType = _targetSignature[i];
+                result = (int)thisParamType - (int)otherMethod._targetSignature[i];
+                if (result != 0)
+                    return result;
+
+                if (thisParamType == DynamicInvokeMethodParameterKind.Pointer)
+                {
+                    result = _targetSignature.GetNumberOfParameterPointerIndirections(i) - otherMethod._targetSignature.GetNumberOfParameterPointerIndirections(i);
+                    if (result != 0)
+                        return result;
+                }
             }
 
             Debug.Assert(this == otherMethod);
@@ -42,9 +58,9 @@ namespace Internal.IL.Stubs
 
         partial class DynamicInvokeThunkGenericParameter
         {
-            protected override int ClassCode => -234393261;
+            protected internal override int ClassCode => -234393261;
 
-            protected override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer)
+            protected internal override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer)
             {
                 var otherType = (DynamicInvokeThunkGenericParameter)other;
                 int result = Index - otherType.Index;

@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
-
 using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.CompilerServices
@@ -17,6 +16,13 @@ namespace System.Runtime.CompilerServices
         where TKey : class
         where TValue : class
     {
+        #region Fields
+        private const int InitialCapacity = 8;  // Initial length of the table. Must be a power of two.
+        private readonly Lock _lock;            // This lock protects all mutation of data in the table.  Readers do not take this lock.
+        private volatile Container _container;  // The actual storage for the table; swapped out as the table grows.
+        private int _activeEnumeratorRefCount;  // The number of outstanding enumerators on the table
+        #endregion
+
         #region Constructors
         public ConditionalWeakTable()
         {
@@ -165,8 +171,8 @@ namespace System.Runtime.CompilerServices
         // invokes createValueCallback() passing it the key. The returned value is bound to the key in the table
         // and returned as the result of GetValue().
         //
-        // If multiple threads race to initialize the same key, the table may invoke createValueCallback
-        // multiple times with the same key. Exactly one of these calls will "win the race" and the returned
+        // If multiple threads try to initialize the same key, the table may invoke createValueCallback
+        // multiple times with the same key. Exactly one of these calls will succeed and the returned
         // value of that call will be the one added to the table and returned by all the racing GetValue() calls.
         // 
         // This rule permits the table to invoke createValueCallback outside the internal table lock
@@ -174,12 +180,7 @@ namespace System.Runtime.CompilerServices
         //--------------------------------------------------------------------------------------------
         public TValue GetValue(TKey key, CreateValueCallback createValueCallback)
         {
-            // Our call to TryGetValue() validates key so no need for us to.
-            //
-            //  if (key == null)
-            //  {
-            //      ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
-            //  }
+            // key is validated by TryGetValue
 
             if (createValueCallback == null)
             {
@@ -187,12 +188,9 @@ namespace System.Runtime.CompilerServices
             }
 
             TValue existingValue;
-            if (TryGetValue(key, out existingValue))
-            {
-                return existingValue;
-            }
-
-            return GetValueLocked(key, createValueCallback);
+            return TryGetValue(key, out existingValue) ?
+                existingValue :
+                GetValueLocked(key, createValueCallback);
         }
 
         private TValue GetValueLocked(TKey key, CreateValueCallback createValueCallback)
@@ -226,10 +224,7 @@ namespace System.Runtime.CompilerServices
         // throw.
         //--------------------------------------------------------------------------------------------
 
-        public TValue GetOrCreateValue(TKey key)
-        {
-            return GetValue(key, k => Activator.CreateInstance<TValue>());
-        }
+        public TValue GetOrCreateValue(TKey key) => GetValue(key, _ => Activator.CreateInstance<TValue>());
 
         public delegate TValue CreateValueCallback(TKey key);
 
@@ -305,7 +300,7 @@ namespace System.Runtime.CompilerServices
                 if (table != null)
                 {
                     // Ensure we don't keep the last current alive unnecessarily
-                    _current = default(KeyValuePair<TKey, TValue>);
+                    _current = default;
 
                     // Decrement the ref count that was incremented when constructed
                     using (LockHolder.Hold(table._lock))
@@ -399,10 +394,7 @@ namespace System.Runtime.CompilerServices
             c.CreateEntryNoResize(key, value);
         }
 
-        private static bool IsPowerOfTwo(int value)
-        {
-            return (value > 0) && ((value & (value - 1)) == 0);
-        }
+        private static bool IsPowerOfTwo(int value) => (value > 0) && ((value & (value - 1)) == 0);
 
         #endregion
 
@@ -417,7 +409,7 @@ namespace System.Runtime.CompilerServices
         //
         //    - Used with live key (linked into a bucket list where _buckets[hashCode & (_buckets.Length - 1)] points to first entry)
         //         depHnd.IsAllocated == true, depHnd.GetPrimary() != null
-        //         hashCode == RuntimeHelpers.GetHashCode(depHnd.GetPrimary()) & Int32.MaxValue
+        //         hashCode == RuntimeHelpers.GetHashCode(depHnd.GetPrimary()) & int.MaxValue
         //         next links to next Entry in bucket. 
         //                          
         //    - Used with dead key (linked into a bucket list where _buckets[hashCode & (_buckets.Length - 1)] points to first entry)
@@ -453,10 +445,19 @@ namespace System.Runtime.CompilerServices
         //
         private sealed class Container
         {
+            private readonly ConditionalWeakTable<TKey, TValue> _parent;  // the ConditionalWeakTable with which this container is associated
+            private int[] _buckets;                // _buckets[hashcode & (_buckets.Length - 1)] contains index of the first entry in bucket (-1 if empty)
+            private Entry[] _entries;              // the table entries containing the stored dependency handles
+            private int _firstFreeEntry;           // _firstFreeEntry < _entries.Length => table has capacity,  entries grow from the bottom of the table.
+            private bool _invalid;                 // flag detects if OOM or other background exception threw us out of the lock.
+            private bool _finalized;               // set to true when initially finalized
+            private volatile object _oldKeepAlive; // used to ensure the next allocated container isn't finalized until this one is GC'd
+
             internal Container(ConditionalWeakTable<TKey, TValue> parent)
             {
                 Debug.Assert(parent != null);
                 Debug.Assert(IsPowerOfTwo(InitialCapacity));
+
                 int size = InitialCapacity;
                 _buckets = new int[size];
                 for (int i = 0; i < _buckets.Length; i++)
@@ -481,13 +482,7 @@ namespace System.Runtime.CompilerServices
                 _firstFreeEntry = firstFreeEntry;
             }
 
-            internal bool HasCapacity
-            {
-                get
-                {
-                    return _firstFreeEntry < _entries.Length;
-                }
-            }
+            internal bool HasCapacity => _firstFreeEntry < _entries.Length;
 
             internal int FirstFreeEntry => _firstFreeEntry;
 
@@ -503,7 +498,7 @@ namespace System.Runtime.CompilerServices
                 VerifyIntegrity();
                 _invalid = true;
 
-                int hashCode = RuntimeHelpers.GetHashCode(key) & Int32.MaxValue;
+                int hashCode = RuntimeHelpers.GetHashCode(key) & int.MaxValue;
                 int newEntry = _firstFreeEntry++;
 
                 _entries[newEntry].hashCode = hashCode;
@@ -530,7 +525,7 @@ namespace System.Runtime.CompilerServices
                 object secondary;
                 int entryIndex = FindEntry(key, out secondary);
                 value = Unsafe.As<TValue>(secondary);
-                return (entryIndex != -1);
+                return entryIndex != -1;
             }
 
             //----------------------------------------------------------------------------------------
@@ -542,17 +537,17 @@ namespace System.Runtime.CompilerServices
             //----------------------------------------------------------------------------------------
             internal int FindEntry(TKey key, out object value)
             {
-                int hashCode = RuntimeHelpers.GetHashCode(key) & Int32.MaxValue;
+                int hashCode = RuntimeHelpers.GetHashCode(key) & int.MaxValue;
                 int bucket = hashCode & (_buckets.Length - 1);
                 for (int entriesIndex = Volatile.Read(ref _buckets[bucket]); entriesIndex != -1; entriesIndex = _entries[entriesIndex].next)
                 {
                     if (_entries[entriesIndex].hashCode == hashCode && _entries[entriesIndex].depHnd.GetPrimaryAndSecondary(out value) == key)
                     {
                         GC.KeepAlive(this); // ensure we don't get finalized while accessing DependentHandles.
-
                         return entriesIndex;
                     }
                 }
+
                 GC.KeepAlive(this); // ensure we don't get finalized while accessing DependentHandles.
                 value = null;
                 return -1;
@@ -565,8 +560,8 @@ namespace System.Runtime.CompilerServices
             {
                 if (index < _entries.Length)
                 {
-                    object oValue;
-                    object oKey = _entries[index].depHnd.GetPrimaryAndSecondary(out oValue);
+                    object oKey, oValue;
+                    oKey = _entries[index].depHnd.GetPrimaryAndSecondary(out oValue);
                     GC.KeepAlive(this); // ensure we don't get finalized while accessing DependentHandles.
 
                     if (oKey != null)
@@ -577,8 +572,8 @@ namespace System.Runtime.CompilerServices
                     }
                 }
 
-                key = default(TKey);
-                value = default(TValue);
+                key = default;
+                value = default;
                 return false;
             }
 
@@ -617,11 +612,9 @@ namespace System.Runtime.CompilerServices
 
                 ref Entry entry = ref _entries[entryIndex];
 
-                //
                 // We do not free the handle here, as we may be racing with readers who already saw the hash code.
                 // Instead, we simply overwrite the entry's hash code, so subsequent reads will ignore it.
                 // The handle will be free'd in Container's finalizer, after the table is resized or discarded.
-                //
                 Volatile.Write(ref entry.hashCode, -1);
 
                 // Also, clear the key to allow GC to collect objects pointed to by the entry
@@ -797,18 +790,10 @@ namespace System.Runtime.CompilerServices
             ~Container()
             {
                 // We're just freeing per-appdomain unmanaged handles here. If we're already shutting down the AD,
-                // don't bother.
-                //
-                // (Despite its name, Environment.HasShutdownStart also returns true if the current AD is finalizing.)
-
-                if (Environment.HasShutdownStarted)
-                {
-                    return;
-                }
-
-                //We also skip doing anything if the container is invalid, including if someone
+                // don't bother. (Despite its name, Environment.HasShutdownStart also returns true if the current
+                // AD is finalizing.)  We also skip doing anything if the container is invalid, including if someone
                 // the container object was allocated but its associated table never set.
-                if (_invalid || _parent == null)
+                if (Environment.HasShutdownStarted || _invalid || _parent == null)
                 {
                     return;
                 }
@@ -855,21 +840,7 @@ namespace System.Runtime.CompilerServices
                     }
                 }
             }
-
-            private readonly ConditionalWeakTable<TKey, TValue> _parent;  // the ConditionalWeakTable with which this container is associated
-            private int[] _buckets;                // _buckets[hashcode & (_buckets.Length - 1)] contains index of the first entry in bucket (-1 if empty)
-            private Entry[] _entries;              // the table entries containing the stored dependency handles
-            private int _firstFreeEntry;           // _firstFreeEntry < _entries.Length => table has capacity,  entries grow from the bottom of the table.
-            private bool _invalid;                 // flag detects if OOM or other background exception threw us out of the lock.
-            private bool _finalized;               // set to true when initially finalized
-            private volatile object _oldKeepAlive; // used to ensure the next allocated container isn't finalized until this one is GC'd
         }
-
-        private volatile Container _container;
-        private readonly Lock _lock;            // This lock protects all mutation of data in the table.  Readers do not take this lock.
-        private int _activeEnumeratorRefCount;  // The number of outstanding enumerators on the table
-
-        private const int InitialCapacity = 8;  // Must be a power of two
         #endregion
     }
     #endregion
@@ -902,25 +873,19 @@ namespace System.Runtime.CompilerServices
     internal struct DependentHandle
     {
         #region Constructors
-        public DependentHandle(Object primary, Object secondary)
+        public DependentHandle(object primary, object secondary)
         {
             _handle = RuntimeImports.RhHandleAllocDependent(primary, secondary);
         }
         #endregion
 
         #region Public Members
-        public bool IsAllocated
-        {
-            get
-            {
-                return _handle != (IntPtr)0;
-            }
-        }
+        public bool IsAllocated => _handle != IntPtr.Zero;
 
         // Getting the secondary object is more expensive than getting the first so
         // we provide a separate primary-only accessor for those times we only want the
         // primary.
-        public Object GetPrimary()
+        public object GetPrimary()
         {
             return RuntimeImports.RhHandleGet(_handle);
         }

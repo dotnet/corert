@@ -14,9 +14,22 @@ namespace Internal.Runtime.CompilerHelpers
 {
     internal partial class RuntimeInteropData : InteropCallbacks
     {
-        public override bool TryGetMarshallerDataForDelegate(RuntimeTypeHandle delegateTypeHandle, out McgPInvokeDelegateData data)
+        public override IntPtr GetForwardDelegateCreationStub(RuntimeTypeHandle delegateTypeHandle)
         {
-            return McgModuleManager.GetPInvokeDelegateData(delegateTypeHandle, out data);
+            McgModuleManager.GetPInvokeDelegateData(delegateTypeHandle, out McgPInvokeDelegateData data);
+            IntPtr pStub = data.ForwardDelegateCreationStub;
+            if (pStub == IntPtr.Zero)
+                throw new MissingInteropDataException(SR.DelegateMarshalling_MissingInteropData, Type.GetTypeFromHandle(delegateTypeHandle));
+            return pStub;
+        }
+
+        public override IntPtr GetDelegateMarshallingStub(RuntimeTypeHandle delegateTypeHandle, bool openStaticDelegate)
+        {
+            McgModuleManager.GetPInvokeDelegateData(delegateTypeHandle, out McgPInvokeDelegateData pinvokeDelegateData);
+            IntPtr pStub = openStaticDelegate ? pinvokeDelegateData.ReverseOpenStaticDelegateStub : pinvokeDelegateData.ReverseStub;
+            if (pStub == IntPtr.Zero)
+                throw new MissingInteropDataException(SR.DelegateMarshalling_MissingInteropData, Type.GetTypeFromHandle(delegateTypeHandle));
+            return pStub;
         }
 
         #region "Struct Data"

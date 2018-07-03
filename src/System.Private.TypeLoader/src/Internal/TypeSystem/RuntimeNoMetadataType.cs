@@ -94,7 +94,6 @@ namespace Internal.TypeSystem.NoMetadata
                 }
                 else
                 {
-                    Debug.Assert(this.HasNativeLayout);
                     // Parsing of the base type has not yet happened. Perform that part of native layout parsing
                     // just-in-time
                     TypeBuilderState state = GetOrCreateTypeBuilderState();
@@ -199,9 +198,9 @@ namespace Internal.TypeSystem.NoMetadata
                 }
             }
 
-            if ((mask & TypeFlags.IsByRefLikeComputed) != 0)
+            if ((mask & TypeFlags.AttributeCacheComputed) != 0)
             {
-                flags |= TypeFlags.IsByRefLikeComputed;
+                flags |= TypeFlags.AttributeCacheComputed;
 
                 unsafe
                 {

@@ -42,8 +42,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => !factory.MetadataManager.SupportsReflection;
-
         public int Offset => 0;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -100,6 +98,11 @@ namespace ILCompiler.DependencyAnalysis
                             }
 
                             string resourceName = module.MetadataReader.GetString(resource.Name);
+
+                            // Check if emitting the manifest resource is blocked by policy.
+                            if (factory.MetadataManager.IsManifestResourceBlocked(module, resourceName))
+                                continue;
+
                             string assemblyName = module.GetName().FullName;
                             BlobReader reader = resourceDirectory.GetReader((int)resource.Offset, resourceDirectory.Length - (int)resource.Offset);
                             int length = (int)reader.ReadUInt32();

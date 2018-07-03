@@ -15,8 +15,14 @@ namespace ILCompiler.DependencyAnalysis
     {
         TypeDesc _type;
 
-        public InterfaceDispatchMapNode(TypeDesc type)
+        public InterfaceDispatchMapNode(NodeFactory factory, TypeDesc type)
         {
+            // Multidimensional arrays should not get a sealed vtable or a dispatch map. Runtime should use the 
+            // sealed vtable and dispatch map of the System.Array basetype instead.
+            // Pointer arrays also follow the same path
+            Debug.Assert(!type.IsArrayTypeWithoutGenericInterfaces());
+            Debug.Assert(MightHaveInterfaceDispatchMap(type, factory));
+
             _type = type;
         }
 
@@ -57,6 +63,48 @@ namespace ILCompiler.DependencyAnalysis
             return result;
         }
 
+        /// <summary>
+        /// Gets a value indicating whether '<paramref name="type"/>' might have a non-empty dispatch map.
+        /// Note that this is only an approximation because we might not be able to take into account
+        /// whether the interface methods are actually used.
+        /// </summary>
+        public static bool MightHaveInterfaceDispatchMap(TypeDesc type, NodeFactory factory)
+        {
+            if (type.IsArrayTypeWithoutGenericInterfaces())
+                return false;
+
+            if (!type.IsArray && !type.IsDefType)
+                return false;
+
+            DefType defType = type.GetClosestDefType();
+
+            foreach (DefType interfaceType in defType.RuntimeInterfaces)
+            {
+                IEnumerable<MethodDesc> slots;
+
+                // If the vtable has fixed slots, we can query it directly.
+                // If it's a lazily built vtable, we might not be able to query slots
+                // just yet, so approximate by looking at all methods.
+                VTableSliceNode vtableSlice = factory.VTable(interfaceType);
+                if (vtableSlice.HasFixedSlots)
+                    slots = vtableSlice.Slots;
+                else
+                    slots = interfaceType.GetAllMethods();
+
+                foreach (MethodDesc declMethod in slots)
+                {
+                    if (declMethod.Signature.IsStatic)
+                        continue;
+
+                    var implMethod = defType.ResolveInterfaceMethodToVirtualMethodOnType(declMethod);
+                    if (implMethod != null)
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
         void EmitDispatchMap(ref ObjectDataBuilder builder, NodeFactory factory)
         {
             var entryCountReservation = builder.ReserveInt();
@@ -80,7 +128,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         builder.EmitShort(checked((short)interfaceIndex));
                         builder.EmitShort(checked((short)(interfaceMethodSlot + (interfaceType.HasGenericDictionarySlot() ? 1 : 0))));
-                        builder.EmitShort(checked((short)VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, implMethod)));
+                        builder.EmitShort(checked((short)VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, implMethod, _type.GetClosestDefType())));
                         entryCount++;
                     }
                 }

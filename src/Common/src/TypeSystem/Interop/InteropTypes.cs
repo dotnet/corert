@@ -15,9 +15,14 @@ namespace Internal.TypeSystem.Interop
             return context.SystemModule.GetKnownType("System", "GC");
         }
 
-        public static MetadataType GetSafeHandleType(TypeSystemContext context)
+        public static MetadataType GetSafeHandle(TypeSystemContext context)
         {
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "SafeHandle");
+        }
+
+        public static MetadataType GetCriticalHandle(TypeSystemContext context)
+        {
+            return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "CriticalHandle");
         }
 
         public static MetadataType GetMissingMemberException(TypeSystemContext context)
@@ -30,102 +35,52 @@ namespace Internal.TypeSystem.Interop
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "PInvokeMarshal");
         }
 
-        /*      
-                TODO: Bring CriticalHandle to CoreLib
-                https://github.com/dotnet/corert/issues/2570
-
-                public static MetadataType GetCriticalHandle(TypeSystemContext context)
-                {
-                        return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "CriticalHandle");
-                }
-
-
-                TODO: Bring HandleRef to CoreLib
-                https://github.com/dotnet/corert/issues/2570
-
-                public static MetadataType GetHandleRef(TypeSystemContext context)
-                {
-                    get
-                    {
-                        return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "HandleRef");
-                    }
-                }
-        */
-
         public static MetadataType GetNativeFunctionPointerWrapper(TypeSystemContext context)
         {
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "NativeFunctionPointerWrapper");
         }
 
-        public static MetadataType GetStringBuilder(TypeSystemContext context, bool throwIfNotFound = true)
-        {
-            return context.SystemModule.GetKnownType("System.Text", "StringBuilder", throwIfNotFound);
-        }
-
-        public static MetadataType GetSystemArray(TypeSystemContext context)
-        {
-            return context.SystemModule.GetKnownType("System", "Array");
-        }
-
-        public static MetadataType GetSystemDateTime(TypeSystemContext context)
-        {
-            return context.SystemModule.GetKnownType("System", "DateTime");
-        }
-
-        public static MetadataType GetSystemDecimal(TypeSystemContext context)
-        {
-            return context.SystemModule.GetKnownType("System", "Decimal");
-        }
-
-        public static MetadataType GetSystemGuid(TypeSystemContext context)
-        {
-            return context.SystemModule.GetKnownType("System", "Guid");
-        }
-
         public static bool IsSafeHandle(TypeSystemContext context, TypeDesc type)
         {
-            return IsOrDerivesFromType(type, GetSafeHandleType(context));
+            return IsOrDerivesFromType(type, GetSafeHandle(context));
         }
-        /*      
-               TODO: Bring CriticalHandle to CoreLib
-               https://github.com/dotnet/corert/issues/2570
 
-               public static bool IsCriticalHandle(TypeSystemContext context, TypeDesc type)
-                {
-                    return IsOrDerivesFromType(type, context.GetCriticalHandle());
-                }
-
-                TODO: Bring HandleRef to CoreLib
-                public static bool IsHandleRef(TypeSystemContext context, TypeDesc type)
-                {
-                    return IsOrDerivesFromType(type, this.HandleRef);
-                }
-        */
-
-        public static bool IsSystemArray(TypeSystemContext context, TypeDesc type)
+        public static bool IsCriticalHandle(TypeSystemContext context, TypeDesc type)
         {
-            return type == GetSystemArray(context);
+            return IsOrDerivesFromType(type, GetCriticalHandle(context));
+        }
+
+        private static bool IsCoreNamedType(TypeSystemContext context, TypeDesc type, string @namespace, string name)
+        {
+            return type is MetadataType mdType &&
+                mdType.Name == name &&
+                mdType.Namespace == @namespace &&
+                mdType.Module == context.SystemModule;
+        }
+
+        public static bool IsHandleRef(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System.Runtime.InteropServices", "HandleRef");
         }
 
         public static bool IsSystemDateTime(TypeSystemContext context, TypeDesc type)
         {
-            return type == GetSystemDateTime(context);
+            return IsCoreNamedType(context, type, "System", "DateTime");
         }
 
         public static bool IsStringBuilder(TypeSystemContext context, TypeDesc type)
         {
-            Debug.Assert(type != null);
-            return type == GetStringBuilder(context, throwIfNotFound: false);
+            return IsCoreNamedType(context, type, "System.Text", "StringBuilder");
         }
 
         public static bool IsSystemDecimal(TypeSystemContext context, TypeDesc type)
         {
-            return type == GetSystemDecimal(context);
+            return IsCoreNamedType(context, type, "System", "Decimal");
         }
 
         public static bool IsSystemGuid(TypeSystemContext context, TypeDesc type)
         {
-            return type == GetSystemGuid(context);
+            return IsCoreNamedType(context, type, "System", "Guid");
         }
 
         private static bool IsOrDerivesFromType(TypeDesc type, MetadataType targetType)

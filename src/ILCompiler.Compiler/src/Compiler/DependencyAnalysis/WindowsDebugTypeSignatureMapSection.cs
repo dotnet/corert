@@ -31,7 +31,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public int Offset => 0;
 
-        protected internal override int ClassCode => 1029840999;
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+        protected internal override int ClassCode => (int)ObjectNodeOrder.WindowsDebugTypeSignatureMapSectionNode;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -129,9 +130,6 @@ namespace ILCompiler.DependencyAnalysis
             if (relocsOnly)
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
             
-            if (factory.WindowsDebugData.DebugTypeRecordsSection != null)
-                factory.WindowsDebugData.DebugTypeRecordsSection.Neuter();
-
             DebugInfoBlob debugData = GetDebugTypeIndexToTokenMap(factory.WindowsDebugData.DebugPseudoAssemblySection.PseudoAssembly, factory.WindowsDebugData.UserDefinedTypeDescriptor.CompleteKnownTypes);
 
             return new ObjectData(debugData.ToArray(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });

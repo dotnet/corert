@@ -22,6 +22,8 @@ namespace ILCompiler.DependencyAnalysis
         public ReflectableMethodNode(MethodDesc method)
         {
             Debug.Assert(method.IsAbstract || method.IsPInvoke);
+            Debug.Assert(!method.IsCanonicalMethod(CanonicalFormKind.Any) ||
+                method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method);
             _method = method;
         }
 

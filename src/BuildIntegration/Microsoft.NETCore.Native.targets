@@ -31,6 +31,7 @@ See the LICENSE file in the project root for more information.
     <NativeObjectExt Condition="'$(TargetOS)' == 'Windows_NT'">.obj</NativeObjectExt>
     <NativeObjectExt Condition="'$(TargetOS)' != 'Windows_NT'">.o</NativeObjectExt>
     <NativeObjectExt Condition="'$(NativeCodeGen)' == 'wasm'">.bc</NativeObjectExt>
+
     <LibFileExt Condition="'$(TargetOS)' == 'Windows_NT'">.lib</LibFileExt>
     <LibFileExt Condition="'$(TargetOS)' != 'Windows_NT'">.a</LibFileExt>
 
@@ -38,18 +39,23 @@ See the LICENSE file in the project root for more information.
     <IlcOutputFileExt Condition="$(NativeCodeGen) == 'cpp'">.cpp</IlcOutputFileExt>
     <IlcOutputFileExt Condition="'$(NativeCodeGen)' == 'wasm'">.bc</IlcOutputFileExt>
 
+    <IsNativeExecutable Condition="'$(OutputType)' == 'Exe' or '$(OutputType)' == 'WinExe'">true</IsNativeExecutable>
 
-    <NativeBinaryExt Condition="'$(OutputType)' ==  'Exe' and '$(TargetOS)' == 'Windows_NT'">.exe</NativeBinaryExt>
-    <NativeBinaryExt Condition="'$(OutputType)' ==  'Exe' and '$(TargetOS)' != 'Windows_NT'"></NativeBinaryExt>
-    <NativeBinaryExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' == 'Windows_NT' and $(NativeLib) == 'Shared'">.dll</NativeBinaryExt>
-    <NativeBinaryExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' == 'OSX' and $(NativeLib) == 'Shared'">.dylib</NativeBinaryExt>
-    <NativeBinaryExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' != 'Windows_NT' and '$(TargetOS)' != 'OSX' and $(NativeLib) == 'Shared'">.so</NativeBinaryExt>
-    <NativeBinaryExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' == 'Windows_NT' and $(NativeLib) == 'Static'">.lib</NativeBinaryExt>
-    <NativeBinaryExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' != 'Windows_NT' and $(NativeLib) == 'Static'">.a</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(IsNativeExecutable)' == 'true' and '$(TargetOS)' == 'Windows_NT'">.exe</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(IsNativeExecutable)' == 'true' and '$(TargetOS)' != 'Windows_NT'"></NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' == 'Windows_NT' and $(NativeLib) == 'Shared'">.dll</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' == 'OSX' and $(NativeLib) == 'Shared'">.dylib</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' != 'Windows_NT' and '$(TargetOS)' != 'OSX' and $(NativeLib) == 'Shared'">.so</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' == 'Windows_NT' and $(NativeLib) == 'Static'">.lib</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' != 'Windows_NT' and $(NativeLib) == 'Static'">.a</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(NativeCodeGen)' == 'wasm'">.html</NativeBinaryExt>
+
+    <ExportsFileExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' == 'Windows_NT' and '$(NativeLib)' == 'Shared'">.def</ExportsFileExt>
+    <ExportsFileExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' != 'Windows_NT' and '$(NativeLib)' == 'Shared'">.exports</ExportsFileExt>
 
     <NativeObject>$(NativeIntermediateOutputPath)$(TargetName)$(NativeObjectExt)</NativeObject>
     <NativeBinary>$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)</NativeBinary>
+    <ExportsFile Condition="$(NativeLib) == 'Shared' and $(ExportsFile) == ''">$(NativeIntermediateOutputPath)$(TargetName)$(ExportsFileExt)</ExportsFile>
 
     <IlcCompileOutput Condition="$(NativeCodeGen) == ''">$(NativeObject)</IlcCompileOutput>
     <IlcCompileOutput Condition="$(NativeCodeGen) == 'cpp'">$(NativeIntermediateOutputPath)$(TargetName).cpp</IlcCompileOutput>
@@ -73,10 +79,20 @@ See the LICENSE file in the project root for more information.
   </PropertyGroup>
 
   <ItemGroup>
+    <AutoInitializedAssemblies Include="System.Private.CoreLib" />
+    <AutoInitializedAssemblies Include="System.Private.TypeLoader" />
+    <AutoInitializedAssemblies Include="System.Private.Reflection.Execution" />
+    <AutoInitializedAssemblies Include="System.Private.DeveloperExperience.Console" />
+    <AutoInitializedAssemblies Include="System.Private.Interop" />
+    <AutoInitializedAssemblies Include="System.Private.StackTraceMetadata" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PrivateSdkAssemblies Include="$(IlcPath)\sdk\*.dll" />
   </ItemGroup>
   <ItemGroup>
-    <FrameworkAssemblies Include="$(IlcPath)\framework\*.dll" />
+    <!-- Exclude clrcompression.dll for now https://github.com/dotnet/corert/issues/5496 -->
+    <FrameworkAssemblies Include="$(IlcPath)\framework\*.dll" Exclude="$(IlcPath)\framework\clrcompression.dll" />
   </ItemGroup>
 
   <ItemGroup>
@@ -136,7 +152,7 @@ See the LICENSE file in the project root for more information.
   </Target>
 
   <Target Name="IlcCompile" 
-      Inputs="@(IlcCompileInput)"
+      Inputs="@(IlcCompileInput);@(RdXmlFile)"
       Outputs="$(NativeIntermediateOutputPath)%(ManagedBinary.Filename)$(IlcOutputFileExt)"
       DependsOnTargets="$(IlcCompileDependsOn)">
 
@@ -150,15 +166,20 @@ See the LICENSE file in the project root for more information.
       <IlcArg Condition="$(Optimize) == 'true'" Include="-O" />
       <IlcArg Condition="$(DebugSymbols) == 'true'" Include="-g" />
       <IlcArg Condition="$(IlcGenerateMapFile) == 'true'" Include="--map:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).map.xml" />
-      <IlcArg Condition="$(RdXmlFile) != ''" Include="--rdxml:$(RdXmlFile)" />
-      <IlcArg Condition="$(OutputType) ==  'Library' and $(NativeLib) != ''" Include="--nativelib" />
+      <IlcArg Include="@(RdXmlFile->'--rdxml:%(Identity)')" />
+      <IlcArg Condition="$(OutputType) == 'Library' and $(NativeLib) != ''" Include="--nativelib" />
+      <IlcArg Condition="$(ExportsFile) != ''" Include="--exportsfile:$(ExportsFile)" />
       <ILcArg Condition="'$(Platform)' == 'wasm'" Include="--wasm" />
+      <IlcArg Include="@(AutoInitializedAssemblies->'--initassembly:%(Identity)')" />
+      <IlcArg Include="@(AppContextSwitchOverrides->'--appcontextswitch:%(Identity)')" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />
     <WriteLinesToFile File="$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp" Lines="@(IlcArg)" Overwrite="true" />
 
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(NativeObject)))" />
+
+    <Message Text="Generating native code" Importance="high" />
 
     <Exec Command="&quot;$(IlcPath)\tools\ilc&quot; @&quot;$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp&quot;" />
   </Target>
@@ -172,9 +193,9 @@ See the LICENSE file in the project root for more information.
       DependsOnTargets="IlcCompile">
 
     <ItemGroup>
-      <CompilerArg Include="$(IlcCompileOutput)" />
-      <CompilerArg Include="/Fo$(NativeObject)" Condition="'$(OS)' == 'Windows_NT'" />
-      <CompilerArg Include="-o $(NativeObject)" Condition="'$(OS)' != 'Windows_NT'" />
+      <CompilerArg Include="&quot;$(IlcCompileOutput)&quot;" />
+      <CompilerArg Include="/Fo&quot;$(NativeObject)&quot;" Condition="'$(OS)' == 'Windows_NT'" />
+      <CompilerArg Include="-o &quot;$(NativeObject)&quot;" Condition="'$(OS)' != 'Windows_NT'" />
       <CompilerArg Include="@(CppCompilerAndLinkerArg)" />
     </ItemGroup>
 
@@ -190,29 +211,40 @@ See the LICENSE file in the project root for more information.
       DependsOnTargets="$(LinkNativeDependsOn)">
 
     <ItemGroup>
-      <CustomLinkerArg Include="$(NativeObject)" />
-      <CustomLinkerArg Include="-o $(NativeBinary)" Condition="'$(OS)' != 'Windows_NT'" />
-      <CustomLinkerArg Include="/OUT:$(NativeBinary)" Condition="'$(OS)' == 'Windows_NT'" />
+      <CustomLinkerArg Include="&quot;$(NativeObject)&quot;" />
+      <CustomLinkerArg Include="-o &quot;$(NativeBinary)&quot;" Condition="'$(OS)' != 'Windows_NT'" />
+      <CustomLinkerArg Include="/OUT:&quot;$(NativeBinary)&quot;" Condition="'$(OS)' == 'Windows_NT'" />
+      <CustomLinkerArg Include="/DEF:&quot;$(ExportsFile)&quot;" Condition="'$(OS)' == 'Windows_NT' and $(ExportsFile) != ''" />
+      <CustomLinkerArg Include="/LIBPATH:&quot;%(AdditionalNativeLibraryDirectories.Identity)&quot;" Condition="'$(OS)' == 'Windows_NT' and '@(AdditionalNativeLibraryDirectories->Count())' &gt; 0" />
+      <CustomLinkerArg Include="-exported_symbols_list &quot;$(ExportsFile)&quot;" Condition="'$(OS)' != 'Windows_NT' and $(ExportsFile) != ''" />
       <CustomLinkerArg Include="@(LinkerArg)" />
     </ItemGroup>
 
     <ItemGroup>
-      <CustomLibArg Include="-crs $(NativeBinary)" Condition="'$(OS)' != 'Windows_NT'" />
-      <CustomLibArg Include="/OUT:$(NativeBinary)" Condition="'$(OS)' == 'Windows_NT'" />
-      <CustomLibArg Include="$(NativeObject)" />
+      <CustomLibArg Include="-crs &quot;$(NativeBinary)&quot;" Condition="'$(OS)' != 'Windows_NT'" />
+      <CustomLibArg Include="/OUT:&quot;$(NativeBinary)&quot;" Condition="'$(OS)' == 'Windows_NT'" />
+      <CustomLibArg Include="&quot;$(NativeObject)&quot;" />
     </ItemGroup>
 
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(NativeBinary)))" />
 
-    <Exec Command="$(CppLinker) @(CustomLinkerArg, ' ')" Condition="'$(OS)' != 'Windows_NT' and '$(NativeLib)' != 'Static'" />
-    <Exec Command="$(CppLibCreator) @(CustomLibArg, ' ')" Condition="'$(OS)' != 'Windows_NT' and '$(NativeLib)' == 'Static'" />
+    <Exec Command="$(CppLinker) @(CustomLinkerArg, ' ')" Condition="'$(OS)' != 'Windows_NT' and '$(NativeLib)' != 'Static' and '$(NativeCodeGen)' != 'wasm'" />
+    <Exec Command="$(CppLibCreator) @(CustomLibArg, ' ')" Condition="'$(OS)' != 'Windows_NT' and '$(NativeLib)' == 'Static' and '$(NativeCodeGen)' != 'wasm'" />
 
     <WriteLinesToFile File="$(NativeIntermediateOutputPath)link.rsp" Lines="@(CustomLinkerArg)" Overwrite="true" Condition="'$(OS)' == 'Windows_NT' and '$(NativeLib)' != 'Static'" />
     <Exec Command="$(CppLinker)  @&quot;$(NativeIntermediateOutputPath)link.rsp&quot;" Condition="'$(OS)' == 'Windows_NT' and '$(NativeLib)' != 'Static' and '$(NativeCodeGen)' != 'wasm'" />
     <WriteLinesToFile File="$(NativeIntermediateOutputPath)lib.rsp" Lines="@(CustomLibArg)" Overwrite="true" Condition="'$(OS)' == 'Windows_NT' and '$(NativeLib)' == 'Static'" />
     <Exec Command="$(CppLibCreator)  @&quot;$(NativeIntermediateOutputPath)lib.rsp&quot;" Condition="'$(OS)' == 'Windows_NT' and '$(NativeLib)' == 'Static' and '$(NativeCodeGen)' != 'wasm'" />
     
-    <Exec Command="&quot;$(EMSCRIPTEN)\emcc.bat&quot;  &quot;$(NativeObject)&quot; -o &quot;$(NativeBinary)&quot; -s WASM=1" Condition="'$(NativeCodeGen)' == 'wasm' and '$(EMSCRIPTEN)' != ''" />
+    <PropertyGroup>
+      <EmccArgs>&quot;$(NativeObject)&quot; -o &quot;$(NativeBinary)&quot; -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 --emrun </EmccArgs>
+      <EmccArgs Condition="'$(Platform)'=='wasm'">$(EmccArgs) &quot;$(IlcPath)/sdk/libPortableRuntime.bc&quot; &quot;$(IlcPath)/sdk/libbootstrappercpp.bc&quot; &quot;$(IlcPath)/sdk/libSystem.Private.CoreLib.Native.bc&quot;  </EmccArgs>
+      <EmccArgs Condition="'$(Configuration)'=='Release'">$(EmccArgs) -O2 --llvm-lto 2</EmccArgs>
+      <EmccArgs Condition="'$(Configuration)'=='Debug'">$(EmccArgs) -g3</EmccArgs>
+    </PropertyGroup>
+    
+    <Exec Command="&quot;$(EMSCRIPTEN)\emcc.bat&quot; $(EmccArgs)" Condition="'$(NativeCodeGen)' == 'wasm' and '$(EMSCRIPTEN)' != '' and '$(OS)' == 'Windows_NT'" />
+    <Exec Command="&quot;$(EMSCRIPTEN)/emcc&quot; $(EmccArgs)" Condition="'$(NativeCodeGen)' == 'wasm' and '$(EMSCRIPTEN)' != '' and '$(OS)' != 'Windows_NT'" />
     <Message Text="Emscripten not found, not linking WebAssembly. To enable WebAssembly linking, install Emscripten and ensure the EMSCRIPTEN environment variable points to the directory containing emcc.bat"
              Condition="'$(NativeCodeGen)' == 'wasm' and '$(EMSCRIPTEN)' == ''" />
   </Target>

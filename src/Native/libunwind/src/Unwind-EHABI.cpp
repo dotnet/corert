@@ -217,7 +217,7 @@ decode_eht_entry(const uint32_t* data, size_t* off, size_t* len) {
     // only by the personality routine. Fortunately, all existing assembler
     // implementations, including GNU assembler, LLVM integrated assembler,
     // and ARM assembler, assume that the unwind opcodes come after the
-    // personality rountine address.
+    // personality routine address.
     *off = 1; // First byte is size data.
     *len = (((data[1] >> 24) & 0xff) + 1) * 4;
     data++; // Skip the first word, which is the prel31 offset.
@@ -695,7 +695,7 @@ _LIBUNWIND_EXPORT void _Unwind_Complete(_Unwind_Exception* exception_object) {
 /// may force a jump to a landing pad in that function, the landing
 /// pad code may then call _Unwind_Resume() to continue with the
 /// unwinding.  Note: the call to _Unwind_Resume() is from compiler
-/// geneated user code.  All other _Unwind_* routines are called
+/// generated user code.  All other _Unwind_* routines are called
 /// by the C++ runtime __cxa_* routines.
 ///
 /// Note: re-throwing an exception (as opposed to continuing the unwind)

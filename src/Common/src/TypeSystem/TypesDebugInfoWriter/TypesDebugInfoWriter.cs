@@ -12,7 +12,8 @@ namespace Internal.TypeSystem.TypesDebugInfo
 
         uint GetClassTypeIndex(ClassTypeDescriptor classTypeDescriptor);
 
-        uint GetCompleteClassTypeIndex(ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptor classFieldsTypeDescriptor, DataFieldDescriptor[] fields);
+        uint GetCompleteClassTypeIndex(ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptor classFieldsTypeDescriptor,
+                                       DataFieldDescriptor[] fields, StaticDataFieldDescriptor[] statics);
 
         uint GetArrayTypeIndex(ClassTypeDescriptor classDescriptor, ArrayTypeDescriptor arrayTypeDescriprtor);
 
@@ -21,6 +22,8 @@ namespace Internal.TypeSystem.TypesDebugInfo
         uint GetMemberFunctionTypeIndex(MemberFunctionTypeDescriptor memberDescriptor, uint[] argumentTypes);
 
         uint GetMemberFunctionId(MemberFunctionIdTypeDescriptor memberIdDescriptor);
+
+        uint GetPrimitiveTypeIndex(TypeDesc type);
 
         string GetMangledName(TypeDesc type);
     }
@@ -46,6 +49,7 @@ namespace Internal.TypeSystem.TypesDebugInfo
         public int IsStruct;
         public string Name;
         public uint BaseClassId;
+        public ulong InstanceSize;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -54,6 +58,14 @@ namespace Internal.TypeSystem.TypesDebugInfo
         public uint FieldTypeIndex;
         public ulong Offset;
         public string Name;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct StaticDataFieldDescriptor
+    {
+        public string StaticDataName;
+        public ulong StaticOffset;
+        public int IsStaticDataInObject;
     }
 
     [StructLayout(LayoutKind.Sequential)]

@@ -11,9 +11,6 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        /// <summary>A handle value of -1.</summary>
-        private static readonly IntPtr s_invalidHandle = new IntPtr(-1);
-
         private SafeFileHandle() : this(ownsHandle: true)
         {
         }
@@ -21,7 +18,7 @@ namespace Microsoft.Win32.SafeHandles
         private SafeFileHandle(bool ownsHandle)
             : base(ownsHandle)
         {
-            SetHandle(s_invalidHandle);
+            SetHandle(new IntPtr(-1));
         }
 
         public SafeFileHandle(IntPtr preexistingHandle, bool ownsHandle) : this(ownsHandle)
@@ -83,10 +80,7 @@ namespace Microsoft.Win32.SafeHandles
 
         private static bool DirectoryExists(string fullPath)
         {
-            int fileType = Interop.Sys.FileTypes.S_IFDIR;
-
             Interop.Sys.FileStatus fileinfo;
-            Interop.ErrorInfo errorInfo = default(Interop.ErrorInfo);
 
             // First use stat, as we want to follow symlinks.  If that fails, it could be because the symlink
             // is broken, we don't have permissions, etc., in which case fall back to using LStat to evaluate
@@ -94,16 +88,10 @@ namespace Microsoft.Win32.SafeHandles
             if (Interop.Sys.Stat(fullPath, out fileinfo) < 0 &&
                 Interop.Sys.LStat(fullPath, out fileinfo) < 0)
             {
-                errorInfo = Interop.Sys.GetLastErrorInfo();
                 return false;
             }
 
-            // Something exists at this path.  If the caller is asking for a directory, return true if it's
-            // a directory and false for everything else.  If the caller is asking for a file, return false for
-            // a directory and true for everything else.
-            return
-                (fileType == Interop.Sys.FileTypes.S_IFDIR) ==
-                ((fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR);
+            return ((fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR);
         }
 
         /// <summary>Opens a SafeFileHandle for a file descriptor created by a provided delegate.</summary>

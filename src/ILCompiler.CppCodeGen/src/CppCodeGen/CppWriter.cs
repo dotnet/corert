@@ -15,6 +15,8 @@ using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace ILCompiler.CppCodeGen
 {
     internal class CppWriter
@@ -316,7 +318,13 @@ namespace ILCompiler.CppCodeGen
 
         public string GetCppFieldName(FieldDesc field)
         {
-            return _compilation.NameMangler.GetMangledFieldName(field).ToString();
+            string name = _compilation.NameMangler.GetMangledFieldName(field).ToString();
+
+            // TODO: name mangling robustness
+            if (name == "register")
+                name = "_" + name + "_";
+
+            return name;
         }
 
         public string GetCppStaticFieldName(FieldDesc field)
@@ -329,7 +337,7 @@ namespace ILCompiler.CppCodeGen
         public string SanitizeCppVarName(string varName)
         {
             // TODO: name mangling robustness
-            if (varName == "errno" || varName == "environ" || varName == "template" || varName == "typename") // some names collide with CRT headers
+            if (varName == "errno" || varName == "environ" || varName == "template" || varName == "typename" || varName == "register") // some names collide with CRT headers
                 return "_" + varName + "_";
 
             return _compilation.NameMangler.SanitizeName(varName);
@@ -580,17 +588,17 @@ namespace ILCompiler.CppCodeGen
 
             if (explicitLayout || hasSize)
             {
-                if (classLayoutMetadata.Size > 0)
-                {
-                    sb.AppendLine();
-                    sb.Append("struct { char __sizePadding[" + classLayoutMetadata.Size + "]; };");
-                }
-
                 if (!explicitLayout)
                 {
                     sb.Exdent();
                     sb.AppendLine();
                     sb.Append("};");
+                }
+
+                if (classLayoutMetadata.Size > 0)
+                {
+                    sb.AppendLine();
+                    sb.Append("struct { char __sizePadding[" + classLayoutMetadata.Size + "]; };");
                 }
 
                 sb.Exdent();
@@ -888,12 +896,12 @@ namespace ILCompiler.CppCodeGen
             {
                 relocCode.Append("dispatchMapModule");
             }
-            else if(reloc.Target is UnboxingStubNode)
+            else if(reloc.Target is CppUnboxingStubNode)
             {
-                var method = reloc.Target as UnboxingStubNode;
+                var method = reloc.Target as CppUnboxingStubNode;
 
                 relocCode.Append("(void*)&");
-                relocCode.Append(GetCppMethodDeclarationName(method.Method.OwningType, UnboxingStubNode.GetMangledName(factory.NameMangler, method.Method), false));
+                relocCode.Append(GetCppMethodDeclarationName(method.Method.OwningType, method.GetMangledName(factory.NameMangler), false));
             }
             else
             {
@@ -1005,10 +1013,6 @@ namespace ILCompiler.CppCodeGen
             //RTR header needs to be declared after all modules have already been output
             string rtrHeader = string.Empty;
 
-            // GetData stabilizes the indices of the embedded objects. This must be done manually
-            // for C++ codegen since we don't currently emit the DispatchMapTable node directly.
-            factory.DispatchMapTable.GetData(factory, false);
-
             // Iterate through nodes
             foreach (var node in nodeIterator.GetNodes())
             {
@@ -1016,15 +1020,19 @@ namespace ILCompiler.CppCodeGen
                     OutputTypeNode(node as EETypeNode, factory, typeDefinitions, methodTables);
                 else if ((node is EETypeOptionalFieldsNode || node is TypeManagerIndirectionNode || node is GenericCompositionNode) && !(node as ObjectNode).ShouldSkipEmittingObjectNode(factory))
                     additionalNodes.Append(GetCodeForObjectNode(node as ObjectNode, factory));
-                else if (node is InterfaceDispatchMapNode)
+                else if (node is ArrayOfEmbeddedPointersNode<InterfaceDispatchMapNode> dispatchMap)
                 {
-                    dispatchPointers.Append("(void *)");
-                    dispatchPointers.Append(((ISymbolNode)node).GetMangledName(factory.NameMangler));
-                    dispatchPointers.Append("(),");
-                    dispatchPointers.AppendLine();
-                    dispatchMapCount++;
-                    additionalNodes.Append(GetCodeForObjectNode(node as ObjectNode, factory));
-
+                    var dispatchMapData = dispatchMap.GetData(factory, false);
+                    Debug.Assert(dispatchMapData.Relocs.Length == dispatchMapData.Data.Length / factory.Target.PointerSize);
+                    foreach (Relocation reloc in dispatchMapData.Relocs)
+                    {
+                        dispatchPointers.Append("(void *)");
+                        dispatchPointers.Append(reloc.Target.GetMangledName(factory.NameMangler));
+                        dispatchPointers.Append("(),");
+                        dispatchPointers.AppendLine();
+                        dispatchMapCount++;
+                        additionalNodes.Append(GetCodeForObjectNode(reloc.Target as ObjectNode, factory));
+                    }
                 }
                 else if (node is ReadyToRunHeaderNode)
                     rtrHeader = GetCodeForReadyToRunHeader(node as ReadyToRunHeaderNode, factory);
@@ -1196,23 +1204,15 @@ namespace ILCompiler.CppCodeGen
 
             if (typeNode is ConstructedEETypeNode)
             {
-                IReadOnlyList<MethodDesc> virtualSlots = _compilation.NodeFactory.VTable(nodeType.GetClosestDefType()).Slots;
+                DefType closestDefType = nodeType.GetClosestDefType();
 
-                int baseSlots = 0;
-                var baseType = nodeType.BaseType;
-                while (baseType != null)
-                {
-                    IReadOnlyList<MethodDesc> baseVirtualSlots = _compilation.NodeFactory.VTable(baseType).Slots;
-                    if (baseVirtualSlots != null)
-                        baseSlots += baseVirtualSlots.Count;
-                    baseType = baseType.BaseType;
-                }
+                IReadOnlyList<MethodDesc> virtualSlots = _compilation.NodeFactory.VTable(closestDefType).Slots;
 
-                for (int slot = 0; slot < virtualSlots.Count; slot++)
+                foreach (MethodDesc slot in virtualSlots)
                 {
-                    MethodDesc virtualMethod = virtualSlots[slot];
                     typeDefinitions.AppendLine();
-                    typeDefinitions.Append(GetCodeForVirtualMethod(virtualMethod, baseSlots + slot));
+                    int slotNumber = VirtualMethodSlotHelper.GetVirtualMethodSlot(_compilation.NodeFactory, slot, closestDefType);
+                    typeDefinitions.Append(GetCodeForVirtualMethod(slot, slotNumber));
                 }
 
                 if (nodeType.IsDelegate)
@@ -1236,7 +1236,7 @@ namespace ILCompiler.CppCodeGen
                     typeDefinitions.AppendLine();
                     AppendCppMethodDeclaration(typeDefinitions, m, false);
                     typeDefinitions.AppendLine();
-                    AppendCppMethodDeclaration(typeDefinitions, m, false, null, null, UnboxingStubNode.GetMangledName(factory.NameMangler, m));
+                    AppendCppMethodDeclaration(typeDefinitions, m, false, null, null, CppUnboxingStubNode.GetMangledName(factory.NameMangler, m));
                 }
             }
 
@@ -1268,7 +1268,7 @@ namespace ILCompiler.CppCodeGen
 
             rtrHeader.Append(GetCodeForObjectNode(headerNode, factory));
             rtrHeader.AppendLine();
-            rtrHeader.Append("void* RtRHeaderWrapper() {");
+            rtrHeader.Append("extern \"C\" void* RtRHeaderWrapper() {");
             rtrHeader.Indent();
             rtrHeader.AppendLine();
             rtrHeader.Append("static struct {");
@@ -1336,13 +1336,13 @@ namespace ILCompiler.CppCodeGen
         /// </summary>
         /// <param name="unboxingStubNode">The unboxing stub node to be output</param>
         /// <param name="methodImplementations">The buffer in which to write out the C++ code</param>
-        private void OutputUnboxingStubNode(UnboxingStubNode unboxingStubNode)
+        private void OutputUnboxingStubNode(CppUnboxingStubNode unboxingStubNode)
         {
             Out.WriteLine();
 
             CppGenerationBuffer sb = new CppGenerationBuffer();
             sb.AppendLine();
-            AppendCppMethodDeclaration(sb, unboxingStubNode.Method, true, null, null, UnboxingStubNode.GetMangledName(_compilation.NameMangler, unboxingStubNode.Method));
+            AppendCppMethodDeclaration(sb, unboxingStubNode.Method, true, null, null, unboxingStubNode.GetMangledName(_compilation.NameMangler));
             sb.AppendLine();
             sb.Append("{");
             sb.Indent();
@@ -1399,8 +1399,8 @@ namespace ILCompiler.CppCodeGen
             {
                 if (node is CppMethodCodeNode)
                     OutputMethodNode(node as CppMethodCodeNode);
-                else if (node is UnboxingStubNode)
-                    OutputUnboxingStubNode(node as UnboxingStubNode);
+                else if (node is CppUnboxingStubNode)
+                    OutputUnboxingStubNode(node as CppUnboxingStubNode);
             }
 
             Out.Dispose();

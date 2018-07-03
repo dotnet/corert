@@ -20,6 +20,7 @@ namespace Internal.Runtime.CompilerServices
     //    so that repeated allocation of the same resolver will not leak.
     // 3) Use the ResolveMethod function to do the virtual lookup. This function takes advantage of 
     //    a lockless cache so the resolution is very fast for repeated lookups.
+    [ReflectionBlocked]
     public struct OpenMethodResolver : IEquatable<OpenMethodResolver>
     {
         public const short DispatchResolve = 0;
@@ -199,7 +200,7 @@ namespace Internal.Runtime.CompilerServices
 
         public override int GetHashCode()
         {
-            return CalcHashCode(_resolveType, _handle, _methodHandleOrSlotOrCodePointer.GetHashCode(), _declaringType.GetHashCode());
+            return CalcHashCode(_resolveType, _handle, _methodHandleOrSlotOrCodePointer.GetHashCode(), _declaringType.IsNull ? 0 : _declaringType.GetHashCode());
         }
 
         public bool Equals(OpenMethodResolver other)

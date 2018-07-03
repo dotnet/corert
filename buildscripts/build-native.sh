@@ -128,7 +128,7 @@ build_host_native_corert()
 
     build_native_corert
 
-    cp ${__ProductHostBinDir}/jitinterface.so ${__ProductBinDir}
+    cp ${__ProductHostBinDir}/tools/jitinterface.so ${__ProductBinDir}
 
     export __BuildArch=$__SavedBuildArch
     export __IntermediatesDir=$__SavedIntermediatesDir

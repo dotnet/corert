@@ -2,23 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
     public partial class EventWaitHandle
     {
-        private static void VerifyNameForCreate(string name)
-        {
-            if (name != null)
-            {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
-            }
-        }
-
         private void CreateEventCore(bool initialState, EventResetMode mode, string name, out bool createdNew)
         {
-            Debug.Assert(name == null);
+            if (name != null)
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
 
             SafeWaitHandle = WaitSubsystem.NewEvent(initialState, mode);
             createdNew = true;
@@ -29,16 +25,46 @@ namespace System.Threading
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
         }
 
-        private static bool ResetCore(IntPtr handle)
+        public bool Reset()
         {
-            WaitSubsystem.ResetEvent(handle);
-            return true;
+            SafeWaitHandle waitHandle = ValidateHandle();
+            try
+            {
+                WaitSubsystem.ResetEvent(waitHandle.DangerousGetHandle());
+                return true;
+            }
+            finally
+            {
+                waitHandle.DangerousRelease();
+            }
         }
 
-        private static bool SetCore(IntPtr handle)
+        public bool Set()
         {
-            WaitSubsystem.SetEvent(handle);
-            return true;
+            SafeWaitHandle waitHandle = ValidateHandle();
+            try
+            {
+                WaitSubsystem.SetEvent(waitHandle.DangerousGetHandle());
+                return true;
+            }
+            finally
+            {
+                waitHandle.DangerousRelease();
+            }
+        }
+
+        private SafeWaitHandle ValidateHandle()
+        {
+            // The field value is modifiable via the public <see cref="WaitHandle.SafeWaitHandle"/> property, save it locally
+            // to ensure that one instance is used in all places in this method
+            SafeWaitHandle waitHandle = _waitHandle;
+            if (waitHandle == null)
+            {
+                ThrowInvalidHandleException();
+            }
+
+            waitHandle.DangerousAddRef();
+            return waitHandle;
         }
     }
 }

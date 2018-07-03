@@ -1,19 +1,22 @@
 # .NET Core Runtime (CoreRT)
-This repo contains the .NET Core runtime optimized for AOT compilation
+This repo contains the .NET Core runtime optimized for ahead of time compilation. The CoreRT compiler can compile a managed .NET Core application into a native (architecture specific) single-file executable that is easy to deploy. It can also produce standalone dynamic or static libraries that can be consumed by applications written in other programming languages. To learn more about CoreRT, see the [intro document](Documentation/intro-to-corert.md).
+
+## Try Our Samples
+
+If you would like to give CoreRT a try, we publish daily snapshots of CoreRT to MyGet. Using CoreRT is as simple as adding a new package reference to your .NET Core project and publishing it. Check out one of our samples: a "[Hello World](samples/HelloWorld)" console app, a simple [ASP.NET Core](samples/WebApi/) app, or a [MonoGame](samples/MonoGame/) game. The `README.md` file in each sample's directory will guide you through the process step by step.
 
 ## Platform Support
 
 This is a work in progress. The current state of platform support:
-- Windows x64 w/ RyuJIT codegen: Simple ASP.NET apps compile and run with some [workarounds](https://github.com/dotnet/corert/issues/4444#issuecomment-328206168)
-- MacOS and Linux x64 w/ RyuJIT codegen: Same as Windows, the libraries are less complete.
-- Linux ARM w/ RyuJIT codegen: ["Hello world"](https://github.com/dotnet/coreclr/pull/14090#issuecomment-330933768)
+- Windows, MacOS and Linux x64 w/ RyuJIT codegen: Simple apps. Check our [ASP.NET Core](samples/WebApi/) and [MonoGame](samples/MonoGame/) samples.
+- Linux ARM w/ RyuJIT codegen: ElmSharp Hello Tizen application ([detailed status](https://github.com/dotnet/corert/issues/4856))
 - CppCodeGen (targets all platforms that support C++): Simple C# programs. The big missing features are [reflection](https://github.com/dotnet/corert/issues/2035), [garbage collection](https://github.com/dotnet/corert/issues/2033) and [exception handling](https://github.com/dotnet/corert/issues/910).
 - WebAssembly: Early prototype that compiles and runs very trivial programs only. Many features are [not yet implemented](https://github.com/dotnet/corert/issues?q=is%3Aissue+is%3Aopen+label%3Aarch-wasm).
 
 ## How to Engage, Contribute and Provide Feedback
 Some of the best ways to contribute are to try things out, file bugs, and join in design conversations.
 
-Looking for something to work on? The [_up for grabs_](https://github.com/dotnet/corert/labels/up-for-grabs) issues are a great place to start or take a look at our [documentation](Documentation).
+Looking for something to work on? The [_up for grabs_](https://github.com/dotnet/corert/labels/up-for-grabs) issues are a great place to start. Take a look at our [documentation](Documentation) to find out about the architecture and learn how to build and test the repo.
 
 This project follows the [.NET Core Contribution Guidelines](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/contributing.md).
 

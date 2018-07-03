@@ -18,7 +18,7 @@ namespace System
 
         public IntPtr Value => _value;
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             if (!(obj is RuntimeFieldHandle))
                 return false;
@@ -30,6 +30,9 @@ namespace System
         {
             if (_value == handle._value)
                 return true;
+
+            if (_value == IntPtr.Zero || handle._value == IntPtr.Zero)
+                return false;
 
             string fieldName1, fieldName2;
             RuntimeTypeHandle declaringType1, declaringType2;
@@ -48,6 +51,9 @@ namespace System
 
         public override int GetHashCode()
         {
+            if (_value == IntPtr.Zero)
+                return 0;
+
             string fieldName;
             RuntimeTypeHandle declaringType;
             RuntimeAugments.TypeLoaderCallbacks.GetRuntimeFieldHandleComponents(this, out declaringType, out fieldName);

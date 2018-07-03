@@ -345,9 +345,9 @@ namespace Internal.StackTraceMetadata
         /// <param name="namespaceQualified">When set to true, include namespace information</param>
         private void EmitTypeInstantiationName(TypeInstantiationSignatureHandle typeInstHandle, bool namespaceQualified)
         {
+            // Stack trace metadata ignores the instantiation arguments of the type in the CLR
             TypeInstantiationSignature typeInst = _metadataReader.GetTypeInstantiationSignature(typeInstHandle);
             EmitTypeName(typeInst.GenericType, namespaceQualified);
-            EmitGenericArguments(typeInst.GenericTypeArguments);
         }
     
         /// <summary>

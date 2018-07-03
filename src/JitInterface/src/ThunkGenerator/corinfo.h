@@ -213,13 +213,12 @@ TODO: Talk about initializing strutures before use
     #define SELECTANY extern __declspec(selectany)
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* a6860f80-01cb-4f87-82c2-a8e5a744f2fa */
-    0xa6860f80,
-    0x01cb,
-    0x4f87,
-    {0x82, 0xc2, 0xa8, 0xe5, 0xa7, 0x44, 0xf2, 0xfa}
+SELECTANY const GUID JITEEVersionIdentifier = { /* 45aafd4d-1d23-4647-9ce1-cf09a2677ca0 */
+    0x45aafd4d,
+    0x1d23,
+    0x4647,
+    {0x9c, 0xe1, 0xcf, 0x09, 0xa2, 0x67, 0x7c, 0xa0}
 };
-
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -644,6 +643,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_THROW_ARGUMENTEXCEPTION,           // throw ArgumentException
     CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION, // throw ArgumentOutOfRangeException
     CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED,      // throw PlatformNotSupportedException
+    CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED,          // throw TypeNotSupportedException
 
     CORINFO_HELP_JIT_PINVOKE_BEGIN, // Transition to preemptive mode before a P/Invoke, frame is the first argument
     CORINFO_HELP_JIT_PINVOKE_END,   // Transition to cooperative mode after a P/Invoke, frame is the first argument
@@ -977,8 +977,9 @@ enum CorInfoIntrinsics
 enum InfoAccessType
 {
     IAT_VALUE,      // The info value is directly available
-    IAT_PVALUE,     // The value needs to be accessed via an       indirection
-    IAT_PPVALUE     // The value needs to be accessed via a double indirection
+    IAT_PVALUE,     // The value needs to be accessed via an         indirection
+    IAT_PPVALUE,    // The value needs to be accessed via a double   indirection
+    IAT_RELPVALUE   // The value needs to be accessed via a relative indirection
 };
 
 enum CorInfoGCType
@@ -1243,6 +1244,7 @@ struct CORINFO_METHOD_INFO
 // Constant Lookups are either:
 //     IAT_VALUE: immediate (relocatable) values,
 //     IAT_PVALUE: immediate values access via an indirection through an immediate (relocatable) address
+//     IAT_RELPVALUE: immediate values access via a relative indirection through an immediate offset
 //     IAT_PPVALUE: immediate values access via a double indirection through an immediate (relocatable) address
 //
 // Runtime Lookups
@@ -1268,9 +1270,10 @@ struct CORINFO_CONST_LOOKUP
     // If the handle is obtained at compile-time, then this handle is the "exact" handle (class, method, or field)
     // Otherwise, it's a representative... 
     // If accessType is
-    //     IAT_VALUE   --> "handle" stores the real handle or "addr " stores the computed address
-    //     IAT_PVALUE  --> "addr" stores a pointer to a location which will hold the real handle
-    //     IAT_PPVALUE --> "addr" stores a double indirection to a location which will hold the real handle
+    //     IAT_VALUE     --> "handle" stores the real handle or "addr " stores the computed address
+    //     IAT_PVALUE    --> "addr" stores a pointer to a location which will hold the real handle
+    //     IAT_RELPVALUE --> "addr" stores a relative pointer to a location which will hold the real handle
+    //     IAT_PPVALUE   --> "addr" stores a double indirection to a location which will hold the real handle
 
     InfoAccessType              accessType;
     union
@@ -1361,6 +1364,7 @@ struct CORINFO_LOOKUP
         // Otherwise, it's a representative...  If accessType is
         //     IAT_VALUE --> "handle" stores the real handle or "addr " stores the computed address
         //     IAT_PVALUE --> "addr" stores a pointer to a location which will hold the real handle
+        //     IAT_RELPVALUE --> "addr" stores a relative pointer to a location which will hold the real handle
         //     IAT_PPVALUE --> "addr" stores a double indirection to a location which will hold the real handle
         CORINFO_CONST_LOOKUP    constLookup;
     };
@@ -1926,6 +1930,21 @@ struct CORINFO_VarArgInfo
 
 #include <poppack.h>
 
+#define SIZEOF__CORINFO_Object                            TARGET_POINTER_SIZE /* methTable */
+
+#define OFFSETOF__CORINFO_Array__length                   SIZEOF__CORINFO_Object
+#ifdef _TARGET_64BIT_
+#define OFFSETOF__CORINFO_Array__data                     (OFFSETOF__CORINFO_Array__length + sizeof(unsigned __int32) /* length */ + sizeof(unsigned __int32) /* alignpad */)
+#else
+#define OFFSETOF__CORINFO_Array__data                     (OFFSETOF__CORINFO_Array__length + sizeof(unsigned __int32) /* length */)
+#endif
+
+#define OFFSETOF__CORINFO_TypedReference__dataPtr         0
+#define OFFSETOF__CORINFO_TypedReference__type            (OFFSETOF__CORINFO_TypedReference__dataPtr + TARGET_POINTER_SIZE /* dataPtr */)
+
+#define OFFSETOF__CORINFO_String__stringLen               SIZEOF__CORINFO_Object
+#define OFFSETOF__CORINFO_String__chars                   (OFFSETOF__CORINFO_String__stringLen + sizeof(unsigned __int32) /* stringLen */)
+
 enum CorInfoSecurityRuntimeChecks
 {
     CORINFO_ACCESS_SECURITY_NONE                          = 0,
@@ -2375,7 +2394,7 @@ public:
     // This is only called for Value classes.  It returns a boolean array
     // in representing of 'cls' from a GC perspective.  The class is
     // assumed to be an array of machine words
-    // (of length // getClassSize(cls) / sizeof(void*)),
+    // (of length // getClassSize(cls) / TARGET_POINTER_SIZE),
     // 'gcPtrs' is a pointer to an array of BYTEs of this length.
     // getClassGClayout fills in this array so that gcPtrs[i] is set
     // to one of the CorInfoGCType values which is the GC type of
@@ -3152,6 +3171,12 @@ public:
     virtual void* getTailCallCopyArgsThunk (
                     CORINFO_SIG_INFO       *pSig,
                     CorInfoHelperTailCallSpecialHandling flags
+                    ) = 0;
+
+    // Optionally, convert calli to regular method call. This is for PInvoke argument marshalling.
+    virtual bool convertPInvokeCalliToCall(
+                    CORINFO_RESOLVED_TOKEN * pResolvedToken,
+                    bool fMustConvert
                     ) = 0;
 };
 

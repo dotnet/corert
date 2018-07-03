@@ -1,0 +1,27 @@
+<Project DefaultTargets="Build" 
+  xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <SkipValidatePackage>true</SkipValidatePackage>
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    <BaseLinePackageDependencies>false</BaseLinePackageDependencies>
+    <PackagePlatforms>x64;</PackagePlatforms>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>$(PackageSourceDirectory)\BuildIntegration\StrongNameKeys\ILVerify.snk</AssemblyOriginatorKeyFile>
+    <PackageTargetFramework>netcoreapp2.1</PackageTargetFramework>
+    <!-- Override this property so that the package name won't look like runtime.[RID].[TFM].[ID] -->
+    <PackageTargetRuntime></PackageTargetRuntime>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(PackageSourceDirectory)ILVerification\src\ILVerification.csproj">
+      <AdditionalProperties>$(AdditionalProperties);PackageTargetRuntime=</AdditionalProperties>
+    </ProjectReference>    
+
+    <Dependency Include="System.IO.MemoryMappedFiles" Version="4.3.0" />
+    <Dependency Include="System.Reflection.Metadata" Version="1.4.1" />
+  </ItemGroup>
+  
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\src\dir.targets" />
+  <Target Name="GetPackageDependencies"/>
+</Project>
+

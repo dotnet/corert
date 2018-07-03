@@ -107,6 +107,7 @@ namespace Internal.Runtime.CallConverter
 
         public bool IsNull() { return _eeType == null && !_isByRef; }
         public bool IsValueType() { if (_isByRef) return false; return _eeType->IsValueType; }
+        public bool IsPointerType() { if (_isByRef) return false; return _eeType->IsPointerType; }
 
         public unsafe uint GetSize()
         {
@@ -836,7 +837,7 @@ namespace Internal.Runtime.CallConverter
 #if !_TARGET_X86_
                     numRegistersUsed++;
 #else
-                    // DESKTOP BEHAVIOR is to do nothing here, as ret buf is never reached by the scan algortithm that walks backwards
+                    // DESKTOP BEHAVIOR is to do nothing here, as ret buf is never reached by the scan algorithm that walks backwards
                     // but in .NET Native, the x86 argument scan is a forward scan, so we need to skip the ret buf arg (which is always
                     // on the stack)
                     initialArgOffset = IntPtr.Size;
@@ -934,9 +935,14 @@ namespace Internal.Runtime.CallConverter
 #if _TARGET_ARM64_
             // NOT DESKTOP BEHAVIOR: The S and D registers overlap, and the UniversalTransitionThunk copies D registers to the transition blocks. We'll need
             // to work with the D registers here as well.
+            bool processingFloatsAsDoublesFromTransitionBlock = false;
             if (argType == CorElementType.ELEMENT_TYPE_VALUETYPE && _argTypeHandle.IsHFA() && _argTypeHandle.GetHFAType() == CorElementType.ELEMENT_TYPE_R4)
             {
-                argSize *= 2;
+                if ((argSize / sizeof(float)) + _idxFPReg <= 8)
+                {
+                    argSize *= 2;
+                    processingFloatsAsDoublesFromTransitionBlock = true;
+                }
             }
 #endif
 
@@ -1238,8 +1244,10 @@ namespace Internal.Runtime.CallConverter
                         if (_argTypeHandle.IsHFA())
                         {
                             CorElementType type = _argTypeHandle.GetHFAType();
-                            // DESKTOP BEHAVIOR cFPRegs = (type == CorElementType.ELEMENT_TYPE_R4) ? (argSize / sizeof(float)) : (argSize / sizeof(double));
-                            cFPRegs = argSize / sizeof(double);
+                            if (processingFloatsAsDoublesFromTransitionBlock)
+                                cFPRegs = argSize / sizeof(double);
+                            else
+                                cFPRegs = (type == CorElementType.ELEMENT_TYPE_R4) ? (argSize / sizeof(float)) : (argSize / sizeof(double));
                         }
                         else
                         {

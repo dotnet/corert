@@ -20,8 +20,14 @@ namespace System.Globalization
         public const int ADEra = 1;
 
         //
-        // This is the max Gregorian year can be represented by DateTime class.  The limitation
-        // is derived from DateTime class.
+        // This is the min Gregorian year can be represented by the DateTime class.
+        // The limitation is derived from the DateTime class.
+        //
+        internal const int MinYear = 1;
+
+        //
+        // This is the max Gregorian year can be represented by the DateTime class.
+        // The limitation is derived from the DateTime class.
         //
         internal const int MaxYear = 9999;
 
@@ -206,7 +212,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                             nameof(months),
-                            String.Format(
+                            string.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Range,
                                 -120000,
@@ -317,7 +323,7 @@ namespace System.Globalization
                 }
                 throw new ArgumentOutOfRangeException(
                             nameof(year),
-                            String.Format(
+                            string.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Range,
                                 1,
@@ -364,7 +370,7 @@ namespace System.Globalization
                 }
                 throw new ArgumentOutOfRangeException(
                             nameof(year),
-                            String.Format(
+                            string.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Range,
                                 1,
@@ -451,7 +457,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                             nameof(year),
-                            String.Format(
+                            string.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Range, 1, MaxYear));
             }
@@ -473,7 +479,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                             nameof(year),
-                            String.Format(
+                            string.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Range, 1, MaxYear));
             }
@@ -501,7 +507,7 @@ namespace System.Globalization
 
                 throw new ArgumentOutOfRangeException(
                             nameof(year),
-                            String.Format(
+                            string.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Range, 1, MaxYear));
             }
@@ -520,25 +526,11 @@ namespace System.Globalization
             throw new ArgumentOutOfRangeException(nameof(era), SR.ArgumentOutOfRange_InvalidEraValue);
         }
 
-        internal override Boolean TryToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era, out DateTime result)
+        internal override bool TryToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era, out DateTime result)
         {
             if (era == CurrentEra || era == ADEra)
             {
-                try
-                {
-                    result = new DateTime(year, month, day, hour, minute, second, millisecond);
-                    return true;
-                }
-                catch (ArgumentOutOfRangeException)
-                {
-                    result = DateTime.Now;
-                    return false;
-                }
-                catch (ArgumentException)
-                {
-                    result = DateTime.Now;
-                    return false;
-                }
+                return DateTime.TryCreate(year, month, day, hour, minute, second, millisecond, out result);
             }
             result = DateTime.MinValue;
             return false;
@@ -565,7 +557,7 @@ namespace System.Globalization
                 {
                     throw new ArgumentOutOfRangeException(
                                 "year",
-                                String.Format(
+                                string.Format(
                                     CultureInfo.CurrentCulture,
                                     SR.ArgumentOutOfRange_Range,
                                     99,
@@ -588,7 +580,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                             nameof(year),
-                            String.Format(
+                            string.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Range, 1, MaxYear));
             }

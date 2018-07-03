@@ -11,8 +11,9 @@ namespace System.Diagnostics
 {
     public static partial class Debug
     {
-        private static void ShowAssertDialog(string stackTrace, string message, string detailMessage)
+        private static void ShowDialog(string stackTrace, string message, string detailMessage, string errorSource)
         {
+            // We can safely ignore errorSource since it's a CoreCLR specific argument for distinguishing calls from Debug.Assert and Environment.FailFast
             string fullMessage = message + Environment.NewLine + detailMessage;
             bool result = DeveloperExperience.Default.OnContractFailure(stackTrace, ContractFailureKind.Assert, fullMessage, null, null, null);
             if (!result)
@@ -21,7 +22,7 @@ namespace System.Diagnostics
             }
         }
 
-        private static readonly object s_ForLock = new Object();
+        private static readonly object s_ForLock = new object();
 
         private static void WriteCore(string message)
         {

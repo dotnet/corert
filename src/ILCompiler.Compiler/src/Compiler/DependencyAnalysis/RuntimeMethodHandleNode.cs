@@ -35,9 +35,19 @@ namespace ILCompiler.DependencyAnalysis
         }
         public int Offset => 0;
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
-        public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
         public override bool IsShareable => false;
         public override bool StaticDependenciesAreComputed => true;
+
+        public override ObjectNodeSection Section
+        {
+            get
+            {
+                if (_targetMethod.Context.Target.IsWindows)
+                    return ObjectNodeSection.ReadOnlyDataSection;
+                else
+                    return ObjectNodeSection.DataSection;
+            }
+        }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
@@ -50,14 +60,7 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(factory.GVMDependencies(_targetMethod), "GVM dependencies for runtime method handle");
             }
 
-            // TODO: https://github.com/dotnet/corert/issues/3224
-            // We should figure out reflectable methods when scanning for reflection
-            MethodDesc methodDefinition = _targetMethod.GetTypicalMethodDefinition();
-            if (factory.MetadataManager.CanGenerateMetadata(methodDefinition))
-            {
-                dependencies = dependencies ?? new DependencyList();
-                dependencies.Add(factory.MethodMetadata(methodDefinition), "LDTOKEN");
-            }
+            factory.MetadataManager.GetDependenciesDueToLdToken(ref dependencies, factory, _targetMethod);
 
             return dependencies;
         }

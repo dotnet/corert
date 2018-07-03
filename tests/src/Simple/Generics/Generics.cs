@@ -31,6 +31,8 @@ class Program
         TestGvmDependencies.Run();
         TestFieldAccess.Run();
         TestNativeLayoutGeneration.Run();
+        TestInterfaceVTableTracking.Run();
+        TestClassVTableTracking.Run();
 
         return 100;
     }
@@ -2086,6 +2088,62 @@ class Program
             }
 
             throw new Exception();
+        }
+    }
+
+    class TestInterfaceVTableTracking
+    {
+        class Gen<T> { }
+
+        interface IFoo<T>
+        {
+            Array Frob();
+        }
+
+        class GenericBase<T> : IFoo<T>
+        {
+            public Array Frob()
+            {
+                return new Gen<T>[1,1];
+            }
+        }
+
+        class Derived<T> : GenericBase<Gen<T>>
+        {
+        }
+
+        static volatile IFoo<Gen<string>> s_foo;
+
+        public static void Run()
+        {
+            // This only really tests whether we can compile this.
+            s_foo = new Derived<string>();
+            Array arr = s_foo.Frob();
+            arr.SetValue(new Gen<Gen<string>>(), new int[] { 0, 0 });
+        }
+    }
+
+    class TestClassVTableTracking
+    {
+        class Unit { }
+
+        class Gen<T, U>
+        {
+            public virtual int Test()
+            {
+                return 42;
+            }
+        }
+
+        static int Call<T>()
+        {
+            return new Gen<T, Unit>().Test();
+        }
+
+        public static void Run()
+        {
+            // This only really tests whether we can compile this.
+            Call<object>();
         }
     }
 }

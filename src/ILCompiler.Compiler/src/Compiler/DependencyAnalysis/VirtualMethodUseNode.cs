@@ -68,11 +68,9 @@ namespace ILCompiler.DependencyAnalysis
 
             dependencies.Add(new DependencyListEntry(factory.VTable(_decl.OwningType), "VTable of a VirtualMethodUse"));
 
-            // TODO: https://github.com/dotnet/corert/issues/3224
-            if (_decl.IsAbstract)
-            {
-                dependencies.Add(factory.ReflectableMethod(_decl), "Abstract reflectable method");
-            }
+            // Do not report things like Foo<object, __Canon>.Frob().
+            if (!_decl.IsCanonicalMethod(CanonicalFormKind.Any) || canonDecl == _decl)
+                factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref dependencies, factory, _decl);
 
             return dependencies;
         }

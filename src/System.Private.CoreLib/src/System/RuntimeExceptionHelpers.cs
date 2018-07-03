@@ -24,6 +24,7 @@ namespace System
         }
     }
 
+    [ReflectionBlocked]
     public class RuntimeExceptionHelpers
     {
         //------------------------------------------------------------------------------------------------------------
@@ -128,7 +129,7 @@ namespace System
         }
 
 
-        public static void FailFast(String message)
+        public static void FailFast(string message)
         {
             FailFast(message, null, RhFailFastReason.Unknown, IntPtr.Zero, IntPtr.Zero);
         }
@@ -183,7 +184,7 @@ namespace System
                         Debug.WriteLine("Unhandled Exception: " + exception.ToString());
                     }
 
-                    failFastMessage = String.Format("Runtime-generated FailFast: ({0}): {1}{2}",
+                    failFastMessage = string.Format("Runtime-generated FailFast: ({0}): {1}{2}",
                         reason.ToString(),  // Explicit call to ToString() to avoid MissingMetadataException inside String.Format()
                         GetStringForFailFastReason(reason),
                         exception != null ? " [exception object available]" : "");
@@ -200,14 +201,14 @@ namespace System
 
         internal static void FailFast(string message, Exception exception, RhFailFastReason reason, IntPtr pExAddress, IntPtr pExContext)
         {
-            // If this a recursive call to FailFast, avoid all unnecessary and complex actitivy the second time around to avoid the recursion 
+            // If this a recursive call to FailFast, avoid all unnecessary and complex activity the second time around to avoid the recursion 
             // that got us here the first time (Some judgement is required as to what activity is "unnecessary and complex".)
             bool minimalFailFast = InFailFast.Value || (exception is OutOfMemoryException);
             InFailFast.Value = true;
 
             if (!minimalFailFast)
             {
-                String output = (exception != null) ?
+                string output = (exception != null) ?
                     "Unhandled Exception: " + exception.ToString()
                     : message;
                 DeveloperExperience.Default.WriteLine(output);
@@ -248,9 +249,9 @@ namespace System
 #pragma warning disable 414 // field is assigned, but never used -- This is because C# doesn't realize that we
         //                                      copy the field into a buffer.
         /// <summary>
-        /// This is the header that describes our 'error report' buffer to the minidump auxillary provider.
+        /// This is the header that describes our 'error report' buffer to the minidump auxiliary provider.
         /// Its format is know to that system-wide DLL, so do not change it.  The remainder of the buffer is
-        /// opaque to the minidump auxillary provider, so it'll have its own format that is more easily 
+        /// opaque to the minidump auxiliary provider, so it'll have its own format that is more easily 
         /// changed.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
@@ -308,10 +309,10 @@ namespace System
 
             public struct ExceptionMetadataStruct
             {
-                public UInt32 ExceptionId { get; set; } // Id assigned to the exception. May not be contiguous or start at 0.
-                public UInt32 InnerExceptionId { get; set; } // ID of the inner exception or 0xFFFFFFFF for 'no inner exception'
-                public UInt32 ThreadId { get; set; } // Managed thread ID the eception was thrown on
-                public Int32 NestingLevel { get; set; } // If multiple exceptions are currently active on a thread, this gives the ordering for them.
+                public uint ExceptionId { get; set; } // Id assigned to the exception. May not be contiguous or start at 0.
+                public uint InnerExceptionId { get; set; } // ID of the inner exception or 0xFFFFFFFF for 'no inner exception'
+                public uint ThreadId { get; set; } // Managed thread ID the eception was thrown on
+                public int NestingLevel { get; set; } // If multiple exceptions are currently active on a thread, this gives the ordering for them.
                                                         // The highest number is the most recent exception. -1 means the exception is not currently in flight
                                                         // (but it may still be an InnerException).
                 public IntPtr ExceptionCCWPtr { get; set; } // If the exception was thrown in an interop scenario, this contains the CCW pointer, otherwise, IntPtr.Zero
@@ -361,7 +362,7 @@ namespace System
         /// <summary>
         /// This method will call the runtime to gather the Exception objects from every exception dispatch in
         /// progress on the current thread.  It will then serialize them into a new buffer and pass that 
-        /// buffer back to the runtime, which will publish it to a place where a global "minidump auxillary 
+        /// buffer back to the runtime, which will publish it to a place where a global "minidump auxiliary 
         /// provider" will be able to save the buffer's contents into triage dumps.
         /// 
         /// Thread safety information: The guarantee of this method is that the buffer it produces will have
@@ -389,7 +390,7 @@ namespace System
 
         private static void SerializeExceptionsForDump(Exception currentException, IntPtr exceptionCCWPtr, LowLevelList<byte[]> serializedExceptions)
         {
-            const UInt32 NoInnerExceptionValue = 0xFFFFFFFF;
+            const uint NoInnerExceptionValue = 0xFFFFFFFF;
 
             // Approximate upper size limit for the serialized exceptions (but we'll always serialize currentException)
             // If we hit the limit, because we serialize in arbitrary order, there may be missing InnerExceptions or nested exceptions.
@@ -441,10 +442,10 @@ namespace System
             {
                 ExceptionData exceptionData = s_exceptionDataTable.GetOrCreateValue(exceptions[i]);
 
-                exceptionData.ExceptionMetadata.ExceptionId = (UInt32)System.Threading.Interlocked.Increment(ref s_currentExceptionId);
+                exceptionData.ExceptionMetadata.ExceptionId = (uint)System.Threading.Interlocked.Increment(ref s_currentExceptionId);
                 if (exceptionData.ExceptionMetadata.ExceptionId == NoInnerExceptionValue)
                 {
-                    exceptionData.ExceptionMetadata.ExceptionId = (UInt32)System.Threading.Interlocked.Increment(ref s_currentExceptionId);
+                    exceptionData.ExceptionMetadata.ExceptionId = (uint)System.Threading.Interlocked.Increment(ref s_currentExceptionId);
                 }
 
                 exceptionData.ExceptionMetadata.ThreadId = currentThreadId;
@@ -461,7 +462,7 @@ namespace System
                 }
 
                 // Only match the CCW pointer up to the current exception
-                if (Object.ReferenceEquals(exceptions[i], currentException))
+                if (object.ReferenceEquals(exceptions[i], currentException))
                 {
                     exceptionData.ExceptionMetadata.ExceptionCCWPtr = exceptionCCWPtr;
                 }

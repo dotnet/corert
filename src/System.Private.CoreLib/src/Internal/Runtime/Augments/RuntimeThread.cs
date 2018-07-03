@@ -7,6 +7,7 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -370,6 +371,7 @@ namespace Internal.Runtime.Augments
             return JoinInternal(millisecondsTimeout);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
         public static void Sleep(int millisecondsTimeout) => SleepInternal(VerifyTimeoutMilliseconds(millisecondsTimeout));
 
         /// <summary>
@@ -381,6 +383,8 @@ namespace Internal.Runtime.Augments
         internal static readonly int OptimalMaxSpinWaitsPerSpinIteration = 64;
 
         public static void SpinWait(int iterations) => RuntimeImports.RhSpinWait(iterations);
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
         public static bool Yield() => RuntimeImports.RhYield();
 
         public void Start() => StartInternal(null);
@@ -490,6 +494,43 @@ namespace Internal.Runtime.Augments
             {
                 thread.SetThreadStateBit(ThreadState.Stopped);
             }
+        }
+
+        // The upper bits of t_currentProcessorIdCache are the currentProcessorId. The lower bits of
+        // the t_currentProcessorIdCache are counting down to get it periodically refreshed.
+        // TODO: Consider flushing the currentProcessorIdCache on Wait operations or similar 
+        // actions that are likely to result in changing the executing core
+        [ThreadStatic]
+        private static int t_currentProcessorIdCache;
+
+        private const int ProcessorIdCacheShift = 16;
+        private const int ProcessorIdCacheCountDownMask = (1 << ProcessorIdCacheShift) - 1;
+        private const int ProcessorIdRefreshRate = 5000;
+
+        private static int RefreshCurrentProcessorId()
+        {
+            int currentProcessorId = ComputeCurrentProcessorId();
+
+            // Add offset to make it clear that it is not guaranteed to be 0-based processor number
+            currentProcessorId += 100;
+
+            Debug.Assert(ProcessorIdRefreshRate <= ProcessorIdCacheCountDownMask);
+
+            // Mask with int.MaxValue to ensure the execution Id is not negative
+            t_currentProcessorIdCache = ((currentProcessorId << ProcessorIdCacheShift) & int.MaxValue) + ProcessorIdRefreshRate;
+
+            return currentProcessorId;
+        }
+
+        // Cached processor id used as a hint for which per-core stack to access. It is periodically
+        // refreshed to trail the actual thread core affinity.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int GetCurrentProcessorId()
+        {
+            int currentProcessorIdCache = t_currentProcessorIdCache--;
+            if ((currentProcessorIdCache & ProcessorIdCacheCountDownMask) == 0)
+                return RefreshCurrentProcessorId();
+            return (currentProcessorIdCache >> ProcessorIdCacheShift);
         }
     }
 }

@@ -51,17 +51,6 @@ namespace Internal.IL.Stubs
         protected internal override int ClassCode => 1993292344;
     }
 
-    partial class DelegateDynamicInvokeThunk
-    {
-        protected internal override int ClassCode => -1127289330;
-
-        protected internal override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
-        {
-            var otherMethod = (DelegateDynamicInvokeThunk)other;
-            return comparer.Compare(_delegateInfo.Type, otherMethod._delegateInfo.Type);
-        }
-    }
-
     partial class DelegateGetThunkMethodOverride
     {
         protected internal override int ClassCode => -321263379;

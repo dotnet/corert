@@ -169,6 +169,46 @@ namespace Internal.Runtime.CompilerServices
         }
 
         /// <summary>
+        /// Determines whether the memory address referenced by <paramref name="left"/> is greater than
+        /// the memory address referenced by <paramref name="right"/>.
+        /// </summary>
+        /// <remarks>
+        /// This check is conceptually similar to "(void*)(&amp;left) &gt; (void*)(&amp;right)".
+        /// </remarks>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsAddressGreaterThan<T>(ref T left, ref T right)
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg.0
+            // ldarg.1
+            // cgt.un
+            // ret
+        }
+
+        /// <summary>
+        /// Determines whether the memory address referenced by <paramref name="left"/> is less than
+        /// the memory address referenced by <paramref name="right"/>.
+        /// </summary>
+        /// <remarks>
+        /// This check is conceptually similar to "(void*)(&amp;left) &lt; (void*)(&amp;right)".
+        /// </remarks>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsAddressLessThan<T>(ref T left, ref T right)
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg.0
+            // ldarg.1
+            // clt.un
+            // ret
+        }
+
+        /// <summary>
         /// Initializes a block of memory at the given location with a given initial value 
         /// without assuming architecture dependent alignment of the address.
         /// </summary>
@@ -315,6 +355,17 @@ namespace Internal.Runtime.CompilerServices
         public static ref T AsRef<T>(void* source)
         {
             return ref Unsafe.As<byte, T>(ref *(byte*)source);
+        }
+
+        /// <summary>
+        /// Reinterprets the given location as a reference to a value of type <typeparamref name="T"/>.
+        /// </summary>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T AsRef<T>(in T source)
+        {
+            throw new PlatformNotSupportedException();
         }
 
         /// <summary>

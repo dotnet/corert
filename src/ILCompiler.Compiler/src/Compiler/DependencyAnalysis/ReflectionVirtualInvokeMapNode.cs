@@ -39,7 +39,6 @@ namespace ILCompiler.DependencyAnalysis
         public override bool IsShareable => false;
         public override ObjectNodeSection Section => _externalReferences.Section;
         public override bool StaticDependenciesAreComputed => true;
-        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => !factory.MetadataManager.SupportsReflection;
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public static bool NeedsVirtualInvokeInfo(MethodDesc method)
@@ -219,7 +218,7 @@ namespace ILCompiler.DependencyAnalysis
                 else
                 {
                     // Get the declaring method for slot on the instantiated declaring type
-                    int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, declaringMethodForSlot, factory.Target.Abi != TargetAbi.ProjectN);
+                    int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, declaringMethodForSlot, declaringMethodForSlot.OwningType, factory.Target.Abi != TargetAbi.ProjectN);
                     Debug.Assert(slot != -1);
 
                     vertex = writer.GetTuple(

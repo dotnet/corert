@@ -8,28 +8,40 @@
 
 #define STACKSIZEOF_ExInfo ((SIZEOF__ExInfo + 15)&(~15))
 
+#define HARDWARE_EXCEPTION 1
+#define SOFTWARE_EXCEPTION 0
+
 ;; -----------------------------------------------------------------------------
 ;; Macro used to create frame of exception throwing helpers (RhpThrowEx, RhpThrowHwEx)
     MACRO
-        ALLOC_THROW_FRAME
+        ALLOC_THROW_FRAME $exceptionType
 
+        PROLOG_NOP mov x3, sp
+ 
         ;; Setup a PAL_LIMITED_CONTEXT on the stack {
-        PROLOG_SAVE_REG_PAIR fp, lr, #-SIZEOF__PAL_LIMITED_CONTEXT!
-        PROLOG_NOP stp x0, x1, [sp, #0x10]
+        IF $exceptionType == HARDWARE_EXCEPTION
+            PROLOG_NOP sub sp,sp,#0x50
+            PROLOG_NOP stp x3, x1, [sp]   ; x3 is the SP and x1 is the IP of the fault site 
+            PROLOG_PUSH_MACHINE_FRAME
+        ELSE
+            PROLOG_STACK_ALLOC 0x50
+            PROLOG_NOP stp x3, lr, [sp]   ; x3 is the SP and lr is the IP of the fault site 
+        ENDIF
+        PROLOG_NOP stp d8, d9, [sp, #0x10]
+        PROLOG_NOP stp d10, d11, [sp, #0x20]
+        PROLOG_NOP stp d12, d13, [sp, #0x30]
+        PROLOG_NOP stp d14, d15, [sp, #0x40]
+        PROLOG_SAVE_REG_PAIR fp, lr, #-0x70!
+        PROLOG_NOP stp xzr, xzr, [sp, #0x10] ; locations reserved for return value, not used for exception handling
         PROLOG_SAVE_REG_PAIR x19, x20, #0x20
         PROLOG_SAVE_REG_PAIR x21, x22, #0x30
         PROLOG_SAVE_REG_PAIR x23, x24, #0x40
         PROLOG_SAVE_REG_PAIR x25, x26, #0x50
         PROLOG_SAVE_REG_PAIR x27, x28, #0x60
-        PROLOG_NOP stp x0, lr, [sp, #0x70]   ; x0 is the SP and lr is the IP of the fault site   
-        PROLOG_NOP stp d8, d9, [sp, #0x80]
-        PROLOG_NOP stp d10, d11, [sp, #0x90]
-        PROLOG_NOP stp d12, d13, [sp, #0xA0]
-        PROLOG_NOP stp d14, d15, [sp, #0xB0]
         ;; } end PAL_LIMITED_CONTEXT
-
+ 
         PROLOG_STACK_ALLOC STACKSIZEOF_ExInfo 
-    MEND
+    MEND 
 
 ;; -----------------------------------------------------------------------------
 ;; Macro used to create frame of funclet calling helpers (RhpCallXXXXFunclet)
@@ -38,12 +50,18 @@
     MACRO 
         ALLOC_CALL_FUNCLET_FRAME $extraStackSize
 
-        PROLOG_SAVE_REG_PAIR fp, lr, #-0x60!
+        ; Using below prolog instead of PROLOG_SAVE_REG_PAIR fp,lr, #-60!
+        ; is intentional. Above statement would also emit instruction to save
+        ; sp in fp. If sp is saved in fp in prolog then it is not expected that fp can change in the body
+        ; of method. However, this method needs to be able to change fp before calling funclet.
+        ; This is required to access locals in funclet.
+        PROLOG_SAVE_REG_PAIR_NO_FP fp,lr, #-0x60!
         PROLOG_SAVE_REG_PAIR x19, x20, #0x10
         PROLOG_SAVE_REG_PAIR x21, x22, #0x20
         PROLOG_SAVE_REG_PAIR x23, x24, #0x30
         PROLOG_SAVE_REG_PAIR x25, x26, #0x40
         PROLOG_SAVE_REG_PAIR x27, x28, #0x50
+        PROLOG_NOP mov fp, sp
 
         IF $extraStackSize != 0
             PROLOG_STACK_ALLOC $extraStackSize
@@ -199,19 +217,7 @@
 #define rsp_offsetof_ExInfo  0
 #define rsp_offsetof_Context STACKSIZEOF_ExInfo
 
-        PROLOG_NOP mov w2, w0       ;; save exception code into x2
-        PROLOG_NOP mov x0, sp       ;; get SP of fault site
-
-        PROLOG_NOP mov lr, x1       ;; set IP of fault site
-
-        ALLOC_THROW_FRAME
-
-        ; x0: SP of fault site
-        ; x1: IP of fault site 
-        ; x2: exception code of fault
-        ; lr: IP of fault site (as a 'return address')
-
-        mov         w0, w2          ;; w0 <- exception code of fault
+        ALLOC_THROW_FRAME HARDWARE_EXCEPTION
 
         ;; x2 = GetThread(), TRASHES x1
         INLINE_GETTHREAD x2, x1
@@ -256,11 +262,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     NESTED_ENTRY RhpThrowEx
 
-        ALLOC_THROW_FRAME
-
-        ;; Compute and save SP at callsite.
-        add         x1, sp, #(STACKSIZEOF_ExInfo + SIZEOF__PAL_LIMITED_CONTEXT)
-        str         x1, [sp, #(rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__SP)]
+        ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
 
         ;; x2 = GetThread(), TRASHES x1
         INLINE_GETTHREAD x2, x1
@@ -351,11 +353,7 @@ NotHijacked
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     NESTED_ENTRY RhpRethrow
 
-        ALLOC_THROW_FRAME
-
-        ;; Compute and save SP at callsite.
-        add         x1, sp, #(STACKSIZEOF_ExInfo + SIZEOF__PAL_LIMITED_CONTEXT)
-        str         x1, [sp, #(rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__SP)]
+        ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
 
         ;; x2 = GetThread(), TRASHES x1
         INLINE_GETTHREAD x2, x1
@@ -599,7 +597,11 @@ SetSuccess
 ;; 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     NESTED_ENTRY RhpCallFilterFunclet
-        ALLOC_CALL_FUNCLET_FRAME 0
+        ALLOC_CALL_FUNCLET_FRAME 0x40
+        stp d8, d9,   [sp, #0x00]
+        stp d10, d11, [sp, #0x10]
+        stp d12, d13, [sp, #0x20]
+        stp d14, d15, [sp, #0x30]
 
         ldr         x12, [x2, #OFFSETOF__REGDISPLAY__pFP]
         ldr         fp, [x12]
@@ -612,7 +614,12 @@ SetSuccess
 
     EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFilterFunclet2
 
-        FREE_CALL_FUNCLET_FRAME 0
+        ldp         d8, d9,   [sp, #0x00]
+        ldp         d10, d11, [sp, #0x10]
+        ldp         d12, d13, [sp, #0x20]
+        ldp         d14, d15, [sp, #0x30]
+
+        FREE_CALL_FUNCLET_FRAME 0x40
         EPILOG_RETURN
 
     NESTED_END RhpCallFilterFunclet

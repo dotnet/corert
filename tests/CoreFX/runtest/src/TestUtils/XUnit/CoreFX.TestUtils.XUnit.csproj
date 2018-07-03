@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\..\dir.props" />
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json">
+      <Version>$(NewtonsoftJsonVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="System.CommandLine">
+      <Version>$(SystemCommandLineVersion)</Version>
+    </PackageReference>
+  </ItemGroup>
+</Project>

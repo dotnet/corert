@@ -22,7 +22,8 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     class StringAllocatorMethodNode : DependencyNodeCore<NodeFactory>, IMethodNode
     {
-        private MethodDesc _allocationMethod;
+        private readonly MethodDesc _allocationMethod;
+        private readonly MethodDesc _constructorMethod;
 
         public MethodDesc Method => _allocationMethod;
 
@@ -43,17 +44,23 @@ namespace ILCompiler.DependencyAnalysis
             signatureBuilder.ReturnType = constructorMethod.OwningType;
 
             _allocationMethod = constructorMethod.OwningType.GetKnownMethod("Ctor", signatureBuilder.ToSignature());
+            _constructorMethod = constructorMethod;
         }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            return new[] {
-                new DependencyListEntry(
-                    factory.ConstructedTypeSymbol(factory.TypeSystemContext.GetWellKnownType(WellKnownType.String)),
-                    "String constructor call"),
-                new DependencyListEntry(
-                    factory.MethodEntrypoint(_allocationMethod),
-                    "String constructor call") };
+            DependencyList result = new DependencyList();
+
+            result.Add(
+                factory.ConstructedTypeSymbol(factory.TypeSystemContext.GetWellKnownType(WellKnownType.String)),
+                "String constructor call");
+            result.Add(
+                factory.MethodEntrypoint(_allocationMethod),
+                "String constructor call");
+
+            factory.MetadataManager.GetDependenciesDueToReflectability(ref result, factory, _constructorMethod);
+
+            return result;
         }
 
         public override bool HasConditionalStaticDependencies => false;

@@ -1,17 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
+  <!--
+    Microsoft ResX Schema
+
     Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
     associated with the data types.
-    
+
     Example:
-    
+
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-                
-    There are any number of "resheader" rows that contain simple 
+
+    There are any number of "resheader" rows that contain simple
     name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
     mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
     extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-    
+
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-    
+
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
+    value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -155,6 +155,9 @@
   </data>
   <data name="Arg_CannotHaveNegativeValue" xml:space="preserve">
     <value>String cannot contain a minus sign if the base is not 10.</value>
+  </data>
+  <data name="Arg_CannotMixComparisonInfrastructure" xml:space="preserve">
+    <value>The usage of IKeyComparer and IHashCodeProvider/IComparer interfaces cannot be mixed; use one or the other.</value>
   </data>
   <data name="Arg_CopyNonBlittableArray" xml:space="preserve">
     <value>Arrays must contain only blittable data in order to be copied to unmanaged memory.</value>
@@ -534,6 +537,9 @@
   <data name="Argument_DateTimeKindMustBeUnspecified" xml:space="preserve">
     <value>The supplied DateTime must have the Kind property set to DateTimeKind.Unspecified.</value>
   </data>
+  <data name="Argument_DateTimeKindMustBeUnspecifiedOrUtc" xml:space="preserve">
+    <value>The supplied DateTime must have the Kind property set to DateTimeKind.Unspecified or DateTimeKind.Utc.</value>
+  </data>
   <data name="Argument_DateTimeOffsetInvalidDateTimeStyles" xml:space="preserve">
     <value>The DateTimeStyles value 'NoCurrentDateDefault' is not allowed when parsing DateTimeOffset.</value>
   </data>
@@ -566,15 +572,6 @@
   </data>
   <data name="Argument_FallbackBufferNotEmpty" xml:space="preserve">
     <value>Cannot change fallback when buffer is not empty. Previous Convert() call left data in the fallback buffer.</value>
-  </data>
-  <data name="Argument_IdnBadLabelSize" xml:space="preserve">
-    <value>IDN labels must be between 1 and 63 characters long.</value>
-  </data>
-  <data name="Argument_IdnBadPunycode" xml:space="preserve">
-    <value>Invalid IDN encoded string.</value>
-  </data>
-  <data name="Argument_IdnIllegalName" xml:space="preserve">
-    <value>Decoded string is not a valid IDN name.</value>
   </data>
   <data name="Argument_ImplementIComparable" xml:space="preserve">
     <value>At least one object must implement IComparable.</value>
@@ -669,6 +666,9 @@
   <data name="Argument_MustBeFalse" xml:space="preserve">
     <value>Argument must be initialized to false</value>
   </data>
+  <data name="Argument_MustBeRuntimeType" xml:space="preserve">
+    <value>Type must be a runtime Type object.</value>
+  </data>
   <data name="Argument_NoEra" xml:space="preserve">
     <value>No Era was supplied.</value>
   </data>
@@ -712,9 +712,6 @@
     <value>The specified length exceeds the maximum value of {0}.</value>
   </data>
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
-    <value>Non-negative number required.</value>
-  </data>
-  <data name="ArgumentOutOfRange_NeedNonNegNumRequired" xml:space="preserve">
     <value>Non-negative number required.</value>
   </data>
   <data name="ArgumentOutOfRange_NeedValidId" xml:space="preserve">
@@ -786,6 +783,9 @@
   <data name="ArgumentNull_ArrayValue" xml:space="preserve">
     <value>Found a null value within an array.</value>
   </data>
+  <data name="ArgumentNull_Dictionary" xml:space="preserve">
+   <value>Dictionary cannot be null.</value>
+  </data>
   <data name="ArgumentNull_Generic" xml:space="preserve">
     <value>Value cannot be null.</value>
   </data>
@@ -803,9 +803,6 @@
   </data>
   <data name="ArgumentNull_Waithandles" xml:space="preserve">
     <value>The waitHandles parameter cannot be null.</value>
-  </data>
-  <data name="ArgumentNull_WithParamName" xml:space="preserve">
-    <value>Parameter '{0}' cannot be null.</value>
   </data>
   <data name="ArgumentOutOfRange_AddValue" xml:space="preserve">
     <value>Value to add was out of range.</value>
@@ -881,6 +878,9 @@
   </data>
   <data name="ArgumentOutOfRange_GetCharCountOverflow" xml:space="preserve">
     <value>Too many bytes. The resulting number of chars is larger than what can be returned as an int.</value>
+  </data>
+  <data name="ArgumentOutOfRange_HashtableLoadFactor" xml:space="preserve">
+    <value>Load factor needs to be between 0.1 and 1.0.</value>
   </data>
   <data name="ArgumentOutOfRange_IndexCount" xml:space="preserve">
     <value>Index and count must refer to a location within the string.</value>
@@ -1024,7 +1024,10 @@
     <value>String was not recognized as a valid Boolean.</value>
   </data>
   <data name="Format_BadFormatSpecifier" xml:space="preserve">
-    <value>Format specifier was invalid.</value>
+    <value>Format specifier '{0}' was invalid.</value>
+  </data>
+  <data name="Format_NoFormatSpecifier" xml:space="preserve">
+    <value>No format specifiers were provided.</value>
   </data>
   <data name="Format_BadQuote" xml:space="preserve">
     <value>Cannot find a matching quote character for the character '{0}'.</value>
@@ -1125,6 +1128,9 @@
   <data name="InvalidOperation_HandleIsNotInitialized" xml:space="preserve">
     <value>Handle is not initialized.</value>
   </data>
+  <data name="InvalidOperation_HashInsertFailed" xml:space="preserve">
+    <value>Hashtable insert failed. Load factor too high. The most common cause is multiple threads writing to the Hashtable simultaneously.</value>
+  </data>
   <data name="InvalidOperation_IComparerFailed" xml:space="preserve">
     <value>Failed to compare two elements in the array.</value>
   </data>
@@ -1173,6 +1179,9 @@
   <data name="InvalidOperation_AsyncFlowCtrlCtxMismatch" xml:space="preserve">
     <value>AsyncFlowControl objects can be used to restore flow only on a Context that had its flow suppressed.</value>
   </data>
+  <data name="InvalidOperation_AsyncIOInProgress" xml:space="preserve">
+    <value>The stream is currently in use by a previous operation on the stream.</value>
+  </data>
   <data name="InvalidProgram_Default" xml:space="preserve">
     <value>Common Language Runtime detected an invalid program.</value>
   </data>
@@ -1190,6 +1199,21 @@
   </data>
   <data name="InvalidTimeZone_InvalidRegistryData" xml:space="preserve">
     <value>The time zone ID '{0}' was found on the local computer, but the registry information was corrupt.</value>
+  </data>
+  <data name="InvalidTimeZone_InvalidFileData" xml:space="preserve">
+    <value>The time zone ID '{0}' was found on the local computer, but the file at '{1}' was corrupt.</value>
+  </data>
+  <data name="InvalidTimeZone_InvalidJulianDay" xml:space="preserve">
+    <value>Invalid Julian day in POSIX strings.</value>
+  </data>
+  <data name="InvalidTimeZone_NJulianDayNotSupported" xml:space="preserve">
+    <value>Julian n day in POSIX strings is not supported.</value>
+  </data>
+  <data name="InvalidTimeZone_NoTTInfoStructures" xml:space="preserve">
+    <value>There are no ttinfo structures in the tzfile.  At least one ttinfo structure is required in order to construct a TimeZoneInfo object.</value>
+  </data>
+  <data name="InvalidTimeZone_UnparseablePosixMDateString" xml:space="preserve">
+    <value>'{0}' is not a valid POSIX-TZ-environment-variable MDate rule.  A valid rule has the format 'Mm.w.d'.</value>
   </data>
   <data name="IO_DriveNotFound_Drive" xml:space="preserve">
     <value>Could not find the drive '{0}'. The drive might not be ready or might not be mapped.</value>
@@ -1383,7 +1407,7 @@
   <data name="Threading_WaitHandleCannotBeOpenedException_InvalidHandle" xml:space="preserve">
     <value>A WaitHandle with system-wide name '{0}' cannot be created. A WaitHandle of a different type might have the same name.</value>
   </data>
-  <data name="TimeZoneNotFound_MissingRegistryData" xml:space="preserve">
+  <data name="TimeZoneNotFound_MissingData" xml:space="preserve">
     <value>The time zone ID '{0}' was not found on the local computer.</value>
   </data>
   <data name="TypeInitialization_Default" xml:space="preserve">
@@ -1513,31 +1537,31 @@
     <value>Could not determine the order of year, month, and date from '{0}'.</value>
   </data>
   <data name="Format_BadDateTime" xml:space="preserve">
-    <value>String was not recognized as a valid DateTime.</value>
+    <value>String '{0}' was not recognized as a valid DateTime.</value>
   </data>
   <data name="Format_BadDateTimeCalendar" xml:space="preserve">
-    <value>The DateTime represented by the string is not supported in calendar {0}.</value>
+    <value>The DateTime represented by the string '{0}' is not supported in calendar '{1}'.</value>
   </data>
   <data name="Format_BadDayOfWeek" xml:space="preserve">
-    <value>String was not recognized as a valid DateTime because the day of week was incorrect.</value>
+    <value>String '{0}' was not recognized as a valid DateTime because the day of week was incorrect.</value>
   </data>
   <data name="Format_DateOutOfRange" xml:space="preserve">
-    <value>The DateTime represented by the string is out of range.</value>
+    <value>The DateTime represented by the string '{0}' is out of range.</value>
   </data>
   <data name="Format_MissingIncompleteDate" xml:space="preserve">
-    <value>There must be at least a partial date with a year present in the input.</value>
+    <value>There must be at least a partial date with a year present in the input string '{0}'.</value>
   </data>
   <data name="Format_OffsetOutOfRange" xml:space="preserve">
-    <value>The time zone offset must be within plus or minus 14 hours.</value>
+    <value>The time zone offset of string '{0}' must be within plus or minus 14 hours.</value>
   </data>
   <data name="Format_RepeatDateTimePattern" xml:space="preserve">
     <value>DateTime pattern '{0}' appears more than once with different values.</value>
   </data>
-  <data name="Format_UnknowDateTimeWord" xml:space="preserve">
-    <value>The string was not recognized as a valid DateTime. There is an unknown word starting at index {0}.</value>
+  <data name="Format_UnknownDateTimeWord" xml:space="preserve">
+    <value>The string '{0}' was not recognized as a valid DateTime. There is an unknown word starting at index '{1}'.</value>
   </data>
   <data name="Format_UTCOutOfRange" xml:space="preserve">
-    <value>The UTC representation of the date falls outside the year range 1-9999.</value>
+    <value>The UTC representation of the date '{0}' falls outside the year range 1-9999.</value>
   </data>
   <data name="RFLCT_Ambiguous" xml:space="preserve">
     <value>Ambiguous match found.</value>
@@ -1840,6 +1864,9 @@
   <data name="PlatformNotSupported_OSXFileLocking" xml:space="preserve">
     <value>Locking/unlocking file regions is not supported on this platform. Use FileShare on the entire file instead.</value>
   </data>
+  <data name="PlatformNotSupported_ReflectionEmit" xml:space="preserve">
+    <value>Dynamic code generation is not supported on this platform.</value>
+  </data>
   <data name="MissingMember_Name" xml:space="preserve">
     <value>Member '{0}' not found.</value>
   </data>
@@ -1851,6 +1878,9 @@
   </data>
   <data name="Format_StringZeroLength" xml:space="preserve">
     <value>String cannot have zero length.</value>
+  </data>
+  <data name="Security_CannotReadFileData" xml:space="preserve">
+    <value>The time zone ID '{0}' was found on the local computer, but the application does not have permission to read the file.</value>
   </data>
   <data name="Security_CannotReadRegistryData" xml:space="preserve">
     <value>The time zone ID '{0}' was found on the local computer, but the application does not have permission to read the registry information.</value>
@@ -1969,9 +1999,6 @@
   <data name="IndexOutOfRange_UMSPosition" xml:space="preserve">
     <value>Unmanaged memory stream position was beyond the capacity of the stream.</value>
   </data>
-  <data name="ObjectDisposed_StreamIsClosed" xml:space="preserve">
-    <value>Cannot access a closed Stream.</value>
-  </data>
   <data name="ObjectDisposed_ViewAccessorClosed" xml:space="preserve">
     <value>Cannot access a closed accessor.</value>
   </data>
@@ -2028,6 +2055,9 @@
   </data>
   <data name="IO_FileStreamHandlePosition" xml:space="preserve">
     <value>The OS handle's position is not what FileStream expected. Do not use a handle simultaneously in one FileStream and in Win32 code or another FileStream. This may cause data loss.</value>
+  </data>
+  <data name="IO_FileTooLong2GB" xml:space="preserve">
+    <value>The file is too long. This operation is currently limited to supporting files less than 2 gigabytes in size.</value>
   </data>
   <data name="NotSupported_FileStreamOnNonFiles" xml:space="preserve">
     <value>FileStream was asked to open a device that was not a file. For support for devices like 'com1:' or 'lpt1:', call CreateFile, then use the FileStream constructors that take an OS handle as an IntPtr.</value>
@@ -2287,6 +2317,9 @@
   <data name="Serialization_InvalidFieldState" xml:space="preserve">
     <value>Object fields may not be properly initialized.</value>
   </data>
+  <data name="Serialization_InvalidOnDeser" xml:space="preserve">
+    <value>OnDeserialization method was called while the object was not being deserialized.</value>
+  </data>
   <data name="Acc_CreateAbst" xml:space="preserve">
     <value>Cannot create an abstract class.</value>
   </data>
@@ -2353,14 +2386,17 @@
   <data name="Serialization_MissingDateTimeData" xml:space="preserve">
     <value>Invalid serialized DateTime data. Unable to find 'ticks' or 'dateData'.</value>
   </data>
+  <data name="Serialization_MissingValues" xml:space="preserve">
+    <value>The values for this dictionary are missing.</value>
+  </data>
   <data name="Serialization_DateTimeTicksOutOfRange" xml:space="preserve">
     <value>Invalid serialized DateTime data. Ticks must be between DateTime.MinValue.Ticks and DateTime.MaxValue.Ticks.</value>
   </data>
   <data name="Arg_InvalidANSIString" xml:space="preserve">
     <value>The ANSI string passed in could not be converted from the default ANSI code page to Unicode.</value>
   </data>
-  <data name="Arg_ExpectedNulTermination" xml:space="preserve">
-    <value>The value passed was not NUL terminated.</value>
+  <data name="Arg_MustBeNullTerminatedString" xml:space="preserve">
+    <value>The string must be null-terminated.</value>
   </data>
   <data name="PlatformNotSupported_ArgIterator" xml:space="preserve">
     <value>ArgIterator is not supported on this platform.</value>
@@ -2376,6 +2412,9 @@
   </data>
   <data name="Serialization_InvalidPtrValue" xml:space="preserve">
     <value>An IntPtr or UIntPtr with an eight byte value cannot be deserialized on a machine with a four byte word size.</value>
+  </data>
+  <data name="Serialization_KeyValueDifferentSizes" xml:space="preserve">
+    <value>The keys and values arrays have different sizes.</value>
   </data>
   <data name="EventSource_AbstractMustNotDeclareEventMethods" xml:space="preserve">
     <value>Abstract event source must not declare event methods ({0} with ID {1}).</value>
@@ -2596,6 +2635,9 @@
   <data name="Argument_InvalidTypeWithPointersNotSupported" xml:space="preserve">
     <value>Cannot use type '{0}'. Only value types without pointers or references are supported.</value>
   </data>
+  <data name="Argument_OverlapAlignmentMismatch" xml:space="preserve">
+    <value>Overlapping spans have mismatching alignment.</value>
+  </data>
   <data name="ArrayTypeMismatch_ConstrainedCopy" xml:space="preserve">
     <value>Array.ConstrainedCopy will only work on array types that are provably compatible, without any form of boxing, unboxing, widening, or casting of each array element.  Change the array types (i.e., copy a Derived[] to a Base[]), or use a mitigation strategy in the CER for Array.Copy's less powerful reliability contract, such as cloning the array or throwing away the potentially corrupt destination array.</value>
   </data>
@@ -2665,13 +2707,16 @@
   <data name="Argument_IdnBadStd3" xml:space="preserve">
     <value>Label contains character '{0}' not allowed with UseStd3AsciiRules</value>
   </data>
+  <data name="Argument_IdnIllegalName" xml:space="preserve">
+    <value>Decoded string is not a valid IDN name.</value>
+  </data>
   <data name="InvalidOperation_NotGenericType" xml:space="preserve">
     <value>This operation is only valid on generic types.</value>
   </data>
   <data name="NotSupported_SignatureType" xml:space="preserve">
     <value>This method is not supported on signature types.</value>
   </data>
-  <data name="Memory_ThrowIfDisposed" xml:space="preserve">
+  <data name="MemoryDisposed" xml:space="preserve">
     <value>Memory&lt;T&gt; has been disposed.</value>
   </data>
   <data name="Memory_OutstandingReferences" xml:space="preserve">
@@ -2682,5 +2727,56 @@
   </data>
   <data name="HashCode_EqualityNotSupported" xml:space="preserve">
     <value>HashCode is a mutable struct and should not be compared with other HashCodes.</value>
+  </data>
+  <data name="ObjectDisposed_WriterClosed" xml:space="preserve">
+    <value>Cannot write to a closed TextWriter.</value>
+  </data>
+  <data name="ObjectDisposed_ReaderClosed" xml:space="preserve">
+    <value>Cannot read from a closed TextReader.</value>
+  </data>
+  <data name="IO_InvalidReadLength" xml:space="preserve">
+    <value>The read operation returned an invalid length.</value>
+  </data>
+  <data name="Arg_BasePathNotFullyQualified" xml:space="preserve">
+    <value>Basepath argument is not fully qualified.</value>
+  </data>
+  <data name="Arg_ElementsInSourceIsGreaterThanDestination" xml:space="preserve">
+    <value>Number of elements in source vector is greater than the destination array</value>
+  </data>
+  <data name="Arg_TypeNotSupported" xml:space="preserve">
+    <value>Specified type is not supported</value>
+  </data>
+  <data name="Arg_NullArgumentNullRef" xml:space="preserve">
+    <value>The method was called with a null array argument.</value>
+  </data>
+  <data name="Arg_InsufficientNumberOfElements" xml:space="preserve">
+    <value>At least {0} element(s) are expected in the parameter "{1}".</value>
+  </data>
+  <data name="InvalidOperation_ConcurrentOperationsNotSupported" xml:space="preserve">
+    <value>Operations that change non-concurrent collections must have exclusive access. A concurrent update was performed on this collection and corrupted its state. The collection's state is no longer correct.</value>
+  </data>
+  <data name="Thread_Operation_RequiresCurrentThread" xml:space="preserve">
+    <value>This operation must be performed on the same thread as that represented by the Thread instance.</value>
+  </data>
+  <data name="ConcurrentCollection_SyncRoot_NotSupported" xml:space="preserve">
+    <value>The SyncRoot property may not be used for the synchronization of concurrent collections.</value>
+  </data>
+  <data name="Arg_WrongAsyncResult" xml:space="preserve">
+    <value>IAsyncResult object did not come from the corresponding async method on this type.</value>
+  </data>
+  <data name="InvalidOperation_EndReadCalledMultiple" xml:space="preserve">
+    <value>EndRead can only be called once for each asynchronous operation.</value>
+  </data>
+  <data name="InvalidOperation_EndWriteCalledMultiple" xml:space="preserve">
+    <value>EndWrite can only be called once for each asynchronous operation.</value>
+  </data>
+  <data name="InvalidOperation_WrongAsyncResultOrEndReadCalledMultiple" xml:space="preserve">
+    <value>Either the IAsyncResult object did not come from the corresponding async method on this type, or EndRead was called multiple times with the same IAsyncResult.</value>
+  </data>
+  <data name="InvalidOperation_WrongAsyncResultOrEndWriteCalledMultiple" xml:space="preserve">
+    <value>Either the IAsyncResult object did not come from the corresponding async method on this type, or EndWrite was called multiple times with the same IAsyncResult.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Week_ISO" xml:space="preserve">
+    <value>The week parameter must be in the range 1 through 53.</value>
   </data>
 </root>

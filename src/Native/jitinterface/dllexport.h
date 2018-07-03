@@ -2,22 +2,39 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+
+// ***
+// Define default C export attributes
+// ***
 #ifdef _WIN32
-#define DLL_EXPORT extern "C" __declspec(dllexport)
+#define DLL_EXPORT         extern "C" __declspec(dllexport)
 #else
-#define DLL_EXPORT extern "C" __attribute((visibility("default")))
-#endif
+#define DLL_EXPORT         extern "C" __attribute((visibility("default")))
+#endif // _WIN32
 
-#ifdef __i386__
 
-#if !defined(__stdcall)
-#define __stdcall      __attribute__((stdcall))
-#endif
+// ***
+// Define default call conventions
+// ***
+#ifndef _X86_
 
-#else
-
-#if !defined(__stdcall)
+#define DEFAULT_CALL_CONV
+#define __cdecl
 #define __stdcall
+
+#else // _X86_
+
+#ifndef __stdcall
+#define __stdcall          __attribute__((stdcall))
 #endif
 
+#ifdef PLATFORM_UNIX
+#define DEFAULT_CALL_CONV
+#else
+#define DEFAULT_CALL_CONV  __stdcall
 #endif
+
+#endif // _X86_
+
+
+#define STDMETHODCALLTYPE  DEFAULT_CALL_CONV

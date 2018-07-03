@@ -406,7 +406,7 @@ namespace System.Threading
         internal static void ThrowInvalidHandleException()
         {
             var ex = new InvalidOperationException(SR.InvalidOperation_InvalidHandle);
-            ex.SetErrorCode(HResults.E_HANDLE);
+            ex.HResult = HResults.E_HANDLE;
             throw ex;
         }
     }

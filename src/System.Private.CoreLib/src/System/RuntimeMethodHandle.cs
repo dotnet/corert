@@ -20,7 +20,7 @@ namespace System
 
         public unsafe IntPtr Value => _value;
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             if (!(obj is RuntimeMethodHandle))
                 return false;
@@ -32,6 +32,9 @@ namespace System
         {
             if (_value == handle._value)
                 return true;
+
+            if (_value == IntPtr.Zero || handle._value == IntPtr.Zero)
+                return false;
 
             RuntimeTypeHandle declaringType1, declaringType2;
             MethodNameAndSignature nameAndSignature1, nameAndSignature2;
@@ -68,6 +71,9 @@ namespace System
 
         public override int GetHashCode()
         {
+            if (_value == IntPtr.Zero)
+                return 0;
+
             RuntimeTypeHandle declaringType;
             MethodNameAndSignature nameAndSignature;
             RuntimeTypeHandle[] genericArgs;

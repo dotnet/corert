@@ -62,7 +62,8 @@ struct ModuleHeader
                                                     // breaking changes
         DELTA_SHORTCUT_TABLE_SIZE   = 16,
         MAX_REGIONS                 = 8,            // Max number of regions described by the Regions array
-        MAX_WELL_KNOWN_METHODS      = 8,            // Max number of methods described by the WellKnownMethods array
+        MAX_WELL_KNOWN_METHODS      = 8,            // Max number of methods described by the WellKnownMethods array 
+        MAX_EXTRA_WELL_KNOWN_METHODS= 8,            // Max number of methods described by the ExtraWellKnownMethods array 
         NULL_RRA                    = 0xffffffff,   // NULL value for region relative addresses (0 is often a
                                                     // legal RRA)
     };
@@ -141,6 +142,9 @@ struct ModuleHeader
 
     UInt32          RraColdToHotMappingInfo;
 
+    UInt32  ExtraWellKnownMethods[MAX_EXTRA_WELL_KNOWN_METHODS];   // Array of methods with well known semantics defined
+                                                                   // in this module
+
     // Macro to generate an inline accessor for RRA-based fields.
 #ifdef RHDUMP
 #define DEFINE_GET_ACCESSOR(_field, _region)\
@@ -202,10 +206,19 @@ struct ModuleHeader
 #ifndef RHDUMP
     // Macro to generate an inline accessor for well known methods (these are all TEXT-based RRAs since they
     // point to code).
-#define DEFINE_WELL_KNOWN_METHOD(_name)                                 \
-    inline PTR_VOID Get_##_name()                                       \
-    {                                                                   \
-        return WellKnownMethods[WKM_##_name] == NULL_RRA ? NULL : RegionPtr[TEXT_REGION] + WellKnownMethods[WKM_##_name]; \
+#define DEFINE_WELL_KNOWN_METHOD(_name)                                                                                     \
+    inline PTR_VOID Get_##_name()                                                                                           \
+    {                                                                                                                       \
+        unsigned int index = (unsigned int)WKM_##_name;                                                                     \
+        if (index >= MAX_WELL_KNOWN_METHODS)                                                                                \
+        {                                                                                                                   \
+            index = index - MAX_WELL_KNOWN_METHODS;                                                                         \
+            return ExtraWellKnownMethods[index] == NULL_RRA ? NULL : RegionPtr[TEXT_REGION] + ExtraWellKnownMethods[index]; \
+        }                                                                                                                   \
+        else                                                                                                                \
+        {                                                                                                                   \
+            return WellKnownMethods[index] == NULL_RRA ? NULL : RegionPtr[TEXT_REGION] + WellKnownMethods[index];           \
+        }                                                                                                                   \
     }
 #include "WellKnownMethodList.h"
 #undef DEFINE_WELL_KNOWN_METHOD
@@ -649,14 +662,38 @@ enum PInvokeTransitionFrameFlags : UInt64
                                                 // a return address pointing into the hijacked method and that method's
                                                 // lr register, which may hold a gc pointer
 
-    // Other flags
-    PTFF_X0_IS_GCREF    = 0x0000000100000000,   // used by hijack handler to report return value of hijacked method
-    PTFF_X0_IS_BYREF    = 0x0000000200000000,   // used by hijack handler to report return value of hijacked method
-    PTFF_X1_IS_GCREF    = 0x0000000400000000,   // used by hijack handler to report return value of hijacked method
-    PTFF_X1_IS_BYREF    = 0x0000000800000000,   // used by hijack handler to report return value of hijacked method
+    // used by hijack handler to report return value of hijacked method
+    PTFF_X0_IS_GCREF    = 0x0000000100000000,
+    PTFF_X0_IS_BYREF    = 0x0000000200000000,
+    PTFF_X1_IS_GCREF    = 0x0000000400000000,
+    PTFF_X1_IS_BYREF    = 0x0000000800000000,
 
     PTFF_THREAD_ABORT   = 0x0000001000000000,   // indicates that ThreadAbortException should be thrown when returning from the transition
 };
+
+// TODO: Consider moving the PInvokeTransitionFrameFlags definition to a separate file to simplify header dependencies
+#ifdef ICODEMANAGER_INCLUDED
+// Verify that we can use bitwise shifts to convert from GCRefKind to PInvokeTransitionFrameFlags and back
+C_ASSERT(PTFF_X0_IS_GCREF == ((UInt64)GCRK_Object << 32));
+C_ASSERT(PTFF_X0_IS_BYREF == ((UInt64)GCRK_Byref << 32));
+C_ASSERT(PTFF_X1_IS_GCREF == ((UInt64)GCRK_Scalar_Obj << 32));
+C_ASSERT(PTFF_X1_IS_BYREF == ((UInt64)GCRK_Scalar_Byref << 32));
+
+inline UInt64 ReturnKindToTransitionFrameFlags(GCRefKind returnKind)
+{
+    if (returnKind == GCRK_Scalar)
+        return 0;
+
+    return PTFF_SAVE_X0 | PTFF_SAVE_X1 | ((UInt64)returnKind << 32);
+}
+
+inline GCRefKind TransitionFrameFlagsToReturnKind(UInt64 transFrameFlags)
+{
+    GCRefKind returnKind = (GCRefKind)((transFrameFlags & (PTFF_X0_IS_GCREF | PTFF_X0_IS_BYREF | PTFF_X1_IS_GCREF | PTFF_X1_IS_BYREF)) >> 32);
+    ASSERT((returnKind == GCRK_Scalar) || ((transFrameFlags & PTFF_SAVE_X0) && (transFrameFlags & PTFF_SAVE_X1)));
+    return returnKind;
+}
+#endif // ICODEMANAGER_INCLUDED
 #else // _TARGET_ARM_
 enum PInvokeTransitionFrameFlags
 {

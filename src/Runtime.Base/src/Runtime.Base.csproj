@@ -8,8 +8,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsCoreAssembly>true</IsCoreAssembly>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <!-- Hack to disable analyzers. Replace once https://github.com/dotnet/buildtools/issues/1349 is fixed. -->
-    <CodeAnalyzerDir>$(MSBuildThisFileDirectory)/Documentation</CodeAnalyzerDir>
+    <EnableFxCopAnalyzers>false</EnableFxCopAnalyzers>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
@@ -113,7 +112,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Condition="'$(Platform)'!='wasm'" Include="$(BaseIntermediateOutputPath)\Native\$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)\Runtime\Full\AsmOffsets.cs" />
-    <Compile Condition="'$(Platform)'=='wasm'" Include="$(BaseIntermediateOutputPath)\Native\$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)\Runtime\Portable\AsmOffsets.cs" />
+    <Compile Condition="'$(Platform)'=='wasm'" Include="$(BaseIntermediateOutputPath)\Native\$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)\Runtime\Portable\AsmOffsetsPortable.cs" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

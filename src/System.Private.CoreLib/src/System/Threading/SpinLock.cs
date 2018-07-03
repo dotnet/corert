@@ -234,7 +234,7 @@ namespace System.Threading
         public void TryEnter(TimeSpan timeout, ref bool lockTaken)
         {
             // Validate the timeout
-            Int64 totalMilliseconds = (Int64)timeout.TotalMilliseconds;
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
             {
                 throw new System.ArgumentOutOfRangeException(
@@ -321,7 +321,7 @@ namespace System.Threading
             // In this case there are three ways to acquire the lock
             // 1- the first way the thread either tries to get the lock if it's free or updates the waiters, if the turn >= the processors count then go to 3 else go to 2
             // 2- In this step the waiter threads spins and tries to acquire the lock, the number of spin iterations and spin count is dependent on the thread turn
-            // the late the thread arrives the more it spins and less frequent it check the lock avilability
+            // the late the thread arrives the more it spins and less frequent it check the lock availability
             // Also the spins count is increases each iteration
             // If the spins iterations finished and failed to acquire the lock, go to step 3
             // 3- This is the yielding step, there are two ways of yielding Thread.Yield and Sleep(1)
@@ -337,19 +337,19 @@ namespace System.Threading
             {
                 if (CompareExchange(ref m_owner, observedOwner | 1, observedOwner, ref lockTaken) == observedOwner)
                 {
-                    // Aquired lock
+                    // Acquired lock
                     return;
                 }
 
                 if (millisecondsTimeout == 0)
                 {
-                    // Did not aquire lock in CompareExchange and timeout is 0 so fail fast
+                    // Did not acquire lock in CompareExchange and timeout is 0 so fail fast
                     return;
                 }
             }
             else if (millisecondsTimeout == 0)
             {
-                // Did not aquire lock as owned and timeout is 0 so fail fast
+                // Did not acquire lock as owned and timeout is 0 so fail fast
                 return;
             }
             else //failed to acquire the lock,then try to update the waiters. If the waiters count reached the maximum, jsut break the loop to avoid overflow
@@ -508,7 +508,7 @@ namespace System.Threading
         /// </summary>
         /// <remarks>
         /// The default overload of <see cref="Exit()"/> provides the same behavior as if calling <see
-        /// cref="Exit(Boolean)"/> using true as the argument, but Exit() could be slightly faster than Exit(true).
+        /// cref="Exit(bool)"/> using true as the argument, but Exit() could be slightly faster than Exit(true).
         /// </remarks>
         /// <exception cref="SynchronizationLockException">
         /// Thread ownership tracking is enabled, and the current thread is not the owner of this lock.
@@ -530,7 +530,7 @@ namespace System.Threading
         /// publish the exit operation to other threads.
         /// </param>
         /// <remarks>
-        /// Calling <see cref="Exit(Boolean)"/> with the <paramref name="useMemoryBarrier"/> argument set to
+        /// Calling <see cref="Exit(bool)"/> with the <paramref name="useMemoryBarrier"/> argument set to
         /// true will improve the fairness of the lock at the expense of some performance. The default <see
         /// cref="Enter"/>
         /// overload behaves as if specifying true for <paramref name="useMemoryBarrier"/>.
@@ -541,7 +541,7 @@ namespace System.Threading
         public void Exit(bool useMemoryBarrier)
         {
             // This is the fast path for the thread tracking is diabled and not to use memory barrier, otherwise go to the slow path
-            // The reason not to add else statement if the usememorybarrier is that it will add more barnching in the code and will prevent
+            // The reason not to add else statement if the usememorybarrier is that it will add more branching in the code and will prevent
             // method inlining, so this is optimized for useMemoryBarrier=false and Exit() overload optimized for useMemoryBarrier=true.
             int tmpOwner = m_owner;
             if ((tmpOwner & LOCK_ID_DISABLE_MASK) != 0 & !useMemoryBarrier)

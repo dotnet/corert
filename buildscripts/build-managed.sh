@@ -92,11 +92,11 @@ get_official_cross_builds()
             return 0
         fi
         __tizenToolsRoot=${__ProjectRoot}/Tools/tizen
-        __corefxsite="https://ci.dot.net/job/dotnet_corefx/job/master/view/Official%20Builds/job/"
-        __coreclrsite="https://ci.dot.net/job/dotnet_coreclr/job/master/view/Official%20Builds/job/"
+        __corefxsite="https://ci.dot.net/job/dotnet_corefx/job/master/job/"
+        __coreclrsite="https://ci.dot.net/job/dotnet_coreclr/job/master/job/"
         __buildArchiveName="build.tar.gz"
         __systemNativeLibName="System.Native.a"
-        __systemGlobNativeLibName="libSystem.Globalization.Native.a"
+        __systemGlobNativeLibName="System.Globalization.Native.a"
         if [ $__BuildType = "Debug" ]; then
             __buildtype="debug"
         else
@@ -106,7 +106,7 @@ get_official_cross_builds()
         __coreclrsource="armel_cross_${__buildtype}_tizen/lastSuccessfulBuild/artifact/bin/Product/Linux.armel.${__BuildType}/${__systemGlobNativeLibName}"
         mkdir -p $__tizenToolsRoot
 
-        (cd ${__tizenToolsRoot} && wget -N "${__corefxsite}${__corefxsource}")
+        (cd ${__tizenToolsRoot} && wget -t0 -N "${__corefxsite}${__corefxsource}")
         export BUILDERRORLEVEL=$?
         if [ $BUILDERRORLEVEL != 0 ]; then
             exit $BUILDERRORLEVEL
@@ -114,7 +114,7 @@ get_official_cross_builds()
         tar xvf ${__tizenToolsRoot}/${__buildArchiveName} -C ${__tizenToolsRoot} ./${__systemNativeLibName}
         cp ${__tizenToolsRoot}/${__systemNativeLibName} $__ProjectRoot/bin/Linux.${__BuildArch}.${__BuildType}/framework
 
-        (cd ${__tizenToolsRoot} && wget -N "${__coreclrsite}${__coreclrsource}")
+        (cd ${__tizenToolsRoot} && wget -t0 -N "${__coreclrsite}${__coreclrsource}")
         export BUILDERRORLEVEL=$?
         if [ $BUILDERRORLEVEL != 0 ]; then
             exit $BUILDERRORLEVEL

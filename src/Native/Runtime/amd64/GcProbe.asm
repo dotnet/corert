@@ -841,15 +841,11 @@ NESTED_ENTRY RhpTrapToGC, _TEXT
     sizeof_XmmAlignPad          equ 8
     sizeof_XmmSave              equ FXSAVE_SIZE
     sizeof_MachineFrame         equ 6*8
-    sizeof_InitialPushedArgs    equ 3*8             ;; eflags, rcx, return value
+    sizeof_InitialPushedArgs    equ 2*8             ;; eflags, return value
     sizeof_FixedFrame           equ sizeof_OutgoingScratchSpace + sizeof_PInvokeFrame + sizeof_XmmAlignPad + sizeof_XmmSave + sizeof_MachineFrame
 
         ;; On the stack on entry: 
         ;;   [rsp     ]  -> Return address 
-
-        ;; Prepare for our return by stashing a scratch register where we can pop it just before returning
-        ;; The scratch register will be used as PSP in the epilog
-        push        rcx                         
 
         ;; save eflags before we trash them
         pushfq
@@ -889,26 +885,27 @@ NESTED_ENTRY RhpTrapToGC, _TEXT
         ;;   [rsp +2e0]  | SS       |
         ;;   [rsp +2e8]  | padding  |
         ;;
-        ;;   [rsp +2f0]  [optional stack alignment]
+        ;;   [rsp +2f0]  [PSP]
+        ;;   [rsp +2f8]  [optional stack alignment]
         ;;
-        ;;   [PSP - 18] -> eflags save
-        ;;   [PSP - 10] -> rcx save
+        ;;   [PSP - 10] -> eflags save
         ;;   [PSP -  8] -> Return address
         ;;   [PSP]      -> caller's frame
 
         test        rsp, 0Fh
         jz          AlreadyAligned
 
-        sub         rsp, sizeof_XmmAlignPad + sizeof_XmmSave + sizeof_MachineFrame + 8  ; +8 to align RSP
+        sub         rsp, sizeof_XmmAlignPad + sizeof_XmmSave + sizeof_MachineFrame + 8 ; +8 to save PSP,
         push        r11                         ; save incoming R11 into save location
         lea         r11, [rsp + 8 + sizeof_XmmAlignPad + sizeof_XmmSave + sizeof_MachineFrame + 8 + sizeof_InitialPushedArgs]
         jmp         PspCalculated
 
     AlreadyAligned:
-        sub         rsp, sizeof_XmmAlignPad + sizeof_XmmSave + sizeof_MachineFrame
-        push        r11                         ; save incoming R11 into save location
-        lea         r11, [rsp + 8 + sizeof_XmmAlignPad + sizeof_XmmSave + sizeof_MachineFrame + sizeof_InitialPushedArgs]
 
+        sub         rsp, sizeof_XmmAlignPad + sizeof_XmmSave + sizeof_MachineFrame + 16 ; +8 to save RSP, +8 to re-align PSP,
+        push        r11                         ; save incoming R11 into save location
+        lea         r11, [rsp + 8 + sizeof_XmmAlignPad + sizeof_XmmSave + sizeof_MachineFrame + 16 + sizeof_InitialPushedArgs]
+        
     PspCalculated:
         push        r10                         ; save incoming R10 into save location
         xor         r10d, r10d
@@ -923,6 +920,7 @@ NESTED_ENTRY RhpTrapToGC, _TEXT
         mov         [rsp + 2d0h - 0a8h], r10           ; init EFLAGS to zero
         mov         [rsp + 2d8h - 0a8h], r11           ; save PSP in the 'machine frame'
         mov         [rsp + 2e0h - 0a8h], r10           ; init SS to zero
+        mov         [rsp + 2f0h - 0a8h], r11           ; save PSP
 
         .pushframe
         .allocstack sizeof_XmmAlignPad + sizeof_XmmSave + 2*8    ;; only 2 of the regs from the PInvokeTransitionFrame are on the stack
@@ -1023,7 +1021,6 @@ endif ;; FEATURE_GC_STRESS
         call        RhpWaitForGCNoAbort
 
     DoneWaitingForGc:
-        mov         rcx, rbx                ; RCX <- PSP
 
         fxrstor     [rsp + 0c0h]
 
@@ -1064,33 +1061,34 @@ DontRestoreXmmAgain:
         pop         r15
         pop         rax                     ; RSP
         pop         rax                     ; RAX save
-        pop         rdx                     ; RCX save (intentionally discarding it)
+        pop         rcx                     
         pop         rdx
         pop         r8
         pop         r9
         pop         r10
         pop         r11
 
+        ;; restore PSP
+        ;; 2F0h -> offset of the PSP area
+        ;; 0B8h -> offset of the end of the integer register area which is already popped
+        mov         rsp, [rsp + 2f0h - 0b8h]    
 
-        ;; RCX is PSP at this point and the stack looks like this:
-        ;;   [PSP - 18] -> eflags save
-        ;;   [PSP - 10] -> rcx save
+        ;; RSP is PSP at this point and the stack looks like this:
+        ;;   [PSP - 10] -> eflags save
         ;;   [PSP -  8] -> return address
         ;;   [PSP]      -> caller's frame
         ;;
-        ;; The final step is to restore eflags, rcx, and return back to the loop target location.
-
-        lea         rsp, [rcx - 18h]
+        ;; The final step is to restore eflags and return 
+        
+        lea         rsp, [rsp - 10h]
         jz          @f          ;; result of the test instruction before the pops above
         popfq                   ;; restore flags
-        pop         rcx         ;; restore rcx
         mov         rcx, STATUS_REDHAWK_THREAD_ABORT
         pop         rdx         ;; return address as exception RIP
         jmp         RhpThrowHwEx ;; Throw the ThreadAbortException as a special kind of hardware exception
 
 @@:
         popfq               ;; restore flags
-        pop         rcx     ;; restore rcx
         ret
 
 NESTED_END RhpTrapToGC, _TEXT

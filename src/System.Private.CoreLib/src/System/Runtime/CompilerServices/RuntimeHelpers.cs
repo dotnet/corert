@@ -53,7 +53,7 @@ namespace System.Runtime.CompilerServices
             ReflectionAugments.ReflectionCoreCallbacks.RunModuleConstructor(module.AssociatedModule);
         }
 
-        public static Object GetObjectValue(Object obj)
+        public static object GetObjectValue(object obj)
         {
             if (obj == null)
                 return null;
@@ -65,23 +65,23 @@ namespace System.Runtime.CompilerServices
             return RuntimeImports.RhMemberwiseClone(obj);
         }
 
-        public new static bool Equals(Object obj1, Object obj2)
+        public new static bool Equals(object o1, object o2)
         {
-            if (obj1 == obj2)
+            if (o1 == o2)
                 return true;
 
-            if ((obj1 == null) || (obj2 == null))
+            if ((o1 == null) || (o2 == null))
                 return false;
 
             // If it's not a value class, don't compare by value
-            if (!obj1.EETypePtr.IsValueType)
+            if (!o1.EETypePtr.IsValueType)
                 return false;
 
             // Make sure they are the same type.
-            if (obj1.EETypePtr != obj2.EETypePtr)
+            if (o1.EETypePtr != o2.EETypePtr)
                 return false;
 
-            return RuntimeImports.RhCompareObjectContentsAndPadding(obj1, obj2);
+            return RuntimeImports.RhCompareObjectContentsAndPadding(o1, o2);
         }
 
 #if !FEATURE_SYNCTABLE
@@ -102,7 +102,7 @@ namespace System.Runtime.CompilerServices
             return t_hashSeed;
         }
 
-        public static unsafe int GetHashCode(Object o)
+        public static unsafe int GetHashCode(object o)
         {
 #if FEATURE_SYNCTABLE
             return ObjectHeader.GetHashCode(o);
@@ -157,15 +157,12 @@ namespace System.Runtime.CompilerServices
 
         public static int OffsetToStringData
         {
-            // Workaround to allow WebAssembly to define a size here without a special CoreLib build
-            // https://github.com/dotnet/corert/issues/4506 includes removing this.
-            [Intrinsic] 
             get
             {
                 // Number of bytes from the address pointed to by a reference to
                 // a String to the first 16-bit character in the String.  
                 // This property allows C#'s fixed statement to work on Strings.
-                return String.FIRST_CHAR_OFFSET;
+                return string.FIRST_CHAR_OFFSET;
             }
         }
 
@@ -242,7 +239,7 @@ namespace System.Runtime.CompilerServices
                 throw new ArgumentNullException(nameof(d));
         }
 
-        public static void ExecuteCodeWithGuaranteedCleanup(TryCode code, CleanupCode backoutCode, Object userData)
+        public static void ExecuteCodeWithGuaranteedCleanup(TryCode code, CleanupCode backoutCode, object userData)
         {
             if (code == null)
                 throw new ArgumentNullException(nameof(code));
@@ -266,8 +263,8 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        public delegate void TryCode(Object userData);
-        public delegate void CleanupCode(Object userData, bool exceptionThrown);
+        public delegate void TryCode(object userData);
+        public delegate void CleanupCode(object userData, bool exceptionThrown);
 
         public static object GetUninitializedObject(Type type)
         {

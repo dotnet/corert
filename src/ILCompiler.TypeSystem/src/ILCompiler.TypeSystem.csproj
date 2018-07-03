@@ -82,6 +82,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\CodeGen\TargetDetails.CodeGen.cs">
       <Link>TypeSystem\CodeGen\TargetDetails.CodeGen.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\CodeGen\TypeDesc.CodeGen.cs">
+      <Link>TypeSystem\CodeGen\TypeDesc.CodeGen.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\AlignmentHelper.cs">
       <Link>Utilities\AlignmentHelper.cs</Link>
     </Compile>
@@ -355,11 +358,14 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\DelegateInfo.cs">
       <Link>IL\DelegateInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateMarshallingMethodThunk.Sorting.cs">
-      <Link>IL\Stubs\DelegateMarshallingMethodThunk.Sorting.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateThunks.Sorting.cs">
       <Link>IL\Stubs\DelegateThunks.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DynamicInvokeMethodThunk.cs">
+      <Link>IL\Stubs\DynamicInvokeMethodThunk.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DynamicInvokeMethodThunk.Sorting.cs">
+      <Link>IL\Stubs\DynamicInvokeMethodThunk.Sorting.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\EnumThunks.cs">
       <Link>IL\Stubs\EnumThunks.cs</Link>
@@ -379,8 +385,23 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\StructMarshallingThunk.Sorting.cs">
       <Link>IL\Stubs\StructMarshallingThunk.Sorting.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\ValueTypeGetFieldHelperMethodOverride.cs">
+      <Link>IL\Stubs\ValueTypeGetFieldHelperMethodOverride.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\ValueTypeGetFieldHelperMethodOverride.Sorting.cs">
+      <Link>IL\Stubs\ValueTypeGetFieldHelperMethodOverride.Sorting.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.DelegateInfo.cs">
       <Link>IL\TypeSystemContext.DelegateInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.DynamicInvoke.cs">
+      <Link>IL\TypeSystemContext.DynamicInvoke.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.GeneratedAssembly.cs">
+      <Link>IL\TypeSystemContext.GeneratedAssembly.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.GeneratedAssembly.Sorting.cs">
+      <Link>IL\TypeSystemContext.GeneratedAssembly.Sorting.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\EcmaMethodIL.cs">
       <Link>IL\EcmaMethodIL.cs</Link>
@@ -406,11 +427,20 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\InstantiatedMethodIL.cs">
       <Link>IL\InstantiatedMethodIL.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\ILStackHelper.cs">
+      <Link>IL\ILStackHelper.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\ILOpcode.cs">
       <Link>IL\ILOpcode.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\ILOpcodeHelper.cs">
+      <Link>IL\ILOpcodeHelper.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.EnumMethods.cs">
       <Link>IL\TypeSystemContext.EnumMethods.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.ValueTypeMethods.cs">
+      <Link>IL\TypeSystemContext.ValueTypeMethods.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\InlineArrayType.Sorting.cs">
       <Link>TypeSystem\Interop\IL\InlineArrayType.Sorting.cs</Link>
@@ -442,11 +472,23 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DebuggerSteppingHelpers.cs">
       <Link>IL\Stubs\DebuggerSteppingHelpers.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\CalliMarshallingMethodThunk.cs">
+      <Link>IL\Stubs\CalliMarshallingMethodThunk.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\CalliMarshallingMethodThunk.Mangling.cs">
+      <Link>IL\Stubs\CalliMarshallingMethodThunk.Mangling.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\CalliMarshallingMethodThunk.Sorting.cs">
+      <Link>IL\Stubs\CalliMarshallingMethodThunk.Sorting.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateMarshallingMethodThunk.cs">
       <Link>IL\Stubs\DelegateMarshallingMethodThunk.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateMarshallingMethodThunk.Mangling.cs">
       <Link>IL\Stubs\DelegateMarshallingMethodThunk.Mangling.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateMarshallingMethodThunk.Sorting.cs">
+      <Link>IL\Stubs\DelegateMarshallingMethodThunk.Sorting.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\ForwardDelegateCreationThunk.cs">
       <Link>IL\Stubs\ForwardDelegateCreationThunk.cs</Link>
@@ -528,6 +570,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Mangling\IPrefixMangledType.cs">
       <Link>TypeSystem\Mangling\IPrefixMangledType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Mangling\IPrefixMangledSignature.cs">
+      <Link>TypeSystem\Mangling\IPrefixMangledSignature.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
       <Link>Utilities\ArrayBuilder.cs</Link>

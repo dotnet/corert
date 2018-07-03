@@ -162,33 +162,7 @@ extern "C" UInt64 PalGetCurrentThreadIdForLogging()
     return GetCurrentThreadId();
 }
 
-#define SUPPRESS_WARNING_4127   \
-    __pragma(warning(push))     \
-    __pragma(warning(disable:4127)) /* conditional expression is constant*/
-
-#define POP_WARNING_STATE       \
-    __pragma(warning(pop))
-
-#define WHILE_0             \
-    SUPPRESS_WARNING_4127   \
-    while(0)                \
-    POP_WARNING_STATE       \
-
-#define RETURN_RESULT(success)                          \
-    do                                                  \
-    {                                                   \
-        if (success)                                    \
-            return S_OK;                                \
-        else                                            \
-        {                                               \
-            DWORD lasterror = GetLastError();           \
-            if (lasterror == 0)                         \
-                return E_FAIL;                          \
-            return HRESULT_FROM_WIN32(lasterror);       \
-        }                                               \
-    }                                                   \
-    WHILE_0;
-
+#if !defined(USE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, UInt32 templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut)
 {
 #ifdef XBOX_ONE
@@ -228,9 +202,10 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(_In_ void
     return UnmapViewOfFile(pBaseAddress);
 #endif    
 }
+#endif // !USE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalMarkThunksAsValidCallTargets(
-    void *virtualAddress, 
+    void *virtualAddress,
     int thunkSize,
     int thunksPerBlock,
     int thunkBlockSize,
@@ -243,21 +218,28 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalMarkThunksAsValidCallTargets(
 
 REDHAWK_PALEXPORT UInt32 REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, UInt32 timeout, UInt32 handleCount, HANDLE* pHandles, UInt32_BOOL allowReentrantWait)
 {
-    DWORD index;
-    SetLastError(ERROR_SUCCESS); // recommended by MSDN.
-    HRESULT hr = CoWaitForMultipleHandles(alertable ? COWAIT_ALERTABLE : 0, timeout, handleCount, pHandles, &index);
-
-    switch (hr)
+    if (!allowReentrantWait)
     {
-    case S_OK:
-        return index;
+        return WaitForMultipleObjectsEx(handleCount, pHandles, FALSE, timeout, alertable);
+    }
+    else
+    {
+        DWORD index;
+        SetLastError(ERROR_SUCCESS); // recommended by MSDN.
+        HRESULT hr = CoWaitForMultipleHandles(alertable ? COWAIT_ALERTABLE : 0, timeout, handleCount, pHandles, &index);
 
-    case RPC_S_CALLPENDING:
-        return WAIT_TIMEOUT;
+        switch (hr)
+        {
+        case S_OK:
+            return index;
 
-    default:
-        SetLastError(HRESULT_CODE(hr));
-        return WAIT_FAILED;
+        case RPC_S_CALLPENDING:
+            return WAIT_TIMEOUT;
+
+        default:
+            SetLastError(HRESULT_CODE(hr));
+            return WAIT_FAILED;
+        }
     }
 }
 
@@ -1081,8 +1063,7 @@ UInt32 CountBits(size_t bfBitfield)
 // 'answers' between the current implementation and the CLR implementation.
 //
 //#define TRACE_CACHE_TOPOLOGY
-#if defined(_DEBUG) && !defined(_ARM64_)
-// ARM64TODO: restore
+#ifdef _DEBUG
 void DumpCacheTopology(_In_reads_(cRecords) SYSTEM_LOGICAL_PROCESSOR_INFORMATION * pProcInfos, UInt32 cRecords)
 {
     printf("----------------\n");
@@ -1126,6 +1107,7 @@ void DumpCacheTopology(_In_reads_(cRecords) SYSTEM_LOGICAL_PROCESSOR_INFORMATION
     }
     printf("----------------\n");
 }
+
 void DumpCacheTopologyResults(UInt32 maxCpuId, CpuVendor cpuVendor, _In_reads_(cRecords) SYSTEM_LOGICAL_PROCESSOR_INFORMATION * pProcInfos, UInt32 cRecords)
 {
     DumpCacheTopology(pProcInfos, cRecords);
@@ -1134,7 +1116,7 @@ void DumpCacheTopologyResults(UInt32 maxCpuId, CpuVendor cpuVendor, _In_reads_(c
     printf("        g_cbLargestOnDieCache: 0x%08zx 0x%08zx :CLR_LargestOnDieCache(TRUE)\n", g_cbLargestOnDieCache, CLR_GetLargestOnDieCacheSize(TRUE, pProcInfos, cRecords));
     printf("g_cbLargestOnDieCacheAdjusted: 0x%08zx 0x%08zx :CLR_LargestOnDieCache(FALSE)\n", g_cbLargestOnDieCacheAdjusted, CLR_GetLargestOnDieCacheSize(FALSE, pProcInfos, cRecords));
 }
-#endif // defined(_DEBUG) && !defined(_ARM64_)
+#endif // _DEBUG
 
 // Method used to initialize the above values.
 bool PalQueryProcessorTopology()
@@ -1307,21 +1289,18 @@ bool PalQueryProcessorTopology()
         g_cbLargestOnDieCache = cbCache;
         g_cbLargestOnDieCacheAdjusted = cbCacheAdjusted;
 
-#if defined(_DEBUG)
-#if defined(TRACE_CACHE_TOPOLOGY) && !defined(_ARM64_)
-// ARM64TODO: restore
+#ifdef _DEBUG
+#ifdef TRACE_CACHE_TOPOLOGY
         DumpCacheTopologyResults(maxCpuId, cpuVendor, pProcInfos, cRecords);
-#endif // defined(TRACE_CACHE_TOPOLOGY) && !defined(_ARM64_)
+#endif
         if ((CLR_GetLargestOnDieCacheSize(TRUE, pProcInfos, cRecords) != g_cbLargestOnDieCache) ||
             (CLR_GetLargestOnDieCacheSize(FALSE, pProcInfos, cRecords) != g_cbLargestOnDieCacheAdjusted) ||
             (CLR_GetLogicalCpuCount(pProcInfos, cRecords) != g_cLogicalCpus))
         {
-#if !defined(_ARM64_)
             DumpCacheTopologyResults(maxCpuId, cpuVendor, pProcInfos, cRecords);
-#endif
             assert(!"QueryProcessorTopology doesn't match CLR's results.  See stdout for more info.");
         }
-#endif
+#endif // _DEBUG
     }
 
     if (pProcInfos)

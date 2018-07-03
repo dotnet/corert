@@ -1114,7 +1114,7 @@ namespace Internal.Runtime.TypeLoader
 #endif
                     }
                 }
-                else if (conversionParams._conversionInfo.IsAnyDynamicInvokerThunk && thRetType.IsValueType())
+                else if (conversionParams._conversionInfo.IsAnyDynamicInvokerThunk && (thRetType.IsValueType() || thRetType.IsPointerType()))
                 {
                     Debug.Assert(returnValueToCopy != null);
 
@@ -1129,7 +1129,15 @@ namespace Internal.Runtime.TypeLoader
                             returnValueToCopy = (void*)(new IntPtr(*((void**)returnValueToCopy)) + IntPtr.Size);
 
                         // Need to box value type before returning it
-                        object returnValue = RuntimeAugments.Box(thRetType.GetRuntimeTypeHandle(), new IntPtr(returnValueToCopy));
+                        object returnValue;
+                        if (thRetType.IsPointerType())
+                        {
+                            returnValue = System.Reflection.Pointer.Box(*(void**)returnValueToCopy, Type.GetTypeFromHandle(thRetType.GetRuntimeTypeHandle()));
+                        }
+                        else
+                        {
+                            returnValue = RuntimeAugments.Box(thRetType.GetRuntimeTypeHandle(), new IntPtr(returnValueToCopy));
+                        }
                         CallConversionParameters.s_pinnedGCHandles._returnObjectHandle.Target = returnValue;
                         pinnedResultObject = CallConversionParameters.s_pinnedGCHandles._returnObjectHandle.GetRawTargetAddress();
                         returnValueToCopy = (void*)&pinnedResultObject;

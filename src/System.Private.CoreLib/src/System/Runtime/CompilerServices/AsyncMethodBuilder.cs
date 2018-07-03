@@ -71,9 +71,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine
-        {
-            AsyncMethodBuilderCore.Start(ref stateMachine);
-        }
+            => AsyncMethodBuilderCore.Start(ref stateMachine);
 
         /// <summary>Associates the builder with the state machine it represents.</summary>
         /// <param name="stateMachine">The heap-allocated state machine object.</param>
@@ -238,9 +236,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine
-        {
-            AsyncMethodBuilderCore.Start(ref stateMachine);
-        }
+            => AsyncMethodBuilderCore.Start(ref stateMachine);
 
         /// <summary>Associates the builder with the state machine it represents.</summary>
         /// <param name="stateMachine">The heap-allocated state machine object.</param>
@@ -437,9 +433,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine
-        {
-            AsyncMethodBuilderCore.Start(ref stateMachine); // argument validation handled by AsyncMethodBuilderCore
-        }
+            => AsyncMethodBuilderCore.Start(ref stateMachine);
 
         /// <summary>Associates the builder with the state machine it represents.</summary>
         /// <param name="stateMachine">The heap-allocated state machine object.</param>
@@ -617,7 +611,6 @@ namespace System.Runtime.CompilerServices
                 // - Boolean
                 // - Byte, SByte
                 // - Char
-                // - Decimal
                 // - Int32, UInt32
                 // - Int64, UInt64
                 // - Int16, UInt16
@@ -652,7 +645,6 @@ namespace System.Runtime.CompilerServices
                     (typeof(TResult) == typeof(Byte) && default(Byte) == (Byte)(object)result) ||
                     (typeof(TResult) == typeof(SByte) && default(SByte) == (SByte)(object)result) ||
                     (typeof(TResult) == typeof(Char) && default(Char) == (Char)(object)result) ||
-                    (typeof(TResult) == typeof(Decimal) && default(Decimal) == (Decimal)(object)result) ||
                     (typeof(TResult) == typeof(Int64) && default(Int64) == (Int64)(object)result) ||
                     (typeof(TResult) == typeof(UInt64) && default(UInt64) == (UInt64)(object)result) ||
                     (typeof(TResult) == typeof(Int16) && default(Int16) == (Int16)(object)result) ||
@@ -724,12 +716,32 @@ namespace System.Runtime.CompilerServices
         internal static void Start<TStateMachine>(ref TStateMachine stateMachine)
             where TStateMachine : IAsyncStateMachine
         {
-            // Async state machines are required not to throw, so no need for try/finally here.
             Thread currentThread = Thread.CurrentThread;
-            ExecutionContextSwitcher ecs = default(ExecutionContextSwitcher);
-            ExecutionContext.EstablishCopyOnWriteScope(currentThread, ref ecs);
+            ExecutionContext previousExecutionCtx = currentThread.ExecutionContext;
+            SynchronizationContext previousSyncCtx = currentThread.SynchronizationContext;
+
+            // Async state machines are required not to throw, so no need for try/finally here.
             stateMachine.MoveNext();
-            ecs.Undo(currentThread);
+
+            // The common case is that these have not changed, so avoid the cost of a write barrier if not needed.
+            if (previousSyncCtx != currentThread.SynchronizationContext)
+            {
+                // Restore changed SynchronizationContext back to previous
+                currentThread.SynchronizationContext = previousSyncCtx;
+            }
+
+            ExecutionContext currentExecutionCtx = currentThread.ExecutionContext;
+            if (previousExecutionCtx != currentExecutionCtx)
+            {
+                // Restore changed ExecutionContext back to previous
+                currentThread.ExecutionContext = previousExecutionCtx;
+                if ((currentExecutionCtx != null && currentExecutionCtx.HasChangeNotifications) ||
+                    (previousExecutionCtx != null && previousExecutionCtx.HasChangeNotifications))
+                {
+                    // There are change notifications; trigger any affected
+                    ExecutionContext.OnValuesChanged(currentExecutionCtx, previousExecutionCtx);
+                }
+            }
         }
 
         //
@@ -937,7 +949,7 @@ namespace System.Runtime.CompilerServices
         [DependencyReductionRoot]
         internal static Action TryGetStateMachineForDebugger(Action action)
         {
-            Object target = action.Target;
+            object target = action.Target;
             MoveNextRunner runner = target as MoveNextRunner;
             if (runner != null)
                 return runner.m_stateMachine.MoveNext;

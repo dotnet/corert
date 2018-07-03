@@ -290,7 +290,17 @@ namespace ILCompiler
 
                 Module = owningModule;
                 ValueTypeRepresented = valuetype;
-                BoxedValue = new BoxedValueField(this);
+
+                // Unboxing thunks for byref-like types don't make sense. Byref-like types cannot be boxed.
+                // We still allow these to exist in the system, because it's easier than trying to prevent
+                // their creation. We create them as if they existed (in lieu of e.g. pointing all of them
+                // to the same __unreachable method body) so that the various places that store pointers to
+                // them because they want to be able to extract the target instance method can use the same
+                // mechanism they use for everything else at runtime.
+                // The main difference is that the "Boxed_ValueType" version has no fields. Reference types
+                // cannot have byref-like fields.
+                if (!valuetype.IsByRefLike)
+                    BoxedValue = new BoxedValueField(this);
             }
 
             public override ClassLayoutMetadata GetClassLayout() => default(ClassLayoutMetadata);
@@ -325,14 +335,14 @@ namespace ILCompiler
                 }
 
                 flags |= TypeFlags.HasFinalizerComputed;
-                flags |= TypeFlags.IsByRefLikeComputed;
+                flags |= TypeFlags.AttributeCacheComputed;
 
                 return flags;
             }
 
             public override FieldDesc GetField(string name)
             {
-                if (name == BoxedValueFieldName)
+                if (name == BoxedValueFieldName && BoxedValue != null)
                     return BoxedValue;
 
                 return null;
@@ -340,7 +350,10 @@ namespace ILCompiler
 
             public override IEnumerable<FieldDesc> GetFields()
             {
-                yield return BoxedValue;
+                if (BoxedValue != null)
+                    return new FieldDesc[] { BoxedValue };
+
+                return Array.Empty<FieldDesc>();
             }
 
             /// <summary>
@@ -439,6 +452,15 @@ namespace ILCompiler
 
             public override MethodIL EmitIL()
             {
+                if (_owningType.BoxedValue == null)
+                {
+                    // If this is the fake unboxing thunk for ByRef-like types, just make a method that throws.
+                    return new ILStubMethodIL(this,
+                        new byte[] { (byte)ILOpcode.ldnull, (byte)ILOpcode.throw_ },
+                        Array.Empty<LocalVariableDefinition>(),
+                        Array.Empty<object>());
+                }
+
                 // Generate the unboxing stub. This loosely corresponds to following C#:
                 // return BoxedValue.InstanceMethod(this.m_pEEType, [rest of parameters])
 
@@ -507,6 +529,15 @@ namespace ILCompiler
 
             public override MethodIL EmitIL()
             {
+                if (_owningType.BoxedValue == null)
+                {
+                    // If this is the fake unboxing thunk for ByRef-like types, just make a method that throws.
+                    return new ILStubMethodIL(this,
+                        new byte[] { (byte)ILOpcode.ldnull, (byte)ILOpcode.throw_ },
+                        Array.Empty<LocalVariableDefinition>(),
+                        Array.Empty<object>());
+                }
+
                 // Generate the unboxing stub. This loosely corresponds to following C#:
                 // return BoxedValue.InstanceMethod([rest of parameters])
 

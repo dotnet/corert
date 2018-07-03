@@ -57,7 +57,7 @@ namespace System.Threading
 
         // -- State -- //
         //For a packed word a uint would seem better, but Interlocked.* doesn't support them as uint isn't CLS-compliant.
-        private volatile int m_combinedState; //ie a UInt32. Used for the state items listed below. 
+        private volatile int m_combinedState; //ie a uint. Used for the state items listed below. 
 
         //1-bit for  signalled state
         private const int SignalledState_BitMask = unchecked((int)0x80000000);//1000 0000 0000 0000 0000 0000 0000 0000
@@ -163,7 +163,7 @@ namespace System.Threading
 
                 // it is possible for the max number of waiters to be exceeded via user-code, hence we use a real exception here.
                 if (value >= NumWaitersState_MaxValue)
-                    throw new InvalidOperationException(String.Format(SR.ManualResetEventSlim_ctor_TooManyWaiters, NumWaitersState_MaxValue));
+                    throw new InvalidOperationException(string.Format(SR.ManualResetEventSlim_ctor_TooManyWaiters, NumWaitersState_MaxValue));
 
                 UpdateStateAtomically(value << NumWaitersState_ShiftCount, NumWaitersState_BitMask);
             }
@@ -185,7 +185,7 @@ namespace System.Threading
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ManualResetEventSlim"/>
-        /// class with a Boolen value indicating whether to set the intial state to signaled.
+        /// class with a Boolean value indicating whether to set the intial state to signaled.
         /// </summary>
         /// <param name="initialState">true to set the initial state signaled; false to set the initial state
         /// to nonsignaled.</param>
@@ -218,7 +218,7 @@ namespace System.Threading
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(spinCount),
-                    String.Format(SR.ManualResetEventSlim_ctor_SpinCountOutOfRange, SpinCountState_MaxValue));
+                    string.Format(SR.ManualResetEventSlim_ctor_SpinCountOutOfRange, SpinCountState_MaxValue));
             }
 
             // We will suppress default spin  because the user specified a count.
@@ -611,7 +611,7 @@ namespace System.Threading
                 // Now enter the lock and wait.
                 EnsureLockObjectCreated();
 
-                // We must register and deregister the token outside of the lock, to avoid deadlocks.
+                // We must register and unregister the token outside of the lock, to avoid deadlocks.
                 using (cancellationToken.InternalRegisterWithoutEC(s_cancellationTokenCallback, this))
                 {
                     using (LockHolder.Hold(m_lock))
@@ -665,7 +665,7 @@ namespace System.Threading
                         }
                     }
                 }
-            } // automatically disposes (and deregisters) the callback 
+            } // automatically disposes (and unregisters) the callback
 
             return true; //done. The wait was satisfied.
         }
@@ -690,7 +690,7 @@ namespace System.Threading
         /// <param name="disposing">true to release both managed and unmanaged resources;
         /// false to release only unmanaged resources.</param>
         /// <remarks>
-        /// Unlike most of the members of <see cref="ManualResetEventSlim"/>, <see cref="Dispose(Boolean)"/> is not
+        /// Unlike most of the members of <see cref="ManualResetEventSlim"/>, <see cref="Dispose(bool)"/> is not
         /// thread-safe and may not be used concurrently with other members of this instance.
         /// </remarks>
         protected virtual void Dispose(bool disposing)

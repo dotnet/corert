@@ -27,7 +27,6 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(type.IsCanonicalSubtype(CanonicalFormKind.Any));
             Debug.Assert(type == type.ConvertToCanonForm(CanonicalFormKind.Specific));
             Debug.Assert(!type.IsMdArray);
-            Debug.Assert(!type.IsByRefLike);
         }
 
         public override bool StaticDependenciesAreComputed => true;
@@ -46,7 +45,7 @@ namespace ILCompiler.DependencyAnalysis
 
             DefType closestDefType = _type.GetClosestDefType();
 
-            if (_type.RuntimeInterfaces.Length > 0)
+            if (InterfaceDispatchMapNode.MightHaveInterfaceDispatchMap(_type, factory))
                 dependencyList.Add(factory.InterfaceDispatchMap(_type), "Canonical interface dispatch map");
 
             dependencyList.Add(factory.VTable(closestDefType), "VTable");
@@ -60,6 +59,15 @@ namespace ILCompiler.DependencyAnalysis
                 dependencyList.Add(new DependencyListEntry(factory.TypeGVMEntries(_type), "Type with generic virtual methods"));
 
                 AddDependenciesForUniversalGVMSupport(factory, _type, ref dependencyList);
+            }
+
+            // Keep track of the default constructor map dependency for this type if it has a default constructor
+            MethodDesc defaultCtor = closestDefType.GetDefaultConstructor();
+            if (defaultCtor != null)
+            {
+                dependencyList.Add(new DependencyListEntry(
+                    factory.MethodEntrypoint(defaultCtor, closestDefType.IsValueType),
+                    "DefaultConstructorNode"));
             }
 
             return dependencyList;

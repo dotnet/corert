@@ -73,7 +73,7 @@ namespace System
             _Minor = minor;
         }
 
-        public Version(String version)
+        public Version(string version)
         {
             Version v = Version.Parse(version);
             _Major = v.Major;
@@ -134,7 +134,7 @@ namespace System
             get { return (short)(_Revision & 0xFFFF); }
         }
 
-        public int CompareTo(Object version)
+        public int CompareTo(object version)
         {
             if (version == null)
             {
@@ -154,7 +154,7 @@ namespace System
         {
             return
                 object.ReferenceEquals(value, this) ? 0 :
-                object.ReferenceEquals(value, null) ? 1 :
+                value is null ? 1 :
                 _Major != value._Major ? (_Major > value._Major ? 1 : -1) :
                 _Minor != value._Minor ? (_Minor > value._Minor ? 1 : -1) :
                 _Build != value._Build ? (_Build > value._Build ? 1 : -1) :
@@ -162,7 +162,7 @@ namespace System
                 0;
         }
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             return Equals(obj as Version);
         }
@@ -170,7 +170,7 @@ namespace System
         public bool Equals(Version obj)
         {
             return object.ReferenceEquals(obj, this) ||
-                (!object.ReferenceEquals(obj, null) &&
+                (!(obj is null) &&
                 _Major == obj._Major &&
                 _Minor == obj._Minor &&
                 _Build == obj._Build &&
@@ -300,7 +300,7 @@ namespace System
                 throw new ArgumentNullException(nameof(input));
             }
 
-            return ParseVersion(input.AsReadOnlySpan(), throwOnFailure: true);
+            return ParseVersion(input.AsSpan(), throwOnFailure: true);
         }
 
         public static Version Parse(ReadOnlySpan<char> input) =>
@@ -314,7 +314,7 @@ namespace System
                 return false;
             }
 
-            return (result = ParseVersion(input.AsReadOnlySpan(), throwOnFailure: false)) != null;
+            return (result = ParseVersion(input.AsSpan(), throwOnFailure: false)) != null;
         }
 
         public static bool TryParse(ReadOnlySpan<char> input, out Version result) =>
@@ -333,13 +333,15 @@ namespace System
             // Find the ends of the optional minor and build portions.
             // We musn't have any separators after build.
             int buildEnd = -1;
-            int minorEnd = input.IndexOf('.', majorEnd + 1);
+            int minorEnd = input.Slice(majorEnd + 1).IndexOf('.');
             if (minorEnd != -1)
             {
-                buildEnd = input.IndexOf('.', minorEnd + 1);
+                minorEnd += (majorEnd + 1);
+                buildEnd = input.Slice(minorEnd + 1).IndexOf('.');
                 if (buildEnd != -1)
                 {
-                    if (input.IndexOf('.', buildEnd + 1) != -1)
+                    buildEnd += (minorEnd + 1);
+                    if (input.Slice(buildEnd + 1).IndexOf('.') != -1)
                     {
                         if (throwOnFailure) throw new ArgumentException(SR.Arg_VersionString, nameof(input));
                         return null;
@@ -347,10 +349,10 @@ namespace System
                 }
             }
 
-            int major, minor, build, revision;
+            int minor, build, revision;
 
             // Parse the major version
-            if (!TryParseComponent(input.Slice(0, majorEnd), nameof(input), throwOnFailure, out major))
+            if (!TryParseComponent(input.Slice(0, majorEnd), nameof(input), throwOnFailure, out int major))
             {
                 return null;
             }
@@ -405,9 +407,9 @@ namespace System
 
         public static bool operator ==(Version v1, Version v2)
         {
-            if (Object.ReferenceEquals(v1, null))
+            if (v1 is null)
             {
-                return Object.ReferenceEquals(v2, null);
+                return v2 is null;
             }
 
             return v1.Equals(v2);
@@ -420,14 +422,14 @@ namespace System
 
         public static bool operator <(Version v1, Version v2)
         {
-            if ((Object)v1 == null)
+            if ((object)v1 == null)
                 throw new ArgumentNullException(nameof(v1));
             return (v1.CompareTo(v2) < 0);
         }
 
         public static bool operator <=(Version v1, Version v2)
         {
-            if ((Object)v1 == null)
+            if ((object)v1 == null)
                 throw new ArgumentNullException(nameof(v1));
             return (v1.CompareTo(v2) <= 0);
         }

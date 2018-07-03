@@ -29,6 +29,10 @@ namespace System
 
         // This method is used to decide if we need to append the exception message parameters to the message when calling SR.Format. 
         // by default it returns false.
+        // Native code generators can replace the value this returns based on user input at the time of native code generation.
+        // Marked as NoInlining because if this is used in an AoT compiled app that is not compiled into a single file, the user
+        // could compile each module with a different setting for this. We want to make sure there's a consistent behavior
+        // that doesn't depend on which native module this method got inlined into.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static bool UsingResourceKeys()
         {
@@ -38,11 +42,14 @@ namespace System
         // Needed for debugger integration
         internal static string GetResourceString(string resourceKey)
         {
-            return GetResourceString(resourceKey, String.Empty);
+            return GetResourceString(resourceKey, string.Empty);
         }
 
         internal static string GetResourceString(string resourceKey, string defaultString)
         {
+            if (UsingResourceKeys())
+                return defaultString ?? resourceKey;
+
             string resourceString = null;
             try { resourceString = InternalGetResourceString(resourceKey); }
             catch (MissingManifestResourceException) { }
@@ -139,10 +146,10 @@ namespace System
             {
                 if (UsingResourceKeys())
                 {
-                    return resourceFormat + String.Join(", ", args);
+                    return resourceFormat + string.Join(", ", args);
                 }
 
-                return String.Format(resourceFormat, args);
+                return string.Format(resourceFormat, args);
             }
 
             return resourceFormat;
@@ -152,29 +159,29 @@ namespace System
         {
             if (UsingResourceKeys())
             {
-                return String.Join(", ", resourceFormat, p1);
+                return string.Join(", ", resourceFormat, p1);
             }
 
-            return String.Format(resourceFormat, p1);
+            return string.Format(resourceFormat, p1);
         }
 
         internal static string Format(string resourceFormat, object p1, object p2)
         {
             if (UsingResourceKeys())
             {
-                return String.Join(", ", resourceFormat, p1, p2);
+                return string.Join(", ", resourceFormat, p1, p2);
             }
 
-            return String.Format(resourceFormat, p1, p2);
+            return string.Format(resourceFormat, p1, p2);
         }
 
         internal static string Format(string resourceFormat, object p1, object p2, object p3)
         {
             if (UsingResourceKeys())
             {
-                return String.Join(", ", resourceFormat, p1, p2, p3);
+                return string.Join(", ", resourceFormat, p1, p2, p3);
             }
-            return String.Format(resourceFormat, p1, p2, p3);
+            return string.Format(resourceFormat, p1, p2, p3);
         }
     }
 }

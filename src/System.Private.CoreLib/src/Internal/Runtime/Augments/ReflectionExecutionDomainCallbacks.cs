@@ -23,6 +23,7 @@ using System.Reflection;
 namespace Internal.Runtime.Augments
 {
     [CLSCompliant(false)]
+    [System.Runtime.CompilerServices.ReflectionBlocked]
     public abstract class ReflectionExecutionDomainCallbacks
     {
         // Api's that are exposed in System.Runtime but are really reflection apis.
@@ -46,7 +47,7 @@ namespace Internal.Runtime.Augments
         // Flotsam and jetsam.
         public abstract Exception CreateMissingMetadataException(Type typeWithMissingMetadata);
 
-        public abstract String GetBetterDiagnosticInfoIfAvailable(RuntimeTypeHandle runtimeTypeHandle);
+        public abstract string GetBetterDiagnosticInfoIfAvailable(RuntimeTypeHandle runtimeTypeHandle);
         public abstract MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress);
         public abstract int ValueTypeGetHashCodeUsingReflection(object valueType);
         public abstract bool ValueTypeEqualsUsingReflection(object left, object right);

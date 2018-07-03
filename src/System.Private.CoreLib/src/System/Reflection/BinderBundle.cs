@@ -12,6 +12,7 @@ namespace System.Reflection
     // to manage.)
     //
     // This is not an api type but needs to be public as both Reflection.Core and System.Private.Corelib accesses it.
+    [System.Runtime.CompilerServices.ReflectionBlocked]
     public sealed class BinderBundle
     {
         public BinderBundle(Binder binder, CultureInfo culture)

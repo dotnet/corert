@@ -419,9 +419,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             PropertyType type,
             PropertyType unboxType)
         {
-            System.InvalidCastException ex = new System.InvalidCastException(SR.Format(SR.PropertyValue_InvalidCast, type, unboxType));
-            McgMarshal.SetExceptionErrorCode(ex, Interop.COM.TYPE_E_TYPEMISMATCH);
-            return ex;
+            return new System.InvalidCastException(SR.Format(SR.PropertyValue_InvalidCast, type, unboxType), Interop.COM.TYPE_E_TYPEMISMATCH);
         }
 
         private static System.InvalidCastException CreateExceptionForInvalidCoersion(
@@ -430,9 +428,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             PropertyType unboxType,
             int hr)
         {
-            InvalidCastException ex = new InvalidCastException(SR.Format(SR.PropertyValue_InvalidCoersion, type, value, unboxType));
-            McgMarshal.SetExceptionErrorCode(ex, hr);
-            return ex;
+            return new InvalidCastException(SR.Format(SR.PropertyValue_InvalidCoersion, type, value, unboxType), hr);
         }
     }
 

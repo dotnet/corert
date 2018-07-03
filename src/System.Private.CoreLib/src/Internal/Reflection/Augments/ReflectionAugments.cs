@@ -28,6 +28,7 @@ using EnumInfo = Internal.Runtime.Augments.EnumInfo;
 
 namespace Internal.Reflection.Augments
 {
+    [System.Runtime.CompilerServices.ReflectionBlocked]
     public static class ReflectionAugments
     {
         //
@@ -123,6 +124,7 @@ namespace Internal.Reflection.Augments
     // This class is implemented by Internal.Reflection.Core.dll and provides the actual implementation
     // of Type.GetTypeInfo() and (on Project N) (Assembly.Load()).
     //
+    [System.Runtime.CompilerServices.ReflectionBlocked]
     public abstract class ReflectionCoreCallbacks
     {
         public abstract Assembly Load(AssemblyName refName, bool throwOnFileNotFound);

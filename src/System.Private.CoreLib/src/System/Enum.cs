@@ -19,7 +19,7 @@ namespace System
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public abstract class Enum : ValueType, IComparable, IFormattable, IConvertible
     {
-        public int CompareTo(Object target)
+        public int CompareTo(object target)
         {
             if (target == null)
                 return 1;
@@ -77,7 +77,7 @@ namespace System
             }
         }
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             if (obj == null)
                 return false;
@@ -137,7 +137,7 @@ namespace System
             }
         }
 
-        public static String Format(Type enumType, Object value, String format)
+        public static string Format(Type enumType, object value, string format)
         {
             if (enumType == null)
                 throw new ArgumentNullException(nameof(enumType));
@@ -170,7 +170,7 @@ namespace System
             return Format(enumInfo, value, format);
         }
 
-        private static String Format(EnumInfo enumInfo, Object value, String format)
+        private static string Format(EnumInfo enumInfo, object value, string format)
         {
             ulong rawValue;
             if (!TryGetUnboxedValueOfEnumOrInteger(value, out rawValue))
@@ -213,20 +213,20 @@ namespace System
         //
         // Helper for Enum.Format(,,"d")
         //
-        private static String DoFormatD(ulong rawValue, RuntimeImports.RhCorElementType corElementType)
+        private static string DoFormatD(ulong rawValue, RuntimeImports.RhCorElementType corElementType)
         {
             switch (corElementType)
             {
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
                     {
-                        SByte result = (SByte)rawValue;
+                        sbyte result = (sbyte)rawValue;
 
                         return result.ToString();
                     }
 
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
                     {
-                        Byte result = (Byte)rawValue;
+                        byte result = (byte)rawValue;
 
                         return result.ToString();
                     }
@@ -240,49 +240,49 @@ namespace System
 
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
                     {
-                        Int16 result = (Int16)rawValue;
+                        short result = (short)rawValue;
 
                         return result.ToString();
                     }
 
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
                     {
-                        UInt16 result = (UInt16)rawValue;
+                        ushort result = (ushort)rawValue;
 
                         return result.ToString();
                     }
 
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
                     {
-                        Char result = (Char)rawValue;
+                        char result = (char)rawValue;
 
                         return result.ToString();
                     }
 
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
                     {
-                        UInt32 result = (UInt32)rawValue;
+                        uint result = (uint)rawValue;
 
                         return result.ToString();
                     }
 
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
                     {
-                        Int32 result = (Int32)rawValue;
+                        int result = (int)rawValue;
 
                         return result.ToString();
                     }
 
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
                     {
-                        UInt64 result = (UInt64)rawValue;
+                        ulong result = (ulong)rawValue;
 
                         return result.ToString();
                     }
 
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
                     {
-                        Int64 result = (Int64)rawValue;
+                        long result = (long)rawValue;
 
                         return result.ToString();
                     }
@@ -297,20 +297,20 @@ namespace System
         //
         // Helper for Enum.Format(,,"x")
         //
-        private static String DoFormatX(ulong rawValue, RuntimeImports.RhCorElementType corElementType)
+        private static string DoFormatX(ulong rawValue, RuntimeImports.RhCorElementType corElementType)
         {
             switch (corElementType)
             {
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
                     {
-                        Byte result = (byte)(sbyte)rawValue;
+                        byte result = (byte)(sbyte)rawValue;
 
                         return result.ToString("X2", null);
                     }
 
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
                     {
-                        Byte result = (byte)rawValue;
+                        byte result = (byte)rawValue;
 
                         return result.ToString("X2", null);
                     }
@@ -318,56 +318,56 @@ namespace System
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
                     {
                         // direct cast from bool to byte is not allowed
-                        Byte result = (byte)rawValue;
+                        byte result = (byte)rawValue;
 
                         return result.ToString("X2", null);
                     }
 
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
                     {
-                        UInt16 result = (UInt16)(Int16)rawValue;
+                        ushort result = (ushort)(short)rawValue;
 
                         return result.ToString("X4", null);
                     }
 
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
                     {
-                        UInt16 result = (UInt16)rawValue;
+                        ushort result = (ushort)rawValue;
 
                         return result.ToString("X4", null);
                     }
 
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
                     {
-                        UInt16 result = (UInt16)(Char)rawValue;
+                        ushort result = (ushort)(char)rawValue;
 
                         return result.ToString("X4", null);
                     }
 
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
                     {
-                        UInt32 result = (UInt32)rawValue;
+                        uint result = (uint)rawValue;
 
                         return result.ToString("X8", null);
                     }
 
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
                     {
-                        UInt32 result = (UInt32)(int)rawValue;
+                        uint result = (uint)(int)rawValue;
 
                         return result.ToString("X8", null);
                     }
 
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
                     {
-                        UInt64 result = (UInt64)rawValue;
+                        ulong result = (ulong)rawValue;
 
                         return result.ToString("X16", null);
                     }
 
                 case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
                     {
-                        UInt64 result = (UInt64)(Int64)rawValue;
+                        ulong result = (ulong)(long)rawValue;
 
                         return result.ToString("X16", null);
                     }
@@ -381,13 +381,13 @@ namespace System
         //
         // Helper for Enum.Format(,,"g")
         //
-        private static String DoFormatG(EnumInfo enumInfo, ulong rawValue)
+        private static string DoFormatG(EnumInfo enumInfo, ulong rawValue)
         {
             Debug.Assert(enumInfo != null);
             if (!enumInfo.HasFlagsAttribute) // Not marked with Flags attribute
             {
                 // Try to see if its one of the enum values, then we return a String back else the value
-                String name = GetNameIfAny(enumInfo, rawValue);
+                string name = GetNameIfAny(enumInfo, rawValue);
                 if (name == null)
                     return DoFormatD(rawValue, enumInfo.UnderlyingType.TypeHandle.ToEETypePtr().CorElementType);
                 else
@@ -402,12 +402,12 @@ namespace System
         //
         // Helper for Enum.Format(,,"f")
         //
-        private static String DoFormatF(EnumInfo enumInfo, ulong rawValue)
+        private static string DoFormatF(EnumInfo enumInfo, ulong rawValue)
         {
             Debug.Assert(enumInfo != null);
 
             // These values are sorted by value. Don't change this
-            KeyValuePair<String, ulong>[] namesAndValues = enumInfo.NamesAndValues;
+            KeyValuePair<string, ulong>[] namesAndValues = enumInfo.NamesAndValues;
 
             int index = namesAndValues.Length - 1;
             StringBuilder retval = new StringBuilder();
@@ -451,7 +451,7 @@ namespace System
                 return retval.ToString();  // Built a list of matching names. Return it.
         }
 
-        internal Object GetValue()
+        internal object GetValue()
         {
             ref byte pValue = ref this.GetRawData();
 
@@ -483,7 +483,7 @@ namespace System
             }
         }
 
-        public static String GetName(Type enumType, Object value)
+        public static string GetName(Type enumType, object value)
         {
             if (enumType == null)
                 throw new ArgumentNullException(nameof(enumType));
@@ -502,11 +502,11 @@ namespace System
                 throw new ArgumentException(SR.Arg_MustBeEnum);
 
             EnumInfo enumInfo = GetEnumInfo(enumType);
-            String nameOrNull = GetNameIfAny(enumInfo, rawValue);
+            string nameOrNull = GetNameIfAny(enumInfo, rawValue);
             return nameOrNull;
         }
 
-        public static String[] GetNames(Type enumType)
+        public static string[] GetNames(Type enumType)
         {
             if (enumType == null)
                 throw new ArgumentNullException(nameof(enumType));
@@ -517,8 +517,8 @@ namespace System
             if (!enumType.IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum);
 
-            KeyValuePair<String, ulong>[] namesAndValues = GetEnumInfo(enumType).NamesAndValues;
-            String[] names = new String[namesAndValues.Length];
+            KeyValuePair<string, ulong>[] namesAndValues = GetEnumInfo(enumType).NamesAndValues;
+            string[] names = new string[namesAndValues.Length];
             for (int i = 0; i < namesAndValues.Length; i++)
                 names[i] = namesAndValues[i].Key;
             return names;
@@ -551,13 +551,24 @@ namespace System
 
             Array values = GetEnumInfo(enumType).Values;
             int count = values.Length;
+#if PROJECTN
             Array result = Array.CreateInstance(enumType, count);
+#else
+            // Without universal shared generics, chances are slim that we'll have the appropriate
+            // array type available. Offer an escape hatch that avoids a MissingMetadataException
+            // at the cost of a small appcompat risk.
+            Array result;
+            if (AppContext.TryGetSwitch("Switch.System.Enum.RelaxedGetValues", out bool isRelaxed) && isRelaxed)
+                result = Array.CreateInstance(Enum.GetUnderlyingType(enumType), count);
+            else
+                result = Array.CreateInstance(enumType, count);
+#endif
             Array.CopyImplValueTypeArrayNoInnerGcRefs(values, 0, result, 0, count);
             return result;
         }
 
         [Intrinsic]
-        public Boolean HasFlag(Enum flag)
+        public bool HasFlag(Enum flag)
         {
             if (flag == null)
                 throw new ArgumentNullException(nameof(flag));
@@ -584,7 +595,7 @@ namespace System
             }
         }
 
-        public static bool IsDefined(Type enumType, Object value)
+        public static bool IsDefined(Type enumType, object value)
         {
             if (enumType == null)
                 throw new ArgumentNullException(nameof(enumType));
@@ -601,7 +612,7 @@ namespace System
                     throw new ArgumentException(SR.Arg_MustBeEnum);
 
                 EnumInfo enumInfo = GetEnumInfo(enumType);
-                foreach (KeyValuePair<String, ulong> kv in enumInfo.NamesAndValues)
+                foreach (KeyValuePair<string, ulong> kv in enumInfo.NamesAndValues)
                 {
                     if (value.Equals(kv.Key))
                         return true;
@@ -641,33 +652,33 @@ namespace System
                         throw new ArgumentException(SR.Arg_MustBeEnum);
                     enumInfo = GetEnumInfo(enumType);
                 }
-                String nameOrNull = GetNameIfAny(enumInfo, rawValue);
+                string nameOrNull = GetNameIfAny(enumInfo, rawValue);
                 return nameOrNull != null;
             }
         }
 
-        public static Object Parse(Type enumType, String value)
+        public static object Parse(Type enumType, string value)
         {
             return Parse(enumType, value, ignoreCase: false);
         }
 
-        public static Object Parse(Type enumType, String value, bool ignoreCase)
+        public static object Parse(Type enumType, string value, bool ignoreCase)
         {
-            Object result;
+            object result;
             Exception exception;
             if (!TryParseEnum(enumType, value, ignoreCase, out result, out exception))
                 throw exception;
             return result;
         }
 
-        public static TEnum Parse<TEnum>(String value) where TEnum : struct
+        public static TEnum Parse<TEnum>(string value) where TEnum : struct
         {
             return Parse<TEnum>(value, ignoreCase: false);
         }
 
-        public static TEnum Parse<TEnum>(String value, bool ignoreCase) where TEnum : struct
+        public static TEnum Parse<TEnum>(string value, bool ignoreCase) where TEnum : struct
         {
-            Object result;
+            object result;
             Exception exception;
             if (!TryParseEnum(typeof(TEnum), value, ignoreCase, out result, out exception))
                 throw exception;
@@ -728,7 +739,7 @@ namespace System
             return RuntimeImports.RhBox(enumEEType, pValue);
         }
 
-        public static Object ToObject(Type enumType, Object value)
+        public static object ToObject(Type enumType, object value)
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
@@ -774,22 +785,22 @@ namespace System
             }
         }
 
-        public static bool TryParse(Type enumType, String value, bool ignoreCase, out Object result)
+        public static bool TryParse(Type enumType, string value, bool ignoreCase, out object result)
         {
             Exception exception;
             return TryParseEnum(enumType, value, ignoreCase, out result, out exception);
         }
 
-        public static bool TryParse(Type enumType, String value, out Object result)
+        public static bool TryParse(Type enumType, string value, out object result)
         {
             Exception exception;
             return TryParseEnum(enumType, value, false, out result, out exception);
         }
 
-        public static bool TryParse<TEnum>(String value, bool ignoreCase, out TEnum result) where TEnum : struct
+        public static bool TryParse<TEnum>(string value, bool ignoreCase, out TEnum result) where TEnum : struct
         {
             Exception exception;
-            Object tempResult;
+            object tempResult;
             if (!TryParseEnum(typeof(TEnum), value, ignoreCase, out tempResult, out exception))
             {
                 result = default(TEnum);
@@ -799,12 +810,12 @@ namespace System
             return true;
         }
 
-        public static bool TryParse<TEnum>(String value, out TEnum result) where TEnum : struct
+        public static bool TryParse<TEnum>(string value, out TEnum result) where TEnum : struct
         {
             return TryParse<TEnum>(value, false, out result);
         }
 
-        public override String ToString()
+        public override string ToString()
         {
             try
             {
@@ -816,7 +827,7 @@ namespace System
             }
         }
 
-        public String ToString(String format)
+        public string ToString(string format)
         {
             if (format == null || format.Length == 0)
                 format = "G";
@@ -833,13 +844,14 @@ namespace System
             return Format(enumInfo, this, format);
         }
 
-        public String ToString(String format, IFormatProvider provider)
+        [Obsolete("The provider argument is not used. Please use ToString().")]
+        public string ToString(string format, IFormatProvider provider)
         {
             return ToString(format);
         }
 
         [Obsolete("The provider argument is not used. Please use ToString().")]
-        public String ToString(IFormatProvider provider)
+        public string ToString(IFormatProvider provider)
         {
             return ToString();
         }
@@ -856,7 +868,7 @@ namespace System
         //
         // Checks if value.GetType() matches enumType exactly. 
         //
-        private static bool ValueTypeMatchesEnumType(Type enumType, Object value)
+        private static bool ValueTypeMatchesEnumType(Type enumType, object value)
         {
             EETypePtr enumEEType;
             if (!enumType.TryGetEEType(out enumEEType))
@@ -884,7 +896,7 @@ namespace System
         //
         // The return value is "bool" if "value" is not an enum or an "integer type" as defined by the BCL Enum apis.
         // 
-        private static bool TryGetUnboxedValueOfEnumOrInteger(Object value, out ulong result)
+        private static bool TryGetUnboxedValueOfEnumOrInteger(object value, out ulong result)
         {
             EETypePtr eeType = value.EETypePtr;
             // For now, this check is required to flush out pointers.
@@ -948,10 +960,10 @@ namespace System
         //
         // Look up a name for rawValue if a matching one exists. Returns null if no matching name exists.
         //
-        private static String GetNameIfAny(EnumInfo enumInfo, ulong rawValue)
+        private static string GetNameIfAny(EnumInfo enumInfo, ulong rawValue)
         {
-            KeyValuePair<String, ulong>[] namesAndValues = enumInfo.NamesAndValues;
-            KeyValuePair<String, ulong> searchKey = new KeyValuePair<String, ulong>(null, rawValue);
+            KeyValuePair<string, ulong>[] namesAndValues = enumInfo.NamesAndValues;
+            KeyValuePair<string, ulong> searchKey = new KeyValuePair<string, ulong>(null, rawValue);
             int index = Array.BinarySearch<KeyValuePair<String, ulong>>(namesAndValues, searchKey, s_nameAndValueComparer);
             if (index < 0)
                 return null;
@@ -961,7 +973,7 @@ namespace System
         //
         // Common funnel for Enum.Parse methods.
         //
-        private static bool TryParseEnum(Type enumType, String value, bool ignoreCase, out Object result, out Exception exception)
+        private static bool TryParseEnum(Type enumType, string value, bool ignoreCase, out object result, out Exception exception)
         {
             exception = null;
             result = null;
@@ -1020,7 +1032,7 @@ namespace System
             StringComparison comparison = ignoreCase ?
                 StringComparison.OrdinalIgnoreCase :
                 StringComparison.Ordinal;
-            KeyValuePair<String, ulong>[] actualNamesAndValues = enumInfo.NamesAndValues;
+            KeyValuePair<string, ulong>[] actualNamesAndValues = enumInfo.NamesAndValues;
             int valueIndex = firstNonWhitespaceIndex;
             while (valueIndex <= value.Length) // '=' is to handle invalid case of an ending comma
             {
@@ -1039,11 +1051,11 @@ namespace System
 
                 // Try to match this substring against each enum name
                 bool foundMatch = false;
-                foreach (KeyValuePair<String, ulong> kv in actualNamesAndValues)
+                foreach (KeyValuePair<string, ulong> kv in actualNamesAndValues)
                 {
-                    String actualName = kv.Key;
+                    string actualName = kv.Key;
                     if (actualName.Length == valueSubstringLength &&
-                        String.Compare(actualName, 0, value, valueIndex, valueSubstringLength, comparison) == 0)
+                        string.Compare(actualName, 0, value, valueIndex, valueSubstringLength, comparison) == 0)
                     {
                         v |= kv.Value;
                         foundMatch = true;
@@ -1066,7 +1078,7 @@ namespace System
             return true;
         }
 
-        private static bool TryParseAsInteger(EETypePtr enumEEType, String value, int valueOffset, out Object result)
+        private static bool TryParseAsInteger(EETypePtr enumEEType, string value, int valueOffset, out object result)
         {
             Debug.Assert(value != null, "Expected non-null value");
             Debug.Assert(value.Length > 0, "Expected non-empty value");
@@ -1075,7 +1087,7 @@ namespace System
             result = null;
 
             char firstNonWhitespaceChar = value[valueOffset];
-            if (!(Char.IsDigit(firstNonWhitespaceChar) || firstNonWhitespaceChar == '+' || firstNonWhitespaceChar == '-'))
+            if (!(char.IsDigit(firstNonWhitespaceChar) || firstNonWhitespaceChar == '+' || firstNonWhitespaceChar == '-'))
                 return false;
             RuntimeImports.RhCorElementType corElementType = enumEEType.CorElementType;
 
@@ -1086,8 +1098,8 @@ namespace System
                 {
                     case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
                         {
-                            Boolean v;
-                            if (!Boolean.TryParse(value, out v))
+                            bool v;
+                            if (!bool.TryParse(value, out v))
                                 return false;
                             result = RuntimeImports.RhBox(enumEEType, &v);
                             return true;
@@ -1095,8 +1107,8 @@ namespace System
 
                     case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
                         {
-                            Char v;
-                            if (!Char.TryParse(value, out v))
+                            char v;
+                            if (!char.TryParse(value, out v))
                                 return false;
                             result = RuntimeImports.RhBox(enumEEType, &v);
                             return true;
@@ -1104,8 +1116,8 @@ namespace System
 
                     case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
                         {
-                            SByte v;
-                            if (!SByte.TryParse(value, out v))
+                            sbyte v;
+                            if (!sbyte.TryParse(value, out v))
                                 return false;
                             result = RuntimeImports.RhBox(enumEEType, &v);
                             return true;
@@ -1113,8 +1125,8 @@ namespace System
 
                     case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
                         {
-                            Byte v;
-                            if (!Byte.TryParse(value, out v))
+                            byte v;
+                            if (!byte.TryParse(value, out v))
                                 return false;
                             result = RuntimeImports.RhBox(enumEEType, &v);
                             return true;
@@ -1122,8 +1134,8 @@ namespace System
 
                     case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
                         {
-                            Int16 v;
-                            if (!Int16.TryParse(value, out v))
+                            short v;
+                            if (!short.TryParse(value, out v))
                                 return false;
                             result = RuntimeImports.RhBox(enumEEType, &v);
                             return true;
@@ -1131,8 +1143,8 @@ namespace System
 
                     case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
                         {
-                            UInt16 v;
-                            if (!UInt16.TryParse(value, out v))
+                            ushort v;
+                            if (!ushort.TryParse(value, out v))
                                 return false;
                             result = RuntimeImports.RhBox(enumEEType, &v);
                             return true;
@@ -1140,8 +1152,8 @@ namespace System
 
                     case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
                         {
-                            Int32 v;
-                            if (!Int32.TryParse(value, out v))
+                            int v;
+                            if (!int.TryParse(value, out v))
                                 return false;
                             result = RuntimeImports.RhBox(enumEEType, &v);
                             return true;
@@ -1149,8 +1161,8 @@ namespace System
 
                     case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
                         {
-                            UInt32 v;
-                            if (!UInt32.TryParse(value, out v))
+                            uint v;
+                            if (!uint.TryParse(value, out v))
                                 return false;
                             result = RuntimeImports.RhBox(enumEEType, &v);
                             return true;
@@ -1158,8 +1170,8 @@ namespace System
 
                     case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
                         {
-                            Int64 v;
-                            if (!Int64.TryParse(value, out v))
+                            long v;
+                            if (!long.TryParse(value, out v))
                                 return false;
                             result = RuntimeImports.RhBox(enumEEType, &v);
                             return true;
@@ -1167,8 +1179,8 @@ namespace System
 
                     case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
                         {
-                            UInt64 v;
-                            if (!UInt64.TryParse(value, out v))
+                            ulong v;
+                            if (!ulong.TryParse(value, out v))
                                 return false;
                             result = RuntimeImports.RhBox(enumEEType, &v);
                             return true;
@@ -1180,7 +1192,7 @@ namespace System
             }
         }
 
-        private static bool StillLooksLikeInteger(String value, int index)
+        private static bool StillLooksLikeInteger(string value, int index)
         {
             if (index != value.Length && (value[index] == '-' || value[index] == '+'))
             {
@@ -1242,9 +1254,9 @@ namespace System
         //
         // Sort comparer for NamesAndValues
         //
-        private class NamesAndValueComparer : IComparer<KeyValuePair<String, ulong>>
+        private class NamesAndValueComparer : IComparer<KeyValuePair<string, ulong>>
         {
-            public int Compare(KeyValuePair<String, ulong> kv1, KeyValuePair<String, ulong> kv2)
+            public int Compare(KeyValuePair<string, ulong> kv1, KeyValuePair<string, ulong> kv2)
             {
                 ulong x = kv1.Value;
                 ulong y = kv2.Value;
@@ -1259,11 +1271,11 @@ namespace System
 
         private static NamesAndValueComparer s_nameAndValueComparer = new NamesAndValueComparer();
 
-        private String LastResortToString
+        private string LastResortToString
         {
             get
             {
-                return String.Format("{0}", GetValue());
+                return string.Format("{0}", GetValue());
             }
         }
 
@@ -1360,17 +1372,17 @@ namespace System
             return Convert.ToDouble(GetValue(), CultureInfo.CurrentCulture);
         }
 
-        Decimal IConvertible.ToDecimal(IFormatProvider provider)
+        decimal IConvertible.ToDecimal(IFormatProvider provider)
         {
             return Convert.ToDecimal(GetValue(), CultureInfo.CurrentCulture);
         }
 
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
-            throw new InvalidCastException(String.Format(SR.InvalidCast_FromTo, "Enum", "DateTime"));
+            throw new InvalidCastException(string.Format(SR.InvalidCast_FromTo, "Enum", "DateTime"));
         }
 
-        Object IConvertible.ToType(Type type, IFormatProvider provider)
+        object IConvertible.ToType(Type type, IFormatProvider provider)
         {
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }

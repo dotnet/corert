@@ -249,12 +249,12 @@
     <DefineConstants>ARM64;BIT64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'wasm'">
-    <DefineConstants>WASM;BIT32;PLATFORM_UNIX;$(DefineConstants)</DefineConstants>
+    <DefineConstants>WASM;BIT32;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup>
     <PrereleaseResolveNuGetPackages>true</PrereleaseResolveNuGetPackages>
-    <NuGetTargetMoniker Condition="'$(NuGetTargetFramework)' == ''">.NETCoreApp,Version=v2.0</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(NuGetTargetFramework)' == ''">.NETCoreApp,Version=v2.1</NuGetTargetMoniker>
     <BuildPackageLibraryReferences>false</BuildPackageLibraryReferences>
   </PropertyGroup>
 

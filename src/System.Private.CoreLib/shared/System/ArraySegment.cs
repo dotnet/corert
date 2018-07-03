@@ -131,7 +131,7 @@ namespace System
             System.Array.Copy(_array, _offset, destination._array, destination._offset, _count);
         }
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             if (obj is ArraySegment<T>)
                 return Equals((ArraySegment<T>)obj);
@@ -192,7 +192,7 @@ namespace System
             return !(a == b);
         }
 
-        public static implicit operator ArraySegment<T>(T[] array) => new ArraySegment<T>(array);
+        public static implicit operator ArraySegment<T>(T[] array) => array != null ? new ArraySegment<T>(array) : default;
 
         #region IList<T>
         T IList<T>.this[int index]
@@ -289,7 +289,7 @@ namespace System
         bool ICollection<T>.Remove(T item)
         {
             ThrowHelper.ThrowNotSupportedException();
-            return default(bool);
+            return default;
         }
         #endregion
 

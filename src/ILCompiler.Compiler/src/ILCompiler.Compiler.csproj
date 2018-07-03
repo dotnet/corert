@@ -58,9 +58,6 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\ComparerIntrinsics.cs">
       <Link>IL\Stubs\ComparerIntrinsics.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DynamicInvokeMethodThunk.Sorting.cs">
-      <Link>IL\Stubs\DynamicInvokeMethodThunk.Sorting.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\GetCanonTypeIntrinsic.cs">
       <Link>IL\Stubs\GetCanonTypeIntrinsic.cs</Link>
     </Compile>
@@ -72,9 +69,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateMethodILEmitter.cs">
       <Link>IL\Stubs\DelegateMethodILEmitter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DynamicInvokeMethodThunk.cs">
-      <Link>IL\Stubs\DynamicInvokeMethodThunk.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\EETypePtrOfIntrinsic.cs">
       <Link>IL\Stubs\EETypePtrOfIntrinsic.cs</Link>
@@ -97,10 +91,9 @@
     <Compile Include="..\..\JitInterface\src\TypeString.cs">
       <Link>JitInterface\TypeString.cs</Link>
     </Compile>
+    <Compile Include="Compiler\AnalysisBasedMetadataManager.cs" />
     <Compile Include="Compiler\BlockedInternalsBlockingPolicy.cs" />
     <Compile Include="Compiler\CodeGenerationFailedException.cs" />
-    <Compile Include="Compiler\CompilerGeneratedType.cs" />
-    <Compile Include="Compiler\CompilerGeneratedType.Sorting.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.BoxedTypes.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Mangling.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Sorting.cs" />
@@ -132,13 +125,19 @@
     <Compile Include="Compiler\DependencyAnalysis\IMethodBodyNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IMethodBodyNodeWithFuncletSymbols.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ISymbolNodeWithFuncletId.cs" />
+	<Compile Include="Compiler\DependencyAnalysis\ISymbolNodeWithDebugInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\LoopHijackFlagNode.cs" />
     <Compile Include="Compiler\DevirtualizationManager.cs" />
     <Compile Include="Compiler\DictionaryLayoutProvider.cs" />
     <Compile Include="Compiler\EmptyInteropStubManager.cs" />
     <Compile Include="Compiler\DependencyAnalysis\SortableDependencyNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ImportedNodeProvider.cs" />
+    <Compile Include="Compiler\FrameworkStringResourceBlockingPolicy.cs" />
+    <Compile Include="Compiler\GeneratingMetadataManager.cs" />
     <Compile Include="Compiler\InternalCompilerErrorException.cs" />
+    <Compile Include="Compiler\ManifestResourceBlockingPolicy.cs" />
+    <Compile Include="Compiler\NoManifestResourceBlockingPolicy.cs" />
+    <Compile Include="Compiler\NoMetadataBlockingPolicy.cs" />
     <Compile Include="Compiler\PreInitFieldInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FrozenArrayNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GCStaticsPreInitDataNode.cs" />
@@ -282,6 +281,7 @@
     <Compile Include="Compiler\DependencyAnalysis\UtcDictionaryLayoutNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\UtcNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\VirtualMethodUseNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\SealedVTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\StackTraceMethodMappingNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\StackTraceEmbeddedMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\Register.cs" />
@@ -322,7 +322,6 @@
     <Compile Include="Compiler\MainMethodRootProvider.cs" />
     <Compile Include="Compiler\ManagedBinaryEmitter.cs" />
     <Compile Include="Compiler\MemoryHelper.cs" />
-    <Compile Include="Compiler\CompilerGeneratedMetadataManager.cs" />
     <Compile Include="Compiler\MergedAssemblyRecords.cs" />
     <Compile Include="Compiler\MetadataManager.cs" />
     <Compile Include="Compiler\InteropStubManager.cs" />
@@ -332,6 +331,7 @@
     <Compile Include="Compiler\NativeLibraryInitializerRootProvider.cs" />
     <Compile Include="Compiler\NodeMangler.cs" />
     <Compile Include="Compiler\ObjectDumper.cs" />
+    <Compile Include="Compiler\ExportsFileWriter.cs" />
     <Compile Include="Compiler\PrecomputedMetadataManager.cs" />
     <Compile Include="Compiler\ReadyToRun.cs" />
     <Compile Include="Compiler\RyuJitCompilation.cs" />
@@ -344,6 +344,7 @@
     <Compile Include="Compiler\TypeExtensions.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.TypeInit.cs" />
     <Compile Include="Compiler\CoreRTNameMangler.cs" />
+    <Compile Include="Compiler\UsageBasedMetadataManager.cs" />
     <Compile Include="Compiler\UserDefinedTypeDescriptor.cs" />
     <Compile Include="Compiler\UniversalGenericsRootProvider.cs" />
     <Compile Include="Compiler\UnixNodeMangler.cs" />
@@ -357,6 +358,8 @@
     <Compile Include="Compiler\WindowsNodeMangler.cs" />
     <Compile Include="IL\ILImporter.Scanner.cs" />
     <Compile Include="IL\Stubs\PInvokeILProvider.cs" />
+    <Compile Include="IL\Stubs\StartupCode\AppContextInitializerMethod.cs" />
+    <Compile Include="IL\Stubs\StartupCode\AppContextInitializerMethod.Sorting.cs" />
     <Compile Include="IL\Stubs\StartupCode\StartupCodeMainMethod.cs" />
     <Compile Include="IL\Stubs\StartupCode\StartupCodeMainMethod.Sorting.cs" />
     <Compile Include="IL\Stubs\StartupCode\NativeLibraryStartupMethod.cs" />

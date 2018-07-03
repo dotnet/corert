@@ -40,6 +40,15 @@ namespace System.Runtime.InteropServices
             s_lastWin32Error = errorCode;
         }
 
+        public static int GetHRForLastWin32Error()
+        {
+            int dwLastError = GetLastWin32Error();
+            if ((dwLastError & 0x80000000) == 0x80000000)
+                return dwLastError;
+            else
+                return (dwLastError & 0x0000FFFF) | unchecked((int)0x80070000);
+        }
+
         public static unsafe IntPtr AllocHGlobal(IntPtr cb)
         {
             return MemAlloc(cb);
@@ -177,7 +186,7 @@ namespace System.Runtime.InteropServices
         /// Return the stub to the pinvoke marshalling stub
         /// </summary>
         /// <param name="del">The delegate</param>
-        public static IntPtr GetStubForPInvokeDelegate(Delegate del)
+        public static IntPtr GetFunctionPointerForDelegate(Delegate del)
         {
             if (del == null)
                 return IntPtr.Zero;
@@ -305,16 +314,13 @@ namespace System.Runtime.InteropServices
 
             var delegateThunk = new PInvokeDelegateThunk(del);
 
-            McgPInvokeDelegateData pinvokeDelegateData;
-            if (!RuntimeAugments.InteropCallbacks.TryGetMarshallerDataForDelegate(del.GetTypeHandle(), out pinvokeDelegateData))
-            {
-                Environment.FailFast("Couldn't find marshalling stubs for delegate.");
-            }
-
             //
             //  For open static delegates set target to ReverseOpenStaticDelegateStub which calls the static function pointer directly
             //
-            IntPtr pTarget = del.GetRawFunctionPointerForOpenStaticDelegate() == IntPtr.Zero ? pinvokeDelegateData.ReverseStub : pinvokeDelegateData.ReverseOpenStaticDelegateStub;
+            bool openStaticDelegate = del.GetRawFunctionPointerForOpenStaticDelegate() != IntPtr.Zero;
+
+            IntPtr pTarget = RuntimeAugments.InteropCallbacks.GetDelegateMarshallingStub(del.GetTypeHandle(), openStaticDelegate);
+            Debug.Assert(pTarget != IntPtr.Zero);
 
             RuntimeAugments.SetThunkData(s_thunkPoolHeap, delegateThunk.Thunk, delegateThunk.ContextData, pTarget);
 
@@ -324,9 +330,9 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Retrieve the corresponding P/invoke instance from the stub
         /// </summary>
-        public static Delegate GetPInvokeDelegateForStub(IntPtr pStub, RuntimeTypeHandle delegateType)
+        public static Delegate GetDelegateForFunctionPointer(IntPtr ptr, RuntimeTypeHandle delegateType)
         {
-            if (pStub == IntPtr.Zero)
+            if (ptr == IntPtr.Zero)
                 return null;
             //
             // First try to see if this is one of the thunks we've allocated when we marshal a managed
@@ -335,7 +341,7 @@ namespace System.Runtime.InteropServices
             //
             IntPtr pContext;
             IntPtr pTarget;
-            if (s_thunkPoolHeap != null && RuntimeAugments.TryGetThunkData(s_thunkPoolHeap, pStub, out pContext, out pTarget))
+            if (s_thunkPoolHeap != null && RuntimeAugments.TryGetThunkData(s_thunkPoolHeap, ptr, out pContext, out pTarget))
             {
                 GCHandle handle;
                 unsafe
@@ -343,7 +349,7 @@ namespace System.Runtime.InteropServices
                     // Pull out Handle from context
                     handle = ((ThunkContextData*)pContext)->Handle;
                 }
-                Delegate target = InteropExtensions.UncheckedCast<Delegate>(handle.Target);
+                Delegate target = Unsafe.As<Delegate>(handle.Target);
 
                 //
                 // The delegate might already been garbage collected
@@ -363,15 +369,10 @@ namespace System.Runtime.InteropServices
             // We need to create the delegate that points to the invoke method of a
             // NativeFunctionPointerWrapper derived class
             //
-            McgPInvokeDelegateData pInvokeDelegateData;
-            if (!RuntimeAugments.InteropCallbacks.TryGetMarshallerDataForDelegate(delegateType, out pInvokeDelegateData))
-            {
-                return null;
-            }
-            return CalliIntrinsics.Call<Delegate>(
-                pInvokeDelegateData.ForwardDelegateCreationStub,
-                pStub
-            );
+            IntPtr pDelegateCreationStub = RuntimeAugments.InteropCallbacks.GetForwardDelegateCreationStub(delegateType);
+            Debug.Assert(pDelegateCreationStub != IntPtr.Zero);
+
+            return CalliIntrinsics.Call<Delegate>(pDelegateCreationStub, ptr);
         }
 
         /// <summary>
@@ -420,7 +421,7 @@ namespace System.Runtime.InteropServices
 
             }
 
-            T target = InteropExtensions.UncheckedCast<T>(handle.Target);
+            T target = Unsafe.As<T>(handle.Target);
 
             //
             // The delegate might already been garbage collected
@@ -442,17 +443,17 @@ namespace System.Runtime.InteropServices
         #endregion
 
         #region String marshalling
-        public static unsafe String PtrToStringUni(IntPtr ptr, int len)
+        public static unsafe string PtrToStringUni(IntPtr ptr, int len)
         {
             if (ptr == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(ptr));
             if (len < 0)
                 throw new ArgumentException(nameof(len));
 
-            return new String((char*)ptr, 0, len);
+            return new string((char*)ptr, 0, len);
         }
 
-        public static unsafe String PtrToStringUni(IntPtr ptr)
+        public static unsafe string PtrToStringUni(IntPtr ptr)
         {
             if (IntPtr.Zero == ptr)
             {
@@ -464,7 +465,7 @@ namespace System.Runtime.InteropServices
             }
             else
             {
-                return new String((char*)ptr);
+                return new string((char*)ptr);
             }
         }
 
@@ -552,7 +553,7 @@ namespace System.Runtime.InteropServices
             int lenUnicode;
             CalculateStringLength(pchBuffer, out lenAnsi, out lenUnicode);
 
-            string result = String.Empty;
+            string result = string.Empty;
 
             if (lenUnicode > 0)
             {
@@ -767,7 +768,7 @@ namespace System.Runtime.InteropServices
             int lenAnsi = GetAnsiStringLen(pchBuffer);
             int lenUnicode = charCount;
 
-            string result = String.Empty;
+            string result = string.Empty;
 
             if (lenUnicode > 0)
             {

@@ -11,16 +11,16 @@
 
     <Compile Include="System\Runtime\InteropServices\ComWeakReferenceHelpers.cs" />
     <Compile Include="System\Runtime\InteropServices\InteropEventProvider.cs" />
-    <Compile Include="System\Runtime\InteropServices\MarshalAdapter.cs" />
-    <Compile Include="System\Runtime\InteropServices\MarshalImpl.cs" />
 
     <Compile Include="Shared\ComCallableObject.cs" />
     <Compile Include="Shared\ComInterop.cs" />
+    <Compile Include="Shared\ClassFactory.cs" />
     <Compile Include="Shared\Dictionary.cs" />
     <Compile Include="Shared\DictionaryBase.cs" />
     <Compile Include="Shared\FixedHashTable.cs" />
     <Compile Include="Shared\GCEventProvider.cs" />
     <Compile Include="Shared\HashSet.cs" />
+    <Compile Include="Shared\IClassFactory.cs" />
     <Compile Include="Shared\InternalModule.cs" />
     <Compile Include="Shared\Interop.Manual.cs" />
     <Compile Include="Shared\List.cs" />
@@ -36,6 +36,7 @@
     <Compile Include="Shared\McgMarshal.cs" />
     <Compile Include="Shared\McgModule.cs" />
     <Compile Include="Shared\McgModuleManager.cs" />
+    <Compile Include="Shared\McgPInvokeData.cs" />
     <Compile Include="Shared\McgPInvokeMarshalStubAttribute.cs" />
     <Compile Include="Shared\McgredirectedMethodAttribute.cs" />
     <Compile Include="Shared\McgRedirectedTypeAttribute.cs" />

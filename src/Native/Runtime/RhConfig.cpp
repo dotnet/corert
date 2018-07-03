@@ -68,12 +68,12 @@ UInt32 RhConfig::ReadConfigValue(_In_z_ const TCHAR *wszName, UInt32 uiDefaultVa
 //reads a config value from rhconfig.ini into outputBuffer buffer returning the length of the value.
 //lazily reads the file so if the file is not yet read, it will read it on first called
 //if the file is not avaliable, or unreadable zero will always be returned
-//cchOuputBuffer is the maximum number of characters to write to outputBuffer
+//cchOutputBuffer is the maximum number of characters to write to outputBuffer
 //cchOutputBuffer must be a size >= CONFIG_VAL_MAXLEN + 1
-UInt32 RhConfig::GetIniVariable(_In_z_ const TCHAR* configName, _Out_writes_all_(cchOuputBuffer) TCHAR* outputBuffer, _In_ UInt32 cchOuputBuffer)
+UInt32 RhConfig::GetIniVariable(_In_z_ const TCHAR* configName, _Out_writes_all_(cchOutputBuffer) TCHAR* outputBuffer, _In_ UInt32 cchOutputBuffer)
 {
     //the buffer needs to be big enough to read the value buffer + null terminator
-    if (cchOuputBuffer < CONFIG_VAL_MAXLEN + 1)
+    if (cchOutputBuffer < CONFIG_VAL_MAXLEN + 1)
     {
         return 0;
     }
@@ -99,7 +99,7 @@ UInt32 RhConfig::GetIniVariable(_In_z_ const TCHAR* configName, _Out_writes_all_
 
             UInt32 iValue;
 
-            for (iValue = 0; (iValue < CONFIG_VAL_MAXLEN + 1) && (iValue < (Int32)cchOuputBuffer); iValue++)
+            for (iValue = 0; (iValue < CONFIG_VAL_MAXLEN + 1) && (iValue < (Int32)cchOutputBuffer); iValue++)
             {
                 outputBuffer[iValue] = ((ConfigPair*)g_iniSettings)[iSettings].Value[iValue];
 

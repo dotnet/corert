@@ -49,7 +49,7 @@ dotnet build /t:LinkNative /t:Rebuild /v:Detailed | grep ".ilc.rsp"
 Once you have the ilc path, you can change ```launch.json``` accordingly:
 
 ```json
-            "args": ["@obj/Debug/netcoreapp1.0/native/<netcore_app_name>.ilc.rsp"],
+            "args": ["@obj/Debug/netcoreapp2.1/native/<netcore_app_name>.ilc.rsp"],
             "cwd": "<netcore_app_root_folder>",
 ```
 

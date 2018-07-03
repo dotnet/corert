@@ -36,19 +36,19 @@ namespace System.Runtime.InteropServices
         private IntPtr _handle;
 
         // Allocate a handle storing the object and the type.
-        private UnsafeGCHandle(Object value, GCHandleType type)
+        private UnsafeGCHandle(object value, GCHandleType type)
         {
             Debug.Assert((uint)type <= (uint)MaxHandleType, "Unexpected handle type");
             _handle = RuntimeImports.RhHandleAlloc(value, type);
         }
 
-        public static UnsafeGCHandle Alloc(Object value, GCHandleType type)
+        public static UnsafeGCHandle Alloc(object value, GCHandleType type)
         {
             return new UnsafeGCHandle(value, type);
         }
 
         // Target property - allows getting / updating of the handle's referent.
-        public Object Target
+        public object Target
         {
             get
             {

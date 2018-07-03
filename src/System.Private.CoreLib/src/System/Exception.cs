@@ -29,7 +29,7 @@ namespace System
             Init();
         }
 
-        public Exception(String message)
+        public Exception(string message)
         {
             Init();
             _message = message;
@@ -40,7 +40,7 @@ namespace System
         // Note: the stack trace is not started until the exception 
         // is thrown
         // 
-        public Exception(String message, Exception innerException)
+        public Exception(string message, Exception innerException)
         {
             Init();
             _message = message;
@@ -63,13 +63,13 @@ namespace System
             _source = info.GetString("Source"); // Do not rename (binary serialization)
         }
 
-        public virtual String Message
+        public virtual string Message
         {
             get
             {
                 if (_message == null)
                 {
-                    String className = GetClassName();
+                    string className = GetClassName();
                     return SR.Format(SR.Exception_WasThrown, className);
                 }
                 else
@@ -177,14 +177,6 @@ namespace System
         }
 
         /// <summary>
-        /// Allow System.Private.Interop to set HRESULT of an exception
-        /// </summary>
-        internal void SetErrorCode(int hr)
-        {
-            HResult = hr;
-        }
-
-        /// <summary>
         /// Allow System.Private.Interop to set message of an exception
         /// </summary>
         internal void SetMessage(string msg)
@@ -240,18 +232,18 @@ namespace System
                 _message = Message; // Set the Message information correctly before serialization
             }
 
-            info.AddValue("ClassName",  GetClassName(), typeof(String)); // Do not rename (binary serialization)
-            info.AddValue("Message", _message, typeof(String)); // Do not rename (binary serialization)
+            info.AddValue("ClassName",  GetClassName(), typeof(string)); // Do not rename (binary serialization)
+            info.AddValue("Message", _message, typeof(string)); // Do not rename (binary serialization)
             info.AddValue("Data", _data, typeof(IDictionary)); // Do not rename (binary serialization)
             info.AddValue("InnerException", _innerException, typeof(Exception)); // Do not rename (binary serialization)
-            info.AddValue("HelpURL", _helpURL, typeof(String)); // Do not rename (binary serialization)
-            info.AddValue("StackTraceString",  StackTrace, typeof(String)); // Do not rename (binary serialization)
-            info.AddValue("RemoteStackTraceString", null, typeof(String)); // Do not rename (binary serialization)
-            info.AddValue("RemoteStackIndex", 0, typeof(Int32)); // Do not rename (binary serialization)
-            info.AddValue("ExceptionMethod", null, typeof(String)); // Do not rename (binary serialization)
+            info.AddValue("HelpURL", _helpURL, typeof(string)); // Do not rename (binary serialization)
+            info.AddValue("StackTraceString",  StackTrace, typeof(string)); // Do not rename (binary serialization)
+            info.AddValue("RemoteStackTraceString", null, typeof(string)); // Do not rename (binary serialization)
+            info.AddValue("RemoteStackIndex", 0, typeof(int)); // Do not rename (binary serialization)
+            info.AddValue("ExceptionMethod", null, typeof(string)); // Do not rename (binary serialization)
             info.AddValue("HResult", HResult); // Do not rename (binary serialization)
-            info.AddValue("Source", _source, typeof(String)); // Do not rename (binary serialization)
-            info.AddValue("WatsonBuckets", null, typeof(String)); // Do not rename (binary serialization)
+            info.AddValue("Source", _source, typeof(string)); // Do not rename (binary serialization)
+            info.AddValue("WatsonBuckets", null, typeof(string)); // Do not rename (binary serialization)
         }
 
         private string GetStackTrace(bool needFileInfo)
@@ -259,7 +251,7 @@ namespace System
             return this.StackTrace;
         }
 
-        public virtual String HelpLink
+        public virtual string HelpLink
         {
             get
             {
@@ -272,7 +264,7 @@ namespace System
             }
         }
 
-        public virtual String Source
+        public virtual string Source
         {
             get
             {
@@ -288,15 +280,15 @@ namespace System
             }
         }
 
-        public override String ToString()
+        public override string ToString()
         {
             return ToString(true, true);
         }
 
-        private String ToString(bool needFileLineInfo, bool needMessage)
+        private string ToString(bool needFileLineInfo, bool needMessage)
         {
-            String message = (needMessage ? Message : null);
-            String s;
+            string message = (needMessage ? Message : null);
+            string s;
 
             if (message == null || message.Length <= 0)
             {
@@ -326,26 +318,26 @@ namespace System
         // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details. 
         // Please do not change the type, the name, or the semantic usage of this member without understanding the implication for tools. 
         // Get in touch with the diagnostics team if you have questions.
-        internal String _message;
+        internal string _message;
         private IDictionary _data;
         private Exception _innerException;
-        private String _helpURL;
-        private String _source;         // Mainly used by VB. 
+        private string _helpURL;
+        private string _source;         // Mainly used by VB. 
 
         private int _HResult;     // HResult
 
         // To maintain compatibility across runtimes, if this object was deserialized, it will store its stack trace as a string
-        private String _stackTrace;
+        private string _stackTrace;
 
         public int HResult
         {
             get { return _HResult; }
-            protected set { _HResult = value; }
+            set { _HResult = value; }
         }
 
         // Returns the stack trace as a string.  If no stack trace is
         // available, null is returned.
-        public virtual String StackTrace
+        public virtual string StackTrace
         {
             get
             {
@@ -524,7 +516,7 @@ namespace System
         // for a small duration but that sounds reasonable considering
         // such scenarios are going to be extremely rare, where timing
         // matches precisely.
-        private static Object s_EDILock = new Object();
+        private static object s_EDILock = new object();
 
         /// <summary>
         /// This is the binary format for serialized exceptions that get saved into a special buffer that is
@@ -536,8 +528,8 @@ namespace System
         private struct SERIALIZED_EXCEPTION_HEADER
         {
             internal IntPtr ExceptionEEType;
-            internal Int32 HResult;
-            internal Int32 StackTraceElementCount;
+            internal int HResult;
+            internal int StackTraceElementCount;
             // IntPtr * N  : StackTrace elements
         }
         internal const int CurrentSerializationSignature = 0x31305845;  // 'EX01'

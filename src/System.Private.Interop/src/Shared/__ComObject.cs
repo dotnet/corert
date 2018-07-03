@@ -1174,7 +1174,7 @@ namespace System
 
         /// <summary>
         /// Slow path of QueryInterface that does not look at any cache.
-        /// NOTE: MethodImpl(NoInlining) is necessary becauase Bartok is trying to be "helpful" by inlining
+        /// NOTE: MethodImpl(NoInlining) is necessary because Bartok is trying to be "helpful" by inlining
         /// these calls while in other cases it does not inline when it should.
         /// </summary>
         [MethodImpl(MethodImplOptions.NoInlining)]

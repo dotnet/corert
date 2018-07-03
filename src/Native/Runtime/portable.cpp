@@ -380,6 +380,11 @@ COOP_PINVOKE_HELPER(void, RhpMemoryBarrier, ())
 #endif
 
 #if defined(USE_PORTABLE_HELPERS)
+EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
+{
+    return NULL;
+}
+
 COOP_PINVOKE_HELPER(void *, RhpGetThunksBase, ())
 {
     return NULL;

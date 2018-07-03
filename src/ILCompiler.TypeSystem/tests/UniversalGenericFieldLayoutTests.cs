@@ -21,7 +21,7 @@ namespace TypeSystemTests
 
         public UniversalGenericFieldLayoutTests()
         {
-            // Architecure specific tests may use these contexts
+            // Architecture specific tests may use these contexts
             _contextX64 = new TestTypeSystemContext(TargetArchitecture.X64);
             var systemModuleX64 = _contextX64.CreateModuleForSimpleName("CoreTestAssembly");
             _contextX64.SetSystemModule(systemModuleX64);

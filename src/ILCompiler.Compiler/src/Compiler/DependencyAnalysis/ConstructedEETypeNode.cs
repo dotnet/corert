@@ -80,7 +80,7 @@ namespace ILCompiler.DependencyAnalysis
 
             DefType closestDefType = _type.GetClosestDefType();
 
-            if (_type.RuntimeInterfaces.Length > 0)
+            if (InterfaceDispatchMapNode.MightHaveInterfaceDispatchMap(_type, factory))
             {
                 dependencyList.Add(factory.InterfaceDispatchMap(_type), "Interface dispatch map");
             }
@@ -102,7 +102,7 @@ namespace ILCompiler.DependencyAnalysis
 
             dependencyList.Add(factory.VTable(closestDefType), "VTable");
 
-            if (closestDefType.HasInstantiation)
+            if (closestDefType.HasInstantiation && factory.MetadataManager.SupportsReflection)
             {
                 TypeDesc canonType = _type.ConvertToCanonForm(CanonicalFormKind.Specific);
                 TypeDesc canonClosestDefType = closestDefType.ConvertToCanonForm(CanonicalFormKind.Specific);
@@ -113,6 +113,22 @@ namespace ILCompiler.DependencyAnalysis
                 // one template is needed for the Array<T> type by the dynamic type loader.
                 if (canonType.IsCanonicalSubtype(CanonicalFormKind.Any) && !factory.NecessaryTypeSymbol(canonClosestDefType).RepresentsIndirectionCell)
                     dependencyList.Add(factory.NativeLayout.TemplateTypeLayout(canonType), "Template Type Layout");
+            }
+
+            if (factory.TypeSystemContext.SupportsUniversalCanon)
+            {
+                foreach (var instantiationType in _type.Instantiation)
+                {
+                    if (instantiationType.IsValueType)
+                    {
+                        // All valuetype generic parameters of a constructed type may be effectively constructed. This is generally not that 
+                        // critical, but in the presence of universal generics the compiler may generate a Box followed by calls to ToString,
+                        // GetHashcode or Equals in ways that cannot otherwise be detected by dependency analysis. Thus force all struct type
+                        // generic parameters to be considered constructed when walking dependencies of a constructed generic
+                        dependencyList.Add(factory.ConstructedTypeSymbol(instantiationType.ConvertToCanonForm(CanonicalFormKind.Specific)), 
+                        "Struct generic parameters in constructed types may be assumed to be used as constructed in constructed generic types");
+                    }
+                }
             }
 
             // Generated type contains generic virtual methods that will get added to the GVM tables
@@ -134,6 +150,15 @@ namespace ILCompiler.DependencyAnalysis
             factory.MetadataManager.GetDependenciesDueToReflectability(ref dependencyList, factory, _type);
 
             factory.InteropStubManager.AddInterestingInteropConstructedTypeDependencies(ref dependencyList, factory, _type);
+
+            // Keep track of the default constructor map dependency for this type if it has a default constructor
+            MethodDesc defaultCtor = closestDefType.GetDefaultConstructor();
+            if (defaultCtor != null)
+            {
+                dependencyList.Add(new DependencyListEntry(
+                    factory.MethodEntrypoint(defaultCtor.GetCanonMethodTarget(CanonicalFormKind.Specific), closestDefType.IsValueType), 
+                    "DefaultConstructorNode"));
+            }
 
             return dependencyList;
         }
@@ -177,10 +202,6 @@ namespace ILCompiler.DependencyAnalysis
 
                     // Full EEType of System.Canon should never be used.
                     if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
-                        return false;
-
-                    // Byref-like types have interior pointers and cannot be heap allocated.
-                    if (type.IsByRefLike)
                         return false;
 
                     // The global "<Module>" type can never be allocated.

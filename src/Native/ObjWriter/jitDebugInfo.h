@@ -26,6 +26,18 @@ struct DebugVarInfo {
       : Name(ArgName), TypeIndex(ArgTypeIndex), IsParam(ArgIsParam) {}
 };
 
+struct DebugEHClauseInfo {
+  unsigned TryOffset;
+  unsigned TryLength;
+  unsigned HandlerOffset;
+  unsigned HandlerLength;
+
+  DebugEHClauseInfo(unsigned TryOffset, unsigned TryLength,
+                    unsigned HandlerOffset, unsigned HandlerLength) :
+                    TryOffset(TryOffset), TryLength(TryLength),
+                    HandlerOffset(HandlerOffset), HandlerLength(HandlerLength) {}
+};
+
 typedef unsigned short CVRegMapping;
 
 #define CVREGDAT(p2, cv) cv

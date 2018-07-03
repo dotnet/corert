@@ -4,6 +4,7 @@
 
 #include "common.h"
 #include "daccess.h"
+#include "rhassert.h"
 
 #define UNW_STEP_SUCCESS 1
 #define UNW_STEP_END     0
@@ -20,12 +21,23 @@
 #include <src/config.h>
 #include <src/Registers.hpp>
 #include <src/AddressSpace.hpp>
+#if defined(_TARGET_ARM_)
+#include <src/libunwind_ext.h>
+#endif
 #include <src/UnwindCursor.hpp>
 
+#if defined(_TARGET_AMD64_)
 using libunwind::Registers_x86_64;
+#elif defined(_TARGET_ARM_)
+using libunwind::Registers_arm;
+#else
+#error "Unwinding is not implemented for this architecture yet."
+#endif
 using libunwind::LocalAddressSpace;
 using libunwind::EHHeaderParser;
+#if _LIBUNWIND_SUPPORT_DWARF_UNWIND
 using libunwind::DwarfInstructions;
+#endif
 using libunwind::UnwindInfoSections;
 
 LocalAddressSpace _addressSpace;
@@ -43,6 +55,7 @@ struct dyld_unwind_sections
 
 #else // __APPLE__
 
+#if defined(_TARGET_AMD64_)
 // Passed to the callback function called by dl_iterate_phdr
 struct dl_iterate_cb_data
 {
@@ -108,6 +121,7 @@ static int LocateSectionsCallback(struct dl_phdr_info *info, size_t size, void *
 
     return 0;
 }
+#endif
 
 #endif // __APPLE__
 
@@ -289,6 +303,7 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
     #error "Unwinding is not implemented for this architecture yet."
 #endif
 
+#if _LIBUNWIND_SUPPORT_DWARF_UNWIND
     bool retVal = uc.getInfoFromDwarfSection(pc, uwInfoSections, 0 /* fdeSectionOffsetHint */);
     if (!retVal)
     {
@@ -307,6 +322,9 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
     }
 
     regs->pIP = PTR_PCODE(regs->SP - sizeof(TADDR));
+#else
+    PORTABILITY_ASSERT("DoTheStep");
+#endif
 
     return true;
 }
@@ -333,8 +351,12 @@ UnwindInfoSections LocateUnwindSections(uintptr_t pc)
     }
 #else // __APPLE__
 
+#if _LIBUNWIND_SUPPORT_DWARF_UNWIND
     dl_iterate_cb_data cb_data = {&uwInfoSections, pc };
     dl_iterate_phdr(LocateSectionsCallback, &cb_data);
+#else
+    PORTABILITY_ASSERT("LocateUnwindSections");
+#endif
 
 #endif
 
@@ -346,10 +368,15 @@ bool UnwindHelpers::StepFrame(REGDISPLAY *regs)
     uintptr_t pc = regs->GetIP();
 
     UnwindInfoSections uwInfoSections = LocateUnwindSections(pc);
+
+#if _LIBUNWIND_SUPPORT_DWARF_UNWIND
     if (uwInfoSections.dwarf_section == NULL)
     {
         return false;
     }
+#else
+    PORTABILITY_ASSERT("StepFrame");
+#endif
 
     return DoTheStep(pc, uwInfoSections, regs);
 }

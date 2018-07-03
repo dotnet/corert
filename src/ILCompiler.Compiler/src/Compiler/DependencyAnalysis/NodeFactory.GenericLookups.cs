@@ -217,14 +217,14 @@ namespace ILCompiler.DependencyAnalysis
 
             private NodeCache<TypeDesc, GenericLookupResult> _objectAllocators;
 
-            public GenericLookupResult ObjectAlloctor(TypeDesc type)
+            public GenericLookupResult ObjectAllocator(TypeDesc type)
             {
                 return _objectAllocators.GetOrAdd(type);
             }
 
             private NodeCache<TypeDesc, GenericLookupResult> _arrayAllocators;
 
-            public GenericLookupResult ArrayAlloctor(TypeDesc type)
+            public GenericLookupResult ArrayAllocator(TypeDesc type)
             {
                 return _arrayAllocators.GetOrAdd(type);
             }

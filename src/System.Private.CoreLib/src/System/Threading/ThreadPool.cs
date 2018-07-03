@@ -385,7 +385,7 @@ namespace System.Threading
             }
         }
 
-        internal readonly LowLevelConcurrentQueue<IThreadPoolWorkItem> workItems = new LowLevelConcurrentQueue<IThreadPoolWorkItem>();
+        internal readonly ConcurrentQueue<IThreadPoolWorkItem> workItems = new ConcurrentQueue<IThreadPoolWorkItem>();
         
         private volatile int numOutstandingThreadRequests = 0;
 
@@ -673,9 +673,9 @@ namespace System.Threading
         }
     }
 
-    public delegate void WaitCallback(Object state);
+    public delegate void WaitCallback(object state);
 
-    public delegate void WaitOrTimerCallback(Object state, bool timedOut);  // signalled or timed out
+    public delegate void WaitOrTimerCallback(object state, bool timedOut);  // signalled or timed out
 
     //
     // Interface to something that can be queued to the TP.  This is implemented by 
@@ -691,24 +691,20 @@ namespace System.Threading
         void ExecuteWorkItem();
     }
 
-    internal sealed class QueueUserWorkItemCallback : IThreadPoolWorkItem
+    internal abstract class QueueUserWorkItemCallbackBase : IThreadPoolWorkItem
     {
-        private WaitCallback callback;
-        private readonly ExecutionContext context;
-        private readonly Object state;
-
 #if DEBUG
         private volatile int executed;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1821:RemoveEmptyFinalizers")]
-        ~QueueUserWorkItemCallback()
+        ~QueueUserWorkItemCallbackBase()
         {
             Debug.Assert(
                 executed != 0 || Environment.HasShutdownStarted /*|| AppDomain.CurrentDomain.IsFinalizingForUnload()*/,
                 "A QueueUserWorkItemCallback was never called!");
         }
 
-        private void MarkExecuted()
+        protected void MarkExecuted()
         {
             GC.SuppressFinalize(this);
             Debug.Assert(
@@ -717,86 +713,51 @@ namespace System.Threading
         }
 #endif
 
-        internal QueueUserWorkItemCallback(WaitCallback waitCallback, Object stateObj, ExecutionContext ec)
-        {
-            callback = waitCallback;
-            state = stateObj;
-            context = ec;
-        }
-
-        void IThreadPoolWorkItem.ExecuteWorkItem()
+        public virtual void ExecuteWorkItem()
         {
 #if DEBUG
             MarkExecuted();
 #endif
-            try
-            {
-                if (context == null)
-                {
-                    WaitCallback cb = callback;
-                    callback = null;
-                    cb(state);
-                }
-                else
-                    ExecutionContext.Run(context, ccb, this);
-            }
-            catch (Exception e)
-            {
-                RuntimeAugments.ReportUnhandledException(e);
-                throw; //unreachable
-            }
-        }
-
-        internal static readonly ContextCallback ccb = new ContextCallback(WaitCallback_Context);
-
-        private static void WaitCallback_Context(Object state)
-        {
-            QueueUserWorkItemCallback obj = (QueueUserWorkItemCallback)state;
-            WaitCallback wc = obj.callback;
-            Debug.Assert(null != wc);
-            wc(obj.state);
         }
     }
 
-    internal sealed class QueueUserWorkItemCallbackDefaultContext : IThreadPoolWorkItem
+    internal sealed class QueueUserWorkItemCallback : QueueUserWorkItemCallbackBase
     {
-        private WaitCallback callback;
-        private readonly Object state;
+        private WaitCallback _callback;
+        private readonly object _state;
+        private readonly ExecutionContext _context;
 
-#if DEBUG
-        private volatile int executed;
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1821:RemoveEmptyFinalizers")]
-        ~QueueUserWorkItemCallbackDefaultContext()
+        internal static readonly ContextCallback s_executionContextShim = state =>
         {
-            Debug.Assert(
-                executed != 0 || Environment.HasShutdownStarted /*|| AppDomain.CurrentDomain.IsFinalizingForUnload()*/,
-                "A QueueUserWorkItemCallbackDefaultContext was never called!");
+            var obj = (QueueUserWorkItemCallback)state;
+            WaitCallback c = obj._callback;
+            Debug.Assert(c != null);
+            obj._callback = null;
+            c(obj._state);
+        };
+
+        internal QueueUserWorkItemCallback(WaitCallback callback, object state, ExecutionContext context)
+        {
+            _callback = callback;
+            _state = state;
+            _context = context;
         }
 
-        private void MarkExecuted()
+        public override void ExecuteWorkItem()
         {
-            GC.SuppressFinalize(this);
-            Debug.Assert(
-                0 == Interlocked.Exchange(ref executed, 1),
-                "A QueueUserWorkItemCallbackDefaultContext was called twice!");
-        }
-#endif
-
-        internal QueueUserWorkItemCallbackDefaultContext(WaitCallback waitCallback, Object stateObj)
-        {
-            callback = waitCallback;
-            state = stateObj;
-        }
-
-        void IThreadPoolWorkItem.ExecuteWorkItem()
-        {
-#if DEBUG
-            MarkExecuted();
-#endif
+            base.ExecuteWorkItem();
             try
             {
-                ExecutionContext.Run(ExecutionContext.Default, ccb, this);
+                if (_context == null)
+                {
+                    WaitCallback c = _callback;
+                    _callback = null;
+                    c(_state);
+                }
+                else
+                {
+                    ExecutionContext.Run(_context, s_executionContextShim, this);
+                }
             }
             catch (Exception e)
             {
@@ -804,16 +765,121 @@ namespace System.Threading
                 throw; //unreachable
             }
         }
+    }
 
-        internal static readonly ContextCallback ccb = new ContextCallback(WaitCallback_Context);
+    internal sealed class QueueUserWorkItemCallback<TState> : QueueUserWorkItemCallbackBase
+    {
+        private Action<TState> _callback;
+        private readonly TState _state;
+        private readonly ExecutionContext _context;
 
-        private static void WaitCallback_Context(Object state)
+        internal static readonly ContextCallback s_executionContextShim = state =>
         {
-            QueueUserWorkItemCallbackDefaultContext obj = (QueueUserWorkItemCallbackDefaultContext)state;
-            WaitCallback wc = obj.callback;
-            Debug.Assert(null != wc);
-            obj.callback = null;
-            wc(obj.state);
+            var obj = (QueueUserWorkItemCallback<TState>)state;
+            Action<TState> c = obj._callback;
+            Debug.Assert(c != null);
+            obj._callback = null;
+            c(obj._state);
+        };
+
+        internal QueueUserWorkItemCallback(Action<TState> callback, TState state, ExecutionContext context)
+        {
+            _callback = callback;
+            _state = state;
+            _context = context;
+        }
+
+        public override void ExecuteWorkItem()
+        {
+            base.ExecuteWorkItem();
+            try
+            {
+                if (_context == null)
+                {
+                    Action<TState> c = _callback;
+                    _callback = null;
+                    c(_state);
+                }
+                else
+                {
+                    ExecutionContext.RunInternal(_context, s_executionContextShim, this);
+                }
+            }
+            catch (Exception e)
+            {
+                RuntimeAugments.ReportUnhandledException(e);
+                throw; //unreachable
+            }
+        }
+    }
+
+    internal sealed class QueueUserWorkItemCallbackDefaultContext : QueueUserWorkItemCallbackBase
+    {
+        private WaitCallback _callback;
+        private readonly object _state;
+
+        internal static readonly ContextCallback s_executionContextShim = state =>
+        {
+            var obj = (QueueUserWorkItemCallbackDefaultContext)state;
+            WaitCallback c = obj._callback;
+            Debug.Assert(c != null);
+            obj._callback = null;
+            c(obj._state);
+        };
+
+        internal QueueUserWorkItemCallbackDefaultContext(WaitCallback callback, object state)
+        {
+            _callback = callback;
+            _state = state;
+        }
+
+        public override void ExecuteWorkItem()
+        {
+            base.ExecuteWorkItem();
+            try
+            {
+                ExecutionContext.Run(ExecutionContext.Default, s_executionContextShim, this);
+            }
+            catch (Exception e)
+            {
+                RuntimeAugments.ReportUnhandledException(e);
+                throw; //unreachable
+            }
+        }
+    }
+
+    internal sealed class QueueUserWorkItemCallbackDefaultContext<TState> : QueueUserWorkItemCallbackBase
+    {
+        private Action<TState> _callback;
+        private readonly TState _state;
+
+        internal static readonly ContextCallback s_executionContextShim = state =>
+        {
+            var obj = (QueueUserWorkItemCallbackDefaultContext<TState>)state;
+            Action<TState> c = obj._callback;
+            Debug.Assert(c != null);
+            obj._callback = null;
+            c(obj._state);
+        };
+
+        internal QueueUserWorkItemCallbackDefaultContext(Action<TState> callback, TState state)
+        {
+            _callback = callback;
+            _state = state;
+        }
+
+        public override void ExecuteWorkItem()
+        {
+            base.ExecuteWorkItem();
+            try
+            {
+                ExecutionContext.Run(ExecutionContext.Default, s_executionContextShim, this);
+            }
+            catch (Exception e)
+            {
+                RuntimeAugments.ReportUnhandledException(e);
+                throw; //unreachable
+            }
         }
     }
 
@@ -821,11 +887,11 @@ namespace System.Threading
     {
         private WaitOrTimerCallback _waitOrTimerCallback;
         private ExecutionContext _executionContext;
-        private Object _state;
+        private object _state;
         private static readonly ContextCallback _ccbt = new ContextCallback(WaitOrTimerCallback_Context_t);
         private static readonly ContextCallback _ccbf = new ContextCallback(WaitOrTimerCallback_Context_f);
 
-        internal _ThreadPoolWaitOrTimerCallback(WaitOrTimerCallback waitOrTimerCallback, Object state, bool flowExecutionContext)
+        internal _ThreadPoolWaitOrTimerCallback(WaitOrTimerCallback waitOrTimerCallback, object state, bool flowExecutionContext)
         {
             _waitOrTimerCallback = waitOrTimerCallback;
             _state = state;
@@ -837,13 +903,13 @@ namespace System.Threading
             }
         }
 
-        private static void WaitOrTimerCallback_Context_t(Object state) =>
+        private static void WaitOrTimerCallback_Context_t(object state) =>
             WaitOrTimerCallback_Context(state, timedOut: true);
 
-        private static void WaitOrTimerCallback_Context_f(Object state) =>
+        private static void WaitOrTimerCallback_Context_f(object state) =>
             WaitOrTimerCallback_Context(state, timedOut: false);
 
-        private static void WaitOrTimerCallback_Context(Object state, bool timedOut)
+        private static void WaitOrTimerCallback_Context(object state, bool timedOut)
         {
             _ThreadPoolWaitOrTimerCallback helper = (_ThreadPoolWaitOrTimerCallback)state;
             helper._waitOrTimerCallback(helper._state, timedOut);
@@ -872,7 +938,7 @@ namespace System.Threading
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
-             Object state,
+             object state,
              uint millisecondsTimeOutInterval,
              bool executeOnlyOnce)
         {
@@ -885,7 +951,7 @@ namespace System.Threading
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
-             Object state,
+             object state,
              uint millisecondsTimeOutInterval,
              bool executeOnlyOnce)
         {
@@ -897,80 +963,77 @@ namespace System.Threading
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
-             Object state,
+             object state,
              int millisecondsTimeOutInterval,
              bool executeOnlyOnce)
         {
             if (millisecondsTimeOutInterval < -1)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)millisecondsTimeOutInterval, executeOnlyOnce, true);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, true);
         }
 
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
-             Object state,
+             object state,
              int millisecondsTimeOutInterval,
              bool executeOnlyOnce)
         {
             if (millisecondsTimeOutInterval < -1)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)millisecondsTimeOutInterval, executeOnlyOnce, false);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
 
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
             WaitHandle waitObject,
             WaitOrTimerCallback callBack,
-            Object state,
+            object state,
             long millisecondsTimeOutInterval,
             bool executeOnlyOnce)
         {
             if (millisecondsTimeOutInterval < -1 || millisecondsTimeOutInterval > int.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)millisecondsTimeOutInterval, executeOnlyOnce, true);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, true);
         }
 
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
             WaitHandle waitObject,
             WaitOrTimerCallback callBack,
-            Object state,
+            object state,
             long millisecondsTimeOutInterval,
             bool executeOnlyOnce)
         {
             if (millisecondsTimeOutInterval < -1 || millisecondsTimeOutInterval > int.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)millisecondsTimeOutInterval, executeOnlyOnce, false);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
 
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
             WaitHandle waitObject,
             WaitOrTimerCallback callBack,
-            Object state,
+            object state,
             TimeSpan timeout,
             bool executeOnlyOnce)
         {
             int tm = WaitHandle.ToTimeoutMilliseconds(timeout);
-            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)tm, executeOnlyOnce, true);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)tm, executeOnlyOnce, true);
         }
 
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
             WaitHandle waitObject,
             WaitOrTimerCallback callBack,
-            Object state,
+            object state,
             TimeSpan timeout,
             bool executeOnlyOnce)
         {
             int tm = WaitHandle.ToTimeoutMilliseconds(timeout);
-            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)tm, executeOnlyOnce, false);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)tm, executeOnlyOnce, false);
         }
 
         public static bool QueueUserWorkItem(WaitCallback callBack) =>
-            QueueUserWorkItem(callBack, null, preferLocal: false);
+            QueueUserWorkItem(callBack, null);
 
-        public static bool QueueUserWorkItem(WaitCallback callBack, object state) =>
-            QueueUserWorkItem(callBack, state, preferLocal: false);
-
-        public static bool QueueUserWorkItem(WaitCallback callBack, object state, bool preferLocal)
+        public static bool QueueUserWorkItem(WaitCallback callBack, object state)
         {
             if (callBack == null)
             {
@@ -983,12 +1046,30 @@ namespace System.Threading
                 new QueueUserWorkItemCallbackDefaultContext(callBack, state) :
                 (IThreadPoolWorkItem)new QueueUserWorkItemCallback(callBack, state, context);
 
+            ThreadPoolGlobals.workQueue.Enqueue(tpcallBack, forceGlobal: true);
+
+            return true;
+        }
+
+        public static bool QueueUserWorkItem<TState>(Action<TState> callBack, TState state, bool preferLocal)
+        {
+            if (callBack == null)
+            {
+                throw new ArgumentNullException(nameof(callBack));
+            }
+
+            ExecutionContext context = ExecutionContext.Capture();
+
+            IThreadPoolWorkItem tpcallBack = context == ExecutionContext.Default ?
+                new QueueUserWorkItemCallbackDefaultContext<TState>(callBack, state) :
+                (IThreadPoolWorkItem)new QueueUserWorkItemCallback<TState>(callBack, state, context);
+
             ThreadPoolGlobals.workQueue.Enqueue(tpcallBack, forceGlobal: !preferLocal);
 
             return true;
         }
 
-        public static bool UnsafeQueueUserWorkItem(WaitCallback callBack, Object state)
+        public static bool UnsafeQueueUserWorkItem(WaitCallback callBack, object state)
         {
             if (callBack == null)
             {

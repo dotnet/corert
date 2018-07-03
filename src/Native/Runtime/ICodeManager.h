@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 #pragma once
 
+#define ICODEMANAGER_INCLUDED
+
 // TODO: Debugger/DAC support (look for TODO: JIT)
 
 struct REGDISPLAY;
@@ -23,13 +25,42 @@ struct GCEnumContext
     GCEnumCallback pCallback;
 };
 
+// All values but GCRK_Unknown must correspond to MethodReturnKind enumeration in gcinfo.h
 enum GCRefKind : unsigned char
-{ 
-    GCRK_Scalar     = 0x00,
-    GCRK_Object     = 0x01,
-    GCRK_Byref      = 0x02,
-    GCRK_Unknown    = 0xFF,
+{
+    GCRK_Scalar         = 0x00,
+    GCRK_Object         = 0x01,
+    GCRK_Byref          = 0x02,
+#ifdef _TARGET_ARM64_
+    // Composite return kinds for value types returned in two registers (encoded with two bits per register)
+    GCRK_Scalar_Obj     = (GCRK_Object << 2) | GCRK_Scalar,
+    GCRK_Obj_Obj        = (GCRK_Object << 2) | GCRK_Object,
+    GCRK_Byref_Obj      = (GCRK_Object << 2) | GCRK_Byref,
+    GCRK_Scalar_Byref   = (GCRK_Byref  << 2) | GCRK_Scalar,
+    GCRK_Obj_Byref      = (GCRK_Byref  << 2) | GCRK_Object,
+    GCRK_Byref_Byref    = (GCRK_Byref  << 2) | GCRK_Byref,
+
+    GCRK_LastValid      = GCRK_Byref_Byref,
+#else // _TARGET_ARM64_
+    GCRK_LastValid      = GCRK_Byref,
+#endif // _TARGET_ARM64_
+    GCRK_Unknown        = 0xFF,
 };
+
+#ifdef _TARGET_ARM64_
+// Extract individual GCRefKind components from a composite return kind
+inline GCRefKind ExtractReg0ReturnKind(GCRefKind returnKind)
+{
+    ASSERT(returnKind <= GCRK_LastValid);
+    return (GCRefKind)(returnKind & (GCRK_Object | GCRK_Byref));
+}
+
+inline GCRefKind ExtractReg1ReturnKind(GCRefKind returnKind)
+{
+    ASSERT(returnKind <= GCRK_LastValid);
+    return (GCRefKind)(returnKind >> 2);
+}
+#endif // _TARGET_ARM64_
 
 //
 // MethodInfo is placeholder type used to allocate space for MethodInfo. Maximum size 
@@ -66,9 +97,7 @@ struct EHClause
     void* m_pTargetType;
 };
 
-// Constants used with RhpGetClasslibFunction, to indicate which classlib function
-// we are interested in. 
-// Note: make sure you change the def in System\Runtime\exceptionhandling.cs if you change this!
+// Note: make sure you change the def in System\Runtime\InternalCalls.cs if you change this!
 enum class ClasslibFunctionId
 {
     GetRuntimeException = 0,
@@ -78,6 +107,8 @@ enum class ClasslibFunctionId
     CheckStaticClassConstruction = 4,
     GetSystemArrayEEType = 5,
     OnFirstChanceException = 6,
+    DebugFuncEvalHelper = 7,
+    DebugFuncEvalAbortHelper = 8,
 };
 
 enum class AssociatedDataFlags : unsigned char

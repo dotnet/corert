@@ -397,15 +397,15 @@ namespace Microsoft.Win32
                     byte[] blob = new byte[size];
                     while (Interop.Errors.ERROR_MORE_DATA == (r = Interop.mincore.RegQueryValueEx(_hkey, name, null, ref type, blob, ref sizeInput)))
                     {
-                        if (size == Int32.MaxValue)
+                        if (size == int.MaxValue)
                         {
-                            // ERROR_MORE_DATA was returned however we cannot increase the buffer size beyond Int32.MaxValue
+                            // ERROR_MORE_DATA was returned however we cannot increase the buffer size beyond int.MaxValue
                             Win32Error(r, name);
                         }
-                        else if (size > (Int32.MaxValue / 2))
+                        else if (size > (int.MaxValue / 2))
                         {
                             // at this point in the loop "size * 2" would cause an overflow
-                            size = Int32.MaxValue;
+                            size = int.MaxValue;
                         }
                         else
                         {
@@ -441,21 +441,21 @@ namespace Microsoft.Win32
 
             switch (type)
             {
-                case Interop.mincore.RegistryValues.REG_NONE:
-                case Interop.mincore.RegistryValues.REG_DWORD_BIG_ENDIAN:
-                case Interop.mincore.RegistryValues.REG_BINARY:
+                case Interop.Kernel32.RegistryValues.REG_NONE:
+                case Interop.Kernel32.RegistryValues.REG_DWORD_BIG_ENDIAN:
+                case Interop.Kernel32.RegistryValues.REG_BINARY:
                     {
                         byte[] blob = new byte[datasize];
                         ret = Interop.mincore.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
                         data = blob;
                     }
                     break;
-                case Interop.mincore.RegistryValues.REG_QWORD:
+                case Interop.Kernel32.RegistryValues.REG_QWORD:
                     {    // also REG_QWORD_LITTLE_ENDIAN
                         if (datasize > 8)
                         {
                             // prevent an AV in the edge case that datasize is larger than sizeof(long)
-                            goto case Interop.mincore.RegistryValues.REG_BINARY;
+                            goto case Interop.Kernel32.RegistryValues.REG_BINARY;
                         }
                         long blob = 0;
                         Debug.Assert(datasize == 8, "datasize==8");
@@ -465,12 +465,12 @@ namespace Microsoft.Win32
                         data = blob;
                     }
                     break;
-                case Interop.mincore.RegistryValues.REG_DWORD:
+                case Interop.Kernel32.RegistryValues.REG_DWORD:
                     {    // also REG_DWORD_LITTLE_ENDIAN
                         if (datasize > 4)
                         {
                             // prevent an AV in the edge case that datasize is larger than sizeof(int)
-                            goto case Interop.mincore.RegistryValues.REG_QWORD;
+                            goto case Interop.Kernel32.RegistryValues.REG_QWORD;
                         }
                         int blob = 0;
                         Debug.Assert(datasize == 4, "datasize==4");
@@ -481,7 +481,7 @@ namespace Microsoft.Win32
                     }
                     break;
 
-                case Interop.mincore.RegistryValues.REG_SZ:
+                case Interop.Kernel32.RegistryValues.REG_SZ:
                     {
                         if (datasize % 2 == 1)
                         {
@@ -511,7 +511,7 @@ namespace Microsoft.Win32
                     }
                     break;
 
-                case Interop.mincore.RegistryValues.REG_EXPAND_SZ:
+                case Interop.Kernel32.RegistryValues.REG_EXPAND_SZ:
                     {
                         if (datasize % 2 == 1)
                         {
@@ -546,7 +546,7 @@ namespace Microsoft.Win32
                         }
                     }
                     break;
-                case Interop.mincore.RegistryValues.REG_MULTI_SZ:
+                case Interop.Kernel32.RegistryValues.REG_MULTI_SZ:
                     {
                         if (datasize % 2 == 1)
                         {
@@ -622,7 +622,7 @@ namespace Microsoft.Win32
                         data = strings;
                     }
                     break;
-                case Interop.mincore.RegistryValues.REG_LINK:
+                case Interop.Kernel32.RegistryValues.REG_LINK:
                 default:
                     break;
             }
@@ -641,7 +641,7 @@ namespace Microsoft.Win32
             }
 
             return
-                type == Interop.mincore.RegistryValues.REG_NONE ? RegistryValueKind.None :
+                type == Interop.Kernel32.RegistryValues.REG_NONE ? RegistryValueKind.None :
                 !Enum.IsDefined(typeof(RegistryValueKind), type) ? RegistryValueKind.Unknown :
                 (RegistryValueKind)type;
         }

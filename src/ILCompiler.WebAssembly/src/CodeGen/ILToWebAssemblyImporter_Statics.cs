@@ -10,7 +10,7 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using ILCompiler;
-using ILCompiler.Compiler.CppCodeGen;
+using ILCompiler.CodeGen;
 
 using ILCompiler.DependencyAnalysis;
 using LLVMSharp;
@@ -51,10 +51,11 @@ namespace Internal.IL
             try
             {
                 string mangledName;
-                // TODO: We should use the startup node to generate StartupCodeMain and avoid special casing here
-                if (methodCodeNodeNeedingCode.Method.Signature.IsStatic && methodCodeNodeNeedingCode.Method.Name == "Main")
+
+                // TODO: Better detection of the StartupCodeMain method
+                if (methodCodeNodeNeedingCode.Method.Signature.IsStatic && methodCodeNodeNeedingCode.Method.Name == "StartupCodeMain")
                 {
-                    mangledName = "Main";
+                    mangledName = "StartupCodeMain";
                 }
                 else
                 {
@@ -83,6 +84,7 @@ namespace Internal.IL
                     ilImporter.SetParameterNames(parameters);*/
 
                 ilImporter.Import();
+
                 methodCodeNodeNeedingCode.CompilationCompleted = true;
             }
             catch (Exception e)
@@ -95,12 +97,25 @@ namespace Internal.IL
                 //methodCodeNodeNeedingCode.SetCode(sb.ToString(), Array.Empty<Object>());
             }
 
+            // Uncomment the block below to get specific method failures when LLVM fails for cryptic reasons
+#if false
+            LLVMBool result = LLVM.VerifyFunction(ilImporter._llvmFunction, LLVMVerifierFailureAction.LLVMPrintMessageAction);
+            if (result.Value != 0)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"Error compliling {method.OwningType}.{method}");
+                Console.ResetColor();
+            }
+#endif // false
+
             // Ensure dependencies show up regardless of exceptions to avoid breaking LLVM
             methodCodeNodeNeedingCode.SetDependencies(ilImporter.GetDependencies());
         }
 
+        static LLVMValueRef DebugtrapFunction = default(LLVMValueRef);
         static LLVMValueRef TrapFunction = default(LLVMValueRef);
         static LLVMValueRef DoNothingFunction = default(LLVMValueRef);
+
         private static IEnumerable<string> GetParameterNamesForMethod(MethodDesc method)
         {
             // TODO: The uses of this method need revision. The right way to get to this info is from

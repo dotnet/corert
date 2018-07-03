@@ -115,16 +115,21 @@ namespace ILCompiler
 
             if (mangledName != literal)
             {
-                if (_sha256 == null)
+                byte[] hash;
+                lock (this)
                 {
-                    // Use SHA256 hash here to provide a high degree of uniqueness to symbol names without requiring them to be long
-                    // This hash function provides an exceedingly high likelihood that no two strings will be given equal symbol names
-                    // This is not considered used for security purpose; however collisions would be highly unfortunate as they will cause compilation
-                    // failure.
-                    _sha256 = SHA256.Create();
-                }
+                    if (_sha256 == null)
+                    {
+                        // Use SHA256 hash here to provide a high degree of uniqueness to symbol names without requiring them to be long
+                        // This hash function provides an exceedingly high likelihood that no two strings will be given equal symbol names
+                        // This is not considered used for security purpose; however collisions would be highly unfortunate as they will cause compilation
+                        // failure.
+                        _sha256 = SHA256.Create();
+                    }
 
-                var hash = _sha256.ComputeHash(GetBytesFromString(literal));
+                    hash = _sha256.ComputeHash(GetBytesFromString(literal));
+                }
+                                
                 mangledName += "_" + BitConverter.ToString(hash).Replace("-", "");
             }
 
@@ -326,7 +331,13 @@ namespace ILCompiler
                     }
                     else
                     {
+                        // This is a type definition. Since we didn't fall in the `is EcmaType` case above,
+                        // it's likely a compiler-generated type.
                         mangledName = SanitizeName(((DefType)type).GetFullName(), true);
+
+                        // Always generate a fully qualified name
+                        if (_mangleForCplusPlus)
+                            mangledName = "::" + mangledName;
                     }
                     break;
             }
@@ -395,6 +406,35 @@ namespace ILCompiler
             {
                 sb.Append(GetMangledTypeName(prefixMangledType.BaseType));
             }
+
+            return sb.ToUtf8String();
+        }
+
+        private Utf8String GetPrefixMangledSignatureName(IPrefixMangledSignature prefixMangledSignature)
+        {
+            Utf8StringBuilder sb = new Utf8StringBuilder();
+            sb.Append(EnterNameScopeSequence).Append(prefixMangledSignature.Prefix).Append(ExitNameScopeSequence);
+
+            var signature = prefixMangledSignature.BaseSignature;
+            sb.Append(signature.Flags.ToStringInvariant());
+
+            sb.Append(EnterNameScopeSequence);
+
+            string sigRetTypeName = GetMangledTypeName(signature.ReturnType);
+            if (_mangleForCplusPlus)
+                sigRetTypeName = sigRetTypeName.Replace("::", "_");
+            sb.Append(sigRetTypeName);
+
+            for (int i = 0; i < signature.Length; i++)
+            {
+                sb.Append("__");
+                string sigArgName = GetMangledTypeName(signature[i]);
+                if (_mangleForCplusPlus)
+                    sigArgName = sigArgName.Replace("::", "_");
+                sb.Append(sigArgName);
+            }
+
+            sb.Append(ExitNameScopeSequence);
 
             return sb.ToUtf8String();
         }
@@ -485,6 +525,10 @@ namespace ILCompiler
                 else if (method is IPrefixMangledType)
                 {
                     utf8MangledName = GetPrefixMangledTypeName((IPrefixMangledType)method);
+                }
+                else if (method is IPrefixMangledSignature)
+                {
+                    utf8MangledName = GetPrefixMangledSignatureName((IPrefixMangledSignature)method);
                 }
                 else
                 {

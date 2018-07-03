@@ -23,42 +23,49 @@ namespace ILCompiler.DependencyAnalysis
     {
         public MrtImportedEETypeSymbolNode(TypeDesc type) : base(type) { }
         protected override sealed string GetNonImportedName(NameMangler nameMangler) => nameMangler.NodeMangler.EEType(Type);
+        protected internal override int ClassCode => 126598072;
     }
 
     public sealed class MrtImportedGCStaticSymbolNode : MrtImportWithTypeSymbol
     {
         public MrtImportedGCStaticSymbolNode(TypeDesc type) : base(type) { }
         protected override sealed string GetNonImportedName(NameMangler nameMangler) => GCStaticsNode.GetMangledName(Type, nameMangler);
+        protected internal override int ClassCode => 1974639431;
     }
 
     public sealed class MrtImportedNonGCStaticSymbolNode : MrtImportWithTypeSymbol
     {
         public MrtImportedNonGCStaticSymbolNode(TypeDesc type) : base(type) { }
         protected override sealed string GetNonImportedName(NameMangler nameMangler) => NonGCStaticsNode.GetMangledName(Type, nameMangler);
+        protected internal override int ClassCode => 257546392;
     }
 
     public sealed class MrtImportedThreadStaticOffsetSymbolNode : MrtImportWithTypeSymbol
     {
         public MrtImportedThreadStaticOffsetSymbolNode(TypeDesc type) : base(type) { }
         protected override sealed string GetNonImportedName(NameMangler nameMangler) => ThreadStaticsOffsetNode.GetMangledName(nameMangler, Type);
+        protected internal override int ClassCode => 1944978231;
     }
 
     public sealed class MrtImportedMethodDictionarySymbolNode : MrtImportWithMethodSymbol
     {
         public MrtImportedMethodDictionarySymbolNode(MethodDesc method) : base(method) { }
         protected override sealed string GetNonImportedName(NameMangler nameMangler) => nameMangler.NodeMangler.MethodGenericDictionary(Method);
+        protected internal override int ClassCode => 925274757;
     }
 
     public sealed class MrtImportedMethodCodeSymbolNode : MrtImportWithMethodSymbol, IMethodNode
     {
         public MrtImportedMethodCodeSymbolNode(MethodDesc method) : base(method) { }
         protected override sealed string GetNonImportedName(NameMangler nameMangler) => nameMangler.GetMangledMethodName(Method).ToString();
+        protected internal override int ClassCode => -454606757;
     }
 
     public sealed class MrtImportedUnboxingMethodCodeSymbolNode : MrtImportWithMethodSymbol, IMethodNode
     {
         public MrtImportedUnboxingMethodCodeSymbolNode(MethodDesc method) : base(method) { }
         protected override sealed string GetNonImportedName(NameMangler nameMangler) => UnboxingStubNode.GetMangledName(nameMangler, Method);
+        protected internal override int ClassCode => 1712079609;
     }
 
     public abstract class MrtImportWithTypeSymbol : MrtImportNode
@@ -114,7 +121,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override sealed string GetName(NodeFactory factory)
         {
-            string prefix = "MrtImport " + Ordinal.ToStringInvariant() + " __mrt_";
+            string prefix = "MrtImport " + Ordinal.ToStringInvariant() + " __mrt__";
             return prefix + GetNonImportedName(factory.NameMangler);
         }
 
@@ -122,7 +129,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__mrt_").Append(nameMangler.CompilationUnitPrefix).Append(GetNonImportedName(nameMangler));
+            sb.Append("__mrt__").Append(nameMangler.CompilationUnitPrefix).Append(GetNonImportedName(nameMangler));
         }
 
         public bool RepresentsIndirectionCell => true;

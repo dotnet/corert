@@ -3,10 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Text;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
-using Interlocked = System.Threading.Interlocked;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
 
 namespace Internal.Runtime.CompilerHelpers
 {
@@ -15,7 +16,7 @@ namespace Internal.Runtime.CompilerHelpers
     /// </summary>
     internal static class InteropHelpers
     {
-        internal static unsafe byte* StringToAnsiString(String str, bool bestFit, bool throwOnUnmappableChar)
+        internal static unsafe byte* StringToAnsiString(string str, bool bestFit, bool throwOnUnmappableChar)
         {
             return PInvokeMarshal.StringToAnsiString(str, bestFit, throwOnUnmappableChar);
         }
@@ -37,7 +38,7 @@ namespace Internal.Runtime.CompilerHelpers
             return PInvokeMarshal.ByValAnsiStringToString(buffer, length);
         }
 
-        internal static unsafe void StringToUnicodeFixedArray(String str, UInt16* buffer, int length)
+        internal static unsafe void StringToUnicodeFixedArray(string str, ushort* buffer, int length)
         {
             if (buffer == null)
                 return;
@@ -58,16 +59,16 @@ namespace Internal.Runtime.CompilerHelpers
             }
         }
 
-        internal static unsafe string UnicodeToStringFixedArray(UInt16* buffer, int length)
+        internal static unsafe string UnicodeToStringFixedArray(ushort* buffer, int length)
         {
             if (buffer == null)
-                return String.Empty;
+                return string.Empty;
 
-            string result = String.Empty;
+            string result = string.Empty;
 
             if (length > 0)
             {
-                result = new String(' ', length);
+                result = new string(' ', length);
 
                 fixed (char* pTemp = result)
                 {
@@ -78,7 +79,7 @@ namespace Internal.Runtime.CompilerHelpers
             return result;
         }
 
-        internal static unsafe char* StringToUnicodeBuffer(String str)
+        internal static unsafe char* StringToUnicodeBuffer(string str)
         {
             if (str == null)
                 return null;
@@ -98,7 +99,7 @@ namespace Internal.Runtime.CompilerHelpers
 
         public static unsafe string UnicodeBufferToString(char* buffer)
         {
-            return new String(buffer);
+            return new string(buffer);
         }
 
         public static unsafe byte* AllocMemoryForAnsiStringBuilder(StringBuilder sb)
@@ -208,6 +209,7 @@ namespace Internal.Runtime.CompilerHelpers
             return ResolvePInvokeSlow(pCell);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static unsafe IntPtr ResolvePInvokeSlow(MethodFixupCell* pCell)
         {
             ModuleFixupCell* pModuleCell = pCell->Module;
@@ -304,8 +306,8 @@ namespace Internal.Runtime.CompilerHelpers
         {
             byte* methodName = (byte*)pCell->MethodName;
 
-#if !PLATFORM_UNIX
-            pCell->Target = Interop.mincore.GetProcAddress(hModule, methodName);
+#if PLATFORM_WINDOWS
+            pCell->Target = GetProcAddress(hModule, methodName, pCell->CharSetMangling);
 #else
             pCell->Target = Interop.Sys.GetProcAddress(hModule, methodName);
 #endif
@@ -315,6 +317,44 @@ namespace Internal.Runtime.CompilerHelpers
                 throw new EntryPointNotFoundException(SR.Format(SR.Arg_EntryPointNotFoundExceptionParameterized, entryPointName, GetModuleName(pCell->Module)));
             }
         }
+
+#if PLATFORM_WINDOWS
+        private static unsafe IntPtr GetProcAddress(IntPtr hModule, byte* methodName, CharSet charSetMangling)
+        {
+            // First look for the unmangled name.  If it is unicode function, we are going
+            // to need to check for the 'W' API because it takes precedence over the
+            // unmangled one (on NT some APIs have unmangled ANSI exports).
+            
+            var exactMatch = Interop.mincore.GetProcAddress(hModule, methodName);
+
+            if ((charSetMangling == CharSet.Ansi && exactMatch != IntPtr.Zero) || charSetMangling == 0)
+            {
+                return exactMatch;
+            }
+
+            int nameLength = strlen(methodName);
+
+            // We need to add an extra byte for the suffix, and an extra byte for the null terminator
+            byte* probedMethodName = stackalloc byte[nameLength + 2];
+
+            for (int i = 0; i < nameLength; i++)
+            {
+                probedMethodName[i] = methodName[i];
+            }
+
+            probedMethodName[nameLength + 1] = 0;
+
+            probedMethodName[nameLength] = (charSetMangling == CharSet.Ansi) ? (byte)'A' : (byte)'W';
+
+            IntPtr probedMethod = Interop.mincore.GetProcAddress(hModule, probedMethodName);
+            if (probedMethod != IntPtr.Zero)
+            {
+                return probedMethod;
+            }
+
+            return exactMatch;
+        }
+#endif
 
         internal static unsafe int strlen(byte* pString)
         {
@@ -339,20 +379,15 @@ namespace Internal.Runtime.CompilerHelpers
         {
             PInvokeMarshal.CoTaskMemFree((IntPtr)p);
         }
-        /// <summary>
-        /// Returns the stub to the pinvoke marshalling stub
-        /// </summary>
-        public static IntPtr GetStubForPInvokeDelegate(Delegate del)
+
+        public static IntPtr GetFunctionPointerForDelegate(Delegate del)
         {
-            return PInvokeMarshal.GetStubForPInvokeDelegate(del);
+            return PInvokeMarshal.GetFunctionPointerForDelegate(del);
         }
 
-        /// <summary>
-        /// Retrieve the corresponding P/invoke instance from the stub
-        /// </summary>
-        public static Delegate GetPInvokeDelegateForStub(IntPtr pStub, RuntimeTypeHandle delegateType)
+        public static Delegate GetDelegateForFunctionPointer(IntPtr ptr, RuntimeTypeHandle delegateType)
         {
-            return PInvokeMarshal.GetPInvokeDelegateForStub(pStub, delegateType);
+            return PInvokeMarshal.GetDelegateForFunctionPointer(ptr, delegateType);
         }
 
         /// <summary>
@@ -384,6 +419,7 @@ namespace Internal.Runtime.CompilerHelpers
             public IntPtr Target;
             public IntPtr MethodName;
             public ModuleFixupCell* Module;
+            public CharSet CharSetMangling;
         }
     }
 }

@@ -75,12 +75,18 @@ namespace ILCompiler.DependencyAnalysis
             BlockReflectionTypeMapNode,
             StaticsInfoHashtableNode,
             ReflectionVirtualInvokeMapNode,
-            ExternalReferencesTableNode,
             ArrayOfEmbeddedPointersNode,
             DefaultConstructorMapNode,
+            ExternalReferencesTableNode,
             StackTraceEmbeddedMetadataNode,
             StackTraceMethodMappingNode,
-            ArrayOfEmbeddedDataNode
+            ArrayOfEmbeddedDataNode,
+            WindowsDebugNeedTypeIndicesStoreNode,
+            WindowsDebugMethodSignatureMapSectionNode,
+            WindowsDebugTypeSignatureMapSectionNode,
+            WindowsDebugManagedNativeDictionaryInfoSectionNode,
+            WindowsDebugTypeRecordsSectionNode,
+            WindowsDebugPseudoAssemblySectionNode,
         }
 
         public class EmbeddedObjectNodeComparer : IComparer<EmbeddedObjectNode>
@@ -159,7 +165,7 @@ namespace ILCompiler.DependencyAnalysis
                 else
                 {
                     Debug.Assert(x.GetType() != y.GetType());
-                    return codeX - codeY;
+                    return codeY > codeX ? -1 : 1;
                 }
             }
             else

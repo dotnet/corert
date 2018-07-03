@@ -187,8 +187,14 @@ namespace System.Reflection.Runtime.PropertyInfos
                     ReflectionTrace.PropertyInfo_PropertyType(this);
 #endif
 
-                TypeContext typeContext = ContextTypeInfo.TypeContext;
-                return PropertyTypeHandle.Resolve(typeContext);
+                Type propertyType = _lazyPropertyType;
+                if (propertyType == null)
+                {
+                    TypeContext typeContext = ContextTypeInfo.TypeContext;
+                    _lazyPropertyType = propertyType = PropertyTypeHandle.Resolve(typeContext);
+                }
+
+                return propertyType;
             }
         }
 
@@ -401,6 +407,8 @@ namespace System.Reflection.Runtime.PropertyInfos
         private volatile RuntimeNamedMethodInfo _lazySetter;
 
         private volatile ParameterInfo[] _lazyIndexParameters;
+
+        private volatile Type _lazyPropertyType;
 
         private String _debugName;
     }

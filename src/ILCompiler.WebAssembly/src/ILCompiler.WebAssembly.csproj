@@ -10,14 +10,13 @@
     <NoWarn>8002</NoWarn>
     <OutputPath>$(BaseOutputPath)$(OSPlatformConfig)/tools</OutputPath>
   </PropertyGroup>
+  
   <ItemGroup>
     <PackageReference Include="LLVMSharp">
-      <Version>3.9.1-rc3</Version>
-    </PackageReference>
-    <PackageReference Include="libLLVM">
-      <Version>3.9.1</Version>
-    </PackageReference>
+      <Version>5.0.0</Version>
+    </PackageReference>  
   </ItemGroup>
+
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <ProjectReference Include="..\..\ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj" />
     <ProjectReference Include="..\..\ILCompiler.MetadataTransform\src\ILCompiler.MetadataTransform.csproj" />
@@ -52,11 +51,18 @@
     <Compile Include="CodeGen\NodeDataSection.cs" />
     <Compile Include="CodeGen\ILToWebAssemblyImporter.cs" />
   </ItemGroup>
+
   <ItemGroup>
-    <Content Include="..\..\..\packages\llvmsharp\3.9.1-rc3\lib\netstandard1.1\LLVMSharp.dll">
+    <Content Include="..\..\..\packages\llvmsharp\5.0.0\lib\netstandard1.1\LLVMSharp.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\..\..\packages\libllvm\3.9.1\content\libLLVM-x64.dll">
+    <Content Include="..\..\..\packages\libllvm\4.0.0\runtimes\osx\native\libLLVM.dylib" Condition="'$(NuPkgRid)' == 'osx-x64'">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\..\packages\libllvm\4.0.0\runtimes\linux-x64\native\libLLVM.so" Condition="'$(NuPkgRid)' == 'linux-x64'">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\..\packages\libllvm\4.0.0\runtimes\win-x64\native\libLLVM.dll" Condition="'$(NuPkgRid)' == 'win-x64' or '$(NuPkgRid)' == ''">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

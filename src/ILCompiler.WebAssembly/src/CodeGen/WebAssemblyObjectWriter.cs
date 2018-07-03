@@ -183,9 +183,9 @@ namespace ILCompiler.DependencyAnalysis
             EmitNativeMain();
             LLVM.WriteBitcodeToFile(Module, _objectFilePath);
 #if DEBUG
-            LLVM.PrintModuleToFile(Module, Path.ChangeExtension(_objectFilePath, ".txt"), out IntPtr unused2);
+            LLVM.PrintModuleToFile(Module, Path.ChangeExtension(_objectFilePath, ".txt"), out string unused2);
 #endif //DEBUG
-            LLVM.VerifyModule(Module, LLVMVerifierFailureAction.LLVMAbortProcessAction, out IntPtr unused);
+            LLVM.VerifyModule(Module, LLVMVerifierFailureAction.LLVMAbortProcessAction, out string unused);
 
             //throw new NotImplementedException(); // This function isn't complete
         }
@@ -225,26 +225,67 @@ namespace ILCompiler.DependencyAnalysis
                 throw new NotImplementedException();
         }
 
+        private void EmitReadyToRunHeaderCallback()
+        {
+            LLVMTypeRef intPtr = LLVM.PointerType(LLVM.Int32Type(), 0);
+            LLVMTypeRef intPtrPtr = LLVM.PointerType(intPtr, 0);
+            var callback = LLVM.AddFunction(Module, "RtRHeaderWrapper", LLVM.FunctionType(intPtrPtr, new LLVMTypeRef[0], false));
+            var builder = LLVM.CreateBuilder();
+            var block = LLVM.AppendBasicBlock(callback, "Block");
+            LLVM.PositionBuilderAtEnd(builder, block);
+
+            LLVMValueRef rtrHeaderPtr = GetSymbolValuePointer(Module, _nodeFactory.ReadyToRunHeader, _nodeFactory.NameMangler, false);
+            LLVMValueRef castRtrHeaderPtr = LLVM.BuildPointerCast(builder, rtrHeaderPtr, intPtrPtr, "castRtrHeaderPtr");
+            LLVM.BuildRet(builder, castRtrHeaderPtr);
+        }
 
         private void EmitNativeMain()
         {
+            LLVMValueRef shadowStackTop = LLVM.GetNamedGlobal(Module, "t_pShadowStackTop");
+
             LLVMBuilderRef builder = LLVM.CreateBuilder();
-            var mainSignature = LLVM.FunctionType(LLVM.Int32Type(), new LLVMTypeRef[0], false);
-            var mainFunc = LLVM.AddFunction(Module, "main", mainSignature);
+            var mainSignature = LLVM.FunctionType(LLVM.Int32Type(), new LLVMTypeRef[] { LLVM.Int32Type(), LLVM.PointerType(LLVM.Int8Type(), 0) }, false);
+            var mainFunc = LLVM.AddFunction(Module, "__managed__Main", mainSignature);
             var mainEntryBlock = LLVM.AppendBasicBlock(mainFunc, "entry");
             LLVM.PositionBuilderAtEnd(builder, mainEntryBlock);
-            LLVMValueRef managedMain = LLVM.GetNamedFunction(Module, "Main");
+            LLVMValueRef managedMain = LLVM.GetNamedFunction(Module, "StartupCodeMain");
+            if (managedMain.Pointer == IntPtr.Zero)
+            {
+                throw new Exception("Main not found");
+            }
+
+            LLVMTypeRef reversePInvokeFrameType = LLVM.StructType(new LLVMTypeRef[] { LLVM.PointerType(LLVM.Int8Type(), 0), LLVM.PointerType(LLVM.Int8Type(), 0) }, false);
+            LLVMValueRef reversePinvokeFrame = LLVM.BuildAlloca(builder, reversePInvokeFrameType, "ReversePInvokeFrame");
+            LLVMValueRef RhpReversePInvoke2 = LLVM.GetNamedFunction(Module, "RhpReversePInvoke2");
+
+            if (RhpReversePInvoke2.Pointer == IntPtr.Zero)
+            {
+                RhpReversePInvoke2 = LLVM.AddFunction(Module, "RhpReversePInvoke2", LLVM.FunctionType(LLVM.VoidType(), new LLVMTypeRef[] { LLVM.PointerType(reversePInvokeFrameType, 0) }, false));
+            }
+
+            LLVM.BuildCall(builder, RhpReversePInvoke2, new LLVMValueRef[] { reversePinvokeFrame }, "");
 
             var shadowStack = LLVM.BuildMalloc(builder, LLVM.ArrayType(LLVM.Int8Type(), 1000000), String.Empty);
             var castShadowStack = LLVM.BuildPointerCast(builder, shadowStack, LLVM.PointerType(LLVM.Int8Type(), 0), String.Empty);
+            LLVM.BuildStore(builder, castShadowStack, shadowStackTop);
+
+            // Pass on main arguments
+            var argcSlot = LLVM.BuildPointerCast(builder, shadowStack, LLVM.PointerType(LLVM.Int32Type(), 0), "argcSlot");
+            LLVM.BuildStore(builder, LLVM.GetParam(mainFunc, 0), argcSlot);
+            var argvSlot = LLVM.BuildGEP(builder, castShadowStack, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), 4, LLVMMisc.False) }, "argvSlot");
+            LLVM.BuildStore(builder, LLVM.GetParam(mainFunc, 1), LLVM.BuildPointerCast(builder, argvSlot, LLVM.PointerType(LLVM.PointerType(LLVM.Int8Type(), 0), 0), ""));
+
+            // StartupCodeMain will always return a value whether the user's main does or not
+            LLVMValueRef returnValueSlot = LLVM.BuildAlloca(builder, LLVM.Int32Type(), "returnValue");
+
             LLVM.BuildCall(builder, managedMain, new LLVMValueRef[]
             {
                 castShadowStack,
-                LLVM.ConstPointerNull(LLVM.PointerType(LLVM.Int8Type(), 0))
+                LLVM.BuildPointerCast(builder, returnValueSlot, LLVM.PointerType(LLVM.Int8Type(), 0), String.Empty) 
             },
             String.Empty);
 
-            LLVM.BuildRet(builder, LLVM.ConstInt(LLVM.Int32Type(), 42, LLVMMisc.False));
+            LLVM.BuildRet(builder, LLVM.BuildLoad(builder, returnValueSlot, String.Empty));
             LLVM.SetLinkage(mainFunc, LLVMLinkage.LLVMExternalLinkage);
         }
 
@@ -462,13 +503,15 @@ namespace ILCompiler.DependencyAnalysis
                 delta = checked(delta + sizeof(int));
             }
 
+            int totalOffset = checked(delta + offsetFromSymbolName);
+
             EmitBlob(new byte[this._nodeFactory.Target.PointerSize]);
             if (relocType == RelocType.IMAGE_REL_BASED_REL32)
             {
                 return this._nodeFactory.Target.PointerSize;
             }
 
-            _currentObjectSymbolRefs.Add(symbolStartOffset, new SymbolRefData(isFunction, realSymbolName, delta));
+            _currentObjectSymbolRefs.Add(symbolStartOffset, new SymbolRefData(isFunction, realSymbolName, totalOffset));
             return _nodeFactory.Target.PointerSize;
         }
 
@@ -687,6 +730,7 @@ namespace ILCompiler.DependencyAnalysis
 
             try
             {
+                objectWriter.EmitReadyToRunHeaderCallback();
                 //ObjectNodeSection managedCodeSection = null;
 
                 var listOfOffsets = new List<int>();

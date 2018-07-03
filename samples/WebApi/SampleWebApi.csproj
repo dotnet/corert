@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <RdXmlFile Include="rd.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore" Version="2.1.0" /> 
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.1.0" /> 
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Formatters.Json" Version="2.1.0" />     
+    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="1.0.0-alpha-*" />
+  </ItemGroup>
+
+</Project>

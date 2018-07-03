@@ -63,11 +63,11 @@ namespace ILCompiler
         {
             if (metadataFile == null)
             {
-                return new EmptyMetadataManager(compilationModuleGroup, context);
+                return new EmptyMetadataManager(context);
             }
             else
             {
-                return new PrecomputedMetadataManager(compilationModuleGroup, context, FindMetadataDescribingModuleInInputSet(inputModules), inputModules, inputMetadataOnlyAssemblies, ReadBytesFromFile(metadataFile), new UtcStackTraceEmissionPolicy());
+                return new PrecomputedMetadataManager(compilationModuleGroup, context, FindMetadataDescribingModuleInInputSet(inputModules), inputModules, inputMetadataOnlyAssemblies, ReadBytesFromFile(metadataFile), new UtcStackTraceEmissionPolicy(), new NoManifestResourceBlockingPolicy());
             }
         }
 
@@ -205,6 +205,7 @@ namespace ILCompiler
             InteropStubManager.AddToReadyToRunHeader(ReadyToRunHeader, this, commonFixupsTableNode);
             MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader, this, commonFixupsTableNode);
             MetadataManager.AttachToDependencyGraph(graph);
+            ReadyToRunHeader.Add(MetadataManager.BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable), commonFixupsTableNode, commonFixupsTableNode, commonFixupsTableNode.EndSymbol);
         }
 
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
@@ -250,16 +251,18 @@ namespace ILCompiler
 
         public GCStaticDescRegionNode GCStaticDescRegion = new GCStaticDescRegionNode(
             CompilationUnitPrefix + "__GCStaticDescStart", 
-            CompilationUnitPrefix + "__GCStaticDescEnd");
+            CompilationUnitPrefix + "__GCStaticDescEnd",
+            new SortableDependencyNode.EmbeddedObjectNodeComparer(new CompilerComparer()));
 
         public GCStaticDescRegionNode ThreadStaticGCDescRegion = new GCStaticDescRegionNode(
             CompilationUnitPrefix + "__ThreadStaticGCDescStart", 
-            CompilationUnitPrefix + "__ThreadStaticGCDescEnd");
+            CompilationUnitPrefix + "__ThreadStaticGCDescEnd",
+            new SortableDependencyNode.EmbeddedObjectNodeComparer(new CompilerComparer()));
 
         public ArrayOfEmbeddedDataNode<ThreadStaticsOffsetNode> ThreadStaticsOffsetRegion = new ArrayOfEmbeddedDataNode<ThreadStaticsOffsetNode>(
             CompilationUnitPrefix + "__ThreadStaticOffsetRegionStart",
             CompilationUnitPrefix + "__ThreadStaticOffsetRegionEnd",
-            null);
+            new SortableDependencyNode.EmbeddedObjectNodeComparer(new CompilerComparer()));
 
         public ThreadStaticsIndexNode ThreadStaticsIndex;
 

@@ -3,12 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.IO;
 using System.Collections.Generic;
 
 using Internal.TypeSystem;
 
-using ILCompiler.Metadata;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 
@@ -16,6 +14,14 @@ using Debug = System.Diagnostics.Debug;
 using ReadyToRunSectionType = Internal.Runtime.ReadyToRunSectionType;
 using ReflectionMapBlob = Internal.Runtime.ReflectionMapBlob;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+
+using MetadataRecord = Internal.Metadata.NativeFormat.Writer.MetadataRecord;
+using MemberReference = Internal.Metadata.NativeFormat.Writer.MemberReference;
+using TypeReference = Internal.Metadata.NativeFormat.Writer.TypeReference;
+using TypeSpecification = Internal.Metadata.NativeFormat.Writer.TypeSpecification;
+using ConstantStringValue = Internal.Metadata.NativeFormat.Writer.ConstantStringValue;
+using TypeInstantiationSignature = Internal.Metadata.NativeFormat.Writer.TypeInstantiationSignature;
+using MethodInstantiation = Internal.Metadata.NativeFormat.Writer.MethodInstantiation;
 
 namespace ILCompiler
 {
@@ -34,9 +40,9 @@ namespace ILCompiler
         private List<MetadataMapping<MethodDesc>> _methodMappings;
         private List<MetadataMapping<MethodDesc>> _stackTraceMappings;
 
-        protected readonly CompilationModuleGroup _compilationModuleGroup;
         protected readonly CompilerTypeSystemContext _typeSystemContext;
         protected readonly MetadataBlockingPolicy _blockingPolicy;
+        protected readonly ManifestResourceBlockingPolicy _resourceBlockingPolicy;
 
         private List<NonGCStaticsNode> _cctorContextsGenerated = new List<NonGCStaticsNode>();
         private HashSet<TypeDesc> _typesWithEETypesGenerated = new HashSet<TypeDesc>();
@@ -44,19 +50,17 @@ namespace ILCompiler
         private HashSet<MethodDesc> _methodsGenerated = new HashSet<MethodDesc>();
         private HashSet<GenericDictionaryNode> _genericDictionariesGenerated = new HashSet<GenericDictionaryNode>();
         private HashSet<IMethodBodyNode> _methodBodiesGenerated = new HashSet<IMethodBodyNode>();
-        private List<ModuleDesc> _modulesWithMetadata = new List<ModuleDesc>();
         private List<TypeGVMEntriesNode> _typeGVMEntries = new List<TypeGVMEntriesNode>();
-        private HashSet<DefaultConstructorFromLazyNode> _defaultConstructorsNeeded = new HashSet<DefaultConstructorFromLazyNode>();
 
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
         internal DynamicInvokeTemplateDataNode DynamicInvokeTemplateData { get; private set; }
         public virtual bool SupportsReflection => true;
 
-        public MetadataManager(CompilationModuleGroup compilationModuleGroup, CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy)
+        public MetadataManager(CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy, ManifestResourceBlockingPolicy resourceBlockingPolicy)
         {
-            _compilationModuleGroup = compilationModuleGroup;
             _typeSystemContext = typeSystemContext;
             _blockingPolicy = blockingPolicy;
+            _resourceBlockingPolicy = resourceBlockingPolicy;
         }
 
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
@@ -71,7 +75,7 @@ namespace ILCompiler
             return result;
         }
 
-        public void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory, ExternalReferencesTableNode commonFixupsTableNode)
+        public virtual void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory, ExternalReferencesTableNode commonFixupsTableNode)
         {
             var metadataNode = new MetadataNode();
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.EmbeddedMetadata), metadataNode, metadataNode, metadataNode.EndSymbol);
@@ -140,21 +144,15 @@ namespace ILCompiler
             var defaultConstructorMapNode = new DefaultConstructorMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.DefaultConstructorMap), defaultConstructorMapNode, defaultConstructorMapNode, defaultConstructorMapNode.EndSymbol);
 
-#if !CORERT
-            var stackTraceEmbeddedMetadataNode = new StackTraceEmbeddedMetadataNode();
-            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdStackTraceEmbeddedMetadata), stackTraceEmbeddedMetadataNode, stackTraceEmbeddedMetadataNode, stackTraceEmbeddedMetadataNode.EndSymbol);
-#endif
-
             var stackTraceMethodMappingNode = new StackTraceMethodMappingNode();
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdStackTraceMethodRvaToTokenMapping), stackTraceMethodMappingNode, stackTraceMethodMappingNode, stackTraceMethodMappingNode.EndSymbol);
             
             // The external references tables should go last
-            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable), commonFixupsTableNode, commonFixupsTableNode, commonFixupsTableNode.EndSymbol);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeReferences), nativeReferencesTableNode, nativeReferencesTableNode, nativeReferencesTableNode.EndSymbol);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeStatics), nativeStaticsTableNode, nativeStaticsTableNode, nativeStaticsTableNode.EndSymbol);
         }
 
-        private void Graph_NewMarkedNode(DependencyNodeCore<NodeFactory> obj)
+        protected virtual void Graph_NewMarkedNode(DependencyNodeCore<NodeFactory> obj)
         {
             var eetypeNode = obj as EETypeNode;
             if (eetypeNode != null)
@@ -175,12 +173,9 @@ namespace ILCompiler
                 _methodBodiesGenerated.Add(methodBodyNode);
             }
 
-            IMethodNode methodNode = obj as MethodCodeNode;
+            IMethodNode methodNode = methodBodyNode;
             if (methodNode == null)
                 methodNode = obj as ShadowConcreteMethodNode;
-
-            if (methodNode == null)
-                methodNode = obj as NonExternMethodSymbolNode;
 
             if (methodNode != null)
             {
@@ -211,19 +206,6 @@ namespace ILCompiler
             {
                 _genericDictionariesGenerated.Add(dictionaryNode);
             }
-
-            var ctorFromLazyGenericsNode = obj as DefaultConstructorFromLazyNode;
-            if (ctorFromLazyGenericsNode != null)
-            {
-                _defaultConstructorsNeeded.Add(ctorFromLazyGenericsNode);
-            }
-
-            // TODO: temporary until we have an IL scanning Metadata Manager. We shouldn't have to keep track of these.
-            var moduleMetadataNode = obj as ModuleMetadataNode;
-            if (moduleMetadataNode != null)
-            {
-                _modulesWithMetadata.Add(moduleMetadataNode.Module);
-            }
         }
 
         /// <summary>
@@ -231,58 +213,8 @@ namespace ILCompiler
         /// </summary>
         public virtual bool IsReflectionInvokable(MethodDesc method)
         {
-            return IsMethodSignatureSupportedInReflectionInvoke(method)
+            return Internal.IL.Stubs.DynamicInvokeMethodThunk.SupportsSignature(method.Signature)
                 && IsMethodSupportedInReflectionInvoke(method);
-        }
-
-        protected bool IsMethodSignatureSupportedInReflectionInvoke(MethodDesc method)
-        {
-            var signature = method.Signature;
-
-            // ----------------------------------------------------------------
-            // TODO: support for methods returning pointer types - https://github.com/dotnet/corert/issues/2113
-            // ----------------------------------------------------------------
-
-            if (signature.ReturnType.IsPointer)
-                return false;
-
-            for (int i = 0; i < signature.Length; i++)
-                if (signature[i].IsByRef && ((ByRefType)signature[i]).ParameterType.IsPointer)
-                    return false;
-
-            // ----------------------------------------------------------------
-            // TODO: function pointer types are odd: https://github.com/dotnet/corert/issues/1929
-            // ----------------------------------------------------------------
-
-            if (signature.ReturnType.IsFunctionPointer)
-                return false;
-
-            for (int i = 0; i < signature.Length; i++)
-                if (signature[i].IsFunctionPointer)
-                    return false;
-
-            // ----------------------------------------------------------------
-            // Methods with ByRef returns can't be reflection invoked
-            // ----------------------------------------------------------------
-
-            if (signature.ReturnType.IsByRef)
-                return false;
-
-            // ----------------------------------------------------------------
-            // Methods that return ByRef-like types or take them by reference can't be reflection invoked
-            // ----------------------------------------------------------------
-
-            if (signature.ReturnType.IsByRefLike)
-                return false;
-
-            for (int i = 0; i < signature.Length; i++)
-            {
-                ByRefType paramType = signature[i] as ByRefType;
-                if (paramType != null && paramType.ParameterType.IsByRefLike)
-                    return false;
-            }
-
-            return true;
         }
 
         protected bool IsMethodSupportedInReflectionInvoke(MethodDesc method)
@@ -365,6 +297,21 @@ namespace ILCompiler
             }
         }
 
+        /// <summary>
+        /// This method is an extension point that can provide additional metadata-based dependencies on a virtual method.
+        /// </summary>
+        public void GetDependenciesDueToVirtualMethodReflectability(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        {
+            // If we have a use of an abstract method, GetDependenciesDueToReflectability is not going to see the method
+            // as being used since there's no body. We inject a dependency on a new node that serves as a logical method body
+            // for the metadata manager. Metadata manager treats that node the same as a body.
+            if (method.IsAbstract && GetMetadataCategory(method) != 0)
+            {
+                dependencies = dependencies ?? new DependencyList();
+                dependencies.Add(factory.ReflectableMethod(method), "Abstract reflectable method");
+            }
+        }
+
         protected virtual void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
             // MetadataManagers can override this to provide additional dependencies caused by the emission of metadata
@@ -388,8 +335,9 @@ namespace ILCompiler
             {
                 // We're going to generate a mapping table entry for this. Collect dependencies.
 
-                // Nothing for now - the mapping table only refers to the EEType and we already generated one because
-                // we got the callback.
+                // Nothing special is needed for the mapping table (we only emit the EEType and we already
+                // have one, since we got this callback). But check if a child wants to do something extra.
+                GetRuntimeMappingDependenciesDueToReflectability(ref dependencies, factory, type);
             }
         }
 
@@ -398,6 +346,30 @@ namespace ILCompiler
             // MetadataManagers can override this to provide additional dependencies caused by the emission of metadata
             // (E.g. dependencies caused by the type having custom attributes applied to it: making sure we compile the attribute constructor
             // and property setters)
+        }
+
+        protected virtual void GetRuntimeMappingDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        {
+            // MetadataManagers can override this to provide additional dependencies caused by the emission of a runtime
+            // mapping for a type.
+        }
+
+        /// <summary>
+        /// This method is an extension point that can provide additional metadata-based dependencies to generated RuntimeMethodHandles.
+        /// </summary>
+        public virtual void GetDependenciesDueToLdToken(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        {
+            // MetadataManagers can override this to provide additional dependencies caused by the presence of a
+            // RuntimeMethodHandle data structure.
+        }
+
+        /// <summary>
+        /// This method is an extension point that can provide additional metadata-based dependencies to generated RuntimeFieldHandles.
+        /// </summary>
+        public virtual void GetDependenciesDueToLdToken(ref DependencyList dependencies, NodeFactory factory, FieldDesc field)
+        {
+            // MetadataManagers can override this to provide additional dependencies caused by the presence of a
+            // RuntimeFieldHandle data structure.
         }
 
         /// <summary>
@@ -443,65 +415,7 @@ namespace ILCompiler
             // Instantiate the generic thunk over the parameters and the return type of the target method
             //
 
-            ParameterMetadata[] paramMetadata = null;
-            TypeDesc[] instantiation = new TypeDesc[sig.ReturnType.IsVoid ? sig.Length : sig.Length + 1];
-            Debug.Assert(thunk.Instantiation.Length == instantiation.Length);
-            for (int i = 0; i < sig.Length; i++)
-            {
-                TypeDesc parameterType = sig[i];
-                if (parameterType.IsByRef)
-                {
-                    // strip ByRefType off the parameter (the method already has ByRef in the signature)
-                    parameterType = ((ByRefType)parameterType).ParameterType;
-
-                    Debug.Assert(!parameterType.IsPointer); // TODO: support for methods returning pointer types - https://github.com/dotnet/corert/issues/2113
-                }
-                else if (parameterType.IsPointer || parameterType.IsFunctionPointer)
-                {
-                    // For pointer typed parameters, instantiate the method over IntPtr
-                    parameterType = context.GetWellKnownType(WellKnownType.IntPtr);
-                }
-                else if (parameterType.IsEnum)
-                {
-                    // If the invoke method takes an enum as an input parameter and there is no default value for
-                    // that paramter, we don't need to specialize on the exact enum type (we only need to specialize
-                    // on the underlying integral type of the enum.)
-                    if (paramMetadata == null)
-                        paramMetadata = method.GetParameterMetadata();
-
-                    bool hasDefaultValue = false;
-                    foreach (var p in paramMetadata)
-                    {
-                        // Parameter metadata indexes are 1-based (0 is reserved for return "parameter")
-                        if (p.Index == (i + 1) && p.HasDefault)
-                        {
-                            hasDefaultValue = true;
-                            break;
-                        }
-                    }
-
-                    if (!hasDefaultValue)
-                        parameterType = parameterType.UnderlyingType;
-                }
-
-                instantiation[i] = parameterType;
-            }
-
-            if (!sig.ReturnType.IsVoid)
-            {
-                TypeDesc returnType = sig.ReturnType;
-                Debug.Assert(!returnType.IsByRef);
-
-                // If the invoke method return an object reference, we don't need to specialize on the
-                // exact type of the object reference, as the behavior is not different.
-                if ((returnType.IsDefType && !returnType.IsValueType) || returnType.IsArray)
-                {
-                    returnType = context.GetWellKnownType(WellKnownType.Object);
-                }
-
-                instantiation[sig.Length] = returnType;
-            }
-
+            TypeDesc[] instantiation = Internal.IL.Stubs.DynamicInvokeMethodThunk.GetThunkInstantiationForMethod(method);
             Debug.Assert(thunk.Instantiation.Length == instantiation.Length);
 
             // Check if at least one of the instantiation arguments is a universal canonical type, and if so, we 
@@ -542,20 +456,64 @@ namespace ILCompiler
                                                 out List<MetadataMapping<FieldDesc>> fieldMappings,
                                                 out List<MetadataMapping<MethodDesc>> stackTraceMapping);
 
+        protected MetadataRecord CreateStackTraceRecord(Metadata.MetadataTransform transform, MethodDesc method)
+        {
+            // In the metadata, we only represent the generic definition
+            MethodDesc methodToGenerateMetadataFor = method.GetTypicalMethodDefinition();
+            MetadataRecord record = transform.HandleQualifiedMethod(methodToGenerateMetadataFor);
 
+            // If we're generating a MemberReference to a method on a generic type, the owning type
+            // should appear as if instantiated over its formals
+            TypeDesc owningTypeToGenerateMetadataFor = methodToGenerateMetadataFor.OwningType;
+            if (owningTypeToGenerateMetadataFor.HasInstantiation
+                && record is MemberReference memberRefRecord
+                && memberRefRecord.Parent is TypeReference)
+            {
+                List<MetadataRecord> genericArgs = new List<MetadataRecord>();
+                foreach (Internal.TypeSystem.Ecma.EcmaGenericParameter genericParam in owningTypeToGenerateMetadataFor.Instantiation)
+                {
+                    genericArgs.Add(new TypeReference
+                    {
+                        TypeName = (ConstantStringValue)genericParam.Name,
+                    });
+                }
+
+                memberRefRecord.Parent = new TypeSpecification
+                {
+                    Signature = new TypeInstantiationSignature
+                    {
+                        GenericType = memberRefRecord.Parent,
+                        GenericTypeArguments = genericArgs,
+                    }
+                };
+            }
+
+            // As a twist, instantiated generic methods appear as if instantiated over their formals.
+            if (methodToGenerateMetadataFor.HasInstantiation)
+            {
+                var methodInst = new MethodInstantiation
+                {
+                    Method = record,
+                };
+                methodInst.GenericTypeArguments.Capacity = methodToGenerateMetadataFor.Instantiation.Length;
+                foreach (Internal.TypeSystem.Ecma.EcmaGenericParameter typeArgument in methodToGenerateMetadataFor.Instantiation)
+                {
+                    var genericParam = new TypeReference
+                    {
+                        TypeName = (ConstantStringValue)typeArgument.Name,
+                    };
+                    methodInst.GenericTypeArguments.Add(genericParam);
+                }
+                record = methodInst;
+            }
+
+            return record;
+        }
 
         /// <summary>
         /// Returns a set of modules that will get some metadata emitted into the output module
         /// </summary>
-        public virtual IEnumerable<ModuleDesc> GetCompilationModulesWithMetadata()
-        {
-            // TODO: this is temporary until we have a metadata manager for IL scanner. This method should be abstract.
-
-            // TODO: We should also return the list of satellite assemblies here (this API is used by the ResourceDataNode to
-            // generate the BlobIdResourceIndex blob, for the ResourceManager to work at runtime).
-
-            return _modulesWithMetadata;
-        }
+        public abstract IEnumerable<ModuleDesc> GetCompilationModulesWithMetadata();
 
         public byte[] GetMetadataBlob(NodeFactory factory)
         {
@@ -610,11 +568,6 @@ namespace ILCompiler
         internal IEnumerable<IMethodBodyNode> GetCompiledMethodBodies()
         {
             return _methodBodiesGenerated;
-        }
-
-        internal IEnumerable<DefaultConstructorFromLazyNode> GetDefaultConstructorsNeeded()
-        {
-            return _defaultConstructorsNeeded;
         }
 
         internal bool TypeGeneratesEEType(TypeDesc type)
@@ -704,6 +657,11 @@ namespace ILCompiler
             }
 
             return _blockingPolicy.IsBlocked(typicalMethodDefinition);
+        }
+
+        public bool IsManifestResourceBlocked(ModuleDesc module, string resourceName)
+        {
+            return _resourceBlockingPolicy.IsManifestResourceBlocked(module, resourceName);
         }
 
         public bool CanGenerateMetadata(MetadataType type)

@@ -40,12 +40,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
         {
-            // TODO: https://github.com/dotnet/corert/issues/3224
-            if (_method.IsAbstract)
-            {
-                yield return new DependencyListEntry(context.ReflectableMethod(_method), "Abstract reflectable method");
-            }
-            else
+            DependencyList dependencies = null;
+
+            context.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref dependencies, context, _method);
+            
+            if (!_method.IsAbstract)
             {
                 MethodDesc instantiatedMethod = _method;
 
@@ -66,11 +65,12 @@ namespace ILCompiler.DependencyAnalysis
                     if (context.TypeSystemContext.SupportsUniversalCanon && canonMethodTarget.IsGenericDepthGreaterThan(UniversalCanonGVMDepthHeuristic_CanonDepth))
                     {
                         // fall back to using the universal generic variant of the generic method
-                        yield break;
+                        return dependencies;
                     }
 
                     bool getUnboxingStub = instantiatedMethod.OwningType.IsValueType;
-                    yield return new DependencyListEntry(context.MethodEntrypoint(canonMethodTarget, getUnboxingStub), "GVM Dependency - Canon method");
+                    dependencies = dependencies ?? new DependencyList();
+                    dependencies.Add(context.MethodEntrypoint(canonMethodTarget, getUnboxingStub), "GVM Dependency - Canon method");
 
                     if (canonMethodTarget != instantiatedMethod)
                     {
@@ -81,13 +81,15 @@ namespace ILCompiler.DependencyAnalysis
                         if (context.TypeSystemContext.SupportsUniversalCanon && instantiatedMethod.IsGenericDepthGreaterThan(UniversalCanonGVMDepthHeuristic_NonCanonDepth))
                         {
                             // fall back to using the universal generic variant of the generic method
-                            yield break;
+                            return dependencies;
                         }
 
-                        yield return new DependencyListEntry(context.ShadowConcreteMethod(instantiatedMethod), "GVM Dependency - Dictionary");
+                        dependencies.Add(context.ShadowConcreteMethod(instantiatedMethod), "GVM Dependency - Dictionary");
                     }
                 }
             }
+
+            return dependencies;
         }
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)

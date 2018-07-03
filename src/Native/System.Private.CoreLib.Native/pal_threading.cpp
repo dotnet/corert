@@ -28,7 +28,7 @@ extern "C" void CoreLibNative_LowLevelMutex_Release(LowLevelMutex *mutex)
 // LowLevelMonitor
 
 #if !(HAVE_MACH_ABSOLUTE_TIME || HAVE_PTHREAD_CONDATTR_SETCLOCK && HAVE_CLOCK_MONOTONIC)
-#error Don't know how to perfom timed wait on this platform
+#error Don't know how to perform timed wait on this platform
 #endif
 
 LowLevelMonitor::LowLevelMonitor(bool abortOnFailure, bool *successRef) : LowLevelMutex(abortOnFailure, successRef)

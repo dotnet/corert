@@ -17,7 +17,7 @@ namespace System.Reflection
     //
     public sealed class RuntimeAssemblyName : IEquatable<RuntimeAssemblyName>
     {
-        public RuntimeAssemblyName(String name, Version version, String cultureName, AssemblyNameFlags flags, byte[] publicKeyOrToken)
+        public RuntimeAssemblyName(string name, Version version, string cultureName, AssemblyNameFlags flags, byte[] publicKeyOrToken)
         {
             Debug.Assert(name != null);
             this.Name = name;
@@ -36,13 +36,13 @@ namespace System.Reflection
         }
 
         // Simple name.
-        public String Name { get; }
+        public string Name { get; }
 
         // Optional version.
         public Version Version { get; }
 
         // Optional culture name.
-        public String CultureName { get; }
+        public string CultureName { get; }
 
         // Optional flags (this is actually an OR of the classic flags and the ContentType.)
         public AssemblyNameFlags Flags { get; }
@@ -69,7 +69,7 @@ namespace System.Reflection
                 if (!this.Version.Equals(other.Version))
                     return false;
             }
-            if (!String.Equals(this.CultureName, other.CultureName))
+            if (!string.Equals(this.CultureName, other.CultureName))
                 return false;
             if (this.Flags != other.Flags)
                 return false;
@@ -101,7 +101,7 @@ namespace System.Reflection
             return true;
         }
 
-        public sealed override bool Equals(Object obj)
+        public sealed override bool Equals(object obj)
         {
             RuntimeAssemblyName other = obj as RuntimeAssemblyName;
             if (other == null)
@@ -157,7 +157,7 @@ namespace System.Reflection
             return;
         }
 
-        public String FullName
+        public string FullName
         {
             get
             {

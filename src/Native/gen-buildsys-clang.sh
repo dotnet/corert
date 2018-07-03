@@ -109,14 +109,19 @@ if [[ -n "$CROSSCOMPILE" ]]; then
         echo "ROOTFS_DIR not set for crosscompile"
         exit 1
     fi
-    cmake_extra_defines="$cmake_extra_defines -C $1/cross/$build_arch/tryrun.cmake"
-    cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$1/cross/$build_arch/toolchain.cmake"
+    if [[ -z $CONFIG_DIR ]]; then
+        CONFIG_DIR="$1/cross"
+    fi
+    export TARGET_BUILD_ARCH=$build_arch
+    cmake_extra_defines="$cmake_extra_defines -C $CONFIG_DIR/tryrun.cmake"
+    cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$CONFIG_DIR/toolchain.cmake"
 fi
 
 if [ $build_arch == "wasm" ]; then
     emcmake cmake \
         "-DEMSCRIPTEN_GENERATE_BITCODE_STATIC_LIBRARIES=1" \
         "-DCMAKE_TOOLCHAIN_FILE=$EMSCRIPTEN/cmake/Modules/Platform/Emscripten.cmake" \
+        "-DCLR_CMAKE_TARGET_ARCH=$build_arch" \
         "-DCMAKE_BUILD_TYPE=$build_type" \
         "$1/src/Native"
 else

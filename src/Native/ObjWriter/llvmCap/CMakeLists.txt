@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.6)
 project(ObjWriter)
 include(ExternalProject)
 
+set(LLVM_VERSION "5")
 set(OBJWRITER_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../)
 set(OBJWRITER_LLVM_POINT tools/ObjWriter)
 
@@ -36,12 +37,11 @@ if(USE_ARM_TARGET_TRIPLE)
   list(APPEND LLVM_CMAKE_EXTRA_ARGS "-DLLVM_DEFAULT_TARGET_TRIPLE=thumbv7-linux-gnueabi")
 endif()
 
-list(REMOVE_DUPLICATES CORERT_NATIVE_COMPILE_OPTIONS)
-
 # Make sure to remove debug flags from general build flags for LLVM
 set(LLVM_COMPILE_OPTIONS "${CORERT_NATIVE_COMPILE_OPTIONS}")
 list(REMOVE_ITEM LLVM_COMPILE_OPTIONS "-g")
 list(REMOVE_ITEM LLVM_COMPILE_OPTIONS "-O0")
+list(REMOVE_ITEM LLVM_COMPILE_OPTIONS "-Werror")
 
 string(REPLACE ";" "\ " CORERT_NATIVE_COMPILE_OPTIONS "${CORERT_NATIVE_COMPILE_OPTIONS}")
 string(REPLACE ";" "\ " LLVM_COMPILE_OPTIONS "${LLVM_COMPILE_OPTIONS}")
@@ -49,19 +49,32 @@ string(REPLACE ";" "\ " LLVM_COMPILE_OPTIONS "${LLVM_COMPILE_OPTIONS}")
 # If host and target are the same, we could use llvm-tblgen from LLVM itself.
 # Otherwise we use host llvm-tblgen. It's universal way for cross-building.
 if(NOT ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL ${CMAKE_SYSTEM_PROCESSOR})
-  execute_process (
-    COMMAND bash -c "echo -n `which llvm-tblgen`"
-    OUTPUT_VARIABLE LLVM_TBLGEN_TOOL
-    )
+  # Find llvm-tblgen tool
   if(NOT LLVM_TBLGEN_TOOL)
-    message(FATAL_ERROR "Can't find llvm-tblgen. You need to make sure that you have installed LLVM")
+    execute_process (
+      COMMAND bash -c "echo -n `which llvm-tblgen`"
+      OUTPUT_VARIABLE LLVM_TBLGEN_TOOL
+      )
+    if(NOT LLVM_TBLGEN_TOOL)
+      message(FATAL_ERROR "Can't find llvm-tblgen! You need to make sure that you have installed LLVM version $LLVM_VERSION")
+    endif()
   endif()
+
+  # Check compatibility
+  execute_process (
+    COMMAND bash -c "echo -n `${LLVM_TBLGEN_TOOL} --version | grep -i 'version ${LLVM_VERSION}'`"
+    OUTPUT_VARIABLE IS_LLVM_TBLGEN_TOOL_COMPATIBLE
+    )
+  if(NOT IS_LLVM_TBLGEN_TOOL_COMPATIBLE)
+    message(FATAL_ERROR "LLVM version incompatibility! You need to make sure that you have installed LLVM version ${LLVM_VERSION}")
+  endif()
+
   list(APPEND LLVM_CMAKE_EXTRA_ARGS "-DLLVM_TABLEGEN=${LLVM_TBLGEN_TOOL}")
 endif()
 
 ExternalProject_Add(LLVM
   GIT_REPOSITORY https://github.com/llvm-mirror/llvm
-  GIT_TAG release_50
+  GIT_TAG release_${LLVM_VERSION}0
   GIT_SHALLOW 1
   GIT_PROGRESS 1
   PATCH_COMMAND ""
@@ -103,14 +116,32 @@ ExternalProject_Add(LLVM
 ExternalProject_Get_Property(LLVM source_dir)
 set(LLVM_SOURCE_DIR ${source_dir})
 ExternalProject_Add_Step(LLVM PatchingLLVM
-  COMMAND git apply --3way ${OBJWRITER_ROOT}/llvm.patch COMMENT "Applying LLVM patch with ObjWriter fixes"
+  COMMAND git checkout -- .
+  COMMAND git apply ${OBJWRITER_ROOT}/llvm.patch COMMENT "Applying LLVM patch with ObjWriter fixes"
   WORKING_DIRECTORY ${LLVM_SOURCE_DIR}
   DEPENDEES patch
   USES_TERMINAL 1
   )
+
+if(CMAKE_HOST_WIN32)
+ExternalProject_Add_Step(LLVM ObjWriterInjection
+  COMMAND ${CMAKE_COMMAND} -E copy_directory ${OBJWRITER_ROOT} ${OBJWRITER_LLVM_POINT} COMMENT "copy ${OBJWRITER_ROOT} -> ${OBJWRITER_LLVM_POINT}"
+  WORKING_DIRECTORY ${LLVM_SOURCE_DIR}
+  DEPENDEES patch
+  USES_TERMINAL 1
+  )
+else()
 ExternalProject_Add_Step(LLVM ObjWriterInjection
   COMMAND ${CMAKE_COMMAND} -E create_symlink ${OBJWRITER_ROOT} ${OBJWRITER_LLVM_POINT} COMMENT "mklink ${OBJWRITER_ROOT} -> ${OBJWRITER_LLVM_POINT}"
   WORKING_DIRECTORY ${LLVM_SOURCE_DIR}
   DEPENDEES patch
   USES_TERMINAL 1
+  )
+endif()
+
+ExternalProject_Add_Step(LLVM forceconfigure
+  COMMAND ${CMAKE_COMMAND} -E echo "Force configure of LLVM"
+  DEPENDEES update
+  DEPENDERS configure
+  ALWAYS 1
   )

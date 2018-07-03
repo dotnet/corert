@@ -6,7 +6,7 @@
 **
 **
 **
-** Purpose: Exception class for Arthimatic Overflows.
+** Purpose: Exception class for Arithmetic Overflows.
 **
 **
 =============================================================================*/
@@ -25,13 +25,13 @@ namespace System
             HResult = HResults.COR_E_OVERFLOW;
         }
 
-        public OverflowException(String message)
+        public OverflowException(string message)
             : base(message)
         {
             HResult = HResults.COR_E_OVERFLOW;
         }
 
-        public OverflowException(String message, Exception innerException)
+        public OverflowException(string message, Exception innerException)
             : base(message, innerException)
         {
             HResult = HResults.COR_E_OVERFLOW;

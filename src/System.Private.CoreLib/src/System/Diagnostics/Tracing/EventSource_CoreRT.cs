@@ -178,6 +178,9 @@ namespace System.Diagnostics.Tracing
                 this.Tags = tags;
                 this.EnabledForAnyListener = enabledForAnyListener;
                 this.EnabledForETW = enabledForETW;
+#if FEATURE_PERFTRACING
+                this.EnabledForEventPipe = false;
+#endif
                 this.TriggersActivityTracking = 0;
                 this.Name = name;
                 this.Message = message;
@@ -338,10 +341,10 @@ namespace System.Diagnostics.Tracing
             if (fmt != null)
                 return string.Format(fmt, args);
 
-            string sargs = String.Empty;
+            string sargs = string.Empty;
             foreach(var arg in args)
             {
-                if (sargs != String.Empty)
+                if (sargs != string.Empty)
                     sargs += ", ";
                 sargs += arg.ToString();
             }

@@ -44,12 +44,11 @@ namespace ILCompiler.DependencyAnalysis
             else
                 dependencies.Add(factory.ModuleMetadata(_type.Module), "Containing module of a reflectable type");
 
-            // TODO: https://github.com/dotnet/corert/issues/3224
-            // We don't currently track the exact list of fields used - assume all are used
-            foreach (FieldDesc field in _type.GetFields())
+            if (_type.IsDelegate)
             {
-                if (factory.MetadataManager.CanGenerateMetadata(field))
-                    dependencies.Add(factory.FieldMetadata(field), "Field of a reflectable type");
+                // A delegate type metadata is rather useless without the Invoke method.
+                // If someone reflects on a delegate, chances are they're going to look at the signature.
+                dependencies.Add(factory.MethodMetadata(_type.GetMethod("Invoke", null)), "Delegate invoke method metadata");
             }
 
             return dependencies;

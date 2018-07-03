@@ -58,7 +58,7 @@ namespace ILCompiler
             foreach (var rootProvider in compilationRoots)
                 rootProvider.AddCompilationRoots(rootingService);
 
-            MetadataType globalModuleGeneratedType = nodeFactory.CompilationModuleGroup.GeneratedAssembly.GetGlobalModuleType();
+            MetadataType globalModuleGeneratedType = nodeFactory.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType();
             _typeGetTypeMethodThunks = new TypeGetTypeMethodThunkCache(globalModuleGeneratedType);
             _assemblyGetExecutingAssemblyMethodThunks = new AssemblyGetExecutingAssemblyMethodThunkCache(globalModuleGeneratedType);
             _methodBaseGetCurrentMethodThunks = new MethodBaseGetCurrentMethodThunkCache();
@@ -90,6 +90,12 @@ namespace ILCompiler
 
         public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target, bool followVirtualDispatch)
         {
+            // If we're creating a delegate to a virtual method that cannot be overriden, devirtualize.
+            // This is not just an optimization - it's required for correctness in the presence of sealed
+            // vtable slots.
+            if (followVirtualDispatch && (target.IsFinal || target.OwningType.IsSealed()))
+                followVirtualDispatch = false;
+
             return DelegateCreationInfo.Create(delegateType, target, NodeFactory, followVirtualDispatch);
         }
 
@@ -102,7 +108,7 @@ namespace ILCompiler
             {
                 var pInvokeFixup = (PInvokeLazyFixupField)field;
                 PInvokeMetadata metadata = pInvokeFixup.PInvokeMetadata;
-                return NodeFactory.PInvokeMethodFixup(metadata.Module, metadata.Name);
+                return NodeFactory.PInvokeMethodFixup(metadata.Module, metadata.Name, metadata.Flags);
             }
             else
             {
@@ -414,8 +420,10 @@ namespace ILCompiler
             {
                 Debug.Assert(method.IsVirtual);
 
-                if (!_factory.VTable(method.OwningType).HasFixedSlots)
-                    _graph.AddRoot(_factory.VirtualMethodUse(method), reason);
+                // Virtual method use is tracked on the slot defining method only.
+                MethodDesc slotDefiningMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method);
+                if (!_factory.VTable(slotDefiningMethod.OwningType).HasFixedSlots)
+                    _graph.AddRoot(_factory.VirtualMethodUse(slotDefiningMethod), reason);
 
                 if (method.IsAbstract)
                 {

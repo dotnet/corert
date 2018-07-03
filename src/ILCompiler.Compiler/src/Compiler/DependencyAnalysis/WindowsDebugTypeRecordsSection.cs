@@ -33,7 +33,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public int Offset => 0;
 
-        protected internal override int ClassCode => -2081034825;
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+        protected internal override int ClassCode => (int)ObjectNodeOrder.WindowsDebugTypeRecordsSectionNode;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -73,9 +74,10 @@ namespace ILCompiler.DependencyAnalysis
             return _dbgInfoWriter.GetClassTypeIndex(classTypeDescriptor);
         }
 
-        uint ITypesDebugInfoWriter.GetCompleteClassTypeIndex(ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptor classFieldsTypeDescriptior, DataFieldDescriptor[] fields)
+        uint ITypesDebugInfoWriter.GetCompleteClassTypeIndex(ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptor classFieldsTypeDescriptior,
+                                                             DataFieldDescriptor[] fields, StaticDataFieldDescriptor[] statics)
         {
-            return _dbgInfoWriter.GetCompleteClassTypeIndex(classTypeDescriptor, classFieldsTypeDescriptior, fields);
+            return _dbgInfoWriter.GetCompleteClassTypeIndex(classTypeDescriptor, classFieldsTypeDescriptior, fields, statics);
         }
 
         uint ITypesDebugInfoWriter.GetArrayTypeIndex(ClassTypeDescriptor classDescriptor, ArrayTypeDescriptor arrayTypeDescriptor)
@@ -96,6 +98,11 @@ namespace ILCompiler.DependencyAnalysis
         uint ITypesDebugInfoWriter.GetMemberFunctionId(MemberFunctionIdTypeDescriptor memberIdDescriptor)
         {
             return _dbgInfoWriter.GetMemberFunctionId(memberIdDescriptor);
+        }
+
+        uint ITypesDebugInfoWriter.GetPrimitiveTypeIndex(TypeDesc type)
+        {
+            return PrimitiveTypeDescriptor.GetPrimitiveTypeIndex(type);
         }
 
         string ITypesDebugInfoWriter.GetMangledName(TypeDesc type)

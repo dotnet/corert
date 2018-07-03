@@ -2,24 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
     public sealed partial class Semaphore
     {
-        private static void VerifyNameForCreate(string name)
+        private void CreateSemaphoreCore(int initialCount, int maximumCount, string name, out bool createdNew)
         {
             if (name != null)
             {
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
             }
-        }
-
-        private void CreateSemaphoreCore(int initialCount, int maximumCount, string name, out bool createdNew)
-        {
-            Debug.Assert(name == null);
 
             SafeWaitHandle = WaitSubsystem.NewSemaphore(initialCount, maximumCount);
             createdNew = true;
@@ -30,9 +27,25 @@ namespace System.Threading
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
         }
 
-        private static int ReleaseCore(IntPtr handle, int releaseCount)
+        private int ReleaseCore(int releaseCount)
         {
-            return WaitSubsystem.ReleaseSemaphore(handle, releaseCount);
+            // The field value is modifiable via the public <see cref="WaitHandle.SafeWaitHandle"/> property, save it locally
+            // to ensure that one instance is used in all places in this method
+            SafeWaitHandle waitHandle = _waitHandle;
+            if (waitHandle == null)
+            {
+                ThrowInvalidHandleException();
+            }
+
+            waitHandle.DangerousAddRef();
+            try
+            {
+                return WaitSubsystem.ReleaseSemaphore(waitHandle.DangerousGetHandle(), releaseCount);
+            }
+            finally
+            {
+                waitHandle.DangerousRelease();
+            }
         }
     }
 }

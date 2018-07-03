@@ -22,7 +22,7 @@ namespace System.Threading.Tasks
             }
         }
 
-        public static void TraceOperationCreation(CausalityTraceLevel traceLevel, Task task, String operationName, ulong relatedContext)
+        public static void TraceOperationCreation(CausalityTraceLevel traceLevel, Task task, string operationName, ulong relatedContext)
         {
         }
 

@@ -9,8 +9,6 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 
-using Internal.TypeSystem;
-
 namespace Internal.TypeSystem.Ecma
 {
     public partial class EcmaModule : ModuleDesc
@@ -147,6 +145,10 @@ namespace Internal.TypeSystem.Ecma
                         item = _module;
                         break;
 
+                    case HandleKind.ModuleReference:
+                        item = _module.ResolveModuleReference((ModuleReferenceHandle)handle);
+                        break;
+
                     default:
                         throw new BadImageFormatException("Unknown metadata token type: " + handle.Kind);
                 }
@@ -163,6 +165,13 @@ namespace Internal.TypeSystem.Ecma
                         return new EcmaObjectLookupWrapper(handle, item);
                 }
             }
+        }
+
+        private object ResolveModuleReference(ModuleReferenceHandle handle)
+        {
+            ModuleReference moduleReference = _metadataReader.GetModuleReference(handle);
+            string fileName = _metadataReader.GetString(moduleReference.Name);
+            return Context.ResolveModule(this, fileName);
         }
 
         private LockFreeReaderHashtable<EntityHandle, IEntityHandleObject> _resolvedTokens;

@@ -97,7 +97,7 @@ void ReportRegisterSet(UInt8 regSet, REGDISPLAY * pContext, GCEnumContext * hCal
 {
     // 2.  00lRRRRR - normal "register set" encoding, pinned and interior attributes both false
     //      a.  l - this is the last descriptor
-    //      b.  RRRRR - this is the register mask for { r4, r5, r6, r7, r8 }
+    //      b.  RRRRR - this is the register mask for { r4-r8 }
 
     if (regSet & CSR_MASK_R4) { ReportObject(hCallback, GetRegObjectAddr<CSR_NUM_R4>(pContext), 0); }
     if (regSet & CSR_MASK_R5) { ReportObject(hCallback, GetRegObjectAddr<CSR_NUM_R5>(pContext), 0); }
@@ -373,9 +373,10 @@ void ReportLocalSlots(UInt8 localsEnc, REGDISPLAY * pContext, GCEnumContext * hC
     {
         // 4.  10l1SSSS - "local stack slot set" encoding, pinned and interior attributes both false
         //      a.  l - last descriptor
-        //      b.  SSSS - set of "local slots" #0 - #3  - local slot 0 is at offset -8 from the last pushed 
-        //          callee saved register, local slot 1 is at offset - 16, etc - in other words, these are the 
-        //          slots normally used for locals
+        //      b.  SSSS - set of "local slots" #0-#3 - local slot #0 is at offset -POINTER_SIZE from
+        //          the last pushed callee saved register, local slot #1 is at offset -2*POINTER_SIZE,
+        //          etc - in other words, these are the slots normally used for locals. The non-sensical
+        //          encoding with SSSS = 0000 is reserved for the "common vars" case 8 below.
         if (localsEnc & 0x01) { ReportLocalSlot(0, pContext, hCallback, pHeader); }
         if (localsEnc & 0x02) { ReportLocalSlot(1, pContext, hCallback, pHeader); }
         if (localsEnc & 0x04) { ReportLocalSlot(2, pContext, hCallback, pHeader); }
@@ -385,7 +386,7 @@ void ReportLocalSlots(UInt8 localsEnc, REGDISPLAY * pContext, GCEnumContext * hC
     {
         // 5.  10l0ssss - "local slot" encoding, pinned and interior attributes are both false
         //      a.  l - last descriptor
-        //      b.  ssss - "local slot" #4 - #19
+        //      b.  ssss - "local slot" #4-#19 (#0-#3 are encoded by case 4 above)
         UInt32 localNum = (localsEnc & 0xF) + 4;
         ReportLocalSlot(localNum, pContext, hCallback, pHeader);
     }
@@ -401,10 +402,10 @@ void ReportStackSlots(UInt8 firstEncByte, REGDISPLAY * pContext, GCEnumContext *
     //      e.  s - offset sign
     //      f.  m - mask follows
     //      g.  offset - variable length unsigned integer
-    //      h.  mask - variable length unsigned integer (only present if m-bit is 1) - this can describe 
-    //          multiple stack locations with the same attributes. E.g., if you want to describe stack 
-    //          locations 0x20, 0x28, 0x38, you would give a (starting) offset of 0x20 and a mask of 
-    //          000000101 = 0x05. Up to 33 stack locations can be described.
+    //      h.  mask - variable length unsigned integer (only present if m-bit is 1) - describes multiple
+    //          (up to 33) stack locations having the same attributes. E.g., to describe stack locations
+    //          0x20, 0x28, 0x38, you specify the starting offset 0x20 and the mask 000000101 = 0x5.
+    //          The mask describes the next 32 stack locations after the first one.
 
     UInt32 flags = 0;
     if (firstEncByte & 0x08) { flags |= GC_CALL_PINNED; }
@@ -478,7 +479,7 @@ void ReportScratchRegs(UInt8 firstEncByte, REGDISPLAY * pContext, GCEnumContext 
     //      e.  IIIIIII - interior scratch register mask for { rax, rcx, rdx, r8, r9, r10, r11 } iff 'i' is 1
     //      f.  PPPPPPP - pinned scratch register mask for { rax, rcx, rdx, r8, r9, r10, r11 } iff 'p' is 1
     //
-    //     For ARM64 the scheme above is extended to support the bigger register set:
+    //     For ARM64 the scheme above is extended to support the larger register set:
     //      -   11lip010 0RRRRRRR [0IIIIIII] [0PPPPPPP] for { x0-x6 }
     //      -   11lip010 1RRRRRRR 0RRRRRRR [[1IIIIIII] 0IIIIIII] [[1PPPPPPP] 0PPPPPPP] for { x0-x13 }
     //      -   11lip010 1RRRRRRR 1RRRRRRR 000RRRRR [0*2(1IIIIIII) 000IIIII] [0*2(1PPPPPPP) 000PPPPP] for { x0-x15, xip0, xip1, lr }
@@ -505,7 +506,7 @@ void ReportScratchRegs(UInt8 firstEncByte, REGDISPLAY * pContext, GCEnumContext 
 }
 
 // Enumerate all live object references in that function using the virtual register set. Same reference 
-// location cannot be enumerated multiple times (but all differenct references pointing to the same object 
+// location cannot be enumerated multiple times (but all different references pointing to the same object 
 // have to be individually enumerated). 
 // Returns success of operation.
 void EECodeManager::EnumGcRefs(MethodGcInfoPointers *   pMethodInfo,
@@ -632,7 +633,7 @@ ContinueUnconditionally:
     //      a.  l - this is the last descriptor
     //      b.  RRRRR - this is the register mask for { rbx, rsi, rdi, rbp, r12 }, ARM = { r4-r8 }
     //
-    //     For ARM64 the scheme above is extended to support the bigger register set:
+    //     For ARM64 the scheme above is extended to support the larger register set:
     //     00lvRRRR [RRRRRRRR] - normal "register set" encoding, pinned and interior attributes both false
     //      a.  l - this is the last descriptor
     //      b.  v - extra byte follows
@@ -648,14 +649,14 @@ ContinueUnconditionally:
     //
     // 4.  10l1SSSS - "local stack slot set" encoding, pinned and interior attributes both false
     //      a.  l - last descriptor
-    //      b.  SSSS - set of "local slots" #0 - #3  - local slot 0 is at offset -8 from the last pushed 
-    //          callee saved register, local slot 1 is at offset - 16, etc - in other words, these are the 
-    //          slots normally used for locals. The non-sensical encoding with SSSS = 0000 is reserved for
-    //          the "common vars" case under 8 below.
+    //      b.  SSSS - set of "local slots" #0-#3 - local slot #0 is at offset -POINTER_SIZE from
+    //          the last pushed callee saved register, local slot #1 is at offset -2*POINTER_SIZE,
+    //          etc - in other words, these are the slots normally used for locals. The non-sensical
+    //          encoding with SSSS = 0000 is reserved for the "common vars" case 8 below.
     //
-    // 5.  10l0ssss - "local slot" encoding
+    // 5.  10l0ssss - "local slot" encoding, pinned and interior attributes are both false
     //      a.  l - last descriptor
-    //      b.  ssss - "local slot" #4 - #19
+    //      b.  ssss - "local slot" #4-#19 (#0-#3 are encoded by case 4 above)
     //
     // 6.  11lipfsm {offset} [mask] - [multiple] stack slot encoding
     //      a.  l - last descriptor
@@ -665,10 +666,10 @@ ContinueUnconditionally:
     //      e.  s - offset sign
     //      f.  m - mask follows
     //      g.  offset - variable length unsigned integer
-    //      h.  mask - variable length unsigned integer (only present if m-bit is 1) - this can describe 
-    //          multiple stack locations with the same attributes. E.g., if you want to describe stack 
-    //          locations 0x20, 0x28, 0x38, you would give a (starting) offset of 0x20 and a mask of 
-    //          000000101 = 0x05. Up to 33 stack locations can be described.
+    //      h.  mask - variable length unsigned integer (only present if m-bit is 1) - describes multiple
+    //          (up to 33) stack locations having the same attributes. E.g., to describe stack locations
+    //          0x20, 0x28, 0x38, you specify the starting offset 0x20 and the mask 000000101 = 0x5.
+    //          The mask describes the next 32 stack locations after the first one.
     //
     // 7.  11lip010 0RRRRRRR [0IIIIIII] [0PPPPPPP] - live scratch reg reporting, this uses the SP-xxx encoding
     //                                               from #6 since we cannot have stack locations at negative
@@ -680,7 +681,7 @@ ContinueUnconditionally:
     //      e.  IIIIIII - interior scratch register mask for { rax, rcx, rdx, r8, r9, r10, r11 } iff 'i' is 1
     //      f.  PPPPPPP - pinned scratch register mask for { rax, rcx, rdx, r8, r9, r10, r11 } iff 'p' is 1
     //
-    //     For ARM64 the scheme above is extended to support the bigger register set:
+    //     For ARM64 the scheme above is extended to support the larger register set:
     //      -   11lip010 0RRRRRRR [0IIIIIII] [0PPPPPPP] for { x0-x6 }
     //      -   11lip010 1RRRRRRR 0RRRRRRR [[1IIIIIII] 0IIIIIII] [[1PPPPPPP] 0PPPPPPP] for { x0-x13 }
     //      -   11lip010 1RRRRRRR 1RRRRRRR 000RRRRR [0*2(1IIIIIII) 000IIIII] [0*2(1PPPPPPP) 000PPPPP] for { x0-x15, xip0, xip1, lr }
@@ -792,7 +793,7 @@ bool EECodeManager::UnwindStackFrame(GCInfoHeader * pInfoHeader,
                                      REGDISPLAY *   pContext)
 {
     // We could implement this unwind if we wanted, but there really isn't any reason
-    ASSERT(pInfoHeader->GetReturnKind() != GCInfoHeader::MRK_ReturnsToNative);
+    ASSERT(!pInfoHeader->ReturnsToNative());
 
     bool ebpFrame = pInfoHeader->HasFramePointer();
 
@@ -890,7 +891,7 @@ bool EECodeManager::UnwindStackFrame(GCInfoHeader * pInfoHeader,
     {
         CalleeSavedRegMask regMask = pInfoHeader->GetSavedRegs();
         ASSERT_MSG(ebpFrame || !(regMask & CSR_MASK_RBP), "We should never use EBP as a preserved register");
-        ASSERT_MSG(!(regMask & CSR_MASK_RBX) || !pInfoHeader->HasDynamicAlignment(), "Can't have EBX as preserved regster and dynamic alignment frame pointer")
+        ASSERT_MSG(!(regMask & CSR_MASK_RBX) || !pInfoHeader->HasDynamicAlignment(), "Can't have EBX as preserved register and dynamic alignment frame pointer")
         if (regMask & CSR_MASK_RBX) { pContext->pRbx = (PTR_UIntNative)((PTR_UInt8)RSP - registerSaveDisplacement); ++RSP; } // registers saved at bottom of frame
         if (regMask & CSR_MASK_RSI) { pContext->pRsi = (PTR_UIntNative)((PTR_UInt8)RSP - registerSaveDisplacement); ++RSP; } // registers saved at bottom of frame
         if (regMask & CSR_MASK_RDI) { pContext->pRdi = (PTR_UIntNative)((PTR_UInt8)RSP - registerSaveDisplacement); ++RSP; } // registers saved at bottom of frame
@@ -988,12 +989,14 @@ bool EECodeManager::UnwindStackFrame(GCInfoHeader * pInfoHeader,
     }
 
     PTR_UIntNative RSP = (PTR_UIntNative)rawRSP;
+    bool restoredIP = false;
 
     if (ebpFrame)
     {
         pContext->pFP = RSP++;
         pContext->SetAddrOfIP((PTR_PCODE)RSP); // save off the return address location
         pContext->SetIP(*RSP++);               // pop the return address
+        restoredIP = true;
     }
 
     if (!pInfoHeader->AreFPLROnTop())
@@ -1001,6 +1004,8 @@ bool EECodeManager::UnwindStackFrame(GCInfoHeader * pInfoHeader,
         RSP = (PTR_UIntNative)(rawRSP + pInfoHeader->GetFrameSize());
         ASSERT(!pInfoHeader->HasGSCookie());
     }
+
+    ASSERT_MSG(pInfoHeader->IsFunclet() || !(dac_cast<TADDR>(RSP) & 0xf), "Callee save area must be 16-byte aligned");
 
     if (saveSize > 0)
     {
@@ -1010,6 +1015,7 @@ bool EECodeManager::UnwindStackFrame(GCInfoHeader * pInfoHeader,
             ASSERT_MSG(!ebpFrame, "Chained frame cannot have CSR_MASK_LR mask set");
             pContext->SetAddrOfIP((PTR_PCODE)RSP); // save off the return address location
             pContext->SetIP(*RSP++);               // pop the return address
+            restoredIP = true;
         }
         if (regMask & CSR_MASK_X19) { pContext->pX19 = RSP++; }
         if (regMask & CSR_MASK_X20) { pContext->pX20 = RSP++; }
@@ -1022,6 +1028,12 @@ bool EECodeManager::UnwindStackFrame(GCInfoHeader * pInfoHeader,
         if (regMask & CSR_MASK_X27) { pContext->pX27 = RSP++; }
         if (regMask & CSR_MASK_X28) { pContext->pX28 = RSP++; }
         if (regMask & CSR_MASK_FP ) { ASSERT(!ebpFrame); pContext->pFP = RSP++; }
+    }
+
+    if (!restoredIP)
+    {
+        pContext->SetAddrOfIP((PTR_PCODE)pContext->pLR);
+        pContext->SetIP(*pContext->pLR);
     }
 
     UInt8 vfpRegMask = (UInt8)pInfoHeader->GetVfpRegsPushedMask();
@@ -1048,6 +1060,10 @@ bool EECodeManager::UnwindStackFrame(GCInfoHeader * pInfoHeader,
 
     RSP += pInfoHeader->ParmRegsPushedCount();
 
+    // Excluding funclets, the total size of the callee save area and the param home area is always a multiple of 16.
+    // The compiler enforces that by placing an 8-byte padding between those areas if needed.
+    // Account for that padding and ensure that the unwound SP is 16-byte aligned.
+    RSP = dac_cast<PTR_UIntNative>((dac_cast<TADDR>(RSP) + 0xf) & ~0xf);
 #else
 
 #error NYI - For this arch
@@ -1060,7 +1076,7 @@ bool EECodeManager::UnwindStackFrame(GCInfoHeader * pInfoHeader,
 
 PTR_VOID EECodeManager::GetReversePInvokeSaveFrame(GCInfoHeader * pHeader, REGDISPLAY * pContext)
 {
-    if (pHeader->GetReturnKind() != GCInfoHeader::MRK_ReturnsToNative)
+    if (!pHeader->ReturnsToNative())
         return NULL;
 
     Int32 frameOffset = pHeader->GetReversePinvokeFrameOffset();
@@ -1078,7 +1094,7 @@ UIntNative EECodeManager::GetConservativeUpperBoundForOutgoingArgs(GCInfoHeader 
 {
     UIntNative upperBound;
 
-    if (pInfoHeader->GetReturnKind() == GCInfoHeader::MRK_ReturnsToNative)
+    if (pInfoHeader->ReturnsToNative())
     {
         // Reverse PInvoke case.  The embedded reverse PInvoke frame is guaranteed to reside above
         // all outgoing arguments.
@@ -1098,7 +1114,9 @@ UIntNative EECodeManager::GetConservativeUpperBoundForOutgoingArgs(GCInfoHeader 
 
 #elif defined(_TARGET_ARM64_)
 
-            PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+            // ARM64 frame pointer case. The pushed FP value is guaranteed to reside above
+            // all outgoing arguments.
+            upperBound = pContext->GetFP();
 
 #elif defined(_TARGET_X86_)
 
@@ -1169,7 +1187,7 @@ PTR_PTR_VOID EECodeManager::GetReturnAddressLocationForHijack(
 
     // We *could* hijack a reverse-pinvoke method, but it doesn't get us much because we already synchronize
     // with the GC on the way back to native code.
-    if (pHeader->GetReturnKind() == GCInfoHeader::MRK_ReturnsToNative)
+    if (pHeader->ReturnsToNative())
         return NULL;
 
     if (pHeader->IsFunclet())
@@ -1182,37 +1200,24 @@ PTR_PTR_VOID EECodeManager::GetReturnAddressLocationForHijack(
     }
 
 #ifdef _ARM_
-    // We cannot get the return address unless LR has 
-    // be saved in the prolog.
+    // We cannot get the return address unless LR has been saved in the prolog.
     if (!pHeader->IsRegSaved(CSR_MASK_LR))
         return NULL;
 #elif defined(_ARM64_)
-    // We can get return address if LR was saved either with FP or on its own:
-    bool ebpFrame = pHeader->HasFramePointer();
-    if (!ebpFrame && !pHeader->IsRegSaved(CSR_MASK_LR)) {
+    // We can get return address if LR was saved either with FP or on its own.
+    if (!pHeader->HasFramePointer() && !pHeader->IsRegSaved(CSR_MASK_LR))
         return NULL;
-    }
 #endif // _ARM_
-
-    void ** ppvResult;
 
     UInt32 epilogOffset = 0;
     UInt32 epilogSize = 0;
     if (GetEpilogOffset(pGCInfoHeader, cbMethodCodeSize, pbEpilogTable, codeOffset, &epilogOffset, &epilogSize)) 
     {
-#ifdef _ARM_
-        // Disable hijacking from epilogs on ARM until we implement GetReturnAddressLocationFromEpilog.
-        return NULL;
-#elif defined(_ARM64_)
-        // Disable hijacking from epilogs on ARM64:
+#if defined(_ARM_) || defined(_ARM64_)
+        // Disable hijacking from epilogs until we implement GetReturnAddressLocationFromEpilog.
         return NULL;
 #else
-        ppvResult = GetReturnAddressLocationFromEpilog(pHeader, pContext, epilogOffset, epilogSize);
-        // Early out if GetReturnAddressLocationFromEpilog indicates a non-hijackable epilog (e.g. exception
-        // throw epilog or tail call).
-        if (ppvResult == NULL)
-            return NULL;
-        goto Finished;
+        return GetReturnAddressLocationFromEpilog(pHeader, pContext, epilogOffset, epilogSize);
 #endif
     }
 
@@ -1220,11 +1225,7 @@ PTR_PTR_VOID EECodeManager::GetReturnAddressLocationForHijack(
     // ARM always sets up R11 as an OS frame chain pointer to enable fast ETW stack walking (except in the
     // case where LR is not pushed, but that was handled above). The protocol specifies that the return
     // address is pushed at [r11, #4].
-    ppvResult = (void **)((*pContext->pR11) + sizeof(void *));
-    goto Finished;
-#elif _ARM64_
-    ppvResult = (void **)(pContext->pLR);
-    goto Finished;
+    return (void **)((*pContext->pR11) + sizeof(void *));
 #else
 
     // We are in the body of the method, so just find the return address using the unwind info.
@@ -1236,8 +1237,7 @@ PTR_PTR_VOID EECodeManager::GetReturnAddressLocationForHijack(
             // In this case, we have the normal EBP frame pointer, but also an EBX frame pointer.  Use the EBX
             // one, because the return address associated with that frame pointer is the one we're actually 
             // going to return to.  The other one (next to EBP) is only for EBP-chain-walking.
-            ppvResult = (void **)((*pContext->pRbx) + sizeof(void *));
-            goto Finished;
+            return (void **)((*pContext->pRbx) + sizeof(void *));
         }
 #endif
 
@@ -1245,25 +1245,24 @@ PTR_PTR_VOID EECodeManager::GetReturnAddressLocationForHijack(
 #ifdef _AMD64_
         framePointerOffset = pHeader->GetFramePointerOffset();
 #endif
-        ppvResult = (void **)((*pContext->pRbp) + sizeof(void *) - framePointerOffset);
-        goto Finished;
+        return (void **)(pContext->GetFP() + sizeof(void *) - framePointerOffset);
     }
 
     {
         // We do not have a frame pointer, but we are also not in the prolog or epilog
 
-        UInt8 * RSP = (UInt8 *)pContext->GetSP();
-        RSP += pHeader->GetFrameSize();
+        UIntNative RSP = pContext->GetSP() + pHeader->GetFrameSize();
+#if _ARM64_
+        // LR is saved at the bottom of the preserved registers area
+        ASSERT(pHeader->IsRegSaved(CSR_MASK_LR));
+#else
         RSP += pHeader->GetPreservedRegsSaveSize();
-
-        // RSP should point to the return address now.
-        ppvResult = (void**)RSP;
-    }
-    goto Finished;
 #endif
 
-  Finished:
-    return ppvResult;
+        // RSP should point to the return address now.
+        return (void**)RSP;
+    }
+#endif
 }
 
 #endif
@@ -1273,21 +1272,18 @@ GCRefKind EECodeManager::GetReturnValueKind(GCInfoHeader * pInfoHeader)
     static_assert((GCRefKind)GCInfoHeader::MRK_ReturnsScalar == GCRK_Scalar, "GCInfoHeader::MRK_ReturnsScalar does not match GCRK_Scalar");
     static_assert((GCRefKind)GCInfoHeader::MRK_ReturnsObject == GCRK_Object, "GCInfoHeader::MRK_ReturnsObject does not match GCRK_Object");
     static_assert((GCRefKind)GCInfoHeader::MRK_ReturnsByref  == GCRK_Byref, "GCInfoHeader::MRK_ReturnsByref does not match GCRK_Byref");
+#ifdef _TARGET_ARM64_
+    static_assert((GCRefKind)GCInfoHeader::MRK_Scalar_Obj    == GCRK_Scalar_Obj,    "GCRefKind and MethodReturnKind enumerations do not match");
+    static_assert((GCRefKind)GCInfoHeader::MRK_Obj_Obj       == GCRK_Obj_Obj,       "GCRefKind and MethodReturnKind enumerations do not match");
+    static_assert((GCRefKind)GCInfoHeader::MRK_Byref_Obj     == GCRK_Byref_Obj,     "GCRefKind and MethodReturnKind enumerations do not match");
+    static_assert((GCRefKind)GCInfoHeader::MRK_Scalar_Byref  == GCRK_Scalar_Byref,  "GCRefKind and MethodReturnKind enumerations do not match");
+    static_assert((GCRefKind)GCInfoHeader::MRK_Obj_Byref     == GCRK_Obj_Byref,     "GCRefKind and MethodReturnKind enumerations do not match");
+    static_assert((GCRefKind)GCInfoHeader::MRK_Byref_Byref   == GCRK_Byref_Byref,   "GCRefKind and MethodReturnKind enumerations do not match");
+#endif
 
     GCInfoHeader::MethodReturnKind retKind = pInfoHeader->GetReturnKind();
-    switch (retKind)
-    {
-        case GCInfoHeader::MRK_ReturnsScalar:
-        case GCInfoHeader::MRK_ReturnsToNative:
-            return GCRK_Scalar;
-        case GCInfoHeader::MRK_ReturnsObject:
-            return GCRK_Object;
-        case GCInfoHeader::MRK_ReturnsByref:
-            return GCRK_Byref;
-        default:
-            break;
-    }
-    UNREACHABLE_MSG("unexpected return kind");
+    ASSERT_MSG(retKind <= GCInfoHeader::MRK_LastValid, "unexpected return kind");
+    return (retKind == GCInfoHeader::MRK_ReturnsToNative) ? GCRK_Scalar : (GCRefKind)retKind;
 }
 
 bool EECodeManager::GetEpilogOffset(
@@ -1345,7 +1341,7 @@ void ** EECodeManager::GetReturnAddressLocationFromEpilog(GCInfoHeader * pInfoHe
 
     //ASSERT(VerifyEpilogBytes(pInfoHeader, (Code *)pbEpilogStart));
     // We could find the return address of a native-callable method, but it's not very useful at the moment.
-    ASSERT(pInfoHeader->GetReturnKind() != GCInfoHeader::MRK_ReturnsToNative); 
+    ASSERT(!pInfoHeader->ReturnsToNative());
     UInt8 * pbEpilog = pbEpilogStart;
 
 #ifdef _X86_
@@ -1796,7 +1792,7 @@ inline bool IsFramelessArm64(void)
 
 void CheckHijackInEpilog(GCInfoHeader * pInfoHeader, Code * pEpilog, Code * pEpilogStart, UInt32 epilogSize)
 {
-    ASSERT(pInfoHeader->GetReturnKind() != GCInfoHeader::MRK_ReturnsToNative);
+    ASSERT(!pInfoHeader->ReturnsToNative());
     if (IS_FRAMELESS())
         return;
 
@@ -1852,8 +1848,7 @@ bool VerifyEpilogBytesX86(GCInfoHeader * pInfoHeader, Code * pEpilogStart, UInt3
     Code * pEpilog = pEpilogStart;
 
     // NativeCallable methods aren't return-address-hijacked, so we don't care about the epilog format.
-    bool returnsToNative = (pInfoHeader->GetReturnKind() == GCInfoHeader::MRK_ReturnsToNative);
-    if (returnsToNative)
+    if (pInfoHeader->ReturnsToNative())
         return true;
 
     if (pInfoHeader->HasFramePointer())
@@ -2047,8 +2042,7 @@ bool VerifyEpilogBytesAMD64(GCInfoHeader * pInfoHeader, Code * pEpilogStart, UIn
     Code * pEpilog = pEpilogStart;
 
     // NativeCallable methods aren't return-address-hijacked, so we don't care about the epilog format.
-    bool returnsToNative = (pInfoHeader->GetReturnKind() == GCInfoHeader::MRK_ReturnsToNative);
-    if (returnsToNative)
+    if (pInfoHeader->ReturnsToNative())
         return true;
 
     CHECK_HIJACK_IN_EPILOG();
@@ -2217,8 +2211,7 @@ bool VerifyEpilogBytesARM(GCInfoHeader * pInfoHeader, Code * pEpilogStart, UInt3
     UInt16 * pEpilog = (UInt16 *)pEpilogStart;
 
     // NativeCallable methods aren't return-address-hijacked, so we don't care about the epilog format.
-    bool returnsToNative = (pInfoHeader->GetReturnKind() == GCInfoHeader::MRK_ReturnsToNative);
-    if (returnsToNative)
+    if (pInfoHeader->ReturnsToNative())
         return true;
 
     CHECK_HIJACK_IN_EPILOG();

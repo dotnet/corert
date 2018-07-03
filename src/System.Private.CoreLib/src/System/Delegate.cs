@@ -31,7 +31,7 @@ namespace System
         }
 
         // V1 API: Create closed instance delegates. Method name matching is case sensitive.
-        protected Delegate(Object target, String method)
+        protected Delegate(object target, string method)
         {
             // This constructor cannot be used by application code. To create a delegate by specifying the name of a method, an
             // overload of the public static CreateDelegate method is used. This will eventually end up calling into the internal
@@ -41,7 +41,7 @@ namespace System
         }
 
         // V1 API: Create open static delegates. Method name matching is case insensitive.
-        protected Delegate(Type target, String method)
+        protected Delegate(Type target, string method)
         {
             // This constructor cannot be used by application code. To create a delegate by specifying the name of a method, an
             // overload of the public static CreateDelegate method is used. This will eventually end up calling into the internal
@@ -373,7 +373,22 @@ namespace System
             else
             {
                 IntPtr invokeThunk = this.GetThunk(DelegateInvokeThunk);
-                object result = System.InvokeUtils.CallDynamicInvokeMethod(this.m_firstParameter, this.m_functionPointer, this, invokeThunk, IntPtr.Zero, this, args, binderBundle: null, wrapInTargetInvocationException: true);
+#if PROJECTN
+                object result = InvokeUtils.CallDynamicInvokeMethod(this.m_firstParameter, this.m_functionPointer, this, invokeThunk, IntPtr.Zero, this, args, binderBundle: null, wrapInTargetInvocationException: true);
+#else
+                IntPtr genericDictionary = IntPtr.Zero;
+                if (FunctionPointerOps.IsGenericMethodPointer(invokeThunk))
+                {
+                    unsafe
+                    {
+                        GenericMethodDescriptor* descriptor = FunctionPointerOps.ConvertToGenericDescriptor(invokeThunk);
+                        genericDictionary = descriptor->InstantiationArgument;
+                        invokeThunk = descriptor->MethodFunctionPointer;
+                    }
+                }
+
+                object result = InvokeUtils.CallDynamicInvokeMethod(this.m_firstParameter, this.m_functionPointer, null, invokeThunk, genericDictionary, this, args, binderBundle: null, wrapInTargetInvocationException: true, invokeMethodHelperIsThisCall: false);
+#endif
                 DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                 return result;
             }
@@ -479,8 +494,8 @@ namespace System
                 MulticastDelegate d = (MulticastDelegate)o;
                 MulticastDelegate dd = (MulticastDelegate)a[index];
 
-                if (Object.ReferenceEquals(dd.m_firstParameter, d.m_firstParameter) &&
-                    Object.ReferenceEquals(dd.m_helperObject, d.m_helperObject) &&
+                if (object.ReferenceEquals(dd.m_firstParameter, d.m_firstParameter) &&
+                    object.ReferenceEquals(dd.m_helperObject, d.m_helperObject) &&
                     dd.m_extraFunctionPointerOrData == d.m_extraFunctionPointerOrData &&
                     dd.m_functionPointer == d.m_functionPointer)
                 {
@@ -493,21 +508,21 @@ namespace System
 
         // This method will combine this delegate with the passed delegate
         //  to form a new delegate.
-        protected virtual Delegate CombineImpl(Delegate follow)
+        protected virtual Delegate CombineImpl(Delegate d)
         {
-            if ((Object)follow == null) // cast to object for a more efficient test
+            if ((object)d == null) // cast to object for a more efficient test
                 return this;
 
             // Verify that the types are the same...
-            if (!InternalEqualTypes(this, follow))
+            if (!InternalEqualTypes(this, d))
                 throw new ArgumentException();
 
-            if (IsDynamicDelegate() && follow.IsDynamicDelegate())
+            if (IsDynamicDelegate() && d.IsDynamicDelegate())
             {
                 throw new InvalidOperationException();
             }
 
-            MulticastDelegate dFollow = (MulticastDelegate)follow;
+            MulticastDelegate dFollow = (MulticastDelegate)d;
             Delegate[] resultList;
             int followCount = 1;
             Delegate[] followList = dFollow.m_helperObject as Delegate[];
@@ -616,12 +631,12 @@ namespace System
         //  look at the invocation list.)  If this is found we remove it from
         //  this list and return a new delegate.  If its not found a copy of the
         //  current list is returned.
-        protected virtual Delegate RemoveImpl(Delegate value)
+        protected virtual Delegate RemoveImpl(Delegate d)
         {
             // There is a special case were we are removing using a delegate as
             //    the value we need to check for this case
             //
-            MulticastDelegate v = value as MulticastDelegate;
+            MulticastDelegate v = d as MulticastDelegate;
 
             if (v == null)
                 return this;
@@ -631,7 +646,7 @@ namespace System
                 if (invocationList == null)
                 {
                     // they are both not real Multicast
-                    if (this.Equals(value))
+                    if (this.Equals(d))
                         return null;
                 }
                 else
@@ -639,7 +654,7 @@ namespace System
                     int invocationCount = (int)m_extraFunctionPointerOrData;
                     for (int i = invocationCount; --i >= 0;)
                     {
-                        if (value.Equals(invocationList[i]))
+                        if (d.Equals(invocationList[i]))
                         {
                             if (invocationCount == 2)
                             {
@@ -724,7 +739,7 @@ namespace System
             return RuntimeAugments.Callbacks.GetDelegateMethod(this);
         }
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             // It is expected that all real uses of the Equals method will hit the MulticastDelegate.Equals logic instead of this
             // therefore, instead of duplicating the desktop behavior where direct calls to this Equals function do not behave
@@ -734,21 +749,21 @@ namespace System
 
         public static bool operator ==(Delegate d1, Delegate d2)
         {
-            if ((Object)d1 == null)
-                return (Object)d2 == null;
+            if ((object)d1 == null)
+                return (object)d2 == null;
 
             return d1.Equals(d2);
         }
 
         public static bool operator !=(Delegate d1, Delegate d2)
         {
-            if ((Object)d1 == null)
-                return (Object)d2 != null;
+            if ((object)d1 == null)
+                return (object)d2 != null;
 
             return !d1.Equals(d2);
         }
 
-        public Object Target
+        public object Target
         {
             get
             {
@@ -767,7 +782,7 @@ namespace System
                     return m_helperObject;
 
                 // Other non-closed thunks can be identified as the m_firstParameter field points at this.
-                if (Object.ReferenceEquals(m_firstParameter, this))
+                if (object.ReferenceEquals(m_firstParameter, this))
                 {
                     return null;
                 }
@@ -853,7 +868,7 @@ namespace System
         // Note that delegates constructed the normal way do not come through here. The IL transformer generates the equivalent of
         // this code customized for each delegate type.
         //
-        internal static Delegate CreateDelegate(EETypePtr delegateEEType, IntPtr ldftnResult, Object thisObject, bool isStatic, bool isOpen)
+        internal static Delegate CreateDelegate(EETypePtr delegateEEType, IntPtr ldftnResult, object thisObject, bool isStatic, bool isOpen)
         {
             Delegate del = (Delegate)(RuntimeImports.RhNewObject(delegateEEType));
 

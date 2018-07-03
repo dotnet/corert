@@ -448,8 +448,15 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
 #ifdef _TARGET_AMD64_
     UInt8 * pCode = pCodeOrg;
 
-    // is this "add rcx,8"?
-    if (pCode[0] == 0x48 && pCode[1] == 0x83 && pCode[2] == 0xc1 && pCode[3] == 0x08)
+    // is this "add rcx/rdi,8"?
+    if (pCode[0] == 0x48 &&
+        pCode[1] == 0x83 &&
+#ifdef UNIX_AMD64_ABI
+        pCode[2] == 0xc7 &&
+#else
+        pCode[2] == 0xc1 &&
+#endif
+        pCode[3] == 0x08)
     {
         // unboxing sequence
         unboxingStub = true;
@@ -546,9 +553,19 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
         pCode++;
     }
     // is this an indirect jump?
-    if (/* ARM64TODO */ false)
+    // adrp xip0,#imm21; ldr xip0,[xip0,#imm12]; br xip0
+    if ((pCode[0] & 0x9f00001f) == 0x90000010 &&
+        (pCode[1] & 0xffc003ff) == 0xf9400210 &&
+        pCode[2] == 0xd61f0200)
     {
-        // ARM64TODO
+        // normal import stub - dist to IAT cell is relative to (PC & ~0xfff)
+        // adrp: imm = SignExtend(immhi:immlo:Zeros(12), 64);
+        Int64 distToIatCell = (((((Int64)pCode[0] & ~0x1f) << 40) >> 31) | ((pCode[0] >> 17) & 0x3000));
+        // ldr: offset = LSL(ZeroExtend(imm12, 64), 3);
+        distToIatCell += (pCode[1] >> 7) & 0x7ff8;
+        UInt8 ** pIatCell = (UInt8 **)(((Int64)pCode & ~0xfff) + distToIatCell);
+        ASSERT(pModule == NULL || pModule->ContainsDataAddress(pIatCell));
+        return *pIatCell;
     }
     // is this an unboxing stub followed by a relative jump?
     else if (unboxingStub && (pCode[0] >> 26) == 0x5)
@@ -690,7 +707,7 @@ COOP_PINVOKE_HELPER(Boolean, RhpArrayCopy, (Array * pSourceArray, Int32 sourceIn
 
 //
 // This function handles all cases of Array.Clear that do not require conversions. It returns false if the operation cannot be performed, leaving
-// the handling of the complex cases or throwing apppropriate exception to the higher level framework. It is only allowed to return false for illegal 
+// the handling of the complex cases or throwing appropriate exception to the higher level framework. It is only allowed to return false for illegal 
 // calls as the BCL side has fallback for "complex cases" only.
 //
 COOP_PINVOKE_HELPER(Boolean, RhpArrayClear, (Array * pArray, Int32 index, Int32 length))

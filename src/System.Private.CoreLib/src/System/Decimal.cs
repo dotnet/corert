@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
@@ -54,7 +55,7 @@ namespace System
     [Serializable]
     [StructLayout(LayoutKind.Explicit)]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public partial struct Decimal : IFormattable, IComparable, IConvertible, IComparable<Decimal>, IEquatable<Decimal>, IDeserializationCallback, ISpanFormattable
+    public partial struct Decimal : IFormattable, IComparable, IConvertible, IComparable<decimal>, IEquatable<decimal>, IDeserializationCallback, ISpanFormattable
     {
         // Sign mask for the flags field. A value of zero in this bit indicates a
         // positive Decimal value, and a value of one in this bit indicates a
@@ -73,21 +74,21 @@ namespace System
         private const int ScaleShift = 16;
 
         // Constant representing the Decimal value 0.
-        public const Decimal Zero = 0m;
+        public const decimal Zero = 0m;
 
         // Constant representing the Decimal value 1.
-        public const Decimal One = 1m;
+        public const decimal One = 1m;
 
         // Constant representing the Decimal value -1.
-        public const Decimal MinusOne = -1m;
+        public const decimal MinusOne = -1m;
 
         // Constant representing the largest possible Decimal value. The value of
         // this constant is 79,228,162,514,264,337,593,543,950,335.
-        public const Decimal MaxValue = 79228162514264337593543950335m;
+        public const decimal MaxValue = 79228162514264337593543950335m;
 
         // Constant representing the smallest possible Decimal value. The value of
         // this constant is -79,228,162,514,264,337,593,543,950,335.
-        public const Decimal MinValue = -79228162514264337593543950335m;
+        public const decimal MinValue = -79228162514264337593543950335m;
 
         private const int CurrencyScale = 4; // Divide the "Int64" representation by 1E4 to get the "true" value of the Currency.
 
@@ -211,9 +212,9 @@ namespace System
         // is the currency value multiplied by 10,000. For example, a currency value of $12.99 would be represented by the Int64 value 129,900.
         //
 
-        public static Decimal FromOACurrency(long cy)
+        public static decimal FromOACurrency(long cy)
         {
-            Decimal d = default(Decimal);
+            decimal d = default(decimal);
 
             ulong absoluteCy; // has to be ulong to accommodate the case where cy == long.MinValue.
             if (cy < 0)
@@ -245,11 +246,9 @@ namespace System
             return d;
         }
 
-        public static long ToOACurrency(Decimal value)
+        public static long ToOACurrency(decimal value)
         {
-            long cy;
-            DecCalc.VarCyFromDec(ref value, out cy);
-            return cy;
+            return DecCalc.VarCyFromDec(ref value);
         }
 
         private static bool IsValid(uint flags) => (flags & ~(SignMask | ScaleMask)) == 0 && ((flags & ScaleMask) <= (28 << 16));
@@ -274,11 +273,6 @@ namespace System
         // equally valid, and all are numerically equivalent.
         //
         public Decimal(int[] bits)
-        {
-            SetBits(bits);
-        }
-
-        private void SetBits(int[] bits)
         {
             if (bits == null)
                 throw new ArgumentNullException(nameof(bits));
@@ -311,47 +305,35 @@ namespace System
                 uflags |= SignMask;
         }
 
-        void IDeserializationCallback.OnDeserialization(Object sender)
+        void IDeserializationCallback.OnDeserialization(object sender)
         {
             // OnDeserialization is called after each instance of this class is deserialized.
             // This callback method performs decimal validation after being deserialized.
-            try
-            {
-                SetBits(GetBits(this));
-            }
-            catch (ArgumentException e)
-            {
-                throw new SerializationException(SR.Overflow_Decimal, e);
-            }
+            if (!IsValid(uflags))
+                throw new SerializationException(SR.Overflow_Decimal);
         }
 
         // Constructs a Decimal from its constituent parts.
-        private Decimal(int lo, int mid, int hi, int flags)
+        private Decimal(ulong ulomidLE, uint hi, uint flags)
         {
-            if ((flags & ~(SignMask | ScaleMask)) == 0 && (flags & ScaleMask) <= (28 << 16))
-            {
-                this.lo = lo;
-                this.mid = mid;
-                this.hi = hi;
-                this.flags = flags;
-                return;
-            }
-            throw new ArgumentException(SR.Arg_DecBitCtor);
+            this.ulomidLE = ulomidLE;
+            this.uhi = hi;
+            this.uflags = flags;
         }
 
         // Returns the absolute value of the given Decimal. If d is
         // positive, the result is d. If d is negative, the result
         // is -d.
         //
-        internal static Decimal Abs(Decimal d)
+        internal static decimal Abs(ref decimal d)
         {
-            return new Decimal(d.lo, d.mid, d.hi, (int)(d.uflags & ~SignMask));
+            return new decimal(d.ulomidLE, d.uhi, d.uflags & ~SignMask);
         }
 
 
         // Adds two Decimal values.
         //
-        public static Decimal Add(Decimal d1, Decimal d2)
+        public static decimal Add(decimal d1, decimal d2)
         {
             DecCalc.VarDecAdd(ref d1, ref d2);
             return d1;
@@ -360,15 +342,18 @@ namespace System
 
         // Rounds a Decimal to an integer value. The Decimal argument is rounded
         // towards positive infinity.
-        public static Decimal Ceiling(Decimal d)
+        public static decimal Ceiling(decimal d)
         {
-            return (-(Decimal.Floor(-d)));
+            uint flags = d.uflags;
+            if ((flags & ScaleMask) != 0)
+                DecCalc.InternalRound(ref d, (byte)(flags >> ScaleShift), DecCalc.RoundingMode.Ceiling);
+            return d;
         }
 
         // Compares two Decimal values, returning an integer that indicates their
         // relationship.
         //
-        public static int Compare(Decimal d1, Decimal d2)
+        public static int Compare(decimal d1, decimal d2)
         {
             return DecCalc.VarDecCmp(ref d1, ref d2);
         }
@@ -379,25 +364,25 @@ namespace System
         // null is considered to be less than any instance.
         // If object is not of type Decimal, this method throws an ArgumentException.
         // 
-        public int CompareTo(Object value)
+        public int CompareTo(object value)
         {
             if (value == null)
                 return 1;
-            if (!(value is Decimal))
+            if (!(value is decimal))
                 throw new ArgumentException(SR.Arg_MustBeDecimal);
 
-            Decimal other = (Decimal)value;
+            decimal other = (decimal)value;
             return DecCalc.VarDecCmp(ref this, ref other);
         }
 
-        public int CompareTo(Decimal value)
+        public int CompareTo(decimal value)
         {
             return DecCalc.VarDecCmp(ref this, ref value);
         }
 
         // Divides two Decimal values.
         //
-        public static Decimal Divide(Decimal d1, Decimal d2)
+        public static decimal Divide(decimal d1, decimal d2)
         {
             DecCalc.VarDecDiv(ref d1, ref d2);
             return d1;
@@ -407,47 +392,29 @@ namespace System
         // if the given object is a boxed Decimal and its value is equal to the
         // value of this Decimal. Returns false otherwise.
         //
-        public override bool Equals(Object value)
+        public override bool Equals(object value)
         {
-            if (value is Decimal)
+            if (value is decimal)
             {
-                Decimal other = (Decimal)value;
+                decimal other = (decimal)value;
                 return DecCalc.VarDecCmp(ref this, ref other) == 0;
             }
             return false;
         }
 
-        public bool Equals(Decimal value)
+        public bool Equals(decimal value)
         {
             return DecCalc.VarDecCmp(ref this, ref value) == 0;
         }
 
         // Returns the hash code for this Decimal.
         //
-        public unsafe override int GetHashCode()
-        {
-            double dbl = DecCalc.VarR8FromDec(ref this);
-            if (dbl == 0.0)
-                // Ensure 0 and -0 have the same hash code
-                return 0;
-
-            // conversion to double is lossy and produces rounding errors so we mask off the lowest 4 bits
-            // 
-            // For example these two numerically equal decimals with different internal representations produce
-            // slightly different results when converted to double:
-            //
-            // decimal a = new decimal(new int[] { 0x76969696, 0x2fdd49fa, 0x409783ff, 0x00160000 });
-            //                     => (decimal)1999021.176470588235294117647000000000 => (double)1999021.176470588
-            // decimal b = new decimal(new int[] { 0x3f0f0f0f, 0x1e62edcc, 0x06758d33, 0x00150000 }); 
-            //                     => (decimal)1999021.176470588235294117647000000000 => (double)1999021.1764705882
-            //
-            return (int)(((((uint*)&dbl)[0]) & 0xFFFFFFF0) ^ ((uint*)&dbl)[1]);
-        }
+        public override int GetHashCode() => DecCalc.GetHashCode(ref this);
 
         // Compares two Decimal values for equality. Returns true if the two
         // Decimal values are equal, or false if they are not equal.
         //
-        public static bool Equals(Decimal d1, Decimal d2)
+        public static bool Equals(decimal d1, decimal d2)
         {
             return DecCalc.VarDecCmp(ref d1, ref d2) == 0;
         }
@@ -455,9 +422,11 @@ namespace System
         // Rounds a Decimal to an integer value. The Decimal argument is rounded
         // towards negative infinity.
         //
-        public static Decimal Floor(Decimal d)
+        public static decimal Floor(decimal d)
         {
-            DecCalc.VarDecInt(ref d);
+            uint flags = d.uflags;
+            if ((flags & ScaleMask) != 0)
+                DecCalc.InternalRound(ref d, (byte)(flags >> ScaleShift), DecCalc.RoundingMode.Floor);
             return d;
         }
 
@@ -466,22 +435,22 @@ namespace System
         // optionally followed by a decimal point (".") and another sequence of
         // digits.
         //
-        public override String ToString()
+        public override string ToString()
         {
             return Number.FormatDecimal(this, null, NumberFormatInfo.CurrentInfo);
         }
 
-        public String ToString(String format)
+        public string ToString(string format)
         {
             return Number.FormatDecimal(this, format, NumberFormatInfo.CurrentInfo);
         }
 
-        public String ToString(IFormatProvider provider)
+        public string ToString(IFormatProvider provider)
         {
             return Number.FormatDecimal(this, null, NumberFormatInfo.GetInstance(provider));
         }
 
-        public String ToString(String format, IFormatProvider provider)
+        public string ToString(string format, IFormatProvider provider)
         {
             return Number.FormatDecimal(this, format, NumberFormatInfo.GetInstance(provider));
         }
@@ -499,7 +468,7 @@ namespace System
         // Parse also allows a currency symbol, a trailing negative sign, and
         // parentheses in the number.
         //
-        public static Decimal Parse(String s)
+        public static decimal Parse(string s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Number.ParseDecimal(s, NumberStyles.Number, NumberFormatInfo.CurrentInfo);
@@ -524,33 +493,33 @@ namespace System
             }
         }
 
-        public static Decimal Parse(String s, NumberStyles style)
+        public static decimal Parse(string s, NumberStyles style)
         {
             ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Number.ParseDecimal(s, style, NumberFormatInfo.CurrentInfo);
         }
 
-        public static Decimal Parse(String s, IFormatProvider provider)
+        public static decimal Parse(string s, IFormatProvider provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Number.ParseDecimal(s, NumberStyles.Number, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static Decimal Parse(String s, NumberStyles style, IFormatProvider provider)
+        public static decimal Parse(string s, NumberStyles style, IFormatProvider provider)
         {
             ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Number.ParseDecimal(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static Decimal Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider)
+        public static decimal Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
         {
             ValidateParseStyleFloatingPoint(style);
             return Number.ParseDecimal(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static Boolean TryParse(String s, out Decimal result)
+        public static bool TryParse(string s, out decimal result)
         {
             if (s == null)
             {
@@ -566,7 +535,7 @@ namespace System
             return Number.TryParseDecimal(s, NumberStyles.Number, NumberFormatInfo.CurrentInfo, out result);
         }
 
-        public static Boolean TryParse(String s, NumberStyles style, IFormatProvider provider, out Decimal result)
+        public static bool TryParse(string s, NumberStyles style, IFormatProvider provider, out decimal result)
         {
             ValidateParseStyleFloatingPoint(style);
             if (s == null)
@@ -593,12 +562,12 @@ namespace System
         // indicates the sign of the Decimal value, 0 meaning positive and 1
         // meaning negative.
         //
-        public static int[] GetBits(Decimal d)
+        public static int[] GetBits(decimal d)
         {
             return new int[] { d.lo, d.mid, d.hi, d.flags };
         }
 
-        internal static void GetBytes(Decimal d, byte[] buffer)
+        internal static void GetBytes(decimal d, byte[] buffer)
         {
             Debug.Assert((buffer != null && buffer.Length >= 16), "[GetBytes]buffer != null && buffer.Length >= 16");
             buffer[0] = (byte)d.lo;
@@ -624,27 +593,27 @@ namespace System
 
         // Returns the larger of two Decimal values.
         //
-        internal static Decimal Max(Decimal d1, Decimal d2)
+        internal static ref decimal Max(ref decimal d1, ref decimal d2)
         {
-            return Compare(d1, d2) >= 0 ? d1 : d2;
+            return ref DecCalc.VarDecCmp(ref d1, ref d2) >= 0 ? ref d1 : ref d2;
         }
 
         // Returns the smaller of two Decimal values.
         //
-        internal static Decimal Min(Decimal d1, Decimal d2)
+        internal static ref decimal Min(ref decimal d1, ref decimal d2)
         {
-            return Compare(d1, d2) < 0 ? d1 : d2;
+            return ref DecCalc.VarDecCmp(ref d1, ref d2) < 0 ? ref d1 : ref d2;
         }
 
-
-        public static Decimal Remainder(Decimal d1, Decimal d2)
+        public static decimal Remainder(decimal d1, decimal d2)
         {
-            return DecCalc.VarDecMod(ref d1, ref d2);
+            DecCalc.VarDecMod(ref d1, ref d2);
+            return d1;
         }
 
         // Multiplies two Decimal values.
         //
-        public static Decimal Multiply(Decimal d1, Decimal d2)
+        public static decimal Multiply(decimal d1, decimal d2)
         {
             DecCalc.VarDecMul(ref d1, ref d2);
             return d1;
@@ -653,9 +622,9 @@ namespace System
         // Returns the negated value of the given Decimal. If d is non-zero,
         // the result is -d. If d is zero, the result is zero.
         //
-        public static Decimal Negate(Decimal d)
+        public static decimal Negate(decimal d)
         {
-            return new Decimal(d.lo, d.mid, d.hi, (int)(d.uflags ^ SignMask));
+            return new decimal(d.ulomidLE, d.uhi, d.uflags ^ SignMask);
         }
 
         // Rounds a Decimal value to a given number of decimal places. The value
@@ -666,46 +635,21 @@ namespace System
         // By default a mid-point value is rounded to the nearest even number. If the mode is
         // passed in, it can also round away from zero.
 
-        public static Decimal Round(Decimal d)
-        {
-            return Round(d, 0);
-        }
+        public static decimal Round(decimal d) => Round(ref d, 0, MidpointRounding.ToEven);
+        public static decimal Round(decimal d, int decimals) => Round(ref d, decimals, MidpointRounding.ToEven);
+        public static decimal Round(decimal d, MidpointRounding mode) => Round(ref d, 0, mode);
+        public static decimal Round(decimal d, int decimals, MidpointRounding mode) => Round(ref d, decimals, mode);
 
-        public static Decimal Round(Decimal d, int decimals)
+        private static decimal Round(ref decimal d, int decimals, MidpointRounding mode)
         {
-            Decimal result = new Decimal();
-
-            if (decimals < 0 || decimals > 28)
+            if ((uint)decimals > 28)
                 throw new ArgumentOutOfRangeException(nameof(decimals), SR.ArgumentOutOfRange_DecimalRound);
+            if ((uint)mode > (uint)MidpointRounding.AwayFromZero)
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, nameof(MidpointRounding)), nameof(mode));
 
-            DecCalc.VarDecRound(ref d, decimals, ref result);
-
-            d = result;
-            return d;
-        }
-
-        public static Decimal Round(Decimal d, MidpointRounding mode)
-        {
-            return Round(d, 0, mode);
-        }
-
-        public static Decimal Round(Decimal d, int decimals, MidpointRounding mode)
-        {
-            if (decimals < 0 || decimals > 28)
-                throw new ArgumentOutOfRangeException(nameof(decimals), SR.ArgumentOutOfRange_DecimalRound);
-            if (mode < MidpointRounding.ToEven || mode > MidpointRounding.AwayFromZero)
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, "MidpointRounding"), nameof(mode));
-
-            if (mode == MidpointRounding.ToEven)
-            {
-                Decimal result = new Decimal();
-                DecCalc.VarDecRound(ref d, decimals, ref result);
-                d = result;
-            }
-            else
-            {
-                DecCalc.InternalRoundFromZero(ref d, decimals);
-            }
+            int scale = d.Scale - decimals;
+            if (scale > 0)
+                DecCalc.InternalRound(ref d, (uint)scale, (DecCalc.RoundingMode)mode);
             return d;
         }
 
@@ -713,7 +657,7 @@ namespace System
 
         // Subtracts two Decimal values.
         //
-        public static Decimal Subtract(Decimal d1, Decimal d2)
+        public static decimal Subtract(decimal d1, decimal d2)
         {
             DecCalc.VarDecSub(ref d1, ref d2);
             return d1;
@@ -723,7 +667,7 @@ namespace System
         // towards zero to the nearest integer value, and the result of this
         // operation is returned as a byte.
         //
-        public static byte ToByte(Decimal value)
+        public static byte ToByte(decimal value)
         {
             uint temp;
             try
@@ -743,7 +687,7 @@ namespace System
         // operation is returned as a byte.
         //
         [CLSCompliant(false)]
-        public static sbyte ToSByte(Decimal value)
+        public static sbyte ToSByte(decimal value)
         {
             int temp;
             try
@@ -762,7 +706,7 @@ namespace System
         // rounded towards zero to the nearest integer value, and the result of
         // this operation is returned as a short.
         //
-        public static short ToInt16(Decimal value)
+        public static short ToInt16(decimal value)
         {
             int temp;
             try
@@ -780,7 +724,7 @@ namespace System
         // Converts a Decimal to a double. Since a double has fewer significant
         // digits than a Decimal, this operation may produce round-off errors.
         //
-        public static double ToDouble(Decimal d)
+        public static double ToDouble(decimal d)
         {
             return DecCalc.VarR8FromDec(ref d);
         }
@@ -789,10 +733,10 @@ namespace System
         // zero to the nearest integer value, and the result of this operation is
         // returned as an integer.
         //
-        public static int ToInt32(Decimal d)
+        public static int ToInt32(decimal d)
         {
-            if (d.Scale != 0) DecCalc.VarDecFix(ref d);
-            if (d.hi == 0 && d.mid == 0)
+            Truncate(ref d);
+            if ((d.hi | d.mid) == 0)
             {
                 int i = d.lo;
                 if (!d.IsNegative)
@@ -812,12 +756,12 @@ namespace System
         // to the nearest integer value, and the result of this operation is
         // returned as a long.
         //
-        public static long ToInt64(Decimal d)
+        public static long ToInt64(decimal d)
         {
-            if (d.Scale != 0) DecCalc.VarDecFix(ref d);
+            Truncate(ref d);
             if (d.uhi == 0)
             {
-                long l = d.ulo | (long)(int)d.umid << 32;
+                long l = (long)d.Low64;
                 if (!d.IsNegative)
                 {
                     if (l >= 0) return l;
@@ -836,7 +780,7 @@ namespace System
         // result of this operation is returned as an ushort.
         //
         [CLSCompliant(false)]
-        public static ushort ToUInt16(Decimal value)
+        public static ushort ToUInt16(decimal value)
         {
             uint temp;
             try
@@ -856,13 +800,14 @@ namespace System
         // result of this operation is returned as an unsigned integer.
         //
         [CLSCompliant(false)]
-        public static uint ToUInt32(Decimal d)
+        public static uint ToUInt32(decimal d)
         {
-            if (d.Scale != 0) DecCalc.VarDecFix(ref d);
-            if (d.uhi == 0 && d.umid == 0)
+            Truncate(ref d);
+            if ((d.uhi | d.umid) == 0)
             {
-                if (!d.IsNegative || d.ulo == 0)
-                    return d.ulo;
+                uint i = d.ulo;
+                if (!d.IsNegative || i == 0)
+                    return i;
             }
             throw new OverflowException(SR.Overflow_UInt32);
         }
@@ -872,12 +817,12 @@ namespace System
         // result of this operation is returned as a long.
         //
         [CLSCompliant(false)]
-        public static ulong ToUInt64(Decimal d)
+        public static ulong ToUInt64(decimal d)
         {
-            if (d.Scale != 0) DecCalc.VarDecFix(ref d);
+            Truncate(ref d);
             if (d.uhi == 0)
             {
-                ulong l = (ulong)d.ulo | ((ulong)d.umid << 32);
+                ulong l = d.Low64;
                 if (!d.IsNegative || l == 0)
                     return l;
             }
@@ -887,7 +832,7 @@ namespace System
         // Converts a Decimal to a float. Since a float has fewer significant
         // digits than a Decimal, this operation may produce round-off errors.
         //
-        public static float ToSingle(Decimal d)
+        public static float ToSingle(decimal d)
         {
             return DecCalc.VarR4FromDec(ref d);
         }
@@ -896,86 +841,94 @@ namespace System
         // towards zero to the nearest integer value, corresponding to removing all
         // digits after the decimal point.
         //
-        public static Decimal Truncate(Decimal d)
+        public static decimal Truncate(decimal d)
         {
-            DecCalc.VarDecFix(ref d);
+            Truncate(ref d);
             return d;
         }
 
-        public static implicit operator Decimal(byte value)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void Truncate(ref decimal d)
         {
-            return new Decimal(value);
+            uint flags = d.uflags;
+            if ((flags & ScaleMask) != 0)
+                DecCalc.InternalRound(ref d, (byte)(flags >> ScaleShift), DecCalc.RoundingMode.Truncate);
+        }
+
+        public static implicit operator decimal(byte value)
+        {
+            return new decimal(value);
         }
 
         [CLSCompliant(false)]
-        public static implicit operator Decimal(sbyte value)
+        public static implicit operator decimal(sbyte value)
         {
-            return new Decimal(value);
+            return new decimal(value);
         }
 
-        public static implicit operator Decimal(short value)
+        public static implicit operator decimal(short value)
         {
-            return new Decimal(value);
-        }
-
-        [CLSCompliant(false)]
-        public static implicit operator Decimal(ushort value)
-        {
-            return new Decimal(value);
-        }
-
-        public static implicit operator Decimal(char value)
-        {
-            return new Decimal(value);
-        }
-
-        public static implicit operator Decimal(int value)
-        {
-            return new Decimal(value);
+            return new decimal(value);
         }
 
         [CLSCompliant(false)]
-        public static implicit operator Decimal(uint value)
+        public static implicit operator decimal(ushort value)
         {
-            return new Decimal(value);
+            return new decimal(value);
         }
 
-        public static implicit operator Decimal(long value)
+        public static implicit operator decimal(char value)
         {
-            return new Decimal(value);
+            return new decimal(value);
+        }
+
+        public static implicit operator decimal(int value)
+        {
+            return new decimal(value);
         }
 
         [CLSCompliant(false)]
-        public static implicit operator Decimal(ulong value)
+        public static implicit operator decimal(uint value)
         {
-            return new Decimal(value);
+            return new decimal(value);
+        }
+
+        public static implicit operator decimal(long value)
+        {
+            return new decimal(value);
+        }
+
+        [CLSCompliant(false)]
+        public static implicit operator decimal(ulong value)
+        {
+            return new decimal(value);
         }
 
 
-        public static explicit operator Decimal(float value)
+        public static explicit operator decimal(float value)
         {
-            return new Decimal(value);
+            return new decimal(value);
         }
 
-        public static explicit operator Decimal(double value)
+        public static explicit operator decimal(double value)
         {
-            return new Decimal(value);
+            return new decimal(value);
         }
 
-        public static explicit operator byte(Decimal value)
+        public static explicit operator byte(decimal value)
         {
             return ToByte(value);
         }
 
         [CLSCompliant(false)]
-        public static explicit operator sbyte(Decimal value)
+        public static explicit operator sbyte(decimal value)
         {
             return ToSByte(value);
         }
 
-        public static explicit operator char(Decimal value)
+        public static explicit operator char(decimal value)
         {
-            UInt16 temp;
+            ushort temp;
             try
             {
                 temp = ToUInt16(value);
@@ -987,120 +940,120 @@ namespace System
             return (char)temp;
         }
 
-        public static explicit operator short(Decimal value)
+        public static explicit operator short(decimal value)
         {
             return ToInt16(value);
         }
 
         [CLSCompliant(false)]
-        public static explicit operator ushort(Decimal value)
+        public static explicit operator ushort(decimal value)
         {
             return ToUInt16(value);
         }
 
-        public static explicit operator int(Decimal value)
+        public static explicit operator int(decimal value)
         {
             return ToInt32(value);
         }
 
         [CLSCompliant(false)]
-        public static explicit operator uint(Decimal value)
+        public static explicit operator uint(decimal value)
         {
             return ToUInt32(value);
         }
 
-        public static explicit operator long(Decimal value)
+        public static explicit operator long(decimal value)
         {
             return ToInt64(value);
         }
 
         [CLSCompliant(false)]
-        public static explicit operator ulong(Decimal value)
+        public static explicit operator ulong(decimal value)
         {
             return ToUInt64(value);
         }
 
-        public static explicit operator float(Decimal value)
+        public static explicit operator float(decimal value)
         {
             return ToSingle(value);
         }
 
-        public static explicit operator double(Decimal value)
+        public static explicit operator double(decimal value)
         {
             return ToDouble(value);
         }
 
-        public static Decimal operator +(Decimal d)
+        public static decimal operator +(decimal d)
         {
             return d;
         }
 
-        public static Decimal operator -(Decimal d)
+        public static decimal operator -(decimal d)
         {
             return Negate(d);
         }
 
-        public static Decimal operator ++(Decimal d)
+        public static decimal operator ++(decimal d)
         {
             return Add(d, One);
         }
 
-        public static Decimal operator --(Decimal d)
+        public static decimal operator --(decimal d)
         {
             return Subtract(d, One);
         }
 
-        public static Decimal operator +(Decimal d1, Decimal d2)
+        public static decimal operator +(decimal d1, decimal d2)
         {
             return Add(d1, d2);
         }
 
-        public static Decimal operator -(Decimal d1, Decimal d2)
+        public static decimal operator -(decimal d1, decimal d2)
         {
             return Subtract(d1, d2);
         }
 
-        public static Decimal operator *(Decimal d1, Decimal d2)
+        public static decimal operator *(decimal d1, decimal d2)
         {
             return Multiply(d1, d2);
         }
 
-        public static Decimal operator /(Decimal d1, Decimal d2)
+        public static decimal operator /(decimal d1, decimal d2)
         {
             return Divide(d1, d2);
         }
 
-        public static Decimal operator %(Decimal d1, Decimal d2)
+        public static decimal operator %(decimal d1, decimal d2)
         {
             return Remainder(d1, d2);
         }
 
-        public static bool operator ==(Decimal d1, Decimal d2)
+        public static bool operator ==(decimal d1, decimal d2)
         {
             return DecCalc.VarDecCmp(ref d1, ref d2) == 0;
         }
 
-        public static bool operator !=(Decimal d1, Decimal d2)
+        public static bool operator !=(decimal d1, decimal d2)
         {
             return DecCalc.VarDecCmp(ref d1, ref d2) != 0;
         }
 
-        public static bool operator <(Decimal d1, Decimal d2)
+        public static bool operator <(decimal d1, decimal d2)
         {
             return DecCalc.VarDecCmp(ref d1, ref d2) < 0;
         }
 
-        public static bool operator <=(Decimal d1, Decimal d2)
+        public static bool operator <=(decimal d1, decimal d2)
         {
             return DecCalc.VarDecCmp(ref d1, ref d2) <= 0;
         }
 
-        public static bool operator >(Decimal d1, Decimal d2)
+        public static bool operator >(decimal d1, decimal d2)
         {
             return DecCalc.VarDecCmp(ref d1, ref d2) > 0;
         }
 
-        public static bool operator >=(Decimal d1, Decimal d2)
+        public static bool operator >=(decimal d1, decimal d2)
         {
             return DecCalc.VarDecCmp(ref d1, ref d2) >= 0;
         }
@@ -1122,7 +1075,7 @@ namespace System
 
         char IConvertible.ToChar(IFormatProvider provider)
         {
-            throw new InvalidCastException(String.Format(SR.InvalidCast_FromTo, "Decimal", "Char"));
+            throw new InvalidCastException(string.Format(SR.InvalidCast_FromTo, "Decimal", "Char"));
         }
 
         sbyte IConvertible.ToSByte(IFormatProvider provider)
@@ -1175,17 +1128,17 @@ namespace System
             return Convert.ToDouble(this);
         }
 
-        Decimal IConvertible.ToDecimal(IFormatProvider provider)
+        decimal IConvertible.ToDecimal(IFormatProvider provider)
         {
             return this;
         }
 
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
-            throw new InvalidCastException(String.Format(SR.InvalidCast_FromTo, "Decimal", "DateTime"));
+            throw new InvalidCastException(string.Format(SR.InvalidCast_FromTo, "Decimal", "DateTime"));
         }
 
-        Object IConvertible.ToType(Type type, IFormatProvider provider)
+        object IConvertible.ToType(Type type, IFormatProvider provider)
         {
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }

@@ -199,7 +199,7 @@ namespace Internal.IL
             else if (kind == StackValueKind.Int64)
                 return ValueAsInt64(builder, signExtend);
             else if (kind == StackValueKind.Float)
-                return ValueAsType(LLVM.FloatType(), builder);
+                return ValueAsType(LLVM.DoubleType(), builder);
             else if (kind == StackValueKind.NativeInt || kind == StackValueKind.ByRef || kind == StackValueKind.ObjRef)
                 return ValueAsInt32(builder, false);
             else
@@ -239,7 +239,7 @@ namespace Internal.IL
         /// Create a new copy of current entry.
         /// </summary>
         /// <returns>A new instance of the same type as the current entry.</returns>
-        public abstract StackEntry Duplicate();
+        public abstract StackEntry Duplicate(LLVMBuilderRef builder);
     }
 
     /// <summary>
@@ -298,7 +298,7 @@ namespace Internal.IL
             }
         }
 
-        public override StackEntry Duplicate()
+        public override StackEntry Duplicate(LLVMBuilderRef builder)
         {
             return new Int32ConstantEntry(Value, Type);
         }
@@ -333,7 +333,7 @@ namespace Internal.IL
         {
         }
 
-        public override StackEntry Duplicate()
+        public override StackEntry Duplicate(LLVMBuilderRef builder)
         {
             return new Int64ConstantEntry(Value, Type);
         }
@@ -397,7 +397,7 @@ namespace Internal.IL
             return LLVM.ConstReal(type, Value);
         }
 
-        public override StackEntry Duplicate()
+        public override StackEntry Duplicate(LLVMBuilderRef builder)
         {
             return new FloatConstantEntry(Value, Type);
         }
@@ -425,7 +425,7 @@ namespace Internal.IL
             RawLLVMValue = llvmValue;
         }
 
-        public override StackEntry Duplicate()
+        public override StackEntry Duplicate(LLVMBuilderRef builder)
         {
             return new ExpressionEntry(Kind, Name, RawLLVMValue, Type);
         }
@@ -433,7 +433,7 @@ namespace Internal.IL
         protected override LLVMValueRef ValueAsTypeInternal(LLVMTypeRef type, LLVMBuilderRef builder, bool signExtend)
         {
             //TODO: deal with sign extension here
-            return ILImporter.CastIfNecessary(builder, RawLLVMValue, type);
+            return ILImporter.CastIfNecessary(builder, RawLLVMValue, type, Name);
         }
     }
 
@@ -449,14 +449,14 @@ namespace Internal.IL
         {
         }
 
-        public override StackEntry Duplicate()
+        public override StackEntry Duplicate(LLVMBuilderRef builder)
         {
-            return new LoadExpressionEntry(Kind, Name, RawLLVMValue, Type);
+            return new ExpressionEntry(Kind, "duplicate_" + Name, ILImporter.LoadValue(builder, RawLLVMValue, Type, ILImporter.GetLLVMTypeForTypeDesc(Type), false, "load_duplicate_" + Name), Type);
         }
 
         protected override LLVMValueRef ValueAsTypeInternal(LLVMTypeRef type, LLVMBuilderRef builder, bool signExtend)
         {
-            return ILImporter.LoadValue(builder, RawLLVMValue, Type, type, signExtend);
+            return ILImporter.LoadValue(builder, RawLLVMValue, Type, type, signExtend, $"Load{Name}");
         }
     }
 
@@ -472,14 +472,38 @@ namespace Internal.IL
         {
         }
 
-        public override StackEntry Duplicate()
+        public override StackEntry Duplicate(LLVMBuilderRef builder)
         {
-            return new LoadExpressionEntry(Kind, Name, RawLLVMValue, Type);
+            return new AddressExpressionEntry(Kind, Name, RawLLVMValue, Type);
         }
 
         protected override LLVMValueRef ValueAsTypeInternal(LLVMTypeRef type, LLVMBuilderRef builder, bool signExtend)
         {
-            return ILImporter.CastIfNecessary(builder, RawLLVMValue, type);
+            return ILImporter.CastIfNecessary(builder, RawLLVMValue, type, Name);
+        }
+    }
+
+    /// <summary>
+    /// Represents the result of a ldftn or ldvirtftn
+    /// </summary>
+    internal class FunctionPointerEntry : ExpressionEntry
+    {
+        /// <summary>
+        /// True if the function pointer was loaded as a virtual function pointer
+        /// </summary>
+        public bool IsVirtual { get; }
+
+        public MethodDesc Method { get; }
+
+        public FunctionPointerEntry(string name, MethodDesc method, LLVMValueRef llvmValue, TypeDesc type, bool isVirtual) : base(StackValueKind.NativeInt, name, llvmValue, type)
+        {
+            Method = method;
+            IsVirtual = isVirtual;
+        }
+
+        public override StackEntry Duplicate(LLVMBuilderRef builder)
+        {
+            return new FunctionPointerEntry(Name, Method, RawLLVMValue, Type, IsVirtual);
         }
     }
 
@@ -490,14 +514,14 @@ namespace Internal.IL
     {
         public T LdToken { get; }
 
-        public LdTokenEntry(StackValueKind kind, string name, T token, TypeDesc type = null) : base(kind, name, default(LLVMValueRef), type)
+        public LdTokenEntry(StackValueKind kind, string name, T token, LLVMValueRef llvmValue, TypeDesc type = null) : base(kind, name, llvmValue, type)
         {
             LdToken = token;
         }
 
-        public override StackEntry Duplicate()
+        public override StackEntry Duplicate(LLVMBuilderRef builder)
         {
-            return new LdTokenEntry<T>(Kind, Name, LdToken, Type);
+            return new LdTokenEntry<T>(Kind, Name, LdToken, RawLLVMValue, Type);
         }
 
         protected override LLVMValueRef ValueAsTypeInternal(LLVMTypeRef type, LLVMBuilderRef builder, bool signExtend)
@@ -505,7 +529,7 @@ namespace Internal.IL
             if (RawLLVMValue.Pointer == IntPtr.Zero)
                 throw new NullReferenceException();
 
-            return ILImporter.CastIfNecessary(builder, RawLLVMValue, type);
+            return ILImporter.CastIfNecessary(builder, RawLLVMValue, type, Name);
         }
     }
 
@@ -520,7 +544,7 @@ namespace Internal.IL
         {
         }
 
-        public override StackEntry Duplicate()
+        public override StackEntry Duplicate(LLVMBuilderRef builder)
         {
             return this;
         }
@@ -546,12 +570,23 @@ namespace Internal.IL
 
         protected override LLVMValueRef ValueAsTypeInternal(LLVMTypeRef type, LLVMBuilderRef builder, bool signExtend)
         {
-            return _importer.LoadTemp(LocalIndex, type);
+            LLVMTypeRef origLLVMType = ILImporter.GetLLVMTypeForTypeDesc(Type);
+            LLVMValueRef value = _importer.LoadTemp(LocalIndex, origLLVMType);
+
+            return ILImporter.CastIfNecessary(builder, value, type);
         }
 
-        public override StackEntry Duplicate()
+        public override StackEntry Duplicate(LLVMBuilderRef builder)
         {
             return new SpilledExpressionEntry(Kind, Name, Type, LocalIndex, _importer);
+        }
+    }
+
+    internal static class StackEntryExtensions
+    {
+        public static string Name(this StackEntry entry)
+        {
+            return (entry as ExpressionEntry)?.Name;
         }
     }
 }

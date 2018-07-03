@@ -42,9 +42,7 @@ if [ -z "$__DOTNET_PKG" ]; then
             if [ -e /etc/os-release ]; then
                 source /etc/os-release
                 if [[ $ID == "alpine" ]]; then
-                    # remove the last version digit
-                    VERSION_ID=${VERSION_ID%.*}
-                    __PKG_RID=alpine.$VERSION_ID
+                    __PKG_RID="linux-musl"
                 fi
 
             elif [ -e /etc/redhat-release ]; then
@@ -62,7 +60,8 @@ if [ -z "$__DOTNET_PKG" ]; then
             __PKG_RID=linux
             ;;
   esac
-  __DOTNET_PKG=dotnet-sdk-${__DOTNET_TOOLS_VERSION}-$__PKG_RID-$__HostArch
+  __PKG_RID=$__PKG_RID-$__HostArch
+  __DOTNET_PKG=dotnet-sdk-${__DOTNET_TOOLS_VERSION}-$__PKG_RID
 fi
 
 display_error_message()
@@ -130,11 +129,11 @@ if [ ! -e $__INIT_TOOLS_DONE_MARKER ]; then
         fi
 
         echo "Initializing BuildTools..."
-        echo "Running: $__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR" >> $__init_tools_log
+        echo "Running: $__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR $__PACKAGES_DIR" >> $__init_tools_log
 
         # Executables restored with .NET Core 2.0 do not have executable permission flags. https://github.com/NuGet/Home/issues/4424
         chmod +x $__BUILD_TOOLS_PATH/init-tools.sh
-        $__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR >> $__init_tools_log
+        $__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR $__PACKAGES_DIR >> $__init_tools_log
         if [ "$?" != "0" ]; then
             echo "ERROR: An error occurred when trying to initialize the tools." 1>&2
             display_error_message
@@ -147,7 +146,7 @@ if [ ! -e $__INIT_TOOLS_DONE_MARKER ]; then
     ls $__scriptpath/Tools/*.sh | xargs chmod +x
     ls $__scriptpath/Tools/scripts/docker/*.sh | xargs chmod +x
 
-    Tools/crossgen.sh $__scriptpath/Tools
+    Tools/crossgen.sh $__scriptpath/Tools $__PKG_RID
 
     # CoreRT does not use special copy of the shared runtime for testing
     cp $__TOOLRUNTIME_DIR/csc.runtimeconfig.json $__TOOLRUNTIME_DIR/xunit.console.netcore.runtimeconfig.json

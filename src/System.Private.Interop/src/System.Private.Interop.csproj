@@ -62,8 +62,6 @@
     <Compile Include="System\Runtime\InteropServices\DispatchWrapper.cs" />
     <Compile Include="System\Runtime\InteropServices\DispIdAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ErrorWrapper.cs" />
-    <Compile Include="System\Runtime\InteropServices\HandleRef.cs" />
-    <Compile Include="System\Runtime\InteropServices\GuidAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ICustomAdapter.cs" />
     <Compile Include="System\Runtime\InteropServices\ICustomFactory.cs" />
     <Compile Include="System\Runtime\InteropServices\ICustomMarshaler.cs" />
@@ -146,6 +144,10 @@
 
     <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="Internal\Runtime\CompilerHelpers\RuntimeInteropData.ProjectN.cs"/>
     <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="Internal\Runtime\CompilerHelpers\RuntimeInteropData.CoreRT.cs"/>
+
+    <!-- TODO This should be really only needed for CoreCLR flavor of S.P.Interop. -->
+    <!-- See https://github.com/dotnet/corert/pull/5404 -->
+    <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Runtime\InteropServices\MarshalAdapter.cs" />
   </ItemGroup>
  
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">

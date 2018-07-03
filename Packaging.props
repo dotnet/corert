@@ -8,8 +8,7 @@
     <PackageThirdPartyNoticesFile>$(ProjectDir)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
     <ReleaseNotes>TODO</ReleaseNotes>
     <ProjectUrl>https://dot.net</ProjectUrl>
-    <!-- Add a condition for this when we are able to run on .NET Core -->
-    <PackagingTaskDir>$(ToolsDir)net46/</PackagingTaskDir>
+    <PackagingTaskDir>$(BuildToolsTaskDir)</PackagingTaskDir>
     <!-- defined in buildtools packaging.targets, but we need this before targets are imported -->
     <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
     <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
@@ -29,15 +28,6 @@
   <ItemGroup>
     <PackageIndex Include="$(PackageProjectDirectory)packageIndex.json" />
   </ItemGroup>
-
-    <!--
-      Building packages fails for two reasons.
-      First, nuget doesn't like the paths in the nuspec having backslashes as directory separators.
-      Second, we aren't yet building pdbs, which the nuspecs specify.
-  <PropertyGroup Condition="'$(OsEnvironment)'=='Unix'">
-    <SkipBuildPackages>true</SkipBuildPackages>
-  </PropertyGroup>
-    -->
 
   <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">
     <!-- Add required legal files to packages -->

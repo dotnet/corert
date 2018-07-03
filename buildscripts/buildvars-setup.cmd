@@ -2,6 +2,12 @@
 set __BuildArch=x64
 set __BuildType=Debug
 set __BuildOS=Windows_NT
+set __HostOS=Windows_NT
+
+:: Disable telemetry, first time experience, and global sdk look for the CLI
+set DOTNET_CLI_TELEMETRY_OPTOUT=1
+set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
+set DOTNET_MULTILEVEL_LOOKUP=0
 
 :: Set the various build properties here so that CMake and MSBuild can pick them up
 set "__ProjectDir=%~dp0.."
@@ -12,6 +18,8 @@ set "__RootBinDir=%__ProjectDir%\bin"
 set "__LogsDir=%__RootBinDir%\Logs"
 set __SkipTestBuild=
 set "__DotNetCliPath=%__ProjectDir%\Tools\dotnetcli"
+
+set __ObjWriterBuild=0
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -35,9 +43,10 @@ if /i "%1" == "clean"   (set __CleanBuild=1&shift&goto Arg_Loop)
 
 if /i "%1" == "skiptests" (set __SkipTests=1&shift&goto Arg_Loop)
 if /i "%1" == "skipvsdev" (set __SkipVsDev=1&shift&goto Arg_Loop)
+if /i "%1" == "objwriter" (set __ObjWriterBuild=1&set "__ExtraMsBuildParams=%__ExtraMsBuildParams% /p:ObjWriterBuild=true"&shift&goto Arg_Loop)
 if /i "%1" == "/dotnetclipath" (set __DotNetCliPath=%2&shift&shift&goto Arg_Loop)
 
-if /i "%1" == "/officialbuildid" (set "__ExtraMsBuildParams=/p:OfficialBuildId=%2"&shift&shift&goto Arg_Loop)
+if /i "%1" == "/officialbuildid" (set "__ExtraMsBuildParams=%__ExtraMsBuildParams% /p:OfficialBuildId=%2"&shift&shift&goto Arg_Loop)
 
 echo Invalid command line argument: %1
 exit /b 1
@@ -118,7 +127,7 @@ if defined VisualStudioVersion goto :RunVCVars
 
 set _VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 if exist %_VSWHERE% (
-  for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -prerelease -property installationPath`) do set _VSCOMNTOOLS=%%i\Common7\Tools
+  for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -prerelease -property installationPath -products *`) do set _VSCOMNTOOLS=%%i\Common7\Tools
 )
 if not exist "%_VSCOMNTOOLS%" goto :MissingVersion
 
@@ -162,8 +171,8 @@ set Platform=
 set __VCBuildArch=x86_amd64
 if /i "%__BuildArch%" == "x86" (set __VCBuildArch=x86)
 
-set __NugetRuntimeId=win7-x64
-if /i "%__BuildArch%" == "x86" (set __NugetRuntimeId=win7-x86)
+set __NugetRuntimeId=win-x64
+if /i "%__BuildArch%" == "x86" (set __NugetRuntimeId=win-x86)
 
 :Done
 set BUILDVARS_DONE=1
