@@ -62,9 +62,9 @@ namespace Internal.IL.Stubs
                     // Prepend fnptr argument to the signature
                     TypeDesc[] parameterTypes = new TypeDesc[_targetSignature.Length + 1];
 
-                    parameterTypes[0] = Context.GetWellKnownType(WellKnownType.IntPtr);
                     for (int i = 0; i < _targetSignature.Length; i++)
-                        parameterTypes[i + 1] = _targetSignature[i];
+                        parameterTypes[i] = _targetSignature[i];
+                    parameterTypes[parameterTypes.Length - 1] = Context.GetWellKnownType(WellKnownType.IntPtr);
 
                     _signature = new MethodSignature(MethodSignatureFlags.Static, 0, _targetSignature.ReturnType, parameterTypes);
                 }
@@ -80,10 +80,17 @@ namespace Internal.IL.Stubs
             }
         }
 
+        public override bool IsPInvoke
+        {
+            get
+            {
+                return true;
+            }
+        }
+
         public override MethodIL EmitIL()
         {
-            // TODO
-            throw null;
+            return PInvokeILEmitter.EmitIL(this, default(PInvokeILEmitterConfiguration), _interopStateManager);
         }
     }
 }

@@ -256,7 +256,7 @@ namespace Internal.IL
                 if (((MetadataType)method.OwningType).HasCustomAttribute("System.Runtime.InteropServices", "McgIntrinsicsAttribute"))
                 {
                     var name = method.Name;
-                    if (name == "Call")
+                    if (name == "Call" || name == "StdCall")
                     {
                         return CalliIntrinsic.EmitIL(method);
                     }
