@@ -1072,7 +1072,7 @@ void DumpCacheTopology(_In_reads_(cRecords) SYSTEM_LOGICAL_PROCESSOR_INFORMATION
         switch (pProcInfos[i].Relationship)
         {
         case RelationProcessorCore:
-            printf("    [%2d] Core: %d threads                    0x%04zx mask, flags = %d\n",
+            printf("    [%2d] Core: %d threads                    0x%04Ix mask, flags = %d\n",
                 i, CountBits(pProcInfos[i].ProcessorMask), pProcInfos[i].ProcessorMask,
                 pProcInfos[i].ProcessorCore.Flags);
             break;
@@ -1086,16 +1086,16 @@ void DumpCacheTopology(_In_reads_(cRecords) SYSTEM_LOGICAL_PROCESSOR_INFORMATION
             case CacheTrace:        pszCacheType = "[Trace  ]"; break;
             default:                pszCacheType = "[Unk    ]"; break;
             }
-            printf("    [%2d] Cache: %s 0x%08x bytes  0x%04zx mask\n", i, pszCacheType,
+            printf("    [%2d] Cache: %s 0x%08x bytes  0x%04Ix mask\n", i, pszCacheType,
                 pProcInfos[i].Cache.Size, pProcInfos[i].ProcessorMask);
             break;
 
         case RelationNumaNode:
-            printf("    [%2d] NumaNode: #%02d                      0x%04zx mask\n",
+            printf("    [%2d] NumaNode: #%02d                      0x%04Ix mask\n",
                 i, pProcInfos[i].NumaNode.NodeNumber, pProcInfos[i].ProcessorMask);
             break;
         case RelationProcessorPackage:
-            printf("    [%2d] Package:                           0x%04zx mask\n",
+            printf("    [%2d] Package:                           0x%04Ix mask\n",
                 i, pProcInfos[i].ProcessorMask);
             break;
         case RelationAll:
@@ -1113,8 +1113,8 @@ void DumpCacheTopologyResults(UInt32 maxCpuId, CpuVendor cpuVendor, _In_reads_(c
     DumpCacheTopology(pProcInfos, cRecords);
     printf("maxCpuId: %d, %s\n", maxCpuId, (cpuVendor == CpuIntel) ? "CpuIntel" : ((cpuVendor == CpuAMD) ? "CpuAMD" : "CpuUnknown"));
     printf("               g_cLogicalCpus:          %d %d          :CLR_GetLogicalCpuCount\n", g_cLogicalCpus, CLR_GetLogicalCpuCount(pProcInfos, cRecords));
-    printf("        g_cbLargestOnDieCache: 0x%08zx 0x%08zx :CLR_LargestOnDieCache(TRUE)\n", g_cbLargestOnDieCache, CLR_GetLargestOnDieCacheSize(TRUE, pProcInfos, cRecords));
-    printf("g_cbLargestOnDieCacheAdjusted: 0x%08zx 0x%08zx :CLR_LargestOnDieCache(FALSE)\n", g_cbLargestOnDieCacheAdjusted, CLR_GetLargestOnDieCacheSize(FALSE, pProcInfos, cRecords));
+    printf("        g_cbLargestOnDieCache: 0x%08Ix 0x%08Ix :CLR_LargestOnDieCache(TRUE)\n", g_cbLargestOnDieCache, CLR_GetLargestOnDieCacheSize(TRUE, pProcInfos, cRecords));
+    printf("g_cbLargestOnDieCacheAdjusted: 0x%08Ix 0x%08Ix :CLR_LargestOnDieCache(FALSE)\n", g_cbLargestOnDieCacheAdjusted, CLR_GetLargestOnDieCacheSize(FALSE, pProcInfos, cRecords));
 }
 #endif // _DEBUG
 
@@ -1293,12 +1293,18 @@ bool PalQueryProcessorTopology()
 #ifdef TRACE_CACHE_TOPOLOGY
         DumpCacheTopologyResults(maxCpuId, cpuVendor, pProcInfos, cRecords);
 #endif
-        if ((CLR_GetLargestOnDieCacheSize(TRUE, pProcInfos, cRecords) != g_cbLargestOnDieCache) ||
-            (CLR_GetLargestOnDieCacheSize(FALSE, pProcInfos, cRecords) != g_cbLargestOnDieCacheAdjusted) ||
-            (CLR_GetLogicalCpuCount(pProcInfos, cRecords) != g_cLogicalCpus))
+        // CLR_GetLargestOnDieCacheSize is implemented for Intel and AMD processors only
+        if ((cpuVendor == CpuIntel) || (cpuVendor == CpuAMD))
         {
-            DumpCacheTopologyResults(maxCpuId, cpuVendor, pProcInfos, cRecords);
-            assert(!"QueryProcessorTopology doesn't match CLR's results.  See stdout for more info.");
+            if ((CLR_GetLargestOnDieCacheSize(TRUE, pProcInfos, cRecords) != g_cbLargestOnDieCache) ||
+                (CLR_GetLargestOnDieCacheSize(FALSE, pProcInfos, cRecords) != g_cbLargestOnDieCacheAdjusted) ||
+                (CLR_GetLogicalCpuCount(pProcInfos, cRecords) != g_cLogicalCpus))
+            {
+#ifndef TRACE_CACHE_TOPOLOGY
+                DumpCacheTopologyResults(maxCpuId, cpuVendor, pProcInfos, cRecords);
+#endif
+                assert(!"QueryProcessorTopology doesn't match CLR's results.  See stdout for more info.");
+            }
         }
 #endif // _DEBUG
     }
