@@ -76,10 +76,15 @@ namespace ILCompiler.DependencyAnalysis
             if (!type.IsArray && !type.IsDefType)
                 return false;
 
-            DefType defType = type.GetClosestDefType();
+            TypeDesc declType = type.GetClosestDefType();
 
-            foreach (DefType interfaceType in defType.RuntimeInterfaces)
+            for (int interfaceIndex = 0; interfaceIndex < declType.RuntimeInterfaces.Length; interfaceIndex++)
             {
+                DefType interfaceType = declType.RuntimeInterfaces[interfaceIndex];
+                InstantiatedType interfaceOnDefinitionType = interfaceType.IsTypeDefinition ?
+                    null :
+                    (InstantiatedType)declType.GetTypeDefinition().RuntimeInterfaces[interfaceIndex];
+
                 IEnumerable<MethodDesc> slots;
 
                 // If the vtable has fixed slots, we can query it directly.
@@ -91,12 +96,16 @@ namespace ILCompiler.DependencyAnalysis
                 else
                     slots = interfaceType.GetAllMethods();
 
-                foreach (MethodDesc declMethod in slots)
+                foreach (MethodDesc slotMethod in slots)
                 {
+                    MethodDesc declMethod = slotMethod;
+                    if (interfaceOnDefinitionType != null)
+                        declMethod = factory.TypeSystemContext.GetMethodForInstantiatedType(declMethod.GetTypicalMethodDefinition(), interfaceOnDefinitionType);
+
                     if (declMethod.Signature.IsStatic)
                         continue;
 
-                    var implMethod = defType.ResolveInterfaceMethodToVirtualMethodOnType(declMethod);
+                    var implMethod = declType.GetTypeDefinition().ResolveInterfaceMethodToVirtualMethodOnType(declMethod);
                     if (implMethod != null)
                         return true;
                 }
@@ -109,10 +118,16 @@ namespace ILCompiler.DependencyAnalysis
         {
             var entryCountReservation = builder.ReserveInt();
             int entryCount = 0;
-            
-            for (int interfaceIndex = 0; interfaceIndex < _type.RuntimeInterfaces.Length; interfaceIndex++)
+
+            TypeDesc declType = _type.GetClosestDefType();
+
+            // Catch any runtime interface collapsing. We shouldn't have any
+            Debug.Assert(declType.RuntimeInterfaces.Length == declType.GetTypeDefinition().RuntimeInterfaces.Length);
+
+            for (int interfaceIndex = 0; interfaceIndex < declType.RuntimeInterfaces.Length; interfaceIndex++)
             {
-                var interfaceType = _type.RuntimeInterfaces[interfaceIndex];
+                var interfaceType = declType.RuntimeInterfaces[interfaceIndex];
+                var interfaceDefinitionType = declType.GetTypeDefinition().RuntimeInterfaces[interfaceIndex];
                 Debug.Assert(interfaceType.IsInterface);
 
                 IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(interfaceType).Slots;
@@ -120,15 +135,26 @@ namespace ILCompiler.DependencyAnalysis
                 for (int interfaceMethodSlot = 0; interfaceMethodSlot < virtualSlots.Count; interfaceMethodSlot++)
                 {
                     MethodDesc declMethod = virtualSlots[interfaceMethodSlot];
-                    var implMethod = _type.GetClosestDefType().ResolveInterfaceMethodToVirtualMethodOnType(declMethod);
+                    if(!interfaceType.IsTypeDefinition)
+                        declMethod = factory.TypeSystemContext.GetMethodForInstantiatedType(declMethod.GetTypicalMethodDefinition(), (InstantiatedType)interfaceDefinitionType);
+
+                    var implMethod = declType.GetTypeDefinition().ResolveInterfaceMethodToVirtualMethodOnType(declMethod);
 
                     // Interface methods first implemented by a base type in the hierarchy will return null for the implMethod (runtime interface
                     // dispatch will walk the inheritance chain).
                     if (implMethod != null)
                     {
+                        TypeDesc implType = declType;
+                        while (!implType.HasSameTypeDefinition(implMethod.OwningType))
+                            implType = implType.BaseType;
+
+                        MethodDesc targetMethod = implMethod;
+                        if (!implType.IsTypeDefinition)
+                            targetMethod = factory.TypeSystemContext.GetMethodForInstantiatedType(implMethod.GetTypicalMethodDefinition(), (InstantiatedType)implType);
+
                         builder.EmitShort(checked((short)interfaceIndex));
                         builder.EmitShort(checked((short)(interfaceMethodSlot + (interfaceType.HasGenericDictionarySlot() ? 1 : 0))));
-                        builder.EmitShort(checked((short)VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, implMethod, _type.GetClosestDefType())));
+                        builder.EmitShort(checked((short)VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod, declType)));
                         entryCount++;
                     }
                 }
