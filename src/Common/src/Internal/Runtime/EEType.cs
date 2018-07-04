@@ -453,7 +453,7 @@ namespace Internal.Runtime
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        private struct GenericComposition
+        private readonly struct GenericComposition
         {
             public readonly ushort Arity;
 
@@ -462,10 +462,7 @@ namespace Internal.Runtime
             {
                 get
                 {
-                    fixed (EETypeRef* pArg1 = &this._genericArgument1)
-                    {
-                        return pArg1;
-                    }
+                    return (EETypeRef*)Unsafe.AsPointer(ref Unsafe.AsRef(in _genericArgument1));
                 }
             }
 
@@ -473,6 +470,7 @@ namespace Internal.Runtime
             {
                 get
                 {
+                    // Generic variance directly follows the last generic argument
                     return (GenericVariance*)(GenericArguments + Arity);
                 }
             }
@@ -1469,7 +1467,7 @@ namespace Internal.Runtime
 
     // Wrapper around pointers
     [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct Pointer<T> where T : unmanaged
+    internal unsafe readonly struct Pointer<T> where T : unmanaged
     {
         private readonly T* _value;
 
@@ -1484,7 +1482,7 @@ namespace Internal.Runtime
 
     // Wrapper around pointers that might be indirected through IAT
     [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct IatAwarePointer<T> where T : unmanaged
+    internal unsafe readonly struct IatAwarePointer<T> where T : unmanaged
     {
         private readonly T* _value;
 
@@ -1501,7 +1499,7 @@ namespace Internal.Runtime
 
     // Wrapper around relative pointers
     [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct RelativePointer<T> where T : unmanaged
+    internal unsafe readonly struct RelativePointer<T> where T : unmanaged
     {
         private readonly int _value;
 
@@ -1509,17 +1507,14 @@ namespace Internal.Runtime
         {
             get
             {
-                fixed (int* pValue = &_value)
-                {
-                    return (T*)((byte*)pValue + _value);
-                }
+                return (T*)((byte*)Unsafe.AsPointer(ref Unsafe.AsRef(in _value)) + _value);
             }
         }
     }
 
     // Wrapper around relative pointers that might be indirected through IAT
     [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct IatAwareRelativePointer<T> where T : unmanaged
+    internal unsafe readonly struct IatAwareRelativePointer<T> where T : unmanaged
     {
         private readonly int _value;
 
@@ -1529,17 +1524,11 @@ namespace Internal.Runtime
             {
                 if ((_value & IndirectionConstants.IndirectionCellPointer) == 0)
                 {
-                    fixed (int* pValue = &_value)
-                    {
-                        return (T*)((byte*)pValue + _value);
-                    }
+                    return (T*)((byte*)Unsafe.AsPointer(ref Unsafe.AsRef(in _value)) + _value);
                 }
                 else
                 {
-                    fixed (int* pValue = &_value)
-                    {
-                        return *(T**)((byte*)pValue + (_value & ~IndirectionConstants.IndirectionCellPointer));
-                    }
+                    return *(T**)((byte*)Unsafe.AsPointer(ref Unsafe.AsRef(in _value)) + (_value & ~IndirectionConstants.IndirectionCellPointer));
                 }
             }
         }
