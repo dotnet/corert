@@ -76,10 +76,15 @@ namespace ILCompiler.DependencyAnalysis
             if (!type.IsArray && !type.IsDefType)
                 return false;
 
-            TypeDesc declType = type.GetClosestDefType().GetTypeDefinition();
+            TypeDesc declType = type.GetClosestDefType();
 
-            foreach (DefType interfaceType in declType.RuntimeInterfaces)
+            for (int interfaceIndex = 0; interfaceIndex < declType.RuntimeInterfaces.Length; interfaceIndex++)
             {
+                DefType interfaceType = declType.RuntimeInterfaces[interfaceIndex];
+                InstantiatedType interfaceOnDefinitionType = interfaceType.IsTypeDefinition ?
+                    null :
+                    (InstantiatedType)declType.GetTypeDefinition().RuntimeInterfaces[interfaceIndex];
+
                 IEnumerable<MethodDesc> slots;
 
                 // If the vtable has fixed slots, we can query it directly.
@@ -91,12 +96,16 @@ namespace ILCompiler.DependencyAnalysis
                 else
                     slots = interfaceType.GetAllMethods();
 
-                foreach (MethodDesc declMethod in slots)
+                foreach (MethodDesc slotMethod in slots)
                 {
+                    MethodDesc declMethod = slotMethod;
+                    if (interfaceOnDefinitionType != null)
+                        declMethod = factory.TypeSystemContext.GetMethodForInstantiatedType(declMethod.GetTypicalMethodDefinition(), interfaceOnDefinitionType);
+
                     if (declMethod.Signature.IsStatic)
                         continue;
 
-                    var implMethod = declType.ResolveInterfaceMethodToVirtualMethodOnType(declMethod);
+                    var implMethod = declType.GetTypeDefinition().ResolveInterfaceMethodToVirtualMethodOnType(declMethod);
                     if (implMethod != null)
                         return true;
                 }
