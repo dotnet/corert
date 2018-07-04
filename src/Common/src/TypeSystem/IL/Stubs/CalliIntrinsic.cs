@@ -18,7 +18,7 @@ namespace Internal.IL.Stubs
     {
         public static MethodIL EmitIL(MethodDesc target)
         {
-            Debug.Assert(target.Name == "Call" || target.Name == "StdCall");
+            Debug.Assert(target.Name == "Call" || target.Name.StartsWith("StdCall"));
             Debug.Assert(target.Signature.Length > 0
                 && target.Signature[0] == target.Context.GetWellKnownType(WellKnownType.IntPtr));
 
