@@ -161,7 +161,7 @@ namespace System
                                                   BindingFlags bindingAttr, 
                                                   Binder binder, 
                                                   object[] args, 
-                                                  System.Globalization.CultureInfo culture, 
+                                                  CultureInfo culture, 
                                                   object[] activationAttributes) 
         { 
             throw new PlatformNotSupportedException(); 
