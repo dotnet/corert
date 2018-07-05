@@ -150,17 +150,49 @@ namespace System
         private const BindingFlags ConstructorDefault = BindingFlags.Instance | BindingFlags.Public | BindingFlags.CreateInstance;
 
         // https://github.com/dotnet/corefx/issues/30845
-        public static ObjectHandle CreateInstance(string assemblyName, string typeName) { throw new PlatformNotSupportedException(); }
+        public static ObjectHandle CreateInstance(string assemblyName, string typeName) 
+        {
+            throw new PlatformNotSupportedException(); 
+        }
 
-        public static ObjectHandle CreateInstance(string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder binder, object[] args, System.Globalization.CultureInfo culture, object[] activationAttributes) { throw new PlatformNotSupportedException(); }
+        public static ObjectHandle CreateInstance(string assemblyName, 
+                                                  string typeName, 
+                                                  bool ignoreCase, 
+                                                  BindingFlags bindingAttr, 
+                                                  Binder binder, 
+                                                  object[] args, 
+                                                  System.Globalization.CultureInfo culture, 
+                                                  object[] activationAttributes) 
+        { 
+            throw new PlatformNotSupportedException(); 
+        }
 
-        public static ObjectHandle CreateInstance(string assemblyName, string typeName, object[] activationAttributes) { throw new PlatformNotSupportedException(); }
+        public static ObjectHandle CreateInstance(string assemblyName, string typeName, object[] activationAttributes) 
+        { 
+            throw new PlatformNotSupportedException(); 
+        }
 
-        public static ObjectHandle CreateInstanceFrom(string assemblyFile, string typeName) { throw new PlatformNotSupportedException(); }
+        public static ObjectHandle CreateInstanceFrom(string assemblyFile, string typeName) 
+        {
+            throw new PlatformNotSupportedException(); 
+        }
 
-        public static ObjectHandle CreateInstanceFrom(string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder binder, object[] args, System.Globalization.CultureInfo culture, object[] activationAttributes) { throw new PlatformNotSupportedException(); }
+        public static ObjectHandle CreateInstanceFrom(string assemblyFile, 
+                                                      string typeName, 
+                                                      bool ignoreCase, 
+                                                      BindingFlags bindingAttr, 
+                                                      Binder binder, 
+                                                      object[] args, 
+                                                      CultureInfo culture, 
+                                                      object[] activationAttributes) 
+        { 
+            throw new PlatformNotSupportedException(); 
+        }
 
-        public static ObjectHandle CreateInstanceFrom(string assemblyFile, string typeName, object[] activationAttributes) { throw new PlatformNotSupportedException(); }
+        public static ObjectHandle CreateInstanceFrom(string assemblyFile, string typeName, object[] activationAttributes) 
+        { 
+            throw new PlatformNotSupportedException(); 
+        }
     }
 }
 
