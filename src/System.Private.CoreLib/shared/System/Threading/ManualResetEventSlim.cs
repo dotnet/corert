@@ -1,21 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-#pragma warning disable 0420
-
-// =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
-//
-// SlimManualResetEvent.cs
-//
-
-//
-// An manual-reset event that mixes a little spinning with a true Win32 event.
-//
-// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using Internal.Runtime.Augments;
 
 namespace System.Threading
 {
@@ -47,10 +34,8 @@ namespace System.Threading
     {
         // These are the default spin counts we use on single-proc and MP machines.
         private const int DEFAULT_SPIN_SP = 1;
-        private const int DEFAULT_SPIN_MP = 10;
 
-        private volatile Lock m_lock;
-        private volatile Condition m_condition;
+        private volatile object m_lock;
         // A lock used for waiting and pulsing. Lazily initialized via EnsureLockObjectCreated()
 
         private volatile ManualResetEvent m_eventObj; // A true Win32 event used for waiting.
@@ -185,7 +170,7 @@ namespace System.Threading
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ManualResetEventSlim"/>
-        /// class with a Boolean value indicating whether to set the intial state to signaled.
+        /// class with a boolean value indicating whether to set the initial state to signaled.
         /// </summary>
         /// <param name="initialState">true to set the initial state signaled; false to set the initial state
         /// to nonsignaled.</param>
@@ -193,12 +178,12 @@ namespace System.Threading
         {
             // Specify the defualt spin count, and use default spin if we're
             // on a multi-processor machine. Otherwise, we won't.
-            Initialize(initialState, DEFAULT_SPIN_MP);
+            Initialize(initialState, SpinWait.SpinCountforSpinBeforeWait);
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ManualResetEventSlim"/>
-        /// class with a Boolen value indicating whether to set the intial state to signaled and a specified
+        /// class with a Boolean value indicating whether to set the initial state to signaled and a specified
         /// spin count.
         /// </summary>
         /// <param name="initialState">true to set the initial state to signaled; false to set the initial state
@@ -246,17 +231,11 @@ namespace System.Threading
         /// </summary>
         private void EnsureLockObjectCreated()
         {
-            if (m_lock == null)
-            {
-                Lock newObj = new Lock();
-                Interlocked.CompareExchange(ref m_lock, newObj, null); // failure is benign.. someone else won the race.
-            }
+            if (m_lock != null)
+                return;
 
-            if (m_condition == null)
-            {
-                Condition newCond = new Condition(m_lock);
-                Interlocked.CompareExchange(ref m_condition, newCond, null);
-            }
+            object newObj = new object();
+            Interlocked.CompareExchange(ref m_lock, newObj, null); // failure is benign. Someone else set the value.
         }
 
         /// <summary>
@@ -275,7 +254,7 @@ namespace System.Threading
             // guarantee only one event is actually stored in this field.
             if (Interlocked.CompareExchange(ref m_eventObj, newEventObj, null) != null)
             {
-                // We raced with someone else and lost. Destroy the garbage event.
+                // Someone else set the value due to a race condition. Destroy the garbage event.
                 newEventObj.Dispose();
 
                 return false;
@@ -332,10 +311,10 @@ namespace System.Threading
             // If there are waiting threads, we need to pulse them.
             if (Waiters > 0)
             {
-                Debug.Assert(m_lock != null && m_condition != null); //if waiters>0, then m_lock has already been created.
-                using (LockHolder.Hold(m_lock))
+                Debug.Assert(m_lock != null); //if waiters>0, then m_lock has already been created.
+                lock (m_lock)
                 {
-                    m_condition.SignalAll();
+                    Monitor.PulseAll(m_lock);
                 }
             }
 
@@ -353,7 +332,7 @@ namespace System.Threading
                 // necessary.  However, the coding pattern { event.Wait(); event.Dispose() } is
                 // quite common, and we must support it.  If the waiter woke up and disposed of
                 // the event object before the setter has finished, however, we would try to set a
-                // now-disposed Win32 event.  Crash!  To deal with this race, we use a lock to
+                // now-disposed Win32 event. Crash! To deal with this race condition, we use a lock to
                 // protect access to the event object when setting and disposing of it.  We also
                 // double-check that the event has not become null in the meantime when in the lock.
 
@@ -368,7 +347,7 @@ namespace System.Threading
             }
 
 #if DEBUG
-            m_lastSetTime = Environment.TickCount;
+            m_lastSetTime = DateTime.UtcNow.Ticks;
 #endif
         }
 
@@ -388,7 +367,7 @@ namespace System.Threading
                 m_eventObj.Reset();
             }
 
-            // There is a race here. If another thread Sets the event, we will get into a state
+            // There is a race condition here. If another thread Sets the event, we will get into a state
             // where m_state will be unsignaled, yet the Win32 event object will have been signaled.
             // This could cause waiting threads to wake up even though the event is in an
             // unsignaled state. This is fine -- those that are calling Reset concurrently are
@@ -399,7 +378,7 @@ namespace System.Threading
             IsSet = false;
 
 #if DEBUG
-            m_lastResetTime = DateTime.Now.Ticks;
+            m_lastResetTime = DateTime.UtcNow.Ticks;
 #endif
         }
 
@@ -449,7 +428,7 @@ namespace System.Threading
         /// false.</returns>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
         /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
-        /// than <see cref="System.Int32.MaxValue"/>.</exception>
+        /// than <see cref="System.int.MaxValue"/>.</exception>
         /// <exception cref="T:System.InvalidOperationException">
         /// The maximum number of waiters has been exceeded.
         /// </exception>
@@ -478,7 +457,7 @@ namespace System.Threading
         /// false.</returns>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
         /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
-        /// than <see cref="System.Int32.MaxValue"/>.</exception>
+        /// than <see cref="System.int.MaxValue"/>.</exception>
         /// <exception cref="T:System.Threading.OperationCanceledException"><paramref
         /// name="cancellationToken"/> was canceled.</exception>
         /// <exception cref="T:System.InvalidOperationException">
@@ -567,44 +546,19 @@ namespace System.Threading
                     bNeedTimeoutAdjustment = true;
                 }
 
-                //spin
-                int HOW_MANY_SPIN_BEFORE_YIELD = 10;
-                int HOW_MANY_YIELD_EVERY_SLEEP_0 = 5;
-                int HOW_MANY_YIELD_EVERY_SLEEP_1 = 20;
-
+                // Spin
                 int spinCount = SpinCount;
-                for (int i = 0; i < spinCount; i++)
+                var spinner = new SpinWait();
+                while (spinner.Count < spinCount)
                 {
+                    spinner.SpinOnce(SpinWait.Sleep1ThresholdForSpinBeforeWait);
+
                     if (IsSet)
                     {
                         return true;
                     }
 
-                    else if (i < HOW_MANY_SPIN_BEFORE_YIELD)
-                    {
-                        if (i == HOW_MANY_SPIN_BEFORE_YIELD / 2)
-                        {
-                            RuntimeThread.Yield();
-                        }
-                        else
-                        {
-                            RuntimeThread.SpinWait(PlatformHelper.ProcessorCount * (4 << i));
-                        }
-                    }
-                    else if (i % HOW_MANY_YIELD_EVERY_SLEEP_1 == 0)
-                    {
-                        RuntimeThread.Sleep(1);
-                    }
-                    else if (i % HOW_MANY_YIELD_EVERY_SLEEP_0 == 0)
-                    {
-                        RuntimeThread.Sleep(0);
-                    }
-                    else
-                    {
-                        RuntimeThread.Yield();
-                    }
-
-                    if (i >= 100 && i % 10 == 0) // check the cancellation token if the user passed a very large spin count
+                    if (spinner.Count >= 100 && spinner.Count % 10 == 0) // check the cancellation token if the user passed a very large spin count
                         cancellationToken.ThrowIfCancellationRequested();
                 }
 
@@ -614,7 +568,7 @@ namespace System.Threading
                 // We must register and unregister the token outside of the lock, to avoid deadlocks.
                 using (cancellationToken.InternalRegisterWithoutEC(s_cancellationTokenCallback, this))
                 {
-                    using (LockHolder.Hold(m_lock))
+                    lock (m_lock)
                     {
                         // Loop to cope with spurious wakeups from other waits being canceled
                         while (!IsSet)
@@ -630,7 +584,7 @@ namespace System.Threading
                                     return false;
                             }
 
-                            // There is a race that Set will fail to see that there are waiters as Set does not take the lock, 
+                            // There is a race condition that Set will fail to see that there are waiters as Set does not take the lock, 
                             // so after updating waiters, we must check IsSet again.
                             // Also, we must ensure there cannot be any reordering of the assignment to Waiters and the
                             // read from IsSet.  This is guaranteed as Waiters{set;} involves an Interlocked.CompareExchange
@@ -650,7 +604,7 @@ namespace System.Threading
                             try
                             {
                                 // ** the actual wait **
-                                if (!m_condition.Wait(realMillisecondsTimeout))
+                                if (!Monitor.Wait(m_lock, realMillisecondsTimeout))
                                     return false; //return immediately if the timeout has expired.
                             }
                             finally
@@ -661,7 +615,6 @@ namespace System.Threading
                             // Now just loop back around, and the right thing will happen.  Either:
                             //     1. We had a spurious wake-up due to some other wait being canceled via a different cancellationToken (rewait)
                             // or  2. the wait was successful. (the loop will break)
-
                         }
                     }
                 }
@@ -733,9 +686,9 @@ namespace System.Threading
             ManualResetEventSlim mre = obj as ManualResetEventSlim;
             Debug.Assert(mre != null, "Expected a ManualResetEventSlim");
             Debug.Assert(mre.m_lock != null); //the lock should have been created before this callback is registered for use.
-            using (LockHolder.Hold(mre.m_lock))
+            lock (mre.m_lock)
             {
-                mre.m_condition.SignalAll(); // awaken all waiters
+                Monitor.PulseAll(mre.m_lock); // awaken all waiters
             }
         }
 
