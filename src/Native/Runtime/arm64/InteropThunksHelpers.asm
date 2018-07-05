@@ -58,7 +58,7 @@ __SECTIONREL_ThunkParamSlot
         
         ;; Now load the target address and jump to it.
         ldr         xip0, [xip0, #POINTER_SIZE]
-        ret         xip0
+        br          xip0
 
     LEAF_END RhCommonStub
 
