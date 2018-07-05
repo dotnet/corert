@@ -566,7 +566,7 @@ EXTRA_SAVE_SIZE equ (32*16)
         EPILOG_RESTORE_REG_PAIR     x27, x28, #0x60
         EPILOG_NOP     ldr          x9, [sp, #0x78]
         EPILOG_RESTORE_REG_PAIR     fp, lr, #(SIZEOF__PAL_LIMITED_CONTEXT + 0x20)!
-        EPILOG_NOP     ret x9
+        EPILOG_NOP     br           x9
 
     NESTED_END RhpHijackForGcStressLeaf
 
@@ -675,7 +675,7 @@ EXTRA_SAVE_SIZE equ (32*16)
         ldr         x2, [sp, #PROBE_FRAME_SIZE]
         FREE_PROBE_FRAME 0x10, {true}       ; This restores exception object back into x0
         EPILOG_NOP  mov x1, x0      ; Move the Exception object back into x1 where the catch handler expects it
-        EPILOG_NOP  ret x2
+        EPILOG_NOP  br  x2
     MEND
 
 ;;
@@ -847,7 +847,7 @@ DoneWaitingForGc
 
         EPILOG_NOP ldr x1, [sp, #8]    ; hijack target address
         EPILOG_STACK_FREE 0x10 
-        EPILOG_NOP ret x1              ; jump to the hijack target
+        EPILOG_NOP br x1               ; jump to the hijack target
 
 Abort
         FREE_LOOP_HIJACK_FRAME

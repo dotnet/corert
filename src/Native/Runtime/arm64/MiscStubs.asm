@@ -96,7 +96,7 @@ RhpCheckCctor__SlowPath
         EPILOG_RESTORE_REG_PAIR fp, lr, #0x20!
         ;; tail-call the class lib cctor check function. This function is required to return its first
         ;; argument, so that x0 can be preserved.
-        EPILOG_NOP ret x12
+        EPILOG_NOP br x12
 
     NESTED_END RhpCheckCctor__SlowPath2
 
