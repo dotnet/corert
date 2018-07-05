@@ -49,7 +49,11 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Jit runtime ABI
         /// </summary>
-        Jit
+        Jit,
+        /// <summary>
+        /// Cross-platform portable C++ codegen
+        /// </summary>
+        CppCodegen,
     }
 
     /// <summary>
@@ -99,6 +103,14 @@ namespace Internal.TypeSystem
                     default:
                         throw new NotSupportedException();
                 }
+            }
+        }
+
+        public bool SupportsRelativePointers
+        {
+            get
+            {
+                return Abi != TargetAbi.CppCodegen;
             }
         }
 

@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using Internal.TypeSystem;
-using Internal.Runtime;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -290,20 +289,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public void EmitPointerReloc(ISymbolNode symbol, int delta = 0)
         {
-            EmitReloc(symbol, (_target.PointerSize == 8) ? RelocType.IMAGE_REL_BASED_DIR64 : RelocType.IMAGE_REL_BASED_HIGHLOW, delta);
-        }
-
-        /// <summary>
-        /// Use this api to generate a reloc to a symbol that may be an indirection cell or not as a pointer
-        /// </summary>
-        /// <param name="symbol">symbol to reference</param>
-        /// <param name="indirectionBit">value to OR in to the reloc to represent to runtime code that this pointer is an indirection. Defaults to IndirectionConstants.IndirectionCellPointer</param>
-        /// <param name="delta">Delta from symbol start for value</param>
-        public void EmitPointerRelocOrIndirectionReference(ISymbolNode symbol, int indirectionBit = IndirectionConstants.IndirectionCellPointer, int delta = 0)
-        {
-            if (symbol.RepresentsIndirectionCell)
-                delta |= indirectionBit;
-
             EmitReloc(symbol, (_target.PointerSize == 8) ? RelocType.IMAGE_REL_BASED_DIR64 : RelocType.IMAGE_REL_BASED_HIGHLOW, delta);
         }
 

@@ -21,8 +21,22 @@ namespace Internal.Runtime.CompilerServices
     /// <summary>
     /// Contains generic, low-level functionality for manipulating pointers.
     /// </summary>
-    public static class Unsafe
+    public static unsafe class Unsafe
     {
+        /// <summary>
+        /// Returns a pointer to the given by-ref parameter.
+        /// </summary>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void* AsPointer<T>(ref T value)
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg.0
+            // conv.u
+            // ret
+        }
+
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int SizeOf<T>()
@@ -82,6 +96,16 @@ namespace Internal.Runtime.CompilerServices
         public static ref T Add<T>(ref T source, int elementOffset)
         {
             return ref AddByteOffset(ref source, (IntPtr)(elementOffset * (nint)SizeOf<T>()));
+        }
+
+        /// <summary>
+        /// Reinterprets the given location as a reference to a value of type <typeparamref name="T"/>.
+        /// </summary>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T AsRef<T>(in T source)
+        {
+            throw new PlatformNotSupportedException();
         }
     }
 }
