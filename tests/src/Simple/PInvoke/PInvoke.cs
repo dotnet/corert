@@ -3,8 +3,16 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+
+// Make sure the interop data are present even without reflection
+namespace System.Runtime.CompilerServices
+{
+    [AttributeUsage(AttributeTargets.All)]
+    internal class __BlockAllReflectionAttribute : Attribute { }
+}
 
 // Name of namespace matches the name of the assembly on purpose to
 // ensure that we can handle this (mostly an issue for C++ code generation).
@@ -103,6 +111,11 @@ namespace PInvokeTests
         delegate int Delegate_Int(int a, int b, int c, int d, int e, int f, int g, int h, int i, int j);
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern bool ReversePInvoke_Int(Delegate_Int del);
+
+        delegate int Delegate_Int_AggressiveInlining(int a, int b, int c, int d, int e, int f, int g, int h, int i, int j);
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, EntryPoint = "ReversePInvoke_Int")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static extern bool ReversePInvoke_Int_AggressiveInlining(Delegate_Int_AggressiveInlining del);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet=CharSet.Ansi)]
         delegate bool Delegate_String(string s);
@@ -474,8 +487,13 @@ namespace PInvokeTests
         private static void TestDelegate()
         {
             Console.WriteLine("Testing Delegate");
+
             Delegate_Int del = new Delegate_Int(Sum);
             ThrowIfNotEquals(true, ReversePInvoke_Int(del), "Delegate marshalling failed.");
+
+            Delegate_Int_AggressiveInlining del_aggressive = new Delegate_Int_AggressiveInlining(Sum);
+            ThrowIfNotEquals(true, ReversePInvoke_Int_AggressiveInlining(del_aggressive), "Delegate marshalling with aggressive inlining failed.");
+
             unsafe
             {
                 //
