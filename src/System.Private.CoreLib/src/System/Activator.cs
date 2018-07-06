@@ -148,11 +148,10 @@ namespace System
         }
 
         private const BindingFlags ConstructorDefault = BindingFlags.Instance | BindingFlags.Public | BindingFlags.CreateInstance;
-
-        // https://github.com/dotnet/corefx/issues/30845
+        
         public static ObjectHandle CreateInstance(string assemblyName, string typeName) 
         {
-            throw new PlatformNotSupportedException(); 
+            throw new PlatformNotSupportedException(); // https://github.com/dotnet/corefx/issues/30845
         }
 
         public static ObjectHandle CreateInstance(string assemblyName, 
@@ -164,12 +163,12 @@ namespace System
                                                   CultureInfo culture, 
                                                   object[] activationAttributes) 
         { 
-            throw new PlatformNotSupportedException(); 
+            throw new PlatformNotSupportedException(); // https://github.com/dotnet/corefx/issues/30845
         }
 
         public static ObjectHandle CreateInstance(string assemblyName, string typeName, object[] activationAttributes) 
         { 
-            throw new PlatformNotSupportedException(); 
+            throw new PlatformNotSupportedException(); // https://github.com/dotnet/corefx/issues/30845
         }
 
         public static ObjectHandle CreateInstanceFrom(string assemblyFile, string typeName) 
