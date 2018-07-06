@@ -9,8 +9,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class ImportSectionNode : EmbeddedObjectNode
     {
-        private ArrayOfEmbeddedDataNode<Import> _imports;
-        private ArrayOfEmbeddedPointersNode<Signature> _signatures;
+        private readonly ArrayOfEmbeddedDataNode<Import> _imports;
+        private readonly ArrayOfEmbeddedPointersNode<Signature> _signatures;
         private readonly CorCompileImportType _type;
         private readonly CorCompileImportFlags _flags;
         private readonly byte _entrySize;
@@ -27,14 +27,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         
         private string NodeIdentifier => $"_{_type}_{_flags}_{_entrySize}";
 
-        public void AddImport(NodeFactory factory, Import import)
+        public void AddImport(ReadyToRunCodegenNodeFactory factory, Import import)
         {
             _imports.AddEmbeddedObject(import);
 
             var signature = import.GetSignature(factory);
             if (signature != null)
             {
-                _signatures.AddEmbeddedObject(signature);
+                _signatures.AddEmbeddedObject(factory.SignatureIndirection(signature));
             }
         }
 

@@ -18,8 +18,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             return new[]
             {
-                    new DependencyListEntry(Target, "reloc"),
-                };
+                new DependencyListEntry(Target, "reloc"),
+            };
         }
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)

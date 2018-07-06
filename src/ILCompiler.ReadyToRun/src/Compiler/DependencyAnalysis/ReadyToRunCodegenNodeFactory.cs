@@ -24,7 +24,10 @@ namespace ILCompiler.DependencyAnalysis
                   dictionaryLayoutProvider, 
                   new ImportedNodeProviderThrowing())
         {
-            
+            _signatureIndirectionNodes = new NodeCache<Signature, EmbeddedPointerIndirectionNode<Signature>>((Signature signature) =>
+            {
+                return new RvaEmbeddedPointerIndirectionNode<Signature>(signature);
+            });
         }
 
         public HeaderNode Header;
@@ -52,6 +55,13 @@ namespace ILCompiler.DependencyAnalysis
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)
         {
             throw new NotImplementedException();
+        }
+
+        private NodeCache<Signature, EmbeddedPointerIndirectionNode<Signature>> _signatureIndirectionNodes;
+
+        public EmbeddedPointerIndirectionNode<Signature> SignatureIndirection(Signature signature)
+        {
+            return _signatureIndirectionNodes.GetOrAdd(signature);
         }
 
         public override void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)

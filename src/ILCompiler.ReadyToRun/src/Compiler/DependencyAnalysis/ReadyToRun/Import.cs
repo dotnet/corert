@@ -9,17 +9,25 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public abstract class Import : EmbeddedObjectNode
     {
-        public abstract EmbeddedPointerIndirectionNode<Signature> GetSignature(NodeFactory factory);
+        public abstract Signature GetSignature(NodeFactory factory);
+
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        {
+            var signature = GetSignature(factory);
+            if (signature != null)
+                yield return new DependencyListEntry(signature, "Signature for ready-to-run fixup import");
+        }
     }
 
     public class ModuleImport : Import
     {
-        EmbeddedPointerIndirectionNode<Signature> _signature;
+        private readonly ReadyToRunHelperSignature _signature;
 
         public ModuleImport()
         {
-            _signature = new RvaEmbeddedPointerIndirectionNode<Signature>(new ReadyToRunHelperSignature(ReadyToRunHelper.READYTORUN_HELPER_Module));
+            _signature = new ReadyToRunHelperSignature(ReadyToRunHelper.READYTORUN_HELPER_Module);
         }
+
         public override bool StaticDependenciesAreComputed => true;
 
         protected override int ClassCode => throw new NotImplementedException();
@@ -31,21 +39,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             dataBuilder.EmitZeroPointer();
         }
 
-        public override EmbeddedPointerIndirectionNode<Signature> GetSignature(NodeFactory factory)
-        {
-            //
-            // Todo: Get this from factory once we decide on the API for making signatures
-            //
-            return _signature;
-        }
-
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
-        {
-            var signature = GetSignature(factory);
-            if (signature != null)
-                yield return new DependencyListEntry(signature, "Signature for ready-to-run fixup import");
-        }
-
+        public override Signature GetSignature(NodeFactory factory) => _signature;
+        
         protected override string GetName(NodeFactory context)
         {
             return "ModuleImport";
