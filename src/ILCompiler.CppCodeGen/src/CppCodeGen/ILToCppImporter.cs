@@ -1003,8 +1003,9 @@ namespace Internal.IL
                     if (IsTypeName(method, "System", "ByReference`1"))
                     {
                         var thisRef = _stack.Pop();
-
-                        PushExpression(StackValueKind.ValueType, ((ExpressionEntry)thisRef).Name + "->_value", method.Signature.ReturnType);
+                        PushExpression(StackValueKind.ByRef,
+                            String.Concat("(", GetSignatureTypeNameAndAddReference(method.Signature.ReturnType), ")", ((ExpressionEntry)thisRef).Name, "->_value"),
+                            method.Signature.ReturnType);
                         return true;
                     }
                     break;

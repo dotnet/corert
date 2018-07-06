@@ -760,12 +760,7 @@ namespace Internal.JitInterface
                 result |= CorInfoFlag.CORINFO_FLG_SHAREDINST;
 
             if (method.IsPInvoke)
-            {
                 result |= CorInfoFlag.CORINFO_FLG_PINVOKE;
-
-                // See comment in pInvokeMarshalingRequired
-                result |= CorInfoFlag.CORINFO_FLG_DONT_INLINE;
-            }
 
             // TODO: Cache inlining hits
             // Check for an inlining directive.
@@ -1037,23 +1032,34 @@ namespace Internal.JitInterface
             return (CorInfoUnmanagedCallConv)unmanagedCallConv;
         }
 
+        private bool IsPInvokeStubRequired(MethodDesc method)
+        {
+            return ((Internal.IL.Stubs.PInvokeILStubMethodIL)_compilation.GetMethodIL(method)).IsStubRequired;
+        }
+
         private bool pInvokeMarshalingRequired(CORINFO_METHOD_STRUCT_* handle, CORINFO_SIG_INFO* callSiteSig)
         {
-            // TODO: Support for PInvoke calli with marshalling. For now, assume there is no marshalling required.
+            // calli is covered by convertPInvokeCalliToCall
             if (handle == null)
+            {
+#if DEBUG
+                MethodSignature methodSignature = (MethodSignature)HandleToObject((IntPtr)callSiteSig->pSig);
+
+                MethodDesc stub = _compilation.PInvokeILProvider.GetCalliStub(methodSignature);
+                Debug.Assert(!IsPInvokeStubRequired(stub));
+#endif
+
                 return false;
+            }
 
             MethodDesc method = HandleToObject(handle);
 
             if (method.IsRawPInvoke())
                 return false;
 
-            // TODO: Ideally, we would just give back the PInvoke stub IL to the JIT and let it inline it, without
-            // checking whether it is required upfront. Unfortunatelly, RyuJIT is not able to generate PInvoke
-            // transitions in inlined methods today (impCheckForPInvokeCall is not called for inlinees and number of other places
-            // depend on it). To get a decent code with this limitation, we mirror CoreCLR behavior: Check
-            // whether PInvoke stub is required here, and disable inlining of PInvoke methods in getMethodAttribsInternal.
-            return ((Internal.IL.Stubs.PInvokeILStubMethodIL)_compilation.GetMethodIL(method)).IsStubRequired;
+            // We could have given back the PInvoke stub IL to the JIT and let it inline it, without
+            // checking whether there is any stub required. Save the JIT from doing the inlining by checking upfront.
+            return IsPInvokeStubRequired(method);
         }
 
         private bool satisfiesMethodConstraints(CORINFO_CLASS_STRUCT_* parent, CORINFO_METHOD_STRUCT_* method)
@@ -3450,8 +3456,30 @@ namespace Internal.JitInterface
 
         private bool convertPInvokeCalliToCall(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool mustConvert)
         {
-            Debug.Assert(!mustConvert);
-            return false;
+            var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
+            if (methodIL.OwningMethod.IsPInvoke)
+            {
+                return false;
+            }
+
+            MethodSignature signature = (MethodSignature)methodIL.GetObject((int)pResolvedToken.token);
+
+            CorInfoCallConv callConv = (CorInfoCallConv)(signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask);
+            if (callConv != CorInfoCallConv.CORINFO_CALLCONV_C &&
+                callConv != CorInfoCallConv.CORINFO_CALLCONV_STDCALL &&
+                callConv != CorInfoCallConv.CORINFO_CALLCONV_THISCALL &&
+                callConv != CorInfoCallConv.CORINFO_CALLCONV_FASTCALL)
+            {
+                return false;
+            }
+
+            MethodDesc stub = _compilation.PInvokeILProvider.GetCalliStub(signature);
+            if (!mustConvert && !IsPInvokeStubRequired(stub))
+                return false;
+
+            pResolvedToken.hMethod = ObjectToHandle(stub);
+            pResolvedToken.hClass = ObjectToHandle(stub.OwningType);
+            return true;
         }
 
         private void* getMemoryManager()

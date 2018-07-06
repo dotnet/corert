@@ -95,6 +95,9 @@ if (CLR_CMAKE_PLATFORM_UNIX)
     add_compile_options(-Wno-null-arithmetic)
     add_compile_options(-Wno-null-conversion)
 
+    # Since 6 version, clang generates pragma-pack warnings, so disable it because we use pshpack[1..8].h/poppack.h
+    add_compile_options(-Wno-pragmas)
+
     if(CLR_CMAKE_PLATFORM_ARCH_AMD64 OR CLR_CMAKE_PLATFORM_ARCH_I386)
         # Allow 16 byte compare-exchange
         add_compile_options(-mcx16)
