@@ -30,12 +30,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public void AddImport(ReadyToRunCodegenNodeFactory factory, Import import)
         {
             _imports.AddEmbeddedObject(import);
-
-            var signature = import.GetSignature(factory);
-            if (signature != null)
-            {
-                _signatures.AddEmbeddedObject(factory.SignatureIndirection(signature));
-            }
+            _signatures.AddEmbeddedObject(factory.SignatureIndirection(import.GetSignature(factory)));
         }
 
         public override bool StaticDependenciesAreComputed => true;
