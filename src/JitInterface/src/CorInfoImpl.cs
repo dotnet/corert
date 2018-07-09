@@ -760,7 +760,13 @@ namespace Internal.JitInterface
                 result |= CorInfoFlag.CORINFO_FLG_SHAREDINST;
 
             if (method.IsPInvoke)
+            {
                 result |= CorInfoFlag.CORINFO_FLG_PINVOKE;
+
+                // TODO: Enable PInvoke inlining
+                // https://github.com/dotnet/corert/issues/6063
+                result |= CorInfoFlag.CORINFO_FLG_DONT_INLINE;
+            }
 
             // TODO: Cache inlining hits
             // Check for an inlining directive.
