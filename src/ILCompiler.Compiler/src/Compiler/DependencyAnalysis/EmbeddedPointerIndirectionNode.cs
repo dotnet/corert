@@ -23,7 +23,7 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         public TTarget Target => _targetNode;
 
-        internal EmbeddedPointerIndirectionNode(TTarget target)
+        protected internal EmbeddedPointerIndirectionNode(TTarget target)
         {
             _targetNode = target;
         }

@@ -31,7 +31,9 @@ namespace ILCompiler.DependencyAnalysis
         private string _objectFilePath;
         private IEnumerable<DependencyNode> _nodes;
 
-        private int _headerSectionIndex;
+        private int _textSectionIndex;
+        private int _dataSectionIndex;
+        private int _rdataSectionIndex;
 
 #if DEBUG
         Dictionary<string, ISymbolNode> _previouslyWrittenNodeNames = new Dictionary<string, ISymbolNode>();
@@ -56,7 +58,10 @@ namespace ILCompiler.DependencyAnalysis
                 var peBuilder = new R2RPEBuilder(Machine.Amd64, peReader, new ValueTuple<string, SectionCharacteristics>[0]);
                 var sectionBuilder = new SectionBuilder();
 
-                _headerSectionIndex = sectionBuilder.AddSection(R2RPEBuilder.TextSectionName, SectionCharacteristics.ContainsCode | SectionCharacteristics.MemExecute | SectionCharacteristics.MemRead, 512);
+                _textSectionIndex = sectionBuilder.AddSection(R2RPEBuilder.TextSectionName, SectionCharacteristics.ContainsCode | SectionCharacteristics.MemExecute | SectionCharacteristics.MemRead, 512);
+                _dataSectionIndex = sectionBuilder.AddSection(".data", SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemWrite | SectionCharacteristics.MemRead, 512);
+                _rdataSectionIndex = sectionBuilder.AddSection(".rdata", SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead, 512);
+
                 sectionBuilder.SetReadyToRunHeaderTable(_nodeFactory.Header, _nodeFactory.Header.GetData(_nodeFactory).Data.Length);
 
                 foreach (var depNode in _nodes)
@@ -100,7 +105,26 @@ namespace ILCompiler.DependencyAnalysis
                     }
 #endif
 
-                    sectionBuilder.AddObjectData(nodeContents, _headerSectionIndex);
+                    int targetSectionIndex;
+                    switch (node.Section.Type)
+                    {
+                        case SectionType.Executable:
+                            targetSectionIndex = _textSectionIndex;
+                            break;
+
+                        case SectionType.Writeable:
+                            targetSectionIndex = _dataSectionIndex;
+                            break;
+
+                        case SectionType.ReadOnly:
+                            targetSectionIndex = _rdataSectionIndex;
+                            break;
+
+                        default:
+                            throw new NotImplementedException();
+                    }
+
+                    sectionBuilder.AddObjectData(nodeContents, targetSectionIndex);
                 }
 
                 using (var peStream = File.Create(_objectFilePath))
