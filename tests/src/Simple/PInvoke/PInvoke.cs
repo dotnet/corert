@@ -97,6 +97,9 @@ namespace PInvokeTests
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         public static extern int SafeHandleOutTest(out SafeMemoryHandle sh1);
 
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        public static extern int SafeHandleRefTest(ref SafeMemoryHandle sh1, bool change);
+
         [DllImport("*", CallingConvention = CallingConvention.StdCall, SetLastError = true)]
         public static extern bool LastErrorTest();
 
@@ -436,6 +439,18 @@ namespace PInvokeTests
             int actual = SafeHandleOutTest(out hnd2);
             int expected = unchecked((int)hnd2.DangerousGetHandle().ToInt64());
             ThrowIfNotEquals(actual, expected, "SafeHandle out marshalling failed");
+
+            Console.WriteLine("Testing marshalling ref SafeHandle");
+            SafeMemoryHandle hndOriginal = hnd2;
+            SafeHandleRefTest(ref hnd2, false);
+            ThrowIfNotEquals(hndOriginal, hnd2, "SafeHandle no-op ref marshalling failed");
+
+            int actual3 = SafeHandleRefTest(ref hnd2, true);
+            int expected3 = unchecked((int)hnd2.DangerousGetHandle().ToInt64());
+            ThrowIfNotEquals(actual3, expected3, "SafeHandle ref marshalling failed");
+
+            hndOriginal.Dispose();
+            hnd2.Dispose();
         }
 
         private static void TestSizeParamIndex()
