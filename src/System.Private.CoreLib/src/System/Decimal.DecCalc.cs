@@ -760,6 +760,7 @@ ThrowOverflow:
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static int LeadingZeroCount(uint value)
             {
+                Debug.Assert(value > 0);
                 int c = 1;
                 if ((value & 0xFFFF0000) == 0)
                 {
@@ -1390,42 +1391,108 @@ ThrowOverflow:
             {
                 int iScale = (byte)(pdecL.uflags + pdecR.uflags >> ScaleShift);
 
-                if ((pdecL.High | pdecL.Mid | pdecR.High | pdecR.Mid) == 0)
+                ulong tmp;
+                uint iHiProd;
+                Buf24 bufProd;
+                _ = &bufProd; // workaround for CS0165
+
+                if ((pdecL.High | pdecL.Mid) == 0)
                 {
-                    // Upper 64 bits are zero.
-                    //
-                    ulong low64 = UInt32x32To64(pdecL.Low, pdecR.Low);
-                    if (iScale > DEC_SCALE_MAX)
+                    if ((pdecR.High | pdecR.Mid) == 0)
                     {
-                        // Result iScale is too big.  Divide result by power of 10 to reduce it.
-                        // If the amount to divide by is > 19 the result is guaranteed
-                        // less than 1/2.  [max value in 64 bits = 1.84E19]
+                        // Upper 64 bits are zero.
                         //
-                        iScale -= DEC_SCALE_MAX + 1;
-                        if (iScale >= MaxInt64Scale)
-                            goto ReturnZero;
+                        ulong low64 = UInt32x32To64(pdecL.Low, pdecR.Low);
+                        if (iScale > DEC_SCALE_MAX)
+                        {
+                            // Result iScale is too big.  Divide result by power of 10 to reduce it.
+                            // If the amount to divide by is > 19 the result is guaranteed
+                            // less than 1/2.  [max value in 64 bits = 1.84E19]
+                            //
+                            if (iScale > DEC_SCALE_MAX + MaxInt64Scale)
+                                goto ReturnZero;
 
-                        ulong ulPwr = s_ulongPowers10[iScale];
+                            iScale -= DEC_SCALE_MAX + 1;
+                            ulong ulPwr = s_ulongPowers10[iScale];
 
-                        // TODO: https://github.com/dotnet/coreclr/issues/3439
-                        ulong div = low64 / ulPwr;
-                        ulong remainder = low64 - div * ulPwr;
-                        low64 = div;
+                            // TODO: https://github.com/dotnet/coreclr/issues/3439
+                            tmp = low64 / ulPwr;
+                            ulong remainder = low64 - tmp * ulPwr;
+                            low64 = tmp;
 
-                        // Round result.  See if remainder >= 1/2 of divisor.
-                        // Divisor is a power of 10, so it is always even.
-                        //
-                        ulPwr >>= 1;
-                        if (remainder >= ulPwr && (remainder > ulPwr || (low64 & 1) > 0))
-                            low64++;
+                            // Round result.  See if remainder >= 1/2 of divisor.
+                            // Divisor is a power of 10, so it is always even.
+                            //
+                            ulPwr >>= 1;
+                            if (remainder >= ulPwr && (remainder > ulPwr || ((uint)low64 & 1) > 0))
+                                low64++;
 
-                        iScale = DEC_SCALE_MAX;
+                            iScale = DEC_SCALE_MAX;
+                        }
+                        pdecL.Low64 = low64;
+                        pdecL.uflags = ((pdecR.uflags ^ pdecL.uflags) & SignMask) | ((uint)iScale << ScaleShift);
+                        return;
                     }
-                    pdecL.Low64 = low64;
+                    else
+                    {
+                        // Left value is 32-bit, result fits in 4 uints
+                        tmp = UInt32x32To64(pdecL.Low, pdecR.Low);
+                        bufProd.U0 = (uint)tmp;
+
+                        tmp = UInt32x32To64(pdecL.Low, pdecR.Mid) + (tmp >> 32);
+                        bufProd.U1 = (uint)tmp;
+                        tmp >>= 32;
+
+                        if (pdecR.High != 0)
+                        {
+                            tmp += UInt32x32To64(pdecL.Low, pdecR.High);
+                            if (tmp > uint.MaxValue)
+                            {
+                                bufProd.Mid64 = tmp;
+                                iHiProd = 3;
+                                goto SkipScan;
+                            }
+                        }
+                        if ((uint)tmp != 0)
+                        {
+                            bufProd.U2 = (uint)tmp;
+                            iHiProd = 2;
+                            goto SkipScan;
+                        }
+                        iHiProd = 1;
+                    }
+                }
+                else if ((pdecR.High | pdecR.Mid) == 0)
+                {
+                    // Right value is 32-bit, result fits in 4 uints
+                    tmp = UInt32x32To64(pdecR.Low, pdecL.Low);
+                    bufProd.U0 = (uint)tmp;
+
+                    tmp = UInt32x32To64(pdecR.Low, pdecL.Mid) + (tmp >> 32);
+                    bufProd.U1 = (uint)tmp;
+                    tmp >>= 32;
+
+                    if (pdecL.High != 0)
+                    {
+                        tmp += UInt32x32To64(pdecR.Low, pdecL.High);
+                        if (tmp > uint.MaxValue)
+                        {
+                            bufProd.Mid64 = tmp;
+                            iHiProd = 3;
+                            goto SkipScan;
+                        }
+                    }
+                    if ((uint)tmp != 0)
+                    {
+                        bufProd.U2 = (uint)tmp;
+                        iHiProd = 2;
+                        goto SkipScan;
+                    }
+                    iHiProd = 1;
                 }
                 else
                 {
-                    // At least one operand has bits set in the upper 64 bits.
+                    // Both operands have bits set in the upper 64 bits.
                     //
                     // Compute and accumulate the 9 partial products into a 
                     // 192-bit (24-byte) result.
@@ -1446,11 +1513,8 @@ ThrowOverflow:
                     // ------------------------------
                     // [p-5][p-4][p-3][p-2][p-1][p-0]      prod[] array
                     //
-                    uint iHiProd;
-                    Buf24 bufProd;
-                    _ = &bufProd; // workaround for CS0165
 
-                    ulong tmp = UInt32x32To64(pdecL.Low, pdecR.Low);
+                    tmp = UInt32x32To64(pdecL.Low, pdecR.Low);
                     bufProd.U0 = (uint)tmp;
 
                     ulong tmp2 = UInt32x32To64(pdecL.Low, pdecR.Mid) + (tmp >> 32);
@@ -1459,10 +1523,9 @@ ThrowOverflow:
                     tmp += tmp2; // this could generate carry
                     bufProd.U1 = (uint)tmp;
                     if (tmp < tmp2) // detect carry
-                        tmp2 = 1UL << 32;
+                        tmp2 = (tmp >> 32) | (1UL << 32);
                     else
-                        tmp2 = 0;
-                    tmp2 += tmp >> 32;
+                        tmp2 = tmp >> 32;
 
                     tmp = UInt32x32To64(pdecL.Mid, pdecR.Mid) + tmp2;
 
@@ -1472,32 +1535,31 @@ ThrowOverflow:
                         //
                         tmp2 = UInt32x32To64(pdecL.Low, pdecR.High);
                         tmp += tmp2; // this could generate carry
-                        ulong tmp3 = 0;
+                        uint tmp3 = 0;
                         if (tmp < tmp2) // detect carry
-                            tmp3 = 1UL << 32;
+                            tmp3 = 1;
 
                         tmp2 = UInt32x32To64(pdecL.High, pdecR.Low);
                         tmp += tmp2; // this could generate carry
                         bufProd.U2 = (uint)tmp;
                         if (tmp < tmp2) // detect carry
-                            tmp3 += 1UL << 32;
-                        tmp2 = tmp3 + (tmp >> 32);
+                            tmp3++;
+                        tmp2 = ((ulong)tmp3 << 32) | (tmp >> 32);
 
                         tmp = UInt32x32To64(pdecL.Mid, pdecR.High);
                         tmp += tmp2; // this could generate carry
                         tmp3 = 0;
                         if (tmp < tmp2) // detect carry
-                            tmp3 = 1UL << 32;
+                            tmp3 = 1;
 
                         tmp2 = UInt32x32To64(pdecL.High, pdecR.Mid);
                         tmp += tmp2; // this could generate carry
                         bufProd.U3 = (uint)tmp;
                         if (tmp < tmp2) // detect carry
-                            tmp3 += 1UL << 32;
-                        tmp3 += tmp >> 32;
+                            tmp3++;
+                        tmp = ((ulong)tmp3 << 32) | (tmp >> 32);
 
-                        tmp = UInt32x32To64(pdecL.High, pdecR.High) + tmp3;
-                        bufProd.High64 = tmp;
+                        bufProd.High64 = UInt32x32To64(pdecL.High, pdecR.High) + tmp;
 
                         iHiProd = 5;
                     }
@@ -1508,31 +1570,31 @@ ThrowOverflow:
                     }
                     else
                         iHiProd = 1;
-
-                    // Check for leading zero ULONGs on the product
-                    //
-                    uint* rgulProd = (uint*)&bufProd;
-                    while (rgulProd[iHiProd] == 0)
-                    {
-                        if (iHiProd == 0)
-                            goto ReturnZero;
-                        iHiProd--;
-                    }
-
-                    if (iHiProd > 2 || iScale > DEC_SCALE_MAX)
-                    {
-                        iScale = ScaleResult(&bufProd, iHiProd, iScale);
-                    }
-
-                    pdecL.Low64 = bufProd.Low64;
-                    pdecL.High = bufProd.U2;
                 }
 
+                // Check for leading zero ULONGs on the product
+                //
+                uint* rgulProd = (uint*)&bufProd;
+                while (rgulProd[(int)iHiProd] == 0)
+                {
+                    if (iHiProd == 0)
+                        goto ReturnZero;
+                    iHiProd--;
+                }
+
+SkipScan:
+                if (iHiProd > 2 || iScale > DEC_SCALE_MAX)
+                {
+                    iScale = ScaleResult(&bufProd, iHiProd, iScale);
+                }
+
+                pdecL.Low64 = bufProd.Low64;
+                pdecL.High = bufProd.U2;
                 pdecL.uflags = ((pdecR.uflags ^ pdecL.uflags) & SignMask) | ((uint)iScale << ScaleShift);
                 return;
 
 ReturnZero:
-                pdecL = default(decimal);
+                pdecL = default;
             }
 
             //**********************************************************************
