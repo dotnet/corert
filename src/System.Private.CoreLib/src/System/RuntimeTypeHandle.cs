@@ -26,7 +26,7 @@ namespace System
             _value = pEEType.RawValue;
         }
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             if (obj is RuntimeTypeHandle)
             {
@@ -119,11 +119,11 @@ namespace System
         }
 
         // Last resort string for Type.ToString() when no metadata around.
-        internal String LastResortToString
+        internal string LastResortToString
         {
             get
             {
-                String s;
+                string s;
                 EETypePtr eeType = this.ToEETypePtr();
                 IntPtr rawEEType = eeType.RawValue;
                 IntPtr moduleBase = RuntimeImports.RhGetOSModuleFromEEType(rawEEType);
@@ -140,7 +140,7 @@ namespace System
                 ReflectionExecutionDomainCallbacks callbacks = RuntimeAugments.CallbacksIfAvailable;
                 if (callbacks != null)
                 {
-                    String penultimateLastResortString = callbacks.GetBetterDiagnosticInfoIfAvailable(this);
+                    string penultimateLastResortString = callbacks.GetBetterDiagnosticInfoIfAvailable(this);
                     if (penultimateLastResortString != null)
                         s += "(" + penultimateLastResortString + ")";
                 }

@@ -36,7 +36,7 @@ namespace System.Diagnostics.Contracts
         /// </summary>
 #if FEATURE_UNTRUSTED_CALLERS
 #endif
-        static partial void AssertMustUseRewriter(ContractFailureKind kind, String contractKind)
+        static partial void AssertMustUseRewriter(ContractFailureKind kind, string contractKind)
         {
             //TODO: Implement CodeContract failure mechanics including enabling CCIRewrite
 
@@ -65,7 +65,7 @@ namespace System.Diagnostics.Contracts
             //if (probablyNotRewritten == null)
             //    probablyNotRewritten = thisAssembly;
             //String simpleName = probablyNotRewritten.GetName().Name;
-            String simpleName = "System.Private.CoreLib";
+            string simpleName = "System.Private.CoreLib";
             System.Runtime.CompilerServices.ContractHelper.TriggerFailure(kind, SR.Format(SR.MustUseCCRewrite, contractKind, simpleName), null, null, null);
 
             t_assertingMustUseRewriter = false;
@@ -85,14 +85,14 @@ namespace System.Diagnostics.Contracts
 #if FEATURE_RELIABILITY_CONTRACTS
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
-        static partial void ReportFailure(ContractFailureKind failureKind, String userMessage, String conditionText, Exception innerException)
+        static partial void ReportFailure(ContractFailureKind failureKind, string userMessage, string conditionText, Exception innerException)
         {
             if (failureKind < ContractFailureKind.Precondition || failureKind > ContractFailureKind.Assume)
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, failureKind), nameof(failureKind));
             Contract.EndContractBlock();
 
             // displayMessage == null means: yes we handled it. Otherwise it is the localized failure message
-            String displayMessage = System.Runtime.CompilerServices.ContractHelper.RaiseContractFailedEvent(failureKind, userMessage, conditionText, innerException);
+            string displayMessage = System.Runtime.CompilerServices.ContractHelper.RaiseContractFailedEvent(failureKind, userMessage, conditionText, innerException);
 
             if (displayMessage == null) return;
 
@@ -139,8 +139,8 @@ namespace System.Diagnostics.Contracts
     public sealed class ContractFailedEventArgs : EventArgs
     {
         private ContractFailureKind _failureKind;
-        private String _message;
-        private String _condition;
+        private string _message;
+        private string _condition;
         private Exception _originalException;
         private bool _handled;
         private bool _unwind;
@@ -150,7 +150,7 @@ namespace System.Diagnostics.Contracts
 #if FEATURE_RELIABILITY_CONTRACTS
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
-        public ContractFailedEventArgs(ContractFailureKind failureKind, String message, String condition, Exception originalException)
+        public ContractFailedEventArgs(ContractFailureKind failureKind, string message, string condition, Exception originalException)
         {
             Contract.Requires(originalException == null || failureKind == ContractFailureKind.PostconditionOnException);
             _failureKind = failureKind;
@@ -159,8 +159,8 @@ namespace System.Diagnostics.Contracts
             _originalException = originalException;
         }
 
-        public String Message { get { return _message; } }
-        public String Condition { get { return _condition; } }
+        public string Message { get { return _message; } }
+        public string Condition { get { return _condition; } }
         public ContractFailureKind FailureKind { get { return _failureKind; } }
         public Exception OriginalException { get { return _originalException; } }
 
@@ -257,7 +257,7 @@ namespace System.Runtime.CompilerServices
 
 #if !FEATURE_CORECLR
         private static volatile EventHandler<ContractFailedEventArgs> s_contractFailedEvent;
-        private static readonly Object s_lockObject = new Object();
+        private static readonly object s_lockObject = new object();
 #endif // !FEATURE_CORECLR
         internal const int COR_E_CODECONTRACTFAILED = unchecked((int)0x80131542);
 
@@ -321,14 +321,14 @@ namespace System.Runtime.CompilerServices
         [System.Diagnostics.DebuggerNonUserCode]
 #if FEATURE_RELIABILITY_CONTRACTS
 #endif
-        static partial void RaiseContractFailedEventImplementation(ContractFailureKind failureKind, String userMessage, String conditionText, Exception innerException, ref string resultFailureMessage)
+        static partial void RaiseContractFailedEventImplementation(ContractFailureKind failureKind, string userMessage, string conditionText, Exception innerException, ref string resultFailureMessage)
         {
             if (failureKind < ContractFailureKind.Precondition || failureKind > ContractFailureKind.Assume)
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, failureKind), nameof(failureKind));
             Contract.EndContractBlock();
 
             string returnValue;
-            String displayMessage = "contract failed.";  // Incomplete, but in case of OOM during resource lookup...
+            string displayMessage = "contract failed.";  // Incomplete, but in case of OOM during resource lookup...
 #if !FEATURE_CORECLR
             ContractFailedEventArgs eventArgs = null;  // In case of OOM.
 #endif // !FEATURE_CORECLR
@@ -392,7 +392,7 @@ namespace System.Runtime.CompilerServices
         [System.Diagnostics.DebuggerNonUserCode]
 #if FEATURE_UNTRUSTED_CALLERS && !FEATURE_CORECLR
 #endif
-        static partial void TriggerFailureImplementation(ContractFailureKind kind, String displayMessage, String userMessage, String conditionText, Exception innerException)
+        static partial void TriggerFailureImplementation(ContractFailureKind kind, string displayMessage, string userMessage, string conditionText, Exception innerException)
         {
             // If we're here, our intent is to pop up a dialog box (if we can).  For developers 
             // interacting live with a debugger, this is a good experience.  For Silverlight 
@@ -414,7 +414,7 @@ namespace System.Runtime.CompilerServices
 
             //TODO: Implement CodeContract failure mechanics including enabling CCIRewrite
 
-            String stackTrace = null; //@todo: Any reasonable way to get a stack trace here?
+            string stackTrace = null; //@todo: Any reasonable way to get a stack trace here?
             bool userSelectedIgnore = DeveloperExperience.Default.OnContractFailure(stackTrace, kind, displayMessage, userMessage, conditionText, innerException);
             if (userSelectedIgnore)
                 return;
@@ -431,9 +431,9 @@ namespace System.Runtime.CompilerServices
             // If we got here, the user selected Ignore.  Continue.
         }
 
-        private static String GetFailureMessage(ContractFailureKind failureKind, String conditionText)
+        private static string GetFailureMessage(ContractFailureKind failureKind, string conditionText)
         {
-            bool hasConditionText = !String.IsNullOrEmpty(conditionText);
+            bool hasConditionText = !string.IsNullOrEmpty(conditionText);
             switch (failureKind)
             {
                 case ContractFailureKind.Assert:
@@ -463,7 +463,7 @@ namespace System.Runtime.CompilerServices
 #if FEATURE_RELIABILITY_CONTRACTS
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
-        private static String GetDisplayMessage(ContractFailureKind failureKind, String userMessage, String conditionText)
+        private static string GetDisplayMessage(ContractFailureKind failureKind, string userMessage, string conditionText)
         {
             // Well-formatted English messages will take one of four forms.  A sentence ending in
             // either a period or a colon, the condition string, then the message tacked 
@@ -471,9 +471,9 @@ namespace System.Runtime.CompilerServices
             // Note that both the conditionText and userMessage may be null.  Also, 
             // on Silverlight we may not be able to look up a friendly string for the
             // error message.  Let's leverage Silverlight's default error message there.
-            String failureMessage = GetFailureMessage(failureKind, conditionText);
+            string failureMessage = GetFailureMessage(failureKind, conditionText);
             // Now add in the user message, if present.
-            if (!String.IsNullOrEmpty(userMessage))
+            if (!string.IsNullOrEmpty(userMessage))
             {
                 return failureMessage + "  " + userMessage;
             }

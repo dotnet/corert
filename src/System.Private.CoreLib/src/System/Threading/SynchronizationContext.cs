@@ -43,12 +43,12 @@ namespace System.Threading
             return ((_props & SynchronizationContextProperties.RequireWaitNotification) != 0);
         }
 
-        public virtual void Send(SendOrPostCallback d, Object state)
+        public virtual void Send(SendOrPostCallback d, object state)
         {
             d(state);
         }
 
-        public virtual void Post(SendOrPostCallback d, Object state)
+        public virtual void Post(SendOrPostCallback d, object state)
         {
             ThreadPool.QueueUserWorkItem(new WaitCallback(d), state);
         }

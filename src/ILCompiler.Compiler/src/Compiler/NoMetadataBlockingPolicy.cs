@@ -10,7 +10,7 @@ namespace ILCompiler
     /// <summary>
     /// Represents a metadata blocking policy that doesn't block any metadata.
     /// </summary>
-    public sealed class NoBlockingPolicy : MetadataBlockingPolicy
+    public sealed class NoMetadataBlockingPolicy : MetadataBlockingPolicy
     {
         public override bool IsBlocked(MetadataType type) => !(type is EcmaType);
 

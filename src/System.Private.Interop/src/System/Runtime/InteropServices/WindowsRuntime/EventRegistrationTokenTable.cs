@@ -185,7 +185,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         public void RemoveEventHandler(T handler)
         {
-            // To match the Windows Runtime behaivor when adding a null handler, removing one is a no-op
+            // To match the Windows Runtime behavior when adding a null handler, removing one is a no-op
             if (handler == null)
             {
                 return;

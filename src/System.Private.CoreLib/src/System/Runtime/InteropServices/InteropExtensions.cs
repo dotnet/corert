@@ -43,7 +43,7 @@ namespace System.Runtime.InteropServices
         }
 
         // Used for methods in System.Private.Interop.dll that need to work from offsets on boxed structs
-        public static unsafe void PinObjectAndCall(Object obj, Action<IntPtr> del)
+        public static unsafe void PinObjectAndCall(object obj, Action<IntPtr> del)
         {
             fixed (IntPtr* pEEType = &obj.m_pEEType)
             {
@@ -70,7 +70,7 @@ namespace System.Runtime.InteropServices
             return handle.ToEETypePtr().MightBeBlittable();
         }
 
-        public static bool IsBlittable(this Object obj)
+        public static bool IsBlittable(this object obj)
         {
             return obj.EETypePtr.MightBeBlittable();
         }
@@ -130,7 +130,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Comparing RuntimeTypeHandle with an object's RuntimeTypeHandle, avoiding going through expensive Object.GetType().TypeHandle path
         /// </summary>
-        public static bool IsOfType(this Object obj, RuntimeTypeHandle handle)
+        public static bool IsOfType(this object obj, RuntimeTypeHandle handle)
         {
             RuntimeTypeHandle objType = new RuntimeTypeHandle(obj.EETypePtr);
 
@@ -228,12 +228,12 @@ namespace System.Runtime.InteropServices
         /// weak handle if the callback returns false, which is perfect for controlling lifetime of a CCW
         /// </summary>
         internal const int RefCountedHandleType = 5;
-        public static IntPtr RuntimeHandleAllocRefCounted(Object value)
+        public static IntPtr RuntimeHandleAllocRefCounted(object value)
         {
             return RuntimeImports.RhHandleAlloc(value, (GCHandleType)RefCountedHandleType);
         }
 
-        public static void RuntimeHandleSet(IntPtr handle, Object value)
+        public static void RuntimeHandleSet(IntPtr handle, object value)
         {
             RuntimeImports.RhHandleSet(handle, value);
         }
@@ -253,7 +253,7 @@ namespace System.Runtime.InteropServices
             return RuntimeImports.RhIsPromoted(obj);
         }
 
-        public static void RuntimeHandleSetDependentSecondary(IntPtr handle, Object secondary)
+        public static void RuntimeHandleSetDependentSecondary(IntPtr handle, object secondary)
         {
             RuntimeImports.RhHandleSetDependentSecondary(handle, secondary);
         }
@@ -338,7 +338,7 @@ namespace System.Runtime.InteropServices
             return stringBuilder.GetBuffer(out len);
         }
 
-        public static IntPtr RuntimeHandleAllocVariable(Object value, uint type)
+        public static IntPtr RuntimeHandleAllocVariable(object value, uint type)
         {
             return RuntimeImports.RhHandleAllocVariable(value, type);
         }
@@ -373,7 +373,7 @@ namespace System.Runtime.InteropServices
             return new DataMisalignedException(message);
         }
 
-        public static Delegate CreateDelegate(RuntimeTypeHandle typeHandleForDelegate, IntPtr ldftnResult, Object thisObject, bool isStatic, bool isVirtual, bool isOpen)
+        public static Delegate CreateDelegate(RuntimeTypeHandle typeHandleForDelegate, IntPtr ldftnResult, object thisObject, bool isStatic, bool isVirtual, bool isOpen)
         {
             return Delegate.CreateDelegate(typeHandleForDelegate.ToEETypePtr(), ldftnResult, thisObject, isStatic, isOpen);
         }
@@ -419,7 +419,7 @@ namespace System.Runtime.InteropServices
             return RuntimeImports.RhpETWShouldWalkCom();
         }
 
-        public static void RhpETWLogLiveCom(int eventType, IntPtr CCWHandle, IntPtr objectID, IntPtr typeRawValue, IntPtr IUnknown, IntPtr VTable, Int32 comRefCount, Int32 jupiterRefCount, Int32 flags)
+        public static void RhpETWLogLiveCom(int eventType, IntPtr CCWHandle, IntPtr objectID, IntPtr typeRawValue, IntPtr IUnknown, IntPtr VTable, int comRefCount, int jupiterRefCount, int flags)
         {
             RuntimeImports.RhpETWLogLiveCom(eventType, CCWHandle, objectID, typeRawValue, IUnknown, VTable, comRefCount, jupiterRefCount, flags);
         }

@@ -223,7 +223,7 @@ namespace Internal.NativeFormat
         public NativeReader(byte* base_, uint size)
         {
             // Limit the maximum blob size to prevent buffer overruns triggered by boundary integer overflows
-            if (size >= UInt32.MaxValue / 4)
+            if (size >= uint.MaxValue / 4)
                 ThrowBadImageFormatException();
 
             Debug.Assert(base_ <= base_ + size);

@@ -239,7 +239,7 @@ namespace System.Collections.Generic
         }
 
         // Equals method for the comparer itself.
-        public sealed override bool Equals(Object obj) => obj is GenericEqualityComparer<T>;
+        public sealed override bool Equals(object obj) => obj is GenericEqualityComparer<T>;
         
         public sealed override int GetHashCode() => typeof(GenericEqualityComparer<T>).GetHashCode();
     }
@@ -270,7 +270,7 @@ namespace System.Collections.Generic
 
 
         // Equals method for the comparer itself.
-        public sealed override bool Equals(Object obj) => obj is NullableEqualityComparer<T>;
+        public sealed override bool Equals(object obj) => obj is NullableEqualityComparer<T>;
 
         public sealed override int GetHashCode() => typeof(NullableEqualityComparer<T>).GetHashCode();
     }
@@ -303,7 +303,7 @@ namespace System.Collections.Generic
         }
 
         // Equals method for the comparer itself.
-        public override bool Equals(Object obj) => obj is EnumEqualityComparer<T>;
+        public override bool Equals(object obj) => obj is EnumEqualityComparer<T>;
 
         public override int GetHashCode() => typeof(EnumEqualityComparer<T>).GetHashCode();
     }
@@ -335,7 +335,7 @@ namespace System.Collections.Generic
         }
 
         // Equals method for the comparer itself.
-        public sealed override bool Equals(Object obj)
+        public sealed override bool Equals(object obj)
         {
             if(obj == null)
             {

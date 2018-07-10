@@ -53,7 +53,7 @@ namespace System.Runtime.CompilerServices
             ReflectionAugments.ReflectionCoreCallbacks.RunModuleConstructor(module.AssociatedModule);
         }
 
-        public static Object GetObjectValue(Object obj)
+        public static object GetObjectValue(object obj)
         {
             if (obj == null)
                 return null;
@@ -65,7 +65,7 @@ namespace System.Runtime.CompilerServices
             return RuntimeImports.RhMemberwiseClone(obj);
         }
 
-        public new static bool Equals(Object o1, Object o2)
+        public new static bool Equals(object o1, object o2)
         {
             if (o1 == o2)
                 return true;
@@ -102,7 +102,7 @@ namespace System.Runtime.CompilerServices
             return t_hashSeed;
         }
 
-        public static unsafe int GetHashCode(Object o)
+        public static unsafe int GetHashCode(object o)
         {
 #if FEATURE_SYNCTABLE
             return ObjectHeader.GetHashCode(o);
@@ -162,7 +162,7 @@ namespace System.Runtime.CompilerServices
                 // Number of bytes from the address pointed to by a reference to
                 // a String to the first 16-bit character in the String.  
                 // This property allows C#'s fixed statement to work on Strings.
-                return String.FIRST_CHAR_OFFSET;
+                return string.FIRST_CHAR_OFFSET;
             }
         }
 
@@ -239,7 +239,7 @@ namespace System.Runtime.CompilerServices
                 throw new ArgumentNullException(nameof(d));
         }
 
-        public static void ExecuteCodeWithGuaranteedCleanup(TryCode code, CleanupCode backoutCode, Object userData)
+        public static void ExecuteCodeWithGuaranteedCleanup(TryCode code, CleanupCode backoutCode, object userData)
         {
             if (code == null)
                 throw new ArgumentNullException(nameof(code));
@@ -263,8 +263,8 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        public delegate void TryCode(Object userData);
-        public delegate void CleanupCode(Object userData, bool exceptionThrown);
+        public delegate void TryCode(object userData);
+        public delegate void CleanupCode(object userData, bool exceptionThrown);
 
         public static object GetUninitializedObject(Type type)
         {

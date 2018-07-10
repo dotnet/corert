@@ -49,14 +49,14 @@ namespace System.Diagnostics
         /// desired events are actually reported to the debugger.
         /// Constant representing the default category
         /// </summary>
-        public static readonly String DefaultCategory = null;
+        public static readonly string DefaultCategory = null;
 
         /// <summary>
         /// Posts a message for the attached debugger.  If there is no
         /// debugger attached, has no effect.  The debugger may or may not
         /// report the message depending on its settings.
         /// </summary>
-        public static void Log(int level, String category, String message)
+        public static void Log(int level, string category, string message)
         {
             if (IsLogging())
             {

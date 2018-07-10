@@ -410,6 +410,35 @@ namespace ILCompiler
             return sb.ToUtf8String();
         }
 
+        private Utf8String GetPrefixMangledSignatureName(IPrefixMangledSignature prefixMangledSignature)
+        {
+            Utf8StringBuilder sb = new Utf8StringBuilder();
+            sb.Append(EnterNameScopeSequence).Append(prefixMangledSignature.Prefix).Append(ExitNameScopeSequence);
+
+            var signature = prefixMangledSignature.BaseSignature;
+            sb.Append(signature.Flags.ToStringInvariant());
+
+            sb.Append(EnterNameScopeSequence);
+
+            string sigRetTypeName = GetMangledTypeName(signature.ReturnType);
+            if (_mangleForCplusPlus)
+                sigRetTypeName = sigRetTypeName.Replace("::", "_");
+            sb.Append(sigRetTypeName);
+
+            for (int i = 0; i < signature.Length; i++)
+            {
+                sb.Append("__");
+                string sigArgName = GetMangledTypeName(signature[i]);
+                if (_mangleForCplusPlus)
+                    sigArgName = sigArgName.Replace("::", "_");
+                sb.Append(sigArgName);
+            }
+
+            sb.Append(ExitNameScopeSequence);
+
+            return sb.ToUtf8String();
+        }
+
         private Utf8String GetPrefixMangledMethodName(IPrefixMangledMethod prefixMangledMetod)
         {
             Utf8StringBuilder sb = new Utf8StringBuilder();
@@ -496,6 +525,10 @@ namespace ILCompiler
                 else if (method is IPrefixMangledType)
                 {
                     utf8MangledName = GetPrefixMangledTypeName((IPrefixMangledType)method);
+                }
+                else if (method is IPrefixMangledSignature)
+                {
+                    utf8MangledName = GetPrefixMangledSignatureName((IPrefixMangledSignature)method);
                 }
                 else
                 {

@@ -179,9 +179,9 @@ namespace Internal.Compiler
             try
             {
                 tokenResolved = TryReadLdtoken(out token);
-                entity = tokenResolved ?(TypeSystemEntity)_methodIL.GetObject(token) : null;
+                entity = tokenResolved ? (TypeSystemEntity)_methodIL.GetObject(token) : null;
             }
-            catch (TypeSystemException.TypeLoadException)
+            catch (TypeSystemException)
             {
                 tokenResolved = false;
                 entity = null;

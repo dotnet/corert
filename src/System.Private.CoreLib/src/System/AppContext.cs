@@ -25,7 +25,7 @@ namespace System
             UnknownValue = 0x8 // Has no default and could not find an override
         }
         private static readonly Dictionary<string, SwitchValueState> s_switchMap = new Dictionary<string, SwitchValueState>();
-        private static Dictionary<String, Object> s_localStore = new Dictionary<String, Object>();
+        private static Dictionary<string, object> s_localStore = new Dictionary<string, object>();
         private static string s_defaultBaseDirectory;
         // AppDomain lives in CoreFX, but some of this class's events need to pass in AppDomains, so people registering those
         // events need to first pass in an AppDomain that we stash here to pass back in the events.

@@ -95,6 +95,9 @@ namespace Internal.Runtime.CallInterceptor
             {
                 address = *(IntPtr*)address.ToPointer();
             }
+#if CCCONVERTER_TRACE
+            CallingConventionConverterLogger.WriteLine("READ " + (_types[index].ByRef ? "ByRef " : "") + "LocalVariableSet, _pbMemory:" + new IntPtr(_pbMemory).LowLevelToString() + "[" + index.LowLevelToString() + "]. " + _types[index].TypeInstanceFieldSize.LowLevelToString() + " bytes <- [" + address.LowLevelToString() + "]");
+#endif
             return Unsafe.Read<T>((void*)address);
         }
 
@@ -108,6 +111,9 @@ namespace Internal.Runtime.CallInterceptor
             {
                 address = *(IntPtr*)address.ToPointer();
             }
+#if CCCONVERTER_TRACE
+            CallingConventionConverterLogger.WriteLine("WRITE " + (_types[index].ByRef ? "ByRef " : "") + "LocalVariableSet, _pbMemory:" + new IntPtr(_pbMemory).LowLevelToString() + "[" + index.LowLevelToString() + "]. " + _types[index].TypeInstanceFieldSize.LowLevelToString() + " bytes -> [" + address.LowLevelToString() + "]");
+#endif
             Unsafe.Write<T>((void*)address, value);
         }
 
@@ -510,16 +516,38 @@ namespace Internal.Runtime.CallInterceptor
                             break;
 
                         default:
-                            callConversionOps.Add(new CallConversionOperation(
-                                CallConversionOperation.OpCode.COPY_X_BYTES_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK,
-                                calleeArgs.GetArgSize(),
-                                CallConversionInterpreter.ArgBlock,
-                                i,
-                                ofsCallee
+                            {
+#if ARM64
+                                if (ofsCallee < 0 && argTypeHandle.IsHFA() && argTypeHandle.GetHFAType() == CorElementType.ELEMENT_TYPE_R4)
+                                {
+                                    // S and D registers overlap. The FP block of the transition block has 64-bit slots that are used for both floats and doubles.
+                                    // When dealing with float HFAs, we need to copy the 32-bit floats into the 64-bit slots to match the format of the transition block's FP block.
+
+                                    callConversionOps.Add(new CallConversionOperation(
+                                        CallConversionOperation.OpCode.ARM64_COPY_X_HFA_FLOATS_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK,
+                                        (int)argTypeHandle.GetSize() / 4,
+                                        CallConversionInterpreter.ArgBlock,
+                                        i,
+                                        ofsCallee
 #if CCCONVERTER_TRACE
-                                , "Arg #" + i.LowLevelToString()
+                                        , "Arg #" + i.LowLevelToString()
 #endif
-                            ));
+                                    ));
+                                    break;
+                                }
+#endif
+
+                                callConversionOps.Add(new CallConversionOperation(
+                                    CallConversionOperation.OpCode.COPY_X_BYTES_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK,
+                                    calleeArgs.GetArgSize(),
+                                    CallConversionInterpreter.ArgBlock,
+                                    i,
+                                    ofsCallee
+#if CCCONVERTER_TRACE
+                                    , "Arg #" + i.LowLevelToString()
+#endif
+                                ));
+                            }
                             break;
                     }
                 }
@@ -556,8 +584,20 @@ namespace Internal.Runtime.CallInterceptor
                 }
                 else
                 {
-                    // Copy from return buffer into return value local
-                    callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.COPY_X_BYTES_FROM_RETBUF_TO_LOCALBLOCK_Y_POINTER_Z, checked((int)returnType.GetSize()), CallConversionInterpreter.ArgBlock, 0));
+#if ARM64
+                    if (returnType.IsHFA() && returnType.GetHFAType() == CorElementType.ELEMENT_TYPE_R4)
+                    {
+                        // S and D registers overlap. The return buffer has 64-bit slots that are used for both floats and doubles.
+                        // When dealing with float HFAs, we need to copy 32-bit float values from the 64-bit slots of the return buffer (A simple memcopy won't work here).
+
+                        callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.ARM64_COPY_X_HFA_FLOATS_FROM_RETBUF_TO_LOCALBLOCK_Y_POINTER_Z, checked((int)returnType.GetSize() / 4), CallConversionInterpreter.ArgBlock, 0));
+                    }
+                    else
+#endif
+                    {
+                        // Copy from return buffer into return value local
+                        callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.COPY_X_BYTES_FROM_RETBUF_TO_LOCALBLOCK_Y_POINTER_Z, checked((int)returnType.GetSize()), CallConversionInterpreter.ArgBlock, 0));
+                    }
                 }
             }
 
@@ -640,7 +680,7 @@ namespace Internal.Runtime.CallInterceptor
                         s = "RETURN_RETBUF_FROM_OFFSET_X_IN_TRANSITION_BLOCK";
                         break;
                     case OpCode.RETURN_FLOATINGPOINT_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z:
-                        s = "__RETURN_FLOATINGPOINT_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z__";
+                        s = "RETURN_FLOATINGPOINT_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z";
                         break;
                     case OpCode.RETURN_INTEGER_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z:
                         s = "RETURN_INTEGER_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z";
@@ -663,6 +703,20 @@ namespace Internal.Runtime.CallInterceptor
                     case OpCode.COPY_GENERIC_CONTEXT_TO_OFFSET_X_IN_TRANSITION_BLOCK:
                         s = "COPY_GENERIC_CONTEXT_TO_OFFSET_X_IN_TRANSITION_BLOCK";
                         break;
+#if ARM64
+                    case OpCode.ARM64_COMPACT_X_FLOATS_INTO_HFA_AT_OFFSET_Y_IN_TRANSITION_BLOCK:
+                        s = "ARM64_COMPACT_X_FLOATS_INTO_HFA_AT_OFFSET_Y_IN_TRANSITION_BLOCK";
+                        break;
+                    case OpCode.ARM64_EXPAND_X_FLOATS_INTO_HFA_IN_RETURN_BLOCK:
+                        s = "ARM64_EXPAND_X_FLOATS_INTO_HFA_IN_RETURN_BLOCK";
+                        break;
+                    case OpCode.ARM64_COPY_X_HFA_FLOATS_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK:
+                        s = "ARM64_COPY_X_HFA_FLOATS_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK";
+                        break;
+                    case OpCode.ARM64_COPY_X_HFA_FLOATS_FROM_RETBUF_TO_LOCALBLOCK_Y_POINTER_Z:
+                        s = "ARM64_COPY_X_HFA_FLOATS_FROM_RETBUF_TO_LOCALBLOCK_Y_POINTER_Z";
+                        break;
+#endif
                     default:
                         s = "";
                         break;
@@ -690,7 +744,7 @@ namespace Internal.Runtime.CallInterceptor
         }
 
 #else
-            public CallConversionOperation(OpCode op, int X, int Y, int Z, int W)
+        public CallConversionOperation(OpCode op, int X, int Y, int Z, int W)
         {
             this.Op = op;
             this.X = X;
@@ -755,7 +809,13 @@ namespace Internal.Runtime.CallInterceptor
             CALL_DESCR_MANAGED_WITH_RETBUF_AS_LOCALBLOCK_X_POINTER_Y_STACKSLOTS_Z_FPCALLINFO_W,
             CALL_DESCR_NATIVE_WITH_RETBUF_AS_LOCALBLOCK_X_POINTER_Y_STACKSLOTS_Z_FPCALLINFO_W,
             COPY_X_BYTES_FROM_RETBUF_TO_LOCALBLOCK_Y_POINTER_Z,
-            COPY_GENERIC_CONTEXT_TO_OFFSET_X_IN_TRANSITION_BLOCK
+            COPY_GENERIC_CONTEXT_TO_OFFSET_X_IN_TRANSITION_BLOCK,
+#if ARM64
+            ARM64_COMPACT_X_FLOATS_INTO_HFA_AT_OFFSET_Y_IN_TRANSITION_BLOCK,
+            ARM64_EXPAND_X_FLOATS_INTO_HFA_IN_RETURN_BLOCK,
+            ARM64_COPY_X_HFA_FLOATS_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK,
+            ARM64_COPY_X_HFA_FLOATS_FROM_RETBUF_TO_LOCALBLOCK_Y_POINTER_Z
+#endif
         }
 
         public OpCode Op;
@@ -874,6 +934,73 @@ namespace Internal.Runtime.CallInterceptor
                             locals.Interceptor.ThunkExecute(ref args);
                         }
                         break;
+
+#if ARM64
+                    case CallConversionOperation.OpCode.ARM64_COMPACT_X_FLOATS_INTO_HFA_AT_OFFSET_Y_IN_TRANSITION_BLOCK:
+                        {
+                            Debug.Assert(op.X > 0 && op.X <= 4);
+
+                            float* pFPRegs = (float*)(locals.TransitionBlockPtr + op.Y);
+                            for (int i = 1; i < op.X; i++)
+                                pFPRegs[i] = pFPRegs[i * 2];
+
+#if CCCONVERTER_TRACE
+                            CallingConventionConverterLogger.WriteLine("     -> Compact " + op.X.LowLevelToString() + " ARM64 HFA floats at [" + new IntPtr(pFPRegs).LowLevelToString() + "]");
+#endif
+                        }
+                        break;
+
+                    case CallConversionOperation.OpCode.ARM64_EXPAND_X_FLOATS_INTO_HFA_IN_RETURN_BLOCK:
+                        {
+                            Debug.Assert(op.X > 0 && op.X <= 4);
+
+                            byte* pReturnBlock = locals.TransitionBlockPtr + TransitionBlock.GetOffsetOfFloatArgumentRegisters();
+                            for (int i = op.X - 1; i >= 0; i--)
+                            {
+                                float value = ((float*)pReturnBlock)[i];
+                                *((IntPtr*)pReturnBlock + i) = IntPtr.Zero;     // Clear destination slot to zeros before copying the float value
+                                *((float*)((IntPtr*)pReturnBlock + i)) = value;
+                            }
+
+#if CCCONVERTER_TRACE
+                            CallingConventionConverterLogger.WriteLine("     -> Expand " + op.X.LowLevelToString() + " ARM64 HFA floats at [" + new IntPtr(pReturnBlock).LowLevelToString() + "]");
+#endif
+                        }
+                        break;
+
+                    case CallConversionOperation.OpCode.ARM64_COPY_X_HFA_FLOATS_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK:
+                        {
+                            Debug.Assert(op.X > 0 && op.X <= 4);
+
+                            float* pSrc = (float*)(locals.GetLocalBlock(op.Y).GetRawMemoryPointer()[op.Z]);
+                            float* pDst = (float*)(locals.TransitionBlockPtr + op.W);
+                            for (int i = 0; i < op.X; i++)
+                            {
+                                ((IntPtr*)pDst)[i] = IntPtr.Zero;           // Clear destination slot to zeros before copying the float value
+                                pDst[i * 2] = pSrc[i];
+                            }
+
+#if CCCONVERTER_TRACE
+                            CallingConventionConverterLogger.WriteLine("     -> Copy " + op.X.LowLevelToString() + " ARM64 HFA floats from [" + new IntPtr(pSrc).LowLevelToString() + "] to [" + new IntPtr(pDst).LowLevelToString() + "]");
+#endif
+                        }
+                        break;
+
+                    case CallConversionOperation.OpCode.ARM64_COPY_X_HFA_FLOATS_FROM_RETBUF_TO_LOCALBLOCK_Y_POINTER_Z:
+                        {
+                            Debug.Assert(op.X > 0 && op.X <= 4);
+
+                            float* pSrc = (float*)locals.IntPtrReturnVal.ToPointer();
+                            float* pDst = (float*)(locals.GetLocalBlock(op.Y).GetRawMemoryPointer()[op.Z].ToPointer());
+                            for (int i = 0; i < op.X; i++)
+                                pDst[i] = pSrc[i * 2];
+
+#if CCCONVERTER_TRACE
+                            CallingConventionConverterLogger.WriteLine("     -> Copy " + op.X.LowLevelToString() + " ARM64 HFA floats from [" + new IntPtr(pSrc).LowLevelToString() + "] to [" + new IntPtr(pDst).LowLevelToString() + "]");
+#endif
+                        }
+                        break;
+#endif
 
                     case CallConversionOperation.OpCode.COPY_X_BYTES_FROM_LOCALBLOCK_Y_OFFSET_Z_IN_LOCALBLOCK_TO_OFFSET_W_IN_TRANSITION_BLOCK:
                         {
@@ -1064,15 +1191,15 @@ namespace Internal.Runtime.CallInterceptor
                     case CallConversionOperation.OpCode.RETURN_FLOATINGPOINT_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z:
                         {
 #if CALLDESCR_FPARGREGSARERETURNREGS
-                            byte* returnBlock = locals.TransitionBlockPtr + TransitionBlock.GetOffsetOfFloatArgumentRegisters();
-                            MemoryHelpers.Memset((IntPtr)returnBlock, IntPtr.Size, 0);
-                            Buffer.MemoryCopy(locals.GetLocalBlock(op.X).GetRawMemoryPointer()[op.Y].ToPointer(), returnBlock, op.Z, op.Z);
+                            byte* pReturnBlock = locals.TransitionBlockPtr + TransitionBlock.GetOffsetOfFloatArgumentRegisters();
+                            MemoryHelpers.Memset((IntPtr)pReturnBlock, IntPtr.Size, 0);
+                            Buffer.MemoryCopy(locals.GetLocalBlock(op.X).GetRawMemoryPointer()[op.Y].ToPointer(), pReturnBlock, op.Z, op.Z);
                             locals.IntPtrReturnVal = CallConverterThunk.ReturnVoidReturnThunk;
 #elif X86
                             CallConverterThunk.SetupCallerActualReturnData(locals.TransitionBlockPtr);
-                            fixed (ReturnBlock* retBlk = &CallConverterThunk.t_NonArgRegisterReturnSpace)
+                            fixed (ReturnBlock* pReturnBlock = &CallConverterThunk.t_NonArgRegisterReturnSpace)
                             {
-                                Buffer.MemoryCopy(locals.GetLocalBlock(op.X).GetRawMemoryPointer()[op.Y].ToPointer(), retBlk, op.Z, op.Z);
+                                Buffer.MemoryCopy(locals.GetLocalBlock(op.X).GetRawMemoryPointer()[op.Y].ToPointer(), pReturnBlock, op.Z, op.Z);
                             }
                             if (op.Z == 4)
                             {
@@ -1446,8 +1573,10 @@ namespace Internal.Runtime.CallInterceptor
             {
                 int ofsCaller = callerArgs.GetNextOffset();
 
-                TypeHandle dummyTypeHandle;
-                if (callerArgs.IsArgPassedByRef() && callerArgs.GetArgType(out dummyTypeHandle) != CorElementType.ELEMENT_TYPE_BYREF)
+                TypeHandle argTypeHandle;
+                CorElementType argType = callerArgs.GetArgType(out argTypeHandle);
+
+                if (callerArgs.IsArgPassedByRef() && argType != CorElementType.ELEMENT_TYPE_BYREF)
                 {
                     callConversionOps.Add(new CallConversionOperation(
                         CallConversionOperation.OpCode.COPY_X_BYTES_TO_LOCALBLOCK_Y_OFFSET_Z_IN_LOCALBLOCK_FROM_OFFSET_W_IN_TRANSITION_BLOCK,
@@ -1462,6 +1591,24 @@ namespace Internal.Runtime.CallInterceptor
                 }
                 else
                 {
+#if ARM64
+                    if (ofsCaller < 0 && argTypeHandle.IsHFA() && argTypeHandle.GetHFAType() == CorElementType.ELEMENT_TYPE_R4)
+                    {
+                        // S and D registers overlap. The FP block of the transition block will have the float values of the HFA struct stored in 64-bit slots. We cannot directly
+                        // memcopy or point at these values without first re-writing them as consecutive 32-bit float values
+
+                        callConversionOps.Add(new CallConversionOperation(
+                            CallConversionOperation.OpCode.ARM64_COMPACT_X_FLOATS_INTO_HFA_AT_OFFSET_Y_IN_TRANSITION_BLOCK,
+                            (int)argTypeHandle.GetSize() / 4,
+                            ofsCaller,
+                            0
+#if CCCONVERTER_TRACE
+                            , "Arg #" + i.LowLevelToString()
+#endif
+                        ));
+                    }
+#endif
+
                     callConversionOps.Add(new CallConversionOperation(
                         CallConversionOperation.OpCode.SET_LOCALBLOCK_X_POINTER_Y_TO_OFFSET_Z_IN_TRANSITION_BLOCK,
                         CallConversionInterpreter.ArgBlock,
@@ -1492,6 +1639,14 @@ namespace Internal.Runtime.CallInterceptor
             else if (callerArgs.GetFPReturnSize() > 0)
             {
                 callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.RETURN_FLOATINGPOINT_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z, CallConversionInterpreter.ArgBlock, 0, checked((int)callerArgs.GetFPReturnSize())));
+
+#if ARM64
+                if (returnType.IsHFA() && returnType.GetHFAType() == CorElementType.ELEMENT_TYPE_R4)
+                {
+                    // S and D registers overlap, so we need to re-write the float values into 64-bit slots to match the format of the UniversalTransitionBlock's FP return block
+                    callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.ARM64_EXPAND_X_FLOATS_INTO_HFA_IN_RETURN_BLOCK, (int)returnType.GetSize() / 4, 0, 0));
+                }
+#endif
             }
             else
             {

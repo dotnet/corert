@@ -154,7 +154,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhTypeCast_CheckCastClass")]
-        public static unsafe object CheckCastClass(Object obj, void* pvTargetEEType)
+        public static unsafe object CheckCastClass(object obj, void* pvTargetEEType)
         {
             // a null value can be cast to anything
             if (obj == null)
@@ -174,7 +174,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhTypeCast_CheckUnbox")]
-        public static unsafe void CheckUnbox(Object obj, byte expectedCorElementType)
+        public static unsafe void CheckUnbox(object obj, byte expectedCorElementType)
         {
             if (obj == null)
             {
@@ -239,7 +239,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhTypeCast_CheckCastArray")]
-        public static unsafe object CheckCastArray(Object obj, void* pvTargetEEType)
+        public static unsafe object CheckCastArray(object obj, void* pvTargetEEType)
         {
             // a null value can be cast to anything
             if (obj == null)
@@ -734,7 +734,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhTypeCast_CheckCastInterface")]
-        public static unsafe object CheckCastInterface(Object obj, void* pvTargetEEType)
+        public static unsafe object CheckCastInterface(object obj, void* pvTargetEEType)
         {
             // a null value can be cast to anything
             if (obj == null)
@@ -858,7 +858,7 @@ namespace System.Runtime
                 // Both bounds and type check are ok.
 
                 // Call write barrier directly. Assigning object reference would call slower checked write barrier.
-                ref Object rawData = ref Unsafe.As<byte, Object>(ref array.GetRawSzArrayData());
+                ref object rawData = ref Unsafe.As<byte, object>(ref array.GetRawSzArrayData());
                 InternalCalls.RhpAssignRef(ref Unsafe.Add(ref rawData, index), obj);
             }
             else
@@ -870,7 +870,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhpLdelemaRef")]
-        public static unsafe ref Object LdelemaRef(Array array, int index, IntPtr elementType)
+        public static unsafe ref object LdelemaRef(Array array, int index, IntPtr elementType)
         {
             Debug.Assert(array.EEType->IsArray, "first argument must be an array");
 
@@ -885,7 +885,7 @@ namespace System.Runtime
                 throw array.EEType->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
             }
 
-            ref Object rawData = ref Unsafe.As<byte, Object>(ref array.GetRawSzArrayData());
+            ref object rawData = ref Unsafe.As<byte, object>(ref array.GetRawSzArrayData());
             return ref Unsafe.Add(ref rawData, index);
         }
 
@@ -976,13 +976,13 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhTypeCast_CheckCast2")] // Helper with RyuJIT calling convention
-        public static unsafe object CheckCast2(void* pvTargetType, Object obj)
+        public static unsafe object CheckCast2(void* pvTargetType, object obj)
         {
             return CheckCast(obj, pvTargetType);
         }
 
         [RuntimeExport("RhTypeCast_CheckCast")]
-        public static unsafe object CheckCast(Object obj, void* pvTargetType)
+        public static unsafe object CheckCast(object obj, void* pvTargetType)
         {
             // @TODO: consider using the cache directly, but beware of ICastable in the interface case
             EEType* pTargetType = (EEType*)pvTargetType;

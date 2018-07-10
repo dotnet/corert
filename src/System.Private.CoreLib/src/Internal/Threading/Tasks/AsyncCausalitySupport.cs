@@ -42,7 +42,7 @@ namespace Internal.Threading.Tasks
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void TraceOperationCreation(Task task, String operationName)
+        public static void TraceOperationCreation(Task task, string operationName)
         {
             DebuggerSupport.TraceOperationCreation(CausalityTraceLevel.Required, task, operationName, 0);
         }

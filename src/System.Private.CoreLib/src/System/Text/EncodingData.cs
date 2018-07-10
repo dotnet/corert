@@ -121,7 +121,7 @@ namespace System.Text
         // The index of the entry in s_encodingNamesIndices will be the index of codepage in
         // s_codePagesByName.
         //
-        private static readonly UInt16[] s_codePagesByName = new UInt16[]
+        private static readonly ushort[] s_codePagesByName = new ushort[]
         {
             20127, // ansi_x3.4-1968
             20127, // ansi_x3.4-1986
@@ -177,7 +177,7 @@ namespace System.Text
         // s_englishNames. In addition, this arrays indices correspond to the indices
         // into s_uiFamilyCodePages and s_flags.
         //
-        private static readonly UInt16[] s_mappedCodePages = new UInt16[]
+        private static readonly ushort[] s_mappedCodePages = new ushort[]
         {
             1200, // utf-16
             1201, // utf-16be

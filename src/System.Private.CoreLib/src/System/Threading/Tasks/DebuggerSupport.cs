@@ -60,7 +60,7 @@ namespace System.Threading.Tasks
         }
 
         private static readonly LowLevelDictionary<int, Task> s_activeTasks = new LowLevelDictionary<int, Task>();
-        private static readonly Object s_activeTasksLock = new Object();
+        private static readonly object s_activeTasksLock = new object();
 
         //==============================================================================================================
         // This section of the class wraps calls to get the lazy-created Task object for the purpose of reporting

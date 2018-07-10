@@ -270,8 +270,6 @@ namespace ILCompiler
 
             if (_isWasmCodegen)
                 _targetArchitecture = TargetArchitecture.Wasm32;
-            else if (_isCppCodegen)
-                _targetArchitecture = TargetArchitecture.Cpp64;
 
             //
             // Initialize type system context
@@ -436,12 +434,15 @@ namespace ILCompiler
                 (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
 
             MetadataBlockingPolicy mdBlockingPolicy = _noMetadataBlocking ?
-                (MetadataBlockingPolicy)new NoBlockingPolicy() : new BlockedInternalsBlockingPolicy();
+                (MetadataBlockingPolicy)new NoMetadataBlockingPolicy() : new BlockedInternalsBlockingPolicy();
+
+            ManifestResourceBlockingPolicy resBlockingPolicy = new NoManifestResourceBlockingPolicy();
 
             UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager(
                 compilationGroup,
                 typeSystemContext,
                 mdBlockingPolicy,
+                resBlockingPolicy,
                 _metadataLogFileName,
                 stackTracePolicy);
 

@@ -121,7 +121,7 @@ namespace System.Runtime
             }
             else
             {
-                return Unsafe.As<byte, Object>(ref data);
+                return Unsafe.As<byte, object>(ref data);
             }
         }
 
@@ -189,7 +189,7 @@ namespace System.Runtime
                     throw ptrUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
                 }
 
-                Unsafe.As<byte, Object>(ref data) = o;
+                Unsafe.As<byte, object>(ref data) = o;
             }
         }
 
@@ -197,7 +197,7 @@ namespace System.Runtime
         // Unbox helpers with RyuJIT conventions
         //
         [RuntimeExport("RhUnbox2")]
-        public static unsafe ref byte RhUnbox2(EETypePtr pUnboxToEEType, Object obj)
+        public static unsafe ref byte RhUnbox2(EETypePtr pUnboxToEEType, object obj)
         {
             EEType* ptrUnboxToEEType = (EEType*)pUnboxToEEType.ToPointer();
             if ((obj == null) || !UnboxAnyTypeCompare(obj.EEType, ptrUnboxToEEType))
@@ -209,7 +209,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhUnboxNullable")]
-        public static unsafe void RhUnboxNullable(ref byte data, EETypePtr pUnboxToEEType, Object obj)
+        public static unsafe void RhUnboxNullable(ref byte data, EETypePtr pUnboxToEEType, object obj)
         {
             EEType* ptrUnboxToEEType = (EEType*)pUnboxToEEType.ToPointer();
             if ((obj != null) && !TypeCast.AreTypesEquivalentInternal(obj.EEType, ptrUnboxToEEType->NullableType))
@@ -235,7 +235,7 @@ namespace System.Runtime
                 return;
             }
 
-            TypeCast.CheckArrayStore(array, Unsafe.As<byte, Object>(ref data));
+            TypeCast.CheckArrayStore(array, Unsafe.As<byte, object>(ref data));
         }
 
         [RuntimeExport("RhBoxAndNullCheck")]
@@ -245,13 +245,13 @@ namespace System.Runtime
             if (ptrEEType->IsValueType)
                 return true;
             else
-                return Unsafe.As<byte, Object>(ref data) != null;
+                return Unsafe.As<byte, object>(ref data) != null;
         }
 
 #pragma warning disable 169 // The field 'System.Runtime.RuntimeExports.Wrapper.o' is never used. 
         private class Wrapper
         {
-            private Object _o;
+            private object _o;
         }
 #pragma warning restore 169
 

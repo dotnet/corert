@@ -718,6 +718,9 @@ namespace Internal.TypeSystem.Interop
                     PropagateToByRefArg(_ilCodeStreams.UnmarshallingCodestream, _managedHome);
                 }
             }
+
+            // TODO This should be in finally block
+            // https://github.com/dotnet/corert/issues/6075
             EmitCleanupManaged(_ilCodeStreams.UnmarshallingCodestream);
         }
 
@@ -1690,42 +1693,13 @@ namespace Internal.TypeSystem.Interop
                 PropagateFromByRefArg(marshallingCodeStream, _managedHome);
             }
 
-            // TODO: https://github.com/dotnet/corert/issues/3291
-            // We don't support [IN,OUT] together yet, either IN or OUT.
-            if (Out && In)
-            {
-                throw new NotSupportedException("Marshalling an argument as both in and out not yet implemented");
-            }
-
             var safeHandleType = InteropTypes.GetSafeHandle(Context);
 
-            if (Out && IsManagedByRef)
+            if (In)
             {
-                // 1) If this is an output parameter we need to preallocate a SafeHandle to wrap the new native handle value. We
-                //    must allocate this before the native call to avoid a failure point when we already have a native resource
-                //    allocated. We must allocate a new SafeHandle even if we have one on input since both input and output native
-                //    handles need to be tracked and released by a SafeHandle.
-                // 2) Initialize a local IntPtr that will be passed to the native call. 
-                // 3) After the native call, the new handle value is written into the output SafeHandle and that SafeHandle
-                //    is propagated back to the caller.
-                var vOutValue = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.IntPtr));
-                var vSafeHandle = emitter.NewLocal(ManagedType);
-                AllocSafeHandle(marshallingCodeStream);
-                marshallingCodeStream.EmitStLoc(vSafeHandle);
-                _ilCodeStreams.CallsiteSetupCodeStream.EmitLdLoca(vOutValue);
+                if (IsManagedByRef)
+                    PropagateFromByRefArg(marshallingCodeStream, _managedHome);
 
-                unmarshallingCodeStream.EmitLdLoc(vSafeHandle);
-                unmarshallingCodeStream.EmitLdLoc(vOutValue);
-                unmarshallingCodeStream.Emit(ILOpcode.call, emitter.NewToken(
-                   safeHandleType.GetKnownMethod("SetHandle", null)));
-
-                unmarshallingCodeStream.EmitLdLoc(vSafeHandle);
-                StoreManagedValue(unmarshallingCodeStream);
-
-                PropagateToByRefArg(unmarshallingCodeStream, _managedHome);
-            }
-            else
-            {
                 var vAddRefed = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Boolean));
                 LoadManagedValue(marshallingCodeStream);
                 marshallingCodeStream.EmitLdLoca(vAddRefed);
@@ -1737,13 +1711,52 @@ namespace Internal.TypeSystem.Interop
                     safeHandleType.GetKnownMethod("DangerousGetHandle", null)));
                 StoreNativeValue(marshallingCodeStream);
 
-                // TODO: This should be inside finally block and only executed it the handle was addrefed
+                // TODO: This should be inside finally block and only executed if the handle was addrefed
+                // https://github.com/dotnet/corert/issues/6075
                 LoadManagedValue(unmarshallingCodeStream);
                 unmarshallingCodeStream.Emit(ILOpcode.call, emitter.NewToken(
                     safeHandleType.GetKnownMethod("DangerousRelease", null)));
-
-                LoadNativeArg(_ilCodeStreams.CallsiteSetupCodeStream);
             }
+
+            if (Out && IsManagedByRef)
+            {
+                // 1) If this is an output parameter we need to preallocate a SafeHandle to wrap the new native handle value. We
+                //    must allocate this before the native call to avoid a failure point when we already have a native resource
+                //    allocated. We must allocate a new SafeHandle even if we have one on input since both input and output native
+                //    handles need to be tracked and released by a SafeHandle.
+                // 2) Initialize a local IntPtr that will be passed to the native call. 
+                // 3) After the native call, the new handle value is written into the output SafeHandle and that SafeHandle
+                //    is propagated back to the caller.
+                var vSafeHandle = emitter.NewLocal(ManagedType);
+                AllocSafeHandle(marshallingCodeStream);
+                marshallingCodeStream.EmitStLoc(vSafeHandle);
+
+                var lSkipPropagation = emitter.NewCodeLabel();
+                if (In)
+                {
+                    // Propagate the value only if it has changed
+                    ILLocalVariable vOriginalValue = emitter.NewLocal(NativeType);
+                    LoadNativeValue(marshallingCodeStream);
+                    marshallingCodeStream.EmitStLoc(vOriginalValue);
+
+                    unmarshallingCodeStream.EmitLdLoc(vOriginalValue);
+                    LoadNativeValue(unmarshallingCodeStream);
+                    unmarshallingCodeStream.Emit(ILOpcode.beq, lSkipPropagation);
+                }
+
+                unmarshallingCodeStream.EmitLdLoc(vSafeHandle);
+                LoadNativeValue(unmarshallingCodeStream);
+                unmarshallingCodeStream.Emit(ILOpcode.call, emitter.NewToken(
+                    safeHandleType.GetKnownMethod("SetHandle", null)));
+
+                unmarshallingCodeStream.EmitLdArg(Index - 1);
+                unmarshallingCodeStream.EmitLdLoc(vSafeHandle);
+                unmarshallingCodeStream.EmitStInd(ManagedType);
+
+                unmarshallingCodeStream.EmitLabel(lSkipPropagation);
+            }
+
+            LoadNativeArg(callsiteCodeStream);
         }
     }
 

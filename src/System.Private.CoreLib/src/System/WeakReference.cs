@@ -35,14 +35,14 @@ namespace System
         // Creates a new WeakReference that keeps track of target.
         // Assumes a Short Weak Reference (ie TrackResurrection is false.)
         //
-        public WeakReference(Object target)
+        public WeakReference(object target)
             : this(target, false)
         {
         }
 
         //Creates a new WeakReference that keeps track of target.
         //
-        public WeakReference(Object target, bool trackResurrection)
+        public WeakReference(object target, bool trackResurrection)
         {
             m_IsLongReference = trackResurrection;
             m_handle = GCHandle.ToIntPtr(GCHandle.Alloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak));
@@ -58,7 +58,7 @@ namespace System
                 throw new ArgumentNullException(nameof(info));
             }
 
-            Object target = info.GetValue("TrackedObject", typeof(Object)); // Do not rename (binary serialization)
+            object target = info.GetValue("TrackedObject", typeof(object)); // Do not rename (binary serialization)
             bool trackResurrection = info.GetBoolean("TrackResurrection"); // Do not rename (binary serialization)
 
             m_IsLongReference = trackResurrection;
@@ -105,7 +105,7 @@ namespace System
         //Gets the Object stored in the handle if it's accessible.
         // Or sets it.
         //
-        public virtual Object Target
+        public virtual object Target
         {
             get
             {
@@ -115,7 +115,7 @@ namespace System
                 if (default(IntPtr) == h)
                     return null;
 
-                Object o = RuntimeImports.RhHandleGet(h);
+                object o = RuntimeImports.RhHandleGet(h);
 
                 if (o == null)
                 {
@@ -188,7 +188,7 @@ namespace System
         /// and gets\create a new RCW in case it is alive.
         /// </summary>
         /// <returns></returns>
-        private Object TryGetComTarget()
+        private object TryGetComTarget()
         {
 #if ENABLE_WINRT
             WinRTInteropCallbacks callbacks = WinRTInterop.UnsafeCallbacks;
@@ -231,7 +231,7 @@ namespace System
                 throw new ArgumentNullException(nameof(info));
             }
 
-            info.AddValue("TrackedObject", Target, typeof(Object)); // Do not rename (binary serialization)
+            info.AddValue("TrackedObject", Target, typeof(object)); // Do not rename (binary serialization)
             info.AddValue("TrackResurrection", m_IsLongReference); // Do not rename (binary serialization)
         }
 

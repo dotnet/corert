@@ -22,15 +22,15 @@ namespace Internal.Runtime
 #pragma warning disable 0169
     internal struct ReadyToRunHeader
     {
-        private UInt32 Signature;      // ReadyToRunHeaderConstants.Signature
-        private UInt16 MajorVersion;
-        private UInt16 MinorVersion;
+        private uint Signature;      // ReadyToRunHeaderConstants.Signature
+        private ushort MajorVersion;
+        private ushort MinorVersion;
 
-        private UInt32 Flags;
+        private uint Flags;
 
-        private UInt16 NumberOfSections;
-        private Byte EntrySize;
-        private Byte EntryType;
+        private ushort NumberOfSections;
+        private byte EntrySize;
+        private byte EntryType;
 
         // Array of sections follows.
     };

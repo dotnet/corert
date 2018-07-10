@@ -206,7 +206,8 @@ namespace System.Threading
             {
                 if (handleValue != IntPtr.Zero && handleValue != (IntPtr)(-1))
                 {
-                    EventWaitHandle.Set(handleValue);
+                    Debug.Assert(handleValue == handle.DangerousGetHandle());
+                    WaitSubsystem.SetEvent(handleValue);
                 }
             }
             finally

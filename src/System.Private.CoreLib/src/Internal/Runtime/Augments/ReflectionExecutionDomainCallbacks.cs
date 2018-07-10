@@ -47,7 +47,7 @@ namespace Internal.Runtime.Augments
         // Flotsam and jetsam.
         public abstract Exception CreateMissingMetadataException(Type typeWithMissingMetadata);
 
-        public abstract String GetBetterDiagnosticInfoIfAvailable(RuntimeTypeHandle runtimeTypeHandle);
+        public abstract string GetBetterDiagnosticInfoIfAvailable(RuntimeTypeHandle runtimeTypeHandle);
         public abstract MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress);
         public abstract int ValueTypeGetHashCodeUsingReflection(object valueType);
         public abstract bool ValueTypeEqualsUsingReflection(object left, object right);

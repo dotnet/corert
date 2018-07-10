@@ -2,15 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-
-////////////////////////////////////////////////////////////////////////////////
-
-#pragma warning disable 0420 // turn off 'a reference to a volatile field will not be treated as volatile' during CAS.
-
-
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 namespace System.Threading
@@ -41,10 +33,10 @@ namespace System.Threading
         // The backing TokenSource.  
         // if null, it implicitly represents the same thing as new CancellationToken(false).
         // When required, it will be instantiated to reflect this.
-        private readonly CancellationTokenSource m_source;
+        private readonly CancellationTokenSource _source;
         //!! warning. If more fields are added, the assumptions in CreateLinkedToken may no longer be valid
 
-        /* Properties */
+        private readonly static Action<object> s_actionToActionObjShunt = obj => ((Action)obj)();
 
         /// <summary>
         /// Returns an empty CancellationToken value.
@@ -52,10 +44,7 @@ namespace System.Threading
         /// <remarks>
         /// The <see cref="CancellationToken"/> value returned by this property will be non-cancelable by default.
         /// </remarks>
-        public static CancellationToken None
-        {
-            get { return default(CancellationToken); }
-        }
+        public static CancellationToken None => default;
 
         /// <summary>
         /// Gets whether cancellation has been requested for this token.
@@ -64,7 +53,7 @@ namespace System.Threading
         /// <remarks>
         /// <para>
         /// This property indicates whether cancellation has been requested for this token, 
-        /// either through the token initially being construted in a canceled state, or through
+        /// either through the token initially being constructed in a canceled state, or through
         /// calling <see cref="System.Threading.CancellationTokenSource.Cancel()">Cancel</see> 
         /// on the token's associated <see cref="CancellationTokenSource"/>.
         /// </para>
@@ -76,13 +65,7 @@ namespace System.Threading
         /// particularly in situations where related objects are being canceled concurrently.
         /// </para>
         /// </remarks>
-        public bool IsCancellationRequested
-        {
-            get
-            {
-                return m_source != null && m_source.IsCancellationRequested;
-            }
-        }
+        public bool IsCancellationRequested => _source != null && _source.IsCancellationRequested;
 
         /// <summary>
         /// Gets whether this token is capable of being in the canceled state.
@@ -92,13 +75,7 @@ namespace System.Threading
         /// into a canceled state, meaning that <see cref="IsCancellationRequested"/> will never
         /// return true.
         /// </remarks>
-        public bool CanBeCanceled
-        {
-            get
-            {
-                return m_source != null && m_source.CanBeCanceled;
-            }
-        }
+        public bool CanBeCanceled => _source != null;
 
         /// <summary>
         /// Gets a <see cref="T:System.Threading.WaitHandle"/> that is signaled when the token is canceled.</summary>
@@ -110,7 +87,7 @@ namespace System.Threading
         /// </remarks>
         /// <exception cref="T:System.ObjectDisposedException">The associated <see
         /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
-        public WaitHandle WaitHandle => (m_source ?? CancellationTokenSource.InternalGetStaticSource(false)).WaitHandle;
+        public WaitHandle WaitHandle => (_source ?? CancellationTokenSource.s_neverCanceledSource).WaitHandle;
 
         // public CancellationToken()
         // this constructor is implicit for structs
@@ -119,10 +96,7 @@ namespace System.Threading
         /// <summary>
         /// Internal constructor only a CancellationTokenSource should create a CancellationToken
         /// </summary>
-        internal CancellationToken(CancellationTokenSource source)
-        {
-            m_source = source;
-        }
+        internal CancellationToken(CancellationTokenSource source) => _source = source;
 
         /// <summary>
         /// Initializes the <see cref="T:System.Threading.CancellationToken">CancellationToken</see>.
@@ -137,22 +111,8 @@ namespace System.Threading
         /// If <paramref name="canceled"/> is true,
         /// both <see cref="CanBeCanceled"/> and <see cref="IsCancellationRequested"/> will be true. 
         /// </remarks>
-        public CancellationToken(bool canceled) :
-            this()
+        public CancellationToken(bool canceled) : this(canceled ? CancellationTokenSource.s_canceledSource : null)
         {
-            if (canceled)
-                m_source = CancellationTokenSource.InternalGetStaticSource(canceled);
-        }
-
-        /* Methods */
-
-
-        private static readonly Action<Object> s_ActionToActionObjShunt = new Action<Object>(ActionToActionObjShunt);
-        private static void ActionToActionObjShunt(object obj)
-        {
-            Action action = obj as Action;
-            Debug.Assert(action != null, "Expected an Action here");
-            action();
         }
 
         /// <summary>
@@ -164,25 +124,21 @@ namespace System.Threading
         /// delegate will be run immediately and synchronously. Any exception the delegate generates will be
         /// propagated out of this method call.
         /// </para>
+        /// <para>
+        /// The current <see cref="System.Threading.ExecutionContext">ExecutionContext</see>, if one exists, will be captured
+        /// along with the delegate and will be used when executing it.
+        /// </para>
         /// </remarks>
         /// <param name="callback">The delegate to be executed when the <see cref="T:System.Threading.CancellationToken">CancellationToken</see> is canceled.</param>
         /// <returns>The <see cref="T:System.Threading.CancellationTokenRegistration"/> instance that can 
         /// be used to unregister the callback.</returns>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
-        /// <exception cref="T:System.ObjectDisposedException">The associated <see
-        /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
-        public CancellationTokenRegistration Register(Action callback)
-        {
-            if (callback == null)
-                throw new ArgumentNullException(nameof(callback));
-
-            return Register(
-                s_ActionToActionObjShunt,
-                callback,
-                false, // useSync=false
-                true   // useExecutionContext=true
-             );
-        }
+        public CancellationTokenRegistration Register(Action callback) =>
+            Register(
+                s_actionToActionObjShunt,
+                callback ?? throw new ArgumentNullException(nameof(callback)),
+                useSynchronizationContext: false,
+                useExecutionContext: true);
 
         /// <summary>
         /// Registers a delegate that will be called when this 
@@ -193,6 +149,10 @@ namespace System.Threading
         /// If this token is already in the canceled state, the
         /// delegate will be run immediately and synchronously. Any exception the delegate generates will be
         /// propagated out of this method call.
+        /// </para>
+        /// <para>
+        /// The current <see cref="System.Threading.ExecutionContext">ExecutionContext</see>, if one exists, will be captured
+        /// along with the delegate and will be used when executing it.
         /// </para>
         /// </remarks>
         /// <param name="callback">The delegate to be executed when the <see cref="T:System.Threading.CancellationToken">CancellationToken</see> is canceled.</param>
@@ -202,18 +162,12 @@ namespace System.Threading
         /// <returns>The <see cref="T:System.Threading.CancellationTokenRegistration"/> instance that can 
         /// be used to unregister the callback.</returns>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
-        public CancellationTokenRegistration Register(Action callback, bool useSynchronizationContext)
-        {
-            if (callback == null)
-                throw new ArgumentNullException(nameof(callback));
-
-            return Register(
-                s_ActionToActionObjShunt,
-                callback,
+        public CancellationTokenRegistration Register(Action callback, bool useSynchronizationContext) =>
+            Register(
+                s_actionToActionObjShunt,
+                callback ?? throw new ArgumentNullException(nameof(callback)),
                 useSynchronizationContext,
-                true   // useExecutionContext=true
-             );
-        }
+                useExecutionContext: true);
 
         /// <summary>
         /// Registers a delegate that will be called when this 
@@ -225,24 +179,18 @@ namespace System.Threading
         /// delegate will be run immediately and synchronously. Any exception the delegate generates will be
         /// propagated out of this method call.
         /// </para>
+        /// <para>
+        /// The current <see cref="System.Threading.ExecutionContext">ExecutionContext</see>, if one exists, will be captured
+        /// along with the delegate and will be used when executing it.
+        /// </para>
         /// </remarks>
         /// <param name="callback">The delegate to be executed when the <see cref="T:System.Threading.CancellationToken">CancellationToken</see> is canceled.</param>
         /// <param name="state">The state to pass to the <paramref name="callback"/> when the delegate is invoked.  This may be null.</param>
         /// <returns>The <see cref="T:System.Threading.CancellationTokenRegistration"/> instance that can 
         /// be used to unregister the callback.</returns>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
-        public CancellationTokenRegistration Register(Action<Object> callback, Object state)
-        {
-            if (callback == null)
-                throw new ArgumentNullException(nameof(callback));
-
-            return Register(
-                callback,
-                state,
-                false, // useSync=false
-                true   // useExecutionContext=true
-             );
-        }
+        public CancellationTokenRegistration Register(Action<object> callback, object state) =>
+            Register(callback, state, useSynchronizationContext: false, useExecutionContext: true);
 
         /// <summary>
         /// Registers a delegate that will be called when this 
@@ -269,27 +217,13 @@ namespace System.Threading
         /// <exception cref="T:System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The associated <see
         /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
-        public CancellationTokenRegistration Register(Action<Object> callback, Object state, bool useSynchronizationContext)
-        {
-            return Register(
-                callback,
-                state,
-                useSynchronizationContext,
-                true   // useExecutionContext=true
-             );
-        }
+        public CancellationTokenRegistration Register(Action<object> callback, object state, bool useSynchronizationContext) =>
+            Register(callback, state, useSynchronizationContext, useExecutionContext: true);
 
         // helper for internal registration needs that don't require an EC capture (e.g. creating linked token sources, or registering unstarted TPL tasks)
         // has a handy signature, and skips capturing execution context.
-        internal CancellationTokenRegistration InternalRegisterWithoutEC(Action<object> callback, Object state)
-        {
-            return Register(
-                callback,
-                state,
-                false, // useSyncContext=false
-                false  // useExecutionContext=false
-             );
-        }
+        internal CancellationTokenRegistration InternalRegisterWithoutEC(Action<object> callback, object state) =>
+            Register(callback, state, useSynchronizationContext: false, useExecutionContext: false);
 
         /// <summary>
         /// Registers a delegate that will be called when this 
@@ -312,33 +246,21 @@ namespace System.Threading
         /// <exception cref="T:System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The associated <see
         /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
+#if CORECLR
+        private
+#else
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public CancellationTokenRegistration Register(Action<Object> callback, Object state, bool useSynchronizationContext, bool useExecutionContext)
+        public
+#endif
+        CancellationTokenRegistration Register(Action<object> callback, object state, bool useSynchronizationContext, bool useExecutionContext)
         {
             if (callback == null)
                 throw new ArgumentNullException(nameof(callback));
 
-            if (CanBeCanceled == false)
-            {
-                return new CancellationTokenRegistration(); // nothing to do for tokens than can never reach the canceled state. Give them a dummy registration.
-            }
-
-            // Capture sync/execution contexts if required.
-            // Note: Only capture sync/execution contexts if IsCancellationRequested = false
-            // as we know that if it is true that the callback will just be called synchronously.
-
-            SynchronizationContext capturedSyncContext = null;
-            ExecutionContext capturedExecutionContext = null;
-            if (!IsCancellationRequested)
-            {
-                if (useSynchronizationContext)
-                    capturedSyncContext = SynchronizationContext.Current;
-                if (useExecutionContext)
-                    capturedExecutionContext = ExecutionContext.Capture();
-            }
-
-            // Register the callback with the source.
-            return m_source.InternalRegister(callback, state, capturedSyncContext, capturedExecutionContext);
+            CancellationTokenSource source = _source;
+            return source != null ?
+                source.InternalRegister(callback, state, useSynchronizationContext ? SynchronizationContext.Current : null, useExecutionContext ? ExecutionContext.Capture() : null) :
+                default; // Nothing to do for tokens than can never reach the canceled state. Give back a dummy registration.
         }
 
         /// <summary>
@@ -350,30 +272,7 @@ namespace System.Threading
         /// <returns>True if the instances are equal; otherwise, false. Two tokens are equal if they are associated
         /// with the same <see cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> or if they were both constructed 
         /// from public CancellationToken constructors and their <see cref="IsCancellationRequested"/> values are equal.</returns>
-        public bool Equals(CancellationToken other)
-        {
-            //if both sources are null, then both tokens represent the Empty token.
-            if (m_source == null && other.m_source == null)
-            {
-                return true;
-            }
-
-            // one is null but other has inflated the default source
-            // these are only equal if the inflated one is the staticSource(false)
-            if (m_source == null)
-            {
-                return other.m_source == CancellationTokenSource.InternalGetStaticSource(false);
-            }
-
-            if (other.m_source == null)
-            {
-                return m_source == CancellationTokenSource.InternalGetStaticSource(false);
-            }
-
-            // general case, we check if the sources are identical
-
-            return m_source == other.m_source;
-        }
+        public bool Equals(CancellationToken other) => _source == other._source;
 
         /// <summary>
         /// Determines whether the current <see cref="T:System.Threading.CancellationToken">CancellationToken</see> instance is equal to the 
@@ -386,30 +285,13 @@ namespace System.Threading
         /// from public CancellationToken constructors and their <see cref="IsCancellationRequested"/> values are equal.</returns>
         /// <exception cref="T:System.ObjectDisposedException">An associated <see
         /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
-        public override bool Equals(Object other)
-        {
-            if (other is CancellationToken)
-            {
-                return Equals((CancellationToken)other);
-            }
-
-            return false;
-        }
+        public override bool Equals(object other) => other is CancellationToken && Equals((CancellationToken)other);
 
         /// <summary>
         /// Serves as a hash function for a <see cref="T:System.Threading.CancellationToken">CancellationToken</see>.
         /// </summary>
         /// <returns>A hash code for the current <see cref="T:System.Threading.CancellationToken">CancellationToken</see> instance.</returns>
-        public override Int32 GetHashCode()
-        {
-            if (m_source == null)
-            {
-                // link to the common source so that we have a source to interrogate.
-                return CancellationTokenSource.InternalGetStaticSource(false).GetHashCode();
-            }
-
-            return m_source.GetHashCode();
-        }
+        public override int GetHashCode() => (_source ?? CancellationTokenSource.s_neverCanceledSource).GetHashCode();
 
         /// <summary>
         /// Determines whether two <see cref="T:System.Threading.CancellationToken">CancellationToken</see> instances are equal.
@@ -419,10 +301,7 @@ namespace System.Threading
         /// <returns>True if the instances are equal; otherwise, false.</returns>
         /// <exception cref="T:System.ObjectDisposedException">An associated <see
         /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
-        public static bool operator ==(CancellationToken left, CancellationToken right)
-        {
-            return left.Equals(right);
-        }
+        public static bool operator ==(CancellationToken left, CancellationToken right) => left.Equals(right);
 
         /// <summary>
         /// Determines whether two <see cref="T:System.Threading.CancellationToken">CancellationToken</see> instances are not equal.
@@ -432,10 +311,7 @@ namespace System.Threading
         /// <returns>True if the instances are not equal; otherwise, false.</returns>
         /// <exception cref="T:System.ObjectDisposedException">An associated <see
         /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
-        public static bool operator !=(CancellationToken left, CancellationToken right)
-        {
-            return !left.Equals(right);
-        }
+        public static bool operator !=(CancellationToken left, CancellationToken right) => !left.Equals(right);
 
         /// <summary>
         /// Throws a <see cref="T:System.OperationCanceledException">OperationCanceledException</see> if
@@ -457,22 +333,8 @@ namespace System.Threading
                 ThrowOperationCanceledException();
         }
 
-        // Throw an ODE if this CancellationToken's source is disposed.
-        internal void ThrowIfSourceDisposed()
-        {
-            if ((m_source != null) && m_source.IsDisposed)
-                ThrowObjectDisposedException();
-        }
-
         // Throws an OCE; separated out to enable better inlining of ThrowIfCancellationRequested
-        private void ThrowOperationCanceledException()
-        {
+        private void ThrowOperationCanceledException() =>
             throw new OperationCanceledException(SR.OperationCanceled, this);
-        }
-
-        private static void ThrowObjectDisposedException()
-        {
-            throw new ObjectDisposedException(null, SR.CancellationToken_SourceDisposed);
-        }
     }
 }
