@@ -55,7 +55,7 @@ SECTIONREL_t_TLS_DispatchCell
         cmp     x10, x11
         bne     %ft0    ;; Jump to label '0'
         ldr     x9, [x9, #(OFFSETOF__InterfaceDispatchCache__m_rgEntries + ($entry * 16) + 8)]
-        ret     x9
+        br      x9
 0   ;; Label '0'
     MEND
 
@@ -70,7 +70,7 @@ SECTIONREL_t_TLS_DispatchCell
 
         ;; Now load the target address and jump to it.
         ldr     x9, [xip0, #8]
-        ret     x9
+        br      x9
     LEAF_END RhpCastableObjectDispatch_CommonStub
 
     LEAF_ENTRY RhpTailCallTLSDispatchCell
@@ -79,7 +79,7 @@ SECTIONREL_t_TLS_DispatchCell
 
         ;; Tail call to the target of the dispatch cell, preserving the cell address in xip1
         ldr     x9, [xip1]
-        ret     x9
+        br      x9
     LEAF_END RhpTailCallTLSDispatchCell
 
     LEAF_ENTRY RhpCastableObjectDispatchHelper_TailCalled
@@ -168,7 +168,7 @@ CurrentEntry SETA CurrentEntry + 1
         ;; Load the target address of the vtable into x12
         ldr     x12, [x12]
 
-        ret     x12
+        br      x12
     LEAF_END RhpVTableOffsetDispatch
 
 ;;

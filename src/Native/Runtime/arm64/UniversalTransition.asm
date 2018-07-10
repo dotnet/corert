@@ -147,7 +147,7 @@
         EPILOG_RESTORE_REG_PAIR   fp, lr, #STACK_SIZE!
 
         ;; Tailcall to the target address.
-        EPILOG_NOP ret x12
+        EPILOG_NOP br x12
 
     NESTED_END Rhp$FunctionName
 

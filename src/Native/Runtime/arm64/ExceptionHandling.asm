@@ -489,7 +489,7 @@ DonePopping
 NoAbort
         ;; reset SP and jump to continuation address
         mov         sp, x2
-        ret         x0
+        br          x0
 
     NESTED_END RhpCallCatchFunclet
 
