@@ -3,10 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Text;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
-using Interlocked = System.Threading.Interlocked;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
 
 namespace Internal.Runtime.CompilerHelpers
 {
@@ -15,7 +16,7 @@ namespace Internal.Runtime.CompilerHelpers
     /// </summary>
     internal static class InteropHelpers
     {
-        internal static unsafe byte* StringToAnsiString(String str, bool bestFit, bool throwOnUnmappableChar)
+        internal static unsafe byte* StringToAnsiString(string str, bool bestFit, bool throwOnUnmappableChar)
         {
             return PInvokeMarshal.StringToAnsiString(str, bestFit, throwOnUnmappableChar);
         }
@@ -37,7 +38,7 @@ namespace Internal.Runtime.CompilerHelpers
             return PInvokeMarshal.ByValAnsiStringToString(buffer, length);
         }
 
-        internal static unsafe void StringToUnicodeFixedArray(String str, UInt16* buffer, int length)
+        internal static unsafe void StringToUnicodeFixedArray(string str, ushort* buffer, int length)
         {
             if (buffer == null)
                 return;
@@ -58,16 +59,16 @@ namespace Internal.Runtime.CompilerHelpers
             }
         }
 
-        internal static unsafe string UnicodeToStringFixedArray(UInt16* buffer, int length)
+        internal static unsafe string UnicodeToStringFixedArray(ushort* buffer, int length)
         {
             if (buffer == null)
-                return String.Empty;
+                return string.Empty;
 
-            string result = String.Empty;
+            string result = string.Empty;
 
             if (length > 0)
             {
-                result = new String(' ', length);
+                result = new string(' ', length);
 
                 fixed (char* pTemp = result)
                 {
@@ -78,7 +79,7 @@ namespace Internal.Runtime.CompilerHelpers
             return result;
         }
 
-        internal static unsafe char* StringToUnicodeBuffer(String str)
+        internal static unsafe char* StringToUnicodeBuffer(string str)
         {
             if (str == null)
                 return null;
@@ -98,7 +99,7 @@ namespace Internal.Runtime.CompilerHelpers
 
         public static unsafe string UnicodeBufferToString(char* buffer)
         {
-            return new String(buffer);
+            return new string(buffer);
         }
 
         public static unsafe byte* AllocMemoryForAnsiStringBuilder(StringBuilder sb)
@@ -208,6 +209,7 @@ namespace Internal.Runtime.CompilerHelpers
             return ResolvePInvokeSlow(pCell);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static unsafe IntPtr ResolvePInvokeSlow(MethodFixupCell* pCell)
         {
             ModuleFixupCell* pModuleCell = pCell->Module;

@@ -10,39 +10,6 @@ internal static partial class Interop
 {
     internal static partial class mincore
     {
-        [DllImport(Libraries.Kernel32, EntryPoint = "CreateEventExW", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal extern static SafeWaitHandle CreateEventEx(IntPtr lpEventAttributes, string lpName, uint dwFlags, uint dwDesiredAccess);
-
-        [DllImport(Libraries.Kernel32, EntryPoint = "CreateSemaphoreExW", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal static extern SafeWaitHandle CreateSemaphoreEx(IntPtr lpSemaphoreAttributes, int lInitialCount, int lMaximumCount, string lpName, uint dwFlags, uint dwDesiredAccess);
-
-        [DllImport(Libraries.Kernel32, EntryPoint = "CreateMutexExW", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal extern static SafeWaitHandle CreateMutexEx(IntPtr lpMutexAttributes, string lpName, uint dwFlags, uint dwDesiredAccess);
-
-        [DllImport(Libraries.Kernel32, EntryPoint = "OpenEventW", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal extern static SafeWaitHandle OpenEvent(uint dwDesiredAccess, bool bInheritHandle, string lpName);
-
-        [DllImport(Libraries.Kernel32, EntryPoint = "OpenSemaphoreW", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal extern static SafeWaitHandle OpenSemaphore(uint dwDesiredAccess, bool bInheritHandle, string lpName);
-
-        [DllImport(Libraries.Kernel32, EntryPoint = "OpenMutexW", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal extern static SafeWaitHandle OpenMutex(uint dwDesiredAccess, bool bInheritHandle, string lpName);
-
-        [DllImport(Libraries.Kernel32)]
-        internal extern static bool ResetEvent(IntPtr hEvent);
-
-        [DllImport(Libraries.Kernel32)]
-        internal extern static bool SetEvent(IntPtr hEvent);
-
-        [DllImport(Libraries.Kernel32)]
-        internal extern static bool SetEvent(SafeWaitHandle hEvent);
-
-        [DllImport(Libraries.Kernel32)]
-        internal extern static bool ReleaseSemaphore(IntPtr hSemaphore, int lReleaseCount, out int lpPreviousCount);
-
-        [DllImport(Libraries.Kernel32)]
-        internal extern static bool ReleaseMutex(IntPtr hMutex);
-
         [DllImport(Libraries.Kernel32)]
         internal extern static uint WaitForMultipleObjectsEx(uint nCount, IntPtr lpHandles, bool bWaitAll, uint dwMilliseconds, bool bAlertable);
 

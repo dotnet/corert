@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.Remoting;
 using System.Runtime;
 
 using Internal.Reflection.Augments;
@@ -147,6 +148,50 @@ namespace System
         }
 
         private const BindingFlags ConstructorDefault = BindingFlags.Instance | BindingFlags.Public | BindingFlags.CreateInstance;
+        
+        public static ObjectHandle CreateInstance(string assemblyName, string typeName) 
+        {
+            throw new PlatformNotSupportedException(); // https://github.com/dotnet/corefx/issues/30845
+        }
+
+        public static ObjectHandle CreateInstance(string assemblyName, 
+                                                  string typeName, 
+                                                  bool ignoreCase, 
+                                                  BindingFlags bindingAttr, 
+                                                  Binder binder, 
+                                                  object[] args, 
+                                                  CultureInfo culture, 
+                                                  object[] activationAttributes) 
+        { 
+            throw new PlatformNotSupportedException(); // https://github.com/dotnet/corefx/issues/30845
+        }
+
+        public static ObjectHandle CreateInstance(string assemblyName, string typeName, object[] activationAttributes) 
+        { 
+            throw new PlatformNotSupportedException(); // https://github.com/dotnet/corefx/issues/30845
+        }
+
+        public static ObjectHandle CreateInstanceFrom(string assemblyFile, string typeName) 
+        {
+            throw new PlatformNotSupportedException(); 
+        }
+
+        public static ObjectHandle CreateInstanceFrom(string assemblyFile, 
+                                                      string typeName, 
+                                                      bool ignoreCase, 
+                                                      BindingFlags bindingAttr, 
+                                                      Binder binder, 
+                                                      object[] args, 
+                                                      CultureInfo culture, 
+                                                      object[] activationAttributes) 
+        { 
+            throw new PlatformNotSupportedException(); 
+        }
+
+        public static ObjectHandle CreateInstanceFrom(string assemblyFile, string typeName, object[] activationAttributes) 
+        { 
+            throw new PlatformNotSupportedException(); 
+        }
     }
 }
 

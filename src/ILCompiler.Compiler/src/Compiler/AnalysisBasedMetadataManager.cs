@@ -27,13 +27,14 @@ namespace ILCompiler
         public AnalysisBasedMetadataManager(
             CompilerTypeSystemContext typeSystemContext,
             MetadataBlockingPolicy blockingPolicy,
+            ManifestResourceBlockingPolicy resourceBlockingPolicy,
             string logFile,
             StackTraceEmissionPolicy stackTracePolicy,
             IEnumerable<ModuleDesc> modulesWithMetadata,
             IEnumerable<ReflectableEntity<TypeDesc>> reflectableTypes,
             IEnumerable<ReflectableEntity<MethodDesc>> reflectableMethods,
             IEnumerable<ReflectableEntity<FieldDesc>> reflectableFields)
-            : base(typeSystemContext, blockingPolicy, logFile, stackTracePolicy)
+            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy)
         {
             _modulesWithMetadata = new List<ModuleDesc>(modulesWithMetadata);
             

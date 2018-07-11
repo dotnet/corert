@@ -19,7 +19,7 @@ namespace Internal.Runtime.CompilerServices
         /// </summary>
         /// <param name="originalAssemblySimpleName">Simple name of the CoreFX assembly the type was relocated from.
         /// For example, System.Collections (with no version or public key token)</param>
-        public RelocatedTypeAttribute(String originalAssemblySimpleName)
+        public RelocatedTypeAttribute(string originalAssemblySimpleName)
         {
         }
     }

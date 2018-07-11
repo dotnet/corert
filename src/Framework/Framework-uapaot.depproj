@@ -19,10 +19,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- System.Runtime.InteropServices implementation has to be forwarded to System.Private.Interop -->
+    <!-- TODO https://github.com/dotnet/corert/issues/3231 -->
+    <FileToInclude Include="System.Runtime.InteropServices" />
+    <FileToInclude Include="mscorlib" />
+
     <!-- Pickup a few selected aot-specific files from uapaot instead -->
     <FileToInclude Include="System.Linq.Expressions" />
-    <FileToInclude Include="System.Reflection.Primitives" />
-    <FileToInclude Include="System.Runtime.InteropServices" />
     <FileToInclude Include="System.Text.RegularExpressions" />
     <FileToInclude Include="System.Private.Xml" />
     <FileToInclude Include="System.Private.Xml.Linq" />

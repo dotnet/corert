@@ -358,9 +358,6 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\DelegateInfo.cs">
       <Link>IL\DelegateInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateMarshallingMethodThunk.Sorting.cs">
-      <Link>IL\Stubs\DelegateMarshallingMethodThunk.Sorting.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateThunks.Sorting.cs">
       <Link>IL\Stubs\DelegateThunks.Sorting.cs</Link>
     </Compile>
@@ -475,11 +472,23 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DebuggerSteppingHelpers.cs">
       <Link>IL\Stubs\DebuggerSteppingHelpers.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\CalliMarshallingMethodThunk.cs">
+      <Link>IL\Stubs\CalliMarshallingMethodThunk.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\CalliMarshallingMethodThunk.Mangling.cs">
+      <Link>IL\Stubs\CalliMarshallingMethodThunk.Mangling.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\CalliMarshallingMethodThunk.Sorting.cs">
+      <Link>IL\Stubs\CalliMarshallingMethodThunk.Sorting.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateMarshallingMethodThunk.cs">
       <Link>IL\Stubs\DelegateMarshallingMethodThunk.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateMarshallingMethodThunk.Mangling.cs">
       <Link>IL\Stubs\DelegateMarshallingMethodThunk.Mangling.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateMarshallingMethodThunk.Sorting.cs">
+      <Link>IL\Stubs\DelegateMarshallingMethodThunk.Sorting.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\ForwardDelegateCreationThunk.cs">
       <Link>IL\Stubs\ForwardDelegateCreationThunk.cs</Link>
@@ -561,6 +570,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Mangling\IPrefixMangledType.cs">
       <Link>TypeSystem\Mangling\IPrefixMangledType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Mangling\IPrefixMangledSignature.cs">
+      <Link>TypeSystem\Mangling\IPrefixMangledSignature.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
       <Link>Utilities\ArrayBuilder.cs</Link>

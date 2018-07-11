@@ -341,10 +341,10 @@ namespace System.Diagnostics.Tracing
             if (fmt != null)
                 return string.Format(fmt, args);
 
-            string sargs = String.Empty;
+            string sargs = string.Empty;
             foreach(var arg in args)
             {
-                if (sargs != String.Empty)
+                if (sargs != string.Empty)
                     sargs += ", ";
                 sargs += arg.ToString();
             }

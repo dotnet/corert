@@ -837,7 +837,7 @@ namespace Internal.Runtime.CallConverter
 #if !_TARGET_X86_
                     numRegistersUsed++;
 #else
-                    // DESKTOP BEHAVIOR is to do nothing here, as ret buf is never reached by the scan algortithm that walks backwards
+                    // DESKTOP BEHAVIOR is to do nothing here, as ret buf is never reached by the scan algorithm that walks backwards
                     // but in .NET Native, the x86 argument scan is a forward scan, so we need to skip the ret buf arg (which is always
                     // on the stack)
                     initialArgOffset = IntPtr.Size;

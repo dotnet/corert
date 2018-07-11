@@ -62,8 +62,9 @@ namespace ILCompiler
             IEnumerable<ModuleDesc> compilationModules,
             IEnumerable<ModuleDesc> inputMetadataOnlyAssemblies,
             byte[] metadataBlob,
-            StackTraceEmissionPolicy stackTraceEmissionPolicy)
-            : base(typeSystemContext, new AttributeSpecifiedBlockingPolicy())
+            StackTraceEmissionPolicy stackTraceEmissionPolicy,
+            ManifestResourceBlockingPolicy resourceBlockingPolicy)
+            : base(typeSystemContext, new AttributeSpecifiedBlockingPolicy(), resourceBlockingPolicy)
         {
             _compilationModuleGroup = group;
             _metadataDescribingModule = metadataDescribingModule;

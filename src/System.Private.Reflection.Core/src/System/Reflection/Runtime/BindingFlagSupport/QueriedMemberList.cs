@@ -30,13 +30,13 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             _allFlagsThatMustMatch = new BindingFlags[Grow];
         }
 
-        private QueriedMemberList(int totalCount, int declaredOnlyCount, M[] members, BindingFlags[] allFlagsThatMustMatch, RuntimeTypeInfo typeThatBlockedBrowing)
+        private QueriedMemberList(int totalCount, int declaredOnlyCount, M[] members, BindingFlags[] allFlagsThatMustMatch, RuntimeTypeInfo typeThatBlockedBrowsing)
         {
             _totalCount = totalCount;
             _declaredOnlyCount = declaredOnlyCount;
             _members = members;
             _allFlagsThatMustMatch = allFlagsThatMustMatch;
-            _typeThatBlockedBrowsing = typeThatBlockedBrowing;
+            _typeThatBlockedBrowsing = typeThatBlockedBrowsing;
         }
 
         /// <summary>

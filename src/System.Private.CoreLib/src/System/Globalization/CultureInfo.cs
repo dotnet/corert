@@ -155,12 +155,12 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////
 
 
-        public CultureInfo(String name)
+        public CultureInfo(string name)
             : this(name, true)
         {
         }
 
-        public CultureInfo(String name, bool useUserOverride)
+        public CultureInfo(string name, bool useUserOverride)
         {
             if (name == null)
             {
@@ -238,7 +238,7 @@ namespace System.Globalization
         // Note that we really cannot use an LCID version of this override as the cached
         // name we create for it has to include both names, and the logic for this is in
         // the GetCultureInfo override *only*.
-        internal CultureInfo(String cultureName, String textAndCompareCultureName)
+        internal CultureInfo(string cultureName, string textAndCompareCultureName)
         {
             if (cultureName == null)
             {
@@ -261,7 +261,7 @@ namespace System.Globalization
         //
         // TODO: It would appear that this is only ever called with userOveride = true
         // and this method only has one caller.  Can we fold it into the caller?
-        private static CultureInfo GetCultureByName(String name, bool userOverride)
+        private static CultureInfo GetCultureByName(string name, bool userOverride)
         {
             CultureInfo ci = null;
             // Try to get our culture
@@ -289,7 +289,7 @@ namespace System.Globalization
         // if we can't find a bigger name.  That doesn't help with things like "zh" though, so
         // the approach is of questionable value
         //
-        public static CultureInfo CreateSpecificCulture(String name)
+        public static CultureInfo CreateSpecificCulture(string name)
         {
             CultureInfo culture;
 
@@ -339,7 +339,7 @@ namespace System.Globalization
             return (new CultureInfo(culture._cultureData.SSPECIFICCULTURE));
         }
 
-        internal static bool VerifyCultureName(String cultureName, bool throwException)
+        internal static bool VerifyCultureName(string cultureName, bool throwException)
         {
             // This function is used by ResourceManager.GetResourceFileName().
             // ResourceManager searches for resource using CultureInfo.Name,
@@ -349,7 +349,7 @@ namespace System.Globalization
             {
                 char c = cultureName[i];
                 // TODO: Names can only be RFC4646 names (ie: a-zA-Z0-9) while this allows any unicode letter/digit
-                if (Char.IsLetterOrDigit(c) || c == '-' || c == '_')
+                if (char.IsLetterOrDigit(c) || c == '-' || c == '_')
                 {
                     continue;
                 }
@@ -567,7 +567,7 @@ namespace System.Globalization
                     CultureInfo culture = null;
                     string parentName = _cultureData.SPARENT;
 
-                    if (String.IsNullOrEmpty(parentName))
+                    if (string.IsNullOrEmpty(parentName))
                     {
                         culture = InvariantCulture;
                     }
@@ -624,7 +624,7 @@ namespace System.Globalization
         //  "en-US"  This version does NOT include sort information in the name.
         //
         ////////////////////////////////////////////////////////////////////////
-        public virtual String Name
+        public virtual string Name
         {
             get
             {
@@ -634,7 +634,7 @@ namespace System.Globalization
                     _nonSortName = _cultureData.SNAME;
                     if (_nonSortName == null)
                     {
-                        _nonSortName = String.Empty;
+                        _nonSortName = string.Empty;
                     }
                 }
                 return _nonSortName;
@@ -642,7 +642,7 @@ namespace System.Globalization
         }
 
         // This one has the sort information (ie: de-DE_phoneb)
-        internal String SortName
+        internal string SortName
         {
             get
             {
@@ -681,7 +681,7 @@ namespace System.Globalization
         //  US English, "Ingles (Estados Unidos)" will be returned.
         //
         ////////////////////////////////////////////////////////////////////////
-        public virtual String DisplayName
+        public virtual string DisplayName
         {
             get
             {
@@ -700,7 +700,7 @@ namespace System.Globalization
         //  (United States)" will be returned.
         //
         ////////////////////////////////////////////////////////////////////////
-        public virtual String NativeName
+        public virtual string NativeName
         {
             get
             {
@@ -717,7 +717,7 @@ namespace System.Globalization
         //  (United States)" will be returned.
         //
         ////////////////////////////////////////////////////////////////////////
-        public virtual String EnglishName
+        public virtual string EnglishName
         {
             get
             {
@@ -726,7 +726,7 @@ namespace System.Globalization
         }
 
         // ie: en
-        public virtual String TwoLetterISOLanguageName
+        public virtual string TwoLetterISOLanguageName
         {
             get
             {
@@ -735,7 +735,7 @@ namespace System.Globalization
         }
 
         // ie: eng
-        public virtual String ThreeLetterISOLanguageName
+        public virtual string ThreeLetterISOLanguageName
         {
             get
             {
@@ -751,7 +751,7 @@ namespace System.Globalization
         //  The ISO names are much preferred
         //
         ////////////////////////////////////////////////////////////////////////
-        public virtual String ThreeLetterWindowsLanguageName
+        public virtual string ThreeLetterWindowsLanguageName
         {
             get
             {
@@ -838,9 +838,9 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////
 
 
-        public override bool Equals(Object value)
+        public override bool Equals(object value)
         {
-            if (Object.ReferenceEquals(this, value))
+            if (object.ReferenceEquals(this, value))
                 return true;
 
             CultureInfo that = value as CultureInfo;
@@ -883,13 +883,13 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////
 
 
-        public override String ToString()
+        public override string ToString()
         {
             return _name;
         }
 
 
-        public virtual Object GetFormat(Type formatType)
+        public virtual object GetFormat(Type formatType)
         {
             if (formatType == typeof(NumberFormatInfo))
                 return (NumberFormat);
@@ -1127,7 +1127,7 @@ namespace System.Globalization
             return (temp);
         }
 
-        public virtual Object Clone()
+        public virtual object Clone()
         {
             CultureInfo ci = (CultureInfo)MemberwiseClone();
             ci._isReadOnly = false;

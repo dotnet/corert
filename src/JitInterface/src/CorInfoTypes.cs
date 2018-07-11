@@ -193,6 +193,7 @@ namespace Internal.JitInterface
     // Constant Lookups are either:
     //     IAT_VALUE: immediate (relocatable) values,
     //     IAT_PVALUE: immediate values access via an indirection through an immediate (relocatable) address
+    //     IAT_RELPVALUE: immediate values access via a relative indirection through an immediate offset
     //     IAT_PPVALUE: immediate values access via a double indirection through an immediate (relocatable) address
     //
     // Runtime Lookups
@@ -220,6 +221,7 @@ namespace Internal.JitInterface
         // If accessType is
         //     IAT_VALUE   --> "handle" stores the real handle or "addr " stores the computed address
         //     IAT_PVALUE  --> "addr" stores a pointer to a location which will hold the real handle
+        //     IAT_RELPVALUE --> "addr" stores a relative pointer to a location which will hold the real handle
         //     IAT_PPVALUE --> "addr" stores a double indirection to a location which will hold the real handle
 
         public InfoAccessType accessType;
@@ -301,6 +303,7 @@ namespace Internal.JitInterface
         // Otherwise, it's a representative...  If accessType is
         //     IAT_VALUE --> "handle" stores the real handle or "addr " stores the computed address
         //     IAT_PVALUE --> "addr" stores a pointer to a location which will hold the real handle
+        //     IAT_RELPVALUE --> "addr" stores a relative pointer to a location which will hold the real handle
         //     IAT_PPVALUE --> "addr" stores a double indirection to a location which will hold the real handle
         public ref CORINFO_CONST_LOOKUP constLookup
         {
@@ -495,7 +498,8 @@ namespace Internal.JitInterface
     {
         IAT_VALUE,      // The info value is directly available
         IAT_PVALUE,     // The value needs to be accessed via an       indirection
-        IAT_PPVALUE     // The value needs to be accessed via a double indirection
+        IAT_PPVALUE,    // The value needs to be accessed via a double indirection
+        IAT_RELPVALUE   // The value needs to be accessed via a relative indirection
     }
 
     public enum CorInfoGCType

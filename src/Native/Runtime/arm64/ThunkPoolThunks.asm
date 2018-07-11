@@ -42,7 +42,7 @@ RO$name % 8
         ;; fix offset to point to last QWROD in page    : xip1 <- [xip0 + PAGE_SIZE - POINTER_SIZE]
         ;; tailcall to the location pointed at by the last qword in the data page
         ldr      xip1, [xip0, #(PAGE_SIZE - POINTER_SIZE - ($groupIndex * THUNK_DATASIZE * 10 + THUNK_DATASIZE * $index))]
-        ret      xip1
+        br       xip1
 
         brk     0xf000      ;; Stubs need to be 16-byte aligned (see comment above). Filling padding with a 
                             ;; deterministic brk instruction, instead of having it just filled with zeros.

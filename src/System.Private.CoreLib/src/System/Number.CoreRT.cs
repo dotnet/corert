@@ -302,9 +302,9 @@ namespace System
         }
 
         #region Decimal Number Formatting Helpers
-        private static unsafe bool NumberBufferToDecimal(ref Number.NumberBuffer number, ref Decimal value)
+        private static unsafe bool NumberBufferToDecimal(ref Number.NumberBuffer number, ref decimal value)
         {
-            Decimal d = new Decimal();
+            decimal d = new decimal();
 
             char* p = number.digits;
             int e = number.scale;
@@ -328,9 +328,9 @@ namespace System
                                                                             ((d.Low < 0x99999999) || ((d.Low == 0x99999999) &&
                                                                                                       (*p <= '5'))))))))
                 {
-                    Decimal.DecMul10(ref d);
+                    decimal.DecMul10(ref d);
                     if (*p != 0)
-                        Decimal.DecAddInt32(ref d, (uint)(*p++ - '0'));
+                        decimal.DecAddInt32(ref d, (uint)(*p++ - '0'));
                     e--;
                 }
 
@@ -353,7 +353,7 @@ namespace System
 
                     if (round)
                     {
-                        Decimal.DecAddInt32(ref d, 1);
+                        decimal.DecAddInt32(ref d, 1);
                         if ((d.High | d.Mid | d.Low) == 0)
                         {
                             d.High = 0x19999999;

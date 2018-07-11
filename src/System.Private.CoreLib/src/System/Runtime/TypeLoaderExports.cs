@@ -109,7 +109,7 @@ namespace System.Runtime
 #if PROJECTN
         [RuntimeExport("GenericLookupAndCallCtor")]
 #endif
-        public static void GenericLookupAndCallCtor(Object arg, IntPtr context, IntPtr signature)
+        public static void GenericLookupAndCallCtor(object arg, IntPtr context, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
             if (entry == null)
@@ -122,27 +122,27 @@ namespace System.Runtime
 #if PROJECTN
         [RuntimeExport("GenericLookupAndAllocObject")]
 #endif
-        public static Object GenericLookupAndAllocObject(IntPtr context, IntPtr signature)
+        public static object GenericLookupAndAllocObject(IntPtr context, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
             if (entry == null)
             {
                 entry = CacheMiss(context, signature);
             }
-            return RawCalliHelper.Call<Object>(entry.Result, entry.AuxResult);
+            return RawCalliHelper.Call<object>(entry.Result, entry.AuxResult);
         }
 
 #if PROJECTN
         [RuntimeExport("GenericLookupAndAllocArray")]
 #endif
-        public static Object GenericLookupAndAllocArray(IntPtr context, IntPtr arg, IntPtr signature)
+        public static object GenericLookupAndAllocArray(IntPtr context, IntPtr arg, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
             if (entry == null)
             {
                 entry = CacheMiss(context, signature);
             }
-            return RawCalliHelper.Call<Object>(entry.Result, entry.AuxResult, arg);
+            return RawCalliHelper.Call<object>(entry.Result, entry.AuxResult, arg);
         }
 
 #if PROJECTN
@@ -161,14 +161,14 @@ namespace System.Runtime
 #if PROJECTN
         [RuntimeExport("GenericLookupAndCast")]
 #endif
-        public static Object GenericLookupAndCast(Object arg, IntPtr context, IntPtr signature)
+        public static object GenericLookupAndCast(object arg, IntPtr context, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
             if (entry == null)
             {
                 entry = CacheMiss(context, signature);
             }
-            return RawCalliHelper.Call<Object>(entry.Result, arg, entry.AuxResult);
+            return RawCalliHelper.Call<object>(entry.Result, arg, entry.AuxResult);
         }
 
 #if PROJECTN
@@ -433,7 +433,7 @@ namespace System.Runtime
         }
 
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static void Call(System.IntPtr pfn, Object arg)
+        public static void Call(System.IntPtr pfn, object arg)
         {
         }
 
@@ -451,12 +451,12 @@ namespace System.Runtime
         }
 
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static void Call(System.IntPtr pfn, IntPtr arg1, Object arg2)
+        public static void Call(System.IntPtr pfn, IntPtr arg1, object arg2)
         {
         }
 
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static T Call<T>(System.IntPtr pfn, Object arg1, IntPtr arg2)
+        public static T Call<T>(System.IntPtr pfn, object arg1, IntPtr arg2)
         {
             return default(T);
         }

@@ -46,7 +46,7 @@ POINTER_SIZE                        equ 0x08
         ldr     xip0, [xip0, #POINTER_SIZE] ; get pointer to CallingConventionConverter_CommonCallingStub_PointerData into xip0
         ldr     x12, [xip0, #POINTER_SIZE]  ; get address of UniversalTransitionThunk (which we'll tailcall to later)
         ldr     xip0, [xip0]                ; get address of ManagedCallConverterThunk (target for universal thunk to call)
-        ret     x12
+        br      x12
     LEAF_END __jmpstub__CallingConventionConverter_CommonCallingStub
 
     ;;

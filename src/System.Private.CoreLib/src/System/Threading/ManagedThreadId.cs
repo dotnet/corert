@@ -103,7 +103,7 @@ namespace System.Threading
                 var right = _right;
 
                 // Any free bits in current node?
-                if (bitmap != UInt32.MaxValue)
+                if (bitmap != uint.MaxValue)
                 {
                     int bit = 0;
                     while ((bitmap & (uint)(1 << bit)) != 0)
@@ -218,7 +218,7 @@ namespace System.Threading
             {
                 var updatedIdDispenser = priorIdDispenser.AllocateId(out id);
                 var interlockedResult = Interlocked.CompareExchange(ref s_idDispenser, updatedIdDispenser, priorIdDispenser);
-                if (Object.ReferenceEquals(priorIdDispenser, interlockedResult))
+                if (object.ReferenceEquals(priorIdDispenser, interlockedResult))
                     break;
                 priorIdDispenser = interlockedResult; // we already have a volatile read that we can reuse for the next loop
             }
@@ -240,7 +240,7 @@ namespace System.Threading
             {
                 var updatedIdDispenser = s_idDispenser.RecycleId(id);
                 var interlockedResult = Interlocked.CompareExchange(ref s_idDispenser, updatedIdDispenser, priorIdDispenser);
-                if (Object.ReferenceEquals(priorIdDispenser, interlockedResult))
+                if (object.ReferenceEquals(priorIdDispenser, interlockedResult))
                     break;
                 priorIdDispenser = interlockedResult; // we already have a volatile read that we can reuse for the next loop
             }

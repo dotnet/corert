@@ -50,7 +50,7 @@ namespace System.Runtime.CompilerServices
             return nonGcStaticBase;
         }
 
-        private unsafe static object CheckStaticClassConstructionReturnThreadStaticBase(TypeManagerSlot* pModuleData, Int32 typeTlsIndex, StaticClassConstructionContext* context)
+        private unsafe static object CheckStaticClassConstructionReturnThreadStaticBase(TypeManagerSlot* pModuleData, int typeTlsIndex, StaticClassConstructionContext* context)
         {
             object threadStaticBase = ThreadStatics.GetThreadStaticBaseForType(pModuleData, typeTlsIndex);
             EnsureClassConstructorRun(context);
@@ -555,7 +555,7 @@ namespace System.Runtime.CompilerServices
             string str;
             fixed (char* p = &chars[i])
             {
-                str = new String(p, 0, numChars - i);
+                str = new string(p, 0, numChars - i);
             }
             return str;
         }

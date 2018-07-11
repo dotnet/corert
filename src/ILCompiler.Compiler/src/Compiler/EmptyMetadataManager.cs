@@ -17,7 +17,7 @@ namespace ILCompiler
         public override bool SupportsReflection => false;
 
         public EmptyMetadataManager(CompilerTypeSystemContext typeSystemContext)
-            : base(typeSystemContext, new FullyBlockedMetadataPolicy())
+            : base(typeSystemContext, new FullyBlockedMetadataPolicy(), new FullyBlockedManifestResourcePolicy())
         {
         }
 
@@ -105,6 +105,14 @@ namespace ILCompiler
             public override bool IsBlocked(FieldDesc field)
             {
                 Debug.Assert(field.IsTypicalFieldDefinition);
+                return true;
+            }
+        }
+
+        private sealed class FullyBlockedManifestResourcePolicy : ManifestResourceBlockingPolicy
+        {
+            public override bool IsManifestResourceBlocked(ModuleDesc module, string resourceName)
+            {
                 return true;
             }
         }
