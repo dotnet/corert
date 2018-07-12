@@ -164,8 +164,9 @@ namespace Internal.TypeSystem
 
         public GCPointerMapBuilder(int numBytes, int pointerSize)
         {
-            // Don't care about the remainder - the remainder is not big enough to hold a GC pointer.
-            int numPointerSizedCells = numBytes / pointerSize;
+            // Align the size up. The size of the pointer map is used to infer the statics storage size that has
+            // to include space for non-GC statics smaller than pointer size.
+            int numPointerSizedCells = (numBytes + pointerSize - 1) / pointerSize;
 
             if (numPointerSizedCells > 0)
             {
@@ -219,7 +220,7 @@ namespace Internal.TypeSystem
         public GCPointerMap ToGCMap()
         {
             Debug.Assert(_delta == 0);
-            return new GCPointerMap(_gcFlags, _limit / _pointerSize);
+            return new GCPointerMap(_gcFlags, (_limit + _pointerSize - 1) / _pointerSize);
         }
 
         public BitEnumerator GetEnumerator()
