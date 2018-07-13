@@ -133,19 +133,16 @@ namespace System
         //
         public Decimal(int value)
         {
-            //  JIT today can't inline methods that contains "starg" opcode.
-            //  For more details, see DevDiv Bugs 81184: x86 JIT CQ: Removing the inline striction of "starg".
-            int value_copy = value;
-            if (value_copy >= 0)
+            if (value >= 0)
             {
                 uflags = 0;
             }
             else
             {
                 uflags = SignMask;
-                value_copy = -value_copy;
+                value = -value;
             }
-            lo = value_copy;
+            lo = value;
             mid = 0;
             hi = 0;
         }
@@ -165,19 +162,16 @@ namespace System
         //
         public Decimal(long value)
         {
-            //  JIT today can't inline methods that contains "starg" opcode.
-            //  For more details, see DevDiv Bugs 81184: x86 JIT CQ: Removing the inline striction of "starg".
-            long value_copy = value;
-            if (value_copy >= 0)
+            if (value >= 0)
             {
                 uflags = 0;
             }
             else
             {
                 uflags = SignMask;
-                value_copy = -value_copy;
+                value = -value;
             }
-            Low64 = (ulong)value_copy;
+            Low64 = (ulong)value;
             uhi = 0;
         }
 
@@ -335,7 +329,7 @@ namespace System
         //
         public static decimal Add(decimal d1, decimal d2)
         {
-            DecCalc.VarDecAdd(ref d1, ref d2);
+            DecCalc.DecAddSub(ref d1, ref d2, false);
             return d1;
         }
 
@@ -591,6 +585,23 @@ namespace System
             buffer[15] = (byte)(d.flags >> 24);
         }
 
+        internal static decimal ToDecimal(byte[] buffer)
+        {
+            Debug.Assert((buffer != null && buffer.Length >= 16), "[ToDecimal]buffer != null && buffer.Length >= 16");
+
+            Decimal d = default;
+
+            d.lo = ((int)buffer[0]) | ((int)buffer[1] << 8) | ((int)buffer[2] << 16) | ((int)buffer[3] << 24);
+            d.mid = ((int)buffer[4]) | ((int)buffer[5] << 8) | ((int)buffer[6] << 16) | ((int)buffer[7] << 24);
+            d.hi = ((int)buffer[8]) | ((int)buffer[9] << 8) | ((int)buffer[10] << 16) | ((int)buffer[11] << 24);
+            d.flags = ((int)buffer[12]) | ((int)buffer[13] << 8) | ((int)buffer[14] << 16) | ((int)buffer[15] << 24);
+
+            if (!IsValid(d.uflags))
+                throw new ArgumentException(SR.Arg_DecBitCtor);
+
+            return d;
+        }
+
         // Returns the larger of two Decimal values.
         //
         internal static ref decimal Max(ref decimal d1, ref decimal d2)
@@ -659,7 +670,7 @@ namespace System
         //
         public static decimal Subtract(decimal d1, decimal d2)
         {
-            DecCalc.VarDecSub(ref d1, ref d2);
+            DecCalc.DecAddSub(ref d1, ref d2, true);
             return d1;
         }
 
@@ -1075,7 +1086,7 @@ namespace System
 
         char IConvertible.ToChar(IFormatProvider provider)
         {
-            throw new InvalidCastException(string.Format(SR.InvalidCast_FromTo, "Decimal", "Char"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Decimal", "Char"));
         }
 
         sbyte IConvertible.ToSByte(IFormatProvider provider)
@@ -1135,7 +1146,7 @@ namespace System
 
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
-            throw new InvalidCastException(string.Format(SR.InvalidCast_FromTo, "Decimal", "DateTime"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Decimal", "DateTime"));
         }
 
         object IConvertible.ToType(Type type, IFormatProvider provider)

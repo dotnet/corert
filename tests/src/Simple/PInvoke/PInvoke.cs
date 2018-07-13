@@ -3,8 +3,16 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+
+// Make sure the interop data are present even without reflection
+namespace System.Runtime.CompilerServices
+{
+    [AttributeUsage(AttributeTargets.All)]
+    internal class __BlockAllReflectionAttribute : Attribute { }
+}
 
 // Name of namespace matches the name of the assembly on purpose to
 // ensure that we can handle this (mostly an issue for C++ code generation).
@@ -97,12 +105,20 @@ namespace PInvokeTests
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         public static extern int SafeHandleOutTest(out SafeMemoryHandle sh1);
 
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        public static extern int SafeHandleRefTest(ref SafeMemoryHandle sh1, bool change);
+
         [DllImport("*", CallingConvention = CallingConvention.StdCall, SetLastError = true)]
         public static extern bool LastErrorTest();
 
         delegate int Delegate_Int(int a, int b, int c, int d, int e, int f, int g, int h, int i, int j);
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern bool ReversePInvoke_Int(Delegate_Int del);
+
+        delegate int Delegate_Int_AggressiveInlining(int a, int b, int c, int d, int e, int f, int g, int h, int i, int j);
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, EntryPoint = "ReversePInvoke_Int")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static extern bool ReversePInvoke_Int_AggressiveInlining(Delegate_Int_AggressiveInlining del);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet=CharSet.Ansi)]
         delegate bool Delegate_String(string s);
@@ -436,6 +452,18 @@ namespace PInvokeTests
             int actual = SafeHandleOutTest(out hnd2);
             int expected = unchecked((int)hnd2.DangerousGetHandle().ToInt64());
             ThrowIfNotEquals(actual, expected, "SafeHandle out marshalling failed");
+
+            Console.WriteLine("Testing marshalling ref SafeHandle");
+            SafeMemoryHandle hndOriginal = hnd2;
+            SafeHandleRefTest(ref hnd2, false);
+            ThrowIfNotEquals(hndOriginal, hnd2, "SafeHandle no-op ref marshalling failed");
+
+            int actual3 = SafeHandleRefTest(ref hnd2, true);
+            int expected3 = unchecked((int)hnd2.DangerousGetHandle().ToInt64());
+            ThrowIfNotEquals(actual3, expected3, "SafeHandle ref marshalling failed");
+
+            hndOriginal.Dispose();
+            hnd2.Dispose();
         }
 
         private static void TestSizeParamIndex()
@@ -474,8 +502,13 @@ namespace PInvokeTests
         private static void TestDelegate()
         {
             Console.WriteLine("Testing Delegate");
+
             Delegate_Int del = new Delegate_Int(Sum);
             ThrowIfNotEquals(true, ReversePInvoke_Int(del), "Delegate marshalling failed.");
+
+            Delegate_Int_AggressiveInlining del_aggressive = new Delegate_Int_AggressiveInlining(Sum);
+            ThrowIfNotEquals(true, ReversePInvoke_Int_AggressiveInlining(del_aggressive), "Delegate marshalling with aggressive inlining failed.");
+
             unsafe
             {
                 //

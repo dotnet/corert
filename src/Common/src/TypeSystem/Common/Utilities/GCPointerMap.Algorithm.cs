@@ -52,6 +52,7 @@ namespace Internal.TypeSystem
                 }
             }
 
+            Debug.Assert(builder.ToGCMap().Size * type.Context.Target.PointerSize >= type.GCStaticFieldSize.AsInt);
             return builder.ToGCMap();
         }
 
@@ -84,6 +85,7 @@ namespace Internal.TypeSystem
                 }
             }
 
+            Debug.Assert(builder.ToGCMap().Size * type.Context.Target.PointerSize >= type.ThreadStaticFieldSize.AsInt);
             return builder.ToGCMap();
         }
 

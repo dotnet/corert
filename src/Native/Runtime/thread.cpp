@@ -31,7 +31,8 @@
 #ifndef DACCESS_COMPILE
 
 EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpHandleAlloc(void* pObject, int type);
-EXTERN_C REDHAWK_API void REDHAWK_CALLCONV RhHandleFree(void*);
+EXTERN_C REDHAWK_API void REDHAWK_CALLCONV RhHandleSet(void* handle, void* pObject);
+EXTERN_C REDHAWK_API void REDHAWK_CALLCONV RhHandleFree(void* handle);
 
 static int (*g_RuntimeInitializationCallback)();
 static Thread* g_RuntimeInitializingThread;
@@ -1318,19 +1319,20 @@ Boolean Thread::SetThreadStaticStorageForModule(Object * pStorage, UInt32 module
         m_numThreadLocalModuleStatics = newSize;
     }
 
-    void* threadStaticsStorageHandle = RhpHandleAlloc(pStorage, 2 /* Normal */);
-    if (threadStaticsStorageHandle == NULL)
-    {
-        return FALSE;
-    }
-
-    // Free the existing storage before assigning a new one
     if (m_pThreadLocalModuleStatics[moduleIndex] != NULL)
     {
-        RhHandleFree(m_pThreadLocalModuleStatics[moduleIndex]);
+        RhHandleSet(m_pThreadLocalModuleStatics[moduleIndex], pStorage);
+    }
+    else
+    {
+        void* threadStaticsStorageHandle = RhpHandleAlloc(pStorage, 2 /* Normal */);
+        if (threadStaticsStorageHandle == NULL)
+        {
+            return FALSE;
+        }
+        m_pThreadLocalModuleStatics[moduleIndex] = threadStaticsStorageHandle;
     }
 
-    m_pThreadLocalModuleStatics[moduleIndex] = threadStaticsStorageHandle;
     return TRUE;
 }
 

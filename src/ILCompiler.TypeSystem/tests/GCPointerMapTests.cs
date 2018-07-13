@@ -86,8 +86,6 @@ namespace TypeSystemTests
             Assert.Equal("010100101001", map.ToString());
         }
 
-#if false
-        // TODO: enable when IsThreadStatic stops lying
         [Fact]
         public void TestThreadStaticMap()
         {
@@ -96,6 +94,5 @@ namespace TypeSystemTests
             Assert.Equal(map.Size, 14);
             Assert.Equal("00010010100110", map.ToString());
         }
-#endif
     }
 }
