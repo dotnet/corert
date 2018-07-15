@@ -106,16 +106,18 @@ namespace Internal.JitInterface
 #endif
         private JitConfigProvider _jitConfig;
 
-        public CorInfoImpl(Compilation compilation, JitConfigProvider jitConfig)
+        public CorInfoImpl(
+#if READY_TO_RUN
+            ReadyToRunCodegenCompilation compilation,
+#else
+            Compilation compilation,
+#endif
+            JitConfigProvider jitConfig)
         {
             //
             // Global initialization
             //
-#if READY_TO_RUN
-            _compilation = (ReadyToRunCodegenCompilation)compilation;
-#else
             _compilation = compilation;
-#endif
             _jitConfig = jitConfig;
 
             jitStartup(GetJitHost(_jitConfig.UnmanagedInstance));
