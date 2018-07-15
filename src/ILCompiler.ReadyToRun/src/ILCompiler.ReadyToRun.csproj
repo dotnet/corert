@@ -6,6 +6,7 @@
     <AssemblyName>ILCompiler.ReadyToRun</AssemblyName>
     <TargetFramework>netstandard1.3</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>READY_TO_RUN</DefineConstants>
   </PropertyGroup>
   
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
@@ -14,6 +15,7 @@
     <ProjectReference Include="..\..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj" />
     <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj" />
     <ProjectReference Include="..\..\ILCompiler.Compiler\src\ILCompiler.Compiler.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.RyuJit\src\ILCompiler.RyuJit.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -48,8 +50,38 @@
     <Compile Include="ObjectWriter\SectionBuilder.cs" />
     <Compile Include="ObjectWriter\R2RPEBuilder.cs" />
     <Compile Include="ObjectWriter\RelocationHelper.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
       <Link>Common\ArrayBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\EEType.Constants.cs">
+      <Link>Common\EEType.Constants.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\EETypeBuilderHelpers.cs">
+      <Link>Common\EEType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ILCompiler.Compiler\src\Compiler\JitHelper.cs">
+      <Link>Compiler\JitHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ILCompiler.Compiler\src\Compiler\MemoryHelper.cs">
+      <Link>Compiler\MemoryHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\HelperExtensions.cs">
+      <Link>IL\HelperExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\TypeString.cs">
+      <Link>JitInterface\TypeString.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\CorInfoBase.cs">
+      <Link>JitInterface\CorInfoBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\CorInfoImpl.cs">
+      <Link>JitInterface\CorInfoImpl.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\CorInfoImpl.Intrinsics.cs">
+      <Link>JitInterface\CorInfoImpl.Intrinsics.cs</Link>
     </Compile>
   </ItemGroup>
 

@@ -12,11 +12,6 @@ namespace ILCompiler.DependencyAnalysis
 {
     public class MethodCodeNode : ObjectNode, IMethodBodyNode, INodeWithCodeInfo, INodeWithDebugInfo, IMethodCodeNode, ISpecialUnboxThunkNode
     {
-        public static readonly ObjectNodeSection StartSection = new ObjectNodeSection(".managedcode$A", SectionType.Executable);
-        public static readonly ObjectNodeSection WindowsContentSection = new ObjectNodeSection(".managedcode$I", SectionType.Executable);
-        public static readonly ObjectNodeSection UnixContentSection = new ObjectNodeSection("__managedcode", SectionType.Executable);
-        public static readonly ObjectNodeSection EndSection = new ObjectNodeSection(".managedcode$Z", SectionType.Executable);
-
         private MethodDesc _method;
         private ObjectData _methodCode;
         private FrameInfo[] _frameInfos;
@@ -47,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return _method.Context.Target.IsWindows ? WindowsContentSection : UnixContentSection;
+                return _method.Context.Target.IsWindows ? ObjectNodeSection.ManagedCodeWindowsContentSection : ObjectNodeSection.ManagedCodeUnixContentSection;
             }
         }
         
@@ -161,9 +156,9 @@ namespace ILCompiler.DependencyAnalysis
             _debugEHClauseInfos = debugEHClauseInfos;
         }
 
-        protected internal override int ClassCode => 788492407;
+        protected override int ClassCode => 788492407;
 
-        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        protected override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
         {
             return comparer.Compare(_method, ((MethodCodeNode)other)._method);
         }

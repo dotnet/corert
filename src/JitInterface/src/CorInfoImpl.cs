@@ -29,7 +29,7 @@ using ILCompiler.DependencyAnalysis;
 
 namespace Internal.JitInterface
 {
-    public unsafe sealed partial class CorInfoImpl
+    internal unsafe sealed partial class CorInfoImpl
     {
         //
         // Global initialization and state
@@ -99,7 +99,11 @@ namespace Internal.JitInterface
         [DllImport("jitinterface")]
         private extern static char* GetExceptionMessage(IntPtr obj);
 
+#if READY_TO_RUN
+        private ReadyToRunCodegenCompilation _compilation;
+#else
         private Compilation _compilation;
+#endif
         private JitConfigProvider _jitConfig;
 
         public CorInfoImpl(Compilation compilation, JitConfigProvider jitConfig)
@@ -107,7 +111,11 @@ namespace Internal.JitInterface
             //
             // Global initialization
             //
+#if READY_TO_RUN
+            _compilation = (ReadyToRunCodegenCompilation)compilation;
+#else
             _compilation = compilation;
+#endif
             _jitConfig = jitConfig;
 
             jitStartup(GetJitHost(_jitConfig.UnmanagedInstance));
