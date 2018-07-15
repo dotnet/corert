@@ -102,6 +102,9 @@ namespace Internal.JitInterface
         public CORINFO_CLASS_STRUCT_** methInst; // (representative, not exact) instantiation for method type variables in signature
     }
 
+    public enum mdToken : uint
+    { }
+
     public enum CorTokenType
     {
         mdtModule = 0x00000000,
