@@ -1022,7 +1022,26 @@ namespace Internal.IL
             if (opcode == ILOpcode.newobj)
             {
                 TypeDesc newType = callee.OwningType;
-                if (newType.IsString)
+                if (newType.IsArray)
+                {
+                    var paramCnt = callee.Signature.Length;
+                    var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("Internal.Runtime", "EEType").MakePointerType();
+                    LLVMValueRef dimensions = LLVM.BuildArrayAlloca(_builder, LLVMTypeRef.Int32Type(), BuildConstInt32(paramCnt), "newobj_array_pdims_" + _currentOffset);
+                    for (int i = paramCnt - 1; i >= 0; --i)
+                        LLVM.BuildStore(_builder, _stack.Pop().ValueAsInt32(_builder, true),
+                            LLVM.BuildGEP(_builder, dimensions, new LLVMValueRef[] { BuildConstInt32(i) }, "__pdims_ptr__"));
+                    var arguments = new StackEntry[]
+                    {
+                        new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(newType, true), eeTypeDesc),
+                        new Int32ConstantEntry(paramCnt),
+                        new AddressExpressionEntry(StackValueKind.ValueType, "newobj_array_pdims", dimensions)
+                    };
+                    MetadataType helperType = _compilation.TypeSystemContext.SystemModule.GetKnownType("Internal.Runtime.CompilerHelpers", "ArrayHelpers");
+                    MethodDesc helperMethod = helperType.GetKnownMethod("NewObjArray", null);
+                    PushNonNull(HandleCall(helperMethod, helperMethod.Signature, arguments, forcedReturnType: newType));
+                    return;
+                }
+                else if (newType.IsString)
                 {
                     // String constructors actually look like regular method calls
                     IMethodNode node = _compilation.NodeFactory.StringAllocator(callee);
