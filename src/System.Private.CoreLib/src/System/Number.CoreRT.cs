@@ -369,7 +369,7 @@ namespace System
             {
                 // Parsing a large scale zero can give you more precision than fits in the decimal.
                 // This should only happen for actual zeros or very small numbers that round to zero.
-                value = new decimal(0, 0, 0, false, DecimalPrecision - 1);
+                value = new decimal(0, 0, 0, number.sign, DecimalPrecision - 1);
             }
             else
             {
