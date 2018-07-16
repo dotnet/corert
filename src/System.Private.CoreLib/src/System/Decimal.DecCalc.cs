@@ -2473,19 +2473,17 @@ done:
 
 #region Number Formatting helpers
 
-            private static uint D32DivMod1E9(uint hi32, ref uint lo32)
-            {
-                ulong n = (ulong)hi32 << 32 | lo32;
-                lo32 = (uint)(n / 1000000000);
-                return (uint)(n % 1000000000);
-            }
-
             internal static uint DecDivMod1E9(ref DecCalc value)
             {
-                return D32DivMod1E9(D32DivMod1E9(D32DivMod1E9(0,
-                                                              ref value.uhi),
-                                                 ref value.umid),
-                                    ref value.ulo);
+                ulong high64 = ((ulong)value.uhi << 32) + value.umid;
+                ulong div64 = high64 / TenToPowerNine;
+                value.uhi = (uint)(div64 >> 32);
+                value.umid = (uint)div64;
+
+                ulong num = ((high64 - (uint)div64 * TenToPowerNine) << 32) + value.ulo;
+                uint div = (uint)(num / TenToPowerNine);
+                value.ulo = div;
+                return (uint)num - div * TenToPowerNine;
             }
 
             internal static void DecAddInt32(ref DecCalc value, uint i)
