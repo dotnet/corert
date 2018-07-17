@@ -34,19 +34,19 @@ UInt32 RhConfig::ReadConfigValue(_In_z_ const TCHAR *wszName, UInt32 uiDefaultVa
 
     UInt32 cchResult = 0;
 
-#ifdef RH_ENVIRONMENT_VARIABLE_CONFIG_ENABLED
+#ifdef FEATURE_ENVIRONMENT_VARIABLE_CONFIG
     cchResult = PalGetEnvironmentVariable(wszName, wszBuffer, cchBuffer);
-#endif // RH_ENVIRONMENT_VARIABLE_CONFIG_ENABLED
+#endif // FEATURE_ENVIRONMENT_VARIABLE_CONFIG
 
     //if the config key wasn't found in the environment 
     if ((cchResult == 0) || (cchResult >= cchBuffer))
         cchResult = GetIniVariable(wszName, wszBuffer, cchBuffer);
 
-#ifdef RH_EMBEDDED_CONFIG_ENABLED
+#ifdef FEATURE_EMBEDDED_CONFIG
     // if the config key wasn't found in the ini file
     if ((cchResult == 0) || (cchResult >= cchBuffer))
         cchResult = GetEmbeddedVariable(wszName, wszBuffer, cchBuffer);
-#endif // RH_EMBEDDED_CONFIG_ENABLED
+#endif // FEATURE_EMBEDDED_CONFIG
 
     if ((cchResult == 0) || (cchResult >= cchBuffer))
         return uiDefaultValue; // not found, return default
@@ -99,7 +99,7 @@ UInt32 RhConfig::GetIniVariable(_In_z_ const TCHAR* configName, _Out_writes_all_
     return GetConfigVariable(configName, (ConfigPair*)g_iniSettings, outputBuffer, cchOutputBuffer);
 }
 
-#ifdef RH_EMBEDDED_CONFIG_ENABLED
+#ifdef FEATURE_EMBEDDED_CONFIG
 UInt32 RhConfig::GetEmbeddedVariable(_In_z_ const TCHAR* configName, _Out_writes_all_(cchOutputBuffer) TCHAR* outputBuffer, _In_ UInt32 cchOutputBuffer)
 {
     //the buffer needs to be big enough to read the value buffer + null terminator
@@ -122,7 +122,7 @@ UInt32 RhConfig::GetEmbeddedVariable(_In_z_ const TCHAR* configName, _Out_writes
 
     return GetConfigVariable(configName, (ConfigPair*)g_embeddedSettings, outputBuffer, cchOutputBuffer);
 }
-#endif // RH_EMBEDDED_CONFIG_ENABLED
+#endif // FEATURE_EMBEDDED_CONFIG
 
 UInt32 RhConfig::GetConfigVariable(_In_z_ const TCHAR* configName, const ConfigPair* configPairs, _Out_writes_all_(cchOutputBuffer) TCHAR* outputBuffer, _In_ UInt32 cchOutputBuffer)
 {
@@ -254,7 +254,7 @@ void RhConfig::ReadConfigIni()
     return;
 }
 
-#ifdef RH_EMBEDDED_CONFIG_ENABLED
+#ifdef FEATURE_EMBEDDED_CONFIG
 struct CompilerEmbeddedSettingsBlob
 {
     UInt32 Size;
@@ -327,7 +327,7 @@ void RhConfig::ReadEmbeddedSettings()
 
     return;
 }
-#endif // RH_EMBEDDED_CONFIG_ENABLED
+#endif // FEATURE_EMBEDDED_CONFIG
 
 //returns the path to the runtime configuration ini
 _Ret_maybenull_z_ TCHAR* RhConfig::GetConfigPath()
