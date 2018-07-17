@@ -36,10 +36,10 @@ namespace ILCompiler.DependencyAnalysis
         DefaultConstructor,
     }
 
-    public partial class ReadyToRunHelperNode : AssemblyStubNode, INodeWithDebugInfo
+    public partial class ReadyToRunHelperNode : AssemblyStubNode
     {
-        private ReadyToRunHelperId _id;
-        private Object _target;
+        protected ReadyToRunHelperId _id;
+        protected Object _target;
 
         public ReadyToRunHelperNode(NodeFactory factory, ReadyToRunHelperId id, Object target)
         {
@@ -187,45 +187,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return null;
-        }
-
-        DebugLocInfo[] INodeWithDebugInfo.DebugLocInfos
-        {
-            get
-            {
-                if (_id == ReadyToRunHelperId.VirtualCall)
-                {
-                    // Generate debug information that lets debuggers step into the virtual calls.
-                    // We generate a step into sequence point at the point where the helper jumps to
-                    // the target of the virtual call.
-                    TargetDetails target = ((MethodDesc)_target).Context.Target;
-                    int debuggerStepInOffset = -1;
-                    switch (target.Architecture)
-                    {
-                        case TargetArchitecture.X64:
-                            debuggerStepInOffset = 3;
-                            break;
-                    }
-                    if (debuggerStepInOffset != -1)
-                    {
-                        return new DebugLocInfo[]
-                        {
-                            new DebugLocInfo(0, String.Empty, WellKnownLineNumber.DebuggerStepThrough),
-                            new DebugLocInfo(debuggerStepInOffset, String.Empty, WellKnownLineNumber.DebuggerStepIn)
-                        };
-                    }
-                }
-
-                return Array.Empty<DebugLocInfo>();
-            }
-        }
-
-        DebugVarInfo[] INodeWithDebugInfo.DebugVarInfos
-        {
-            get
-            {
-                return Array.Empty<DebugVarInfo>();
-            }
         }
 
 #if !SUPPORT_JIT

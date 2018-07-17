@@ -9,11 +9,11 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 using ILCompiler.DependencyAnalysisFramework;
-
+using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.TypesDebugInfo;
-using Internal.JitInterface;
+
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
 namespace ILCompiler.DependencyAnalysis
@@ -21,7 +21,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Object writer using src/Native/ObjWriter
     /// </summary>
-    internal class ObjectWriter : IDisposable, ITypesDebugInfoWriter
+    internal class RyuJitObjectWriter : IDisposable, ITypesDebugInfoWriter
     {
         // This is used to build mangled names
         private Utf8StringBuilder _sb = new Utf8StringBuilder();
@@ -62,10 +62,10 @@ namespace ILCompiler.DependencyAnalysis
 
         private const string NativeObjectWriterFileName = "objwriter";
 
-        // Target platform ObjectWriter is instantiated for.
+        // Target platform RyuJitObjectWriter is instantiated for.
         private TargetDetails _targetPlatform;
 
-        // Nodefactory for which ObjectWriter is instantiated for.
+        // Nodefactory for which RyuJitObjectWriter is instantiated for.
         private NodeFactory _nodeFactory;
 
         // Unix section containing LSDA data, like EH Info and GC Info
@@ -874,7 +874,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private IntPtr _nativeObjectWriter = IntPtr.Zero;
 
-        public ObjectWriter(string objectFilePath, NodeFactory factory)
+        public RyuJitObjectWriter(string objectFilePath, NodeFactory factory)
         {
             _nativeObjectWriter = InitObjWriter(objectFilePath);
             if (_nativeObjectWriter == IntPtr.Zero)
@@ -908,7 +908,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        ~ObjectWriter()
+        ~RyuJitObjectWriter()
         {
             Dispose(false);
         }
@@ -952,7 +952,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public static void EmitObject(string objectFilePath, IEnumerable<DependencyNode> nodes, NodeFactory factory, IObjectDumper dumper)
         {
-            ObjectWriter objectWriter = new ObjectWriter(objectFilePath, factory);
+            RyuJitObjectWriter objectWriter = new RyuJitObjectWriter(objectFilePath, factory);
             bool succeeded = false;
 
             try

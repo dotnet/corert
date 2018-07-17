@@ -40,7 +40,7 @@ namespace ILCompiler
             var nodes = _dependencyGraph.MarkedNodeList;
 
             NodeFactory.SetMarkingComplete();
-            ObjectWriter.EmitObject(outputFile, nodes, NodeFactory, dumper);
+            RyuJitObjectWriter.EmitObject(outputFile, nodes, NodeFactory, dumper);
         }
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
