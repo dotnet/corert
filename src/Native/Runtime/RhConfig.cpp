@@ -46,7 +46,7 @@ UInt32 RhConfig::ReadConfigValue(_In_z_ const TCHAR *wszName, UInt32 uiDefaultVa
     // if the config key wasn't found in the ini file
     if ((cchResult == 0) || (cchResult >= cchBuffer))
         cchResult = GetEmbeddedVariable(wszName, wszBuffer, cchBuffer);
-#endif RH_EMBEDDED_CONFIG_ENABLED
+#endif // RH_EMBEDDED_CONFIG_ENABLED
 
     if ((cchResult == 0) || (cchResult >= cchBuffer))
         return uiDefaultValue; // not found, return default
@@ -122,7 +122,7 @@ UInt32 RhConfig::GetEmbeddedVariable(_In_z_ const TCHAR* configName, _Out_writes
 
     return GetConfigVariable(configName, (ConfigPair*)g_embeddedSettings, outputBuffer, cchOutputBuffer);
 }
-#endif RH_EMBEDDED_CONFIG_ENABLED
+#endif // RH_EMBEDDED_CONFIG_ENABLED
 
 UInt32 RhConfig::GetConfigVariable(_In_z_ const TCHAR* configName, const ConfigPair* configPairs, _Out_writes_all_(cchOutputBuffer) TCHAR* outputBuffer, _In_ UInt32 cchOutputBuffer)
 {
@@ -327,7 +327,7 @@ void RhConfig::ReadEmbeddedSettings()
 
     return;
 }
-#endif RH_EMBEDDED_CONFIG_ENABLED
+#endif // RH_EMBEDDED_CONFIG_ENABLED
 
 //returns the path to the runtime configuration ini
 _Ret_maybenull_z_ TCHAR* RhConfig::GetConfigPath()
