@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
         public int Offset => 0;
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
-        protected internal override int ClassCode => (int)ObjectNodeOrder.WindowsDebugNeedTypeIndicesStoreNode;
+        public override int ClassCode => (int)ObjectNodeOrder.WindowsDebugNeedTypeIndicesStoreNode;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {

@@ -63,9 +63,9 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => false;
 
-        int ISortableSymbolNode.ClassCode => -1381809560;
+        int ISortableNode.ClassCode => -1381809560;
 
-        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
+        int ISortableNode.CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return comparer.Compare(Method, ((ScannedMethodNode)other).Method);
         }

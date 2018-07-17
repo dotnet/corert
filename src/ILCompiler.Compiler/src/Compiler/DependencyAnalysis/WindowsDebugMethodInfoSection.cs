@@ -150,6 +150,6 @@ namespace ILCompiler.DependencyAnalysis
             return "___DebugMethodInfoSection";
         }
 
-        protected internal override int ClassCode => 513099721;
+        public override int ClassCode => 513099721;
     }
 }

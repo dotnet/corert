@@ -220,6 +220,6 @@ namespace ILCompiler.DependencyAnalysis
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
         }
 
-        protected internal override int ClassCode => 590142654;
+        public override int ClassCode => 590142654;
     }
 }

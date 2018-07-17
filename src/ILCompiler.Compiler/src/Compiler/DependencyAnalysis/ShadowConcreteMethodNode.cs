@@ -99,9 +99,9 @@ namespace ILCompiler.DependencyAnalysis
         public sealed override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
         public sealed override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
 
-        int ISortableSymbolNode.ClassCode => -1440570971;
+        int ISortableNode.ClassCode => -1440570971;
 
-        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
+        int ISortableNode.CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             var compare = comparer.Compare(Method, ((ShadowConcreteMethodNode)other).Method);
             if (compare != 0)

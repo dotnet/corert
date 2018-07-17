@@ -27,6 +27,6 @@ namespace ILCompiler.DependencyAnalysis
             return _type.BaseType != null ? factory.NecessaryTypeSymbol(GetFullCanonicalTypeForCanonicalType(_type.BaseType)) : null;
         }
 
-        protected internal override int ClassCode => 1505000724;
+        public override int ClassCode => 1505000724;
     }
 }
