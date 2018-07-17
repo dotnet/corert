@@ -19,9 +19,44 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
     public enum CorCompileImportFlags : ushort
     {
+        CORCOMPILE_IMPORT_FLAGS_UNKNOWN = 0x0000, // Apparently used for string fixups by CoreCLR R2R
         CORCOMPILE_IMPORT_FLAGS_EAGER = 0x0001,   // Section at module load time.
         CORCOMPILE_IMPORT_FLAGS_CODE = 0x0002,   // Section contains code.
         CORCOMPILE_IMPORT_FLAGS_PCODE = 0x0004,   // Section contains pointers to code.
+    };
+
+    /// <summary>
+    /// Constants for method and field encoding
+    /// </summary>
+    [Flags]
+    public enum ReadyToRunMethodSigFlags : byte
+    {
+        READYTORUN_METHOD_SIG_None = 0x00,
+        READYTORUN_METHOD_SIG_UnboxingStub = 0x01,
+        READYTORUN_METHOD_SIG_InstantiatingStub = 0x02,
+        READYTORUN_METHOD_SIG_MethodInstantiation = 0x04,
+        READYTORUN_METHOD_SIG_SlotInsteadOfToken = 0x08,
+        READYTORUN_METHOD_SIG_MemberRefToken = 0x10,
+        READYTORUN_METHOD_SIG_Constrained = 0x20,
+        READYTORUN_METHOD_SIG_OwnerType = 0x40,
+    };
+
+    [Flags]
+    public enum ReadyToRunFieldSigFlags : byte
+    {
+        READYTORUN_FIELD_SIG_IndexInsteadOfToken = 0x08,
+        READYTORUN_FIELD_SIG_MemberRefToken = 0x10,
+        READYTORUN_FIELD_SIG_OwnerType = 0x40,
+    };
+
+    [Flags]
+    public enum ReadyToRunTypeLayoutFlags : byte
+    {
+        READYTORUN_LAYOUT_HFA = 0x01,
+        READYTORUN_LAYOUT_Alignment = 0x02,
+        READYTORUN_LAYOUT_Alignment_Native = 0x04,
+        READYTORUN_LAYOUT_GCLayout = 0x08,
+        READYTORUN_LAYOUT_GCLayout_Empty = 0x10,
     };
 
     public enum ReadyToRunFixupKind

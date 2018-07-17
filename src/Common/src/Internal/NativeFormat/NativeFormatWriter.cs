@@ -1658,7 +1658,19 @@ namespace Internal.NativeFormat
             private Vertex _first;
             private Vertex _second;
 
+            public VertexTree()
+            {
+                _first = null;
+                _second = null;
+            }
+
             public VertexTree(Vertex first, Vertex second)
+            {
+                _first = first;
+                _second = second;
+            }
+
+            public void Update(Vertex first, Vertex second)
             {
                 _first = first;
                 _second = second;
@@ -1731,6 +1743,10 @@ namespace Internal.NativeFormat
             }
             else
             {
+                VertexTree tree = new VertexTree();
+                if (place)
+                    _section.Place(tree);
+
                 bool firstIsLeaf;
                 Vertex first = ExpandBlock(index, depth - 1, false, out firstIsLeaf);
 
@@ -1765,11 +1781,7 @@ namespace Internal.NativeFormat
                     return first;
                 }
     
-                Vertex tree = new VertexTree(first, second);
-                if (place)
-                {
-                    _section.Place(tree);
-                }
+                tree.Update(first, second);
                 isLeaf = false;
                 return tree;
             }
