@@ -127,7 +127,11 @@ namespace ILCompiler.DependencyAnalysis
                         else
                         {
                             encoder.EmitLEAQ(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target), - NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target));
-                            // TODO: performance optimization - inline the check verifying whether we need to trigger the cctor
+
+                            AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg2, null, factory.Target.PointerSize, 0, AddrModeSize.Int32);
+                            encoder.EmitCMP(ref initialized, 1);
+                            encoder.EmitJE(factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType));
+
                             encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
                         }
                     }

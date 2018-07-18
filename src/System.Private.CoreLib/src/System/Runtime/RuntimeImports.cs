@@ -561,11 +561,11 @@ namespace System.Runtime
 #if !PROJECTN
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetThreadStaticStorageForModule")]
-        internal static unsafe extern Array RhGetThreadStaticStorageForModule(int moduleIndex);
+        internal static unsafe extern object[] RhGetThreadStaticStorageForModule(int moduleIndex);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhSetThreadStaticStorageForModule")]
-        internal static unsafe extern bool RhSetThreadStaticStorageForModule(Array storage, int moduleIndex);
+        internal static unsafe extern bool RhSetThreadStaticStorageForModule(object[] storage, int moduleIndex);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCurrentNativeThreadId")]
