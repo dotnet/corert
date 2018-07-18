@@ -1243,18 +1243,11 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected internal override int ClassCode => 1521789141;
+        public override int ClassCode => 1521789141;
 
-        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return comparer.Compare(_type, ((EETypeNode)other)._type);
-        }
-
-        int ISortableSymbolNode.ClassCode => ClassCode;
-
-        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
-        {
-            return CompareToImpl((ObjectNode)other, comparer);
         }
 
         private struct SlotCounter

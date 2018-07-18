@@ -73,9 +73,9 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        int ISortableSymbolNode.ClassCode => 1991750873;
+        int ISortableNode.ClassCode => 1991750873;
 
-        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
+        int ISortableNode.CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return comparer.Compare(_allocationMethod, ((StringAllocatorMethodNode)other)._allocationMethod);
         }

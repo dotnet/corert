@@ -50,9 +50,9 @@ namespace ILCompiler.DependencyAnalysis
             return builder.ToObjectData();
         }
 
-        protected internal override int ClassCode => 159930099;
+        public override int ClassCode => 159930099;
 
-        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return string.Compare(_moduleName, ((PInvokeModuleFixupNode)other)._moduleName);
         }

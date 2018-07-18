@@ -149,20 +149,13 @@ namespace ILCompiler.DependencyAnalysis
             return dependencies;
         }
 
-        protected sealed internal override int ClassCode => -2124588118;
+        public override int ClassCode => -2124588118;
 
-        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             NonExternMethodSymbolNode otherMethod = (NonExternMethodSymbolNode)other;
             var result = _isUnboxing.CompareTo(otherMethod._isUnboxing);
             return result != 0 ? result : comparer.Compare(_method, otherMethod._method);
-        }
-
-        int ISortableSymbolNode.ClassCode => ClassCode;
-
-        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
-        {
-            return CompareToImpl((SortableDependencyNode)other, comparer);
         }
 
         private class FuncletSymbol : ISymbolNodeWithFuncletId

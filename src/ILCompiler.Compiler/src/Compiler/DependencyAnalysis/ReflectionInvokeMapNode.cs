@@ -189,6 +189,6 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
-        protected internal override int ClassCode => (int)ObjectNodeOrder.ReflectionInvokeMapNode;
+        public override int ClassCode => (int)ObjectNodeOrder.ReflectionInvokeMapNode;
     }
 }

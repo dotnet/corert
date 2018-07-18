@@ -42,6 +42,6 @@ namespace ILCompiler.DependencyAnalysis
             builder.EmitZeroPointer();
         }
 
-        protected internal override int ClassCode => -1771336339;
+        public override int ClassCode => -1771336339;
     }
 }
