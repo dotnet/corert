@@ -99,25 +99,13 @@ namespace Internal.JitInterface
         [DllImport("jitinterface")]
         private extern static char* GetExceptionMessage(IntPtr obj);
 
-#if READY_TO_RUN
-        private ReadyToRunCodegenCompilation _compilation;
-#else
-        private Compilation _compilation;
-#endif
         private JitConfigProvider _jitConfig;
 
-        public CorInfoImpl(
-#if READY_TO_RUN
-            ReadyToRunCodegenCompilation compilation,
-#else
-            Compilation compilation,
-#endif
-            JitConfigProvider jitConfig)
+        public CorInfoImpl(JitConfigProvider jitConfig)
         {
             //
             // Global initialization
             //
-            _compilation = compilation;
             _jitConfig = jitConfig;
 
             jitStartup(GetJitHost(_jitConfig.UnmanagedInstance));

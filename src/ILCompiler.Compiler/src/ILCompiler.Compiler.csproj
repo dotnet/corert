@@ -312,7 +312,6 @@
     <Compile Include="Compiler\LibraryRootProvider.cs" />
     <Compile Include="Compiler\MainMethodRootProvider.cs" />
     <Compile Include="Compiler\ManagedBinaryEmitter.cs" />
-    <Compile Include="Compiler\MemoryHelper.cs" />
     <Compile Include="Compiler\MergedAssemblyRecords.cs" />
     <Compile Include="Compiler\MetadataManager.cs" />
     <Compile Include="Compiler\InteropStubManager.cs" />
@@ -408,6 +407,9 @@
     </Compile>
     <Compile Include="..\..\JitInterface\src\CorInfoTypes.VarInfo.cs">
       <Link>JitInterface\CorInfoTypes.VarInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\MemoryHelper.cs">
+      <Link>JitInterface\MemoryHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\TypesDebugInfoWriter\PrimitiveTypeDescriptor.cs">
       <Link>TypeSystem\TypesDebugInfoWriter\PrimitiveTypeDescriptor.cs</Link>

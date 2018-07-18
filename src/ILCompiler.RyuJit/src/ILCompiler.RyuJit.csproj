@@ -25,6 +25,7 @@
     <Compile Include="Compiler\DependencyAnalysis\RyuJitNodeFactory.cs" />
     <Compile Include="Compiler\RyuJitCompilation.cs" />
     <Compile Include="Compiler\RyuJitCompilationBuilder.cs" />
+    <Compile Include="JitInterface\CorInfoImpl.RyuJit.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -34,17 +35,11 @@
     <Compile Include="..\..\Common\src\Internal\Runtime\EEType.Constants.cs">
       <Link>Common\EEType.Constants.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Internal\Runtime\EETypeBuilderHelpers.cs">
-      <Link>Common\EEType.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\System\FormattingHelpers.cs">
       <Link>Common\FormattingHelpers.cs</Link>
     </Compile>
     <Compile Include="..\..\ILCompiler.Compiler\src\Compiler\JitHelper.cs">
       <Link>Compiler\JitHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ILCompiler.Compiler\src\Compiler\MemoryHelper.cs">
-      <Link>Compiler\MemoryHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\HelperExtensions.cs">
       <Link>IL\HelperExtensions.cs</Link>
@@ -72,6 +67,9 @@
     </Compile>
     <Compile Include="..\..\JitInterface\src\CorInfoTypes.cs">
       <Link>JitInterface\CorInfoTypes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\MemoryHelper.cs">
+      <Link>JitInterface\MemoryHelper.cs</Link>
     </Compile>
   </ItemGroup>
 

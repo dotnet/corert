@@ -6,7 +6,7 @@
     <AssemblyName>ILCompiler.ReadyToRun</AssemblyName>
     <TargetFramework>netstandard1.3</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>READY_TO_RUN</DefineConstants>
+    <DefineConstants>READYTORUN</DefineConstants>
   </PropertyGroup>
   
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
@@ -47,6 +47,7 @@
     <Compile Include="Compiler\ReadyToRunCodegenCompilation.cs" />
     <Compile Include="Compiler\ReadyToRunCodegenCompilationBuilder.cs" />
     <Compile Include="Compiler\ReadyToRunNodeMangler.cs" />
+    <Compile Include="JitInterface\CorInfoImpl.ReadyToRun.cs" />
     <Compile Include="ObjectWriter\SectionBuilder.cs" />
     <Compile Include="ObjectWriter\R2RPEBuilder.cs" />
     <Compile Include="ObjectWriter\RelocationHelper.cs" />
@@ -56,18 +57,14 @@
     <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
       <Link>Common\ArrayBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Internal\Runtime\EEType.Constants.cs">
-      <Link>Common\EEType.Constants.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Internal\Runtime\EETypeBuilderHelpers.cs">
-      <Link>Common\EEType.cs</Link>
-    </Compile>
+    
+    <!--
+      JitHelper is CoreRT specific. Refactor so it's not needed in the ReadyToRun project
+    -->
     <Compile Include="..\..\ILCompiler.Compiler\src\Compiler\JitHelper.cs">
       <Link>Compiler\JitHelper.cs</Link>
     </Compile>
-    <Compile Include="..\..\ILCompiler.Compiler\src\Compiler\MemoryHelper.cs">
-      <Link>Compiler\MemoryHelper.cs</Link>
-    </Compile>
+
     <Compile Include="..\..\Common\src\TypeSystem\IL\HelperExtensions.cs">
       <Link>IL\HelperExtensions.cs</Link>
     </Compile>
@@ -82,6 +79,9 @@
     </Compile>
     <Compile Include="..\..\JitInterface\src\CorInfoImpl.Intrinsics.cs">
       <Link>JitInterface\CorInfoImpl.Intrinsics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\MemoryHelper.cs">
+      <Link>JitInterface\MemoryHelper.cs</Link>
     </Compile>
   </ItemGroup>
 
