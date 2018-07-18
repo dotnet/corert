@@ -22,7 +22,7 @@ namespace Internal.Runtime
         {
             // Get the array that holds thread static memory blocks for each type in the given module
             int moduleIndex = pModuleData->ModuleIndex;
-            object[] storage = (object[])RuntimeImports.RhGetThreadStaticStorageForModule(moduleIndex);
+            object[] storage = RuntimeImports.RhGetThreadStaticStorageForModule(moduleIndex);
 
             // Check whether thread static storage has already been allocated for this module and type.
             if ((storage != null) && (typeTlsIndex < storage.Length) && (storage[typeTlsIndex] != null))
