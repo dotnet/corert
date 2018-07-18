@@ -401,6 +401,11 @@ namespace System.Runtime.InteropServices
             return ex.TryGetRestrictedErrorDetails(out restrictedError, out restrictedErrorReference, out restrictedCapabilitySid);
         }
 
+        public static IntPtr[] ExceptionGetStackIPs(Exception ex)
+        {
+            return ex.GetStackIPs();
+        }
+
         public static TypeInitializationException CreateTypeInitializationException(string message)
         {
             return new TypeInitializationException(message);

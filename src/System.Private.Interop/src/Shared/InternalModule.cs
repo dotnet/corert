@@ -195,6 +195,15 @@ namespace System.Runtime.InteropServices
         {
             ItfType = InternalTypes.HSTRING
         };
+
+        // ILanguageExceptionStackBackTrace
+        internal static McgInterfaceData s_ILanguageExceptionStackBackTrace = new McgInterfaceData
+        {
+            ItfType = InternalTypes.ILanguageExceptionStackBackTrace,
+            ItfGuid = Interop.COM.IID_ILanguageExceptionStackBackTrace,
+            Flags = McgInterfaceFlags.isInternal,
+            CcwVtable = __vtable_ILanguageExceptionStackBackTrace.GetVtableFuncPtr(),
+        };
 #endif
 
         static readonly McgInterfaceData[] s_interfaceData = new McgInterfaceData[] {

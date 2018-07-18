@@ -160,6 +160,78 @@ namespace System.Runtime.InteropServices
             internal System.IntPtr pfnGetReference;
         }
 
+        internal unsafe struct __com_ILanguageExceptionStackBackTrace
+        {
+            internal __vtable_ILanguageExceptionStackBackTrace* pVtable;
+        }
+
+        internal unsafe struct __vtable_ILanguageExceptionStackBackTrace
+        {
+            private IntPtr pfnQueryInterface;
+            private IntPtr pfnAddRef;
+            private IntPtr pfnRelease;
+            internal IntPtr pfnGetStackBackTrace;
+            
+            public static IntPtr pNativeVtable;
+            private static __vtable_ILanguageExceptionStackBackTrace s_theCcwVtable = new __vtable_ILanguageExceptionStackBackTrace
+            {
+                // IUnknown
+                pfnQueryInterface = AddrOfIntrinsics.AddrOf<AddrOfQueryInterface>(__vtable_IUnknown.QueryInterface),
+                pfnAddRef = AddrOfIntrinsics.AddrOf<AddrOfAddRef>(__vtable_IUnknown.AddRef),
+                pfnRelease = AddrOfIntrinsics.AddrOf<AddrOfRelease>(__vtable_IUnknown.Release),
+                // ILanguageExceptionStackBackTrace
+                pfnGetStackBackTrace = AddrOfIntrinsics.AddrOf<AddrOfIntrinsics.AddrOfTarget1>(GetStackBackTrace),
+            };
+
+            internal static IntPtr GetVtableFuncPtr()
+            {
+                return AddrOfIntrinsics.AddrOf<AddrOfGetCCWVtable>(GetCcwvtable_ILanguageExceptionStackBackTrace);
+            }
+
+            internal static unsafe IntPtr GetCcwvtable_ILanguageExceptionStackBackTrace()
+            {
+                if (pNativeVtable == default(IntPtr))
+                {
+                    fixed (void* pVtbl = &s_theCcwVtable)
+                    {
+                        McgMarshal.GetCCWVTableCopy(pVtbl, ref __vtable_ILanguageExceptionStackBackTrace.pNativeVtable,sizeof(__vtable_ILanguageExceptionStackBackTrace));
+
+                    }
+                }
+                return __vtable_ILanguageExceptionStackBackTrace.pNativeVtable;
+            }
+
+            [NativeCallable]
+            static int GetStackBackTrace(IntPtr pComThis, uint maxFramesToCapture, IntPtr stackBackTrace, IntPtr framesCaptured)
+            {
+                try
+                {
+                    object target = ComCallableObject.FromThisPointer(pComThis).TargetObject;
+                    Debug.Assert(target is Exception);
+                    IntPtr[] stackIPs = InteropExtensions.ExceptionGetStackIPs(target);
+                    int* pFramesCaptured = (int*)framesCaptured;
+                    *pFramesCaptured = Math.Min((uint)stackIPs.Length, maxFramesToCapture);
+                    if (stackBackTrace != IntPtr.Zero)
+                    {
+                        unsafe
+                        {
+                            IntPtr* pStackBackTrace = (IntPtr*)stackBackTrace;
+                            for (uint i = 0; i < framesCaptured; i++)
+                            {
+                                *pStackBackTrace = stackIPs[i];
+                                pStackBackTrace++;
+                            }
+                        }
+                    }
+                    return Interop.COM.S_OK;
+                }
+                catch (System.Exception hrExcep)
+                {
+                    return McgMarshal.GetHRForExceptionWinRT(hrExcep);
+                }
+            }
+        }
+
 #pragma warning restore 649, 169
 
         /// <summary>
