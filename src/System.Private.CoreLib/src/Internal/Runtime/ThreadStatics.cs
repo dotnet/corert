@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime;
+using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerHelpers;
 
 namespace Internal.Runtime
@@ -21,18 +22,26 @@ namespace Internal.Runtime
         internal static unsafe object GetThreadStaticBaseForType(TypeManagerSlot* pModuleData, int typeTlsIndex)
         {
             // Get the array that holds thread static memory blocks for each type in the given module
-            int moduleIndex = pModuleData->ModuleIndex;
-            object[] storage = RuntimeImports.RhGetThreadStaticStorageForModule(moduleIndex);
+            object[] storage = RuntimeImports.RhGetThreadStaticStorageForModule(pModuleData->ModuleIndex);
 
             // Check whether thread static storage has already been allocated for this module and type.
-            if ((storage != null) && (typeTlsIndex < storage.Length) && (storage[typeTlsIndex] != null))
+            if ((storage != null) && ((uint)typeTlsIndex < (uint)storage.Length) && (storage[typeTlsIndex] != null))
             {
                 return storage[typeTlsIndex];
             }
 
+            return GetThreadStaticBaseForTypeSlow(pModuleData, typeTlsIndex);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static unsafe object GetThreadStaticBaseForTypeSlow(TypeManagerSlot* pModuleData, int typeTlsIndex)
+        {
+            // Get the array that holds thread static memory blocks for each type in the given module
+            object[] storage = RuntimeImports.RhGetThreadStaticStorageForModule(pModuleData->ModuleIndex);
+
             // This the first access to the thread statics of the type corresponding to typeTlsIndex.
             // Make sure there is enough storage allocated to hold it.
-            storage = EnsureThreadStaticStorage(moduleIndex, storage, requiredSize: typeTlsIndex + 1);
+            storage = EnsureThreadStaticStorage(pModuleData->ModuleIndex, storage, requiredSize: typeTlsIndex + 1);
 
             // Allocate an object that will represent a memory block for all thread static fields of the type
             object threadStaticBase = AllocateThreadStaticStorageForType(pModuleData->TypeManager, typeTlsIndex);
