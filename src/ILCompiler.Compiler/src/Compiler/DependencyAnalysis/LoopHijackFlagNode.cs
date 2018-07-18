@@ -35,7 +35,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        protected internal override int ClassCode => -266743363;
+        public override int ClassCode => -266743363;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {

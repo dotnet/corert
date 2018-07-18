@@ -101,9 +101,9 @@ namespace ILCompiler.DependencyAnalysis
             return dataBuilder.ToObjectData();
         }
 
-        protected internal override int ClassCode => 1304929125;
+        public override int ClassCode => 1304929125;
 
-        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return _gcMap.CompareTo(((GCStaticEETypeNode)other)._gcMap);
         }

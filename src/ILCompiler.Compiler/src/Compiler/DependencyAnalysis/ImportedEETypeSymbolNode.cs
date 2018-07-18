@@ -32,6 +32,6 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected internal override int ClassCode => 395643063;
+        public override int ClassCode => 395643063;
     }
 }

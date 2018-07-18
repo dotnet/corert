@@ -47,9 +47,9 @@ namespace ILCompiler.DependencyAnalysis
             Target.AppendMangledName(nameMangler, sb);
         }
 
-        int ISortableSymbolNode.ClassCode => -2055384490;
+        public override int ClassCode => -2055384490;
 
-        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return comparer.Compare(_targetNode, ((EmbeddedPointerIndirectionNode<TTarget>)other)._targetNode);
         }

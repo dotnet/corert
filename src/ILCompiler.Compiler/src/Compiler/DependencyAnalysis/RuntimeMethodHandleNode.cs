@@ -80,9 +80,9 @@ namespace ILCompiler.DependencyAnalysis
             return objData.ToObjectData();
         }
 
-        protected internal override int ClassCode => -274400625;
+        public override int ClassCode => -274400625;
 
-        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return comparer.Compare(_targetMethod, ((RuntimeMethodHandleNode)other)._targetMethod);
         }

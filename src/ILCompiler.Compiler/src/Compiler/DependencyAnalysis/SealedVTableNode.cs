@@ -160,8 +160,8 @@ namespace ILCompiler.DependencyAnalysis
             return objData.ToObjectData();
         }
 
-        protected internal override int ClassCode => 1632890252;
-        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int ClassCode => 1632890252;
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return comparer.Compare(_type, ((SealedVTableNode)other)._type);
         }

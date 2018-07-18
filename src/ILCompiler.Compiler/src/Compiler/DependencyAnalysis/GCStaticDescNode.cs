@@ -177,18 +177,11 @@ namespace ILCompiler.DependencyAnalysis
             return compare != 0 ? compare : comparer.Compare(_type, other._type);
         }
 
-        protected sealed internal override int ClassCode => 2142332918;
+        public sealed override int ClassCode => 2142332918;
         
-        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return CompareTo((GCStaticDescNode)other, comparer);
-        }
-
-        int ISortableSymbolNode.ClassCode => ClassCode;
-
-        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
-        {
-            return CompareToImpl((SortableDependencyNode)other, comparer);
         }
     }
 
@@ -199,7 +192,7 @@ namespace ILCompiler.DependencyAnalysis
         {
         }
 
-        protected internal override int ClassCode => 1312891560;
+        public override int ClassCode => 1312891560;
 
         protected override void GetElementDataForNodes(ref ObjectDataBuilder builder, NodeFactory factory, bool relocsOnly)
         {
@@ -255,9 +248,9 @@ namespace ILCompiler.DependencyAnalysis
             return "Standalone" + _standaloneGCStaticDesc.GetMangledName(context.NameMangler);
         }
         
-        protected internal override int ClassCode => 2091208431;
+        public override int ClassCode => 2091208431;
 
-        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return _standaloneGCStaticDesc.CompareTo(((StandaloneGCStaticDescRegionNode)other)._standaloneGCStaticDesc, comparer);
         }

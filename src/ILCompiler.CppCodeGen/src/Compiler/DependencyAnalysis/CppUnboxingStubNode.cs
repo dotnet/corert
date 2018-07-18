@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append("unbox_").Append(nameMangler.GetMangledMethodName(Method));
         }
 
-        public int CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
+        public int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return comparer.Compare(this.Method, ((CppUnboxingStubNode)other).Method);
         }

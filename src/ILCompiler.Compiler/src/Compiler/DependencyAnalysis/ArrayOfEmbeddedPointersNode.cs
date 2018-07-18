@@ -51,7 +51,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
 
-        protected internal override int ClassCode => (int)ObjectNodeOrder.ArrayOfEmbeddedPointersNode;
+        public override int ClassCode => (int)ObjectNodeOrder.ArrayOfEmbeddedPointersNode;
 
         private class PointerIndirectionNodeComparer : IComparer<EmbeddedPointerIndirectionNode<TTarget>>
         {
@@ -96,7 +96,7 @@ namespace ILCompiler.DependencyAnalysis
                 };
             }
 
-            protected internal override int ClassCode => -66002498;
+            public override int ClassCode => -66002498;
         }
 
         private class EmbeddedPointerIndirectionWithSymbolNode : SimpleEmbeddedPointerIndirectionNode, ISymbolDefinitionNode
