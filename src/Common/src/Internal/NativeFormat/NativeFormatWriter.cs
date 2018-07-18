@@ -74,6 +74,15 @@ namespace Internal.NativeFormat
 
             return vertex;
         }
+
+        public Vertex Pop()
+        {
+            Vertex vertex = _items[_items.Count - 1];
+            _items.RemoveAt(_items.Count - 1);
+            Debug.Assert(vertex._offset == Vertex.Placed);
+            vertex._offset = Vertex.NotPlaced;
+            return vertex;
+        }
     }
 
 #if NATIVEFORMAT_PUBLICWRITER
@@ -1658,7 +1667,19 @@ namespace Internal.NativeFormat
             private Vertex _first;
             private Vertex _second;
 
+            public VertexTree()
+            {
+                _first = null;
+                _second = null;
+            }
+
             public VertexTree(Vertex first, Vertex second)
+            {
+                _first = first;
+                _second = second;
+            }
+
+            public void Update(Vertex first, Vertex second)
             {
                 _first = first;
                 _second = second;
@@ -1701,7 +1722,7 @@ namespace Internal.NativeFormat
     
                 if (first == null && second == null)
                 {
-                    isLeaf = false;
+                    isLeaf = true;
                     return null;
                 }
     
@@ -1709,7 +1730,7 @@ namespace Internal.NativeFormat
                 {
                     VertexLeaf leaf = new VertexLeaf(
                         first == null ? second : first,
-                        first == null ? index + 1 : (index & (BlockSize - 1)));
+                        (first == null ? index + 1 : index) & (BlockSize - 1));
                         
                     if (place)
                     {
@@ -1731,20 +1752,31 @@ namespace Internal.NativeFormat
             }
             else
             {
+                VertexTree tree = new VertexTree();
+                if (place)
+                    _section.Place(tree);
+
                 bool firstIsLeaf;
                 Vertex first = ExpandBlock(index, depth - 1, false, out firstIsLeaf);
 
                 bool secondIsLeaf;
-                Vertex second = ExpandBlock(((index + 1) << (depth - 1)), depth - 1, true, out secondIsLeaf);
+                Vertex second = ExpandBlock(index + (1 << (depth - 1)), depth - 1, true, out secondIsLeaf);
     
                 if (first == null && second == null)
                 {
-                    isLeaf = false;
+                    if (place)
+                    {
+                        Vertex pop = _section.Pop();
+                        Debug.Assert(pop == tree);
+                    }
+                    isLeaf = true;
                     return null;
                 }
     
                 if (first == null && secondIsLeaf)
                 {
+                    Vertex pop = _section.Pop();
+                    Debug.Assert(pop == second);
                     if (place)
                     {
                         _section.Place(second);
@@ -1758,6 +1790,8 @@ namespace Internal.NativeFormat
                 {
                     if (place)
                     {
+                        Vertex pop = _section.Pop();
+                        Debug.Assert(pop == tree);
                         _section.Place(first);
                     }
     
@@ -1765,11 +1799,7 @@ namespace Internal.NativeFormat
                     return first;
                 }
     
-                Vertex tree = new VertexTree(first, second);
-                if (place)
-                {
-                    _section.Place(tree);
-                }
+                tree.Update(first, second);
                 isLeaf = false;
                 return tree;
             }
