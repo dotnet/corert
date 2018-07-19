@@ -20,7 +20,7 @@ namespace ILCompiler
 {
     public partial class CompilerTypeSystemContext : MetadataTypeSystemContext, IMetadataStringDecoderProvider
     {
-        private CompilerMetadataFieldLayoutAlgorithm _metadataFieldLayoutAlgorithm = new CompilerMetadataFieldLayoutAlgorithm();
+        private MetadataFieldLayoutAlgorithm _metadataFieldLayoutAlgorithm = new CompilerMetadataFieldLayoutAlgorithm();
         private RuntimeDeterminedFieldLayoutAlgorithm _runtimeDeterminedFieldLayoutAlgorithm = new RuntimeDeterminedFieldLayoutAlgorithm();
         private VectorOfTFieldLayoutAlgorithm _vectorOfTFieldLayoutAlgorithm;
         private MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
@@ -106,11 +106,6 @@ namespace ILCompiler
             _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
 
             GenericsConfig = new SharedGenericsConfiguration();
-        }
-
-        public void SetReadyToRunMode(int numberOfTypesInModule)
-        {
-            _metadataFieldLayoutAlgorithm.SetReadyToRunMode(numberOfTypesInModule);
         }
 
         public SharedGenericsConfiguration GenericsConfig
@@ -295,7 +290,12 @@ namespace ILCompiler
             else if (_simdHelper.IsVectorOfT(type))
                 return _vectorOfTFieldLayoutAlgorithm;
             else
-                return _metadataFieldLayoutAlgorithm;
+                return GetMetadataFieldLayoutAlgorithm();
+        }
+
+        protected virtual FieldLayoutAlgorithm GetMetadataFieldLayoutAlgorithm()
+        {
+            return _metadataFieldLayoutAlgorithm;
         }
 
         protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)
