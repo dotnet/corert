@@ -234,6 +234,8 @@ namespace Internal.Runtime
 
         ELEMENT_TYPE_ARRAY = 0x14,
 
+        ELEMENT_TYPE_GENERICINST = 0x15,
+
         ELEMENT_TYPE_TYPEDBYREF = 0x16,
         ELEMENT_TYPE_I = 0x18,
         ELEMENT_TYPE_U = 0x19,

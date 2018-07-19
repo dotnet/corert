@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Reflection.PortableExecutable;
+
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem;
 
@@ -29,6 +31,8 @@ namespace ILCompiler.DependencyAnalysis
                 return new RvaEmbeddedPointerIndirectionNode<Signature>(signature);
             });
         }
+
+        public PEReader PEReader;
 
         public HeaderNode Header;
 
