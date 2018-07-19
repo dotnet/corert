@@ -63,6 +63,8 @@ namespace ILCompiler
 
         private IReadOnlyList<string> _appContextSwitches = Array.Empty<string>();
 
+        private IReadOnlyList<string> _runtimeOptions = Array.Empty<string>();
+
         private bool _help;
 
         private Program()
@@ -163,6 +165,7 @@ namespace ILCompiler
                 syntax.DefineOption("stacktracedata", ref _emitStackTraceData, "Emit data to support generating stack trace strings at runtime");
                 syntax.DefineOptionList("initassembly", ref _initAssemblies, "Assembly(ies) with a library initializer");
                 syntax.DefineOptionList("appcontextswitch", ref _appContextSwitches, "System.AppContext switches to set");
+                syntax.DefineOptionList("runtimeopt", ref _runtimeOptions, "Runtime options to set");
 
                 syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
                 syntax.DefineOption("targetos", ref _targetOSStr, "Target OS for cross compilation");
@@ -348,6 +351,7 @@ namespace ILCompiler
                 if (entrypointModule != null)
                 {
                     compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext)));
+                    compilationRoots.Add(new RuntimeConfigurationRootProvider(_runtimeOptions));
                 }
 
                 if (_multiFile)
@@ -382,6 +386,7 @@ namespace ILCompiler
                     // Set owning module of generated native library startup method to compiler generated module,
                     // to ensure the startup method is included in the object file during multimodule mode build
                     compilationRoots.Add(new NativeLibraryInitializerRootProvider(typeSystemContext.GeneratedAssembly, CreateInitializerList(typeSystemContext)));
+                    compilationRoots.Add(new RuntimeConfigurationRootProvider(_runtimeOptions));
                 }
 
                 if (_rdXmlFilePaths.Count > 0)

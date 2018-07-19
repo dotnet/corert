@@ -421,6 +421,11 @@ namespace ILCompiler
             {
                 _graph.AddRoot(_factory.ModuleMetadata(module), reason);
             }
+
+            public void RootReadOnlyDataBlob(byte[] data, int alignment, string reason, string exportName)
+            {
+                _graph.AddRoot(_factory.ReadOnlyDataBlob(exportName, data, alignment), reason);
+            }
         }
     }
 

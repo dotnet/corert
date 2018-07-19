@@ -1336,10 +1336,10 @@ Boolean Thread::SetThreadStaticStorageForModule(Object * pStorage, UInt32 module
     return TRUE;
 }
 
-COOP_PINVOKE_HELPER(Array*, RhGetThreadStaticStorageForModule, (UInt32 moduleIndex))
+COOP_PINVOKE_HELPER(Object*, RhGetThreadStaticStorageForModule, (UInt32 moduleIndex))
 {
     Thread * pCurrentThread = ThreadStore::RawGetCurrentThread();
-    return (Array*)pCurrentThread->GetThreadStaticStorageForModule(moduleIndex);
+    return pCurrentThread->GetThreadStaticStorageForModule(moduleIndex);
 }
 
 COOP_PINVOKE_HELPER(Boolean, RhSetThreadStaticStorageForModule, (Array * pStorage, UInt32 moduleIndex))

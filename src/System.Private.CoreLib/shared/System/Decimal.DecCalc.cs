@@ -5,69 +5,45 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Internal.Runtime.CompilerServices;
 using X86 = System.Runtime.Intrinsics.X86;
 
 namespace System
 {
     public partial struct Decimal
     {
-        // Low level accessors used by a DecCalc and formatting 
-        internal uint High
-        {
-            get { return uhi; }
-            set { uhi = value; }
-        }
+        // Low level accessors used by a DecCalc and formatting
+        internal uint High => (uint)hi;
+        internal uint Low => (uint)lo;
+        internal uint Mid => (uint)mid;
 
-        internal uint Low
-        {
-            get { return ulo; }
-            set { ulo = value; }
-        }
+        internal bool IsNegative => flags < 0;
 
-        internal uint Mid
-        {
-            get { return umid; }
-            set { umid = value; }
-        }
+        internal int Scale => (byte)(flags >> ScaleShift);
 
-        internal bool IsNegative
-        {
-            get { return flags < 0; }
-            set { uflags = (uflags & ~SignMask) | (value ? SignMask : 0); }
-        }
-
-        internal int Scale
-        {
-            get { return (byte)(uflags >> ScaleShift); }
-            set { uflags = (uflags & ~ScaleMask) | ((uint)value << ScaleShift); }
-        }
-
-        private ulong Low64
-        {
 #if BIGENDIAN
-            get { return ((ulong)umid << 32) | ulo; }
-            set { umid = (uint)(value >> 32); ulo = (uint)value; }
+        private ulong Low64 => ((ulong)Mid << 32) | Low;
 #else
-            get => ulomidLE;
-            set => ulomidLE = value;
+        private ulong Low64 => Unsafe.As<int, ulong>(ref Unsafe.AsRef(in lo));
 #endif
-        }
+
+        private static ref DecCalc AsMutable(ref decimal d) => ref Unsafe.As<decimal, DecCalc>(ref d);
 
         #region APIs need by number formatting.
 
         internal static uint DecDivMod1E9(ref decimal value)
         {
-            return DecCalc.DecDivMod1E9(ref value);
+            return DecCalc.DecDivMod1E9(ref AsMutable(ref value));
         }
 
         internal static void DecAddInt32(ref decimal value, uint i)
         {
-            DecCalc.DecAddInt32(ref value, i);
+            DecCalc.DecAddInt32(ref AsMutable(ref value), i);
         }
 
         internal static void DecMul10(ref decimal value)
         {
-            DecCalc.DecMul10(ref value);
+            DecCalc.DecMul10(ref AsMutable(ref value));
         }
 
         #endregion
@@ -75,8 +51,61 @@ namespace System
         /// <summary>
         /// Class that contains all the mathematical calculations for decimal. Most of which have been ported from oleaut32.
         /// </summary>
-        private static class DecCalc
+        [StructLayout(LayoutKind.Explicit)]
+        private struct DecCalc
         {
+            // NOTE: Do not change the offsets of these fields. This structure must have the same layout as Decimal.
+            [FieldOffset(0)]
+            private uint uflags;
+            [FieldOffset(4)]
+            private uint uhi;
+            [FieldOffset(8)]
+            private uint ulo;
+            [FieldOffset(12)]
+            private uint umid;
+
+            /// <summary>
+            /// The low and mid fields combined in little-endian order
+            /// </summary>
+            [FieldOffset(8)]
+            private ulong ulomidLE;
+
+            private uint High
+            {
+                get => uhi;
+                set => uhi = value;
+            }
+
+            private uint Low
+            {
+                get => ulo;
+                set => ulo = value;
+            }
+
+            private uint Mid
+            {
+                get => umid;
+                set => umid = value;
+            }
+
+            private bool IsNegative => (int)uflags < 0;
+
+            private int Scale => (byte)(uflags >> ScaleShift);
+
+            private ulong Low64
+            {
+#if BIGENDIAN
+                get { return ((ulong)umid << 32) | ulo; }
+                set { umid = (uint)(value >> 32); ulo = (uint)value; }
+#else
+                get => ulomidLE;
+                set => ulomidLE = value;
+#endif
+            }
+
+            private const uint SignMask = 0x80000000;
+            private const uint ScaleMask = 0x00FF0000;
+
             private const int DEC_SCALE_MAX = 28;
 
             private const uint TenToPowerNine = 1000000000;
@@ -87,7 +116,7 @@ namespace System
             // The maximum power of 10 that a 64 bit integer can store
             private const int MaxInt64Scale = 19;
 
-            // Fast access for 10^n where n is 0-9        
+            // Fast access for 10^n where n is 0-9
             private static readonly uint[] s_powers10 = new uint[] {
                 1,
                 10,
@@ -166,7 +195,7 @@ namespace System
                 return (ulong)a * (ulong)b;
             }
 
-            private static void UInt64x64To128(ulong a, ulong b, ref decimal pdecOut)
+            private static void UInt64x64To128(ulong a, ulong b, ref DecCalc pdecOut)
             {
                 ulong low = UInt32x32To64((uint)a, (uint)b); // lo partial prod
                 ulong mid = UInt32x32To64((uint)a, (uint)(b >> 32)); // mid 1 partial prod
@@ -300,10 +329,10 @@ namespace System
 
             // Normalize (unscale) the number by trying to divide out 10^8, 10^4, 10^2, and 10^1.
             // If a division by one of these powers returns a zero remainder, then we keep the quotient.
-            // 
-            // Since 10 = 2 * 5, there must be a factor of 2 for every power of 10 we can extract. 
+            //
+            // Since 10 = 2 * 5, there must be a factor of 2 for every power of 10 we can extract.
             // We use this as a quick test on whether to try a given power.
-            // 
+            //
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static void Unscale(ref uint low, ref ulong high64, ref int scale)
             {
@@ -572,11 +601,11 @@ PosRem:
 
                 // See if we need to scale the result.  The combined scale must
                 // be <= DEC_SCALE_MAX and the upper 96 bits must be zero.
-                // 
+                //
                 // Start by figuring a lower bound on the scaling needed to make
                 // the upper 96 bits zero.  iHiRes is the index into rgulRes[]
                 // of the highest non-zero ULONG.
-                // 
+                //
                 int iNewScale = 0;
                 if (iHiRes > 2)
                 {
@@ -584,21 +613,21 @@ PosRem:
                     iNewScale -= X86.Lzcnt.IsSupported ? (int)X86.Lzcnt.LeadingZeroCount(rgulRes[iHiRes]) : LeadingZeroCount(rgulRes[iHiRes]);
 
                     // Multiply bit position by log10(2) to figure it's power of 10.
-                    // We scale the log by 256.  log(2) = .30103, * 256 = 77.  Doing this 
+                    // We scale the log by 256.  log(2) = .30103, * 256 = 77.  Doing this
                     // with a multiply saves a 96-byte lookup table.  The power returned
                     // is <= the power of the number, so we must add one power of 10
                     // to make it's integer part zero after dividing by 256.
-                    // 
+                    //
                     // Note: the result of this multiplication by an approximation of
-                    // log10(2) have been exhaustively checked to verify it gives the 
+                    // log10(2) have been exhaustively checked to verify it gives the
                     // correct result.  (There were only 95 to check...)
-                    // 
+                    //
                     iNewScale = ((iNewScale * 77) >> 8) + 1;
 
                     // iNewScale = min scale factor to make high 96 bits zero, 0 - 29.
                     // This reduces the scale factor of the result.  If it exceeds the
                     // current scale of the result, we'll overflow.
-                    // 
+                    //
                     if (iNewScale > iScale)
                         goto ThrowOverflow;
                 }
@@ -611,8 +640,8 @@ PosRem:
 
                 if (iNewScale != 0)
                 {
-                    // Scale by the power of 10 given by iNewScale.  Note that this is 
-                    // NOT guaranteed to bring the number within 96 bits -- it could 
+                    // Scale by the power of 10 given by iNewScale.  Note that this is
+                    // NOT guaranteed to bring the number within 96 bits -- it could
                     // be 1 power of 10 short.
                     //
                     iScale -= iNewScale;
@@ -701,7 +730,7 @@ PosRem:
 
                             if (iCur > 2)
                             {
-                                // The rounding caused us to carry beyond 96 bits. 
+                                // The rounding caused us to carry beyond 96 bits.
                                 // Scale by 10 more.
                                 //
                                 if (iScale == 0)
@@ -785,8 +814,8 @@ ThrowOverflow:
                 return c + ((int)value >> 31);
             }
 
-            // Adjust the quotient to deal with an overflow. We need to divide by 10, 
-            // feed in the high bit to undo the overflow and then round as required, 
+            // Adjust the quotient to deal with an overflow. We need to divide by 10,
+            // feed in the high bit to undo the overflow and then round as required,
             private static int OverflowUnscale(ref Buf12 bufQuo, int iScale, bool fRemainder)
             {
                 if (--iScale < 0)
@@ -898,17 +927,17 @@ ThrowOverflow:
 
                 // In all cases, we already found we could not use the power one larger.
                 // So if we can use this power, it is the biggest, and we're done.  If
-                // we can't use this power, the one below it is correct for all cases 
+                // we can't use this power, the one below it is correct for all cases
                 // unless it's 10^1 -- we might have to go to 10^0 (no scaling).
-                // 
+                //
                 if (ulResHi == powerOvfl[iCurScale - 1].Hi && ulResMidLo > powerOvfl[iCurScale - 1].MidLo)
                     iCurScale--;
 
                 HaveScale:
-                // iCurScale = largest power of 10 we can scale by without overflow, 
-                // iCurScale < 9.  See if this is enough to make scale factor 
+                // iCurScale = largest power of 10 we can scale by without overflow,
+                // iCurScale < 9.  See if this is enough to make scale factor
                 // positive if it isn't already.
-                // 
+                //
                 if (iCurScale + iScale < 0)
                     throw new OverflowException(SR.Overflow_Decimal);
 
@@ -930,7 +959,7 @@ ThrowOverflow:
             // DecAddSub adds or subtracts two decimal values.
             // On return, d1 contains the result of the operation and d2 is trashed.
             // Passing in true for bSign means subtract and false means add.
-            internal static unsafe void DecAddSub(ref decimal d1, ref decimal d2, bool bSign)
+            internal static unsafe void DecAddSub(ref DecCalc d1, ref DecCalc d2, bool bSign)
             {
                 ulong low64 = d1.Low64;
                 uint high = d1.High, flags = d1.uflags, d2flags = d2.uflags;
@@ -1172,7 +1201,7 @@ AlignedScale:
                 {
                     // The addition carried above 96 bits.
                     // Divide the value by 10, dropping the scale factor.
-                    // 
+                    //
                     if ((flags & ScaleMask) == 0)
                         throw new OverflowException(SR.Overflow_Decimal);
                     flags -= 1 << ScaleShift;
@@ -1254,7 +1283,7 @@ ReturnResult:
             //**********************************************************************
             // VarCyFromDec - Convert Currency to Decimal (similar to OleAut32 api.)
             //**********************************************************************
-            internal static long VarCyFromDec(ref decimal pdecIn)
+            internal static long VarCyFromDec(ref DecCalc pdecIn)
             {
                 long value;
 
@@ -1299,7 +1328,7 @@ ThrowOverflow:
             //**********************************************************************
             // VarDecCmp - Decimal Compare updated to return values similar to ICompareTo
             //**********************************************************************
-            internal static int VarDecCmp(ref decimal pdecL, ref decimal pdecR)
+            internal static int VarDecCmp(in decimal pdecL, in decimal pdecR)
             {
                 if ((pdecR.Low | pdecR.Mid | pdecR.High) == 0)
                 {
@@ -1313,10 +1342,10 @@ ThrowOverflow:
                 int sign = (pdecL.flags >> 31) - (pdecR.flags >> 31);
                 if (sign != 0)
                     return sign;
-                return VarDecCmpSub(ref pdecL, ref pdecR);
+                return VarDecCmpSub(in pdecL, in pdecR);
             }
 
-            private static int VarDecCmpSub(ref decimal d1, ref decimal d2)
+            private static int VarDecCmpSub(in decimal d1, in decimal d2)
             {
                 int flags = d2.flags;
                 int sign = (flags >> 31) | 1;
@@ -1387,7 +1416,7 @@ ThrowOverflow:
             //**********************************************************************
             // VarDecMul - Decimal Multiply
             //**********************************************************************
-            internal static unsafe void VarDecMul(ref decimal pdecL, ref decimal pdecR)
+            internal static unsafe void VarDecMul(ref DecCalc pdecL, ref DecCalc pdecR)
             {
                 int iScale = (byte)(pdecL.uflags + pdecR.uflags >> ScaleShift);
 
@@ -1494,7 +1523,7 @@ ThrowOverflow:
                 {
                     // Both operands have bits set in the upper 64 bits.
                     //
-                    // Compute and accumulate the 9 partial products into a 
+                    // Compute and accumulate the 9 partial products into a
                     // 192-bit (24-byte) result.
                     //
                     //        [l-h][l-m][l-l]      left high, middle, low
@@ -1600,7 +1629,7 @@ ReturnZero:
             //**********************************************************************
             // VarDecFromR4 - Convert float to Decimal
             //**********************************************************************
-            internal static void VarDecFromR4(float input, out decimal pdecOut)
+            internal static void VarDecFromR4(float input, out DecCalc pdecOut)
             {
                 pdecOut = default;
 
@@ -1627,8 +1656,8 @@ ReturnZero:
                 // only 7 digits of precision, and we want to keep garbage digits
                 // out of the Decimal were making.
                 //
-                // Calculate max power of 10 input value could have by multiplying 
-                // the exponent by log10(2).  Using scaled integer multiplcation, 
+                // Calculate max power of 10 input value could have by multiplying
+                // the exponent by log10(2).  Using scaled integer multiplcation,
                 // log10(2) * 2 ^ 16 = .30103 * 65536 = 19728.3.
                 //
                 double dbl = input;
@@ -1712,8 +1741,8 @@ ReturnZero:
                 {
                     // Factor out powers of 10 to reduce the scale, if possible.
                     // The maximum number we could factor out would be 6.  This
-                    // comes from the fact we have a 7-digit number, and the 
-                    // MSD must be non-zero -- but the lower 6 digits could be 
+                    // comes from the fact we have a 7-digit number, and the
+                    // MSD must be non-zero -- but the lower 6 digits could be
                     // zero.  Note also the scale factor is never negative, so
                     // we can't scale by any more than the power we used to
                     // get the integer.
@@ -1767,7 +1796,7 @@ ReturnZero:
             //**********************************************************************
             // VarDecFromR8 - Convert double to Decimal
             //**********************************************************************
-            internal static void VarDecFromR8(double input, out decimal pdecOut)
+            internal static void VarDecFromR8(double input, out DecCalc pdecOut)
             {
                 pdecOut = default;
 
@@ -1794,8 +1823,8 @@ ReturnZero:
                 // only 15 digits of precision, and we want to keep garbage digits
                 // out of the Decimal were making.
                 //
-                // Calculate max power of 10 input value could have by multiplying 
-                // the exponent by log10(2).  Using scaled integer multiplcation, 
+                // Calculate max power of 10 input value could have by multiplying
+                // the exponent by log10(2).  Using scaled integer multiplcation,
                 // log10(2) * 2 ^ 16 = .30103 * 65536 = 19728.3.
                 //
                 double dbl = input;
@@ -1872,8 +1901,8 @@ ReturnZero:
                 {
                     // Factor out powers of 10 to reduce the scale, if possible.
                     // The maximum number we could factor out would be 14.  This
-                    // comes from the fact we have a 15-digit number, and the 
-                    // MSD must be non-zero -- but the lower 14 digits could be 
+                    // comes from the fact we have a 15-digit number, and the
+                    // MSD must be non-zero -- but the lower 14 digits could be
                     // zero.  Note also the scale factor is never negative, so
                     // we can't scale by any more than the power we used to
                     // get the integer.
@@ -1961,12 +1990,12 @@ ReturnZero:
                 return dbl;
             }
 
-            internal static int GetHashCode(ref decimal d)
+            internal static int GetHashCode(in decimal d)
             {
                 if ((d.Low | d.Mid | d.High) == 0)
                     return 0;
 
-                uint flags = d.uflags;
+                uint flags = (uint)d.flags;
                 if ((flags & ScaleMask) == 0 || (d.Low & 1) != 0)
                     return (int)(flags ^ d.High ^ d.Mid ^ d.Low);
 
@@ -1982,7 +2011,7 @@ ReturnZero:
 
             // VarDecDiv divides two decimal values.  On return, d1 contains the result
             // of the operation.
-            internal static unsafe void VarDecDiv(ref decimal d1, ref decimal d2)
+            internal static unsafe void VarDecDiv(ref DecCalc d1, ref DecCalc d2)
             {
                 Buf12 bufQuo, bufDivisor;
                 _ = &bufQuo; // workaround for CS0165
@@ -2021,23 +2050,23 @@ ReturnZero:
                         // We need to unscale if and only if we have a non-zero remainder
                         fUnscale = true;
 
-                        // We have computed a quotient based on the natural scale 
-                        // ( <dividend scale> - <divisor scale> ).  We have a non-zero 
-                        // remainder, so now we should increase the scale if possible to 
+                        // We have computed a quotient based on the natural scale
+                        // ( <dividend scale> - <divisor scale> ).  We have a non-zero
+                        // remainder, so now we should increase the scale if possible to
                         // include more quotient bits.
-                        // 
-                        // If it doesn't cause overflow, we'll loop scaling by 10^9 and 
-                        // computing more quotient bits as long as the remainder stays 
-                        // non-zero.  If scaling by that much would cause overflow, we'll 
+                        //
+                        // If it doesn't cause overflow, we'll loop scaling by 10^9 and
+                        // computing more quotient bits as long as the remainder stays
+                        // non-zero.  If scaling by that much would cause overflow, we'll
                         // drop out of the loop and scale by as much as we can.
-                        // 
-                        // Scaling by 10^9 will overflow if rgulQuo[2].rgulQuo[1] >= 2^32 / 10^9 
-                        // = 4.294 967 296.  So the upper limit is rgulQuo[2] == 4 and 
-                        // rgulQuo[1] == 0.294 967 296 * 2^32 = 1,266,874,889.7+.  Since 
-                        // quotient bits in rgulQuo[0] could be all 1's, then 1,266,874,888 
-                        // is the largest value in rgulQuo[1] (when rgulQuo[2] == 4) that is 
+                        //
+                        // Scaling by 10^9 will overflow if rgulQuo[2].rgulQuo[1] >= 2^32 / 10^9
+                        // = 4.294 967 296.  So the upper limit is rgulQuo[2] == 4 and
+                        // rgulQuo[1] == 0.294 967 296 * 2^32 = 1,266,874,889.7+.  Since
+                        // quotient bits in rgulQuo[0] could be all 1's, then 1,266,874,888
+                        // is the largest value in rgulQuo[1] (when rgulQuo[2] == 4) that is
                         // assured not to overflow.
-                        // 
+                        //
                         if (iScale == DEC_SCALE_MAX || (iCurScale = SearchScale(ref bufQuo, iScale)) == 0)
                         {
                             // No more scaling to be done, but remainder is non-zero.
@@ -2072,9 +2101,9 @@ ReturnZero:
                 {
                     // Divisor has bits set in the upper 64 bits.
                     //
-                    // Divisor must be fully normalized (shifted so bit 31 of the most 
-                    // significant ULONG is 1).  Locate the MSB so we know how much to 
-                    // normalize by.  The dividend will be shifted by the same amount so 
+                    // Divisor must be fully normalized (shifted so bit 31 of the most
+                    // significant ULONG is 1).  Locate the MSB so we know how much to
+                    // normalize by.  The dividend will be shifted by the same amount so
                     // the quotient is not changed.
                     //
                     bufDivisor.Low64 = d2.Low64;
@@ -2086,7 +2115,7 @@ ReturnZero:
                     iCurScale = X86.Lzcnt.IsSupported ? (int)X86.Lzcnt.LeadingZeroCount(ulTmp) : LeadingZeroCount(ulTmp);
 
                     // Shift both dividend and divisor left by iCurScale.
-                    // 
+                    //
                     Buf16 bufRem;
                     _ = &bufRem; // workaround for CS0165
                     bufRem.Low64 = d1.Low64 << iCurScale;
@@ -2096,9 +2125,9 @@ ReturnZero:
 
                     if (bufDivisor.U2 == 0)
                     {
-                        // Have a 64-bit divisor in sdlDivisor.  The remainder 
+                        // Have a 64-bit divisor in sdlDivisor.  The remainder
                         // (currently 96 bits spread over 4 ULONGs) will be < divisor.
-                        // 
+                        //
 
                         bufQuo.U1 = Div96By64(ref *(Buf12*)&bufRem.U1, divisor);
                         bufQuo.U0 = Div96By64(ref *(Buf12*)&bufRem, divisor);
@@ -2118,9 +2147,9 @@ ReturnZero:
                             // We need to unscale if and only if we have a non-zero remainder
                             fUnscale = true;
 
-                            // Remainder is non-zero.  Scale up quotient and remainder by 
+                            // Remainder is non-zero.  Scale up quotient and remainder by
                             // powers of 10 so we can compute more significant bits.
-                            // 
+                            //
                             if (iScale == DEC_SCALE_MAX || (iCurScale = SearchScale(ref bufQuo, iScale)) == 0)
                             {
                                 // No more scaling to be done, but remainder is non-zero.
@@ -2159,7 +2188,7 @@ ReturnZero:
                         bufDivisor.Low64 = divisor;
                         bufDivisor.U2 = tmp;
 
-                        // The remainder (currently 96 bits spread over 4 ULONGs) 
+                        // The remainder (currently 96 bits spread over 4 ULONGs)
                         // will be < divisor.
                         //
                         bufQuo.Low64 = Div128By96(ref bufRem, ref bufDivisor);
@@ -2179,7 +2208,7 @@ ReturnZero:
                             // We need to unscale if and only if we have a non-zero remainder
                             fUnscale = true;
 
-                            // Remainder is non-zero.  Scale up quotient and remainder by 
+                            // Remainder is non-zero.  Scale up quotient and remainder by
                             // powers of 10 so we can compute more significant bits.
                             //
                             if (iScale == DEC_SCALE_MAX || (iCurScale = SearchScale(ref bufQuo, iScale)) == 0)
@@ -2256,23 +2285,23 @@ ThrowOverflow:
             //**********************************************************************
             // VarDecMod - Computes the remainder between two decimals
             //**********************************************************************
-            internal static void VarDecMod(ref decimal d1, ref decimal d2)
+            internal static void VarDecMod(ref DecCalc d1, ref DecCalc d2)
             {
-                if ((d2.lo | d2.mid | d2.hi) == 0)
+                if ((d2.ulo | d2.umid | d2.uhi) == 0)
                     throw new DivideByZeroException();
 
-                if ((d1.lo | d1.mid | d1.hi) == 0)
+                if ((d1.ulo | d1.umid | d1.uhi) == 0)
                     return;
 
                 // In the operation x % y the sign of y does not matter. Result will have the sign of x.
                 d2.uflags = (d2.uflags & ~SignMask) | (d1.uflags & SignMask);
 
-                int cmp = VarDecCmpSub(ref d1, ref d2);
+                int cmp = VarDecCmpSub(in Unsafe.As<DecCalc, decimal>(ref d1), in Unsafe.As<DecCalc, decimal>(ref d2));
                 if (cmp == 0)
                 {
-                    d1.lo = 0;
-                    d1.mid = 0;
-                    d1.hi = 0;
+                    d1.ulo = 0;
+                    d1.umid = 0;
+                    d1.uhi = 0;
                     if (d2.uflags > d1.uflags)
                         d1.uflags = d2.uflags;
                     return;
@@ -2283,13 +2312,13 @@ ThrowOverflow:
                 // This piece of code is to work around the fact that Dividing a decimal with 28 digits number by decimal which causes
                 // causes the result to be 28 digits, can cause to be incorrectly rounded up.
                 // eg. Decimal.MaxValue / 2 * Decimal.MaxValue will overflow since the division by 2 was rounded instead of being truncked.
-                decimal tmp = d2;
+                DecCalc tmp = d2;
                 DecAddSub(ref d1, ref tmp, true);
 
-                // Formula:  d1 - (RoundTowardsZero(d1 / d2) * d2)            
+                // Formula:  d1 - (RoundTowardsZero(d1 / d2) * d2)
                 tmp = d1;
                 VarDecDiv(ref tmp, ref d2);
-                Truncate(ref tmp);
+                Truncate(ref Unsafe.As<DecCalc, decimal>(ref tmp));
                 VarDecMul(ref tmp, ref d2);
                 uint flags = d1.uflags;
                 DecAddSub(ref d1, ref tmp, true);
@@ -2299,7 +2328,7 @@ ThrowOverflow:
                     if ((d1.Low | d1.Mid | d1.High) == 0 || d1.Scale == DEC_SCALE_MAX && d1.Low64 == 1 && d1.High == 0)
                     {
                         // Certain Remainder operations on decimals with 28 significant digits round
-                        // to [+-]0.0000000000000000000000000001m instead of [+-]0m during the intermediate calculations. 
+                        // to [+-]0.0000000000000000000000000001m instead of [+-]0m during the intermediate calculations.
                         // 'zero' results just need their sign corrected.
                         d1.uflags ^= SignMask;
                     }
@@ -2322,7 +2351,7 @@ ThrowOverflow:
             }
 
             // Does an in-place round by the specified scale
-            internal static void InternalRound(ref decimal d, uint scale, RoundingMode mode)
+            internal static void InternalRound(ref DecCalc d, uint scale, RoundingMode mode)
             {
                 // the scale becomes the desired decimal count
                 d.uflags -= scale << ScaleShift;
@@ -2444,22 +2473,20 @@ done:
 
 #region Number Formatting helpers
 
-            private static uint D32DivMod1E9(uint hi32, ref uint lo32)
+            internal static uint DecDivMod1E9(ref DecCalc value)
             {
-                ulong n = (ulong)hi32 << 32 | lo32;
-                lo32 = (uint)(n / 1000000000);
-                return (uint)(n % 1000000000);
+                ulong high64 = ((ulong)value.uhi << 32) + value.umid;
+                ulong div64 = high64 / TenToPowerNine;
+                value.uhi = (uint)(div64 >> 32);
+                value.umid = (uint)div64;
+
+                ulong num = ((high64 - (uint)div64 * TenToPowerNine) << 32) + value.ulo;
+                uint div = (uint)(num / TenToPowerNine);
+                value.ulo = div;
+                return (uint)num - div * TenToPowerNine;
             }
 
-            internal static uint DecDivMod1E9(ref decimal value)
-            {
-                return D32DivMod1E9(D32DivMod1E9(D32DivMod1E9(0,
-                                                              ref value.uhi),
-                                                 ref value.umid),
-                                    ref value.ulo);
-            }
-
-            internal static void DecAddInt32(ref decimal value, uint i)
+            internal static void DecAddInt32(ref DecCalc value, uint i)
             {
                 if (D32AddCarry(ref value.ulo, i))
                 {
@@ -2476,16 +2503,16 @@ done:
                 return (sum < v) || (sum < i);
             }
 
-            internal static void DecMul10(ref decimal value)
+            internal static void DecMul10(ref DecCalc value)
             {
-                decimal d = value;
+                DecCalc d = value;
                 DecShiftLeft(ref value);
                 DecShiftLeft(ref value);
                 DecAdd(ref value, d);
                 DecShiftLeft(ref value);
             }
 
-            private static void DecShiftLeft(ref decimal value)
+            private static void DecShiftLeft(ref DecCalc value)
             {
                 uint c0 = (value.Low & 0x80000000) != 0 ? 1u : 0u;
                 uint c1 = (value.Mid & 0x80000000) != 0 ? 1u : 0u;
@@ -2494,7 +2521,7 @@ done:
                 value.High = (value.High << 1) | c1;
             }
 
-            private static void DecAdd(ref decimal value, decimal d)
+            private static void DecAdd(ref DecCalc value, DecCalc d)
             {
                 if (D32AddCarry(ref value.ulo, d.Low))
                 {
@@ -2526,7 +2553,7 @@ done:
             {
                 // This is a table of the largest values that can be in the upper two
                 // ULONGs of a 96-bit number that will not overflow when multiplied
-                // by a given power.  For the upper word, this is a table of 
+                // by a given power.  For the upper word, this is a table of
                 // 2^32 / 10^n for 1 <= n <= 8.  For the lower word, this is the
                 // remaining fraction part * 2^32.  2^32 = 4294967296.
                 //
