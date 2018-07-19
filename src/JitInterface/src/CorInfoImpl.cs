@@ -12,17 +12,17 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 
 #if SUPPORT_JIT
 using Internal.Runtime.CompilerServices;
 #endif
 
-using Internal.TypeSystem;
-
 using Internal.IL;
+using Internal.JitInterface;
+using Internal.TypeSystem;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
@@ -820,8 +820,18 @@ namespace Internal.JitInterface
 
         private CorInfoInline canInline(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, ref uint pRestrictions)
         {
-            // No restrictions on inlining
-            return CorInfoInline.INLINE_PASS;
+            MethodDesc callerMethod = HandleToObject(callerHnd);
+            MethodDesc calleeMethod = HandleToObject(calleeHnd);
+            if (_compilation.CanInline(callerMethod, calleeMethod))
+            {
+                // No restrictions on inlining
+                return CorInfoInline.INLINE_PASS;
+            }
+            else
+            {
+                // Call may not be inlined
+                return CorInfoInline.INLINE_NEVER;
+            }
         }
 
         private void reportInliningDecision(CORINFO_METHOD_STRUCT_* inlinerHnd, CORINFO_METHOD_STRUCT_* inlineeHnd, CorInfoInline inlineResult, byte* reason)
@@ -914,14 +924,14 @@ namespace Internal.JitInterface
             return impl != null ? ObjectToHandle(impl) : null;
         }
 
-        private void ComputeLookup(CORINFO_CONTEXT_STRUCT* pContextMethod, object entity, ReadyToRunHelperId helperId, ref CORINFO_LOOKUP lookup)
+        private void ComputeLookup(ref CORINFO_RESOLVED_TOKEN pResolvedToken, object entity, ReadyToRunHelperId helperId, ref CORINFO_LOOKUP lookup)
         {
             if (_compilation.NeedsRuntimeLookup(helperId, entity))
             {
                 lookup.lookupKind.needsRuntimeLookup = true;
                 lookup.runtimeLookup.signature = null;
 
-                MethodDesc contextMethod = methodFromContext(pContextMethod);
+                MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
 
                 // Do not bother computing the runtime lookup if we are inlining. The JIT is going
                 // to abort the inlining attempt anyway.
@@ -992,10 +1002,10 @@ namespace Internal.JitInterface
             switch (method.Name)
             {
                 case "EETypePtrOf":
-                    ComputeLookup(pResolvedToken.tokenContext, method.Instantiation[0], ReadyToRunHelperId.TypeHandle, ref pResult.lookup);
+                    ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.TypeHandle, ref pResult.lookup);
                     break;
                 case "DefaultConstructorOf":
-                    ComputeLookup(pResolvedToken.tokenContext, method.Instantiation[0], ReadyToRunHelperId.DefaultConstructor, ref pResult.lookup);
+                    ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.DefaultConstructor, ref pResult.lookup);
                     break;
             }
         }
@@ -2940,7 +2950,7 @@ namespace Internal.JitInterface
 
             Debug.Assert(pResult.compileTimeHandle != null);
             
-            ComputeLookup(pResolvedToken.tokenContext, target, helperId, ref pResult.lookup);
+            ComputeLookup(ref pResolvedToken, target, helperId, ref pResult.lookup);
         }
 
         private CORINFO_RUNTIME_LOOKUP_KIND GetGenericRuntimeLookupKind(MethodDesc method)
@@ -3290,7 +3300,7 @@ namespace Internal.JitInterface
 
                 if (pResult.exactContextNeedsRuntimeLookup)
                 {
-                    ComputeLookup(pResolvedToken.tokenContext,
+                    ComputeLookup(ref pResolvedToken,
                         GetRuntimeDeterminedObjectForToken(ref pResolvedToken),
                         ReadyToRunHelperId.MethodHandle,
                         ref pResult.codePointerOrStubLookup);
@@ -3309,7 +3319,7 @@ namespace Internal.JitInterface
 
                 if (pResult.exactContextNeedsRuntimeLookup)
                 {
-                    ComputeLookup(pResolvedToken.tokenContext,
+                    ComputeLookup(ref pResolvedToken,
                         GetRuntimeDeterminedObjectForToken(ref pResolvedToken),
                         ReadyToRunHelperId.VirtualDispatchCell,
                         ref pResult.codePointerOrStubLookup);

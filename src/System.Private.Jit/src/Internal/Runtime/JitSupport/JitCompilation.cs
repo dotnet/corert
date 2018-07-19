@@ -43,6 +43,12 @@ namespace ILCompiler
 
         public NameMangler NameMangler { get { return null; } }
 
+        public virtual bool CanInline(MethodDesc caller, MethodDesc callee)
+        {
+            // No inlining limits by default
+            return true;
+        }
+
         public ObjectNode GetFieldRvaData(FieldDesc field)
         {
             // Use the typical field definition in case this is an instantiated generic type
