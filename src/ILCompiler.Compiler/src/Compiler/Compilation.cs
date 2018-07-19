@@ -31,7 +31,7 @@ namespace ILCompiler
         public NodeFactory NodeFactory => _nodeFactory;
         public CompilerTypeSystemContext TypeSystemContext => NodeFactory.TypeSystemContext;
         public Logger Logger => _logger;
-        internal PInvokeILProvider PInvokeILProvider { get; }
+        public PInvokeILProvider PInvokeILProvider { get; }
 
         private readonly TypeGetTypeMethodThunkCache _typeGetTypeMethodThunks;
         private readonly AssemblyGetExecutingAssemblyMethodThunkCache _assemblyGetExecutingAssemblyMethodThunks;

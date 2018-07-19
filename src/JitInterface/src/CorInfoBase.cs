@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace Internal.JitInterface
 {
-    public unsafe partial class CorInfoImpl
+    unsafe partial class CorInfoImpl
     {
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate uint __getMethodAttribs(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn);

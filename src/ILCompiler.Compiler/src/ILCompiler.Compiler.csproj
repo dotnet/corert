@@ -85,12 +85,6 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\TypeSystemThrowingILEmitter.cs">
       <Link>IL\Stubs\TypeSystemThrowingILEmitter.cs</Link>
     </Compile>
-    <Compile Include="..\..\JitInterface\src\JitConfigProvider.cs">
-      <Link>JitInterface\JitConfigProvider.cs</Link>
-    </Compile>
-    <Compile Include="..\..\JitInterface\src\TypeString.cs">
-      <Link>JitInterface\TypeString.cs</Link>
-    </Compile>
     <Compile Include="Compiler\AnalysisBasedMetadataManager.cs" />
     <Compile Include="Compiler\BlockedInternalsBlockingPolicy.cs" />
     <Compile Include="Compiler\CodeGenerationFailedException.cs" />
@@ -208,7 +202,6 @@
     <Compile Include="Compiler\DependencyAnalysis\GenericDictionaryNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericLookupResult.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IEETypeNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\IMethodCodeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ImportedEETypeSymbolNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ImportedStaticsNode.cs" />    
@@ -218,7 +211,6 @@
     <Compile Include="Compiler\DependencyAnalysis\PInvokeModuleFixupNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ResourceDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ResourceIndexNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\RyuJitNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\RuntimeImportMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\StringAllocatorMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64ReadyToRunGenericHelperNode.cs" />
@@ -233,7 +225,6 @@
     <Compile Include="Compiler\DependencyAnalysis\ISpecialUnboxThunkNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchCellNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MetadataNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\MethodCodeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodAssociatedDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedPointersNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ObjectNodeSection.cs" />
@@ -321,7 +312,6 @@
     <Compile Include="Compiler\LibraryRootProvider.cs" />
     <Compile Include="Compiler\MainMethodRootProvider.cs" />
     <Compile Include="Compiler\ManagedBinaryEmitter.cs" />
-    <Compile Include="Compiler\MemoryHelper.cs" />
     <Compile Include="Compiler\MergedAssemblyRecords.cs" />
     <Compile Include="Compiler\MetadataManager.cs" />
     <Compile Include="Compiler\InteropStubManager.cs" />
@@ -334,8 +324,6 @@
     <Compile Include="Compiler\ExportsFileWriter.cs" />
     <Compile Include="Compiler\PrecomputedMetadataManager.cs" />
     <Compile Include="Compiler\ReadyToRun.cs" />
-    <Compile Include="Compiler\RyuJitCompilation.cs" />
-    <Compile Include="Compiler\RyuJitCompilationBuilder.cs" />
     <Compile Include="Compiler\SingleFileCompilationModuleGroup.cs" />
     <Compile Include="Compiler\SingleMethodCompilationModuleGroup.cs" />
     <Compile Include="Compiler\SingleMethodRootProvider.cs" />
@@ -417,6 +405,12 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\UnsafeIntrinsics.cs">
       <Link>IL\Stubs\UnsafeIntrinsics.cs</Link>
     </Compile>
+    <Compile Include="..\..\JitInterface\src\CorInfoTypes.VarInfo.cs">
+      <Link>JitInterface\CorInfoTypes.VarInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\MemoryHelper.cs">
+      <Link>JitInterface\MemoryHelper.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\TypesDebugInfoWriter\PrimitiveTypeDescriptor.cs">
       <Link>TypeSystem\TypesDebugInfoWriter\PrimitiveTypeDescriptor.cs</Link>
     </Compile>
@@ -425,23 +419,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\TypesDebugInfoWriter\DebugInfoWriter.cs">
       <Link>TypeSystem\TypesDebugInfoWriter\DebugInfoWriter.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="..\..\JitInterface\src\CorInfoBase.cs">
-      <Link>JitInterface\CorInfoBase.cs</Link>
-    </Compile>
-    <Compile Include="..\..\JitInterface\src\CorInfoHelpFunc.cs">
-      <Link>JitInterface\CorInfoHelpFunc.cs</Link>
-    </Compile>
-    <Compile Include="..\..\JitInterface\src\CorInfoImpl.cs">
-      <Link>JitInterface\CorInfoImpl.cs</Link>
-    </Compile>
-    <Compile Include="..\..\JitInterface\src\CorInfoImpl.Intrinsics.cs">
-      <Link>JitInterface\CorInfoImpl.Intrinsics.cs</Link>
-    </Compile>
-    <Compile Include="..\..\JitInterface\src\CorInfoTypes.cs">
-      <Link>JitInterface\CorInfoTypes.cs</Link>
     </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" Condition="'$(IsProjectNLibrary)' != 'true'" />
