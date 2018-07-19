@@ -30,6 +30,7 @@ namespace System.Runtime.InteropServices
         internal static RuntimeTypeHandle IManagedActivationFactory = typeof(System.Runtime.InteropServices.WindowsRuntime.IManagedActivationFactory).TypeHandle;
         internal static RuntimeTypeHandle IRestrictedErrorInfo = typeof(System.Runtime.InteropServices.ExceptionHelpers.__com_IRestrictedErrorInfo).TypeHandle;
         internal static RuntimeTypeHandle HSTRING = typeof(System.Runtime.InteropServices.HSTRING).TypeHandle;
+        internal static RuntimeTypeHandle ILanguageExceptionStackBackTrace = typeof(System.Runtime.InteropServices.ExceptionHelpers.__com_ILanguageExceptionStackBackTrace).TypeHandle;
 #endif
     }
 
@@ -195,6 +196,15 @@ namespace System.Runtime.InteropServices
         {
             ItfType = InternalTypes.HSTRING
         };
+
+        // ILanguageExceptionStackBackTrace
+        internal static McgInterfaceData s_ILanguageExceptionStackBackTrace = new McgInterfaceData
+        {
+            ItfType = InternalTypes.ILanguageExceptionStackBackTrace,
+            ItfGuid = Interop.COM.IID_ILanguageExceptionStackBackTrace,
+            Flags = McgInterfaceFlags.isInternal,
+            CcwVtable = System.Runtime.InteropServices.ExceptionHelpers.__vtable_ILanguageExceptionStackBackTrace.GetVtableFuncPtr(),
+        };
 #endif
 
         static readonly McgInterfaceData[] s_interfaceData = new McgInterfaceData[] {
@@ -220,7 +230,8 @@ namespace System.Runtime.InteropServices
                 s_IDispatch,
 
 #if ENABLE_WINRT
-                s_HSTRING
+                s_HSTRING,
+                s_ILanguageExceptionStackBackTrace
 #endif
         };
     }
