@@ -353,7 +353,7 @@ namespace ILCompiler
                         if (entrypointModule != null)
                             throw new Exception("Multiple EXE modules");
                         entrypointModule = module;
-                        r2rCompilerContext?.InitializeAlgorithm(targetDetails, module.MetadataReader.GetTableRowCount(TableIndex.TypeDef));
+                        r2rCompilerContext?.InitializeAlgorithm(module.MetadataReader.GetTableRowCount(TableIndex.TypeDef));
                     }
 
                     if (!_isReadyToRunCodeGen)

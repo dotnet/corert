@@ -31,10 +31,10 @@ namespace ILCompiler
         {
         }
 
-        public void InitializeAlgorithm(TargetDetails target, int numberOfTypesInModule)
+        public void InitializeAlgorithm(int numberOfTypesInModule)
         {
             Debug.Assert(_r2rFieldLayoutAlgorithm == null);
-            _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm(target, numberOfTypesInModule);
+            _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm(Target, numberOfTypesInModule);
         }
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
