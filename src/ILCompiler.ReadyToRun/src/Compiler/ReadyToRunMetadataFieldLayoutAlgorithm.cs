@@ -11,15 +11,21 @@ namespace ILCompiler
 {
     internal class ReadyToRunMetadataFieldLayoutAlgorithm : MetadataFieldLayoutAlgorithm
     {
-        private const int DomainLocalModuleDataBlobOffset = 0x30;
+        /// <summary>
+        /// CoreCLR DomainLocalModule::OffsetOfDataBlob() / sizeof(void *)
+        /// </summary>
+        private const int DomainLocalModuleDataBlobOffsetAsIntPtrCount = 6;
 
-        private const int ThreadLocalModuleDataBlobOffset = 0x18;
+        /// <summary>
+        /// CoreCLR ThreadLocalModule::OffsetOfDataBlob() / sizeof(void *)
+        /// </summary>
+        private const int ThreadLocalModuleDataBlobOffsetAsIntPtrCount = 3;
 
         private LayoutInt _initialNonGcStaticsOffset;
 
-        public ReadyToRunMetadataFieldLayoutAlgorithm(int numberOfTypesInModule)
+        public ReadyToRunMetadataFieldLayoutAlgorithm(TargetDetails target, int numberOfTypesInModule)
         {
-            _initialNonGcStaticsOffset = new LayoutInt(DomainLocalModuleDataBlobOffset + numberOfTypesInModule);
+            _initialNonGcStaticsOffset = new LayoutInt(DomainLocalModuleDataBlobOffsetAsIntPtrCount * target.PointerSize + numberOfTypesInModule);
         }
 
         protected override void PrepareRuntimeSpecificStaticFieldLayout(TypeSystemContext context, ref ComputedStaticFieldLayout layout)

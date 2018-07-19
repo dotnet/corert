@@ -63,10 +63,6 @@
       <Link>Common\ArrayBuilder.cs</Link>
     </Compile>
 
-    <Compile Include="..\..\Common\src\Internal\Runtime\EEType.Constants.cs">
-      <Link>Common\EEType.Constants.cs</Link>
-    </Compile>
-    
     <!--
       JitHelper is CoreRT specific. Refactor so it's not needed in the ReadyToRun project
     -->

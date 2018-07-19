@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.CommandLine;
+using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 
 using Internal.TypeSystem;
@@ -281,7 +282,17 @@ namespace ILCompiler
             // TODO: compiler switch for SIMD support?
             var simdVectorLength = (_isCppCodegen || _isWasmCodegen) ? SimdVectorLength.None : SimdVectorLength.Vector128Bit;
             var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, TargetAbi.CoreRT, simdVectorLength);
-            var typeSystemContext = new CompilerTypeSystemContext(targetDetails, genericsMode);
+            CompilerTypeSystemContext typeSystemContext;
+            ReadyToRunCompilerContext r2rCompilerContext = null;
+            if (_isReadyToRunCodeGen)
+            {
+                r2rCompilerContext = new ReadyToRunCompilerContext(targetDetails, genericsMode);
+                typeSystemContext = r2rCompilerContext;
+            }
+            else
+            {
+                typeSystemContext = new CompilerTypeSystemContext(targetDetails, genericsMode);
+            }
 
             //
             // TODO: To support our pre-compiled test tree, allow input files that aren't managed assemblies since
@@ -342,6 +353,7 @@ namespace ILCompiler
                         if (entrypointModule != null)
                             throw new Exception("Multiple EXE modules");
                         entrypointModule = module;
+                        r2rCompilerContext?.InitializeAlgorithm(targetDetails, module.MetadataReader.GetTableRowCount(TableIndex.TypeDef));
                     }
 
                     if (!_isReadyToRunCodeGen)

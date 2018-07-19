@@ -290,12 +290,7 @@ namespace ILCompiler
             else if (_simdHelper.IsVectorOfT(type))
                 return _vectorOfTFieldLayoutAlgorithm;
             else
-                return GetMetadataFieldLayoutAlgorithm();
-        }
-
-        protected virtual FieldLayoutAlgorithm GetMetadataFieldLayoutAlgorithm()
-        {
-            return _metadataFieldLayoutAlgorithm;
+                return _metadataFieldLayoutAlgorithm;
         }
 
         protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)

@@ -31,16 +31,27 @@ namespace ILCompiler
         {
         }
 
-        public void SetNumberOfTypesInModule(int numberOfTypesInModule)
+        public void InitializeAlgorithm(TargetDetails target, int numberOfTypesInModule)
         {
             Debug.Assert(_r2rFieldLayoutAlgorithm == null);
-            _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm(numberOfTypesInModule);
+            _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm(target, numberOfTypesInModule);
         }
 
-        protected override FieldLayoutAlgorithm GetMetadataFieldLayoutAlgorithm()
+        public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
         {
-            Debug.Assert(_r2rFieldLayoutAlgorithm != null);
-            return _r2rFieldLayoutAlgorithm;
+            if (type == UniversalCanonType)
+                throw new NotImplementedException();
+            else if (type.IsRuntimeDeterminedType)
+                throw new NotImplementedException();
+            /* TODO
+            else if (_simdHelper.IsVectorOfT(type))
+                throw new NotImplementedException();
+            */
+            else
+            {
+                Debug.Assert(_r2rFieldLayoutAlgorithm != null);
+                return _r2rFieldLayoutAlgorithm;
+            }
         }
     }
 }

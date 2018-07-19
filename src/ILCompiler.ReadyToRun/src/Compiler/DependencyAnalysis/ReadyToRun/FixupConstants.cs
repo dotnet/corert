@@ -15,7 +15,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         CORCOMPILE_IMPORT_TYPE_TYPE_HANDLE = 4,
         CORCOMPILE_IMPORT_TYPE_METHOD_HANDLE = 5,
         CORCOMPILE_IMPORT_TYPE_VIRTUAL_METHOD = 6,
-    };
+    }
 
     public enum CorCompileImportFlags : ushort
     {
@@ -23,7 +23,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         CORCOMPILE_IMPORT_FLAGS_EAGER = 0x0001,   // Section at module load time.
         CORCOMPILE_IMPORT_FLAGS_CODE = 0x0002,   // Section contains code.
         CORCOMPILE_IMPORT_FLAGS_PCODE = 0x0004,   // Section contains pointers to code.
-    };
+    }
 
     /// <summary>
     /// Constants for method and field encoding
@@ -39,7 +39,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         READYTORUN_METHOD_SIG_MemberRefToken = 0x10,
         READYTORUN_METHOD_SIG_Constrained = 0x20,
         READYTORUN_METHOD_SIG_OwnerType = 0x40,
-    };
+    }
 
     [Flags]
     public enum ReadyToRunFieldSigFlags : byte
@@ -47,7 +47,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         READYTORUN_FIELD_SIG_IndexInsteadOfToken = 0x08,
         READYTORUN_FIELD_SIG_MemberRefToken = 0x10,
         READYTORUN_FIELD_SIG_OwnerType = 0x40,
-    };
+    }
 
     [Flags]
     public enum ReadyToRunTypeLayoutFlags : byte
@@ -57,7 +57,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         READYTORUN_LAYOUT_Alignment_Native = 0x04,
         READYTORUN_LAYOUT_GCLayout = 0x08,
         READYTORUN_LAYOUT_GCLayout_Empty = 0x10,
-    };
+    }
 
     public enum ReadyToRunFixupKind
     {
@@ -106,7 +106,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         READYTORUN_FIXUP_DelegateCtor = 0x2C, /* optimized delegate ctor */
         READYTORUN_FIXUP_DeclaringTypeHandle = 0x2D,
-    };
+    }
 
     //
     // Intrinsics and helpers
@@ -245,5 +245,43 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         // JIT32 x86-specific exception handling
         READYTORUN_HELPER_EndCatch = 0x110,
-    };
+    }
+
+    public enum CorElementType : byte
+    {
+        Invalid = 0,
+        ELEMENT_TYPE_VOID = 1,
+        ELEMENT_TYPE_BOOLEAN = 2,
+        ELEMENT_TYPE_CHAR = 3,
+        ELEMENT_TYPE_I1 = 4,
+        ELEMENT_TYPE_U1 = 5,
+        ELEMENT_TYPE_I2 = 6,
+        ELEMENT_TYPE_U2 = 7,
+        ELEMENT_TYPE_I4 = 8,
+        ELEMENT_TYPE_U4 = 9,
+        ELEMENT_TYPE_I8 = 10,
+        ELEMENT_TYPE_U8 = 11,
+        ELEMENT_TYPE_R4 = 12,
+        ELEMENT_TYPE_R8 = 13,
+        ELEMENT_TYPE_STRING = 14,
+        ELEMENT_TYPE_PTR = 15,
+        ELEMENT_TYPE_BYREF = 16,
+        ELEMENT_TYPE_VALUETYPE = 17,
+        ELEMENT_TYPE_CLASS = 18,
+        ELEMENT_TYPE_VAR = 19,
+        ELEMENT_TYPE_ARRAY = 20,
+        ELEMENT_TYPE_GENERICINST = 21,
+        ELEMENT_TYPE_TYPEDBYREF = 22,
+        ELEMENT_TYPE_I = 24,
+        ELEMENT_TYPE_U = 25,
+        ELEMENT_TYPE_FNPTR = 27,
+        ELEMENT_TYPE_OBJECT = 28,
+        ELEMENT_TYPE_SZARRAY = 29,
+        ELEMENT_TYPE_MVAR = 30,
+        ELEMENT_TYPE_CMOD_REQD = 31,
+        ELEMENT_TYPE_CMOD_OPT = 32,
+        ELEMENT_TYPE_HANDLE = 64,
+        ELEMENT_TYPE_SENTINEL = 65,
+        ELEMENT_TYPE_PINNED = 69
+    }
 }
