@@ -25,14 +25,14 @@ namespace ILCompiler
         private DependencyAnalysis.ReadyToRun.DevirtualizationManager _r2rDevirtualizationManager;
 
 
-        public ReadyToRunCodegenCompilationBuilder(ReadyToRunCompilerContext context, CompilationModuleGroup group, string inputFilePath)
+        public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group, string inputFilePath)
             : base(context, group, new CoreRTNameMangler(new ReadyToRunNodeMangler(), false))
         {
             _inputFilePath = inputFilePath;
             _r2rDevirtualizationManager = new DependencyAnalysis.ReadyToRun.DevirtualizationManager(group);
 
             EcmaModule inputModule = context.GetModuleFromPath(_inputFilePath);
-            context.InitializeAlgorithm(inputModule.MetadataReader.GetTableRowCount(TableIndex.TypeDef));
+            ((ReadyToRunCompilerContext)context).InitializeAlgorithm(inputModule.MetadataReader.GetTableRowCount(TableIndex.TypeDef));
         }
 
         public override CompilationBuilder UseBackendOptions(IEnumerable<string> options)
