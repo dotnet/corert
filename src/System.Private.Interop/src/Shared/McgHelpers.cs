@@ -394,7 +394,7 @@ namespace System.Runtime.InteropServices
 
                 *((IntPtr*)pItem) = McgMarshal.ObjectToComInterface(item, interfaceType.GetElementInterfaceType());
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
                 if (hrExcep is ArgumentOutOfRangeException)
@@ -424,7 +424,7 @@ namespace System.Runtime.InteropServices
 
                 *((uint*)pSize) = (uint)CalliIntrinsics.Call<int>(thunk, list, Toolbox.IList_Oper.GetCount, 0, ref dummy);
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -452,7 +452,7 @@ namespace System.Runtime.InteropServices
 
                 *((IntPtr*)pView) = McgMarshal.ObjectToComInterface(view, interfaceType.GetVectorViewType());
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -492,7 +492,7 @@ namespace System.Runtime.InteropServices
 
                 *((int*)pIndex) = index;
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -525,7 +525,7 @@ namespace System.Runtime.InteropServices
                     CalliIntrinsics.Call<int>(thunk, list, Toolbox.IList_Oper.SetItem, (int)index, ref value);
                 }
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
                 if (hrExcep is ArgumentOutOfRangeException)
@@ -565,7 +565,7 @@ namespace System.Runtime.InteropServices
                     CalliIntrinsics.Call<int>(thunk, list, Toolbox.IList_Oper.Insert, (int)index, ref value);
                 }
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
                 if (hrExcep is ArgumentOutOfRangeException)
@@ -600,7 +600,7 @@ namespace System.Runtime.InteropServices
                 }
             }
 
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
                 if (hrExcep is ArgumentOutOfRangeException)
@@ -631,7 +631,7 @@ namespace System.Runtime.InteropServices
 
                 CalliIntrinsics.Call<int>(thunk, list, Toolbox.IList_Oper.Add, 0, ref value);
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -667,7 +667,7 @@ namespace System.Runtime.InteropServices
                     CalliIntrinsics.Call<int>(thunk, list, Toolbox.IList_Oper.RemoveAt, (int)(listCount - 1), ref dummy);
                 }
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
                 if (hrExcep is ArgumentOutOfRangeException)
@@ -698,7 +698,7 @@ namespace System.Runtime.InteropServices
 
                 CalliIntrinsics.Call<int>(thunk, list, Toolbox.IList_Oper.Clear, 0, ref dummy);
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -754,7 +754,7 @@ namespace System.Runtime.InteropServices
 
                 *((uint*)pCount) = itemCount;
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -789,7 +789,7 @@ namespace System.Runtime.InteropServices
                     CalliIntrinsics.Call<int>(thunk, list, Toolbox.IList_Oper.Add, 0, ref value);
                 }
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -870,7 +870,7 @@ namespace System.Runtime.InteropServices
 
                 CalliIntrinsics.Call<object>(thunk, list, Toolbox.IList_Oper.GetItem, ref index, pItem);
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
                 if (hrExcep is ArgumentOutOfRangeException)
@@ -901,7 +901,7 @@ namespace System.Runtime.InteropServices
 
                 *((uint*)pSize) = (uint)size;
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -928,7 +928,7 @@ namespace System.Runtime.InteropServices
 
                 *((IntPtr*)pView) = McgMarshal.ObjectToComInterface(view, interfaceType.GetVectorViewType());
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -967,7 +967,7 @@ namespace System.Runtime.InteropServices
 
                 *((int*)pIndex) = index;
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -992,7 +992,7 @@ namespace System.Runtime.InteropServices
                 int index = (int)_index;
                 CalliIntrinsics.Call<object>(thunk, list, Toolbox.IList_Oper.SetItem, ref index, (IntPtr)(&_value));
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
                 if (hrExcep is ArgumentOutOfRangeException)
@@ -1023,7 +1023,7 @@ namespace System.Runtime.InteropServices
 
                 CalliIntrinsics.Call<object>(thunk, list, Toolbox.IList_Oper.Insert, ref index, (IntPtr)(&_value));
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
                 if (hrExcep is ArgumentOutOfRangeException)
@@ -1053,7 +1053,7 @@ namespace System.Runtime.InteropServices
 
                 CalliIntrinsics.Call<object>(thunk, list, Toolbox.IList_Oper.RemoveAt, ref index, default(IntPtr));
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
                 if (hrExcep is ArgumentOutOfRangeException)
@@ -1084,7 +1084,7 @@ namespace System.Runtime.InteropServices
 
                 CalliIntrinsics.Call<object>(thunk, list, Toolbox.IList_Oper.Add, ref dummy, (IntPtr)(&_value));
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -1122,7 +1122,7 @@ namespace System.Runtime.InteropServices
                     CalliIntrinsics.Call<object>(thunk, list, Toolbox.IList_Oper.RemoveAt, ref index, default(IntPtr));
                 }
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
                 if (hrExcep is ArgumentOutOfRangeException)
@@ -1152,7 +1152,7 @@ namespace System.Runtime.InteropServices
                 int dummy = 0;
                 CalliIntrinsics.Call<object>(thunk, list, Toolbox.IList_Oper.Clear, ref dummy, default(IntPtr));
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -1204,7 +1204,7 @@ namespace System.Runtime.InteropServices
 
                 *((uint*)pCount) = itemCount;
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -1239,7 +1239,7 @@ namespace System.Runtime.InteropServices
                     pItems = (IntPtr)((byte*)pItems + byteSize);
                 }
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -1389,7 +1389,7 @@ namespace System.Runtime.InteropServices
                 // Marshal to native iterator
                  *((IntPtr*)pResult) =  McgMarshal.ObjectToComInterface(enumerator, interfaceType.GetIteratorType());
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -1468,7 +1468,7 @@ namespace System.Runtime.InteropServices
 
                 *((IntPtr*)pValue) = McgMarshal.ObjectToComInterface(item, interfaceType.GetElementInterfaceType());
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -1493,7 +1493,7 @@ namespace System.Runtime.InteropServices
                 object item = null;
                 *((byte*)pValue) = (byte)CalliIntrinsics.Call<int>(thunk, iterator, Toolbox.IIterator_Oper.get_HasCurrent, ref item, 0);
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -1518,7 +1518,7 @@ namespace System.Runtime.InteropServices
                 object item = null;
                 *((byte*)pValue) = (byte)CalliIntrinsics.Call<int>(thunk, iterator, Toolbox.IIterator_Oper.MoveNext, ref item, 0);
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -1553,7 +1553,7 @@ namespace System.Runtime.InteropServices
                     dst[i] = McgMarshal.ObjectToComInterface(src[i], interfaceType.GetElementInterfaceType());
                 }
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -1619,7 +1619,7 @@ namespace System.Runtime.InteropServices
                 int dummy = 0;
                 CalliIntrinsics.Call<Array>(thunk, iterator, Toolbox.IIterator_Oper.get_Current, pValue, ref dummy);
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -1646,7 +1646,7 @@ namespace System.Runtime.InteropServices
 
                 *((byte*)pValue) = (byte)has;
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -1673,7 +1673,7 @@ namespace System.Runtime.InteropServices
 
                 *((byte*)pValue) = (byte)has;
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -1702,7 +1702,7 @@ namespace System.Runtime.InteropServices
 
                 PInvokeMarshal.CopyToNative(data, 0, pDest, count);
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -1753,7 +1753,7 @@ namespace System.Runtime.InteropServices
                 // Call handler.Invoke(asyncInfo, asyncStatus)
                 CalliIntrinsics.Call<int>(thunk, handler, asyncInfo, asyncStatus);
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }

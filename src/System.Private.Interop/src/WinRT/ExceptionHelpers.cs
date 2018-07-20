@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic.Internal;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -16,6 +17,46 @@ namespace System.Runtime.InteropServices
     /// </summary>
     public static unsafe partial class ExceptionHelpers
     {
+#if DEBUG
+        [ThreadStatic]
+        private static Dictionary<Exception, bool> t_propagatedExceptions = new Dictionary<Exception, bool>();
+#endif
+        
+        public static bool PropagateException(Exception ex)
+        {
+#if DEBUG
+            Debug.Assert(!ExceptionHelpers.t_propagatedExceptions.ContainsKey(ex));
+            ExceptionHelpers.t_propagatedExceptions.Add(ex, true);
+#endif
+            try
+            {
+                IntPtr pRestrictedErrorInfo;
+                object restrictedErrorInfo;
+                if (InteropExtensions.TryGetRestrictedErrorObject(ex, out restrictedErrorInfo) && restrictedErrorInfo != null)
+                {
+                    // We have the restricted errorInfo associated with this object and hence this exception was created by an hr entering managed through native.
+                    pRestrictedErrorInfo = McgMarshal.ObjectToComInterface(restrictedErrorInfo, InternalTypes.IRestrictedErrorInfo);
+                    if (pRestrictedErrorInfo != IntPtr.Zero)
+                    {
+                        // We simply call SetRestrictedErrorInfo since we do not want to originate the exception again.
+                        ExternalInterop.SetRestrictedErrorInfo(pRestrictedErrorInfo);
+                        McgMarshal.ComSafeRelease(pRestrictedErrorInfo);
+                    }
+                }
+                else
+                {
+                    // we are in windows 8.1+ and hence we can preserve our exception so that we can reuse this exception in case it comes back and provide richer exception support.
+                    OriginateLanguageException(ex);
+                }
+            }
+            catch (Exception)
+            {
+                // We can't throw an exception here and hence simply swallow it.
+            }
+            
+            return true;
+        }
+
         /// <summary>
         ///  This class is a helper class to call into IRestrictedErrorInfo methods.
         /// </summary>
@@ -272,24 +313,10 @@ namespace System.Runtime.InteropServices
                 // Check whether the exception has an associated RestrictedErrorInfo associated with it.
                 if (isWinRTScenario)
                 {
-                    IntPtr pRestrictedErrorInfo;
-                    object restrictedErrorInfo;
-                    if (InteropExtensions.TryGetRestrictedErrorObject(ex, out restrictedErrorInfo) && restrictedErrorInfo != null)
-                    {
-                        // We have the restricted errorInfo associated with this object and hence this exception was created by an hr entering managed through native.
-                        pRestrictedErrorInfo = McgMarshal.ObjectToComInterface(restrictedErrorInfo, InternalTypes.IRestrictedErrorInfo);
-                        if (pRestrictedErrorInfo != IntPtr.Zero)
-                        {
-                            // We simply call SetRestrictedErrorInfo since we do not want to originate the exception again.
-                            ExternalInterop.SetRestrictedErrorInfo(pRestrictedErrorInfo);
-                            McgMarshal.ComSafeRelease(pRestrictedErrorInfo);
-                        }
-                    }
-                    else
-                    {
-                        // we are in windows blue and hence we can preserve our exception so that we can reuse this exception in case it comes back and provide richer exception support.
-                        OriginateLanguageException(ex);
-                    }
+#if DEBUG
+                    Debug.Assert(ExceptionHelpers.t_propagatedExceptions.ContainsKey(ex));
+                    ExceptionHelpers.t_propagatedExceptions.Remove(ex);
+#endif
                 }
                 else
                 {
