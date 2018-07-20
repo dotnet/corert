@@ -1147,6 +1147,18 @@ namespace System.Runtime.InteropServices
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        public static bool PropagateException(Exception ex)
+        {
+#if ENABLE_WINRT
+            return ExceptionHelpers.PropagateException(ex);
+#else
+            // TODO : ExceptionHelpers should be platform specific , move it to
+            // seperate source files
+            return true;
+#endif
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static int GetHRForException(Exception ex)
         {
 #if ENABLE_WINRT
