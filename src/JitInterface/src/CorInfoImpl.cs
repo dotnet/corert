@@ -2019,7 +2019,7 @@ namespace Internal.JitInterface
                     {
                         pResult.fieldLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                            _compilation.NodeFactory.GetOrCreateReadyToRunHelper(helperId, field.OwningType, pResolvedToken.token)
+                            _compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType, pResolvedToken.token)
 #else
                             _compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType)
 #endif
@@ -2935,7 +2935,7 @@ namespace Internal.JitInterface
                     // Calling a string constructor doesn't call the actual constructor.
                     pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                        _compilation.NodeFactory.GetOrCreateStringAllocatorMethodNode(targetMethod, pResolvedToken.token)
+                        _compilation.NodeFactory.StringAllocator(targetMethod, pResolvedToken.token)
 
 #else
                         _compilation.NodeFactory.StringAllocator(targetMethod)
@@ -2952,7 +2952,7 @@ namespace Internal.JitInterface
                     Debug.Assert(!forceUseRuntimeLookup);
                     pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                        _compilation.NodeFactory.GetOrCreateMethodEntrypointNode(targetMethod, pResolvedToken.token)
+                        _compilation.NodeFactory.MethodEntrypoint(targetMethod, pResolvedToken.token)
 #else
                         _compilation.NodeFactory.MethodEntrypoint(targetMethod)
 #endif
@@ -2965,7 +2965,7 @@ namespace Internal.JitInterface
                     if (targetMethod.RequiresInstMethodDescArg())
                     {
 #if READYTORUN
-                        instParam = _compilation.NodeFactory.GetOrCreateMethodGenericDictionary(concreteMethod, pResolvedToken.token);
+                        instParam = _compilation.NodeFactory.MethodGenericDictionary(concreteMethod, pResolvedToken.token);
 #else
                         instParam = _compilation.NodeFactory.MethodGenericDictionary(concreteMethod);
 #endif
@@ -2997,7 +2997,7 @@ namespace Internal.JitInterface
                             // any generic lookups).
                             pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                                _compilation.NodeFactory.GetOrCreateMethodEntrypointNode(targetMethod, pResolvedToken.token)
+                                _compilation.NodeFactory.MethodEntrypoint(targetMethod, pResolvedToken.token)
 #else
                                 _compilation.NodeFactory.MethodEntrypoint(targetMethod)
 #endif
@@ -3018,7 +3018,7 @@ namespace Internal.JitInterface
                     {
                         pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                            _compilation.NodeFactory.GetOrCreateMethodEntrypointNode(targetMethod, pResolvedToken.token)
+                            _compilation.NodeFactory.MethodEntrypoint(targetMethod, pResolvedToken.token)
 #else
                             _compilation.NodeFactory.MethodEntrypoint(targetMethod)
 #endif
@@ -3072,7 +3072,7 @@ namespace Internal.JitInterface
                     pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_PVALUE;
                     pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
 #if READYTORUN
-                        _compilation.NodeFactory.GetOrCreateInterfaceDispatchCell(targetMethod, pResolvedToken.token
+                        _compilation.NodeFactory.InterfaceDispatchCell(targetMethod, pResolvedToken.token
 #else
                         _compilation.NodeFactory.InterfaceDispatchCell(targetMethod
 #if !SUPPORT_JIT

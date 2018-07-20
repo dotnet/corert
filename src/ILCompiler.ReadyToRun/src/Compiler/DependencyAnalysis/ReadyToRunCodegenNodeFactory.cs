@@ -8,13 +8,11 @@ using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
+using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
-
 using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
-
-using ILCompiler.DependencyAnalysis.ReadyToRun;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -102,7 +100,7 @@ namespace ILCompiler.DependencyAnalysis
 
         Dictionary<MethodDesc, IMethodNode> _methodMap = new Dictionary<MethodDesc, IMethodNode>();
 
-        public IMethodNode GetOrCreateMethodEntrypointNode(MethodDesc method, mdToken token, bool isUnboxingStub = false)
+        public IMethodNode MethodEntrypoint(MethodDesc method, mdToken token, bool isUnboxingStub = false)
         {
             IMethodNode methodNode;
             if (!_methodMap.TryGetValue(method, out methodNode))
@@ -139,12 +137,12 @@ namespace ILCompiler.DependencyAnalysis
             return GetOrAddImportedMethodNode(method, unboxingStub: false, token: token, localMethod: localMethod);
         }
 
-        public IMethodNode GetOrCreateStringAllocatorMethodNode(MethodDesc constructor, mdToken token)
+        public IMethodNode StringAllocator(MethodDesc constructor, mdToken token)
         {
-            return GetOrCreateMethodEntrypointNode(constructor, token, isUnboxingStub: false);
+            return MethodEntrypoint(constructor, token, isUnboxingStub: false);
         }
 
-        public ISymbolNode GetOrCreateStringLiteralNode(mdToken token)
+        public ISymbolNode StringLiteral(mdToken token)
         {
             ISymbolNode stringNode;
             if (!_importStrings.TryGetValue(token, out stringNode))
@@ -170,7 +168,7 @@ namespace ILCompiler.DependencyAnalysis
 
         Dictionary<ReadyToRunHelperId, Dictionary<object, ISymbolNode>> _r2rHelpers = new Dictionary<ReadyToRunHelperId, Dictionary<object, ISymbolNode>>();
 
-        public ISymbolNode GetOrCreateReadyToRunHelper(ReadyToRunHelperId id, object target, mdToken token)
+        public ISymbolNode ReadyToRunHelper(ReadyToRunHelperId id, object target, mdToken token)
         {
             if (id == ReadyToRunHelperId.NecessaryTypeHandle)
             {
@@ -388,7 +386,7 @@ namespace ILCompiler.DependencyAnalysis
 
         Dictionary<ILCompiler.ReadyToRunHelper, ISymbolNode> _helperCache = new Dictionary<ILCompiler.ReadyToRunHelper, ISymbolNode>();
 
-        public ISymbolNode GetOrCreateExternSymbol(ILCompiler.ReadyToRunHelper helper)
+        public ISymbolNode ExternSymbol(ILCompiler.ReadyToRunHelper helper)
         {
             ISymbolNode result;
             if (_helperCache.TryGetValue(helper, out result))
@@ -434,9 +432,9 @@ namespace ILCompiler.DependencyAnalysis
             return result;
         }
 
-        public ISymbolNode GetOrCreateHelperMethodEntrypoint(ILCompiler.ReadyToRunHelper helperId, MethodDesc method)
+        public ISymbolNode HelperMethodEntrypoint(ILCompiler.ReadyToRunHelper helperId, MethodDesc method)
         {
-            return GetOrCreateExternSymbol(helperId);
+            return ExternSymbol(helperId);
         }
 
 
@@ -505,7 +503,7 @@ namespace ILCompiler.DependencyAnalysis
 
         Dictionary<TokenAndCallSite, ISymbolNode> _interfaceDispatchCells = new Dictionary<TokenAndCallSite, ISymbolNode>();
 
-        public ISymbolNode GetOrCreateInterfaceDispatchCell(MethodDesc method, mdToken token, string callSite = null)
+        public ISymbolNode InterfaceDispatchCell(MethodDesc method, mdToken token, string callSite = null)
         {
             TokenAndCallSite cellKey = new TokenAndCallSite(token, callSite);
             ISymbolNode dispatchCell;
@@ -543,12 +541,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public ISymbolNode ComputeConstantLookup(ReadyToRunHelperId helperId, object entity, mdToken token)
         {
-            return GetOrCreateReadyToRunHelper(helperId, entity, token);
+            return ReadyToRunHelper(helperId, entity, token);
         }
 
         Dictionary<MethodDesc, ISortableSymbolNode> _genericDictionaryCache = new Dictionary<MethodDesc, ISortableSymbolNode>();
 
-        public ISortableSymbolNode GetOrCreateMethodGenericDictionary(MethodDesc method, mdToken token)
+        public ISortableSymbolNode MethodGenericDictionary(MethodDesc method, mdToken token)
         {
             ISortableSymbolNode genericDictionary;
             if (!_genericDictionaryCache.TryGetValue(method, out genericDictionary))
@@ -734,7 +732,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public IMethodNode ShadowConcreteMethod(MethodDesc method, mdToken token, bool isUnboxingStub = false)
         {
-            return GetOrCreateMethodEntrypointNode(method, token, isUnboxingStub);
+            return MethodEntrypoint(method, token, isUnboxingStub);
         }
 
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
@@ -744,7 +742,7 @@ namespace ILCompiler.DependencyAnalysis
                 // Cannot encode external methods without tokens
                 throw new NotImplementedException();
             }
-            return GetOrCreateMethodEntrypointNode(method, default(mdToken), isUnboxingStub: false);
+            return MethodEntrypoint(method, default(mdToken), isUnboxingStub: false);
         }
 
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)
