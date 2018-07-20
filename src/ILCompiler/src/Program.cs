@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.CommandLine;
-using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 
 using Internal.TypeSystem;
