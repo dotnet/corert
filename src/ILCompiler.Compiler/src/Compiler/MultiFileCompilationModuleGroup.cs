@@ -26,16 +26,14 @@ namespace ILCompiler
 
         public sealed override bool ContainsType(TypeDesc type)
         {
-            EcmaType ecmaType = type as EcmaType;
-
-            if (ecmaType == null)
-                return true;
-
-            if (!IsModuleInCompilationGroup(ecmaType.EcmaModule))
+            if (type is EcmaType ecmaType)
             {
-                return false;
+                return IsModuleInCompilationGroup(ecmaType.EcmaModule);
             }
-
+            if (type is InstantiatedType instantiatedType)
+            {
+                return ContainsType(instantiatedType.GetTypeDefinition());
+            }
             return true;
         }
 

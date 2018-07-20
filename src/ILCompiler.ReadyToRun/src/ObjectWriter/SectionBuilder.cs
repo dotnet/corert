@@ -16,6 +16,8 @@ using System.Runtime.CompilerServices;
 
 using ILCompiler.DependencyAnalysis;
 
+using Internal.Text;
+
 namespace ILCompiler.PEWriter
 {
     /// <summary>
@@ -311,12 +313,26 @@ namespace ILCompiler.PEWriter
             _readyToRunHeaderSize = headerSize;
         }
 
+        private CoreRTNameMangler _nameMangler;
+        
+        private NameMangler GetNameMangler()
+        {
+            if (_nameMangler == null)
+            {
+                _nameMangler = new CoreRTNameMangler(new WindowsNodeMangler(), mangleForCplusPlus: false);
+                _nameMangler.CompilationUnitPrefix = "";
+            }
+            return _nameMangler;
+        }
+
         /// <summary>
         /// Add an ObjectData block to a given section.
         /// </summary>
         /// <param name="data">Block to add</param>
         /// <param name="sectionIndex">Section index</param>
-        public void AddObjectData(ObjectNode.ObjectData objectData, int sectionIndex)
+        /// <param name="name">Node name to emit in the map file</param>
+        /// <param name="mapFile">Optional map file to emit</param>
+        public void AddObjectData(ObjectNode.ObjectData objectData, int sectionIndex, string name, TextWriter mapFile)
         {
             Section section = _sections[sectionIndex];
 
@@ -326,11 +342,22 @@ namespace ILCompiler.PEWriter
             {
                 alignedOffset = (section.Content.Count + objectData.Alignment - 1) & -objectData.Alignment;
                 int padding = alignedOffset - section.Content.Count;
-
                 if (padding > 0)
                 {
-                    section.Content.WriteBytes(0, padding);
+                    byte paddingByte = 0;
+                    if ((section.Characteristics & SectionCharacteristics.ContainsCode) != 0)
+                    {
+                        // TODO: only use INT3 on x86 & amd64
+                        paddingByte = 0xCC;
+                    }
+
+                    section.Content.WriteBytes(paddingByte, padding);
                 }
+            }
+
+            if (mapFile != null)
+            {
+                mapFile.WriteLine($@"S{sectionIndex}+0x{alignedOffset:X4}..{(alignedOffset + objectData.Data.Length):X4}: {objectData.Data.Length:X4} * {name}");
             }
 
             section.Content.WriteBytes(objectData.Data);
@@ -339,6 +366,13 @@ namespace ILCompiler.PEWriter
             {
                 foreach (ISymbolDefinitionNode symbol in objectData.DefinedSymbols)
                 {
+                    if (mapFile != null)
+                    {
+                        Utf8StringBuilder sb = new Utf8StringBuilder();
+                        symbol.AppendMangledName(GetNameMangler(), sb);
+                        int sectionRelativeOffset = alignedOffset + symbol.Offset;
+                        mapFile.WriteLine($@"  +0x{sectionRelativeOffset:X4}: {sb.ToString()}");
+                    }
                     _symbolMap.Add(symbol, new SymbolTarget(
                         sectionIndex: sectionIndex,
                         offset: alignedOffset + symbol.Offset));

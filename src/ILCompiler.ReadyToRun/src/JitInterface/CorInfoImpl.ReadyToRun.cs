@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 
 using Internal.IL;
+using Internal.JitInterface;
 using Internal.TypeSystem;
 
 using ILCompiler;
@@ -24,6 +25,7 @@ namespace Internal.JitInterface
         {
             _compilation = compilation;
         }
+
         private void ComputeLookup(ref CORINFO_RESOLVED_TOKEN pResolvedToken, object entity, ReadyToRunHelperId helperId, ref CORINFO_LOOKUP lookup)
         {
             if (_compilation.NeedsRuntimeLookup(helperId, entity))
@@ -79,7 +81,7 @@ namespace Internal.JitInterface
             else
             {
                 lookup.lookupKind.needsRuntimeLookup = false;
-                ISymbolNode constLookup = _compilation.ComputeConstantLookup(helperId, entity);
+                ISymbolNode constLookup = _compilation.NodeFactory.ComputeConstantLookup(helperId, entity, pResolvedToken.token);
                 lookup.constLookup = CreateConstLookupToSymbol(constLookup);
             }
         }
@@ -95,7 +97,7 @@ namespace Internal.JitInterface
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.NewHelper, type));
+                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.GetOrCreateReadyToRunHelper(ReadyToRunHelperId.NewHelper, type, pResolvedToken.token));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NEWARR_1:
@@ -105,7 +107,7 @@ namespace Internal.JitInterface
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.NewArr1, type));
+                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.GetOrCreateReadyToRunHelper(ReadyToRunHelperId.NewArr1, type, pResolvedToken.token));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_ISINSTANCEOF:
@@ -118,7 +120,7 @@ namespace Internal.JitInterface
                         if (type.IsNullable)
                             type = type.Instantiation[0];
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.IsInstanceOf, type));
+                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.GetOrCreateReadyToRunHelper(ReadyToRunHelperId.IsInstanceOf, type, pResolvedToken.token));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_CHKCAST:
@@ -131,7 +133,7 @@ namespace Internal.JitInterface
                         if (type.IsNullable)
                             type = type.Instantiation[0];
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.CastClass, type));
+                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.GetOrCreateReadyToRunHelper(ReadyToRunHelperId.CastClass, type, pResolvedToken.token));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE:
@@ -140,7 +142,7 @@ namespace Internal.JitInterface
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.GetNonGCStaticBase, type));
+                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.GetOrCreateReadyToRunHelper(ReadyToRunHelperId.GetNonGCStaticBase, type, pResolvedToken.token));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE:
@@ -210,7 +212,7 @@ namespace Internal.JitInterface
             else
             {
                 pLookup.lookupKind.needsRuntimeLookup = false;
-                pLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, delegateInfo));
+                pLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.GetOrCreateReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, delegateInfo, pTargetMethod.token));
             }
         }
 
@@ -448,18 +450,7 @@ namespace Internal.JitInterface
                     throw new NotImplementedException(ftnNum.ToString());
             }
 
-            string mangledName;
-            MethodDesc methodDesc;
-            JitHelper.GetEntryPoint(_compilation.TypeSystemContext, id, out mangledName, out methodDesc);
-            Debug.Assert(mangledName != null || methodDesc != null);
-
-            ISymbolNode entryPoint;
-            if (mangledName != null)
-                entryPoint = _compilation.NodeFactory.ExternSymbol(mangledName);
-            else
-                entryPoint = _compilation.NodeFactory.MethodEntrypoint(methodDesc);
-
-            return entryPoint;
+            return _compilation.NodeFactory.GetOrCreateExternSymbol(id);
         }
 
         private void getFunctionEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags)
@@ -475,11 +466,9 @@ namespace Internal.JitInterface
 
         private InfoAccessType constructStringLiteral(CORINFO_MODULE_STRUCT_* module, mdToken metaTok, ref void* ppValue)
         {
-            MethodIL methodIL = (MethodIL)HandleToObject((IntPtr)module);
-            object literal = methodIL.GetObject((int)metaTok);
-            ISymbolNode stringObject = _compilation.NodeFactory.SerializedStringObject((string)literal);
+            ISymbolNode stringObject = _compilation.NodeFactory.GetOrCreateStringLiteralNode(metaTok);
             ppValue = (void*)ObjectToHandle(stringObject);
-            return stringObject.RepresentsIndirectionCell ? InfoAccessType.IAT_PVALUE : InfoAccessType.IAT_VALUE;
+            return InfoAccessType.IAT_PPVALUE;
         }
     }
 }

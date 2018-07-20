@@ -64,13 +64,14 @@ namespace ILCompiler
         {
             var interopStubManager = new CompilerGeneratedInteropStubManager(_compilationGroup, _context, new InteropStateManager(_context.GeneratedAssembly));
             ReadyToRunCodegenNodeFactory factory = new ReadyToRunCodegenNodeFactory(
-                _context, 
-                _compilationGroup, 
-                _metadataManager, 
-                interopStubManager, 
+                _context,
+                _compilationGroup,
+                _metadataManager,
+                interopStubManager,
                 _nameMangler,
-                _vtableSliceProvider, 
-                _dictionaryLayoutProvider);
+                _vtableSliceProvider,
+                _dictionaryLayoutProvider,
+                _context.GetModuleFromPath(_inputFilePath));
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);
 
             List<CorJitFlag> corJitFlags = new List<CorJitFlag>();

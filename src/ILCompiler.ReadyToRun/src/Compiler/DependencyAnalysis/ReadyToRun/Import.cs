@@ -2,35 +2,43 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
+using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public abstract class Import : EmbeddedObjectNode
+    /// <summary>
+    /// This class represents a single indirection cell in one of the import tables.
+    /// </summary>
+    public class Import : EmbeddedObjectNode, ISymbolDefinitionNode, ISortableSymbolNode
     {
-        public abstract Signature GetSignature(NodeFactory factory);
+        public readonly ImportSectionNode Table;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        internal readonly RvaEmbeddedPointerIndirectionNode<Signature> ImportSignature;
+
+        internal readonly string CallSite;
+
+        public Import(ImportSectionNode tableNode, Signature importSignature, string callSite = null)
         {
-            var signature = GetSignature(factory);
-            if (signature != null)
-                yield return new DependencyListEntry(signature, "Signature for ready-to-run fixup import");
-        }
-    }
-
-    public class ModuleImport : Import
-    {
-        private readonly ReadyToRunHelperSignature _signature;
-
-        public ModuleImport()
-        {
-            _signature = new ReadyToRunHelperSignature(ReadyToRunHelper.READYTORUN_HELPER_Module);
+            Table = tableNode;
+            CallSite = callSite;
+            ImportSignature = new RvaEmbeddedPointerIndirectionNode<Signature>(importSignature, callSite);
         }
 
-        public override bool StaticDependenciesAreComputed => true;
+        protected override string GetName(NodeFactory factory)
+        {
+            Utf8StringBuilder sb = new Utf8StringBuilder();
+            AppendMangledName(factory.NameMangler, sb);
+            return sb.ToString();
+        }
 
-        protected override int ClassCode => throw new NotImplementedException();
+        private const int ClassCodeValue = 667823013;
+
+        protected override int ClassCode => ClassCodeValue;
+
+        int ISortableSymbolNode.ClassCode => ClassCodeValue;
+
+        public virtual bool EmitPrecode => Table.EmitPrecode;
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
         {
@@ -39,11 +47,28 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             dataBuilder.EmitZeroPointer();
         }
 
-        public override Signature GetSignature(NodeFactory factory) => _signature;
-        
-        protected override string GetName(NodeFactory context)
+        public virtual void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            return "ModuleImport";
+            sb.Append(Table.Name);
+            sb.Append("->");
+            ImportSignature.AppendMangledName(nameMangler, sb);
         }
+
+        public override bool StaticDependenciesAreComputed => true;
+
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        {
+            return new DependencyListEntry[] { new DependencyListEntry(ImportSignature, "Signature for ready-to-run fixup import") };
+        }
+
+        public int CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
+        {
+            return new ObjectNodeComparer(comparer).Compare(this, (Import)other);
+        }
+
+        public override bool RepresentsIndirectionCell => true;
+
+        int ISymbolDefinitionNode.Offset => OffsetFromBeginningOfArray;
+        int ISymbolNode.Offset => 0;
     }
 }

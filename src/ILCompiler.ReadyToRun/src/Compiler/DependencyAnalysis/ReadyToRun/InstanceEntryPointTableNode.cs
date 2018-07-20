@@ -64,7 +64,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append("__ReadyToRunInstanceEntryPointTable");
         }
 
-        public void Add(MethodCodeNode methodNode, int methodIndex)
+        public void Add(MethodWithGCInfo methodNode, int methodIndex)
         {
             // TODO: method instance table
         }
