@@ -78,11 +78,6 @@ namespace ILCompiler
                     continue;
 
                 MethodDesc method = methodCodeNodeNeedingCode.Method;
-                if (!NodeFactory.CompilationModuleGroup.ContainsMethodBody(method, unboxingStub: false))
-                {
-                    // Don't drill into methods defined outside of this version bubble
-                    continue;
-                }
 
                 if (Logger.IsVerbose)
                 {
