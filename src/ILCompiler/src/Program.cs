@@ -353,7 +353,6 @@ namespace ILCompiler
                         if (entrypointModule != null)
                             throw new Exception("Multiple EXE modules");
                         entrypointModule = module;
-                        r2rCompilerContext?.InitializeAlgorithm(module.MetadataReader.GetTableRowCount(TableIndex.TypeDef));
                     }
 
                     if (!_isReadyToRunCodeGen)
@@ -435,7 +434,7 @@ namespace ILCompiler
                 {
                     inputFilePath = input.Value;
                 }
-                builder = new ReadyToRunCodegenCompilationBuilder(typeSystemContext, compilationGroup, inputFilePath);
+                builder = new ReadyToRunCodegenCompilationBuilder(r2rCompilerContext, compilationGroup, inputFilePath);
             }
             else if (_isCppCodegen)
                 builder = new CppCodegenCompilationBuilder(typeSystemContext, compilationGroup);

@@ -5,12 +5,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.JitInterface;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
@@ -23,11 +25,14 @@ namespace ILCompiler
         private DependencyAnalysis.ReadyToRun.DevirtualizationManager _r2rDevirtualizationManager;
 
 
-        public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group, string inputFilePath)
+        public ReadyToRunCodegenCompilationBuilder(ReadyToRunCompilerContext context, CompilationModuleGroup group, string inputFilePath)
             : base(context, group, new CoreRTNameMangler(new ReadyToRunNodeMangler(), false))
         {
             _inputFilePath = inputFilePath;
             _r2rDevirtualizationManager = new DependencyAnalysis.ReadyToRun.DevirtualizationManager(group);
+
+            EcmaModule inputModule = context.GetModuleFromPath(_inputFilePath);
+            context.InitializeAlgorithm(inputModule.MetadataReader.GetTableRowCount(TableIndex.TypeDef));
         }
 
         public override CompilationBuilder UseBackendOptions(IEnumerable<string> options)
