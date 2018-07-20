@@ -21,7 +21,6 @@ using Internal.Runtime.CompilerServices;
 #endif
 
 using Internal.IL;
-using Internal.JitInterface;
 using Internal.TypeSystem;
 
 using ILCompiler;
