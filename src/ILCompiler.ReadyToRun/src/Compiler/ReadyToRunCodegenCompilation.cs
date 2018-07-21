@@ -64,13 +64,13 @@ namespace ILCompiler
         {
             foreach (DependencyNodeCore<NodeFactory> dependency in obj)
             {
-                var methodCodeNodeNeedingCode = dependency as MethodCodeNode;
+                var methodCodeNodeNeedingCode = dependency as MethodWithGCInfo;
                 if (methodCodeNodeNeedingCode == null)
                 {
                     // To compute dependencies of the shadow method that tracks dictionary
                     // dependencies we need to ensure there is code for the canonical method body.
                     var dependencyMethod = (ShadowConcreteMethodNode)dependency;
-                    methodCodeNodeNeedingCode = (MethodCodeNode)dependencyMethod.CanonicalMethodNode;
+                    methodCodeNodeNeedingCode = (MethodWithGCInfo)dependencyMethod.CanonicalMethodNode;
                 }
 
                 // We might have already compiled this method.
@@ -78,7 +78,6 @@ namespace ILCompiler
                     continue;
 
                 MethodDesc method = methodCodeNodeNeedingCode.Method;
-
                 if (Logger.IsVerbose)
                 {
                     string methodName = method.ToString();

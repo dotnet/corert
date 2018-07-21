@@ -70,7 +70,8 @@ namespace ILCompiler
                 interopStubManager, 
                 _nameMangler,
                 _vtableSliceProvider, 
-                _dictionaryLayoutProvider);
+                _dictionaryLayoutProvider,
+                _context.GetModuleFromPath(_inputFilePath));
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);
 
             List<CorJitFlag> corJitFlags = new List<CorJitFlag>();

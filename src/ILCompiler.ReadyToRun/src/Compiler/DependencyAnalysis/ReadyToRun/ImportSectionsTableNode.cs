@@ -24,13 +24,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         protected override void GetElementDataForNodes(ref ObjectDataBuilder builder, NodeFactory factory, bool relocsOnly)
         {
             builder.RequireInitialPointerAlignment();
-
+            int index = 0;
             foreach (ImportSectionNode node in NodesList)
             {
-                if (!relocsOnly)
+                if (!relocsOnly && !node.ShouldSkipEmittingTable(factory))
+                {
                     node.InitializeOffsetFromBeginningOfArray(builder.CountBytes);
+                    node.InitializeIndexFromBeginningOfArray(index++);
+                }
 
                 node.EncodeData(ref builder, factory, relocsOnly);
+                if (node is ISymbolDefinitionNode symbolDef)
+                {
+                    builder.AddSymbol(symbolDef);
+                }
             }
         }
 

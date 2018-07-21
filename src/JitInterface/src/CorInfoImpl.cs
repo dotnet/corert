@@ -2017,7 +2017,13 @@ namespace Internal.JitInterface
 
                     if (helperId != ReadyToRunHelperId.Invalid)
                     {
-                        pResult.fieldLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType));
+                        pResult.fieldLookup = CreateConstLookupToSymbol(
+#if READYTORUN
+                            _compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType, pResolvedToken.token)
+#else
+                            _compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType)
+#endif
+                            );
                     }
                 }
             }
@@ -2927,8 +2933,14 @@ namespace Internal.JitInterface
                 if (targetMethod.IsConstructor && targetMethod.OwningType.IsString)
                 {
                     // Calling a string constructor doesn't call the actual constructor.
-                    pResult.codePointerOrStubLookup.constLookup = 
-                        CreateConstLookupToSymbol(_compilation.NodeFactory.StringAllocator(targetMethod));
+                    pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+#if READYTORUN
+                        _compilation.NodeFactory.StringAllocator(targetMethod, pResolvedToken.token)
+
+#else
+                        _compilation.NodeFactory.StringAllocator(targetMethod)
+#endif
+                        );
                 }
                 else if (pResult.exactContextNeedsRuntimeLookup)
                 {
@@ -2938,8 +2950,13 @@ namespace Internal.JitInterface
                     // codegen emitted at crossgen time)
 
                     Debug.Assert(!forceUseRuntimeLookup);
-                    pResult.codePointerOrStubLookup.constLookup = 
-                        CreateConstLookupToSymbol(_compilation.NodeFactory.MethodEntrypoint(targetMethod));
+                    pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+#if READYTORUN
+                        _compilation.NodeFactory.MethodEntrypoint(targetMethod, pResolvedToken.token)
+#else
+                        _compilation.NodeFactory.MethodEntrypoint(targetMethod)
+#endif
+                        );
                 }
                 else
                 {
@@ -2947,7 +2964,11 @@ namespace Internal.JitInterface
 
                     if (targetMethod.RequiresInstMethodDescArg())
                     {
+#if READYTORUN
+                        instParam = _compilation.NodeFactory.MethodGenericDictionary(concreteMethod, pResolvedToken.token);
+#else
                         instParam = _compilation.NodeFactory.MethodGenericDictionary(concreteMethod);
+#endif
                     }
                     else if (targetMethod.RequiresInstMethodTableArg() || referencingArrayAddressMethod)
                     {
@@ -2961,27 +2982,47 @@ namespace Internal.JitInterface
 
                         if (!referencingArrayAddressMethod)
                         {
-                            pResult.codePointerOrStubLookup.constLookup = 
-                                CreateConstLookupToSymbol(_compilation.NodeFactory.ShadowConcreteMethod(concreteMethod));
+                            pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+#if READYTORUN
+                                _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod, pResolvedToken.token)
+#else
+                                _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod)
+#endif
+                                );
                         }
                         else
                         {
                             // We don't want array Address method to be modeled in the generic dependency analysis.
                             // The method doesn't actually have runtime determined dependencies (won't do
                             // any generic lookups).
-                            pResult.codePointerOrStubLookup.constLookup = 
-                                CreateConstLookupToSymbol(_compilation.NodeFactory.MethodEntrypoint(targetMethod));
+                            pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+#if READYTORUN
+                                _compilation.NodeFactory.MethodEntrypoint(targetMethod, pResolvedToken.token)
+#else
+                                _compilation.NodeFactory.MethodEntrypoint(targetMethod)
+#endif
+                                );
                         }
                     }
                     else if (targetMethod.AcquiresInstMethodTableFromThis())
                     {
-                        pResult.codePointerOrStubLookup.constLookup = 
-                            CreateConstLookupToSymbol(_compilation.NodeFactory.ShadowConcreteMethod(concreteMethod));
+                        pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+#if READYTORUN
+                            _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod, pResolvedToken.token)
+#else
+                            _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod)
+#endif
+                            );
                     }
                     else
                     {
-                        pResult.codePointerOrStubLookup.constLookup = 
-                            CreateConstLookupToSymbol(_compilation.NodeFactory.MethodEntrypoint(targetMethod));
+                        pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+#if READYTORUN
+                            _compilation.NodeFactory.MethodEntrypoint(targetMethod, pResolvedToken.token)
+#else
+                            _compilation.NodeFactory.MethodEntrypoint(targetMethod)
+#endif
+                            );
                     }
                 }
 
@@ -3008,8 +3049,12 @@ namespace Internal.JitInterface
                 // move that assert to some place later though.
                 targetIsFatFunctionPointer = true;
             }
-            else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0
+            else
+// In ReadyToRun, we always use the dispatch stub to call virtual methods
+#if !READYTORUN
+            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0
                 && targetMethod.OwningType.IsInterface)
+#endif // !READYTORUN
             {
                 pResult.kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB;
 
@@ -3026,14 +3071,20 @@ namespace Internal.JitInterface
                     pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
                     pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_PVALUE;
                     pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
+#if READYTORUN
+                        _compilation.NodeFactory.InterfaceDispatchCell(targetMethod, pResolvedToken.token
+#else
                         _compilation.NodeFactory.InterfaceDispatchCell(targetMethod
 #if !SUPPORT_JIT
                         , _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled).ToString()
 #endif
+#endif // READYTORUN
                         ));
                 }
             }
-            else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0
+#if !READYTORUN
+            else
+            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0
                 && _compilation.HasFixedSlotVTable(targetMethod.OwningType))
             {
                 pResult.kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_VTABLE;
@@ -3087,6 +3138,7 @@ namespace Internal.JitInterface
                 // TODO: Optimize this
                 pResult.nullInstanceCheck = true;
             }
+#endif // !READYTORUN
 
             pResult.hMethod = ObjectToHandle(targetMethod);
 
