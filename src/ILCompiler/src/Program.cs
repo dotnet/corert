@@ -281,7 +281,9 @@ namespace ILCompiler
             // TODO: compiler switch for SIMD support?
             var simdVectorLength = (_isCppCodegen || _isWasmCodegen) ? SimdVectorLength.None : SimdVectorLength.Vector128Bit;
             var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, TargetAbi.CoreRT, simdVectorLength);
-            var typeSystemContext = new CompilerTypeSystemContext(targetDetails, genericsMode);
+            CompilerTypeSystemContext typeSystemContext = (_isReadyToRunCodeGen
+                ? new ReadyToRunCompilerContext(targetDetails, genericsMode)
+                : new CompilerTypeSystemContext(targetDetails, genericsMode));
 
             //
             // TODO: To support our pre-compiled test tree, allow input files that aren't managed assemblies since

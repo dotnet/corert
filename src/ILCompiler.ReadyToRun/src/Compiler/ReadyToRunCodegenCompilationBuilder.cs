@@ -5,12 +5,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.JitInterface;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
@@ -19,12 +21,18 @@ namespace ILCompiler
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
-        string _inputFilePath;
+        private string _inputFilePath;
+        private DependencyAnalysis.ReadyToRun.DevirtualizationManager _r2rDevirtualizationManager;
+
 
         public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group, string inputFilePath)
             : base(context, group, new CoreRTNameMangler(new ReadyToRunNodeMangler(), false))
         {
             _inputFilePath = inputFilePath;
+            _r2rDevirtualizationManager = new DependencyAnalysis.ReadyToRun.DevirtualizationManager(group);
+
+            EcmaModule inputModule = context.GetModuleFromPath(_inputFilePath);
+            ((ReadyToRunCompilerContext)context).InitializeAlgorithm(inputModule.MetadataReader.GetTableRowCount(TableIndex.TypeDef));
         }
 
         public override CompilationBuilder UseBackendOptions(IEnumerable<string> options)
@@ -55,11 +63,48 @@ namespace ILCompiler
         public override ICompilation ToCompilation()
         {
             var interopStubManager = new CompilerGeneratedInteropStubManager(_compilationGroup, _context, new InteropStateManager(_context.GeneratedAssembly));
-            ReadyToRunCodegenNodeFactory factory = new ReadyToRunCodegenNodeFactory(_context, _compilationGroup, _metadataManager, interopStubManager, _nameMangler, _vtableSliceProvider, _dictionaryLayoutProvider);
+            ReadyToRunCodegenNodeFactory factory = new ReadyToRunCodegenNodeFactory(
+                _context, 
+                _compilationGroup, 
+                _metadataManager, 
+                interopStubManager, 
+                _nameMangler,
+                _vtableSliceProvider, 
+                _dictionaryLayoutProvider);
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);
-            var jitConfig = new JitConfigProvider(Enumerable.Empty<CorJitFlag>(), _ryujitOptions);
 
-            return new ReadyToRunCodegenCompilation(graph, factory, _compilationRoots, _debugInformationProvider, _logger, _devirtualizationManager, jitConfig, _inputFilePath);
+            List<CorJitFlag> corJitFlags = new List<CorJitFlag>();
+
+            switch (_optimizationMode)
+            {
+                case OptimizationMode.None:
+                    corJitFlags.Add(CorJitFlag.CORJIT_FLAG_DEBUG_CODE);
+                    break;
+
+                case OptimizationMode.PreferSize:
+                    corJitFlags.Add(CorJitFlag.CORJIT_FLAG_SIZE_OPT);
+                    break;
+
+                case OptimizationMode.PreferSpeed:
+                    corJitFlags.Add(CorJitFlag.CORJIT_FLAG_SPEED_OPT);
+                    break;
+
+                default:
+                    // Not setting a flag results in BLENDED_CODE.
+                    break;
+            }
+
+            var jitConfig = new JitConfigProvider(corJitFlags, _ryujitOptions);
+
+            return new ReadyToRunCodegenCompilation(
+                graph,
+                factory,
+                _compilationRoots,
+                _debugInformationProvider,
+                _logger,
+                _r2rDevirtualizationManager,
+                jitConfig,
+                _inputFilePath);
         }
     }
 }

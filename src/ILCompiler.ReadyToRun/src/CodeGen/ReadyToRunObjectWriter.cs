@@ -27,7 +27,6 @@ namespace ILCompiler.DependencyAnalysis
     {
         // Nodefactory for which ObjectWriter is instantiated for.
         private ReadyToRunCodegenNodeFactory _nodeFactory;
-        private string _inputFilePath;
         private string _objectFilePath;
         private IEnumerable<DependencyNode> _nodes;
 
@@ -39,9 +38,8 @@ namespace ILCompiler.DependencyAnalysis
         Dictionary<string, ISymbolNode> _previouslyWrittenNodeNames = new Dictionary<string, ISymbolNode>();
 #endif
 
-        public ReadyToRunObjectWriter(string inputFilePath, string objectFilePath, IEnumerable<DependencyNode> nodes, ReadyToRunCodegenNodeFactory factory)
+        public ReadyToRunObjectWriter(string objectFilePath, IEnumerable<DependencyNode> nodes, ReadyToRunCodegenNodeFactory factory)
         {
-            _inputFilePath = inputFilePath;
             _objectFilePath = objectFilePath;
             _nodes = nodes;
             _nodeFactory = factory;
@@ -49,13 +47,11 @@ namespace ILCompiler.DependencyAnalysis
         
         public void EmitPortableExecutable()
         {
-            FileStream inputFileStream = File.OpenRead(_inputFilePath);
             bool succeeded = false;
 
             try
             {
-                var peReader = new PEReader(inputFileStream);
-                var peBuilder = new R2RPEBuilder(Machine.Amd64, peReader, new ValueTuple<string, SectionCharacteristics>[0]);
+                var peBuilder = new R2RPEBuilder(Machine.Amd64, _nodeFactory.PEReader, new ValueTuple<string, SectionCharacteristics>[0]);
                 var sectionBuilder = new SectionBuilder();
 
                 _textSectionIndex = sectionBuilder.AddSection(R2RPEBuilder.TextSectionName, SectionCharacteristics.ContainsCode | SectionCharacteristics.MemExecute | SectionCharacteristics.MemRead, 512);
@@ -129,15 +125,13 @@ namespace ILCompiler.DependencyAnalysis
 
                 using (var peStream = File.Create(_objectFilePath))
                 {
-                    sectionBuilder.EmitR2R(Machine.Amd64, peReader, peStream);
+                    sectionBuilder.EmitR2R(Machine.Amd64, _nodeFactory.PEReader, peStream);
                 }
 
                 succeeded = true;
             }
             finally
             {
-                inputFileStream.Dispose();
-
                 if (!succeeded)
                 {
                     // If there was an exception while generating the OBJ file, make sure we don't leave the unfinished
@@ -153,9 +147,9 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public static void EmitObject(string inputFilePath, string objectFilePath, IEnumerable<DependencyNode> nodes, ReadyToRunCodegenNodeFactory factory)
+        public static void EmitObject(string objectFilePath, IEnumerable<DependencyNode> nodes, ReadyToRunCodegenNodeFactory factory)
         {
-            ReadyToRunObjectWriter objectWriter = new ReadyToRunObjectWriter(inputFilePath, objectFilePath, nodes, factory);
+            ReadyToRunObjectWriter objectWriter = new ReadyToRunObjectWriter(objectFilePath, nodes, factory);
             objectWriter.EmitPortableExecutable();
         }
     }

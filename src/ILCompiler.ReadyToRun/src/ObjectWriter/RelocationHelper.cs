@@ -164,7 +164,7 @@ namespace ILCompiler.PEWriter
                 case RelocType.IMAGE_REL_BASED_REL32:
                     {
                         relocationLength = 4;
-                        delta = targetRVA - sourceRVA;
+                        delta = targetRVA - sourceRVA - 4;
                         break;
                     }
                     
