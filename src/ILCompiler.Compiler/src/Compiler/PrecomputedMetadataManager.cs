@@ -708,7 +708,7 @@ namespace ILCompiler
                     continue;
 
                 int token;
-                if (loadedMetadata.AllTypeMappings.TryGetValue(definition, out token))
+                if (loadedMetadata.AllTypeMappings.TryGetValue(definition, out token) || loadedMetadata.WeakReflectedTypeMappings.TryGetValue(definition, out token))
                 {
                     typeMappings.Add(new MetadataMapping<MetadataType>(definition, token));
                 }

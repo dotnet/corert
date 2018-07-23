@@ -846,7 +846,11 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (_type.HasInstantiation && !_type.IsTypeDefinition)
             {
-                objData.EmitPointerRelocOrIndirectionReference(factory.NecessaryTypeSymbol(_type.GetTypeDefinition()));
+                IEETypeNode typeDefNode = factory.NecessaryTypeSymbol(_type.GetTypeDefinition());
+                if (factory.Target.SupportsRelativePointers)
+                    objData.EmitRelativeRelocOrIndirectionReference(typeDefNode);
+                else
+                    objData.EmitPointerRelocOrIndirectionReference(typeDefNode);
 
                 GenericCompositionDetails details;
                 if (_type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)
@@ -864,7 +868,11 @@ namespace ILCompiler.DependencyAnalysis
                 else
                     details = new GenericCompositionDetails(_type);
 
-                objData.EmitPointerReloc(factory.GenericComposition(details));
+                ISymbolNode compositionNode = factory.GenericComposition(details);
+                if (factory.Target.SupportsRelativePointers)
+                    objData.EmitReloc(compositionNode, RelocType.IMAGE_REL_BASED_RELPTR32);
+                else
+                    objData.EmitPointerReloc(compositionNode);
             }
         }
 
