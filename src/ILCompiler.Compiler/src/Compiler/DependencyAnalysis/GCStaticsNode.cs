@@ -65,7 +65,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             dependencyList.Add(factory.GCStaticsRegion, "GCStatics Region");
-            if (factory.Target.Abi == TargetAbi.CoreRT)
+            if (factory.Target.Abi != TargetAbi.ProjectN)
             {
                 dependencyList.Add(GetGCStaticEETypeNode(factory), "GCStatic EEType");
                 if (_preInitFieldInfos != null)
