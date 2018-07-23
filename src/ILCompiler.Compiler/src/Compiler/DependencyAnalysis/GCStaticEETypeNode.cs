@@ -69,7 +69,7 @@ namespace ILCompiler.DependencyAnalysis
             dataBuilder.AddSymbol(this);
 
             // +1 for SyncBlock (in CoreRT static size already includes EEType)
-            Debug.Assert(factory.Target.Abi == TargetAbi.CoreRT);
+            Debug.Assert(factory.Target.Abi == TargetAbi.CoreRT || factory.Target.Abi == TargetAbi.CppCodegen);
             int totalSize = (_gcMap.Size + 1) * _target.PointerSize;
 
             // We only need to check for containsPointers because ThreadStatics are always allocated

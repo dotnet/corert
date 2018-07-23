@@ -372,63 +372,13 @@ inline UInt8 EEType::GetNullableValueOffset()
     return pOptFields->GetNullableValueOffset(0) + 1;
 }
 
-inline void EEType::set_GenericDefinition(EEType *pTypeDef)
-{
-    ASSERT(IsGeneric());
-
-    UInt32 cbOffset = GetFieldOffset(ETF_GenericDefinition);
-
-    *(EEType**)((UInt8*)this + cbOffset) = pTypeDef;
-}
-
-inline EETypeRef & EEType::get_GenericDefinition()
-{
-    ASSERT(IsGeneric());
-
-    UInt32 cbOffset = GetFieldOffset(ETF_GenericDefinition);
-
-    return *(EETypeRef *)((UInt8*)this + cbOffset);
-}
-
 inline void EEType::set_GenericComposition(GenericComposition *pGenericComposition)
 {
-    ASSERT(IsGeneric());
+    ASSERT(IsGeneric() && IsDynamicType());
 
     UInt32 cbOffset = GetFieldOffset(ETF_GenericComposition);
 
     *(GenericComposition **)((UInt8*)this + cbOffset) = pGenericComposition;
-}
-
-inline GenericComposition *EEType::get_GenericComposition()
-{
-    ASSERT(IsGeneric());
-
-    UInt32 cbOffset = GetFieldOffset(ETF_GenericComposition);
-
-    GenericComposition *pGenericComposition = *(GenericComposition **)((UInt8*)this + cbOffset);
-
-    return pGenericComposition;
-}
-
-inline UInt32 EEType::get_GenericArity()
-{
-    GenericComposition *pGenericComposition = get_GenericComposition();
-
-    return pGenericComposition->GetArity();
-}
-
-inline EETypeRef* EEType::get_GenericArguments()
-{
-    GenericComposition *pGenericComposition = get_GenericComposition();
-
-    return pGenericComposition->GetArguments();
-}
-
-inline GenericVarianceType* EEType::get_GenericVariance()
-{
-    GenericComposition *pGenericComposition = get_GenericComposition();
-
-    return pGenericComposition->GetVariance();
 }
 
 inline EEType * EEType::get_DynamicTemplateType()
@@ -570,7 +520,7 @@ inline DynamicModule * EEType::get_DynamicModule()
         + (fRequiresOptionalFields ? sizeof(UIntTarget) : 0)
         + (fRequiresNullableType ? sizeof(UIntTarget) : 0)
         + (fHasSealedVirtuals ? sizeof(Int32) : 0)
-        + (fHasGenericInfo ? sizeof(UIntTarget)*2 : 0);
+        + (fHasGenericInfo ? sizeof(UInt32)*2 : 0);
 }
 
 #if !defined(BINDER) && !defined(DACCESS_COMPILE)
@@ -673,7 +623,7 @@ __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
         return cbOffset;
     }
     if (IsGeneric())
-        cbOffset += sizeof(UIntTarget);
+        cbOffset += (IsDynamicType() ? sizeof(UIntTarget) : sizeof(UInt32));
 
     if (eField == ETF_GenericComposition)
     {
@@ -681,7 +631,7 @@ __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
         return cbOffset;
     }
     if (IsGeneric())
-        cbOffset += sizeof(UIntTarget);
+        cbOffset += (IsDynamicType() ? sizeof(UIntTarget) : sizeof(UInt32));
 
     if (eField == ETF_DynamicModule)
     {
@@ -795,7 +745,7 @@ __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
         {
             return cbOffset;
         }
-        cbOffset += sizeof(UIntTarget);
+        cbOffset += sizeof(UInt32);
 
         if (eField == ETF_GenericComposition)
         {
