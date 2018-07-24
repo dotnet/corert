@@ -87,6 +87,7 @@
     </Compile>
     <Compile Include="Compiler\AnalysisBasedMetadataManager.cs" />
     <Compile Include="Compiler\BlockedInternalsBlockingPolicy.cs" />
+    <Compile Include="Compiler\ReadyToRunMultiFileCompilationModuleGroup.cs" />
     <Compile Include="Compiler\CodeGenerationFailedException.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.BoxedTypes.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Mangling.cs" />
