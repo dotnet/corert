@@ -378,7 +378,14 @@ namespace ILCompiler
                         inputModules.Add(module);
                     }
 
-                    compilationGroup = new MultiFileSharedCompilationModuleGroup(typeSystemContext, inputModules);
+                    if (_isReadyToRunCodeGen)
+                    {
+                        compilationGroup = new ReadyToRunMultiFileSharedCompilationModuleGroup(typeSystemContext, inputModules);
+                    }
+                    else
+                    {
+                        compilationGroup = new MultiFileSharedCompilationModuleGroup(typeSystemContext, inputModules);
+                    }
                 }
                 else
                 {
