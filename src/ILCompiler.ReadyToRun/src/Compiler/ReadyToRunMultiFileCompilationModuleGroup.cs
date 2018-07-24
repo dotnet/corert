@@ -24,7 +24,7 @@ namespace ILCompiler
             _compilationModuleSet.Add(context.GeneratedAssembly);
         }
 
-        public sealed override bool ContainsType(TypeDesc type)//
+        public sealed override bool ContainsType(TypeDesc type)
         {
             if (type is EcmaType ecmaType)
             {
@@ -42,7 +42,7 @@ namespace ILCompiler
             return ContainsType(type);
         }
 
-        public sealed override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)//
+        public sealed override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)
         {
             if (method.HasInstantiation)
                 return true;
@@ -76,12 +76,12 @@ namespace ILCompiler
             return ExportForm.None;
         }
 
-        private bool IsModuleInCompilationGroup(EcmaModule module)//
+        private bool IsModuleInCompilationGroup(EcmaModule module)
         {
             return _compilationModuleSet.Contains(module);
         }
 
-        public sealed override bool IsSingleFileCompilation//
+        public sealed override bool IsSingleFileCompilation
         {
             get
             {
