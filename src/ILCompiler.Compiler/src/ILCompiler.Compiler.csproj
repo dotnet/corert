@@ -103,6 +103,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolsImportedNodeProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolsWithIndirectionImportedNodeProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IndirectionExtensions.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchCellSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MrtImportImportedNodeProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MrtImports.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MrtProcessedExportAddressTableNode.cs" />
