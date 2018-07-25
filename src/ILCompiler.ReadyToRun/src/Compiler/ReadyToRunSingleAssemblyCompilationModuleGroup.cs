@@ -12,11 +12,11 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
-    public abstract class ReadyToRunMultiFileCompilationModuleGroup : CompilationModuleGroup
+    public class ReadyToRunSingleAssemblyCompilationModuleGroup : CompilationModuleGroup
     {
         private HashSet<ModuleDesc> _compilationModuleSet;
 
-        public ReadyToRunMultiFileCompilationModuleGroup(TypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
+        public ReadyToRunSingleAssemblyCompilationModuleGroup(TypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
         {
             _compilationModuleSet = new HashSet<ModuleDesc>(compilationModuleSet);
 
@@ -100,17 +100,6 @@ namespace ILCompiler
             {
                 return false;
             }
-        }
-    }
-
-    /// <summary>
-    /// Represents a non-leaf multifile compilation group where types contained in the group are always fully expanded.
-    /// </summary>
-    public class ReadyToRunMultiFileSharedCompilationModuleGroup : ReadyToRunMultiFileCompilationModuleGroup
-    {
-        public ReadyToRunMultiFileSharedCompilationModuleGroup(TypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
-            : base(context, compilationModuleSet)
-        {
         }
 
         public override bool ShouldProduceFullVTable(TypeDesc type)

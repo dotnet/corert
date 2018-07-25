@@ -362,7 +362,7 @@ namespace ILCompiler
                     }
                 }
 
-                if (_multiFile)
+                if (_multiFile || _isReadyToRunCodeGen)
                 {
                     List<EcmaModule> inputModules = new List<EcmaModule>();
 
@@ -380,7 +380,7 @@ namespace ILCompiler
 
                     if (_isReadyToRunCodeGen)
                     {
-                        compilationGroup = new ReadyToRunMultiFileSharedCompilationModuleGroup(typeSystemContext, inputModules);
+                        compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(typeSystemContext, inputModules);
                     }
                     else
                     {

@@ -67,7 +67,7 @@
     <Compile Include="Compiler\ReadyToRunCodegenCompilationBuilder.cs" />
     <Compile Include="Compiler\ReadyToRunCompilerContext.cs" />
     <Compile Include="Compiler\ReadyToRunMetadataFieldLayoutAlgorithm.cs" />
-    <Compile Include="Compiler\ReadyToRunMultiFileCompilationModuleGroup.cs" />
+    <Compile Include="Compiler\ReadyToRunSingleAssemblyCompilationModuleGroup.cs" />
     <Compile Include="Compiler\ReadyToRunNodeMangler.cs" />
     <Compile Include="JitInterface\CorInfoImpl.ReadyToRun.cs" />
     <Compile Include="ObjectWriter\SectionBuilder.cs" />
