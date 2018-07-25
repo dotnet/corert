@@ -362,7 +362,7 @@ namespace ILCompiler
                     }
                 }
 
-                if (_multiFile)
+                if (_multiFile || _isReadyToRunCodeGen)
                 {
                     List<EcmaModule> inputModules = new List<EcmaModule>();
 
@@ -378,7 +378,14 @@ namespace ILCompiler
                         inputModules.Add(module);
                     }
 
-                    compilationGroup = new MultiFileSharedCompilationModuleGroup(typeSystemContext, inputModules);
+                    if (_isReadyToRunCodeGen)
+                    {
+                        compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(typeSystemContext, inputModules);
+                    }
+                    else
+                    {
+                        compilationGroup = new MultiFileSharedCompilationModuleGroup(typeSystemContext, inputModules);
+                    }
                 }
                 else
                 {
