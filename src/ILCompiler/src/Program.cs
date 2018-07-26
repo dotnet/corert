@@ -362,7 +362,24 @@ namespace ILCompiler
                     }
                 }
 
-                if (_multiFile || _isReadyToRunCodeGen)
+                if (_isReadyToRunCodeGen)
+                {
+                    List<EcmaModule> inputModules = new List<EcmaModule>();
+
+                    foreach (var inputFile in typeSystemContext.InputFilePaths)
+                    {
+                        EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
+
+                        if (entrypointModule == null)
+                        {
+                            compilationRoots.Add(new LibraryRootProvider(module));
+                        }
+                        inputModules.Add(module);
+                    }
+
+                    compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(typeSystemContext, inputModules);
+                }
+                else if (_multiFile)
                 {
                     List<EcmaModule> inputModules = new List<EcmaModule>();
 
@@ -378,14 +395,7 @@ namespace ILCompiler
                         inputModules.Add(module);
                     }
 
-                    if (_isReadyToRunCodeGen)
-                    {
-                        compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(typeSystemContext, inputModules);
-                    }
-                    else
-                    {
-                        compilationGroup = new MultiFileSharedCompilationModuleGroup(typeSystemContext, inputModules);
-                    }
+                    compilationGroup = new MultiFileSharedCompilationModuleGroup(typeSystemContext, inputModules);
                 }
                 else
                 {
