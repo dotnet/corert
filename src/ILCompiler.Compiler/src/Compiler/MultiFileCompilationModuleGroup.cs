@@ -26,14 +26,16 @@ namespace ILCompiler
 
         public sealed override bool ContainsType(TypeDesc type)
         {
-            if (type is EcmaType ecmaType)
+            EcmaType ecmaType = type as EcmaType;
+
+            if (ecmaType == null)
+                return true;
+
+            if (!IsModuleInCompilationGroup(ecmaType.EcmaModule))
             {
-                return IsModuleInCompilationGroup(ecmaType.EcmaModule);
+                return false;
             }
-            if (type is InstantiatedType instantiatedType)
-            {
-                return ContainsType(instantiatedType.GetTypeDefinition());
-            }
+
             return true;
         }
 
@@ -100,7 +102,7 @@ namespace ILCompiler
             {
                 return false;
             }
-        } 
+        }
     }
 
     /// <summary>
@@ -125,7 +127,7 @@ namespace ILCompiler
 
         public override bool PresenceOfEETypeImpliesAllMethodsOnType(TypeDesc type)
         {
-            return (type.HasInstantiation || type.IsArray) && ShouldProduceFullVTable(type) && 
+            return (type.HasInstantiation || type.IsArray) && ShouldProduceFullVTable(type) &&
                    type.ConvertToCanonForm(CanonicalFormKind.Specific).IsCanonicalSubtype(CanonicalFormKind.Any);
         }
     }
