@@ -131,6 +131,7 @@
     <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(IntermediateOutputRootPath)$(MSBuildProjectName)</IntermediateOutputPath>
 
     <RuntimePath Condition="'$(RuntimePath)' == ''">$(IntermediateOutputRootPath)test-runtime/</RuntimePath>
+    <CoreClrRuntimePath Condition="'$(CoreClrRuntimePath)' == ''">$(IntermediateOutputRootPath)CoreClrRuntime/</CoreClrRuntimePath>
 
     <!-- Use the shared tools host and runtime for testing -->
     <TestHostRootPath Condition="'$(TestHostRootPath)' == ''">$(DotnetCliPath)</TestHostRootPath>
