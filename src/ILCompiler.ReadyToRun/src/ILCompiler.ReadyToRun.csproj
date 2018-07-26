@@ -65,8 +65,6 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypesTableNode.cs" />
     <Compile Include="Compiler\ReadyToRunCodegenCompilation.cs" />
     <Compile Include="Compiler\ReadyToRunCodegenCompilationBuilder.cs" />
-    <Compile Include="Compiler\ReadyToRunCompilerContext.cs" />
-    <Compile Include="Compiler\ReadyToRunMetadataFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\ReadyToRunSingleAssemblyCompilationModuleGroup.cs" />
     <Compile Include="Compiler\ReadyToRunNodeMangler.cs" />
     <Compile Include="JitInterface\CorInfoImpl.ReadyToRun.cs" />
