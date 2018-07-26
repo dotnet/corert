@@ -677,8 +677,8 @@ namespace Internal.TypeSystem.TypesDebugInfo
             uint recordSize = 12 + DebugInfoBlob.StringLengthEncoded(name);
             _blob.WriteWORD(checked((ushort)(_blob.DWORDAlignedSize(recordSize) - 2))); // don't include size of 'length' in 'length'
             _blob.WriteLeafKind(LeafKind.LF_MFUNC_ID);
-            _blob.WriteDWORD(memberIdDescriptor.MemberFunction);
             _blob.WriteDWORD(memberIdDescriptor.ParentClass);
+            _blob.WriteDWORD(memberIdDescriptor.MemberFunction);
             _blob.WriteString(name);
             _blob.AlignToDWORD();
             VerifyBlobEligibleToBeBetweenRecords();
