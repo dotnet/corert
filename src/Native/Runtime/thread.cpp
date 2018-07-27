@@ -728,8 +728,6 @@ bool Thread::InternalHijack(PAL_LIMITED_CONTEXT * pSuspendCtx, void * pvHijackTa
 
     if (frameIterator.IsValid())
     {
-        CrossThreadUnhijack();
-
         frameIterator.CalculateCurrentMethodState();
 
         frameIterator.GetCodeManager()->UnsynchronizedHijackMethodLoops(frameIterator.GetMethodInfo());
@@ -738,10 +736,16 @@ bool Thread::InternalHijack(PAL_LIMITED_CONTEXT * pSuspendCtx, void * pvHijackTa
         GCRefKind retValueKind;
 
         if (frameIterator.GetCodeManager()->GetReturnAddressHijackInfo(frameIterator.GetMethodInfo(),
-                                                                  frameIterator.GetRegisterSet(),
-                                                                  &ppvRetAddrLocation, 
-                                                                  &retValueKind))
+            frameIterator.GetRegisterSet(),
+            &ppvRetAddrLocation,
+            &retValueKind))
         {
+            // ARM64 epilogs have a window between loading the hijackable return address into LR and the RET instruction.
+            // We cannot hijack or unhijack a thread while it is suspended in that window unless we implement hijacking
+            // via LR register modification. Therefore it is important to check our ability to hijack the thread before
+            // unhijacking it.
+            CrossThreadUnhijack();
+
             void* pvRetAddr = *ppvRetAddrLocation;
             ASSERT(ppvRetAddrLocation != NULL);
             ASSERT(pvRetAddr != NULL);
