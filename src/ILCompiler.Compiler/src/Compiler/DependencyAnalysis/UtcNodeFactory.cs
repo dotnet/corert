@@ -351,14 +351,6 @@ namespace ILCompiler
             return ReadOnlyDataBlob(NameMangler.GetMangledFieldName(field), ((EcmaField)field).GetFieldRvaData(), Target.PointerSize);
         }
 
-        public class UtcDictionaryLayoutProvider : DictionaryLayoutProvider
-        {
-            public override DictionaryLayoutNode GetLayout(TypeSystemEntity methodOrType)
-            {
-                return new UtcDictionaryLayoutNode(methodOrType);
-            }
-        }
-
         public ISymbolNode LoopHijackFlagSymbol()
         {
             return LoopHijackFlag;
