@@ -401,10 +401,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\explicitlayout\Regressions\ASURT\ASURT150271\test16\test16.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\asurt150271\test3\test3.*" />
 
-    <!-- Infinitely recursive variant interface casting -->
-    <!-- https://github.com/dotnet/corert/issues/2365 -->
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\regressions\dev10_531793\dev10_531793\dev10_531793.*" />
-
     <!-- Disallow allocation of delegate types with bad variance -->
     <!-- https://github.com/dotnet/corert/issues/2366 -->
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\Delegates\Delegates002\Delegates002.*" />
