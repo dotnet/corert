@@ -815,7 +815,7 @@ namespace ILCompiler.CppCodeGen
                     string mangledName = ((ISymbolNode)node).GetMangledName(factory.NameMangler);
 
                     // Rename generic composition and optional fields nodes to avoid name clash with types
-                    bool shouldReplaceNamespaceQualifier = node is GenericCompositionNode || node is EETypeOptionalFieldsNode;
+                    bool shouldReplaceNamespaceQualifier = node is GenericCompositionNode || node is EETypeOptionalFieldsNode || node is SealedVTableNode;
                     nodeCode.Append(shouldReplaceNamespaceQualifier ? mangledName.Replace("::", "_") : mangledName);
                 }
                 nodeCode.Append("()");
@@ -903,10 +903,15 @@ namespace ILCompiler.CppCodeGen
                 relocCode.Append("()");
             }
             // Node is either an non-emitted type or a generic composition - both are ignored for CPP codegen
-            else if ((reloc.Target is TypeManagerIndirectionNode || reloc.Target is InterfaceDispatchMapNode || reloc.Target is EETypeOptionalFieldsNode || reloc.Target is GenericCompositionNode) && !(reloc.Target as ObjectNode).ShouldSkipEmittingObjectNode(factory))
+            else if ((reloc.Target is TypeManagerIndirectionNode ||
+                reloc.Target is InterfaceDispatchMapNode ||
+                reloc.Target is EETypeOptionalFieldsNode ||
+                reloc.Target is GenericCompositionNode ||
+                reloc.Target is SealedVTableNode
+                ) && !(reloc.Target as ObjectNode).ShouldSkipEmittingObjectNode(factory))
             {
                 string mangledTargetName = reloc.Target.GetMangledName(factory.NameMangler);
-                bool shouldReplaceNamespaceQualifier = reloc.Target is GenericCompositionNode || reloc.Target is EETypeOptionalFieldsNode;
+                bool shouldReplaceNamespaceQualifier = reloc.Target is GenericCompositionNode || reloc.Target is EETypeOptionalFieldsNode || reloc.Target is SealedVTableNode;
                 relocCode.Append(shouldReplaceNamespaceQualifier ? mangledTargetName.Replace("::", "_") : mangledTargetName);
                 relocCode.Append("()");
             }
@@ -1037,7 +1042,11 @@ namespace ILCompiler.CppCodeGen
             {
                 if (node is EETypeNode)
                     OutputTypeNode(node as EETypeNode, factory, typeDefinitions, methodTables);
-                else if ((node is EETypeOptionalFieldsNode || node is TypeManagerIndirectionNode || node is GenericCompositionNode || node is BlobNode) && !(node as ObjectNode).ShouldSkipEmittingObjectNode(factory))
+                else if ((node is EETypeOptionalFieldsNode ||
+                    node is TypeManagerIndirectionNode ||
+                    node is GenericCompositionNode ||
+                    node is BlobNode ||
+                    node is SealedVTableNode) && !(node as ObjectNode).ShouldSkipEmittingObjectNode(factory))
                     additionalNodes.Append(GetCodeForObjectNode(node as ObjectNode, factory));
                 else if (node is ArrayOfEmbeddedPointersNode<InterfaceDispatchMapNode> dispatchMap)
                 {

@@ -90,10 +90,6 @@ namespace ILCompiler.DependencyAnalysis
 
             _sealedVTableEntries = new List<MethodDesc>();
 
-            // Cpp codegen does not support sealed vtables
-            if (factory.IsCppCodegenTemporaryWorkaround)
-                return true;
-
             IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(declType).Slots;
 
             for (int i = 0; i < virtualSlots.Count; i++)
@@ -153,7 +149,12 @@ namespace ILCompiler.DependencyAnalysis
                 for (int i = 0; i < _sealedVTableEntries.Count; i++)
                 {
                     MethodDesc canonImplMethod = _sealedVTableEntries[i].GetCanonMethodTarget(CanonicalFormKind.Specific);
-                    objData.EmitReloc(factory.MethodEntrypoint(canonImplMethod, _sealedVTableEntries[i].OwningType.IsValueType), RelocType.IMAGE_REL_BASED_RELPTR32);
+                    IMethodNode relocTarget = factory.MethodEntrypoint(canonImplMethod, _sealedVTableEntries[i].OwningType.IsValueType);
+
+                    if (factory.Target.SupportsRelativePointers)
+                        objData.EmitReloc(relocTarget, RelocType.IMAGE_REL_BASED_RELPTR32);
+                    else
+                        objData.EmitPointerReloc(relocTarget);
                 }
             }
 
