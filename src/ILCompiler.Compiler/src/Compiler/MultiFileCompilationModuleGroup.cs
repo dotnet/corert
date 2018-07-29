@@ -102,7 +102,7 @@ namespace ILCompiler
             {
                 return false;
             }
-        }
+        } 
     }
 
     /// <summary>
@@ -127,7 +127,7 @@ namespace ILCompiler
 
         public override bool PresenceOfEETypeImpliesAllMethodsOnType(TypeDesc type)
         {
-            return (type.HasInstantiation || type.IsArray) && ShouldProduceFullVTable(type) &&
+            return (type.HasInstantiation || type.IsArray) && ShouldProduceFullVTable(type) && 
                    type.ConvertToCanonForm(CanonicalFormKind.Specific).IsCanonicalSubtype(CanonicalFormKind.Any);
         }
     }
