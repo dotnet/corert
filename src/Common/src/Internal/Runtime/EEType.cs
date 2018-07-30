@@ -1035,7 +1035,7 @@ namespace Internal.Runtime
 
             fixed (EEType* pThis = &this)
             {
-                if (IsDynamicType)
+                if (IsDynamicType || !SupportsRelativePointers)
                 {
                     uint cbSealedVirtualSlotsTypeOffset = GetFieldOffset(EETypeField.ETF_SealedVirtualSlots);
                     IntPtr* pSealedVirtualsSlotTable = *(IntPtr**)((byte*)pThis + cbSealedVirtualSlotsTypeOffset);
@@ -1318,7 +1318,7 @@ namespace Internal.Runtime
 
             // in the case of sealed vtable entries on static types, we have a UInt sized relative pointer
             if ((rareFlags & EETypeRareFlags.HasSealedVTableEntriesFlag) != 0)
-                cbOffset += (IsDynamicType ? (uint)IntPtr.Size : 4);
+                cbOffset += (IsDynamicType || !SupportsRelativePointers ? (uint)IntPtr.Size : 4);
 
             if (eField == EETypeField.ETF_DynamicDispatchMap)
             {
