@@ -12,7 +12,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// This node emits a thunk calling DelayLoad_Helper with a given instance signature
     /// to populate its indirection cell.
     /// </summary>
-    public class DelayLoadHelperThunk : ObjectNode, ISymbolDefinitionNode
+    public class DelayLoadHelperThunk : AssemblyStubNode, ISymbolDefinitionNode
     {
         private readonly ISymbolNode _helperCell;
 
@@ -27,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _moduleImport = factory.ModuleImport;
         }
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append("DelayLoadHelper->");
             _instanceCell.AppendMangledName(nameMangler, sb);
@@ -38,64 +38,48 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return "DelayLoadHelper";
         }
 
-        public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
+        protected override void EmitCode(NodeFactory factory, ref X64.X64Emitter instructionEncoder, bool relocsOnly)
         {
-            ObjectDataBuilder builder = new ObjectDataBuilder();
-            builder.AddSymbol(this);
-
-            switch (factory.Target.Architecture)
+            // lea rax, [pCell]
+            instructionEncoder.EmitLEAQ(X64.Register.RAX, _instanceCell);
+            if (!relocsOnly)
             {
-                case TargetArchitecture.X64:
-                    {
-                        if (!relocsOnly)
-                        {
-                            builder.RequireInitialAlignment(8);
+                // push table index
+                instructionEncoder.Builder.EmitByte(0x6A);
+                instructionEncoder.Builder.EmitByte((byte)_instanceCell.Table.IndexFromBeginningOfArray);
 
-                            // lea rax, [pCell]
-                            builder.EmitByte(0x48);
-                            builder.EmitByte(0x8D);
-                            builder.EmitByte(0x05);
-                        }
-                        builder.EmitReloc(_instanceCell, RelocType.IMAGE_REL_BASED_REL32);
-
-                        if (!relocsOnly)
-                        {
-                            // push table index
-                            builder.EmitByte(0x6A);
-                            builder.EmitByte((byte)_instanceCell.Table.IndexFromBeginningOfArray);
-
-                            // push [module]
-                            builder.EmitByte(0xFF);
-                            builder.EmitByte(0x35);
-                        }
-                        builder.EmitReloc(_moduleImport, RelocType.IMAGE_REL_BASED_REL32);
-
-                        if (!relocsOnly)
-                        {
-                            // TODO: additional tricks regarding UNIX AMD64 ABI
-
-                            // jmp [helper]
-                            builder.EmitByte(0xFF);
-                            builder.EmitByte(0x25);
-                        }
-                        builder.EmitReloc(_helperCell, RelocType.IMAGE_REL_BASED_REL32);
-
-                        break;
-                    }
-
-                default:
-                    throw new NotImplementedException();
+                // push [module]
+                instructionEncoder.Builder.EmitByte(0xFF);
+                instructionEncoder.Builder.EmitByte(0x35);
             }
+            instructionEncoder.Builder.EmitReloc(_moduleImport, RelocType.IMAGE_REL_BASED_REL32);
+            
+            if (!relocsOnly)
+            {
+                // TODO: additional tricks regarding UNIX AMD64 ABI
 
-            return builder.ToObjectData();
+                // jmp [helper]
+                instructionEncoder.Builder.EmitByte(0xFF);
+                instructionEncoder.Builder.EmitByte(0x25);
+            }
+            instructionEncoder.Builder.EmitReloc(_helperCell, RelocType.IMAGE_REL_BASED_REL32);
         }
 
-        public override ObjectNodeSection Section => ObjectNodeSection.TextSection;
+        protected override void EmitCode(NodeFactory factory, ref X86.X86Emitter instructionEncoder, bool relocsOnly)
+        {
+            throw new NotImplementedException();
+        }
 
-        int ISymbolDefinitionNode.Offset => 0;
-        int ISymbolNode.Offset => 0;
-        public override bool IsShareable => false;
-        public override bool StaticDependenciesAreComputed => true;
+        protected override void EmitCode(NodeFactory factory, ref ARM.ARMEmitter instructionEncoder, bool relocsOnly)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override void EmitCode(NodeFactory factory, ref ARM64.ARM64Emitter instructionEncoder, bool relocsOnly)
+        {
+            throw new NotImplementedException();
+        }
+
         protected override int ClassCode => 433266948;
     }
 

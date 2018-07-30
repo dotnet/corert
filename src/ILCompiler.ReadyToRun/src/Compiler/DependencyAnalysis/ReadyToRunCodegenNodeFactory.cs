@@ -416,7 +416,6 @@ namespace ILCompiler.DependencyAnalysis
             return ExternSymbol(helperId);
         }
 
-
         private ISymbolNode CreateBoxHelper()
         {
             return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Box);
