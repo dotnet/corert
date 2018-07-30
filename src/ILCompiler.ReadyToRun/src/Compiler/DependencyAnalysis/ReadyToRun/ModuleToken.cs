@@ -54,6 +54,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return result;
         }
 
+        public SignatureContext SignatureContext(ReadyToRunCodegenNodeFactory factory)
+        {
+            return new SignatureContext(factory, Module);
+        }
+
         public MetadataReader MetadataReader => Module.PEReader.GetMetadataReader();
 
         public CorTokenType TokenType => SignatureBuilder.TypeFromToken(Token);

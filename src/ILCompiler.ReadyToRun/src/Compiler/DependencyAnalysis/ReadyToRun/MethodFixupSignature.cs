@@ -20,6 +20,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             Signature,
         }
 
+        private readonly ReadyToRunCodegenNodeFactory _factory;
+
         private readonly ReadyToRunFixupKind _fixupKind;
 
         private readonly MethodDesc _methodDesc;
@@ -28,8 +30,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly SignatureKind _signatureKind;
 
-        public MethodFixupSignature(ReadyToRunFixupKind fixupKind, MethodDesc methodDesc, ModuleToken methodToken, SignatureKind signatureKind)
+        public MethodFixupSignature(
+            ReadyToRunCodegenNodeFactory factory, 
+            ReadyToRunFixupKind fixupKind, 
+            MethodDesc methodDesc, 
+            ModuleToken methodToken, 
+            SignatureKind signatureKind)
         {
+            _factory = factory;
             _fixupKind = fixupKind;
             _methodDesc = methodDesc;
             _methodToken = methodToken;
@@ -56,7 +64,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     break;
 
                 case SignatureKind.Signature:
-                    dataBuilder.EmitMethodSignature(_methodDesc, _methodToken, r2rFactory.SignatureContext);
+                    dataBuilder.EmitMethodSignature(_methodDesc, _methodToken, _methodToken.SignatureContext(_factory));
                     break;
 
                 default:

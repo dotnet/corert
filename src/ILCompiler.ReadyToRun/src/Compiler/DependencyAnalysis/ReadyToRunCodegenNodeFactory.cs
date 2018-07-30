@@ -33,8 +33,7 @@ namespace ILCompiler.DependencyAnalysis
             InteropStubManager interopStubManager, 
             NameMangler nameMangler, 
             VTableSliceProvider vtableSliceProvider, 
-            DictionaryLayoutProvider dictionaryLayoutProvider,
-            EcmaModule inputModule)
+            DictionaryLayoutProvider dictionaryLayoutProvider)
             : base(context,
                   compilationModuleGroup,
                   metadataManager,
@@ -47,7 +46,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             _importMethods = new Dictionary<MethodDesc, IMethodNode>();
             _importStrings = new Dictionary<ModuleToken, ISymbolNode>();
-            _inputModule = inputModule;
             _r2rHelpers = new Dictionary<ReadyToRunHelperId, Dictionary<object, ISymbolNode>>();
         }
 
@@ -76,28 +74,6 @@ namespace ILCompiler.DependencyAnalysis
         public ImportSectionNode HelperImports;
 
         public ImportSectionNode PrecodeImports;
-
-        /// <summary>
-        /// TODO: this will need changing when compiling multiple files. Ideally this
-        /// should be switched every time we compile a method in a particular module
-        /// because this is what provides context for reference token resolution.
-        /// </summary>
-        EcmaModule _inputModule;
-
-        SignatureContext _signatureContext;
-
-        public SignatureContext SignatureContext
-        {
-            get
-            {
-                if (_signatureContext == null)
-                {
-                    _signatureContext = new SignatureContext(this, _inputModule);
-                }
-                return _signatureContext;
-            }
-        }
-
 
         Dictionary<MethodDesc, IMethodNode> _methodMap = new Dictionary<MethodDesc, IMethodNode>();
 
@@ -273,7 +249,7 @@ namespace ILCompiler.DependencyAnalysis
 
             return new DelayLoadHelperImport(this,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
-                new NewObjectFixupSignature(type, typeToken));
+                new NewObjectFixupSignature(this, type, typeToken));
         }
 
         private ISymbolNode CreateNewArrayHelper(ArrayType type, ModuleToken typeRefToken)
@@ -282,7 +258,7 @@ namespace ILCompiler.DependencyAnalysis
             return new DelayLoadHelperImport(
                 this,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
-                new NewArrayFixupSignature(type, typeRefToken));
+                new NewArrayFixupSignature(this, type, typeRefToken));
         }
 
         private ISymbolNode CreateGCStaticBaseHelper(TypeDesc type, ModuleToken token)
@@ -290,7 +266,7 @@ namespace ILCompiler.DependencyAnalysis
             return new DelayLoadHelperImport(
                 this,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
-                new TypeFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_StaticBaseGC, type, GetTypeToken(token)));
+                new TypeFixupSignature(this, ReadyToRunFixupKind.READYTORUN_FIXUP_StaticBaseGC, type, GetTypeToken(token)));
         }
 
         private ISymbolNode CreateNonGCStaticBaseHelper(TypeDesc type, ModuleToken token)
@@ -298,7 +274,7 @@ namespace ILCompiler.DependencyAnalysis
             return new DelayLoadHelperImport(
                 this,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
-                new TypeFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_StaticBaseNonGC, type, GetTypeToken(token)));
+                new TypeFixupSignature(this, ReadyToRunFixupKind.READYTORUN_FIXUP_StaticBaseNonGC, type, GetTypeToken(token)));
         }
 
         private ISymbolNode CreateThreadStaticBaseHelper(TypeDesc type, ModuleToken token)
@@ -307,7 +283,7 @@ namespace ILCompiler.DependencyAnalysis
             return new DelayLoadHelperImport(
                 this,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
-                new TypeFixupSignature(fixupKind, type, GetTypeToken(token)));
+                new TypeFixupSignature(this, fixupKind, type, GetTypeToken(token)));
         }
 
         private ModuleToken GetTypeToken(ModuleToken token)
@@ -358,7 +334,7 @@ namespace ILCompiler.DependencyAnalysis
             return new DelayLoadHelperImport(
                 this,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
-                new TypeFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_IsInstanceOf, type, typeRefToken));
+                new TypeFixupSignature(this, ReadyToRunFixupKind.READYTORUN_FIXUP_IsInstanceOf, type, typeRefToken));
         }
 
         private ISymbolNode CreateCastClassHelper(TypeDesc type, ModuleToken typeRefToken)
@@ -366,14 +342,14 @@ namespace ILCompiler.DependencyAnalysis
             return new DelayLoadHelperImport(
                 this,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_Obj,
-                new TypeFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_ChkCast, type, typeRefToken));
+                new TypeFixupSignature(this, ReadyToRunFixupKind.READYTORUN_FIXUP_ChkCast, type, typeRefToken));
         }
 
         private ISymbolNode CreateTypeHandleHelper(TypeDesc type, ModuleToken typeRefToken)
         {
             return new PrecodeHelperImport(
                 this,
-                new TypeFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_TypeHandle, type, typeRefToken));
+                new TypeFixupSignature(this, ReadyToRunFixupKind.READYTORUN_FIXUP_TypeHandle, type, typeRefToken));
         }
 
         private ISymbolNode CreateVirtualCallHelper(MethodDesc method, ModuleToken methodToken)
@@ -601,7 +577,7 @@ namespace ILCompiler.DependencyAnalysis
             MethodFixupSignature signature;
             if (!_methodSignatures.TryGetValue(signatureKey, out signature))
             {
-                signature = new MethodFixupSignature(fixupKind, methodDesc, token, signatureKind);
+                signature = new MethodFixupSignature(this, fixupKind, methodDesc, token, signatureKind);
                 _methodSignatures.Add(signatureKey, signature);
             }
             return signature;

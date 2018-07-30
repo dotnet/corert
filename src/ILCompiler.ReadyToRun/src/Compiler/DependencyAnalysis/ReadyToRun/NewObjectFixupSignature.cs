@@ -11,11 +11,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class NewObjectFixupSignature : Signature
     {
+        private readonly ReadyToRunCodegenNodeFactory _factory;
         private readonly TypeDesc _typeDesc;
         private readonly ModuleToken _typeToken;
 
-        public NewObjectFixupSignature(TypeDesc typeDesc, ModuleToken typeToken)
+        public NewObjectFixupSignature(ReadyToRunCodegenNodeFactory factory, TypeDesc typeDesc, ModuleToken typeToken)
         {
+            _factory = factory;
             _typeDesc = typeDesc;
             _typeToken = typeToken;
         }
@@ -29,7 +31,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             dataBuilder.AddSymbol(this);
 
             dataBuilder.EmitByte((byte)ReadyToRunFixupKind.READYTORUN_FIXUP_NewObject);
-            dataBuilder.EmitTypeSignature(_typeDesc, _typeToken, r2rFactory.SignatureContext);
+            dataBuilder.EmitTypeSignature(_typeDesc, _typeToken, _typeToken.SignatureContext(_factory));
 
             return dataBuilder.ToObjectData();
         }
