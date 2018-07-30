@@ -51,6 +51,23 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(factory.MethodMetadata(_type.GetMethod("Invoke", null)), "Delegate invoke method metadata");
             }
 
+            // If the user asked for complete metadata to be generated for all types that are getting metadata, ensure that.
+            var mdManager = (UsageBasedMetadataManager)factory.MetadataManager;
+            if ((mdManager._generationOptions & UsageBasedMetadataGenerationOptions.CompleteTypesOnly) != 0)
+            {
+                foreach (MethodDesc method in _type.GetMethods())
+                {
+                    if (!mdManager.IsReflectionBlocked(method))
+                        dependencies.Add(factory.MethodMetadata(method), "Complete metadata for type");
+                }
+
+                foreach (FieldDesc field in _type.GetFields())
+                {
+                    if (!mdManager.IsReflectionBlocked(field))
+                        dependencies.Add(factory.FieldMetadata(field), "Complete metadata for type");
+                }
+            }
+
             return dependencies;
         }
 
