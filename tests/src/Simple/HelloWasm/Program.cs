@@ -10,12 +10,18 @@ using CpObj;
 
 internal static class Program
 {
-    private static int staticInt;
-    [ThreadStatic]
-    private static int threadStaticInt;
+    //private static int staticInt;
+    //[ThreadStatic]
+    //private static int threadStaticInt;
     private static unsafe int Main(string[] args)
     {
-        Add(1, 2);
+        Console.WriteLine("fbxrd");
+        return 100;
+    }
+}
+
+#if false
+    Add(1, 2);
         int tempInt = 0;
         int tempInt2 = 0;
         (*(&tempInt)) = 9;
@@ -646,3 +652,4 @@ public struct ItfStruct : ITestItf
         return 4;
     }
 }
+#endif
