@@ -912,6 +912,9 @@ namespace ILCompiler.DependencyAnalysis
 
         internal TypeMetadataNode TypeMetadata(MetadataType type)
         {
+            // These are only meaningful for UsageBasedMetadataManager. We should not have them
+            // in the dependency graph otherwise.
+            Debug.Assert(MetadataManager is UsageBasedMetadataManager);
             return _typesWithMetadata.GetOrAdd(type);
         }
 
@@ -919,6 +922,9 @@ namespace ILCompiler.DependencyAnalysis
 
         internal MethodMetadataNode MethodMetadata(MethodDesc method)
         {
+            // These are only meaningful for UsageBasedMetadataManager. We should not have them
+            // in the dependency graph otherwise.
+            Debug.Assert(MetadataManager is UsageBasedMetadataManager);
             return _methodsWithMetadata.GetOrAdd(method);
         }
 
@@ -926,6 +932,9 @@ namespace ILCompiler.DependencyAnalysis
 
         internal FieldMetadataNode FieldMetadata(FieldDesc field)
         {
+            // These are only meaningful for UsageBasedMetadataManager. We should not have them
+            // in the dependency graph otherwise.
+            Debug.Assert(MetadataManager is UsageBasedMetadataManager);
             return _fieldsWithMetadata.GetOrAdd(field);
         }
 
@@ -933,6 +942,9 @@ namespace ILCompiler.DependencyAnalysis
 
         internal ModuleMetadataNode ModuleMetadata(ModuleDesc module)
         {
+            // These are only meaningful for UsageBasedMetadataManager. We should not have them
+            // in the dependency graph otherwise.
+            Debug.Assert(MetadataManager is UsageBasedMetadataManager);
             return _modulesWithMetadata.GetOrAdd(module);
         }
 
