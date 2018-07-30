@@ -8,6 +8,7 @@ using System.Reflection.PortableExecutable;
 
 using Internal.JitInterface;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
@@ -17,9 +18,22 @@ namespace ILCompiler
 {
     public sealed class ReadyToRunCodegenCompilation : Compilation
     {
-        private CorInfoImpl _corInfo;
-        private JitConfigProvider _jitConfigProvider;
-        string _inputFilePath;
+        /// <summary>
+        /// Map from method modules to the appropriate CorInfoImpl instantiations
+        /// used to propagate the module back to managed code as context for
+        /// reference token resolution.
+        /// </summary>
+        private readonly Dictionary<EcmaModule, CorInfoImpl> _corInfo;
+
+        /// <summary>
+        /// JIT configuration provider.
+        /// </summary>
+        private readonly JitConfigProvider _jitConfigProvider;
+
+        /// <summary>
+        /// Name of the compilation input MSIL file.
+        /// </summary>
+        private readonly string _inputFilePath;
 
         public new ReadyToRunCodegenNodeFactory NodeFactory { get; }
         internal ReadyToRunCodegenCompilation(
@@ -34,7 +48,9 @@ namespace ILCompiler
             : base(dependencyGraph, nodeFactory, roots, debugInformationProvider, devirtualizationManager, logger)
         {
             NodeFactory = nodeFactory;
+            _corInfo = new Dictionary<EcmaModule, CorInfoImpl>();
             _jitConfigProvider = configProvider;
+
             _inputFilePath = inputFilePath;
         }
 
@@ -46,17 +62,15 @@ namespace ILCompiler
 
         protected override void CompileInternal(string outputFile, ObjectDumper dumper)
         {
-            _corInfo = new CorInfoImpl(this, _jitConfigProvider);
-
             using (FileStream inputFile = File.OpenRead(_inputFilePath))
             {
-                NodeFactory.PEReader = new PEReader(inputFile);
+                PEReader inputPeReader = new PEReader(inputFile);
 
                 _dependencyGraph.ComputeMarkedNodes();
                 var nodes = _dependencyGraph.MarkedNodeList;
 
                 NodeFactory.SetMarkingComplete();
-                ReadyToRunObjectWriter.EmitObject(outputFile, nodes, NodeFactory);
+                ReadyToRunObjectWriter.EmitObject(inputPeReader, outputFile, nodes, NodeFactory);
             }
         }
 
@@ -64,13 +78,13 @@ namespace ILCompiler
         {
             foreach (DependencyNodeCore<NodeFactory> dependency in obj)
             {
-                var methodCodeNodeNeedingCode = dependency as MethodCodeNode;
+                var methodCodeNodeNeedingCode = dependency as MethodWithGCInfo;
                 if (methodCodeNodeNeedingCode == null)
                 {
                     // To compute dependencies of the shadow method that tracks dictionary
                     // dependencies we need to ensure there is code for the canonical method body.
                     var dependencyMethod = (ShadowConcreteMethodNode)dependency;
-                    methodCodeNodeNeedingCode = (MethodCodeNode)dependencyMethod.CanonicalMethodNode;
+                    methodCodeNodeNeedingCode = (MethodWithGCInfo)dependencyMethod.CanonicalMethodNode;
                 }
 
                 // We might have already compiled this method.
@@ -78,6 +92,11 @@ namespace ILCompiler
                     continue;
 
                 MethodDesc method = methodCodeNodeNeedingCode.Method;
+                if (!NodeFactory.CompilationModuleGroup.ContainsMethodBody(method, unboxingStub: false))
+                {
+                    // Don't drill into methods defined outside of this version bubble
+                    continue;
+                }
 
                 if (Logger.IsVerbose)
                 {
@@ -87,7 +106,16 @@ namespace ILCompiler
 
                 try
                 {
-                    _corInfo.CompileMethod(methodCodeNodeNeedingCode);
+                    EcmaModule module = ((EcmaMethod)method).Module;
+
+                    CorInfoImpl perModuleCorInfo;
+                    if (!_corInfo.TryGetValue(module, out perModuleCorInfo))
+                    {
+                        perModuleCorInfo = new CorInfoImpl(this, module, _jitConfigProvider);
+                        _corInfo.Add(module, perModuleCorInfo);
+                    }
+
+                    perModuleCorInfo.CompileMethod(methodCodeNodeNeedingCode);
                 }
                 catch (TypeSystemException ex)
                 {

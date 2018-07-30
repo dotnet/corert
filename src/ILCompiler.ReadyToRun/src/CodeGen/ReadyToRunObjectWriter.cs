@@ -11,6 +11,7 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 
 using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.PEWriter;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
@@ -26,57 +27,65 @@ namespace ILCompiler.DependencyAnalysis
     internal class ReadyToRunObjectWriter
     {
         // Nodefactory for which ObjectWriter is instantiated for.
-        private ReadyToRunCodegenNodeFactory _nodeFactory;
-        private string _objectFilePath;
-        private IEnumerable<DependencyNode> _nodes;
+        private readonly ReadyToRunCodegenNodeFactory _nodeFactory;
+        private readonly string _objectFilePath;
+        private readonly IEnumerable<DependencyNode> _nodes;
+        private readonly PEReader _inputPeReader;
 
         private int _textSectionIndex;
-        private int _dataSectionIndex;
         private int _rdataSectionIndex;
+        private int _dataSectionIndex;
 
 #if DEBUG
-        Dictionary<string, ISymbolNode> _previouslyWrittenNodeNames = new Dictionary<string, ISymbolNode>();
+        Dictionary<string, (ISymbolNode Node, int NodeIndex, int SymbolIndex)> _previouslyWrittenNodeNames = new Dictionary<string, (ISymbolNode Node, int NodeIndex, int SymbolIndex)>();
 #endif
 
-        public ReadyToRunObjectWriter(string objectFilePath, IEnumerable<DependencyNode> nodes, ReadyToRunCodegenNodeFactory factory)
+        public ReadyToRunObjectWriter(PEReader inputPeReader, string objectFilePath, IEnumerable<DependencyNode> nodes, ReadyToRunCodegenNodeFactory factory)
         {
             _objectFilePath = objectFilePath;
             _nodes = nodes;
             _nodeFactory = factory;
+            _inputPeReader = inputPeReader;
         }
-        
+
         public void EmitPortableExecutable()
         {
             bool succeeded = false;
 
+            FileStream mapFileStream = null;
+            TextWriter mapFile = null;
+
             try
             {
-                var peBuilder = new R2RPEBuilder(Machine.Amd64, _nodeFactory.PEReader, new ValueTuple<string, SectionCharacteristics>[0]);
+                string mapFileName = Path.ChangeExtension(_objectFilePath, ".map");
+                mapFileStream = new FileStream(mapFileName, FileMode.Create, FileAccess.Write);
+                mapFile = new StreamWriter(mapFileStream);
+
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
+                mapFile.WriteLine($@"R2R object emission started: {DateTime.Now}");
+
+                var peBuilder = new R2RPEBuilder(Machine.Amd64, _inputPeReader, new ValueTuple<string, SectionCharacteristics>[0]);
                 var sectionBuilder = new SectionBuilder();
 
                 _textSectionIndex = sectionBuilder.AddSection(R2RPEBuilder.TextSectionName, SectionCharacteristics.ContainsCode | SectionCharacteristics.MemExecute | SectionCharacteristics.MemRead, 512);
-                _dataSectionIndex = sectionBuilder.AddSection(".data", SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemWrite | SectionCharacteristics.MemRead, 512);
                 _rdataSectionIndex = sectionBuilder.AddSection(".rdata", SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead, 512);
-
-                sectionBuilder.SetReadyToRunHeaderTable(_nodeFactory.Header, _nodeFactory.Header.GetData(_nodeFactory).Data.Length);
+                _dataSectionIndex = sectionBuilder.AddSection(".data", SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemWrite | SectionCharacteristics.MemRead, 512);
 
                 foreach (var depNode in _nodes)
                 {
-                    if (depNode is MethodCodeNode methodNode)
-                    {
-                        int methodIndex = _nodeFactory.RuntimeFunctionsTable.Add(methodNode);
-                        _nodeFactory.MethodEntryPointTable.Add(methodNode, methodIndex);
-                    }
-
                     if (depNode is EETypeNode eeTypeNode)
                     {
                         _nodeFactory.TypesTable.Add(eeTypeNode);
                     }
                 }
 
+                int nodeIndex = -1;
                 foreach (var depNode in _nodes)
                 {
+                    ++nodeIndex;
                     ObjectNode node = depNode as ObjectNode;
+
                     if (node == null)
                         continue;
 
@@ -84,20 +93,20 @@ namespace ILCompiler.DependencyAnalysis
                         continue;
 
                     ObjectData nodeContents = node.GetData(_nodeFactory);
-
 #if DEBUG
-                    foreach (ISymbolNode definedSymbol in nodeContents.DefinedSymbols)
+                    for (int symbolIndex = 0; symbolIndex < nodeContents.DefinedSymbols.Length; symbolIndex++)
                     {
-                        try
+                        ISymbolNode definedSymbol = nodeContents.DefinedSymbols[symbolIndex];
+                        (ISymbolNode Node, int NodeIndex, int SymbolIndex) alreadyWrittenSymbol;
+                        string symbolName = definedSymbol.GetMangledName(_nodeFactory.NameMangler);
+                        if (_previouslyWrittenNodeNames.TryGetValue(symbolName, out alreadyWrittenSymbol))
                         {
-                            _previouslyWrittenNodeNames.Add(definedSymbol.GetMangledName(_nodeFactory.NameMangler), definedSymbol);
-                        }
-                        catch (ArgumentException)
-                        {
-                            ISymbolNode alreadyWrittenSymbol = _previouslyWrittenNodeNames[definedSymbol.GetMangledName(_nodeFactory.NameMangler)];
+                            Console.WriteLine($@"Duplicate symbol - 1st occurrence: [{alreadyWrittenSymbol.NodeIndex}:{alreadyWrittenSymbol.SymbolIndex}], {alreadyWrittenSymbol.Node.GetMangledName(_nodeFactory.NameMangler)}");
+                            Console.WriteLine($@"Duplicate symbol - 2nd occurrence: [{nodeIndex}:{symbolIndex}], {definedSymbol.GetMangledName(_nodeFactory.NameMangler)}");
                             Debug.Fail("Duplicate node name emitted to file",
                             $"Symbol {definedSymbol.GetMangledName(_nodeFactory.NameMangler)} has already been written to the output object file {_objectFilePath} with symbol {alreadyWrittenSymbol}");
                         }
+                        _previouslyWrittenNodeNames.Add(symbolName, (Node: definedSymbol, NodeIndex: nodeIndex, SymbolIndex: symbolIndex));
                     }
 #endif
 
@@ -120,18 +129,48 @@ namespace ILCompiler.DependencyAnalysis
                             throw new NotImplementedException();
                     }
 
-                    sectionBuilder.AddObjectData(nodeContents, targetSectionIndex);
+                    string name = null;
+
+                    if (mapFile != null)
+                    {
+                        name = depNode.GetType().ToString();
+                        int firstGeneric = name.IndexOf('[');
+                        if (firstGeneric < 0)
+                        {
+                            firstGeneric = name.Length;
+                        }
+                        int lastDot = name.LastIndexOf('.', firstGeneric - 1, firstGeneric);
+                        if (lastDot > 0)
+                        {
+                            name = name.Substring(lastDot + 1);
+                        }
+                    }
+                    sectionBuilder.AddObjectData(nodeContents, targetSectionIndex, name, mapFile);
                 }
+
+                sectionBuilder.SetReadyToRunHeaderTable(_nodeFactory.Header, _nodeFactory.Header.GetData(_nodeFactory).Data.Length);
 
                 using (var peStream = File.Create(_objectFilePath))
                 {
-                    sectionBuilder.EmitR2R(Machine.Amd64, _nodeFactory.PEReader, peStream);
+                    sectionBuilder.EmitR2R(Machine.Amd64, _inputPeReader, peStream);
                 }
+
+                mapFile.WriteLine($@"R2R object emission finished: {DateTime.Now}, {stopwatch.ElapsedMilliseconds} msecs");
+                mapFile.Flush();
+                mapFileStream.Flush();
 
                 succeeded = true;
             }
             finally
             {
+                if (mapFile != null)
+                {
+                    mapFile.Dispose();
+                }
+                if (mapFileStream != null)
+                {
+                    mapFileStream.Dispose();
+                }
                 if (!succeeded)
                 {
                     // If there was an exception while generating the OBJ file, make sure we don't leave the unfinished
@@ -147,9 +186,10 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public static void EmitObject(string objectFilePath, IEnumerable<DependencyNode> nodes, ReadyToRunCodegenNodeFactory factory)
+        public static void EmitObject(PEReader inputPeReader, string objectFilePath, IEnumerable<DependencyNode> nodes, ReadyToRunCodegenNodeFactory factory)
         {
-            ReadyToRunObjectWriter objectWriter = new ReadyToRunObjectWriter(objectFilePath, nodes, factory);
+            Console.WriteLine($@"Emitting R2R PE file: {objectFilePath}");
+            ReadyToRunObjectWriter objectWriter = new ReadyToRunObjectWriter(inputPeReader, objectFilePath, nodes, factory);
             objectWriter.EmitPortableExecutable();
         }
     }

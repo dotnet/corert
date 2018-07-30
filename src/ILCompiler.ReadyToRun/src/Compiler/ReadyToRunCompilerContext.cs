@@ -3,18 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.IO;
-using System.IO.MemoryMappedFiles;
 using System.Diagnostics;
-using System.Collections.Generic;
-using System.Reflection.Metadata;
-using System.Reflection.PortableExecutable;
 
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
-using Internal.IL;
-
-using Interlocked = System.Threading.Interlocked;
 
 namespace ILCompiler
 {

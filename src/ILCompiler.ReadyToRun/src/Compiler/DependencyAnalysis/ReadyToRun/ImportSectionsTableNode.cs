@@ -2,14 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection.PortableExecutable;
-
-using Internal.NativeFormat;
-using Internal.Runtime;
-using Internal.Text;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
@@ -24,13 +16,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         protected override void GetElementDataForNodes(ref ObjectDataBuilder builder, NodeFactory factory, bool relocsOnly)
         {
             builder.RequireInitialPointerAlignment();
-
+            int index = 0;
             foreach (ImportSectionNode node in NodesList)
             {
-                if (!relocsOnly)
+                if (!relocsOnly && !node.ShouldSkipEmittingTable(factory))
+                {
                     node.InitializeOffsetFromBeginningOfArray(builder.CountBytes);
+                    node.InitializeIndexFromBeginningOfArray(index++);
+                }
 
                 node.EncodeData(ref builder, factory, relocsOnly);
+                if (node is ISymbolDefinitionNode symbolDef)
+                {
+                    builder.AddSymbol(symbolDef);
+                }
             }
         }
 

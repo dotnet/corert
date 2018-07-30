@@ -4,13 +4,20 @@
 
 using System.Collections.Generic;
 
+using Internal.Text;
+
 namespace ILCompiler.DependencyAnalysis
 {
     class RvaEmbeddedPointerIndirectionNode<TTarget> : EmbeddedPointerIndirectionNode<TTarget>
         where TTarget : ISortableSymbolNode
     {
-        public RvaEmbeddedPointerIndirectionNode(TTarget target)
-            : base(target) { }
+        private readonly string _callSite;
+        
+        public RvaEmbeddedPointerIndirectionNode(TTarget target, string callSite = null)
+            : base(target)
+        {
+            _callSite = callSite;
+        }
 
         protected override string GetName(NodeFactory factory) => $"Embedded pointer to {Target.GetMangledName(factory.NameMangler)}";
 
@@ -26,6 +33,17 @@ namespace ILCompiler.DependencyAnalysis
         {
             dataBuilder.RequireInitialPointerAlignment();
             dataBuilder.EmitReloc(Target, RelocType.IMAGE_REL_BASED_ADDR32NB);
+        }
+    
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("RVA_");
+            Target.AppendMangledName(nameMangler, sb);
+            if (_callSite != null)
+            {
+                sb.Append(" @ ");
+                sb.Append(_callSite);
+            }
         }
 
         protected override int ClassCode => -66002498;

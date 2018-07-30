@@ -4,9 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection.Metadata.Ecma335;
-
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 
@@ -64,12 +62,12 @@ namespace ILCompiler
         {
             var interopStubManager = new CompilerGeneratedInteropStubManager(_compilationGroup, _context, new InteropStateManager(_context.GeneratedAssembly));
             ReadyToRunCodegenNodeFactory factory = new ReadyToRunCodegenNodeFactory(
-                _context, 
-                _compilationGroup, 
-                _metadataManager, 
-                interopStubManager, 
+                _context,
+                _compilationGroup,
+                _metadataManager,
+                interopStubManager,
                 _nameMangler,
-                _vtableSliceProvider, 
+                _vtableSliceProvider,
                 _dictionaryLayoutProvider);
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);
 

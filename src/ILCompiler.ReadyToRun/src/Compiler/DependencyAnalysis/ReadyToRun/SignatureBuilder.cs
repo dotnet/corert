@@ -4,11 +4,8 @@
 using System;
 using System.Collections.Generic;
 using Debug = System.Diagnostics.Debug;
-using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-
-using Internal.Runtime;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.JitInterface;
@@ -180,7 +177,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             EmitByte((byte)elementType);
         }
 
-        public void EmitTypeSignature(TypeDesc typeDesc, mdToken token, SignatureContext context)
+        public void EmitTypeSignature(TypeDesc typeDesc, ModuleToken token, SignatureContext context)
         {
             if (typeDesc.HasInstantiation)
             {
@@ -277,14 +274,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 elementType = CorElementType.ELEMENT_TYPE_CLASS;
             }
 
+            // TODO: module override for tokens with external context
             EmitElementType(elementType);
 
-            switch (TypeFromToken(token))
+            switch (token.TokenType)
             {
                 case CorTokenType.mdtTypeDef:
                 case CorTokenType.mdtTypeRef:
                 case CorTokenType.mdtTypeSpec:
-                    EmitToken(token);
+                    EmitToken(token.Token);
                     return;
 
                 default:
@@ -292,25 +290,27 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        private void EmitTypeSpecification(mdToken token, SignatureContext context)
+        private void EmitTypeSpecification(ModuleToken token, SignatureContext context)
         {
-            Debug.Assert(TypeFromToken(token) == CorTokenType.mdtTypeSpec);
-            TypeSpecification typeSpec = context.MetadataReader.GetTypeSpecification((TypeSpecificationHandle)MetadataTokens.Handle((int)token));
-            BlobReader signatureReader = context.MetadataReader.GetBlobReader(typeSpec.Signature);
+            Debug.Assert(token.TokenType == CorTokenType.mdtTypeSpec);
+            TypeSpecification typeSpec = token.MetadataReader.GetTypeSpecification((TypeSpecificationHandle)MetadataTokens.Handle((int)token.Token));
+            BlobReader signatureReader = token.MetadataReader.GetBlobReader(typeSpec.Signature);
             SignatureDecoder<byte[], SignatureContext> decoder = new SignatureDecoder<byte[], SignatureContext>(context, context.MetadataReader, context);
             EmitBytes(decoder.DecodeType(ref signatureReader, allowTypeSpecifications: true));
         }
 
-        public void EmitMethodSignature(MethodDesc method, mdToken token, SignatureContext context)
+        public void EmitMethodSignature(MethodDesc method, ModuleToken token, SignatureContext context)
         {
-            switch (TypeFromToken(token))
+            switch (token.TokenType)
             {
                 case CorTokenType.mdtMethodDef:
+                    // TODO: module override for methoddefs with external module context
                     EmitUInt((uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_None);
                     EmitMethodDefToken(token);
                     break;
 
                 case CorTokenType.mdtMemberRef:
+                    // TODO: module override for methodrefs with external module context
                     EmitUInt((uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MemberRefToken);
                     EmitMethodRefToken(token);
                     break;
@@ -324,25 +324,25 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public void EmitMethodDefToken(mdToken methodDefToken)
+        public void EmitMethodDefToken(ModuleToken methodDefToken)
         {
-            Debug.Assert(TypeFromToken(methodDefToken) == CorTokenType.mdtMethodDef);
-            EmitUInt(RidFromToken(methodDefToken));
+            Debug.Assert(methodDefToken.TokenType == CorTokenType.mdtMethodDef);
+            EmitUInt(methodDefToken.TokenRid);
         }
 
-        public void EmitMethodRefToken(mdToken memberRefToken)
+        public void EmitMethodRefToken(ModuleToken memberRefToken)
         {
-            Debug.Assert(TypeFromToken(memberRefToken) == CorTokenType.mdtMemberRef);
-            EmitUInt(RidFromToken(memberRefToken));
+            Debug.Assert(memberRefToken.TokenType == CorTokenType.mdtMemberRef);
+            EmitUInt(RidFromToken(memberRefToken.Token));
         }
 
-        private void EmitMethodSpecificationSignature(MethodDesc method, mdToken token, SignatureContext context)
+        private void EmitMethodSpecificationSignature(MethodDesc method, ModuleToken token, SignatureContext context)
         {
-            switch (TypeFromToken(token))
+            switch (token.TokenType)
             {
                 case CorTokenType.mdtMethodSpec:
                     {
-                        MethodSpecification methodSpec = context.MetadataReader.GetMethodSpecification((MethodSpecificationHandle)MetadataTokens.Handle((int)token));
+                        MethodSpecification methodSpec = token.MetadataReader.GetMethodSpecification((MethodSpecificationHandle)MetadataTokens.Handle((int)token.Token));
 
                         ReadyToRunMethodSigFlags flags = ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MethodInstantiation;
                         mdToken genericMethodToken;
@@ -440,7 +440,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _contextModule = contextModule;
         }
 
-        public MetadataReader MetadataReader => _nodeFactory.PEReader.GetMetadataReader();
+        public MetadataReader MetadataReader => _contextModule.MetadataReader;
 
         public byte[] GetArrayType(byte[] elementType, ArrayShape shape)
         {

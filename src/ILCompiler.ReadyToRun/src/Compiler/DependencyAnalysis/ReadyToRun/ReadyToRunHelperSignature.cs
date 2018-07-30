@@ -9,11 +9,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class ReadyToRunHelperSignature : Signature
     {
-        private ReadyToRunHelper _helper;
+        private readonly ReadyToRunHelper _helperID;
 
         public ReadyToRunHelperSignature(ReadyToRunHelper helper)
         {
-            _helper = helper;
+            _helperID = helper;
         }
 
         protected override int ClassCode => 208107954;
@@ -21,7 +21,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             return new ObjectData(
-                new[] { (byte)ReadyToRunFixupKind.READYTORUN_FIXUP_Helper, (byte)_helper },
+                new[] { (byte) ReadyToRunFixupKind.READYTORUN_FIXUP_Helper, (byte) _helperID },
                 Array.Empty<Relocation>(),
                 1,
                 new ISymbolDefinitionNode[] { this });
@@ -31,12 +31,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
             sb.Append("ReadyToRunHelper_");
-            sb.Append(_helper.ToString());
+            sb.Append(_helperID.ToString());
         }
 
         protected override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
         {
-            return _helper.CompareTo(((ReadyToRunHelperSignature)other)._helper);
+            return _helperID.CompareTo(((ReadyToRunHelperSignature) other)._helperID);
         }
     }
 }
