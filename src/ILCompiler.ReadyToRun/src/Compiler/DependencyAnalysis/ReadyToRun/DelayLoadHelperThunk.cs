@@ -12,7 +12,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// This node emits a thunk calling DelayLoad_Helper with a given instance signature
     /// to populate its indirection cell.
     /// </summary>
-    public class DelayLoadHelperThunk : AssemblyStubNode, ISymbolDefinitionNode
+    public partial class DelayLoadHelperThunk : AssemblyStubNode, ISymbolDefinitionNode
     {
         private readonly ISymbolNode _helperCell;
 
@@ -35,49 +35,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         protected override string GetName(NodeFactory factory)
         {
-            return "DelayLoadHelper";
-        }
-
-        protected override void EmitCode(NodeFactory factory, ref X64.X64Emitter instructionEncoder, bool relocsOnly)
-        {
-            // lea rax, [pCell]
-            instructionEncoder.EmitLEAQ(X64.Register.RAX, _instanceCell);
-            if (!relocsOnly)
-            {
-                // push table index
-                instructionEncoder.Builder.EmitByte(0x6A);
-                instructionEncoder.Builder.EmitByte((byte)_instanceCell.Table.IndexFromBeginningOfArray);
-
-                // push [module]
-                instructionEncoder.Builder.EmitByte(0xFF);
-                instructionEncoder.Builder.EmitByte(0x35);
-            }
-            instructionEncoder.Builder.EmitReloc(_moduleImport, RelocType.IMAGE_REL_BASED_REL32);
-            
-            if (!relocsOnly)
-            {
-                // TODO: additional tricks regarding UNIX AMD64 ABI
-
-                // jmp [helper]
-                instructionEncoder.Builder.EmitByte(0xFF);
-                instructionEncoder.Builder.EmitByte(0x25);
-            }
-            instructionEncoder.Builder.EmitReloc(_helperCell, RelocType.IMAGE_REL_BASED_REL32);
-        }
-
-        protected override void EmitCode(NodeFactory factory, ref X86.X86Emitter instructionEncoder, bool relocsOnly)
-        {
-            throw new NotImplementedException();
-        }
-
-        protected override void EmitCode(NodeFactory factory, ref ARM.ARMEmitter instructionEncoder, bool relocsOnly)
-        {
-            throw new NotImplementedException();
-        }
-
-        protected override void EmitCode(NodeFactory factory, ref ARM64.ARM64Emitter instructionEncoder, bool relocsOnly)
-        {
-            throw new NotImplementedException();
+            Utf8StringBuilder sb = new Utf8StringBuilder();
+            AppendMangledName(factory.NameMangler, sb);
+            return sb.ToString();
         }
 
         protected override int ClassCode => 433266948;

@@ -59,6 +59,10 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\SignatureBuilder.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\StringImport.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\StringImportSignature.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_ARM64\DelayLoadHelperThunk.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_ARM\DelayLoadHelperThunk.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_X64\DelayLoadHelperThunk.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_X86\DelayLoadHelperThunk.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypeFixupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypesTableNode.cs" />
     <Compile Include="Compiler\ReadyToRunCompilerContext.cs" />
