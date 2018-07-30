@@ -10,11 +10,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class StringImport : Import
     {
-        private readonly mdToken _token; // diagnostic purposes only
+        private readonly ModuleToken _token;
 
         private int _definitionOffset;
 
-        public StringImport(ImportSectionNode table, mdToken token)
+        public StringImport(ImportSectionNode table, ModuleToken token)
             : base(table, new StringImportSignature(token))
         {
             _token = token;
@@ -36,7 +36,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         protected override string GetName(NodeFactory context)
         {
-            return "StringCell: " + ((uint)_token).ToString("X8");
+            return "StringCell: " + _token.ToString();
         }
     }
 }

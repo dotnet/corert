@@ -7,6 +7,7 @@ using System;
 using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -22,12 +23,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly ReadyToRunFixupKind _fixupKind;
 
         private readonly MethodDesc _methodDesc;
-        
-        private readonly mdToken _methodToken;
+
+        private readonly ModuleToken _methodToken;
 
         private readonly SignatureKind _signatureKind;
 
-        public MethodFixupSignature(ReadyToRunFixupKind fixupKind, MethodDesc methodDesc, mdToken methodToken, SignatureKind signatureKind)
+        public MethodFixupSignature(ReadyToRunFixupKind fixupKind, MethodDesc methodDesc, ModuleToken methodToken, SignatureKind signatureKind)
         {
             _fixupKind = fixupKind;
             _methodDesc = methodDesc;
@@ -68,7 +69,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append($@"MethodFixupSignature({_fixupKind.ToString()} {(uint)_methodToken:X8}): {_methodDesc.ToString()}");
+            sb.Append($@"MethodFixupSignature({_fixupKind.ToString()} {_methodToken}): {_methodDesc.ToString()}");
         }
 
         protected override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)

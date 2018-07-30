@@ -8,8 +8,10 @@ using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
+
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
+
 using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -22,7 +24,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         private Dictionary<MethodDesc, IMethodNode> _importMethods;
 
-        private Dictionary<mdToken, ISymbolNode> _importStrings;
+        private Dictionary<ModuleToken, ISymbolNode> _importStrings;
 
         public ReadyToRunCodegenNodeFactory(
             CompilerTypeSystemContext context, 
@@ -44,11 +46,10 @@ namespace ILCompiler.DependencyAnalysis
                   new ImportedNodeProviderThrowing())
         {
             _importMethods = new Dictionary<MethodDesc, IMethodNode>();
-            _importStrings = new Dictionary<mdToken, ISymbolNode>();
+            _importStrings = new Dictionary<ModuleToken, ISymbolNode>();
             _inputModule = inputModule;
+            _r2rHelpers = new Dictionary<ReadyToRunHelperId, Dictionary<object, ISymbolNode>>();
         }
-
-        public PEReader PEReader;
 
         public HeaderNode Header;
 
@@ -100,7 +101,7 @@ namespace ILCompiler.DependencyAnalysis
 
         Dictionary<MethodDesc, IMethodNode> _methodMap = new Dictionary<MethodDesc, IMethodNode>();
 
-        public IMethodNode MethodEntrypoint(MethodDesc method, mdToken token, bool isUnboxingStub = false)
+        public IMethodNode MethodEntrypoint(MethodDesc method, ModuleToken token, bool isUnboxingStub = false)
         {
             IMethodNode methodNode;
             if (!_methodMap.TryGetValue(method, out methodNode))
@@ -111,7 +112,7 @@ namespace ILCompiler.DependencyAnalysis
             return methodNode;
         }
 
-        private IMethodNode CreateMethodEntrypointNode(MethodDesc method, mdToken token, bool isUnboxingStub = false)
+        private IMethodNode CreateMethodEntrypointNode(MethodDesc method, ModuleToken token, bool isUnboxingStub = false)
         {
             if (method is InstantiatedMethod instantiatedMethod)
             {
@@ -128,7 +129,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 // TODO: hack - how do we distinguish between emitting main entry point and calls between
                 // methods?
-                if (token == 0)
+                if (token.Token == 0)
                 {
                     return localMethod;
                 }
@@ -137,12 +138,12 @@ namespace ILCompiler.DependencyAnalysis
             return GetOrAddImportedMethodNode(method, unboxingStub: false, token: token, localMethod: localMethod);
         }
 
-        public IMethodNode StringAllocator(MethodDesc constructor, mdToken token)
+        public IMethodNode StringAllocator(MethodDesc constructor, ModuleToken token)
         {
             return MethodEntrypoint(constructor, token, isUnboxingStub: false);
         }
 
-        public ISymbolNode StringLiteral(mdToken token)
+        public ISymbolNode StringLiteral(ModuleToken token)
         {
             ISymbolNode stringNode;
             if (!_importStrings.TryGetValue(token, out stringNode))
@@ -166,9 +167,9 @@ namespace ILCompiler.DependencyAnalysis
             return CompilationModuleGroup.ContainsMethodBody(calleeMethod, unboxingStub: false);
         }
 
-        Dictionary<ReadyToRunHelperId, Dictionary<object, ISymbolNode>> _r2rHelpers = new Dictionary<ReadyToRunHelperId, Dictionary<object, ISymbolNode>>();
+        private readonly Dictionary<ReadyToRunHelperId, Dictionary<object, ISymbolNode>> _r2rHelpers;
 
-        public ISymbolNode ReadyToRunHelper(ReadyToRunHelperId id, object target, mdToken token)
+        public ISymbolNode ReadyToRunHelper(ReadyToRunHelperId id, object target, ModuleToken token)
         {
             if (id == ReadyToRunHelperId.NecessaryTypeHandle)
             {
@@ -239,30 +240,30 @@ namespace ILCompiler.DependencyAnalysis
             return helperNode;
         }
 
-        private ISymbolNode CreateNewHelper(TypeDesc type, mdToken ctorMemberRefOrTypeRefToken)
+        private ISymbolNode CreateNewHelper(TypeDesc type, ModuleToken memberOrTypeToken)
         {
-            MetadataReader mdReader = PEReader.GetMetadataReader();
-            mdToken typeToken;
-            EntityHandle handle = (EntityHandle)MetadataTokens.Handle((int)ctorMemberRefOrTypeRefToken);
-            switch (handle.Kind)
+            MetadataReader mdReader = memberOrTypeToken.MetadataReader;
+            EntityHandle handle = (EntityHandle)MetadataTokens.Handle((int)memberOrTypeToken.Token);
+            ModuleToken typeToken;
+            switch (memberOrTypeToken.TokenType)
             {
-                case HandleKind.TypeReference:
-                    typeToken = ctorMemberRefOrTypeRefToken;
+                case CorTokenType.mdtTypeRef:
+                    typeToken = memberOrTypeToken;
                     break;
 
-                case HandleKind.MemberReference:
+                case CorTokenType.mdtMemberRef:
                     {
                         MemberReferenceHandle memberRefHandle = (MemberReferenceHandle)handle;
                         MemberReference memberRef = mdReader.GetMemberReference(memberRefHandle);
-                        typeToken = (mdToken)MetadataTokens.GetToken(memberRef.Parent);
+                        typeToken = new ModuleToken(memberOrTypeToken.Module, (mdToken)MetadataTokens.GetToken(memberRef.Parent));
                     }
                     break;
 
-                case HandleKind.MethodDefinition:
+                case CorTokenType.mdtMethodDef:
                     {
                         MethodDefinitionHandle methodDefHandle = (MethodDefinitionHandle)handle;
                         MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
-                        typeToken = (mdToken)MetadataTokens.GetToken(methodDef.GetDeclaringType());
+                        typeToken = new ModuleToken(memberOrTypeToken.Module, (mdToken)MetadataTokens.GetToken(methodDef.GetDeclaringType()));
                     }
                     break;
 
@@ -275,15 +276,16 @@ namespace ILCompiler.DependencyAnalysis
                 new NewObjectFixupSignature(type, typeToken));
         }
 
-        private ISymbolNode CreateNewArrayHelper(ArrayType type, mdToken typeRefToken)
+        private ISymbolNode CreateNewArrayHelper(ArrayType type, ModuleToken typeRefToken)
         {
-            Debug.Assert(SignatureBuilder.TypeFromToken(typeRefToken) == CorTokenType.mdtTypeRef);
-            return new DelayLoadHelperImport(this,
+            Debug.Assert(typeRefToken.TokenType == CorTokenType.mdtTypeRef);
+            return new DelayLoadHelperImport(
+                this,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
                 new NewArrayFixupSignature(type, typeRefToken));
         }
 
-        private ISymbolNode CreateGCStaticBaseHelper(TypeDesc type, mdToken token)
+        private ISymbolNode CreateGCStaticBaseHelper(TypeDesc type, ModuleToken token)
         {
             return new DelayLoadHelperImport(
                 this,
@@ -291,7 +293,7 @@ namespace ILCompiler.DependencyAnalysis
                 new TypeFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_StaticBaseGC, type, GetTypeToken(token)));
         }
 
-        private ISymbolNode CreateNonGCStaticBaseHelper(TypeDesc type, mdToken token)
+        private ISymbolNode CreateNonGCStaticBaseHelper(TypeDesc type, ModuleToken token)
         {
             return new DelayLoadHelperImport(
                 this,
@@ -299,7 +301,7 @@ namespace ILCompiler.DependencyAnalysis
                 new TypeFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_StaticBaseNonGC, type, GetTypeToken(token)));
         }
 
-        private ISymbolNode CreateThreadStaticBaseHelper(TypeDesc type, mdToken token)
+        private ISymbolNode CreateThreadStaticBaseHelper(TypeDesc type, ModuleToken token)
         {
             ReadyToRunFixupKind fixupKind = ReadyToRunFixupKind.READYTORUN_FIXUP_ThreadStaticBaseNonGC;
             return new DelayLoadHelperImport(
@@ -308,39 +310,39 @@ namespace ILCompiler.DependencyAnalysis
                 new TypeFixupSignature(fixupKind, type, GetTypeToken(token)));
         }
 
-        private mdToken GetTypeToken(mdToken token)
+        private ModuleToken GetTypeToken(ModuleToken token)
         {
-            MetadataReader mdReader = PEReader.GetMetadataReader();
-            mdToken typeToken;
-            EntityHandle handle = (EntityHandle)MetadataTokens.Handle((int)token);
-            switch (handle.Kind)
+            MetadataReader mdReader = token.MetadataReader;
+            EntityHandle handle = (EntityHandle)MetadataTokens.Handle((int)token.Token);
+            ModuleToken typeToken;
+            switch (token.TokenType)
             {
-                case HandleKind.TypeReference:
-                case HandleKind.TypeDefinition:
+                case CorTokenType.mdtTypeRef:
+                case CorTokenType.mdtTypeDef:
                     typeToken = token;
                     break;
 
-                case HandleKind.MemberReference:
+                case CorTokenType.mdtMemberRef:
                     {
                         MemberReferenceHandle memberRefHandle = (MemberReferenceHandle)handle;
                         MemberReference memberRef = mdReader.GetMemberReference(memberRefHandle);
-                        typeToken = (mdToken)MetadataTokens.GetToken(memberRef.Parent);
+                        typeToken = new ModuleToken(token.Module, (mdToken)MetadataTokens.GetToken(memberRef.Parent));
                     }
                     break;
 
-                case HandleKind.FieldDefinition:
+                case CorTokenType.mdtFieldDef:
                     {
                         FieldDefinitionHandle fieldDefHandle = (FieldDefinitionHandle)handle;
                         FieldDefinition fieldDef = mdReader.GetFieldDefinition(fieldDefHandle);
-                        typeToken = (mdToken)MetadataTokens.GetToken(fieldDef.GetDeclaringType());
+                        typeToken = new ModuleToken(token.Module, (mdToken)MetadataTokens.GetToken(fieldDef.GetDeclaringType()));
                     }
                     break;
 
-                case HandleKind.MethodDefinition:
+                case CorTokenType.mdtMethodDef:
                     {
                         MethodDefinitionHandle methodDefHandle = (MethodDefinitionHandle)handle;
                         MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
-                        typeToken = (mdToken)MetadataTokens.GetToken(methodDef.GetDeclaringType());
+                        typeToken = new ModuleToken(token.Module, (mdToken)MetadataTokens.GetToken(methodDef.GetDeclaringType()));
                     }
                     break;
 
@@ -351,27 +353,30 @@ namespace ILCompiler.DependencyAnalysis
             return typeToken;
         }
 
-        private ISymbolNode CreateIsInstanceOfHelper(TypeDesc type, mdToken typeRefToken)
+        private ISymbolNode CreateIsInstanceOfHelper(TypeDesc type, ModuleToken typeRefToken)
         {
-            return new DelayLoadHelperImport(this, 
+            return new DelayLoadHelperImport(
+                this,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
                 new TypeFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_IsInstanceOf, type, typeRefToken));
         }
 
-        private ISymbolNode CreateCastClassHelper(TypeDesc type, mdToken typeRefToken)
+        private ISymbolNode CreateCastClassHelper(TypeDesc type, ModuleToken typeRefToken)
         {
-            return new DelayLoadHelperImport(this,
+            return new DelayLoadHelperImport(
+                this,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_Obj,
                 new TypeFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_ChkCast, type, typeRefToken));
         }
 
-        private ISymbolNode CreateTypeHandleHelper(TypeDesc type, mdToken typeRefToken)
+        private ISymbolNode CreateTypeHandleHelper(TypeDesc type, ModuleToken typeRefToken)
         {
-            return new PrecodeHelperImport(this,
+            return new PrecodeHelperImport(
+                this,
                 new TypeFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_TypeHandle, type, typeRefToken));
         }
 
-        private ISymbolNode CreateVirtualCallHelper(MethodDesc method, mdToken methodToken)
+        private ISymbolNode CreateVirtualCallHelper(MethodDesc method, ModuleToken methodToken)
         {
             return new DelayLoadHelperImport(
                 this,
@@ -379,7 +384,7 @@ namespace ILCompiler.DependencyAnalysis
                 GetOrAddMethodSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry, method, methodToken, MethodFixupSignature.SignatureKind.Signature));
         }
 
-        private ISymbolNode CreateDelegateCtorHelper(DelegateCreationInfo info, mdToken token)
+        private ISymbolNode CreateDelegateCtorHelper(DelegateCreationInfo info, ModuleToken token)
         {
             return info.Constructor;
         }
@@ -478,38 +483,39 @@ namespace ILCompiler.DependencyAnalysis
             throw new NotImplementedException();
         }
 
-        struct TokenAndCallSite
+        struct MethodAndCallSite
         {
-            public readonly mdToken Token;
+            public readonly MethodDesc Method;
             public readonly string CallSite;
 
-            public TokenAndCallSite(mdToken token, string callSite)
+            public MethodAndCallSite(MethodDesc method, string callSite)
             {
                 CallSite = callSite;
-                Token = token;
+                Method = method;
             }
 
             public override bool Equals(object obj)
             {
-                TokenAndCallSite other = (TokenAndCallSite)obj;
-                return CallSite == other.CallSite && Token == other.Token;
+                MethodAndCallSite other = (MethodAndCallSite)obj;
+                return CallSite == other.CallSite && Method == other.Method;
             }
 
             public override int GetHashCode()
             {
-                return (CallSite != null ? CallSite.GetHashCode() : 0) + unchecked(31 * (int)Token);
+                return (CallSite != null ? CallSite.GetHashCode() : 0) + unchecked(31 * Method.GetHashCode());
             }
         }
 
-        Dictionary<TokenAndCallSite, ISymbolNode> _interfaceDispatchCells = new Dictionary<TokenAndCallSite, ISymbolNode>();
+        Dictionary<MethodAndCallSite, ISymbolNode> _interfaceDispatchCells = new Dictionary<MethodAndCallSite, ISymbolNode>();
 
-        public ISymbolNode InterfaceDispatchCell(MethodDesc method, mdToken token, string callSite = null)
+        public ISymbolNode InterfaceDispatchCell(MethodDesc method, ModuleToken token, string callSite = null)
         {
-            TokenAndCallSite cellKey = new TokenAndCallSite(token, callSite);
+            MethodAndCallSite cellKey = new MethodAndCallSite(method, callSite);
             ISymbolNode dispatchCell;
             if (!_interfaceDispatchCells.TryGetValue(cellKey, out dispatchCell))
             {
-                dispatchCell = new DelayLoadHelperImport(this,
+                dispatchCell = new DelayLoadHelperImport(
+                    this,
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_MethodCall,
                     GetOrAddMethodSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry, method, token, MethodFixupSignature.SignatureKind.Signature),
                     callSite);
@@ -539,19 +545,20 @@ namespace ILCompiler.DependencyAnalysis
             return helperCell;
         }
 
-        public ISymbolNode ComputeConstantLookup(ReadyToRunHelperId helperId, object entity, mdToken token)
+        public ISymbolNode ComputeConstantLookup(ReadyToRunHelperId helperId, object entity, ModuleToken token)
         {
             return ReadyToRunHelper(helperId, entity, token);
         }
 
         Dictionary<MethodDesc, ISortableSymbolNode> _genericDictionaryCache = new Dictionary<MethodDesc, ISortableSymbolNode>();
 
-        public ISortableSymbolNode MethodGenericDictionary(MethodDesc method, mdToken token)
+        public ISortableSymbolNode MethodGenericDictionary(MethodDesc method, ModuleToken token)
         {
             ISortableSymbolNode genericDictionary;
             if (!_genericDictionaryCache.TryGetValue(method, out genericDictionary))
             {
-                genericDictionary = new DelayLoadHelperImport(this,
+                genericDictionary = new DelayLoadHelperImport(
+                    this,
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
                     GetOrAddMethodSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_MethodDictionary, method, token, MethodFixupSignature.SignatureKind.Signature));
                 _genericDictionaryCache.Add(method, genericDictionary);
@@ -559,38 +566,38 @@ namespace ILCompiler.DependencyAnalysis
             return genericDictionary;
         }
 
-        struct TokenAndFixupKind
+        struct MethodAndFixupKind
         {
-            public readonly mdToken Token;
+            public readonly MethodDesc Method;
             public readonly ReadyToRunFixupKind FixupKind;
 
-            public TokenAndFixupKind(mdToken token, ReadyToRunFixupKind fixupKind)
+            public MethodAndFixupKind(MethodDesc method, ReadyToRunFixupKind fixupKind)
             {
-                Token = token;
+                Method = method;
                 FixupKind = fixupKind;
             }
 
             public override bool Equals(object obj)
             {
-                TokenAndFixupKind other = (TokenAndFixupKind)obj;
-                return Token == other.Token && FixupKind == other.FixupKind;
+                MethodAndFixupKind other = (MethodAndFixupKind)obj;
+                return Method == other.Method && FixupKind == other.FixupKind;
             }
 
             public override int GetHashCode()
             {
-                return (int)Token ^ unchecked(31 * (int)FixupKind);
+                return (int)Method.GetHashCode() ^ unchecked(31 * (int)FixupKind);
             }
         }
 
-        Dictionary<TokenAndFixupKind, MethodFixupSignature> _methodSignatures = new Dictionary<TokenAndFixupKind, MethodFixupSignature>();
+        Dictionary<MethodAndFixupKind, MethodFixupSignature> _methodSignatures = new Dictionary<MethodAndFixupKind, MethodFixupSignature>();
 
         public MethodFixupSignature GetOrAddMethodSignature(
             ReadyToRunFixupKind fixupKind,
             MethodDesc methodDesc,
-            mdToken token,
+            ModuleToken token,
             MethodFixupSignature.SignatureKind signatureKind)
         {
-            TokenAndFixupKind signatureKey = new TokenAndFixupKind(token, fixupKind);
+            MethodAndFixupKind signatureKey = new MethodAndFixupKind(methodDesc, fixupKind);
             MethodFixupSignature signature;
             if (!_methodSignatures.TryGetValue(signatureKey, out signature))
             {
@@ -680,11 +687,11 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(Header, "ReadyToRunHeader is always generated");
         }
 
-        public IMethodNode GetOrAddImportedMethodNode(MethodDesc method, bool unboxingStub, mdToken token, MethodWithGCInfo localMethod)
+        public IMethodNode GetOrAddImportedMethodNode(MethodDesc method, bool unboxingStub, ModuleToken token, MethodWithGCInfo localMethod)
         {
             ReadyToRunFixupKind fixupKind;
             MethodFixupSignature.SignatureKind signatureKind;
-            CorTokenType tokenType = SignatureBuilder.TypeFromToken(token);
+            CorTokenType tokenType = token.TokenType;
             switch (tokenType)
             {
                 case CorTokenType.mdtMethodDef:
@@ -713,7 +720,7 @@ namespace ILCompiler.DependencyAnalysis
 
         Dictionary<InstantiatedMethod, IMethodNode> _instantiatedMethodImports = new Dictionary<InstantiatedMethod, IMethodNode>();
 
-        private IMethodNode GetOrAddInstantiatedMethodNode(InstantiatedMethod method, mdToken token)
+        private IMethodNode GetOrAddInstantiatedMethodNode(InstantiatedMethod method, ModuleToken token)
         {
             IMethodNode methodImport;
             if (!_instantiatedMethodImports.TryGetValue(method, out methodImport))
@@ -730,7 +737,7 @@ namespace ILCompiler.DependencyAnalysis
             return methodImport;
         }
 
-        public IMethodNode ShadowConcreteMethod(MethodDesc method, mdToken token, bool isUnboxingStub = false)
+        public IMethodNode ShadowConcreteMethod(MethodDesc method, ModuleToken token, bool isUnboxingStub = false)
         {
             return MethodEntrypoint(method, token, isUnboxingStub);
         }
@@ -742,7 +749,7 @@ namespace ILCompiler.DependencyAnalysis
                 // Cannot encode external methods without tokens
                 throw new NotImplementedException();
             }
-            return MethodEntrypoint(method, default(mdToken), isUnboxingStub: false);
+            return MethodEntrypoint(method, default(ModuleToken), isUnboxingStub: false);
         }
 
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)

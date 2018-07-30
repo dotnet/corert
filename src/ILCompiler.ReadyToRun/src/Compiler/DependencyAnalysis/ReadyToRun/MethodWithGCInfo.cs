@@ -16,7 +16,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public readonly MethodGCInfoNode GCInfoNode;
 
         private readonly MethodDesc _method;
-        private readonly mdToken _token;
+        private readonly ModuleToken _token;
 
         private ObjectData _methodCode;
         private FrameInfo[] _frameInfos;
@@ -26,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private DebugVarInfo[] _debugVarInfos;
         private DebugEHClauseInfo[] _debugEHClauseInfos;
 
-        public MethodWithGCInfo(MethodDesc methodDesc, mdToken token)
+        public MethodWithGCInfo(MethodDesc methodDesc, ModuleToken token)
         {
             GCInfoNode = new MethodGCInfoNode(this);
             _method = methodDesc;

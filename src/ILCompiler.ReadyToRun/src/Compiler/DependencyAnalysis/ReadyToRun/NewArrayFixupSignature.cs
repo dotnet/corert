@@ -12,9 +12,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     public class NewArrayFixupSignature : Signature
     {
         private readonly ArrayType _arrayType;
-        private readonly mdToken _typeToken;
+        private readonly ModuleToken _typeToken;
 
-        public NewArrayFixupSignature(ArrayType arrayType, mdToken typeToken)
+        public NewArrayFixupSignature(ArrayType arrayType, ModuleToken typeToken)
         {
             _arrayType = arrayType;
             _typeToken = typeToken;
@@ -37,7 +37,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append($@"NewArraySignature: {_arrayType.ToString()}; token: {(uint)_typeToken:X8})");
+            sb.Append($@"NewArraySignature: {_arrayType.ToString()}; token: {_typeToken})");
         }
 
         protected override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)

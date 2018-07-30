@@ -27,9 +27,10 @@ namespace ILCompiler.DependencyAnalysis
     internal class ReadyToRunObjectWriter
     {
         // Nodefactory for which ObjectWriter is instantiated for.
-        private ReadyToRunCodegenNodeFactory _nodeFactory;
-        private string _objectFilePath;
-        private IEnumerable<DependencyNode> _nodes;
+        private readonly ReadyToRunCodegenNodeFactory _nodeFactory;
+        private readonly string _objectFilePath;
+        private readonly IEnumerable<DependencyNode> _nodes;
+        private readonly PEReader _inputPeReader;
 
         private int _textSectionIndex;
         private int _rdataSectionIndex;
@@ -39,11 +40,12 @@ namespace ILCompiler.DependencyAnalysis
         Dictionary<string, (ISymbolNode Node, int NodeIndex, int SymbolIndex)> _previouslyWrittenNodeNames = new Dictionary<string, (ISymbolNode Node, int NodeIndex, int SymbolIndex)>();
 #endif
 
-        public ReadyToRunObjectWriter(string objectFilePath, IEnumerable<DependencyNode> nodes, ReadyToRunCodegenNodeFactory factory)
+        public ReadyToRunObjectWriter(PEReader inputPeReader, string objectFilePath, IEnumerable<DependencyNode> nodes, ReadyToRunCodegenNodeFactory factory)
         {
             _objectFilePath = objectFilePath;
             _nodes = nodes;
             _nodeFactory = factory;
+            _inputPeReader = inputPeReader;
         }
 
         public void EmitPortableExecutable()
@@ -63,7 +65,7 @@ namespace ILCompiler.DependencyAnalysis
                 stopwatch.Start();
                 mapFile.WriteLine($@"R2R object emission started: {DateTime.Now}");
 
-                var peBuilder = new R2RPEBuilder(Machine.Amd64, _nodeFactory.PEReader, new ValueTuple<string, SectionCharacteristics>[0]);
+                var peBuilder = new R2RPEBuilder(Machine.Amd64, _inputPeReader, new ValueTuple<string, SectionCharacteristics>[0]);
                 var sectionBuilder = new SectionBuilder();
 
                 _textSectionIndex = sectionBuilder.AddSection(R2RPEBuilder.TextSectionName, SectionCharacteristics.ContainsCode | SectionCharacteristics.MemExecute | SectionCharacteristics.MemRead, 512);
@@ -150,7 +152,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 using (var peStream = File.Create(_objectFilePath))
                 {
-                    sectionBuilder.EmitR2R(Machine.Amd64, _nodeFactory.PEReader, peStream);
+                    sectionBuilder.EmitR2R(Machine.Amd64, _inputPeReader, peStream);
                 }
 
                 mapFile.WriteLine($@"R2R object emission finished: {DateTime.Now}, {stopwatch.ElapsedMilliseconds} msecs");
@@ -184,10 +186,10 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public static void EmitObject(string objectFilePath, IEnumerable<DependencyNode> nodes, ReadyToRunCodegenNodeFactory factory)
+        public static void EmitObject(PEReader inputPeReader, string objectFilePath, IEnumerable<DependencyNode> nodes, ReadyToRunCodegenNodeFactory factory)
         {
             Console.WriteLine($@"Emitting R2R PE file: {objectFilePath}");
-            ReadyToRunObjectWriter objectWriter = new ReadyToRunObjectWriter(objectFilePath, nodes, factory);
+            ReadyToRunObjectWriter objectWriter = new ReadyToRunObjectWriter(inputPeReader, objectFilePath, nodes, factory);
             objectWriter.EmitPortableExecutable();
         }
     }

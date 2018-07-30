@@ -15,9 +15,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly TypeDesc _typeDesc;
 
-        private readonly mdToken _typeToken;
+        private readonly ModuleToken _typeToken;
 
-        public TypeFixupSignature(ReadyToRunFixupKind fixupKind, TypeDesc typeDesc, mdToken typeToken)
+        public TypeFixupSignature(ReadyToRunFixupKind fixupKind, TypeDesc typeDesc, ModuleToken typeToken)
         {
             _fixupKind = fixupKind;
             _typeDesc = typeDesc;
@@ -41,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append($@"TypeFixupSignature({_fixupKind.ToString()}): {_typeDesc.ToString()}; token: {(uint)_typeToken:X8})");
+            sb.Append($@"TypeFixupSignature({_fixupKind.ToString()}): {_typeDesc.ToString()}; token: {_typeToken})");
         }
 
         protected override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)

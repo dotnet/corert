@@ -12,9 +12,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     public class NewObjectFixupSignature : Signature
     {
         private readonly TypeDesc _typeDesc;
-        private readonly mdToken _typeToken;
+        private readonly ModuleToken _typeToken;
 
-        public NewObjectFixupSignature(TypeDesc typeDesc, mdToken typeToken)
+        public NewObjectFixupSignature(TypeDesc typeDesc, ModuleToken typeToken)
         {
             _typeDesc = typeDesc;
             _typeToken = typeToken;
@@ -37,7 +37,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append($@"NewObjectSignature: {_typeDesc.ToString()}; token: {(uint)_typeToken:X8})");
+            sb.Append($@"NewObjectSignature: {_typeDesc.ToString()}; token: {_typeToken})");
         }
 
         protected override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)

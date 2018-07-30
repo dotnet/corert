@@ -7,7 +7,9 @@ using System;
 using System.Collections.Generic;
 
 using Internal.JitInterface;
+using Internal.Text;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -15,7 +17,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private readonly MethodDesc _methodDesc;
 
-        private readonly mdToken _token;
+        private readonly ModuleToken _token;
 
         private readonly MethodWithGCInfo _localMethod;
 
@@ -23,7 +25,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadyToRunCodegenNodeFactory factory,
             ReadyToRunFixupKind fixupKind,
             MethodDesc methodDesc,
-            mdToken token,
+            ModuleToken token,
             MethodWithGCInfo localMethod,
             MethodFixupSignature.SignatureKind signatureKind)
             : base(factory.MethodImports, factory.GetOrAddMethodSignature(fixupKind, methodDesc, token, signatureKind))
@@ -49,6 +51,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 new DependencyListEntry(_localMethod, "Local method import"),
                 new DependencyListEntry(ImportSignature, "Method fixup signature"),
             };
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            base.AppendMangledName(nameMangler, sb);
+            sb.Append(" = ");
+            sb.Append(_token.ToString());
         }
     }
 }

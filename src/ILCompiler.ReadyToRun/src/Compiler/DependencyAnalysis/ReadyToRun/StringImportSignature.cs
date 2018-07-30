@@ -9,9 +9,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class StringImportSignature : Signature
     {
-        private readonly mdToken _token;
+        private readonly ModuleToken _token;
 
-        public StringImportSignature(mdToken token)
+        public StringImportSignature(ModuleToken token)
         {
             _token = token;
         }
@@ -24,8 +24,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
             dataBuilder.AddSymbol(this);
 
+            // TODO: module override for external module strings
             dataBuilder.EmitByte((byte)ReadyToRunFixupKind.READYTORUN_FIXUP_StringHandle);
-            dataBuilder.EmitUInt(SignatureBuilder.RidFromToken(_token));
+            dataBuilder.EmitUInt(_token.TokenRid);
 
             return dataBuilder.ToObjectData();
         }
@@ -33,7 +34,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("StringImportSignature: " + ((uint)_token).ToString("X8"));
+            sb.Append("StringImportSignature: " + _token.ToString());
         }
 
         protected override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
