@@ -10,7 +10,6 @@ using System.Reflection.Metadata.Ecma335;
 
 using Internal.JitInterface;
 using Internal.NativeFormat;
-using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;

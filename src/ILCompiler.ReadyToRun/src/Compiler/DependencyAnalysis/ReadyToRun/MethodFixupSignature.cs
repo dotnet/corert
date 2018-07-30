@@ -3,11 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-
-using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {

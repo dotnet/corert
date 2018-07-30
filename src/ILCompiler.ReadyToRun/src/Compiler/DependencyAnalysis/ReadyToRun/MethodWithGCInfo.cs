@@ -4,8 +4,6 @@
 
 using System;
 using System.Diagnostics;
-
-using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
 
