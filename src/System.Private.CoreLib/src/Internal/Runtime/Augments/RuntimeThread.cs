@@ -80,6 +80,14 @@ namespace Internal.Runtime.Augments
             }
         }
 
+        internal static ulong CurrentOSThreadId
+        {
+            get
+            {
+                return RuntimeImports.RhCurrentOSThreadId();
+            }
+        }
+
         // Slow path executed once per thread
         private static RuntimeThread InitializeExistingThread(bool threadPoolThread)
         {
