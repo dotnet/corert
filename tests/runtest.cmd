@@ -97,11 +97,18 @@ if "%CoreRT_MultiFileConfiguration%"=="MultiModule" (
     set CoreRT_TestCompileMode=ryujit
 )
 
+set CoreRT_CoreCLRRuntimeDir=%CoreRT_TestRoot%..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\CoreClrRuntime
+set CoreRT_ReadyToRunTestHarnessDir=%CoreRT_TestRoot%src\tools\ReadyToRun.TestHarness
+
+if not exist %CoreRT_CoreCLRRuntimeDir% (
+    REM The test build handles restoring external dependencies such as CoreCLR runtime and its test host
+    REM Trigger the test build so it will build but not run tests before we run them here
+    call %CoreRT_TestRoot%..\buildscripts\build-tests.cmd buildtests
+)
+
 call %CoreRT_TestRoot%testenv.cmd
 
 set CoreRT_RspTemplateDir=%CoreRT_TestRoot%..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%
-set CoreRT_CoreCLRRuntimeDir=%CoreRT_TestRoot%..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\CoreClrRuntime
-set CoreRT_ReadyToRunTestHarnessDir=%CoreRT_TestRoot%src\tools\ReadyToRun.TestHarness
 
 set __BuildStr=%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%
 set __CoreRTTestBinDir=%CoreRT_TestRoot%..\bin\tests

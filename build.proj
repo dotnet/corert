@@ -10,7 +10,6 @@
 
   <ItemGroup>
     <Project Include="src\Common\test-runtime\XUnit.Runtime.depproj" />
-    <Project Include="external\dirs.proj" />
     <Project Include="src\dirs.proj" />
   </ItemGroup>
 
