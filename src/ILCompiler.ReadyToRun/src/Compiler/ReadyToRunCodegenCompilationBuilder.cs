@@ -19,18 +19,21 @@ namespace ILCompiler
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
-        private string _inputFilePath;
+        private List<string> _inputFilePaths;
         private DependencyAnalysis.ReadyToRun.DevirtualizationManager _r2rDevirtualizationManager;
 
 
-        public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group, string inputFilePath)
+        public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group, List<string> inputFilePaths)
             : base(context, group, new CoreRTNameMangler(new ReadyToRunNodeMangler(), false))
         {
-            _inputFilePath = inputFilePath;
+            _inputFilePaths = inputFilePaths;
             _r2rDevirtualizationManager = new DependencyAnalysis.ReadyToRun.DevirtualizationManager(group);
 
-            EcmaModule inputModule = context.GetModuleFromPath(_inputFilePath);
-            ((ReadyToRunCompilerContext)context).InitializeAlgorithm(inputModule.MetadataReader.GetTableRowCount(TableIndex.TypeDef));
+            foreach (var inputFilePath in _inputFilePaths)
+            {
+                EcmaModule inputModule = context.GetModuleFromPath(inputFilePath);
+                ((ReadyToRunCompilerContext)context).InitializeAlgorithm(inputModule.MetadataReader.GetTableRowCount(TableIndex.TypeDef));
+            }
         }
 
         public override CompilationBuilder UseBackendOptions(IEnumerable<string> options)
@@ -102,7 +105,7 @@ namespace ILCompiler
                 _logger,
                 _r2rDevirtualizationManager,
                 jitConfig,
-                _inputFilePath);
+                _inputFilePaths);
         }
     }
 }
