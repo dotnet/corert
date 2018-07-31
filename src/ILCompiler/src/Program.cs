@@ -50,6 +50,7 @@ namespace ILCompiler
         private string _mapFileName;
         private string _metadataLogFileName;
         private bool _noMetadataBlocking;
+        private bool _completeTypesMetadata;
 
         private string _singleMethodTypeName;
         private string _singleMethodName;
@@ -159,6 +160,7 @@ namespace ILCompiler
                 syntax.DefineOption("map", ref _mapFileName, "Generate a map file");
                 syntax.DefineOption("metadatalog", ref _metadataLogFileName, "Generate a metadata log file");
                 syntax.DefineOption("nometadatablocking", ref _noMetadataBlocking, "Ignore metadata blocking for internal implementation details");
+                syntax.DefineOption("completetypemetadata", ref _completeTypesMetadata, "Generate complete metadata for types");
                 syntax.DefineOption("scan", ref _useScanner, "Use IL scanner to generate optimized code (implied by -O)");
                 syntax.DefineOption("noscan", ref _noScanner, "Do not use IL scanner to generate optimized code");
                 syntax.DefineOption("ildump", ref _ilDump, "Dump IL assembly listing for compiler-generated IL");
@@ -418,13 +420,19 @@ namespace ILCompiler
 
             ManifestResourceBlockingPolicy resBlockingPolicy = new NoManifestResourceBlockingPolicy();
 
+            UsageBasedMetadataGenerationOptions metadataGenerationOptions = UsageBasedMetadataGenerationOptions.None;
+            if (_completeTypesMetadata)
+                metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.CompleteTypesOnly;
+
             UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager(
                 compilationGroup,
                 typeSystemContext,
                 mdBlockingPolicy,
                 resBlockingPolicy,
                 _metadataLogFileName,
-                stackTracePolicy);
+                stackTracePolicy,
+                metadataGenerationOptions
+                );
 
             // Unless explicitly opted in at the command line, we enable scanner for retail builds by default.
             // We don't do this for CppCodegen and Wasm, because those codegens are behind.
