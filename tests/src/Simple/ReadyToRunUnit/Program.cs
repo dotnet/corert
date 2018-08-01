@@ -261,8 +261,13 @@ internal class Program
         return true;
     }
     
-    public static int Main()
+    public static int Main(string[] args)
     {
+        if (args.Length > 0)
+        {
+            TextFileName = args[0];
+        }
+
         _passedTests = new List<string>();
         _failedTests = new List<string>();
 

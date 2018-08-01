@@ -64,9 +64,33 @@ namespace ReadyToRun.TestHarness
                 return exitCode;
             }
 
-            if (args.Length == 3 && File.Exists(args[2]))
+            int passThroughIndex = -1;
+            string passThroughArguments = "";
+            if (args.Length >= 3)
             {
-                whiteListFile = args[2];
+                if (args[2] == "/testargs")
+                {
+                    passThroughIndex = 2;
+                } else
+                {
+                    if (!File.Exists(args[2]))
+                    {
+                        Console.WriteLine($"Error: {args[2]} is an invalid path.");
+                        ShowUsage();
+                        return exitCode;
+                    }
+                    whiteListFile = args[2];
+
+                    if (args.Length >= 4 && args[3] == "/testargs")
+                    {
+                        passThroughIndex = 3;
+                    }
+                }
+                
+                if (passThroughIndex > -1 && (args.Length - passThroughIndex - 1) > 0)
+                {
+                    passThroughArguments = string.Join(' ', args, passThroughIndex + 1, args.Length - passThroughIndex - 1);
+                }
             }
 
             string coreRunExePath = args[0];
@@ -81,7 +105,7 @@ namespace ReadyToRun.TestHarness
                 var r2rMethodFilter = new ReadyToRunJittedMethods(session, testModules);
                 session.EnableProvider(ClrTraceEventParser.ProviderGuid, TraceEventLevel.Verbose, (ulong)(ClrTraceEventParser.Keywords.Jit | ClrTraceEventParser.Keywords.Loader));
                 
-                Task.Run(() => exitCode = RunTest(session, coreRunExePath, testExe));
+                Task.Run(() => exitCode = RunTest(session, coreRunExePath, testExe, passThroughArguments));
 
                 // Block, processing callbacks for events we subscribed to
                 session.Source.Process();
@@ -151,7 +175,7 @@ namespace ReadyToRun.TestHarness
             return StatusTestPassed;
         }
 
-        private static int RunTest(TraceEventSession session, string coreRunPath, string testExecutable)
+        private static int RunTest(TraceEventSession session, string coreRunPath, string testExecutable, string testArguments)
         {
             int exitCode = -100;
 
@@ -160,7 +184,7 @@ namespace ReadyToRun.TestHarness
                 using (var process = new Process())
                 {
                     process.StartInfo.FileName = coreRunPath;
-                    process.StartInfo.Arguments = testExecutable;
+                    process.StartInfo.Arguments = testExecutable + " " + testArguments;
                     process.StartInfo.UseShellExecute = false;
                     
                     process.Start();
