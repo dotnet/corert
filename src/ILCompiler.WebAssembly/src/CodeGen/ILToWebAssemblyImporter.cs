@@ -1028,8 +1028,10 @@ namespace Internal.IL
                     var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("Internal.Runtime", "EEType").MakePointerType();
                     LLVMValueRef dimensions = LLVM.BuildArrayAlloca(_builder, LLVMTypeRef.Int32Type(), BuildConstInt32(paramCnt), "newobj_array_pdims_" + _currentOffset);
                     for (int i = paramCnt - 1; i >= 0; --i)
+                    {
                         LLVM.BuildStore(_builder, _stack.Pop().ValueAsInt32(_builder, true),
-                            LLVM.BuildGEP(_builder, dimensions, new LLVMValueRef[] { BuildConstInt32(i) }, "__pdims_ptr__"));
+                            LLVM.BuildGEP(_builder, dimensions, new LLVMValueRef[] { BuildConstInt32(i) }, "pdims_ptr"));
+                    }
                     var arguments = new StackEntry[]
                     {
                         new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(newType, true), eeTypeDesc),
