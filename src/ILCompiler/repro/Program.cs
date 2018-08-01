@@ -9,6 +9,7 @@ using System.Text;
 
 internal class Program
 {
+    //*
     // [ThreadStatic]
     private static string TextFileName = @"C:\Windows\Microsoft.NET\Framework\v4.0.30319\clientexclusionlist.xml";
 
@@ -18,6 +19,7 @@ internal class Program
     private static List<string> _passedTests;
 
     private static List<string> _failedTests;
+    //*/
 
     //*
     private static bool NewString()
@@ -227,15 +229,29 @@ internal class Program
     }
     //*/
 
+    //*
     private static bool EmptyArray()
     {
         int[] emptyIntArray = Array.Empty<int>();
         Console.WriteLine("Successfully constructed Array.Empty<int>!");
         return emptyIntArray.Length == 0;
     }
+    //*/
 
+    //*
     private delegate char CharFilterDelegate(char inputChar);
 
+    private static bool SimpleDelegateTest()
+    {
+        CharFilterDelegate filterDelegate = CharFilterUpperCase;
+        char lower = 'x';
+        char upper = filterDelegate(lower);
+        Console.WriteLine($@"lower = '{lower}', upper = '{upper}'");
+        return upper == Char.ToUpper(lower);
+    }
+    //*/
+
+    //*
     private static bool CharFilterDelegateTest()
     {
         string transformedString = TransformStringUsingCharFilter(TextFileName, CharFilterUpperCase);
@@ -256,13 +272,48 @@ internal class Program
         }
         return outputBuilder.ToString();
     }
+    //*/
 
     private static char CharFilterUpperCase(char c)
     {
+        Console.WriteLine($@"CharFilterUpperCase({c})");
         return Char.ToUpperInvariant(c);
     }
 
     //*
+    static bool s_sampleActionFlag;
+
+    private static bool ActionTest()
+    {
+        s_sampleActionFlag = false;
+        Action action = SampleAction;
+        action();
+        return s_sampleActionFlag;
+    }
+
+    private static void SampleAction()
+    {
+        Console.WriteLine("SampleAction() called!");
+        s_sampleActionFlag = true;
+    }
+    //*/
+
+    private static bool FuncCharCharTest()
+    {
+        Func<char, char> charFunc = CharFilterUpperCase;
+
+        StringBuilder builder = new StringBuilder();
+        foreach (char c in TextFileName)
+        {
+            builder.Append(charFunc(c));
+        }
+
+        Console.WriteLine($@"Func<char,char> string: {builder}");
+
+        return builder.ToString() == TextFileName.ToUpperInvariant();
+    }
+
+    /*
     private static bool EnumerateEmptyArray()
     {
         foreach (int element in Array.Empty<int>())
@@ -281,6 +332,8 @@ internal class Program
 
     public static int Main()
     {
+        // return SimpleDelegateTest() ? 100 : 1;
+
         /*
         StreamReader reader = new StreamReader(TextFileName, System.Text.Encoding.UTF8);
 
@@ -294,8 +347,10 @@ internal class Program
         return o != null ? 100 : 101;
         */
 
+        //*
         _passedTests = new List<string>();
         _failedTests = new List<string>();
+        //*/
 
         //*
         RunTest("NewString", NewString());
@@ -309,9 +364,14 @@ internal class Program
         RunTest("RuntimeTypeHandle", RuntimeTypeHandle());
         RunTest("ReadAllText", ReadAllText());
         RunTest("StreamReaderReadLine", StreamReaderReadLine());
-        // TODO: RunTest("CharFilterDelegateTest", CharFilterDelegateTest());
+        //*/
+        RunTest("SimpleDelegateTest", SimpleDelegateTest());
+        RunTest("CharFilterDelegateTest", CharFilterDelegateTest());
+        RunTest("ActionTest", ActionTest());
+        RunTest("FuncCharCharTest", FuncCharCharTest());
         //*/
 
+        //*
         RunTest("ConstructListOfInt", ConstructListOfInt());
         RunTest("ManipulateListOfInt", ManipulateListOfInt());
         RunTest("ConstructListOfString", ConstructListOfString());
@@ -319,10 +379,11 @@ internal class Program
 
         RunTest("EmptyArray", EmptyArray());
         // TODO: RunTest("EnumerateEmptyArray", EnumerateEmptyArray());
+        //*/
 
         //*
         Console.WriteLine($@"{_passedTests.Count} tests pass:");
-        // TODO: enumerator - foreach (string testName in _passedTests)
+        // TODO: inst param - foreach (string testName in _passedTests)
         for (int i = 0; i < _passedTests.Count; i++)
         {
             string testName = _passedTests[i];
@@ -349,6 +410,7 @@ internal class Program
     }
     //*/
 
+    //*
     private static void RunTest(string name, bool result)
     {
         if (result)
@@ -360,6 +422,7 @@ internal class Program
             _failedTests.Add(name);
         }
     }
+    //*/
 
     /*
     public static int Main()
