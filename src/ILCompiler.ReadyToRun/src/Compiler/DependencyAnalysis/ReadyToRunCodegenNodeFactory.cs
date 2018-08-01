@@ -13,6 +13,7 @@ using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.JitInterface;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -97,9 +98,6 @@ namespace ILCompiler.DependencyAnalysis
             if (CompilationModuleGroup.ContainsMethodBody(method, false))
             {
                 localMethod = new MethodWithGCInfo(method, token);
-                _runtimeFunctionsGCInfo.AddEmbeddedObject(localMethod.GCInfoNode);
-                int methodIndex = RuntimeFunctionsTable.Add(localMethod);
-                MethodEntryPointTable.Add(localMethod, methodIndex, this);
 
                 // TODO: hack - how do we distinguish between emitting main entry point and calls between
                 // methods?
@@ -109,7 +107,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            return GetOrAddImportedMethodNode(method, unboxingStub: false, token: token, localMethod: localMethod);
+            return ImportedMethodNode(method, unboxingStub: false, token: token, localMethod: localMethod);
         }
 
         public IMethodNode StringAllocator(MethodDesc constructor, ModuleToken token)
@@ -122,9 +120,7 @@ namespace ILCompiler.DependencyAnalysis
             ISymbolNode stringNode;
             if (!_importStrings.TryGetValue(token, out stringNode))
             {
-                StringImport r2rImportNode = new StringImport(StringImports, token);
-                StringImports.AddImport(this, r2rImportNode);
-                stringNode = r2rImportNode;
+                stringNode = new StringImport(StringImports, token);
                 _importStrings.Add(token, stringNode);
             }
             return stringNode;
@@ -513,9 +509,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private ISymbolNode CreateReadyToRunHelperCell(ReadyToRunHelper helperId)
         {
-            Import helperCell = new Import(EagerImports, new ReadyToRunHelperSignature(helperId));
-            EagerImports.AddImport(this, helperCell);
-            return helperCell;
+            return new Import(EagerImports, new ReadyToRunHelperSignature(helperId));
         }
 
         public ISymbolNode ComputeConstantLookup(ReadyToRunHelperId helperId, object entity, ModuleToken token)
@@ -665,7 +659,7 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(Header, "ReadyToRunHeader is always generated");
         }
 
-        public IMethodNode GetOrAddImportedMethodNode(MethodDesc method, bool unboxingStub, ModuleToken token, MethodWithGCInfo localMethod)
+        public IMethodNode ImportedMethodNode(MethodDesc method, bool unboxingStub, ModuleToken token, MethodWithGCInfo localMethod)
         {
             ReadyToRunFixupKind fixupKind;
             MethodFixupSignature.SignatureKind signatureKind;
@@ -733,6 +727,68 @@ namespace ILCompiler.DependencyAnalysis
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)
         {
             throw new NotImplementedException();
+        }
+
+        public void NewMarkedNode(DependencyNodeCore<NodeFactory> node)
+        {
+            if (node is MethodWithGCInfo methodWithGCInfo)
+            {
+                // Marked method - add runtime & entry point table entry
+                _runtimeFunctionsGCInfo.AddEmbeddedObject(methodWithGCInfo.GCInfoNode);
+                int index = RuntimeFunctionsTable.Add(methodWithGCInfo);
+                MethodEntryPointTable.Add(methodWithGCInfo, index);
+            }
+        }
+
+        struct TypeAndMethod
+        {
+            public readonly TypeDesc Type;
+            public readonly MethodDesc Method;
+
+            public TypeAndMethod(TypeDesc type, MethodDesc method)
+            {
+                Type = type;
+                Method = method;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is TypeAndMethod other && Type == other.Type && Method == other.Method;
+            }
+
+            public override int GetHashCode()
+            {
+                return Type.GetHashCode() ^ unchecked(Method.GetHashCode() * 31);
+            }
+        }
+
+        private Dictionary<TypeAndMethod, ISymbolNode> _delegateCtors = new Dictionary<TypeAndMethod, ISymbolNode>();
+
+        public ISymbolNode DelegateCtor(TypeDesc delegateType, MethodDesc targetMethod, ModuleToken methodToken)
+        {
+            ISymbolNode ctorNode;
+            TypeAndMethod ctorKey = new TypeAndMethod(delegateType, targetMethod);
+            if (!_delegateCtors.TryGetValue(ctorKey, out ctorNode))
+            {
+                ModuleToken delegateTypeToken;
+                if (CompilationModuleGroup.ContainsType(delegateType) && delegateType is EcmaType ecmaType)
+                {
+                    delegateTypeToken = new ModuleToken(ecmaType.EcmaModule, (mdToken)MetadataTokens.GetToken(ecmaType.Handle));
+                }
+                else
+                {
+                    // TODO: reverse typedef lookup within the version bubble
+                    throw new NotImplementedException();
+                }
+
+                IMethodNode targetMethodNode = MethodEntrypoint(targetMethod, methodToken, isUnboxingStub: false);
+
+                ctorNode = new DelayLoadHelperImport(this,
+                    ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
+                    new DelegateCtorSignature(this, delegateType, delegateTypeToken, targetMethodNode, methodToken));
+                _delegateCtors.Add(ctorKey, ctorNode);
+            }
+            return ctorNode;
         }
     }
 }
