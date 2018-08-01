@@ -205,6 +205,7 @@ namespace Internal.JitInterface
                 targetMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pTargetMethod);
             }
 
+            /* TODO
             bool isLdvirtftn = pTargetMethod.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldvirtftn;
             DelegateCreationInfo delegateInfo = _compilation.GetDelegateCtor(delegateTypeDesc, targetMethod, isLdvirtftn);
 
@@ -222,9 +223,11 @@ namespace Internal.JitInterface
                 pLookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(delegateInfo);
             }
             else
+            */
             {
                 pLookup.lookupKind.needsRuntimeLookup = false;
-                pLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, delegateInfo, new ModuleToken(_tokenContext, pTargetMethod.token)));
+                pLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.DelegateCtor(
+                    delegateTypeDesc, targetMethod, new ModuleToken(_tokenContext, pTargetMethod.token)));
             }
         }
 

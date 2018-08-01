@@ -80,7 +80,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append("__ReadyToRunMethodEntryPointTable");
         }
 
-        public void Add(MethodWithGCInfo methodNode, int methodIndex, NodeFactory factory)
+        public void Add(MethodWithGCInfo methodNode, int methodIndex)
         {
             uint rid;
             if (methodNode.Method is EcmaMethod ecmaMethod)

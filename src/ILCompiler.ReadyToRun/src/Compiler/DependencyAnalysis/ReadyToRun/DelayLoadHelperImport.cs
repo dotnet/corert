@@ -19,7 +19,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public DelayLoadHelperImport(ReadyToRunCodegenNodeFactory factory, ReadyToRunHelper helper, Signature instanceSignature, string callSite = null)
             : base(factory.HelperImports, instanceSignature, callSite)
         {
-            factory.HelperImports.AddImport(factory, this);
             _helper = helper;
             _delayLoadHelper = new DelayLoadHelperThunk(helper, factory, this);
         }

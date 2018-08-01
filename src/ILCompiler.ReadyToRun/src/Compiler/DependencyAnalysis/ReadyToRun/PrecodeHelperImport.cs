@@ -16,7 +16,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public PrecodeHelperImport(ReadyToRunCodegenNodeFactory factory, Signature signature)
             : base(factory.PrecodeImports, signature)
         {
-            factory.PrecodeImports.AddImport(factory, this);
         }
 
         protected override string GetName(NodeFactory factory)
