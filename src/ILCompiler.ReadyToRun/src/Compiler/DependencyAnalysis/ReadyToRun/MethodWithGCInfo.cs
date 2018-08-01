@@ -39,6 +39,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public MethodDesc Method => _method;
 
+        protected override void OnMarked(NodeFactory factory)
+        {
+            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
+            // Marked method - add runtime & entry point table entry
+            r2rFactory.RuntimeFunctionsGCInfo.AddEmbeddedObject(GCInfoNode);
+            int index = r2rFactory.RuntimeFunctionsTable.Add(this);
+            r2rFactory.MethodEntryPointTable.Add(this, index);
+        }
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
             ObjectData methodCode = _methodCode;

@@ -52,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public RuntimeFunctionsTableNode RuntimeFunctionsTable;
 
-        private RuntimeFunctionsGCInfoNode _runtimeFunctionsGCInfo;
+        public RuntimeFunctionsGCInfoNode RuntimeFunctionsGCInfo;
 
         public MethodEntryPointTableNode MethodEntryPointTable;
 
@@ -584,8 +584,8 @@ namespace ILCompiler.DependencyAnalysis
             RuntimeFunctionsTable = new RuntimeFunctionsTableNode(Target);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.RuntimeFunctions, RuntimeFunctionsTable, RuntimeFunctionsTable);
 
-            _runtimeFunctionsGCInfo = new RuntimeFunctionsGCInfoNode();
-            graph.AddRoot(_runtimeFunctionsGCInfo, "GC info is always generated");
+            RuntimeFunctionsGCInfo = new RuntimeFunctionsGCInfoNode();
+            graph.AddRoot(RuntimeFunctionsGCInfo, "GC info is always generated");
 
             MethodEntryPointTable = new MethodEntryPointTableNode(Target);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.MethodDefEntryPoints, MethodEntryPointTable, MethodEntryPointTable);
@@ -722,17 +722,6 @@ namespace ILCompiler.DependencyAnalysis
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)
         {
             throw new NotImplementedException();
-        }
-
-        public void NewMarkedNode(DependencyNodeCore<NodeFactory> node)
-        {
-            if (node is MethodWithGCInfo methodWithGCInfo)
-            {
-                // Marked method - add runtime & entry point table entry
-                _runtimeFunctionsGCInfo.AddEmbeddedObject(methodWithGCInfo.GCInfoNode);
-                int index = RuntimeFunctionsTable.Add(methodWithGCInfo);
-                MethodEntryPointTable.Add(methodWithGCInfo, index);
-            }
         }
 
         struct TypeAndMethod
