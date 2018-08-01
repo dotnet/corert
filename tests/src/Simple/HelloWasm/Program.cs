@@ -246,6 +246,10 @@ internal static class Program
             PrintLine("Runtime.Helpers array initialization test: Ok.");
         }
 
+        var testMdArrayInstantiation = new int[2, 2];
+        if (testMdArrayInstantiation != null && testMdArrayInstantiation.GetLength(0) == 2 && testMdArrayInstantiation.GetLength(1) == 2)
+            PrintLine("Multi-dimension array instantiation test: Ok.");
+
         int intToCast = 1;
         double castedDouble = (double)intToCast;
         if (castedDouble == 1d)
