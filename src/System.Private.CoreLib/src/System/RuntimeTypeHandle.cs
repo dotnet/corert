@@ -105,6 +105,7 @@ namespace System
             throw new PlatformNotSupportedException();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal EETypePtr ToEETypePtr()
         {
             return new EETypePtr(_value);

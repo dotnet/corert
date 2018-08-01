@@ -396,6 +396,7 @@ namespace System
         }
 
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static EETypePtr EETypePtrOf<T>()
         {
             // Compilers are required to provide a low level implementation of this method.

@@ -100,8 +100,8 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        protected internal override int ClassCode => -762680703;
-        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int ClassCode => -762680703;
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return _details.CompareToImpl(((GenericCompositionNode)other)._details, comparer);
         }

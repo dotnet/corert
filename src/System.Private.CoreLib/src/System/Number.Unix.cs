@@ -18,10 +18,10 @@ namespace System
             Debug.Assert(precision > 0 && precision < 40);
 
             number.precision = precision;
-            if (DoubleHelper.Exponent(value) == 0x7ff)
+            if (!Double.IsFinite(value))
             {
-                number.scale = DoubleHelper.Mantissa(value) != 0 ? ScaleNAN : ScaleINF;
-                number.sign = DoubleHelper.Sign(value);
+                number.scale = Double.IsNaN(value) ? ScaleNAN : ScaleINF;
+                number.sign = Double.IsNegative(value);
                 number.digits[0] = '\0';
                 return;
             }

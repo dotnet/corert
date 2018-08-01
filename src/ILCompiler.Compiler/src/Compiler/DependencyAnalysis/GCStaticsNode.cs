@@ -65,7 +65,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             dependencyList.Add(factory.GCStaticsRegion, "GCStatics Region");
-            if (factory.Target.Abi == TargetAbi.CoreRT)
+            if (factory.Target.Abi != TargetAbi.ProjectN)
             {
                 dependencyList.Add(GetGCStaticEETypeNode(factory), "GCStatic EEType");
                 if (_preInitFieldInfos != null)
@@ -132,18 +132,11 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected internal override int ClassCode => -522346696;
+        public override int ClassCode => -522346696;
 
-        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return comparer.Compare(_type, ((GCStaticsNode)other)._type);
-        }
-
-        int ISortableSymbolNode.ClassCode => ClassCode;
-
-        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
-        {
-            return CompareToImpl((ObjectNode)other, comparer);
         }
     }
 }

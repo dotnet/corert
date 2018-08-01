@@ -42,9 +42,9 @@ namespace ILCompiler.DependencyAnalysis
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
 #if !SUPPORT_JIT
-        protected internal override int ClassCode => -470351029;
+        public override int ClassCode => -470351029;
 
-        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return _name.CompareTo(((BlobNode)other)._name);
         }

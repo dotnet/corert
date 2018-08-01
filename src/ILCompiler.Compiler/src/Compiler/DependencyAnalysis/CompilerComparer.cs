@@ -10,9 +10,9 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class CompilerComparer : TypeSystemComparer, IComparer<ISortableSymbolNode>
+    public class CompilerComparer : TypeSystemComparer, IComparer<ISortableNode>
     {
-        public int Compare(ISortableSymbolNode x, ISortableSymbolNode y)
+        public int Compare(ISortableNode x, ISortableNode y)
         {
             if (x == y)
             {

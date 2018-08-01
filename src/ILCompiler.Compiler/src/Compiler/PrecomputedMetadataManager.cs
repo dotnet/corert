@@ -33,6 +33,7 @@ namespace ILCompiler
             public ImmutableArray<ModuleDesc> LocalMetadataModules = ImmutableArray<ModuleDesc>.Empty;
             public ImmutableArray<ModuleDesc> ExternalMetadataModules = ImmutableArray<ModuleDesc>.Empty;
             public List<MetadataType> TypesWithStrongMetadataMappings = new List<MetadataType>();
+            public Dictionary<MetadataType, int> WeakReflectedTypeMappings = new Dictionary<MetadataType, int>();
             public Dictionary<MetadataType, int> AllTypeMappings = new Dictionary<MetadataType, int>();
             public Dictionary<MethodDesc, int> MethodMappings = new Dictionary<MethodDesc, int>();
             public Dictionary<FieldDesc, int> FieldMappings = new Dictionary<FieldDesc, int>();
@@ -401,7 +402,7 @@ namespace ILCompiler
                 MethodIL weakMethodIL = ilProvider.GetMethodIL(weakMetadataMethod);
                 Dictionary<MethodDesc, int> weakMethodMappings = new Dictionary<MethodDesc, int>();
                 Dictionary<FieldDesc, int> weakFieldMappings = new Dictionary<FieldDesc, int>();
-                ReadMetadataMethod(weakMethodIL, result.AllTypeMappings, weakMethodMappings, weakFieldMappings, metadataModules);
+                ReadMetadataMethod(weakMethodIL, result.WeakReflectedTypeMappings, weakMethodMappings, weakFieldMappings, metadataModules);
                 if ((weakMethodMappings.Count > 0) || (weakFieldMappings.Count > 0))
                 {
                     // the format does not permit weak field/method mappings
@@ -707,7 +708,7 @@ namespace ILCompiler
                     continue;
 
                 int token;
-                if (loadedMetadata.AllTypeMappings.TryGetValue(definition, out token))
+                if (loadedMetadata.AllTypeMappings.TryGetValue(definition, out token) || loadedMetadata.WeakReflectedTypeMappings.TryGetValue(definition, out token))
                 {
                     typeMappings.Add(new MetadataMapping<MetadataType>(definition, token));
                 }
@@ -738,6 +739,14 @@ namespace ILCompiler
 
                 foreach (FieldDesc field in eetypeGenerated.GetFields())
                     AddFieldMapping(field, canonicalFieldsAddedToMap, fieldMappings);
+            }
+
+            foreach (var typeMapping in loadedMetadata.WeakReflectedTypeMappings)
+            {
+                // Imported types that are also declared as weak reflected types need to be added to the TypeMap table, but only if they are also
+                // reachable from static compilation (node marked in the dependency analysis graph)
+                if (factory.CompilationModuleGroup.ShouldReferenceThroughImportTable(typeMapping.Key) && factory.NecessaryTypeSymbol(typeMapping.Key).Marked)
+                    typeMappings.Add(new MetadataMapping<MetadataType>(typeMapping.Key, typeMapping.Value));
             }
 
             stackTraceMapping = GenerateStackTraceMetadata(factory);

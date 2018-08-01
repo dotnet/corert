@@ -620,6 +620,8 @@ namespace System.Runtime.InteropServices
         // ICommand
         internal delegate int AddrOfICommandremove_CanExecuteChanged(IntPtr pComThis, System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken unsafe_token);
 #endif        
+        // ILanguageExceptionStackBackTrace
+        internal delegate int AddrOfILanguageExceptionStackBackTraceGetStackBackTrace(IntPtr pComThis, uint maxFramesToCapture, IntPtr stackBackTrace, IntPtr framesCaptured);
     }
 
 #if ENABLE_MIN_WINRT

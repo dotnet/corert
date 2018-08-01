@@ -1722,6 +1722,10 @@ namespace System.Runtime.InteropServices
 #endif
             // IDispatch is not supported for UWP apps
             new CCWWellKnownType() {guid = Interop.COM.IID_IDispatch, type = InternalTypes.IDispatch, ccwSupport = CCWSupport.NotSupport },
+#if ENABLE_WINRT
+            // ILanguageExceptionStackBackTrace is supported iff managed object is an Exception object
+            new CCWWellKnownType() {guid = Interop.COM.IID_ILanguageExceptionStackBackTrace, type = InternalTypes.ILanguageExceptionStackBackTrace,  ccwSupport = CCWSupport.DependsOnCast, castToType = typeof(Exception).TypeHandle},
+#endif
         };
 
         private static bool IsWellKnownInterface(ref Guid guid, object targetObject,ref RuntimeTypeHandle interfaceType,out bool isCCWSupported)

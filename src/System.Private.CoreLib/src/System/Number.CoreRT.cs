@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
-using System.Text;
 
 namespace System
 {
@@ -282,112 +281,6 @@ namespace System
     internal static partial class Number
     {
         private const int _CVTBUFSIZE = 349;
-
-        public static bool IsPositiveInfinity(string s, IFormatProvider provider)
-        {
-            NumberFormatInfo nfi = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
-            return s.Equals(nfi.PositiveInfinitySymbol);
-        }
-
-        public static bool IsNegativeInfinity(string s, IFormatProvider provider)
-        {
-            NumberFormatInfo nfi = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
-            return s.Equals(nfi.NegativeInfinitySymbol);
-        }
-
-        public static bool IsNaNSymbol(string s, IFormatProvider provider)
-        {
-            NumberFormatInfo nfi = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
-            return s.Equals(nfi.NaNSymbol);
-        }
-
-        #region Decimal Number Formatting Helpers
-        private static unsafe bool NumberBufferToDecimal(ref Number.NumberBuffer number, ref decimal value)
-        {
-            decimal d = new decimal();
-
-            char* p = number.digits;
-            int e = number.scale;
-            if (*p == 0)
-            {
-                // To avoid risking an app-compat issue with pre 4.5 (where some app was illegally using Reflection to examine the internal scale bits), we'll only force
-                // the scale to 0 if the scale was previously positive (previously, such cases were unparsable to a bug.)
-                if (e > 0)
-                {
-                    e = 0;
-                }
-            }
-            else
-            {
-                if (e > DecimalPrecision)
-                    return false;
-
-                while (((e > 0) || ((*p != 0) && (e > -28))) &&
-                       ((d.High < 0x19999999) || ((d.High == 0x19999999) &&
-                                                  ((d.Mid < 0x99999999) || ((d.Mid == 0x99999999) &&
-                                                                            ((d.Low < 0x99999999) || ((d.Low == 0x99999999) &&
-                                                                                                      (*p <= '5'))))))))
-                {
-                    decimal.DecMul10(ref d);
-                    if (*p != 0)
-                        decimal.DecAddInt32(ref d, (uint)(*p++ - '0'));
-                    e--;
-                }
-
-                if (*p++ >= '5')
-                {
-                    bool round = true;
-                    if ((*(p - 1) == '5') && ((*(p - 2) % 2) == 0))
-                    {
-                        // Check if previous digit is even, only if the when we are unsure whether hows to do
-                        // Banker's rounding. For digits > 5 we will be roundinp up anyway.
-                        int count = 20; // Look at the next 20 digits to check to round
-                        while ((*p == '0') && (count != 0))
-                        {
-                            p++;
-                            count--;
-                        }
-                        if ((*p == '\0') || (count == 0))
-                            round = false;// Do nothing
-                    }
-
-                    if (round)
-                    {
-                        decimal.DecAddInt32(ref d, 1);
-                        if ((d.High | d.Mid | d.Low) == 0)
-                        {
-                            d.High = 0x19999999;
-                            d.Mid = 0x99999999;
-                            d.Low = 0x9999999A;
-                            e++;
-                        }
-                    }
-                }
-            }
-
-            if (e > 0)
-                return false;
-
-            if (e <= -DecimalPrecision)
-            {
-                // Parsing a large scale zero can give you more precision than fits in the decimal.
-                // This should only happen for actual zeros or very small numbers that round to zero.
-                d.High = 0;
-                d.Low = 0;
-                d.Mid = 0;
-                d.Scale = DecimalPrecision - 1;
-            }
-            else
-            {
-                d.Scale = -e;
-            }
-            d.IsNegative = number.sign;
-
-            value = d;
-            return true;
-        }
-
-        #endregion
 
         /*===========================================================
             Portable NumberToDouble implementation

@@ -58,6 +58,6 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
-        protected internal override int ClassCode => (int)ObjectNodeOrder.MetadataNode;
+        public override int ClassCode => (int)ObjectNodeOrder.MetadataNode;
     }
 }

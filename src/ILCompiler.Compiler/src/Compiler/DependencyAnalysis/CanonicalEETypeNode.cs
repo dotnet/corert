@@ -144,6 +144,6 @@ namespace ILCompiler.DependencyAnalysis
             base.ComputeValueTypeFieldPadding();
         }
 
-        protected internal override int ClassCode => -1798018602;
+        public override int ClassCode => -1798018602;
     }
 }

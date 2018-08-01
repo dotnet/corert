@@ -33,12 +33,8 @@ namespace ILCompiler.DependencyAnalysis
     }
 
 
-    public interface ISortableSymbolNode : ISymbolNode
+    public interface ISortableSymbolNode : ISymbolNode, ISortableNode
     {
-#if !SUPPORT_JIT
-        int ClassCode { get; }
-        int CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer);
-#endif
     }
 
 

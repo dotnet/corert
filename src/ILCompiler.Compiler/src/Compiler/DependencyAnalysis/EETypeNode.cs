@@ -774,7 +774,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 // Final NewSlot methods cannot be overridden, and therefore can be placed in the sealed-vtable to reduce the size of the vtable
                 // of this type and any type that inherits from it.
-                if (declMethod.CanMethodBeInSealedVTable() && !declType.IsArrayTypeWithoutGenericInterfaces() && !factory.IsCppCodegenTemporaryWorkaround)
+                if (declMethod.CanMethodBeInSealedVTable() && !declType.IsArrayTypeWithoutGenericInterfaces())
                     continue;
 
                 if (!implMethod.IsAbstract)
@@ -838,7 +838,12 @@ namespace ILCompiler.DependencyAnalysis
                 SealedVTableNode sealedVTable = factory.SealedVTable(_type.ConvertToCanonForm(CanonicalFormKind.Specific));
 
                 if (sealedVTable.BuildSealedVTableSlots(factory, relocsOnly) && sealedVTable.NumSealedVTableEntries > 0)
-                    objData.EmitReloc(sealedVTable, RelocType.IMAGE_REL_BASED_RELPTR32);
+                {
+                    if (factory.Target.SupportsRelativePointers)
+                        objData.EmitReloc(sealedVTable, RelocType.IMAGE_REL_BASED_RELPTR32);
+                    else
+                        objData.EmitPointerReloc(sealedVTable);
+                }
             }
         }
 
@@ -846,7 +851,11 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (_type.HasInstantiation && !_type.IsTypeDefinition)
             {
-                objData.EmitPointerRelocOrIndirectionReference(factory.NecessaryTypeSymbol(_type.GetTypeDefinition()));
+                IEETypeNode typeDefNode = factory.NecessaryTypeSymbol(_type.GetTypeDefinition());
+                if (factory.Target.SupportsRelativePointers)
+                    objData.EmitRelativeRelocOrIndirectionReference(typeDefNode);
+                else
+                    objData.EmitPointerRelocOrIndirectionReference(typeDefNode);
 
                 GenericCompositionDetails details;
                 if (_type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)
@@ -864,7 +873,11 @@ namespace ILCompiler.DependencyAnalysis
                 else
                     details = new GenericCompositionDetails(_type);
 
-                objData.EmitPointerReloc(factory.GenericComposition(details));
+                ISymbolNode compositionNode = factory.GenericComposition(details);
+                if (factory.Target.SupportsRelativePointers)
+                    objData.EmitReloc(compositionNode, RelocType.IMAGE_REL_BASED_RELPTR32);
+                else
+                    objData.EmitPointerReloc(compositionNode);
             }
         }
 
@@ -1243,18 +1256,11 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected internal override int ClassCode => 1521789141;
+        public override int ClassCode => 1521789141;
 
-        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return comparer.Compare(_type, ((EETypeNode)other)._type);
-        }
-
-        int ISortableSymbolNode.ClassCode => ClassCode;
-
-        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
-        {
-            return CompareToImpl((ObjectNode)other, comparer);
         }
 
         private struct SlotCounter

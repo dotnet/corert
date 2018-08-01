@@ -1122,13 +1122,34 @@ namespace System.Runtime.InteropServices
 #endregion
 
         /// <summary>
-        /// This method returns HR for the exception being thrown.
+        /// This method propagate the exception being thrown.
         /// 1. On Windows8+, WinRT scenarios we do the following.
         ///      a. Check whether the exception has any IRestrictedErrorInfo associated with it.
         ///          If so, it means that this exception was actually caused by a native exception in which case we do simply use the same
         ///              message and stacktrace.
         ///      b.  If not, this is actually a managed exception and in this case we RoOriginateLanguageException with the msg, hresult and the IErrorInfo
         ///          associated with the managed exception. This helps us to retrieve the same exception in case it comes back to native.
+        /// 2. On win8 and for classic COM scenarios.
+        ///     a. This method should not be called
+        /// </summary>
+        /// <param name="ex"></param>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static bool PropagateException(Exception ex)
+        {
+#if ENABLE_WINRT
+            return ExceptionHelpers.PropagateException(ex);
+#else
+            // TODO : ExceptionHelpers should be platform specific , move it to
+            // seperate source files
+            return true;
+#endif
+        }
+
+        /// <summary>
+        /// This method returns HR for the exception being thrown.
+        /// 1. On Windows8+, WinRT scenarios 
+        ///     The work to propagate the exception should have already performed in the exception filter
+        ///     by calling PropagateException()
         /// 2. On win8 and for classic COM scenarios.
         ///     a. We create IErrorInfo for the given Exception object and SetErrorInfo with the given IErrorInfo.
         /// </summary>

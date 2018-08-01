@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Text;
 
 using ILCompiler.DependencyAnalysisFramework;
@@ -15,7 +14,6 @@ using Internal.Text;
 using Internal.TypeSystem;
 using Internal.Runtime;
 using Internal.IL;
-using Internal.NativeFormat;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -51,6 +49,7 @@ namespace ILCompiler.DependencyAnalysis
             MetadataManager = metadataManager;
             LazyGenericsPolicy = lazyGenericsPolicy;
             _importedNodeProvider = importedNodeProvider;
+            InterfaceDispatchCellSection = new InterfaceDispatchCellSectionNode(this);
         }
 
         public void SetMarkingComplete()
@@ -913,6 +912,9 @@ namespace ILCompiler.DependencyAnalysis
 
         internal TypeMetadataNode TypeMetadata(MetadataType type)
         {
+            // These are only meaningful for UsageBasedMetadataManager. We should not have them
+            // in the dependency graph otherwise.
+            Debug.Assert(MetadataManager is UsageBasedMetadataManager);
             return _typesWithMetadata.GetOrAdd(type);
         }
 
@@ -920,6 +922,9 @@ namespace ILCompiler.DependencyAnalysis
 
         internal MethodMetadataNode MethodMetadata(MethodDesc method)
         {
+            // These are only meaningful for UsageBasedMetadataManager. We should not have them
+            // in the dependency graph otherwise.
+            Debug.Assert(MetadataManager is UsageBasedMetadataManager);
             return _methodsWithMetadata.GetOrAdd(method);
         }
 
@@ -927,6 +932,9 @@ namespace ILCompiler.DependencyAnalysis
 
         internal FieldMetadataNode FieldMetadata(FieldDesc field)
         {
+            // These are only meaningful for UsageBasedMetadataManager. We should not have them
+            // in the dependency graph otherwise.
+            Debug.Assert(MetadataManager is UsageBasedMetadataManager);
             return _fieldsWithMetadata.GetOrAdd(field);
         }
 
@@ -934,6 +942,9 @@ namespace ILCompiler.DependencyAnalysis
 
         internal ModuleMetadataNode ModuleMetadata(ModuleDesc module)
         {
+            // These are only meaningful for UsageBasedMetadataManager. We should not have them
+            // in the dependency graph otherwise.
+            Debug.Assert(MetadataManager is UsageBasedMetadataManager);
             return _modulesWithMetadata.GetOrAdd(module);
         }
 
@@ -1018,6 +1029,8 @@ namespace ILCompiler.DependencyAnalysis
             "__ImportTablesTableEnd",
             new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer()));
 
+        public InterfaceDispatchCellSectionNode InterfaceDispatchCellSection { get; }
+
         public ReadyToRunHeaderNode ReadyToRunHeader;
 
         public Dictionary<ISymbolNode, string> NodeAliases = new Dictionary<ISymbolNode, string>();
@@ -1037,6 +1050,7 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(TypeManagerIndirection, "TypeManagerIndirection is always generated");
             graph.AddRoot(DispatchMapTable, "DispatchMapTable is always generated");
             graph.AddRoot(FrozenSegmentRegion, "FrozenSegmentRegion is always generated");
+            graph.AddRoot(InterfaceDispatchCellSection, "Interface dispatch cell section is always generated");
             if (Target.IsWindows)
             {
                 // We need 2 delimiter symbols to bound the unboxing stubs region on Windows platforms (these symbols are

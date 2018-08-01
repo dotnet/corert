@@ -61,11 +61,11 @@ namespace ILCompiler.DependencyAnalysis
             return builder.ToObjectData();
         }
 
-        protected internal override int ClassCode => -1401349230;
+        public override int ClassCode => -1401349230;
 
-        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return comparer.Compare(this._indirectedNode, ((IndirectionNode)other)._indirectedNode);
+            return comparer.Compare(_indirectedNode, ((IndirectionNode)other)._indirectedNode);
         }
     }
 }

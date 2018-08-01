@@ -123,9 +123,8 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
-        protected internal override int ClassCode => (int)ObjectNodeOrder.ExternalReferencesTableNode;
-
-        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int ClassCode => (int)ObjectNodeOrder.ExternalReferencesTableNode;
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return string.Compare(_blobName, ((ExternalReferencesTableNode)other)._blobName);
         }

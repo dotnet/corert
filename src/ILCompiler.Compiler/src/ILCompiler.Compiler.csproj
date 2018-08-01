@@ -96,6 +96,8 @@
     <Compile Include="Compiler\DependencyAnalysis\DefaultConstructorMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolsImportedNodeProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolsWithIndirectionImportedNodeProvider.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\IndirectionExtensions.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchCellSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MrtImportImportedNodeProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MrtImports.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MrtProcessedExportAddressTableNode.cs" />
@@ -123,6 +125,7 @@
     <Compile Include="Compiler\DevirtualizationManager.cs" />
     <Compile Include="Compiler\DictionaryLayoutProvider.cs" />
     <Compile Include="Compiler\EmptyInteropStubManager.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ISortableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\SortableDependencyNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ImportedNodeProvider.cs" />
     <Compile Include="Compiler\FrameworkStringResourceBlockingPolicy.cs" />
@@ -269,7 +272,6 @@
     <Compile Include="Compiler\DependencyAnalysis\UtcThreadStaticsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeMetadataMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\UnboxingStubNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\UtcDictionaryLayoutNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\UtcNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\VirtualMethodUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\SealedVTableNode.cs" />
@@ -324,6 +326,7 @@
     <Compile Include="Compiler\ExportsFileWriter.cs" />
     <Compile Include="Compiler\PrecomputedMetadataManager.cs" />
     <Compile Include="Compiler\ReadyToRun.cs" />
+    <Compile Include="Compiler\RuntimeConfigurationRootProvider.cs" />
     <Compile Include="Compiler\SingleFileCompilationModuleGroup.cs" />
     <Compile Include="Compiler\SingleMethodCompilationModuleGroup.cs" />
     <Compile Include="Compiler\SingleMethodRootProvider.cs" />

@@ -31,7 +31,8 @@
 #ifndef DACCESS_COMPILE
 
 EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpHandleAlloc(void* pObject, int type);
-EXTERN_C REDHAWK_API void REDHAWK_CALLCONV RhHandleFree(void*);
+EXTERN_C REDHAWK_API void REDHAWK_CALLCONV RhHandleSet(void* handle, void* pObject);
+EXTERN_C REDHAWK_API void REDHAWK_CALLCONV RhHandleFree(void* handle);
 
 static int (*g_RuntimeInitializationCallback)();
 static Thread* g_RuntimeInitializingThread;
@@ -727,8 +728,6 @@ bool Thread::InternalHijack(PAL_LIMITED_CONTEXT * pSuspendCtx, void * pvHijackTa
 
     if (frameIterator.IsValid())
     {
-        CrossThreadUnhijack();
-
         frameIterator.CalculateCurrentMethodState();
 
         frameIterator.GetCodeManager()->UnsynchronizedHijackMethodLoops(frameIterator.GetMethodInfo());
@@ -737,10 +736,16 @@ bool Thread::InternalHijack(PAL_LIMITED_CONTEXT * pSuspendCtx, void * pvHijackTa
         GCRefKind retValueKind;
 
         if (frameIterator.GetCodeManager()->GetReturnAddressHijackInfo(frameIterator.GetMethodInfo(),
-                                                                  frameIterator.GetRegisterSet(),
-                                                                  &ppvRetAddrLocation, 
-                                                                  &retValueKind))
+            frameIterator.GetRegisterSet(),
+            &ppvRetAddrLocation,
+            &retValueKind))
         {
+            // ARM64 epilogs have a window between loading the hijackable return address into LR and the RET instruction.
+            // We cannot hijack or unhijack a thread while it is suspended in that window unless we implement hijacking
+            // via LR register modification. Therefore it is important to check our ability to hijack the thread before
+            // unhijacking it.
+            CrossThreadUnhijack();
+
             void* pvRetAddr = *ppvRetAddrLocation;
             ASSERT(ppvRetAddrLocation != NULL);
             ASSERT(pvRetAddr != NULL);
@@ -1318,26 +1323,27 @@ Boolean Thread::SetThreadStaticStorageForModule(Object * pStorage, UInt32 module
         m_numThreadLocalModuleStatics = newSize;
     }
 
-    void* threadStaticsStorageHandle = RhpHandleAlloc(pStorage, 2 /* Normal */);
-    if (threadStaticsStorageHandle == NULL)
-    {
-        return FALSE;
-    }
-
-    // Free the existing storage before assigning a new one
     if (m_pThreadLocalModuleStatics[moduleIndex] != NULL)
     {
-        RhHandleFree(m_pThreadLocalModuleStatics[moduleIndex]);
+        RhHandleSet(m_pThreadLocalModuleStatics[moduleIndex], pStorage);
+    }
+    else
+    {
+        void* threadStaticsStorageHandle = RhpHandleAlloc(pStorage, 2 /* Normal */);
+        if (threadStaticsStorageHandle == NULL)
+        {
+            return FALSE;
+        }
+        m_pThreadLocalModuleStatics[moduleIndex] = threadStaticsStorageHandle;
     }
 
-    m_pThreadLocalModuleStatics[moduleIndex] = threadStaticsStorageHandle;
     return TRUE;
 }
 
-COOP_PINVOKE_HELPER(Array*, RhGetThreadStaticStorageForModule, (UInt32 moduleIndex))
+COOP_PINVOKE_HELPER(Object*, RhGetThreadStaticStorageForModule, (UInt32 moduleIndex))
 {
     Thread * pCurrentThread = ThreadStore::RawGetCurrentThread();
-    return (Array*)pCurrentThread->GetThreadStaticStorageForModule(moduleIndex);
+    return pCurrentThread->GetThreadStaticStorageForModule(moduleIndex);
 }
 
 COOP_PINVOKE_HELPER(Boolean, RhSetThreadStaticStorageForModule, (Array * pStorage, UInt32 moduleIndex))
@@ -1356,6 +1362,12 @@ COOP_PINVOKE_HELPER(UInt8*, RhCurrentNativeThreadId, ())
 #endif // PLATFORM_UNIX
 }
 #endif // !PROJECTN
+
+// This function is used to get the OS thread identifier for the current thread.
+COOP_PINVOKE_HELPER(UInt64, RhCurrentOSThreadId, ())
+{
+    return PalGetCurrentThreadIdForLogging();
+}
 
 // Standard calling convention variant and actual implementation for RhpReversePInvokeAttachOrTrapThread
 EXTERN_C NOINLINE void FASTCALL RhpReversePInvokeAttachOrTrapThread2(ReversePInvokeFrame * pFrame)

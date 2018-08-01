@@ -3,9 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using Internal.NativeFormat;
+using Internal.Runtime.CompilerServices;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -167,6 +169,22 @@ namespace Internal.Runtime
 
                 // Reached end of stream without getting a match. Field is not present so return default value.
                 return uiDefaultValue;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether the statically generated data structures use relative pointers.
+        /// </summary>
+        internal static bool SupportsRelativePointers
+        {
+            [Intrinsic]
+            get
+            {
+#if PROJECTN
+                return true;
+#else
+                throw new NotImplementedException();
+#endif
             }
         }
 
@@ -416,11 +434,10 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert(IsGeneric);
-                uint cbOffset = GetFieldOffset(EETypeField.ETF_GenericDefinition);
-                fixed (EEType* pThis = &this)
-                {
-                    return ((EETypeRef*)((byte*)pThis + cbOffset))->Value;
-                }
+                if (IsDynamicType || !SupportsRelativePointers)
+                    return GetField<IatAwarePointer<EEType>>(EETypeField.ETF_GenericDefinition).Value;
+
+                return GetField<IatAwareRelativePointer<EEType>>(EETypeField.ETF_GenericDefinition).Value;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
@@ -435,17 +452,39 @@ namespace Internal.Runtime
 #endif
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        private readonly struct GenericComposition
+        {
+            public readonly ushort Arity;
+
+            private readonly EETypeRef _genericArgument1;
+            public EETypeRef* GenericArguments
+            {
+                get
+                {
+                    return (EETypeRef*)Unsafe.AsPointer(ref Unsafe.AsRef(in _genericArgument1));
+                }
+            }
+
+            public GenericVariance* GenericVariance
+            {
+                get
+                {
+                    // Generic variance directly follows the last generic argument
+                    return (GenericVariance*)(GenericArguments + Arity);
+                }
+            }
+        }
+
         internal uint GenericArity
         {
             get
             {
                 Debug.Assert(IsGeneric);
-                uint cbOffset = GetFieldOffset(EETypeField.ETF_GenericComposition);
-                fixed (EEType* pThis = &this)
-                {
-                    // Number of generic arguments is the first UInt16 of the composition stream.
-                    return **(ushort**)((byte*)pThis + cbOffset);
-                }
+                if (IsDynamicType || !SupportsRelativePointers)
+                    return GetField<Pointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value->Arity;
+
+                return GetField<RelativePointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value->Arity;
             }
         }
 
@@ -454,13 +493,10 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert(IsGeneric);
-                uint cbOffset = GetFieldOffset(EETypeField.ETF_GenericComposition);
-                fixed (EEType* pThis = &this)
-                {
-                    // Generic arguments follow after a (padded) UInt16 specifying their count
-                    // in the generic composition stream.
-                    return ((*(EETypeRef**)((byte*)pThis + cbOffset)) + 1);
-                }
+                if (IsDynamicType || !SupportsRelativePointers)
+                    return GetField<Pointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value->GenericArguments;
+
+                return GetField<RelativePointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value->GenericArguments;
             }
         }
 
@@ -473,12 +509,10 @@ namespace Internal.Runtime
                 if (!HasGenericVariance)
                     return null;
 
-                uint cbOffset = GetFieldOffset(EETypeField.ETF_GenericComposition);
-                fixed (EEType* pThis = &this)
-                {
-                    // Variance info follows immediatelly after the generic arguments
-                    return (GenericVariance*)(GenericArguments + GenericArity);
-                }
+                if (IsDynamicType || !SupportsRelativePointers)
+                    return GetField<Pointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value->GenericVariance;
+
+                return GetField<RelativePointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value->GenericVariance;
             }
         }
 
@@ -1001,7 +1035,7 @@ namespace Internal.Runtime
 
             fixed (EEType* pThis = &this)
             {
-                if (IsDynamicType)
+                if (IsDynamicType || !SupportsRelativePointers)
                 {
                     uint cbSealedVirtualSlotsTypeOffset = GetFieldOffset(EETypeField.ETF_SealedVirtualSlots);
                     IntPtr* pSealedVirtualsSlotTable = *(IntPtr**)((byte*)pThis + cbSealedVirtualSlotsTypeOffset);
@@ -1284,7 +1318,7 @@ namespace Internal.Runtime
 
             // in the case of sealed vtable entries on static types, we have a UInt sized relative pointer
             if ((rareFlags & EETypeRareFlags.HasSealedVTableEntriesFlag) != 0)
-                cbOffset += (IsDynamicType ? (uint)IntPtr.Size : 4);
+                cbOffset += (IsDynamicType || !SupportsRelativePointers ? (uint)IntPtr.Size : 4);
 
             if (eField == EETypeField.ETF_DynamicDispatchMap)
             {
@@ -1300,7 +1334,12 @@ namespace Internal.Runtime
                 return cbOffset;
             }
             if (IsGeneric)
-                cbOffset += (uint)IntPtr.Size;
+            {
+                if ((rareFlags & EETypeRareFlags.IsDynamicTypeFlag) != 0 || !SupportsRelativePointers)
+                    cbOffset += (uint)IntPtr.Size;
+                else
+                    cbOffset += 4;
+            }
 
             if (eField == EETypeField.ETF_GenericComposition)
             {
@@ -1308,7 +1347,12 @@ namespace Internal.Runtime
                 return cbOffset;
             }
             if (IsGeneric)
-                cbOffset += (uint)IntPtr.Size;
+            {
+                if ((rareFlags & EETypeRareFlags.IsDynamicTypeFlag) != 0 || !SupportsRelativePointers)
+                    cbOffset += (uint)IntPtr.Size;
+                else
+                    cbOffset += 4;
+            }
 
             if (eField == EETypeField.ETF_DynamicModule)
             {
@@ -1352,6 +1396,12 @@ namespace Internal.Runtime
 
             Debug.Assert(false, "Unknown EEType field type");
             return 0;
+        }
+
+        public ref T GetField<T>(EETypeField eField)
+        {
+            fixed (EEType* pThis = &this)
+                return ref Unsafe.AddByteOffset(ref Unsafe.As<EEType, T>(ref *pThis), (IntPtr)GetFieldOffset(eField));
         }
 
 #if TYPE_LOADER_IMPLEMENTATION
@@ -1412,6 +1462,75 @@ namespace Internal.Runtime
                 _value = (byte*)value;
             }
 #endif
+        }
+    }
+
+    // Wrapper around pointers
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe readonly struct Pointer<T> where T : unmanaged
+    {
+        private readonly T* _value;
+
+        public T* Value
+        {
+            get
+            {
+                return _value;
+            }
+        }
+    }
+
+    // Wrapper around pointers that might be indirected through IAT
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe readonly struct IatAwarePointer<T> where T : unmanaged
+    {
+        private readonly T* _value;
+
+        public T* Value
+        {
+            get
+            {
+                if (((int)_value & IndirectionConstants.IndirectionCellPointer) == 0)
+                    return _value;
+                return *(T**)((byte*)_value - IndirectionConstants.IndirectionCellPointer);
+            }
+        }
+    }
+
+    // Wrapper around relative pointers
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe readonly struct RelativePointer<T> where T : unmanaged
+    {
+        private readonly int _value;
+
+        public T* Value
+        {
+            get
+            {
+                return (T*)((byte*)Unsafe.AsPointer(ref Unsafe.AsRef(in _value)) + _value);
+            }
+        }
+    }
+
+    // Wrapper around relative pointers that might be indirected through IAT
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe readonly struct IatAwareRelativePointer<T> where T : unmanaged
+    {
+        private readonly int _value;
+
+        public T* Value
+        {
+            get
+            {
+                if ((_value & IndirectionConstants.IndirectionCellPointer) == 0)
+                {
+                    return (T*)((byte*)Unsafe.AsPointer(ref Unsafe.AsRef(in _value)) + _value);
+                }
+                else
+                {
+                    return *(T**)((byte*)Unsafe.AsPointer(ref Unsafe.AsRef(in _value)) + (_value & ~IndirectionConstants.IndirectionCellPointer));
+                }
+            }
         }
     }
 

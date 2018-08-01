@@ -2392,6 +2392,9 @@
   <data name="Serialization_DateTimeTicksOutOfRange" xml:space="preserve">
     <value>Invalid serialized DateTime data. Ticks must be between DateTime.MinValue.Ticks and DateTime.MaxValue.Ticks.</value>
   </data>
+  <data name="FeatureRemoved_Message" xml:space="preserve">
+    <value>Code to support feature '{0}' was removed during publishing. If this is in error, update the project configuration to not disable feature '{0}'.</value>
+  </data>
   <data name="Arg_InvalidANSIString" xml:space="preserve">
     <value>The ANSI string passed in could not be converted from the default ANSI code page to Unicode.</value>
   </data>

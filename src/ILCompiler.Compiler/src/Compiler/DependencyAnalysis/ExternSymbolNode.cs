@@ -42,18 +42,11 @@ namespace ILCompiler.DependencyAnalysis
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
 
 #if !SUPPORT_JIT
-        protected internal override int ClassCode => 1092559304;
+        public override int ClassCode => 1092559304;
 
-        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return _name.CompareTo(((ExternSymbolNode)other)._name);
-        }
-
-        int ISortableSymbolNode.ClassCode => ClassCode;
-
-        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
-        {
-            return CompareToImpl((SortableDependencyNode)other, comparer);
         }
 #endif
     }

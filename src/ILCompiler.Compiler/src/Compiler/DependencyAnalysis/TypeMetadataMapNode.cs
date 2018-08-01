@@ -53,12 +53,9 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (var mappingEntry in factory.MetadataManager.GetTypeDefinitionMapping(factory))
             {
-                if (!factory.CompilationModuleGroup.ContainsType(mappingEntry.Entity))
-                    continue;
-
                 // Types that don't have EETypes don't need mapping table entries because there's no risk of them
                 // not unifying to the same System.Type at runtime.
-                if (!factory.MetadataManager.TypeGeneratesEEType(mappingEntry.Entity))
+                if (!factory.MetadataManager.TypeGeneratesEEType(mappingEntry.Entity) && !factory.CompilationModuleGroup.ShouldReferenceThroughImportTable(mappingEntry.Entity))
                     continue;
                 
                 // Go with a necessary type symbol. It will be upgraded to a constructed one if a constructed was emitted.
@@ -82,6 +79,6 @@ namespace ILCompiler.DependencyAnalysis
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
 
-        protected internal override int ClassCode => (int)ObjectNodeOrder.TypeMetadataMapNode;
+        public override int ClassCode => (int)ObjectNodeOrder.TypeMetadataMapNode;
     }
 }

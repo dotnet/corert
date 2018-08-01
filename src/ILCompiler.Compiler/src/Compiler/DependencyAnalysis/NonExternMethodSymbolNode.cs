@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
         // When full analysis is fully supported, remove this class and field forever.
         public static bool EnableFullAnalysis = false;
     }
-
+    
     /// <summary>
     /// Represents a symbol that is defined externally but modeled as a method
     /// in the DependencyAnalysis infrastructure during compilation that is compiled 
@@ -32,6 +32,7 @@ namespace ILCompiler.DependencyAnalysis
         ISymbolNode[] _funcletSymbols = Array.Empty<ISymbolNode>();
         bool _dependenciesQueried;
         bool _hasCompiledBody;
+        private HashSet<GenericLookupResult> _floatingGenericLookupResults;
 
         public NonExternMethodSymbolNode(NodeFactory factory, MethodDesc method, bool isUnboxing)
              : base(isUnboxing ? UnboxingStubNode.GetMangledName(factory.NameMangler, method) :
@@ -101,6 +102,30 @@ namespace ILCompiler.DependencyAnalysis
             _funcletSymbols = funclets;
         }
 
+        public void DeferFloatingGenericLookup(GenericLookupResult lookupResult)
+        {
+            if (_floatingGenericLookupResults == null)
+                _floatingGenericLookupResults = new HashSet<GenericLookupResult>();
+            _floatingGenericLookupResults.Add(lookupResult);
+        }
+
+        protected override void OnMarked(NodeFactory factory)
+        {
+            // Commit all floating generic lookups associated with the method when the method
+            // is proved not dead.
+            if (_floatingGenericLookupResults != null)
+            {
+                Debug.Assert(_method.IsCanonicalMethod(CanonicalFormKind.Any));
+                TypeSystemEntity canonicalOwner = _method.HasInstantiation ? (TypeSystemEntity)_method : (TypeSystemEntity)_method.OwningType;
+                DictionaryLayoutNode dictLayout = factory.GenericDictionaryLayout(canonicalOwner);
+
+                foreach (var lookupResult in _floatingGenericLookupResults)
+                {
+                    dictLayout.EnsureEntry(lookupResult);
+                }
+            }
+        }
+
         public void AddCompilationDiscoveredDependency(IDependencyNode<NodeFactory> node, string reason)
         {
             Debug.Assert(!_dependenciesQueried);
@@ -149,20 +174,13 @@ namespace ILCompiler.DependencyAnalysis
             return dependencies;
         }
 
-        protected sealed internal override int ClassCode => -2124588118;
+        public override int ClassCode => -2124588118;
 
-        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             NonExternMethodSymbolNode otherMethod = (NonExternMethodSymbolNode)other;
             var result = _isUnboxing.CompareTo(otherMethod._isUnboxing);
             return result != 0 ? result : comparer.Compare(_method, otherMethod._method);
-        }
-
-        int ISortableSymbolNode.ClassCode => ClassCode;
-
-        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
-        {
-            return CompareToImpl((SortableDependencyNode)other, comparer);
         }
 
         private class FuncletSymbol : ISymbolNodeWithFuncletId
