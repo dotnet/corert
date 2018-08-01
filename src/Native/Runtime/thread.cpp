@@ -1363,6 +1363,12 @@ COOP_PINVOKE_HELPER(UInt8*, RhCurrentNativeThreadId, ())
 }
 #endif // !PROJECTN
 
+// This function is used to get the OS thread identifier for the current thread.
+COOP_PINVOKE_HELPER(UInt64, RhCurrentOSThreadId, ())
+{
+    return PalGetCurrentThreadIdForLogging();
+}
+
 // Standard calling convention variant and actual implementation for RhpReversePInvokeAttachOrTrapThread
 EXTERN_C NOINLINE void FASTCALL RhpReversePInvokeAttachOrTrapThread2(ReversePInvokeFrame * pFrame)
 {
