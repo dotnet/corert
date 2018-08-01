@@ -17,6 +17,8 @@ namespace Internal.JitInterface
     {
         private const CORINFO_RUNTIME_ABI TargetABI = CORINFO_RUNTIME_ABI.CORINFO_CORERT_ABI;
 
+        private uint OffsetOfDelegateFirstTarget => (uint)(4 * PointerSize); // Delegate::m_functionPointer
+
         private Compilation _compilation;
 
         public CorInfoImpl(Compilation compilation, JitConfigProvider jitConfig)

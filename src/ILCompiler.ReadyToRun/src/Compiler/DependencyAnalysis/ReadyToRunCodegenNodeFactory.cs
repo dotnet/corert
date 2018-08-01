@@ -452,7 +452,7 @@ namespace ILCompiler.DependencyAnalysis
             throw new NotImplementedException();
         }
 
-        struct MethodAndCallSite
+        struct MethodAndCallSite : IEquatable<MethodAndCallSite>
         {
             public readonly MethodDesc Method;
             public readonly string CallSite;
@@ -463,10 +463,14 @@ namespace ILCompiler.DependencyAnalysis
                 Method = method;
             }
 
+            public bool Equals(MethodAndCallSite other)
+            {
+                return CallSite == other.CallSite && Method == other.Method;
+            }
+
             public override bool Equals(object obj)
             {
-                MethodAndCallSite other = (MethodAndCallSite)obj;
-                return CallSite == other.CallSite && Method == other.Method;
+                return obj is MethodAndCallSite other && Equals(other);
             }
 
             public override int GetHashCode()
@@ -533,7 +537,7 @@ namespace ILCompiler.DependencyAnalysis
             return genericDictionary;
         }
 
-        struct MethodAndFixupKind
+        struct MethodAndFixupKind : IEquatable<MethodAndFixupKind>
         {
             public readonly MethodDesc Method;
             public readonly ReadyToRunFixupKind FixupKind;
@@ -544,10 +548,14 @@ namespace ILCompiler.DependencyAnalysis
                 FixupKind = fixupKind;
             }
 
+            public bool Equals(MethodAndFixupKind other)
+            {
+                return Method == other.Method && FixupKind == other.FixupKind;
+            }
+
             public override bool Equals(object obj)
             {
-                MethodAndFixupKind other = (MethodAndFixupKind)obj;
-                return Method == other.Method && FixupKind == other.FixupKind;
+                return obj is MethodAndFixupKind other && Equals(other);
             }
 
             public override int GetHashCode()
@@ -724,7 +732,7 @@ namespace ILCompiler.DependencyAnalysis
             throw new NotImplementedException();
         }
 
-        struct TypeAndMethod
+        struct TypeAndMethod : IEquatable<TypeAndMethod>
         {
             public readonly TypeDesc Type;
             public readonly MethodDesc Method;
@@ -735,9 +743,14 @@ namespace ILCompiler.DependencyAnalysis
                 Method = method;
             }
 
+            public bool Equals(TypeAndMethod other)
+            {
+                return Type == other.Type && Method == other.Method;
+            }
+
             public override bool Equals(object obj)
             {
-                return obj is TypeAndMethod other && Type == other.Type && Method == other.Method;
+                return obj is TypeAndMethod other && Equals(other);
             }
 
             public override int GetHashCode()

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using Internal.TypeSystem;
 
 using Internal.Text;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -44,11 +45,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ObjectDataSignatureBuilder builder = new ObjectDataSignatureBuilder();
             builder.AddSymbol(this);
 
-            if (relocsOnly)
-            {
-                builder.EmitReloc(_targetMethod, RelocType.IMAGE_REL_BASED_REL32);
-            }
-            else
+            if (!relocsOnly)
             {
                 builder.EmitByte((byte)ReadyToRunFixupKind.READYTORUN_FIXUP_DelegateCtor);
                 builder.EmitMethodSignature(_targetMethod.Method, _targetMethodToken, _targetMethodToken.SignatureContext(_factory));
@@ -56,6 +53,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             return builder.ToObjectData();
+        }
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            return new DependencyList(
+                new DependencyListEntry[]
+                {
+                    new DependencyListEntry(_targetMethod, "Delegate target method")
+                }
+            );
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

@@ -2373,11 +2373,7 @@ namespace Internal.JitInterface
             pEEInfoOut.inlinedCallFrameInfo.size = this.SizeOfPInvokeTransitionFrame;
 
             pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize;            // Delegate::m_firstParameter
-#if READYTORUN
-            pEEInfoOut.offsetOfDelegateFirstTarget = (uint)(3 * pointerSize);   // Delegate::m_functionPointer
-#else
-            pEEInfoOut.offsetOfDelegateFirstTarget = (uint)(4 * pointerSize);   // Delegate::m_functionPointer
-#endif
+            pEEInfoOut.offsetOfDelegateFirstTarget = OffsetOfDelegateFirstTarget;
 
             pEEInfoOut.offsetOfObjArrayData = (uint)(2 * pointerSize);
 
