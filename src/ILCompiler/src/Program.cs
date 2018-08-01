@@ -56,6 +56,7 @@ namespace ILCompiler
         private string _singleMethodTypeName;
         private string _singleMethodName;
         private IReadOnlyList<string> _singleMethodGenericArgs;
+        private string _compileFilePath;
 
         private IReadOnlyList<string> _codegenOptions = Array.Empty<string>();
 
@@ -167,6 +168,7 @@ namespace ILCompiler
                 syntax.DefineOption("noscan", ref _noScanner, "Do not use IL scanner to generate optimized code");
                 syntax.DefineOption("ildump", ref _ilDump, "Dump IL assembly listing for compiler-generated IL");
                 syntax.DefineOption("stacktracedata", ref _emitStackTraceData, "Emit data to support generating stack trace strings at runtime");
+                syntax.DefineOption("compile", ref _compileFilePath, "The input file to compile for multi-module r2r");
                 syntax.DefineOptionList("initassembly", ref _initAssemblies, "Assembly(ies) with a library initializer");
                 syntax.DefineOptionList("appcontextswitch", ref _appContextSwitches, "System.AppContext switches to set");
                 syntax.DefineOptionList("runtimeopt", ref _runtimeOptions, "Runtime options to set");
@@ -439,17 +441,21 @@ namespace ILCompiler
                 builder = new WebAssemblyCodegenCompilationBuilder(typeSystemContext, compilationGroup);
             else if (_isReadyToRunCodeGen)
             {
+                string inputFilePath = "";
                 if (typeSystemContext.InputFilePaths.Count > 1)
                 {
-                    // Since ready-to-run currently adds to an existing IL image, we expect a single input
-                    throw new CommandLineException("Ready-to-run compilation only supports a single input assembly");
+                    if (_compileFilePath == null)
+                        throw new CommandLineException("Compile filename must be specified (/compile <file>)");
+                    inputFilePath = _compileFilePath;
+                }
+                else
+                {
+                    foreach (var input in typeSystemContext.InputFilePaths)
+                    {
+                        inputFilePath = input.Value;
+                    }
                 }
 
-                string inputFilePath = "";
-                foreach (var input in typeSystemContext.InputFilePaths)
-                {
-                    inputFilePath = input.Value;
-                }
                 builder = new ReadyToRunCodegenCompilationBuilder(typeSystemContext, compilationGroup, inputFilePath);
             }
             else if (_isCppCodegen)
