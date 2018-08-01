@@ -13,6 +13,7 @@ using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.JitInterface;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -51,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public RuntimeFunctionsTableNode RuntimeFunctionsTable;
 
-        private RuntimeFunctionsGCInfoNode _runtimeFunctionsGCInfo;
+        public RuntimeFunctionsGCInfoNode RuntimeFunctionsGCInfo;
 
         public MethodEntryPointTableNode MethodEntryPointTable;
 
@@ -97,9 +98,6 @@ namespace ILCompiler.DependencyAnalysis
             if (CompilationModuleGroup.ContainsMethodBody(method, false))
             {
                 localMethod = new MethodWithGCInfo(method, token);
-                _runtimeFunctionsGCInfo.AddEmbeddedObject(localMethod.GCInfoNode);
-                int methodIndex = RuntimeFunctionsTable.Add(localMethod);
-                MethodEntryPointTable.Add(localMethod, methodIndex, this);
 
                 // TODO: hack - how do we distinguish between emitting main entry point and calls between
                 // methods?
@@ -109,7 +107,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            return GetOrAddImportedMethodNode(method, unboxingStub: false, token: token, localMethod: localMethod);
+            return ImportedMethodNode(method, unboxingStub: false, token: token, localMethod: localMethod);
         }
 
         public IMethodNode StringAllocator(MethodDesc constructor, ModuleToken token)
@@ -122,9 +120,7 @@ namespace ILCompiler.DependencyAnalysis
             ISymbolNode stringNode;
             if (!_importStrings.TryGetValue(token, out stringNode))
             {
-                StringImport r2rImportNode = new StringImport(StringImports, token);
-                StringImports.AddImport(this, r2rImportNode);
-                stringNode = r2rImportNode;
+                stringNode = new StringImport(StringImports, token);
                 _importStrings.Add(token, stringNode);
             }
             return stringNode;
@@ -456,7 +452,7 @@ namespace ILCompiler.DependencyAnalysis
             throw new NotImplementedException();
         }
 
-        struct MethodAndCallSite
+        struct MethodAndCallSite : IEquatable<MethodAndCallSite>
         {
             public readonly MethodDesc Method;
             public readonly string CallSite;
@@ -467,10 +463,14 @@ namespace ILCompiler.DependencyAnalysis
                 Method = method;
             }
 
+            public bool Equals(MethodAndCallSite other)
+            {
+                return CallSite == other.CallSite && Method == other.Method;
+            }
+
             public override bool Equals(object obj)
             {
-                MethodAndCallSite other = (MethodAndCallSite)obj;
-                return CallSite == other.CallSite && Method == other.Method;
+                return obj is MethodAndCallSite other && Equals(other);
             }
 
             public override int GetHashCode()
@@ -513,9 +513,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private ISymbolNode CreateReadyToRunHelperCell(ReadyToRunHelper helperId)
         {
-            Import helperCell = new Import(EagerImports, new ReadyToRunHelperSignature(helperId));
-            EagerImports.AddImport(this, helperCell);
-            return helperCell;
+            return new Import(EagerImports, new ReadyToRunHelperSignature(helperId));
         }
 
         public ISymbolNode ComputeConstantLookup(ReadyToRunHelperId helperId, object entity, ModuleToken token)
@@ -539,7 +537,7 @@ namespace ILCompiler.DependencyAnalysis
             return genericDictionary;
         }
 
-        struct MethodAndFixupKind
+        struct MethodAndFixupKind : IEquatable<MethodAndFixupKind>
         {
             public readonly MethodDesc Method;
             public readonly ReadyToRunFixupKind FixupKind;
@@ -550,10 +548,14 @@ namespace ILCompiler.DependencyAnalysis
                 FixupKind = fixupKind;
             }
 
+            public bool Equals(MethodAndFixupKind other)
+            {
+                return Method == other.Method && FixupKind == other.FixupKind;
+            }
+
             public override bool Equals(object obj)
             {
-                MethodAndFixupKind other = (MethodAndFixupKind)obj;
-                return Method == other.Method && FixupKind == other.FixupKind;
+                return obj is MethodAndFixupKind other && Equals(other);
             }
 
             public override int GetHashCode()
@@ -590,8 +592,8 @@ namespace ILCompiler.DependencyAnalysis
             RuntimeFunctionsTable = new RuntimeFunctionsTableNode(Target);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.RuntimeFunctions, RuntimeFunctionsTable, RuntimeFunctionsTable);
 
-            _runtimeFunctionsGCInfo = new RuntimeFunctionsGCInfoNode();
-            graph.AddRoot(_runtimeFunctionsGCInfo, "GC info is always generated");
+            RuntimeFunctionsGCInfo = new RuntimeFunctionsGCInfoNode();
+            graph.AddRoot(RuntimeFunctionsGCInfo, "GC info is always generated");
 
             MethodEntryPointTable = new MethodEntryPointTableNode(Target);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.MethodDefEntryPoints, MethodEntryPointTable, MethodEntryPointTable);
@@ -660,7 +662,7 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(Header, "ReadyToRunHeader is always generated");
         }
 
-        public IMethodNode GetOrAddImportedMethodNode(MethodDesc method, bool unboxingStub, ModuleToken token, MethodWithGCInfo localMethod)
+        public IMethodNode ImportedMethodNode(MethodDesc method, bool unboxingStub, ModuleToken token, MethodWithGCInfo localMethod)
         {
             ReadyToRunFixupKind fixupKind;
             MethodFixupSignature.SignatureKind signatureKind;
@@ -728,6 +730,62 @@ namespace ILCompiler.DependencyAnalysis
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)
         {
             throw new NotImplementedException();
+        }
+
+        struct TypeAndMethod : IEquatable<TypeAndMethod>
+        {
+            public readonly TypeDesc Type;
+            public readonly MethodDesc Method;
+
+            public TypeAndMethod(TypeDesc type, MethodDesc method)
+            {
+                Type = type;
+                Method = method;
+            }
+
+            public bool Equals(TypeAndMethod other)
+            {
+                return Type == other.Type && Method == other.Method;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is TypeAndMethod other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                return Type.GetHashCode() ^ unchecked(Method.GetHashCode() * 31);
+            }
+        }
+
+        private Dictionary<TypeAndMethod, ISymbolNode> _delegateCtors = new Dictionary<TypeAndMethod, ISymbolNode>();
+
+        public ISymbolNode DelegateCtor(TypeDesc delegateType, MethodDesc targetMethod, ModuleToken methodToken)
+        {
+            ISymbolNode ctorNode;
+            TypeAndMethod ctorKey = new TypeAndMethod(delegateType, targetMethod);
+            if (!_delegateCtors.TryGetValue(ctorKey, out ctorNode))
+            {
+                ModuleToken delegateTypeToken;
+                if (CompilationModuleGroup.ContainsType(delegateType) && delegateType is EcmaType ecmaType)
+                {
+                    delegateTypeToken = new ModuleToken(ecmaType.EcmaModule, (mdToken)MetadataTokens.GetToken(ecmaType.Handle));
+                }
+                else
+                {
+                    // TODO: reverse typedef lookup within the version bubble
+                    throw new NotImplementedException();
+                }
+
+                IMethodNode targetMethodNode = MethodEntrypoint(targetMethod, methodToken, isUnboxingStub: false);
+
+                ctorNode = new DelayLoadHelperImport(this,
+                    ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
+                    new DelegateCtorSignature(this, delegateType, delegateTypeToken, targetMethodNode, methodToken));
+                _delegateCtors.Add(ctorKey, ctorNode);
+            }
+            return ctorNode;
         }
     }
 }

@@ -33,6 +33,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CompilerIdentifierNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadHelperImport.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadHelperThunk.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelegateCtorSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DevirtualizationManager.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ExternalMethodImport.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\FixupConstants.cs" />

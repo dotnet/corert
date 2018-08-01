@@ -4,7 +4,7 @@
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    class RuntimeFunctionsGCInfoNode : ArrayOfEmbeddedDataNode<MethodGCInfoNode>
+    public class RuntimeFunctionsGCInfoNode : ArrayOfEmbeddedDataNode<MethodGCInfoNode>
     {
         public RuntimeFunctionsGCInfoNode()
             : base("RuntimeFunctionsGCInfo_Begin", "RuntimeFunctionsGCInfo_End", null)

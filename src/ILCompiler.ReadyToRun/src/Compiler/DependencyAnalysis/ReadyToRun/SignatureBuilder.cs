@@ -402,6 +402,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _builder.EmitByte(data);
         }
 
+        public void EmitReloc(ISymbolNode symbol, RelocType relocType, int delta = 0)
+        {
+            _builder.EmitReloc(symbol, relocType, delta);
+        }
+
         public ObjectNode.ObjectData ToObjectData()
         {
             return _builder.ToObjectData();

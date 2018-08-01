@@ -25,6 +25,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ImportSignature = new RvaEmbeddedPointerIndirectionNode<Signature>(importSignature, callSite);
         }
 
+        protected override void OnMarked(NodeFactory factory)
+        {
+            Table.AddImport(factory, this);
+        }
+
         protected override string GetName(NodeFactory factory)
         {
             Utf8StringBuilder sb = new Utf8StringBuilder();

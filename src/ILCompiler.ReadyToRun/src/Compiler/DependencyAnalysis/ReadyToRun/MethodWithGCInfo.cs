@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using ILCompiler.DependencyAnalysisFramework;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -39,21 +40,28 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public MethodDesc Method => _method;
 
+        protected override void OnMarked(NodeFactory factory)
+        {
+            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
+            // Marked method - add runtime & entry point table entry
+            r2rFactory.RuntimeFunctionsGCInfo.AddEmbeddedObject(GCInfoNode);
+            int index = r2rFactory.RuntimeFunctionsTable.Add(this);
+            r2rFactory.MethodEntryPointTable.Add(this, index);
+        }
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
-            ObjectData methodCode = _methodCode;
-            if (relocsOnly)
-            {
-                int extraRelocs = 1; // GCInfoNode
+            return _methodCode;
+        }
 
-                Relocation[] relocs = new Relocation[methodCode.Relocs.Length + extraRelocs];
-                Array.Copy(methodCode.Relocs, relocs, methodCode.Relocs.Length);
-                int extraRelocIndex = methodCode.Relocs.Length;
-                relocs[extraRelocIndex++] = new Relocation(RelocType.IMAGE_REL_BASED_ADDR32NB, 0, GCInfoNode);
-                Debug.Assert(extraRelocIndex == relocs.Length);
-                methodCode = new ObjectData(methodCode.Data, relocs, methodCode.Alignment, methodCode.DefinedSymbols); 
-            }
-            return methodCode;
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            return new DependencyList(
+                new DependencyListEntry[]
+                {
+                    new DependencyListEntry(GCInfoNode, "GC info"),
+                }
+            );
         }
 
         public override bool StaticDependenciesAreComputed => _methodCode != null;

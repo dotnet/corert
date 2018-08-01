@@ -69,6 +69,7 @@ namespace ILCompiler
                 _nameMangler,
                 _vtableSliceProvider,
                 _dictionaryLayoutProvider);
+
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);
 
             List<CorJitFlag> corJitFlags = new List<CorJitFlag>();

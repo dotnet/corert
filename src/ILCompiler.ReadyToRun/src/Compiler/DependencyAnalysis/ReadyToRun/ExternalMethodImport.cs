@@ -26,7 +26,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             MethodFixupSignature.SignatureKind signatureKind)
             : base(factory.MethodImports, factory.GetOrAddMethodSignature(fixupKind, methodDesc, token, signatureKind))
         {
-            factory.MethodImports.AddImport(factory, this);
             _methodDesc = methodDesc;
             _token = token;
             _localMethod = localMethod;
