@@ -179,9 +179,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void EmitTypeSignature(TypeDesc typeDesc, ModuleToken token, SignatureContext context)
         {
-            if (typeDesc.HasInstantiation)
+            if (typeDesc is InstantiatedType instantiatedType)
             {
-                EmitTypeSpecification(token, context);
+                EmitInstantiatedTypeSignature(instantiatedType, token, context);
+                return;
+            }
+
+            if (typeDesc is PointerType pointerType)
+            {
+                EmitPointerTypeSignature(pointerType, token, context);
+                return;
+            }
+
+            if (typeDesc is ArrayType arrayType)
+            {
+                EmitArrayTypeSignature(arrayType, token, context);
                 return;
             }
 
@@ -258,13 +270,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return;
             }
 
-            if (typeDesc is ArrayType arrayType)
-            {
-                EmitByte((byte)CorElementType.ELEMENT_TYPE_SZARRAY);
-                EmitTypeSignature(arrayType.ElementType, token, context);
-                return;
-            }
-
             if (typeDesc.IsValueType)
             {
                 elementType = CorElementType.ELEMENT_TYPE_VALUETYPE;
@@ -277,11 +282,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // TODO: module override for tokens with external context
             EmitElementType(elementType);
 
+            if (typeDesc is EcmaType ecmaType)
+            {
+                if (token.Module == null)
+                {
+                    token = context.GetModuleTokenForType(ecmaType);
+                }
+            }
+
             switch (token.TokenType)
             {
                 case CorTokenType.mdtTypeDef:
                 case CorTokenType.mdtTypeRef:
-                case CorTokenType.mdtTypeSpec:
                     EmitToken(token.Token);
                     return;
 
@@ -290,13 +302,32 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        private void EmitTypeSpecification(ModuleToken token, SignatureContext context)
+        private void EmitInstantiatedTypeSignature(InstantiatedType type, ModuleToken token, SignatureContext context)
         {
-            Debug.Assert(token.TokenType == CorTokenType.mdtTypeSpec);
-            TypeSpecification typeSpec = token.MetadataReader.GetTypeSpecification((TypeSpecificationHandle)MetadataTokens.Handle((int)token.Token));
-            BlobReader signatureReader = token.MetadataReader.GetBlobReader(typeSpec.Signature);
-            SignatureDecoder<byte[], SignatureContext> decoder = new SignatureDecoder<byte[], SignatureContext>(context, context.MetadataReader, context);
-            EmitBytes(decoder.DecodeType(ref signatureReader, allowTypeSpecifications: true));
+            EmitElementType(CorElementType.ELEMENT_TYPE_GENERICINST);
+            EmitTypeSignature(type.GetTypeDefinition(), default(ModuleToken), context);
+            EmitUInt((uint)type.Instantiation.Length);
+            for (int paramIndex = 0; paramIndex < type.Instantiation.Length; paramIndex++)
+            {
+                EmitTypeSignature(type.Instantiation[paramIndex], default(ModuleToken), context);
+            }
+        }
+
+        private void EmitPointerTypeSignature(PointerType type, ModuleToken token, SignatureContext context)
+        {
+            EmitElementType(CorElementType.ELEMENT_TYPE_PTR);
+            EmitTypeSignature(type.ParameterType, token, context);
+        }
+
+        private void EmitArrayTypeSignature(ArrayType type, ModuleToken token, SignatureContext context)
+        {
+            if (type.IsSzArray)
+            {
+                EmitElementType(CorElementType.ELEMENT_TYPE_SZARRAY);
+                EmitTypeSignature(type.ElementType, token, context);
+                return;
+            }
+            throw new NotImplementedException();
         }
 
         public void EmitMethodSignature(MethodDesc method, ModuleToken token, SignatureContext context)
@@ -446,6 +477,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         public MetadataReader MetadataReader => _contextModule.MetadataReader;
+
+        public ModuleToken GetModuleTokenForType(EcmaType type)
+        {
+            return _nodeFactory.GetModuleTokenForType(type);
+        }
 
         public byte[] GetArrayType(byte[] elementType, ArrayShape shape)
         {

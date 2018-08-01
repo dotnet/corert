@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
 
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
@@ -791,25 +792,54 @@ namespace ILCompiler.DependencyAnalysis
             TypeAndMethod ctorKey = new TypeAndMethod(delegateType, targetMethod);
             if (!_delegateCtors.TryGetValue(ctorKey, out ctorNode))
             {
-                ModuleToken delegateTypeToken;
-                if (CompilationModuleGroup.ContainsType(delegateType) && delegateType is EcmaType ecmaType)
-                {
-                    delegateTypeToken = new ModuleToken(ecmaType.EcmaModule, (mdToken)MetadataTokens.GetToken(ecmaType.Handle));
-                }
-                else
-                {
-                    // TODO: reverse typedef lookup within the version bubble
-                    throw new NotImplementedException();
-                }
-
                 IMethodNode targetMethodNode = MethodEntrypoint(targetMethod, methodToken, isUnboxingStub: false);
 
                 ctorNode = new DelayLoadHelperImport(this,
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
-                    new DelegateCtorSignature(this, delegateType, delegateTypeToken, targetMethodNode, methodToken));
+                    new DelegateCtorSignature(this, delegateType, default(ModuleToken), targetMethodNode, methodToken));
                 _delegateCtors.Add(ctorKey, ctorNode);
             }
             return ctorNode;
+        }
+
+        /// <summary>
+        /// Reverse lookup table mapping external types to reference tokens in the input modules. The table
+        /// gets lazily initialized with all input module references the first time the reverse lookup is
+        /// needed.
+        /// </summary>
+        private Dictionary<TypeDesc, ModuleToken> _typeToRefTokens = null;
+
+        public ModuleToken GetModuleTokenForType(EcmaType type)
+        {
+            if (CompilationModuleGroup.ContainsType(type))
+            {
+                return new ModuleToken(type.EcmaModule, (mdToken)MetadataTokens.GetToken(type.Handle));
+            }
+
+            if (_typeToRefTokens == null)
+            {
+                _typeToRefTokens = new Dictionary<TypeDesc, ModuleToken>();
+                foreach (KeyValuePair<string, string> namePathPair in TypeSystemContext.InputFilePaths)
+                {
+                    EcmaModule module = TypeSystemContext.GetModuleFromPath(namePathPair.Value);
+                    PEReader peReader = module.PEReader;
+                    MetadataReader metadataReader = peReader.GetMetadataReader();
+                    foreach (TypeReferenceHandle typeRefHandle in metadataReader.TypeReferences)
+                    {
+                        TypeDesc resolvedType = (TypeDesc)module.GetObject((EntityHandle)typeRefHandle);
+                        _typeToRefTokens[resolvedType] = new ModuleToken(module, (mdToken)MetadataTokens.GetToken(typeRefHandle));
+                    }
+                }
+            }
+
+            ModuleToken token;
+            if (_typeToRefTokens.TryGetValue(type, out token))
+            {
+                return token;
+            }
+
+            // Reverse lookup failed
+            throw new NotImplementedException();
         }
     }
 }
