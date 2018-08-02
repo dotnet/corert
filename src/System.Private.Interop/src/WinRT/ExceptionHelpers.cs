@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic.Internal;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -16,6 +17,46 @@ namespace System.Runtime.InteropServices
     /// </summary>
     public static unsafe partial class ExceptionHelpers
     {
+#if DEBUG
+        [ThreadStatic]
+        private static Dictionary<Exception, bool> t_propagatedExceptions = new Dictionary<Exception, bool>();
+#endif
+        
+        public static bool PropagateException(Exception ex)
+        {
+#if DEBUG
+            Debug.Assert(!ExceptionHelpers.t_propagatedExceptions.ContainsKey(ex));
+            ExceptionHelpers.t_propagatedExceptions.Add(ex, true);
+#endif
+            try
+            {
+                IntPtr pRestrictedErrorInfo;
+                object restrictedErrorInfo;
+                if (InteropExtensions.TryGetRestrictedErrorObject(ex, out restrictedErrorInfo) && restrictedErrorInfo != null)
+                {
+                    // We have the restricted errorInfo associated with this object and hence this exception was created by an hr entering managed through native.
+                    pRestrictedErrorInfo = McgMarshal.ObjectToComInterface(restrictedErrorInfo, InternalTypes.IRestrictedErrorInfo);
+                    if (pRestrictedErrorInfo != IntPtr.Zero)
+                    {
+                        // We simply call SetRestrictedErrorInfo since we do not want to originate the exception again.
+                        ExternalInterop.SetRestrictedErrorInfo(pRestrictedErrorInfo);
+                        McgMarshal.ComSafeRelease(pRestrictedErrorInfo);
+                    }
+                }
+                else
+                {
+                    // we are in windows 8.1+ and hence we can preserve our exception so that we can reuse this exception in case it comes back and provide richer exception support.
+                    OriginateLanguageException(ex);
+                }
+            }
+            catch (Exception)
+            {
+                // We can't throw an exception here and hence simply swallow it.
+            }
+            
+            return true;
+        }
+
         /// <summary>
         ///  This class is a helper class to call into IRestrictedErrorInfo methods.
         /// </summary>
@@ -160,6 +201,78 @@ namespace System.Runtime.InteropServices
             internal System.IntPtr pfnGetReference;
         }
 
+        internal unsafe struct __com_ILanguageExceptionStackBackTrace
+        {
+            internal __vtable_ILanguageExceptionStackBackTrace* pVtable;
+        }
+
+        internal unsafe struct __vtable_ILanguageExceptionStackBackTrace
+        {
+            private IntPtr pfnQueryInterface;
+            private IntPtr pfnAddRef;
+            private IntPtr pfnRelease;
+            internal IntPtr pfnGetStackBackTrace;
+            
+            public static IntPtr pNativeVtable;
+            private static __vtable_ILanguageExceptionStackBackTrace s_theCcwVtable = new __vtable_ILanguageExceptionStackBackTrace
+            {
+                // IUnknown
+                pfnQueryInterface = AddrOfIntrinsics.AddrOf<AddrOfQueryInterface>(__vtable_IUnknown.QueryInterface),
+                pfnAddRef = AddrOfIntrinsics.AddrOf<AddrOfAddRef>(__vtable_IUnknown.AddRef),
+                pfnRelease = AddrOfIntrinsics.AddrOf<AddrOfRelease>(__vtable_IUnknown.Release),
+                // ILanguageExceptionStackBackTrace
+                pfnGetStackBackTrace = AddrOfIntrinsics.AddrOf<System.Runtime.InteropServices.AddrOfIntrinsics.AddrOfILanguageExceptionStackBackTraceGetStackBackTrace>(GetStackBackTrace),
+            };
+
+            internal static IntPtr GetVtableFuncPtr()
+            {
+                return AddrOfIntrinsics.AddrOf<AddrOfGetCCWVtable>(GetCcwvtable_ILanguageExceptionStackBackTrace);
+            }
+
+            internal static unsafe IntPtr GetCcwvtable_ILanguageExceptionStackBackTrace()
+            {
+                if (pNativeVtable == default(IntPtr))
+                {
+                    fixed (void* pVtbl = &s_theCcwVtable)
+                    {
+                        McgMarshal.GetCCWVTableCopy(pVtbl, ref __vtable_ILanguageExceptionStackBackTrace.pNativeVtable,sizeof(__vtable_ILanguageExceptionStackBackTrace));
+
+                    }
+                }
+                return __vtable_ILanguageExceptionStackBackTrace.pNativeVtable;
+            }
+
+            [NativeCallable]
+            public static int GetStackBackTrace(IntPtr pComThis, uint maxFramesToCapture, IntPtr stackBackTrace, IntPtr framesCaptured)
+            {
+                try
+                {
+                    object target = ComCallableObject.FromThisPointer(pComThis).TargetObject;
+                    Debug.Assert(target is Exception);
+                    IntPtr[] stackIPs = InteropExtensions.ExceptionGetStackIPs(target as Exception);
+                    uint* pFramesCaptured = (uint*)framesCaptured;
+                    *pFramesCaptured = Math.Min((uint)stackIPs.Length, maxFramesToCapture);
+                    if (stackBackTrace != IntPtr.Zero)
+                    {
+                        unsafe
+                        {
+                            IntPtr* pStackBackTrace = (IntPtr*)stackBackTrace;
+                            for (uint i = 0; i < *pFramesCaptured ; i++)
+                            {
+                                *pStackBackTrace = stackIPs[i];
+                                pStackBackTrace++;
+                            }
+                        }
+                    }
+                    return Interop.COM.S_OK;
+                }
+                catch (System.Exception hrExcep)
+                {
+                    return McgMarshal.GetHRForExceptionWinRT(hrExcep);
+                }
+            }
+        }
+
 #pragma warning restore 649, 169
 
         /// <summary>
@@ -200,24 +313,10 @@ namespace System.Runtime.InteropServices
                 // Check whether the exception has an associated RestrictedErrorInfo associated with it.
                 if (isWinRTScenario)
                 {
-                    IntPtr pRestrictedErrorInfo;
-                    object restrictedErrorInfo;
-                    if (InteropExtensions.TryGetRestrictedErrorObject(ex, out restrictedErrorInfo) && restrictedErrorInfo != null)
-                    {
-                        // We have the restricted errorInfo associated with this object and hence this exception was created by an hr entering managed through native.
-                        pRestrictedErrorInfo = McgMarshal.ObjectToComInterface(restrictedErrorInfo, InternalTypes.IRestrictedErrorInfo);
-                        if (pRestrictedErrorInfo != IntPtr.Zero)
-                        {
-                            // We simply call SetRestrictedErrorInfo since we do not want to originate the exception again.
-                            ExternalInterop.SetRestrictedErrorInfo(pRestrictedErrorInfo);
-                            McgMarshal.ComSafeRelease(pRestrictedErrorInfo);
-                        }
-                    }
-                    else
-                    {
-                        // we are in windows blue and hence we can preserve our exception so that we can reuse this exception in case it comes back and provide richer exception support.
-                        OriginateLanguageException(ex);
-                    }
+#if DEBUG
+                    Debug.Assert(ExceptionHelpers.t_propagatedExceptions.ContainsKey(ex));
+                    ExceptionHelpers.t_propagatedExceptions.Remove(ex);
+#endif
                 }
                 else
                 {

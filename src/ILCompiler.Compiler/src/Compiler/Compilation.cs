@@ -425,7 +425,16 @@ namespace ILCompiler
 
             public void RootModuleMetadata(ModuleDesc module, string reason)
             {
-                _graph.AddRoot(_factory.ModuleMetadata(module), reason);
+                // RootModuleMetadata is kind of a hack - this is pretty much only used to force include
+                // type forwarders from assemblies metadata generator would normally not look at.
+                // This will go away when the temporary RD.XML parser goes away.
+                if (_factory.MetadataManager is UsageBasedMetadataManager)
+                    _graph.AddRoot(_factory.ModuleMetadata(module), reason);
+            }
+
+            public void RootReadOnlyDataBlob(byte[] data, int alignment, string reason, string exportName)
+            {
+                _graph.AddRoot(_factory.ReadOnlyDataBlob(exportName, data, alignment), reason);
             }
         }
     }

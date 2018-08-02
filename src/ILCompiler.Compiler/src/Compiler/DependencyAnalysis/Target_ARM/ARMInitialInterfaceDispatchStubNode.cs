@@ -52,6 +52,6 @@ namespace ILCompiler.DependencyAnalysis
             throw new NotImplementedException();
         }
 
-        protected internal override int ClassCode => 588185132;
+        public override int ClassCode => 588185132;
     }
 }

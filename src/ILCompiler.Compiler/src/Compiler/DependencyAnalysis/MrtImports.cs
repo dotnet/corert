@@ -23,49 +23,49 @@ namespace ILCompiler.DependencyAnalysis
     {
         public MrtImportedEETypeSymbolNode(TypeDesc type) : base(type) { }
         protected override sealed string GetNonImportedName(NameMangler nameMangler) => nameMangler.NodeMangler.EEType(Type);
-        protected internal override int ClassCode => 126598072;
+        public override int ClassCode => 126598072;
     }
 
     public sealed class MrtImportedGCStaticSymbolNode : MrtImportWithTypeSymbol
     {
         public MrtImportedGCStaticSymbolNode(TypeDesc type) : base(type) { }
         protected override sealed string GetNonImportedName(NameMangler nameMangler) => GCStaticsNode.GetMangledName(Type, nameMangler);
-        protected internal override int ClassCode => 1974639431;
+        public override int ClassCode => 1974639431;
     }
 
     public sealed class MrtImportedNonGCStaticSymbolNode : MrtImportWithTypeSymbol
     {
         public MrtImportedNonGCStaticSymbolNode(TypeDesc type) : base(type) { }
         protected override sealed string GetNonImportedName(NameMangler nameMangler) => NonGCStaticsNode.GetMangledName(Type, nameMangler);
-        protected internal override int ClassCode => 257546392;
+        public override int ClassCode => 257546392;
     }
 
     public sealed class MrtImportedThreadStaticOffsetSymbolNode : MrtImportWithTypeSymbol
     {
         public MrtImportedThreadStaticOffsetSymbolNode(TypeDesc type) : base(type) { }
         protected override sealed string GetNonImportedName(NameMangler nameMangler) => ThreadStaticsOffsetNode.GetMangledName(nameMangler, Type);
-        protected internal override int ClassCode => 1944978231;
+        public override int ClassCode => 1944978231;
     }
 
     public sealed class MrtImportedMethodDictionarySymbolNode : MrtImportWithMethodSymbol
     {
         public MrtImportedMethodDictionarySymbolNode(MethodDesc method) : base(method) { }
         protected override sealed string GetNonImportedName(NameMangler nameMangler) => nameMangler.NodeMangler.MethodGenericDictionary(Method);
-        protected internal override int ClassCode => 925274757;
+        public override int ClassCode => 925274757;
     }
 
     public sealed class MrtImportedMethodCodeSymbolNode : MrtImportWithMethodSymbol, IMethodNode
     {
         public MrtImportedMethodCodeSymbolNode(MethodDesc method) : base(method) { }
         protected override sealed string GetNonImportedName(NameMangler nameMangler) => nameMangler.GetMangledMethodName(Method).ToString();
-        protected internal override int ClassCode => -454606757;
+        public override int ClassCode => -454606757;
     }
 
     public sealed class MrtImportedUnboxingMethodCodeSymbolNode : MrtImportWithMethodSymbol, IMethodNode
     {
         public MrtImportedUnboxingMethodCodeSymbolNode(MethodDesc method) : base(method) { }
         protected override sealed string GetNonImportedName(NameMangler nameMangler) => UnboxingStubNode.GetMangledName(nameMangler, Method);
-        protected internal override int ClassCode => 1712079609;
+        public override int ClassCode => 1712079609;
     }
 
     public abstract class MrtImportWithTypeSymbol : MrtImportNode
@@ -160,7 +160,7 @@ namespace ILCompiler.DependencyAnalysis
         public sealed override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
         public sealed override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
 
-        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             MrtImportNode otherImportNode = (MrtImportNode)other;
 
@@ -171,7 +171,7 @@ namespace ILCompiler.DependencyAnalysis
             return Ordinal - otherImportNode.Ordinal;
         }
 
-        protected internal override int ClassCode => 2017985192;
+        public override int ClassCode => 2017985192;
 
         public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
@@ -186,13 +186,6 @@ namespace ILCompiler.DependencyAnalysis
             // Only when this node gets marked, the parent node becomes the actual parent.
             _importTable.AddNode(this);
         }
-
-        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
-        {
-            return CompareToImpl((SortableDependencyNode)other, comparer);
-        }
-
-        int ISortableSymbolNode.ClassCode => this.ClassCode;
 
         void ISymbolNode.AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {

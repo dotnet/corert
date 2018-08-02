@@ -146,6 +146,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return blobVertices;
         }
 
-        protected override int ClassCode => -348722540;
+        public override int ClassCode => -348722540;
     }
 }

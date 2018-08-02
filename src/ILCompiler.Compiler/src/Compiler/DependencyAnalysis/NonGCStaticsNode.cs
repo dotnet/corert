@@ -180,18 +180,11 @@ namespace ILCompiler.DependencyAnalysis
             return builder.ToObjectData();
         }
 
-        protected internal override int ClassCode => -1173104872;
+        public override int ClassCode => -1173104872;
 
-        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return comparer.Compare(_type, ((NonGCStaticsNode)other)._type);
-        }
-
-        int ISortableSymbolNode.ClassCode => ClassCode;
-
-        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
-        {
-            return CompareToImpl((ObjectNode)other, comparer);
         }
     }
 }

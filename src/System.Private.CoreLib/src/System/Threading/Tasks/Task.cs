@@ -2925,27 +2925,19 @@ namespace System.Threading.Tasks
                 return false;
             }
 
-            //This code is pretty similar to the custom spinning in MRES except there is no yieling after we exceed the spin count
-            const int YIELD_THRESHOLD = 10; // When to switch over to a true yield.
-            int spinCount = PlatformHelper.IsSingleProcessor ? 1 : YIELD_THRESHOLD; //spin only once if we are running on a single CPU
-            for (int i = 0; i < spinCount; i++)
+            int spinCount = Threading.SpinWait.SpinCountforSpinBeforeWait;
+            var spinner = new SpinWait();
+            while (spinner.Count < spinCount)
             {
+                spinner.SpinOnce(sleep1Threshold: -1);
+
                 if (IsCompleted)
                 {
                     return true;
                 }
-
-                if (i == spinCount / 2)
-                {
-                    RuntimeThread.Yield();
-                }
-                else
-                {
-                    RuntimeThread.SpinWait(PlatformHelper.ProcessorCount * (4 << i));
-                }
             }
 
-            return IsCompleted;
+            return false;
         }
 
         /// <summary>

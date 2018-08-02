@@ -1064,10 +1064,9 @@ bool EECodeManager::UnwindStackFrame(GCInfoHeader * pInfoHeader,
     // The compiler enforces that by placing an 8-byte padding between those areas if needed.
     // Account for that padding and ensure that the unwound SP is 16-byte aligned.
     RSP = dac_cast<PTR_UIntNative>((dac_cast<TADDR>(RSP) + 0xf) & ~0xf);
+
 #else
-
-#error NYI - For this arch
-
+#error Unexpected target architecture
 #endif
 
     pContext->SetSP((UIntNative) dac_cast<TADDR>(RSP));
@@ -1135,7 +1134,7 @@ UIntNative EECodeManager::GetConservativeUpperBoundForOutgoingArgs(GCInfoHeader 
             upperBound = pContext->GetFP() - pInfoHeader->GetFramePointerOffset();
 
 #else
-#error NYI - For this arch
+#error Unexpected target architecture
 #endif
         }
         else
@@ -1145,21 +1144,15 @@ UIntNative EECodeManager::GetConservativeUpperBoundForOutgoingArgs(GCInfoHeader 
             // Adding the frame size to the SP is guaranteed to yield an address above all outgoing
             // arguments.
             //
-            // If this frame contains one or more callee-saved register (guaranteed on ARM since at
+            // If this frame contains one or more callee-saved register (guaranteed on ARM/ARM64 since at
             // least LR is saved in all functions that contain callsites), then the computed address
             // will point at the lowest callee-saved register (or possibly above it in the x86 case
             // where registers are saved at the bottom of the frame).
             //
-            // If the frame contains no callee-saved registers (impossible on ARM), then the computed
+            // If the frame contains no callee-saved registers (impossible on ARM/ARM64), then the computed
             // address will point to the pushed return address.
 
             upperBound = pContext->GetSP() + pInfoHeader->GetFrameSize();
-
-#if defined(_TARGET_ARM_)
-            ASSERT(pInfoHeader->GetSavedRegs() != 0);
-#elif defined(_TARGET_ARM64_)
-            PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
-#endif
         }
     }
 
@@ -1331,6 +1324,10 @@ bool EECodeManager::GetEpilogOffset(
 
 #ifndef DACCESS_COMPILE
 
+// ARM64 epilogs have a window between loading the hijackable return address into LR and the RET instruction.
+// We cannot hijack or unhijack a thread while it is suspended in that window unless we implement hijacking
+// via LR register modification.
+#ifndef _ARM64_
 void ** EECodeManager::GetReturnAddressLocationFromEpilog(GCInfoHeader * pInfoHeader, REGDISPLAY * pContext,
                                                           UInt32 epilogOffset, UInt32 epilogSize)
 {
@@ -1743,6 +1740,7 @@ void ** EECodeManager::GetReturnAddressLocationFromEpilog(GCInfoHeader * pInfoHe
 
 #endif
 }
+#endif // _ARM64_
 
 #ifdef _DEBUG
 

@@ -226,7 +226,7 @@ namespace System.Runtime
                         // arity of both had better be the same.
                         Debug.Assert(itfArity == (int)pCurEntryType->GenericArity, "arity mismatch betweeen generic instantiations");
 
-                        if (TypeCast.TypeParametersAreCompatible(itfArity, pCurEntryInstantiation, pItfInstantiation, pItfVarianceInfo, fArrayCovariance))
+                        if (TypeCast.TypeParametersAreCompatible(itfArity, pCurEntryInstantiation, pItfInstantiation, pItfVarianceInfo, fArrayCovariance, null))
                         {
                             *pImplSlotNumber = i->_usImplMethodSlot;
                             return true;

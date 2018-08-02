@@ -146,6 +146,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return builder.ToObjectData();
         }
 
-        protected override int ClassCode => 627741208;
+        public override int ClassCode => 627741208;
     }
 }

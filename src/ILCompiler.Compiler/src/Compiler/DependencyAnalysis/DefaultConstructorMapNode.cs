@@ -43,7 +43,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool StaticDependenciesAreComputed => true;
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
-        protected internal override int ClassCode => (int)ObjectNodeOrder.DefaultConstructorMapNode;
+        public override int ClassCode => (int)ObjectNodeOrder.DefaultConstructorMapNode;
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 

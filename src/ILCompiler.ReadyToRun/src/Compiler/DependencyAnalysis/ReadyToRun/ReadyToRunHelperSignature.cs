@@ -16,7 +16,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _helperID = helper;
         }
 
-        protected override int ClassCode => 208107954;
+        public override int ClassCode => 208107954;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -34,7 +34,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append(_helperID.ToString());
         }
 
-        protected override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return _helperID.CompareTo(((ReadyToRunHelperSignature) other)._helperID);
         }

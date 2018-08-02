@@ -41,9 +41,9 @@ namespace ILCompiler.DependencyAnalysis
         public int Offset => 0;
         public override bool IsShareable => _methodNode.Method is InstantiatedMethod || EETypeNode.IsTypeNodeShareable(_methodNode.Method.OwningType);
 
-        protected internal override int ClassCode => 1055183914;
+        public override int ClassCode => 1055183914;
 
-        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return comparer.Compare(_methodNode, ((MethodAssociatedDataNode)other)._methodNode);
         }

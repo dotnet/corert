@@ -229,9 +229,9 @@ namespace ILCompiler.DependencyAnalysis
         }
 
 #if !SUPPORT_JIT
-        protected internal override int ClassCode => -911637948;
+        public override int ClassCode => -911637948;
 
-        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             var compare = _id.CompareTo(((ReadyToRunHelperNode)other)._id);
             if (compare != 0)

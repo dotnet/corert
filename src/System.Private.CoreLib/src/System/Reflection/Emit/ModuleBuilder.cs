@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+
 namespace System.Reflection.Emit
 {
     public class ModuleBuilder : Module
@@ -60,6 +62,16 @@ namespace System.Reflection.Emit
         }
 
         public FieldBuilder DefineInitializedData(string name, byte[] data, FieldAttributes attributes)
+        {
+            return default;
+        }
+
+        public MethodBuilder DefinePInvokeMethod(string name, string dllName, MethodAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet)
+        {
+            return default;
+        }
+
+        public MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet)
         {
             return default;
         }

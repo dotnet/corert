@@ -26,9 +26,9 @@ namespace ILCompiler.DependencyAnalysis
             _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, endSymbolMangledName, true);
         }
 
-        protected internal override int ClassCode => -1410622237;
+        public override int ClassCode => -1410622237;
 
-        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return _startSymbolMangledName.CompareTo(((EmbeddedDataContainerNode)other)._startSymbolMangledName);
         }

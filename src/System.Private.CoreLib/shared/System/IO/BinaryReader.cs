@@ -2,11 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.Runtime.CompilerServices;
-using System;
-using System.Text;
+/*============================================================
+**
+** 
+** 
+**
+**
+** Purpose: Wraps a stream and provides convenient read functionality
+** for strings and primitive types.
+**
+**
+============================================================*/
+
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.IO
 {
@@ -89,7 +99,7 @@ namespace System.IO
                 _stream = null;
                 if (copyOfStream != null && !_leaveOpen)
                 {
-                    copyOfStream.Dispose();
+                    copyOfStream.Close();
                 }
             }
             _stream = null;
@@ -117,7 +127,7 @@ namespace System.IO
         {
             if (_stream == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+                throw Error.GetFileNotOpen();
             }
 
             if (!_stream.CanSeek)
@@ -135,9 +145,79 @@ namespace System.IO
         {
             if (_stream == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+                throw Error.GetFileNotOpen();
             }
-            return InternalReadOneChar();
+
+            int charsRead = 0;
+            int numBytes = 0;
+            long posSav = posSav = 0;
+
+            if (_stream.CanSeek)
+            {
+                posSav = _stream.Position;
+            }
+
+            if (_charBytes == null)
+            {
+                _charBytes = new byte[MaxCharBytesSize]; //REVIEW: We need at most 2 bytes/char here? 
+            }
+            if (_singleChar == null)
+            {
+                _singleChar = new char[1];
+            }
+
+            while (charsRead == 0)
+            {
+                // We really want to know what the minimum number of bytes per char
+                // is for our encoding.  Otherwise for UnicodeEncoding we'd have to
+                // do ~1+log(n) reads to read n characters.
+                // Assume 1 byte can be 1 char unless _2BytesPerChar is true.
+                numBytes = _2BytesPerChar ? 2 : 1;
+
+                int r = _stream.ReadByte();
+                _charBytes[0] = (byte)r;
+                if (r == -1)
+                {
+                    numBytes = 0;
+                }
+                if (numBytes == 2)
+                {
+                    r = _stream.ReadByte();
+                    _charBytes[1] = (byte)r;
+                    if (r == -1)
+                    {
+                        numBytes = 1;
+                    }
+                }
+
+                if (numBytes == 0)
+                {
+                    return -1;
+                }
+
+                Debug.Assert(numBytes == 1 || numBytes == 2, "BinaryReader::ReadOneChar assumes it's reading one or 2 bytes only.");
+
+                try
+                {
+                    charsRead = _decoder.GetChars(_charBytes, 0, numBytes, _singleChar, 0);
+                }
+                catch
+                {
+                    // Handle surrogate char 
+
+                    if (_stream.CanSeek)
+                    {
+                        _stream.Seek((posSav - _stream.Position), SeekOrigin.Current);
+                    }
+                    // else - we can't do much here
+
+                    throw;
+                }
+
+                Debug.Assert(charsRead < 2, "BinaryReader::ReadOneChar - assuming we only got 0 or 1 char, not 2!");
+            }
+            Debug.Assert(charsRead > 0);
+            return _singleChar[0];
         }
 
         public virtual bool ReadBoolean()
@@ -151,13 +231,13 @@ namespace System.IO
             // Inlined to avoid some method call overhead with FillBuffer.
             if (_stream == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+                throw Error.GetFileNotOpen();
             }
 
             int b = _stream.ReadByte();
             if (b == -1)
             {
-                throw new EndOfStreamException(SR.IO_EOF_ReadBeyondEOF);
+                throw Error.GetEndOfFile();
             }
 
             return (byte)b;
@@ -175,7 +255,7 @@ namespace System.IO
             int value = Read();
             if (value == -1)
             {
-                throw new EndOfStreamException(SR.IO_EOF_ReadBeyondEOF);
+                throw Error.GetEndOfFile();
             }
             return (char)value;
         }
@@ -199,7 +279,7 @@ namespace System.IO
             {
                 if (_stream == null)
                 {
-                    throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+                    throw Error.GetFileNotOpen();
                 }
 
                 // read directly from MemoryStream buffer
@@ -265,11 +345,9 @@ namespace System.IO
         public virtual decimal ReadDecimal()
         {
             FillBuffer(16);
-            int[] ints = new int[4];
-            Buffer.BlockCopy(_buffer, 0, ints, 0, 16);
             try
             {
-                return new decimal(ints);
+                return decimal.ToDecimal(_buffer);
             }
             catch (ArgumentException e)
             {
@@ -282,7 +360,7 @@ namespace System.IO
         {
             if (_stream == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+                throw Error.GetFileNotOpen();
             }
 
             int currPos = 0;
@@ -321,7 +399,7 @@ namespace System.IO
                 n = _stream.Read(_charBytes, 0, readLength);
                 if (n == 0)
                 {
-                    throw new EndOfStreamException(SR.IO_EOF_ReadBeyondEOF);
+                    throw Error.GetEndOfFile();
                 }
 
                 charsRead = _decoder.GetChars(_charBytes, 0, n, _charBuffer, 0);
@@ -363,7 +441,7 @@ namespace System.IO
             }
             if (_stream == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+                throw Error.GetFileNotOpen();
             }
 
             // SafeCritical: index and count have already been verified to be a valid range for the buffer
@@ -374,7 +452,7 @@ namespace System.IO
         {
             if (_stream == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+                throw Error.GetFileNotOpen();
             }
 
             return InternalReadChars(buffer);
@@ -465,88 +543,6 @@ namespace System.IO
             return (buffer.Length - charsRemaining);
         }
 
-        private int InternalReadOneChar()
-        {
-            // I know having a separate InternalReadOneChar method seems a little 
-            // redundant, but this makes a scenario like the security parser code
-            // 20% faster, in addition to the optimizations for UnicodeEncoding I
-            // put in InternalReadChars.   
-            int charsRead = 0;
-            int numBytes = 0;
-            long posSav = posSav = 0;
-
-            if (_stream.CanSeek)
-            {
-                posSav = _stream.Position;
-            }
-
-            if (_charBytes == null)
-            {
-                _charBytes = new byte[MaxCharBytesSize]; //REVIEW: We need at most 2 bytes/char here? 
-            }
-            if (_singleChar == null)
-            {
-                _singleChar = new char[1];
-            }
-
-            while (charsRead == 0)
-            {
-                // We really want to know what the minimum number of bytes per char
-                // is for our encoding.  Otherwise for UnicodeEncoding we'd have to
-                // do ~1+log(n) reads to read n characters.
-                // Assume 1 byte can be 1 char unless _2BytesPerChar is true.
-                numBytes = _2BytesPerChar ? 2 : 1;
-
-                int r = _stream.ReadByte();
-                _charBytes[0] = (byte)r;
-                if (r == -1)
-                {
-                    numBytes = 0;
-                }
-                if (numBytes == 2)
-                {
-                    r = _stream.ReadByte();
-                    _charBytes[1] = (byte)r;
-                    if (r == -1)
-                    {
-                        numBytes = 1;
-                    }
-                }
-
-                if (numBytes == 0)
-                {
-                    // Console.WriteLine("Found no bytes.  We're outta here.");
-                    return -1;
-                }
-
-                Debug.Assert(numBytes == 1 || numBytes == 2, "BinaryReader::InternalReadOneChar assumes it's reading one or 2 bytes only.");
-
-                try
-                {
-                    charsRead = _decoder.GetChars(_charBytes, 0, numBytes, _singleChar, 0);
-                }
-                catch
-                {
-                    // Handle surrogate char 
-
-                    if (_stream.CanSeek)
-                    {
-                        _stream.Seek((posSav - _stream.Position), SeekOrigin.Current);
-                    }
-                    // else - we can't do much here
-
-                    throw;
-                }
-
-                Debug.Assert(charsRead < 2, "InternalReadOneChar - assuming we only got 0 or 1 char, not 2!");
-                //                Console.WriteLine("That became: " + charsRead + " characters.");
-            }
-
-            Debug.Assert(charsRead != 0);
-
-            return _singleChar[0];
-        }
-
         public virtual char[] ReadChars(int count)
         {
             if (count < 0)
@@ -555,7 +551,7 @@ namespace System.IO
             }
             if (_stream == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+                throw Error.GetFileNotOpen();
             }
 
             if (count == 0)
@@ -596,7 +592,7 @@ namespace System.IO
             }
             if (_stream == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+                throw Error.GetFileNotOpen();
             }
 
             return _stream.Read(buffer, index, count);
@@ -606,7 +602,7 @@ namespace System.IO
         {
             if (_stream == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+                throw Error.GetFileNotOpen();
             }
 
             return _stream.Read(buffer);
@@ -665,7 +661,7 @@ namespace System.IO
 
             if (_stream == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+                throw Error.GetFileNotOpen();
             }
 
             // Need to find a good threshold for calling ReadByte() repeatedly
@@ -676,7 +672,7 @@ namespace System.IO
                 n = _stream.ReadByte();
                 if (n == -1)
                 {
-                    throw new EndOfStreamException(SR.IO_EOF_ReadBeyondEOF);
+                    throw Error.GetEndOfFile();
                 }
 
                 _buffer[0] = (byte)n;
@@ -688,7 +684,7 @@ namespace System.IO
                 n = _stream.Read(_buffer, bytesRead, numBytes - bytesRead);
                 if (n == 0)
                 {
-                    throw new EndOfStreamException(SR.IO_EOF_ReadBeyondEOF);
+                    throw Error.GetEndOfFile();
                 }
                 bytesRead += n;
             } while (bytesRead < numBytes);

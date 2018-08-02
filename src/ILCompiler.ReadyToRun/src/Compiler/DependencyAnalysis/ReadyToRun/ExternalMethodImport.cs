@@ -33,7 +33,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public MethodDesc Method => _methodDesc;
 
-        int ISortableSymbolNode.ClassCode => 458823351;
+        public override int ClassCode => 458823351;
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {

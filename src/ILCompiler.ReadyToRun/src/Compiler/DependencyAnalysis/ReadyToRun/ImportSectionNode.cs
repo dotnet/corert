@@ -42,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override bool StaticDependenciesAreComputed => true;
 
-        protected override int ClassCode => -62839441;
+        public override int ClassCode => -62839441;
 
         public bool ShouldSkipEmittingTable(NodeFactory factory)
         {

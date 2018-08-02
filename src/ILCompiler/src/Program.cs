@@ -51,6 +51,7 @@ namespace ILCompiler
         private string _mapFileName;
         private string _metadataLogFileName;
         private bool _noMetadataBlocking;
+        private bool _completeTypesMetadata;
 
         private string _singleMethodTypeName;
         private string _singleMethodName;
@@ -63,6 +64,8 @@ namespace ILCompiler
         private IReadOnlyList<string> _initAssemblies = Array.Empty<string>();
 
         private IReadOnlyList<string> _appContextSwitches = Array.Empty<string>();
+
+        private IReadOnlyList<string> _runtimeOptions = Array.Empty<string>();
 
         private bool _help;
 
@@ -159,12 +162,14 @@ namespace ILCompiler
                 syntax.DefineOption("map", ref _mapFileName, "Generate a map file");
                 syntax.DefineOption("metadatalog", ref _metadataLogFileName, "Generate a metadata log file");
                 syntax.DefineOption("nometadatablocking", ref _noMetadataBlocking, "Ignore metadata blocking for internal implementation details");
+                syntax.DefineOption("completetypemetadata", ref _completeTypesMetadata, "Generate complete metadata for types");
                 syntax.DefineOption("scan", ref _useScanner, "Use IL scanner to generate optimized code (implied by -O)");
                 syntax.DefineOption("noscan", ref _noScanner, "Do not use IL scanner to generate optimized code");
                 syntax.DefineOption("ildump", ref _ilDump, "Dump IL assembly listing for compiler-generated IL");
                 syntax.DefineOption("stacktracedata", ref _emitStackTraceData, "Emit data to support generating stack trace strings at runtime");
                 syntax.DefineOptionList("initassembly", ref _initAssemblies, "Assembly(ies) with a library initializer");
                 syntax.DefineOptionList("appcontextswitch", ref _appContextSwitches, "System.AppContext switches to set");
+                syntax.DefineOptionList("runtimeopt", ref _runtimeOptions, "Runtime options to set");
 
                 syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
                 syntax.DefineOption("targetos", ref _targetOSStr, "Target OS for cross compilation");
@@ -280,7 +285,8 @@ namespace ILCompiler
 
             // TODO: compiler switch for SIMD support?
             var simdVectorLength = (_isCppCodegen || _isWasmCodegen) ? SimdVectorLength.None : SimdVectorLength.Vector128Bit;
-            var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, TargetAbi.CoreRT, simdVectorLength);
+            var targetAbi = _isCppCodegen ? TargetAbi.CppCodegen : TargetAbi.CoreRT;
+            var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, targetAbi, simdVectorLength);
             CompilerTypeSystemContext typeSystemContext = (_isReadyToRunCodeGen
                 ? new ReadyToRunCompilerContext(targetDetails, genericsMode)
                 : new CompilerTypeSystemContext(targetDetails, genericsMode));
@@ -359,6 +365,7 @@ namespace ILCompiler
                     else
                     {
                         compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext)));
+                        compilationRoots.Add(new RuntimeConfigurationRootProvider(_runtimeOptions));
                     }
                 }
 
@@ -412,6 +419,7 @@ namespace ILCompiler
                     // Set owning module of generated native library startup method to compiler generated module,
                     // to ensure the startup method is included in the object file during multimodule mode build
                     compilationRoots.Add(new NativeLibraryInitializerRootProvider(typeSystemContext.GeneratedAssembly, CreateInitializerList(typeSystemContext)));
+                    compilationRoots.Add(new RuntimeConfigurationRootProvider(_runtimeOptions));
                 }
 
                 if (_rdXmlFilePaths.Count > 0)
@@ -457,13 +465,19 @@ namespace ILCompiler
 
             ManifestResourceBlockingPolicy resBlockingPolicy = new NoManifestResourceBlockingPolicy();
 
+            UsageBasedMetadataGenerationOptions metadataGenerationOptions = UsageBasedMetadataGenerationOptions.None;
+            if (_completeTypesMetadata)
+                metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.CompleteTypesOnly;
+
             UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager(
                 compilationGroup,
                 typeSystemContext,
                 mdBlockingPolicy,
                 resBlockingPolicy,
                 _metadataLogFileName,
-                stackTracePolicy);
+                stackTracePolicy,
+                metadataGenerationOptions
+                );
 
             // Unless explicitly opted in at the command line, we enable scanner for retail builds by default.
             // We don't do this for CppCodegen and Wasm, because those codegens are behind.

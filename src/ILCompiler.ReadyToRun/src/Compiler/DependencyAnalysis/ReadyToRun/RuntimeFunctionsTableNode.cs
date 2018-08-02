@@ -54,6 +54,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return runtimeFunctionsBuilder.ToObjectData();
         }
 
-        protected override int ClassCode => -855231428;
+        public override int ClassCode => -855231428;
     }
 }

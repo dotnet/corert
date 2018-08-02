@@ -40,7 +40,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return sb.ToString();
         }
 
-        protected override int ClassCode => 433266948;
+        public override int ClassCode => 433266948;
     }
 
     public class DelayLoadHelperThunk_Obj : DelayLoadHelperThunk

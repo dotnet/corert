@@ -18,9 +18,7 @@ namespace ILCompiler
         /// </summary>
         public static int GetVirtualMethodSlot(NodeFactory factory, MethodDesc method, TypeDesc implType, bool countDictionarySlots = true)
         {
-            // CppCodegen does not yet support sealed vtables.
-
-            if (method.CanMethodBeInSealedVTable() && !factory.IsCppCodegenTemporaryWorkaround)
+            if (method.CanMethodBeInSealedVTable())
             {
                 // If the method is a sealed newslot method, it will be put in the sealed vtable instead of the type's vtable. In this
                 // case, the slot index return should be the index in the sealed vtable, plus the total number of vtable slots.
@@ -71,7 +69,7 @@ namespace ILCompiler
                 int numSealedVTableEntries = 0;
                 for (int slot = 0; slot < virtualSlots.Count; slot++)
                 {
-                    if (virtualSlots[slot].CanMethodBeInSealedVTable() && !factory.IsCppCodegenTemporaryWorkaround)
+                    if (virtualSlots[slot].CanMethodBeInSealedVTable())
                     {
                         numSealedVTableEntries++;
                         continue;
@@ -133,7 +131,7 @@ namespace ILCompiler
                 foreach (var vtableMethod in baseVirtualSlots)
                 {
                     // Methods in the sealed vtable should be excluded from the count
-                    if (vtableMethod.CanMethodBeInSealedVTable() && !factory.IsCppCodegenTemporaryWorkaround)
+                    if (vtableMethod.CanMethodBeInSealedVTable())
                         continue;
                     baseSlots++;
                 }

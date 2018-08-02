@@ -742,7 +742,7 @@ namespace System.Runtime.InteropServices
                 else
                     *unsafe_stringRepresentation = McgMarshal.StringToHString(stringRepresentation);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (McgMarshal.PropagateException(ex))
             {
                 return McgMarshal.GetHRForExceptionWinRT(ex);
             }
@@ -1214,7 +1214,7 @@ namespace System.Runtime.InteropServices
 
                 return hr;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (McgMarshal.PropagateException(ex))
             {
                 return McgMarshal.GetHRForExceptionWinRT(ex);
             }
@@ -1443,7 +1443,7 @@ namespace System.Runtime.InteropServices
                 *pResult = (IntPtr)((IActivationFactoryInternal)target).ActivateInstance();
                 return Interop.COM.S_OK;
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 *pResult = default(IntPtr);
                 return McgMarshal.GetHRForExceptionWinRT(hrExcep);
@@ -1513,7 +1513,7 @@ namespace System.Runtime.InteropServices
                 ((IManagedActivationFactory)ComCallableObject.GetTarget(pComThis)).RunClassConstructor();
                 return Interop.COM.S_OK;
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 return McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }

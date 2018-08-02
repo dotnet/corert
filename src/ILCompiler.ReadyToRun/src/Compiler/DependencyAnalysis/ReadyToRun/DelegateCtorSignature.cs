@@ -38,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _targetMethodToken = targetMethodToken;
         }
 
-        protected override int ClassCode => 99885741;
+        public override int ClassCode => 99885741;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -71,7 +71,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append($@"DelegateCtor({_delegateType} -> {_targetMethod.Method})");
         }
 
-        protected override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             DelegateCtorSignature otherSignature = (DelegateCtorSignature)other;
             int result = _delegateTypeToken.CompareTo(otherSignature._delegateTypeToken);

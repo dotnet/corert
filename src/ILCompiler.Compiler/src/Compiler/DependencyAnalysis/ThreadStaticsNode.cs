@@ -20,7 +20,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public ThreadStaticsNode(MetadataType type, NodeFactory factory)
         {
-            Debug.Assert(factory.Target.Abi == TargetAbi.CoreRT);
+            Debug.Assert(factory.Target.Abi == TargetAbi.CoreRT || factory.Target.Abi == TargetAbi.CppCodegen);
             _type = type;
         }
 
@@ -76,9 +76,9 @@ namespace ILCompiler.DependencyAnalysis
             builder.EmitPointerReloc(GetGCStaticEETypeNode(factory));
         }
 
-        protected internal override int ClassCode => 2091208431;
+        public override int ClassCode => 2091208431;
 
-        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return comparer.Compare(_type, ((ThreadStaticsNode)other)._type);
         }

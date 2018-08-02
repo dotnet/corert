@@ -1,8 +1,6 @@
 @echo off
 setlocal
 
-rem Enable Server GC for this test
-set RH_UseServerGC=1
 "%1\%2"
 set ErrorCode=%ERRORLEVEL%
 IF "%ErrorCode%"=="100" (

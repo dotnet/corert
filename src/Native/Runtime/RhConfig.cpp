@@ -34,13 +34,19 @@ UInt32 RhConfig::ReadConfigValue(_In_z_ const TCHAR *wszName, UInt32 uiDefaultVa
 
     UInt32 cchResult = 0;
 
-#ifdef RH_ENVIRONMENT_VARIABLE_CONFIG_ENABLED
+#ifdef FEATURE_ENVIRONMENT_VARIABLE_CONFIG
     cchResult = PalGetEnvironmentVariable(wszName, wszBuffer, cchBuffer);
-#endif // RH_ENVIRONMENT_VARIABLE_CONFIG_ENABLED
+#endif // FEATURE_ENVIRONMENT_VARIABLE_CONFIG
 
     //if the config key wasn't found in the environment 
     if ((cchResult == 0) || (cchResult >= cchBuffer))
         cchResult = GetIniVariable(wszName, wszBuffer, cchBuffer);
+
+#ifdef FEATURE_EMBEDDED_CONFIG
+    // if the config key wasn't found in the ini file
+    if ((cchResult == 0) || (cchResult >= cchBuffer))
+        cchResult = GetEmbeddedVariable(wszName, wszBuffer, cchBuffer);
+#endif // FEATURE_EMBEDDED_CONFIG
 
     if ((cchResult == 0) || (cchResult >= cchBuffer))
         return uiDefaultValue; // not found, return default
@@ -90,10 +96,40 @@ UInt32 RhConfig::GetIniVariable(_In_z_ const TCHAR* configName, _Out_writes_all_
         return 0;
     }
 
+    return GetConfigVariable(configName, (ConfigPair*)g_iniSettings, outputBuffer, cchOutputBuffer);
+}
+
+#ifdef FEATURE_EMBEDDED_CONFIG
+UInt32 RhConfig::GetEmbeddedVariable(_In_z_ const TCHAR* configName, _Out_writes_all_(cchOutputBuffer) TCHAR* outputBuffer, _In_ UInt32 cchOutputBuffer)
+{
+    //the buffer needs to be big enough to read the value buffer + null terminator
+    if (cchOutputBuffer < CONFIG_VAL_MAXLEN + 1)
+    {
+        return 0;
+    }
+
+    //if we haven't read the config yet try to read
+    if (g_embeddedSettings == NULL)
+    {
+        ReadEmbeddedSettings();
+    }
+
+    //if the config wasn't read or reading failed return 0 immediately
+    if (g_embeddedSettings == CONFIG_INI_NOT_AVAIL)
+    {
+        return 0;
+    }
+
+    return GetConfigVariable(configName, (ConfigPair*)g_embeddedSettings, outputBuffer, cchOutputBuffer);
+}
+#endif // FEATURE_EMBEDDED_CONFIG
+
+UInt32 RhConfig::GetConfigVariable(_In_z_ const TCHAR* configName, const ConfigPair* configPairs, _Out_writes_all_(cchOutputBuffer) TCHAR* outputBuffer, _In_ UInt32 cchOutputBuffer)
+{
     //find the first name which matches (case insensitive to be compat with environment variable counterpart)
     for (int iSettings = 0; iSettings < RCV_Count; iSettings++)
     {
-        if (_tcsicmp(configName, ((ConfigPair*)g_iniSettings)[iSettings].Key) == 0)
+        if (_tcsicmp(configName, configPairs[iSettings].Key) == 0)
         {
             bool nullTerm = FALSE;
 
@@ -101,7 +137,7 @@ UInt32 RhConfig::GetIniVariable(_In_z_ const TCHAR* configName, _Out_writes_all_
 
             for (iValue = 0; (iValue < CONFIG_VAL_MAXLEN + 1) && (iValue < (Int32)cchOutputBuffer); iValue++)
             {
-                outputBuffer[iValue] = ((ConfigPair*)g_iniSettings)[iSettings].Value[iValue];
+                outputBuffer[iValue] = configPairs[iSettings].Value[iValue];
 
                 if (outputBuffer[iValue] == '\0')
                 {
@@ -217,6 +253,81 @@ void RhConfig::ReadConfigIni()
 
     return;
 }
+
+#ifdef FEATURE_EMBEDDED_CONFIG
+struct CompilerEmbeddedSettingsBlob
+{
+    UInt32 Size;
+    char Data[1];
+};
+
+extern "C" CompilerEmbeddedSettingsBlob g_compilerEmbeddedSettingsBlob;
+
+void RhConfig::ReadEmbeddedSettings()
+{
+    if (g_embeddedSettings == NULL)
+    {
+        //if reading the file contents failed set g_embeddedSettings to CONFIG_INI_NOT_AVAIL
+        if (g_compilerEmbeddedSettingsBlob.Size == 0)
+        {
+            //only set if another thread hasn't initialized the buffer yet, otherwise ignore and let the first setter win
+            PalInterlockedCompareExchangePointer(&g_embeddedSettings, CONFIG_INI_NOT_AVAIL, NULL);
+
+            return;
+        }
+
+        ConfigPair* iniBuff = new (nothrow) ConfigPair[RCV_Count];
+        if (iniBuff == NULL)
+        {
+            //only set if another thread hasn't initialized the buffer yet, otherwise ignore and let the first setter win
+            PalInterlockedCompareExchangePointer(&g_embeddedSettings, CONFIG_INI_NOT_AVAIL, NULL);
+
+            return;
+        }
+
+        UInt32 iBuff = 0;
+        UInt32 iIniBuff = 0;
+        char* currLine;
+
+        //while we haven't reached the max number of config pairs, or the end of the file, read the next line
+        while (iIniBuff < RCV_Count && iBuff < g_compilerEmbeddedSettingsBlob.Size)
+        {
+            currLine = &g_compilerEmbeddedSettingsBlob.Data[iBuff];
+
+            //find the end of the line
+            while ((g_compilerEmbeddedSettingsBlob.Data[iBuff] != '\0') && (iBuff < g_compilerEmbeddedSettingsBlob.Size))
+                iBuff++;
+
+            //parse the line
+            //only increment iIniBuff if the parsing succeeded otherwise reuse the config struct
+            if (ParseConfigLine(&iniBuff[iIniBuff], currLine))
+            {
+                iIniBuff++;
+            }
+
+            //advance to the next line;
+            iBuff++;
+        }
+
+        //initialize the remaining config pairs to "\0"
+        while (iIniBuff < RCV_Count)
+        {
+            iniBuff[iIniBuff].Key[0] = '\0';
+            iniBuff[iIniBuff].Value[0] = '\0';
+            iIniBuff++;
+        }
+
+        //if another thread initialized first let the first setter win
+        //delete the iniBuff to avoid leaking memory
+        if (PalInterlockedCompareExchangePointer(&g_embeddedSettings, iniBuff, NULL) != NULL)
+        {
+            delete[] iniBuff;
+        }
+    }
+
+    return;
+}
+#endif // FEATURE_EMBEDDED_CONFIG
 
 //returns the path to the runtime configuration ini
 _Ret_maybenull_z_ TCHAR* RhConfig::GetConfigPath()

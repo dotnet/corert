@@ -86,9 +86,9 @@ namespace ILCompiler.DependencyAnalysis
             return this.GetMangledName(factory.NameMangler);
         }
 
-        int ISortableSymbolNode.ClassCode => ClassCode;
+        public override int ClassCode => ClassCode;
 
-        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return CompareToImpl((ObjectNode)other, comparer);
         }
@@ -176,9 +176,9 @@ namespace ILCompiler.DependencyAnalysis
             _owningType = owningType;
         }
 
-        protected internal override int ClassCode => 889700584;
+        public override int ClassCode => 889700584;
 
-        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return comparer.Compare(_owningType, ((TypeGenericDictionaryNode)other)._owningType);
         }
@@ -277,9 +277,9 @@ namespace ILCompiler.DependencyAnalysis
             _owningMethod = owningMethod;
         }
 
-        protected internal override int ClassCode => -1245704203;
+        public override int ClassCode => -1245704203;
 
-        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return comparer.Compare(_owningMethod, ((MethodGenericDictionaryNode)other)._owningMethod);
         }

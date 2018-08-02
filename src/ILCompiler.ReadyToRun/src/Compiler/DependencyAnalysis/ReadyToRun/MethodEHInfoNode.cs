@@ -27,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override bool IsShareable => true;
 
-        protected override int ClassCode => 577012239;
+        public override int ClassCode => 577012239;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {

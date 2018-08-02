@@ -23,6 +23,6 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        protected internal override int ClassCode => 737788182;
+        public override int ClassCode => 737788182;
     }
 }

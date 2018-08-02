@@ -90,10 +90,6 @@ namespace ILCompiler.DependencyAnalysis
 
             _sealedVTableEntries = new List<MethodDesc>();
 
-            // Cpp codegen does not support sealed vtables
-            if (factory.IsCppCodegenTemporaryWorkaround)
-                return true;
-
             IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(declType).Slots;
 
             for (int i = 0; i < virtualSlots.Count; i++)
@@ -153,15 +149,20 @@ namespace ILCompiler.DependencyAnalysis
                 for (int i = 0; i < _sealedVTableEntries.Count; i++)
                 {
                     MethodDesc canonImplMethod = _sealedVTableEntries[i].GetCanonMethodTarget(CanonicalFormKind.Specific);
-                    objData.EmitReloc(factory.MethodEntrypoint(canonImplMethod, _sealedVTableEntries[i].OwningType.IsValueType), RelocType.IMAGE_REL_BASED_RELPTR32);
+                    IMethodNode relocTarget = factory.MethodEntrypoint(canonImplMethod, _sealedVTableEntries[i].OwningType.IsValueType);
+
+                    if (factory.Target.SupportsRelativePointers)
+                        objData.EmitReloc(relocTarget, RelocType.IMAGE_REL_BASED_RELPTR32);
+                    else
+                        objData.EmitPointerReloc(relocTarget);
                 }
             }
 
             return objData.ToObjectData();
         }
 
-        protected internal override int ClassCode => 1632890252;
-        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int ClassCode => 1632890252;
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return comparer.Compare(_type, ((SealedVTableNode)other)._type);
         }

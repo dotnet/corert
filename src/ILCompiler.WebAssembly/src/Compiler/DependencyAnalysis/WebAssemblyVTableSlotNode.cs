@@ -76,9 +76,9 @@ namespace ILCompiler.DependencyAnalysis
             return objData.ToObjectData();
         }
 
-        protected override int ClassCode => 0;
+        public override int ClassCode => 0;
 
-        protected override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return comparer.Compare(_targetMethod, ((WebAssemblyVTableSlotNode)other)._targetMethod);
         }

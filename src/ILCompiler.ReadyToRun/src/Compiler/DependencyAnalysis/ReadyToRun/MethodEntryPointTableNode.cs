@@ -240,6 +240,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 definedSymbols: new ISymbolDefinitionNode[] { this });
         }
 
-        protected override int ClassCode => 787556329;
+        public override int ClassCode => 787556329;
     }
 }
