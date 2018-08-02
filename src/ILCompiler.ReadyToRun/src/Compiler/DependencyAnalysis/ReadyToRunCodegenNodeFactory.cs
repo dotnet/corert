@@ -533,6 +533,21 @@ namespace ILCompiler.DependencyAnalysis
             return genericDictionary;
         }
 
+        Dictionary<TypeDesc, ISymbolNode> _constructedTypeSymbols = new Dictionary<TypeDesc, ISymbolNode>();
+
+        public ISymbolNode ConstructedTypeSymbol(TypeDesc type, ModuleToken token)
+        {
+            ISymbolNode symbol;
+            if (!_constructedTypeSymbols.TryGetValue(type, out symbol))
+            {
+                symbol = new PrecodeHelperImport(
+                    this,
+                    new TypeFixupSignature(this, ReadyToRunFixupKind.READYTORUN_FIXUP_TypeDictionary, type, token));
+                _constructedTypeSymbols.Add(type, symbol);
+            }
+            return symbol;
+        }
+
         struct MethodAndFixupKind : IEquatable<MethodAndFixupKind>
         {
             public readonly MethodDesc Method;
