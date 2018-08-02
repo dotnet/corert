@@ -81,7 +81,11 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                 LowLevelList<QTypeDefRefOrSpec> constraints = new LowLevelList<QTypeDefRefOrSpec>();
                 foreach (Handle constraintHandle in _genericParameter.Constraints)
                 {
-                    constraints.Add(new QTypeDefRefOrSpec(reader, constraintHandle));
+                    // We're skipping custom modifiers here because Roslyn generates
+                    // a modifier for the "unmanaged" constraint. This doesn't conform to the
+                    // ECMA-335 spec, but we need to deal with it. The modifier is not visible
+                    // to reflection.
+                    constraints.Add(new QTypeDefRefOrSpec(reader, constraintHandle.SkipCustomModifiers(reader)));
                 }
                 return constraints.ToArray();
             }
