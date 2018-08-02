@@ -8,10 +8,16 @@
     <SkipSigning>true</SkipSigning>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <CopyNuGetImplementations>false</CopyNuGetImplementations>
+    
+    <!-- Supress warnings that often happen in repro code -->
+    <NoWarn>169;414</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.App">
       <Version>$(MicrosoftNETCoreAppPackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
+      <Version>4.5.1</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
