@@ -32,10 +32,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
-            dataBuilder.AddSymbol(this);
 
-            dataBuilder.EmitByte((byte)_fixupKind);
-            dataBuilder.EmitTypeSignature(_typeDesc, _typeToken, _typeToken.SignatureContext(_factory));
+            if (!relocsOnly)
+            {
+                dataBuilder.AddSymbol(this);
+
+                dataBuilder.EmitByte((byte)_fixupKind);
+                dataBuilder.EmitTypeSignature(_typeDesc, _typeToken, _typeToken.SignatureContext(_factory));
+            }
 
             return dataBuilder.ToObjectData();
         }

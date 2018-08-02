@@ -807,7 +807,7 @@ namespace ILCompiler.DependencyAnalysis
         /// gets lazily initialized with all input module references the first time the reverse lookup is
         /// needed.
         /// </summary>
-        private Dictionary<TypeDesc, ModuleToken> _typeToRefTokens = null;
+        private Dictionary<EcmaType, ModuleToken> _typeToRefTokens = null;
 
         public ModuleToken GetModuleTokenForType(EcmaType type)
         {
@@ -818,7 +818,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_typeToRefTokens == null)
             {
-                _typeToRefTokens = new Dictionary<TypeDesc, ModuleToken>();
+                _typeToRefTokens = new Dictionary<EcmaType, ModuleToken>();
                 foreach (KeyValuePair<string, string> namePathPair in TypeSystemContext.InputFilePaths)
                 {
                     EcmaModule module = TypeSystemContext.GetModuleFromPath(namePathPair.Value);
@@ -826,8 +826,18 @@ namespace ILCompiler.DependencyAnalysis
                     MetadataReader metadataReader = peReader.GetMetadataReader();
                     foreach (TypeReferenceHandle typeRefHandle in metadataReader.TypeReferences)
                     {
-                        TypeDesc resolvedType = (TypeDesc)module.GetObject((EntityHandle)typeRefHandle);
-                        _typeToRefTokens[resolvedType] = new ModuleToken(module, (mdToken)MetadataTokens.GetToken(typeRefHandle));
+                        try
+                        {
+                            EcmaType resolvedType = module.GetObject((EntityHandle)typeRefHandle) as EcmaType;
+                            if (resolvedType != null)
+                            {
+                                _typeToRefTokens[resolvedType] = new ModuleToken(module, (mdToken)MetadataTokens.GetToken(typeRefHandle));
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            // Ignore token resolution errors
+                        }
                     }
                 }
             }

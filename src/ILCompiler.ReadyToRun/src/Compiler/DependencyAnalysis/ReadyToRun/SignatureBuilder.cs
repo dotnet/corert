@@ -179,127 +179,109 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void EmitTypeSignature(TypeDesc typeDesc, ModuleToken token, SignatureContext context)
         {
-            if (typeDesc is InstantiatedType instantiatedType)
+            if (typeDesc.HasInstantiation && !typeDesc.IsGenericDefinition)
             {
-                EmitInstantiatedTypeSignature(instantiatedType, token, context);
+                EmitInstantiatedTypeSignature((InstantiatedType)typeDesc, token, context);
                 return;
             }
 
-            if (typeDesc is PointerType pointerType)
+            switch (typeDesc.Category)
             {
-                EmitPointerTypeSignature(pointerType, token, context);
-                return;
-            }
+                case TypeFlags.SzArray:
+                    EmitSzArrayTypeSignature((ArrayType)typeDesc, token, context);
+                    return;
 
-            if (typeDesc is ArrayType arrayType)
-            {
-                EmitArrayTypeSignature(arrayType, token, context);
-                return;
-            }
+                case TypeFlags.Pointer:
+                    EmitPointerTypeSignature((PointerType)typeDesc, token, context);
+                    return;
 
-            CorElementType elementType;
-            if (typeDesc.IsPrimitive)
-            {
-                switch (typeDesc.Category)
-                {
-                    case TypeFlags.Void:
-                        elementType = CorElementType.ELEMENT_TYPE_VOID;
-                        break;
+                case TypeFlags.Void:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_VOID);
+                    return;
 
-                    case TypeFlags.Boolean:
-                        elementType = CorElementType.ELEMENT_TYPE_BOOLEAN;
-                        break;
+                case TypeFlags.Boolean:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_BOOLEAN);
+                    return;
 
-                    case TypeFlags.Char:
-                        elementType = CorElementType.ELEMENT_TYPE_CHAR;
-                        break;
+                case TypeFlags.Char:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_CHAR);
+                    return;
 
-                    case TypeFlags.SByte:
-                        elementType = CorElementType.ELEMENT_TYPE_I1;
-                        break;
+                case TypeFlags.SByte:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_I1);
+                    return;
 
-                    case TypeFlags.Byte:
-                        elementType = CorElementType.ELEMENT_TYPE_U1;
-                        break;
+                case TypeFlags.Byte:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_U1);
+                    return;
 
-                    case TypeFlags.Int16:
-                        elementType = CorElementType.ELEMENT_TYPE_I2;
-                        break;
+                case TypeFlags.Int16:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_I2);
+                    return;
 
-                    case TypeFlags.UInt16:
-                        elementType = CorElementType.ELEMENT_TYPE_U2;
-                        break;
+                case TypeFlags.UInt16:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_U2);
+                    return;
 
-                    case TypeFlags.Int32:
-                        elementType = CorElementType.ELEMENT_TYPE_I4;
-                        break;
+                case TypeFlags.Int32:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_I4);
+                    return;
 
-                    case TypeFlags.UInt32:
-                        elementType = CorElementType.ELEMENT_TYPE_U4;
-                        break;
+                case TypeFlags.UInt32:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_U4);
+                    return;
 
-                    case TypeFlags.Int64:
-                        elementType = CorElementType.ELEMENT_TYPE_I8;
-                        break;
+                case TypeFlags.Int64:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_I8);
+                    return;
 
-                    case TypeFlags.UInt64:
-                        elementType = CorElementType.ELEMENT_TYPE_U8;
-                        break;
+                case TypeFlags.UInt64:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_U8);
+                    return;
 
-                    case TypeFlags.IntPtr:
-                        elementType = CorElementType.ELEMENT_TYPE_I;
-                        break;
+                case TypeFlags.IntPtr:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_I);
+                    return;
 
-                    case TypeFlags.UIntPtr:
-                        elementType = CorElementType.ELEMENT_TYPE_U;
-                        break;
+                case TypeFlags.UIntPtr:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_U);
+                    return;
 
-                    case TypeFlags.Single:
-                        elementType = CorElementType.ELEMENT_TYPE_R4;
-                        break;
+                case TypeFlags.Single:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_R4);
+                    return;
 
-                    case TypeFlags.Double:
-                        elementType = CorElementType.ELEMENT_TYPE_R4;
-                        break;
+                case TypeFlags.Double:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_R4);
+                    return;
 
-                    default:
-                        throw new NotImplementedException();
-                }
+                case TypeFlags.Class:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_CLASS);
+                    EmitTypeToken((EcmaType)typeDesc, token, context);
+                    return;
 
-                EmitByte((byte)elementType);
-                return;
-            }
+                case TypeFlags.ValueType:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_VALUETYPE);
+                    EmitTypeToken((EcmaType)typeDesc, token, context);
+                    return;
 
-            if (typeDesc.IsValueType)
-            {
-                elementType = CorElementType.ELEMENT_TYPE_VALUETYPE;
-            }
-            else
-            {
-                elementType = CorElementType.ELEMENT_TYPE_CLASS;
-            }
-
-            // TODO: module override for tokens with external context
-            EmitElementType(elementType);
-
-            if (typeDesc is EcmaType ecmaType)
-            {
-                if (token.Module == null)
-                {
-                    token = context.GetModuleTokenForType(ecmaType);
-                }
-            }
-
-            switch (token.TokenType)
-            {
-                case CorTokenType.mdtTypeDef:
-                case CorTokenType.mdtTypeRef:
-                    EmitToken(token.Token);
+                case TypeFlags.Nullable:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_VALUETYPE);
+                    EmitTypeToken((EcmaType)typeDesc, token, context);
                     return;
 
                 default:
                     throw new NotImplementedException();
             }
+        }
+
+        private void EmitTypeToken(EcmaType type, ModuleToken token, SignatureContext context)
+        {
+            if (token.IsNull)
+            {
+                token = context.GetModuleTokenForType(type);
+            }
+            EmitToken(token.Token);
         }
 
         private void EmitInstantiatedTypeSignature(InstantiatedType type, ModuleToken token, SignatureContext context)
@@ -319,15 +301,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             EmitTypeSignature(type.ParameterType, token, context);
         }
 
-        private void EmitArrayTypeSignature(ArrayType type, ModuleToken token, SignatureContext context)
+        private void EmitSzArrayTypeSignature(ArrayType type, ModuleToken token, SignatureContext context)
         {
-            if (type.IsSzArray)
-            {
-                EmitElementType(CorElementType.ELEMENT_TYPE_SZARRAY);
-                EmitTypeSignature(type.ElementType, token, context);
-                return;
-            }
-            throw new NotImplementedException();
+            Debug.Assert(type.IsSzArray);
+            EmitElementType(CorElementType.ELEMENT_TYPE_SZARRAY);
+            EmitTypeSignature(type.ElementType, token, context);
         }
 
         public void EmitMethodSignature(MethodDesc method, ModuleToken token, SignatureContext context)

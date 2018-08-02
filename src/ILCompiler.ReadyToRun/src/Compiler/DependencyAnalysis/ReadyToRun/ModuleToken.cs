@@ -14,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// <summary>
     /// This helper structure encapsulates a module-qualified token.
     /// </summary>
-    public struct ModuleToken
+    public struct ModuleToken : IEquatable<ModuleToken>
     {
         public readonly EcmaModule Module;
         public readonly mdToken Token;
@@ -24,6 +24,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             Module = module;
             Token = token;
         }
+
+        public bool IsNull => Module == null;
 
         public override int GetHashCode()
         {
@@ -38,8 +40,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override bool Equals(object obj)
         {
             return obj is ModuleToken moduleToken &&
-                Module == moduleToken.Module &&
-                Token == moduleToken.Token;
+                Equals(moduleToken);
+        }
+
+        public bool Equals(ModuleToken moduleToken)
+        {
+            return Module == moduleToken.Module && Token == moduleToken.Token;
         }
 
         public int CompareTo(ModuleToken other)
