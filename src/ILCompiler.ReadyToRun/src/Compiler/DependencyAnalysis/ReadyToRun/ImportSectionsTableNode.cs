@@ -33,6 +33,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        protected override int ClassCode => 787556329;
+        public override int ClassCode => 787556329;
     }
 }

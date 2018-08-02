@@ -14,11 +14,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public abstract void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb);
         public int Offset => 0;
-        int ISortableSymbolNode.ClassCode => ClassCode;
+        public override int ClassCode => ClassCode;
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return CompareToImpl((SortableDependencyNode)other, comparer);
         }

@@ -16,7 +16,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _token = token;
         }
 
-        protected override int ClassCode => 324832559;
+        public override int ClassCode => 324832559;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -37,7 +37,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append("StringImportSignature: " + _token.ToString());
         }
 
-        protected override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return _token.CompareTo(((StringImportSignature)other)._token);
         }

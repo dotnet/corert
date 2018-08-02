@@ -41,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _signatureKind = signatureKind;
         }
 
-        protected override int ClassCode => 150063499;
+        public override int ClassCode => 150063499;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -77,7 +77,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append($@"MethodFixupSignature({_fixupKind.ToString()} {_methodToken}): {_methodDesc.ToString()}");
         }
 
-        protected override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return _methodToken.CompareTo(((MethodFixupSignature)other)._methodToken);
         }

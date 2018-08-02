@@ -78,11 +78,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return sb.ToString();
         }
 
-        private const int ClassCodeValue = 315213488;
-
-        int ISortableSymbolNode.ClassCode => ClassCodeValue;
-
-        protected override int ClassCode => ClassCodeValue;
+        public override int ClassCode => 315213488;
 
         public override ObjectNodeSection Section
         {

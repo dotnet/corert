@@ -11,7 +11,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
         }
 
-        protected override int ClassCode => 316678892;
+        public override int ClassCode => 316678892;
 
         public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
 

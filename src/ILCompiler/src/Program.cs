@@ -358,7 +358,6 @@ namespace ILCompiler
 
                 if (entrypointModule != null)
                 {
-<<<<<<< HEAD
                     if (_isReadyToRunCodeGen)
                     {
                         compilationRoots.Add(new ManagedEntryPointRootProvider(entrypointModule));
@@ -366,11 +365,8 @@ namespace ILCompiler
                     else
                     {
                         compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext)));
+                        compilationRoots.Add(new RuntimeConfigurationRootProvider(_runtimeOptions));
                     }
-=======
-                    compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext)));
-                    compilationRoots.Add(new RuntimeConfigurationRootProvider(_runtimeOptions));
->>>>>>> dotnet/master
                 }
 
                 if (_isReadyToRunCodeGen)

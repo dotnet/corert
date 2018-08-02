@@ -26,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _typeToken = typeToken;
         }
 
-        protected override int ClassCode => 255607008;
+        public override int ClassCode => 255607008;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -46,7 +46,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append($@"TypeFixupSignature({_fixupKind.ToString()}): {_typeDesc.ToString()}; token: {_typeToken})");
         }
 
-        protected override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return _typeToken.CompareTo(((TypeFixupSignature)other)._typeToken);
         }

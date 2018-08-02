@@ -20,7 +20,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _token = token;
         }
 
-        protected override int ClassCode => throw new NotImplementedException();
+        public override int ClassCode => throw new NotImplementedException();
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
         {

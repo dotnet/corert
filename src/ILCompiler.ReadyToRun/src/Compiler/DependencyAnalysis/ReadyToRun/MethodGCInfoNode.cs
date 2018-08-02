@@ -26,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         int ISymbolNode.Offset => 0;
 
-        protected override int ClassCode => 892356612;
+        public override int ClassCode => 892356612;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {

@@ -39,9 +39,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private const int ClassCodeValue = 667823013;
 
-        protected override int ClassCode => ClassCodeValue;
-
-        int ISortableSymbolNode.ClassCode => ClassCodeValue;
+        public override int ClassCode => ClassCodeValue;
 
         public virtual bool EmitPrecode => Table.EmitPrecode;
 
