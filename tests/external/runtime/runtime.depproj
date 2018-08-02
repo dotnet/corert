@@ -5,7 +5,7 @@
     <RuntimeIdentifiers>$(NuPkgRid)</RuntimeIdentifiers>
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <RidSpecificAssets>true</RidSpecificAssets>
-    <OutputPath>$(CoreClrRuntimePath)</OutputPath>
+    <OutputPath>$(IntermediateOutputRootPath)CoreClrRuntime</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
