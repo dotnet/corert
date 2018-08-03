@@ -8,39 +8,33 @@ namespace System.Reflection
 {
     public class LocalVariableInfo
     {
-        protected LocalVariableInfo()
-        {
-        }
-
-        public virtual bool IsPinned
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public virtual int LocalIndex
-        {
-            get
-            {
-                return 0;
-            }
-        }
+#if CORECLR
+        private RuntimeType _type;
+#endif
+        private bool _isPinned = false;
+        private int _localIndex = 0;
 
         public virtual Type LocalType
-        {
-            get
+        { 
+            get 
             {
-                // Don't laugh - this is really how the desktop behaves if you don't override.
                 Debug.Fail("type must be set!");
+#if CORECLR
+                return _type;
+#else
                 return null;
+#endif                
             }
         }
+        
+        public virtual bool IsPinned => _isPinned;
+        public virtual int LocalIndex => _localIndex;
 
+        protected LocalVariableInfo() { }
+        
         public override string ToString()
         {
-            // Don't laugh - this is really how the desktop behaves if you don't override, including the NullReference when 
+            // This is really how the desktop behaves if you don't override, including the NullReference when 
             // it calls ToString() on LocalType's null return.
             string toString = LocalType.ToString() + " (" + LocalIndex + ")";
 
