@@ -353,8 +353,6 @@ namespace System.Reflection.Runtime.MethodInfos
                 MethodInvoker methodInvoker = _lazyMethodInvoker;
                 if (methodInvoker == null)
                 {
-                    if (ReturnType.IsByRef)
-                        throw new NotSupportedException(SR.NotSupported_ByRefReturn);
                     methodInvoker = _lazyMethodInvoker = this.UncachedMethodInvoker;
                 }
                 return methodInvoker;
