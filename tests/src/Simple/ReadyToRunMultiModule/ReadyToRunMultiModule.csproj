@@ -1,0 +1,16 @@
+<Project DefaultTargets="Build;BuildAllReadyToRunMultiModule" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+	<OutputPath>$(MSBuildProjectDirectory)\bin\$(Configuration)\$(Platform)\</OutputPath>
+    <IntermediateOutputPath>$(MSBuildProjectDirectory)\obj\$(Configuration)\$(Platform)\</IntermediateOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="MultiModuleTestingClass.csproj" />
+  </ItemGroup>
+  
+  <Import Project="BuildFrameworkNativeObjects.proj" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), SimpleTest.targets))\SimpleTest.targets" />
+</Project>

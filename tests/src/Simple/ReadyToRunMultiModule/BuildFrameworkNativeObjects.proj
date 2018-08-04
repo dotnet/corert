@@ -1,0 +1,45 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <IlcCompileDependsOn>ComputeIlcCompileInputs;BuildOneReadyToRunMultiModule;AddModuleDependencies</IlcCompileDependsOn>
+    <IlcMultiModule>true</IlcMultiModule>
+    <NativeIntermediateOutputPath>$(MSBuildProjectDirectory)\obj\$(Configuration)\$(Platform)\</NativeIntermediateOutputPath>
+    <BuildingReadyToRunMultiModule>true</BuildingReadyToRunMultiModule>
+	<ReadyToRunMultiModuleAssembliesPaths>$(MSBuildThisFileDirectory)bin\Debug\x64\MultiModuleTestingClass.dll;$(MSBuildThisFileDirectory)bin\Debug\x64\ReadyToRunMultiModule.exe</ReadyToRunMultiModuleAssembliesPaths>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ReadyToRunMultiModuleAssemblies Include="$(ReadyToRunMultiModuleAssembliesPaths)" />
+  </ItemGroup>
+
+  <Target Name="BuildAllReadyToRunMultiModule"
+    Inputs="@(ReadyToRunMultiModuleAssemblies)"
+    Outputs="@(ReadyToRunMultiModuleAssemblies->'$(NativeIntermediateOutputPath)\%(Filename)$(NativeObjectExt)')"
+	AfterTargets="Build">
+    <ItemGroup>
+      <ProjectToBuild Include="$(MSBuildProjectFullPath)">
+        <AdditionalProperties>
+          LibraryToCompile=%(ReadyToRunMultiModuleAssemblies.Identity)
+        </AdditionalProperties>
+      </ProjectToBuild>
+    </ItemGroup>
+    <MSBuild Projects="@(ProjectToBuild)" Targets="IlcCompile" BuildInParallel="true" />
+  </Target>
+
+  <Target Name="BuildOneReadyToRunMultiModule">
+    <PropertyGroup>
+        <IlcGenerateMetadataLog>true</IlcGenerateMetadataLog>
+    </PropertyGroup>
+    <ItemGroup>
+        <ManagedBinary Include="$(LibraryToCompile)" />
+        <IlcCompileInput Include="@(ManagedBinary)" />
+    </ItemGroup>
+  </Target>
+  
+  <Target Name="AddModuleDependencies">
+    <ItemGroup>
+      <IlcArg Include="-m:%(ReadyToRunMultiModuleAssemblies.Identity)" Condition="'%(ReadyToRunMultiModuleAssemblies.Identity)' != '$(LibraryToCompile)'" />
+    </ItemGroup>
+  </Target>
+  
+</Project>

@@ -130,7 +130,7 @@ See the LICENSE file in the project root for more information.
 
   <Target Name="ComputeIlcCompileInputs" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)" BeforeTargets="Publish">
     <ItemGroup>
-      <ManagedBinary Condition="$(BuildingFrameworkLibrary) != 'true'" Include="$(IntermediateOutputPath)$(TargetName)$(TargetExt)" />
+      <ManagedBinary Condition="$(BuildingFrameworkLibrary) != 'true' and '$(BuildingReadyToRunMultiModule)' != 'true'" Include="$(IntermediateOutputPath)$(TargetName)$(TargetExt)" />
       <IlcCompileInput Include="@(ManagedBinary)" />
       <IlcReference Include="@(DefaultFrameworkAssemblies)" />
     </ItemGroup>
