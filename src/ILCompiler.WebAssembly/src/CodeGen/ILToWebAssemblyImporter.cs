@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
 
 using Internal.TypeSystem;
 using ILCompiler;
@@ -12,8 +14,8 @@ using LLVMSharp;
 using ILCompiler.CodeGen;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.WebAssembly;
 using Internal.TypeSystem.Ecma;
-using System.Linq;
 
 namespace Internal.IL
 {
@@ -35,6 +37,7 @@ namespace Internal.IL
         }
 
         public LLVMModuleRef Module { get; }
+        public LLVMContextRef Context { get; }
         private readonly MethodDesc _method;
         private readonly MethodIL _methodIL;
         private readonly MethodSignature _signature;
@@ -49,6 +52,8 @@ namespace Internal.IL
         private List<SpilledExpressionEntry> _spilledExpressions = new List<SpilledExpressionEntry>();
         private int _pointerSize;
         private readonly byte[] _ilBytes;
+        private EcmaMethodDebugInformation _debugInformation;
+        private LLVMMetadataRef _debugFunction;
 
         /// <summary>
         /// Stack of values pushed onto the IL stack: locals, arguments, values, function pointer, ...
@@ -106,6 +111,12 @@ namespace Internal.IL
             _llvmFunction = GetOrCreateLLVMFunction(mangledName, method.Signature);
             _builder = LLVM.CreateBuilder();
             _pointerSize = compilation.NodeFactory.Target.PointerSize;
+
+            if (_method is EcmaMethod ecmaMethod && ecmaMethod.Module.PdbReader != null)
+            {
+                _debugInformation = new EcmaMethodDebugInformation(ecmaMethod);
+            }
+            Context = LLVM.GetModuleContext(Module);
         }
 
         public void Import()
@@ -398,10 +409,63 @@ namespace Internal.IL
 
         private void StartImportingInstruction()
         {
+            if (_debugInformation != null)
+            {
+                bool foundSequencePoint = false;
+                ILSequencePoint curSequencePoint = default;
+                foreach (var sequencePoint in _debugInformation.GetSequencePoints())
+                {
+                    if(sequencePoint.Offset == _currentOffset)
+                    {
+                        curSequencePoint = sequencePoint;
+                        foundSequencePoint = true;
+                        break;
+                    }
+                    else if (sequencePoint.Offset < _currentOffset)
+                    {
+                        curSequencePoint = sequencePoint;
+                        foundSequencePoint = true;
+                    }
+                }
+
+                if (!foundSequencePoint)
+                {
+                    return;
+                }
+
+                DebugMetadata debugMetadata;
+                if (!_compilation.DebugMetadataMap.TryGetValue(curSequencePoint.Document, out debugMetadata))
+                {
+                    string fullPath = curSequencePoint.Document;
+                    string fileName = Path.GetFileName(fullPath);
+                    string directory = Path.GetDirectoryName(fullPath);
+                    LLVMMetadataRef fileMetadata = LLVMPInvokes.LLVMDIBuilderCreateFile(_compilation.DIBuilder, fullPath, fullPath.Length,
+                        directory, directory.Length);
+
+                    // todo: get the right value for isOptimized
+                    LLVMMetadataRef compileUnitMetadata = LLVMPInvokes.LLVMDIBuilderCreateCompileUnit(_compilation.DIBuilder, LLVMDWARFSourceLanguage.LLVMDWARFSourceLanguageC,
+                        fileMetadata, "ILC", 3, isOptimized: false, String.Empty, 0, 1, String.Empty, 0, LLVMDWARFEmissionKind.LLVMDWARFEmissionFull, 0, false, false);
+                    LLVM.AddNamedMetadataOperand(Module, "llvm.dbg.cu", LLVM.MetadataAsValue(Context, compileUnitMetadata));
+
+                    debugMetadata = new DebugMetadata() { File = fileMetadata, CompileUnit = compileUnitMetadata };
+                    _compilation.DebugMetadataMap[fullPath] = debugMetadata;
+                }
+
+                if(_debugFunction.Pointer == IntPtr.Zero)
+                {
+                    _debugFunction = LLVM.DIBuilderCreateFunction(_compilation.DIBuilder, debugMetadata.CompileUnit, _method.Name, String.Empty, debugMetadata.File,
+                        (uint)_debugInformation.GetSequencePoints().FirstOrDefault().LineNumber, default(LLVMMetadataRef), 1, 1, 1, 0, IsOptimized: 0, _llvmFunction);
+                }
+
+                LLVMMetadataRef currentLine = LLVMPInvokes.LLVMDIBuilderCreateDebugLocation(Context, (uint)curSequencePoint.LineNumber, 0, _debugFunction, default(LLVMMetadataRef));
+                LLVM.SetCurrentDebugLocation(_builder, LLVM.MetadataAsValue(Context, currentLine));
+            }
         }
 
         private void EndImportingInstruction()
         {
+            // Reset the debug position so it doesn't end up applying to the wrong instructions
+            LLVM.SetCurrentDebugLocation(_builder, default(LLVMValueRef));
         }
 
         private void ImportNop()
