@@ -22,7 +22,7 @@ namespace System.Runtime.CompilerServices
         // with a calli during compilation). The transform doesn't handle non-generic versions yet (i.e.
         // functions that are void).
         //=========================================================================================================
-        private static T Call<T>(System.IntPtr pfn)
+        private static void Call(System.IntPtr pfn)
         {
             throw NotImplemented.ByDesign;
         }

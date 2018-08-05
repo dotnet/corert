@@ -185,7 +185,7 @@ namespace ILCompiler.DependencyAnalysis
 #if DEBUG
             LLVM.PrintModuleToFile(Module, Path.ChangeExtension(_objectFilePath, ".txt"), out string unused2);
 #endif //DEBUG
-            LLVM.VerifyModule(Module, LLVMVerifierFailureAction.LLVMAbortProcessAction, out string unused);            
+            LLVM.VerifyModule(Module, LLVMVerifierFailureAction.LLVMAbortProcessAction, out string unused);
 
             //throw new NotImplementedException(); // This function isn't complete
         }
@@ -273,19 +273,15 @@ namespace ILCompiler.DependencyAnalysis
             LLVMValueRef argc = LLVM.GetParam(mainFunc, 0);
             LLVMValueRef argv = LLVM.GetParam(mainFunc, 1);
 
-            // StartupCodeMain will always return a value whether the user's main does or not
-            LLVMValueRef returnValueSlot = LLVM.BuildAlloca(builder, LLVM.Int32Type(), "returnValue");
-
-            LLVM.BuildCall(builder, managedMain, new LLVMValueRef[]
+            LLVMValueRef mainReturn = LLVM.BuildCall(builder, managedMain, new LLVMValueRef[]
             {
                 castShadowStack,
-                LLVM.BuildPointerCast(builder, returnValueSlot, LLVM.PointerType(LLVM.Int8Type(), 0), String.Empty),
                 argc,
                 argv,
             },
-            String.Empty);
+            "returnValue");
 
-            LLVM.BuildRet(builder, LLVM.BuildLoad(builder, returnValueSlot, String.Empty));
+            LLVM.BuildRet(builder, mainReturn);
             LLVM.SetLinkage(mainFunc, LLVMLinkage.LLVMExternalLinkage);
         }
 
