@@ -1105,6 +1105,14 @@ namespace Internal.IL
         private LLVMValueRef LLVMFunctionForMethod(MethodDesc callee, StackEntry thisPointer, bool isCallVirt)
         {
             string calleeName = _compilation.NameMangler.GetMangledMethodName(callee).ToString();
+
+            // Sealed methods must not be called virtually due to sealed vTables, so call them directly
+            if(callee.IsFinal || callee.OwningType.IsSealed())
+            {
+                AddMethodReference(callee);
+                return GetOrCreateLLVMFunction(calleeName);
+            }
+
             if (thisPointer != null && callee.IsVirtual && isCallVirt)
             {
                 // TODO: Full resolution of virtual methods
