@@ -185,7 +185,7 @@ namespace ILCompiler.DependencyAnalysis
 #if DEBUG
             LLVM.PrintModuleToFile(Module, Path.ChangeExtension(_objectFilePath, ".txt"), out string unused2);
 #endif //DEBUG
-            LLVM.VerifyModule(Module, LLVMVerifierFailureAction.LLVMAbortProcessAction, out string unused);
+            LLVM.VerifyModule(Module, LLVMVerifierFailureAction.LLVMAbortProcessAction, out string unused);            
 
             //throw new NotImplementedException(); // This function isn't complete
         }
@@ -270,10 +270,8 @@ namespace ILCompiler.DependencyAnalysis
             LLVM.BuildStore(builder, castShadowStack, shadowStackTop);
 
             // Pass on main arguments
-            var argcSlot = LLVM.BuildPointerCast(builder, shadowStack, LLVM.PointerType(LLVM.Int32Type(), 0), "argcSlot");
-            LLVM.BuildStore(builder, LLVM.GetParam(mainFunc, 0), argcSlot);
-            var argvSlot = LLVM.BuildGEP(builder, castShadowStack, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), 4, LLVMMisc.False) }, "argvSlot");
-            LLVM.BuildStore(builder, LLVM.GetParam(mainFunc, 1), LLVM.BuildPointerCast(builder, argvSlot, LLVM.PointerType(LLVM.PointerType(LLVM.Int8Type(), 0), 0), ""));
+            LLVMValueRef argc = LLVM.GetParam(mainFunc, 0);
+            LLVMValueRef argv = LLVM.GetParam(mainFunc, 1);
 
             // StartupCodeMain will always return a value whether the user's main does or not
             LLVMValueRef returnValueSlot = LLVM.BuildAlloca(builder, LLVM.Int32Type(), "returnValue");
@@ -281,7 +279,9 @@ namespace ILCompiler.DependencyAnalysis
             LLVM.BuildCall(builder, managedMain, new LLVMValueRef[]
             {
                 castShadowStack,
-                LLVM.BuildPointerCast(builder, returnValueSlot, LLVM.PointerType(LLVM.Int8Type(), 0), String.Empty) 
+                LLVM.BuildPointerCast(builder, returnValueSlot, LLVM.PointerType(LLVM.Int8Type(), 0), String.Empty),
+                argc,
+                argv,
             },
             String.Empty);
 
