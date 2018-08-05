@@ -31,7 +31,7 @@
     </ProjectReference>
     <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
     <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.Experimental.csproj" />
-    <ProjectReference Include="..\..\System.Private.Interop\src\System.Private.Interop.csproj" />
+    <ProjectReference Include="..\..\System.Private.Interop\src\System.Private.Interop.Experimental.csproj" />
   </ItemGroup>
   <PropertyGroup>
     <NativeFormatCommonPath>..\..\Common\src\Internal\NativeFormat</NativeFormatCommonPath>

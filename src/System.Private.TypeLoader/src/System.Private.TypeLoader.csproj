@@ -82,7 +82,6 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\EnumThunks.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\HelperExtensions.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\ILDisassembler.cs" />
-    <Compile Include="..\..\Common\src\TypeSystem\IL\ILInstruction.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\ILOpcode.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\ILOpcodeHelper.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\ILStackHelper.cs" />

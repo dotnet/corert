@@ -80,10 +80,14 @@ See the LICENSE file in the project root for more information.
 
   <ItemGroup>
     <AutoInitializedAssemblies Include="System.Private.CoreLib" />
-    <AutoInitializedAssemblies Include="System.Private.TypeLoader" />
-    <AutoInitializedAssemblies Include="System.Private.Reflection.Execution" />
+    <AutoInitializedAssemblies Condition="'$(ExperimentalInterpreterSupport)' == 'true'" Include="System.Private.Interpreter" />
+    <AutoInitializedAssemblies Condition="'$(ExperimentalInterpreterSupport)' == 'true'" Include="System.Private.TypeLoader.Experimental" />
+    <AutoInitializedAssemblies Condition="'$(ExperimentalInterpreterSupport)' == 'true'" Include="System.Private.Reflection.Execution.Experimental" />
+    <AutoInitializedAssemblies Condition="'$(ExperimentalInterpreterSupport)' != 'true'" Include="System.Private.TypeLoader" />
+    <AutoInitializedAssemblies Condition="'$(ExperimentalInterpreterSupport)' != 'true'" Include="System.Private.Reflection.Execution" />
     <AutoInitializedAssemblies Include="System.Private.DeveloperExperience.Console" />
-    <AutoInitializedAssemblies Include="System.Private.Interop" />
+    <AutoInitializedAssemblies Condition="'$(ExperimentalInterpreterSupport)' != 'true'" Include="System.Private.Interop" />
+    <AutoInitializedAssemblies Condition="'$(ExperimentalInterpreterSupport)' == 'true'" Include="System.Private.Interop.Experimental" />
     <AutoInitializedAssemblies Include="System.Private.StackTraceMetadata" />
   </ItemGroup>
 
@@ -170,6 +174,7 @@ See the LICENSE file in the project root for more information.
       <IlcArg Condition="$(OutputType) == 'Library' and $(NativeLib) != ''" Include="--nativelib" />
       <IlcArg Condition="$(ExportsFile) != ''" Include="--exportsfile:$(ExportsFile)" />
       <ILcArg Condition="'$(Platform)' == 'wasm'" Include="--wasm" />
+      <ILcArg Condition="'$(ExperimentalInterpreterSupport)' == 'true'" Include="--nometadatablocking" />
       <IlcArg Include="@(AutoInitializedAssemblies->'--initassembly:%(Identity)')" />
       <IlcArg Include="@(AppContextSwitchOverrides->'--appcontextswitch:%(Identity)')" />
       <IlcArg Condition="$(ServerGarbageCollection) != ''" Include="--runtimeopt:RH_UseServerGC=1" />

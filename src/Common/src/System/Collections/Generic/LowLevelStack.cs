@@ -152,7 +152,7 @@ namespace System.Collections.Generic
             return true;
         }
 
-        public void ThrowIfEmptyStack()
+        private void ThrowIfEmptyStack()
         {
             if (_size == 0)
                 throw new InvalidOperationException();

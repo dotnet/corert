@@ -186,11 +186,11 @@ namespace Internal.Reflection.Execution
                     }
 
                     // Cache missed lookups
-                    if (!foundMatch)
-                    {
-                        PEInfo peinfo = new PEInfo(refName, null, null);
-                        s_ecmaLoadedAssemblies.Add(peinfo);
-                    }
+                    // if (!foundMatch)
+                    // {
+                    //     PEInfo peinfo = new PEInfo(refName, null, null);
+                    //     s_ecmaLoadedAssemblies.Add(peinfo);
+                    // }
                 }
             }
         }

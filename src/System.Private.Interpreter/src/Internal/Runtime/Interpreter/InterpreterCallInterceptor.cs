@@ -1,3 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using Internal.IL;
 using Internal.Runtime.CallConverter;
 using Internal.Runtime.CallInterceptor;
@@ -8,11 +12,13 @@ namespace Internal.Runtime.Interpreter
 {
     public class InterpreterCallInterceptor : CallInterceptor.CallInterceptor
     {
-        private MethodDesc _method;
-        private MethodIL _methodIL;
+        private readonly MethodDesc _method;
+        private readonly MethodIL _methodIL;
+        private readonly TypeSystemContext _context;
 
-        public InterpreterCallInterceptor(MethodDesc method) : base(false)
+        public InterpreterCallInterceptor(TypeSystemContext context, MethodDesc method) : base(false)
         {
+            _context = context;
             _method = method;
             _methodIL = EcmaMethodIL.Create(method as EcmaMethod);
         }
@@ -59,8 +65,8 @@ namespace Internal.Runtime.Interpreter
 
         public override void ThunkExecute(ref CallInterceptorArgs callInterceptorArgs)
         {
-            ILInterpreter interpreter = new ILInterpreter(_method, _methodIL);
-            interpreter.Interpret(ref callInterceptorArgs);
+            ILInterpreter interpreter = new ILInterpreter(_context, _method, _methodIL);
+            interpreter.InterpretMethod(ref callInterceptorArgs);
         }
     }
 }

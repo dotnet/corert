@@ -31,14 +31,14 @@
       <Aliases>global,System_Private_CoreLib</Aliases>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
-
-    <ProjectReference Include="..\..\System.Private.Interop\src\System.Private.Interop.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true' and '$(EcmaMetadataSupport)' != 'true'">
+    <ProjectReference Include="..\..\System.Private.Interop\src\System.Private.Interop.csproj" />
     <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj" />
     <ProjectReference Include="..\..\System.Private.Reflection.Core\src\System.Private.Reflection.Core.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true' and '$(EcmaMetadataSupport)' == 'true'">
+    <ProjectReference Include="..\..\System.Private.Interop\src\System.Private.Interop.Experimental.csproj" />
     <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.Experimental.csproj" />
     <ProjectReference Include="..\..\System.Private.Reflection.Core\src\System.Private.Reflection.Core.Experimental.csproj" />
     <ProjectReference Include="..\..\System.Private.Jit\src\System.Private.Jit.csproj" />

@@ -424,9 +424,6 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\ILDisassembler.cs">
       <Link>IL\ILDisassembler.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\IL\ILInstruction.cs">
-      <Link>IL\ILInstruction.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\InstantiatedMethodIL.cs">
       <Link>IL\InstantiatedMethodIL.cs</Link>
     </Compile>
