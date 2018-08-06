@@ -80,15 +80,21 @@ See the LICENSE file in the project root for more information.
 
   <ItemGroup>
     <AutoInitializedAssemblies Include="System.Private.CoreLib" />
-    <AutoInitializedAssemblies Condition="'$(ExperimentalInterpreterSupport)' == 'true'" Include="System.Private.Interpreter" />
-    <AutoInitializedAssemblies Condition="'$(ExperimentalInterpreterSupport)' == 'true'" Include="System.Private.TypeLoader.Experimental" />
-    <AutoInitializedAssemblies Condition="'$(ExperimentalInterpreterSupport)' == 'true'" Include="System.Private.Reflection.Execution.Experimental" />
-    <AutoInitializedAssemblies Condition="'$(ExperimentalInterpreterSupport)' != 'true'" Include="System.Private.TypeLoader" />
-    <AutoInitializedAssemblies Condition="'$(ExperimentalInterpreterSupport)' != 'true'" Include="System.Private.Reflection.Execution" />
     <AutoInitializedAssemblies Include="System.Private.DeveloperExperience.Console" />
-    <AutoInitializedAssemblies Condition="'$(ExperimentalInterpreterSupport)' != 'true'" Include="System.Private.Interop" />
-    <AutoInitializedAssemblies Condition="'$(ExperimentalInterpreterSupport)' == 'true'" Include="System.Private.Interop.Experimental" />
     <AutoInitializedAssemblies Include="System.Private.StackTraceMetadata" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(ExperimentalInterpreterSupport)' != 'true'">
+    <AutoInitializedAssemblies Include="System.Private.TypeLoader" />
+    <AutoInitializedAssemblies Include="System.Private.Reflection.Execution" />
+    <AutoInitializedAssemblies Include="System.Private.Interop" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(ExperimentalInterpreterSupport)' == 'true'">
+    <AutoInitializedAssemblies Include="System.Private.Interpreter" />
+    <AutoInitializedAssemblies Include="System.Private.TypeLoader.Experimental" />
+    <AutoInitializedAssemblies Include="System.Private.Reflection.Execution.Experimental" />
+    <AutoInitializedAssemblies Include="System.Private.Interop.Experimental" />
   </ItemGroup>
 
   <ItemGroup>
