@@ -285,7 +285,7 @@ internal static class Program
         System.Diagnostics.Debugger.Break();
 
         PrintLine("Done");
-        return 100;
+        return 99;
     }
 
     private static int StaticDelegateTarget()
