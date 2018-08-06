@@ -137,7 +137,7 @@ def static calculateBuildCommands(def os, def configuration, def scenario, def i
             buildCommands += testScriptString 
         }
     }
-    else if (os == 'Windows_NT_Wasm' {
+    else if (os == 'Windows_NT_Wasm') {
         // Emsdk isn't necessarily activated correctly on CI machines (but should be on the path), so activate it now
         buildCommands += "emsdk activate latest"
 
