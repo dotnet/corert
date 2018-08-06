@@ -112,7 +112,9 @@ namespace Internal.IL
             _builder = LLVM.CreateBuilder();
             _pointerSize = compilation.NodeFactory.Target.PointerSize;
 
-            if (_method is EcmaMethod ecmaMethod && ecmaMethod.Module.PdbReader != null)
+            // Get debug metadata for the uninstantiated version of the method
+            MethodDesc typicalMethod = _method.GetTypicalMethodDefinition();
+            if (typicalMethod is EcmaMethod ecmaMethod && ecmaMethod.Module.PdbReader != null)
             {
                 _debugInformation = new EcmaMethodDebugInformation(ecmaMethod);
             }
