@@ -14,7 +14,7 @@ internal static class Program
     [ThreadStatic]
     private static int threadStaticInt;
     private static unsafe int Main(string[] args)
-    {        
+    {
         Add(1, 2);
         int tempInt = 0;
         int tempInt2 = 0;
@@ -297,7 +297,7 @@ internal static class Program
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
-        
+
         PrintLine("Done");
         return 100;
     }

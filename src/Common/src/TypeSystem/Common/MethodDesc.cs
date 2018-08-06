@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Internal.NativeFormat;
@@ -142,7 +140,7 @@ namespace Internal.TypeSystem
 
         public override TypeSystemContext Context => _returnType.Context;
 
-        public struct SignatureEnumerator : IEnumerator<TypeDesc>
+        public struct SignatureEnumerator
         {
             private int _index;
             private MethodSignature _signature;
@@ -155,21 +153,10 @@ namespace Internal.TypeSystem
 
             public TypeDesc Current => _signature[_index];
 
-            object IEnumerator.Current => _signature[_index];
-
-            public void Dispose()
-            {
-            }
-
             public bool MoveNext()
             {
                 _index++;
                 return _index < _signature.Length;
-            }
-
-            public void Reset()
-            {
-                _index = -1;
             }
         }
     }

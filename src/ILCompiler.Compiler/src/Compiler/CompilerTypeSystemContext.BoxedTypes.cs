@@ -417,19 +417,6 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Manages unique ids for thunks to prevent name collisions
-        /// </summary>
-        private class UnboxThunkIdDispenser
-        {
-            private static int s_curThunkId = 0;
-
-            public static int GetNextThunkId()
-            {
-                return Interlocked.Increment(ref s_curThunkId);
-            }
-        }
-
-        /// <summary>
         /// Represents a thunk to call shared instance method on boxed valuetypes.
         /// </summary>
         private partial class GenericUnboxingThunk : ILStubMethod
@@ -437,7 +424,6 @@ namespace ILCompiler
             private MethodDesc _targetMethod;
             private ValueTypeInstanceMethodWithHiddenParameter _nakedTargetMethod;
             private BoxedValueType _owningType;
-            private Lazy<int> _thunkId = new Lazy<int>(UnboxThunkIdDispenser.GetNextThunkId);
 
             public GenericUnboxingThunk(BoxedValueType owningType, MethodDesc targetMethod)
             {
@@ -461,7 +447,7 @@ namespace ILCompiler
             {
                 get
                 {
-                    return _targetMethod.Name + "_Unbox" + _thunkId.Value;
+                    return _targetMethod.Name + "_Unbox";
                 }
             }
 
@@ -516,7 +502,6 @@ namespace ILCompiler
         {
             private MethodDesc _targetMethod;
             private BoxedValueType _owningType;
-            private Lazy<int> _thunkId = new Lazy<int>(UnboxThunkIdDispenser.GetNextThunkId);
 
             public UnboxingThunk(BoxedValueType owningType, MethodDesc targetMethod)
             {
@@ -539,7 +524,7 @@ namespace ILCompiler
             {
                 get
                 {
-                    return _targetMethod.Name + "_Unbox" + _thunkId.Value;
+                    return _targetMethod.Name + "_Unbox";
                 }
             }
 
