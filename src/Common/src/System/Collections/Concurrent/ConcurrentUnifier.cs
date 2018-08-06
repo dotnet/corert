@@ -10,6 +10,15 @@ using System.Collections.Generic;
 
 namespace System.Collections.Concurrent
 {
+    internal struct TwoByteStr
+    {
+        public byte first;
+        public byte second;
+
+        [System.Runtime.InteropServices.DllImport("*")]
+        public static unsafe extern int printf(byte* str, byte* unused);
+    }
+
     // Abstract base for a thread-safe dictionary mapping a set of keys (K) to values (V).
     //
     // To create an actual dictionary, subclass this type and override the protected Factory method
@@ -70,6 +79,26 @@ namespace System.Collections.Concurrent
             _container = new Container(this);
         }
 
+        private static unsafe void PrintString(string s)
+        {
+            int length = s.Length;
+            fixed (char* curChar = s)
+            {
+                for (int i = 0; i < length; i++)
+                {
+                    TwoByteStr curCharStr = new TwoByteStr();
+                    curCharStr.first = (byte)(*(curChar + i));
+                    TwoByteStr.printf((byte*)&curCharStr, null);
+                }
+            }
+        }
+
+        public static void PrintLine(string s)
+        {
+            PrintString(s);
+            PrintString("\n");
+        }
+
         //
         // Retrieve the *unique* value for a given key. If the key was previously not entered into the dictionary,
         // this method invokes the overridable Factory() method to create the new value. The Factory() method is
@@ -81,6 +110,15 @@ namespace System.Collections.Concurrent
         {
             Debug.Assert(key != null);
             Debug.Assert(!_lock.IsAcquired, "GetOrAdd called while lock already acquired. A possible cause of this is an Equals or GetHashCode method that causes reentrancy in the table.");
+
+            if(key is String str)
+            {
+                PrintLine("GetOrCreate with string key. String:");
+                PrintLine(str);
+                PrintLine("Direct GetHashCode call result:");
+                uint strHash = (uint)str.GetHashCode();
+                PrintLine(strHash.ToString());
+            }
 
             int hashCode = key.GetHashCode();
             V value;

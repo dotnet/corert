@@ -54,6 +54,7 @@ namespace Internal.IL
         private readonly byte[] _ilBytes;
         private MethodDebugInformation _debugInformation;
         private LLVMMetadataRef _debugFunction;
+        private TypeDesc _constrainedType = null;
 
         /// <summary>
         /// Stack of values pushed onto the IL stack: locals, arguments, values, function pointer, ...
@@ -1284,10 +1285,12 @@ namespace Internal.IL
                 }
             }
 
-            HandleCall(callee, callee.Signature, opcode);
+            TypeDesc localConstrainedType = _constrainedType;
+            _constrainedType = null;
+            HandleCall(callee, callee.Signature, opcode, localConstrainedType);
         }
 
-        private LLVMValueRef LLVMFunctionForMethod(MethodDesc callee, StackEntry thisPointer, bool isCallVirt)
+        private LLVMValueRef LLVMFunctionForMethod(MethodDesc callee, StackEntry thisPointer, bool isCallVirt, TypeDesc constrainedType)
         {
             string calleeName = _compilation.NameMangler.GetMangledMethodName(callee).ToString();
 
@@ -1328,12 +1331,20 @@ namespace Internal.IL
                     {
                         targetMethod = parameterType.ResolveInterfaceMethodTarget(callee);
                     }
+                    else if (constrainedType != null && constrainedType.IsSealed())
+                    {
+                        targetMethod = constrainedType.ResolveInterfaceMethodTarget(callee);
+                    }
                 }
                 else
                 {
                     if (isValueTypeCall)
                     {
                         targetMethod = parameterType.FindVirtualFunctionTargetMethodOnObjectType(callee);
+                    }
+                    else if (constrainedType != null && constrainedType.IsSealed())
+                    {
+                        targetMethod = constrainedType.FindVirtualFunctionTargetMethodOnObjectType(callee);
                     }
                 }
 
@@ -1584,7 +1595,7 @@ namespace Internal.IL
             return false;
         }
 
-        private void HandleCall(MethodDesc callee, MethodSignature signature, ILOpcode opcode = ILOpcode.call, LLVMValueRef calliTarget = default(LLVMValueRef))
+        private void HandleCall(MethodDesc callee, MethodSignature signature, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef))
         {
             var parameterCount = signature.Length + (signature.IsStatic ? 0 : 1);
             // The last argument is the top of the stack. We need to reverse them and store starting at the first argument
@@ -1593,10 +1604,10 @@ namespace Internal.IL
             {
                 argumentValues[argumentValues.Length - i - 1] = _stack.Pop();
             }
-            PushNonNull(HandleCall(callee, signature, argumentValues, opcode, calliTarget));
+            PushNonNull(HandleCall(callee, signature, argumentValues, opcode, constrainedType, calliTarget));
         }
 
-        private ExpressionEntry HandleCall(MethodDesc callee, MethodSignature signature, StackEntry[] argumentValues, ILOpcode opcode = ILOpcode.call, LLVMValueRef calliTarget = default(LLVMValueRef), TypeDesc forcedReturnType = null)
+        private ExpressionEntry HandleCall(MethodDesc callee, MethodSignature signature, StackEntry[] argumentValues, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef), TypeDesc forcedReturnType = null)
         {
             if (opcode == ILOpcode.callvirt && callee.IsVirtual)
             {
@@ -1687,7 +1698,7 @@ namespace Internal.IL
             }
             else
             {
-                fn = LLVMFunctionForMethod(callee, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt);
+                fn = LLVMFunctionForMethod(callee, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt, constrainedType);
             }
 
             LLVMValueRef llvmReturn = LLVM.BuildCall(_builder, fn, llvmArgs.ToArray(), string.Empty);
@@ -1955,7 +1966,7 @@ namespace Internal.IL
         private void ImportCalli(int token)
         {
             MethodSignature methodSignature = (MethodSignature)_methodIL.GetObject(token);
-            HandleCall(null, methodSignature, ILOpcode.calli, ((ExpressionEntry)_stack.Pop()).ValueAsType(LLVM.PointerType(GetLLVMSignatureForMethod(methodSignature), 0), _builder));
+            HandleCall(null, methodSignature, ILOpcode.calli, calliTarget: ((ExpressionEntry)_stack.Pop()).ValueAsType(LLVM.PointerType(GetLLVMSignatureForMethod(methodSignature), 0), _builder));
         }
 
         private void ImportLdFtn(int token, ILOpcode opCode)
@@ -1967,7 +1978,7 @@ namespace Internal.IL
                 StackEntry thisPointer = _stack.Pop();
                 if (method.IsVirtual)
                 {
-                    targetLLVMFunction = LLVMFunctionForMethod(method, thisPointer, true);
+                    targetLLVMFunction = LLVMFunctionForMethod(method, thisPointer, true, null);
                     AddVirtualMethodReference(method);
                 }
             }
@@ -2652,6 +2663,7 @@ namespace Internal.IL
 
         private void ImportConstrainedPrefix(int token)
         {
+            _constrainedType = (TypeDesc)_methodIL.GetObject(token);
         }
 
         private void ImportNoPrefix(byte mask)

@@ -8,6 +8,112 @@ using System.Runtime.InteropServices;
 using CpObj;
 #endif
 
+public sealed class MySealedClass
+{
+    uint _data;
+
+    public MySealedClass()
+    {
+        _data = 104;
+    }
+
+    public MySealedClass(uint data)
+    {
+        _data = data;
+    }
+
+    public uint GetData()
+    {
+        return _data;
+    }
+
+    public override int GetHashCode()
+    {
+        Program.PrintLine("MySealedClass.GetHashCode called. Data:");
+        Program.PrintLine(_data.ToString());
+        return (int)_data * 2;
+    }
+
+    public override string ToString()
+    {
+        Program.PrintLine("MySealedClass.ToString called. Data:");
+        Program.PrintLine(_data.ToString());
+        return _data.ToString();
+    }
+}
+
+public class MyUnsealedClass
+{
+    uint _data;
+
+    public MyUnsealedClass()
+    {
+        _data = 24;
+    }
+
+    public MyUnsealedClass(uint data)
+    {
+        _data = data;
+    }
+
+    public uint GetData()
+    {
+        return _data;
+    }
+
+    public override int GetHashCode()
+    {
+        Program.PrintLine("MyUnsealedClass.GetHashCode called. Data:");
+        Program.PrintLine(_data.ToString());
+        return (int)_data * 2;
+    }
+
+    public override string ToString()
+    {
+        Program.PrintLine("MyUnsealedClass.ToString called. Data:");
+        Program.PrintLine(_data.ToString());
+        return _data.ToString();
+    }
+}
+
+public class MyBase
+{
+    protected uint _data;
+    public MyBase(uint data)
+    {
+        _data = data;
+    }
+
+    public virtual uint GetData()
+    {
+        Program.PrintLine("MyBase.GetData called. Data:");
+        Program.PrintLine(_data.ToString());
+        return _data;
+    }
+}
+
+public class UnsealedDerived : MyBase
+{
+    public UnsealedDerived(uint data) : base(data) { }
+    public override uint GetData()
+    {
+        Program.PrintLine("UnsealedDerived.GetData called. Data:");
+        Program.PrintLine(_data.ToString());
+        return _data * 2;
+    }
+}
+
+public sealed class SealedDerived : MyBase
+{
+    public SealedDerived(uint data) : base(data) { }
+    public override uint GetData()
+    {
+        Program.PrintLine("SealedDerived.GetData called. Data:");
+        Program.PrintLine(_data.ToString());
+        return _data * 3;
+    }
+}
+
 internal static class Program
 {
     //private static int staticInt;
@@ -15,10 +121,131 @@ internal static class Program
     //private static int threadStaticInt;
     private static unsafe int Main(string[] args)
     {
-        Console.WriteLine("fbxrd");
+        //Console.WriteLine("fbxrd");
+        string s = "utf-8";
+        uint directHashCode = (uint)s.GetHashCode();
+        PrintLine("String: ");
+        PrintLine(s);
+        PrintLine("Direct hash code:");
+        PrintLine(directHashCode.ToString());
+
+        uint directHashCodeRedo = (uint)s.GetHashCode();
+
+        //PrintLine("Direct hash code redo:");
+        //PrintLine(directHashCodeRedo.ToString());
+
+        PrintLine("Direct ToString:");
+        PrintLine(s.ToString());
+
+        object sAsObject = (object)s;
+        uint hashCodeViaObject = (uint)sAsObject.GetHashCode();
+        PrintLine("As object hash code:");
+        PrintLine(hashCodeViaObject.ToString());
+
+        //uint hashCodeViaObjectRedo = (uint)sAsObject.GetHashCode();
+        //PrintLine("As object hash code redo:");
+        //PrintLine(hashCodeViaObjectRedo.ToString());
+
+        PrintLine("As object ToString:");
+        PrintLine(sAsObject.ToString());
+
+        MySealedClass sealedClass = new MySealedClass(42);
+        PrintLine("SealedClass GetHashCode");
+        PrintLine(((uint)sealedClass.GetHashCode()).ToString());
+
+        MyUnsealedClass unsealedClass = new MyUnsealedClass(36);
+        PrintLine("UnsealedClass GetHashCode");
+        PrintLine(((uint)unsealedClass.GetHashCode()).ToString());
+
+        // nongeneric
+        uint hashCodeOfUnsealedViaNonGeneric = (uint)NonGenericGetHashCode(unsealedClass);
+        PrintLine("Via Nongeneric of unsealed hash code:");
+        PrintLine(hashCodeOfUnsealedViaNonGeneric.ToString());
+
+        uint hashCodeOfSealedViaNonGeneric = (uint)NonGenericGetHashCode(sealedClass);
+        PrintLine("Via Nongeneric of sealed hash code:");
+        PrintLine(hashCodeOfSealedViaNonGeneric.ToString());
+
+        uint hashCodeViaNonGenericOfString = (uint)NonGenericGetHashCode(s);
+        PrintLine("Via Nongeneric of string hash code:");
+        PrintLine(hashCodeViaNonGenericOfString.ToString());
+
+        uint hashCodeViaNonGenericOfObject = (uint)NonGenericGetHashCode(sAsObject);
+        PrintLine("Via Nongeneric of object hash code:");
+        PrintLine(hashCodeViaNonGenericOfObject.ToString());
+
+        // generic not from object
+        uint dataFromBase = GenericGetData<MyBase>(new MyBase(11));
+        PrintLine("Data from base:");
+        PrintLine(dataFromBase.ToString());
+
+        uint dataFromUnsealed = GenericGetData<UnsealedDerived>(new UnsealedDerived(13));
+        PrintLine("Data from unsealed:");
+        PrintLine(dataFromUnsealed.ToString());
+
+        uint dataFromSealed = GenericGetData<SealedDerived>(new SealedDerived(15));
+        PrintLine("Data from sealed:");
+        PrintLine(dataFromSealed.ToString());
+
+        uint dataFromUnsealedAsBase = GenericGetData<MyBase>(new UnsealedDerived(17));
+        PrintLine("Data from unsealed as base:");
+        PrintLine(dataFromUnsealedAsBase.ToString());
+
+        uint dataFromSealedAsBase = GenericGetData<MyBase>(new SealedDerived(19));
+        PrintLine("Data from sealed as base:");
+        PrintLine(dataFromSealedAsBase.ToString());
+
+        // generic
+        uint hashCodeOfSealedViaGeneric = (uint)GenericGetHashCode<MySealedClass>(sealedClass);
+        PrintLine("Via generic of sealed hash code:");
+        PrintLine(hashCodeOfSealedViaGeneric.ToString());
+
+        uint hashCodeViaGenericOfString = (uint)GenericGetHashCode<string>(s);
+        PrintLine("Via generic of string hash code:");
+        PrintLine(hashCodeViaGenericOfString.ToString());
+
+        uint hashCodeViaGenericOfObject = (uint)GenericGetHashCode<object>(s);
+        PrintLine("Via generic of object hash code:");
+        PrintLine(hashCodeViaGenericOfObject.ToString());
+
+        uint hashCodeOfUnsealedViaGeneric = (uint)GenericGetHashCode<MyUnsealedClass>(unsealedClass);
+        PrintLine("Via generic of unsealed hash code:");
+        PrintLine(hashCodeOfUnsealedViaGeneric.ToString());
+        
         return 100;
     }
-}
+
+    static int NonGenericGetHashCode(object obj)
+    {
+        if (obj is string)
+        {
+            PrintLine("NonGenericGetHashCode got string:");
+            PrintLine((string)(object)obj);
+        }
+        PrintLine("NonGenericGetHashCode ToString:");
+        PrintLine(obj.ToString());
+        PrintLine("(end of that string)");
+        return obj.GetHashCode();
+    }
+
+    static uint GenericGetData<T>(T obj) where T: MyBase
+    {
+        return obj.GetData();
+    }
+
+    static int GenericGetHashCode<T>(T obj)
+    {
+        if (obj is string)
+        {
+            PrintLine("GenericGetHashCode got string:");
+            PrintLine((string)(object)obj);
+        }
+        PrintLine("GenericGetHashCode ToString:");
+        PrintLine(obj.ToString());
+        PrintLine("(end of that string)");
+        return obj.GetHashCode();
+    }
+//}
 
 #if false
     Add(1, 2);
@@ -328,7 +555,7 @@ internal static class Program
     {         
         return 7;
     }
-
+#endif
     private static unsafe void PrintString(string s)
     {
         int length = s.Length;
@@ -348,8 +575,8 @@ internal static class Program
         PrintString(s);
         PrintString("\n");
     }
-
-    private static int Add(int a, int b)
+#if false
+private static int Add(int a, int b)
     {
         return a + b;
     }
@@ -495,7 +722,7 @@ internal static class Program
             PrintLine("NonBeforeFieldInitType cctor not run");
         }
     }
-
+#endif
     [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
 }
@@ -505,7 +732,7 @@ public struct TwoByteStr
     public byte first;
     public byte second;
 }
-
+#if false
 public struct BoxStubTest
 {
     public string Value;
