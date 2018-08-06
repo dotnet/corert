@@ -31,6 +31,12 @@ Constants.scenarios.each { scenario ->
                     return
                 }
 
+                // Disable the corefx scenario for wasm for now since 
+                // the tests won't work
+                if (os == 'Windows_NT_Wasm' && scenario == 'corefx') {
+                    return
+                }
+
                 // Define build string
                 def lowercaseConfiguration = configuration.toLowerCase()
 
