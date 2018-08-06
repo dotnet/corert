@@ -17,7 +17,7 @@ class Constants {
     def static scenarios = ['coreclr', 'corefx']
     
     // Innerloop build OS's
-    def static osList = ['Ubuntu', 'OSX10.12', 'Windows_NT']
+    def static osList = ['Ubuntu', 'OSX10.12', 'Windows_NT', 'Windows_NT_Wasm']
 
 }
 
@@ -61,7 +61,7 @@ Constants.scenarios.each { scenario ->
                 def newJob = job(newJobName) {
                     // This opens the set of build steps that will be run.
                     steps {
-                        if (os == 'Windows_NT') {
+                        if (os.startsWith('Windows_NT')) {
                         // Indicates that a batch script should be run with each build command
                             buildCommands.each { buildCommand -> 
                                 batchFile(buildCommand) 
@@ -78,7 +78,13 @@ Constants.scenarios.each { scenario ->
                 // This call performs test run checks for the CI.
                 Utilities.addXUnitDotNETResults(newJob, '**/testResults.xml')
                 Utilities.addArchival(newJob, "**/testResults.xml")
-                Utilities.setMachineAffinity(newJob, os, Constants.imageVersionMap[os])
+                if (os == 'Windows_NT_Wasm') {
+                    Utilities.setMachineAffinity(newJob, 'Windows.10.Wasm.Open')
+                    prJobDescription += " WebAssembly"
+                }
+                else {
+                    Utilities.setMachineAffinity(newJob, os, Constants.imageVersionMap[os])
+                }
                 Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
 
                 if (isPR) {
@@ -130,6 +136,9 @@ def static calculateBuildCommands(def os, def configuration, def scenario, def i
             //Todo: Add json config files for different testing scenarios
             buildCommands += testScriptString 
         }
+    }
+    else if (os == 'Windows_NT_Wasm') {
+        buildCommands += "build.cmd wasm ${lowercaseConfiguration}"
     }
     else {
         // Calculate the build commands        
