@@ -14,10 +14,10 @@ class Constants {
                            'OSX10.12':'latest-or-auto',
                            'Ubuntu':'20170118']
 
-    def static scenarios = ['coreclr', 'corefx', 'wasm']
+    def static scenarios = ['coreclr', 'corefx']
     
     // Innerloop build OS's
-    def static osList = ['Ubuntu', 'OSX10.12', 'Windows_NT']
+    def static osList = ['Ubuntu', 'OSX10.12', 'Windows_NT', 'Windows_NT_Wasm']
 
 }
 
@@ -28,9 +28,6 @@ Constants.scenarios.each { scenario ->
             Constants.osList.each { os ->
 
                 if (configuration == 'Release' && scenario == 'corefx') {
-                    return
-                }
-                if (os != 'Windows_NT' && scenario=='wasm') {
                     return
                 }
 
@@ -57,10 +54,6 @@ Constants.scenarios.each { scenario ->
                     }
                 }
                 
-                if (scenario == 'wasm') {
-                    prJobDescription += " WebAssembly"
-                }
-                
                 def buildCommands = calculateBuildCommands(os, configuration, scenario, isPR)
 
                 // Create a new job with the specified name.  The brace opens a new closure
@@ -68,7 +61,7 @@ Constants.scenarios.each { scenario ->
                 def newJob = job(newJobName) {
                     // This opens the set of build steps that will be run.
                     steps {
-                        if (os == 'Windows_NT') {
+                        if (os.startsWith('Windows_NT')) {
                         // Indicates that a batch script should be run with each build command
                             buildCommands.each { buildCommand -> 
                                 batchFile(buildCommand) 
@@ -85,11 +78,12 @@ Constants.scenarios.each { scenario ->
                 // This call performs test run checks for the CI.
                 Utilities.addXUnitDotNETResults(newJob, '**/testResults.xml')
                 Utilities.addArchival(newJob, "**/testResults.xml")
-                if(scenario != 'wasm') {
-                    Utilities.setMachineAffinity(newJob, os, Constants.imageVersionMap[os])
+                if (os == 'Windows_NT_Wasm') {
+                    Utilities.setMachineAffinity(newJob, 'Windows.10.Wasm.Open')
+                    prJobDescription += " WebAssembly"
                 }
                 else {
-                    Utilities.setMachineAffinity(newJob, 'Windows.10.Wasm.Open')
+                    Utilities.setMachineAffinity(newJob, os, Constants.imageVersionMap[os])
                 }
                 Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
 
@@ -114,39 +108,41 @@ def static calculateBuildCommands(def os, def configuration, def scenario, def i
 
     if (os == 'Windows_NT') {
         // Calculate the build commands
-        if (scenario != 'wasm') {
-            buildCommands += "build.cmd ${lowercaseConfiguration} skiptests"
+        buildCommands += "build.cmd ${lowercaseConfiguration} skiptests"
     
-            if (scenario == 'coreclr'){
-                // Run simple tests and multimodule tests only under CoreCLR mode
-                buildCommands += "tests\\runtest.cmd ${configuration} "
-                buildCommands += "tests\\runtest.cmd ${configuration} /multimodule"
-                if (configuration == 'Debug')
-                {
-                    // Run CoreCLR tests
-                    testScriptString = "tests\\runtest.cmd ${configuration} /coreclr "
-                    if (isPR) {
-                        // Run a small set of BVTs during PR validation
-                        buildCommands += testScriptString + "Top200"
-                    }
-                    else {
-                        // Run the full set of known passing tests in the post-commit job
-                        buildCommands += testScriptString + "KnownGood /multimodule"
-                    }
+        if (scenario == 'coreclr'){
+            // Run simple tests and multimodule tests only under CoreCLR mode
+            buildCommands += "tests\\runtest.cmd ${configuration} "
+            buildCommands += "tests\\runtest.cmd ${configuration} /multimodule"
+            if (configuration == 'Debug')
+            {
+                // Run CoreCLR tests
+                testScriptString = "tests\\runtest.cmd ${configuration} /coreclr "
+                if (isPR) {
+                    // Run a small set of BVTs during PR validation
+                    buildCommands += testScriptString + "Top200"
+                }
+                else {
+                    // Run the full set of known passing tests in the post-commit job
+                    buildCommands += testScriptString + "KnownGood /multimodule"
                 }
             }
-            else if (scenario == 'corefx')
-            {
-                // CoreFX tests are currently run only under Debug, so skip the configuration check
-                testScriptString = "tests\\runtest.cmd ${configuration} /corefx "
+        }
+        else if (scenario == 'corefx')
+        {
+            // CoreFX tests are currently run only under Debug, so skip the configuration check
+            testScriptString = "tests\\runtest.cmd ${configuration} /corefx "
             
-                //Todo: Add json config files for different testing scenarios
-                buildCommands += testScriptString 
-            }
+            //Todo: Add json config files for different testing scenarios
+            buildCommands += testScriptString 
         }
-        else {
-            buildCommands += "build.cmd wasm ${lowercaseConfiguration}"
-        }
+    }
+    else if (os == 'Windows_NT_Wasm' {
+        // Emsdk isn't necessarily activated correctly on CI machines (but should be on the path), so activate it now
+        buildCommands += "emsdk activate latest"
+
+        buildCommands += "build.cmd wasm ${lowercaseConfiguration} skiptests"
+        buildCommands += "tests\\runtest.cmd wasm ${configuration}"
     }
     else {
         // Calculate the build commands        
