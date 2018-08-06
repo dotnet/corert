@@ -36,12 +36,12 @@ public:
     JitHost(JitConfigProvider* pConfigProvider)
         : pConfigProvider(pConfigProvider) { }
 
-    virtual void* allocateMemory(size_t size, bool usePageAllocator = false)
+    virtual void* allocateMemory(size_t size)
     {
         return malloc(size);
     }
 
-    virtual void freeMemory(void* block, bool usePageAllocator = false)
+    virtual void freeMemory(void* block)
     {
         free(block);
     }
@@ -75,6 +75,17 @@ public:
         )
     {
         free(value);
+    }
+
+    virtual void* allocateSlab(size_t size, size_t* pActualSize)
+    {
+        *pActualSize = size;
+        return allocateMemory(size);
+    }
+
+    virtual void freeSlab(void* slab, size_t actualSize)
+    {
+        freeMemory(slab);
     }
 };
 
