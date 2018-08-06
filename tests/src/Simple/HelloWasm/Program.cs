@@ -280,12 +280,19 @@ internal static class Program
             PrintLine("float comparison: Ok.");
         }
 
+        FailTest();
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
 
         PrintLine("Done");
-        return 99;
+        return 100;
+    }
+
+    private static void FailTest()
+    {
+        throw new Exception();
     }
 
     private static int StaticDelegateTarget()
