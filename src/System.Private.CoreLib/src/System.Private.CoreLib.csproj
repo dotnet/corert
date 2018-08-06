@@ -622,9 +622,6 @@
     <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelDictionary.cs">
       <Link>System\Collections\Generic\LowLevelDictionary.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelStack.cs">
-      <Link>System\Collections\Generic\LowLevelStack.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\System\Collections\Concurrent\ConcurrentUnifier.cs">
       <Link>System\Collections\Concurrent\ConcurrentUnifier.cs</Link>
     </Compile>

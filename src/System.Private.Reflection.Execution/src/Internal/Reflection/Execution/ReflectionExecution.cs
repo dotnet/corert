@@ -64,11 +64,6 @@ namespace Internal.Reflection.Execution
                 };
 
             ExecutionEnvironment = executionEnvironment;
-#if SUPPORT_INTERPRETER
-            Internal.Runtime.TypeLoader.MethodExecutionStrategy.GlobalExecutionStrategy = new Internal.Runtime.Interpreter.InterpreterExecutionStrategy();
-#elif SUPPORT_JIT
-            Internal.Runtime.TypeLoader.MethodExecutionStrategy.GlobalExecutionStrategy = new Internal.Runtime.JitSupport.RyuJitExecutionStrategy();
-#endif
         }
 
         //
