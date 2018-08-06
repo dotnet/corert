@@ -1198,7 +1198,7 @@ namespace Internal.IL
                 }
             }
 
-            if (callee.IsPInvoke || (callee.IsInternalCall && callee.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute")))
+            if (callee.IsRawPInvoke() || (callee.IsInternalCall && callee.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute")))
             {
                 ImportRawPInvoke(callee);
                 return;
