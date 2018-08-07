@@ -111,15 +111,6 @@ namespace System.Collections.Concurrent
             Debug.Assert(key != null);
             Debug.Assert(!_lock.IsAcquired, "GetOrAdd called while lock already acquired. A possible cause of this is an Equals or GetHashCode method that causes reentrancy in the table.");
 
-            if(key is String str)
-            {
-                PrintLine("GetOrCreate with string key. String:");
-                PrintLine(str);
-                PrintLine("Direct GetHashCode call result:");
-                uint strHash = (uint)str.GetHashCode();
-                PrintLine(strHash.ToString());
-            }
-
             int hashCode = key.GetHashCode();
             V value;
             bool found = _container.TryGetValue(key, hashCode, out value);
