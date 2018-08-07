@@ -12,7 +12,6 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using Internal.CommandLine;
-using System.IO;
 
 namespace ILCompiler
 {
