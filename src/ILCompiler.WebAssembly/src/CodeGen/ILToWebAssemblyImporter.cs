@@ -1268,12 +1268,6 @@ namespace Internal.IL
                 }
             }
 
-            // we don't really have virtual call support, but we'll treat it as direct for now
-            if (opcode != ILOpcode.call && opcode !=  ILOpcode.callvirt && opcode != ILOpcode.newobj)
-            {
-                throw new NotImplementedException();
-            }
-
             if (opcode == ILOpcode.newobj && callee.OwningType.IsDelegate)
             {
                 FunctionPointerEntry functionPointer = ((FunctionPointerEntry)_stack.Peek());
@@ -1604,6 +1598,28 @@ namespace Internal.IL
             {
                 argumentValues[argumentValues.Length - i - 1] = _stack.Pop();
             }
+
+            if(constrainedType != null)
+            {
+                if (signature.IsStatic)
+                {
+                    throw new Exception("Constrained call on static method");
+                }
+                StackEntry thisByRef = argumentValues[0];
+                if (thisByRef.Kind != StackValueKind.ByRef)
+                {
+                    throw new Exception("Constrained call without byref");
+                }
+
+                // If this is a constrained call and the this pointer is a reference type, it's a byref,
+                // dereference it before calling.
+                if (!constrainedType.IsValueType)
+                {
+                    TypeDesc objectType = thisByRef.Type.GetParameterType();
+                    argumentValues[0] = new LoadExpressionEntry(StackValueKind.ObjRef, "thisPtr", thisByRef.ValueAsType(objectType, _builder), objectType);
+                }
+            }
+
             PushNonNull(HandleCall(callee, signature, argumentValues, opcode, constrainedType, calliTarget));
         }
 
