@@ -121,7 +121,17 @@ internal static class Program
     //private static int threadStaticInt;
     private static unsafe int Main(string[] args)
     {
-        //Console.WriteLine("fbxrd");
+        //PrintLine("Starting");
+        Console.WriteLine("Victory will be mine!");
+        Console.Write("abc");
+        Console.WriteLine("def");
+        Console.Write("env new line here:");
+        Console.Write(Environment.NewLine);
+        Console.Write("manual line break here:");
+        Console.Write("\n");
+        Console.WriteLine("Also spiffy!");
+        Console.WriteLine("...Yup.");
+#if false
         string s = "utf-8";
         uint directHashCode = (uint)s.GetHashCode();
         PrintLine("String: ");
@@ -211,7 +221,8 @@ internal static class Program
         uint hashCodeOfUnsealedViaGeneric = (uint)GenericGetHashCode<MyUnsealedClass>(unsealedClass);
         PrintLine("Via generic of unsealed hash code:");
         PrintLine(hashCodeOfUnsealedViaGeneric.ToString());
-        
+#endif
+        //PrintLine("Done");
         return 100;
     }
 
