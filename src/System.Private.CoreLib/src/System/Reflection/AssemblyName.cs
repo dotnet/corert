@@ -6,12 +6,14 @@ using System.Globalization;
 using System.Runtime.Serialization;
 using System.Configuration.Assemblies;
 
-using Internal.Reflection.Augments;
-
 namespace System.Reflection
 {
     public sealed class AssemblyName : ICloneable, IDeserializationCallback, ISerializable
     {
+        private byte[] _publicKey;
+        private byte[] _publicKeyToken;
+        private AssemblyNameFlags _flags;
+
         public AssemblyName()
         {
             HashAlgorithm = AssemblyHashAlgorithm.None;
@@ -28,19 +30,32 @@ namespace System.Reflection
             runtimeAssemblyName.CopyToAssemblyName(this);
         }
 
-        public object Clone()
+        public string Name { get; set; }
+        public Version Version { get; set; }
+        public CultureInfo CultureInfo { get; set; }
+        public string CultureName
         {
-            AssemblyName n = new AssemblyName();
-            n.Name = Name;
-            n._publicKey = (byte[])_publicKey?.Clone();
-            n._publicKeyToken = (byte[])_publicKeyToken?.Clone();
-            n.CultureInfo = CultureInfo;
-            n.Version = (Version)Version?.Clone();
-            n._flags = _flags;
-            n.CodeBase = CodeBase;
-            n.HashAlgorithm = HashAlgorithm;
-            n.VersionCompatibility = VersionCompatibility;
-            return n;
+            get
+            {
+                return CultureInfo?.Name;
+            }
+            set
+            {
+                CultureInfo = (value == null) ? null : new CultureInfo(value);
+            }
+        }
+
+        public string CodeBase { get; set; }
+
+        public string EscapedCodeBase
+        {
+            get
+            {
+                if (CodeBase == null)
+                    return null;
+                else
+                    return EscapeCodeBase(CodeBase);
+            }
         }
 
         public ProcessorArchitecture ProcessorArchitecture
@@ -83,58 +98,19 @@ namespace System.Reflection
             }
         }
 
-        public string CultureName
+        public object Clone()
         {
-            get
-            {
-                return CultureInfo?.Name;
-            }
-            set
-            {
-                CultureInfo = (value == null) ? null : new CultureInfo(value);
-            }
-        }
-
-        public CultureInfo CultureInfo { get; set; }
-
-        public AssemblyNameFlags Flags
-        {
-            get { return (AssemblyNameFlags)((uint)_flags & 0xFFFFF10F); }
-            set
-            {
-                _flags &= unchecked((AssemblyNameFlags)0x00000EF0);
-                _flags |= (value & unchecked((AssemblyNameFlags)0xFFFFF10F));
-            }
-        }
-
-        public string FullName
-        {
-            get
-            {
-                if (this.Name == null)
-                    return string.Empty;
-                // Do not call GetPublicKeyToken() here - that latches the result into AssemblyName which isn't a side effect we want.
-                byte[] pkt = _publicKeyToken ?? AssemblyNameHelpers.ComputePublicKeyToken(_publicKey);
-                return AssemblyNameFormatter.ComputeDisplayName(Name, Version, CultureName, pkt, Flags, ContentType); 
-            }
-        }
-
-        public string Name { get; set; }
-        public Version Version { get; set; }
-        public string CodeBase { get; set; }
-        public AssemblyHashAlgorithm HashAlgorithm { get; set; }
-        public AssemblyVersionCompatibility VersionCompatibility { get; set; }
-        public StrongNameKeyPair KeyPair { get; set; }
-
-        public string EscapedCodeBase
-        {
-            get
-            {
-                if (CodeBase == null)
-                    return null;
-                else
-                    return EscapeCodeBase(CodeBase);
-            }
+            AssemblyName n = new AssemblyName();
+            n.Name = Name;
+            n._publicKey = (byte[])_publicKey?.Clone();
+            n._publicKeyToken = (byte[])_publicKeyToken?.Clone();
+            n.CultureInfo = CultureInfo;
+            n.Version = (Version)Version?.Clone();
+            n._flags = _flags;
+            n.CodeBase = CodeBase;
+            n.HashAlgorithm = HashAlgorithm;
+            n.VersionCompatibility = VersionCompatibility;
+            return n;
         }
 
         public byte[] GetPublicKey()
@@ -162,6 +138,32 @@ namespace System.Reflection
         public void SetPublicKeyToken(byte[] publicKeyToken)
         {
             _publicKeyToken = publicKeyToken;
+        }
+
+        public AssemblyNameFlags Flags
+        {
+            get { return (AssemblyNameFlags)((uint)_flags & 0xFFFFF10F); }
+            set
+            {
+                _flags &= unchecked((AssemblyNameFlags)0x00000EF0);
+                _flags |= (value & unchecked((AssemblyNameFlags)0xFFFFF10F));
+            }
+        }
+
+        public AssemblyHashAlgorithm HashAlgorithm { get; set; }
+        public AssemblyVersionCompatibility VersionCompatibility { get; set; }
+        public StrongNameKeyPair KeyPair { get; set; }
+
+        public string FullName
+        {
+            get
+            {
+                if (this.Name == null)
+                    return string.Empty;
+                // Do not call GetPublicKeyToken() here - that latches the result into AssemblyName which isn't a side effect we want.
+                byte[] pkt = _publicKeyToken ?? AssemblyNameHelpers.ComputePublicKeyToken(_publicKey);
+                return AssemblyNameFormatter.ComputeDisplayName(Name, Version, CultureName, pkt, Flags, ContentType);
+            }
         }
 
         public override string ToString()
@@ -210,10 +212,6 @@ namespace System.Reflection
         }
 
         internal static string EscapeCodeBase(string codebase) { throw new PlatformNotSupportedException(); }
-
-        private AssemblyNameFlags _flags;
-        private byte[] _publicKey;
-        private byte[] _publicKeyToken;
     }
 }
 
