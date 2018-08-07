@@ -45,6 +45,7 @@ namespace Internal.IL
         private LLVMBuilderRef _builder;
         private readonly LocalVariableDefinition[] _locals;
         private readonly LLVMValueRef[] _localSlots;
+        private readonly LLVMValueRef[] _argSlots;
         private List<SpilledExpressionEntry> _spilledExpressions = new List<SpilledExpressionEntry>();
         private int _pointerSize;
         private readonly byte[] _ilBytes;
@@ -53,9 +54,7 @@ namespace Internal.IL
         /// Stack of values pushed onto the IL stack: locals, arguments, values, function pointer, ...
         /// </summary>
         private EvaluationStack<StackEntry> _stack = new EvaluationStack<StackEntry>(0);
-
-        LLVMTypeRef _universalSignature = LLVM.FunctionType(LLVM.VoidType(), new LLVMTypeRef[] { LLVM.PointerType(LLVM.Int8Type(), 0), LLVM.PointerType(LLVM.Int8Type(), 0) }, false);
-
+        
         private class BasicBlock
         {
             // Common fields
@@ -94,6 +93,7 @@ namespace Internal.IL
             _ilBytes = methodIL.GetILBytes();
             _locals = methodIL.GetLocals();
             _localSlots = new LLVMValueRef[_locals.Length];
+            _argSlots = new LLVMValueRef[method.Signature.Length];
             _signature = method.Signature;
             _thisType = method.OwningType;
 
@@ -103,7 +103,7 @@ namespace Internal.IL
             {
                 _exceptionRegions[i] = new ExceptionRegion() { ILRegion = ilExceptionRegions[i] };
             }
-            _llvmFunction = GetOrCreateLLVMFunction(mangledName);
+            _llvmFunction = GetOrCreateLLVMFunction(mangledName, method.Signature);
             _builder = LLVM.CreateBuilder();
             _pointerSize = compilation.NodeFactory.Target.PointerSize;
         }
@@ -158,9 +158,36 @@ namespace Internal.IL
             LLVMBasicBlockRef prologBlock = LLVM.AppendBasicBlock(_llvmFunction, "Prolog");
             LLVM.PositionBuilderAtEnd(_builder, prologBlock);
 
+            // Copy arguments onto the stack to allow
+            // them to be referenced by address
+            int thisOffset = 0;
+            if (!_signature.IsStatic)
+            {
+                thisOffset = 1;
+            }
+
+            // Keep track of where we are in the llvm signature, starting after the
+            // shadow stack pointer and return adress
+            int signatureIndex = 1;
+            if (NeedsReturnStackSlot(_signature))
+            {
+                signatureIndex++;
+            }
+
+            for (int i = 0; i < _signature.Length; i++)
+            {
+                if (CanStoreTypeOnStack(_signature[i]))
+                {
+                    LLVMValueRef argStackSlot = LLVM.BuildAlloca(_builder, GetLLVMTypeForTypeDesc(_signature[i]), $"arg{i + thisOffset}_");
+                    LLVM.BuildStore(_builder, LLVM.GetParam(_llvmFunction, (uint)signatureIndex), argStackSlot);
+                    _argSlots[i] = argStackSlot;
+                    signatureIndex++;
+                }
+            }
+
             for (int i = 0; i < _locals.Length; i++)
             {
-                if (CanStoreTypeOnStack(_locals[i].Type))
+                if (CanStoreLocalOnStack(_locals[i].Type))
                 {
                     LLVMValueRef localStackSlot = LLVM.BuildAlloca(_builder, GetLLVMTypeForTypeDesc(_locals[i].Type), $"local{i}_");
                     _localSlots[i] = localStackSlot;
@@ -172,7 +199,7 @@ namespace Internal.IL
                 for(int i = 0; i < _locals.Length; i++)
                 {
                     LLVMValueRef localAddr = LoadVarAddress(i, LocalVarKind.Local, out TypeDesc localType);
-                    if(CanStoreTypeOnStack(localType))
+                    if(CanStoreLocalOnStack(localType))
                     {
                         LLVMTypeRef llvmType = GetLLVMTypeForTypeDesc(localType);
                         LLVMTypeKind typeKind = LLVM.GetTypeKind(llvmType);
@@ -236,18 +263,18 @@ namespace Internal.IL
             LLVM.BuildBr(_builder, block0);
         }
 
-        private LLVMValueRef CreateLLVMFunction(string mangledName)
+        private LLVMValueRef CreateLLVMFunction(string mangledName, MethodSignature signature)
         {
-            return LLVM.AddFunction(Module, mangledName , _universalSignature);            
+            return LLVM.AddFunction(Module, mangledName, GetLLVMSignatureForMethod(signature));
         }
 
-        private LLVMValueRef GetOrCreateLLVMFunction(string mangledName)
+        private LLVMValueRef GetOrCreateLLVMFunction(string mangledName, MethodSignature signature)
         {
             LLVMValueRef llvmFunction = LLVM.GetNamedFunction(Module, mangledName);
 
             if(llvmFunction.Pointer == IntPtr.Zero)
             {
-                return CreateLLVMFunction(mangledName);
+                return CreateLLVMFunction(mangledName, signature);
             }
             return llvmFunction;
         }
@@ -484,7 +511,7 @@ namespace Internal.IL
                     varCountBase = 1;
                 }
 
-                GetArgSizeAndOffsetAtIndex(index, out int argSize, out varOffset);
+                GetArgSizeAndOffsetAtIndex(index, out int argSize, out varOffset, out int realArgIndex);
 
                 if (!_signature.IsStatic && index == 0)
                 {
@@ -499,6 +526,13 @@ namespace Internal.IL
                     type = _signature[index - varCountBase];
                 }
                 valueType = GetLLVMTypeForTypeDesc(type);
+
+                // If the argument can be passed as a real argument rather than on the shadow stack,
+                // get its address here
+                if(realArgIndex != -1)
+                {
+                    return _argSlots[realArgIndex];
+                }
             }
             else if (kind == LocalVarKind.Local)
             {
@@ -785,7 +819,7 @@ namespace Internal.IL
             for (int i = 0; i < _locals.Length; i++)
             {
                 TypeDesc localType = _locals[i].Type;
-                if (!CanStoreTypeOnStack(localType))
+                if (!CanStoreLocalOnStack(localType))
                 {
                     offset = PadNextOffset(localType, offset);
                 }
@@ -793,30 +827,45 @@ namespace Internal.IL
             return offset.AlignUp(_pointerSize);
         }
 
-        /// <summary>
-        /// Returns true if the type can be stored on the local stack
-        /// instead of the shadow stack in this method.
-        /// </summary>
-        private bool CanStoreTypeOnStack(TypeDesc localType)
+        private bool CanStoreLocalOnStack(TypeDesc localType)
         {
             // Keep all locals on the shadow stack if there is exception
             // handling so funclets can access them
             if (_exceptionRegions.Length == 0)
             {
-                if (localType is DefType)
-                {
-                    if (!((DefType)localType).ContainsGCPointers)
-                    {
-                        return true;
-                    }
-                }
-                else if (localType is PointerType)
+                return CanStoreTypeOnStack(localType);
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Returns true if the type can be stored on the local stack
+        /// instead of the shadow stack in this method.
+        /// </summary>
+        private static bool CanStoreTypeOnStack(TypeDesc type)
+        {
+            if (type is DefType defType)
+            {
+                if (!defType.IsGCPointer && !defType.ContainsGCPointers)
                 {
                     return true;
                 }
             }
+            else if (type is PointerType)
+            {
+                return true;
+            }
 
             return false;
+        }
+
+        /// <summary>
+        /// Returns true if the method returns a type that must be kept
+        /// on the shadow stack
+        /// </summary>
+        private static bool NeedsReturnStackSlot(MethodSignature signature)
+        {
+            return !signature.ReturnType.IsVoid && !CanStoreTypeOnStack(signature.ReturnType);
         }
 
         private int GetTotalParameterOffset()
@@ -824,7 +873,10 @@ namespace Internal.IL
             int offset = 0;
             for (int i = 0; i < _signature.Length; i++)
             {
-                offset = PadNextOffset(_signature[i], offset);
+                if (!CanStoreTypeOnStack(_signature[i]))
+                {
+                    offset = PadNextOffset(_signature[i], offset);
+                }
             }
             if (!_signature.IsStatic)
             {
@@ -842,8 +894,10 @@ namespace Internal.IL
             return offset.AlignUp(_pointerSize);
         }
 
-        private void GetArgSizeAndOffsetAtIndex(int index, out int size, out int offset)
+        private void GetArgSizeAndOffsetAtIndex(int index, out int size, out int offset, out int realArgIndex)
         {
+            realArgIndex = -1;
+
             int thisSize = 0;
             if (!_signature.IsStatic)
             {
@@ -863,12 +917,29 @@ namespace Internal.IL
             var argType = _signature[index];
             size = argType.GetElementSize().AsInt;
 
+            int potentialRealArgIndex = 0;
+
             offset = thisSize;
             for (int i = 0; i < index; i++)
             {
-                offset = PadNextOffset(_signature[i], offset);
+                // We could compact the set of argSlots to only those that we'd keep on the stack, but currently don't
+                potentialRealArgIndex++;
+
+                if (!CanStoreTypeOnStack(_signature[i]))
+                {
+                    offset = PadNextOffset(_signature[i], offset);
+                }
             }
-            offset = PadOffset(argType, offset);
+
+            if (CanStoreTypeOnStack(argType))
+            {
+                realArgIndex = potentialRealArgIndex;
+                offset = -1;
+            }
+            else
+            {
+                offset = PadOffset(argType, offset);
+            }
         }
 
         private void GetLocalSizeAndOffsetAtIndex(int index, out int size, out int offset)
@@ -876,7 +947,7 @@ namespace Internal.IL
             LocalVariableDefinition local = _locals[index];
             size = local.Type.GetElementSize().AsInt;
 
-            if (CanStoreTypeOnStack(local.Type))
+            if (CanStoreLocalOnStack(local.Type))
             {
                 offset = -1;
             }
@@ -885,7 +956,7 @@ namespace Internal.IL
                 offset = 0;
                 for (int i = 0; i < index; i++)
                 {
-                    if (!CanStoreTypeOnStack(_locals[i].Type))
+                    if (!CanStoreLocalOnStack(_locals[i].Type))
                     {
                         offset = PadNextOffset(_locals[i].Type, offset);
                     }
@@ -992,14 +1063,25 @@ namespace Internal.IL
 
         private void ImportReturn()
         {
-            if (_signature.ReturnType != GetWellKnownType(WellKnownType.Void))
+            if (_signature.ReturnType.IsVoid)
             {
-                StackEntry retVal = _stack.Pop();
-                LLVMTypeRef valueType = GetLLVMTypeForTypeDesc(_signature.ReturnType);
-                ImportStoreHelper(retVal.ValueAsType(valueType, _builder), valueType, LLVM.GetNextParam(LLVM.GetFirstParam(_llvmFunction)), 0);
+                LLVM.BuildRetVoid(_builder);
+                return;
             }
 
-            LLVM.BuildRetVoid(_builder);
+            StackEntry retVal = _stack.Pop();
+            LLVMTypeRef valueType = GetLLVMTypeForTypeDesc(_signature.ReturnType);
+            LLVMValueRef castValue = retVal.ValueAsType(valueType, _builder);
+
+            if (NeedsReturnStackSlot(_signature))
+            {
+                ImportStoreHelper(castValue, valueType, LLVM.GetNextParam(LLVM.GetFirstParam(_llvmFunction)), 0);
+                LLVM.BuildRetVoid(_builder);
+            }
+            else
+            {
+                LLVM.BuildRet(_builder, castValue);
+            }
         }
 
         private void ImportCall(ILOpcode opcode, int token)
@@ -1095,7 +1177,7 @@ namespace Internal.IL
                 callee = delegateInfo.Constructor.Method;
                 if (callee.Signature.Length == 3)
                 {
-                    PushExpression(StackValueKind.NativeInt, "thunk", GetOrCreateLLVMFunction(_compilation.NodeFactory.NameMangler.GetMangledMethodName(delegateInfo.Thunk.Method).ToString()));
+                    PushExpression(StackValueKind.NativeInt, "thunk", GetOrCreateLLVMFunction(_compilation.NodeFactory.NameMangler.GetMangledMethodName(delegateInfo.Thunk.Method).ToString(), delegateInfo.Thunk.Method.Signature));
                 }
             }
 
@@ -1110,7 +1192,7 @@ namespace Internal.IL
             if(callee.IsFinal || callee.OwningType.IsSealed())
             {
                 AddMethodReference(callee);
-                return GetOrCreateLLVMFunction(calleeName);
+                return GetOrCreateLLVMFunction(calleeName, callee.Signature);
             }
 
             if (thisPointer != null && callee.IsVirtual && isCallVirt)
@@ -1155,7 +1237,7 @@ namespace Internal.IL
                 if (targetMethod != null)
                 {
                     AddMethodReference(targetMethod);
-                    return GetOrCreateLLVMFunction(_compilation.NameMangler.GetMangledMethodName(targetMethod).ToString());
+                    return GetOrCreateLLVMFunction(_compilation.NameMangler.GetMangledMethodName(targetMethod).ToString(), callee.Signature);
                 }
 
                 return GetCallableVirtualMethod(thisPointer, callee);
@@ -1163,7 +1245,7 @@ namespace Internal.IL
             }
             else
             {
-                return GetOrCreateLLVMFunction(calleeName);
+                return GetOrCreateLLVMFunction(calleeName, callee.Signature);
             }
         }
 
@@ -1180,7 +1262,7 @@ namespace Internal.IL
             Debug.Assert(method.IsVirtual);
             LLVMValueRef slot = GetOrCreateMethodSlot(method);
             var pointerSize = method.Context.Target.PointerSize;
-            LLVMTypeRef universalSignature = LLVM.FunctionType(LLVM.VoidType(), new LLVMTypeRef[] { LLVM.PointerType(LLVM.Int8Type(), 0), LLVM.PointerType(LLVM.Int8Type(), 0) }, false);
+            LLVMTypeRef llvmSignature = GetLLVMSignatureForMethod(method.Signature);
             LLVMValueRef functionPtr;
             if (method.OwningType.IsInterface)
             {
@@ -1188,17 +1270,53 @@ namespace Internal.IL
                 var interfaceEEType = new LoadExpressionEntry(StackValueKind.ValueType, "interfaceEEType", GetEETypePointerForTypeDesc(method.OwningType, true), eeTypeDesc);
                 var eeTypeExpression = new LoadExpressionEntry(StackValueKind.ValueType, "eeType", objectPtr.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), eeTypeDesc);
                 var targetEntry = CallRuntime(_compilation.TypeSystemContext, DispatchResolve, "FindInterfaceMethodImplementationTarget", new StackEntry[] { eeTypeExpression, interfaceEEType, new ExpressionEntry(StackValueKind.Int32, "slot", slot, GetWellKnownType(WellKnownType.UInt16)) });
-                functionPtr = targetEntry.ValueAsType(LLVM.PointerType(universalSignature, 0), _builder);
+                functionPtr = targetEntry.ValueAsType(LLVM.PointerType(llvmSignature, 0), _builder);
             }
             else
             {
-                var rawObjectPtr = CastIfNecessary(objectPtr.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(universalSignature, 0), 0), 0), objectPtr.Name());
+                var rawObjectPtr = CastIfNecessary(objectPtr.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(llvmSignature, 0), 0), 0), objectPtr.Name());
                 var eeType = LLVM.BuildLoad(_builder, rawObjectPtr, "ldEEType");
                 var slotPtr = LLVM.BuildGEP(_builder, eeType, new LLVMValueRef[] { slot }, "__getslot__");
                 functionPtr = LLVM.BuildLoad(_builder, slotPtr, "ld__getslot__");
             }
 
             return functionPtr;
+        }
+
+        private LLVMTypeRef GetLLVMSignatureForMethod(MethodSignature signature)
+        {
+            TypeDesc returnType = signature.ReturnType;
+            LLVMTypeRef llvmReturnType;
+            bool returnOnStack = false;
+            if (!NeedsReturnStackSlot(signature))
+            {
+                returnOnStack = true;
+                llvmReturnType = GetLLVMTypeForTypeDesc(returnType);
+            }
+            else
+            {
+                llvmReturnType = LLVM.VoidType();
+            }
+
+            List<LLVMTypeRef> signatureTypes = new List<LLVMTypeRef>();
+            signatureTypes.Add(LLVM.PointerType(LLVM.Int8Type(), 0)); // Shadow stack pointer
+
+            if (!returnOnStack && returnType != GetWellKnownType(WellKnownType.Void))
+            {
+                signatureTypes.Add(LLVM.PointerType(LLVM.Int8Type(), 0));
+            }
+
+            // Intentionally skipping the 'this' pointer since it could always be a GC reference
+            // and thus must be on the shadow stack
+            foreach (TypeDesc type in signature)
+            {
+                if (CanStoreTypeOnStack(type))
+                {
+                    signatureTypes.Add(GetLLVMTypeForTypeDesc(type));
+                }
+            }
+
+            return LLVM.FunctionType(llvmReturnType, signatureTypes.ToArray(), false);
         }
 
         private ExpressionEntry AllocateObject(TypeDesc type)
@@ -1371,21 +1489,18 @@ namespace Internal.IL
             var pointerSize = _compilation.NodeFactory.Target.PointerSize;
 
             LLVMValueRef returnAddress;
-            LLVMValueRef castReturnAddress;
+            LLVMValueRef castReturnAddress = default;
             TypeDesc returnType = signature.ReturnType;
+
+            bool needsReturnSlot = NeedsReturnStackSlot(signature);
             SpilledExpressionEntry returnSlot = null;
-            if (!returnType.IsVoid)
+            if (needsReturnSlot)
             {
                 int returnIndex = _spilledExpressions.Count;
                 returnSlot = new SpilledExpressionEntry(GetStackValueKind(returnType), callee?.Name + "_return", returnType, returnIndex, this);
                 _spilledExpressions.Add(returnSlot);
                 returnAddress = LoadVarAddress(returnIndex, LocalVarKind.Temp, out TypeDesc unused);
                 castReturnAddress = LLVM.BuildPointerCast(_builder, returnAddress, LLVM.PointerType(LLVM.Int8Type(), 0), callee?.Name + "_castreturn");
-            }
-            else
-            {
-                returnAddress = LLVM.ConstNull(LLVM.PointerType(LLVM.Int8Type(), 0));
-                castReturnAddress = returnAddress;
             }
 
             int offset = GetTotalParameterOffset() + GetTotalLocalOffset();
@@ -1394,16 +1509,25 @@ namespace Internal.IL
                 String.Empty);
             var castShadowStack = LLVM.BuildPointerCast(_builder, shadowStack, LLVM.PointerType(LLVM.Int8Type(), 0), "castshadowstack");
 
-            // argument offset
+            List<LLVMValueRef> llvmArgs = new List<LLVMValueRef>();
+            llvmArgs.Add(castShadowStack);
+            if (needsReturnSlot)
+            {
+                llvmArgs.Add(castReturnAddress);
+            }
+
+            // argument offset on the shadow stack
             int argOffset = 0;
             var instanceAdjustment = signature.IsStatic ? 0 : 1;
             for (int index = 0; index < argumentValues.Length; index++)
             {
                 StackEntry toStore = argumentValues[index];
 
+                bool isThisParameter = false;
                 TypeDesc argType;
                 if (index == 0 && !signature.IsStatic)
                 {
+                    isThisParameter = true;
                     if (opcode == ILOpcode.calli)
                         argType = toStore.Type;
                     else if (callee.OwningType.IsValueType)
@@ -1416,14 +1540,24 @@ namespace Internal.IL
                     argType = signature[index - instanceAdjustment];
                 }
 
-                // The previous argument might have left this type unaligned, so pad if necessary
-                argOffset = PadOffset(argType, argOffset);
-
                 LLVMTypeRef valueType = GetLLVMTypeForTypeDesc(argType);
+                LLVMValueRef argValue = toStore.ValueAsType(valueType, _builder);
 
-                ImportStoreHelper(toStore.ValueAsType(valueType, _builder), valueType, castShadowStack, (uint)argOffset);
+                // Pass arguments as parameters if possible
+                if (!isThisParameter && CanStoreTypeOnStack(argType))
+                {
+                    llvmArgs.Add(argValue);
+                }
+                // Otherwise store them on the shadow stack
+                else
+                {
+                    // The previous argument might have left this type unaligned, so pad if necessary
+                    argOffset = PadOffset(argType, argOffset);
 
-                argOffset += argType.GetElementSize().AsInt;
+                    ImportStoreHelper(argValue, valueType, castShadowStack, (uint)argOffset);
+
+                    argOffset += argType.GetElementSize().AsInt;
+                }
             }
 
             LLVMValueRef fn;
@@ -1436,14 +1570,18 @@ namespace Internal.IL
                 fn = LLVMFunctionForMethod(callee, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt);
             }
 
-            LLVM.BuildCall(_builder, fn, new LLVMValueRef[] {
-                castShadowStack,
-                castReturnAddress}, string.Empty);
-
+            LLVMValueRef llvmReturn = LLVM.BuildCall(_builder, fn, llvmArgs.ToArray(), string.Empty);
             
             if (!returnType.IsVoid)
             {
-                return returnSlot;
+                if (needsReturnSlot)
+                {
+                    return returnSlot;
+                }
+                else
+                {
+                    return new ExpressionEntry(GetStackValueKind(returnType), callee?.Name + "_return", llvmReturn, returnType);
+                }
             }
             else
             {
@@ -1641,15 +1779,35 @@ namespace Internal.IL
             curOffset = PadNextOffset(method.Signature.ReturnType, curOffset);
             LLVMValueRef calleeFrame = LLVM.BuildGEP(builder, shadowStack, new LLVMValueRef[] { BuildConstInt32(curOffset) }, "calleeFrame");
 
-            for (int i = 0; i < llvmParams.Length; i++)
+            List<LLVMValueRef> llvmArgs = new List<LLVMValueRef>();
+            llvmArgs.Add(calleeFrame);
+
+            bool needsReturnSlot = NeedsReturnStackSlot(method.Signature);
+
+            if (needsReturnSlot)
             {
-                curOffset = PadOffset(method.Signature[i], curOffset);
-                LLVMValueRef argAddr = LLVM.BuildGEP(builder, shadowStack, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (ulong)curOffset, LLVMMisc.False) }, "arg" + i);
-                LLVM.BuildStore(builder, LLVM.GetParam(thunkFunc, (uint)i), CastIfNecessary(builder, argAddr, LLVM.PointerType(llvmParams[i], 0), $"parameter{i}_"));
-                curOffset = PadNextOffset(method.Signature[i], curOffset);
+                // Slot for return value if necessary
+                llvmArgs.Add(shadowStack);
             }
 
-            LLVM.BuildCall(builder, managedFunction, new LLVMValueRef[] { calleeFrame, shadowStack }, "");
+            for (int i = 0; i < llvmParams.Length; i++)
+            {
+                LLVMValueRef argValue = LLVM.GetParam(thunkFunc, (uint)i);
+
+                if (CanStoreTypeOnStack(method.Signature[i]))
+                {
+                    llvmArgs.Add(argValue);
+                }
+                else
+                {
+                    curOffset = PadOffset(method.Signature[i], curOffset);
+                    LLVMValueRef argAddr = LLVM.BuildGEP(builder, shadowStack, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (ulong)curOffset, LLVMMisc.False) }, "arg" + i);
+                    LLVM.BuildStore(builder, argValue, CastIfNecessary(builder, argAddr, LLVM.PointerType(llvmParams[i], 0), $"parameter{i}_"));
+                    curOffset = PadNextOffset(method.Signature[i], curOffset);
+                }
+            }
+
+            LLVMValueRef llvmReturnValue = LLVM.BuildCall(builder, managedFunction, llvmArgs.ToArray(), "");
 
             if (method.IsNativeCallable)
             {
@@ -1657,9 +1815,16 @@ namespace Internal.IL
                 LLVM.BuildCall(builder, RhpReversePInvokeReturn2, new LLVMValueRef[] { reversePInvokeFrame }, "");
             }
 
-            if (method.Signature.ReturnType != compilation.TypeSystemContext.GetWellKnownType(WellKnownType.Void))
+            if (!method.Signature.ReturnType.IsVoid)
             {
-                LLVM.BuildRet(builder, LLVM.BuildLoad(builder, CastIfNecessary(builder, shadowStack, LLVM.PointerType(GetLLVMTypeForTypeDesc(method.Signature.ReturnType), 0)), "returnValue"));
+                if (needsReturnSlot)
+                {
+                    LLVM.BuildRet(builder, LLVM.BuildLoad(builder, CastIfNecessary(builder, shadowStack, LLVM.PointerType(GetLLVMTypeForTypeDesc(method.Signature.ReturnType), 0)), "returnValue"));
+                }
+                else
+                {
+                    LLVM.BuildRet(builder, llvmReturnValue);
+                }
             }
             else
             {
@@ -1670,7 +1835,7 @@ namespace Internal.IL
         private void ImportCalli(int token)
         {
             MethodSignature methodSignature = (MethodSignature)_methodIL.GetObject(token);
-            HandleCall(null, methodSignature, ILOpcode.calli, ((ExpressionEntry)_stack.Pop()).ValueAsType(LLVM.PointerType(_universalSignature, 0), _builder));
+            HandleCall(null, methodSignature, ILOpcode.calli, ((ExpressionEntry)_stack.Pop()).ValueAsType(LLVM.PointerType(GetLLVMSignatureForMethod(methodSignature), 0), _builder));
         }
 
         private void ImportLdFtn(int token, ILOpcode opCode)
@@ -1693,7 +1858,7 @@ namespace Internal.IL
 
             if (targetLLVMFunction.Pointer.Equals(IntPtr.Zero))
             {
-                targetLLVMFunction = GetOrCreateLLVMFunction(_compilation.NameMangler.GetMangledMethodName(method).ToString());
+                targetLLVMFunction = GetOrCreateLLVMFunction(_compilation.NameMangler.GetMangledMethodName(method).ToString(), method.Signature);
             }
 
             var entry = new FunctionPointerEntry("ldftn", method, targetLLVMFunction, GetWellKnownType(WellKnownType.IntPtr), opCode == ILOpcode.ldvirtftn);

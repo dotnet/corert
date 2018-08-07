@@ -36,10 +36,19 @@ internal static class Program
         {
             PrintLine("Inline assign byte Test: Ok.");
         }
+        else
+        {
+            PrintLine("Inline assign byte Test: Failed.");
+        }
 
-        if(ILHelpers.ILHelpersTest.DupTest(ref tempInt) == 209 && tempInt == 209)
+        int dupTestInt = 9;
+        if(ILHelpers.ILHelpersTest.DupTest(ref dupTestInt) == 209 && dupTestInt == 209)
         {
             PrintLine("dup test: Ok.");
+        }
+        else
+        {
+            PrintLine("dup test: Failed.");
         }
 
         TestClass tempObj = new TestDerivedClass(1337);
@@ -81,7 +90,12 @@ internal static class Program
         {
             PrintLine("box test: Ok.");
         }
-
+        else
+        {
+            PrintLine("box test: Failed. Value:");
+            PrintLine(boxedInt.ToString());
+        }
+        
         var boxedStruct = (object)new BoxStubTest { Value = "Boxed Stub Test: Ok." };
         PrintLine(boxedStruct.ToString());
 
