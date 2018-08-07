@@ -45,7 +45,7 @@ namespace Internal.Runtime.TypeLoader
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
         {
             if ((type == UniversalCanonType)
-#if SUPPORT_JIT
+#if SUPPORT_DYNAMIC_CODE
                 || (type.IsRuntimeDeterminedType && (((RuntimeDeterminedType)type).CanonicalType == UniversalCanonType)))
 #else
                 )

@@ -21,8 +21,8 @@
       <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
-    <ProjectReference Condition="'$(InterpreterSupport)' != 'true'" Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj" />
-    <ProjectReference Condition="'$(InterpreterSupport)' == 'true'" Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.Experimental.csproj" />
+    <ProjectReference Condition="'$(DynamicCodeSupport)' != 'true'" Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj" />
+    <ProjectReference Condition="'$(DynamicCodeSupport)' == 'true'" Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.Experimental.csproj" />
   </ItemGroup>
 
   <Import Project="System.Private.Interop.Shared.projitems" />
