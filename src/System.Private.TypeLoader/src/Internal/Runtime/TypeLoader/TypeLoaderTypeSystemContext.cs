@@ -202,7 +202,7 @@ namespace Internal.Runtime.TypeLoader
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
             AssemblyBindResult bindResult;
             Exception failureException;
-            if (!AssemblyBinderImplementation.Instance.Bind(name.ToRuntimeAssemblyName(), out bindResult, out failureException))
+            if (!AssemblyBinderImplementation.Instance.Bind(name.ToRuntimeAssemblyName(), false, out bindResult, out failureException))
             {
                 if (throwErrorIfNotFound)
                     throw failureException;

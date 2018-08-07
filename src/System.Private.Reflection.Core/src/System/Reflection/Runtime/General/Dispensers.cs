@@ -45,12 +45,12 @@ namespace System.Reflection.Runtime.Assemblies
         /// <summary>
         /// Returns non-null or throws.
         /// </summary>
-        internal static RuntimeAssembly GetRuntimeAssemblyFromByteArray(byte[] rawAssembly, byte[] pdbSymbolStore)
+        internal static RuntimeAssembly GetRuntimeAssemblyFromByteArray(byte[] rawAssembly, byte[] pdbSymbolStore, bool cacheMissedLookups)
         {
             AssemblyBinder binder = ReflectionCoreExecution.ExecutionDomain.ReflectionDomainSetup.AssemblyBinder;
             AssemblyBindResult bindResult;
             Exception exception;
-            if (!binder.Bind(rawAssembly, pdbSymbolStore, out bindResult, out exception))
+            if (!binder.Bind(rawAssembly, pdbSymbolStore, cacheMissedLookups, out bindResult, out exception))
             {
                 if (exception != null)
                     throw exception;
@@ -97,7 +97,7 @@ namespace System.Reflection.Runtime.Assemblies
                     AssemblyBinder binder = ReflectionCoreExecution.ExecutionDomain.ReflectionDomainSetup.AssemblyBinder;
                     AssemblyBindResult bindResult;
                     Exception exception;
-                    if (!binder.Bind(assemblyRefName, out bindResult, out exception))
+                    if (!binder.Bind(assemblyRefName, false, out bindResult, out exception))
                         return exception;
 
                     return GetRuntimeAssembly(bindResult);
