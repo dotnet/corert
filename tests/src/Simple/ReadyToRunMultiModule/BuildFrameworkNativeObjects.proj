@@ -5,7 +5,7 @@
     <IlcMultiModule>true</IlcMultiModule>
     <NativeIntermediateOutputPath>$(MSBuildProjectDirectory)\obj\$(Configuration)\$(Platform)\</NativeIntermediateOutputPath>
     <BuildingReadyToRunMultiModule>true</BuildingReadyToRunMultiModule>
-	<ReadyToRunMultiModuleAssembliesPaths>$(MSBuildThisFileDirectory)bin\Debug\x64\MultiModuleTestingClass.dll;$(MSBuildThisFileDirectory)bin\Debug\x64\ReadyToRunMultiModule.exe</ReadyToRunMultiModuleAssembliesPaths>
+    <ReadyToRunMultiModuleAssembliesPaths>$(MSBuildThisFileDirectory)bin\$(Configuration)\$(Platform)\MultiModuleTestingClass.dll;$(MSBuildThisFileDirectory)bin\$(Configuration)\$(Platform)\ReadyToRunMultiModule.exe</ReadyToRunMultiModuleAssembliesPaths>
   </PropertyGroup>
 
   <ItemGroup>
@@ -35,7 +35,7 @@
         <IlcCompileInput Include="@(ManagedBinary)" />
     </ItemGroup>
   </Target>
-  
+
   <Target Name="AddModuleDependencies">
     <ItemGroup>
       <IlcArg Include="-m:%(ReadyToRunMultiModuleAssemblies.Identity)" Condition="'%(ReadyToRunMultiModuleAssemblies.Identity)' != '$(LibraryToCompile)'" />
