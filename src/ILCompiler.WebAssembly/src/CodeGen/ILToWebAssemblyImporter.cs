@@ -187,14 +187,41 @@ namespace Internal.IL
                 signatureIndex++;
             }
 
+            string[] argNames = null;
+            if (_debugInformation != null)
+            {
+                argNames = _debugInformation.GetParameterNames().ToArray();
+            }
+
             for (int i = 0; i < _signature.Length; i++)
             {
                 if (CanStoreTypeOnStack(_signature[i]))
                 {
-                    LLVMValueRef argStackSlot = LLVM.BuildAlloca(_builder, GetLLVMTypeForTypeDesc(_signature[i]), $"arg{i + thisOffset}_");
+                    string argName = String.Empty;
+                    if (argNames != null && argNames[i] != null)
+                    {
+                        argName = argNames[i] + "_";
+                    }
+                    argName += $"arg{i + thisOffset}_";
+
+                    LLVMValueRef argStackSlot = LLVM.BuildAlloca(_builder, GetLLVMTypeForTypeDesc(_signature[i]), argName);
                     LLVM.BuildStore(_builder, LLVM.GetParam(_llvmFunction, (uint)signatureIndex), argStackSlot);
                     _argSlots[i] = argStackSlot;
                     signatureIndex++;
+                }
+            }
+
+            string[] localNames = new string[_locals.Length];
+            if (_debugInformation != null)
+            {
+                foreach (ILLocalVariable localDebugInfo in _debugInformation.GetLocalVariables())
+                {
+                    // Check whether the slot still exists as the compiler may remove it for intrinsics
+                    int slot = localDebugInfo.Slot;
+                    if (slot < localNames.Length)
+                    {
+                        localNames[localDebugInfo.Slot] = localDebugInfo.Name;
+                    }
                 }
             }
 
@@ -202,7 +229,15 @@ namespace Internal.IL
             {
                 if (CanStoreLocalOnStack(_locals[i].Type))
                 {
-                    LLVMValueRef localStackSlot = LLVM.BuildAlloca(_builder, GetLLVMTypeForTypeDesc(_locals[i].Type), $"local{i}_");
+                    string localName = String.Empty;
+                    if(localNames[i] != null)
+                    {
+                        localName = localNames[i] + "_";
+                    }
+
+                    localName += $"local{i}_";
+
+                    LLVMValueRef localStackSlot = LLVM.BuildAlloca(_builder, GetLLVMTypeForTypeDesc(_locals[i].Type), localName);
                     _localSlots[i] = localStackSlot;
                 }
             }
