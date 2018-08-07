@@ -5,12 +5,7 @@
     <IlcMultiModule>true</IlcMultiModule>
     <NativeIntermediateOutputPath>$(MSBuildProjectDirectory)\obj\$(Configuration)\$(Platform)\</NativeIntermediateOutputPath>
     <BuildingReadyToRunMultiModule>true</BuildingReadyToRunMultiModule>
-    <ReadyToRunMultiModuleAssembliesPaths>$(MSBuildThisFileDirectory)bin\$(Configuration)\$(Platform)\MultiModuleTestingClass.dll;$(MSBuildThisFileDirectory)bin\$(Configuration)\$(Platform)\ReadyToRunMultiModule.exe</ReadyToRunMultiModuleAssembliesPaths>
   </PropertyGroup>
-
-  <ItemGroup>
-    <ReadyToRunMultiModuleAssemblies Include="$(ReadyToRunMultiModuleAssembliesPaths)" />
-  </ItemGroup>
 
   <Target Name="BuildAllReadyToRunMultiModule"
     Inputs="@(ReadyToRunMultiModuleAssemblies)"
