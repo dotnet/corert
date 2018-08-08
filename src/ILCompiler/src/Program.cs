@@ -21,7 +21,6 @@ namespace ILCompiler
 
         private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, string> _moduleFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         private string _outputFilePath;
         private bool _isCppCodegen;
@@ -126,7 +125,6 @@ namespace ILCompiler
         {
             IReadOnlyList<string> inputFiles = Array.Empty<string>();
             IReadOnlyList<string> referenceFiles = Array.Empty<string>();
-            IReadOnlyList<string> moduleFiles = Array.Empty<string>();
 
             bool optimize = false;
 
@@ -172,7 +170,6 @@ namespace ILCompiler
                 syntax.DefineOptionList("initassembly", ref _initAssemblies, "Assembly(ies) with a library initializer");
                 syntax.DefineOptionList("appcontextswitch", ref _appContextSwitches, "System.AppContext switches to set");
                 syntax.DefineOptionList("runtimeopt", ref _runtimeOptions, "Runtime options to set");
-                syntax.DefineOptionList("m|module", ref moduleFiles, "Module file(s) for ReadyToRun multi-module compilation");
 
                 syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
                 syntax.DefineOption("targetos", ref _targetOSStr, "Target OS for cross compilation");
@@ -196,9 +193,6 @@ namespace ILCompiler
 
             foreach (var reference in referenceFiles)
                 Helpers.AppendExpandedPaths(_referenceFilePaths, reference, false);
-
-            foreach (var module in moduleFiles)
-                Helpers.AppendExpandedPaths(_moduleFilePaths, module, false);
 
             return argSyntax;
         }
@@ -307,18 +301,6 @@ namespace ILCompiler
             //  typeSystemContext.InputFilePaths = _inputFilePaths;
             //
             Dictionary<string, string> inputFilePaths = new Dictionary<string, string>();
-            foreach (var inputFile in _moduleFilePaths)
-            {
-                try
-                {
-                    var module = typeSystemContext.GetModuleFromPath(inputFile.Value);
-                    inputFilePaths.Add(inputFile.Key, inputFile.Value);
-                }
-                catch (TypeSystemException.BadImageFormatException)
-                {
-                    // Keep calm and carry on.
-                }
-            }
             foreach (var inputFile in _inputFilePaths)
             {
                 try
@@ -462,7 +444,6 @@ namespace ILCompiler
                 {
                     inputFilePath = input.Value;
                 }
-
                 builder = new ReadyToRunCodegenCompilationBuilder(typeSystemContext, compilationGroup, inputFilePath);
             }
             else if (_isCppCodegen)

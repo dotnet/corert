@@ -33,7 +33,7 @@
 
   <Target Name="AddModuleDependencies">
     <ItemGroup>
-      <IlcArg Include="-m:%(ReadyToRunMultiModuleAssemblies.Identity)" Condition="'%(ReadyToRunMultiModuleAssemblies.Identity)' != '$(LibraryToCompile)'" />
+      <IlcArg Include="-r:%(ReadyToRunMultiModuleAssemblies.Identity)" Condition="'%(ReadyToRunMultiModuleAssemblies.Identity)' != '$(LibraryToCompile)'" />
     </ItemGroup>
   </Target>
   
