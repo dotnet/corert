@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+
 public class TestingClass
 {
     int N;
@@ -13,5 +15,20 @@ public class TestingClass
     public int GetN()
     {
         return N;
+    }
+
+    public override string ToString()
+    {
+        return "";
+    }
+
+    public override bool Equals(Object obj)
+    {
+        return false;
+    }
+
+    public override int GetHashCode()
+    {
+        return 0;
     }
 }
