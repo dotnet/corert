@@ -16,19 +16,4 @@ public class TestingClass
     {
         return N;
     }
-
-    public override string ToString()
-    {
-        return "";
-    }
-
-    public override bool Equals(Object obj)
-    {
-        return false;
-    }
-
-    public override int GetHashCode()
-    {
-        return 0;
-    }
 }
