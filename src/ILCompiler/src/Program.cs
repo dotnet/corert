@@ -379,7 +379,7 @@ namespace ILCompiler
 
                         if (entrypointModule == null)
                         {
-                            compilationRoots.Add(new LibraryRootProvider(module));
+                            compilationRoots.Add(new ReadyToRunLibraryRootProvider(module));
                         }
                         inputModules.Add(module);
                     }
