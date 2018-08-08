@@ -747,15 +747,12 @@ namespace ILCompiler.PEWriter
                         relocationHelper.CopyToFilePosition(relocationFilePos);
 
                         // Look up relocation target
-                        if (_symbolMap.ContainsKey(relocation.Target))
-                        {
-                            SymbolTarget relocationTarget = _symbolMap[relocation.Target];
-                            Section targetSection = _sections[relocationTarget.SectionIndex];
-                            int targetRVA = targetSection.RVAWhenPlaced + relocationTarget.Offset;
+                        SymbolTarget relocationTarget = _symbolMap[relocation.Target];
+                        Section targetSection = _sections[relocationTarget.SectionIndex];
+                        int targetRVA = targetSection.RVAWhenPlaced + relocationTarget.Offset;
 
-                            // Apply the relocation
-                            relocationHelper.ProcessRelocation(relocation.RelocType, relocationRVA, targetRVA);
-                        }
+                        // Apply the relocation
+                        relocationHelper.ProcessRelocation(relocation.RelocType, relocationRVA, targetRVA);
                     }
                 }
             }
