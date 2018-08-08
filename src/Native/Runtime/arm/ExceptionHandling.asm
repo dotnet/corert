@@ -211,6 +211,7 @@ NotHijacked
         add         r1, sp, #rsp_offsetof_ExInfo                    ;; r1 <- ExInfo*
         mov         r3, #0
         str         r3, [r1, #OFFSETOF__ExInfo__m_exception]        ;; pExInfo->m_exception = null
+        strb        r3, [r1, #OFFSETOF__ExInfo__m_kind]             ;; init to a deterministic value (ExKind.None)
         mov         r3, #1
         strb        r3, [r1, #OFFSETOF__ExInfo__m_passNumber]       ;; pExInfo->m_passNumber = 1
         mov         r3, #0xFFFFFFFF
