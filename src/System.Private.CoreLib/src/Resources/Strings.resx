@@ -192,6 +192,9 @@
   <data name="Arg_DuplicateWaitObjectException" xml:space="preserve">
     <value>Duplicate objects in argument.</value>
   </data>
+  <data name="Arg_EHClauseNotFilter" xml:space="preserve">
+    <value>This ExceptionHandlingClause is not a filter.</value>
+  </data>
   <data name="Arg_EnumAndObjectMustBeSameType" xml:space="preserve">
     <value>Object must be the same type as the enum. The type passed in was '{0}'; the enum type was '{1}'.</value>
   </data>

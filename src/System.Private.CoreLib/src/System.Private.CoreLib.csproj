@@ -179,11 +179,9 @@
     <Compile Include="System\Reflection\Emit\ReflectionEmitThrower.cs" />
     <Compile Include="System\Reflection\Emit\SignatureHelper.cs" />
     <Compile Include="System\Reflection\Emit\TypeBuilder.cs" />
-    <Compile Include="System\Reflection\ExceptionHandlingClause.cs" />
     <Compile Include="System\Reflection\FieldInfo.CoreRT.cs" />
     <Compile Include="System\Reflection\LegacyCustomAttributeApis.cs" />
     <Compile Include="System\Reflection\MethodBase.CoreRT.cs" />
-    <Compile Include="System\Reflection\MethodBody.cs" />
     <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimeImplementedCustomAttributeData.cs" />
     <Compile Include="System\Resources\FileBasedResourceGroveler.cs" />
     <Compile Include="System\Resources\IResourceGroveler.cs" />
