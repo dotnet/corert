@@ -30,12 +30,9 @@ namespace Internal.IL.Stubs
             if (result != 0)
                 return result;
 
-            if (thisReturnType == DynamicInvokeMethodParameterKind.Pointer)
-            {
-                result = _targetSignature.GetNumerOfReturnTypePointerIndirections() - otherMethod._targetSignature.GetNumerOfReturnTypePointerIndirections();
-                if (result != 0)
-                    return result;
-            }
+            result = _targetSignature.GetNumerOfReturnTypePointerIndirections() - otherMethod._targetSignature.GetNumerOfReturnTypePointerIndirections();
+            if (result != 0)
+                return result;
 
             for (int i = 0; i < _targetSignature.Length; i++)
             {
@@ -44,12 +41,9 @@ namespace Internal.IL.Stubs
                 if (result != 0)
                     return result;
 
-                if (thisParamType == DynamicInvokeMethodParameterKind.Pointer)
-                {
-                    result = _targetSignature.GetNumberOfParameterPointerIndirections(i) - otherMethod._targetSignature.GetNumberOfParameterPointerIndirections(i);
-                    if (result != 0)
-                        return result;
-                }
+                result = _targetSignature.GetNumberOfParameterPointerIndirections(i) - otherMethod._targetSignature.GetNumberOfParameterPointerIndirections(i);
+                if (result != 0)
+                    return result;
             }
 
             Debug.Assert(this == otherMethod);

@@ -12,6 +12,8 @@ using Internal.Reflection.Core.NonPortable;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
+using Interlocked = System.Threading.Interlocked;
+
 namespace System
 {
     [System.Runtime.CompilerServices.ReflectionBlocked]
@@ -416,9 +418,9 @@ namespace System
                 s_curIndex = 0;
                 s_targetMethodOrDelegate = targetMethodOrDelegate;
 
+                object result;
                 try
                 {
-                    object result = null;
                     if (invokeMethodHelperIsThisCall)
                     {
                         Debug.Assert(methodToCallIsThisCall == true);
@@ -438,8 +440,6 @@ namespace System
                             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                         }
                     }
-
-                    return result;
                 }
                 catch (Exception e) when (wrapInTargetInvocationException && argSetupState.fComplete)
                 {
@@ -468,6 +468,11 @@ namespace System
                         }
                     }
                 }
+
+                if (result == NullByRefValueSentinel)
+                    throw new NullReferenceException(SR.NullReference_InvokeNullRefReturned);
+
+                return result;
             }
             finally
             {
@@ -849,6 +854,19 @@ namespace System
                         }
                     }
                 }
+            }
+        }
+
+        private static volatile object _nullByRefValueSentinel;
+        public static object NullByRefValueSentinel
+        {
+            get
+            {
+                if (_nullByRefValueSentinel == null)
+                {
+                    Interlocked.CompareExchange(ref _nullByRefValueSentinel, new object(), null);
+                }
+                return _nullByRefValueSentinel;
             }
         }
     }
