@@ -354,7 +354,12 @@ namespace System.Reflection.Runtime.MethodInfos
                 if (methodInvoker == null)
                 {
                     if (ReturnType.IsByRef)
-                        throw new NotSupportedException(SR.NotSupported_ByRefReturn);
+                    {
+                        // The invoker is going to dereference and box (for structs) the result of the invocation
+                        // on behalf of the caller. Can't box byref-like types and can't box void.
+                        if (ReturnType.GetElementType().IsByRefLike || ReturnType.GetElementType() == CommonRuntimeTypes.Void)
+                            throw new NotSupportedException();
+                    }
                     methodInvoker = _lazyMethodInvoker = this.UncachedMethodInvoker;
                 }
                 return methodInvoker;
