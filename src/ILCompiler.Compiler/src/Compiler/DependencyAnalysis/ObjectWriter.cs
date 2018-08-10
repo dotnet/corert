@@ -21,7 +21,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Object writer using src/Native/ObjWriter
     /// </summary>
-    internal class ObjectWriter : IDisposable, ITypesDebugInfoWriter
+    public class ObjectWriter : IDisposable, ITypesDebugInfoWriter
     {
         // This is used to build mangled names
         private Utf8StringBuilder _sb = new Utf8StringBuilder();
@@ -960,27 +960,27 @@ namespace ILCompiler.DependencyAnalysis
                 ObjectNodeSection managedCodeSection;
                 if (factory.Target.OperatingSystem == TargetOS.Windows)
                 {
-                    managedCodeSection = MethodCodeNode.WindowsContentSection;
+                    managedCodeSection = ObjectNodeSection.ManagedCodeWindowsContentSection;
 
                     // Emit sentinels for managed code section.
                     ObjectNodeSection codeStartSection = factory.CompilationModuleGroup.IsSingleFileCompilation ?
-                                                            MethodCodeNode.StartSection :
-                                                            objectWriter.GetSharedSection(MethodCodeNode.StartSection, "__managedcode_a");
+                                                            ObjectNodeSection.ManagedCodeStartSection :
+                                                            objectWriter.GetSharedSection(ObjectNodeSection.ManagedCodeStartSection, "__managedcode_a");
                     objectWriter.SetSection(codeStartSection);
                     objectWriter.EmitSymbolDef(new Utf8StringBuilder().Append("__managedcode_a"));
                     objectWriter.EmitIntValue(0, 1);
                     ObjectNodeSection codeEndSection = factory.CompilationModuleGroup.IsSingleFileCompilation ?
-                                                            MethodCodeNode.EndSection :
-                                                            objectWriter.GetSharedSection(MethodCodeNode.EndSection, "__managedcode_z");
+                                                            ObjectNodeSection.ManagedCodeEndSection :
+                                                            objectWriter.GetSharedSection(ObjectNodeSection.ManagedCodeEndSection, "__managedcode_z");
                     objectWriter.SetSection(codeEndSection);
                     objectWriter.EmitSymbolDef(new Utf8StringBuilder().Append("__managedcode_z"));
                     objectWriter.EmitIntValue(1, 1);
                 }
                 else
                 {
-                    managedCodeSection = MethodCodeNode.UnixContentSection;
+                    managedCodeSection = ObjectNodeSection.ManagedCodeUnixContentSection;
                     // TODO 2916: managed code section has to be created here, switch is not necessary.
-                    objectWriter.SetSection(MethodCodeNode.UnixContentSection);
+                    objectWriter.SetSection(ObjectNodeSection.ManagedCodeUnixContentSection);
                     objectWriter.SetSection(LsdaSection);
                 }
                 objectWriter.SetCodeSectionAttribute(managedCodeSection);

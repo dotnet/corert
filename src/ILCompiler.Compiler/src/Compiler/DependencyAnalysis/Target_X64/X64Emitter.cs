@@ -112,6 +112,38 @@ namespace ILCompiler.DependencyAnalysis.X64
             EmitIndirInstruction(0xFF, 0x4, ref addrMode);
         }
 
+        public void EmitPUSH(sbyte imm8)
+        {
+            Builder.EmitByte(0x6A);
+            Builder.EmitByte(unchecked((byte)imm8));
+        }
+
+        public void EmitPUSH(ISymbolNode node)
+        {
+            if (node.RepresentsIndirectionCell)
+            {
+                // push [rip + relative node offset]
+                Builder.EmitByte(0xFF);
+                Builder.EmitByte(0x35);
+                Builder.EmitReloc(node, RelocType.IMAGE_REL_BASED_REL32);
+            }
+            else
+            {
+                // push rax (arbitrary value)
+                Builder.EmitByte(0x50);
+                // lea rax, [rip + relative node offset]
+                Builder.EmitByte(0x48);
+                Builder.EmitByte(0x8D);
+                Builder.EmitByte(0x05);
+                Builder.EmitReloc(node, RelocType.IMAGE_REL_BASED_REL32);
+                // xchg [rsp], rax; this also restores the previous value of rax
+                Builder.EmitByte(0x48);
+                Builder.EmitByte(0x87);
+                Builder.EmitByte(0x04);
+                Builder.EmitByte(0x24);
+            }
+        }
+
         public void EmitRET()
         {
             Builder.EmitByte(0xC3);

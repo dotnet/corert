@@ -1,0 +1,20 @@
+<Project DefaultTargets="Build;BuildAllReadyToRunMultiModule;MultiModuleCopyNative" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="MultiModuleTestingClass.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ReadyToRunMultiModuleAssemblies Include="$(MSBuildThisFileDirectory)bin\$(Configuration)\$(Platform)\MultiModuleTestingClass.dll;$(MSBuildThisFileDirectory)bin\$(Configuration)\$(Platform)\ReadyToRunMultiModule.exe" />
+  </ItemGroup>
+
+  <Import Project="..\..\..\..\src\BuildIntegration\BuildReadyToRunMultiModule.proj" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), SimpleTest.targets))\SimpleTest.targets" />
+</Project>

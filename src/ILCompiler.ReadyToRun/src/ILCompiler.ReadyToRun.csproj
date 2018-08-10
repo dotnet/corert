@@ -1,0 +1,129 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="14.0">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" Condition="'$(IsProjectNLibrary)' != 'true'" />
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <AssemblyName>ILCompiler.ReadyToRun</AssemblyName>
+    <TargetFramework>netstandard1.3</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>READYTORUN</DefineConstants>
+  </PropertyGroup>
+  
+  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+    <ProjectReference Include="..\..\ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.MetadataTransform\src\ILCompiler.MetadataTransform.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.Compiler\src\ILCompiler.Compiler.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Reflection.Metadata">
+      <Version>1.4.2</Version>
+    </PackageReference>
+    <PackageReference Include="System.ValueTuple">
+      <Version>4.3.0</Version>
+    </PackageReference>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Compile Include="CodeGen\ReadyToRunObjectWriter.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRunCodegenNodeFactory.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ByteArrayComparer.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CompilerIdentifierNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadHelperImport.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadHelperThunk.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelegateCtorSignature.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DevirtualizationManager.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ExternalMethodImport.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\FixupConstants.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\HeaderNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ImportSectionNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Import.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ImportSectionsTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\InstanceEntryPointTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\MethodEHInfoNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\MethodEntryPointTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\MethodFixupSignature.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\MethodGCInfoNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\MethodWithGCInfo.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ModuleToken.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\NewArrayFixupSignature.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\NewObjectFixupSignature.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\NibbleWriter.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\PrecodeHelperImport.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ReadyToRunHelperSignature.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RuntimeFunctionsGCInfoNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RuntimeFunctionsTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RvaEmbeddedPointerIndirectionNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Signature.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\SignatureBuilder.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\StringImport.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\StringImportSignature.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_ARM64\DelayLoadHelperThunk.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_ARM\DelayLoadHelperThunk.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_X64\DelayLoadHelperThunk.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_X86\DelayLoadHelperThunk.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypeFixupSignature.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypesTableNode.cs" />
+    <Compile Include="Compiler\ReadyToRunLibraryRootProvider.cs" />
+    <Compile Include="Compiler\ReadyToRunCompilerContext.cs" />
+    <Compile Include="Compiler\ReadyToRunCodegenCompilation.cs" />
+    <Compile Include="Compiler\ReadyToRunCodegenCompilationBuilder.cs" />
+    <Compile Include="Compiler\ReadyToRunMetadataFieldLayoutAlgorithm.cs" />
+    <Compile Include="Compiler\ReadyToRunNodeMangler.cs" />
+    <Compile Include="Compiler\ReadyToRunSingleAssemblyCompilationModuleGroup.cs" />
+    <Compile Include="JitInterface\CorInfoImpl.ReadyToRun.cs" />
+    <Compile Include="ObjectWriter\SectionBuilder.cs" />
+    <Compile Include="ObjectWriter\R2RPEBuilder.cs" />
+    <Compile Include="ObjectWriter\RelocationHelper.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
+      <Link>Common\ArrayBuilder.cs</Link>
+    </Compile>
+
+    <!-- To clean this up, we should move IMethodCodeNode to a common location -->
+    <Compile Include="..\..\ILCompiler.RyuJit\src\Compiler\DependencyAnalysis\IMethodCodeNode.cs">
+      <Link>DependencyAnalysis\IMethodCodeNode.cs</Link>
+    </Compile>
+
+    <!--
+      JitHelper is CoreRT specific. Refactor so it's not needed in the ReadyToRun project
+    -->
+    <Compile Include="..\..\ILCompiler.Compiler\src\Compiler\JitHelper.cs">
+      <Link>Compiler\JitHelper.cs</Link>
+    </Compile>
+
+    <Compile Include="..\..\Common\src\TypeSystem\IL\HelperExtensions.cs">
+      <Link>IL\HelperExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\TypeString.cs">
+      <Link>JitInterface\TypeString.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\CorInfoBase.cs">
+      <Link>JitInterface\CorInfoBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\CorInfoImpl.cs">
+      <Link>JitInterface\CorInfoImpl.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\CorInfoHelpFunc.cs">
+      <Link>JitInterface\CorInfoHelpFunc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\CorInfoTypes.cs">
+      <Link>JitInterface\CorInfoTypes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\JitConfigProvider.cs">
+      <Link>JitInterface\JitConfigProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\CorInfoImpl.Intrinsics.cs">
+      <Link>JitInterface\CorInfoImpl.Intrinsics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\MemoryHelper.cs">
+      <Link>JitInterface\MemoryHelper.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" Condition="'$(IsProjectNLibrary)' != 'true'" />
+</Project>
