@@ -46,7 +46,7 @@ namespace Internal.Reflection.Execution
 
         private static LowLevelList<PEInfo> s_ecmaLoadedAssemblies = new LowLevelList<PEInfo>();
 
-        partial void BindEcmaByteArray(byte[] rawAssembly, byte[] rawSymbolStore, bool cacheMissedLookups, ref AssemblyBindResult bindResult, ref Exception exception, ref bool? result)
+        partial void BindEcmaByteArray(byte[] rawAssembly, byte[] rawSymbolStore, ref AssemblyBindResult bindResult, ref Exception exception, ref bool? result)
         {
             // 1. Load byte[] into immutable array for use by PEReader/MetadataReader
             ImmutableArray<byte> assemblyData = ImmutableArray.Create(rawAssembly);
@@ -59,7 +59,7 @@ namespace Internal.Reflection.Execution
             lock(s_ecmaLoadedAssemblies)
             {
                 // 3. Attempt to bind to already loaded assembly
-                if (Bind(runtimeAssemblyName, cacheMissedLookups, out bindResult, out exception))
+                if (Bind(runtimeAssemblyName, cacheMissedLookups: false, out bindResult, out exception))
                 {
                     result = true;
                     return;
@@ -75,7 +75,7 @@ namespace Internal.Reflection.Execution
                 moduleList.RegisterModule(newModuleInfo);
 
                 // 5. Then try to load by name again. This load should always succeed
-                if (Bind(runtimeAssemblyName, cacheMissedLookups, out bindResult, out exception))
+                if (Bind(runtimeAssemblyName, cacheMissedLookups: false, out bindResult, out exception))
                 {
                     result = true;
                     return;
