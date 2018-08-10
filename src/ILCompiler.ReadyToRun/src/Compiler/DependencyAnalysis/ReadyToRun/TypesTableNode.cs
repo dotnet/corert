@@ -50,7 +50,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             
             foreach ((int Rid, EcmaType Node) typeNode in _typeNodes)
             {
-                int hashCode = TypeHashingAlgorithms.ComputeNameHashCode(typeNode.Node.Name);
+                int hashCode = TypeHashingAlgorithms.ComputeNameHashCode(typeNode.Node.Namespace) ^ TypeHashingAlgorithms.ComputeNameHashCode(typeNode.Node.Name);
                 typesHashtable.Append(unchecked((uint)hashCode), section.Place(new UnsignedConstant((uint)typeNode.Rid << 1)));
             }
 

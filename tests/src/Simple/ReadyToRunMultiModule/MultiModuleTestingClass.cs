@@ -4,6 +4,8 @@
 
 using System;
 
+namespace Abc.def{
+
 public class TestingClass
 {
     int N;
@@ -16,4 +18,5 @@ public class TestingClass
     {
         return N;
     }
+}
 }
