@@ -17,12 +17,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class TypesTableNode : HeaderTableNode
     {
-        List<(int Rid, EETypeNode Node)> _eeTypeNodes;
+        List<(int Rid, EcmaType Node)> _typeNodes;
         
         public TypesTableNode(TargetDetails target)
             : base(target)
         {
-            _eeTypeNodes = new List<(int Rid, EETypeNode Node)>();
+            _typeNodes = new List<(int Rid, EcmaType Node)>();
         }
         
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -31,20 +31,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append("__ReadyToRunAvailableTypesTable");
         }
 
-        public int Add(EETypeNode eeTypeNode)
+        public int Add(EcmaType eeTypeNode)
         {
-            if (eeTypeNode.Type is EcmaType ecmaType)
-            {
-                int rid = MetadataTokens.GetToken(ecmaType.Handle) & 0x00FFFFFF;
-                Debug.Assert(rid != 0);
-                int eeTypeIndex = _eeTypeNodes.Count;
-                _eeTypeNodes.Add((Rid: rid, Node: eeTypeNode));
-                return eeTypeIndex;
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
+            int rid = MetadataTokens.GetToken(eeTypeNode.Handle) & 0x00FFFFFF;
+            Debug.Assert(rid != 0);
+            int eeTypeIndex = _typeNodes.Count;
+            _typeNodes.Add((Rid: rid, Node: eeTypeNode));
+            return eeTypeIndex;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
@@ -55,10 +48,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             VertexHashtable typesHashtable = new VertexHashtable();
             section.Place(typesHashtable);
             
-            foreach ((int Rid, EETypeNode Node) eeTypeNode in _eeTypeNodes)
+            foreach ((int Rid, EcmaType Node) typeNode in _typeNodes)
             {
-                int hashCode = eeTypeNode.Node.Type.GetHashCode();
-                typesHashtable.Append(unchecked((uint)hashCode), section.Place(new UnsignedConstant((uint)eeTypeNode.Rid << 1)));
+                int hashCode = TypeHashingAlgorithms.ComputeNameHashCode(typeNode.Node.Name);
+                typesHashtable.Append(unchecked((uint)hashCode), section.Place(new UnsignedConstant((uint)typeNode.Rid << 1)));
             }
 
             MemoryStream writerContent = new MemoryStream();

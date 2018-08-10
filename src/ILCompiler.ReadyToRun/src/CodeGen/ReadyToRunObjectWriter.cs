@@ -17,6 +17,7 @@ using ILCompiler.PEWriter;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
 using Internal.Metadata.NativeFormat;
+using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
@@ -72,11 +73,14 @@ namespace ILCompiler.DependencyAnalysis
                 _rdataSectionIndex = sectionBuilder.AddSection(".rdata", SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead, 512);
                 _dataSectionIndex = sectionBuilder.AddSection(".data", SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemWrite | SectionCharacteristics.MemRead, 512);
 
-                foreach (var depNode in _nodes)
+                foreach (var module in ((ReadyToRunSingleAssemblyCompilationModuleGroup)_nodeFactory.CompilationModuleGroup).CompilationModuleSet)
                 {
-                    if (depNode is EETypeNode eeTypeNode)
+                    foreach (TypeDesc type in module.GetAllTypes())
                     {
-                        _nodeFactory.TypesTable.Add(eeTypeNode);
+                        if (type is EcmaType ecmaType)
+                        {
+                            _nodeFactory.TypesTable.Add(ecmaType);
+                        }
                     }
                 }
 
