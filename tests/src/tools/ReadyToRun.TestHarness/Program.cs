@@ -34,9 +34,35 @@ namespace ReadyToRun.TestHarness
         private const int StatusTestErrorBadInput = -104;
         private const int StatusTestPassed = 100;
 
+        private static bool _help;
+        private static string _coreRunExePath;
+        private static string _testExe;
+        private static IReadOnlyList<string> _referenceFilenames = Array.Empty<string>();
+        private static string _whitelistFilename;
+        private static IReadOnlyList<string> _testargs = Array.Empty<string>();
+
         static void ShowUsage()
         {
-            Console.WriteLine("dotnet ReadyToRun.Harness <PathToCoreRun> <PathToTestBinary> [MethodWhiteListFile]");
+            Console.WriteLine("dotnet ReadyToRun.TestHarness --corerun <PathToCoreRun> --in <PathToTestBinary> --ref [ReferencedBinaries] --whitelist [MethodWhiteListFile] --testargs [TestArgs]");
+        }
+
+        private static ArgumentSyntax ParseCommandLine(string[] args)
+        {
+            bool verbose = false;
+            ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>
+            {
+                syntax.ApplicationName = "ReadyToRun.TestHarness";
+                syntax.HandleHelp = false;
+                syntax.HandleErrors = true;
+
+                syntax.DefineOption("h|help", ref _help, "Help message for R2RDump");
+				syntax.DefineOption("c|corerun", ref _coreRunExePath, "Path to CoreRun");
+                syntax.DefineOption("i|in", ref _testExe, "Path to test exe");
+				syntax.DefineOptionList("r|ref", ref _referenceFilenames, "Paths to referenced assemblies");
+                syntax.DefineOption("w|whitelist", ref _whitelistFilename, "Path to method whitelist file");
+                syntax.DefineOptionList("testargs", ref _testargs, "Args to pass into test");
+            });
+            return argSyntax;
         }
 
         static int Main(string[] args)
@@ -44,69 +70,47 @@ namespace ReadyToRun.TestHarness
             int exitCode = StatusTestErrorBadInput;
             string whiteListFile = null;
 
-            if (args.Length < 2)
+			ArgumentSyntax syntax = ParseCommandLine(args);
+
+            if (_help)
             {
-                Console.WriteLine("Error: Missing required arguments.");
+                ShowUsage();
+                return 0;
+            }
+
+            if (!File.Exists(_coreRunExePath))
+            {
+                Console.WriteLine($"Error: {_coreRunExePath} is an invalid path.");
                 ShowUsage();
                 return exitCode;
             }
 
-            if (!File.Exists(args[0]))
+            if (!File.Exists(_testExe))
             {
-                Console.WriteLine($"Error: {args[0]} is an invalid path.");
+                Console.WriteLine($"Error: {_testExe} is an invalid path.");
                 ShowUsage();
                 return exitCode;
             }
 
-            if (!File.Exists(args[1]))
-            {
-                Console.WriteLine($"Error: {args[1]} is an invalid path.");
-                ShowUsage();
-                return exitCode;
-            }
-
-            int passThroughIndex = -1;
             string passThroughArguments = "";
-            if (args.Length >= 3)
+            if (_testargs.Count > 0)
             {
-                if (args[2] == "/testargs")
-                {
-                    passThroughIndex = 2;
-                } else
-                {
-                    if (!File.Exists(args[2]))
-                    {
-                        Console.WriteLine($"Error: {args[2]} is an invalid path.");
-                        ShowUsage();
-                        return exitCode;
-                    }
-                    whiteListFile = args[2];
-
-                    if (args.Length >= 4 && args[3] == "/testargs")
-                    {
-                        passThroughIndex = 3;
-                    }
-                }
-                
-                if (passThroughIndex > -1 && (args.Length - passThroughIndex - 1) > 0)
-                {
-                    passThroughArguments = string.Join(' ', args, passThroughIndex + 1, args.Length - passThroughIndex - 1);
-                }
+                passThroughArguments = string.Join(' ', _testargs);
             }
 
-            string coreRunExePath = args[0];
-            string testExe = args[1];
-
-            // TODO: CoreCLR test bed has tests with multiple assemblies - we'll need to add them here when we support that
             var testModules = new HashSet<string>();
-            testModules.Add(testExe);
+            testModules.Add(_testExe);
+            foreach (string reference in _referenceFilenames)
+            {
+                testModules.Add(reference);
+            }
 
             using (var session = new TraceEventSession("ReadyToRunTestSession"))
             {
                 var r2rMethodFilter = new ReadyToRunJittedMethods(session, testModules);
                 session.EnableProvider(ClrTraceEventParser.ProviderGuid, TraceEventLevel.Verbose, (ulong)(ClrTraceEventParser.Keywords.Jit | ClrTraceEventParser.Keywords.Loader));
                 
-                exitCode = RunTestWrapper(session, coreRunExePath, testExe, passThroughArguments).Result;
+                exitCode = RunTestWrapper(session, passThroughArguments).Result;
 
                 Console.WriteLine("Test execution " + (exitCode == StatusTestPassed ? "PASSED" : "FAILED"));
                 int analysisResult = AnalyzeResults(r2rMethodFilter, whiteListFile);
@@ -173,12 +177,12 @@ namespace ReadyToRun.TestHarness
             return StatusTestPassed;
         }
 
-        private static async Task<int> RunTestWrapper(TraceEventSession session, string coreRunExePath, string testExe, string passThroughArguments)
+        private static async Task<int> RunTestWrapper(TraceEventSession session, string passThroughArguments)
         {
-            return await Task.Run(() => RunTest(session, coreRunExePath, testExe, passThroughArguments));
+            return await Task.Run(() => RunTest(session, passThroughArguments));
         }
 
-        private static int RunTest(TraceEventSession session, string coreRunPath, string testExecutable, string testArguments)
+        private static int RunTest(TraceEventSession session, string testArguments)
         {
             int exitCode = -100;
 
@@ -186,8 +190,8 @@ namespace ReadyToRun.TestHarness
             {
                 using (var process = new Process())
                 {
-                    process.StartInfo.FileName = coreRunPath;
-                    process.StartInfo.Arguments = testExecutable + " " + testArguments;
+                    process.StartInfo.FileName = _coreRunExePath;
+                    process.StartInfo.Arguments = _testExe + " " + testArguments;
                     process.StartInfo.UseShellExecute = false;
                     
                     process.Start();
