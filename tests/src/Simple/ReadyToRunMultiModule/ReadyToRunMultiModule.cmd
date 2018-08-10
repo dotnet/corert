@@ -1,6 +1,16 @@
 @echo off
+setlocal
 
-:: Intentionally empty since we're just testing we can compile the framework
-:: assemblies to their own library obj files
+REM The arguments to invoke a ready-to-run test with ETW logging of jitted methods look like
+REM dotnet run --project tests\src\tools\ReadyToRun.TestHarness bin\obj\<Build>\CoreCLRRuntime\CoreRun.exe bin\Debug\<arch>\native\<test>.ni.exe methodWhiteList.txt
+echo %3 run --project %4 %5 "%1\%2" %~dp0methodWhiteList.txt
+call %3 run --project %4 %5 "%1\%2" %~dp0methodWhiteList.txt
 
-exit /b 0
+IF "%errorlevel%"=="100" (
+    echo %~n0: Pass
+    EXIT /b 0
+) ELSE (
+    echo %~n0: fail - %ErrorLevel%
+    EXIT /b 1
+)
+endlocal

@@ -3,18 +3,18 @@
   <PropertyGroup>
     <IlcCompileDependsOn>ComputeIlcCompileInputs;BuildOneReadyToRunMultiModule;AddModuleDependencies</IlcCompileDependsOn>
     <IlcMultiModule>true</IlcMultiModule>
-    <NativeIntermediateOutputPath>$(MSBuildProjectDirectory)\obj\$(Configuration)\$(Platform)\</NativeIntermediateOutputPath>
     <BuildingReadyToRunMultiModule>true</BuildingReadyToRunMultiModule>
   </PropertyGroup>
 
   <Target Name="BuildAllReadyToRunMultiModule"
     Inputs="@(ReadyToRunMultiModuleAssemblies)"
-    Outputs="@(ReadyToRunMultiModuleAssemblies->'$(NativeIntermediateOutputPath)\%(Filename)$(NativeObjectExt)')"
+    Outputs="@(ReadyToRunMultiModuleAssemblies->'$(NativeIntermediateOutputPath)\%(Filename)$(IlcOutputFileExt)')"
 	AfterTargets="Build">
     <ItemGroup>
       <ProjectToBuild Include="$(MSBuildProjectFullPath)">
         <AdditionalProperties>
-          LibraryToCompile=%(ReadyToRunMultiModuleAssemblies.Identity)
+          LibraryToCompile=%(ReadyToRunMultiModuleAssemblies.Identity);
+          IlcOutputFileExt=.ni%(ReadyToRunMultiModuleAssemblies.Extension);
         </AdditionalProperties>
       </ProjectToBuild>
     </ItemGroup>

@@ -1,7 +1,7 @@
-<Project DefaultTargets="Build;BuildAllReadyToRunMultiModule" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build;BuildAllReadyToRunMultiModule;MultiModuleCopyNative" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
   <PropertyGroup>
-	<OutputPath>$(MSBuildProjectDirectory)\bin\$(Configuration)\$(Platform)\</OutputPath>
-    <IntermediateOutputPath>$(MSBuildProjectDirectory)\obj\$(Configuration)\$(Platform)\</IntermediateOutputPath>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
@@ -10,7 +10,7 @@
   <ItemGroup>
     <ProjectReference Include="MultiModuleTestingClass.csproj" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <ReadyToRunMultiModuleAssemblies Include="$(MSBuildThisFileDirectory)bin\$(Configuration)\$(Platform)\MultiModuleTestingClass.dll;$(MSBuildThisFileDirectory)bin\$(Configuration)\$(Platform)\ReadyToRunMultiModule.exe" />
   </ItemGroup>

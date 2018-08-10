@@ -37,7 +37,7 @@ See the LICENSE file in the project root for more information.
     <LibFileExt Condition="'$(TargetOS)' == 'Windows_NT'">.lib</LibFileExt>
     <LibFileExt Condition="'$(TargetOS)' != 'Windows_NT'">.a</LibFileExt>
 
-    <IlcOutputFileExt>$(NativeObjectExt)</IlcOutputFileExt>
+    <IlcOutputFileExt Condition="$(IlcOutputFileExt) == ''">$(NativeObjectExt)</IlcOutputFileExt>
     <IlcOutputFileExt Condition="$(NativeCodeGen) == 'cpp'">.cpp</IlcOutputFileExt>
     <IlcOutputFileExt Condition="'$(NativeCodeGen)' == 'wasm'">.bc</IlcOutputFileExt>
 
@@ -220,6 +220,20 @@ See the LICENSE file in the project root for more information.
       DependsOnTargets="IlcCompile">
 
       <Copy SourceFiles="$(NativeObject)" DestinationFiles="$(NativeBinary)" />
+  </Target>
+
+  <Target Name="GetMultiModuleNativeObjects">
+    <ItemGroup>
+      <MultiModuleNativeObjects Include="$(NativeIntermediateOutputPath)*.ni.exe;$(NativeIntermediateOutputPath)*.ni.dll" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="MultiModuleCopyNative"
+      Inputs="@(MultiModuleNativeObjects)"
+      Outputs="$(NativeOutputPath)"
+      DependsOnTargets="GetMultiModuleNativeObjects">
+
+      <Copy SourceFiles="@(MultiModuleNativeObjects)" DestinationFolder="$(NativeOutputPath)" />
   </Target>
 
   <Target Name="LinkNative"
