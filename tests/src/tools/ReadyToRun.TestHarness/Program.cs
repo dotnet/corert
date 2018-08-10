@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.CommandLine;
 using System.Diagnostics;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
@@ -105,10 +106,7 @@ namespace ReadyToRun.TestHarness
                 var r2rMethodFilter = new ReadyToRunJittedMethods(session, testModules);
                 session.EnableProvider(ClrTraceEventParser.ProviderGuid, TraceEventLevel.Verbose, (ulong)(ClrTraceEventParser.Keywords.Jit | ClrTraceEventParser.Keywords.Loader));
                 
-                Task.Run(() => exitCode = RunTest(session, coreRunExePath, testExe, passThroughArguments));
-
-                // Block, processing callbacks for events we subscribed to
-                session.Source.Process();
+                exitCode = RunTestWrapper(session, coreRunExePath, testExe, passThroughArguments).Result;
 
                 Console.WriteLine("Test execution " + (exitCode == StatusTestPassed ? "PASSED" : "FAILED"));
                 int analysisResult = AnalyzeResults(r2rMethodFilter, whiteListFile);
@@ -173,6 +171,11 @@ namespace ReadyToRun.TestHarness
             }
 
             return StatusTestPassed;
+        }
+
+        private static async Task<int> RunTestWrapper(TraceEventSession session, string coreRunExePath, string testExe, string passThroughArguments)
+        {
+            return await Task.Run(() => RunTest(session, coreRunExePath, testExe, passThroughArguments));
         }
 
         private static int RunTest(TraceEventSession session, string coreRunPath, string testExecutable, string testArguments)
