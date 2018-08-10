@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using Abc.def;
 
 internal class Program
 {
@@ -28,7 +27,7 @@ internal class Program
         else
         {
             Console.Error.WriteLine("Test failed");
-            return 100;
+            return 1;
         }
     }
 }
