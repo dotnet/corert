@@ -75,7 +75,7 @@ namespace Internal.Reflection.Execution
                 moduleList.RegisterModule(newModuleInfo);
 
                 // 5. Then try to load by name again. This load should always succeed
-                if (Bind(runtimeAssemblyName, cacheMissedLookups: false, out bindResult, out exception))
+                if (Bind(runtimeAssemblyName, cacheMissedLookups: true, out bindResult, out exception))
                 {
                     result = true;
                     return;
