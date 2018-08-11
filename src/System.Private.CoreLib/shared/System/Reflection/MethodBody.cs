@@ -9,14 +9,12 @@ namespace System.Reflection
     public class MethodBody
     {
         protected MethodBody() { }
-
-        // Desktop compat: These default implementations behave strangely because this class was originally
-        // creatable only from the native runtime, not through subclass inheritance.
         public virtual int LocalSignatureMetadataToken => 0;
-        public virtual IList<LocalVariableInfo> LocalVariables { get { throw new ArgumentNullException("array"); } }
+        public virtual IList<LocalVariableInfo> LocalVariables => throw new ArgumentNullException("array");
         public virtual int MaxStackSize => 0;
         public virtual bool InitLocals => false;
         public virtual byte[] GetILAsByteArray() => null;
-        public virtual IList<ExceptionHandlingClause> ExceptionHandlingClauses { get { throw new ArgumentNullException("array"); } }
+        public virtual IList<ExceptionHandlingClause> ExceptionHandlingClauses => throw new ArgumentNullException("array");
     }
 }
+
