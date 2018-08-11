@@ -59,7 +59,7 @@ namespace ILCompiler
             return null;
         }
 
-        private static MetadataManager PickMetadataManager(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, IEnumerable<ModuleDesc> inputModules, IEnumerable<ModuleDesc> inputMetadataOnlyAssemblies, string metadataFile, bool emitStackTraceMetadata, bool disableExceptionMessages)
+        private static MetadataManager PickMetadataManager(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, IEnumerable<ModuleDesc> inputModules, IEnumerable<ModuleDesc> inputMetadataOnlyAssemblies, string metadataFile, bool emitStackTraceMetadata, bool disableExceptionMessages, bool disableInvokeThunks)
         {
             if (metadataFile == null)
             {
@@ -88,7 +88,7 @@ namespace ILCompiler
                     resourceBlockingPolicy = new NoManifestResourceBlockingPolicy();
                 }
 
-                return new PrecomputedMetadataManager(compilationModuleGroup, context, FindMetadataDescribingModuleInInputSet(inputModules), inputModules, inputMetadataOnlyAssemblies, ReadBytesFromFile(metadataFile), stackTraceEmissionPolicy , resourceBlockingPolicy);
+                return new PrecomputedMetadataManager(compilationModuleGroup, context, FindMetadataDescribingModuleInInputSet(inputModules), inputModules, inputMetadataOnlyAssemblies, ReadBytesFromFile(metadataFile), stackTraceEmissionPolicy , resourceBlockingPolicy, disableInvokeThunks);
             }
         }
 
@@ -109,11 +109,12 @@ namespace ILCompiler
             bool buildMRT, 
             bool emitStackTraceMetadata,
             bool disableExceptionMessages,
+            bool allowInvokeThunks,
             DictionaryLayoutProvider dictionaryLayoutProvider,
             ImportedNodeProvider importedNodeProvider) 
             : base(context, 
                   compilationModuleGroup, 
-                  PickMetadataManager(context, compilationModuleGroup, inputModules, inputMetadataOnlyAssemblies, metadataFile, emitStackTraceMetadata, disableExceptionMessages), 
+                  PickMetadataManager(context, compilationModuleGroup, inputModules, inputMetadataOnlyAssemblies, metadataFile, emitStackTraceMetadata, disableExceptionMessages, allowInvokeThunks),
                   NewEmptyInteropStubManager(context, compilationModuleGroup), 
                   nameMangler, 
                   new AttributeDrivenLazyGenericsPolicy(), 
