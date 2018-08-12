@@ -3,11 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Security;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Runtime.ConstrainedExecution;
-using System.Runtime.Versioning;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -16,18 +11,13 @@ namespace Microsoft.Win32.SafeHandles
 #else
     internal
 #endif
-    sealed class SafeRegistryHandle : SafeHandleZeroOrMinusOneIsInvalid
+    sealed partial class SafeRegistryHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         internal SafeRegistryHandle() : base(true) { }
 
         public SafeRegistryHandle(IntPtr preexistingHandle, bool ownsHandle) : base(ownsHandle)
         {
             SetHandle(preexistingHandle);
-        }
-
-        protected override bool ReleaseHandle()
-        {
-            return (Interop.Advapi32.RegCloseKey(handle) == Interop.Errors.ERROR_SUCCESS);
         }
     }
 }
