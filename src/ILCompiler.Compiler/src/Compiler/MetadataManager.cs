@@ -43,6 +43,7 @@ namespace ILCompiler
         protected readonly CompilerTypeSystemContext _typeSystemContext;
         protected readonly MetadataBlockingPolicy _blockingPolicy;
         protected readonly ManifestResourceBlockingPolicy _resourceBlockingPolicy;
+        protected readonly DynamicInvokeThunkGenerationPolicy _dynamicInvokeThunkGenerationPolicy;
 
         private List<NonGCStaticsNode> _cctorContextsGenerated = new List<NonGCStaticsNode>();
         private HashSet<TypeDesc> _typesWithEETypesGenerated = new HashSet<TypeDesc>();
@@ -56,11 +57,13 @@ namespace ILCompiler
         internal DynamicInvokeTemplateDataNode DynamicInvokeTemplateData { get; private set; }
         public virtual bool SupportsReflection => true;
 
-        public MetadataManager(CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy, ManifestResourceBlockingPolicy resourceBlockingPolicy)
+        public MetadataManager(CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy,
+            ManifestResourceBlockingPolicy resourceBlockingPolicy, DynamicInvokeThunkGenerationPolicy dynamicInvokeThunkGenerationPolicy)
         {
             _typeSystemContext = typeSystemContext;
             _blockingPolicy = blockingPolicy;
             _resourceBlockingPolicy = resourceBlockingPolicy;
+            _dynamicInvokeThunkGenerationPolicy = dynamicInvokeThunkGenerationPolicy;
         }
 
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
@@ -375,7 +378,11 @@ namespace ILCompiler
         /// <summary>
         /// Given that a method is invokable, does there exist a reflection invoke stub?
         /// </summary>
-        public abstract bool HasReflectionInvokeStubForInvokableMethod(MethodDesc method);
+        public bool HasReflectionInvokeStubForInvokableMethod(MethodDesc method)
+        {
+            Debug.Assert(IsReflectionInvokable(method));
+            return _dynamicInvokeThunkGenerationPolicy.HasStaticInvokeThunk(method);
+        }
 
         /// <summary>
         /// Given that a method is invokable, if it is inserted into the reflection invoke table

@@ -59,7 +59,7 @@ namespace ILCompiler
             return null;
         }
 
-        private static MetadataManager PickMetadataManager(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, IEnumerable<ModuleDesc> inputModules, IEnumerable<ModuleDesc> inputMetadataOnlyAssemblies, string metadataFile)
+        private static MetadataManager PickMetadataManager(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, IEnumerable<ModuleDesc> inputModules, IEnumerable<ModuleDesc> inputMetadataOnlyAssemblies, string metadataFile, bool emitStackTraceMetadata, bool disableExceptionMessages, bool disableInvokeThunks)
         {
             if (metadataFile == null)
             {
@@ -67,7 +67,28 @@ namespace ILCompiler
             }
             else
             {
-                return new PrecomputedMetadataManager(compilationModuleGroup, context, FindMetadataDescribingModuleInInputSet(inputModules), inputModules, inputMetadataOnlyAssemblies, ReadBytesFromFile(metadataFile), new UtcStackTraceEmissionPolicy(), new NoManifestResourceBlockingPolicy());
+                // Set Policies according to passed arguments
+                StackTraceEmissionPolicy stackTraceEmissionPolicy;
+                if (emitStackTraceMetadata)
+                {
+                    stackTraceEmissionPolicy = new UtcStackTraceEmissionPolicy();
+                }
+                else
+                {
+                    stackTraceEmissionPolicy = new NoStackTraceEmissionPolicy();
+                }
+
+                ManifestResourceBlockingPolicy resourceBlockingPolicy;
+                if (disableExceptionMessages)
+                {
+                    resourceBlockingPolicy = new FrameworkStringResourceBlockingPolicy();
+                }
+                else
+                {
+                    resourceBlockingPolicy = new NoManifestResourceBlockingPolicy();
+                }
+
+                return new PrecomputedMetadataManager(compilationModuleGroup, context, FindMetadataDescribingModuleInInputSet(inputModules), inputModules, inputMetadataOnlyAssemblies, ReadBytesFromFile(metadataFile), stackTraceEmissionPolicy , resourceBlockingPolicy, disableInvokeThunks);
             }
         }
 
@@ -86,11 +107,14 @@ namespace ILCompiler
             string outputFile, 
             UTCNameMangler nameMangler, 
             bool buildMRT, 
+            bool emitStackTraceMetadata,
+            bool disableExceptionMessages,
+            bool allowInvokeThunks,
             DictionaryLayoutProvider dictionaryLayoutProvider,
             ImportedNodeProvider importedNodeProvider) 
             : base(context, 
                   compilationModuleGroup, 
-                  PickMetadataManager(context, compilationModuleGroup, inputModules, inputMetadataOnlyAssemblies, metadataFile), 
+                  PickMetadataManager(context, compilationModuleGroup, inputModules, inputMetadataOnlyAssemblies, metadataFile, emitStackTraceMetadata, disableExceptionMessages, allowInvokeThunks),
                   NewEmptyInteropStubManager(context, compilationModuleGroup), 
                   nameMangler, 
                   new AttributeDrivenLazyGenericsPolicy(), 

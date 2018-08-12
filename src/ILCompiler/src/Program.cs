@@ -424,6 +424,8 @@ namespace ILCompiler
             if (_completeTypesMetadata)
                 metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.CompleteTypesOnly;
 
+            DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy = new DefaultDynamicInvokeThunkGenerationPolicy();
+
             UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager(
                 compilationGroup,
                 typeSystemContext,
@@ -431,6 +433,7 @@ namespace ILCompiler
                 resBlockingPolicy,
                 _metadataLogFileName,
                 stackTracePolicy,
+                invokeThunkGenerationPolicy,
                 metadataGenerationOptions
                 );
 
