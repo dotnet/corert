@@ -16,8 +16,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly DelayLoadHelperThunk _delayLoadHelper;
 
-        public DelayLoadHelperImport(ReadyToRunCodegenNodeFactory factory, ReadyToRunHelper helper, Signature instanceSignature, string callSite = null)
-            : base(factory.HelperImports, instanceSignature, callSite)
+        public DelayLoadHelperImport(ReadyToRunCodegenNodeFactory factory, ImportSectionNode importSectionNode, ReadyToRunHelper helper, Signature instanceSignature, string callSite = null)
+            : base(importSectionNode, instanceSignature, callSite)
         {
             _helper = helper;
             _delayLoadHelper = new DelayLoadHelperThunk(helper, factory, this);

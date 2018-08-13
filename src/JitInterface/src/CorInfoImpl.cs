@@ -2851,6 +2851,14 @@ namespace Internal.JitInterface
             bool directCall = false;
             bool resolvedCallVirt = false;
 
+#if READYTORUN
+            if (!_compilation.NodeFactory.CompilationModuleGroup.ContainsMethodBody(targetMethod, unboxingStub: false))
+            {
+                // Always use indirect calls across version bubbles for version resiliency
+                directCall = false;
+            }
+            else
+#endif
             if (targetMethod.Signature.IsStatic)
             {
                 // Static methods are always direct calls
@@ -3080,13 +3088,13 @@ namespace Internal.JitInterface
                     pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_PVALUE;
                     pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
 #if READYTORUN
-                        _compilation.NodeFactory.InterfaceDispatchCell(targetMethod, new ModuleToken(_tokenContext, pResolvedToken.token)
+                        _compilation.NodeFactory.InterfaceDispatchCell(targetMethod, new ModuleToken(_tokenContext, pResolvedToken.token), isUnboxingStub: false
 #else
                         _compilation.NodeFactory.InterfaceDispatchCell(targetMethod
-#if !SUPPORT_JIT
+#endif // READYTORUN
+#if !SUPPORT_JIT || READYTORUN
                         , _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled).ToString()
 #endif
-#endif // READYTORUN
                         ));
                 }
             }

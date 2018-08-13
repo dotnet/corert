@@ -20,11 +20,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly ISymbolNode _moduleImport;
 
+        private readonly bool _isVirtualStubDispatchCell;
+
         public DelayLoadHelperThunk(ReadyToRunHelper helperId, ReadyToRunCodegenNodeFactory factory, Import instanceCell)
         {
-            _helperCell = factory.GetReadyToRunHelperCell(helperId);
+            _helperCell = factory.GetReadyToRunHelperCell(helperId & ~ReadyToRunHelper.READYTORUN_HELPER_FLAG_VSD);
             _instanceCell = instanceCell;
             _moduleImport = factory.ModuleImport;
+            _isVirtualStubDispatchCell = (uint)(helperId & ~ReadyToRunHelper.READYTORUN_HELPER_FLAG_VSD) != 0;
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

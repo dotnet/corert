@@ -48,7 +48,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (!relocsOnly)
             {
                 builder.EmitByte((byte)ReadyToRunFixupKind.READYTORUN_FIXUP_DelegateCtor);
-                builder.EmitMethodSignature(_targetMethod.Method, _targetMethodToken, _targetMethodToken.SignatureContext(_factory));
+                builder.EmitMethodSignature(_targetMethod.Method, _targetMethodToken, isUnboxingStub: false, _targetMethodToken.SignatureContext(_factory));
                 builder.EmitTypeSignature(_delegateType, _delegateTypeToken, _delegateTypeToken.SignatureContext(_factory));
             }
 

@@ -34,6 +34,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override string ToString()
         {
+            if (IsNull)
+            {
+                return "default(ModuleToken)";
+            }
             return Module.ToString() + ":" + ((uint)Token).ToString("X8");
         }
 

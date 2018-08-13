@@ -256,8 +256,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     return;
 
                 case TypeFlags.Class:
-                    EmitElementType(CorElementType.ELEMENT_TYPE_CLASS);
-                    EmitTypeToken((EcmaType)typeDesc, token, context);
+                    if (typeDesc.IsString)
+                    {
+                        EmitElementType(CorElementType.ELEMENT_TYPE_STRING);
+                    }
+                    else
+                    {
+                        EmitElementType(CorElementType.ELEMENT_TYPE_CLASS);
+                        EmitTypeToken((EcmaType)typeDesc, token, context);
+                    }
                     return;
 
                 case TypeFlags.ValueType:
@@ -308,24 +315,27 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             EmitTypeSignature(type.ElementType, token, context);
         }
 
-        public void EmitMethodSignature(MethodDesc method, ModuleToken token, SignatureContext context)
+        public void EmitMethodSignature(MethodDesc method, ModuleToken token, bool isUnboxingStub, SignatureContext context)
         {
+            uint flags = (isUnboxingStub ? (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UnboxingStub : 0);
+
             switch (token.TokenType)
             {
                 case CorTokenType.mdtMethodDef:
                     // TODO: module override for methoddefs with external module context
-                    EmitUInt((uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_None);
+                    EmitUInt(flags);
                     EmitMethodDefToken(token);
                     break;
 
                 case CorTokenType.mdtMemberRef:
                     // TODO: module override for methodrefs with external module context
-                    EmitUInt((uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MemberRefToken);
+                    flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MemberRefToken;
+                    EmitUInt(flags);
                     EmitMethodRefToken(token);
                     break;
 
                 case CorTokenType.mdtMethodSpec:
-                    EmitMethodSpecificationSignature(method, token, context);
+                    EmitMethodSpecificationSignature(method, token, isUnboxingStub, context);
                     break;
 
                 default:
@@ -345,7 +355,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             EmitUInt(RidFromToken(memberRefToken.Token));
         }
 
-        private void EmitMethodSpecificationSignature(MethodDesc method, ModuleToken token, SignatureContext context)
+        private void EmitMethodSpecificationSignature(MethodDesc method, ModuleToken token, bool isUnboxingStub, SignatureContext context)
         {
             switch (token.TokenType)
             {
@@ -354,6 +364,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         MethodSpecification methodSpec = token.MetadataReader.GetMethodSpecification((MethodSpecificationHandle)MetadataTokens.Handle((int)token.Token));
 
                         ReadyToRunMethodSigFlags flags = ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MethodInstantiation;
+                        if (isUnboxingStub)
+                        {
+                            flags |= ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UnboxingStub;
+                        }
                         mdToken genericMethodToken;
 
                         switch (methodSpec.Method.Kind)
