@@ -33,7 +33,7 @@ namespace Internal.Runtime.Augments
 
             // Per man page, environment variables come back as an array of pointers to strings
             // Parse each pointer of strings individually
-            while (ParseEntry(ref block, out string key, out string value))
+            while (ParseEntry(block, out string key, out string value))
             {
                 if (key != null && value != null)
                     yield return new KeyValuePair<string, string>(key, value);
@@ -43,7 +43,7 @@ namespace Internal.Runtime.Augments
             }
 
             // Use a local, unsafe function since we cannot use `yield return` inside of an `unsafe` block
-            unsafe bool ParseEntry(ref IntPtr current, out string key, out string value)
+            unsafe bool ParseEntry(IntPtr current, out string key, out string value)
             {
                 // Setup
                 key = null; 
