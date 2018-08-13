@@ -27,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _helperCell = factory.GetReadyToRunHelperCell(helperId & ~ReadyToRunHelper.READYTORUN_HELPER_FLAG_VSD);
             _instanceCell = instanceCell;
             _moduleImport = factory.ModuleImport;
-            _isVirtualStubDispatchCell = (uint)(helperId & ~ReadyToRunHelper.READYTORUN_HELPER_FLAG_VSD) != 0;
+            _isVirtualStubDispatchCell = (uint)(helperId & ReadyToRunHelper.READYTORUN_HELPER_FLAG_VSD) != 0;
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

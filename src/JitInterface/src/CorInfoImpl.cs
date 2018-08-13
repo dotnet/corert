@@ -2851,14 +2851,6 @@ namespace Internal.JitInterface
             bool directCall = false;
             bool resolvedCallVirt = false;
 
-#if READYTORUN
-            if (!_compilation.NodeFactory.CompilationModuleGroup.ContainsMethodBody(targetMethod, unboxingStub: false))
-            {
-                // Always use indirect calls across version bubbles for version resiliency
-                directCall = false;
-            }
-            else
-#endif
             if (targetMethod.Signature.IsStatic)
             {
                 // Static methods are always direct calls
