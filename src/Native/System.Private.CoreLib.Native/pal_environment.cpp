@@ -10,7 +10,9 @@
 #if HAVE_SCHED_GETCPU
 #include <sched.h>
 #endif
-#include <unistd.h>
+#if HAVE__NSGETENVIRON
+#include <crt_externs.h>
+#endif
 
 
 extern "C" char* CoreLibNative_GetEnv(const char* variable)
