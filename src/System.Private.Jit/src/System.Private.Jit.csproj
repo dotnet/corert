@@ -155,6 +155,5 @@
     <Compile Include="Internal\Runtime\JitSupport\RyuJitExecutionStrategy.cs" />
     <Compile Include="Internal\Runtime\JitSupport\VirtualMethodSlotHelper.cs" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
