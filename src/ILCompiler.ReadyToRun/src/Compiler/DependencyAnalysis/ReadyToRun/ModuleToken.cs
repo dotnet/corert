@@ -5,6 +5,7 @@
 using System;
 
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 using Internal.JitInterface;
 using Internal.TypeSystem.Ecma;
@@ -23,6 +24,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             Module = module;
             Token = token;
+        }
+        public ModuleToken(EcmaModule module, EntityHandle entityHandle)
+        {
+            Module = module;
+            Token = (mdToken)MetadataTokens.GetToken(entityHandle);
+        }
+
+        public ModuleToken(EcmaModule module, Handle handle)
+        {
+            Module = module;
+            Token = (mdToken)MetadataTokens.GetToken(handle);
         }
 
         public bool IsNull => Module == null;
@@ -74,5 +86,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public CorTokenType TokenType => SignatureBuilder.TypeFromToken(Token);
 
         public uint TokenRid => SignatureBuilder.RidFromToken(Token);
+
+        public Handle Handle => MetadataTokens.Handle((int)Token);
     }
 }

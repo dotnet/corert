@@ -1114,12 +1114,16 @@ namespace Internal.JitInterface
             pResolvedToken.hClass = null;
             pResolvedToken.hMethod = null;
             pResolvedToken.hField = null;
-
+            
             if (result is MethodDesc)
             {
                 MethodDesc method = result as MethodDesc;
                 pResolvedToken.hMethod = ObjectToHandle(method);
                 pResolvedToken.hClass = ObjectToHandle(method.OwningType);
+
+#if READYTORUN
+            _compilation.NodeFactory.AddModuleTokenForMethod(method, new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token));
+#endif
             }
             else
             if (result is FieldDesc)
@@ -1133,6 +1137,10 @@ namespace Internal.JitInterface
 
                 pResolvedToken.hField = ObjectToHandle(field);
                 pResolvedToken.hClass = ObjectToHandle(field.OwningType);
+
+#if READYTORUN
+                _compilation.NodeFactory.AddModuleTokenForField(field, new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token));
+#endif
             }
             else
             {
@@ -1145,6 +1153,10 @@ namespace Internal.JitInterface
                     type = type.MakeArrayType();
                 }
                 pResolvedToken.hClass = ObjectToHandle(type);
+
+#if READYTORUN
+                _compilation.NodeFactory.AddModuleTokenForType(type, new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token));
+#endif
             }
 
             pResolvedToken.pTypeSpec = null;
