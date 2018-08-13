@@ -1,6 +1,7 @@
 include(CheckCXXSourceCompiles)
 include(CheckCXXSourceRuns)
 include(CheckLibraryExists)
+include(CheckFunctionExists)
 
 check_library_exists(pthread pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
 
@@ -61,6 +62,8 @@ int main(void)
 set(CMAKE_REQUIRED_LIBRARIES)
 
 check_include_files(gnu/lib-names.h HAVE_GNU_LIBNAMES_H)
+
+check_function_exists(_NSGetEnviron HAVE__NSGETENVIRON)
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
