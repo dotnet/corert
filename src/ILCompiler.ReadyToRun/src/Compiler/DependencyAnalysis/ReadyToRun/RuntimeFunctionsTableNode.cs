@@ -2,20 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
+
 using Internal.Text;
 using Internal.TypeSystem;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class RuntimeFunctionsTableNode : HeaderTableNode
     {
-        private readonly List<MethodWithGCInfo> _methodNodes;
+        private List<MethodWithGCInfo> _methodNodes;
+        private Dictionary<MethodWithGCInfo, int> _insertedMethodNodes;
+        private readonly NodeFactory _nodeFactory;
 
-        public RuntimeFunctionsTableNode(TargetDetails target)
-            : base(target)
+        public RuntimeFunctionsTableNode(NodeFactory nodeFactory)
+            : base(nodeFactory.Target)
         {
-            _methodNodes = new List<MethodWithGCInfo>();
+            _nodeFactory = nodeFactory;
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -24,14 +30,47 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append("__ReadyToRunRuntimeFunctionsTable");
         }
 
-        public int Add(MethodWithGCInfo method)
+        public int GetIndex(MethodWithGCInfo method)
         {
-            _methodNodes.Add(method);
-            return _methodNodes.Count - 1;
+#if DEBUG
+            Debug.Assert(_nodeFactory.MarkingComplete);
+            Debug.Assert(method.Marked);
+#endif
+            if (_methodNodes == null)
+                LayoutRuntimeFunctions();
+
+            return _insertedMethodNodes[method];
+        }
+
+        private void LayoutRuntimeFunctions()
+        {
+            _methodNodes = new List<MethodWithGCInfo>();
+            _insertedMethodNodes = new Dictionary<MethodWithGCInfo, int>();
+
+            foreach (MethodDesc method in _nodeFactory.MetadataManager.GetCompiledMethods())
+            {
+                MethodWithGCInfo methodCodeNode = _nodeFactory.MethodEntrypoint(method) as MethodWithGCInfo;
+                if (methodCodeNode == null)
+                {
+                    methodCodeNode = ((ExternalMethodImport)_nodeFactory.MethodEntrypoint(method))?.MethodCodeNode;
+                    if (methodCodeNode == null)
+                        continue;
+                }
+
+                _methodNodes.Add(methodCodeNode);
+                _insertedMethodNodes[methodCodeNode] = _methodNodes.Count - 1;
+            }
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
+            // This node does not trigger generation of other nodes.
+            if (relocsOnly)
+                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
+
+            if (_methodNodes == null)
+                LayoutRuntimeFunctions();
+
             ObjectDataBuilder runtimeFunctionsBuilder = new ObjectDataBuilder(factory, relocsOnly);
 
             // Add the symbol representing this object node

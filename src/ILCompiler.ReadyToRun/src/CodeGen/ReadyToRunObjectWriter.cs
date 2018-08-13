@@ -72,14 +72,6 @@ namespace ILCompiler.DependencyAnalysis
                 _rdataSectionIndex = sectionBuilder.AddSection(".rdata", SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead, 512);
                 _dataSectionIndex = sectionBuilder.AddSection(".data", SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemWrite | SectionCharacteristics.MemRead, 512);
 
-                foreach (var depNode in _nodes)
-                {
-                    if (depNode is EETypeNode eeTypeNode)
-                    {
-                        _nodeFactory.TypesTable.Add(eeTypeNode);
-                    }
-                }
-
                 int nodeIndex = -1;
                 foreach (var depNode in _nodes)
                 {

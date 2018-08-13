@@ -44,5 +44,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             return _typeToken.CompareTo(((NewArrayFixupSignature)other)._typeToken);
         }
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            DependencyList dependencies = new DependencyList();
+            dependencies.Add(factory.NecessaryTypeSymbol(_arrayType.ElementType), "Type used as array element");
+            return dependencies;
+        }
     }
 }
