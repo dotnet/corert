@@ -10,6 +10,7 @@
 #if HAVE_SCHED_GETCPU
 #include <sched.h>
 #endif
+#include <unistd.h>
 
 
 extern "C" char* CoreLibNative_GetEnv(const char* variable)
@@ -31,7 +32,7 @@ extern "C" void CoreLibNative_Exit(int32_t exitCode)
     exit(exitCode);
 }
 
-extern "C" char** CoreLibNative_EnvironGetSystemEnvironment()
+extern "C" char** CoreLibNative_GetEnviron()
 {
     char** sysEnviron;
 

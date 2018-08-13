@@ -27,91 +27,54 @@ namespace Internal.Runtime.Augments
 
         public static IEnumerable<KeyValuePair<string,string>> EnumerateEnvironmentVariables()
         {
-            if ("".Length != 0)
-                throw new NotImplementedException(); // Need to return something better than an empty environment block.
+            IntPtr block = Interop.Sys.GetEnviron();
+            if (block == IntPtr.Zero)
+                yield break;
 
-            unsafe
+            // Per man page, environment variables come back as an array of pointers to strings
+            // Parse each pointer of strings individually
+            while (ParseEntry(ref block, out string key, out string value))
             {
-                // Get byte** of environment variables from native interop
-                var unsafeBlock = (byte**)Interop.Sys.EnvironGetSystemEnvironment();
-                if (unsafeBlock == (byte**)0)
-                    throw new OutOfMemoryException();
-                
-                // Find total length of two-dimensional byte**
-                int rowIndex = 0;
-                int totalLength = 0;
-                while (unsafeBlock[rowIndex] != null && unsafeBlock[rowIndex][0] != 0)
-                {
-                    byte* p = unsafeBlock[rowIndex];
-                    while (*p != 0) // Continue until end-of-line char '\0'
-                    {
-                        p++;
-                    }
-                    totalLength += checked((int)(p - unsafeBlock[rowIndex] + 1));
-                    rowIndex++;
-                }
+                if (key != null && value != null)
+                    yield return new KeyValuePair<string, string>(key, value);
 
-                // Copy two-dimensional byte** to a flat char[] for parsing
-                rowIndex = 0;
-                var blockIndex = 0;
-                char[] block = new char[totalLength];
-                while (unsafeBlock[rowIndex] != null && unsafeBlock[rowIndex][0] != 0)
-                {
-                    byte* p = unsafeBlock[rowIndex];
-                    while (*p != 0) // Continue until end-of-line char '\0'
-                    {
-                        p++;
-                    }
-                    var rowLength = checked((int)(p - unsafeBlock[rowIndex] + 1));
-                    for (int i = 0; i < rowLength; i++)
-                    {
-                        // Copy original byte to a Unicode char in our flat char[]
-                        block[blockIndex++] = Convert.ToChar(unsafeBlock[rowIndex][i]);
-                    }
-                    rowIndex++;
-                }
-
-                // Parse flat char[] and return
-                return EnumerateEnvironmentVariables(block);
+                // Increment to next environment variable entry
+                block += IntPtr.Size;
             }
-        }
 
-        private static IEnumerable<KeyValuePair<string, string>> EnumerateEnvironmentVariables(char[] block)
-        {
-            // To maintain complete compatibility with prior versions we need to return a Hashtable.
-            // We did ship a prior version of Core with LowLevelDictionary, which does iterate the
-            // same (e.g. yields DictionaryEntry), but it is not a public type.
-            //
-            // While we could pass Hashtable back from CoreCLR the type is also defined here. We only
-            // want to surface the local Hashtable.
-            for (int i = 0; i < block.Length; i++)
+            // Use a local, unsafe function since we cannot use `yield return` inside of an `unsafe` block
+            unsafe bool ParseEntry(ref IntPtr current, out string key, out string value)
             {
-                int startKey = i;
+                // Setup
+                key = null; 
+                value = null;
 
-                // Skip to key. On some old OS, the environment block can be corrupted.
+                // Point to current entry
+                byte* entry = *(byte**)current;
+
+                // Per man page, "The last pointer in this array has the value NULL"
+                // Therefore, if entry is null then we're at the end and can bail
+                if (entry == null)
+                    return false;
+
+                // Parse each byte of the entry until we hit either the separator '=' or '\0'.
+                // This finds the split point for creating key/value strings below.
+                // On some old OS, the environment block can be corrupted.
                 // Some will not have '=', so we need to check for '\0'. 
-                while (block[i] != '=' && block[i] != '\0')
-                    i++;
-                if (block[i] == '\0')
-                    continue;
+                byte* splitpoint = entry;
+                while (*splitpoint != '=' && *splitpoint != '\0')
+                    splitpoint++;
 
-                // Skip over environment variables starting with '='
-                if (i - startKey == 0)
-                {
-                    while (block[i] != 0)
-                        i++;
-                    continue;
-                }
+                // Skip over entries starting with '=' and entries with no value (just a null-terminating char '\0')
+                if (splitpoint == entry || *splitpoint == '\0')
+                    return true;
 
-                string key = new string(block, startKey, i - startKey);
-                i++;  // skip over '='
+                // The key is the bytes from start (0) until our splitpoint
+                key = new string((sbyte*)entry, 0, checked((int)(splitpoint - entry)));
+                // The value is the rest of the bytes starting after the splitpoint
+                value = new string((sbyte*)(splitpoint + 1));
 
-                int startValue = i;
-                while (block[i] != 0)
-                    i++; // Read to end of this entry 
-                string value = new string(block, startValue, i - startValue); // skip over 0 handled by for loop's i++
-
-                yield return new KeyValuePair<string, string>(key, value);
+                return true;
             }
         }
 

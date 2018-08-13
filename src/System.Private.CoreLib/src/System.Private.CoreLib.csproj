@@ -608,8 +608,8 @@
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.ErrNo.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.ErrNo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.EnvironGetSystemEnvironment.cs">
-      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.EnvironGetSystemEnvironment.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetEnviron.cs">
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetEnviron.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
