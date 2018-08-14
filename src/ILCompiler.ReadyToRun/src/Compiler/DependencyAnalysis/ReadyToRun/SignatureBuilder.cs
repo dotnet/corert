@@ -268,10 +268,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     return;
 
                 case TypeFlags.ValueType:
-                    EmitElementType(CorElementType.ELEMENT_TYPE_VALUETYPE);
-                    EmitTypeToken((EcmaType)typeDesc, token, context);
-                    return;
-
                 case TypeFlags.Nullable:
                     EmitElementType(CorElementType.ELEMENT_TYPE_VALUETYPE);
                     EmitTypeToken((EcmaType)typeDesc, token, context);

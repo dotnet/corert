@@ -867,8 +867,7 @@ namespace ILCompiler.DependencyAnalysis
 
         /// <summary>
         /// Reverse lookup table mapping external types to reference tokens in the input modules. The table
-        /// gets lazily initialized with all input module references the first time the reverse lookup is
-        /// needed.
+        /// gets lazily initialized as various tokens are resolved in CorInfoImpl.
         /// </summary>
         private Dictionary<EcmaType, ModuleToken> _typeToRefTokens = new Dictionary<EcmaType, ModuleToken>();
 

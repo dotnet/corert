@@ -1114,7 +1114,7 @@ namespace Internal.JitInterface
             pResolvedToken.hClass = null;
             pResolvedToken.hMethod = null;
             pResolvedToken.hField = null;
-            
+
             if (result is MethodDesc)
             {
                 MethodDesc method = result as MethodDesc;
