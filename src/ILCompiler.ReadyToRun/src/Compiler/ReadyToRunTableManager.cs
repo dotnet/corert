@@ -17,6 +17,8 @@ namespace ILCompiler
 {
     public class ReadyToRunTableManager : MetadataManager
     {
+        private readonly HashSet<TypeDesc> _typesWithAvailableTypesGenerated = new HashSet<TypeDesc>();
+
         public ReadyToRunTableManager(CompilerTypeSystemContext typeSystemContext)
             : base(typeSystemContext, new NoMetadataBlockingPolicy(), new NoManifestResourceBlockingPolicy()) {}
 
@@ -32,9 +34,14 @@ namespace ILCompiler
             var eetypeNode = obj as AvailableType;
             if (eetypeNode != null)
             {
-                _typesWithEETypesGenerated.Add(eetypeNode.Type);
+                _typesWithAvailableTypesGenerated.Add(eetypeNode.Type);
                 return;
             }
+        }
+
+        public IEnumerable<TypeDesc> GetTypesWithAvailableTypes()
+        {
+            return _typesWithAvailableTypesGenerated;
         }
 
         public override MethodDesc GetCanonicalReflectionInvokeStub(MethodDesc method) => throw new NotImplementedException();

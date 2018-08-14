@@ -11,11 +11,11 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class AvailableType : DependencyNodeCore<NodeFactory>, IEETypeNode
+    class ExternalTypeNode : DependencyNodeCore<NodeFactory>, IEETypeNode
     {
         private readonly TypeDesc _type;
 
-        public AvailableType(NodeFactory factory, TypeDesc type)
+        public ExternalTypeNode(NodeFactory factory, TypeDesc type)
         {
             _type = type;
 
@@ -33,7 +33,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public bool RepresentsIndirectionCell => false;
 
-        public int ClassCode => 345483495;
+        public int ClassCode => -1044459;
 
         public override bool InterestingForDynamicDependencyAnalysis => false;
 
@@ -57,6 +57,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => null;
 
-        protected override string GetName(NodeFactory factory) => $"Available type {Type.ToString()}";
+        protected override string GetName(NodeFactory factory) => $"Externally referenced type {Type.ToString()}";
     }
 }

@@ -44,7 +44,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         protected override void OnMarked(NodeFactory factory)
         {
             ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
-            // Marked method - add runtime & entry point table entry
             r2rFactory.RuntimeFunctionsGCInfo.AddEmbeddedObject(GCInfoNode);
         }
 

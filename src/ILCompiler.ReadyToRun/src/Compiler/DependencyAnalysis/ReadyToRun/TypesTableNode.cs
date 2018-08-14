@@ -38,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             VertexHashtable typesHashtable = new VertexHashtable();
             section.Place(typesHashtable);
 
-            foreach (TypeDesc type in factory.MetadataManager.GetTypesWithEETypes())
+            foreach (TypeDesc type in ((ReadyToRunTableManager)factory.MetadataManager).GetTypesWithAvailableTypes())
             {
                 int rid = 0;
                 if (type is EcmaType ecmaType)
