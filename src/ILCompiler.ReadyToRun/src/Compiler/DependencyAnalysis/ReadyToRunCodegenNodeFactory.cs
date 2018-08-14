@@ -78,11 +78,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public ImportSectionNode PrecodeImports;
 
-        public IMethodNode MethodEntrypoint(MethodDesc method, ModuleToken token, bool isUnboxingStub = false)
+        public IMethodNode MethodEntrypoint(MethodDesc method, ModuleToken token, TypeDesc constrainedType = null, bool isUnboxingStub = false)
         {
             return _methodEntrypoints.GetOrAdd(method, (m) =>
             {
-                return CreateMethodEntrypointNode(method, token, isUnboxingStub);
+                return CreateMethodEntrypointNode(method, token, constrainedType, isUnboxingStub);
             });
         }
 
