@@ -315,9 +315,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             EmitTypeSignature(type.ElementType, token, context);
         }
 
-        public void EmitMethodSignature(MethodDesc method, ModuleToken token, bool isUnboxingStub, SignatureContext context)
+        public void EmitMethodSignature(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool isUnboxingStub, SignatureContext context)
         {
-            uint flags = (isUnboxingStub ? (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UnboxingStub : 0);
+            uint flags = 0;
+            if (isUnboxingStub)
+            {
+                flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UnboxingStub;
+            }
+            if (constrainedType != null)
+            {
+                flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_Constrained;
+            }
 
             switch (token.TokenType)
             {
@@ -340,6 +348,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 default:
                     throw new NotImplementedException();
+            }
+
+            if (constrainedType != null)
+            {
+                EmitTypeSignature(constrainedType, default(ModuleToken), context);
             }
         }
 

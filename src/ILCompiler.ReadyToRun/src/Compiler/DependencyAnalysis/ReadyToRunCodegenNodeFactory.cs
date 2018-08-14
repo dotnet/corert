@@ -23,7 +23,7 @@ namespace ILCompiler.DependencyAnalysis
 
     public sealed class ReadyToRunCodegenNodeFactory : NodeFactory
     {
-        private Dictionary<MethodDesc, IMethodNode> _importMethods;
+        private Dictionary<TypeAndMethod, IMethodNode> _importMethods;
 
         private Dictionary<ModuleToken, ISymbolNode> _importStrings;
 
@@ -45,7 +45,7 @@ namespace ILCompiler.DependencyAnalysis
                   dictionaryLayoutProvider,
                   new ImportedNodeProviderThrowing())
         {
-            _importMethods = new Dictionary<MethodDesc, IMethodNode>();
+            _importMethods = new Dictionary<TypeAndMethod, IMethodNode>();
             _importStrings = new Dictionary<ModuleToken, ISymbolNode>();
             _r2rHelpers = new Dictionary<ReadyToRunHelperId, Dictionary<object, ISymbolNode>>();
         }
@@ -80,17 +80,17 @@ namespace ILCompiler.DependencyAnalysis
 
         public IMethodNode MethodEntrypoint(MethodDesc method, ModuleToken token, bool isUnboxingStub = false)
         {
-            return _methodEntrypoints.GetOrAdd(method, (m) => 
+            return _methodEntrypoints.GetOrAdd(method, (m) =>
             {
                 return CreateMethodEntrypointNode(method, token, isUnboxingStub);
             });
         }
 
-        private IMethodNode CreateMethodEntrypointNode(MethodDesc method, ModuleToken token, bool isUnboxingStub)
+        private IMethodNode CreateMethodEntrypointNode(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool isUnboxingStub)
         {
             if (method is InstantiatedMethod instantiatedMethod)
             {
-                return InstantiatedMethodNode(instantiatedMethod, token, isUnboxingStub);
+                return InstantiatedMethodNode(instantiatedMethod, token, constrainedType, isUnboxingStub);
             }
 
             MethodWithGCInfo localMethod = null;
@@ -111,12 +111,12 @@ namespace ILCompiler.DependencyAnalysis
                 token = new ModuleToken(ecmaMethod.Module, (mdToken)MetadataTokens.GetToken(ecmaMethod.Handle));
             }
 
-            return ImportedMethodNode(method, unboxingStub: isUnboxingStub, token: token, localMethod: localMethod);
+            return ImportedMethodNode(method, unboxingStub: isUnboxingStub, token: token, constrainedType: constrainedType, localMethod: localMethod);
         }
 
         public IMethodNode StringAllocator(MethodDesc constructor, ModuleToken token)
         {
-            return MethodEntrypoint(constructor, token, isUnboxingStub: false);
+            return MethodEntrypoint(constructor, token, constrainedType: null, isUnboxingStub: false);
         }
 
         public ISymbolNode StringLiteral(ModuleToken token)
@@ -368,7 +368,7 @@ namespace ILCompiler.DependencyAnalysis
                 this,
                 DispatchImports,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_Obj,
-                MethodSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry, method, methodToken, isUnboxingStub: false));
+                MethodSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry, method, methodToken, constrainedType: null, isUnboxingStub: false));
         }
 
         private ISymbolNode CreateDelegateCtorHelper(DelegateCreationInfo info, ModuleToken token)
@@ -509,7 +509,7 @@ namespace ILCompiler.DependencyAnalysis
                     DispatchImports,
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_MethodCall |
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_FLAG_VSD,
-                    MethodSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry, method, token, isUnboxingStub),
+                    MethodSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry, method, token, constrainedType: null, isUnboxingStub),
                     callSite);
 
                 _interfaceDispatchCells.Add(cellKey, dispatchCell);
@@ -551,7 +551,7 @@ namespace ILCompiler.DependencyAnalysis
                     this,
                     HelperImports,
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
-                    MethodSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_MethodDictionary, method, token, isUnboxingStub: false));
+                    MethodSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_MethodDictionary, method, token, constrainedType: null, isUnboxingStub: false));
                 _genericDictionaryCache.Add(method, genericDictionary);
             }
             return genericDictionary;
@@ -601,20 +601,29 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        Dictionary<MethodAndFixupKind, MethodFixupSignature> _methodSignatures = new Dictionary<MethodAndFixupKind, MethodFixupSignature>();
+        Dictionary<ReadyToRunFixupKind, Dictionary<TypeAndMethod, MethodFixupSignature>> _methodSignatures =
+            new Dictionary<ReadyToRunFixupKind, Dictionary<TypeAndMethod, MethodFixupSignature>>();
 
         public MethodFixupSignature MethodSignature(
             ReadyToRunFixupKind fixupKind,
             MethodDesc methodDesc,
             ModuleToken token,
+            TypeDesc constrainedType,
             bool isUnboxingStub)
         {
-            MethodAndFixupKind signatureKey = new MethodAndFixupKind(methodDesc, isUnboxingStub, fixupKind);
-            MethodFixupSignature signature;
-            if (!_methodSignatures.TryGetValue(signatureKey, out signature))
+            Dictionary<TypeAndMethod, MethodFixupSignature> perFixupKindMap;
+            if (!_methodSignatures.TryGetValue(fixupKind, out perFixupKindMap))
             {
-                signature = new MethodFixupSignature(this, fixupKind, methodDesc, token, isUnboxingStub);
-                _methodSignatures.Add(signatureKey, signature);
+                perFixupKindMap = new Dictionary<TypeAndMethod, MethodFixupSignature>();
+                _methodSignatures.Add(fixupKind, perFixupKindMap);
+            }
+
+            TypeAndMethod key = new TypeAndMethod(constrainedType, methodDesc, isUnboxingStub);
+            MethodFixupSignature signature;
+            if (!perFixupKindMap.TryGetValue(key, out signature))
+            {
+                signature = new MethodFixupSignature(this, fixupKind, methodDesc, token, constrainedType, isUnboxingStub);
+                perFixupKindMap.Add(key, signature);
             }
             return signature;
         }
@@ -710,10 +719,11 @@ namespace ILCompiler.DependencyAnalysis
             MetadataManager.AttachToDependencyGraph(graph);
         }
 
-        public IMethodNode ImportedMethodNode(MethodDesc method, ModuleToken token, bool unboxingStub, MethodWithGCInfo localMethod)
+        public IMethodNode ImportedMethodNode(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool unboxingStub, MethodWithGCInfo localMethod)
         {
             IMethodNode methodImport;
-            if (!_importMethods.TryGetValue(method, out methodImport))
+            TypeAndMethod key = new TypeAndMethod(constrainedType, method, unboxingStub);
+            if (!_importMethods.TryGetValue(key, out methodImport))
             {
                 // First time we see a given external method - emit indirection cell and the import entry
                 ExternalMethodImport indirectionCell = new ExternalMethodImport(
@@ -721,9 +731,10 @@ namespace ILCompiler.DependencyAnalysis
                     ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
                     method,
                     token,
+                    constrainedType,
                     unboxingStub,
                     localMethod);
-                _importMethods.Add(method, indirectionCell);
+                _importMethods.Add(key, indirectionCell);
                 methodImport = indirectionCell;
             }
             return methodImport;
@@ -731,7 +742,7 @@ namespace ILCompiler.DependencyAnalysis
 
         Dictionary<InstantiatedMethod, IMethodNode> _instantiatedMethodImports = new Dictionary<InstantiatedMethod, IMethodNode>();
 
-        private IMethodNode InstantiatedMethodNode(InstantiatedMethod method, ModuleToken token, bool isUnboxingStub)
+        private IMethodNode InstantiatedMethodNode(InstantiatedMethod method, ModuleToken token, TypeDesc constrainedType, bool isUnboxingStub)
         {
             IMethodNode methodImport;
             if (!_instantiatedMethodImports.TryGetValue(method, out methodImport))
@@ -741,6 +752,7 @@ namespace ILCompiler.DependencyAnalysis
                     ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
                     method,
                     token,
+                    constrainedType,
                     isUnboxingStub,
                     localMethod: null);
                 _instantiatedMethodImports.Add(method, methodImport);
@@ -748,9 +760,18 @@ namespace ILCompiler.DependencyAnalysis
             return methodImport;
         }
 
-        public IMethodNode ShadowConcreteMethod(MethodDesc method, ModuleToken token, bool isUnboxingStub = false)
+        private Dictionary<TypeAndMethod, IMethodNode> _shadowConcreteMethods = new Dictionary<TypeAndMethod, IMethodNode>();
+
+        public IMethodNode ShadowConcreteMethod(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool isUnboxingStub = false)
         {
-            return MethodEntrypoint(method, token, isUnboxingStub);
+            IMethodNode result;
+            TypeAndMethod key = new TypeAndMethod(constrainedType, method, isUnboxingStub);
+            if (!_shadowConcreteMethods.TryGetValue(key, out result))
+            {
+                result = MethodEntrypoint(method, token, constrainedType, isUnboxingStub);
+                _shadowConcreteMethods.Add(key, result);
+            }
+            return result;
         }
 
         protected override IEETypeNode CreateNecessaryTypeNode(TypeDesc type)
@@ -787,7 +808,7 @@ namespace ILCompiler.DependencyAnalysis
                 // Cannot encode external methods without tokens
                 throw new NotImplementedException();
             }
-            return MethodEntrypoint(method, default(ModuleToken), isUnboxingStub: false);
+            return MethodEntrypoint(method, default(ModuleToken), constrainedType: null, isUnboxingStub: false);
         }
 
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)
@@ -799,16 +820,18 @@ namespace ILCompiler.DependencyAnalysis
         {
             public readonly TypeDesc Type;
             public readonly MethodDesc Method;
+            public readonly bool IsUnboxingStub;
 
-            public TypeAndMethod(TypeDesc type, MethodDesc method)
+            public TypeAndMethod(TypeDesc type, MethodDesc method, bool isUnboxingStub)
             {
                 Type = type;
                 Method = method;
+                IsUnboxingStub = isUnboxingStub;
             }
 
             public bool Equals(TypeAndMethod other)
             {
-                return Type == other.Type && Method == other.Method;
+                return Type == other.Type && Method == other.Method && IsUnboxingStub == other.IsUnboxingStub;
             }
 
             public override bool Equals(object obj)
@@ -818,7 +841,7 @@ namespace ILCompiler.DependencyAnalysis
 
             public override int GetHashCode()
             {
-                return Type.GetHashCode() ^ unchecked(Method.GetHashCode() * 31);
+                return (Type?.GetHashCode() ?? 0) ^ unchecked(Method.GetHashCode() * 31) ^ (IsUnboxingStub ? -0x80000000 : 0);
             }
         }
 
@@ -827,10 +850,10 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode DelegateCtor(TypeDesc delegateType, MethodDesc targetMethod, ModuleToken methodToken)
         {
             ISymbolNode ctorNode;
-            TypeAndMethod ctorKey = new TypeAndMethod(delegateType, targetMethod);
+            TypeAndMethod ctorKey = new TypeAndMethod(delegateType, targetMethod, isUnboxingStub: false);
             if (!_delegateCtors.TryGetValue(ctorKey, out ctorNode))
             {
-                IMethodNode targetMethodNode = MethodEntrypoint(targetMethod, methodToken, isUnboxingStub: false);
+                IMethodNode targetMethodNode = MethodEntrypoint(targetMethod, methodToken, constrainedType: null, isUnboxingStub: false);
 
                 ctorNode = new DelayLoadHelperImport(
                     this,

@@ -2968,7 +2968,7 @@ namespace Internal.JitInterface
                     Debug.Assert(!forceUseRuntimeLookup);
                     pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                        _compilation.NodeFactory.MethodEntrypoint(targetMethod, new ModuleToken(_tokenContext, pResolvedToken.token))
+                        _compilation.NodeFactory.MethodEntrypoint(targetMethod, new ModuleToken(_tokenContext, pResolvedToken.token), constrainedType)
 #else
                         _compilation.NodeFactory.MethodEntrypoint(targetMethod)
 #endif
@@ -3004,7 +3004,7 @@ namespace Internal.JitInterface
                         {
                             pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                                _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod, new ModuleToken(_tokenContext, pResolvedToken.token))
+                                _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod, new ModuleToken(_tokenContext, pResolvedToken.token), constrainedType)
 #else
                                 _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod)
 #endif
@@ -3017,7 +3017,7 @@ namespace Internal.JitInterface
                             // any generic lookups).
                             pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                                _compilation.NodeFactory.MethodEntrypoint(targetMethod, new ModuleToken(_tokenContext, pResolvedToken.token))
+                                _compilation.NodeFactory.MethodEntrypoint(targetMethod, new ModuleToken(_tokenContext, pResolvedToken.token), constrainedType)
 #else
                                 _compilation.NodeFactory.MethodEntrypoint(targetMethod)
 #endif
@@ -3028,7 +3028,7 @@ namespace Internal.JitInterface
                     {
                         pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                            _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod, new ModuleToken(_tokenContext, pResolvedToken.token))
+                            _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod, new ModuleToken(_tokenContext, pResolvedToken.token), constrainedType)
 #else
                             _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod)
 #endif
@@ -3038,7 +3038,7 @@ namespace Internal.JitInterface
                     {
                         pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                            _compilation.NodeFactory.MethodEntrypoint(targetMethod, new ModuleToken(_tokenContext, pResolvedToken.token))
+                            _compilation.NodeFactory.MethodEntrypoint(targetMethod, new ModuleToken(_tokenContext, pResolvedToken.token), constrainedType)
 #else
                             _compilation.NodeFactory.MethodEntrypoint(targetMethod)
 #endif
