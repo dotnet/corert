@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
+
 using ILCompiler.DependencyAnalysisFramework;
+
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -43,10 +44,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         protected override void OnMarked(NodeFactory factory)
         {
             ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
-            // Marked method - add runtime & entry point table entry
             r2rFactory.RuntimeFunctionsGCInfo.AddEmbeddedObject(GCInfoNode);
-            int index = r2rFactory.RuntimeFunctionsTable.Add(this);
-            r2rFactory.MethodEntryPointTable.Add(this, index);
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)

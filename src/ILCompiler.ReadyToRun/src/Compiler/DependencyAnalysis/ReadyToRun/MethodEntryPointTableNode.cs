@@ -66,7 +66,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        List<EntryPoint> _ridToEntryPoint;
+        private List<EntryPoint> _ridToEntryPoint;
 
         public MethodEntryPointTableNode(TargetDetails target)
             : base(target)
@@ -198,6 +198,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (relocsOnly)
             {
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, Array.Empty<ISymbolDefinitionNode>());
+            }
+
+            foreach (MethodDesc method in factory.MetadataManager.GetCompiledMethods())
+            {
+                MethodWithGCInfo methodCodeNode = factory.MethodEntrypoint(method) as MethodWithGCInfo;
+                if (methodCodeNode == null)
+                {
+                    methodCodeNode = ((ExternalMethodImport)factory.MethodEntrypoint(method))?.MethodCodeNode;
+                    if (methodCodeNode == null)
+                        continue;
+                }
+
+                Add(methodCodeNode, ((ReadyToRunCodegenNodeFactory)factory).RuntimeFunctionsTable.GetIndex(methodCodeNode));
             }
 
             NativeWriter writer = new NativeWriter();

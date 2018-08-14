@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using ILCompiler.DependencyAnalysisFramework;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -43,6 +44,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return _typeToken.CompareTo(((NewObjectFixupSignature)other)._typeToken);
+        }
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            DependencyList dependencies = new DependencyList();
+            dependencies.Add(factory.ConstructedTypeSymbol(_typeDesc), "Type constructed through new object fixup");
+            return dependencies;
         }
     }
 }

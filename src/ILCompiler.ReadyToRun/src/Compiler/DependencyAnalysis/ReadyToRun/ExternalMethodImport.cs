@@ -32,6 +32,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         public MethodDesc Method => _methodDesc;
+        public MethodWithGCInfo MethodCodeNode => _localMethod;
 
         public override int ClassCode => 458823351;
 

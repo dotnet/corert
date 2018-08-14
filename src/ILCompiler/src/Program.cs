@@ -491,7 +491,16 @@ namespace ILCompiler
 
             bool supportsReflection = !_isReadyToRunCodeGen && !_isWasmCodegen && !_isCppCodegen && _systemModuleName == DefaultSystemModule;
 
-            MetadataManager compilationMetadataManager = supportsReflection ? metadataManager : (MetadataManager)new EmptyMetadataManager(typeSystemContext);
+            MetadataManager compilationMetadataManager;
+            if (_isReadyToRunCodeGen)
+            {
+                compilationMetadataManager = new ReadyToRunTableManager(typeSystemContext);
+            }
+            else
+            {
+                compilationMetadataManager = supportsReflection ? metadataManager : (MetadataManager)new EmptyMetadataManager(typeSystemContext);
+            }
+            
             ILScanResults scanResults = null;
             if (useScanner)
             {

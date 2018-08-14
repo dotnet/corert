@@ -261,6 +261,25 @@ internal class Program
         return true;
     }
     
+    private static bool CreateLocalClassInstance()
+    {
+        var testClass = new TestClass(1234);
+        Console.WriteLine("Successfully constructed TestClass");
+        return testClass.A == 1234;
+    }
+
+    private class TestClass
+    {
+        private int _a;
+
+        public TestClass(int a)
+        {
+            _a = a;
+        }
+
+        public int A => _a;
+    }
+
     public static int Main(string[] args)
     {
         if (args.Length > 0)
@@ -290,6 +309,8 @@ internal class Program
         RunTest("ManipulateListOfString", ManipulateListOfString());
 
         RunTest("EmptyArray", EmptyArray());
+        RunTest("CreateLocalClassInstance", CreateLocalClassInstance());
+        
         // TODO: RunTest("EnumerateEmptyArray", EnumerateEmptyArray());
 
         Console.WriteLine($@"{_passedTests.Count} tests pass:");

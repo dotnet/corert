@@ -26,12 +26,12 @@ namespace ILCompiler.DependencyAnalysis
         private Dictionary<ModuleToken, ISymbolNode> _importStrings;
 
         public ReadyToRunCodegenNodeFactory(
-            CompilerTypeSystemContext context, 
+            CompilerTypeSystemContext context,
             CompilationModuleGroup compilationModuleGroup,
             MetadataManager metadataManager,
-            InteropStubManager interopStubManager, 
-            NameMangler nameMangler, 
-            VTableSliceProvider vtableSliceProvider, 
+            InteropStubManager interopStubManager,
+            NameMangler nameMangler,
+            VTableSliceProvider vtableSliceProvider,
             DictionaryLayoutProvider dictionaryLayoutProvider)
             : base(context,
                   compilationModuleGroup,
@@ -74,17 +74,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public ImportSectionNode PrecodeImports;
 
-        Dictionary<MethodDesc, IMethodNode> _methodMap = new Dictionary<MethodDesc, IMethodNode>();
-
         public IMethodNode MethodEntrypoint(MethodDesc method, ModuleToken token, bool isUnboxingStub = false)
         {
-            IMethodNode methodNode;
-            if (!_methodMap.TryGetValue(method, out methodNode))
+            return _methodEntrypoints.GetOrAdd(method, (m) => 
             {
-                methodNode = CreateMethodEntrypointNode(method, token, isUnboxingStub);
-                _methodMap.Add(method, methodNode);
-            }
-            return methodNode;
+                return CreateMethodEntrypointNode(method, token, isUnboxingStub);
+            });
         }
 
         private IMethodNode CreateMethodEntrypointNode(MethodDesc method, ModuleToken token, bool isUnboxingStub = false)
@@ -589,7 +584,7 @@ namespace ILCompiler.DependencyAnalysis
             var compilerIdentifierNode = new CompilerIdentifierNode(Target);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.CompilerIdentifier, compilerIdentifierNode, compilerIdentifierNode);
 
-            RuntimeFunctionsTable = new RuntimeFunctionsTableNode(Target);
+            RuntimeFunctionsTable = new RuntimeFunctionsTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.RuntimeFunctions, RuntimeFunctionsTable, RuntimeFunctionsTable);
 
             RuntimeFunctionsGCInfo = new RuntimeFunctionsGCInfoNode();
@@ -608,8 +603,8 @@ namespace ILCompiler.DependencyAnalysis
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ImportSections, ImportSectionsTable, ImportSectionsTable.StartSymbol);
 
             EagerImports = new ImportSectionNode(
-                "EagerImports", 
-                CorCompileImportType.CORCOMPILE_IMPORT_TYPE_UNKNOWN, 
+                "EagerImports",
+                CorCompileImportType.CORCOMPILE_IMPORT_TYPE_UNKNOWN,
                 CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_EAGER,
                 (byte)Target.PointerSize,
                 emitPrecode: false);
@@ -660,6 +655,8 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(PrecodeImports, "Precode imports are always generated");
             graph.AddRoot(StringImports, "String imports are always generated");
             graph.AddRoot(Header, "ReadyToRunHeader is always generated");
+
+            MetadataManager.AttachToDependencyGraph(graph);
         }
 
         public IMethodNode ImportedMethodNode(MethodDesc method, bool unboxingStub, ModuleToken token, MethodWithGCInfo localMethod)
@@ -702,9 +699,9 @@ namespace ILCompiler.DependencyAnalysis
             {
                 methodImport = new ExternalMethodImport(
                     this,
-                    ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry, 
-                    method, 
-                    token, 
+                    ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
+                    method,
+                    token,
                     localMethod: null,
                     MethodFixupSignature.SignatureKind.Signature);
                 _instantiatedMethodImports.Add(method, methodImport);
@@ -715,6 +712,33 @@ namespace ILCompiler.DependencyAnalysis
         public IMethodNode ShadowConcreteMethod(MethodDesc method, ModuleToken token, bool isUnboxingStub = false)
         {
             return MethodEntrypoint(method, token, isUnboxingStub);
+        }
+
+        protected override IEETypeNode CreateNecessaryTypeNode(TypeDesc type)
+        {
+            if (CompilationModuleGroup.ContainsType(type))
+            {
+                return new AvailableType(this, type);
+            }
+            else
+            {
+                return new ExternalTypeNode(this, type);
+            }
+        }
+
+        protected override IEETypeNode CreateConstructedTypeNode(TypeDesc type)
+        {
+            // Canonical definition types are *not* constructed types (call NecessaryTypeSymbol to get them)
+            Debug.Assert(!type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
+            
+            if (CompilationModuleGroup.ContainsType(type))
+            {
+                return new AvailableType(this, type);
+            }
+            else
+            {
+                return new ExternalTypeNode(this, type);
+            }
         }
 
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
