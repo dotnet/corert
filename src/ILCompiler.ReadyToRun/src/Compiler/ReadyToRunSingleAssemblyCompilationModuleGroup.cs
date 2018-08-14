@@ -23,14 +23,6 @@ namespace ILCompiler
             _compilationModuleSet.Add(context.GeneratedAssembly);
         }
 
-        public HashSet<ModuleDesc> CompilationModuleSet
-        {
-            get
-            {
-                return _compilationModuleSet;
-            }
-        }
-
         public sealed override bool ContainsType(TypeDesc type)
         {
             if (type is EcmaType ecmaType)
