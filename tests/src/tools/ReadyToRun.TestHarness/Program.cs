@@ -110,10 +110,13 @@ namespace ReadyToRun.TestHarness
                 var r2rMethodFilter = new ReadyToRunJittedMethods(session, testModules);
                 session.EnableProvider(ClrTraceEventParser.ProviderGuid, TraceEventLevel.Verbose, (ulong)(ClrTraceEventParser.Keywords.Jit | ClrTraceEventParser.Keywords.Loader));
                 
-                exitCode = RunTestWrapper(session, passThroughArguments).Result;
+                Task.Run(() => RunTest(session, passThroughArguments, out exitCode));
+
+                // Block, processing callbacks for events we subscribed to
+                session.Source.Process();
 
                 Console.WriteLine("Test execution " + (exitCode == StatusTestPassed ? "PASSED" : "FAILED"));
-                int analysisResult = AnalyzeResults(r2rMethodFilter, whiteListFile);
+                int analysisResult = AnalyzeResults(r2rMethodFilter, _whitelistFilename);
 
                 Console.WriteLine("Test jitted method analysis " + (analysisResult == StatusTestPassed ? "PASSED" : "FAILED"));
 
@@ -177,14 +180,9 @@ namespace ReadyToRun.TestHarness
             return StatusTestPassed;
         }
 
-        private static async Task<int> RunTestWrapper(TraceEventSession session, string passThroughArguments)
+        private static void RunTest(TraceEventSession session, string testArguments, out int exitCode)
         {
-            return await Task.Run(() => RunTest(session, passThroughArguments));
-        }
-
-        private static int RunTest(TraceEventSession session, string testArguments)
-        {
-            int exitCode = -100;
+            exitCode = -100;
 
             try
             {
@@ -220,8 +218,9 @@ namespace ReadyToRun.TestHarness
                     
                     if (session.EventsLost > 0)
                     {
+                        exitCode = StatusTestErrorEventsLost;
                         Console.WriteLine($"Error - {session.EventsLost} got lost in the nether.");
-                        return StatusTestErrorEventsLost;
+                        return;
                     }
                 }
             }
@@ -230,8 +229,6 @@ namespace ReadyToRun.TestHarness
                 // Stop ETL collection on the main thread
                 session.Stop();
             }
-            
-            return exitCode;
         }
     }
 }
