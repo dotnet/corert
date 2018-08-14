@@ -10,7 +10,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class MethodFixupSignature : Signature
     {
-        private readonly ReadyToRunCodegenNodeFactory _factory;
+        private readonly ModuleTokenResolver _resolver;
 
         private readonly ReadyToRunFixupKind _fixupKind;
 
@@ -23,14 +23,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly bool _isUnboxingStub;
 
         public MethodFixupSignature(
-            ReadyToRunCodegenNodeFactory factory, 
+            ModuleTokenResolver resolver, 
             ReadyToRunFixupKind fixupKind, 
             MethodDesc methodDesc, 
             ModuleToken methodToken,
             TypeDesc constrainedType,
             bool isUnboxingStub)
         {
-            _factory = factory;
+            _resolver = resolver;
             _fixupKind = fixupKind;
             _methodDesc = methodDesc;
             _methodToken = methodToken;
@@ -47,7 +47,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             dataBuilder.AddSymbol(this);
 
             dataBuilder.EmitByte((byte)_fixupKind);
-            dataBuilder.EmitMethodSignature(_methodDesc, _methodToken, _constrainedType, _isUnboxingStub, _methodToken.SignatureContext(_factory.Resolver));
+            dataBuilder.EmitMethodSignature(_methodDesc, _methodToken, _constrainedType, _isUnboxingStub, _methodToken.SignatureContext(_resolver));
 
             return dataBuilder.ToObjectData();
         }

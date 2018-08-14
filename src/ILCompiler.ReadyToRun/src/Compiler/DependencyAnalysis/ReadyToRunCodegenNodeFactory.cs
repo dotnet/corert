@@ -253,7 +253,7 @@ namespace ILCompiler.DependencyAnalysis
                 this,
                 HelperImports,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
-                new NewObjectFixupSignature(this, type, typeToken));
+                new NewObjectFixupSignature(Resolver, type, typeToken));
         }
 
         private ISymbolNode CreateNewArrayHelper(ArrayType type, ModuleToken typeRefToken)
@@ -263,7 +263,7 @@ namespace ILCompiler.DependencyAnalysis
                 this,
                 HelperImports,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
-                new NewArrayFixupSignature(this, type, typeRefToken));
+                new NewArrayFixupSignature(Resolver, type, typeRefToken));
         }
 
         private ISymbolNode CreateGCStaticBaseHelper(TypeDesc type, ModuleToken token)
@@ -272,7 +272,7 @@ namespace ILCompiler.DependencyAnalysis
                 this,
                 HelperImports,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
-                new TypeFixupSignature(this, ReadyToRunFixupKind.READYTORUN_FIXUP_StaticBaseGC, type, GetTypeToken(token)));
+                new TypeFixupSignature(Resolver, ReadyToRunFixupKind.READYTORUN_FIXUP_StaticBaseGC, type, GetTypeToken(token)));
         }
 
         private ISymbolNode CreateNonGCStaticBaseHelper(TypeDesc type, ModuleToken token)
@@ -281,7 +281,7 @@ namespace ILCompiler.DependencyAnalysis
                 this,
                 HelperImports,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
-                new TypeFixupSignature(this, ReadyToRunFixupKind.READYTORUN_FIXUP_StaticBaseNonGC, type, GetTypeToken(token)));
+                new TypeFixupSignature(Resolver, ReadyToRunFixupKind.READYTORUN_FIXUP_StaticBaseNonGC, type, GetTypeToken(token)));
         }
 
         private ISymbolNode CreateThreadStaticBaseHelper(TypeDesc type, ModuleToken token)
@@ -291,7 +291,7 @@ namespace ILCompiler.DependencyAnalysis
                 this,
                 HelperImports,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
-                new TypeFixupSignature(this, fixupKind, type, GetTypeToken(token)));
+                new TypeFixupSignature(Resolver, fixupKind, type, GetTypeToken(token)));
         }
 
         private ModuleToken GetTypeToken(ModuleToken token)
@@ -347,7 +347,7 @@ namespace ILCompiler.DependencyAnalysis
                 this,
                 HelperImports,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
-                new TypeFixupSignature(this, ReadyToRunFixupKind.READYTORUN_FIXUP_IsInstanceOf, type, typeRefToken));
+                new TypeFixupSignature(Resolver, ReadyToRunFixupKind.READYTORUN_FIXUP_IsInstanceOf, type, typeRefToken));
         }
 
         private ISymbolNode CreateCastClassHelper(TypeDesc type, ModuleToken typeRefToken)
@@ -356,14 +356,14 @@ namespace ILCompiler.DependencyAnalysis
                 this,
                 HelperImports,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_Obj,
-                new TypeFixupSignature(this, ReadyToRunFixupKind.READYTORUN_FIXUP_ChkCast, type, typeRefToken));
+                new TypeFixupSignature(Resolver, ReadyToRunFixupKind.READYTORUN_FIXUP_ChkCast, type, typeRefToken));
         }
 
         private ISymbolNode CreateTypeHandleHelper(TypeDesc type, ModuleToken typeRefToken)
         {
             return new PrecodeHelperImport(
                 this,
-                new TypeFixupSignature(this, ReadyToRunFixupKind.READYTORUN_FIXUP_TypeHandle, type, typeRefToken));
+                new TypeFixupSignature(Resolver, ReadyToRunFixupKind.READYTORUN_FIXUP_TypeHandle, type, typeRefToken));
         }
 
         private ISymbolNode CreateVirtualCallHelper(MethodDesc method, ModuleToken methodToken)
@@ -570,7 +570,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 symbol = new PrecodeHelperImport(
                     this,
-                    new TypeFixupSignature(this, ReadyToRunFixupKind.READYTORUN_FIXUP_TypeDictionary, type, token));
+                    new TypeFixupSignature(Resolver, ReadyToRunFixupKind.READYTORUN_FIXUP_TypeDictionary, type, token));
                 _constructedTypeSymbols.Add(type, symbol);
             }
             return symbol;
@@ -626,7 +626,7 @@ namespace ILCompiler.DependencyAnalysis
             MethodFixupSignature signature;
             if (!perFixupKindMap.TryGetValue(key, out signature))
             {
-                signature = new MethodFixupSignature(this, fixupKind, methodDesc, token, constrainedType, isUnboxingStub);
+                signature = new MethodFixupSignature(Resolver, fixupKind, methodDesc, token, constrainedType, isUnboxingStub);
                 perFixupKindMap.Add(key, signature);
             }
             return signature;
@@ -863,7 +863,7 @@ namespace ILCompiler.DependencyAnalysis
                     this,
                     HelperImports,
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
-                    new DelegateCtorSignature(this, delegateType, default(ModuleToken), targetMethodNode, methodToken));
+                    new DelegateCtorSignature(Resolver, delegateType, default(ModuleToken), targetMethodNode, methodToken));
                 _delegateCtors.Add(ctorKey, ctorNode);
             }
             return ctorNode;

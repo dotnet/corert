@@ -162,17 +162,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return genericType;
             }
 
-            public EntityHandle GetGenericMethodParameter(ReadyToRunCodegenNodeFactory genericContext, int index)
-            {
-                throw new NotImplementedException();
-            }
-
             public EntityHandle GetGenericMethodParameter(ModuleTokenResolver genericContext, int index)
-            {
-                throw new NotImplementedException();
-            }
-
-            public EntityHandle GetGenericTypeParameter(ReadyToRunCodegenNodeFactory genericContext, int index)
             {
                 throw new NotImplementedException();
             }
