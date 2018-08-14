@@ -45,7 +45,7 @@ namespace Internal.Runtime.TypeLoader
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
         {
             if ((type == UniversalCanonType)
-#if SUPPORT_JIT
+#if SUPPORT_DYNAMIC_CODE
                 || (type.IsRuntimeDeterminedType && (((RuntimeDeterminedType)type).CanonicalType == UniversalCanonType)))
 #else
                 )
@@ -202,7 +202,7 @@ namespace Internal.Runtime.TypeLoader
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
             AssemblyBindResult bindResult;
             Exception failureException;
-            if (!AssemblyBinderImplementation.Instance.Bind(name.ToRuntimeAssemblyName(), out bindResult, out failureException))
+            if (!AssemblyBinderImplementation.Instance.Bind(name.ToRuntimeAssemblyName(), cacheMissedLookups: true, out bindResult, out failureException))
             {
                 if (throwErrorIfNotFound)
                     throw failureException;

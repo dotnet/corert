@@ -35,7 +35,7 @@ namespace Internal.Reflection.Execution
         public static AssemblyBinderImplementation Instance { get; } = new AssemblyBinderImplementation();
 
         partial void BindEcmaByteArray(byte[] rawAssembly, byte[] rawSymbolStore, ref AssemblyBindResult bindResult, ref Exception exception, ref bool? result);
-        partial void BindEcmaAssemblyName(RuntimeAssemblyName refName, ref AssemblyBindResult result, ref Exception exception, ref Exception preferredException, ref bool resultBoolean);
+        partial void BindEcmaAssemblyName(RuntimeAssemblyName refName, bool cacheMissedLookups, ref AssemblyBindResult result, ref Exception exception, ref Exception preferredException, ref bool resultBoolean);
         partial void InsertEcmaLoadedAssemblies(List<AssemblyBindResult> loadedAssemblies);
 
         public sealed override bool Bind(byte[] rawAssembly, byte[] rawSymbolStore, out AssemblyBindResult bindResult, out Exception exception)
@@ -53,7 +53,7 @@ namespace Internal.Reflection.Execution
                 return result.Value;
         }
 
-        public sealed override bool Bind(RuntimeAssemblyName refName, out AssemblyBindResult result, out Exception exception)
+        public sealed override bool Bind(RuntimeAssemblyName refName, bool cacheMissedLookups, out AssemblyBindResult result, out Exception exception)
         {
             bool foundMatch = false;
             result = default(AssemblyBindResult);
@@ -102,7 +102,7 @@ namespace Internal.Reflection.Execution
                 }
             }
 
-            BindEcmaAssemblyName(refName, ref result, ref exception, ref preferredException, ref foundMatch);
+            BindEcmaAssemblyName(refName, cacheMissedLookups, ref result, ref exception, ref preferredException, ref foundMatch);
             if (exception != null)
                 return false;
 

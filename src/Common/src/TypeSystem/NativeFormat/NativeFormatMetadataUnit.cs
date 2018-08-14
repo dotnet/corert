@@ -502,7 +502,7 @@ namespace Internal.TypeSystem.NativeFormat
             AssemblyBindResult bindResult;
             RuntimeAssemblyName assemblyName = AssemblyNameParser.Parse(assemblyNameString);
             Exception failureException;
-            if (!AssemblyBinderImplementation.Instance.Bind(assemblyName, out bindResult, out failureException))
+            if (!AssemblyBinderImplementation.Instance.Bind(assemblyName, cacheMissedLookups: true, out bindResult, out failureException))
             {
                 throw failureException;
             }
