@@ -211,14 +211,16 @@ internal class Program
         return listOfString.Count == ItemCount;
     }
 
-    private static bool EmptyArray()
-    {
-        int[] emptyIntArray = Array.Empty<int>();
-        Console.WriteLine("Successfully constructed Array.Empty<int>!");
-        return emptyIntArray.Length == 0;
-    }
-
     private delegate char CharFilterDelegate(char inputChar);
+
+    private static bool SimpleDelegateTest()
+    {
+        CharFilterDelegate filterDelegate = CharFilterUpperCase;
+        char lower = 'x';
+        char upper = filterDelegate(lower);
+        Console.WriteLine($@"lower = '{lower}', upper = '{upper}'");
+        return upper == Char.ToUpper(lower);
+    }
 
     private static bool CharFilterDelegateTest()
     {
@@ -246,18 +248,125 @@ internal class Program
         return Char.ToUpperInvariant(c);
     }
 
-    private static bool EnumerateEmptyArray()
+    static bool s_sampleActionFlag;
+
+    private static bool ActionTest()
+    {
+        s_sampleActionFlag = false;
+        Action action = SampleAction;
+        action();
+        return s_sampleActionFlag;
+    }
+
+    private static void SampleAction()
+    {
+        Console.WriteLine("SampleAction() called!");
+        s_sampleActionFlag = true;
+    }
+
+    private static bool FuncCharCharTest()
+    {
+        Func<char, char> charFunc = CharFilterUpperCase;
+
+        StringBuilder builder = new StringBuilder();
+        foreach (char c in TextFileName)
+        {
+            builder.Append(charFunc(c));
+        }
+
+        Console.WriteLine($@"Func<char,char> string: {builder}");
+
+        return builder.ToString() == TextFileName.ToUpperInvariant();
+    }
+
+    class DisposeClass : IDisposable
+    {
+        public static bool DisposedFlag = false;
+        
+        public DisposeClass()
+        {
+            Console.WriteLine("DisposeClass created!");
+        }
+    
+        public void Dispose()
+        {
+            Console.WriteLine("DisposeClass disposed!");
+            DisposedFlag = true;
+        }
+    }
+    
+    struct DisposeStruct : IDisposable
+    {
+        public static bool DisposedFlag = false;
+
+        public void Dispose()
+        {
+            Console.WriteLine("DisposeStruct disposed!");
+            DisposedFlag = true;
+        }
+    }
+    
+    private static bool DisposeStructTest()
+    {
+        using (var disposeStruct = new DisposeStruct())
+        {
+            Console.WriteLine($@"DisposeStruct test: {disposeStruct}");
+        }
+        return DisposeStruct.DisposedFlag;
+    }
+
+    private static bool DisposeClassTest()
+    {
+        using (var disposeClass = new DisposeClass())
+        {
+            Console.WriteLine($@"DisposeClass test: {disposeClass}");
+        }
+        return DisposeClass.DisposedFlag;
+    }
+    
+    private static bool DisposeEnumeratorTest()
+    {
+        List<string> listOfString = new List<string>();
+        using (var enumerator = listOfString.GetEnumerator())
+        {
+            Console.WriteLine($@"DisposeEnumeratorTest: {enumerator}");
+        }
+        return true;
+    }
+
+    private static bool EmptyArrayOfInt()
+    {
+        int[] emptyIntArray = Array.Empty<int>();
+        Console.WriteLine("Successfully constructed Array.Empty<int>!");
+        return emptyIntArray.Length == 0;
+    }
+
+    private static bool EnumerateEmptyArrayOfInt()
     {
         foreach (int element in Array.Empty<int>())
         {
-            Console.Error.WriteLine($@"Error: Array.Empty<int> has an element {element}!");
+            Console.Error.WriteLine($@"Error: Array.Empty<int> has an element: {element}");
             return false;
         }
+        Console.WriteLine("Array.Empty<int> enumeration passed");
+        return true;
+    }
+
+    private static bool EmptyArrayOfString()
+    {
+        string[] emptyStringArray = Array.Empty<string>();
+        Console.WriteLine("Successfully constructed Array.Empty<string>!");
+        return emptyStringArray.Length == 0;
+    }
+
+    private static bool EnumerateEmptyArrayOfString()
+    {
         foreach (string element in Array.Empty<string>())
         {
-            Console.Error.WriteLine($@"Error: Array.Empty<string> has an element {element}");
+            Console.Error.WriteLine($@"Error: Array.Empty<string> has an element: {element}");
             return false;
         }
+        Console.WriteLine("Array.Empty<string> enumeration passed");
         return true;
     }
     
@@ -301,23 +410,26 @@ internal class Program
         RunTest("RuntimeTypeHandle", RuntimeTypeHandle());
         RunTest("ReadAllText", ReadAllText());
         RunTest("StreamReaderReadLine", StreamReaderReadLine());
-        // TODO: RunTest("CharFilterDelegateTest", CharFilterDelegateTest());
-        
+        RunTest("SimpleDelegateTest", SimpleDelegateTest());
+        RunTest("CharFilterDelegateTest", CharFilterDelegateTest());
+        RunTest("ActionTest", ActionTest());
+        RunTest("FuncCharCharTest", FuncCharCharTest());
         RunTest("ConstructListOfInt", ConstructListOfInt());
         RunTest("ManipulateListOfInt", ManipulateListOfInt());
         RunTest("ConstructListOfString", ConstructListOfString());
         RunTest("ManipulateListOfString", ManipulateListOfString());
-
-        RunTest("EmptyArray", EmptyArray());
         RunTest("CreateLocalClassInstance", CreateLocalClassInstance());
-        
-        // TODO: RunTest("EnumerateEmptyArray", EnumerateEmptyArray());
+        RunTest("DisposeStructTest", DisposeStructTest());
+        RunTest("DisposeClassTest", DisposeClassTest());
+        RunTest("DisposeEnumeratorTest", DisposeEnumeratorTest());
+        RunTest("EmptyArrayOfInt", EmptyArrayOfInt());
+        RunTest("EnumerateEmptyArrayOfInt", EnumerateEmptyArrayOfInt());
+        // TODO: RunTest("EmptyArrayOfString", EmptyArrayOfString());
+        // TODO: RunTest("EnumerateEmptyArrayOfString", EnumerateEmptyArrayOfString());
 
         Console.WriteLine($@"{_passedTests.Count} tests pass:");
-        // TODO: enumerator - foreach (string testName in _passedTests)
-        for (int i = 0; i < _passedTests.Count; i++)
+        foreach (string testName in _passedTests)
         {
-            string testName = _passedTests[i];
             Console.WriteLine($@"    {testName}");
         }
 
@@ -329,10 +441,8 @@ internal class Program
         else
         {
             Console.Error.WriteLine($@"{_failedTests.Count} test failed:");
-            // TODO: enumerator - foreach (string testName in _failedTests)
-            for (int i = 0; i < _failedTests.Count; i++)
+            foreach (string testName in _failedTests)
             {
-                string testName = _failedTests[i];
                 Console.Error.WriteLine($@"    {testName}");
             }
             return 1;
