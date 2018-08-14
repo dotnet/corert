@@ -1122,7 +1122,7 @@ namespace Internal.JitInterface
                 pResolvedToken.hClass = ObjectToHandle(method.OwningType);
 
 #if READYTORUN
-            _compilation.NodeFactory.AddModuleTokenForMethod(method, new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token));
+            _compilation.NodeFactory.Resolver.AddModuleTokenForMethod(method, new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token));
 #endif
             }
             else
@@ -1139,7 +1139,7 @@ namespace Internal.JitInterface
                 pResolvedToken.hClass = ObjectToHandle(field.OwningType);
 
 #if READYTORUN
-                _compilation.NodeFactory.AddModuleTokenForField(field, new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token));
+                _compilation.NodeFactory.Resolver.AddModuleTokenForField(field, new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token));
 #endif
             }
             else
@@ -1155,7 +1155,7 @@ namespace Internal.JitInterface
                 pResolvedToken.hClass = ObjectToHandle(type);
 
 #if READYTORUN
-                _compilation.NodeFactory.AddModuleTokenForType(type, new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token));
+                _compilation.NodeFactory.Resolver.AddModuleTokenForType(type, new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token));
 #endif
             }
 

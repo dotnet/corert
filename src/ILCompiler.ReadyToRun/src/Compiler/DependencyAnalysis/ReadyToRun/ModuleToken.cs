@@ -76,9 +76,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return result;
         }
 
-        public SignatureContext SignatureContext(ReadyToRunCodegenNodeFactory factory)
+        public SignatureContext SignatureContext(ModuleTokenResolver resolver)
         {
-            return new SignatureContext(factory, Module);
+            return new SignatureContext(resolver, Module);
         }
 
         public MetadataReader MetadataReader => Module.PEReader.GetMetadataReader();

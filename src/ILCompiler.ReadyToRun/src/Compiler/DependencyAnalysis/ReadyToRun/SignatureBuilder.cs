@@ -467,13 +467,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
     public class SignatureContext : ISignatureTypeProvider<byte[], SignatureContext>
     {
-        private readonly ReadyToRunCodegenNodeFactory _nodeFactory;
+        private readonly ModuleTokenResolver _resolver;
 
         private readonly EcmaModule _contextModule;
 
-        public SignatureContext(ReadyToRunCodegenNodeFactory nodeFactory, EcmaModule contextModule)
+        public SignatureContext(ModuleTokenResolver resolver, EcmaModule contextModule)
         {
-            _nodeFactory = nodeFactory;
+            _resolver = resolver;
             _contextModule = contextModule;
         }
 
@@ -481,7 +481,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public ModuleToken GetModuleTokenForType(EcmaType type)
         {
-            return _nodeFactory.GetModuleTokenForType(type);
+            return _resolver.GetModuleTokenForType(type);
         }
 
         public byte[] GetArrayType(byte[] elementType, ArrayShape shape)

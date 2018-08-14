@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             dataBuilder.AddSymbol(this);
 
             dataBuilder.EmitByte((byte)ReadyToRunFixupKind.READYTORUN_FIXUP_NewArray);
-            dataBuilder.EmitTypeSignature(_arrayType, _typeToken, _typeToken.SignatureContext(_factory));
+            dataBuilder.EmitTypeSignature(_arrayType, _typeToken, _typeToken.SignatureContext(_factory.Resolver));
 
             return dataBuilder.ToObjectData();
         }
