@@ -130,7 +130,7 @@ See the LICENSE file in the project root for more information.
 
   <Target Name="ComputeIlcCompileInputs" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)" BeforeTargets="Publish">
     <ItemGroup>
-      <ManagedBinary Condition="$(BuildingFrameworkLibrary) != 'true' and '$(BuildingReadyToRunMultiModule)' != 'true'" Include="$(IntermediateOutputPath)$(TargetName)$(TargetExt)" />
+      <ManagedBinary Condition="$(BuildingFrameworkLibrary) != 'true' and '$(BuildingReadyToRunAssembly)' != 'true'" Include="$(IntermediateOutputPath)$(TargetName)$(TargetExt)" />
       <IlcCompileInput Include="@(ManagedBinary)" />
       <IlcReference Include="@(DefaultFrameworkAssemblies)" />
     </ItemGroup>
@@ -222,18 +222,18 @@ See the LICENSE file in the project root for more information.
       <Copy SourceFiles="$(NativeObject)" DestinationFiles="$(NativeBinary)" />
   </Target>
 
-  <Target Name="GetMultiModuleNativeObjects">
+  <Target Name="GetNativeObjects">
     <ItemGroup>
-      <MultiModuleNativeObjects Include="$(NativeIntermediateOutputPath)*.ni.exe;$(NativeIntermediateOutputPath)*.ni.dll" />
+      <NativeObjects Include="$(NativeIntermediateOutputPath)*.ni.exe;$(NativeIntermediateOutputPath)*.ni.dll" />
     </ItemGroup>
   </Target>
 
-  <Target Name="MultiModuleCopyNative"
-      Inputs="@(MultiModuleNativeObjects)"
+  <Target Name="MultiFileCopyNative"
+      Inputs="@(NativeObjects)"
       Outputs="$(NativeOutputPath)"
-      DependsOnTargets="GetMultiModuleNativeObjects">
+      DependsOnTargets="GetNativeObjects">
 
-      <Copy SourceFiles="@(MultiModuleNativeObjects)" DestinationFolder="$(NativeOutputPath)" />
+      <Copy SourceFiles="@(NativeObjects)" DestinationFolder="$(NativeOutputPath)" />
   </Target>
 
   <Target Name="LinkNative"
