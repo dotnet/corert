@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <IlcCompileDependsOn>ComputeIlcCompileInputs;BuildOneReadyToRunMultiModule;AddModuleDependencies</IlcCompileDependsOn>
-    <IlcMultiModule>true</IlcMultiModule>
     <BuildingReadyToRunMultiModule>true</BuildingReadyToRunMultiModule>
   </PropertyGroup>
 

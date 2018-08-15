@@ -29,12 +29,8 @@ namespace ILCompiler
                 }
                 catch (TypeSystemException)
                 {
-                    // TODO: fail compilation if a switch was passed
-
                     // Swallow type load exceptions while rooting
                     continue;
-
-                    // TODO: Log as a warning
                 }
 
                 // If this is not a generic definition, root all methods
@@ -58,18 +54,14 @@ namespace ILCompiler
 
                 try
                 {
-                    //CheckCanGenerateMethod(method);
+                    CheckCanGenerateMethod(method);
                     rootProvider.AddCompilationRoot(method, reason);
                 }
                 catch (TypeSystemException)
                 {
-                    // TODO: fail compilation if a switch was passed
-
                     // Individual methods can fail to load types referenced in their signatures.
                     // Skip them in library mode since they're not going to be callable.
                     continue;
-
-                    // TODO: Log as a warning
                 }
             }
         }
