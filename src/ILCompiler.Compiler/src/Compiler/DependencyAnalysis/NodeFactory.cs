@@ -758,6 +758,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public IMethodNode CanonicalEntrypoint(MethodDesc method, bool isUnboxingStub = false)
         {
+            return MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific), isUnboxingStub);
+        }
+
+        public IMethodNode MethodNodeForDependencyAnalysis(MethodDesc method, bool isUnboxingStub = false)
+        {
             MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
             if (method != canonMethod)
                 return ShadowConcreteMethod(method, isUnboxingStub);

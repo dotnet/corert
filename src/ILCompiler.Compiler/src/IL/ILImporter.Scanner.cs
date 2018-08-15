@@ -396,7 +396,7 @@ namespace Internal.IL
                             MetadataType classWithMissingCtor = activatorType.GetKnownNestedType("ClassWithMissingConstructor");
                             ctor = classWithMissingCtor.GetParameterlessConstructor();
                         }
-                        _dependencies.Add(_factory.CanonicalEntrypoint(ctor), reason);
+                        _dependencies.Add(_factory.MethodNodeForDependencyAnalysis(ctor), reason);
                     }
 
                     return;
@@ -580,7 +580,7 @@ namespace Internal.IL
                             _dependencies.Add(instParam, reason);
                         }
 
-                        _dependencies.Add(_factory.CanonicalEntrypoint(targetMethod), reason);
+                        _dependencies.Add(_factory.MethodNodeForDependencyAnalysis(targetMethod), reason);
                     }
                     else
                     {

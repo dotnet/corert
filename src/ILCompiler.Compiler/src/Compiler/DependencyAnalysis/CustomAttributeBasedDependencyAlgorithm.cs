@@ -78,7 +78,7 @@ namespace ILCompiler.DependencyAnalysis
                     // Make a new list in case we need to abort.
                     var caDependencies = new DependencyList();
 
-                    caDependencies.Add(factory.CanonicalEntrypoint(constructor), "Attribute constructor");
+                    caDependencies.Add(factory.MethodNodeForDependencyAnalysis(constructor), "Attribute constructor");
                     caDependencies.Add(factory.ConstructedTypeSymbol(constructor.OwningType), "Attribute type");
 
                     CustomAttributeValue<TypeDesc> decodedValue = attribute.DecodeValue(attributeTypeProvider);
@@ -164,7 +164,7 @@ namespace ILCompiler.DependencyAnalysis
                         }
 
                         // TODO: what if the setter is virtual/abstract?
-                        dependencies.Add(factory.CanonicalEntrypoint(setterMethod), "Custom attribute blob");
+                        dependencies.Add(factory.MethodNodeForDependencyAnalysis(setterMethod), "Custom attribute blob");
                     }
 
                     return true;
