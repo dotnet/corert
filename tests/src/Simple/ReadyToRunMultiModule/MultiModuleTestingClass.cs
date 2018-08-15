@@ -4,7 +4,35 @@
 
 using System;
 
-namespace Abc.def{
+namespace TestingNamespace {
+    public class TestingClassInNamespace
+    {
+        int N;
+        public TestingClassInNamespace(int n)
+        {
+            N = n;
+        }
+
+        public int GetN()
+        {
+            return N;
+        }
+
+        public class TestingClassNested
+        {
+            int N;
+            public TestingClassNested(int n)
+            {
+                N = n;
+            }
+
+            public int GetN()
+            {
+                return N;
+            }
+        }
+    }
+}
 
 public class TestingClass
 {
@@ -18,5 +46,4 @@ public class TestingClass
     {
         return N;
     }
-}
 }

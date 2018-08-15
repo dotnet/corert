@@ -23,6 +23,20 @@ namespace ILCompiler
         {
             foreach (TypeDesc type in _module.GetAllTypes())
             {
+                try
+                {
+                    rootProvider.AddCompilationRoot(type, "Library module type");
+                }
+                catch (TypeSystemException)
+                {
+                    // TODO: fail compilation if a switch was passed
+
+                    // Swallow type load exceptions while rooting
+                    continue;
+
+                    // TODO: Log as a warning
+                }
+
                 // If this is not a generic definition, root all methods
                 if (!type.HasInstantiation)
                 {

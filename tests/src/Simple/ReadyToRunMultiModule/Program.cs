@@ -3,22 +3,23 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using Abc.def;
+using TestingNamespace;
 
 internal class Program
 {
 
-	private static bool MultiModule()
+    private static bool MultiModule()
     {
-		//return true;
-		TestingClass t = new TestingClass(4);
-		Console.WriteLine($@"N = {t.GetN()}");
-		return t.GetN() == 4;
+        //return true;
+        TestingClass testingClass = new TestingClass(1);
+        TestingClassInNamespace testingClassInNamespace = new TestingClassInNamespace(2);
+        TestingClassInNamespace.TestingClassNested testingClassNested = new TestingClassInNamespace.TestingClassNested(3);
+        return testingClass.GetN() == 1 && testingClassInNamespace.GetN() == 2 && testingClassNested.GetN() == 3;
     }
     
     public static int Main(string[] args)
     {
-		bool result = MultiModule();
+        bool result = MultiModule();
 
         if (result)
         {
