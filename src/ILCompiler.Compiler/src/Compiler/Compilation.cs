@@ -349,7 +349,7 @@ namespace ILCompiler
 
             public void AddCompilationRoot(MethodDesc method, string reason, string exportName = null)
             {
-                IMethodNode methodEntryPoint = _factory.MethodNodeForDependencyAnalysis(method);
+                IMethodNode methodEntryPoint = _factory.CanonicalEntrypoint(method);
                 _graph.AddRoot(methodEntryPoint, reason);
 
                 if (exportName != null)
