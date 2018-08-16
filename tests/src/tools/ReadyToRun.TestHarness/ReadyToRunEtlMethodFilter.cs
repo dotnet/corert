@@ -45,7 +45,12 @@ namespace ReadyToRun.TestHarness
             };
         }
 
-        public IEnumerable<(string methodName, bool readyToRunRejected)> JittedMethods => _methodsJitted;
+        public IEnumerable<(string MethodName, bool ReadyToRunRejected)> JittedMethods => _methodsJitted;
+
+        /// <summary>
+        /// Returns the number of test assemblies that were loaded by the runtime
+        /// </summary>
+        public int AssembliesWithEventsCount => _testModuleIds.Count;
 
         //
         // Builds a method name from event data of the form Class.Method(arg1, arg2)

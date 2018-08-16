@@ -32,6 +32,7 @@ namespace ReadyToRun.TestHarness
         private const int StatusTestErrorMethodsJitted = -102;
         private const int StatusTestErrorTimeOut = -103;
         private const int StatusTestErrorBadInput = -104;
+        private const int StatusTestErrorNoAssemblyLoadEvents = -105;
         private const int StatusTestPassed = 100;
 
         private static bool _help;
@@ -48,7 +49,6 @@ namespace ReadyToRun.TestHarness
 
         private static ArgumentSyntax ParseCommandLine(string[] args)
         {
-            bool verbose = false;
             ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>
             {
                 syntax.ApplicationName = "ReadyToRun.TestHarness";
@@ -56,9 +56,9 @@ namespace ReadyToRun.TestHarness
                 syntax.HandleErrors = true;
 
                 syntax.DefineOption("h|help", ref _help, "Help message for R2RDump");
-				syntax.DefineOption("c|corerun", ref _coreRunExePath, "Path to CoreRun");
+                syntax.DefineOption("c|corerun", ref _coreRunExePath, "Path to CoreRun");
                 syntax.DefineOption("i|in", ref _testExe, "Path to test exe");
-				syntax.DefineOptionList("r|ref", ref _referenceFilenames, "Paths to referenced assemblies");
+                syntax.DefineOptionList("r|ref", ref _referenceFilenames, "Paths to referenced assemblies");
                 syntax.DefineOption("w|whitelist", ref _whitelistFilename, "Path to method whitelist file");
                 syntax.DefineOptionList("testargs", ref _testargs, "Args to pass into test");
             });
@@ -68,9 +68,8 @@ namespace ReadyToRun.TestHarness
         static int Main(string[] args)
         {
             int exitCode = StatusTestErrorBadInput;
-            string whiteListFile = null;
 
-			ArgumentSyntax syntax = ParseCommandLine(args);
+            ArgumentSyntax syntax = ParseCommandLine(args);
 
             if (_help)
             {
@@ -144,6 +143,12 @@ namespace ReadyToRun.TestHarness
                 }
             }
 
+            if (jittedMethods.AssembliesWithEventsCount == 0)
+            {
+                Console.WriteLine($"Error: No test assemblies were loaded by the runtime. This is likely a test harness bug / ETW issue");
+                return StatusTestErrorNoAssemblyLoadEvents;
+            }
+
             Console.WriteLine("");
             Console.WriteLine("*** Jitted method analysis ***");
 
@@ -152,11 +157,15 @@ namespace ReadyToRun.TestHarness
             int whiteListedJittedMethodCount = 0;
             foreach (var jittedMethod in jittedMethods.JittedMethods)
             {
-                if (whiteListedMethods.Contains(jittedMethod.methodName))
+                if (whiteListedMethods.Contains(jittedMethod.MethodName))
                 {
-                    Console.WriteLine(jittedMethod.methodName);
+                    Console.WriteLine(jittedMethod.MethodName);
                     ++whiteListedJittedMethodCount;
                 }
+            }
+            if (whiteListedJittedMethodCount == 0)
+            {
+                Console.WriteLine("-None-");
             }
 
             Console.WriteLine("");
@@ -164,11 +173,15 @@ namespace ReadyToRun.TestHarness
             int jittedMethodCount = 0;
             foreach (var jittedMethod in jittedMethods.JittedMethods)
             {
-                if (!whiteListedMethods.Contains(jittedMethod.methodName))
+                if (!whiteListedMethods.Contains(jittedMethod.MethodName))
                 {
-                    Console.WriteLine(jittedMethod.methodName);
+                    Console.WriteLine(jittedMethod.MethodName);
                     ++jittedMethodCount;
                 }
+            }
+            if (jittedMethodCount == 0)
+            {
+                Console.WriteLine("-None-");
             }
 
             if (jittedMethodCount > 0)
