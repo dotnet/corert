@@ -2977,7 +2977,11 @@ namespace Internal.JitInterface
                     else if (targetMethod.RequiresInstMethodTableArg() || referencingArrayAddressMethod)
                     {
                         // Ask for a constructed type symbol because we need the vtable to get to the dictionary
+#if READYTORUN
+                        instParam = _compilation.NodeFactory.ConstructedTypeSymbol(concreteMethod.OwningType, new ModuleToken(_tokenContext, pResolvedToken.token));
+#else
                         instParam = _compilation.NodeFactory.ConstructedTypeSymbol(concreteMethod.OwningType);
+#endif
                     }
 
                     if (instParam != null)

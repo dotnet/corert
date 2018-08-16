@@ -33,7 +33,7 @@ namespace ILCompiler
         /// <summary>
         /// Name of the compilation input MSIL file.
         /// </summary>
-        private readonly string _inputFilePath;
+        private readonly List<string> _inputFilePaths;
 
         public new ReadyToRunCodegenNodeFactory NodeFactory { get; }
         internal ReadyToRunCodegenCompilation(
@@ -44,14 +44,14 @@ namespace ILCompiler
             Logger logger,
             DevirtualizationManager devirtualizationManager,
             JitConfigProvider configProvider,
-            string inputFilePath)
+            List<string> inputFilePath)
             : base(dependencyGraph, nodeFactory, roots, debugInformationProvider, devirtualizationManager, logger)
         {
             NodeFactory = nodeFactory;
             _corInfo = new Dictionary<EcmaModule, CorInfoImpl>();
             _jitConfigProvider = configProvider;
 
-            _inputFilePath = inputFilePath;
+            _inputFilePaths = inputFilePath;
         }
 
         private static IEnumerable<ICompilationRootProvider> GetCompilationRoots(IEnumerable<ICompilationRootProvider> existingRoots, NodeFactory factory)
@@ -62,15 +62,18 @@ namespace ILCompiler
 
         protected override void CompileInternal(string outputFile, ObjectDumper dumper)
         {
-            using (FileStream inputFile = File.OpenRead(_inputFilePath))
+            foreach (var inputFilePath in _inputFilePaths)
             {
-                PEReader inputPeReader = new PEReader(inputFile);
+                using (FileStream inputFile = File.OpenRead(inputFilePath))
+                {
+                    PEReader inputPeReader = new PEReader(inputFile);
 
-                _dependencyGraph.ComputeMarkedNodes();
-                var nodes = _dependencyGraph.MarkedNodeList;
+                    _dependencyGraph.ComputeMarkedNodes();
+                    var nodes = _dependencyGraph.MarkedNodeList;
 
-                NodeFactory.SetMarkingComplete();
-                ReadyToRunObjectWriter.EmitObject(inputPeReader, outputFile, nodes, NodeFactory);
+                    NodeFactory.SetMarkingComplete();
+                    ReadyToRunObjectWriter.EmitObject(inputPeReader, outputFile, nodes, NodeFactory);
+                }
             }
         }
 

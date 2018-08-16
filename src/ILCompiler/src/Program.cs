@@ -439,18 +439,12 @@ namespace ILCompiler
                 builder = new WebAssemblyCodegenCompilationBuilder(typeSystemContext, compilationGroup);
             else if (_isReadyToRunCodeGen)
             {
-                if (typeSystemContext.InputFilePaths.Count > 1)
-                {
-                    // Since ready-to-run currently adds to an existing IL image, we expect a single input
-                    throw new CommandLineException("Ready-to-run compilation only supports a single input assembly");
-                }
-
-                string inputFilePath = "";
+                List<string> inputFiles = new List<string>();
                 foreach (var input in typeSystemContext.InputFilePaths)
                 {
-                    inputFilePath = input.Value;
+                    inputFiles.Add(input.Value);
                 }
-                builder = new ReadyToRunCodegenCompilationBuilder(typeSystemContext, compilationGroup, inputFilePath);
+                builder = new ReadyToRunCodegenCompilationBuilder(typeSystemContext, compilationGroup, inputFiles);
             }
             else if (_isCppCodegen)
                 builder = new CppCodegenCompilationBuilder(typeSystemContext, compilationGroup);

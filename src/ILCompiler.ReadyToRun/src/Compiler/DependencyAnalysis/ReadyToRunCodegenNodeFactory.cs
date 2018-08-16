@@ -577,6 +577,11 @@ namespace ILCompiler.DependencyAnalysis
             return signature;
         }
 
+        public ISymbolNode ConstructedTypeSymbol(TypeDesc owningType, ModuleToken token)
+        {
+            throw new NotImplementedException();
+        }
+
         public override void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
             Header = new HeaderNode(Target);
