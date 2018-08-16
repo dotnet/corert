@@ -30,7 +30,7 @@ namespace Internal.Reflection.Core
     {
         public const String DefaultAssemblyNameForGetType = "mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
 
-        public abstract bool Bind(RuntimeAssemblyName refName, out AssemblyBindResult result, out Exception exception);
+        public abstract bool Bind(RuntimeAssemblyName refName, bool cacheMissedLookups, out AssemblyBindResult result, out Exception exception);
 
         public abstract bool Bind(byte[] rawAssembly, byte[] rawSymbolStore, out AssemblyBindResult result, out Exception exception);
 

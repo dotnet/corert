@@ -75,7 +75,7 @@ namespace Microsoft.Win32
             // the dispose below and usage elsewhere (other threads). This is By Design. 
             // This is less of an issue when OS > NT5 (i.e Vista & higher), we can close the perfkey  
             // (to release & refresh PERFLIB resources) and the OS will rebuild PERFLIB as necessary. 
-            Interop.mincore.RegCloseKey(HKEY_PERFORMANCE_DATA);
+            Interop.Advapi32.RegCloseKey(HKEY_PERFORMANCE_DATA);
         }
 
         private void FlushCore()

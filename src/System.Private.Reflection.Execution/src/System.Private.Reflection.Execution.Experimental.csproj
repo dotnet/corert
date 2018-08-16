@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyName>System.Private.Reflection.Execution.Experimental</AssemblyName>
     <EcmaMetadataSupport>true</EcmaMetadataSupport>
-    <JitSupport>true</JitSupport>
+    <DynamicCodeSupport>true</DynamicCodeSupport>
   </PropertyGroup>
 
   <Import Project="System.Private.Reflection.Execution.csproj" />

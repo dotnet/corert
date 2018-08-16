@@ -52,7 +52,7 @@ namespace Internal.Runtime.TypeLoader
 #if SUPPORTS_R2R_LOADING
             TryGetCodeTableEntry(method, out methodAddress, out unboxingStubAddress, out foundAddressType);
 #endif
-#if SUPPORT_JIT
+#if SUPPORT_DYNAMIC_CODE
             if (foundAddressType == MethodAddressType.None)
                 MethodEntrypointStubs.TryGetMethodEntrypoint(method, out methodAddress, out unboxingStubAddress, out foundAddressType);
 #endif

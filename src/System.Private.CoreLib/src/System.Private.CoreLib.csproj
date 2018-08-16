@@ -347,8 +347,6 @@
     <Compile Include="System\WeakReferenceOfT.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'">
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs" />
     <Compile Include="Microsoft\Win32\Registry.cs" />
     <Compile Include="Microsoft\Win32\RegistryHive.cs" />
     <Compile Include="Microsoft\Win32\RegistryKey.cs" />
@@ -364,9 +362,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegistryOptions.cs">
       <Link>Interop\Windows\mincore\Interop.RegistryOptions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegCloseKey.cs">
-      <Link>Interop\Windows\mincore\Interop.RegCloseKey.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegCreateKeyEx.cs">
       <Link>Interop\Windows\mincore\Interop.RegCreateKeyEx.cs</Link>
@@ -605,6 +600,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.ErrNo.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.ErrNo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetEnviron.cs">
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetEnviron.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

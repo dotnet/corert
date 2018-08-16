@@ -363,7 +363,7 @@ namespace Internal.Runtime.TypeLoader
 
             DynamicMethodHandleInfo* methodData = (DynamicMethodHandleInfo*)runtimeMethodHandleValue.ToPointer();
             declaringTypeHandle = *(RuntimeTypeHandle*)&(methodData->DeclaringType);
-            genericMethodArgs = null;
+            genericMethodArgs = Array.Empty<RuntimeTypeHandle>();
 
             if (methodData->NumGenericArgs > 0)
             {
