@@ -24,12 +24,19 @@ copy /Y %~dp0\Test.csproj %TestFolder%
 :: The CoreCLR test system configures the VS environment as 32-bit by default,
 :: so override if we're doing a 64-bit test run
 ::
-if "%CoreRT_BuildArch%" == "x64" (
-    call "%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build\vcvarsall.bat" x64
+if not "%NativeCodeGen%" == "readytorun" (
+    if "%CoreRT_BuildArch%" == "x64" (
+        call "%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build\vcvarsall.bat" x64
+    )
 )
 
-echo msbuild /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /p:DisableFrameworkLibGeneration=true %TestFolder%\Test.csproj
-msbuild /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /p:DisableFrameworkLibGeneration=true %TestFolder%\Test.csproj
+set ExtraArgs=
+if "%NativeCodeGen%" == "readytorun" (
+    echo READY TO RUN MODE
+    set ExtraArgs="/t:CopyNative"
+)
+echo msbuild /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /p:DisableFrameworkLibGeneration=true %ExtraArgs% %TestFolder%\Test.csproj
+msbuild /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /p:DisableFrameworkLibGeneration=true %ExtraArgs% %TestFolder%\Test.csproj
 if errorlevel 1 (
     set TestExitCode=!ERRORLEVEL!
     goto :Cleanup
@@ -53,7 +60,12 @@ shift
 goto :GetNextParameter
 
 :RunTest
-%TestFolder%\native\%TestExecutable% %TestParameters%
+if "%NativeCodeGen%" == "readytorun" (
+    echo %CoreRT_CoreCLRRuntimeDir%\CoreRun.exe %TestFolder%\native\%TestFileName%.ni.exe %TestParameters%
+    %CoreRT_CoreCLRRuntimeDir%\CoreRun.exe %TestFolder%\native\%TestFileName%.ni.exe %TestParameters%
+) else (
+    %TestFolder%\native\%TestExecutable% %TestParameters%
+)
 
 set TestExitCode=!ERRORLEVEL!
 
