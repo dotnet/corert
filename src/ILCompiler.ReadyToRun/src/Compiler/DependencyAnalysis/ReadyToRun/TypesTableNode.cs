@@ -51,7 +51,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     throw new NotImplementedException();
                 }
 
-                int hashCode = type.GetHashCode();
+                int hashCode = GetHashCode((EcmaType)type);
                 typesHashtable.Append(unchecked((uint)hashCode), section.Place(new UnsignedConstant((uint)rid << 1)));
             }
 
@@ -63,6 +63,26 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 relocs: null,
                 alignment: 8,
                 definedSymbols: new ISymbolDefinitionNode[] { this });
+        }
+
+        private int GetHashCode(EcmaType type)
+        {
+            int hashCode = ComputeNameHashCode(type);
+            while (type.ContainingType != null)
+            {
+                type = (EcmaType)type.ContainingType;
+                hashCode ^= ComputeNameHashCode(type);
+            }
+            return hashCode;
+        }
+        private int ComputeNameHashCode(EcmaType type)
+        {
+            int hashCode = TypeHashingAlgorithms.ComputeNameHashCode(type.Name);
+            if (!type.Namespace.Equals(""))
+            {
+                hashCode = TypeHashingAlgorithms.ComputeNameHashCode(type.Namespace) ^ hashCode;
+            }
+            return hashCode;
         }
 
         public override int ClassCode => -944318825;

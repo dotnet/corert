@@ -307,7 +307,7 @@ goto :eof
     ) else if /i "%__Mode%" == "wasm" (
         set extraArgs=!extraArgs! /p:NativeCodeGen=wasm
     ) else if /i "%__Mode%" == "readytorun" (
-        set extraArgs=!extraArgs! /p:NativeCodeGen=readytorun /t:CopyNative
+        set extraArgs=!extraArgs! /p:NativeCodeGen=readytorun
     ) else (
         if "%CoreRT_MultiFileConfiguration%" == "MultiModule" (
             set extraArgs=!extraArgs! "/p:IlcMultiModule=true"

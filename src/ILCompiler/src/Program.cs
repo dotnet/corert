@@ -379,7 +379,7 @@ namespace ILCompiler
 
                         if (entrypointModule == null)
                         {
-                            compilationRoots.Add(new LibraryRootProvider(module));
+                            compilationRoots.Add(new ReadyToRunLibraryRootProvider(module));
                         }
                         inputModules.Add(module);
                     }
@@ -439,12 +439,6 @@ namespace ILCompiler
                 builder = new WebAssemblyCodegenCompilationBuilder(typeSystemContext, compilationGroup);
             else if (_isReadyToRunCodeGen)
             {
-                if (typeSystemContext.InputFilePaths.Count > 1)
-                {
-                    // Since ready-to-run currently adds to an existing IL image, we expect a single input
-                    throw new CommandLineException("Ready-to-run compilation only supports a single input assembly");
-                }
-
                 string inputFilePath = "";
                 foreach (var input in typeSystemContext.InputFilePaths)
                 {
