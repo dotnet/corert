@@ -24,12 +24,21 @@ copy /Y %~dp0\Test.csproj %TestFolder%
 :: The CoreCLR test system configures the VS environment as 32-bit by default,
 :: so override if we're doing a 64-bit test run
 ::
-if "%CoreRT_BuildArch%" == "x64" (
-    call "%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build\vcvarsall.bat" x64
+if /i not "%NativeCodeGen%" == "readytorun" (
+    if "%CoreRT_BuildArch%" == "x64" (
+        call "%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build\vcvarsall.bat" x64
+    )
 )
 
-echo msbuild /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /p:DisableFrameworkLibGeneration=true %TestFolder%\Test.csproj
-msbuild /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /p:DisableFrameworkLibGeneration=true %TestFolder%\Test.csproj
+set ExtraArgs=
+if /i "%NativeCodeGen%" == "readytorun" (
+    echo READY TO RUN MODE
+    set ExtraArgs="/t:CopyNative"
+)
+
+set MsBuildCommandLine=msbuild /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /p:DisableFrameworkLibGeneration=true %ExtraArgs% %TestFolder%\Test.csproj
+echo %MsBuildCommandLine%
+%MsBuildCommandLine%
 if errorlevel 1 (
     set TestExitCode=!ERRORLEVEL!
     goto :Cleanup
@@ -53,7 +62,14 @@ shift
 goto :GetNextParameter
 
 :RunTest
-%TestFolder%\native\%TestExecutable% %TestParameters%
+
+set CoreRunCommandLine=%CoreRT_CoreCLRRuntimeDir%\CoreRun.exe %TestFolder%\native\%TestFileName%.ni.exe %TestParameters%
+if /i "%NativeCodeGen%" == "readytorun" (
+    echo %CoreRunCommandLine%
+    %CoreRunCommandLine%
+) else (
+    %TestFolder%\native\%TestExecutable% %TestParameters%
+)
 
 set TestExitCode=!ERRORLEVEL!
 
