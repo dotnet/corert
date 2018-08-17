@@ -52,7 +52,7 @@ namespace Internal.IL
         private List<SpilledExpressionEntry> _spilledExpressions = new List<SpilledExpressionEntry>();
         private int _pointerSize;
         private readonly byte[] _ilBytes;
-        private EcmaMethodDebugInformation _debugInformation;
+        private MethodDebugInformation _debugInformation;
         private LLVMMetadataRef _debugFunction;
 
         /// <summary>
@@ -112,12 +112,8 @@ namespace Internal.IL
             _builder = LLVM.CreateBuilder();
             _pointerSize = compilation.NodeFactory.Target.PointerSize;
 
-            // Get debug metadata for the uninstantiated version of the method
-            MethodDesc typicalMethod = _method.GetTypicalMethodDefinition();
-            if (typicalMethod is EcmaMethod ecmaMethod && ecmaMethod.Module.PdbReader != null)
-            {
-                _debugInformation = new EcmaMethodDebugInformation(ecmaMethod);
-            }
+            _debugInformation = _compilation.GetDebugInfo(_methodIL);
+
             Context = LLVM.GetModuleContext(Module);
         }
 
@@ -190,7 +186,7 @@ namespace Internal.IL
             string[] argNames = null;
             if (_debugInformation != null)
             {
-                argNames = _debugInformation.GetParameterNames().ToArray();
+                argNames = _debugInformation.GetParameterNames()?.ToArray();
             }
 
             for (int i = 0; i < _signature.Length; i++)
@@ -214,7 +210,7 @@ namespace Internal.IL
             string[] localNames = new string[_locals.Length];
             if (_debugInformation != null)
             {
-                foreach (ILLocalVariable localDebugInfo in _debugInformation.GetLocalVariables())
+                foreach (ILLocalVariable localDebugInfo in _debugInformation.GetLocalVariables() ?? Enumerable.Empty<ILLocalVariable>())
                 {
                     // Check whether the slot still exists as the compiler may remove it for intrinsics
                     int slot = localDebugInfo.Slot;
@@ -230,7 +226,7 @@ namespace Internal.IL
                 if (CanStoreLocalOnStack(_locals[i].Type))
                 {
                     string localName = String.Empty;
-                    if(localNames[i] != null)
+                    if (localNames[i] != null)
                     {
                         localName = localNames[i] + "_";
                     }
@@ -450,9 +446,9 @@ namespace Internal.IL
             {
                 bool foundSequencePoint = false;
                 ILSequencePoint curSequencePoint = default;
-                foreach (var sequencePoint in _debugInformation.GetSequencePoints())
+                foreach (var sequencePoint in _debugInformation.GetSequencePoints() ?? Enumerable.Empty<ILSequencePoint>())
                 {
-                    if(sequencePoint.Offset == _currentOffset)
+                    if (sequencePoint.Offset == _currentOffset)
                     {
                         curSequencePoint = sequencePoint;
                         foundSequencePoint = true;
@@ -470,12 +466,18 @@ namespace Internal.IL
                     return;
                 }
 
+                // LLVM can't process empty string file names
+                if (String.IsNullOrWhiteSpace(curSequencePoint.Document))
+                {
+                    return;
+                }
+
                 DebugMetadata debugMetadata;
                 if (!_compilation.DebugMetadataMap.TryGetValue(curSequencePoint.Document, out debugMetadata))
                 {
                     string fullPath = curSequencePoint.Document;
                     string fileName = Path.GetFileName(fullPath);
-                    string directory = Path.GetDirectoryName(fullPath);
+                    string directory = Path.GetDirectoryName(fullPath) ?? String.Empty;
                     LLVMMetadataRef fileMetadata = LLVMPInvokes.LLVMDIBuilderCreateFile(_compilation.DIBuilder, fullPath, fullPath.Length,
                         directory, directory.Length);
 
@@ -484,11 +486,11 @@ namespace Internal.IL
                         fileMetadata, "ILC", 3, isOptimized: false, String.Empty, 0, 1, String.Empty, 0, LLVMDWARFEmissionKind.LLVMDWARFEmissionFull, 0, false, false);
                     LLVM.AddNamedMetadataOperand(Module, "llvm.dbg.cu", LLVM.MetadataAsValue(Context, compileUnitMetadata));
 
-                    debugMetadata = new DebugMetadata() { File = fileMetadata, CompileUnit = compileUnitMetadata };
+                    debugMetadata = new DebugMetadata(fileMetadata, compileUnitMetadata);
                     _compilation.DebugMetadataMap[fullPath] = debugMetadata;
                 }
 
-                if(_debugFunction.Pointer == IntPtr.Zero)
+                if (_debugFunction.Pointer == IntPtr.Zero)
                 {
                     _debugFunction = LLVM.DIBuilderCreateFunction(_compilation.DIBuilder, debugMetadata.CompileUnit, _method.Name, String.Empty, debugMetadata.File,
                         (uint)_debugInformation.GetSequencePoints().FirstOrDefault().LineNumber, default(LLVMMetadataRef), 1, 1, 1, 0, IsOptimized: 0, _llvmFunction);

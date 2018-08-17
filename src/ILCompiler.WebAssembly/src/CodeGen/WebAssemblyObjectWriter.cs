@@ -198,7 +198,7 @@ namespace ILCompiler.DependencyAnalysis
         private void EmitDebugMetadata()
         {
             var dwarfVersion = LLVM.MDNode(new[]
-                        {
+            {
                 LLVM.ConstInt(LLVM.Int32Type(), 2, false),
                 LLVM.MDString("Dwarf Version", 13),
                 LLVM.ConstInt(LLVM.Int32Type(), 4, false)

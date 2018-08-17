@@ -24,9 +24,10 @@ namespace ILCompiler
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             WebAssemblyCodegenNodeFactory nodeFactory,
             IEnumerable<ICompilationRootProvider> roots,
+            DebugInformationProvider debugInformationProvider,
             Logger logger,
             WebAssemblyCodegenConfigProvider options)
-            : base(dependencyGraph, nodeFactory, GetCompilationRoots(roots, nodeFactory), null, null, logger)
+            : base(dependencyGraph, nodeFactory, GetCompilationRoots(roots, nodeFactory), debugInformationProvider, null, logger)
         {
             NodeFactory = nodeFactory;
             Module = LLVM.ModuleCreateWithName("netscripten");

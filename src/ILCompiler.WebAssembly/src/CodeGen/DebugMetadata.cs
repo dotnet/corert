@@ -11,7 +11,13 @@ namespace ILCompiler.WebAssembly
 {
     class DebugMetadata
     {
-        public LLVMMetadataRef CompileUnit { get; set; }
-        public LLVMMetadataRef File { get; set; }
+        public DebugMetadata(LLVMMetadataRef file, LLVMMetadataRef compileUnit)
+        {
+            File = file;
+            CompileUnit = compileUnit;
+        }
+
+        public LLVMMetadataRef CompileUnit { get; }
+        public LLVMMetadataRef File { get; }
     }
 }
