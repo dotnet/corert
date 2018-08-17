@@ -15,7 +15,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler) + " cloned";
 
-        public override ObjectNode NodeForLinkage(NodeFactory factory) => this;
+        public override ISymbolNode NodeForLinkage(NodeFactory factory) => this;
 
         //
         // A cloned type must be named differently than the type it is a clone of so the linker
