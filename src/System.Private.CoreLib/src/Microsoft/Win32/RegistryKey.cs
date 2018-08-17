@@ -167,6 +167,11 @@ namespace Microsoft.Win32
             DeleteValueCore(name, throwOnMissingValue);
         }
 
+        public static RegistryKey OpenBaseKey(RegistryHive hKey)
+        {
+            return OpenBaseKey(hKey, RegistryView.Default);
+        }
+        
         public static RegistryKey OpenBaseKey(RegistryHive hKey, RegistryView view)
         {
             ValidateKeyView(view);
@@ -552,6 +557,10 @@ namespace Microsoft.Win32
             key._keyName = s_hkeyNames[index];
             return key;
         }
+
+        // This dummy method is added to have the same implemenatation of Registry class. 
+        // Its not being used anywhere. 
+        public void SetValue(string name, object value, RegistryValueKind valueKind) { }
     }
 
     [Flags]
