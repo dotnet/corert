@@ -179,110 +179,98 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void EmitTypeSignature(TypeDesc typeDesc, ModuleToken token, SignatureContext context)
         {
-            if (typeDesc.HasInstantiation)
+            if (typeDesc.HasInstantiation && !typeDesc.IsGenericDefinition)
             {
-                EmitTypeSpecification(token, context);
+                EmitInstantiatedTypeSignature((InstantiatedType)typeDesc, token, context);
                 return;
             }
 
-            CorElementType elementType;
-            if (typeDesc.IsPrimitive)
+            switch (typeDesc.Category)
             {
-                switch (typeDesc.Category)
-                {
-                    case TypeFlags.Void:
-                        elementType = CorElementType.ELEMENT_TYPE_VOID;
-                        break;
+                case TypeFlags.SzArray:
+                    EmitSzArrayTypeSignature((ArrayType)typeDesc, token, context);
+                    return;
 
-                    case TypeFlags.Boolean:
-                        elementType = CorElementType.ELEMENT_TYPE_BOOLEAN;
-                        break;
+                case TypeFlags.Pointer:
+                    EmitPointerTypeSignature((PointerType)typeDesc, token, context);
+                    return;
 
-                    case TypeFlags.Char:
-                        elementType = CorElementType.ELEMENT_TYPE_CHAR;
-                        break;
+                case TypeFlags.Void:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_VOID);
+                    return;
 
-                    case TypeFlags.SByte:
-                        elementType = CorElementType.ELEMENT_TYPE_I1;
-                        break;
+                case TypeFlags.Boolean:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_BOOLEAN);
+                    return;
 
-                    case TypeFlags.Byte:
-                        elementType = CorElementType.ELEMENT_TYPE_U1;
-                        break;
+                case TypeFlags.Char:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_CHAR);
+                    return;
 
-                    case TypeFlags.Int16:
-                        elementType = CorElementType.ELEMENT_TYPE_I2;
-                        break;
+                case TypeFlags.SByte:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_I1);
+                    return;
 
-                    case TypeFlags.UInt16:
-                        elementType = CorElementType.ELEMENT_TYPE_U2;
-                        break;
+                case TypeFlags.Byte:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_U1);
+                    return;
 
-                    case TypeFlags.Int32:
-                        elementType = CorElementType.ELEMENT_TYPE_I4;
-                        break;
+                case TypeFlags.Int16:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_I2);
+                    return;
 
-                    case TypeFlags.UInt32:
-                        elementType = CorElementType.ELEMENT_TYPE_U4;
-                        break;
+                case TypeFlags.UInt16:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_U2);
+                    return;
 
-                    case TypeFlags.Int64:
-                        elementType = CorElementType.ELEMENT_TYPE_I8;
-                        break;
+                case TypeFlags.Int32:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_I4);
+                    return;
 
-                    case TypeFlags.UInt64:
-                        elementType = CorElementType.ELEMENT_TYPE_U8;
-                        break;
+                case TypeFlags.UInt32:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_U4);
+                    return;
 
-                    case TypeFlags.IntPtr:
-                        elementType = CorElementType.ELEMENT_TYPE_I;
-                        break;
+                case TypeFlags.Int64:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_I8);
+                    return;
 
-                    case TypeFlags.UIntPtr:
-                        elementType = CorElementType.ELEMENT_TYPE_U;
-                        break;
+                case TypeFlags.UInt64:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_U8);
+                    return;
 
-                    case TypeFlags.Single:
-                        elementType = CorElementType.ELEMENT_TYPE_R4;
-                        break;
+                case TypeFlags.IntPtr:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_I);
+                    return;
 
-                    case TypeFlags.Double:
-                        elementType = CorElementType.ELEMENT_TYPE_R4;
-                        break;
+                case TypeFlags.UIntPtr:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_U);
+                    return;
 
-                    default:
-                        throw new NotImplementedException();
-                }
+                case TypeFlags.Single:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_R4);
+                    return;
 
-                EmitByte((byte)elementType);
-                return;
-            }
+                case TypeFlags.Double:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_R4);
+                    return;
 
-            if (typeDesc is ArrayType arrayType)
-            {
-                EmitByte((byte)CorElementType.ELEMENT_TYPE_SZARRAY);
-                EmitTypeSignature(arrayType.ElementType, token, context);
-                return;
-            }
+                case TypeFlags.Class:
+                    if (typeDesc.IsString)
+                    {
+                        EmitElementType(CorElementType.ELEMENT_TYPE_STRING);
+                    }
+                    else
+                    {
+                        EmitElementType(CorElementType.ELEMENT_TYPE_CLASS);
+                        EmitTypeToken((EcmaType)typeDesc, token, context);
+                    }
+                    return;
 
-            if (typeDesc.IsValueType)
-            {
-                elementType = CorElementType.ELEMENT_TYPE_VALUETYPE;
-            }
-            else
-            {
-                elementType = CorElementType.ELEMENT_TYPE_CLASS;
-            }
-
-            // TODO: module override for tokens with external context
-            EmitElementType(elementType);
-
-            switch (token.TokenType)
-            {
-                case CorTokenType.mdtTypeDef:
-                case CorTokenType.mdtTypeRef:
-                case CorTokenType.mdtTypeSpec:
-                    EmitToken(token.Token);
+                case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
+                    EmitElementType(CorElementType.ELEMENT_TYPE_VALUETYPE);
+                    EmitTypeToken((EcmaType)typeDesc, token, context);
                     return;
 
                 default:
@@ -290,37 +278,77 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        private void EmitTypeSpecification(ModuleToken token, SignatureContext context)
+        private void EmitTypeToken(EcmaType type, ModuleToken token, SignatureContext context)
         {
-            Debug.Assert(token.TokenType == CorTokenType.mdtTypeSpec);
-            TypeSpecification typeSpec = token.MetadataReader.GetTypeSpecification((TypeSpecificationHandle)MetadataTokens.Handle((int)token.Token));
-            BlobReader signatureReader = token.MetadataReader.GetBlobReader(typeSpec.Signature);
-            SignatureDecoder<byte[], SignatureContext> decoder = new SignatureDecoder<byte[], SignatureContext>(context, context.MetadataReader, context);
-            EmitBytes(decoder.DecodeType(ref signatureReader, allowTypeSpecifications: true));
+            if (token.IsNull)
+            {
+                token = context.GetModuleTokenForType(type);
+            }
+            EmitToken(token.Token);
         }
 
-        public void EmitMethodSignature(MethodDesc method, ModuleToken token, SignatureContext context)
+        private void EmitInstantiatedTypeSignature(InstantiatedType type, ModuleToken token, SignatureContext context)
         {
+            EmitElementType(CorElementType.ELEMENT_TYPE_GENERICINST);
+            EmitTypeSignature(type.GetTypeDefinition(), default(ModuleToken), context);
+            EmitUInt((uint)type.Instantiation.Length);
+            for (int paramIndex = 0; paramIndex < type.Instantiation.Length; paramIndex++)
+            {
+                EmitTypeSignature(type.Instantiation[paramIndex], default(ModuleToken), context);
+            }
+        }
+
+        private void EmitPointerTypeSignature(PointerType type, ModuleToken token, SignatureContext context)
+        {
+            EmitElementType(CorElementType.ELEMENT_TYPE_PTR);
+            EmitTypeSignature(type.ParameterType, token, context);
+        }
+
+        private void EmitSzArrayTypeSignature(ArrayType type, ModuleToken token, SignatureContext context)
+        {
+            Debug.Assert(type.IsSzArray);
+            EmitElementType(CorElementType.ELEMENT_TYPE_SZARRAY);
+            EmitTypeSignature(type.ElementType, token, context);
+        }
+
+        public void EmitMethodSignature(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool isUnboxingStub, SignatureContext context)
+        {
+            uint flags = 0;
+            if (isUnboxingStub)
+            {
+                flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UnboxingStub;
+            }
+            if (constrainedType != null)
+            {
+                flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_Constrained;
+            }
+
             switch (token.TokenType)
             {
                 case CorTokenType.mdtMethodDef:
                     // TODO: module override for methoddefs with external module context
-                    EmitUInt((uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_None);
+                    EmitUInt(flags);
                     EmitMethodDefToken(token);
                     break;
 
                 case CorTokenType.mdtMemberRef:
                     // TODO: module override for methodrefs with external module context
-                    EmitUInt((uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MemberRefToken);
+                    flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MemberRefToken;
+                    EmitUInt(flags);
                     EmitMethodRefToken(token);
                     break;
 
                 case CorTokenType.mdtMethodSpec:
-                    EmitMethodSpecificationSignature(method, token, context);
+                    EmitMethodSpecificationSignature(method, token, isUnboxingStub, context);
                     break;
 
                 default:
                     throw new NotImplementedException();
+            }
+
+            if (constrainedType != null)
+            {
+                EmitTypeSignature(constrainedType, default(ModuleToken), context);
             }
         }
 
@@ -336,7 +364,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             EmitUInt(RidFromToken(memberRefToken.Token));
         }
 
-        private void EmitMethodSpecificationSignature(MethodDesc method, ModuleToken token, SignatureContext context)
+        private void EmitMethodSpecificationSignature(MethodDesc method, ModuleToken token, bool isUnboxingStub, SignatureContext context)
         {
             switch (token.TokenType)
             {
@@ -345,6 +373,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         MethodSpecification methodSpec = token.MetadataReader.GetMethodSpecification((MethodSpecificationHandle)MetadataTokens.Handle((int)token.Token));
 
                         ReadyToRunMethodSigFlags flags = ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MethodInstantiation;
+                        if (isUnboxingStub)
+                        {
+                            flags |= ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UnboxingStub;
+                        }
                         mdToken genericMethodToken;
 
                         switch (methodSpec.Method.Kind)
@@ -435,17 +467,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
     public class SignatureContext : ISignatureTypeProvider<byte[], SignatureContext>
     {
-        private readonly ReadyToRunCodegenNodeFactory _nodeFactory;
+        private readonly ModuleTokenResolver _resolver;
 
         private readonly EcmaModule _contextModule;
 
-        public SignatureContext(ReadyToRunCodegenNodeFactory nodeFactory, EcmaModule contextModule)
+        public SignatureContext(ModuleTokenResolver resolver, EcmaModule contextModule)
         {
-            _nodeFactory = nodeFactory;
+            _resolver = resolver;
             _contextModule = contextModule;
         }
 
         public MetadataReader MetadataReader => _contextModule.MetadataReader;
+
+        public ModuleToken GetModuleTokenForType(EcmaType type)
+        {
+            return _resolver.GetModuleTokenForType(type);
+        }
 
         public byte[] GetArrayType(byte[] elementType, ArrayShape shape)
         {

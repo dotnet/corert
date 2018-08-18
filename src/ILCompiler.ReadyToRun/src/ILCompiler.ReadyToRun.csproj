@@ -50,6 +50,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\MethodGCInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\MethodWithGCInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ModuleToken.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ModuleTokenResolver.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\NewArrayFixupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\NewObjectFixupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\NibbleWriter.cs" />

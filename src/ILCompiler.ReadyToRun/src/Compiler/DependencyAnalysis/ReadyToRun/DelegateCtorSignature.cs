@@ -14,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class DelegateCtorSignature : Signature
     {
-        private readonly ReadyToRunCodegenNodeFactory _factory;
+        private readonly ModuleTokenResolver _resolver;
 
         private readonly TypeDesc _delegateType;
 
@@ -25,13 +25,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly ModuleToken _targetMethodToken;
 
         public DelegateCtorSignature(
-            ReadyToRunCodegenNodeFactory factory,
+            ModuleTokenResolver resolver,
             TypeDesc delegateType, 
             ModuleToken delegateTypeToken,
             IMethodNode targetMethod,
             ModuleToken targetMethodToken)
         {
-            _factory = factory;
+            _resolver = resolver;
             _delegateType = delegateType;
             _delegateTypeToken = delegateTypeToken;
             _targetMethod = targetMethod;
@@ -48,8 +48,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (!relocsOnly)
             {
                 builder.EmitByte((byte)ReadyToRunFixupKind.READYTORUN_FIXUP_DelegateCtor);
-                builder.EmitMethodSignature(_targetMethod.Method, _targetMethodToken, _targetMethodToken.SignatureContext(_factory));
-                builder.EmitTypeSignature(_delegateType, _delegateTypeToken, _delegateTypeToken.SignatureContext(_factory));
+                builder.EmitMethodSignature(
+                    _targetMethod.Method, 
+                    _targetMethodToken, 
+                    constrainedType: null, 
+                    isUnboxingStub: false, 
+                    _targetMethodToken.SignatureContext(_resolver));
+                builder.EmitTypeSignature(_delegateType, _delegateTypeToken, _delegateTypeToken.SignatureContext(_resolver));
             }
 
             return builder.ToObjectData();

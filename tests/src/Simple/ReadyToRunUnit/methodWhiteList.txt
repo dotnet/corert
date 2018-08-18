@@ -1,1 +1,4 @@
 Program..cctor()
+Program+DisposeStruct..cctor()
+Program+DisposeClass.Dispose()
+Program+DisposeClass..cctor()

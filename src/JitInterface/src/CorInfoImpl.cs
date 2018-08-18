@@ -1120,6 +1120,10 @@ namespace Internal.JitInterface
                 MethodDesc method = result as MethodDesc;
                 pResolvedToken.hMethod = ObjectToHandle(method);
                 pResolvedToken.hClass = ObjectToHandle(method.OwningType);
+
+#if READYTORUN
+            _compilation.NodeFactory.Resolver.AddModuleTokenForMethod(method, new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token));
+#endif
             }
             else
             if (result is FieldDesc)
@@ -1133,6 +1137,10 @@ namespace Internal.JitInterface
 
                 pResolvedToken.hField = ObjectToHandle(field);
                 pResolvedToken.hClass = ObjectToHandle(field.OwningType);
+
+#if READYTORUN
+                _compilation.NodeFactory.Resolver.AddModuleTokenForField(field, new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token));
+#endif
             }
             else
             {
@@ -1145,6 +1153,10 @@ namespace Internal.JitInterface
                     type = type.MakeArrayType();
                 }
                 pResolvedToken.hClass = ObjectToHandle(type);
+
+#if READYTORUN
+                _compilation.NodeFactory.Resolver.AddModuleTokenForType(type, new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token));
+#endif
             }
 
             pResolvedToken.pTypeSpec = null;
@@ -2956,7 +2968,7 @@ namespace Internal.JitInterface
                     Debug.Assert(!forceUseRuntimeLookup);
                     pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                        _compilation.NodeFactory.MethodEntrypoint(targetMethod, new ModuleToken(_tokenContext, pResolvedToken.token))
+                        _compilation.NodeFactory.MethodEntrypoint(targetMethod, new ModuleToken(_tokenContext, pResolvedToken.token), constrainedType)
 #else
                         _compilation.NodeFactory.MethodEntrypoint(targetMethod)
 #endif
@@ -2977,7 +2989,11 @@ namespace Internal.JitInterface
                     else if (targetMethod.RequiresInstMethodTableArg() || referencingArrayAddressMethod)
                     {
                         // Ask for a constructed type symbol because we need the vtable to get to the dictionary
+#if READYTORUN
+                        instParam = _compilation.NodeFactory.ConstructedTypeSymbol(concreteMethod.OwningType, new ModuleToken(_tokenContext, pResolvedToken.token));
+#else
                         instParam = _compilation.NodeFactory.ConstructedTypeSymbol(concreteMethod.OwningType);
+#endif
                     }
 
                     if (instParam != null)
@@ -2988,7 +3004,7 @@ namespace Internal.JitInterface
                         {
                             pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                                _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod, new ModuleToken(_tokenContext, pResolvedToken.token))
+                                _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod, new ModuleToken(_tokenContext, pResolvedToken.token), constrainedType)
 #else
                                 _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod)
 #endif
@@ -3001,7 +3017,7 @@ namespace Internal.JitInterface
                             // any generic lookups).
                             pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                                _compilation.NodeFactory.MethodEntrypoint(targetMethod, new ModuleToken(_tokenContext, pResolvedToken.token))
+                                _compilation.NodeFactory.MethodEntrypoint(targetMethod, new ModuleToken(_tokenContext, pResolvedToken.token), constrainedType)
 #else
                                 _compilation.NodeFactory.MethodEntrypoint(targetMethod)
 #endif
@@ -3012,7 +3028,7 @@ namespace Internal.JitInterface
                     {
                         pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                            _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod, new ModuleToken(_tokenContext, pResolvedToken.token))
+                            _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod, new ModuleToken(_tokenContext, pResolvedToken.token), constrainedType)
 #else
                             _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod)
 #endif
@@ -3022,7 +3038,7 @@ namespace Internal.JitInterface
                     {
                         pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                            _compilation.NodeFactory.MethodEntrypoint(targetMethod, new ModuleToken(_tokenContext, pResolvedToken.token))
+                            _compilation.NodeFactory.MethodEntrypoint(targetMethod, new ModuleToken(_tokenContext, pResolvedToken.token), constrainedType)
 #else
                             _compilation.NodeFactory.MethodEntrypoint(targetMethod)
 #endif
@@ -3076,13 +3092,13 @@ namespace Internal.JitInterface
                     pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_PVALUE;
                     pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
 #if READYTORUN
-                        _compilation.NodeFactory.InterfaceDispatchCell(targetMethod, new ModuleToken(_tokenContext, pResolvedToken.token)
+                        _compilation.NodeFactory.InterfaceDispatchCell(targetMethod, new ModuleToken(_tokenContext, pResolvedToken.token), isUnboxingStub: false
 #else
                         _compilation.NodeFactory.InterfaceDispatchCell(targetMethod
+#endif // READYTORUN
 #if !SUPPORT_JIT
                         , _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled).ToString()
 #endif
-#endif // READYTORUN
                         ));
                 }
             }

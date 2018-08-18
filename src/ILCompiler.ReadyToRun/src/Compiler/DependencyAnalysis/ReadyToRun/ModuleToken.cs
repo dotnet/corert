@@ -5,6 +5,7 @@
 using System;
 
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 using Internal.JitInterface;
 using Internal.TypeSystem.Ecma;
@@ -14,7 +15,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// <summary>
     /// This helper structure encapsulates a module-qualified token.
     /// </summary>
-    public struct ModuleToken
+    public struct ModuleToken : IEquatable<ModuleToken>
     {
         public readonly EcmaModule Module;
         public readonly mdToken Token;
@@ -24,6 +25,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             Module = module;
             Token = token;
         }
+        public ModuleToken(EcmaModule module, EntityHandle entityHandle)
+        {
+            Module = module;
+            Token = (mdToken)MetadataTokens.GetToken(entityHandle);
+        }
+
+        public ModuleToken(EcmaModule module, Handle handle)
+        {
+            Module = module;
+            Token = (mdToken)MetadataTokens.GetToken(handle);
+        }
+
+        public bool IsNull => Module == null;
 
         public override int GetHashCode()
         {
@@ -32,14 +46,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override string ToString()
         {
+            if (IsNull)
+            {
+                return "default(ModuleToken)";
+            }
             return Module.ToString() + ":" + ((uint)Token).ToString("X8");
         }
 
         public override bool Equals(object obj)
         {
             return obj is ModuleToken moduleToken &&
-                Module == moduleToken.Module &&
-                Token == moduleToken.Token;
+                Equals(moduleToken);
+        }
+
+        public bool Equals(ModuleToken moduleToken)
+        {
+            return Module == moduleToken.Module && Token == moduleToken.Token;
         }
 
         public int CompareTo(ModuleToken other)
@@ -54,9 +76,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return result;
         }
 
-        public SignatureContext SignatureContext(ReadyToRunCodegenNodeFactory factory)
+        public SignatureContext SignatureContext(ModuleTokenResolver resolver)
         {
-            return new SignatureContext(factory, Module);
+            return new SignatureContext(resolver, Module);
         }
 
         public MetadataReader MetadataReader => Module.PEReader.GetMetadataReader();
@@ -64,5 +86,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public CorTokenType TokenType => SignatureBuilder.TypeFromToken(Token);
 
         public uint TokenRid => SignatureBuilder.RidFromToken(Token);
+
+        public Handle Handle => MetadataTokens.Handle((int)Token);
     }
 }

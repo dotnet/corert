@@ -22,9 +22,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadyToRunFixupKind fixupKind,
             MethodDesc methodDesc,
             ModuleToken token,
-            MethodWithGCInfo localMethod,
-            MethodFixupSignature.SignatureKind signatureKind)
-            : base(factory.MethodImports, factory.GetOrAddMethodSignature(fixupKind, methodDesc, token, signatureKind))
+            TypeDesc constrainedType,
+            bool isUnboxingStub,
+            MethodWithGCInfo localMethod)
+            : base(factory.MethodImports, factory.MethodSignature(fixupKind, methodDesc, token, constrainedType, isUnboxingStub))
         {
             _methodDesc = methodDesc;
             _token = token;

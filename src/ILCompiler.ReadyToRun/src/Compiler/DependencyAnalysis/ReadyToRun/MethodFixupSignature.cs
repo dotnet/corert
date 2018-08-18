@@ -10,14 +10,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class MethodFixupSignature : Signature
     {
-        public enum SignatureKind
-        {
-            DefToken,
-            RefToken,
-            Signature,
-        }
-
-        private readonly ReadyToRunCodegenNodeFactory _factory;
+        private readonly ModuleTokenResolver _resolver;
 
         private readonly ReadyToRunFixupKind _fixupKind;
 
@@ -25,20 +18,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly ModuleToken _methodToken;
 
-        private readonly SignatureKind _signatureKind;
+        private readonly TypeDesc _constrainedType;
+
+        private readonly bool _isUnboxingStub;
 
         public MethodFixupSignature(
-            ReadyToRunCodegenNodeFactory factory, 
+            ModuleTokenResolver resolver, 
             ReadyToRunFixupKind fixupKind, 
             MethodDesc methodDesc, 
-            ModuleToken methodToken, 
-            SignatureKind signatureKind)
+            ModuleToken methodToken,
+            TypeDesc constrainedType,
+            bool isUnboxingStub)
         {
-            _factory = factory;
+            _resolver = resolver;
             _fixupKind = fixupKind;
             _methodDesc = methodDesc;
             _methodToken = methodToken;
-            _signatureKind = signatureKind;
+            _constrainedType = constrainedType;
+            _isUnboxingStub = isUnboxingStub;
         }
 
         public override int ClassCode => 150063499;
@@ -50,23 +47,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             dataBuilder.AddSymbol(this);
 
             dataBuilder.EmitByte((byte)_fixupKind);
-            switch (_signatureKind)
-            {
-                case SignatureKind.DefToken:
-                    dataBuilder.EmitMethodDefToken(_methodToken);
-                    break;
-
-                case SignatureKind.RefToken:
-                    dataBuilder.EmitMethodRefToken(_methodToken);
-                    break;
-
-                case SignatureKind.Signature:
-                    dataBuilder.EmitMethodSignature(_methodDesc, _methodToken, _methodToken.SignatureContext(_factory));
-                    break;
-
-                default:
-                    throw new NotImplementedException();
-            }
+            dataBuilder.EmitMethodSignature(_methodDesc, _methodToken, _constrainedType, _isUnboxingStub, _methodToken.SignatureContext(_resolver));
 
             return dataBuilder.ToObjectData();
         }

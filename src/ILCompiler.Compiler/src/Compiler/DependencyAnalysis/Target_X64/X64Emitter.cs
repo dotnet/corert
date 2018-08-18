@@ -28,8 +28,8 @@ namespace ILCompiler.DependencyAnalysis.X64
         {
             AddrMode rexAddrMode = new AddrMode(regSrc, null, 0, 0, AddrModeSize.Int64);
             EmitRexPrefix(regDst, ref rexAddrMode);
-            Builder.EmitByte(0x89);
-            Builder.EmitByte((byte)(0xC0 | (((int)regSrc & 0x07) << 3) | (((int)regDst & 0x07))));
+            Builder.EmitByte(0x8B);
+            Builder.EmitByte((byte)(0xC0 | (((int)regDst & 0x07) << 3) | (((int)regSrc & 0x07))));
         }
 
         public void EmitMOV(Register regDst, int imm32)
@@ -287,32 +287,32 @@ namespace ILCompiler.DependencyAnalysis.X64
             // Are we accessing a byte register that wasn't byte accessible in x86?
             if (addrMode.Size == AddrModeSize.Int8 && reg >= Register.RSP)
             {
-                rexPrefix |= 0x40;
+                rexPrefix |= 0x40; // REX - access to new 8-bit registers
             }
 
             // Is this a 64 bit instruction?
             if (addrMode.Size == AddrModeSize.Int64)
             {
-                rexPrefix |= 0x48;
+                rexPrefix |= 0x48; // REX.W - 64-bit data operand
             }
 
             // Is the destination register one of the new ones?
             if (reg >= Register.R8)
             {
-                rexPrefix |= 0x44;
+                rexPrefix |= 0x44; // REX.R - extension of the register field
             }
 
             // Is the index register one of the new ones?
             if (addrMode.IndexReg.HasValue && addrMode.IndexReg.Value >= Register.R8 && addrMode.IndexReg.Value <= Register.R15)
             {
-                rexPrefix |= 0x42;
+                rexPrefix |= 0x42; // REX.X - extension of the SIB index field
             }
 
             // Is the base register one of the new ones?
             if (addrMode.BaseReg >= Register.R8 && addrMode.BaseReg <= Register.R15
                || addrMode.BaseReg >= (int)Register.R8 + Register.RegDirect && addrMode.BaseReg <= (int)Register.R15 + Register.RegDirect)
             {
-                rexPrefix |= 0x41;
+                rexPrefix |= 0x41; // REX.WB (Wide, extended Base)
             }
 
             // If we have anything so far, emit it.
