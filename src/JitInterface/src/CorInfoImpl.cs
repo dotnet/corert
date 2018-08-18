@@ -3096,7 +3096,7 @@ namespace Internal.JitInterface
 #else
                         _compilation.NodeFactory.InterfaceDispatchCell(targetMethod
 #endif // READYTORUN
-#if !SUPPORT_JIT || READYTORUN
+#if !SUPPORT_JIT
                         , _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled).ToString()
 #endif
                         ));
