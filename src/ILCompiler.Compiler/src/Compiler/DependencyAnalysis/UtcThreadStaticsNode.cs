@@ -58,7 +58,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.RequireInitialPointerAlignment();
-            builder.EmitZeros(_type.ThreadStaticFieldSize.AsInt);
+            builder.EmitZeros(_type.ThreadGcStaticFieldSize.AsInt);
             builder.AddSymbol(this);
             return builder.ToObjectData();
         }

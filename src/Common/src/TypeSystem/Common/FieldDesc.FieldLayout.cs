@@ -33,8 +33,7 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// For static fields, represents whether or not the field is held in the GC or non GC statics region
-        /// Does not apply to thread static fields.
+        /// For static fields, represents whether or not the field is held in the GC or non GC statics region.
         /// </summary>
         public bool HasGCStaticBase
         {
@@ -42,7 +41,6 @@ namespace Internal.TypeSystem
             {
                 // If this assert fires then make sure the caller checks the IsThreadStatic attribute
                 // of FieldDesc before checking its HasGCStaticBase property.
-                Debug.Assert(IsStatic && !IsThreadStatic);
                 return Context.ComputeHasGCStaticBase(this);
             }
         }
