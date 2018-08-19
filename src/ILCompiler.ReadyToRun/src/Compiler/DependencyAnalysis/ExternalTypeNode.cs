@@ -11,11 +11,12 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    class ExternalTypeNode : DependencyNodeCore<NodeFactory>, IEETypeNode
+    class ExternalTypeNode : PrecodeHelperImport, IEETypeNode
     {
         private readonly TypeDesc _type;
 
-        public ExternalTypeNode(NodeFactory factory, TypeDesc type)
+        public ExternalTypeNode(ReadyToRunCodegenNodeFactory factory, TypeDesc type)
+            : base(factory, new TypeFixupSignature(factory.Resolver, ReadyToRunFixupKind.READYTORUN_FIXUP_TypeHandle, type, default(ModuleToken)))
         {
             _type = type;
 
@@ -31,9 +32,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public int Offset => 0;
 
-        public bool RepresentsIndirectionCell => false;
-
-        public int ClassCode => -1044459;
+        public override int ClassCode => -1044459;
 
         public override bool InterestingForDynamicDependencyAnalysis => false;
 
@@ -43,19 +42,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.GetMangledTypeName(_type));
         }
 
-        public int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return comparer.Compare(Type, ((AvailableType)other).Type);
+            return comparer.Compare(Type, ((ExternalTypeNode)other).Type);
         }
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => null;
 
         protected override string GetName(NodeFactory factory) => $"Externally referenced type {Type.ToString()}";
     }

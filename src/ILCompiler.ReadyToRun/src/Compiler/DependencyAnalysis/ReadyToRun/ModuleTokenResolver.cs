@@ -27,6 +27,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// </summary>
         private readonly Dictionary<EcmaType, ModuleToken> _typeToRefTokens = new Dictionary<EcmaType, ModuleToken>();
 
+        private readonly Dictionary<MethodDesc, ModuleToken> _methodToRefTokens = new Dictionary<MethodDesc, ModuleToken>();
+
         private readonly CompilationModuleGroup _compilationModuleGroup;
 
         public ModuleTokenResolver(CompilationModuleGroup compilationModuleGroup)
@@ -51,17 +53,43 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             throw new NotImplementedException(type.ToString());
         }
 
+        public ModuleToken GetModuleTokenForMethod(MethodDesc method)
+        {
+            if (_compilationModuleGroup.ContainsMethodBody(method, unboxingStub: false) &&
+                method is EcmaMethod ecmaMethod)
+            {
+                return new ModuleToken(ecmaMethod.Module, (mdToken)MetadataTokens.GetToken(ecmaMethod.Handle));
+            }
+
+            if (_methodToRefTokens.TryGetValue(method, out ModuleToken token))
+            {
+                return token;
+            }
+
+            // Reverse lookup failed
+            throw new NotImplementedException(method.ToString());
+        }
+
         public void AddModuleTokenForMethod(MethodDesc method, ModuleToken token)
         {
-            if (_compilationModuleGroup.ContainsMethodBody(method, unboxingStub: false))
+            if (_compilationModuleGroup.ContainsMethodBody(method, unboxingStub: false) && method is EcmaMethod)
             {
                 // We don't need to store handles within the current compilation group
                 // as we can read them directly from the ECMA objects.
                 return;
             }
 
+            _methodToRefTokens[method] = token;
+
             switch (token.TokenType)
             {
+                case CorTokenType.mdtMethodSpec:
+                    {
+                        MethodSpecification methodSpec = token.MetadataReader.GetMethodSpecification((MethodSpecificationHandle)token.Handle);
+                        AddModuleTokenForMethod((MethodDesc)token.Module.GetObject(methodSpec.Method), new ModuleToken(token.Module, methodSpec.Method));
+                    }
+                    break;
+
                 case CorTokenType.mdtMemberRef:
                     AddModuleTokenForMemberReference(method.OwningType, token);
                     break;
@@ -118,11 +146,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     case CorTokenType.mdtTypeSpec:
                         {
                             TypeSpecification typeSpec = token.MetadataReader.GetTypeSpecification((TypeSpecificationHandle)token.Handle);
-                            EntityHandle genericType = typeSpec.DecodeSignature(new GenericTypeProvider(this), this);
-                            if (!genericType.IsNil && instantiatedType.GetTypeDefinition() is EcmaType ecmaTypeDef)
-                            {
-                                _typeToRefTokens[ecmaTypeDef] = new ModuleToken(token.Module, genericType);
-                            }
+                            typeSpec.DecodeSignature(new TokenResolverProvider(this, token.Module), this);
                         }
                         break;
                 }
@@ -133,86 +157,91 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        private class GenericTypeProvider : ISignatureTypeProvider<EntityHandle, ModuleTokenResolver>
+        private class TokenResolverProvider : ISignatureTypeProvider<bool, ModuleTokenResolver>
         {
             ModuleTokenResolver _resolver;
 
-            public GenericTypeProvider(ModuleTokenResolver resolver)
+            EcmaModule _contextModule;
+
+            public TokenResolverProvider(ModuleTokenResolver resolver, EcmaModule contextModule)
             {
                 _resolver = resolver;
+                _contextModule = contextModule;
             }
 
-            public EntityHandle GetArrayType(EntityHandle elementType, ArrayShape shape)
+            public bool GetArrayType(bool elementType, ArrayShape shape)
             {
                 throw new NotImplementedException();
             }
 
-            public EntityHandle GetByReferenceType(EntityHandle elementType)
+            public bool GetByReferenceType(bool elementType)
             {
                 throw new NotImplementedException();
             }
 
-            public EntityHandle GetFunctionPointerType(MethodSignature<EntityHandle> signature)
+            public bool GetFunctionPointerType(MethodSignature<bool> signature)
             {
                 throw new NotImplementedException();
             }
 
-            public EntityHandle GetGenericInstantiation(EntityHandle genericType, ImmutableArray<EntityHandle> typeArguments)
+            public bool GetGenericInstantiation(bool genericType, ImmutableArray<bool> typeArguments)
             {
-                return genericType;
+                return true;
             }
 
-            public EntityHandle GetGenericMethodParameter(ModuleTokenResolver genericContext, int index)
-            {
-                throw new NotImplementedException();
-            }
-
-            public EntityHandle GetGenericTypeParameter(ModuleTokenResolver genericContext, int index)
+            public bool GetGenericMethodParameter(ModuleTokenResolver genericContext, int index)
             {
                 throw new NotImplementedException();
             }
 
-            public EntityHandle GetModifiedType(EntityHandle modifier, EntityHandle unmodifiedType, bool isRequired)
+            public bool GetGenericTypeParameter(ModuleTokenResolver genericContext, int index)
+            {
+                return false;
+            }
+
+            public bool GetModifiedType(bool modifier, bool unmodifiedType, bool isRequired)
+            {
+                return false;
+            }
+
+            public bool GetPinnedType(bool elementType)
+            {
+                return false;
+            }
+
+            public bool GetPointerType(bool elementType)
+            {
+                return false;
+            }
+
+            public bool GetPrimitiveType(PrimitiveTypeCode typeCode)
+            {
+                return false;
+            }
+
+            public bool GetSZArrayType(bool elementType)
+            {
+                return false;
+            }
+
+            public bool GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
+            {
+                // Type definition tokens outside of the versioning bubble are useless.
+                return false;
+            }
+
+            public bool GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
+            {
+                _resolver.AddModuleTokenForType((TypeDesc)_contextModule.GetObject(handle), new ModuleToken(_contextModule, handle));
+                return true;
+            }
+
+            public bool GetTypeFromSpecification(MetadataReader reader, ReadyToRunCodegenNodeFactory genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
             {
                 throw new NotImplementedException();
             }
 
-            public EntityHandle GetPinnedType(EntityHandle elementType)
-            {
-                throw new NotImplementedException();
-            }
-
-            public EntityHandle GetPointerType(EntityHandle elementType)
-            {
-                throw new NotImplementedException();
-            }
-
-            public EntityHandle GetPrimitiveType(PrimitiveTypeCode typeCode)
-            {
-                return default(EntityHandle);
-            }
-
-            public EntityHandle GetSZArrayType(EntityHandle elementType)
-            {
-                throw new NotImplementedException();
-            }
-
-            public EntityHandle GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
-            {
-                throw new NotImplementedException();
-            }
-
-            public EntityHandle GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
-            {
-                return handle;
-            }
-
-            public EntityHandle GetTypeFromSpecification(MetadataReader reader, ReadyToRunCodegenNodeFactory genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
-            {
-                throw new NotImplementedException();
-            }
-
-            public EntityHandle GetTypeFromSpecification(MetadataReader reader, ModuleTokenResolver genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
+            public bool GetTypeFromSpecification(MetadataReader reader, ModuleTokenResolver genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
             {
                 throw new NotImplementedException();
             }

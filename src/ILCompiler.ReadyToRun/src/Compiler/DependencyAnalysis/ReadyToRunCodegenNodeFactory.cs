@@ -109,10 +109,24 @@ namespace ILCompiler.DependencyAnalysis
                     return localMethod;
                 }
 
-                // When the method is within the current compilation module group, resolve it via its natural ECMA
-                // handle as for de-virtualized interface dispatch the token still refers to the original virtual method.
-                EcmaMethod ecmaMethod = (EcmaMethod)method;
-                token = new ModuleToken(ecmaMethod.Module, (mdToken)MetadataTokens.GetToken(ecmaMethod.Handle));
+                if ((method.HasInstantiation && !method.IsGenericMethodDefinition) ||
+                    (method.OwningType.HasInstantiation && !method.OwningType.IsGenericDefinition))
+                {
+                    // Instantiated methods cannot be encoded via a ref token, they must use signature encoding
+                    token = default(ModuleToken);
+                }
+                else if (method is ArrayMethod)
+                {
+                    // Array methods use special signatures and don't need tokens
+                    token = default(ModuleToken);
+                }
+                else
+                {
+                    // When the method is within the current compilation module group, resolve it via its natural ECMA
+                    // handle as for de-virtualized interface dispatch the token still refers to the original virtual method.
+                    EcmaMethod ecmaMethod = (EcmaMethod)method;
+                    token = new ModuleToken(ecmaMethod.Module, (mdToken)MetadataTokens.GetToken(ecmaMethod.Handle));
+                }
             }
 
             return ImportedMethodNode(method, unboxingStub: isUnboxingStub, token: token, constrainedType: constrainedType, localMethod: localMethod);
@@ -202,6 +216,10 @@ namespace ILCompiler.DependencyAnalysis
                     helperNode = CreateTypeHandleHelper((TypeDesc)target, token);
                     break;
 
+                case ReadyToRunHelperId.FieldHandle:
+                    helperNode = CreateFieldHandleHelper((FieldDesc)target, token);
+                    break;
+
                 case ReadyToRunHelperId.VirtualCall:
                     helperNode = CreateVirtualCallHelper((MethodDesc)target, token);
                     break;
@@ -226,6 +244,7 @@ namespace ILCompiler.DependencyAnalysis
             switch (memberOrTypeToken.TokenType)
             {
                 case CorTokenType.mdtTypeRef:
+                case CorTokenType.mdtTypeSpec:
                     typeToken = memberOrTypeToken;
                     break;
 
@@ -366,6 +385,13 @@ namespace ILCompiler.DependencyAnalysis
                 new TypeFixupSignature(Resolver, ReadyToRunFixupKind.READYTORUN_FIXUP_TypeHandle, type, typeRefToken));
         }
 
+        private ISymbolNode CreateFieldHandleHelper(FieldDesc field, ModuleToken fieldRefToken)
+        {
+            return new PrecodeHelperImport(
+                this,
+                new FieldFixupSignature(Resolver, ReadyToRunFixupKind.READYTORUN_FIXUP_FieldHandle, field, fieldRefToken));
+        }
+
         private ISymbolNode CreateVirtualCallHelper(MethodDesc method, ModuleToken methodToken)
         {
             return new DelayLoadHelperImport(
@@ -420,8 +446,36 @@ namespace ILCompiler.DependencyAnalysis
                     result = CreateWriteBarrierHelper();
                     break;
 
+                case ILCompiler.ReadyToRunHelper.CheckedWriteBarrier:
+                    result = CreateCheckedWriteBarrierHelper();
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.Throw:
+                    result = CreateThrowHelper();
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.Rethrow:
+                    result = CreateRethrowHelper();
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.FailFast:
+                    result = CreateFailFastHelper();
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.Stelem_Ref:
+                    result = CreateStElemRefHelper();
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.NewMultiDimArr:
+                    result = CreateNewMultiDimArrHelper();
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.NewMultiDimArr_NonVarArg:
+                    result = CreateNewMultiDimArrNonVarArgHelper();
+                    break;
+
                 default:
-                    throw new NotImplementedException();
+                    throw new NotImplementedException(helper.ToString());
             }
 
             _helperCache.Add(helper, result);
@@ -466,6 +520,41 @@ namespace ILCompiler.DependencyAnalysis
         private ISymbolNode CreateWriteBarrierHelper()
         {
             return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_WriteBarrier);
+        }
+
+        private ISymbolNode CreateCheckedWriteBarrierHelper()
+        {
+            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_CheckedWriteBarrier);
+        }
+
+        private ISymbolNode CreateThrowHelper()
+        {
+            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Throw);
+        }
+
+        private ISymbolNode CreateRethrowHelper()
+        {
+            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Rethrow);
+        }
+
+        private ISymbolNode CreateFailFastHelper()
+        {
+            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_FailFast);
+        }
+
+        private ISymbolNode CreateStElemRefHelper()
+        {
+            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Stelem_Ref);
+        }
+
+        private ISymbolNode CreateNewMultiDimArrHelper()
+        {
+            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_NewMultiDimArr);
+        }
+
+        private ISymbolNode CreateNewMultiDimArrNonVarArgHelper()
+        {
+            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_NewMultiDimArr_NonVarArg);
         }
 
         public IMethodNode CreateUnboxingStubNode(MethodDesc method, mdToken token)

@@ -187,6 +187,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             switch (typeDesc.Category)
             {
+                case TypeFlags.Array:
+                    EmitArrayTypeSignature((ArrayType)typeDesc, token, context);
+                    return;
+
                 case TypeFlags.SzArray:
                     EmitSzArrayTypeSignature((ArrayType)typeDesc, token, context);
                     return;
@@ -255,10 +259,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     EmitElementType(CorElementType.ELEMENT_TYPE_R4);
                     return;
 
+                case TypeFlags.Interface:
                 case TypeFlags.Class:
                     if (typeDesc.IsString)
                     {
                         EmitElementType(CorElementType.ELEMENT_TYPE_STRING);
+                    }
+                    else if (typeDesc.IsObject)
+                    {
+                        EmitElementType(CorElementType.ELEMENT_TYPE_OBJECT);
                     }
                     else
                     {
@@ -269,6 +278,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 case TypeFlags.ValueType:
                 case TypeFlags.Nullable:
+                case TypeFlags.Enum:
                     EmitElementType(CorElementType.ELEMENT_TYPE_VALUETYPE);
                     EmitTypeToken((EcmaType)typeDesc, token, context);
                     return;
@@ -311,8 +321,26 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             EmitTypeSignature(type.ElementType, token, context);
         }
 
+        private void EmitArrayTypeSignature(ArrayType type, ModuleToken token, SignatureContext context)
+        {
+            Debug.Assert(type.IsArray && !type.IsSzArray);
+            EmitElementType(CorElementType.ELEMENT_TYPE_ARRAY);
+            EmitTypeSignature(type.ElementType, token, context);
+            EmitUInt((uint)type.Rank);
+            if (type.Rank != 0)
+            {
+                EmitUInt(0); // Number of sizes
+                EmitUInt(0); // Number of lower bounds
+            }
+        }
+
         public void EmitMethodSignature(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool isUnboxingStub, SignatureContext context)
         {
+            if (token.IsNull)
+            {
+                token = context.GetModuleTokenForMethod(method);
+            }
+
             uint flags = 0;
             if (isUnboxingStub)
             {
@@ -413,6 +441,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     throw new NotImplementedException();
             }
         }
+
+        public void EmitFieldSignature(FieldDesc field, ModuleToken fieldRefToken, SignatureContext context)
+        {
+            switch (fieldRefToken.TokenType)
+            {
+                case CorTokenType.mdtMemberRef:
+                    EmitUInt((uint)ReadyToRunFieldSigFlags.READYTORUN_FIELD_SIG_MemberRefToken);
+                    EmitTokenRid(fieldRefToken.Token);
+                    break;
+
+                default:
+                    throw new NotImplementedException();
+            }
+        }
     }
 
     public class ObjectDataSignatureBuilder : SignatureBuilder
@@ -484,9 +526,31 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return _resolver.GetModuleTokenForType(type);
         }
 
+        public ModuleToken GetModuleTokenForMethod(MethodDesc method)
+        {
+            return _resolver.GetModuleTokenForMethod(method);
+        }
+
         public byte[] GetArrayType(byte[] elementType, ArrayShape shape)
         {
-            throw new NotImplementedException();
+            ArraySignatureBuilder builder = new ArraySignatureBuilder();
+            builder.EmitByte((byte)CorElementType.ELEMENT_TYPE_ARRAY);
+            builder.EmitBytes(elementType);
+            builder.EmitUInt((uint)shape.Rank);
+            if (shape.Rank != 0)
+            {
+                builder.EmitUInt((uint)shape.Sizes.Length);
+                foreach (int size in shape.Sizes)
+                {
+                    builder.EmitUInt((uint)size);
+                }
+                builder.EmitUInt((uint)shape.LowerBounds.Length);
+                foreach (int lowerBound in shape.LowerBounds)
+                {
+                    builder.EmitInt(lowerBound);
+                }
+            }
+            return builder.ToArray();
         }
 
         public byte[] GetByReferenceType(byte[] elementType)
@@ -514,12 +578,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public byte[] GetGenericMethodParameter(SignatureContext genericContext, int index)
         {
-            throw new NotImplementedException();
+            ArraySignatureBuilder builder = new ArraySignatureBuilder();
+            builder.EmitElementType(CorElementType.ELEMENT_TYPE_MVAR);
+            builder.EmitUInt((uint)index);
+            return builder.ToArray();
         }
 
         public byte[] GetGenericTypeParameter(SignatureContext genericContext, int index)
         {
-            throw new NotImplementedException();
+            ArraySignatureBuilder builder = new ArraySignatureBuilder();
+            builder.EmitElementType(CorElementType.ELEMENT_TYPE_VAR);
+            builder.EmitUInt((uint)index);
+            return builder.ToArray();
         }
 
         public byte[] GetModifiedType(byte[] modifier, byte[] unmodifiedType, bool isRequired)
@@ -529,12 +599,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public byte[] GetPinnedType(byte[] elementType)
         {
-            throw new NotImplementedException();
+            byte[] output = new byte[elementType.Length + 1];
+            output[0] = (byte)CorElementType.ELEMENT_TYPE_PINNED;
+            Array.Copy(elementType, 0, output, 1, elementType.Length);
+            return output;
         }
 
         public byte[] GetPointerType(byte[] elementType)
         {
-            throw new NotImplementedException();
+            byte[] output = new byte[elementType.Length + 1];
+            output[0] = (byte)CorElementType.ELEMENT_TYPE_PTR;
+            Array.Copy(elementType, 0, output, 1, elementType.Length);
+            return output;
         }
 
         public byte[] GetPrimitiveType(PrimitiveTypeCode typeCode)
@@ -623,12 +699,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public byte[] GetSZArrayType(byte[] elementType)
         {
-            throw new NotImplementedException();
+            byte[] outputSignature = new byte[elementType.Length + 1];
+            outputSignature[0] = (byte)CorElementType.ELEMENT_TYPE_SZARRAY;
+            Array.Copy(elementType, 0, outputSignature, 1, elementType.Length);
+            return outputSignature;
         }
 
         public byte[] GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
         {
-            throw new NotImplementedException();
+            // If the two readers mismatch, we must do something mode complicated and I don't yet know what
+            Debug.Assert(_contextModule.MetadataReader == reader);
+            TypeDesc type = (TypeDesc)_contextModule.GetObject(handle);
+            ArraySignatureBuilder builder = new ArraySignatureBuilder();
+            builder.EmitTypeSignature(type, new ModuleToken(_contextModule, (mdToken)MetadataTokens.GetToken(handle)), this);
+            return builder.ToArray();
         }
 
         public byte[] GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
