@@ -179,14 +179,19 @@ See the LICENSE file in the project root for more information.
       <IlcArg Condition="$(ServerGarbageCollection) != ''" Include="--runtimeopt:RH_UseServerGC=1" />
     </ItemGroup>
 
-    <MakeDir Directories="$(NativeIntermediateOutputPath)" />
-    <WriteLinesToFile File="$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp" Lines="@(IlcArg)" Overwrite="true" />
+    <PropertyGroup>
+      <IlcResponseFolder>$(IntermediateOutputPath)</IlcResponseFolder>
+      <IlcResponseFile>$(IlcResponseFolder)%(ManagedBinary.Filename).ilc.rsp</IlcResponseFile>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(IlcResponseFolder)" />
+    <WriteLinesToFile File="$(IlcResponseFile)" Lines="@(IlcArg)" Overwrite="true" />
 
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(NativeObject)))" />
 
     <Message Text="Generating native code" Importance="high" />
 
-    <Exec Command="&quot;$(IlcPath)\tools\ilc&quot; @&quot;$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp&quot;" />
+    <Exec Command="&quot;$(IlcPath)\tools\ilc&quot; @&quot;$(IlcResponseFile)&quot;" />
   </Target>
 
   <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Windows.props" Condition="'$(TargetOS)' == 'Windows_NT'" />

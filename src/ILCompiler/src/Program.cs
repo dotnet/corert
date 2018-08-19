@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.CommandLine;
 using System.Runtime.InteropServices;
@@ -237,6 +238,9 @@ namespace ILCompiler
 
             if (_outputFilePath == null)
                 throw new CommandLineException("Output filename must be specified (/out <file>)");
+
+            // Create the output directory if it doesn't exist yet
+            Directory.CreateDirectory(Path.GetDirectoryName(_outputFilePath));
 
             //
             // Set target Architecture and OS
