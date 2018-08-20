@@ -22,6 +22,7 @@ namespace ILCompiler.DependencyAnalysis
         GetNonGCStaticBase,
         GetGCStaticBase,
         GetThreadStaticBase,
+        GetThreadNonGcStaticBase,
         DelegateCtor,
         ResolveVirtualFunction,
 
