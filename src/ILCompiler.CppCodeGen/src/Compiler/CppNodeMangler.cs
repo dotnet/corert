@@ -47,7 +47,8 @@ namespace ILCompiler
 
         public sealed override string MethodGenericDictionary(MethodDesc method)
         {
-            return GenericDictionaryNamePrefix + NameMangler.GetMangledMethodName(method);
+            return GenericDictionaryNamePrefix + NameMangler.GetMangledTypeName(method.OwningType) +
+                "_" + NameMangler.GetMangledMethodName(method);
         }
     }
 }
