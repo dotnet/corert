@@ -293,8 +293,9 @@ namespace ILCompiler.DependencyAnalysis
             ReadyToRunFixupKind fixupKind = ReadyToRunFixupKind.READYTORUN_FIXUP_ThreadStaticBaseGC;
             return new DelayLoadHelperImport(
                 this,
+                HelperImports,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
-                new TypeFixupSignature(this, fixupKind, type, GetTypeToken(token)));
+                new TypeFixupSignature(Resolver, fixupKind, type, GetTypeToken(token)));
         }
 
         private ISymbolNode CreateThreadNonGcStaticBaseHelper(TypeDesc type, ModuleToken token)
