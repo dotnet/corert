@@ -157,7 +157,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        private class TokenResolverProvider : ISignatureTypeProvider<bool, ModuleTokenResolver>
+        /// <summary>
+        /// As of 8/20/2018, recursive propagation of type information through
+        /// the composite signature tree is not needed for anything. We're adding
+        /// a dummy class to clearly indicate what aspects of the resolver need
+        /// changing if the propagation becomes necessary.
+        /// </summary>
+        private class DummyTypeInfo
+        {
+            public static DummyTypeInfo Instance = new DummyTypeInfo(); 
+        }
+
+        private class TokenResolverProvider : ISignatureTypeProvider<DummyTypeInfo, ModuleTokenResolver>
         {
             ModuleTokenResolver _resolver;
 
@@ -169,79 +180,79 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 _contextModule = contextModule;
             }
 
-            public bool GetArrayType(bool elementType, ArrayShape shape)
+            public DummyTypeInfo GetArrayType(DummyTypeInfo elementType, ArrayShape shape)
             {
                 throw new NotImplementedException();
             }
 
-            public bool GetByReferenceType(bool elementType)
+            public DummyTypeInfo GetByReferenceType(DummyTypeInfo elementType)
             {
                 throw new NotImplementedException();
             }
 
-            public bool GetFunctionPointerType(MethodSignature<bool> signature)
+            public DummyTypeInfo GetFunctionPointerType(MethodSignature<DummyTypeInfo> signature)
             {
                 throw new NotImplementedException();
             }
 
-            public bool GetGenericInstantiation(bool genericType, ImmutableArray<bool> typeArguments)
+            public DummyTypeInfo GetGenericInstantiation(DummyTypeInfo genericType, ImmutableArray<DummyTypeInfo> typeArguments)
             {
-                return true;
+                return DummyTypeInfo.Instance;
             }
 
-            public bool GetGenericMethodParameter(ModuleTokenResolver genericContext, int index)
+            public DummyTypeInfo GetGenericMethodParameter(ModuleTokenResolver genericContext, int index)
             {
                 throw new NotImplementedException();
             }
 
-            public bool GetGenericTypeParameter(ModuleTokenResolver genericContext, int index)
+            public DummyTypeInfo GetGenericTypeParameter(ModuleTokenResolver genericContext, int index)
             {
-                return false;
+                return DummyTypeInfo.Instance;
             }
 
-            public bool GetModifiedType(bool modifier, bool unmodifiedType, bool isRequired)
+            public DummyTypeInfo GetModifiedType(DummyTypeInfo modifier, DummyTypeInfo unmodifiedType, bool isRequired)
             {
-                return false;
+                return DummyTypeInfo.Instance;
             }
 
-            public bool GetPinnedType(bool elementType)
+            public DummyTypeInfo GetPinnedType(DummyTypeInfo elementType)
             {
-                return false;
+                return DummyTypeInfo.Instance;
             }
 
-            public bool GetPointerType(bool elementType)
+            public DummyTypeInfo GetPointerType(DummyTypeInfo elementType)
             {
-                return false;
+                return DummyTypeInfo.Instance;
             }
 
-            public bool GetPrimitiveType(PrimitiveTypeCode typeCode)
+            public DummyTypeInfo GetPrimitiveType(PrimitiveTypeCode typeCode)
             {
-                return false;
+                return DummyTypeInfo.Instance;
             }
 
-            public bool GetSZArrayType(bool elementType)
+            public DummyTypeInfo GetSZArrayType(DummyTypeInfo elementType)
             {
-                return false;
+                return DummyTypeInfo.Instance;
             }
 
-            public bool GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
+            public DummyTypeInfo GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
             {
                 // Type definition tokens outside of the versioning bubble are useless.
-                return false;
+                return DummyTypeInfo.Instance;
             }
 
-            public bool GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
+            public DummyTypeInfo GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
             {
                 _resolver.AddModuleTokenForType((TypeDesc)_contextModule.GetObject(handle), new ModuleToken(_contextModule, handle));
-                return true;
+                return DummyTypeInfo.Instance;
             }
 
-            public bool GetTypeFromSpecification(MetadataReader reader, ReadyToRunCodegenNodeFactory genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
+            public DummyTypeInfo GetTypeFromSpecification(MetadataReader reader, ReadyToRunCodegenNodeFactory genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
             {
                 throw new NotImplementedException();
             }
 
-            public bool GetTypeFromSpecification(MetadataReader reader, ModuleTokenResolver genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
+            public DummyTypeInfo GetTypeFromSpecification(MetadataReader reader, ModuleTokenResolver genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
             {
                 throw new NotImplementedException();
             }
