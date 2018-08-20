@@ -105,12 +105,7 @@ namespace Internal.Runtime.TypeLoader
                 return (IntPtr)(_moduleHandle.ConvertRVAToPointer(rva));
             }
 #else
-            if (index >= _elementsCount)
-                throw new BadImageFormatException();
-
-            // TODO: indirection through IAT
-            int* pRelPtr32 = &((int*)_elements)[index];
-            return (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
+            return GetAddressFromIndex(index);
 #endif
         }
 
@@ -128,12 +123,7 @@ namespace Internal.Runtime.TypeLoader
                 return (IntPtr)(_moduleHandle.ConvertRVAToPointer(rva));
             }
 #else
-            if (index >= _elementsCount)
-                throw new BadImageFormatException();
-
-            // TODO: indirection through IAT
-            int* pRelPtr32 = &((int*)_elements)[index];
-            return (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
+            return GetAddressFromIndex(index);
 #endif
         }
 
@@ -155,14 +145,19 @@ namespace Internal.Runtime.TypeLoader
         }
 
 #if !PROJECTN
-        unsafe public IntPtr GetFieldAddressFromIndex(uint index)
+        unsafe public IntPtr GetAddressFromIndex(uint index)
         {
             if (index >= _elementsCount)
                 throw new BadImageFormatException();
 
             // TODO: indirection through IAT
-            int* pRelPtr32 = &((int*)_elements)[index];
-            return (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
+            if (EEType.SupportsRelativePointers)
+            {
+                int* pRelPtr32 = &((int*)_elements)[index];
+                return (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
+            }
+
+            return (IntPtr)(((void**)_elements)[index]);
         }
 #endif
 

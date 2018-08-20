@@ -240,7 +240,7 @@ namespace Internal.Runtime.TypeLoader
                                 fieldOffset = (int)externalReferences.GetRvaFromIndex(entryParser.GetUnsigned());
 #else
                                 fieldOffset = 0;
-                                fieldAddressCookie = externalReferences.GetFieldAddressFromIndex(entryParser.GetUnsigned());
+                                fieldAddressCookie = externalReferences.GetAddressFromIndex(entryParser.GetUnsigned());
 
                                 if((entryFlags & FieldTableFlags.IsGcSection) != 0)
                                     fieldOffset = (int)entryParser.GetUnsigned();

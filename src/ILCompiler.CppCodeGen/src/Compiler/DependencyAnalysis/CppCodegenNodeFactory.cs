@@ -28,6 +28,14 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
         {
+            if (method.IsInternalCall)
+            {
+                if (method.IsArrayAddressMethod())
+                {
+                    return MethodEntrypoint(((ArrayType)method.OwningType).GetArrayMethod(ArrayMethodKind.AddressWithHiddenArg));
+                }
+            }
+
             if (CompilationModuleGroup.ContainsMethodBody(method, false))
             {
                 return new CppMethodCodeNode(method);

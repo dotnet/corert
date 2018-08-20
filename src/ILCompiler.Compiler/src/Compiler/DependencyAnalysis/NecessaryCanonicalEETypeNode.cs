@@ -12,14 +12,14 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// The node is used in ProjectX to represent a canonical type that does not have a vtable.
     /// </summary>
-    internal sealed class NecessaryCanonicalEETypeNode : EETypeNode
+    public sealed class NecessaryCanonicalEETypeNode : EETypeNode
     {
         public NecessaryCanonicalEETypeNode(NodeFactory factory, TypeDesc type) : base(factory, type)
         {
             Debug.Assert(!type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
             Debug.Assert(type.IsCanonicalSubtype(CanonicalFormKind.Any));
             Debug.Assert(type == type.ConvertToCanonForm(CanonicalFormKind.Specific));
-            Debug.Assert(!type.IsMdArray);
+            Debug.Assert(!type.IsMdArray || factory.Target.Abi == TargetAbi.CppCodegen);
         }
 
         protected override ISymbolNode GetBaseTypeNode(NodeFactory factory)

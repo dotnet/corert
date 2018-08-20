@@ -14,6 +14,8 @@ using ILCompiler.CppCodeGen;
 
 using ILCompiler.DependencyAnalysis;
 
+using FatFunctionPointerConstants = Internal.Runtime.FatFunctionPointerConstants;
+
 namespace Internal.IL
 {
     internal partial class ILImporter
@@ -35,6 +37,7 @@ namespace Internal.IL
         private TypeDesc _thisType;
 
         private MethodIL _methodIL;
+        private MethodIL _canonMethodIL;
         private byte[] _ilBytes;
         private LocalVariableDefinition[] _locals;
 
@@ -118,12 +121,25 @@ namespace Internal.IL
             if (!_methodSignature.IsStatic)
                 _thisType = method.OwningType;
 
-            _methodIL = methodIL;
+            _canonMethodIL = methodIL;
 
-            _ilBytes = _methodIL.GetILBytes();
-            _locals = _methodIL.GetLocals();
+            // Get the runtime determined method IL so that this works right in shared code
+            // and tokens in shared code resolve to runtime determined types.
+            MethodIL uninstantiatiedMethodIL = methodIL.GetMethodILDefinition();
+            if (methodIL != uninstantiatiedMethodIL)
+            {
+                MethodDesc sharedMethod = method.GetSharedRuntimeFormMethodTarget();
+                _methodIL = new InstantiatedMethodIL(sharedMethod, uninstantiatiedMethodIL);
+            }
+            else
+            {
+                _methodIL = methodIL;
+            }
 
-            var ilExceptionRegions = _methodIL.GetExceptionRegions();
+            _ilBytes = methodIL.GetILBytes();
+            _locals = methodIL.GetLocals();
+
+            var ilExceptionRegions = methodIL.GetExceptionRegions();
             _exceptionRegions = new ExceptionRegion[ilExceptionRegions.Length];
             for (int i = 0; i < ilExceptionRegions.Length; i++)
             {
@@ -183,6 +199,35 @@ namespace Internal.IL
             }
 
             _parameterIndexToNameMap = parameterIndexToNameMap;
+        }
+
+        private ISymbolNode GetGenericLookupHelper(ReadyToRunHelperId helperId, object helperArgument)
+        {
+            if (_method.RequiresInstMethodDescArg())
+            {
+                return _nodeFactory.ReadyToRunHelperFromDictionaryLookup(helperId, helperArgument, _method);
+            }
+            else
+            {
+                Debug.Assert(_method.RequiresInstMethodTableArg() || _method.AcquiresInstMethodTableFromThis());
+                return _nodeFactory.ReadyToRunHelperFromTypeLookup(helperId, helperArgument, _method.OwningType);
+            }
+        }
+
+        private string GetGenericContext()
+        {
+            Debug.Assert(_method.IsSharedByGenericInstantiations);
+
+            if (_method.AcquiresInstMethodTableFromThis())
+            {
+                return String.Concat(
+                    "*(void **)",
+                    GetVarName(0, true));
+            }
+            else
+            {
+                return _writer.GetCppHiddenParam();
+            }
         }
 
         private StackValueKind GetStackValueKind(TypeDesc type)
@@ -300,9 +345,19 @@ namespace Internal.IL
             ConstantEntry constant = srcEntry as ConstantEntry;
             if ((constant != null) && (constant.IsCastNecessary(destType)) || !destType.IsValueType || destType != srcEntry.Type)
             {
-                Append("(");
-                Append(GetSignatureTypeNameAndAddReference(destType));
-                Append(")");
+                if (srcEntry.Kind == StackValueKind.ValueType)
+                {
+                    Append("*(");
+                    Append(GetSignatureTypeNameAndAddReference(destType));
+                    Append("*");
+                    Append(")&");
+                }
+                else
+                {
+                    Append("(");
+                    Append(GetSignatureTypeNameAndAddReference(destType));
+                    Append(")");
+                }
             }
         }
 
@@ -460,6 +515,72 @@ namespace Internal.IL
             }
         }
 
+        private string GetSymbolNodeName(ISymbolNode node)
+        {
+            return node.GetMangledName(_nodeFactory.NameMangler).Replace("::", "_");
+        }
+
+        private void AppendMethodGenericDictionary(MethodDesc method)
+        {
+            ISymbolNode node = _nodeFactory.MethodGenericDictionary(method);
+            _dependencies.Add(node);
+
+            Append(GetSymbolNodeName(node));
+        }
+
+        private void AppendRuntimeMethodHandle(MethodDesc method)
+        {
+            ISymbolNode node = _nodeFactory.RuntimeMethodHandle(method);
+            _dependencies.Add(node);
+
+            Append(_writer.GetCppSymbolNodeName(_nodeFactory, node));
+        }
+
+        private void AppendFatFunctionPointer(MethodDesc method, bool isUnboxingStub = false)
+        {
+            ISymbolNode node = _nodeFactory.FatFunctionPointer(method, isUnboxingStub);
+            _dependencies.Add(node);
+
+            Append(_writer.GetCppSymbolNodeName(_nodeFactory, node));
+        }
+
+        private string GetGenericLookupHelperAndAddReference(ReadyToRunHelperId helperId, object helperArgument)
+        {
+            ISymbolNode node = GetGenericLookupHelper(helperId, helperArgument);
+            _dependencies.Add(node);
+
+            return _writer.GetCppReadyToRunGenericHelperNodeName(_nodeFactory, node as ReadyToRunGenericHelperNode);
+        }
+
+        private void AppendStaticFieldGenericLookupHelperAndAddReference(FieldDesc field)
+        {
+            Debug.Assert(field.IsStatic);
+
+            ReadyToRunHelperId helperId;
+            if (field.IsThreadStatic)
+            {
+                helperId = ReadyToRunHelperId.GetThreadStaticBase;
+            }
+            else if (field.HasGCStaticBase)
+            {
+                helperId = ReadyToRunHelperId.GetGCStaticBase;
+            }
+            else
+            {
+                helperId = ReadyToRunHelperId.GetNonGCStaticBase;
+            }
+
+            Append(GetGenericLookupHelperAndAddReference(helperId, field.OwningType));
+        }
+
+        private void AppendMethodAndAddReference(MethodDesc method, bool isUnboxingStub = false)
+        {
+            ISymbolNode node = _nodeFactory.MethodEntrypoint(method, isUnboxingStub);
+            _dependencies.Add(node);
+
+            Append(GetSymbolNodeName(node));
+        }
+
         private StackEntry NewSpillSlot(StackEntry entry)
         {
             if (_spillSlots == null)
@@ -575,6 +696,8 @@ namespace Internal.IL
 
         private TypeDesc GetVarType(int index, bool argument)
         {
+            TypeDesc type;
+
             if (argument)
             {
                 if (_thisType != null)
@@ -582,15 +705,18 @@ namespace Internal.IL
                 if (index == -1)
                 {
                     if (_thisType.IsValueType)
-                        return _thisType.MakeByRefType();
-                    return _thisType;
+                        type = _thisType.MakeByRefType();
+                    else
+                        type = _thisType;
                 }
-                else return _methodSignature[index];
+                else type = _methodSignature[index];
             }
             else
             {
-                return _locals[index].Type;
+                type = _locals[index].Type;
             }
+
+            return _writer.ConvertToCanonFormIfNecessary(type, CanonicalFormKind.Specific);
         }
 
         private TypeDesc GetWellKnownType(WellKnownType wellKnownType)
@@ -600,7 +726,7 @@ namespace Internal.IL
 
         private TypeDesc ResolveTypeToken(int token)
         {
-            return (TypeDesc)_methodIL.GetObject(token);
+            return (TypeDesc)_canonMethodIL.GetObject(token);
         }
 
         private void MarkInstructionBoundary()
@@ -636,13 +762,13 @@ namespace Internal.IL
             for (int i = 0; i < methodCodeNodeNeedingCode.Method.Signature.Length; i++)
             {
                 var parameterType = methodCodeNodeNeedingCode.Method.Signature[i];
-                AddTypeReference(parameterType, false);
+                AddTypeReference(_writer.ConvertToCanonFormIfNecessary(parameterType, CanonicalFormKind.Specific), false);
             }
 
             var returnType = methodCodeNodeNeedingCode.Method.Signature.ReturnType;
             if (!returnType.IsByRef)
             {
-                AddTypeReference(returnType, true);
+                AddTypeReference(_writer.ConvertToCanonFormIfNecessary(returnType, CanonicalFormKind.Specific), true);
             }
             var owningType = methodCodeNodeNeedingCode.Method.OwningType;
 
@@ -682,14 +808,15 @@ namespace Internal.IL
             bool initLocals = _methodIL.IsInitLocals;
             for (int i = 0; i < _locals.Length; i++)
             {
+                TypeDesc localType = _writer.ConvertToCanonFormIfNecessary(_locals[i].Type, CanonicalFormKind.Specific);
+
                 AppendLine();
-                Append(GetSignatureTypeNameAndAddReference(_locals[i].Type));
+                Append(GetSignatureTypeNameAndAddReference(localType));
 
                 Append(" ");
                 Append(GetVarName(i, false));
                 if (initLocals)
                 {
-                    TypeDesc localType = _locals[i].Type;
                     if (localType.IsValueType && !localType.IsPrimitive && !localType.IsEnum)
                     {
                         AppendSemicolon();
@@ -882,19 +1009,32 @@ namespace Internal.IL
 
         private void ImportCasting(ILOpcode opcode, int token)
         {
-            TypeDesc type = (TypeDesc)_methodIL.GetObject(token);
+            TypeDesc runtimeDeterminedType = (TypeDesc)_methodIL.GetObject(token);
+            TypeDesc type = (TypeDesc)_canonMethodIL.GetObject(token);
+            TypeDesc canonType = _writer.ConvertToCanonFormIfNecessary(type, CanonicalFormKind.Specific);
 
             var value = _stack.Pop();
-            PushTemp(StackValueKind.ObjRef, type);
+            PushTemp(StackValueKind.ObjRef, canonType);
 
-            AddTypeReference(type, false);
+            AddTypeReference(canonType, false);
 
             Append(opcode == ILOpcode.isinst ? "__isinst" : "__castclass");
             Append("(");
             Append(value);
             Append(", ");
-            Append(_writer.GetCppTypeName(type));
-            Append("::__getMethodTable())");
+            if (runtimeDeterminedType.IsRuntimeDeterminedSubtype)
+            {
+                Append("(MethodTable *)");
+                Append(GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, runtimeDeterminedType));
+                Append("(");
+                Append(GetGenericContext());
+                Append("))");
+            }
+            else
+            {
+                Append(_writer.GetCppTypeName(runtimeDeterminedType));
+                Append("::__getMethodTable())");
+            }
             AppendSemicolon();
         }
 
@@ -973,7 +1113,21 @@ namespace Internal.IL
                     {
                         var typeHandleSlot = (LdTokenEntry<TypeDesc>)_stack.Pop();
                         TypeDesc typeOfEEType = typeHandleSlot.LdToken;
-                        PushExpression(StackValueKind.NativeInt, string.Concat("((intptr_t)", _writer.GetCppTypeName(typeOfEEType), "::__getMethodTable())"));
+
+                        string expr;
+
+                        if (typeOfEEType.IsRuntimeDeterminedSubtype)
+                        {
+                            expr = string.Concat(
+                                "(intptr_t)",
+                                GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, typeOfEEType),
+                                "(", GetGenericContext(), ")");
+                        }
+                        else
+                        {
+                            expr = string.Concat("((intptr_t)", _writer.GetCppTypeName(typeOfEEType), "::__getMethodTable())");
+                        }
+                        PushExpression(StackValueKind.NativeInt, expr);
                         return true;
                     }
                     break;
@@ -1015,13 +1169,15 @@ namespace Internal.IL
             return false;
         }
 
-        private void ImportNewObjArray(TypeDesc owningType, MethodDesc method)
+        private void ImportNewObjArray(TypeDesc owningType, MethodDesc runtimeMethod)
         {
             AppendLine();
 
+            TypeDesc canonOwningType = _writer.ConvertToCanonFormIfNecessary(owningType, CanonicalFormKind.Specific);
+
             string dimensionsTemp = NewTempName();
             Append("int32_t " + dimensionsTemp + "[] = { ");
-            int argumentsCount = method.Signature.Length;
+            int argumentsCount = runtimeMethod.Signature.Length;
             for (int i = 0; i < argumentsCount; i++)
             {
                 Append("(int32_t)(");
@@ -1032,17 +1188,30 @@ namespace Internal.IL
 
             Append("};");
 
-            PushTemp(StackValueKind.ObjRef, owningType);
+            PushTemp(StackValueKind.ObjRef, canonOwningType);
 
-            AddTypeReference(owningType, true);
+            AddTypeReference(canonOwningType, true);
 
             MethodDesc helper = _typeSystemContext.GetHelperEntryPoint("ArrayHelpers", "NewObjArray");
             AddMethodReference(helper);
 
             Append(_writer.GetCppTypeName(helper.OwningType) + "::" + _writer.GetCppMethodName(helper));
             Append("((intptr_t)");
-            Append(_writer.GetCppTypeName(method.OwningType));
-            Append("::__getMethodTable(),");
+
+            if (!runtimeMethod.OwningType.IsRuntimeDeterminedSubtype)
+            {
+                Append(_writer.GetCppTypeName(runtimeMethod.OwningType));
+                Append("::__getMethodTable(),");
+            }
+            else
+            {
+                Append("(MethodTable *)");
+                Append(GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, runtimeMethod.OwningType));
+                Append("(");
+                Append(GetGenericContext());
+                Append("),");
+            }
+
             Append(argumentsCount.ToStringInvariant());
             Append(",");
             Append(dimensionsTemp);
@@ -1055,9 +1224,11 @@ namespace Internal.IL
             bool callViaSlot = false;
             bool delegateInvoke = false;
             bool callViaInterfaceDispatch = false;
+            bool callViaGVMDispatch = false;
             DelegateCreationInfo delegateInfo = null;
 
-            MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
+            var runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
+            var method = (MethodDesc)_canonMethodIL.GetObject(token);
 
             if (method.IsIntrinsic)
             {
@@ -1077,12 +1248,16 @@ namespace Internal.IL
             }
 
             TypeDesc constrained = null;
+            bool resolvedConstraint = false;
             if (opcode != ILOpcode.newobj)
             {
                 if ((_pendingPrefix & Prefix.Constrained) != 0 && opcode == ILOpcode.callvirt)
                 {
                     _pendingPrefix &= ~Prefix.Constrained;
                     constrained = _constrained;
+                    if (constrained.IsRuntimeDeterminedSubtype)
+                        constrained = constrained.ConvertToCanonForm(CanonicalFormKind.Specific);
+
                     bool forceUseRuntimeLookup;
                     var constrainedType = constrained.GetClosestDefType();
                     MethodDesc directMethod = constrainedType.TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup);
@@ -1094,9 +1269,10 @@ namespace Internal.IL
                     {
                         method = directMethod;
                         opcode = ILOpcode.call;
+                        resolvedConstraint = true;
                     }
-                    //If constrainedType is a value type and constrainedType does not implement method (directMethod == null) then ptr is 
-                    //dereferenced, boxed, and passed as the 'this' pointer to the callvirt  method instruction. 
+                    //If constrainedType is a value type and constrainedType does not implement method (directMethod == null) then ptr is
+                    //dereferenced, boxed, and passed as the 'this' pointer to the callvirt  method instruction.
                     else if (constrainedType.IsValueType)
                     {
                         int thisPosition = _stack.Top - (method.Signature.Length + 1);
@@ -1112,11 +1288,15 @@ namespace Internal.IL
             TypeDesc owningType = method.OwningType;
 
             TypeDesc retType = null;
+            TypeDesc runtimeDeterminedRetType = null;
+
+            string delegateCtorHelper = null;
 
             {
                 if (opcode == ILOpcode.newobj)
                 {
                     retType = owningType;
+                    runtimeDeterminedRetType = runtimeDeterminedMethod.OwningType;
 
                     if (owningType.IsString)
                     {
@@ -1128,13 +1308,20 @@ namespace Internal.IL
                     }
                     else if (owningType.IsArray)
                     {
-                        ImportNewObjArray(owningType, method);
+                        ImportNewObjArray(owningType, runtimeDeterminedMethod);
                         return;
                     }
                     else if (owningType.IsDelegate)
                     {
-                        delegateInfo = _compilation.GetDelegateCtor(owningType, ((LdTokenEntry<MethodDesc>)_stack.Peek()).LdToken, followVirtualDispatch: false);
+                        TypeDesc canonDelegateType = owningType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                        LdFtnTokenEntry ldFtnTokenEntry = (LdFtnTokenEntry)_stack.Peek();
+                        delegateInfo = _compilation.GetDelegateCtor(canonDelegateType, ldFtnTokenEntry.LdToken, followVirtualDispatch: false);
                         method = delegateInfo.Constructor.Method;
+
+                        if (delegateInfo.NeedsRuntimeLookup && !ldFtnTokenEntry.IsVirtual)
+                        {
+                            delegateCtorHelper = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.DelegateCtor, delegateInfo);
+                        }
                     }
                 }
                 else
@@ -1148,6 +1335,16 @@ namespace Internal.IL
                 }
             }
 
+            bool exactContextNeedsRuntimeLookup;
+            if (method.HasInstantiation)
+            {
+                exactContextNeedsRuntimeLookup = method.IsSharedByGenericInstantiations;
+            }
+            else
+            {
+                exactContextNeedsRuntimeLookup = method.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any);
+            }
+
             if (opcode == ILOpcode.callvirt)
             {
                 // TODO: Null checks
@@ -1158,37 +1355,48 @@ namespace Internal.IL
                     if (!method.IsNewSlot)
                         throw new NotImplementedException();
 
-                    if (method.OwningType.IsInterface)
+                    if (method.HasInstantiation)
+                        callViaGVMDispatch = true;
+                    else if (method.OwningType.IsInterface)
                         callViaInterfaceDispatch = true;
                     else
                         callViaSlot = true;
 
-                    if (!_nodeFactory.VTable(method.OwningType).HasFixedSlots)
+                    if (!callViaGVMDispatch && !_nodeFactory.VTable(method.OwningType).HasFixedSlots)
                         _dependencies.Add(_nodeFactory.VirtualMethodUse(method));
+                    else if (callViaGVMDispatch)
+                        _dependencies.Add(_nodeFactory.GVMDependencies(method));
                 }
             }
 
-            if (!callViaSlot && !delegateInvoke && !callViaInterfaceDispatch)
-                AddMethodReference(method);
+            var canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+            if (!callViaSlot && !delegateInvoke && !callViaInterfaceDispatch && !callViaGVMDispatch)
+                AddMethodReference(canonMethod);
+
+            var canonMethodSignature = canonMethod.Signature;
+
+            if (retType == null)
+                retType = method.Signature.ReturnType;
+
+            retType = _writer.ConvertToCanonFormIfNecessary(retType, CanonicalFormKind.Specific);
 
             if (opcode == ILOpcode.newobj)
                 AddTypeReference(retType, true);
 
-            var methodSignature = method.Signature;
-
-            if (retType == null)
-                retType = methodSignature.ReturnType;
-
             string temp = null;
             StackValueKind retKind = StackValueKind.Unknown;
             var needNewLine = false;
+            string gvmSlotVarName = null;
 
             if (callViaInterfaceDispatch)
             {
-                ExpressionEntry v = (ExpressionEntry)_stack[_stack.Top - (methodSignature.Length + 1)];
+                ExpressionEntry v = (ExpressionEntry)_stack[_stack.Top - (canonMethodSignature.Length + 1)];
 
-                string typeDefName = _writer.GetCppMethodName(method);
-                _writer.AppendSignatureTypeDef(_builder, typeDefName, method.Signature, method.OwningType);
+                string typeDefName = _writer.GetCppTypeName(canonMethod.OwningType) + "_" + _writer.GetCppMethodName(canonMethod);
+                typeDefName = typeDefName.Replace("::", "_");
+                _writer.AppendSignatureTypeDef(_builder, typeDefName, canonMethodSignature,
+                    canonMethod.OwningType, canonMethod.RequiresInstMethodDescArg());
 
                 string functionPtr = NewTempName();
                 AppendEmptyLine();
@@ -1196,32 +1404,142 @@ namespace Internal.IL
                 Append("void*");
                 Append(functionPtr);
                 Append(" = (void*) ");
-                GetFunctionPointerForInterfaceMethod(method, v, typeDefName);
+                GetFunctionPointerForInterfaceMethod(runtimeDeterminedMethod, v, typeDefName);
 
                 PushExpression(StackValueKind.ByRef, functionPtr);
             }
+            else if (callViaGVMDispatch)
+            {
+                ExpressionEntry v = (ExpressionEntry)_stack[_stack.Top - (canonMethodSignature.Length + 1)];
+
+                MethodDesc helper = _typeSystemContext.SystemModule.GetKnownType("System.Runtime", "TypeLoaderExports").GetKnownMethod("GVMLookupForSlot", null);
+                AddMethodReference(helper);
+
+                gvmSlotVarName = NewTempName();
+                AppendEmptyLine();
+
+                Append("intptr_t ");
+                Append(gvmSlotVarName);
+                Append(" = ");
+                Append(_writer.GetCppTypeName(helper.OwningType) + "::" + _writer.GetCppMethodName(helper));
+                Append("(");
+                Append("(::System_Private_CoreLib::System::Object*)");
+                Append(v.Name);
+                Append(", ");
+
+                if (exactContextNeedsRuntimeLookup)
+                {
+                    Append(GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.MethodHandle, runtimeDeterminedMethod));
+                    Append("(");
+                    Append(GetGenericContext());
+                    Append(")");
+                }
+                else
+                {
+                    AppendRuntimeMethodHandle(runtimeDeterminedMethod);
+                    Append("()");
+                }
+                Append(");");
+
+                string functionPtr = NewTempName();
+
+                Append("intptr_t ");
+                Append(functionPtr);
+                AppendSemicolon();
+
+                Append("if (");
+                Append(gvmSlotVarName);
+                Append(" & ");
+                Append(FatFunctionPointerConstants.Offset.ToString());
+                Append(") {");
+                Append(functionPtr);
+                Append(" = *(intptr_t*)(");
+                Append(gvmSlotVarName);
+                Append(" - ");
+                Append(FatFunctionPointerConstants.Offset.ToString());
+                Append(");} else {");
+                Append(functionPtr);
+                Append(" = ");
+                Append(gvmSlotVarName);
+                Append(";};");
+
+                PushExpression(StackValueKind.ValueType, functionPtr);
+            }
+
+            string arrayAddressMethodHiddenArg = null;
+
+            if (canonMethod.IsArrayAddressMethod())
+            {
+                arrayAddressMethodHiddenArg = NewTempName();
+
+                Append("::System_Private_CoreLib::System::EETypePtr ");
+                Append(arrayAddressMethodHiddenArg);
+                Append(" = {(::System_Private_CoreLib::Internal::Runtime::EEType*)");
+
+                TypeDesc type;
+
+                if (!resolvedConstraint)
+                    type = runtimeDeterminedMethod.OwningType;
+                else
+                    type = _constrained;
+
+                if (exactContextNeedsRuntimeLookup)
+                {
+                    Append(GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, type));
+
+                    Append("(");
+                    Append(GetGenericContext());
+                    Append(")");
+                }
+                else
+                {
+                    Append(_writer.GetCppTypeName(type));
+                    Append("::__getMethodTable()");
+
+                    AddTypeReference(type, true);
+                }
+
+                Append("};");
+            }
+
+            TypeDesc canonRetType = null;
 
             if (!retType.IsVoid)
             {
-                retKind = GetStackValueKind(retType);
+                if (opcode == ILOpcode.newobj)
+                {
+                    canonRetType = retType;
+                }
+                else
+                {
+                    canonRetType = _writer.ConvertToCanonFormIfNecessary(canonMethodSignature.ReturnType, CanonicalFormKind.Specific);
+                }
+
+                retKind = GetStackValueKind(canonRetType);
                 temp = NewTempName();
 
                 AppendLine();
-                Append(GetStackValueKindCPPTypeName(retKind, retType));
+                Append(GetStackValueKindCPPTypeName(retKind, canonRetType));
                 Append(" ");
                 Append(temp);
-                if (retType.IsValueType && opcode == ILOpcode.newobj)
+                if (canonRetType.IsValueType && opcode == ILOpcode.newobj || callViaGVMDispatch)
                 {
-                    Append(";");
-                    needNewLine = true;
+                    AppendSemicolon();
+
+                    if (!callViaGVMDispatch)
+                        needNewLine = true;
                 }
                 else
                 {
                     Append(" = ");
 
-                    if (retType.IsPointer)
+                    if (canonRetType.IsPointer)
                     {
                         Append("(intptr_t)");
+                    }
+                    else
+                    {
+                        AppendCastIfNecessary(retKind, canonRetType);
                     }
                 }
             }
@@ -1229,7 +1547,7 @@ namespace Internal.IL
             {
                 needNewLine = true;
             }
-            AddTypeReference(method.OwningType, true);
+            AddTypeReference(canonMethod.OwningType, true);
 
             if (opcode == ILOpcode.newobj)
             {
@@ -1239,8 +1557,23 @@ namespace Internal.IL
                     if (needNewLine)
                         AppendLine();
                     Append("__allocate_object(");
-                    Append(_writer.GetCppTypeName(retType));
-                    Append("::__getMethodTable())");
+
+                    if (runtimeDeterminedRetType.IsRuntimeDeterminedSubtype)
+                    {
+                        Append("(MethodTable *)");
+                        Append(GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, runtimeDeterminedRetType));
+                        Append("(");
+                        Append(GetGenericContext());
+                        Append("))");
+                    }
+                    else
+                    {
+                        Append(_writer.GetCppTypeName(runtimeDeterminedRetType));
+                        Append("::__getMethodTable())");
+
+                        AddTypeReference(runtimeDeterminedRetType, true);
+                    }
+
                     AppendSemicolon();
                     needNewLine = true;
 
@@ -1269,12 +1602,13 @@ namespace Internal.IL
 
             if (callViaSlot || delegateInvoke)
             {
-                ExpressionEntry v = (ExpressionEntry)_stack[_stack.Top - (methodSignature.Length + 1)];
+                ExpressionEntry v = (ExpressionEntry)_stack[_stack.Top - (canonMethodSignature.Length + 1)];
+
                 Append("(*");
-                Append(_writer.GetCppTypeName(method.OwningType));
+                Append(_writer.GetCppTypeName(canonMethod.OwningType));
                 Append("::");
                 Append(delegateInvoke ? "__invoke__" : "__getslot__");
-                Append(_writer.GetCppMethodName(method));
+                Append(_writer.GetCppMethodName(canonMethod));
                 Append("(");
                 Append(v);
                 Append("))");
@@ -1289,54 +1623,268 @@ namespace Internal.IL
             else if (callViaInterfaceDispatch)
             {
                 Append("((");
-                Append(_writer.GetCppMethodName(method));
+                Append(_writer.GetCppTypeName(canonMethod.OwningType).Replace("::", "_"));
+                Append("_");
+                Append(_writer.GetCppMethodName(canonMethod));
                 Append(")");
                 ExpressionEntry v = (ExpressionEntry)_stack.Pop();
                 Append(v);
                 Append(")");
             }
-            else
+            else if (delegateCtorHelper != null)
             {
-                Append(_writer.GetCppTypeName(method.OwningType));
+                Append(delegateCtorHelper);
+            }
+            else if (!callViaGVMDispatch)
+            {
+                Append(_writer.GetCppTypeName(canonMethod.OwningType));
                 Append("::");
-                Append(_writer.GetCppMethodName(method));
+                Append(_writer.GetCppMethodName(canonMethod));
             }
 
             TypeDesc thisArgument = null;
-            Append("(");
-            if (opcode == ILOpcode.newobj)
+            if (opcode != ILOpcode.newobj && !canonMethodSignature.IsStatic)
             {
-                Append("(");
-                if (retType.IsValueType)
+                thisArgument = canonMethod.OwningType;
+                if (thisArgument.IsValueType)
+                    thisArgument = thisArgument.MakeByRefType();
+            }
+
+            if (callViaGVMDispatch)
+            {
+                string typeDefName = _writer.GetCppTypeName(canonMethod.OwningType) + "_" + _writer.GetCppMethodName(canonMethod);
+                typeDefName = typeDefName.Replace("::", "_");
+
+                ExpressionEntry v = (ExpressionEntry)_stack.Pop();
+
+                Append("if (");
+                Append(gvmSlotVarName);
+                Append(" & ");
+                Append(FatFunctionPointerConstants.Offset.ToString());
+                Append(") {");
+
+                _writer.AppendSignatureTypeDef(_builder, typeDefName, canonMethodSignature,
+                    canonMethod.OwningType, true);
+
+                if (canonRetType != null && !canonRetType.IsValueType)
                 {
-                    Append(_writer.GetCppSignatureTypeName(retType.MakeByRefType()));
-                    Append(")");
-                    Append("&" + temp);
-                }
-                else
-                {
-                    Append(_writer.GetCppSignatureTypeName(retType));
-                    Append(")");
                     Append(temp);
+                    Append(" = ");
+
+                    if (canonRetType.IsPointer)
+                    {
+                        Append("(intptr_t)");
+                    }
+                    else
+                    {
+                        AppendCastIfNecessary(GetStackValueKind(canonRetType), canonRetType);
+                    }
                 }
-                if (methodSignature.Length > 0)
+
+                Append("((");
+                Append(_writer.GetCppTypeName(canonMethod.OwningType).Replace("::", "_"));
+                Append("_");
+                Append(_writer.GetCppMethodName(canonMethod));
+                Append(")");
+                Append(v);
+                Append(")(");
+
+                PassThisArgumentIfNeeded(canonMethodSignature, thisArgument);
+
+                if (thisArgument != null)
                     Append(", ");
+
+                Append("**(void***)(");
+                Append(gvmSlotVarName);
+                Append(" - ");
+                Append(FatFunctionPointerConstants.Offset.ToString());
+                Append(" + sizeof(void*))");
+
+                if (canonMethodSignature.Length > 0)
+                    Append(", ");
+
+                PassCallArguments(canonMethodSignature, thisArgument, false);
+
+                Append(");} else {");
+
+                _writer.AppendSignatureTypeDef(_builder, typeDefName, canonMethodSignature,
+                    canonMethod.OwningType, false);
+
+                if (canonRetType != null && !canonRetType.IsValueType)
+                {
+                    Append(temp);
+                    Append(" = ");
+
+                    if (canonRetType.IsPointer)
+                    {
+                        Append("(intptr_t)");
+                    }
+                    else
+                    {
+                        AppendCastIfNecessary(GetStackValueKind(canonRetType), canonRetType);
+                    }
+                }
+
+                Append("((");
+                Append(_writer.GetCppTypeName(canonMethod.OwningType).Replace("::", "_"));
+                Append("_");
+                Append(_writer.GetCppMethodName(canonMethod));
+                Append(")");
+                Append(v);
+                Append(")(");
+
+                PassThisArgumentIfNeeded(canonMethodSignature, thisArgument);
+
+                if (thisArgument != null && canonMethodSignature.Length > 0)
+                    Append(", ");
+
+                PassCallArguments(canonMethodSignature, thisArgument);
+
+                Append(");};");
             }
             else
             {
-                if (!methodSignature.IsStatic)
+                Append("(");
+
+                if (opcode == ILOpcode.newobj)
                 {
-                    thisArgument = owningType;
-                    if (thisArgument.IsValueType)
-                        thisArgument = thisArgument.MakeByRefType();
+                    if (delegateCtorHelper != null)
+                    {
+                        Append(GetGenericContext());
+                        Append(", ");
+                    }
+
+                    canonRetType = _writer.ConvertToCanonFormIfNecessary(canonMethod.OwningType, CanonicalFormKind.Specific);
+
+                    Append("(");
+                    if (canonRetType.IsValueType)
+                    {
+                        Append(_writer.GetCppSignatureTypeName(canonRetType.MakeByRefType()));
+                        Append(")");
+                        Append("&" + temp);
+                    }
+                    else
+                    {
+                        Append(_writer.GetCppSignatureTypeName(canonRetType));
+                        Append(")");
+                        Append(temp);
+                    }
+                    if (canonMethodSignature.Length > 0)
+                        Append(", ");
                 }
+
+                PassThisArgumentIfNeeded(canonMethodSignature, thisArgument);
+
+                if (thisArgument != null &&
+                    (canonMethod.IsArrayAddressMethod() || canonMethod.RequiresInstArg() || canonMethodSignature.Length > 0))
+                    Append(", ");
+
+                if (canonMethod.IsArrayAddressMethod())
+                {
+                    Append(arrayAddressMethodHiddenArg);
+
+                    if (canonMethodSignature.Length > 0)
+                        Append(", ");
+                }
+                else if (canonMethod.RequiresInstArg())
+                {
+                    if (exactContextNeedsRuntimeLookup)
+                    {
+                        if (!resolvedConstraint)
+                        {
+                            if (canonMethod.RequiresInstMethodDescArg())
+                            {
+                                Append(GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.MethodDictionary, runtimeDeterminedMethod));
+                            }
+                            else
+                            {
+                                Append(GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.OwningType));
+                            }
+
+                            Append("(");
+                            Append(GetGenericContext());
+                            Append(")");
+                        }
+                        else
+                        {
+                            Debug.Assert(canonMethod.RequiresInstMethodTableArg());
+
+                            if (canonMethod.RequiresInstMethodTableArg())
+                            {
+                                if (_constrained.IsRuntimeDeterminedSubtype)
+                                {
+                                    Append(GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, _constrained));
+
+                                    Append("(");
+                                    Append(GetGenericContext());
+                                    Append(")");
+                                }
+                                else
+                                {
+                                    Append(_writer.GetCppTypeName(_constrained));
+                                    Append("::__getMethodTable()");
+
+                                    AddTypeReference(_constrained, true);
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (canonMethod.RequiresInstMethodDescArg())
+                        {
+                            Append("&");
+                            AppendMethodGenericDictionary(method);
+                        }
+                        else
+                        {
+                            Append(_writer.GetCppTypeName(method.OwningType));
+                            Append("::__getMethodTable()");
+
+                            AddTypeReference(method.OwningType, true);
+                        }
+                    }
+
+                    if (canonMethodSignature.Length > 0)
+                        Append(", ");
+                }
+
+                PassCallArguments(canonMethodSignature, thisArgument);
+                Append(")");
             }
-            PassCallArguments(methodSignature, thisArgument);
-            Append(")");
 
             if (temp != null)
             {
                 Debug.Assert(retKind != StackValueKind.Unknown, "Valid return type");
+
+                if (opcode != ILOpcode.newobj &&
+                    retType != _writer.ConvertToCanonFormIfNecessary(canonMethodSignature.ReturnType, CanonicalFormKind.Specific))
+                {
+                    string retVar = temp;
+                    retKind = GetStackValueKind(retType);
+                    temp = NewTempName();
+
+                    AppendSemicolon();
+                    Append(GetStackValueKindCPPTypeName(retKind, retType));
+                    Append(" ");
+                    Append(temp);
+                    Append(" = ");
+
+                    if (retType.IsValueType && !retType.IsPrimitive)
+                    {
+                        Append("*(");
+                        Append(_writer.GetCppSignatureTypeName(retType));
+                        Append("*)&");
+                    }
+                    else
+                    {
+                        Append("(");
+                        Append(_writer.GetCppSignatureTypeName(retType));
+                        Append(")");
+                    }
+                    Append(retVar);
+                }
+
                 PushExpression(retKind, temp, retType);
             }
             AppendSemicolon();
@@ -1388,18 +1936,31 @@ namespace Internal.IL
 
             // Get EEType of interface
             Append("((::System_Private_CoreLib::Internal::Runtime::EEType *)(");
-            Append(_writer.GetCppTypeName(method.OwningType));
-            Append("::__getMethodTable()))");
+
+            if (method.OwningType.IsRuntimeDeterminedSubtype)
+            {
+                Append(GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, method.OwningType));
+                Append("(");
+                Append(GetGenericContext());
+                Append(")))");
+            }
+            else
+            {
+                Append(_writer.GetCppTypeName(method.OwningType));
+                Append("::__getMethodTable()))");
+            }
 
             Append(", ");
+
+            MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
             // Get slot of implementation
             Append("(uint16_t)");
             Append("(");
-            Append(_writer.GetCppTypeName(method.OwningType));
+            Append(_writer.GetCppTypeName(canonMethod.OwningType));
             Append("::");
             Append("__getslot__");
-            Append(_writer.GetCppMethodName(method));
+            Append(_writer.GetCppMethodName(canonMethod));
             Append("(");
             Append(v.Name);
             Append("))");
@@ -1407,35 +1968,44 @@ namespace Internal.IL
             Append("));");
         }
 
-        private void PassCallArguments(MethodSignature methodSignature, TypeDesc thisArgument)
+        private void PassThisArgumentIfNeeded(MethodSignature methodSignature, TypeDesc thisArgument)
+        {
+            if (thisArgument == null)
+                return;
+
+            int signatureLength = methodSignature.Length;
+            int argumentsCount = (thisArgument != null) ? (signatureLength + 1) : signatureLength;
+            int thisIndex = _stack.Top - argumentsCount;
+
+            var op = _stack[thisIndex];
+            AppendCastIfNecessary(_writer.ConvertToCanonFormIfNecessary(thisArgument, CanonicalFormKind.Specific), op);
+            Append(op);
+        }
+
+        private void PassCallArguments(MethodSignature methodSignature, TypeDesc thisArgument, bool clearStack = true)
         {
             int signatureLength = methodSignature.Length;
             int argumentsCount = (thisArgument != null) ? (signatureLength + 1) : signatureLength;
-            int startingIndex = _stack.Top - argumentsCount;
-            for (int i = 0; i < argumentsCount; i++)
+            int startingIndex = _stack.Top - signatureLength;
+
+            for (int i = 0; i < signatureLength; i++)
             {
                 var op = _stack[startingIndex + i];
-                int argIndex = signatureLength - (argumentsCount - i);
-                TypeDesc argType;
-                if (argIndex == -1)
-                {
-                    argType = thisArgument;
-                }
-                else
-                {
-                    argType = methodSignature[argIndex];
-                }
-                AppendCastIfNecessary(argType, op);
+
+                AppendCastIfNecessary(_writer.ConvertToCanonFormIfNecessary(methodSignature[i], CanonicalFormKind.Specific), op);
                 Append(op);
-                if (i + 1 != argumentsCount)
+
+                if (i != signatureLength - 1)
                     Append(", ");
             }
-            _stack.PopN(argumentsCount);
+
+            if (clearStack)
+                _stack.PopN(argumentsCount);
         }
 
         private void ImportCalli(int token)
         {
-            MethodSignature methodSignature = (MethodSignature)_methodIL.GetObject(token);
+            MethodSignature methodSignature = (MethodSignature)_canonMethodIL.GetObject(token);
 
             TypeDesc thisArgument = null;
             if (!methodSignature.IsStatic)
@@ -1444,9 +2014,6 @@ namespace Internal.IL
                 if (thisArgument.IsValueType)
                     thisArgument = thisArgument.MakeByRefType();
             }
-
-            string typeDefName = "__calli__" + token.ToStringInvariant("x8");
-            _writer.AppendSignatureTypeDef(_builder, typeDefName, methodSignature, thisArgument);
 
             TypeDesc retType = methodSignature.ReturnType;
             StackValueKind retKind = StackValueKind.Unknown;
@@ -1462,12 +2029,7 @@ namespace Internal.IL
                 Append(GetStackValueKindCPPTypeName(retKind, retType));
                 Append(" ");
                 Append(temp);
-                Append(" = ");
-
-                if (retType.IsPointer)
-                {
-                    Append("(intptr_t)");
-                }
+                AppendSemicolon();
             }
             else
             {
@@ -1475,68 +2037,223 @@ namespace Internal.IL
             }
 
             var fnPtrValue = _stack.Pop();
+
+            string fatPtr = NewTempName();
+
+            Append("intptr_t ");
+            Append(fatPtr);
+            Append(" = ");
+            Append(fnPtrValue);
+
+            AppendSemicolon();
+
+            Append("if (");
+            Append(fatPtr);
+            Append(" & ");
+            Append(FatFunctionPointerConstants.Offset.ToString());
+            Append(") {");
+            Append(fnPtrValue);
+            Append(" = *(intptr_t*)(");
+            Append(fatPtr);
+            Append(" - ");
+            Append(FatFunctionPointerConstants.Offset.ToString());
+            Append(")");
+
+            AppendSemicolon();
+
+            string typeDefName = "__calli__" + token.ToStringInvariant("x8");
+            _writer.AppendSignatureTypeDef(_builder, typeDefName, methodSignature, thisArgument, true);
+
+            if (!retType.IsVoid)
+            {
+                Append(temp);
+                Append(" = ");
+
+                if (retType.IsPointer)
+                {
+                    Append("(intptr_t)");
+                }
+            }
+
             Append("((");
             Append(typeDefName);
             Append(")");
             Append(fnPtrValue);
             Append(")(");
+
+            PassThisArgumentIfNeeded(methodSignature, thisArgument);
+
+            if (thisArgument != null)
+                Append(", ");
+
+            Append("**(void***)(");
+            Append(fatPtr);
+            Append(" - ");
+            Append(FatFunctionPointerConstants.Offset.ToString());
+            Append(" + sizeof(void*))");
+
+            if (methodSignature.Length > 0)
+                Append(", ");
+
+            PassCallArguments(methodSignature, thisArgument, false);
+            Append(")");
+
+            AppendSemicolon();
+
+            Append("} else {");
+
+            _writer.AppendSignatureTypeDef(_builder, typeDefName, methodSignature, thisArgument, false);
+
+            if (!retType.IsVoid)
+            {
+                Append(temp);
+                Append(" = ");
+
+                if (retType.IsPointer)
+                {
+                    Append("(intptr_t)");
+                }
+            }
+
+            Append("((");
+            Append(typeDefName);
+            Append(")");
+            Append(fnPtrValue);
+            Append(")(");
+            PassThisArgumentIfNeeded(methodSignature, thisArgument);
+
+            if (thisArgument != null && methodSignature.Length > 0)
+                Append(", ");
+
             PassCallArguments(methodSignature, thisArgument);
             Append(")");
+
+            AppendSemicolon();
+            Append("}");
+
+            AppendSemicolon();
 
             if (temp != null)
             {
                 Debug.Assert(retKind != StackValueKind.Unknown, "Valid return type");
                 PushExpression(retKind, temp, retType);
             }
-
-            AppendSemicolon();
         }
 
         private void ImportLdFtn(int token, ILOpcode opCode)
         {
-            MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
+            MethodDesc runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
+            MethodDesc method = ((MethodDesc)_canonMethodIL.GetObject(token));
+            MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            if (opCode == ILOpcode.ldvirtftn && method.IsVirtual && method.OwningType.IsInterface)
+            if (opCode == ILOpcode.ldvirtftn && canonMethod.IsVirtual && !canonMethod.HasInstantiation && canonMethod.OwningType.IsInterface)
             {
-                AddVirtualMethodReference(method);
-                var entry = new LdTokenEntry<MethodDesc>(StackValueKind.NativeInt, NewTempName(), method);
+                AddVirtualMethodReference(canonMethod);
+                var entry = new LdFtnTokenEntry(StackValueKind.NativeInt, NewTempName(), runtimeDeterminedMethod, true);
                 ExpressionEntry v = (ExpressionEntry)_stack.Pop();
-                string typeDefName = _writer.GetCppMethodName(method);
-                _writer.AppendSignatureTypeDef(_builder, typeDefName, method.Signature, method.OwningType);
+                string typeDefName = _writer.GetCppTypeName(canonMethod.OwningType) + "_" + _writer.GetCppMethodName(canonMethod);
+                typeDefName = typeDefName.Replace("::", "_");
+                _writer.AppendSignatureTypeDef(_builder, typeDefName, canonMethod.Signature, canonMethod.OwningType);
 
                 AppendEmptyLine();
 
                 PushTemp(entry);
                 Append("(intptr_t) ");
-                GetFunctionPointerForInterfaceMethod(method, v, typeDefName);
+                GetFunctionPointerForInterfaceMethod(runtimeDeterminedMethod, v, typeDefName);
             }
             else
             {
-                AddMethodReference(method);
-                var entry = new LdTokenEntry<MethodDesc>(StackValueKind.NativeInt, NewTempName(), method);
-                
-                if (opCode == ILOpcode.ldvirtftn && method.IsVirtual)
+                bool isVirtual = opCode == ILOpcode.ldvirtftn && canonMethod.IsVirtual;
+                var entry = new LdFtnTokenEntry(StackValueKind.NativeInt, NewTempName(), runtimeDeterminedMethod, isVirtual);
+
+                if (isVirtual)
                 {
                     //ldvirtftn requires an object instance, we have to pop one off the stack
                     //then call the associated getslot method passing in the object instance to get the real function pointer
                     ExpressionEntry v = (ExpressionEntry)_stack.Pop();
+
                     PushTemp(entry);
                     Append("(intptr_t)");
-                    Append(_writer.GetCppTypeName(method.OwningType));
-                    Append("::__getslot__");
-                    Append(_writer.GetCppMethodName(method));
-                    Append("(");
-                    Append(v.Name);
-                    Append(")");
+
+                    if (!canonMethod.HasInstantiation)
+                    {
+                        Append(_writer.GetCppTypeName(canonMethod.OwningType));
+                        Append("::__getslot__");
+                        Append(_writer.GetCppMethodName(canonMethod));
+                        Append("(");
+                        Append(v.Name);
+                        Append(")");
+                    }
+                    else
+                    {
+                        MethodDesc helper = _typeSystemContext.SystemModule.GetKnownType("System.Runtime", "TypeLoaderExports").GetKnownMethod("GVMLookupForSlot", null);
+                        AddMethodReference(helper);
+
+                        Append(_writer.GetCppTypeName(helper.OwningType) + "::" + _writer.GetCppMethodName(helper));
+                        Append("(");
+                        Append("(::System_Private_CoreLib::System::Object*)");
+                        Append(v.Name);
+                        Append(", ");
+
+                        if (method.IsSharedByGenericInstantiations)
+                        {
+                            Append(GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.MethodHandle, runtimeDeterminedMethod));
+                            Append("(");
+                            Append(GetGenericContext());
+                            Append(")");
+                        }
+                        else
+                        {
+                            AppendRuntimeMethodHandle(runtimeDeterminedMethod);
+                            Append("()");
+                        }
+                        Append(")");
+                    }
                     AppendSemicolon();
+
+                    if (!canonMethod.HasInstantiation && !_nodeFactory.VTable(canonMethod.OwningType).HasFixedSlots)
+                        _dependencies.Add(_nodeFactory.VirtualMethodUse(canonMethod));
+                    else if (canonMethod.HasInstantiation)
+                        _dependencies.Add(_nodeFactory.GVMDependencies(canonMethod));
                 }
                 else
                 {
+                    bool exactContextNeedsRuntimeLookup;
+                    if (method.HasInstantiation)
+                    {
+                        exactContextNeedsRuntimeLookup = method.IsSharedByGenericInstantiations;
+                    }
+                    else
+                    {
+                        exactContextNeedsRuntimeLookup = method.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any);
+                    }
+
                     PushTemp(entry);
-                    Append("(intptr_t)&");
-                    Append(_writer.GetCppTypeName(method.OwningType));
-                    Append("::");
-                    Append(_writer.GetCppMethodName(method));
+
+                    bool needUnbox = canonMethod.OwningType.IsValueType && !canonMethod.Signature.IsStatic;
+
+                    if (canonMethod.IsSharedByGenericInstantiations && (canonMethod.HasInstantiation || canonMethod.Signature.IsStatic))
+                    {
+                        if (exactContextNeedsRuntimeLookup)
+                        {
+                            // Actual address will be obtained in runtime helper
+                            Append("0");
+                        }
+                        else
+                        {
+                            Append("((intptr_t)");
+                            AppendFatFunctionPointer(runtimeDeterminedMethod, needUnbox);
+                            Append("()) + ");
+                            Append(FatFunctionPointerConstants.Offset.ToString());
+                        }
+                    }
+                    else
+                    {
+                        Append("(intptr_t)&");
+                        Append(_writer.GetCppTypeName(canonMethod.OwningType));
+                        Append("::");
+                        AppendMethodAndAddReference(canonMethod, needUnbox);
+                    }
 
                     AppendSemicolon();
                 }
@@ -1863,51 +2580,69 @@ namespace Internal.IL
 
         private void ImportLoadField(int token, bool isStatic)
         {
-            FieldDesc field = (FieldDesc)_methodIL.GetObject(token);
-
-            AddFieldReference(field);
+            FieldDesc runtimeDeterminedField = (FieldDesc)_methodIL.GetObject(token);
+            FieldDesc field = (FieldDesc)_canonMethodIL.GetObject(token);
 
             var thisPtr = isStatic ? InvalidEntry.Entry : _stack.Pop();
 
-            TypeDesc owningType = field.OwningType;
-            TypeDesc fieldType = field.FieldType;
+            TypeDesc runtimeDeterminedOwningType = runtimeDeterminedField.OwningType;
+
+            TypeDesc owningType = _writer.ConvertToCanonFormIfNecessary(field.OwningType, CanonicalFormKind.Specific);
+            TypeDesc fieldType = _writer.ConvertToCanonFormIfNecessary(field.FieldType, CanonicalFormKind.Specific);
 
             // TODO: Is this valid combination?
             if (!isStatic && !owningType.IsValueType && thisPtr.Kind != StackValueKind.ObjRef)
                 throw new InvalidProgramException();
 
-            if (field.IsStatic)
-                TriggerCctor(field.OwningType);
+            if (!runtimeDeterminedOwningType.IsRuntimeDeterminedSubtype && field.IsStatic)
+                TriggerCctor(runtimeDeterminedField.OwningType);
 
             StackValueKind kind = GetStackValueKind(fieldType);
             PushTemp(kind, fieldType);
             AppendCastIfNecessary(kind, fieldType);
 
-            if (field.IsStatic)
+            if (runtimeDeterminedOwningType.IsRuntimeDeterminedSubtype && field.IsStatic)
             {
-                if (!fieldType.IsValueType)
-                    Append("__gcStatics.");
-                else
-                    Append("__statics.");
-                Append(_writer.GetCppStaticFieldName(field));
-            }
-            else
-            if (thisPtr.Kind == StackValueKind.ValueType)
-            {
-                Append(thisPtr);
-                Append(".");
-                Append(_writer.GetCppFieldName(field));
-            }
-            else
-            {
-                Append("((");
-                Append(_writer.GetCppTypeName(owningType));
-                Append("*)");
-                Append(thisPtr);
-                Append(")->");
-                Append(_writer.GetCppFieldName(field));
+                AddTypeReference(fieldType, false);
 
-                GetSignatureTypeNameAndAddReference(owningType);
+                Append("(((");
+                Append(_writer.GetCppStaticsTypeName(owningType, field.HasGCStaticBase, field.IsThreadStatic));
+                Append("*)");
+                AppendStaticFieldGenericLookupHelperAndAddReference(runtimeDeterminedField);
+                Append("(");
+                Append(GetGenericContext());
+                Append("))->");
+                Append(_writer.GetCppFieldName(field));
+                Append(")");
+            }
+            else
+            {
+                AddFieldReference(field);
+
+                if (field.IsStatic)
+                {
+                    Append(_writer.GetCppStaticsName(owningType, field.HasGCStaticBase, field.IsThreadStatic));
+                    Append(".");
+                    Append(_writer.GetCppFieldName(field));
+                }
+                else
+                if (thisPtr.Kind == StackValueKind.ValueType)
+                {
+                    Append(thisPtr);
+                    Append(".");
+                    Append(_writer.GetCppFieldName(field));
+                }
+                else
+                {
+                    Append("((");
+                    Append(_writer.GetCppTypeName(owningType));
+                    Append("*)");
+                    Append(thisPtr);
+                    Append(")->");
+                    Append(_writer.GetCppFieldName(field));
+
+                    GetSignatureTypeNameAndAddReference(owningType);
+                }
             }
 
             AppendSemicolon();
@@ -1915,52 +2650,75 @@ namespace Internal.IL
 
         private void ImportAddressOfField(int token, bool isStatic)
         {
-            FieldDesc field = (FieldDesc)_methodIL.GetObject(token);
-
-            AddFieldReference(field);
+            FieldDesc runtimeDeterminedField = (FieldDesc)_methodIL.GetObject(token);
+            FieldDesc field = (FieldDesc)_canonMethodIL.GetObject(token);
 
             var thisPtr = isStatic ? InvalidEntry.Entry : _stack.Pop();
 
-            TypeDesc owningType = field.OwningType;
-            TypeDesc fieldType = field.FieldType;
+            TypeDesc runtimeDeterminedOwningType = runtimeDeterminedField.OwningType;
+
+            TypeDesc owningType = _writer.ConvertToCanonFormIfNecessary(field.OwningType, CanonicalFormKind.Specific);
+            TypeDesc fieldType = _writer.ConvertToCanonFormIfNecessary(field.FieldType, CanonicalFormKind.Specific);
 
             // TODO: Is this valid combination?
             if (!isStatic && !owningType.IsValueType && thisPtr.Kind != StackValueKind.ObjRef)
                 throw new InvalidProgramException();
 
-            if (field.IsStatic)
-                TriggerCctor(field.OwningType);
+            if (!runtimeDeterminedOwningType.IsRuntimeDeterminedSubtype && field.IsStatic)
+                TriggerCctor(runtimeDeterminedField.OwningType);
 
             TypeDesc addressType = fieldType.MakeByRefType();
             StackValueKind kind = GetStackValueKind(addressType);
             PushTemp(kind, addressType);
-            AppendCastIfNecessary(kind, addressType);
 
-            Append("&");
+            if (runtimeDeterminedOwningType.IsRuntimeDeterminedSubtype && field.IsStatic)
+            {
+                AddTypeReference(fieldType, false);
 
-            if (field.IsStatic)
-            {
-                if (!fieldType.IsValueType)
-                    Append("__gcStatics.");
-                else
-                    Append("__statics.");
-                Append(_writer.GetCppStaticFieldName(field));
-            }
-            else
-            if (thisPtr.Kind == StackValueKind.ValueType)
-            {
-                throw new NotImplementedException();
-            }
-            else
-            {
-                Append("((");
-                Append(_writer.GetCppTypeName(owningType));
+                AppendCastIfNecessary(kind, addressType);
+
+                Append("&");
+
+                Append("(((");
+                Append(_writer.GetCppStaticsTypeName(owningType, field.HasGCStaticBase, field.IsThreadStatic));
                 Append("*)");
-                Append(thisPtr);
-                Append(")->");
+                AppendStaticFieldGenericLookupHelperAndAddReference(runtimeDeterminedField);
+                Append("(");
+                Append(GetGenericContext());
+                Append("))->");
                 Append(_writer.GetCppFieldName(field));
+                Append(")");
+            }
+            else
+            {
+                AddFieldReference(field);
 
-                GetSignatureTypeNameAndAddReference(owningType);
+                AppendCastIfNecessary(kind, addressType);
+
+                Append("&");
+
+                if (field.IsStatic)
+                {
+                    Append(_writer.GetCppStaticsName(owningType, field.HasGCStaticBase, field.IsThreadStatic));
+                    Append(".");
+                    Append(_writer.GetCppFieldName(field));
+                }
+                else
+                if (thisPtr.Kind == StackValueKind.ValueType)
+                {
+                    throw new NotImplementedException();
+                }
+                else
+                {
+                    Append("((");
+                    Append(_writer.GetCppTypeName(owningType));
+                    Append("*)");
+                    Append(thisPtr);
+                    Append(")->");
+                    Append(_writer.GetCppFieldName(field));
+
+                    GetSignatureTypeNameAndAddReference(owningType);
+                }
             }
 
             AppendSemicolon();
@@ -1969,49 +2727,66 @@ namespace Internal.IL
 
         private void ImportStoreField(int token, bool isStatic)
         {
-            FieldDesc field = (FieldDesc)_methodIL.GetObject(token);
-
-            AddFieldReference(field);
+            FieldDesc runtimeDeterminedField = (FieldDesc)_methodIL.GetObject(token);
+            FieldDesc field = (FieldDesc)_canonMethodIL.GetObject(token);
 
             var value = _stack.Pop();
             var thisPtr = isStatic ? InvalidEntry.Entry : _stack.Pop();
 
-            TypeDesc owningType = field.OwningType;
-            TypeDesc fieldType = field.FieldType;
+            TypeDesc runtimeDeterminedOwningType = runtimeDeterminedField.OwningType;
+
+            TypeDesc owningType = _writer.ConvertToCanonFormIfNecessary(field.OwningType, CanonicalFormKind.Specific);
+            TypeDesc fieldType = _writer.ConvertToCanonFormIfNecessary(field.FieldType, CanonicalFormKind.Specific);
 
             // TODO: Is this valid combination?
             if (!isStatic && !owningType.IsValueType && thisPtr.Kind != StackValueKind.ObjRef)
                 throw new InvalidProgramException();
 
-            if (field.IsStatic)
-                TriggerCctor(field.OwningType);
+            if (!runtimeDeterminedOwningType.IsRuntimeDeterminedSubtype && field.IsStatic)
+                TriggerCctor(runtimeDeterminedField.OwningType);
 
-            // TODO: Write barrier as necessary!!!
-
-            AppendLine();
-            if (field.IsStatic)
+            if (runtimeDeterminedOwningType.IsRuntimeDeterminedSubtype && field.IsStatic)
             {
-                if (!fieldType.IsValueType)
-                    Append("__gcStatics.");
-                else
-                    Append("__statics.");
-                Append(_writer.GetCppStaticFieldName(field));
-            }
-            else if (thisPtr.Kind == StackValueKind.ValueType)
-            {
-                throw new NotImplementedException();
+                Append("(((");
+                Append(_writer.GetCppStaticsTypeName(owningType, field.HasGCStaticBase, field.IsThreadStatic));
+                Append("*)");
+                AppendStaticFieldGenericLookupHelperAndAddReference(runtimeDeterminedField);
+                Append("(");
+                Append(GetGenericContext());
+                Append("))->");
+                Append(_writer.GetCppFieldName(field));
+                Append(")");
             }
             else
             {
-                Append("((");
-                Append(_writer.GetCppTypeName(owningType));
-                Append("*)");
-                Append(thisPtr);
-                Append(")->");
-                Append(_writer.GetCppFieldName(field));
+                AddFieldReference(field);
 
-                GetSignatureTypeNameAndAddReference(owningType);
+                // TODO: Write barrier as necessary!!!
+
+                AppendLine();
+                if (field.IsStatic)
+                {
+                    Append(_writer.GetCppStaticsName(owningType, field.HasGCStaticBase, field.IsThreadStatic));
+                    Append(".");
+                    Append(_writer.GetCppFieldName(field));
+                }
+                else if (thisPtr.Kind == StackValueKind.ValueType)
+                {
+                    throw new NotImplementedException();
+                }
+                else
+                {
+                    Append("((");
+                    Append(_writer.GetCppTypeName(owningType));
+                    Append("*)");
+                    Append(thisPtr);
+                    Append(")->");
+                    Append(_writer.GetCppFieldName(field));
+
+                    GetSignatureTypeNameAndAddReference(owningType);
+                }
             }
+
             Append(" = ");
             if (!fieldType.IsValueType)
             {
@@ -2127,13 +2902,14 @@ namespace Internal.IL
 
         private void ImportInitObj(int token)
         {
-            TypeDesc type = (TypeDesc)_methodIL.GetObject(token);
+            TypeDesc type = (TypeDesc)_canonMethodIL.GetObject(token);
+
             var addr = _stack.Pop();
             AppendLine();
             Append("::memset((void*)");
             Append(addr);
             Append(",0,sizeof(");
-            Append(GetSignatureTypeNameAndAddReference(type));
+            Append(GetSignatureTypeNameAndAddReference(_writer.ConvertToCanonFormIfNecessary(type, CanonicalFormKind.Specific)));
             Append("))");
             AppendSemicolon();
         }
@@ -2155,14 +2931,31 @@ namespace Internal.IL
         private ExpressionEntry BoxValue(TypeDesc type, StackEntry value)
         {
             string tempName = NewTempName();
+            TypeDesc runtimeDeterminedType = type;
+
+            if (type.IsRuntimeDeterminedSubtype)
+                type = type.ConvertToCanonForm(CanonicalFormKind.Specific);
 
             AddTypeReference(type, true);
             Append(GetStackValueKindCPPTypeName(StackValueKind.ObjRef, type));
             Append(" ");
             Append(tempName);
             Append(" = __allocate_object(");
-            Append(_writer.GetCppTypeName(type));
-            Append("::__getMethodTable())");
+
+            if (runtimeDeterminedType.IsRuntimeDeterminedSubtype)
+            {
+                Append("(MethodTable *)");
+                Append(GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, runtimeDeterminedType));
+                Append("(");
+                Append(GetGenericContext());
+                Append("))");
+            }
+            else
+            {
+                Append(_writer.GetCppTypeName(type));
+                Append("::__getMethodTable())");
+            }
+
             AppendSemicolon();
 
             string typeName = GetStackValueKindCPPTypeName(GetStackValueKind(type), type);
@@ -2278,20 +3071,35 @@ namespace Internal.IL
 
         private void ImportNewArray(int token)
         {
-            TypeDesc type = (TypeDesc)_methodIL.GetObject(token);
-            TypeDesc arrayType = type.Context.GetArrayType(type);
+            TypeDesc runtimeDeterminedType = (TypeDesc)_methodIL.GetObject(token);
+            TypeDesc runtimeDeterminedArrayType = runtimeDeterminedType.MakeArrayType();
+            TypeDesc type = (TypeDesc)_canonMethodIL.GetObject(token);
+            TypeDesc arrayType = _writer.ConvertToCanonFormIfNecessary(type.MakeArrayType(), CanonicalFormKind.Specific);
 
             var numElements = _stack.Pop();
 
             PushTemp(StackValueKind.ObjRef, arrayType);
 
-            AddTypeReference(arrayType, true);
-
             Append("__allocate_array(");
             Append(numElements);
             Append(", ");
-            Append(_writer.GetCppTypeName(arrayType));
-            Append("::__getMethodTable()");
+
+            AddTypeReference(arrayType, true);
+
+            if (runtimeDeterminedType.IsRuntimeDeterminedSubtype)
+            {
+                Append("(MethodTable *)");
+                Append(GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, runtimeDeterminedArrayType));
+                Append("(");
+                Append(GetGenericContext());
+                Append(")");
+            }
+            else
+            {
+                Append(_writer.GetCppTypeName(runtimeDeterminedArrayType));
+                Append("::__getMethodTable()");
+            }
+
             Append(")");
             AppendSemicolon();
         }
@@ -2381,7 +3189,7 @@ namespace Internal.IL
 
         private void ImportAddressOfElement(int token)
         {
-            TypeDesc elementType = (TypeDesc)_methodIL.GetObject(token);
+            TypeDesc elementType = (TypeDesc)_canonMethodIL.GetObject(token);
             var index = _stack.Pop();
             var arrayPtr = _stack.Pop();
 
@@ -2507,13 +3315,14 @@ namespace Internal.IL
         private void ImportLdToken(int token)
         {
             var ldtokenValue = _methodIL.GetObject(token);
+
             WellKnownType ldtokenKind;
             string name;
             StackEntry value;
             if (ldtokenValue is TypeDesc)
             {
                 ldtokenKind = WellKnownType.RuntimeTypeHandle;
-                AddTypeReference((TypeDesc)ldtokenValue, false);
+                TypeDesc type = (TypeDesc)ldtokenValue;
 
                 MethodDesc helper = _typeSystemContext.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeTypeHandle");
                 AddMethodReference(helper);
@@ -2521,12 +3330,30 @@ namespace Internal.IL
                 name = String.Concat(
                     _writer.GetCppTypeName(helper.OwningType),
                     "::",
-                    _writer.GetCppMethodName(helper),
-                    "((intptr_t)",
-                    _compilation.NameMangler.GetMangledTypeName((TypeDesc)ldtokenValue),
-                    "::__getMethodTable())");
+                    _writer.GetCppMethodName(helper));
 
-                value = new LdTokenEntry<TypeDesc>(StackValueKind.ValueType, name, (TypeDesc)ldtokenValue, GetWellKnownType(ldtokenKind));
+                if (type.IsRuntimeDeterminedSubtype)
+                {
+                    name = String.Concat(
+                        name,
+                        "((intptr_t)",
+                        GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, type),
+                        "(",
+                        GetGenericContext(),
+                        "))");
+                }
+                else
+                {
+                    AddTypeReference(type, false);
+
+                    name = String.Concat(
+                        name,
+                        "((intptr_t)",
+                        _compilation.NameMangler.GetMangledTypeName(type),
+                        "::__getMethodTable())");
+                }
+
+                value = new LdTokenEntry<TypeDesc>(StackValueKind.ValueType, name, type, GetWellKnownType(ldtokenKind));
             }
             else if (ldtokenValue is FieldDesc)
             {
@@ -2633,7 +3460,7 @@ namespace Internal.IL
         {
             _pendingPrefix |= Prefix.Constrained;
 
-            _constrained = ResolveTypeToken(token);
+            _constrained = (TypeDesc)_methodIL.GetObject(token);
         }
 
         private void ImportNoPrefix(byte mask)
@@ -2648,6 +3475,8 @@ namespace Internal.IL
 
         private void TriggerCctor(TypeDesc type)
         {
+            Debug.Assert(!type.IsRuntimeDeterminedSubtype);
+
             // TODO: Before field init
 
             MethodDesc cctor = type.GetStaticConstructor();
@@ -2656,22 +3485,32 @@ namespace Internal.IL
 
             // TODO: Thread safety
 
-            string ctorHasRun = "__statics.__cctor_" + _writer.GetCppTypeName(type).Replace("::", "__");
+            MethodDesc canonCctor = cctor.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+            string ctorHasRun = _writer.GetCppStaticsName(type) + ".__cctor_has_run";
             AppendLine();
             Append("if (!" + ctorHasRun + ") {");
             Indent();
             AppendLine();
             Append(ctorHasRun + " = true;");
             AppendLine();
-            Append(_writer.GetCppTypeName(cctor.OwningType));
+            Append(_writer.GetCppTypeName(canonCctor.OwningType));
             Append("::");
-            Append(_writer.GetCppMethodName(cctor));
-            Append("();");
+            Append(_writer.GetCppMethodName(canonCctor));
+            Append("(");
+
+            if (canonCctor != cctor)
+            {
+                Append(_writer.GetCppTypeName(cctor.OwningType));
+                Append("::__getMethodTable()");
+            }
+
+            Append(");");
             Exdent();
             AppendLine();
             Append("}");
 
-            AddMethodReference(cctor);
+            AddMethodReference(canonCctor);
         }
 
         private void AddTypeReference(TypeDesc type, bool constructed)
@@ -2686,13 +3525,16 @@ namespace Internal.IL
             {
                 foreach (var field in type.GetFields())
                 {
-                    AddTypeDependency(field.FieldType, false);
+                    AddTypeDependency(_writer.ConvertToCanonFormIfNecessary(field.FieldType, CanonicalFormKind.Specific), false);
                 }
             }
         }
         private void AddTypeDependency(TypeDesc type, bool constructed)
         {
-            if (type.IsPrimitive)
+            Debug.Assert(!type.IsRuntimeDeterminedSubtype);
+
+            if (type.IsPrimitive ||
+                type.IsCanonicalSubtype(CanonicalFormKind.Any) && (type.IsPointer || type.IsByRef))
             {
                 return;
             }
@@ -2712,6 +3554,11 @@ namespace Internal.IL
             _dependencies.Add(_nodeFactory.MethodEntrypoint(method));
         }
 
+        private void AddCanonicalReference(MethodDesc method)
+        {
+            _dependencies.Add(_nodeFactory.CanonicalEntrypoint(method));
+        }
+
         private void AddVirtualMethodReference(MethodDesc method)
         {
             _dependencies.Add(_nodeFactory.VirtualMethodUse(method));
@@ -2719,28 +3566,34 @@ namespace Internal.IL
 
         private void AddFieldReference(FieldDesc field)
         {
+            var owningType = field.OwningType;
+
+            Debug.Assert(!owningType.IsRuntimeDeterminedSubtype);
+
             if (field.IsStatic)
             {
-                var owningType = (MetadataType)field.OwningType;
+                var metadataType = owningType as MetadataType;
 
                 Object node;
                 if (field.IsThreadStatic)
                 {
-                    node = _nodeFactory.TypeThreadStaticsSymbol(owningType);
+                    node = _nodeFactory.TypeThreadStaticsSymbol(metadataType);
                 }
                 else
                 {
                     if (field.HasGCStaticBase)
-                        node = _nodeFactory.TypeGCStaticsSymbol(owningType);
+                        node = _nodeFactory.TypeGCStaticsSymbol(metadataType);
                     else
-                        node = _nodeFactory.TypeNonGCStaticsSymbol(owningType);
+                        node = _nodeFactory.TypeNonGCStaticsSymbol(metadataType);
                 }
 
                 // TODO: Remove once the dependencies for static fields are tracked properly
-                GetSignatureTypeNameAndAddReference(owningType, true);
+                GetSignatureTypeNameAndAddReference(metadataType, true);
                 _dependencies.Add(node);
             }
-            AddTypeReference(field.FieldType, false);
+
+            var fieldType = field.FieldType;
+            AddTypeReference(_writer.ConvertToCanonFormIfNecessary(fieldType, CanonicalFormKind.Specific), false);
         }
 
         private string GetSignatureTypeNameAndAddReference(TypeDesc type, bool constructed = true)

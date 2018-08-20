@@ -21,6 +21,8 @@ namespace ILCompiler.DependencyAnalysis
         private Utf8String _identityPrefix;
         private NativeLayoutSavedVertexNode _nativeSignature;
 
+        public TypeSystemEntity Identity => _identity;
+
         public NativeLayoutSignatureNode(NativeLayoutSavedVertexNode nativeSignature, TypeSystemEntity identity, Utf8String identityPrefix)
         {
             _nativeSignature = nativeSignature;
