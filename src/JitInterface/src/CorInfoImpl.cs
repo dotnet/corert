@@ -1973,7 +1973,18 @@ namespace Internal.JitInterface
                         // Find out what kind of base do we need to look up.
                         if (field.IsThreadStatic)
                         {
+#if READYTORUN
+                            if (field.HasGCStaticBase)
+                            {
+                                helperId = ReadyToRunHelperId.GetThreadStaticBase;
+                            }
+                            else
+                            {
+                                helperId = ReadyToRunHelperId.GetThreadNonGcStaticBase;
+                            }
+#else
                             helperId = ReadyToRunHelperId.GetThreadStaticBase;
+#endif
                         }
                         else if (field.HasGCStaticBase)
                         {
@@ -2010,7 +2021,18 @@ namespace Internal.JitInterface
                     ReadyToRunHelperId helperId = ReadyToRunHelperId.Invalid;
                     if (field.IsThreadStatic)
                     {
+#if READYTORUN
+                        if (field.HasGCStaticBase)
+                        {
+                            helperId = ReadyToRunHelperId.GetThreadStaticBase;
+                        }
+                        else
+                        {
+                            helperId = ReadyToRunHelperId.GetThreadNonGcStaticBase;
+                        }
+#else
                         helperId = ReadyToRunHelperId.GetThreadStaticBase;
+#endif
                     }
                     else if (field.HasGCStaticBase)
                     {
