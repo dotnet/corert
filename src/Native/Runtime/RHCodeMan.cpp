@@ -1327,7 +1327,6 @@ bool EECodeManager::GetEpilogOffset(
 // ARM64 epilogs have a window between loading the hijackable return address into LR and the RET instruction.
 // We cannot hijack or unhijack a thread while it is suspended in that window unless we implement hijacking
 // via LR register modification.
-#ifndef _ARM64_
 void ** EECodeManager::GetReturnAddressLocationFromEpilog(GCInfoHeader * pInfoHeader, REGDISPLAY * pContext,
                                                           UInt32 epilogOffset, UInt32 epilogSize)
 {
@@ -1740,7 +1739,6 @@ void ** EECodeManager::GetReturnAddressLocationFromEpilog(GCInfoHeader * pInfoHe
 
 #endif
 }
-#endif // _ARM64_
 
 #ifdef _DEBUG
 
