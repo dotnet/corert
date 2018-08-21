@@ -387,27 +387,57 @@ namespace ILCompiler
             return 0;
         }
 
-        TypeDesc GetFieldDebugType(FieldDesc field)
+        bool ShouldUseCanonicalTypeRecord(TypeDesc type)
         {
-            TypeDesc type = field.FieldType;
-
             // TODO: check the type's generic complexity
-            if (NodeFactory.LazyGenericsPolicy.UsesLazyGenerics(type))
+            return type.GetGenericDepth() > NodeFactory.TypeSystemContext.GenericsConfig.MaxGenericDepthOfDebugRecord;
+        }
+
+        TypeDesc GetDebugType(TypeDesc type)
+        {
+            TypeDesc typeGenericComplexityInfo = type;
+
+            // Strip off pointer, array, and byref details.
+            while (typeGenericComplexityInfo is ParameterizedType paramType) {
+                typeGenericComplexityInfo = paramType.ParameterType;
+            }
+
+            // Types that have some canonical subtypes types should always be represented in normalized canonical form to the binder.
+            // Also, to avoid infinite generic recursion issues, attempt to use canonical form for fields with high generic complexity. 
+            if (type.IsCanonicalSubtype(CanonicalFormKind.Specific) || (typeGenericComplexityInfo is DefType defType) && ShouldUseCanonicalTypeRecord(defType))
             {
                 type = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+
+                // Re-check if the canonical subtype has acceptable generic complexity
+                typeGenericComplexityInfo = type;
+
+                while (typeGenericComplexityInfo is ParameterizedType paramType) {
+                    typeGenericComplexityInfo = paramType.ParameterType;
+                }
+
+                if ((typeGenericComplexityInfo is DefType canonDefType) && ShouldUseCanonicalTypeRecord(canonDefType))
+                {
+                    type = type.ConvertToCanonForm(CanonicalFormKind.Universal);
+                }
             }
 
             return type;
         }
 
+        TypeDesc GetFieldDebugType(FieldDesc field)
+        {
+            return GetDebugType(field.FieldType);
+        }
+
         private uint GetClassTypeIndex(TypeDesc type, bool needsCompleteType)
         {
-            DefType defType = type as DefType;
+            TypeDesc debugType = GetDebugType(type);
+            DefType defType = debugType as DefType;
             System.Diagnostics.Debug.Assert(defType != null, "GetClassTypeIndex was called with non def type");
             ClassTypeDescriptor classTypeDescriptor = new ClassTypeDescriptor
             {
                 IsStruct = type.IsValueType ? 1 : 0,
-                Name = _objectWriter.GetMangledName(type),
+                Name = _objectWriter.GetMangledName(defType),
                 BaseClassId = 0,
                 InstanceSize = 0
             };
