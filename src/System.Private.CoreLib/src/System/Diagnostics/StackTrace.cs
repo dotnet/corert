@@ -148,14 +148,35 @@ namespace System.Diagnostics
         private void InitializeForIpAddressArray(IntPtr[] ipAddresses, int skipFrames, int endFrameIndex, bool needFileInfo)
         {
             int frameCount = (skipFrames < endFrameIndex ? endFrameIndex - skipFrames : 0);
-            if (frameCount > 0)
+
+            // Calculate true frame count upfront - we need to skip EdiSeparators which get
+            // collapsed onto boolean flags on the preceding stack frame
+            int outputFrameCount = 0;
+            for (int frameIndex = 0; frameIndex < frameCount; frameIndex++)
             {
-                _stackFrames = new StackFrame[frameCount];
+                if (ipAddresses[frameIndex + skipFrames] != StackTraceHelper.SpecialIP.EdiSeparator)
+                {
+                    outputFrameCount++;
+                }
+            }
+
+            if (outputFrameCount > 0)
+            {
+                _stackFrames = new StackFrame[outputFrameCount];
+                int outputFrameIndex = 0;
                 for (int frameIndex = 0; frameIndex < frameCount; frameIndex++)
                 {
                     IntPtr ipAddress = ipAddresses[frameIndex + skipFrames];
-                    _stackFrames[frameIndex] = new StackFrame(ipAddress, needFileInfo);
+                    if (ipAddress != StackTraceHelper.SpecialIP.EdiSeparator)
+                    {
+                        _stackFrames[outputFrameIndex++] = new StackFrame(ipAddress, needFileInfo);
+                    }
+                    else if (outputFrameIndex > 0)
+                    {
+                        _stackFrames[outputFrameIndex - 1].SetIsLastFrameFromForeignExceptionStackTrace(true);
+                    }
                 }
+                Debug.Assert(outputFrameIndex == outputFrameCount);
             }
         }
 
