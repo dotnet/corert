@@ -437,7 +437,7 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
 #if defined(_TARGET_AMD64_)
     libunwind::UnwindCursor<LocalAddressSpace, Registers_x86_64> uc(_addressSpace);
 #elif defined(_TARGET_ARM_)
-    libunwind::UnwindCursor<LocalAddressSpace, Registers_arm> uc(_addressSpace);
+    libunwind::UnwindCursor<LocalAddressSpace, Registers_arm_rt> uc(_addressSpace, regs);
 #else
     #error "Unwinding is not implemented for this architecture yet."
 #endif
@@ -461,8 +461,13 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
     }
 
     regs->pIP = PTR_PCODE(regs->SP - sizeof(TADDR));
-#else
-    PORTABILITY_ASSERT("DoTheStep");
+#elif defined(_LIBUNWIND_ARM_EHABI)
+    uc.setInfoBasedOnIPRegister(true);
+    int stepRet = uc.step();
+    if ((stepRet != UNW_STEP_SUCCESS) && (stepRet != UNW_STEP_END))
+    {
+        return false;
+    }
 #endif
 
     return true;
