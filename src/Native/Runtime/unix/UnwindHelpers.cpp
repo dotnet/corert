@@ -292,6 +292,32 @@ struct Registers_REGDISPLAY : REGDISPLAY
 };
 
 #endif // _TARGET_AMD64_
+#if defined(_TARGET_ARM_)
+
+class Registers_arm_rt: public libunwind::Registers_arm {
+public:
+    Registers_arm_rt() { abort(); };
+    Registers_arm_rt(void *registers) { regs = (REGDISPLAY *)registers; };
+    uint32_t    getRegister(int num);
+    void        setRegister(int num, uint32_t value, uint32_t location);
+    uint32_t    getRegisterLocation(int regNum) const { abort();}
+    unw_fpreg_t getFloatRegister(int num) { abort();}
+    void        setFloatRegister(int num, unw_fpreg_t value) {abort();}
+    bool        validVectorRegister(int num) const { abort();}
+    uint32_t    getVectorRegister(int num) const {abort();};
+    void        setVectorRegister(int num, uint32_t value) {abort();};
+    void        jumpto() { abort();};
+    uint32_t    getSP() const         { return regs->SP;}
+    void        setSP(uint32_t value, uint32_t location) { regs->SP = value;}
+    uint32_t    getIP() const         { return regs->IP;}
+    void        setIP(uint32_t value, uint32_t location)
+    { regs->IP = value; regs->pIP = (PTR_UIntNative)location; }
+    void saveVFPAsX() {abort();};
+private:
+    REGDISPLAY *regs;
+};
+
+#endif // _TARGET_ARM_
 
 bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs)
 {
