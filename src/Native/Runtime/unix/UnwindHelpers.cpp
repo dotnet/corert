@@ -504,18 +504,20 @@ UnwindInfoSections LocateUnwindSections(uintptr_t pc)
 
 bool UnwindHelpers::StepFrame(REGDISPLAY *regs)
 {
-    uintptr_t pc = regs->GetIP();
-
-    UnwindInfoSections uwInfoSections = LocateUnwindSections(pc);
-
 #if _LIBUNWIND_SUPPORT_DWARF_UNWIND
+    uintptr_t pc = regs->GetIP();
+    UnwindInfoSections uwInfoSections = LocateUnwindSections(pc);
     if (uwInfoSections.dwarf_section == NULL)
     {
         return false;
     }
+    return DoTheStep(pc, uwInfoSections, regs);
+#elif defined(_LIBUNWIND_ARM_EHABI)
+    // unwind section is located later for ARM
+    // pc will be taked from regs parameter
+    UnwindInfoSections uwInfoSections;
+    return DoTheStep(0, uwInfoSections, regs);
 #else
     PORTABILITY_ASSERT("StepFrame");
 #endif
-
-    return DoTheStep(pc, uwInfoSections, regs);
 }
