@@ -171,13 +171,13 @@ _LIBUNWIND_EXPORT int unw_get_reg(unw_cursor_t *cursor, unw_regnum_t regNum,
 
 /// Set value of specified register at cursor position in stack frame.
 _LIBUNWIND_EXPORT int unw_set_reg(unw_cursor_t *cursor, unw_regnum_t regNum,
-                                  unw_word_t value) {
+                                  unw_word_t value, unw_word_t *pos) {
   _LIBUNWIND_TRACE_API("unw_set_reg(cursor=%p, regNum=%d, value=0x%llX)",
                        static_cast<void *>(cursor), regNum, (long long)value);
   typedef LocalAddressSpace::pint_t pint_t;
   AbstractUnwindCursor *co = (AbstractUnwindCursor *)cursor;
   if (co->validReg(regNum)) {
-    co->setReg(regNum, (pint_t)value, 0);
+    co->setReg(regNum, (pint_t)value, (pint_t)pos);
     // special case altering IP to re-find info (being called by personality
     // function)
     if (regNum == UNW_REG_IP)
