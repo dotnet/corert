@@ -42,13 +42,8 @@
   #endif
 #else
   #if defined(__ARM_DWARF_EH__) || !defined(__arm__)
-    #define _LIBUNWIND_SUPPORT_COMPACT_UNWIND 0
     #define _LIBUNWIND_SUPPORT_DWARF_UNWIND 1
     #define _LIBUNWIND_SUPPORT_DWARF_INDEX 1
-  #else
-    #define _LIBUNWIND_SUPPORT_COMPACT_UNWIND 0
-    #define _LIBUNWIND_SUPPORT_DWARF_UNWIND 0
-    #define _LIBUNWIND_SUPPORT_DWARF_INDEX 0
   #endif
 #endif
 
