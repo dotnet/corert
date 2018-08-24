@@ -628,9 +628,11 @@ UnwindCursor<A, R>::UnwindCursor(unw_context_t *context, A &as)
 }
 
 template <typename A, typename R>
-UnwindCursor<A, R>::UnwindCursor(A &as, void *)
-    : _addressSpace(as), _unwindInfoMissing(false), _isSignalFrame(false) {
+UnwindCursor<A, R>::UnwindCursor(A &as, void *arg)
+    : _addressSpace(as),_registers(arg), _unwindInfoMissing(false),
+        _isSignalFrame(false) {
   memset(&_info, 0, sizeof(_info));
+
   // FIXME
   // fill in _registers from thread arg
 }

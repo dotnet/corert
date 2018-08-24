@@ -259,7 +259,7 @@ _Unwind_VRS_Interpret(_Unwind_Context *context, const uint32_t *data,
         sp -= (((uint32_t)byte & 0x3f) << 2) + 4;
       else
         sp += ((uint32_t)byte << 2) + 4;
-      _Unwind_VRS_Set(context, _UVRSC_CORE, UNW_ARM_SP, _UVRSD_UINT32, &sp);
+      _Unwind_VRS_Set(context, _UVRSC_CORE, UNW_ARM_SP, _UVRSD_UINT32, &sp, NULL);
     } else {
       switch (byte & 0xf0) {
         case 0x80: {
@@ -283,7 +283,7 @@ _Unwind_VRS_Interpret(_Unwind_Context *context, const uint32_t *data,
           _Unwind_VRS_Get(context, _UVRSC_CORE, UNW_ARM_R0 + reg,
                           _UVRSD_UINT32, &sp);
           _Unwind_VRS_Set(context, _UVRSC_CORE, UNW_ARM_SP, _UVRSD_UINT32,
-                          &sp);
+                          &sp, NULL);
           break;
         }
         case 0xa0: {
@@ -325,7 +325,7 @@ _Unwind_VRS_Interpret(_Unwind_Context *context, const uint32_t *data,
                               &sp);
               sp += 0x204 + (addend << 2);
               _Unwind_VRS_Set(context, _UVRSC_CORE, UNW_ARM_SP, _UVRSD_UINT32,
-                              &sp);
+                              &sp, NULL);
               break;
             }
             case 0xb3: {
@@ -411,7 +411,7 @@ _Unwind_VRS_Interpret(_Unwind_Context *context, const uint32_t *data,
   if (!wrotePC) {
     uint32_t lr;
     _Unwind_VRS_Get(context, _UVRSC_CORE, UNW_ARM_LR, _UVRSD_UINT32, &lr);
-    _Unwind_VRS_Set(context, _UVRSC_CORE, UNW_ARM_IP, _UVRSD_UINT32, &lr);
+    _Unwind_VRS_Set(context, _UVRSC_CORE, UNW_ARM_IP, _UVRSD_UINT32, &lr, NULL);
   }
   return _URC_CONTINUE_UNWIND;
 }
@@ -559,7 +559,7 @@ static _Unwind_Reason_Code unwind_phase2(unw_context_t *uc, unw_cursor_t *cursor
       //
       // See #7.4.6 for details.
       unw_set_reg(cursor, UNW_REG_IP,
-                  exception_object->unwinder_cache.reserved2);
+                  exception_object->unwinder_cache.reserved2, NULL);
       resume = false;
     }
 
@@ -753,7 +753,7 @@ static uint64_t ValueAsBitPattern(_Unwind_VRS_DataRepresentation representation,
 _LIBUNWIND_EXPORT _Unwind_VRS_Result
 _Unwind_VRS_Set(_Unwind_Context *context, _Unwind_VRS_RegClass regclass,
                 uint32_t regno, _Unwind_VRS_DataRepresentation representation,
-                void *valuep) {
+                void *valuep, unw_word_t *pos) {
   _LIBUNWIND_TRACE_API("_Unwind_VRS_Set(context=%p, regclass=%d, reg=%d, "
                        "rep=%d, value=0x%llX)",
                        static_cast<void *>(context), regclass, regno,
@@ -765,7 +765,7 @@ _Unwind_VRS_Set(_Unwind_Context *context, _Unwind_VRS_RegClass regclass,
       if (representation != _UVRSD_UINT32 || regno > 15)
         return _UVRSR_FAILED;
       return unw_set_reg(cursor, (unw_regnum_t)(UNW_ARM_R0 + regno),
-                         *(unw_word_t *)valuep) == UNW_ESUCCESS
+                         *(unw_word_t *)valuep,(unw_word_t *)pos) == UNW_ESUCCESS
                  ? _UVRSR_OK
                  : _UVRSR_FAILED;
     case _UVRSC_VFP:
@@ -897,6 +897,7 @@ _Unwind_VRS_Pop(_Unwind_Context *context, _Unwind_VRS_RegClass regclass,
       // computed new stack location. See EHABI #7.5.4 table 3.
       bool poppedSP = false;
       uint32_t* sp;
+      uint32_t* pos;
       if (_Unwind_VRS_Get(context, _UVRSC_CORE, UNW_ARM_SP,
                           _UVRSD_UINT32, &sp) != _UVRSR_OK) {
         return _UVRSR_FAILED;
@@ -904,17 +905,18 @@ _Unwind_VRS_Pop(_Unwind_Context *context, _Unwind_VRS_RegClass regclass,
       for (uint32_t i = 0; i < 16; ++i) {
         if (!(discriminator & static_cast<uint32_t>(1 << i)))
           continue;
+        pos = sp;
         uint32_t value = *sp++;
         if (regclass == _UVRSC_CORE && i == 13)
           poppedSP = true;
         if (_Unwind_VRS_Set(context, regclass, i,
-                            _UVRSD_UINT32, &value) != _UVRSR_OK) {
+                            _UVRSD_UINT32, &value, pos) != _UVRSR_OK) {
           return _UVRSR_FAILED;
         }
       }
       if (!poppedSP) {
         return _Unwind_VRS_Set(context, _UVRSC_CORE, UNW_ARM_SP,
-                               _UVRSD_UINT32, &sp);
+                               _UVRSD_UINT32, &sp, NULL);
       }
       return _UVRSR_OK;
     }
@@ -939,14 +941,14 @@ _Unwind_VRS_Pop(_Unwind_Context *context, _Unwind_VRS_RegClass regclass,
         // SP is only 32-bit aligned so don't copy 64-bit at a time.
         uint64_t value = *sp++;
         value |= ((uint64_t)(*sp++)) << 32;
-        if (_Unwind_VRS_Set(context, regclass, i, representation, &value) !=
+        if (_Unwind_VRS_Set(context, regclass, i, representation, &value, NULL) !=
             _UVRSR_OK)
           return _UVRSR_FAILED;
       }
       if (representation == _UVRSD_VFPX)
         ++sp;
       return _Unwind_VRS_Set(context, _UVRSC_CORE, UNW_ARM_SP, _UVRSD_UINT32,
-                             &sp);
+                             &sp, NULL);
     }
   }
   _LIBUNWIND_ABORT("unsupported register class");
