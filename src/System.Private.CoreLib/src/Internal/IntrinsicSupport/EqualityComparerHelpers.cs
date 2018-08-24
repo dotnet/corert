@@ -195,10 +195,15 @@ namespace Internal.IntrinsicSupport
 #endif
         }
 
+        private static bool StructOnlyNormalEquals<T>(T left, T right)
+        {
+            return left.Equals(right);
+        }
+
         [Intrinsic]
         internal static bool StructOnlyEquals<T>(T left, T right)
         {
-            return left.Equals(right);
+            return EqualityComparer<T>.Default.Equals(left, right);
         }
     }
 }

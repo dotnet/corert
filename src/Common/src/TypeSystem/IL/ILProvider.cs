@@ -225,6 +225,10 @@ namespace Internal.IL
                                 {
                                     methodToCall = helperType.GetKnownMethod("StructOnlyEqualsIEquatable", null).MakeInstantiatedMethod(elementType);
                                 }
+                                else
+                                {
+                                    methodToCall = helperType.GetKnownMethod("StructOnlyNormalEquals", null).MakeInstantiatedMethod(elementType);
+                                }
 
                                 if (methodToCall != null)
                                 {
