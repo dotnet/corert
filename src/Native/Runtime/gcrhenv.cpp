@@ -92,16 +92,6 @@ void RhEnableFinalization();
 static EEConfig s_sDummyConfig;
 EEConfig* g_pConfig = &s_sDummyConfig;
 
-int EEConfig::GetHeapVerifyLevel()
-{
-    return g_pRhConfig->GetHeapVerify();
-}
-
-int EEConfig::GetGCconcurrent()
-{
-    return !g_pRhConfig->GetDisableBGC();
-}
-
 // A few settings are now backed by the cut-down version of Redhawk configuration values.
 static RhConfig g_sRhConfig;
 RhConfig * g_pRhConfig = &g_sRhConfig;
@@ -341,22 +331,6 @@ void RedhawkGCInterface::WaitForGCCompletion()
 {
     GCHeapUtilities::GetGCHeap()->WaitUntilGCComplete();
 }
-
-#endif // !DACCESS_COMPILE
-
-//
-// -----------------------------------------------------------------------------------------------------------
-//
-// AppDomain emulation. The we don't have these in Redhawk so instead we emulate the bare minimum of the API
-// touched by the GC/HandleTable and pretend we have precisely one (default) appdomain.
-//
-
-// Used by DAC, but since this just exposes [System|App]Domain::GetIndex we can just keep a local copy.
-
-SystemDomain g_sSystemDomain;
-AppDomain g_sDefaultDomain;
-
-#ifndef DACCESS_COMPILE
 
 //
 // -----------------------------------------------------------------------------------------------------------
@@ -1399,7 +1373,7 @@ void GCToEEInterface::HandleFatalError(unsigned int exitCode)
     EEPOLICY_HANDLE_FATAL_ERROR(exitCode);
 }
 
-bool GCToEEInterface::ShouldFinalizeObjectForUnload(AppDomain* pDomain, Object* obj)
+bool GCToEEInterface::ShouldFinalizeObjectForUnload(void* pDomain, Object* obj)
 {
     // CoreCLR does not have appdomains, so this code path is dead. Other runtimes may
     // choose to inspect the object being finalized here.
@@ -1518,6 +1492,39 @@ IGCToCLREventSink* GCToEEInterface::EventSink()
     return &g_gcToClrEventSink;
 }
 
+uint32_t GCToEEInterface::GetDefaultDomainIndex()
+{
+    return -1;
+}
+
+void* GCToEEInterface::GetAppDomainAtIndex(uint32_t appDomainIndex)
+{
+    UNREFERENCED_PARAMETER(appDomainIndex);
+    return nullptr;
+}
+
+bool GCToEEInterface::AppDomainCanAccessHandleTable(uint32_t appDomainID)
+{
+    UNREFERENCED_PARAMETER(appDomainID);
+    return true;
+}
+
+uint32_t GCToEEInterface::GetIndexOfAppDomainBeingUnloaded()
+{
+    return -1;
+}
+
+uint32_t GCToEEInterface::GetTotalNumSizedRefHandles()
+{
+    return -1;
+}
+
+bool GCToEEInterface::AppDomainIsRudeUnload(void* appDomain)
+{
+    UNREFERENCED_PARAMETER(appDomain);
+    return false;
+}
+
 MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
 {
     assert(g_pFreeObjectMethodTable != nullptr);
@@ -1535,13 +1542,13 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* key, bool* value)
 
     if (strcmp(key, "gcConcurrent") == 0)
     {
-        *value = g_pConfig->GetGCconcurrent() != 0;
+        *value = !g_pRhConfig->GetDisableBGC();
         return true;
     }
 
     if (strcmp(key, "GCRetainVM") == 0)
     {
-        *value = !!g_pConfig->GetGCRetainVM();
+        *value = false;
         return true;
     }
 
@@ -1553,25 +1560,25 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* key, bool* value)
 
     if (strcmp(key, "gcForceCompact") == 0)
     {
-        *value = g_pConfig->GetGCForceCompact() != 0;
+        *value = false;
         return true;
     }
 
     if (strcmp(key, "GCStressMix") == 0)
     {
-        *value = g_pConfig->IsGCStressMix();
+        *value = false;
         return true;
     }
 
     if (strcmp(key, "GCBreakOnOOM") == 0)
     {
-        *value = g_pConfig->IsGCBreakOnOOMEnabled();
+        *value = false;
         return true;
     }
 
     if (strcmp(key, "GCNoAffinitize") == 0)
     {
-        *value = g_pConfig->GetGCNoAffinitize();
+        *value = false;
         return true;
     }
 
@@ -1582,31 +1589,37 @@ bool GCToEEInterface::GetIntConfigValue(const char* key, int64_t* value)
 {
     if (strcmp(key, "HeapVerify") == 0)
     {
-        *value = g_pConfig->GetHeapVerifyLevel();
+        *value = g_pRhConfig->GetHeapVerify();
         return true;
     }
 
     if (strcmp(key, "GCLOHCompact") == 0)
     {
-        *value = g_pConfig->GetGCLOHCompactionMode();
+        *value = 0;
         return true;
     }
 
     if (strcmp(key, "GCHeapCount") == 0)
     {
-        *value = g_pConfig->GetGCHeapCount();
+        *value = 0;
         return true;
     }
 
     if (strcmp(key, "GCgen0size") == 0)
     {
-        *value = g_pConfig->GetGCgen0size();
+#ifdef USE_PORTABLE_HELPERS
+        // CORERT-TODO: remove this
+        //              https://github.com/dotnet/corert/issues/2033
+        *value = 100 * 1024 * 1024;
+#else
+        *value = 0;
+#endif
         return true;
     }
 
     if (strcmp(key, "GCLatencyMode") == 0)
     {
-        *value = g_pConfig->GetGCLatencyMode();
+        *value = 1;
         return true;
     }
 
