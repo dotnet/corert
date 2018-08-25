@@ -129,14 +129,14 @@ namespace System.Diagnostics
         /// </summary>
         internal void AppendToStackTrace(StringBuilder builder)
         {
-            if (_ipAddress == StackTraceHelper.SpecialIP.EdiSeparator)
-            {
-                builder.AppendLine(SR.StackTrace_EndStackTraceFromPreviousThrow);
-            }
-            else
+            if (_ipAddress != StackTraceHelper.SpecialIP.EdiSeparator)
             {
                 builder.Append(SR.StackTrace_AtWord);
                 builder.AppendLine(DeveloperExperience.Default.CreateStackTraceString(_ipAddress, _needFileInfo));
+            }
+            if (GetIsLastFrameFromForeignExceptionStackTrace())
+            {
+                builder.AppendLine(SR.StackTrace_EndStackTraceFromPreviousThrow);
             }
         }
     }
