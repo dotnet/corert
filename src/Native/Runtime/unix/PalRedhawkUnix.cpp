@@ -1553,8 +1553,9 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 //  size    - size of the virtual memory range
 // Return:
 //  true if it has succeeded, false if it has failed
-bool GCToOSInterface::VirtualCommit(void* address, size_t size)
+bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint32_t node)
 {
+    UNREFERENCED_PARAMETER(node); // TODO: Numa support
     return mprotect(address, size, PROT_WRITE | PROT_READ) == 0;
 }
 
@@ -1838,7 +1839,33 @@ static void* GCThreadStub(void* param)
 
 uint32_t GCToOSInterface::GetTotalProcessorCount()
 {
+    // TODO: CPUGroupInfo support
     return g_SystemInfo.dwNumberOfProcessors;
+}
+
+// TODO: Numa support
+bool GCToOSInterface::CanEnableGCNumaAware()
+{
+    return false;
+}
+
+bool GCToOSInterface::GetNumaProcessorNode(PPROCESSOR_NUMBER proc_no, uint16_t* node_no)
+{
+    UNREFERENCED_PARAMETER(proc_no);
+    UNREFERENCED_PARAMETER(node_no);
+    return false;
+}
+
+bool GCToOSInterface::CanEnableGCCPUGroups()
+{
+    return false;
+}
+
+void GCToOSInterface::GetGroupForProcessor(uint16_t processor_number, uint16_t* group_number, uint16_t* group_processor_number)
+{
+    UNREFERENCED_PARAMETER(processor_number);
+    UNREFERENCED_PARAMETER(group_number);
+    UNREFERENCED_PARAMETER(group_processor_number);
 }
 
 // Initialize the critical section
