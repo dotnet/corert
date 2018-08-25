@@ -22,13 +22,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly bool _isUnboxingStub;
 
+        private readonly bool _isInstantiatingStub;
+
         public MethodFixupSignature(
             ModuleTokenResolver resolver, 
             ReadyToRunFixupKind fixupKind, 
             MethodDesc methodDesc, 
             ModuleToken methodToken,
             TypeDesc constrainedType,
-            bool isUnboxingStub)
+            bool isUnboxingStub,
+            bool isInstantiatingStub)
         {
             _resolver = resolver;
             _fixupKind = fixupKind;
@@ -36,6 +39,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _methodToken = methodToken;
             _constrainedType = constrainedType;
             _isUnboxingStub = isUnboxingStub;
+            _isInstantiatingStub = isInstantiatingStub;
         }
 
         public override int ClassCode => 150063499;
@@ -47,7 +51,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             dataBuilder.AddSymbol(this);
 
             dataBuilder.EmitByte((byte)_fixupKind);
-            dataBuilder.EmitMethodSignature(_methodDesc, _methodToken, _constrainedType, _isUnboxingStub, _methodToken.SignatureContext(_resolver));
+            dataBuilder.EmitMethodSignature(_methodDesc, _methodToken, _constrainedType, _isUnboxingStub, _isInstantiatingStub, _methodToken.SignatureContext(_resolver));
 
             return dataBuilder.ToObjectData();
         }

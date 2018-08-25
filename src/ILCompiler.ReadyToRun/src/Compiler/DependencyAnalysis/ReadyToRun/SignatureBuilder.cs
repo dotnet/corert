@@ -334,7 +334,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public void EmitMethodSignature(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool isUnboxingStub, SignatureContext context)
+        public void EmitMethodSignature(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool isUnboxingStub, bool isInstantiatingStub, SignatureContext context)
         {
             if (token.IsNull)
             {
@@ -345,6 +345,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (isUnboxingStub)
             {
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UnboxingStub;
+            }
+            if (isInstantiatingStub)
+            {
+                flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_InstantiatingStub;
             }
             if (constrainedType != null)
             {
@@ -367,7 +371,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     break;
 
                 case CorTokenType.mdtMethodSpec:
-                    EmitMethodSpecificationSignature(method, token, isUnboxingStub, context);
+                    EmitMethodSpecificationSignature(method, token, flags, context);
                     break;
 
                 default:
@@ -392,7 +396,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             EmitUInt(RidFromToken(memberRefToken.Token));
         }
 
-        private void EmitMethodSpecificationSignature(MethodDesc method, ModuleToken token, bool isUnboxingStub, SignatureContext context)
+        private void EmitMethodSpecificationSignature(MethodDesc method, ModuleToken token, uint flags, SignatureContext context)
         {
             switch (token.TokenType)
             {
@@ -400,11 +404,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         MethodSpecification methodSpec = token.MetadataReader.GetMethodSpecification((MethodSpecificationHandle)MetadataTokens.Handle((int)token.Token));
 
-                        ReadyToRunMethodSigFlags flags = ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MethodInstantiation;
-                        if (isUnboxingStub)
-                        {
-                            flags |= ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UnboxingStub;
-                        }
+                        flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MethodInstantiation;
                         mdToken genericMethodToken;
 
                         switch (methodSpec.Method.Kind)
@@ -418,7 +418,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                 break;
 
                             case HandleKind.MemberReference:
-                                flags |= ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MemberRefToken;
+                                flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MemberRefToken;
                                 genericMethodToken = (mdToken)MetadataTokens.GetToken(methodSpec.Method);
                                 break;
 
@@ -426,7 +426,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                 throw new NotImplementedException();
                         }
 
-                        EmitUInt((uint)flags);
+                        EmitUInt(flags);
                         EmitTokenRid(genericMethodToken);
                         ImmutableArray<byte[]> methodTypeSignatures = methodSpec.DecodeSignature<byte[], SignatureContext>(context, context);
                         EmitUInt((uint)methodTypeSignatures.Length);

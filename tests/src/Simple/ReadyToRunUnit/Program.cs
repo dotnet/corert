@@ -424,8 +424,8 @@ internal class Program
         RunTest("DisposeEnumeratorTest", DisposeEnumeratorTest());
         RunTest("EmptyArrayOfInt", EmptyArrayOfInt());
         RunTest("EnumerateEmptyArrayOfInt", EnumerateEmptyArrayOfInt());
-        // TODO: RunTest("EmptyArrayOfString", EmptyArrayOfString());
-        // TODO: RunTest("EnumerateEmptyArrayOfString", EnumerateEmptyArrayOfString());
+        RunTest("EmptyArrayOfString", EmptyArrayOfString());
+        RunTest("EnumerateEmptyArrayOfString", EnumerateEmptyArrayOfString());
 
         Console.WriteLine($@"{_passedTests.Count} tests pass:");
         foreach (string testName in _passedTests)

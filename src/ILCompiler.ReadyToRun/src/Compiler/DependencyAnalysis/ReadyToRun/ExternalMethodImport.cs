@@ -25,7 +25,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             TypeDesc constrainedType,
             bool isUnboxingStub,
             MethodWithGCInfo localMethod)
-            : base(factory.MethodImports, factory.MethodSignature(fixupKind, methodDesc, token, constrainedType, isUnboxingStub))
+            : base(factory.MethodImports, factory.MethodSignature(fixupKind, methodDesc, token, constrainedType, isUnboxingStub, isInstantiatingStub: false))
         {
             _methodDesc = methodDesc;
             _token = token;

@@ -53,6 +53,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     _targetMethodToken, 
                     constrainedType: null, 
                     isUnboxingStub: false, 
+                    isInstantiatingStub: false,
                     _targetMethodToken.SignatureContext(_resolver));
                 builder.EmitTypeSignature(_delegateType, _delegateTypeToken, _delegateTypeToken.SignatureContext(_resolver));
             }
