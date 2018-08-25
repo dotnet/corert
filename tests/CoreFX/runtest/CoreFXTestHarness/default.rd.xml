@@ -36,6 +36,7 @@
             <Type Name="Xunit.Sdk.BeforeAfterTestAttribute[]" Dynamic="Required All" />
         </Assembly>
         <Assembly Name="Xunit.NetCore.Extensions" Dynamic="Required All" />
+        <Assembly Name="Microsoft.DotNet.XUnitExtensions" Dynamic="Required All" />
         <Assembly Name="System.Linq.Expressions" Dynamic="Required All" />
     </Application>
 </Directives>
