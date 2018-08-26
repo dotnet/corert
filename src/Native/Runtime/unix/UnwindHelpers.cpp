@@ -292,13 +292,152 @@ struct Registers_REGDISPLAY : REGDISPLAY
 };
 
 #endif // _TARGET_AMD64_
+#if defined(_TARGET_ARM_)
+
+class Registers_arm_rt: public libunwind::Registers_arm {
+public:
+    Registers_arm_rt() { abort(); };
+    Registers_arm_rt(void *registers) { regs = (REGDISPLAY *)registers; };
+    uint32_t    getRegister(int num);
+    void        setRegister(int num, uint32_t value, uint32_t location);
+    uint32_t    getRegisterLocation(int regNum) const { abort();}
+    unw_fpreg_t getFloatRegister(int num) { abort();}
+    void        setFloatRegister(int num, unw_fpreg_t value) {abort();}
+    bool        validVectorRegister(int num) const { abort();}
+    uint32_t    getVectorRegister(int num) const {abort();};
+    void        setVectorRegister(int num, uint32_t value) {abort();};
+    void        jumpto() { abort();};
+    uint32_t    getSP() const         { return regs->SP;}
+    void        setSP(uint32_t value, uint32_t location) { regs->SP = value;}
+    uint32_t    getIP() const         { return regs->IP;}
+    void        setIP(uint32_t value, uint32_t location)
+    { regs->IP = value; regs->pIP = (PTR_UIntNative)location; }
+    void saveVFPAsX() {abort();};
+private:
+    REGDISPLAY *regs;
+};
+
+inline uint32_t Registers_arm_rt::getRegister(int regNum) {
+    if (regNum == UNW_REG_SP || regNum == UNW_ARM_SP)
+        return regs->SP;
+
+    if (regNum == UNW_ARM_LR)
+        return *regs->pLR;
+
+    if (regNum == UNW_REG_IP || regNum == UNW_ARM_IP)
+        return regs->IP;
+
+    switch (regNum)
+    {
+    case (UNW_ARM_R0):
+        return *regs->pR0;
+    case (UNW_ARM_R1):
+        return *regs->pR1;
+    case (UNW_ARM_R2):
+        return *regs->pR2;
+    case (UNW_ARM_R3):
+        return *regs->pR3;
+    case (UNW_ARM_R4):
+        return *regs->pR4;
+    case (UNW_ARM_R5):
+        return *regs->pR5;
+    case (UNW_ARM_R6):
+        return *regs->pR6;
+    case (UNW_ARM_R7):
+        return *regs->pR7;
+    case (UNW_ARM_R8):
+        return *regs->pR8;
+    case (UNW_ARM_R9):
+        return *regs->pR9;
+    case (UNW_ARM_R10):
+        return *regs->pR10;
+    case (UNW_ARM_R11):
+        return *regs->pR11;
+    case (UNW_ARM_R12):
+        return *regs->pR12;
+    }
+
+    PORTABILITY_ASSERT("unsupported arm register");
+}
+
+void Registers_arm_rt::setRegister(int num, uint32_t value, uint32_t location)
+{
+
+    if (num == UNW_REG_SP || num == UNW_ARM_SP) {
+        regs->SP = (UIntNative )value;
+        return;
+    }
+
+    if (num == UNW_ARM_LR) {
+        regs->pLR = (PTR_UIntNative)location;
+        return;
+    }
+
+    if (num == UNW_REG_IP || num == UNW_ARM_IP) {
+        regs->IP = value;
+        /* the location could be NULL, we could try to recover
+           pointer to value in stack from pLR */
+        if ((!location) && (regs->pLR) && (*regs->pLR == value))
+            regs->pIP = regs->pLR;
+        else
+            regs->pIP = (PTR_UIntNative)location;
+        return;
+    }
+
+    switch (num)
+    {
+    case (UNW_ARM_R0):
+        regs->pR0 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM_R1):
+        regs->pR1 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM_R2):
+        regs->pR2 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM_R3):
+        regs->pR3 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM_R4):
+        regs->pR4 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM_R5):
+        regs->pR5 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM_R6):
+        regs->pR6 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM_R7):
+        regs->pR7 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM_R8):
+        regs->pR8 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM_R9):
+        regs->pR9 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM_R10):
+        regs->pR10 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM_R11):
+        regs->pR11 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM_R12):
+        regs->pR12 = (PTR_UIntNative)location;
+        break;
+    default:
+        PORTABILITY_ASSERT("unsupported arm register");
+    }
+}
+
+#endif // _TARGET_ARM_
 
 bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs)
 {
 #if defined(_TARGET_AMD64_)
     libunwind::UnwindCursor<LocalAddressSpace, Registers_x86_64> uc(_addressSpace);
 #elif defined(_TARGET_ARM_)
-    libunwind::UnwindCursor<LocalAddressSpace, Registers_arm> uc(_addressSpace);
+    libunwind::UnwindCursor<LocalAddressSpace, Registers_arm_rt> uc(_addressSpace, regs);
 #else
     #error "Unwinding is not implemented for this architecture yet."
 #endif
@@ -322,8 +461,13 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
     }
 
     regs->pIP = PTR_PCODE(regs->SP - sizeof(TADDR));
-#else
-    PORTABILITY_ASSERT("DoTheStep");
+#elif defined(_LIBUNWIND_ARM_EHABI)
+    uc.setInfoBasedOnIPRegister(true);
+    int stepRet = uc.step();
+    if ((stepRet != UNW_STEP_SUCCESS) && (stepRet != UNW_STEP_END))
+    {
+        return false;
+    }
 #endif
 
     return true;
@@ -365,18 +509,20 @@ UnwindInfoSections LocateUnwindSections(uintptr_t pc)
 
 bool UnwindHelpers::StepFrame(REGDISPLAY *regs)
 {
-    uintptr_t pc = regs->GetIP();
-
-    UnwindInfoSections uwInfoSections = LocateUnwindSections(pc);
-
 #if _LIBUNWIND_SUPPORT_DWARF_UNWIND
+    uintptr_t pc = regs->GetIP();
+    UnwindInfoSections uwInfoSections = LocateUnwindSections(pc);
     if (uwInfoSections.dwarf_section == NULL)
     {
         return false;
     }
+    return DoTheStep(pc, uwInfoSections, regs);
+#elif defined(_LIBUNWIND_ARM_EHABI)
+    // unwind section is located later for ARM
+    // pc will be taked from regs parameter
+    UnwindInfoSections uwInfoSections;
+    return DoTheStep(0, uwInfoSections, regs);
 #else
     PORTABILITY_ASSERT("StepFrame");
 #endif
-
-    return DoTheStep(pc, uwInfoSections, regs);
 }

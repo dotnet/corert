@@ -144,6 +144,8 @@ namespace ILCompiler.DependencyAnalysis
         // this is the llvm instance.
         public LLVMModuleRef Module { get; }
 
+        public LLVMDIBuilderRef DIBuilder { get; }
+
         // This is used to build mangled names
         private Utf8StringBuilder _sb = new Utf8StringBuilder();
 
@@ -181,6 +183,9 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             EmitNativeMain();
+
+            EmitDebugMetadata();
+
             LLVM.WriteBitcodeToFile(Module, _objectFilePath);
 #if DEBUG
             LLVM.PrintModuleToFile(Module, Path.ChangeExtension(_objectFilePath, ".txt"), out string unused2);
@@ -188,6 +193,25 @@ namespace ILCompiler.DependencyAnalysis
             LLVM.VerifyModule(Module, LLVMVerifierFailureAction.LLVMAbortProcessAction, out string unused);
 
             //throw new NotImplementedException(); // This function isn't complete
+        }
+
+        private void EmitDebugMetadata()
+        {
+            var dwarfVersion = LLVM.MDNode(new[]
+            {
+                LLVM.ConstInt(LLVM.Int32Type(), 2, false),
+                LLVM.MDString("Dwarf Version", 13),
+                LLVM.ConstInt(LLVM.Int32Type(), 4, false)
+            });
+            var dwarfSchemaVersion = LLVM.MDNode(new[]
+            {
+                LLVM.ConstInt(LLVM.Int32Type(), 2, false),
+                LLVM.MDString("Debug Info Version", 18),
+                LLVM.ConstInt(LLVM.Int32Type(), 3, false)
+            });
+            LLVM.AddNamedMetadataOperand(Module, "llvm.module.flags", dwarfVersion);
+            LLVM.AddNamedMetadataOperand(Module, "llvm.module.flags", dwarfSchemaVersion);
+            LLVM.DIBuilderFinalize(DIBuilder);
         }
 
         public static LLVMValueRef GetConstZeroArray(int length)
@@ -645,6 +669,7 @@ namespace ILCompiler.DependencyAnalysis
             _nodeFactory = factory;
             _objectFilePath = objectFilePath;
             Module = compilation.Module;
+            DIBuilder = compilation.DIBuilder;
         }
 
         public void Dispose()

@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
 
 using Internal.TypeSystem;
 using ILCompiler;
@@ -12,8 +14,8 @@ using LLVMSharp;
 using ILCompiler.CodeGen;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.WebAssembly;
 using Internal.TypeSystem.Ecma;
-using System.Linq;
 
 namespace Internal.IL
 {
@@ -35,6 +37,7 @@ namespace Internal.IL
         }
 
         public LLVMModuleRef Module { get; }
+        public LLVMContextRef Context { get; }
         private readonly MethodDesc _method;
         private readonly MethodIL _methodIL;
         private readonly MethodSignature _signature;
@@ -49,6 +52,8 @@ namespace Internal.IL
         private List<SpilledExpressionEntry> _spilledExpressions = new List<SpilledExpressionEntry>();
         private int _pointerSize;
         private readonly byte[] _ilBytes;
+        private MethodDebugInformation _debugInformation;
+        private LLVMMetadataRef _debugFunction;
 
         /// <summary>
         /// Stack of values pushed onto the IL stack: locals, arguments, values, function pointer, ...
@@ -106,6 +111,10 @@ namespace Internal.IL
             _llvmFunction = GetOrCreateLLVMFunction(mangledName, method.Signature);
             _builder = LLVM.CreateBuilder();
             _pointerSize = compilation.NodeFactory.Target.PointerSize;
+
+            _debugInformation = _compilation.GetDebugInfo(_methodIL);
+
+            Context = LLVM.GetModuleContext(Module);
         }
 
         public void Import()
@@ -174,14 +183,41 @@ namespace Internal.IL
                 signatureIndex++;
             }
 
+            string[] argNames = null;
+            if (_debugInformation != null)
+            {
+                argNames = _debugInformation.GetParameterNames()?.ToArray();
+            }
+
             for (int i = 0; i < _signature.Length; i++)
             {
                 if (CanStoreTypeOnStack(_signature[i]))
                 {
-                    LLVMValueRef argStackSlot = LLVM.BuildAlloca(_builder, GetLLVMTypeForTypeDesc(_signature[i]), $"arg{i + thisOffset}_");
+                    string argName = String.Empty;
+                    if (argNames != null && argNames[i] != null)
+                    {
+                        argName = argNames[i] + "_";
+                    }
+                    argName += $"arg{i + thisOffset}_";
+
+                    LLVMValueRef argStackSlot = LLVM.BuildAlloca(_builder, GetLLVMTypeForTypeDesc(_signature[i]), argName);
                     LLVM.BuildStore(_builder, LLVM.GetParam(_llvmFunction, (uint)signatureIndex), argStackSlot);
                     _argSlots[i] = argStackSlot;
                     signatureIndex++;
+                }
+            }
+
+            string[] localNames = new string[_locals.Length];
+            if (_debugInformation != null)
+            {
+                foreach (ILLocalVariable localDebugInfo in _debugInformation.GetLocalVariables() ?? Enumerable.Empty<ILLocalVariable>())
+                {
+                    // Check whether the slot still exists as the compiler may remove it for intrinsics
+                    int slot = localDebugInfo.Slot;
+                    if (slot < localNames.Length)
+                    {
+                        localNames[localDebugInfo.Slot] = localDebugInfo.Name;
+                    }
                 }
             }
 
@@ -189,7 +225,15 @@ namespace Internal.IL
             {
                 if (CanStoreLocalOnStack(_locals[i].Type))
                 {
-                    LLVMValueRef localStackSlot = LLVM.BuildAlloca(_builder, GetLLVMTypeForTypeDesc(_locals[i].Type), $"local{i}_");
+                    string localName = String.Empty;
+                    if (localNames[i] != null)
+                    {
+                        localName = localNames[i] + "_";
+                    }
+
+                    localName += $"local{i}_";
+
+                    LLVMValueRef localStackSlot = LLVM.BuildAlloca(_builder, GetLLVMTypeForTypeDesc(_locals[i].Type), localName);
                     _localSlots[i] = localStackSlot;
                 }
             }
@@ -398,10 +442,69 @@ namespace Internal.IL
 
         private void StartImportingInstruction()
         {
+            if (_debugInformation != null)
+            {
+                bool foundSequencePoint = false;
+                ILSequencePoint curSequencePoint = default;
+                foreach (var sequencePoint in _debugInformation.GetSequencePoints() ?? Enumerable.Empty<ILSequencePoint>())
+                {
+                    if (sequencePoint.Offset == _currentOffset)
+                    {
+                        curSequencePoint = sequencePoint;
+                        foundSequencePoint = true;
+                        break;
+                    }
+                    else if (sequencePoint.Offset < _currentOffset)
+                    {
+                        curSequencePoint = sequencePoint;
+                        foundSequencePoint = true;
+                    }
+                }
+
+                if (!foundSequencePoint)
+                {
+                    return;
+                }
+
+                // LLVM can't process empty string file names
+                if (String.IsNullOrWhiteSpace(curSequencePoint.Document))
+                {
+                    return;
+                }
+
+                DebugMetadata debugMetadata;
+                if (!_compilation.DebugMetadataMap.TryGetValue(curSequencePoint.Document, out debugMetadata))
+                {
+                    string fullPath = curSequencePoint.Document;
+                    string fileName = Path.GetFileName(fullPath);
+                    string directory = Path.GetDirectoryName(fullPath) ?? String.Empty;
+                    LLVMMetadataRef fileMetadata = LLVMPInvokes.LLVMDIBuilderCreateFile(_compilation.DIBuilder, fullPath, fullPath.Length,
+                        directory, directory.Length);
+
+                    // todo: get the right value for isOptimized
+                    LLVMMetadataRef compileUnitMetadata = LLVMPInvokes.LLVMDIBuilderCreateCompileUnit(_compilation.DIBuilder, LLVMDWARFSourceLanguage.LLVMDWARFSourceLanguageC,
+                        fileMetadata, "ILC", 3, isOptimized: false, String.Empty, 0, 1, String.Empty, 0, LLVMDWARFEmissionKind.LLVMDWARFEmissionFull, 0, false, false);
+                    LLVM.AddNamedMetadataOperand(Module, "llvm.dbg.cu", LLVM.MetadataAsValue(Context, compileUnitMetadata));
+
+                    debugMetadata = new DebugMetadata(fileMetadata, compileUnitMetadata);
+                    _compilation.DebugMetadataMap[fullPath] = debugMetadata;
+                }
+
+                if (_debugFunction.Pointer == IntPtr.Zero)
+                {
+                    _debugFunction = LLVM.DIBuilderCreateFunction(_compilation.DIBuilder, debugMetadata.CompileUnit, _method.Name, String.Empty, debugMetadata.File,
+                        (uint)_debugInformation.GetSequencePoints().FirstOrDefault().LineNumber, default(LLVMMetadataRef), 1, 1, 1, 0, IsOptimized: 0, _llvmFunction);
+                }
+
+                LLVMMetadataRef currentLine = LLVMPInvokes.LLVMDIBuilderCreateDebugLocation(Context, (uint)curSequencePoint.LineNumber, 0, _debugFunction, default(LLVMMetadataRef));
+                LLVM.SetCurrentDebugLocation(_builder, LLVM.MetadataAsValue(Context, currentLine));
+            }
         }
 
         private void EndImportingInstruction()
         {
+            // Reset the debug position so it doesn't end up applying to the wrong instructions
+            LLVM.SetCurrentDebugLocation(_builder, default(LLVMValueRef));
         }
 
         private void ImportNop()
