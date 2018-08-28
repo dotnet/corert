@@ -40,6 +40,7 @@ if /i "%1" == "/coreclr"  (
     )
 
     if /i "!SelectedTests!" == "Top200" set CoreRT_CoreCLRTargetsFile=%CoreRT_TestRoot%\Top200.CoreCLR.issues.targets&&goto :ExtRepoTestsOk
+    if /i "!SelectedTests!" == "ReadyToRun" set CoreRT_CoreCLRTargetsFile=%CoreRT_TestRoot%\ReadyToRun.CoreCLR.issues.targets&&goto :ExtRepoTestsOk
     if /i "!SelectedTests!" == "KnownGood" set CoreRT_CoreCLRTargetsFile=%CoreRT_TestRoot%\CoreCLR.issues.targets&&goto :ExtRepoTestsOk
     if /i "!SelectedTests!" == "Interop" set CoreRT_CoreCLRTargetsFile=%CoreRT_TestRoot%\Interop.CoreCLR.issues.targets&&goto :ExtRepoTestsOk
 
@@ -80,6 +81,7 @@ echo     --- CoreCLR Subset ---
 echo        Top200     : Runs broad coverage / CI validation (~200 tests).
 echo        KnownGood  : Runs tests known to pass on CoreRT (~6000 tests).
 echo        Interop    : Runs only the interop tests (~43 tests).
+echo        ReadyToRun : Runs tests known to pass using CoreCLR Ready To Run (~23 tests).
 echo        All        : Runs all tests. There will be many failures (~7000 tests).
 exit /b 2
 

@@ -127,6 +127,9 @@ def static calculateBuildCommands(def os, def configuration, def scenario, def i
                 if (isPR) {
                     // Run a small set of BVTs during PR validation
                     buildCommands += testScriptString + "Top200"
+
+                    // Run the set of tests known to work with Ready To Run
+                    buildCommands += testScriptString + "ReadyToRun /mode ReadyToRun"
                 }
                 else {
                     // Run the full set of known passing tests in the post-commit job
