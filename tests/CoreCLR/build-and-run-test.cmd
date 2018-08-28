@@ -82,4 +82,29 @@ set TestExitCode=!ERRORLEVEL!
 ::
 rd /s /q %TestFolder%\native
 
+
+::
+:: Dev bring-up aid to help populate the inclusion / exclusion files. Ie, tests\ReadyToRun.CoreCLR.issues.targets.
+:: All failing tests will have a file named exclude.txt containing the test cmd file path.
+:: All passing tests will have a file named include.txt containing the test cmd file path.
+::
+:: From <root>\tests_downloaded\CoreCLR gather all the test cmd file names:
+::
+::  for /r %f in (include.txt) do type "%f" >> passed.txt
+::
+::   Or
+::
+::  for /r %f in (exclude.txt) do type "%f" >> failed.txt
+::
+:: You can find / replace to massage the list into the XML format needed in the issues.targets file.
+::
+del %TestFolder%\include.txt
+del %TestFolder%\exclude.txt
+
+if "!TestExitCode!" == "100" (
+    echo %TestFolder%%TestFileName%.cmd > %TestFolder%\include.txt
+) else (
+    echo %TestFolder%%TestFileName%.cmd > %TestFolder%\exclude.txt
+)
+
 exit /b !TestExitCode!
