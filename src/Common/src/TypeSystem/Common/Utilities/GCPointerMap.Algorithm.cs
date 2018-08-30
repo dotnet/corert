@@ -61,7 +61,7 @@ namespace Internal.TypeSystem
         /// </summary>
         public static GCPointerMap FromThreadStaticLayout(DefType type)
         {
-            GCPointerMapBuilder builder = new GCPointerMapBuilder(type.ThreadStaticFieldSize.AsInt, type.Context.Target.PointerSize);
+            GCPointerMapBuilder builder = new GCPointerMapBuilder(type.ThreadGcStaticFieldSize.AsInt, type.Context.Target.PointerSize);
 
             foreach (FieldDesc field in type.GetFields())
             {
@@ -85,7 +85,7 @@ namespace Internal.TypeSystem
                 }
             }
 
-            Debug.Assert(builder.ToGCMap().Size * type.Context.Target.PointerSize >= type.ThreadStaticFieldSize.AsInt);
+            Debug.Assert(builder.ToGCMap().Size * type.Context.Target.PointerSize >= type.ThreadGcStaticFieldSize.AsInt);
             return builder.ToGCMap();
         }
 

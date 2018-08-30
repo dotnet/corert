@@ -120,7 +120,8 @@ namespace Internal.Runtime.TypeLoader
             {
                 layout.GcStatics = new StaticsBlock() { Size = position[(int)NativeFormat.FieldStorage.GCStatic], LargestAlignment = DefType.MaximumAlignmentPossible };
                 layout.NonGcStatics = new StaticsBlock() { Size = position[(int)NativeFormat.FieldStorage.NonGCStatic], LargestAlignment = DefType.MaximumAlignmentPossible };
-                layout.ThreadStatics = new StaticsBlock() { Size = position[(int)NativeFormat.FieldStorage.TLSStatic], LargestAlignment = DefType.MaximumAlignmentPossible };
+                layout.ThreadGcStatics = new StaticsBlock() { Size = position[(int)NativeFormat.FieldStorage.TLSStatic], LargestAlignment = DefType.MaximumAlignmentPossible };
+                layout.ThreadNonGcStatics = new StaticsBlock() { Size = LayoutInt.Zero, LargestAlignment = LayoutInt.Zero };
             }
 
             int curStaticField = 0;
@@ -179,7 +180,8 @@ namespace Internal.Runtime.TypeLoader
                 GcStatics = new StaticsBlock() { Size = gcDataSize, LargestAlignment = DefType.MaximumAlignmentPossible },
                 NonGcStatics = new StaticsBlock() { Size = nonGcDataSize, LargestAlignment = DefType.MaximumAlignmentPossible },
                 Offsets = null, // We're not computing field offsets here, so return null
-                ThreadStatics = new StaticsBlock() { Size = threadDataSize, LargestAlignment = DefType.MaximumAlignmentPossible },
+                ThreadGcStatics = new StaticsBlock() { Size = threadDataSize, LargestAlignment = DefType.MaximumAlignmentPossible },
+                ThreadNonGcStatics = new StaticsBlock() { Size = LayoutInt.Zero, LargestAlignment = LayoutInt.Zero },
             };
 
             return staticLayout;
