@@ -8,100 +8,6 @@ using System.Runtime.InteropServices;
 using CpObj;
 #endif
 
-public sealed class MySealedClass
-{
-    uint _data;
-
-    public MySealedClass()
-    {
-        _data = 104;
-    }
-
-    public MySealedClass(uint data)
-    {
-        _data = data;
-    }
-
-    public uint GetData()
-    {
-        return _data;
-    }
-
-    public override int GetHashCode()
-    {
-        return (int)_data * 2;
-    }
-
-    public override string ToString()
-    {
-        Program.PrintLine("MySealedClass.ToString called. Data:");
-        Program.PrintLine(_data.ToString());
-        return _data.ToString();
-    }
-}
-
-public class MyUnsealedClass
-{
-    uint _data;
-
-    public MyUnsealedClass()
-    {
-        _data = 24;
-    }
-
-    public MyUnsealedClass(uint data)
-    {
-        _data = data;
-    }
-
-    public uint GetData()
-    {
-        return _data;
-    }
-
-    public override int GetHashCode()
-    {
-        return (int)_data * 2;
-    }
-
-    public override string ToString()
-    {
-        return _data.ToString();
-    }
-}
-
-public class MyBase
-{
-    protected uint _data;
-    public MyBase(uint data)
-    {
-        _data = data;
-    }
-
-    public virtual uint GetData()
-    {
-        return _data;
-    }
-}
-
-public class UnsealedDerived : MyBase
-{
-    public UnsealedDerived(uint data) : base(data) { }
-    public override uint GetData()
-    {
-        return _data * 2;
-    }
-}
-
-public sealed class SealedDerived : MyBase
-{
-    public SealedDerived(uint data) : base(data) { }
-    public override uint GetData()
-    {
-        return _data * 3;
-    }
-}
-
 internal static class Program
 {
     private static int staticInt;
@@ -849,5 +755,99 @@ public struct ItfStruct : ITestItf
     public int GetValue()
     {
         return 4;
+    }
+}
+
+public sealed class MySealedClass
+{
+    uint _data;
+
+    public MySealedClass()
+    {
+        _data = 104;
+    }
+
+    public MySealedClass(uint data)
+    {
+        _data = data;
+    }
+
+    public uint GetData()
+    {
+        return _data;
+    }
+
+    public override int GetHashCode()
+    {
+        return (int)_data * 2;
+    }
+
+    public override string ToString()
+    {
+        Program.PrintLine("MySealedClass.ToString called. Data:");
+        Program.PrintLine(_data.ToString());
+        return _data.ToString();
+    }
+}
+
+public class MyUnsealedClass
+{
+    uint _data;
+
+    public MyUnsealedClass()
+    {
+        _data = 24;
+    }
+
+    public MyUnsealedClass(uint data)
+    {
+        _data = data;
+    }
+
+    public uint GetData()
+    {
+        return _data;
+    }
+
+    public override int GetHashCode()
+    {
+        return (int)_data * 2;
+    }
+
+    public override string ToString()
+    {
+        return _data.ToString();
+    }
+}
+
+public class MyBase
+{
+    protected uint _data;
+    public MyBase(uint data)
+    {
+        _data = data;
+    }
+
+    public virtual uint GetData()
+    {
+        return _data;
+    }
+}
+
+public class UnsealedDerived : MyBase
+{
+    public UnsealedDerived(uint data) : base(data) { }
+    public override uint GetData()
+    {
+        return _data * 2;
+    }
+}
+
+public sealed class SealedDerived : MyBase
+{
+    public SealedDerived(uint data) : base(data) { }
+    public override uint GetData()
+    {
+        return _data * 3;
     }
 }
