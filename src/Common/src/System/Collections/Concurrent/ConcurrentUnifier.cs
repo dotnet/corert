@@ -10,15 +10,6 @@ using System.Collections.Generic;
 
 namespace System.Collections.Concurrent
 {
-    internal struct TwoByteStr
-    {
-        public byte first;
-        public byte second;
-
-        [System.Runtime.InteropServices.DllImport("*")]
-        public static unsafe extern int printf(byte* str, byte* unused);
-    }
-
     // Abstract base for a thread-safe dictionary mapping a set of keys (K) to values (V).
     //
     // To create an actual dictionary, subclass this type and override the protected Factory method
@@ -77,26 +68,6 @@ namespace System.Collections.Concurrent
         {
             _lock = new Lock();
             _container = new Container(this);
-        }
-
-        private static unsafe void PrintString(string s)
-        {
-            int length = s.Length;
-            fixed (char* curChar = s)
-            {
-                for (int i = 0; i < length; i++)
-                {
-                    TwoByteStr curCharStr = new TwoByteStr();
-                    curCharStr.first = (byte)(*(curChar + i));
-                    TwoByteStr.printf((byte*)&curCharStr, null);
-                }
-            }
-        }
-
-        public static void PrintLine(string s)
-        {
-            PrintString(s);
-            PrintString("\n");
         }
 
         //
