@@ -294,6 +294,22 @@ internal static class Program
             PrintLine("float comparison: Ok.");
         }
 
+        // Create a ByReference<char> through the ReadOnlySpan ctor and call the ByReference.Value via the indexer.
+        var span = "123".AsSpan();
+        if (span[0] != '1'
+            || span[1] != '2'
+            || span[2] != '3')
+        {
+            PrintLine("ByReference intrinsics exercise via ReadOnlySpan failed");
+            PrintLine(span[0].ToString());
+            PrintLine(span[1].ToString());
+            PrintLine(span[2].ToString());
+        }
+        else
+        {
+            PrintLine("ByReference intrinsics exercise via ReadOnlySpan OK.");
+        }
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
