@@ -100,6 +100,7 @@ namespace Explicit
 
 namespace Sequential
 {
+    [StructLayout(LayoutKind.Sequential)]
     class Class1
     {
         int MyInt;
@@ -110,11 +111,13 @@ namespace Sequential
         Class1 MyClass1SelfRef;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
     class Class2 : Class1
     {
         int MyInt2;
     }
 
+    // [StructLayout(LayoutKind.Sequential)] is applied by default by the C# compiler
     struct Struct0
     {
         bool b1;
@@ -124,6 +127,7 @@ namespace Sequential
         string s1;
     }
 
+    // [StructLayout(LayoutKind.Sequential)] is applied by default by the C# compiler
     struct Struct1
     {
         Struct0 MyStruct0;
@@ -143,6 +147,27 @@ namespace Sequential
         bool bool1;
         double double1;
         bool bool2;
+    }
+}
+
+namespace Auto
+{
+    class Class1
+    {
+        Struct0 MyStruct0;
+        bool MyBool1;
+        char MyChar1;
+        int MyInt;
+        double MyDouble;
+        long MyLong;
+        byte[] MyByteArray;
+        string MyString1;
+        bool MyBool2;
+    }
+
+    struct Struct0
+    {
+        bool MyStruct0Bool;
     }
 }
 

@@ -124,7 +124,7 @@ namespace TypeSystemTests
             // MyByteArray      8
             // MyClass1SelfRef  8
             // -------------------
-            //                  40
+            //                  40 (0x28)
             Assert.Equal(0x28, class1Type.InstanceByteCount.AsInt);
 
             foreach (var f in class1Type.GetFields())
@@ -168,7 +168,7 @@ namespace TypeSystemTests
             // Base Class       40
             // MyInt2           4 + 4 byte padding to make class size % pointer size == 0
             // -------------------
-            //                  44
+            //                  48 (0x30)
             Assert.Equal(0x30, class2Type.InstanceByteCount.AsInt);
 
             foreach (var f in class2Type.GetFields())
@@ -258,6 +258,67 @@ namespace TypeSystemTests
                         break;
                     case "MyBool":
                         Assert.Equal(0x10, f.Offset.AsInt);
+                        break;
+                    default:
+                        Assert.True(false);
+                        break;
+                }
+            }
+        }
+
+        [Fact]
+        public void TestAutoTypeLayout()
+        {
+            MetadataType class1Type = _testModule.GetType("Auto", "Class1");
+
+            // Byte count
+            // Base Class       8
+            // MyByteArray      8
+            // MyString1        8
+            // MyDouble         8
+            // MyLong           8
+            // MyInt            4
+            // MyChar1          2
+            // MyBool1          1
+            // MyBool2          1
+            // MyStruct0        1 + 7 byte padding to make class size % pointer size == 0
+            // -------------------
+            //                  56 (0x38)
+            Assert.Equal(0x38, class1Type.InstanceByteCount.AsInt);
+
+            foreach (var f in class1Type.GetFields())
+            {
+                if (f.IsStatic)
+                    continue;
+
+                switch (f.Name)
+                {
+                    case "MyByteArray":
+                        Assert.Equal(0x08, f.Offset.AsInt);
+                        break;
+                    case "MyString1":
+                        Assert.Equal(0x10, f.Offset.AsInt);
+                        break;
+                    case "MyDouble":
+                        Assert.Equal(0x18, f.Offset.AsInt);
+                        break;
+                    case "MyLong":
+                        Assert.Equal(0x20, f.Offset.AsInt);
+                        break;
+                    case "MyInt":
+                        Assert.Equal(0x28, f.Offset.AsInt);
+                        break;
+                    case "MyChar1":
+                        Assert.Equal(0x2C, f.Offset.AsInt);
+                        break;
+                    case "MyBool1":
+                        Assert.Equal(0x2E, f.Offset.AsInt);
+                        break;
+                    case "MyBool2":
+                        Assert.Equal(0x2F, f.Offset.AsInt);
+                        break;
+                    case "MyStruct0":
+                        Assert.Equal(0x30, f.Offset.AsInt);
                         break;
                     default:
                         Assert.True(false);
