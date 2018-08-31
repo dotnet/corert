@@ -1525,6 +1525,15 @@ bool GCToEEInterface::AppDomainIsRudeUnload(void* appDomain)
     return false;
 }
 
+bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)
+{
+    return false;
+}
+
+void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration)
+{
+}
+
 MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
 {
     assert(g_pFreeObjectMethodTable != nullptr);
