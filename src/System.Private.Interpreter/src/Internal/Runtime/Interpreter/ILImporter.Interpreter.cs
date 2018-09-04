@@ -102,6 +102,15 @@ namespace Internal.IL
             return _interpreter.TypeSystemContext.GetWellKnownType(wellKnownType);
         }
 
+        public StackItem PopWithValidation()
+        {
+            bool hasStackItem = _interpreter.EvaluationStack.TryPop(out StackItem stackItem);
+            if (!hasStackItem)
+                throw new InvalidProgramException();
+
+            return stackItem;
+        }
+
         private void ImportNop()
         {
             // Do nothing!
@@ -149,15 +158,17 @@ namespace Internal.IL
 
         private void ImportReturn()
         {
-            bool hasStackItem = _interpreter.EvaluationStack.TryPop(out StackItem stackItem);
-            if (!hasStackItem)
+            var returnType = _method.Signature.ReturnType;
+            if (returnType.IsVoid)
                 return;
 
             int integer = 0;
+            StackItem stackItem = PopWithValidation();
+
             if (stackItem.Kind == StackValueKind.Int32)
                 integer = stackItem.AsInt32();
 
-            TypeFlags category = _method.Signature.ReturnType.Category;
+            TypeFlags category = returnType.Category;
             switch (category)
             {
                 case TypeFlags.Boolean:
@@ -220,17 +231,6 @@ namespace Internal.IL
                 case TypeFlags.Pointer:
                 case TypeFlags.FunctionPointer:
                 case TypeFlags.GenericParameter:
-                case TypeFlags.SignatureTypeVariable:
-                case TypeFlags.SignatureMethodVariable:
-                case TypeFlags.HasGenericVariance:
-                case TypeFlags.HasGenericVarianceComputed:
-                case TypeFlags.HasStaticConstructor:
-                case TypeFlags.HasStaticConstructorComputed:
-                case TypeFlags.HasFinalizerComputed:
-                case TypeFlags.HasFinalizer:
-                case TypeFlags.IsByRefLike:
-                case TypeFlags.AttributeCacheComputed:
-                case TypeFlags.IsIntrinsic:
                 default:
                     break;
             }
