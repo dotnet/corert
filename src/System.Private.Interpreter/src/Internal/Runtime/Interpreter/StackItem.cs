@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Internal.IL;
 using Internal.TypeSystem;
@@ -16,123 +17,116 @@ namespace Internal.Runtime.Interpreter
         private StackValueKind _kind;
 
         [FieldOffset(8)]
-        private WellKnownType _type;
-
-        [FieldOffset(16)]
         private int _int32;
 
-        [FieldOffset(16)]
+        [FieldOffset(8)]
         private long _int64;
 
-        [FieldOffset(16)]
+        [FieldOffset(8)]
         private IntPtr _nativeInt;
 
-        [FieldOffset(16)]
+        [FieldOffset(8)]
         private float _float;
 
-        [FieldOffset(16)]
+        [FieldOffset(8)]
         private double _double;
 
-        [FieldOffset(16)]
+        [FieldOffset(8)]
         private void* _ptr;
 
-        [FieldOffset(24)]
+        [FieldOffset(16)]
         private ValueType _valueType;
 
-        [FieldOffset(24)]
+        [FieldOffset(16)]
         private object _objref;
 
         public StackValueKind Kind => _kind;
-        public WellKnownType Type => _type;
 
-        public static implicit operator StackItem(int int32)
+        public static StackItem FromInt32(int int32)
         {
-            return new StackItem { _int32 = int32, _type = WellKnownType.Int32, _kind = StackValueKind.Int32 };
+            return new StackItem { _int32 = int32, _kind = StackValueKind.Int32 };
         }
 
-        public static explicit operator int(StackItem stackItem)
+        public int AsInt32()
         {
-            if (stackItem._type != WellKnownType.Int32)
-                throw new InvalidCastException();
-
-            return stackItem._int32;
+            Debug.Assert(_kind == StackValueKind.Int32);
+            return _int32;
         }
 
-        public static implicit operator StackItem(long int64)
+        public static StackItem FromInt64(long int64)
         {
-            return new StackItem { _int64 = int64, _type = WellKnownType.Int64, _kind = StackValueKind.Int64 };
+            return new StackItem { _int64 = int64, _kind = StackValueKind.Int64 };
         }
 
-        public static explicit operator long(StackItem stackItem)
+        public long AsInt64()
         {
-            if (stackItem._type != WellKnownType.Int64)
-                throw new InvalidCastException();
-
-            return stackItem._int64;
+            Debug.Assert(_kind == StackValueKind.Int64);
+            return _int64;
         }
 
-        public static implicit operator StackItem(IntPtr ptr)
+        public static StackItem FromIntPtr(IntPtr nativeInt)
         {
-            return new StackItem { _nativeInt = ptr, _type = WellKnownType.IntPtr, _kind = StackValueKind.NativeInt };
+            return new StackItem { _nativeInt = nativeInt, _kind = StackValueKind.NativeInt };
         }
 
-        public static explicit operator IntPtr(StackItem stackItem)
+        public IntPtr AsIntPtr()
         {
-            if (stackItem._type != WellKnownType.IntPtr)
-                throw new InvalidCastException();
-
-            return stackItem._nativeInt;
+            Debug.Assert(_kind == StackValueKind.NativeInt);
+            return _nativeInt;
         }
 
-        public static implicit operator StackItem(float single)
+        public static StackItem FromFloat(float single)
         {
-            return new StackItem { _float = single, _type = WellKnownType.Single, _kind = StackValueKind.Float };
+            return new StackItem { _float = single, _kind = StackValueKind.Float };
         }
 
-        public static explicit operator float(StackItem stackItem)
+        public float AsFloat()
         {
-            if (stackItem._type != WellKnownType.Single)
-                throw new InvalidCastException();
-
-            return stackItem._float;
+            Debug.Assert(_kind == StackValueKind.Float);
+            return _float;
         }
 
-        public static implicit operator StackItem(double d)
+        public static StackItem FromDouble(double d)
         {
-            return new StackItem { _double = d, _type = WellKnownType.Double, _kind = StackValueKind.Float };
+            return new StackItem { _double = d, _kind = StackValueKind.Float };
         }
 
-        public static explicit operator double(StackItem stackItem)
+        public double AsDouble()
         {
-            if (stackItem._type != WellKnownType.Double)
-                throw new InvalidCastException();
+            Debug.Assert(_kind == StackValueKind.Float);
+            return _double;
+        }
 
-            return stackItem._double;
+        public static StackItem FromUnknown(void* ptr)
+        {
+            return new StackItem { _ptr = ptr, _kind = StackValueKind.Unknown };
+        }
+
+        public void* AsUnknown()
+        {
+            Debug.Assert(_kind == StackValueKind.Unknown);
+            return _ptr;
         }
 
         public static StackItem FromValueType(ValueType valueType)
         {
-            return new StackItem { _valueType = valueType, _type = WellKnownType.ValueType, _kind = StackValueKind.ValueType };
+            return new StackItem { _valueType = valueType, _kind = StackValueKind.ValueType };
         }
 
-        public ValueType ToValueType()
+        public ValueType AsValueType()
         {
-            if (_type != WellKnownType.ValueType)
-                throw new InvalidCastException();
-
+            Debug.Assert(_kind == StackValueKind.ValueType);
             return _valueType;
         }
 
         public static StackItem FromObjectRef(object obj)
         {
-            return new StackItem { _objref = obj, _type = WellKnownType.Object, _kind = StackValueKind.ObjRef };
+            return new StackItem { _objref = obj, _kind = StackValueKind.ObjRef };
         }
 
-        public object ToObjectRef()
+        public object AsObjectRef()
         {
-            if (_type != WellKnownType.Object)
-                throw new InvalidCastException();
-
+            Debug.Assert(_kind == StackValueKind.ObjRef);
             return _objref;
         }
     }
