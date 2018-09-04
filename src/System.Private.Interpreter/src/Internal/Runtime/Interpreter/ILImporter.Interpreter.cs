@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using Internal.Runtime.Interpreter;
 using Internal.TypeSystem;
 
@@ -148,31 +149,88 @@ namespace Internal.IL
 
         private void ImportReturn()
         {
-            bool hasReturnValue = _interpreter.EvaluationStack.TryPop(out StackItem stackItem);
-            if (!hasReturnValue)
+            bool hasStackItem = _interpreter.EvaluationStack.TryPop(out StackItem stackItem);
+            if (!hasStackItem)
                 return;
 
-            switch (stackItem.Kind)
+            int integer = 0;
+            if (stackItem.Kind == StackValueKind.Int32)
+                integer = stackItem.AsInt32();
+
+            TypeFlags category = _method.Signature.ReturnType.Category;
+            switch (category)
             {
-                case StackValueKind.Int32:
-                    _interpreter.SetReturnValue((int)stackItem);
+                case TypeFlags.Boolean:
+                    Debug.Assert(integer >= 0 && integer <= 1);
+                    _interpreter.SetReturnValue(integer == 1);
                     break;
-                case StackValueKind.Int64:
-                    _interpreter.SetReturnValue((long)stackItem);
+                case TypeFlags.Char:
+                    Debug.Assert(integer >= char.MinValue && integer <= char.MaxValue);
+                    _interpreter.SetReturnValue((char)integer);
                     break;
-                case StackValueKind.Unknown:
-                case StackValueKind.NativeInt:
-                case StackValueKind.Float:
-                    if (stackItem.Type == WellKnownType.Single)
-                        _interpreter.SetReturnValue((float)stackItem);
-                    else if (stackItem.Type == WellKnownType.Double)
-                        _interpreter.SetReturnValue((double)stackItem);
+                case TypeFlags.SByte:
+                    Debug.Assert(integer >= sbyte.MinValue && integer <= sbyte.MaxValue);
+                    _interpreter.SetReturnValue((sbyte)integer);
                     break;
-                case StackValueKind.ByRef:
-                case StackValueKind.ObjRef:
-                    _interpreter.SetReturnValue(stackItem.ToObjectRef());
+                case TypeFlags.Byte:
+                    Debug.Assert(integer >= byte.MinValue && integer <= byte.MaxValue);
+                    _interpreter.SetReturnValue((byte)integer);
                     break;
-                case StackValueKind.ValueType:
+                case TypeFlags.Int16:
+                    Debug.Assert(integer >= short.MinValue && integer <= short.MaxValue);
+                    _interpreter.SetReturnValue((short)integer);
+                    break;
+                case TypeFlags.UInt16:
+                    Debug.Assert(integer >= ushort.MinValue && integer <= ushort.MaxValue);
+                    _interpreter.SetReturnValue((ushort)integer);
+                    break;
+                case TypeFlags.Int32:
+                case TypeFlags.UInt32:
+                    _interpreter.SetReturnValue(integer);
+                    break;
+                case TypeFlags.Int64:
+                case TypeFlags.UInt64:
+                    _interpreter.SetReturnValue(stackItem.AsInt64());
+                    break;
+                case TypeFlags.IntPtr:
+                case TypeFlags.UIntPtr:
+                    _interpreter.SetReturnValue(stackItem.AsIntPtr());
+                    break;
+                case TypeFlags.Single:
+                    _interpreter.SetReturnValue(stackItem.AsFloat());
+                    break;
+                case TypeFlags.Double:
+                    _interpreter.SetReturnValue(stackItem.AsDouble());
+                    break;
+                case TypeFlags.ValueType:
+                    _interpreter.SetReturnValue(stackItem.AsValueType());
+                    break;
+                case TypeFlags.Interface:
+                case TypeFlags.Class:
+                    _interpreter.SetReturnValue(stackItem.AsObjectRef());
+                    break;
+                case TypeFlags.CategoryMask:
+                case TypeFlags.Unknown:
+                case TypeFlags.Void:
+                case TypeFlags.Enum:
+                case TypeFlags.Nullable:
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                case TypeFlags.ByRef:
+                case TypeFlags.Pointer:
+                case TypeFlags.FunctionPointer:
+                case TypeFlags.GenericParameter:
+                case TypeFlags.SignatureTypeVariable:
+                case TypeFlags.SignatureMethodVariable:
+                case TypeFlags.HasGenericVariance:
+                case TypeFlags.HasGenericVarianceComputed:
+                case TypeFlags.HasStaticConstructor:
+                case TypeFlags.HasStaticConstructorComputed:
+                case TypeFlags.HasFinalizerComputed:
+                case TypeFlags.HasFinalizer:
+                case TypeFlags.IsByRefLike:
+                case TypeFlags.AttributeCacheComputed:
+                case TypeFlags.IsIntrinsic:
                 default:
                     break;
             }
@@ -181,19 +239,19 @@ namespace Internal.IL
         private void ImportLoadInt(long value, StackValueKind kind)
         {
             if (kind == StackValueKind.Int32)
-                _interpreter.EvaluationStack.Push((int)value);
+                _interpreter.EvaluationStack.Push(StackItem.FromInt32((int)value));
             else if (kind == StackValueKind.Int64)
-                _interpreter.EvaluationStack.Push(value);
+                _interpreter.EvaluationStack.Push(StackItem.FromInt64(value));
         }
 
         private void ImportLoadFloat(float value)
         {
-            _interpreter.EvaluationStack.Push(value);
+            _interpreter.EvaluationStack.Push(StackItem.FromFloat(value));
         }
 
         private void ImportLoadFloat(double value)
         {
-            _interpreter.EvaluationStack.Push(value);
+            _interpreter.EvaluationStack.Push(StackItem.FromDouble(value));
         }
 
         private void ImportShiftOperation(ILOpcode opcode)
