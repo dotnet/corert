@@ -12,7 +12,7 @@ namespace System.Reflection
     {
         protected CustomAttributeData() { }
 
-        public Type AttributeType
+        public virtual Type AttributeType
         {
             get
             {
