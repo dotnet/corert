@@ -545,7 +545,7 @@ namespace ILCompiler
                     }
                 }
 
-                if (metadataType.ThreadStaticFieldSize.AsInt > 0)
+                if (metadataType.ThreadGcStaticFieldSize.AsInt > 0)
                 {
                     dependencies.Add(((UtcNodeFactory)factory).TypeThreadStaticsOffsetSymbol(metadataType), "Thread statics for ReflectionFieldMap entry");
                 }
