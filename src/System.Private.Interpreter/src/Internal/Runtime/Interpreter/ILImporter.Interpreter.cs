@@ -143,7 +143,7 @@ namespace Internal.IL
 
         private void ImportLoadNull()
         {
-            _interpreter.EvaluationStack.Push(new ObjectRefStackItem(null));
+            _interpreter.EvaluationStack.Push(StackItem.FromObjectRef(null));
         }
 
         private void ImportReturn()
@@ -155,22 +155,22 @@ namespace Internal.IL
             switch (stackItem.Kind)
             {
                 case StackValueKind.Int32:
-                    _interpreter.SetReturnValue(((Int32StackItem)stackItem).Value);
+                    _interpreter.SetReturnValue((int)stackItem);
                     break;
                 case StackValueKind.Int64:
-                    _interpreter.SetReturnValue(((Int64StackItem)stackItem).Value);
+                    _interpreter.SetReturnValue((long)stackItem);
                     break;
                 case StackValueKind.Unknown:
                 case StackValueKind.NativeInt:
                 case StackValueKind.Float:
                     if (stackItem.Type == WellKnownType.Single)
-                        _interpreter.SetReturnValue(((FloatStackItem)stackItem).Value);
+                        _interpreter.SetReturnValue((float)stackItem);
                     else if (stackItem.Type == WellKnownType.Double)
-                        _interpreter.SetReturnValue(((DoubleStackItem)stackItem).Value);
+                        _interpreter.SetReturnValue((double)stackItem);
                     break;
                 case StackValueKind.ByRef:
                 case StackValueKind.ObjRef:
-                    _interpreter.SetReturnValue(((ObjectRefStackItem)stackItem).Value);
+                    _interpreter.SetReturnValue(stackItem.ToObjectRef());
                     break;
                 case StackValueKind.ValueType:
                 default:
@@ -181,19 +181,19 @@ namespace Internal.IL
         private void ImportLoadInt(long value, StackValueKind kind)
         {
             if (kind == StackValueKind.Int32)
-                _interpreter.EvaluationStack.Push(new Int32StackItem((int)value));
+                _interpreter.EvaluationStack.Push((int)value);
             else if (kind == StackValueKind.Int64)
-                _interpreter.EvaluationStack.Push(new Int64StackItem(value));
+                _interpreter.EvaluationStack.Push(value);
         }
 
         private void ImportLoadFloat(float value)
         {
-            _interpreter.EvaluationStack.Push(new FloatStackItem(value));
+            _interpreter.EvaluationStack.Push(value);
         }
 
         private void ImportLoadFloat(double value)
         {
-            _interpreter.EvaluationStack.Push(new DoubleStackItem(value));
+            _interpreter.EvaluationStack.Push(value);
         }
 
         private void ImportShiftOperation(ILOpcode opcode)
@@ -389,7 +389,7 @@ namespace Internal.IL
         private void ImportLoadString(int token)
         {
             string str = (string)_methodIL.GetObject(token);
-            _interpreter.EvaluationStack.Push(new ObjectRefStackItem(str));
+            _interpreter.EvaluationStack.Push(StackItem.FromObjectRef(str));
         }
 
         private void ImportBinaryOperation(ILOpcode opCode)
