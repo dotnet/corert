@@ -106,7 +106,7 @@ namespace Internal.IL
         {
             bool hasStackItem = _interpreter.EvaluationStack.TryPop(out StackItem stackItem);
             if (!hasStackItem)
-                throw new InvalidProgramException();
+                ThrowHelper.ThrowInvalidProgramException();
 
             return stackItem;
         }
