@@ -26,9 +26,6 @@ namespace Internal.Runtime.Interpreter
         private IntPtr _nativeInt;
 
         [FieldOffset(8)]
-        private float _float;
-
-        [FieldOffset(8)]
         private double _double;
 
         [FieldOffset(16)]
@@ -72,20 +69,9 @@ namespace Internal.Runtime.Interpreter
             return _nativeInt;
         }
 
-        public static StackItem FromFloat(float single)
-        {
-            return new StackItem { _float = single, _kind = StackValueKind.Float };
-        }
-
-        public float AsFloat()
-        {
-            Debug.Assert(_kind == StackValueKind.Float);
-            return _float;
-        }
-
         public static StackItem FromDouble(double d)
         {
-            return new StackItem { _double = d, _kind = StackValueKind.Double };
+            return new StackItem { _double = d, _kind = StackValueKind.Float };
         }
 
         public double AsDouble()

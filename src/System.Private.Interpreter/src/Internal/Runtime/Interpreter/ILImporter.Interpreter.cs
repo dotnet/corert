@@ -208,7 +208,7 @@ namespace Internal.IL
                     _interpreter.SetReturnValue(stackItem.AsIntPtr());
                     break;
                 case TypeFlags.Single:
-                    _interpreter.SetReturnValue(stackItem.AsFloat());
+                    _interpreter.SetReturnValue((float)stackItem.AsDouble());
                     break;
                 case TypeFlags.Double:
                     _interpreter.SetReturnValue(stackItem.AsDouble());
@@ -243,11 +243,6 @@ namespace Internal.IL
                 _interpreter.EvaluationStack.Push(StackItem.FromInt32((int)value));
             else if (kind == StackValueKind.Int64)
                 _interpreter.EvaluationStack.Push(StackItem.FromInt64(value));
-        }
-
-        private void ImportLoadFloat(float value)
-        {
-            _interpreter.EvaluationStack.Push(StackItem.FromFloat(value));
         }
 
         private void ImportLoadFloat(double value)
