@@ -31,9 +31,6 @@ namespace Internal.Runtime.Interpreter
         [FieldOffset(8)]
         private double _double;
 
-        [FieldOffset(8)]
-        private void* _ptr;
-
         [FieldOffset(16)]
         private ValueType _valueType;
 
@@ -95,17 +92,6 @@ namespace Internal.Runtime.Interpreter
         {
             Debug.Assert(_kind == StackValueKind.Float);
             return _double;
-        }
-
-        public static StackItem FromUnknown(void* ptr)
-        {
-            return new StackItem { _ptr = ptr, _kind = StackValueKind.Unknown };
-        }
-
-        public void* AsUnknown()
-        {
-            Debug.Assert(_kind == StackValueKind.Unknown);
-            return _ptr;
         }
 
         public static StackItem FromValueType(ValueType valueType)
