@@ -1562,6 +1562,23 @@ namespace Internal.IL
                         return true;
                     }
                     break;
+                case ".ctor":
+                    if (metadataType.IsByReferenceOfT)
+                    {
+                        StackEntry byRefValueParamHolder = _stack.Pop();
+
+                        // Allocate a slot on the shadow stack for the ByReference type
+                        int spillIndex = _spilledExpressions.Count;
+                        SpilledExpressionEntry spillEntry = new SpilledExpressionEntry(StackValueKind.ByRef, "byref" + _currentOffset, metadataType, spillIndex, this);
+                        _spilledExpressions.Add(spillEntry);
+                        LLVMValueRef addrOfValueType = LoadVarAddress(spillIndex, LocalVarKind.Temp, out TypeDesc unused);
+                        var typedAddress = CastIfNecessary(_builder, addrOfValueType, LLVM.PointerType(LLVM.Int32Type(), 0));
+                        LLVM.BuildStore(_builder, byRefValueParamHolder.ValueForStackKind(StackValueKind.ByRef, _builder, false), typedAddress);
+
+                        _stack.Push(spillEntry);
+                        return true;
+                    }
+                    break;
             }
 
             return false;

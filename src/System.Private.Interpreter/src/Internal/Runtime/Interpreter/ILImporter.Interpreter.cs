@@ -143,7 +143,7 @@ namespace Internal.IL
 
         private void ImportLoadNull()
         {
-            throw new NotImplementedException();
+            _interpreter.EvaluationStack.Push(new ObjectRefStackItem(null));
         }
 
         private void ImportReturn()
@@ -163,8 +163,15 @@ namespace Internal.IL
                 case StackValueKind.Unknown:
                 case StackValueKind.NativeInt:
                 case StackValueKind.Float:
+                    if (stackItem.Type == WellKnownType.Single)
+                        _interpreter.SetReturnValue(((FloatStackItem)stackItem).Value);
+                    else if (stackItem.Type == WellKnownType.Double)
+                        _interpreter.SetReturnValue(((DoubleStackItem)stackItem).Value);
+                    break;
                 case StackValueKind.ByRef:
                 case StackValueKind.ObjRef:
+                    _interpreter.SetReturnValue(((ObjectRefStackItem)stackItem).Value);
+                    break;
                 case StackValueKind.ValueType:
                 default:
                     break;
@@ -179,9 +186,14 @@ namespace Internal.IL
                 _interpreter.EvaluationStack.Push(new Int64StackItem(value));
         }
 
+        private void ImportLoadFloat(float value)
+        {
+            _interpreter.EvaluationStack.Push(new FloatStackItem(value));
+        }
+
         private void ImportLoadFloat(double value)
         {
-            throw new NotImplementedException();
+            _interpreter.EvaluationStack.Push(new DoubleStackItem(value));
         }
 
         private void ImportShiftOperation(ILOpcode opcode)
@@ -374,9 +386,10 @@ namespace Internal.IL
             throw new NotImplementedException();
         }
 
-        private void ImportLoadString(int v)
+        private void ImportLoadString(int token)
         {
-            throw new NotImplementedException();
+            string str = (string)_methodIL.GetObject(token);
+            _interpreter.EvaluationStack.Push(new ObjectRefStackItem(str));
         }
 
         private void ImportBinaryOperation(ILOpcode opCode)
