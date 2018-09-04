@@ -232,6 +232,7 @@ namespace Internal.IL
                 case TypeFlags.FunctionPointer:
                 case TypeFlags.GenericParameter:
                 default:
+                    // TODO: Support more complex return types
                     break;
             }
         }

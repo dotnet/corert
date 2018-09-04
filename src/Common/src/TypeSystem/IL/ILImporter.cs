@@ -24,6 +24,8 @@ namespace Internal.IL
         NativeInt,
         /// <summary>Any float value.</summary>
         Float,
+        /// <summary>Any double value.</summary>
+        Double,
         /// <summary>A managed pointer.</summary>
         ByRef,
         /// <summary>An object reference.</summary>

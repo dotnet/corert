@@ -85,7 +85,7 @@ namespace Internal.Runtime.Interpreter
 
         public static StackItem FromDouble(double d)
         {
-            return new StackItem { _double = d, _kind = StackValueKind.Float };
+            return new StackItem { _double = d, _kind = StackValueKind.Double };
         }
 
         public double AsDouble()
