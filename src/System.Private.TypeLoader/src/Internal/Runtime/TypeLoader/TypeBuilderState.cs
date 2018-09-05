@@ -507,7 +507,7 @@ namespace Internal.Runtime.TypeLoader
                 DefType defType = TypeBeingBuilt as DefType;
                 if (defType != null && !defType.IsGenericDefinition)
                 {
-                    return defType.ThreadStaticFieldSize.AsInt;
+                    return defType.ThreadGcStaticFieldSize.AsInt;
                 }
                 else
                 {
@@ -532,7 +532,7 @@ namespace Internal.Runtime.TypeLoader
         public uint NumSealedVTableEntries;
         public int[] GenericVarianceFlags;
 
-        // Sentinel static to allow us to initializae _instanceLayout to something
+        // Sentinel static to allow us to initialize _instanceLayout to something
         // and then detect that InstanceGCLayout should return null
         private static LowLevelList<bool> s_emptyLayout = new LowLevelList<bool>();
 

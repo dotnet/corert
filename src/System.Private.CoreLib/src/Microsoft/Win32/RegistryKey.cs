@@ -167,6 +167,11 @@ namespace Microsoft.Win32
             DeleteValueCore(name, throwOnMissingValue);
         }
 
+        public static RegistryKey OpenBaseKey(RegistryHive hKey)
+        {
+            return OpenBaseKey(hKey, RegistryView.Default);
+        }
+        
         public static RegistryKey OpenBaseKey(RegistryHive hKey, RegistryView view)
         {
             ValidateKeyView(view);
@@ -530,7 +535,7 @@ namespace Microsoft.Win32
                     // the dispose below and usage elsewhere (other threads). This is By Design. 
                     // This is less of an issue when OS > NT5 (i.e Vista & higher), we can close the perfkey  
                     // (to release & refresh PERFLIB resources) and the OS will rebuild PERFLIB as necessary. 
-                    Interop.mincore.RegCloseKey(RegistryKey.HKEY_PERFORMANCE_DATA);
+                    Interop.Advapi32.RegCloseKey(RegistryKey.HKEY_PERFORMANCE_DATA);
                 }
             }
         }
@@ -552,6 +557,10 @@ namespace Microsoft.Win32
             key._keyName = s_hkeyNames[index];
             return key;
         }
+
+        // This dummy method is added to have the same implemenatation of Registry class. 
+        // Its not being used anywhere. 
+        public void SetValue(string name, object value, RegistryValueKind valueKind) { }
     }
 
     [Flags]

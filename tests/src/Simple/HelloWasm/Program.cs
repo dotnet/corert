@@ -36,10 +36,19 @@ internal static class Program
         {
             PrintLine("Inline assign byte Test: Ok.");
         }
+        else
+        {
+            PrintLine("Inline assign byte Test: Failed.");
+        }
 
-        if(ILHelpers.ILHelpersTest.DupTest(ref tempInt) == 209 && tempInt == 209)
+        int dupTestInt = 9;
+        if(ILHelpers.ILHelpersTest.DupTest(ref dupTestInt) == 209 && dupTestInt == 209)
         {
             PrintLine("dup test: Ok.");
+        }
+        else
+        {
+            PrintLine("dup test: Failed.");
         }
 
         TestClass tempObj = new TestDerivedClass(1337);
@@ -81,7 +90,12 @@ internal static class Program
         {
             PrintLine("box test: Ok.");
         }
-
+        else
+        {
+            PrintLine("box test: Failed. Value:");
+            PrintLine(boxedInt.ToString());
+        }
+        
         var boxedStruct = (object)new BoxStubTest { Value = "Boxed Stub Test: Ok." };
         PrintLine(boxedStruct.ToString());
 
@@ -278,6 +292,22 @@ internal static class Program
         if (12.34567f == 12.34567f && 12.34567f != 12.34568f)
         {
             PrintLine("float comparison: Ok.");
+        }
+
+        // Create a ByReference<char> through the ReadOnlySpan ctor and call the ByReference.Value via the indexer.
+        var span = "123".AsSpan();
+        if (span[0] != '1'
+            || span[1] != '2'
+            || span[2] != '3')
+        {
+            PrintLine("ByReference intrinsics exercise via ReadOnlySpan failed");
+            PrintLine(span[0].ToString());
+            PrintLine(span[1].ToString());
+            PrintLine(span[2].ToString());
+        }
+        else
+        {
+            PrintLine("ByReference intrinsics exercise via ReadOnlySpan OK.");
         }
 
         // This test should remain last to get other results before stopping the debugger

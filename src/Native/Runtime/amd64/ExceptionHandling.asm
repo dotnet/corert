@@ -254,6 +254,7 @@ NESTED_ENTRY RhpRethrow, _TEXT
         mov     [rdx + OFFSETOF__ExInfo__m_exception], r8           ;; init the exception object to null
         mov     byte ptr [rdx + OFFSETOF__ExInfo__m_passNumber], 1  ;; init to the first pass 
         mov     dword ptr [rdx + OFFSETOF__ExInfo__m_idxCurClause], 0FFFFFFFFh
+        mov     byte ptr [rdx + OFFSETOF__ExInfo__m_kind], 0        ;; init to a deterministic value (ExKind.None)
 
 
         ;; link the ExInfo into the thread's ExInfo chain

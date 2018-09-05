@@ -185,7 +185,8 @@ namespace Internal.TypeSystem
             ComputedStaticFieldLayout result;
             result.GcStatics = new StaticsBlock();
             result.NonGcStatics = new StaticsBlock();
-            result.ThreadStatics = new StaticsBlock();
+            result.ThreadGcStatics = new StaticsBlock();
+            result.ThreadNonGcStatics = new StaticsBlock();
 
             if (numStaticFields == 0)
             {
@@ -231,7 +232,12 @@ namespace Internal.TypeSystem
         private ref StaticsBlock GetStaticsBlockForField(ref ComputedStaticFieldLayout layout, FieldDesc field)
         {
             if (field.IsThreadStatic)
-                return ref layout.ThreadStatics;
+            {
+                if (field.HasGCStaticBase)
+                    return ref layout.ThreadGcStatics;
+                else
+                    return ref layout.ThreadNonGcStatics;
+            }
             else if (field.HasGCStaticBase)
                 return ref layout.GcStatics;
             else

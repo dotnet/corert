@@ -232,11 +232,11 @@ int unw_get_save_loc(unw_cursor_t*, int, unw_save_loc_t*)
 static void RegDisplayToUnwindCursor(REGDISPLAY* regDisplay, unw_cursor_t *cursor)
 {
 #define ASSIGN_REG(regName1, regName2) \
-    unw_set_reg(cursor, regName1, regDisplay->regName2);
+    unw_set_reg(cursor, regName1, regDisplay->regName2, 0);
 
 #define ASSIGN_REG_PTR(regName1, regName2) \
     if (regDisplay->p##regName2 != NULL) \
-        unw_set_reg(cursor, regName1, *(regDisplay->p##regName2));
+        unw_set_reg(cursor, regName1, *(regDisplay->p##regName2), 0);
 
 #if defined(_AMD64_)
     ASSIGN_REG(UNW_REG_SP, SP)

@@ -44,7 +44,7 @@ Choose the set of tests you want to run. Currently the options are:
 * Top200
   * Small set of the suite selected to provide broad coverage quickly (Under 10 minutes). These run as part of the CI when submitting a pull request.
 * KnownGood
-  * Subset of the suite previously validated to all pass on CoreRT. If these all pass you can be pretty sure you haven't regressed the compiler.
+  * Subset of the suite previously validated to all pass on CoreRT. If these all pass you can be pretty sure you haven't regressed the compiler. We currently only have a KnownGood list on Windows.
 * All
   * The entire suite. Many of the tests will fail since CoreRT is still pre-release and some tests don't play well with an ahead-of-time compiler.
 

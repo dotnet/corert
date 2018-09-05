@@ -206,6 +206,7 @@ NESTED_ENTRY RhpRethrow, _TEXT, NoHandler
 
         mov         r3, #0
         str         r3, [r1, #OFFSETOF__ExInfo__m_exception]         // init the exception object to null
+        strb        r3, [r1, #OFFSETOF__ExInfo__m_kind]              // init to a deterministic value (ExKind.None)
         mov         r3, #0xFFFFFFFF
         str         r3, [r1, #OFFSETOF__ExInfo__m_idxCurClause]
 
