@@ -161,42 +161,33 @@ namespace Internal.IL
             var returnType = _method.Signature.ReturnType;
             if (returnType.IsVoid)
                 return;
-
-            int integer = 0;
+            
             StackItem stackItem = PopWithValidation();
-
-            if (stackItem.Kind == StackValueKind.Int32)
-                integer = stackItem.AsInt32();
-
             TypeFlags category = returnType.Category;
+
             switch (category)
             {
                 case TypeFlags.Boolean:
-                    _interpreter.SetReturnValue(integer != 0);
+                    _interpreter.SetReturnValue(stackItem.AsInt32() != 0);
                     break;
                 case TypeFlags.Char:
-                    Debug.Assert(integer >= char.MinValue && integer <= char.MaxValue);
-                    _interpreter.SetReturnValue((char)integer);
+                    _interpreter.SetReturnValue((char)stackItem.AsInt32());
                     break;
                 case TypeFlags.SByte:
-                    Debug.Assert(integer >= sbyte.MinValue && integer <= sbyte.MaxValue);
-                    _interpreter.SetReturnValue((sbyte)integer);
+                    _interpreter.SetReturnValue((sbyte)stackItem.AsInt32());
                     break;
                 case TypeFlags.Byte:
-                    Debug.Assert(integer >= byte.MinValue && integer <= byte.MaxValue);
-                    _interpreter.SetReturnValue((byte)integer);
+                    _interpreter.SetReturnValue((byte)stackItem.AsInt32());
                     break;
                 case TypeFlags.Int16:
-                    Debug.Assert(integer >= short.MinValue && integer <= short.MaxValue);
-                    _interpreter.SetReturnValue((short)integer);
+                    _interpreter.SetReturnValue((short)stackItem.AsInt32());
                     break;
                 case TypeFlags.UInt16:
-                    Debug.Assert(integer >= ushort.MinValue && integer <= ushort.MaxValue);
-                    _interpreter.SetReturnValue((ushort)integer);
+                    _interpreter.SetReturnValue((ushort)stackItem.AsInt32());
                     break;
                 case TypeFlags.Int32:
                 case TypeFlags.UInt32:
-                    _interpreter.SetReturnValue(integer);
+                    _interpreter.SetReturnValue(stackItem.AsInt32());
                     break;
                 case TypeFlags.Int64:
                 case TypeFlags.UInt64:
