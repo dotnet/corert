@@ -83,7 +83,8 @@ namespace Internal.Runtime.TypeLoader
                 GcStatics = default(StaticsBlock),
                 NonGcStatics = default(StaticsBlock),
                 Offsets = Array.Empty<FieldAndOffset>(), // No fields are considered to exist for completely NoMetadataTypes
-                ThreadStatics = default(StaticsBlock),
+                ThreadGcStatics = default(StaticsBlock),
+                ThreadNonGcStatics = default(StaticsBlock),
             };
             return staticLayout;
         }

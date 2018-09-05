@@ -55,7 +55,8 @@ namespace Internal.TypeSystem
         {
             public StaticsBlock NonGcStatics;
             public StaticsBlock GcStatics;
-            public StaticsBlock ThreadStatics;
+            public StaticsBlock ThreadNonGcStatics;
+            public StaticsBlock ThreadGcStatics;
         }
 
         ThreadSafeFlags _fieldLayoutFlags;
@@ -217,10 +218,10 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// How many bytes must be allocated to represent the (potentially GC visible) thread static
-        /// fields of this type.
+        /// How many bytes must be allocated to represent the non GC visible thread static fields
+        /// of this type.
         /// </summary>
-        public LayoutInt ThreadStaticFieldSize
+        public LayoutInt ThreadNonGcStaticFieldSize
         {
             get
             {
@@ -228,7 +229,39 @@ namespace Internal.TypeSystem
                 {
                     ComputeStaticFieldLayout(StaticLayoutKind.StaticRegionSizes);
                 }
-                return _staticBlockInfo == null ? LayoutInt.Zero : _staticBlockInfo.ThreadStatics.Size;
+                return _staticBlockInfo == null ? LayoutInt.Zero : _staticBlockInfo.ThreadNonGcStatics.Size;
+            }
+        }
+
+        /// <summary>
+        /// What is the alignment required for allocating the non GC visible thread static fields
+        /// of this type.
+        /// </summary>
+        public LayoutInt ThreadNonGcStaticFieldAlignment
+        {
+            get
+            {
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedStaticRegionLayout))
+                {
+                    ComputeStaticFieldLayout(StaticLayoutKind.StaticRegionSizes);
+                }
+                return _staticBlockInfo == null ? LayoutInt.Zero : _staticBlockInfo.ThreadNonGcStatics.LargestAlignment;
+            }
+        }
+
+        /// <summary>
+        /// How many bytes must be allocated to represent the (potentially GC visible) thread static
+        /// fields of this type.
+        /// </summary>
+        public LayoutInt ThreadGcStaticFieldSize
+        {
+            get
+            {
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedStaticRegionLayout))
+                {
+                    ComputeStaticFieldLayout(StaticLayoutKind.StaticRegionSizes);
+                }
+                return _staticBlockInfo == null ? LayoutInt.Zero : _staticBlockInfo.ThreadGcStatics.Size;
             }
         }
 
@@ -236,7 +269,7 @@ namespace Internal.TypeSystem
         /// What is the alignment required for allocating the (potentially GC visible) thread static
         /// fields of this type.
         /// </summary>
-        public LayoutInt ThreadStaticFieldAlignment
+        public LayoutInt ThreadGcStaticFieldAlignment
         {
             get
             {
@@ -244,7 +277,7 @@ namespace Internal.TypeSystem
                 {
                     ComputeStaticFieldLayout(StaticLayoutKind.StaticRegionSizes);
                 }
-                return _staticBlockInfo == null ? LayoutInt.Zero : _staticBlockInfo.ThreadStatics.LargestAlignment;
+                return _staticBlockInfo == null ? LayoutInt.Zero : _staticBlockInfo.ThreadGcStatics.LargestAlignment;
             }
         }
 
@@ -328,13 +361,15 @@ namespace Internal.TypeSystem
 
             if ((computedStaticLayout.NonGcStatics.Size != LayoutInt.Zero) ||
                 (computedStaticLayout.GcStatics.Size != LayoutInt.Zero) ||
-                (computedStaticLayout.ThreadStatics.Size != LayoutInt.Zero))
+                (computedStaticLayout.ThreadNonGcStatics.Size != LayoutInt.Zero) ||
+                (computedStaticLayout.ThreadGcStatics.Size != LayoutInt.Zero))
             {
                 var staticBlockInfo = new StaticBlockInfo
                 {
                     NonGcStatics = computedStaticLayout.NonGcStatics,
                     GcStatics = computedStaticLayout.GcStatics,
-                    ThreadStatics = computedStaticLayout.ThreadStatics
+                    ThreadNonGcStatics = computedStaticLayout.ThreadNonGcStatics,
+                    ThreadGcStatics = computedStaticLayout.ThreadGcStatics
                 };
                 _staticBlockInfo = staticBlockInfo;
             }
