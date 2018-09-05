@@ -172,8 +172,7 @@ namespace Internal.IL
             switch (category)
             {
                 case TypeFlags.Boolean:
-                    Debug.Assert(integer >= 0 && integer <= 1);
-                    _interpreter.SetReturnValue(integer == 1);
+                    _interpreter.SetReturnValue(integer != 0);
                     break;
                 case TypeFlags.Char:
                     Debug.Assert(integer >= char.MinValue && integer <= char.MaxValue);
@@ -218,15 +217,12 @@ namespace Internal.IL
                     break;
                 case TypeFlags.Interface:
                 case TypeFlags.Class:
-                    _interpreter.SetReturnValue(stackItem.AsObjectRef());
-                    break;
-                case TypeFlags.CategoryMask:
-                case TypeFlags.Unknown:
-                case TypeFlags.Void:
-                case TypeFlags.Enum:
-                case TypeFlags.Nullable:
                 case TypeFlags.Array:
                 case TypeFlags.SzArray:
+                    _interpreter.SetReturnValue(stackItem.AsObjectRef());
+                    break;
+                case TypeFlags.Enum:
+                case TypeFlags.Nullable:
                 case TypeFlags.ByRef:
                 case TypeFlags.Pointer:
                 case TypeFlags.FunctionPointer:
