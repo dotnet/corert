@@ -36,6 +36,21 @@
     </PackageReference>
   </ItemGroup>
 
+  <!-- Set default references for netstandard2.0 -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <NuGetTargetMoniker>.NETStandard,Version=v2.0</NuGetTargetMoniker>
+    <TargetFrameworkIdentifier>.NETStandard</TargetFrameworkIdentifier>
+    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="NETStandard.Library">
+      <Version>2.0.3</Version>
+    </PackageReference>
+  </ItemGroup>
+  <ImportGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <Import Project="$(PackagesDir)netstandard.library\2.0.3\build\netstandard2.0\NETStandard.Library.targets" Condition="Exists('$(PackagesDir)netstandard.library\2.0.3\build\netstandard2.0\NETStandard.Library.targets')" />
+  </ImportGroup>
+
   <!-- Set non-empty TargetFrameworkIdentifier to avoid defaulting to .NETPortable -->
   <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == ''">
     <TargetFrameworkIdentifier>.NETStandard</TargetFrameworkIdentifier>

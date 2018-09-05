@@ -4,7 +4,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>ILCompiler.DependencyAnalysisFramework.Tests</AssemblyName>
     <RootNamespace>ILCompiler.DependencyAnalysisFramework.Tests</RootNamespace>
-    <TargetFramework>netstandard1.3</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\ILCompiler.DependencyAnalysisFramework.csproj" />

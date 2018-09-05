@@ -4,7 +4,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>TypeSystem.Tests</AssemblyName>
     <RootNamespace>TypeSystem.Tests</RootNamespace>
-    <TargetFramework>netstandard1.3</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <!-- Don't warn if some dependencies were rolled forward -->
     <NoWarn>$(NoWarn);NU1603</NoWarn>
   </PropertyGroup>
