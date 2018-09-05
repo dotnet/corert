@@ -40,6 +40,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public bool EmitPrecode => _emitPrecode;
 
+        public bool IsEager => (_flags & CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_EAGER) != 0;
+
         public override bool StaticDependenciesAreComputed => true;
 
         public override int ClassCode => -62839441;

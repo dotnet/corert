@@ -15,8 +15,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private readonly TypeDesc _type;
 
-        public AvailableType(ReadyToRunCodegenNodeFactory factory, TypeDesc type)
-            : base(factory, new TypeFixupSignature(factory.Resolver, ReadyToRunFixupKind.READYTORUN_FIXUP_TypeHandle, type, default(ModuleToken)))
+        public AvailableType(ReadyToRunCodegenNodeFactory factory, TypeDesc type, SignatureContext signatureContext)
+            : base(factory, new TypeFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_TypeHandle, type, signatureContext))
         {
             _type = type;
 

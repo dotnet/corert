@@ -14,13 +14,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private readonly ReadyToRunHelper _helper;
 
-        private readonly DelayLoadHelperThunk _delayLoadHelper;
+        private readonly ImportThunk _delayLoadHelper;
 
         public DelayLoadHelperImport(ReadyToRunCodegenNodeFactory factory, ImportSectionNode importSectionNode, ReadyToRunHelper helper, Signature instanceSignature, string callSite = null)
             : base(importSectionNode, instanceSignature, callSite)
         {
             _helper = helper;
-            _delayLoadHelper = new DelayLoadHelperThunk(helper, factory, this);
+            _delayLoadHelper = new ImportThunk(helper, factory, this);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

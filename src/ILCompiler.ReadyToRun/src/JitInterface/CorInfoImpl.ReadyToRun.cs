@@ -32,11 +32,14 @@ namespace Internal.JitInterface
         /// </summary>
         private readonly EcmaModule _tokenContext;
 
+        private readonly SignatureContext _signatureContext;
+
         public CorInfoImpl(ReadyToRunCodegenCompilation compilation, EcmaModule tokenContext, JitConfigProvider jitConfig)
             : this(jitConfig)
         {
             _compilation = compilation;
             _tokenContext = tokenContext;
+            _signatureContext = new SignatureContext(_compilation.NodeFactory.Resolver, _tokenContext);
         }
 
         private void ComputeLookup(ref CORINFO_RESOLVED_TOKEN pResolvedToken, object entity, ReadyToRunHelperId helperId, ref CORINFO_LOOKUP lookup)
@@ -94,7 +97,7 @@ namespace Internal.JitInterface
             else
             {
                 lookup.lookupKind.needsRuntimeLookup = false;
-                ISymbolNode constLookup = _compilation.NodeFactory.ComputeConstantLookup(helperId, entity, new ModuleToken(_tokenContext, pResolvedToken.token));
+                ISymbolNode constLookup = _compilation.NodeFactory.ComputeConstantLookup(helperId, entity, _signatureContext);
                 lookup.constLookup = CreateConstLookupToSymbol(constLookup);
             }
         }
@@ -110,7 +113,7 @@ namespace Internal.JitInterface
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.NewHelper, type, new ModuleToken(_tokenContext, pResolvedToken.token)));
+                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.NewHelper, type, _signatureContext));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NEWARR_1:
@@ -120,7 +123,7 @@ namespace Internal.JitInterface
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.NewArr1, type, new ModuleToken(_tokenContext, pResolvedToken.token)));
+                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.NewArr1, type, _signatureContext));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_ISINSTANCEOF:
@@ -133,7 +136,7 @@ namespace Internal.JitInterface
                         if (type.IsNullable)
                             type = type.Instantiation[0];
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.IsInstanceOf, type, new ModuleToken(_tokenContext, pResolvedToken.token)));
+                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.IsInstanceOf, type, _signatureContext));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_CHKCAST:
@@ -146,7 +149,7 @@ namespace Internal.JitInterface
                         if (type.IsNullable)
                             type = type.Instantiation[0];
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.CastClass, type, new ModuleToken(_tokenContext, pResolvedToken.token)));
+                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.CastClass, type, _signatureContext));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE:
@@ -155,7 +158,7 @@ namespace Internal.JitInterface
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.GetNonGCStaticBase, type, default(ModuleToken)));
+                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.GetNonGCStaticBase, type, _signatureContext));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE:
@@ -228,7 +231,7 @@ namespace Internal.JitInterface
             {
                 pLookup.lookupKind.needsRuntimeLookup = false;
                 pLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.DelegateCtor(
-                    delegateTypeDesc, targetMethod, new ModuleToken(_tokenContext, pTargetMethod.token)));
+                    delegateTypeDesc, targetMethod, _signatureContext));
             }
         }
 
@@ -490,9 +493,9 @@ namespace Internal.JitInterface
             return InfoAccessType.IAT_PPVALUE;
         }
 
-        public ISymbolNode ComputeConstantLookup(ReadyToRunHelperId helperId, object entity, ModuleToken token)
+        public ISymbolNode ComputeConstantLookup(ReadyToRunHelperId helperId, object entity, SignatureContext signatureContext)
         {
-            return _compilation.NodeFactory.ReadyToRunHelper(helperId, entity, token);
+            return _compilation.NodeFactory.ReadyToRunHelper(helperId, entity, signatureContext);
         }
     }
 }

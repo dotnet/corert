@@ -177,26 +177,26 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             EmitByte((byte)elementType);
         }
 
-        public void EmitTypeSignature(TypeDesc typeDesc, ModuleToken token, SignatureContext context)
+        public void EmitTypeSignature(TypeDesc typeDesc, SignatureContext context)
         {
             if (typeDesc.HasInstantiation && !typeDesc.IsGenericDefinition)
             {
-                EmitInstantiatedTypeSignature((InstantiatedType)typeDesc, token, context);
+                EmitInstantiatedTypeSignature((InstantiatedType)typeDesc, context);
                 return;
             }
 
             switch (typeDesc.Category)
             {
                 case TypeFlags.Array:
-                    EmitArrayTypeSignature((ArrayType)typeDesc, token, context);
+                    EmitArrayTypeSignature((ArrayType)typeDesc, context);
                     return;
 
                 case TypeFlags.SzArray:
-                    EmitSzArrayTypeSignature((ArrayType)typeDesc, token, context);
+                    EmitSzArrayTypeSignature((ArrayType)typeDesc, context);
                     return;
 
                 case TypeFlags.Pointer:
-                    EmitPointerTypeSignature((PointerType)typeDesc, token, context);
+                    EmitPointerTypeSignature((PointerType)typeDesc, context);
                     return;
 
                 case TypeFlags.Void:
@@ -272,7 +272,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     else
                     {
                         EmitElementType(CorElementType.ELEMENT_TYPE_CLASS);
-                        EmitTypeToken((EcmaType)typeDesc, token, context);
+                        EmitTypeToken((EcmaType)typeDesc, context);
                     }
                     return;
 
@@ -280,7 +280,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 case TypeFlags.Nullable:
                 case TypeFlags.Enum:
                     EmitElementType(CorElementType.ELEMENT_TYPE_VALUETYPE);
-                    EmitTypeToken((EcmaType)typeDesc, token, context);
+                    EmitTypeToken((EcmaType)typeDesc, context);
                     return;
 
                 default:
@@ -288,44 +288,41 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        private void EmitTypeToken(EcmaType type, ModuleToken token, SignatureContext context)
+        private void EmitTypeToken(EcmaType type, SignatureContext context)
         {
-            if (token.IsNull)
-            {
-                token = context.GetModuleTokenForType(type);
-            }
+            ModuleToken token = context.GetModuleTokenForType(type);
             EmitToken(token.Token);
         }
 
-        private void EmitInstantiatedTypeSignature(InstantiatedType type, ModuleToken token, SignatureContext context)
+        private void EmitInstantiatedTypeSignature(InstantiatedType type, SignatureContext context)
         {
             EmitElementType(CorElementType.ELEMENT_TYPE_GENERICINST);
-            EmitTypeSignature(type.GetTypeDefinition(), default(ModuleToken), context);
+            EmitTypeSignature(type.GetTypeDefinition(), context);
             EmitUInt((uint)type.Instantiation.Length);
             for (int paramIndex = 0; paramIndex < type.Instantiation.Length; paramIndex++)
             {
-                EmitTypeSignature(type.Instantiation[paramIndex], default(ModuleToken), context);
+                EmitTypeSignature(type.Instantiation[paramIndex], context);
             }
         }
 
-        private void EmitPointerTypeSignature(PointerType type, ModuleToken token, SignatureContext context)
+        private void EmitPointerTypeSignature(PointerType type, SignatureContext context)
         {
             EmitElementType(CorElementType.ELEMENT_TYPE_PTR);
-            EmitTypeSignature(type.ParameterType, token, context);
+            EmitTypeSignature(type.ParameterType, context);
         }
 
-        private void EmitSzArrayTypeSignature(ArrayType type, ModuleToken token, SignatureContext context)
+        private void EmitSzArrayTypeSignature(ArrayType type, SignatureContext context)
         {
             Debug.Assert(type.IsSzArray);
             EmitElementType(CorElementType.ELEMENT_TYPE_SZARRAY);
-            EmitTypeSignature(type.ElementType, token, context);
+            EmitTypeSignature(type.ElementType, context);
         }
 
-        private void EmitArrayTypeSignature(ArrayType type, ModuleToken token, SignatureContext context)
+        private void EmitArrayTypeSignature(ArrayType type, SignatureContext context)
         {
             Debug.Assert(type.IsArray && !type.IsSzArray);
             EmitElementType(CorElementType.ELEMENT_TYPE_ARRAY);
-            EmitTypeSignature(type.ElementType, token, context);
+            EmitTypeSignature(type.ElementType, context);
             EmitUInt((uint)type.Rank);
             if (type.Rank != 0)
             {
@@ -334,12 +331,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public void EmitMethodSignature(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool isUnboxingStub, bool isInstantiatingStub, SignatureContext context)
+        public void EmitMethodSignature(MethodDesc method, TypeDesc constrainedType, bool isUnboxingStub, bool isInstantiatingStub, SignatureContext context)
         {
-            if (token.IsNull)
-            {
-                token = context.GetModuleTokenForMethod(method);
-            }
+            ModuleToken token = context.GetModuleTokenForMethod(method);
 
             uint flags = 0;
             if (isUnboxingStub)
@@ -380,7 +374,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (constrainedType != null)
             {
-                EmitTypeSignature(constrainedType, default(ModuleToken), context);
+                EmitTypeSignature(constrainedType, context);
             }
         }
 
@@ -442,8 +436,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public void EmitFieldSignature(FieldDesc field, ModuleToken fieldRefToken, SignatureContext context)
+        public void EmitFieldSignature(FieldDesc field, SignatureContext context)
         {
+            ModuleToken fieldRefToken = context.GetModuleTokenForField(field);
             switch (fieldRefToken.TokenType)
             {
                 case CorTokenType.mdtMemberRef:
@@ -529,6 +524,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public ModuleToken GetModuleTokenForMethod(MethodDesc method)
         {
             return _resolver.GetModuleTokenForMethod(method);
+        }
+
+        public ModuleToken GetModuleTokenForField(FieldDesc field)
+        {
+            return _resolver.GetModuleTokenForField(field);
         }
 
         public byte[] GetArrayType(byte[] elementType, ArrayShape shape)
@@ -711,7 +711,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             Debug.Assert(_contextModule.MetadataReader == reader);
             TypeDesc type = (TypeDesc)_contextModule.GetObject(handle);
             ArraySignatureBuilder builder = new ArraySignatureBuilder();
-            builder.EmitTypeSignature(type, new ModuleToken(_contextModule, (mdToken)MetadataTokens.GetToken(handle)), this);
+            builder.EmitTypeSignature(type, this);
             return builder.ToArray();
         }
 

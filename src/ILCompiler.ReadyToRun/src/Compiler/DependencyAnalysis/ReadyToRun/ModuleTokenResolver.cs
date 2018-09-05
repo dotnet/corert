@@ -29,6 +29,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly Dictionary<MethodDesc, ModuleToken> _methodToRefTokens = new Dictionary<MethodDesc, ModuleToken>();
 
+        private readonly Dictionary<FieldDesc, ModuleToken> _fieldToRefTokens = new Dictionary<FieldDesc, ModuleToken>();
+
         private readonly CompilationModuleGroup _compilationModuleGroup;
 
         public ModuleTokenResolver(CompilationModuleGroup compilationModuleGroup)
@@ -58,7 +60,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (_compilationModuleGroup.ContainsMethodBody(method, unboxingStub: false) &&
                 method is EcmaMethod ecmaMethod)
             {
-                return new ModuleToken(ecmaMethod.Module, (mdToken)MetadataTokens.GetToken(ecmaMethod.Handle));
+                return new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
             }
 
             if (_methodToRefTokens.TryGetValue(method, out ModuleToken token))
@@ -68,6 +70,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // Reverse lookup failed
             throw new NotImplementedException(method.ToString());
+        }
+
+        public ModuleToken GetModuleTokenForField(FieldDesc field)
+        {
+            if (_compilationModuleGroup.ContainsType(field.OwningType) && field is EcmaField ecmaField)
+            {
+                return new ModuleToken(ecmaField.Module, ecmaField.Handle);
+            }
+
+            throw new NotImplementedException();
         }
 
         public void AddModuleTokenForMethod(MethodDesc method, ModuleToken token)
@@ -137,7 +149,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (type is EcmaType ecmaType)
             {
-                _typeToRefTokens[ecmaType] = token;
+                // Don't store typespec tokens where a generic parameter resolves to the type in question
+                if (token.TokenType == CorTokenType.mdtTypeDef || token.TokenType == CorTokenType.mdtTypeRef)
+                {
+                    _typeToRefTokens[ecmaType] = token;
+                }
             }
             else if (type is InstantiatedType instantiatedType)
             {

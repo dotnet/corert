@@ -20,11 +20,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            return new ObjectData(
-                new[] { (byte) ReadyToRunFixupKind.READYTORUN_FIXUP_Helper, (byte) _helperID },
-                Array.Empty<Relocation>(),
-                1,
-                new ISymbolDefinitionNode[] { this });
+            ObjectDataSignatureBuilder builder = new ObjectDataSignatureBuilder();
+            builder.AddSymbol(this);
+            builder.EmitUInt((uint)ReadyToRunFixupKind.READYTORUN_FIXUP_Helper);
+            builder.EmitUInt((uint)_helperID);
+            return builder.ToObjectData();
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

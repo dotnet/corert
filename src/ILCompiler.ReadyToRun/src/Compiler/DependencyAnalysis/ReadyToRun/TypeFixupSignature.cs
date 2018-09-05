@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+
 using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
@@ -14,16 +16,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly TypeDesc _typeDesc;
 
-        private readonly ModuleTokenResolver _resolver;
+        private readonly SignatureContext _signatureContext;
 
-        private readonly ModuleToken _typeToken;
-
-        public TypeFixupSignature(ModuleTokenResolver resolver, ReadyToRunFixupKind fixupKind, TypeDesc typeDesc, ModuleToken typeToken)
+        public TypeFixupSignature(ReadyToRunFixupKind fixupKind, TypeDesc typeDesc, SignatureContext signatureContext)
         {
-            _resolver = resolver;
             _fixupKind = fixupKind;
             _typeDesc = typeDesc;
-            _typeToken = typeToken;
+            _signatureContext = signatureContext;
         }
 
         public override int ClassCode => 255607008;
@@ -38,7 +37,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 dataBuilder.AddSymbol(this);
 
                 dataBuilder.EmitByte((byte)_fixupKind);
-                dataBuilder.EmitTypeSignature(_typeDesc, _typeToken, _typeToken.SignatureContext(_resolver));
+                dataBuilder.EmitTypeSignature(_typeDesc, _signatureContext);
             }
 
             return dataBuilder.ToObjectData();
@@ -47,12 +46,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append($@"TypeFixupSignature({_fixupKind.ToString()}): {_typeDesc.ToString()}; token: {_typeToken})");
+            sb.Append($@"TypeFixupSignature({_fixupKind.ToString()}): {_typeDesc.ToString()}");
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return _typeToken.CompareTo(((TypeFixupSignature)other)._typeToken);
+            throw new NotImplementedException();
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)

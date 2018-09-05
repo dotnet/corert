@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+
 using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
@@ -14,16 +16,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly FieldDesc _fieldDesc;
 
-        private readonly ModuleTokenResolver _resolver;
+        private readonly SignatureContext _signatureContext;
 
-        private readonly ModuleToken _fieldToken;
-
-        public FieldFixupSignature(ModuleTokenResolver resolver, ReadyToRunFixupKind fixupKind, FieldDesc fieldDesc, ModuleToken fieldToken)
+        public FieldFixupSignature(ReadyToRunFixupKind fixupKind, FieldDesc fieldDesc, SignatureContext signatureContext)
         {
-            _resolver = resolver;
             _fixupKind = fixupKind;
             _fieldDesc = fieldDesc;
-            _fieldToken = fieldToken;
+            _signatureContext = signatureContext;
         }
 
         public override int ClassCode => 271828182;
@@ -38,7 +37,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 dataBuilder.AddSymbol(this);
 
                 dataBuilder.EmitByte((byte)_fixupKind);
-                dataBuilder.EmitFieldSignature(_fieldDesc, _fieldToken, _fieldToken.SignatureContext(_resolver));
+                dataBuilder.EmitFieldSignature(_fieldDesc, _signatureContext);
             }
 
             return dataBuilder.ToObjectData();
@@ -47,12 +46,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append($@"TypeFixupSignature({_fixupKind.ToString()}): {_fieldDesc.ToString()}; token: {_fieldToken})");
+            sb.Append($@"TypeFixupSignature({_fixupKind.ToString()}): {_fieldDesc.ToString()}");
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return _fieldToken.CompareTo(((FieldFixupSignature)other)._fieldToken);
+            throw new NotImplementedException();
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
