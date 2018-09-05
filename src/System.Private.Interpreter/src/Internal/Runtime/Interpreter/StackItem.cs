@@ -3,68 +3,103 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Internal.IL;
 using Internal.TypeSystem;
 
 namespace Internal.Runtime.Interpreter
 {
-    internal abstract class StackItem
+    [StructLayout(LayoutKind.Explicit)]
+    internal unsafe struct StackItem
     {
-        public StackValueKind Kind { get; protected set; }
-        public WellKnownType Type { get; protected set; }
-    }
+        [FieldOffset(0)]
+        private StackValueKind _kind;
 
-    internal class StackItem<T> : StackItem
-    {
-        public T Value { get; }
+        [FieldOffset(8)]
+        private int _int32;
 
-        public StackItem(T value, StackValueKind kind, WellKnownType type)
+        [FieldOffset(8)]
+        private long _int64;
+
+        [FieldOffset(8)]
+        private IntPtr _nativeInt;
+
+        [FieldOffset(8)]
+        private double _double;
+
+        [FieldOffset(16)]
+        private ValueType _valueType;
+
+        [FieldOffset(16)]
+        private object _objref;
+
+        public StackValueKind Kind => _kind;
+
+        public static StackItem FromInt32(int int32)
         {
-            Value = value;
-            Kind = kind;
-            Type = type;
+            return new StackItem { _int32 = int32, _kind = StackValueKind.Int32 };
         }
-    }
 
-    internal class Int32StackItem : StackItem<int>
-    {
-        public Int32StackItem(int value) : base(value, StackValueKind.Int32, WellKnownType.Int32)
+        public int AsInt32()
         {
+            Debug.Assert(_kind == StackValueKind.Int32);
+            return _int32;
         }
-    }
 
-    internal class Int64StackItem : StackItem<long>
-    {
-        public Int64StackItem(long value) : base(value, StackValueKind.Int64, WellKnownType.Int64)
+        public static StackItem FromInt64(long int64)
         {
+            return new StackItem { _int64 = int64, _kind = StackValueKind.Int64 };
         }
-    }
 
-    internal class FloatStackItem : StackItem<float>
-    {
-        public FloatStackItem(float value) : base(value, StackValueKind.Float, WellKnownType.Single)
+        public long AsInt64()
         {
+            Debug.Assert(_kind == StackValueKind.Int64);
+            return _int64;
         }
-    }
 
-    internal class DoubleStackItem : StackItem<double>
-    {
-        public DoubleStackItem(double value) : base(value, StackValueKind.Float, WellKnownType.Double)
+        public static StackItem FromIntPtr(IntPtr nativeInt)
         {
+            return new StackItem { _nativeInt = nativeInt, _kind = StackValueKind.NativeInt };
         }
-    }
 
-    internal class ValueTypeStackItem : StackItem<ValueType>
-    {
-        public ValueTypeStackItem(ValueType value) : base(value, StackValueKind.ValueType, WellKnownType.ValueType)
+        public IntPtr AsIntPtr()
         {
+            Debug.Assert(_kind == StackValueKind.NativeInt);
+            return _nativeInt;
         }
-    }
 
-    internal class ObjectRefStackItem : StackItem<Object>
-    {
-        public ObjectRefStackItem(Object value) : base(value, StackValueKind.ObjRef, WellKnownType.Object)
+        public static StackItem FromDouble(double d)
         {
+            return new StackItem { _double = d, _kind = StackValueKind.Float };
+        }
+
+        public double AsDouble()
+        {
+            Debug.Assert(_kind == StackValueKind.Float);
+            return _double;
+        }
+
+        public static StackItem FromValueType(ValueType valueType)
+        {
+            return new StackItem { _valueType = valueType, _kind = StackValueKind.ValueType };
+        }
+
+        public ValueType AsValueType()
+        {
+            Debug.Assert(_kind == StackValueKind.ValueType);
+            return _valueType;
+        }
+
+        public static StackItem FromObjectRef(object obj)
+        {
+            return new StackItem { _objref = obj, _kind = StackValueKind.ObjRef };
+        }
+
+        public object AsObjectRef()
+        {
+            Debug.Assert(_kind == StackValueKind.ObjRef);
+            return _objref;
         }
     }
 }
