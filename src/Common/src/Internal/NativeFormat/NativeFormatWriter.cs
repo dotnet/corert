@@ -1779,6 +1779,8 @@ namespace Internal.NativeFormat
                     Debug.Assert(pop == second);
                     if (place)
                     {
+                        pop = _section.Pop();
+                        Debug.Assert(pop == tree);
                         _section.Place(second);
                     }
     
