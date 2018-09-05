@@ -6,6 +6,9 @@
     <ExcludeProjects Condition="'$(OSEnvironment)'!='Windows_NT'" Include="**\TypeSystem.Tests.csproj" />
     <ExcludeProjects Condition="'$(OSEnvironment)'!='Windows_NT'" Include="**\ILCompiler.MetadataTransform.Tests.csproj" />
 
+    <!-- This project required manual build step -->
+    <ExcludeProjects Include="**\ILVerification.Tests.csproj" />
+
     <Project Include="AotPackageReference\AotPackageReference.depproj" />
 
     <Project Include="Framework\Framework.depproj" />

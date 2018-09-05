@@ -149,7 +149,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <SupplementalTestData Include="$(RuntimePath)*.dll" />
+    <SupplementalTestData Include="$(RuntimePath)*" />
   </ItemGroup>
 
   <!-- initialize all the targets variables to false as they should only be set below -->

@@ -4,7 +4,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>WindowsWinRTMetadataAssembly</AssemblyName>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <RunTestsForProject>false</RunTestsForProject>
+    <SkipTestRun>true</SkipTestRun>
   </PropertyGroup>
 
   <ItemGroup>

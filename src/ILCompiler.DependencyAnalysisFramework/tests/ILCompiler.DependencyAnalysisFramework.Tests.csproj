@@ -13,8 +13,11 @@
     <PackageReference Include="System.Collections.Immutable">
       <Version>1.3.1</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.DotNet.BuildTools.TestSuite">
-      <Version>$(XunitNetcoreExtensionsVersion)</Version>
+    <PackageReference Include="xunit">
+      <Version>$(XUnitPackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.DotNet.XUnitExtensions">
+      <Version>$(MicrosoftDotNetXUnitExtensionsVersion)</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
