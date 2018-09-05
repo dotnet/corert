@@ -10,6 +10,8 @@ using Cts = Internal.TypeSystem;
 
 using Xunit;
 
+#pragma warning disable xUnit2013 // Do not use Assert.Equal() to check for collection size
+
 namespace MetadataTransformTests
 {
     public class SimpleTests
