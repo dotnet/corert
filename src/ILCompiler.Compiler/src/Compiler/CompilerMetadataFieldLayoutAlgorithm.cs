@@ -31,5 +31,10 @@ namespace ILCompiler
                 layout.ThreadStatics.Size = LayoutInt.Zero;
             }
         }
+
+        protected override ComputedInstanceFieldLayout ComputeAutoFieldLayout(MetadataType type, int numInstanceFields)
+        {
+            return ComputeSequentialFieldLayout(type, numInstanceFields);
+        }
     }
 }
