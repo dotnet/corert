@@ -30,6 +30,26 @@ namespace ILCompiler
             return null;
         }
 
+        public static string GetRuntimeImportDllName(this EcmaMethod This)
+        {
+            var decoded = This.GetDecodedCustomAttribute("System.Runtime", "RuntimeImportAttribute");
+            if (decoded == null)
+                return null;
+
+            var decodedValue = decoded.Value;
+
+            if (decodedValue.FixedArguments.Length == 2)
+                return (string)decodedValue.FixedArguments[0].Value;
+
+            foreach (var argument in decodedValue.NamedArguments)
+            {
+                if (argument.Name == "DllName")
+                    return (string)argument.Value;
+            }
+
+            return null;
+        }
+
         public static string GetRuntimeExportName(this EcmaMethod This)
         {
             var decoded = This.GetDecodedCustomAttribute("System.Runtime", "RuntimeExportAttribute");
