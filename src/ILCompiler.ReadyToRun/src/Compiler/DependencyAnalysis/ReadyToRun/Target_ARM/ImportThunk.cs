@@ -12,7 +12,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// This node emits a thunk calling DelayLoad_Helper with a given instance signature
     /// to populate its indirection cell.
     /// </summary>
-    public partial class DelayLoadHelperThunk
+    public partial class ImportThunk
     {
         protected override void EmitCode(NodeFactory factory, ref ARM.ARMEmitter instructionEncoder, bool relocsOnly)
         {

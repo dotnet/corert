@@ -12,7 +12,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// This node emits a thunk calling DelayLoad_Helper with a given instance signature
     /// to populate its indirection cell.
     /// </summary>
-    public partial class DelayLoadHelperThunk : AssemblyStubNode, ISymbolDefinitionNode
+    public partial class ImportThunk : AssemblyStubNode, ISymbolDefinitionNode
     {
         private readonly ISymbolNode _helperCell;
 
@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly bool _isVirtualStubDispatchCell;
 
-        public DelayLoadHelperThunk(ReadyToRunHelper helperId, ReadyToRunCodegenNodeFactory factory, Import instanceCell)
+        public ImportThunk(ReadyToRunHelper helperId, ReadyToRunCodegenNodeFactory factory, Import instanceCell)
         {
             _helperCell = factory.GetReadyToRunHelperCell(helperId & ~ReadyToRunHelper.READYTORUN_HELPER_FLAG_VSD);
             _instanceCell = instanceCell;
@@ -46,7 +46,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int ClassCode => 433266948;
     }
 
-    public class DelayLoadHelperThunk_Obj : DelayLoadHelperThunk
+    public class DelayLoadHelperThunk_Obj : ImportThunk
     {
         public DelayLoadHelperThunk_Obj(ReadyToRunCodegenNodeFactory nodeFactory, Import instanceCell)
             : base(ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_Obj, nodeFactory, instanceCell)

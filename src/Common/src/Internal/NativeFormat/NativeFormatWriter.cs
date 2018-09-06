@@ -1777,6 +1777,7 @@ namespace Internal.NativeFormat
                 {
                     Vertex pop = _section.Pop();
                     Debug.Assert(pop == second);
+
                     if (place)
                     {
                         pop = _section.Pop();

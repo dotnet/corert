@@ -19,8 +19,9 @@ namespace ILCompiler
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
-        private string _inputFilePath;
-        private DependencyAnalysis.ReadyToRun.DevirtualizationManager _r2rDevirtualizationManager;
+        private readonly string _inputFilePath;
+        private readonly EcmaModule _inputModule;
+        private readonly DependencyAnalysis.ReadyToRun.DevirtualizationManager _r2rDevirtualizationManager;
 
 
         public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group, string inputFilePath)
@@ -29,8 +30,8 @@ namespace ILCompiler
             _inputFilePath = inputFilePath;
             _r2rDevirtualizationManager = new DependencyAnalysis.ReadyToRun.DevirtualizationManager(group);
 
-            EcmaModule inputModule = context.GetModuleFromPath(_inputFilePath);
-            ((ReadyToRunCompilerContext)context).InitializeAlgorithm(inputModule.MetadataReader.GetTableRowCount(TableIndex.TypeDef));
+            _inputModule = context.GetModuleFromPath(_inputFilePath);
+            ((ReadyToRunCompilerContext)context).InitializeAlgorithm(_inputModule.MetadataReader.GetTableRowCount(TableIndex.TypeDef));
         }
 
         public override CompilationBuilder UseBackendOptions(IEnumerable<string> options)
@@ -68,7 +69,8 @@ namespace ILCompiler
                 interopStubManager,
                 _nameMangler,
                 _vtableSliceProvider,
-                _dictionaryLayoutProvider);
+                _dictionaryLayoutProvider,
+                _inputModule);
 
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);
 

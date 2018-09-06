@@ -389,6 +389,34 @@ internal class Program
         public int A => _a;
     }
 
+    private static bool TryCatch()
+    {
+        try
+        {
+            throw new Exception("Test exception!");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($@"Expected exception: {ex.ToString()}");
+            return true;
+        }
+    }
+
+    private static bool FileStreamNullRefTryCatch()
+    {
+        try
+        {
+            FileStream fileStream = new FileStream(null, FileMode.Open, FileAccess.Read);
+            Console.Error.WriteLine("Why haven't we thrown an exception?");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($@"Expected exception: {ex.ToString()}");
+            return true;
+        }
+    }
+
     public static int Main(string[] args)
     {
         if (args.Length > 0)
@@ -424,8 +452,10 @@ internal class Program
         RunTest("DisposeEnumeratorTest", DisposeEnumeratorTest());
         RunTest("EmptyArrayOfInt", EmptyArrayOfInt());
         RunTest("EnumerateEmptyArrayOfInt", EnumerateEmptyArrayOfInt());
-        // TODO: RunTest("EmptyArrayOfString", EmptyArrayOfString());
-        // TODO: RunTest("EnumerateEmptyArrayOfString", EnumerateEmptyArrayOfString());
+        RunTest("EmptyArrayOfString", EmptyArrayOfString());
+        RunTest("EnumerateEmptyArrayOfString", EnumerateEmptyArrayOfString());
+        RunTest("TryCatch", TryCatch());
+        RunTest("FileStreamNullRefTryCatch", FileStreamNullRefTryCatch());
 
         Console.WriteLine($@"{_passedTests.Count} tests pass:");
         foreach (string testName in _passedTests)
