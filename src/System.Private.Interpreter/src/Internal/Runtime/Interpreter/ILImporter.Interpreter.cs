@@ -111,6 +111,15 @@ namespace Internal.IL
             return stackItem;
         }
 
+        public StackItem PeekWithValidation()
+        {
+            bool hasStackItem = _interpreter.EvaluationStack.TryPeek(out StackItem stackItem);
+            if (!hasStackItem)
+                ThrowHelper.ThrowInvalidProgramException();
+
+            return stackItem;
+        }
+
         private void ImportNop()
         {
             // Do nothing!
@@ -123,12 +132,19 @@ namespace Internal.IL
 
         private void ImportLoadVar(int index, bool argument)
         {
-            throw new NotImplementedException();
+            if (argument)
+                return;
+
+            StackItem stackItem = _interpreter.GetVariable(index);
+            _interpreter.EvaluationStack.Push(stackItem);
         }
 
         private void ImportStoreVar(int index, bool argument)
         {
-            throw new NotImplementedException();
+            if (argument)
+                return;
+
+            _interpreter.SetVariable(index, PopWithValidation());
         }
 
         private void ImportAddressOfVar(int index, bool argument)
@@ -138,12 +154,12 @@ namespace Internal.IL
 
         private void ImportDup()
         {
-            throw new NotImplementedException();
+            _interpreter.EvaluationStack.Push(PeekWithValidation());
         }
 
         private void ImportPop()
         {
-            throw new NotImplementedException();
+            PopWithValidation();
         }
 
         private void ImportCalli(int token)
@@ -159,7 +175,7 @@ namespace Internal.IL
         private void ImportReturn()
         {
             var returnType = _method.Signature.ReturnType;
-            if (returnType.IsVoid)
+            if (returnType.RuntimeTypeHandle.Value == typeof(void).TypeHandle.Value)
                 return;
             
             StackItem stackItem = PopWithValidation();
