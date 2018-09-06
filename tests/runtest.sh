@@ -39,6 +39,7 @@ run_test_dir()
     local __dir_path=`dirname ${__test_dir}`
     local __filename=`basename ${__dir_path}`
     local __extra_args=""
+    local __extra_flags=()
     if [ "${__mode}" = "Cpp" ]; then
         __extra_args="${__extra_args} /p:NativeCodeGen=cpp"
     fi
@@ -47,9 +48,11 @@ run_test_dir()
     fi
     if [ -n "${__extra_cxxflags}" ]; then
         __extra_cxxflags="/p:AdditionalCppCompilerFlags=\"${__extra_cxxflags}\""
+        __extra_flags+=("${__extra_cxxflags}")
     fi
-    if [ -n "${__extra_cxxflags}" ]; then
+    if [ -n "${__extra_linkflags}" ]; then
         __extra_linkflags="/p:AdditionalLinkerFlags=\"${__extra_linkflags}\""
+        __extra_flags+=("${__extra_linkflags}")
     fi
     if [ "${CoreRT_MultiFileConfiguration}" = "MultiModule" ]; then
         __extra_args="${__extra_args} /p:IlcMultiModule=true"
@@ -59,8 +62,8 @@ run_test_dir()
 
     local __msbuild_dir=${CoreRT_TestRoot}/../Tools
 
-    echo ${__msbuild_dir}/msbuild.sh /ds /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:Platform=${CoreRT_BuildArch} /p:RepoLocalBuild=true "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" ${__extra_args} ${__extra_cxxflags} ${__extra_linkflags} ${__dir_path}/${__filename}.csproj
-    ${__msbuild_dir}/msbuild.sh /ds /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:Platform=${CoreRT_BuildArch} /p:OSGroup=${CoreRT_BuildOS} /p:RepoLocalBuild=true "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" ${__extra_args} ${__extra_cxxflags} ${__extra_linkflags} ${__dir_path}/${__filename}.csproj
+    echo ${__msbuild_dir}/msbuild.sh /ds /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:Platform=${CoreRT_BuildArch} /p:OSGroup=${CoreRT_BuildOS} /p:RepoLocalBuild=true "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" ${__extra_args} "${__extra_flags[@]}" ${__dir_path}/${__filename}.csproj
+    ${__msbuild_dir}/msbuild.sh /ds /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:Platform=${CoreRT_BuildArch} /p:OSGroup=${CoreRT_BuildOS} /p:RepoLocalBuild=true "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" ${__extra_args} "${__extra_flags[@]}" ${__dir_path}/${__filename}.csproj
 
     local __exitcode=$?
 
