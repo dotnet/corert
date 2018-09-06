@@ -504,6 +504,10 @@ namespace Internal.IL
 
         private void EndImportingInstruction()
         {
+            // If this was constrained used in a call, it's already been cleared,
+            // but if it was on some other instruction, it shoudln't carry forward
+            _constrainedType = null;
+
             // Reset the debug position so it doesn't end up applying to the wrong instructions
             LLVM.SetCurrentDebugLocation(_builder, default(LLVMValueRef));
         }
@@ -1318,28 +1322,31 @@ namespace Internal.IL
                         isValueTypeCall = true;
                     }
                 }
-                if (callee.OwningType.IsInterface)
+
+
+                if(constrainedType != null && constrainedType.IsValueType)
                 {
-                    // For value types, devirtualize the call
-                    if (isValueTypeCall)
+                    isValueTypeCall = true;
+                }
+
+                if (isValueTypeCall)
+                {
+                    if (constrainedType != null)
+                    {
+                        targetMethod = constrainedType.TryResolveValueTypeConstraintMethodApprox(callee.OwningType, callee, out _);
+                    }
+                    else if (callee.OwningType.IsInterface)
                     {
                         targetMethod = parameterType.ResolveInterfaceMethodTarget(callee);
                     }
-                    else if (constrainedType != null && constrainedType.IsSealed())
-                    {
-                        targetMethod = constrainedType.ResolveInterfaceMethodTarget(callee);
-                    }
-                }
-                else
-                {
-                    if (isValueTypeCall)
+                    else
                     {
                         targetMethod = parameterType.FindVirtualFunctionTargetMethodOnObjectType(callee);
                     }
-                    else if (constrainedType != null && constrainedType.IsSealed())
-                    {
-                        targetMethod = constrainedType.FindVirtualFunctionTargetMethodOnObjectType(callee);
-                    }
+                }
+                else if (constrainedType != null)
+                {
+                    targetMethod = constrainedType.TryResolveConstraintMethodApprox(callee.OwningType, callee, out _);
                 }
 
                 if (targetMethod != null)
@@ -1599,19 +1606,21 @@ namespace Internal.IL
                 argumentValues[argumentValues.Length - i - 1] = _stack.Pop();
             }
 
-            if(constrainedType != null)
+            if (constrainedType != null)
             {
                 if (signature.IsStatic)
                 {
-                    throw new Exception("Constrained call on static method");
+                    // Constrained call on static method
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, _method);
                 }
                 StackEntry thisByRef = argumentValues[0];
                 if (thisByRef.Kind != StackValueKind.ByRef)
                 {
-                    throw new Exception("Constrained call without byref");
+                    // Constrained call without byref
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, _method);
                 }
 
-                // If this is a constrained call and the this pointer is a reference type, it's a byref,
+                // If this is a constrained call and the 'this' pointer is a reference type, it's a byref,
                 // dereference it before calling.
                 if (!constrainedType.IsValueType)
                 {

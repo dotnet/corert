@@ -3079,7 +3079,7 @@ namespace Internal.JitInterface
                 // JIT compilation, and require a runtime lookup for the actual code pointer
                 // to call.
 
-                MethodDesc directMethod = constrainedType.GetClosestDefType().TryResolveConstraintMethodApprox(exactType, method, out forceUseRuntimeLookup);
+                MethodDesc directMethod = constrainedType.GetClosestDefType().TryResolveValueTypeConstraintMethodApprox(exactType, method, out forceUseRuntimeLookup);
                 if (directMethod == null && constrainedType.IsEnum)
                 {
                     // Constrained calls to methods on enum methods resolve to System.Enum's methods. System.Enum is a reference

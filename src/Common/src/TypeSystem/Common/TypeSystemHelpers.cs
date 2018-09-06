@@ -157,6 +157,29 @@ namespace Internal.TypeSystem
             return null;
         }
 
+        public static MethodDesc TryResolveValueTypeConstraintMethodApprox(this TypeDesc constrainedType, TypeDesc interfaceType, MethodDesc interfaceMethod, out bool forceRuntimeLookup)
+        {
+            forceRuntimeLookup = false;
+
+            if (!constrainedType.IsValueType)
+            {
+                return null;
+            }
+
+            MethodDesc method = TryResolveConstraintMethodApprox(constrainedType, interfaceType, interfaceMethod, out forceRuntimeLookup);
+            
+            //#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
+            // Only return a method if the value type itself declares the method, 
+            // otherwise we might get a method from Object or System.ValueType
+            if (!method.OwningType.IsValueType)
+            {
+                // Fall back to VSD
+                return null;
+            }
+
+            return method;
+        }
+
         /// <summary>
         /// Attempts to resolve constrained call to <paramref name="interfaceMethod"/> into a concrete non-unboxing
         /// method on <paramref name="constrainedType"/>.
@@ -168,9 +191,9 @@ namespace Internal.TypeSystem
         {
             forceRuntimeLookup = false;
 
-            // We can't resolve constraint calls effectively for reference types, and there's
+            // We can't resolve constraint calls effectively for unsealed types, and there's
             // not a lot of perf. benefit in doing it anyway.
-            if (!constrainedType.IsValueType)
+            if (constrainedType is MetadataType metadataType && !metadataType.IsSealed)
             {
                 return null;
             }
@@ -213,15 +236,6 @@ namespace Internal.TypeSystem
             }
 
             if (method == null)
-            {
-                // Fall back to VSD
-                return null;
-            }
-
-            //#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
-            // Only return a method if the value type itself declares the method, 
-            // otherwise we might get a method from Object or System.ValueType
-            if (!method.OwningType.IsValueType)
             {
                 // Fall back to VSD
                 return null;
