@@ -447,7 +447,6 @@ namespace Internal.TypeSystem
                         instanceFieldsWithMatchingSize = new List<FieldDesc>();
                         instanceGCPointerFieldsBySize[fieldSizeAsInt] = instanceFieldsWithMatchingSize;
                     }
-
                     instanceFieldsWithMatchingSize.Add(field);
                 }
                 else
@@ -457,16 +456,63 @@ namespace Internal.TypeSystem
                         instanceFieldsWithMatchingSize = new List<FieldDesc>();
                         instanceNonGCPointerFieldsBySize[fieldSizeAsInt] = instanceFieldsWithMatchingSize;
                     }
-
                     instanceFieldsWithMatchingSize.Add(field);
                 }
             }
 
-            // place small fields first if the parent have a number of field bytes that is not aligned
+            // Align the field offset to the required alignment of an int: 4
+            // Not sure why that is, but a .NET Core 2.1 app seems to align the subclass's fields automatically to this boundary
+            cumulativeInstanceFieldPos = LayoutInt.AlignUp(cumulativeInstanceFieldPos, new LayoutInt(4));
+
+            // First, place small fields immediately after the parent field bytes if there are a number of field bytes that are not aligned
+            // GC pointer fields and value class fields are not considered for this optimization
+            // Place the fields in order, starting with the largest size.
             int parentByteOffsetModulo = cumulativeInstanceFieldPos.AsInt % type.Context.Target.PointerSize;
             if (parentByteOffsetModulo != 0)
             {
-                // TODO: Complete the operation in follow up commit
+                int alignmentBytesRemaining = type.BaseType.InstanceByteCount.AsInt - cumulativeInstanceFieldPos.AsInt;
+                bool continueProcessingInstanceFields = true;
+
+                for (int i = maxInstanceFieldSize; continueProcessingInstanceFields && i > 0; i /= 2)
+                {
+                    // Continue to next size if the current size will absolutely not fit into the remaining space
+                    if (i > alignmentBytesRemaining)
+                        continue;
+
+                    if (alignmentBytesRemaining == 0)
+                    {
+                        break;
+                    }
+
+                    Debug.Assert(alignmentBytesRemaining > 0);
+
+                    // Iterate over the variable of size i if we have stored any
+                    if (instanceNonGCPointerFieldsBySize.TryGetValue(i, out List<FieldDesc> instanceNonGCPointerFields) && instanceNonGCPointerFields.Count > 0)
+                    {
+                        while (instanceNonGCPointerFields.Count > 0)
+                        {
+                            FieldDesc field = instanceNonGCPointerFields[0];
+                            var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, packingSize);
+
+                            LayoutInt tentativeInstanceFieldOffSet = LayoutInt.AlignUp(cumulativeInstanceFieldPos, fieldSizeAndAlignment.Alignment);
+                            LayoutInt tentativeCumulativeInstanceFieldPos = checked(tentativeInstanceFieldOffSet + fieldSizeAndAlignment.Size);
+
+                            // If the alignment and size of the new field would extend past the unaligned space, stop processing this optimization
+                            if (tentativeCumulativeInstanceFieldPos.AsInt > type.BaseType.InstanceByteCount.AsInt)
+                            {
+                                continueProcessingInstanceFields = false;
+                                break;
+                            }
+
+                            offsets[fieldOrdinal] = new FieldAndOffset(field, tentativeInstanceFieldOffSet);
+                            cumulativeInstanceFieldPos = tentativeCumulativeInstanceFieldPos;
+                            alignmentBytesRemaining = type.BaseType.InstanceByteCount.AsInt - cumulativeInstanceFieldPos.AsInt;
+
+                            fieldOrdinal++;
+                            instanceNonGCPointerFields.RemoveAt(0);
+                        }
+                    }
+                }
             }
 
             // Next, place GC pointer fields and non-GC pointer fields

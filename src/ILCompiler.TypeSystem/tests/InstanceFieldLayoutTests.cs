@@ -269,7 +269,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestAutoTypeLayout()
         {
-            MetadataType class1Type = _testModule.GetType("Auto", "Class1");
+            MetadataType class1Type = _testModule.GetType("Auto", "Class1_7BytesRemaining");
 
             // Byte count
             // Base Class       8
@@ -319,6 +319,199 @@ namespace TypeSystemTests
                         break;
                     case "MyStruct0":
                         Assert.Equal(0x30, f.Offset.AsInt);
+                        break;
+                    default:
+                        Assert.True(false);
+                        break;
+                }
+            }
+        }
+
+        [Fact]
+        public void TestAutoTypeLayoutInheritanceClass2()
+        {
+            MetadataType class2Type = _testModule.GetType("Auto", "Class2_3BytesRemaining");
+
+            // Byte count
+            // Base Class       49 (unaligned) + 3 byte padding to align the int
+            // MyInt2           4
+            // MyString2        8
+            // MyChar2          2
+            // MyChar3          2
+            // MyBool3          1 + 3 byte padding to align the start of type fields
+            // -------------------
+            //                  72 (0x48)
+            Assert.Equal(0x48, class2Type.InstanceByteCount.AsInt);
+
+            foreach (var f in class2Type.GetFields())
+            {
+                if (f.IsStatic)
+                    continue;
+
+                switch (f.Name)
+                {
+                    case "MyInt2":
+                        Assert.Equal(0x34, f.Offset.AsInt);
+                        break;
+                    case "MyString2":
+                        Assert.Equal(0x38, f.Offset.AsInt);
+                        break;
+                    case "MyChar2":
+                        Assert.Equal(0x40, f.Offset.AsInt);
+                        break;
+                    case "MyChar3":
+                        Assert.Equal(0x42, f.Offset.AsInt);
+                        break;
+                    case "MyBool3":
+                        Assert.Equal(0x44, f.Offset.AsInt);
+                        break;
+                    default:
+                        Assert.True(false);
+                        break;
+                }
+            }
+        }
+
+        [Fact]
+        public void TestAutoTypeLayoutInheritanceClass3()
+        {
+            MetadataType class2Type = _testModule.GetType("Auto", "Class3");
+
+            // Byte count
+            // Base Class       49 (unaligned) + 3 byte padding to align int
+            // MyInt3           4
+            // MyString3        8
+            // -------------------
+            //                  64 (0x40)
+            Assert.Equal(0x40, class2Type.InstanceByteCount.AsInt);
+
+            foreach (var f in class2Type.GetFields())
+            {
+                if (f.IsStatic)
+                    continue;
+
+                switch (f.Name)
+                {
+                    case "MyInt3":
+                        Assert.Equal(0x34, f.Offset.AsInt);
+                        break;
+                    case "MyString3":
+                        Assert.Equal(0x38, f.Offset.AsInt);
+                        break;
+                    default:
+                        Assert.True(false);
+                        break;
+                }
+            }
+        }
+
+        [Fact]
+        public void TestAutoTypeLayoutInheritanceClass4()
+        {
+            MetadataType class2Type = _testModule.GetType("Auto", "Class4");
+
+            // Byte count
+            // Base Class       49 (unaligned) + 3 byte padding to align char
+            // MyChar4          2
+            // MyChar42         2
+            // MyString4        8
+            // MyChar43         2 + 6 byte padding to align the start of type fields
+            // -------------------
+            //                  72 (0x48)
+            Assert.Equal(0x48, class2Type.InstanceByteCount.AsInt);
+
+            foreach (var f in class2Type.GetFields())
+            {
+                if (f.IsStatic)
+                    continue;
+
+                switch (f.Name)
+                {
+                    case "MyChar4":
+                        Assert.Equal(0x34, f.Offset.AsInt);
+                        break;
+                    case "MyChar42":
+                        Assert.Equal(0x36, f.Offset.AsInt);
+                        break;
+                    case "MyString4":
+                        Assert.Equal(0x38, f.Offset.AsInt);
+                        break;
+                    case "MyChar43":
+                        Assert.Equal(0x40, f.Offset.AsInt);
+                        break;
+                    default:
+                        Assert.True(false);
+                        break;
+                }
+            }
+        }
+
+        [Fact]
+        public void TestAutoTypeLayoutInheritanceClass5()
+        {
+            MetadataType class2Type = _testModule.GetType("Auto", "Class5");
+
+            // Byte count
+            // Base Class       49 (unaligned) + 3 byte padding to align char
+            // MyChar5          2
+            // MyBool5          1 + 1 byte padding to make class size % pointer size == 0
+            // MyString5        8
+            // MyLong5          8
+            // -------------------
+            //                  72 (0x48)
+            Assert.Equal(0x48, class2Type.InstanceByteCount.AsInt);
+
+            foreach (var f in class2Type.GetFields())
+            {
+                if (f.IsStatic)
+                    continue;
+
+                switch (f.Name)
+                {
+                    case "MyChar5":
+                        Assert.Equal(0x34, f.Offset.AsInt);
+                        break;
+                    case "MyBool4":
+                        Assert.Equal(0x36, f.Offset.AsInt);
+                        break;
+                    case "MyString5":
+                        Assert.Equal(0x38, f.Offset.AsInt);
+                        break;
+                    case "MyLong5":
+                        Assert.Equal(0x40, f.Offset.AsInt);
+                        break;
+                    default:
+                        Assert.True(false);
+                        break;
+                }
+            }
+        }
+
+        [Fact]
+        public void TestAutoTypeLayoutInheritanceClass6()
+        {
+            MetadataType class2Type = _testModule.GetType("Auto", "Class6");
+
+            // Byte count
+            // Base Class       69 (unaligned) + 3 byte padding to align int
+            // MyInt6           4
+            // MyChar6          2 + 2 byte padding to make class size % pointer size == 0
+            // -------------------
+            //                  80 (0x50)
+            Assert.Equal(0x50, class2Type.InstanceByteCount.AsInt);
+
+            foreach (var f in class2Type.GetFields())
+            {
+                if (f.IsStatic)
+                    continue;
+
+                switch (f.Name)
+                {
+                    case "MyInt6":
+                        Assert.Equal(0x48, f.Offset.AsInt);
+                        break;
+                    case "MyChar6":
+                        Assert.Equal(0x4C, f.Offset.AsInt);
                         break;
                     default:
                         Assert.True(false);

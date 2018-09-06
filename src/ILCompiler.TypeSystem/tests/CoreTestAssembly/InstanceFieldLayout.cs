@@ -152,7 +152,7 @@ namespace Sequential
 
 namespace Auto
 {
-    class Class1
+    class Class1_7BytesRemaining
     {
         Struct0 MyStruct0;
         bool MyBool1;
@@ -163,6 +163,43 @@ namespace Auto
         byte[] MyByteArray;
         string MyString1;
         bool MyBool2;
+    }
+
+    class Class2_3BytesRemaining : Class1_7BytesRemaining
+    {
+        int MyInt2;
+        string MyString2;
+        bool MyBool3;
+        char MyChar2;
+        char MyChar3;
+    }
+
+    class Class3 : Class1_7BytesRemaining
+    {
+        int MyInt3;
+        string MyString3;
+    }
+
+    class Class4 : Class1_7BytesRemaining
+    {
+        char MyChar4;
+        char MyChar42;
+        char MyChar43;
+        string MyString4;
+    }
+
+    class Class5 : Class1_7BytesRemaining
+    {
+        bool MyBool4;
+        char MyChar5;
+        long MyLong5;
+        string MyString5;
+    }
+
+    class Class6 : Class2_3BytesRemaining
+    {
+        char MyChar6;
+        int MyInt6;
     }
 
     struct Struct0
