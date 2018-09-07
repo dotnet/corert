@@ -192,6 +192,9 @@
   <data name="Arg_DuplicateWaitObjectException" xml:space="preserve">
     <value>Duplicate objects in argument.</value>
   </data>
+  <data name="Arg_EHClauseNotFilter" xml:space="preserve">
+    <value>This ExceptionHandlingClause is not a filter.</value>
+  </data>
   <data name="Arg_EnumAndObjectMustBeSameType" xml:space="preserve">
     <value>Object must be the same type as the enum. The type passed in was '{0}'; the enum type was '{1}'.</value>
   </data>
@@ -422,6 +425,9 @@
   </data>
   <data name="Arg_RegKeyNotFound" xml:space="preserve">
     <value>The specified registry key does not exist.</value>
+  </data>
+  <data name="Arg_RegInvalidKeyName" xml:space="preserve">
+    <value>Registry key name must start with a valid base key name.</value>
   </data>
   <data name="Arg_SecurityException" xml:space="preserve">
     <value>Security error.</value>
@@ -2754,6 +2760,9 @@
   </data>
   <data name="Arg_InsufficientNumberOfElements" xml:space="preserve">
     <value>At least {0} element(s) are expected in the parameter "{1}".</value>
+  </data>
+  <data name="NullReference_InvokeNullRefReturned" xml:space="preserve">
+    <value>The target method returned a null reference.</value>
   </data>
   <data name="InvalidOperation_ConcurrentOperationsNotSupported" xml:space="preserve">
     <value>Operations that change non-concurrent collections must have exclusive access. A concurrent update was performed on this collection and corrupted its state. The collection's state is no longer correct.</value>

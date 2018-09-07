@@ -39,8 +39,9 @@ namespace ILCompiler
             ManifestResourceBlockingPolicy resourceBlockingPolicy,
             string logFile,
             StackTraceEmissionPolicy stackTracePolicy,
+            DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy,
             UsageBasedMetadataGenerationOptions generationOptions)
-            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy)
+            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy)
         {
             // We use this to mark places that would behave differently if we tracked exact fields used. 
             _hasPreciseFieldUsageInformation = false;
@@ -359,7 +360,7 @@ namespace ILCompiler
             }
 
             return new AnalysisBasedMetadataManager(
-                _typeSystemContext, _blockingPolicy, _resourceBlockingPolicy, _metadataLogFile, _stackTraceEmissionPolicy,
+                _typeSystemContext, _blockingPolicy, _resourceBlockingPolicy, _metadataLogFile, _stackTraceEmissionPolicy, _dynamicInvokeThunkGenerationPolicy,
                 _modulesWithMetadata, reflectableTypes.ToEnumerable(), reflectableMethods.ToEnumerable(),
                 reflectableFields.ToEnumerable());
         }

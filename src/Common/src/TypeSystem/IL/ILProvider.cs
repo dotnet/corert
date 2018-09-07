@@ -212,7 +212,7 @@ namespace Internal.IL
                                 TypeSystemContext context = elementType.Context;
                                 MetadataType helperType = context.SystemModule.GetKnownType("Internal.IntrinsicSupport", "EqualityComparerHelpers");
 
-                                MethodDesc methodToCall = null;
+                                MethodDesc methodToCall;
                                 if (elementType.IsEnum)
                                 {
                                     methodToCall = helperType.GetKnownMethod("EnumOnlyEquals", null).MakeInstantiatedMethod(elementType);
@@ -225,18 +225,19 @@ namespace Internal.IL
                                 {
                                     methodToCall = helperType.GetKnownMethod("StructOnlyEqualsIEquatable", null).MakeInstantiatedMethod(elementType);
                                 }
-
-                                if (methodToCall != null)
+                                else
                                 {
-                                    return new ILStubMethodIL(method, new byte[]
-                                    {
-                                        (byte)ILOpcode.ldarg_0,
-                                        (byte)ILOpcode.ldarg_1,
-                                        (byte)ILOpcode.call, 1, 0, 0, 0,
-                                        (byte)ILOpcode.ret
-                                    },
-                                    Array.Empty<LocalVariableDefinition>(), new object[] { methodToCall });
+                                    methodToCall = helperType.GetKnownMethod("StructOnlyNormalEquals", null).MakeInstantiatedMethod(elementType);
                                 }
+
+                                return new ILStubMethodIL(method, new byte[]
+                                {
+                                    (byte)ILOpcode.ldarg_0,
+                                    (byte)ILOpcode.ldarg_1,
+                                    (byte)ILOpcode.call, 1, 0, 0, 0,
+                                    (byte)ILOpcode.ret
+                                },
+                                Array.Empty<LocalVariableDefinition>(), new object[] { methodToCall });
                             }
                         }
                     }

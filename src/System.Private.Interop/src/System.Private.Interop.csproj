@@ -1,7 +1,7 @@
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <AssemblyName>System.Private.Interop</AssemblyName>
+    <AssemblyName Condition="'$(AssemblyName)' == ''">System.Private.Interop</AssemblyName>
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);TARGET_CORE_API_SET</DefineConstants>
@@ -21,7 +21,8 @@
       <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
-    <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj" />
+    <ProjectReference Condition="'$(DynamicCodeSupport)' != 'true'" Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj" />
+    <ProjectReference Condition="'$(DynamicCodeSupport)' == 'true'" Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.Experimental.csproj" />
   </ItemGroup>
 
   <Import Project="System.Private.Interop.Shared.projitems" />

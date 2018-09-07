@@ -9,10 +9,10 @@ using System.Text;
 
 internal class Program
 {
-    // [ThreadStatic]
+    [ThreadStatic]
     private static string TextFileName = @"C:\Windows\Microsoft.NET\Framework\v4.0.30319\clientexclusionlist.xml";
 
-    //[ThreadStatic]
+    [ThreadStatic]
     private static int LineCount = 0x12345678;
 
     private static List<string> _passedTests;

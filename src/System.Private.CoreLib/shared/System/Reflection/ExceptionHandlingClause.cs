@@ -9,17 +9,13 @@ namespace System.Reflection
     public class ExceptionHandlingClause
     {
         protected ExceptionHandlingClause() { }
-
-        // Desktop compat: These default implementations behave strangely because this class was originally
-        // creatable only from the native runtime, not through subclass inheritance.
-
-        public virtual Type CatchType => null;
-        public virtual int FilterOffset { get { throw new InvalidOperationException(); } }
-        public virtual ExceptionHandlingClauseOptions Flags => default(ExceptionHandlingClauseOptions);
-        public virtual int HandlerLength => 0;
-        public virtual int HandlerOffset => 0;
-        public virtual int TryLength => 0;
+        public virtual ExceptionHandlingClauseOptions Flags => default;
         public virtual int TryOffset => 0;
+        public virtual int TryLength => 0;
+        public virtual int HandlerOffset => 0;
+        public virtual int HandlerLength => 0;
+        public virtual int FilterOffset => throw new InvalidOperationException(SR.Arg_EHClauseNotFilter);
+        public virtual Type CatchType => null;
 
         public override string ToString()
         {
@@ -29,3 +25,4 @@ namespace System.Reflection
         }
     }
 }
+

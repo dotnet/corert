@@ -644,7 +644,7 @@ class SchemaDef
                 new MemberDef("Flags", "GenericParameterAttributes"),
                 new MemberDef("Kind", "GenericParameterKind"),
                 new MemberDef("Name", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child),
-                new MemberDef("Constraints", TypeDefOrRefOrSpec, MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.EnumerateForHashCode),
+                new MemberDef("Constraints", TypeDefOrRefOrSpecOrMod, MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.EnumerateForHashCode),
                 new MemberDef("CustomAttributes", "CustomAttribute", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
             }
         ),

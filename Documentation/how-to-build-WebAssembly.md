@@ -37,6 +37,7 @@ This is Windows only for now.
 
 # Useful tips #
 * To manually make ILC compile to WebAssembly, add ```--wasm``` to the command line.
+* To debug C# source, add ```-g4``` to the emcc command line and change ```-s WASM=1``` to ```-s WASM=0```. This will generate a JavaScript source map that browser debuggers and Visual Studio Code can work with. Using Visual Studio Code's Chrome debugger works particularly well.
 * Add ```-g3``` to the emcc command line to generate more debuggable output and a .wast file with the text form of the WebAssembly.
-* Omit ```-s WASM=1``` from the emcc command line to generate asm.js. Browser debuggers currently work better with asm.js and it's often a bit more readable than wast.
+* Change ```-s WASM=1``` to ```-s WASM=0``` in the emcc command line to generate asm.js. Browser debuggers currently work better with asm.js and it's often a bit more readable than wast.
 * Add ```-O2 --llvm-lto 2``` to the emcc command line to enable optimizations. This makes the generated WebAssembly as much as 75% smaller as well as more efficient.

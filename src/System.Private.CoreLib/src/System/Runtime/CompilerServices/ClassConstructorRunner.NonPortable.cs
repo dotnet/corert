@@ -19,10 +19,9 @@ namespace System.Runtime.CompilerServices
     {
         //=========================================================================================================
         // Intrinsic to call the cctor given a pointer to the code (this method's body is ignored and replaced
-        // with a calli during compilation). The transform doesn't handle non-generic versions yet (i.e.
-        // functions that are void).
+        // with a calli during compilation).
         //=========================================================================================================
-        private static T Call<T>(System.IntPtr pfn)
+        private static void Call(System.IntPtr pfn)
         {
             throw NotImplemented.ByDesign;
         }

@@ -10,6 +10,9 @@
 #if HAVE_SCHED_GETCPU
 #include <sched.h>
 #endif
+#if HAVE__NSGETENVIRON
+#include <crt_externs.h>
+#endif
 
 
 extern "C" char* CoreLibNative_GetEnv(const char* variable)
@@ -29,4 +32,18 @@ extern "C" int32_t CoreLibNative_SchedGetCpu()
 extern "C" void CoreLibNative_Exit(int32_t exitCode)
 {
     exit(exitCode);
+}
+
+extern "C" char** CoreLibNative_GetEnviron()
+{
+    char** sysEnviron;
+
+#if HAVE__NSGETENVIRON
+    sysEnviron = *(_NSGetEnviron());
+#else   // HAVE__NSGETENVIRON
+    extern char **environ;
+    sysEnviron = environ;
+#endif  // HAVE__NSGETENVIRON
+
+    return sysEnviron;
 }

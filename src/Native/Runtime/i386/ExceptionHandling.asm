@@ -207,6 +207,7 @@ FASTCALL_FUNC  RhpRethrow, 0
         mov     [edx + OFFSETOF__ExInfo__m_exception], esi          ;; init the exception object to null
         mov     byte ptr [edx + OFFSETOF__ExInfo__m_passNumber], 1  ;; init to the first pass 
         mov     dword ptr [edx + OFFSETOF__ExInfo__m_idxCurClause], 0FFFFFFFFh
+        mov     byte ptr [edx + OFFSETOF__ExInfo__m_kind], 0        ;; init to a deterministic value (ExKind.None)
 
         ;; link the ExInfo into the thread's ExInfo chain
         mov     ecx, [eax + OFFSETOF__Thread__m_pExInfoStackHead]   ;; ecx <- currently active ExInfo

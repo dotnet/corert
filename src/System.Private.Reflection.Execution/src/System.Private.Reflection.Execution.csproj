@@ -13,9 +13,6 @@
   <PropertyGroup Condition="'$(EcmaMetadataSupport)' == 'true'">
     <DefineConstants>ECMA_METADATA_SUPPORT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(JitSupport)' == 'true'">
-    <DefineConstants>SUPPORT_JIT;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
 
   <!-- Setup the right references -->
   <ItemGroup>
@@ -28,17 +25,18 @@
       <Aliases>global,System_Private_CoreLib</Aliases>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
-
-    <ProjectReference Include="..\..\System.Private.Interop\src\System.Private.Interop.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true' and '$(EcmaMetadataSupport)' != 'true'">
+    <ProjectReference Include="..\..\System.Private.Interop\src\System.Private.Interop.csproj" />
     <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj" />
     <ProjectReference Include="..\..\System.Private.Reflection.Core\src\System.Private.Reflection.Core.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true' and '$(EcmaMetadataSupport)' == 'true'">
+    <ProjectReference Include="..\..\System.Private.Interop\src\System.Private.Interop.Experimental.csproj" />
     <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.Experimental.csproj" />
     <ProjectReference Include="..\..\System.Private.Reflection.Core\src\System.Private.Reflection.Core.Experimental.csproj" />
     <ProjectReference Include="..\..\System.Private.Jit\src\System.Private.Jit.csproj" />
+    <ProjectReference Include="..\..\System.Private.Interpreter\src\System.Private.Interpreter.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -95,7 +93,6 @@
     <Compile Include="Internal\Reflection\Extensions\NonPortable\DelegateMethodInfoRetriever.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
     <Compile Include="System\Reflection\MissingRuntimeArtifactException.cs" />
-
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\Internal\Runtime\MetadataBlob.cs" >

@@ -372,7 +372,7 @@ namespace ILCompiler
                 Debug.Assert(!type.IsGenericDefinition);
 
                 MetadataType metadataType = type as MetadataType;
-                if (metadataType != null && metadataType.ThreadStaticFieldSize.AsInt > 0)
+                if (metadataType != null && metadataType.ThreadGcStaticFieldSize.AsInt > 0)
                 {
                     _graph.AddRoot(_factory.TypeThreadStaticIndex(metadataType), reason);
 

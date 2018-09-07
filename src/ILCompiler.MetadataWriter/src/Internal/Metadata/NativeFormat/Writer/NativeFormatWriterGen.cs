@@ -2807,7 +2807,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             Debug.Assert(Constraints.TrueForAll(handle => handle == null ||
                 handle.HandleType == HandleType.TypeDefinition ||
                 handle.HandleType == HandleType.TypeReference ||
-                handle.HandleType == HandleType.TypeSpecification));
+                handle.HandleType == HandleType.TypeSpecification ||
+                handle.HandleType == HandleType.ModifiedType));
             writer.Write(Constraints);
             writer.Write(CustomAttributes);
         } // Save

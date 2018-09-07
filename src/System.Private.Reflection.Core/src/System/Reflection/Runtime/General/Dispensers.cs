@@ -97,7 +97,7 @@ namespace System.Reflection.Runtime.Assemblies
                     AssemblyBinder binder = ReflectionCoreExecution.ExecutionDomain.ReflectionDomainSetup.AssemblyBinder;
                     AssemblyBindResult bindResult;
                     Exception exception;
-                    if (!binder.Bind(assemblyRefName, out bindResult, out exception))
+                    if (!binder.Bind(assemblyRefName, cacheMissedLookups: true, out bindResult, out exception))
                         return exception;
 
                     return GetRuntimeAssembly(bindResult);

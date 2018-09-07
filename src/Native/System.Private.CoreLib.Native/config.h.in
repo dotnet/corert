@@ -6,3 +6,4 @@
 #cmakedefine01 HAVE_MACH_ABSOLUTE_TIME
 #cmakedefine01 HAVE_SCHED_GETCPU
 #cmakedefine01 HAVE_GNU_LIBNAMES_H
+#cmakedefine01 HAVE__NSGETENVIRON

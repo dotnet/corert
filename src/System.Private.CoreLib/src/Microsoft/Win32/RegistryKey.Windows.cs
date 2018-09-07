@@ -75,7 +75,7 @@ namespace Microsoft.Win32
             // the dispose below and usage elsewhere (other threads). This is By Design. 
             // This is less of an issue when OS > NT5 (i.e Vista & higher), we can close the perfkey  
             // (to release & refresh PERFLIB resources) and the OS will rebuild PERFLIB as necessary. 
-            Interop.mincore.RegCloseKey(HKEY_PERFORMANCE_DATA);
+            Interop.Advapi32.RegCloseKey(HKEY_PERFORMANCE_DATA);
         }
 
         private void FlushCore()
@@ -441,21 +441,21 @@ namespace Microsoft.Win32
 
             switch (type)
             {
-                case Interop.Kernel32.RegistryValues.REG_NONE:
-                case Interop.Kernel32.RegistryValues.REG_DWORD_BIG_ENDIAN:
-                case Interop.Kernel32.RegistryValues.REG_BINARY:
+                case Interop.Advapi32.RegistryValues.REG_NONE:
+                case Interop.Advapi32.RegistryValues.REG_DWORD_BIG_ENDIAN:
+                case Interop.Advapi32.RegistryValues.REG_BINARY:
                     {
                         byte[] blob = new byte[datasize];
                         ret = Interop.mincore.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
                         data = blob;
                     }
                     break;
-                case Interop.Kernel32.RegistryValues.REG_QWORD:
+                case Interop.Advapi32.RegistryValues.REG_QWORD:
                     {    // also REG_QWORD_LITTLE_ENDIAN
                         if (datasize > 8)
                         {
                             // prevent an AV in the edge case that datasize is larger than sizeof(long)
-                            goto case Interop.Kernel32.RegistryValues.REG_BINARY;
+                            goto case Interop.Advapi32.RegistryValues.REG_BINARY;
                         }
                         long blob = 0;
                         Debug.Assert(datasize == 8, "datasize==8");
@@ -465,12 +465,12 @@ namespace Microsoft.Win32
                         data = blob;
                     }
                     break;
-                case Interop.Kernel32.RegistryValues.REG_DWORD:
+                case Interop.Advapi32.RegistryValues.REG_DWORD:
                     {    // also REG_DWORD_LITTLE_ENDIAN
                         if (datasize > 4)
                         {
                             // prevent an AV in the edge case that datasize is larger than sizeof(int)
-                            goto case Interop.Kernel32.RegistryValues.REG_QWORD;
+                            goto case Interop.Advapi32.RegistryValues.REG_QWORD;
                         }
                         int blob = 0;
                         Debug.Assert(datasize == 4, "datasize==4");
@@ -481,7 +481,7 @@ namespace Microsoft.Win32
                     }
                     break;
 
-                case Interop.Kernel32.RegistryValues.REG_SZ:
+                case Interop.Advapi32.RegistryValues.REG_SZ:
                     {
                         if (datasize % 2 == 1)
                         {
@@ -511,7 +511,7 @@ namespace Microsoft.Win32
                     }
                     break;
 
-                case Interop.Kernel32.RegistryValues.REG_EXPAND_SZ:
+                case Interop.Advapi32.RegistryValues.REG_EXPAND_SZ:
                     {
                         if (datasize % 2 == 1)
                         {
@@ -546,7 +546,7 @@ namespace Microsoft.Win32
                         }
                     }
                     break;
-                case Interop.Kernel32.RegistryValues.REG_MULTI_SZ:
+                case Interop.Advapi32.RegistryValues.REG_MULTI_SZ:
                     {
                         if (datasize % 2 == 1)
                         {
@@ -622,7 +622,7 @@ namespace Microsoft.Win32
                         data = strings;
                     }
                     break;
-                case Interop.Kernel32.RegistryValues.REG_LINK:
+                case Interop.Advapi32.RegistryValues.REG_LINK:
                 default:
                     break;
             }
@@ -641,7 +641,7 @@ namespace Microsoft.Win32
             }
 
             return
-                type == Interop.Kernel32.RegistryValues.REG_NONE ? RegistryValueKind.None :
+                type == Interop.Advapi32.RegistryValues.REG_NONE ? RegistryValueKind.None :
                 !Enum.IsDefined(typeof(RegistryValueKind), type) ? RegistryValueKind.Unknown :
                 (RegistryValueKind)type;
         }

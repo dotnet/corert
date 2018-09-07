@@ -30,11 +30,12 @@ namespace ILCompiler
             ManifestResourceBlockingPolicy resourceBlockingPolicy,
             string logFile,
             StackTraceEmissionPolicy stackTracePolicy,
+            DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy,
             IEnumerable<ModuleDesc> modulesWithMetadata,
             IEnumerable<ReflectableEntity<TypeDesc>> reflectableTypes,
             IEnumerable<ReflectableEntity<MethodDesc>> reflectableMethods,
             IEnumerable<ReflectableEntity<FieldDesc>> reflectableFields)
-            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy)
+            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy)
         {
             _modulesWithMetadata = new List<ModuleDesc>(modulesWithMetadata);
             

@@ -360,6 +360,7 @@ NotHijacked
 
         add         x1, sp, #rsp_offsetof_ExInfo                    ;; x1 <- ExInfo*
         str         xzr, [x1, #OFFSETOF__ExInfo__m_exception]       ;; pExInfo->m_exception = null
+        strb        wzr, [x1, #OFFSETOF__ExInfo__m_kind]            ;; init to a deterministic value (ExKind.None)
         mov         w3, #1
         strb        w3, [x1, #OFFSETOF__ExInfo__m_passNumber]       ;; pExInfo->m_passNumber = 1
         mov         w3, #0xFFFFFFFF
