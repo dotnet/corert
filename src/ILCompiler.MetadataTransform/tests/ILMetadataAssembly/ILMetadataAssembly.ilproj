@@ -5,7 +5,7 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AssemblyName>ILMetadataAssembly</AssemblyName>
-    <RunTestsForProject>false</RunTestsForProject>
+    <SkipTestRun>true</SkipTestRun>
   </PropertyGroup>
 
   <ItemGroup>

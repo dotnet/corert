@@ -149,7 +149,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <SupplementalTestData Include="$(RuntimePath)*.dll" />
+    <SupplementalTestData Include="$(RuntimePath)*" />
   </ItemGroup>
 
   <!-- initialize all the targets variables to false as they should only be set below -->
@@ -261,6 +261,11 @@
   <PropertyGroup>
     <!-- Don't run tests if we're building another platform's binaries on Windows -->
     <SkipTests Condition="'$(SkipTests)'=='' and ('$(OsEnvironment)'=='Windows_NT' and '$(TargetsWindows)'!='true')">true</SkipTests>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- On Windows fallback to ILAsm from the framework for now -->
+    <IlasmToolPath Condition="'$(OSEnvironment)'=='Windows_NT'">%WINDIR%\Microsoft.NET\Framework\v4.0.30319\ilasm.exe</IlasmToolPath>
   </PropertyGroup>
 
   <!-- Use Roslyn Compilers to build -->
