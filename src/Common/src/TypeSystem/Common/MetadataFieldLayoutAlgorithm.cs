@@ -409,20 +409,58 @@ namespace Internal.TypeSystem
             var offsets = new FieldAndOffset[numInstanceFields];
             int fieldOrdinal = 0;
 
+            // Iterate over the instance fields and keep track of the number of fields of each category
+            // For non-value class fields, we will keep track of the number of fields by log2(size)
+            int maxLog2Size = CalculateLog2(TargetDetails.MaximumAlignment);
+            int instanceValueClassFieldCount = 0;
+            int[] instanceGCPointerFieldsCount = new int[maxLog2Size + 1];
+            int[] instanceNonGCPointerFieldsCount = new int[maxLog2Size + 1];
+
+            foreach (var field in type.GetFields())
+            {
+                if (field.IsStatic)
+                    continue;
+
+                if (IsByValueClass(field.FieldType))
+                {
+                    instanceValueClassFieldCount++;
+                }
+                else if (field.FieldType.IsGCPointer)
+                {
+                    var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, packingSize);
+                    instanceGCPointerFieldsCount[CalculateLog2(fieldSizeAndAlignment.Size.AsInt)]++;
+                }
+                else
+                {
+                    var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, packingSize);
+                    instanceNonGCPointerFieldsCount[CalculateLog2(fieldSizeAndAlignment.Size.AsInt)]++;
+                }
+            }
+
             // Initialize three different sets of lists to hold the instance fields
             //   1. List of value class fields
-            //   2. Lists of GC Pointer fields. These will be stored in a dictionary indexed by the size of the field
-            //   3. Lists of remaining fields. These will be stored in a dictionary indexed by the size of the field
-            List<FieldDesc> instanceValueClassFieldDescs = new List<FieldDesc>();
-            Dictionary<int, List<FieldDesc>> instanceGCPointerFieldsBySize = new Dictionary<int, List<FieldDesc>>();
-            Dictionary<int, List<FieldDesc>> instanceNonGCPointerFieldsBySize = new Dictionary<int, List<FieldDesc>>();
+            //   2. Lists of GC Pointer fields. These will be stored in arrays that are indexed by the log2(size) of the fields
+            //   3. Lists of remaining fields. These will be stored in arrays that are indexed by the log2(size) of the fields
+            FieldDesc[] instanceValueClassFieldsArr = new FieldDesc[instanceValueClassFieldCount];
+            FieldDesc[][] instanceGCPointerFieldsArr = new FieldDesc[maxLog2Size + 1][];
+            FieldDesc[][] instanceNonGCPointerFieldsArr = new FieldDesc[maxLog2Size + 1][];
 
-            int maxInstanceFieldSize = int.MinValue;
+            for (int i = 0; i <= maxLog2Size; i++)
+            {
+                instanceGCPointerFieldsArr[i]    = new FieldDesc[instanceGCPointerFieldsCount[i]];
+                instanceNonGCPointerFieldsArr[i] = new FieldDesc[instanceNonGCPointerFieldsCount[i]];
+
+                // Reset the counters to be used later as the index to insert into the arrays
+                instanceGCPointerFieldsCount[i] = 0;
+                instanceNonGCPointerFieldsCount[i] = 0;
+            }
+
+            // Reset the counter to be used later as the index to insert into the array
+            instanceValueClassFieldCount = 0;
 
             // Iterate over all fields and do the following
-            //   - Add instance fields to the appropriate list in the dictionary (while maintaining the enumerated order)
+            //   - Add instance fields to the appropriate array (while maintaining the enumerated order)
             //   - Save the largest alignment we've seen
-            //   - For non-value class fields, save the largest size we've seen
             foreach (var field in type.GetFields())
             {
                 if (field.IsStatic)
@@ -432,34 +470,29 @@ namespace Internal.TypeSystem
 
                 largestAlignmentRequired = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequired);
 
-                if (field.FieldType.IsGCPointer)
+                if (IsByValueClass(field.FieldType))
                 {
-                    int fieldSizeAsInt = fieldSizeAndAlignment.Size.AsInt;
-                    maxInstanceFieldSize = Math.Max(fieldSizeAsInt, maxInstanceFieldSize);
-
-                    if (!instanceGCPointerFieldsBySize.TryGetValue(fieldSizeAsInt, out List<FieldDesc> instanceFieldsWithMatchingSize))
-                    {
-                        instanceFieldsWithMatchingSize = new List<FieldDesc>();
-                        instanceGCPointerFieldsBySize[fieldSizeAsInt] = instanceFieldsWithMatchingSize;
-                    }
-                    instanceFieldsWithMatchingSize.Add(field);
+                    instanceValueClassFieldsArr[instanceValueClassFieldCount++] = field;
                 }
-                else if (IsByValueClass(field.FieldType))
+                else if (field.FieldType.IsGCPointer)
                 {
-                    instanceValueClassFieldDescs.Add(field);
+                    int log2size = CalculateLog2(fieldSizeAndAlignment.Size.AsInt);
+                    instanceGCPointerFieldsArr[log2size][instanceGCPointerFieldsCount[log2size]++] = field;
                 }
                 else
                 {
-                    int fieldSizeAsInt = fieldSizeAndAlignment.Size.AsInt;
-                    maxInstanceFieldSize = Math.Max(fieldSizeAsInt, maxInstanceFieldSize);
-
-                    if (!instanceNonGCPointerFieldsBySize.TryGetValue(fieldSizeAsInt, out List<FieldDesc> instanceFieldsWithMatchingSize))
-                    {
-                        instanceFieldsWithMatchingSize = new List<FieldDesc>();
-                        instanceNonGCPointerFieldsBySize[fieldSizeAsInt] = instanceFieldsWithMatchingSize;
-                    }
-                    instanceFieldsWithMatchingSize.Add(field);
+                    int log2size = CalculateLog2(fieldSizeAndAlignment.Size.AsInt);
+                    instanceNonGCPointerFieldsArr[log2size][instanceNonGCPointerFieldsCount[log2size]++] = field;
                 }
+            }
+
+            // We've finished placing the fields into their appropriate arrays
+            // The next optimization may place non-GC Pointers so repurpose our
+            // counter to keep track of the next non-GC Pointer that must be placed
+            // for a given field size
+            for (int i = 0; i <= maxLog2Size; i++)
+            {
+                instanceNonGCPointerFieldsCount[i] = 0;
             }
 
             // If the position is Indeterminate, proceed immediately to placing the fields
@@ -478,10 +511,11 @@ namespace Internal.TypeSystem
                     int alignmentBytesRemaining = type.BaseType.InstanceByteCount.AsInt - cumulativeInstanceFieldPos.AsInt;
                     bool continueProcessingInstanceFields = true;
 
-                    for (int i = maxInstanceFieldSize; continueProcessingInstanceFields && i > 0; i /= 2)
+                    for (int i = maxLog2Size; continueProcessingInstanceFields && i >= 0; i--)
                     {
+                        int size = 1 << i;
                         // Continue to next size if the current size will absolutely not fit into the remaining space
-                        if (i > alignmentBytesRemaining)
+                        if (size > alignmentBytesRemaining)
                             continue;
 
                         if (alignmentBytesRemaining == 0)
@@ -491,31 +525,24 @@ namespace Internal.TypeSystem
 
                         Debug.Assert(alignmentBytesRemaining > 0);
 
-                        // Iterate over the variable of size i if we have stored any
-                        if (instanceNonGCPointerFieldsBySize.TryGetValue(i, out List<FieldDesc> instanceNonGCPointerFields) && instanceNonGCPointerFields.Count > 0)
+                        // Iterate over the fields of size 2^i if we have stored any
+                        for (int j = instanceNonGCPointerFieldsCount[i]; j < instanceNonGCPointerFieldsArr[i].Length; j++)
                         {
-                            while (instanceNonGCPointerFields.Count > 0)
+                            FieldDesc field = instanceNonGCPointerFieldsArr[i][j];
+                            var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, packingSize);
+
+                            LayoutInt tentativeInstanceFieldOffSet = LayoutInt.AlignUp(cumulativeInstanceFieldPos, fieldSizeAndAlignment.Alignment);
+                            LayoutInt tentativeCumulativeInstanceFieldPos = checked(tentativeInstanceFieldOffSet + fieldSizeAndAlignment.Size);
+
+                            // If the alignment and size of the new field would extend past the unaligned space, stop processing this optimization
+                            if (tentativeCumulativeInstanceFieldPos.AsInt > type.BaseType.InstanceByteCount.AsInt)
                             {
-                                FieldDesc field = instanceNonGCPointerFields[0];
-                                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, packingSize);
-
-                                LayoutInt tentativeInstanceFieldOffSet = LayoutInt.AlignUp(cumulativeInstanceFieldPos, fieldSizeAndAlignment.Alignment);
-                                LayoutInt tentativeCumulativeInstanceFieldPos = checked(tentativeInstanceFieldOffSet + fieldSizeAndAlignment.Size);
-
-                                // If the alignment and size of the new field would extend past the unaligned space, stop processing this optimization
-                                if (tentativeCumulativeInstanceFieldPos.AsInt > type.BaseType.InstanceByteCount.AsInt)
-                                {
-                                    continueProcessingInstanceFields = false;
-                                    break;
-                                }
-
-                                offsets[fieldOrdinal] = new FieldAndOffset(field, tentativeInstanceFieldOffSet);
-                                cumulativeInstanceFieldPos = tentativeCumulativeInstanceFieldPos;
-                                alignmentBytesRemaining = type.BaseType.InstanceByteCount.AsInt - cumulativeInstanceFieldPos.AsInt;
-
-                                fieldOrdinal++;
-                                instanceNonGCPointerFields.RemoveAt(0);
+                                continueProcessingInstanceFields = false;
+                                break;
                             }
+
+                            PlaceInstanceField(field, packingSize, offsets, ref cumulativeInstanceFieldPos, ref fieldOrdinal);
+                            instanceNonGCPointerFieldsCount[i]++;
                         }
                     }
                 }
@@ -524,21 +551,25 @@ namespace Internal.TypeSystem
             // Next, place GC pointer fields and non-GC pointer fields
             // Starting with the largest-sized fields, place the GC pointer fields in order then place the non-GC pointer fields in order.
             // Once the largest-sized fields are placed, repeat with the next-largest-sized group of fields and continue.
-            for (int i = maxInstanceFieldSize; i > 0; i /= 2)
+            for (int i = maxLog2Size; i >= 0; i--)
             {
-                if (instanceGCPointerFieldsBySize.TryGetValue(i, out List<FieldDesc> instanceGCPointerFields) && instanceGCPointerFields.Count > 0)
+                for (int j = 0; j < instanceGCPointerFieldsArr[i].Length; j++)
                 {
-                    PlaceOrderedInstanceFields(instanceGCPointerFields, packingSize, offsets, ref cumulativeInstanceFieldPos, ref fieldOrdinal);
+                    PlaceInstanceField(instanceGCPointerFieldsArr[i][j], packingSize, offsets, ref cumulativeInstanceFieldPos, ref fieldOrdinal);
                 }
 
-                if (instanceNonGCPointerFieldsBySize.TryGetValue(i, out List<FieldDesc> instanceNonGCPointerFields) && instanceNonGCPointerFields.Count > 0)
+                // The start index will be the index that may have been increased in the previous optimization
+                for (int j = instanceNonGCPointerFieldsCount[i]; j < instanceNonGCPointerFieldsArr[i].Length; j++)
                 {
-                    PlaceOrderedInstanceFields(instanceNonGCPointerFields, packingSize, offsets, ref cumulativeInstanceFieldPos, ref fieldOrdinal);
+                    PlaceInstanceField(instanceNonGCPointerFieldsArr[i][j], packingSize, offsets, ref cumulativeInstanceFieldPos, ref fieldOrdinal);
                 }
             }
 
             // Place value class fields last
-            PlaceOrderedInstanceFields(instanceValueClassFieldDescs, packingSize, offsets, ref cumulativeInstanceFieldPos, ref fieldOrdinal);
+            for (int i = 0; i < instanceValueClassFieldsArr.Length; i++)
+            {
+                PlaceInstanceField(instanceValueClassFieldsArr[i], packingSize, offsets, ref cumulativeInstanceFieldPos, ref fieldOrdinal);
+            }
 
             if (type.IsValueType)
             {
@@ -558,18 +589,32 @@ namespace Internal.TypeSystem
             return computedLayout;
         }
 
-        private static void PlaceOrderedInstanceFields(IEnumerable<FieldDesc> fieldDescs, int packingSize, FieldAndOffset[] offsets, ref LayoutInt instanceFieldPos, ref int fieldOrdinal)
+        private static void PlaceInstanceField(FieldDesc field, int packingSize, FieldAndOffset[] offsets, ref LayoutInt instanceFieldPos, ref int fieldOrdinal)
         {
-            foreach (var field in fieldDescs)
+            var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, packingSize);
+
+            instanceFieldPos = LayoutInt.AlignUp(instanceFieldPos, fieldSizeAndAlignment.Alignment);
+            offsets[fieldOrdinal] = new FieldAndOffset(field, instanceFieldPos);
+            instanceFieldPos = checked(instanceFieldPos + fieldSizeAndAlignment.Size);
+
+            fieldOrdinal++;
+        }
+
+        private static int CalculateLog2(int size)
+        {
+            // Size must be a positive number
+            Debug.Assert(size > 0);
+
+            // Size must be a power of 2
+            Debug.Assert( 0 == (size & (size - 1)));
+
+            int log2size;
+            for (log2size = 0; size > 1; log2size++)
             {
-                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, packingSize);
-
-                instanceFieldPos = LayoutInt.AlignUp(instanceFieldPos, fieldSizeAndAlignment.Alignment);
-                offsets[fieldOrdinal] = new FieldAndOffset(field, instanceFieldPos);
-                instanceFieldPos = checked(instanceFieldPos + fieldSizeAndAlignment.Size);
-
-                fieldOrdinal++;
+                size = size >> 1;
             }
+
+            return log2size;
         }
 
         private static bool IsByValueClass(TypeDesc type)
