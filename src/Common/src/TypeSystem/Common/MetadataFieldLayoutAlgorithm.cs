@@ -421,27 +421,22 @@ namespace Internal.TypeSystem
 
             // Iterate over all fields and do the following
             //   - Add instance fields to the appropriate list in the dictionary (while maintaining the enumerated order)
+            //   - Save the largest alignment we've seen
             //   - For non-value class fields, save the largest size we've seen
-            //   - For non-value class fields, save the largest alignment we've seen
             foreach (var field in type.GetFields())
             {
                 if (field.IsStatic)
                     continue;
 
-                if (IsByValueClass(field.FieldType))
-                {
-                    instanceValueClassFieldDescs.Add(field);
-                    continue;
-                }
-
                 var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, packingSize);
-                int fieldSizeAsInt = fieldSizeAndAlignment.Size.AsInt;
 
-                maxInstanceFieldSize = Math.Max(fieldSizeAsInt, maxInstanceFieldSize);
                 largestAlignmentRequired = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequired);
 
                 if (field.FieldType.IsGCPointer)
                 {
+                    int fieldSizeAsInt = fieldSizeAndAlignment.Size.AsInt;
+                    maxInstanceFieldSize = Math.Max(fieldSizeAsInt, maxInstanceFieldSize);
+
                     if (!instanceGCPointerFieldsBySize.TryGetValue(fieldSizeAsInt, out List<FieldDesc> instanceFieldsWithMatchingSize))
                     {
                         instanceFieldsWithMatchingSize = new List<FieldDesc>();
@@ -449,8 +444,15 @@ namespace Internal.TypeSystem
                     }
                     instanceFieldsWithMatchingSize.Add(field);
                 }
+                else if (IsByValueClass(field.FieldType))
+                {
+                    instanceValueClassFieldDescs.Add(field);
+                }
                 else
                 {
+                    int fieldSizeAsInt = fieldSizeAndAlignment.Size.AsInt;
+                    maxInstanceFieldSize = Math.Max(fieldSizeAsInt, maxInstanceFieldSize);
+
                     if (!instanceNonGCPointerFieldsBySize.TryGetValue(fieldSizeAsInt, out List<FieldDesc> instanceFieldsWithMatchingSize))
                     {
                         instanceFieldsWithMatchingSize = new List<FieldDesc>();
@@ -460,56 +462,60 @@ namespace Internal.TypeSystem
                 }
             }
 
-            // Align the field offset to the required alignment of an int: 4
-            // Not sure why that is, but a .NET Core 2.1 app seems to align the subclass's fields automatically to this boundary
-            cumulativeInstanceFieldPos = LayoutInt.AlignUp(cumulativeInstanceFieldPos, new LayoutInt(4));
-
-            // First, place small fields immediately after the parent field bytes if there are a number of field bytes that are not aligned
-            // GC pointer fields and value class fields are not considered for this optimization
-            // Place the fields in order, starting with the largest size.
-            int parentByteOffsetModulo = cumulativeInstanceFieldPos.AsInt % type.Context.Target.PointerSize;
-            if (parentByteOffsetModulo != 0)
+            // If the position is Indeterminate, proceed immediately to placing the fields
+            if (!cumulativeInstanceFieldPos.IsIndeterminate)
             {
-                int alignmentBytesRemaining = type.BaseType.InstanceByteCount.AsInt - cumulativeInstanceFieldPos.AsInt;
-                bool continueProcessingInstanceFields = true;
+                // Align the field offset to the required alignment of an int: 4
+                // Not sure why that is, but a .NET Core 2.1 app seems to align the subclass's fields automatically to this boundary
+                cumulativeInstanceFieldPos = LayoutInt.AlignUp(cumulativeInstanceFieldPos, new LayoutInt(4));
 
-                for (int i = maxInstanceFieldSize; continueProcessingInstanceFields && i > 0; i /= 2)
+                // First, place small fields immediately after the parent field bytes if there are a number of field bytes that are not aligned
+                // GC pointer fields and value class fields are not considered for this optimization
+                // Place the fields in order, starting with the largest size.
+                int parentByteOffsetModulo = cumulativeInstanceFieldPos.AsInt % type.Context.Target.PointerSize;
+                if (parentByteOffsetModulo != 0)
                 {
-                    // Continue to next size if the current size will absolutely not fit into the remaining space
-                    if (i > alignmentBytesRemaining)
-                        continue;
+                    int alignmentBytesRemaining = type.BaseType.InstanceByteCount.AsInt - cumulativeInstanceFieldPos.AsInt;
+                    bool continueProcessingInstanceFields = true;
 
-                    if (alignmentBytesRemaining == 0)
+                    for (int i = maxInstanceFieldSize; continueProcessingInstanceFields && i > 0; i /= 2)
                     {
-                        break;
-                    }
+                        // Continue to next size if the current size will absolutely not fit into the remaining space
+                        if (i > alignmentBytesRemaining)
+                            continue;
 
-                    Debug.Assert(alignmentBytesRemaining > 0);
-
-                    // Iterate over the variable of size i if we have stored any
-                    if (instanceNonGCPointerFieldsBySize.TryGetValue(i, out List<FieldDesc> instanceNonGCPointerFields) && instanceNonGCPointerFields.Count > 0)
-                    {
-                        while (instanceNonGCPointerFields.Count > 0)
+                        if (alignmentBytesRemaining == 0)
                         {
-                            FieldDesc field = instanceNonGCPointerFields[0];
-                            var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, packingSize);
+                            break;
+                        }
 
-                            LayoutInt tentativeInstanceFieldOffSet = LayoutInt.AlignUp(cumulativeInstanceFieldPos, fieldSizeAndAlignment.Alignment);
-                            LayoutInt tentativeCumulativeInstanceFieldPos = checked(tentativeInstanceFieldOffSet + fieldSizeAndAlignment.Size);
+                        Debug.Assert(alignmentBytesRemaining > 0);
 
-                            // If the alignment and size of the new field would extend past the unaligned space, stop processing this optimization
-                            if (tentativeCumulativeInstanceFieldPos.AsInt > type.BaseType.InstanceByteCount.AsInt)
+                        // Iterate over the variable of size i if we have stored any
+                        if (instanceNonGCPointerFieldsBySize.TryGetValue(i, out List<FieldDesc> instanceNonGCPointerFields) && instanceNonGCPointerFields.Count > 0)
+                        {
+                            while (instanceNonGCPointerFields.Count > 0)
                             {
-                                continueProcessingInstanceFields = false;
-                                break;
+                                FieldDesc field = instanceNonGCPointerFields[0];
+                                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, packingSize);
+
+                                LayoutInt tentativeInstanceFieldOffSet = LayoutInt.AlignUp(cumulativeInstanceFieldPos, fieldSizeAndAlignment.Alignment);
+                                LayoutInt tentativeCumulativeInstanceFieldPos = checked(tentativeInstanceFieldOffSet + fieldSizeAndAlignment.Size);
+
+                                // If the alignment and size of the new field would extend past the unaligned space, stop processing this optimization
+                                if (tentativeCumulativeInstanceFieldPos.AsInt > type.BaseType.InstanceByteCount.AsInt)
+                                {
+                                    continueProcessingInstanceFields = false;
+                                    break;
+                                }
+
+                                offsets[fieldOrdinal] = new FieldAndOffset(field, tentativeInstanceFieldOffSet);
+                                cumulativeInstanceFieldPos = tentativeCumulativeInstanceFieldPos;
+                                alignmentBytesRemaining = type.BaseType.InstanceByteCount.AsInt - cumulativeInstanceFieldPos.AsInt;
+
+                                fieldOrdinal++;
+                                instanceNonGCPointerFields.RemoveAt(0);
                             }
-
-                            offsets[fieldOrdinal] = new FieldAndOffset(field, tentativeInstanceFieldOffSet);
-                            cumulativeInstanceFieldPos = tentativeCumulativeInstanceFieldPos;
-                            alignmentBytesRemaining = type.BaseType.InstanceByteCount.AsInt - cumulativeInstanceFieldPos.AsInt;
-
-                            fieldOrdinal++;
-                            instanceNonGCPointerFields.RemoveAt(0);
                         }
                     }
                 }

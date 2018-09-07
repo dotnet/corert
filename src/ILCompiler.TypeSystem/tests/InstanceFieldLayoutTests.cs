@@ -266,7 +266,7 @@ namespace TypeSystemTests
             }
         }
 
-        [Fact (Skip = "The compiler and test MetadataFieldLayoutAlgorithms do not support AutoLayout")]
+        [Fact]
         public void TestAutoTypeLayout()
         {
             MetadataType class1Type = _testModule.GetType("Auto", "Class1_7BytesRemaining");
@@ -327,7 +327,7 @@ namespace TypeSystemTests
             }
         }
 
-        [Fact (Skip = "The compiler and test MetadataFieldLayoutAlgorithms do not support AutoLayout")]
+        [Fact]
         public void TestAutoTypeLayoutInheritanceClass2()
         {
             MetadataType class2Type = _testModule.GetType("Auto", "Class2_3BytesRemaining");
@@ -372,7 +372,7 @@ namespace TypeSystemTests
             }
         }
 
-        [Fact (Skip = "The compiler and test MetadataFieldLayoutAlgorithms do not support AutoLayout")]
+        [Fact]
         public void TestAutoTypeLayoutInheritanceClass3()
         {
             MetadataType class2Type = _testModule.GetType("Auto", "Class3");
@@ -405,7 +405,7 @@ namespace TypeSystemTests
             }
         }
 
-        [Fact (Skip = "The compiler and test MetadataFieldLayoutAlgorithms do not support AutoLayout")]
+        [Fact]
         public void TestAutoTypeLayoutInheritanceClass4()
         {
             MetadataType class2Type = _testModule.GetType("Auto", "Class4");
@@ -446,7 +446,7 @@ namespace TypeSystemTests
             }
         }
 
-        [Fact (Skip = "The compiler and test MetadataFieldLayoutAlgorithms do not support AutoLayout")]
+        [Fact]
         public void TestAutoTypeLayoutInheritanceClass5()
         {
             MetadataType class2Type = _testModule.GetType("Auto", "Class5");
@@ -487,7 +487,7 @@ namespace TypeSystemTests
             }
         }
 
-        [Fact (Skip = "The compiler and test MetadataFieldLayoutAlgorithms do not support AutoLayout")]
+        [Fact]
         public void TestAutoTypeLayoutInheritanceClass6()
         {
             MetadataType class2Type = _testModule.GetType("Auto", "Class6");
