@@ -133,7 +133,32 @@ namespace Internal.TypeSystem
             return TypeHashingAlgorithms.ComputeMethodSignatureHashCode(_returnType.GetHashCode(), _parameters);
         }
 
+        public SignatureEnumerator GetEnumerator()
+        {
+            return new SignatureEnumerator(this);
+        }
+
         public override TypeSystemContext Context => _returnType.Context;
+
+        public struct SignatureEnumerator
+        {
+            private int _index;
+            private MethodSignature _signature;
+
+            public SignatureEnumerator(MethodSignature signature)
+            {
+                _signature = signature;
+                _index = -1;
+            }
+
+            public TypeDesc Current => _signature[_index];
+
+            public bool MoveNext()
+            {
+                _index++;
+                return _index < _signature.Length;
+            }
+        }
     }
 
     /// <summary>

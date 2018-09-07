@@ -20,7 +20,7 @@ namespace ILCompiler
         private readonly HashSet<TypeDesc> _typesWithAvailableTypesGenerated = new HashSet<TypeDesc>();
 
         public ReadyToRunTableManager(CompilerTypeSystemContext typeSystemContext)
-            : base(typeSystemContext, new NoMetadataBlockingPolicy(), new NoManifestResourceBlockingPolicy()) {}
+            : base(typeSystemContext, new NoMetadataBlockingPolicy(), new NoManifestResourceBlockingPolicy(), new NoDynamicInvokeThunkGenerationPolicy()) {}
 
         public override void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory, ExternalReferencesTableNode commonFixupsTableNode)
         {
@@ -46,7 +46,6 @@ namespace ILCompiler
 
         public override MethodDesc GetCanonicalReflectionInvokeStub(MethodDesc method) => throw new NotImplementedException();
         public override IEnumerable<ModuleDesc> GetCompilationModulesWithMetadata() => throw new NotImplementedException();
-        public override bool HasReflectionInvokeStubForInvokableMethod(MethodDesc method) => throw new NotImplementedException();
         public override bool WillUseMetadataTokenToReferenceField(FieldDesc field) => throw new NotImplementedException();
         public override bool WillUseMetadataTokenToReferenceMethod(MethodDesc method) => throw new NotImplementedException();
         protected override void ComputeMetadata(NodeFactory factory, out byte[] metadataBlob, out List<MetadataMapping<MetadataType>> typeMappings, out List<MetadataMapping<MethodDesc>> methodMappings, out List<MetadataMapping<FieldDesc>> fieldMappings, out List<MetadataMapping<MethodDesc>> stackTraceMapping) => throw new NotImplementedException();

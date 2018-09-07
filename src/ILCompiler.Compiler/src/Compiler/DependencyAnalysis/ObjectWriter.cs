@@ -733,12 +733,21 @@ namespace ILCompiler.DependencyAnalysis
             List<byte[]> cfis;
             if (_offsetToCfis.TryGetValue(offset, out cfis))
             {
-                foreach (byte[] cfi in cfis)
+                if (forArm)
                 {
-                    if (forArm)
-                        EmitARMExIdxCode(offset, cfi);
-                    else
+                    // Unwind insts are generated in the object file in the reversed order on arm,
+                    // so we should reverse the cfi list
+                    for (int index = cfis.Count - 1; index >= 0; index--)
+                    {
+                        EmitARMExIdxCode(offset, cfis[index]);
+                    }
+                }
+                else
+                {
+                    foreach (byte[] cfi in cfis)
+                    {
                         EmitCFICode(offset, cfi);
+                    }
                 }
             }
         }

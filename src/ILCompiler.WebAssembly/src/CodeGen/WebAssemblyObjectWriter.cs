@@ -143,6 +143,8 @@ namespace ILCompiler.DependencyAnalysis
         // this is the llvm instance.
         public LLVMModuleRef Module { get; }
 
+        public LLVMDIBuilderRef DIBuilder { get; }
+
         // This is used to build mangled names
         private Utf8StringBuilder _sb = new Utf8StringBuilder();
 
@@ -180,6 +182,9 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             EmitNativeMain();
+
+            EmitDebugMetadata();
+
             LLVM.WriteBitcodeToFile(Module, _objectFilePath);
 #if DEBUG
             LLVM.PrintModuleToFile(Module, Path.ChangeExtension(_objectFilePath, ".txt"), out string unused2);
@@ -187,6 +192,25 @@ namespace ILCompiler.DependencyAnalysis
             LLVM.VerifyModule(Module, LLVMVerifierFailureAction.LLVMAbortProcessAction, out string unused);
 
             //throw new NotImplementedException(); // This function isn't complete
+        }
+
+        private void EmitDebugMetadata()
+        {
+            var dwarfVersion = LLVM.MDNode(new[]
+            {
+                LLVM.ConstInt(LLVM.Int32Type(), 2, false),
+                LLVM.MDString("Dwarf Version", 13),
+                LLVM.ConstInt(LLVM.Int32Type(), 4, false)
+            });
+            var dwarfSchemaVersion = LLVM.MDNode(new[]
+            {
+                LLVM.ConstInt(LLVM.Int32Type(), 2, false),
+                LLVM.MDString("Debug Info Version", 18),
+                LLVM.ConstInt(LLVM.Int32Type(), 3, false)
+            });
+            LLVM.AddNamedMetadataOperand(Module, "llvm.module.flags", dwarfVersion);
+            LLVM.AddNamedMetadataOperand(Module, "llvm.module.flags", dwarfSchemaVersion);
+            LLVM.DIBuilderFinalize(DIBuilder);
         }
 
         public static LLVMValueRef GetConstZeroArray(int length)
@@ -269,22 +293,18 @@ namespace ILCompiler.DependencyAnalysis
             LLVM.BuildStore(builder, castShadowStack, shadowStackTop);
 
             // Pass on main arguments
-            var argcSlot = LLVM.BuildPointerCast(builder, shadowStack, LLVM.PointerType(LLVM.Int32Type(), 0), "argcSlot");
-            LLVM.BuildStore(builder, LLVM.GetParam(mainFunc, 0), argcSlot);
-            var argvSlot = LLVM.BuildGEP(builder, castShadowStack, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), 4, LLVMMisc.False) }, "argvSlot");
-            LLVM.BuildStore(builder, LLVM.GetParam(mainFunc, 1), LLVM.BuildPointerCast(builder, argvSlot, LLVM.PointerType(LLVM.PointerType(LLVM.Int8Type(), 0), 0), ""));
+            LLVMValueRef argc = LLVM.GetParam(mainFunc, 0);
+            LLVMValueRef argv = LLVM.GetParam(mainFunc, 1);
 
-            // StartupCodeMain will always return a value whether the user's main does or not
-            LLVMValueRef returnValueSlot = LLVM.BuildAlloca(builder, LLVM.Int32Type(), "returnValue");
-
-            LLVM.BuildCall(builder, managedMain, new LLVMValueRef[]
+            LLVMValueRef mainReturn = LLVM.BuildCall(builder, managedMain, new LLVMValueRef[]
             {
                 castShadowStack,
-                LLVM.BuildPointerCast(builder, returnValueSlot, LLVM.PointerType(LLVM.Int8Type(), 0), String.Empty) 
+                argc,
+                argv,
             },
-            String.Empty);
+            "returnValue");
 
-            LLVM.BuildRet(builder, LLVM.BuildLoad(builder, returnValueSlot, String.Empty));
+            LLVM.BuildRet(builder, mainReturn);
             LLVM.SetLinkage(mainFunc, LLVMLinkage.LLVMExternalLinkage);
         }
 
@@ -648,6 +668,7 @@ namespace ILCompiler.DependencyAnalysis
             _nodeFactory = factory;
             _objectFilePath = objectFilePath;
             Module = compilation.Module;
+            DIBuilder = compilation.DIBuilder;
         }
 
         public void Dispose()

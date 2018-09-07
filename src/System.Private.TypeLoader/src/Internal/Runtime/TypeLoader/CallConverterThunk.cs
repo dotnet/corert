@@ -1114,11 +1114,12 @@ namespace Internal.Runtime.TypeLoader
 #endif
                     }
                 }
-                else if (conversionParams._conversionInfo.IsAnyDynamicInvokerThunk && (thRetType.IsValueType() || thRetType.IsPointerType()))
+                else if (conversionParams._conversionInfo.IsAnyDynamicInvokerThunk &&
+                    (thRetType.IsValueType() || thRetType.IsPointerType() || returnType == CorElementType.ELEMENT_TYPE_BYREF))
                 {
                     Debug.Assert(returnValueToCopy != null);
 
-                    if (conversionParams._calleeArgs.GetReturnType(out thDummy, out dummyBool) == CorElementType.ELEMENT_TYPE_VOID)
+                    if (returnType == CorElementType.ELEMENT_TYPE_VOID)
                     {
                         // Invokers returning void need to return a null object
                         returnValueToCopy = null;
@@ -1128,15 +1129,36 @@ namespace Internal.Runtime.TypeLoader
                         if (!conversionParams._callerArgs.HasRetBuffArg() && conversionParams._calleeArgs.HasRetBuffArg())
                             returnValueToCopy = (void*)(new IntPtr(*((void**)returnValueToCopy)) + IntPtr.Size);
 
+                        if (returnType == CorElementType.ELEMENT_TYPE_BYREF)
+                        {
+                            // If this is a byref return, we're going to dereference the result
+                            returnValueToCopy = *(void**)returnValueToCopy;
+                        }
+
+                        RuntimeTypeHandle returnTypeRuntimeTypeHandle = thRetType.GetRuntimeTypeHandle();
+
                         // Need to box value type before returning it
                         object returnValue;
-                        if (thRetType.IsPointerType())
+                        if (returnType == CorElementType.ELEMENT_TYPE_BYREF && returnValueToCopy == null)
                         {
-                            returnValue = System.Reflection.Pointer.Box(*(void**)returnValueToCopy, Type.GetTypeFromHandle(thRetType.GetRuntimeTypeHandle()));
+                            // This is a byref return and dereferencing it would result in a NullReferenceException.
+                            // Set the return value to a sentinel that InvokeUtils will recognize.
+                            // Can't throw from here or we would wrap this in a TargetInvocationException.
+                            returnValue = InvokeUtils.NullByRefValueSentinel;
+                        }
+                        else if (RuntimeAugments.IsUnmanagedPointerType(returnTypeRuntimeTypeHandle))
+                        {
+                            returnValue = System.Reflection.Pointer.Box(*(void**)returnValueToCopy, Type.GetTypeFromHandle(returnTypeRuntimeTypeHandle));
+                        }
+                        else if (RuntimeAugments.IsValueType(returnTypeRuntimeTypeHandle))
+                        {
+                            returnValue = RuntimeAugments.Box(returnTypeRuntimeTypeHandle, new IntPtr(returnValueToCopy));
                         }
                         else
                         {
-                            returnValue = RuntimeAugments.Box(thRetType.GetRuntimeTypeHandle(), new IntPtr(returnValueToCopy));
+                            // byref return of a reference type
+                            Debug.Assert(returnType == CorElementType.ELEMENT_TYPE_BYREF);
+                            returnValue = Unsafe.As<byte, object>(ref *(byte*)returnValueToCopy);
                         }
                         CallConversionParameters.s_pinnedGCHandles._returnObjectHandle.Target = returnValue;
                         pinnedResultObject = CallConversionParameters.s_pinnedGCHandles._returnObjectHandle.GetRawTargetAddress();

@@ -921,13 +921,13 @@ void ObjectWriter::EmitARMExIdxCode(int Offset, const char *Blob)
     ATS.emitPad(CfiCode->Offset);
     break;
   case CFI_REL_OFFSET:
-    RegList.push_back(CfiCode->DwarfReg);
+    RegList.push_back(CfiCode->DwarfReg + 14); // See ARMRegEncodingTable in ARMGenRegisterInfo.inc by getEncodingValue
     ATS.emitRegSave(RegList, false);
     break;
   case CFI_DEF_CFA_REGISTER:
     assert(CfiCode->Offset == 0 &&
            "Unexpected Offset Value for OpDefCfaRegister");
-    ATS.emitMovSP(CfiCode->DwarfReg, 0);
+    ATS.emitMovSP(CfiCode->DwarfReg + 14, 0); // See ARMRegEncodingTable in ARMGenRegisterInfo.inc by getEncodingValue
     break;
   default:
     assert(false && "Unrecognized CFI");

@@ -1539,6 +1539,8 @@ namespace Internal.Reflection.Execution
 
                     MethodInfo reflectionMethodInfo = _methodBase as MethodInfo;
                     Type returnType = reflectionMethodInfo != null ? reflectionMethodInfo.ReturnType : CommonRuntimeTypes.Void;
+                    if (returnType.IsByRef)
+                        returnType = returnType.GetElementType();
                     result.Insert(0, returnType.TypeHandle);
 
                     return result;

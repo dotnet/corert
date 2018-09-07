@@ -46,7 +46,9 @@ struct ExInfo;
 typedef DPTR(ExInfo) PTR_ExInfo;
 
 
-// also defined in ExceptionHandling.cs, layouts must match
+// Also defined in ExceptionHandling.cs, layouts must match.
+// When adding new fields to this struct, ensure they get properly initialized in the exception handling 
+// assembly stubs
 struct ExInfo
 {
 

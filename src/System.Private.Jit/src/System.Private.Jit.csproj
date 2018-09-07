@@ -1,4 +1,4 @@
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+﻿<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Private.Jit</AssemblyName>
@@ -31,7 +31,7 @@
     </ProjectReference>
     <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
     <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.Experimental.csproj" />
-    <ProjectReference Include="..\..\System.Private.Interop\src\System.Private.Interop.csproj" />
+    <ProjectReference Include="..\..\System.Private.Interop\src\System.Private.Interop.Experimental.csproj" />
   </ItemGroup>
   <PropertyGroup>
     <NativeFormatCommonPath>..\..\Common\src\Internal\NativeFormat</NativeFormatCommonPath>
@@ -44,6 +44,7 @@
     <JitInterfaceBasePath>..\..\JitInterface\src</JitInterfaceBasePath>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
     <Compile Include="Internal\Runtime\JitSupport\ExternObjectSymbolNode.cs" />
     <Compile Include="Internal\Runtime\JitSupport\FrozenStrings.cs" />
     <Compile Include="Internal\Runtime\JitSupport\JitCompilation.cs" />

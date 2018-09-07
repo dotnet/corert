@@ -32,6 +32,16 @@ namespace ILCompiler.DependencyAnalysis
         bool RepresentsIndirectionCell { get; }
     }
 
+    /// <summary>
+    /// Represents a symbol backed by a different symbol for object emission purposes.
+    /// </summary>
+    public interface ISymbolNodeWithLinkage : ISymbolNode
+    {
+        /// <summary>
+        /// Return a node that is used for linkage
+        /// </summary>
+        ISymbolNode NodeForLinkage(NodeFactory factory);
+    }
 
     public interface ISortableSymbolNode : ISymbolNode, ISortableNode
     {

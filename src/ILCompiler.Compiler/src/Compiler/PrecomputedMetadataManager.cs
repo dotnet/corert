@@ -64,9 +64,14 @@ namespace ILCompiler
             IEnumerable<ModuleDesc> inputMetadataOnlyAssemblies,
             byte[] metadataBlob,
             StackTraceEmissionPolicy stackTraceEmissionPolicy,
-            ManifestResourceBlockingPolicy resourceBlockingPolicy)
-            : base(typeSystemContext, new AttributeSpecifiedBlockingPolicy(), resourceBlockingPolicy)
+            ManifestResourceBlockingPolicy resourceBlockingPolicy,
+            bool disableInvokeThunks)
+            : base(typeSystemContext, new AttributeSpecifiedBlockingPolicy(), resourceBlockingPolicy,
+                  disableInvokeThunks ? (DynamicInvokeThunkGenerationPolicy)new NoDynamicInvokeThunkGenerationPolicy() : new PrecomputedDynamicInvokeThunkGenerationPolicy())
         {
+            // Need to do this dance because C# won't let us access `this` in the `base()` expression above. Sigh.
+            (_dynamicInvokeThunkGenerationPolicy as PrecomputedDynamicInvokeThunkGenerationPolicy)?.SetParentWorkaround(this);
+
             _compilationModuleGroup = group;
             _metadataDescribingModule = metadataDescribingModule;
             _compilationModules = new HashSet<ModuleDesc>(compilationModules);
@@ -540,7 +545,7 @@ namespace ILCompiler
                     }
                 }
 
-                if (metadataType.ThreadStaticFieldSize.AsInt > 0)
+                if (metadataType.ThreadGcStaticFieldSize.AsInt > 0)
                 {
                     dependencies.Add(((UtcNodeFactory)factory).TypeThreadStaticsOffsetSymbol(metadataType), "Thread statics for ReflectionFieldMap entry");
                 }
@@ -904,38 +909,6 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Is there a reflection invoke stub for a method that is invokable?
-        /// </summary>
-        public override bool HasReflectionInvokeStubForInvokableMethod(MethodDesc method)
-        {
-            Debug.Assert(IsReflectionInvokable(method));
-
-            if (!ProjectNDependencyBehavior.EnableFullAnalysis)
-            {
-                if (method.IsCanonicalMethod(CanonicalFormKind.Any))
-                    return false;
-            }
-            else
-            {
-                if (method.IsCanonicalMethod(CanonicalFormKind.Universal))
-                    return false;
-            }
-
-            MethodDesc reflectionInvokeStub = GetCanonicalReflectionInvokeStub(method);
-
-            if (reflectionInvokeStub == null)
-                return false;
-
-            // TODO: Generate DynamicInvokeTemplateMap dependencies correctly. For now, force all canonical stubs to go through the 
-            // calling convention converter interpreter path.
-            if (reflectionInvokeStub.IsSharedByGenericInstantiations)
-                return false;
-
-            return true;
-        }
-
-
-        /// <summary>
         /// Gets a stub that can be used to reflection-invoke a method with a given signature.
         /// </summary>
         public override MethodDesc GetCanonicalReflectionInvokeStub(MethodDesc method)
@@ -1049,6 +1022,46 @@ namespace ILCompiler
             public bool IsBlocked(MetadataType typeDef) => false;
             public bool IsBlocked(MethodDesc methodDef) => false;
             public ModuleDesc GetModuleOfType(MetadataType typeDef) => typeDef.Module;
+        }
+
+        private sealed class PrecomputedDynamicInvokeThunkGenerationPolicy : DynamicInvokeThunkGenerationPolicy
+        {
+            private PrecomputedMetadataManager _parent;
+
+            public PrecomputedDynamicInvokeThunkGenerationPolicy()
+            {
+            }
+
+            public void SetParentWorkaround(PrecomputedMetadataManager parent)
+            {
+                _parent = parent;
+            }
+
+            public override bool HasStaticInvokeThunk(MethodDesc method)
+            {
+                if (!ProjectNDependencyBehavior.EnableFullAnalysis)
+                {
+                    if (method.IsCanonicalMethod(CanonicalFormKind.Any))
+                        return false;
+                }
+                else
+                {
+                    if (method.IsCanonicalMethod(CanonicalFormKind.Universal))
+                        return false;
+                }
+
+                MethodDesc reflectionInvokeStub = _parent.GetCanonicalReflectionInvokeStub(method);
+
+                if (reflectionInvokeStub == null)
+                    return false;
+
+                // TODO: Generate DynamicInvokeTemplateMap dependencies correctly. For now, force all canonical stubs to go through the 
+                // calling convention converter interpreter path.
+                if (reflectionInvokeStub.IsSharedByGenericInstantiations)
+                    return false;
+
+                return true;
+            }
         }
     }
 }

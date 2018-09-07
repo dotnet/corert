@@ -145,8 +145,9 @@ namespace Internal.Runtime.TypeLoader
                 methodOnInstantiatedType = typeSystemContext.GetMethodForInstantiatedType(typicalMethod, (InstantiatedType)declaringType);
             
             MethodDesc instantiatedMethod = methodOnInstantiatedType;
-            if (genericMethodArgs.Length != 0)
+            if (genericMethodArgs != null)
             {
+                Debug.Assert(genericMethodArgs.Length > 0);
                 Instantiation genericMethodInstantiation = typeSystemContext.ResolveRuntimeTypeHandles(genericMethodArgs);
                 typeSystemContext.GetInstantiatedMethod(methodOnInstantiatedType, genericMethodInstantiation);
             }

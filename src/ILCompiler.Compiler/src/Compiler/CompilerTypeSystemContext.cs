@@ -424,6 +424,9 @@ namespace ILCompiler
         {
             Debug.Assert(field.IsStatic);
 
+            if (field.IsThreadStatic)
+                return true;
+
             TypeDesc fieldType = field.FieldType;
             if (fieldType.IsValueType)
                 return ((DefType)fieldType).ContainsGCPointers;
@@ -499,6 +502,10 @@ namespace ILCompiler
         // method table.
         public long UniversalCanonReflectionMethodRootHeuristic_InstantiationCount { get; }
 
+        // To avoid infinite generic recursion issues during debug type record generation, attempt to 
+        // use canonical form for types with high generic complexity. 
+        public long MaxGenericDepthOfDebugRecord { get; }
+
         public SharedGenericsConfiguration()
         {
             UniversalCanonGVMReflectionRootHeuristic_InstantiationCount = 4;
@@ -510,6 +517,8 @@ namespace ILCompiler
             // expansion is allowed. Numbers are chosen to allow a fairly large
             // amount of generic expansion before trimming.
             UniversalCanonReflectionMethodRootHeuristic_InstantiationCount = 1024;
+
+            MaxGenericDepthOfDebugRecord = 15;
         }
     };
 }

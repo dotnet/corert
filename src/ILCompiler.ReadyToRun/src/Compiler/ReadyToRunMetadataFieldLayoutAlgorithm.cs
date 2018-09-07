@@ -32,7 +32,8 @@ namespace ILCompiler
         {
             layout.NonGcStatics.Size = _initialNonGcStaticsOffset;
             layout.GcStatics.Size = LayoutInt.Zero;
-            layout.ThreadStatics.Size = LayoutInt.Zero;
+            layout.ThreadNonGcStatics.Size = LayoutInt.Zero;
+            layout.ThreadGcStatics.Size = LayoutInt.Zero;
         }
 
         protected override void FinalizeRuntimeSpecificStaticFieldLayout(TypeSystemContext context, ref ComputedStaticFieldLayout layout)
