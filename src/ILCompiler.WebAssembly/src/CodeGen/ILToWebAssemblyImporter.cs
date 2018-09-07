@@ -1323,7 +1323,6 @@ namespace Internal.IL
                     }
                 }
 
-
                 if(constrainedType != null && constrainedType.IsValueType)
                 {
                     isValueTypeCall = true;
@@ -1333,7 +1332,7 @@ namespace Internal.IL
                 {
                     if (constrainedType != null)
                     {
-                        targetMethod = constrainedType.TryResolveValueTypeConstraintMethodApprox(callee.OwningType, callee, out _);
+                        targetMethod = constrainedType.TryResolveConstraintMethodApprox(callee.OwningType, callee, out _);
                     }
                     else if (callee.OwningType.IsInterface)
                     {
@@ -1343,10 +1342,6 @@ namespace Internal.IL
                     {
                         targetMethod = parameterType.FindVirtualFunctionTargetMethodOnObjectType(callee);
                     }
-                }
-                else if (constrainedType != null)
-                {
-                    targetMethod = constrainedType.TryResolveConstraintMethodApprox(callee.OwningType, callee, out _);
                 }
 
                 if (targetMethod != null)
