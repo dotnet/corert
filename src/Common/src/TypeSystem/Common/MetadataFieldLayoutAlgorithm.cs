@@ -162,7 +162,7 @@ namespace Internal.TypeSystem
             {
                 return ComputeExplicitFieldLayout(type, numInstanceFields);
             }
-            else if (type.IsSequentialLayout)
+            else if (type.IsSequentialLayout || type.Context.Target.Abi == TargetAbi.ProjectN)
             {
                 return ComputeSequentialFieldLayout(type, numInstanceFields);
             }
@@ -349,7 +349,7 @@ namespace Internal.TypeSystem
             return computedLayout;
         }
 
-        protected virtual ComputedInstanceFieldLayout ComputeSequentialFieldLayout(MetadataType type, int numInstanceFields)
+        private static ComputedInstanceFieldLayout ComputeSequentialFieldLayout(MetadataType type, int numInstanceFields)
         {
             var offsets = new FieldAndOffset[numInstanceFields];
 
@@ -396,7 +396,7 @@ namespace Internal.TypeSystem
             return computedLayout;
         }
 
-        protected virtual ComputedInstanceFieldLayout ComputeAutoFieldLayout(MetadataType type, int numInstanceFields)
+        private static ComputedInstanceFieldLayout ComputeAutoFieldLayout(MetadataType type, int numInstanceFields)
         {
             // For types inheriting from another type, field offsets continue on from where they left off
             LayoutInt cumulativeInstanceFieldPos = ComputeBytesUsedInParentType(type);
