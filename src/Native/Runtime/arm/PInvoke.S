@@ -20,7 +20,7 @@
 
 NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
         str     lr, [r0, #OFFSETOF__PInvokeTransitionFrame__m_RIP]
-        str     r7, [r0, #OFFSETOF__PInvokeTransitionFrame__m_FramePointer]
+        str     r11, [r0, #OFFSETOF__PInvokeTransitionFrame__m_FramePointer]
         str     sp, [r0, #OFFSETOF__PInvokeTransitionFrame__m_PreservedRegs]
         mov     r3, #PTFF_SAVE_SP
         str     r3, [r0, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
