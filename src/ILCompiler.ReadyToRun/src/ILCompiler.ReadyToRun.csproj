@@ -34,7 +34,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ByteArrayComparer.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CompilerIdentifierNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadHelperImport.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadHelperThunk.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ImportThunk.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelegateCtorSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DevirtualizationManager.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ExternalMethodImport.cs" />
@@ -63,10 +63,10 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\SignatureBuilder.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\StringImport.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\StringImportSignature.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_ARM64\DelayLoadHelperThunk.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_ARM\DelayLoadHelperThunk.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_X64\DelayLoadHelperThunk.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_X86\DelayLoadHelperThunk.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_ARM64\ImportThunk.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_ARM\ImportThunk.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_X64\ImportThunk.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_X86\ImportThunk.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypeFixupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypesTableNode.cs" />
     <Compile Include="Compiler\ReadyToRunLibraryRootProvider.cs" />
