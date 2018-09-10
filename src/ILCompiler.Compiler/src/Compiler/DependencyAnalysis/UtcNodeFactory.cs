@@ -237,12 +237,21 @@ namespace ILCompiler
         {
             if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
             {
-                return new RuntimeImportMethodNode(method);
+                RuntimeImportMethodNode runtimeImportMethod = new RuntimeImportMethodNode(method);
+              
+                // If the method is imported from either the current module or the runtime, reference it directly
+                if (CompilationModuleGroup.ContainsMethodBody(method, false))
+                    return runtimeImportMethod;
+                // If the method is imported from the runtime but not a managed assembly, reference it directly
+                else if (!CompilationModuleGroup.ImportsMethod(method, false))
+                    return runtimeImportMethod;
+                
+                // If the method is imported from a managed assembly, reference it via an import cell
             }
-
-            if (CompilationModuleGroup.ContainsMethodBody(method, false))
+            else
             {
-                return NonExternMethodSymbol(method, false);
+                if (CompilationModuleGroup.ContainsMethodBody(method, false))
+                    return NonExternMethodSymbol(method, false);
             }
 
             return _importedNodeProvider.ImportedMethodCodeNode(this, method, false);
