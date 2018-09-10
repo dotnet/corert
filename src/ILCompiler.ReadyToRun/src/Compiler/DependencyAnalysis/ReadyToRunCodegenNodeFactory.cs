@@ -845,11 +845,11 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (CompilationModuleGroup.ContainsType(type))
             {
-                return new AvailableType(this, type, InputModuleContext);
+                return new AvailableType(this, type);
             }
             else
             {
-                return new ExternalTypeNode(this, type, InputModuleContext);
+                return new ExternalTypeNode(this, type);
             }
         }
 
@@ -860,11 +860,11 @@ namespace ILCompiler.DependencyAnalysis
             
             if (CompilationModuleGroup.ContainsType(type))
             {
-                return new AvailableType(this, type, InputModuleContext);
+                return new AvailableType(this, type);
             }
             else
             {
-                return new ExternalTypeNode(this, type, InputModuleContext);
+                return new ExternalTypeNode(this, type);
             }
         }
 
