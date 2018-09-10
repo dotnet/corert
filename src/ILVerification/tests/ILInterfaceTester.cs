@@ -10,27 +10,20 @@ using System.Reflection.PortableExecutable;
 using ILVerify;
 using Internal.TypeSystem.Ecma;
 using Xunit;
-
+using System.Linq;
 namespace ILVerification.Tests
 {
     public class ILInterfaceTester : ResolverBase
     {
         [Fact]
+        [Trait("MyTrait", "MyTrait")]
         public void InvalidClass()
         {
-            string testFile = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), @"Tests\InterfaceTest.dll");
+            string testFile = @"Tests\InterfaceTest.dll";
             EcmaModule module = TestDataLoader.GetModuleForTestAssembly(testFile);
             Verifier verifier = new Verifier(this);
-            verifier.Verify(module.PEReader);
-        }
-
-        private static IEnumerable<VerificationResult> Verify(TestCase testCase)
-        {
-            EcmaModule module = TestDataLoader.GetModuleForTestAssembly(testCase.ModuleName);
-            var methodHandle = (MethodDefinitionHandle)MetadataTokens.EntityHandle(testCase.MetadataToken);
-            var method = (EcmaMethod)module.GetMethod(methodHandle);
-            var verifier = new Verifier((ILVerifyTypeSystemContext)method.Context);
-            return verifier.Verify(module.PEReader, methodHandle);
+            var results = verifier.Verify(module.PEReader).ToArray();
+            Assert.NotNull(results);
         }
 
         protected override PEReader ResolveCore(string simpleName)
