@@ -41,18 +41,23 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             foreach (TypeDesc type in ((ReadyToRunTableManager)factory.MetadataManager).GetTypesWithAvailableTypes())
             {
                 int rid = 0;
-                if (type is EcmaType ecmaType)
+                if (type.GetTypeDefinition() is EcmaType ecmaType)
                 {
                     rid = MetadataTokens.GetToken(ecmaType.Handle) & 0x00FFFFFF;
                     Debug.Assert(rid != 0);
+
+                    int hashCode = GetHashCode(ecmaType);
+                    typesHashtable.Append(unchecked((uint)hashCode), section.Place(new UnsignedConstant((uint)rid << 1)));
+                }
+                else if (type.IsArray || type.IsMdArray)
+                {
+                    // TODO: arrays in type table - should we have a recursive descent into composite types here
+                    // and e.g. add the element type to the type table in case of arrays?
                 }
                 else
                 {
                     throw new NotImplementedException();
                 }
-
-                int hashCode = GetHashCode((EcmaType)type);
-                typesHashtable.Append(unchecked((uint)hashCode), section.Place(new UnsignedConstant((uint)rid << 1)));
             }
 
             MemoryStream writerContent = new MemoryStream();

@@ -14,28 +14,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class DelegateCtorSignature : Signature
     {
-        private readonly ModuleTokenResolver _resolver;
-
         private readonly TypeDesc _delegateType;
-
-        private readonly ModuleToken _delegateTypeToken;
 
         private readonly IMethodNode _targetMethod;
 
-        private readonly ModuleToken _targetMethodToken;
+        private readonly SignatureContext _signatureContext;
 
         public DelegateCtorSignature(
-            ModuleTokenResolver resolver,
-            TypeDesc delegateType, 
-            ModuleToken delegateTypeToken,
+            TypeDesc delegateType,
             IMethodNode targetMethod,
-            ModuleToken targetMethodToken)
+            SignatureContext signatureContext)
         {
-            _resolver = resolver;
             _delegateType = delegateType;
-            _delegateTypeToken = delegateTypeToken;
             _targetMethod = targetMethod;
-            _targetMethodToken = targetMethodToken;
+            _signatureContext = signatureContext;
         }
 
         public override int ClassCode => 99885741;
@@ -50,11 +42,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 builder.EmitByte((byte)ReadyToRunFixupKind.READYTORUN_FIXUP_DelegateCtor);
                 builder.EmitMethodSignature(
                     _targetMethod.Method, 
-                    _targetMethodToken, 
                     constrainedType: null, 
                     isUnboxingStub: false, 
-                    _targetMethodToken.SignatureContext(_resolver));
-                builder.EmitTypeSignature(_delegateType, _delegateTypeToken, _delegateTypeToken.SignatureContext(_resolver));
+                    isInstantiatingStub: false,
+                    _signatureContext);
+                builder.EmitTypeSignature(_delegateType, _signatureContext);
             }
 
             return builder.ToObjectData();
@@ -78,13 +70,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            DelegateCtorSignature otherSignature = (DelegateCtorSignature)other;
-            int result = _delegateTypeToken.CompareTo(otherSignature._delegateTypeToken);
-            if (result == 0)
-            {
-                result = _targetMethodToken.CompareTo(otherSignature._targetMethodToken);
-            }
-            return result;
+            throw new NotImplementedException();
         }
     }
 }
