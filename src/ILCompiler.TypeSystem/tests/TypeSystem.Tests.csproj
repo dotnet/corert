@@ -4,16 +4,16 @@
     <OutputType>Library</OutputType>
     <AssemblyName>TypeSystem.Tests</AssemblyName>
     <RootNamespace>TypeSystem.Tests</RootNamespace>
-    <TargetFramework>netstandard1.3</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <!-- Don't warn if some dependencies were rolled forward -->
     <NoWarn>$(NoWarn);NU1603</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.DotNet.BuildTools.TestSuite">
-      <Version>$(XunitNetcoreExtensionsVersion)</Version>
+    <PackageReference Include="xunit">
+      <Version>$(XUnitPackageVersion)</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.xunit.netcore.extensions">
-      <Version>$(XunitNetcoreExtensionsVersion)</Version>
+    <PackageReference Include="Microsoft.DotNet.XUnitExtensions">
+      <Version>$(MicrosoftDotNetXUnitExtensionsVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Reflection.Metadata">
       <Version>1.4.2</Version>

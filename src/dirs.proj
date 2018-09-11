@@ -2,9 +2,10 @@
   <Import Project="dir.props" />
 
   <ItemGroup>
-    <!-- This project requires ILASM and we have access to that only on Windows -->
+    <!-- These projects requires ILASM and we have access to that only on Windows -->
     <ExcludeProjects Condition="'$(OSEnvironment)'!='Windows_NT'" Include="**\TypeSystem.Tests.csproj" />
     <ExcludeProjects Condition="'$(OSEnvironment)'!='Windows_NT'" Include="**\ILCompiler.MetadataTransform.Tests.csproj" />
+    <ExcludeProjects Condition="'$(OSEnvironment)'!='Windows_NT'" Include="**\ILVerification.Tests.csproj" />
 
     <Project Include="AotPackageReference\AotPackageReference.depproj" />
 

@@ -54,6 +54,7 @@ namespace Internal.IL
         private readonly byte[] _ilBytes;
         private MethodDebugInformation _debugInformation;
         private LLVMMetadataRef _debugFunction;
+        private TypeDesc _constrainedType = null;
 
         /// <summary>
         /// Stack of values pushed onto the IL stack: locals, arguments, values, function pointer, ...
@@ -503,6 +504,10 @@ namespace Internal.IL
 
         private void EndImportingInstruction()
         {
+            // If this was constrained used in a call, it's already been cleared,
+            // but if it was on some other instruction, it shoudln't carry forward
+            _constrainedType = null;
+
             // Reset the debug position so it doesn't end up applying to the wrong instructions
             LLVM.SetCurrentDebugLocation(_builder, default(LLVMValueRef));
         }
@@ -1198,7 +1203,7 @@ namespace Internal.IL
                 }
             }
 
-            if (callee.IsPInvoke || (callee.IsInternalCall && callee.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute")))
+            if (callee.IsRawPInvoke() || (callee.IsInternalCall && callee.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute")))
             {
                 ImportRawPInvoke(callee);
                 return;
@@ -1267,12 +1272,6 @@ namespace Internal.IL
                 }
             }
 
-            // we don't really have virtual call support, but we'll treat it as direct for now
-            if (opcode != ILOpcode.call && opcode !=  ILOpcode.callvirt && opcode != ILOpcode.newobj)
-            {
-                throw new NotImplementedException();
-            }
-
             if (opcode == ILOpcode.newobj && callee.OwningType.IsDelegate)
             {
                 FunctionPointerEntry functionPointer = ((FunctionPointerEntry)_stack.Peek());
@@ -1284,10 +1283,12 @@ namespace Internal.IL
                 }
             }
 
-            HandleCall(callee, callee.Signature, opcode);
+            TypeDesc localConstrainedType = _constrainedType;
+            _constrainedType = null;
+            HandleCall(callee, callee.Signature, opcode, localConstrainedType);
         }
 
-        private LLVMValueRef LLVMFunctionForMethod(MethodDesc callee, StackEntry thisPointer, bool isCallVirt)
+        private LLVMValueRef LLVMFunctionForMethod(MethodDesc callee, StackEntry thisPointer, bool isCallVirt, TypeDesc constrainedType)
         {
             string calleeName = _compilation.NameMangler.GetMangledMethodName(callee).ToString();
 
@@ -1321,17 +1322,23 @@ namespace Internal.IL
                         isValueTypeCall = true;
                     }
                 }
-                if (callee.OwningType.IsInterface)
+
+                if(constrainedType != null && constrainedType.IsValueType)
                 {
-                    // For value types, devirtualize the call
-                    if (isValueTypeCall)
+                    isValueTypeCall = true;
+                }
+
+                if (isValueTypeCall)
+                {
+                    if (constrainedType != null)
+                    {
+                        targetMethod = constrainedType.TryResolveConstraintMethodApprox(callee.OwningType, callee, out _);
+                    }
+                    else if (callee.OwningType.IsInterface)
                     {
                         targetMethod = parameterType.ResolveInterfaceMethodTarget(callee);
                     }
-                }
-                else
-                {
-                    if (isValueTypeCall)
+                    else
                     {
                         targetMethod = parameterType.FindVirtualFunctionTargetMethodOnObjectType(callee);
                     }
@@ -1584,7 +1591,7 @@ namespace Internal.IL
             return false;
         }
 
-        private void HandleCall(MethodDesc callee, MethodSignature signature, ILOpcode opcode = ILOpcode.call, LLVMValueRef calliTarget = default(LLVMValueRef))
+        private void HandleCall(MethodDesc callee, MethodSignature signature, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef))
         {
             var parameterCount = signature.Length + (signature.IsStatic ? 0 : 1);
             // The last argument is the top of the stack. We need to reverse them and store starting at the first argument
@@ -1593,10 +1600,34 @@ namespace Internal.IL
             {
                 argumentValues[argumentValues.Length - i - 1] = _stack.Pop();
             }
-            PushNonNull(HandleCall(callee, signature, argumentValues, opcode, calliTarget));
+
+            if (constrainedType != null)
+            {
+                if (signature.IsStatic)
+                {
+                    // Constrained call on static method
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, _method);
+                }
+                StackEntry thisByRef = argumentValues[0];
+                if (thisByRef.Kind != StackValueKind.ByRef)
+                {
+                    // Constrained call without byref
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, _method);
+                }
+
+                // If this is a constrained call and the 'this' pointer is a reference type, it's a byref,
+                // dereference it before calling.
+                if (!constrainedType.IsValueType)
+                {
+                    TypeDesc objectType = thisByRef.Type.GetParameterType();
+                    argumentValues[0] = new LoadExpressionEntry(StackValueKind.ObjRef, "thisPtr", thisByRef.ValueAsType(objectType, _builder), objectType);
+                }
+            }
+
+            PushNonNull(HandleCall(callee, signature, argumentValues, opcode, constrainedType, calliTarget));
         }
 
-        private ExpressionEntry HandleCall(MethodDesc callee, MethodSignature signature, StackEntry[] argumentValues, ILOpcode opcode = ILOpcode.call, LLVMValueRef calliTarget = default(LLVMValueRef), TypeDesc forcedReturnType = null)
+        private ExpressionEntry HandleCall(MethodDesc callee, MethodSignature signature, StackEntry[] argumentValues, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef), TypeDesc forcedReturnType = null)
         {
             if (opcode == ILOpcode.callvirt && callee.IsVirtual)
             {
@@ -1687,7 +1718,7 @@ namespace Internal.IL
             }
             else
             {
-                fn = LLVMFunctionForMethod(callee, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt);
+                fn = LLVMFunctionForMethod(callee, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt, constrainedType);
             }
 
             LLVMValueRef llvmReturn = LLVM.BuildCall(_builder, fn, llvmArgs.ToArray(), string.Empty);
@@ -1955,7 +1986,7 @@ namespace Internal.IL
         private void ImportCalli(int token)
         {
             MethodSignature methodSignature = (MethodSignature)_methodIL.GetObject(token);
-            HandleCall(null, methodSignature, ILOpcode.calli, ((ExpressionEntry)_stack.Pop()).ValueAsType(LLVM.PointerType(GetLLVMSignatureForMethod(methodSignature), 0), _builder));
+            HandleCall(null, methodSignature, ILOpcode.calli, calliTarget: ((ExpressionEntry)_stack.Pop()).ValueAsType(LLVM.PointerType(GetLLVMSignatureForMethod(methodSignature), 0), _builder));
         }
 
         private void ImportLdFtn(int token, ILOpcode opCode)
@@ -1967,7 +1998,7 @@ namespace Internal.IL
                 StackEntry thisPointer = _stack.Pop();
                 if (method.IsVirtual)
                 {
-                    targetLLVMFunction = LLVMFunctionForMethod(method, thisPointer, true);
+                    targetLLVMFunction = LLVMFunctionForMethod(method, thisPointer, true, null);
                     AddVirtualMethodReference(method);
                 }
             }
@@ -2652,6 +2683,7 @@ namespace Internal.IL
 
         private void ImportConstrainedPrefix(int token)
         {
+            _constrainedType = (TypeDesc)_methodIL.GetObject(token);
         }
 
         private void ImportNoPrefix(byte mask)

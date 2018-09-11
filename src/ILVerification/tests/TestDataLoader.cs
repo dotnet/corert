@@ -20,19 +20,17 @@ namespace ILVerification.Tests
 {
     /// <summary>
     /// Parses the methods in the test assemblies. 
-    /// It loads all assemblies from the test folder defined in <code>TestDataLoader.TESTASSEMBLYPATH</code>
+    /// It loads all assemblies from the test folder defined in <code>TestDataLoader.TestAssemblyPath</code>
     /// This class feeds the xunit Theories
     /// </summary>
     class TestDataLoader
     {
         /// <summary>
-        /// The folder with the binaries which are compiled from the test driver IL Code
-        /// Currently the test .il code is built manually, but the plan is to have a ProjectReference and automatically build the .il files.
-        /// See: https://github.com/dotnet/corert/pull/3725#discussion_r118820770
+        /// The folder with the test binaries
         /// </summary>
-        public static string TESTASSEMBLYPATH = @"..\..\..\ILTests\";
+        private const string TestAssemblyPath = @"Tests\";
 
-        private const string SPECIALTEST_PREFIX = "special.";
+        private const string SpecialTestPrefix = "special.";
 
         /// <summary>
         /// Returns all methods that contain valid IL code based on the following naming convention:
@@ -129,11 +127,11 @@ namespace ILVerification.Tests
 
         private static MethodDefinitionHandle HandleSpecialTests(string[] methodParams, EcmaMethod method)
         {
-            if (!methodParams[0].StartsWith(SPECIALTEST_PREFIX))
+            if (!methodParams[0].StartsWith(SpecialTestPrefix))
                 return method.Handle;
 
             // Cut off special prefix
-            var specialParams = methodParams[0].Substring(SPECIALTEST_PREFIX.Length);
+            var specialParams = methodParams[0].Substring(SpecialTestPrefix.Length);
 
             // Get friendly name / special name
             int delimiter = specialParams.IndexOf('.');
@@ -152,7 +150,7 @@ namespace ILVerification.Tests
 
         private static IEnumerable<string> GetAllTestDlls()
         {
-            foreach (var item in Directory.GetFiles(TESTASSEMBLYPATH))
+            foreach (var item in Directory.GetFiles(TestAssemblyPath))
             {
                 if (item.ToLower().EndsWith(".dll"))
                 {
@@ -167,7 +165,7 @@ namespace ILVerification.Tests
 
             foreach (var fileName in GetAllTestDlls())
             {
-                simpleNameToPathMap.Add(Path.GetFileNameWithoutExtension(fileName), TESTASSEMBLYPATH + fileName);
+                simpleNameToPathMap.Add(Path.GetFileNameWithoutExtension(fileName), TestAssemblyPath + fileName);
             }
 
             Assembly coreAssembly = typeof(object).GetTypeInfo().Assembly;
