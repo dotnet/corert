@@ -349,9 +349,7 @@
   <ItemGroup Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'">
     <Compile Include="Microsoft\Win32\RegistryKey.cs" />
     <Compile Include="Microsoft\Win32\RegistryKey.Windows.cs" />
-    <Compile Include="Microsoft\Win32\RegistryOptions.cs" />
     <Compile Include="Microsoft\Win32\ThrowHelper.cs" />
-    <Compile Include="System\Security\AccessControl\RegistryRights.cs" />
     <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.ExitProcess.cs">
       <Link>Interop\Windows\mincore\Interop.ExitProcess.cs</Link>
     </Compile>
