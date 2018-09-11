@@ -11,24 +11,61 @@ using ILVerify;
 using Internal.TypeSystem.Ecma;
 using Xunit;
 using System.Linq;
+using System.Reflection;
+
 namespace ILVerification.Tests
 {
-    public class ILInterfaceTester : ResolverBase
+    public class ILInterfaceTester
     {
         [Fact]
         [Trait("MyTrait", "MyTrait")]
         public void InvalidClass()
         {
-            string testFile = @"Tests\InterfaceTest.dll";
-            EcmaModule module = TestDataLoader.GetModuleForTestAssembly(testFile);
-            Verifier verifier = new Verifier(this);
+            string testFile = Path.GetFullPath(@"Tests\InterfaceTest.dll");
+            var simpleNameToPathMap = new Dictionary<string, string>();
+            simpleNameToPathMap.Add(Path.GetFileNameWithoutExtension(testFile), testFile);
+            Assembly coreAssembly = typeof(object).GetTypeInfo().Assembly;
+            simpleNameToPathMap.Add(coreAssembly.GetName().Name, coreAssembly.Location);
+            Assembly systemRuntime = Assembly.Load(new AssemblyName("System.Runtime"));
+            simpleNameToPathMap.Add(systemRuntime.GetName().Name, systemRuntime.Location);
+            var resolver = new TestResolver(simpleNameToPathMap);
+            var typeSystemContext = new ILVerifyTypeSystemContext(resolver);
+            typeSystemContext.SetSystemModule(typeSystemContext.GetModule(resolver.Resolve(coreAssembly.GetName().Name)));
+            Verifier verifier = new Verifier(typeSystemContext);
+            var module = typeSystemContext.GetModule(resolver.Resolve(new AssemblyName(Path.GetFileNameWithoutExtension(testFile)).Name));
             var results = verifier.Verify(module.PEReader).ToArray();
             Assert.NotNull(results);
+            Assert.NotEmpty(results);
         }
 
-        protected override PEReader ResolveCore(string simpleName)
+        private static IEnumerable<string> GetAllTestDlls(string assemblyPath)
         {
-            throw new System.NotImplementedException();
+            foreach (var item in Directory.GetFiles(assemblyPath))
+            {
+                if (item.ToLower().EndsWith(".dll"))
+                {
+                    yield return Path.GetFileName(item);
+                }
+            }
+        }
+
+        private sealed class TestResolver : ResolverBase
+        {
+            Dictionary<string, string> _simpleNameToPathMap;
+            public TestResolver(Dictionary<string, string> simpleNameToPathMap)
+            {
+                _simpleNameToPathMap = simpleNameToPathMap;
+            }
+
+            protected override PEReader ResolveCore(string simpleName)
+            {
+                if (_simpleNameToPathMap.TryGetValue(simpleName, out string path))
+                {
+                    return new PEReader(File.OpenRead(path));
+                }
+
+                return null;
+            }
         }
     }
 }

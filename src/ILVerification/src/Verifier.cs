@@ -142,6 +142,25 @@ namespace ILVerify
 
         private IEnumerable<VerificationResult> VerifyMethods(EcmaModule module, IEnumerable<MethodDefinitionHandle> methodHandles)
         {
+            foreach (TypeDefinitionHandle tdh in module.MetadataReader.TypeDefinitions)
+            {
+                TypeDefinition td = module.MetadataReader.GetTypeDefinition(tdh);
+                var tmd = td.GetMethods();
+                foreach (InterfaceImplementationHandle ii in td.GetInterfaceImplementations())
+                {
+                    InterfaceImplementation interfaceImplementation = module.MetadataReader.GetInterfaceImplementation(ii);
+                    DefType interfaceType = module.GetType(interfaceImplementation.Interface) as DefType;
+                    if (interfaceType == null)
+                        //ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, interfaceImplementation.Interface);
+                        throw new Exception("Load exception");
+
+                    foreach (MethodDesc md in interfaceType.GetAllMethods())
+                    {
+
+                    }
+                }
+            }
+
             foreach (var methodHandle in methodHandles)
             {
                 var method = (EcmaMethod)module.GetMethod(methodHandle);
@@ -161,7 +180,7 @@ namespace ILVerify
         private IEnumerable<VerificationResult> VerifyMethod(EcmaModule module, MethodIL methodIL, MethodDefinitionHandle methodHandle)
         {
             var builder = new ArrayBuilder<VerificationResult>();
-            MethodDesc method = methodIL.OwningMethod; 
+            MethodDesc method = methodIL.OwningMethod;
 
             try
             {
