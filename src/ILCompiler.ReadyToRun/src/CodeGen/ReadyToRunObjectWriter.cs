@@ -89,25 +89,6 @@ namespace ILCompiler.DependencyAnalysis
 
                     ObjectData nodeContents = node.GetData(_nodeFactory);
 
-                    int targetSectionIndex;
-                    switch (node.Section.Type)
-                    {
-                        case SectionType.Executable:
-                            targetSectionIndex = _textSectionIndex;
-                            break;
-
-                        case SectionType.Writeable:
-                            targetSectionIndex = _dataSectionIndex;
-                            break;
-
-                        case SectionType.ReadOnly:
-                            targetSectionIndex = _rdataSectionIndex;
-                            break;
-
-                        default:
-                            throw new NotImplementedException();
-                    }
-
                     string name = null;
 
                     if (mapFile != null)
