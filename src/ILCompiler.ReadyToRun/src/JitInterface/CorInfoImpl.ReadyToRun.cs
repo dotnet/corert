@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 using Internal.IL;
@@ -523,5 +524,41 @@ namespace Internal.JitInterface
             return new ObjectNode.ObjectData(ehInfoData, Array.Empty<Relocation>(), alignment: 1, definedSymbols: Array.Empty<ISymbolDefinitionNode>());
         }
 
+        private void setVars(CORINFO_METHOD_STRUCT_* ftn, uint cVars, NativeVarInfo* vars)
+        {
+            Debug.Assert(_debugVarInfos == null);
+
+            if (cVars == 0)
+                return;
+
+            _debugVarInfos = new DebugVarInfo[1];
+            _debugVarInfos[0] = new DebugVarInfo();
+            _debugVarInfos[0].Ranges = new List<NativeVarInfo>();
+            for (int i = 0; i < cVars; i++)
+            {
+                _debugVarInfos[0].Ranges.Add(vars[i]);
+            }
+        }
+
+        // Create a DebugLocInfo which is a table from native offset to source line.
+        // using native to il offset (pMap) and il to source line (_sequencePoints).
+        private void setBoundaries(CORINFO_METHOD_STRUCT_* ftn, uint cMap, OffsetMapping* pMap)
+        {
+            Debug.Assert(_debugLocInfos == null);
+            
+            List<DebugLocInfo> debugLocInfos = new List<DebugLocInfo>();
+            for (int i = 0; i < cMap; i++)
+            {
+                OffsetMapping nativeToILInfo = pMap[i];
+                NativeLocInfo nativeLocInfo = new NativeLocInfo { nativeOffset = nativeToILInfo.nativeOffset, ilOffset = nativeToILInfo.ilOffset, source = (uint)nativeToILInfo.source };
+                DebugLocInfo loc = new DebugLocInfo(0, null, nativeLocInfo, 0);
+                debugLocInfos.Add(loc);
+            }
+
+            if (debugLocInfos.Count > 0)
+            {
+                _debugLocInfos = debugLocInfos.ToArray();
+            }
+        }
     }
 }

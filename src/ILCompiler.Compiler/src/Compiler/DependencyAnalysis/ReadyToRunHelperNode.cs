@@ -211,8 +211,8 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         return new DebugLocInfo[]
                         {
-                            new DebugLocInfo(0, String.Empty, WellKnownLineNumber.DebuggerStepThrough),
-                            new DebugLocInfo(debuggerStepInOffset, String.Empty, WellKnownLineNumber.DebuggerStepIn)
+                            new DebugLocInfo(0, String.Empty, default, WellKnownLineNumber.DebuggerStepThrough),
+                            new DebugLocInfo(debuggerStepInOffset, String.Empty, default, WellKnownLineNumber.DebuggerStepIn)
                         };
                     }
                 }

@@ -15,13 +15,15 @@ namespace ILCompiler.DependencyAnalysis
         public readonly string FileName;
         public readonly int LineNumber;
         public readonly int ColNumber;
+        public readonly NativeLocInfo OffsetMapping;
 
-        public DebugLocInfo(int nativeOffset, string fileName, int lineNumber, int colNumber = 0)
+        public DebugLocInfo(int nativeOffset, string fileName, NativeLocInfo offsetMapping, int lineNumber, int colNumber = 0)
         {
             NativeOffset = nativeOffset;
             FileName = fileName;
             LineNumber = lineNumber;
             ColNumber = colNumber;
+            OffsetMapping = offsetMapping;
         }
     }
     

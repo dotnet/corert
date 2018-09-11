@@ -14,6 +14,13 @@ using System.Runtime.InteropServices;
 
 namespace Internal.JitInterface
 {
+    public struct NativeLocInfo
+    {
+        public uint nativeOffset;
+        public uint ilOffset;
+        public uint source;
+    }
+
     public struct NativeVarInfo
     {
         public uint startOffset;
@@ -26,10 +33,10 @@ namespace Internal.JitInterface
     [StructLayout(LayoutKind.Sequential)]
     public struct VarLoc
     {
-        IntPtr A; // vlType + padding
-        int B;
-        int C;
-        int D;
+        public IntPtr A; // vlType + padding
+        public int B;
+        public int C;
+        public int D;
 
         /*
            Changes to the following types may require revisiting the above layout.

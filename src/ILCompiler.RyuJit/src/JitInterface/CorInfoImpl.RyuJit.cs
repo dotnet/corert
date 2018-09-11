@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 using Internal.IL;
@@ -601,5 +602,108 @@ namespace Internal.JitInterface
             return builder.ToObjectData();
         }
 
+        private void setVars(CORINFO_METHOD_STRUCT_* ftn, uint cVars, NativeVarInfo* vars)
+        {
+            if (_localSlotToInfoMap == null && _parameterIndexToNameMap == null)
+            {
+                return;
+            }
+
+            uint paramCount = (_parameterIndexToNameMap == null) ? 0 : (uint)_parameterIndexToNameMap.Count;
+            Dictionary<uint, DebugVarInfo> debugVars = new Dictionary<uint, DebugVarInfo>();
+            int i;
+
+            for (i = 0; i < cVars; i++)
+            {
+                NativeVarInfo nativeVarInfo = vars[i];
+
+                if (nativeVarInfo.varNumber < paramCount)
+                {
+                    string name = _parameterIndexToNameMap[nativeVarInfo.varNumber];
+                    updateDebugVarInfo(debugVars, name, true, nativeVarInfo);
+                }
+                else if (_localSlotToInfoMap != null)
+                {
+                    ILLocalVariable ilVar;
+                    uint slotNumber = nativeVarInfo.varNumber - paramCount;
+                    if (_localSlotToInfoMap.TryGetValue(slotNumber, out ilVar))
+                    {
+                        updateDebugVarInfo(debugVars, ilVar.Name, false, nativeVarInfo);
+                    }
+                }
+            }
+
+            i = 0;
+            _debugVarInfos = new DebugVarInfo[debugVars.Count];
+            foreach (var debugVar in debugVars)
+            {
+                _debugVarInfos[i] = debugVar.Value;
+                i++;
+            }
+        }
+
+        // Create a DebugLocInfo which is a table from native offset to source line.
+        // using native to il offset (pMap) and il to source line (_sequencePoints).
+        private void setBoundaries(CORINFO_METHOD_STRUCT_* ftn, uint cMap, OffsetMapping* pMap)
+        {
+            Debug.Assert(_debugLocInfos == null);
+            // No interest if sequencePoints is not populated before.
+            if (_sequencePoints == null)
+            {
+                return;
+            }
+
+            int largestILOffset = 0; // All epiloges point to the largest IL offset.
+            for (int i = 0; i < cMap; i++)
+            {
+                OffsetMapping nativeToILInfo = pMap[i];
+                int currectILOffset = (int)nativeToILInfo.ilOffset;
+                if (currectILOffset > largestILOffset) // Special offsets are negative.
+                {
+                    largestILOffset = currectILOffset;
+                }
+            }
+
+            int previousNativeOffset = -1;
+            List<DebugLocInfo> debugLocInfos = new List<DebugLocInfo>();
+            for (int i = 0; i < cMap; i++)
+            {
+                OffsetMapping nativeToILInfo = pMap[i];
+                int ilOffset = (int)nativeToILInfo.ilOffset;
+                int nativeOffset = (int)pMap[i].nativeOffset;
+                if (nativeOffset == previousNativeOffset)
+                {
+                    // Save the first one, skip others.
+                    continue;
+                }
+                switch (ilOffset)
+                {
+                    case (int)MappingTypes.PROLOG:
+                        ilOffset = 0;
+                        break;
+                    case (int)MappingTypes.EPILOG:
+                        ilOffset = largestILOffset;
+                        break;
+                    case (int)MappingTypes.NO_MAPPING:
+                        continue;
+                }
+
+                NativeLocInfo nativeLocInfo = new NativeLocInfo { nativeOffset = nativeToILInfo.nativeOffset, ilOffset = nativeToILInfo.ilOffset, source = (uint)nativeToILInfo.source };
+
+                SequencePoint s;
+                if (_sequencePoints.TryGetValue((int)ilOffset, out s))
+                {
+                    Debug.Assert(s.Document != null);
+                    DebugLocInfo loc = new DebugLocInfo(nativeOffset, s.Document, nativeLocInfo, s.LineNumber);
+                    debugLocInfos.Add(loc);
+                    previousNativeOffset = nativeOffset;
+                }
+            }
+
+            if (debugLocInfos.Count > 0)
+            {
+                _debugLocInfos = debugLocInfos.ToArray();
+            }
+        }
     }
 }

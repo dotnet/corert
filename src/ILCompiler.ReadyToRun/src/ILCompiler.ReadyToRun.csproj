@@ -34,6 +34,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\AvailableType.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ByteArrayComparer.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CompilerIdentifierNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DebugInfoTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadHelperImport.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ImportThunk.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelegateCtorSignature.cs" />

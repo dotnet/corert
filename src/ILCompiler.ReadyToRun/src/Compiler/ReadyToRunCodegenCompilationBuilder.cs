@@ -93,6 +93,10 @@ namespace ILCompiler
                     break;
             }
 
+            // Do not bother with debug information if the debug info provider never gives anything.
+            if (!(_debugInformationProvider is NullDebugInformationProvider))
+                corJitFlags.Add(CorJitFlag.CORJIT_FLAG_DEBUG_INFO);
+
             var jitConfig = new JitConfigProvider(corJitFlags, _ryujitOptions);
 
             return new ReadyToRunCodegenCompilation(

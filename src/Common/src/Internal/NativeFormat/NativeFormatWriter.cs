@@ -256,6 +256,14 @@ namespace Internal.NativeFormat
             return offset;
         }
 
+        public int GetCurrentOffset(Vertex val)
+        {
+            if (val._iteration != _iteration)
+                return -1;
+
+            return val._offset;
+        }
+
         public int GetCurrentOffset()
         {
             return _encoder.Size;
@@ -1617,6 +1625,38 @@ namespace Internal.NativeFormat
         {
             _blob.Save(writer);
             base.Save(writer);
+        }
+    }
+
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
+    class DebugInfoVertex : Vertex
+    {
+        private BlobVertex _debugInfo;
+
+        public DebugInfoVertex(BlobVertex debugInfo)
+        {
+            _debugInfo = debugInfo;
+        }
+
+        internal override void Save(NativeWriter writer)
+        {
+            int existingOffset = writer.GetCurrentOffset(_debugInfo);
+            if (existingOffset != -1)
+            {
+                Debug.Assert(writer.GetCurrentOffset() > existingOffset);
+                writer.WriteUnsigned((uint)(writer.GetCurrentOffset() - existingOffset));
+            }
+            else
+            {
+                writer.WriteUnsigned(0);
+                _debugInfo._iteration = writer.GetNumberOfIterations();
+                _debugInfo._offset = writer.GetCurrentOffset();
+                _debugInfo.Save(writer);
+            }
         }
     }
 
