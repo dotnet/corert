@@ -82,7 +82,7 @@ namespace Microsoft.Win32
         {
             if (_hkey != null && IsDirty())
             {
-                Interop.mincore.RegFlushKey(_hkey);
+                Interop.Advapi32.RegFlushKey(_hkey);
             }
         }
 
@@ -93,7 +93,7 @@ namespace Microsoft.Win32
 
             // By default, the new key will be writable.
             SafeRegistryHandle result = null;
-            int ret = Interop.mincore.RegCreateKeyEx(_hkey,
+            int ret = Interop.Advapi32.RegCreateKeyEx(_hkey,
                 subkey,
                 0,
                 null,
@@ -185,7 +185,7 @@ namespace Microsoft.Win32
         private RegistryKey InternalOpenSubKeyCore(string name, RegistryRights rights, bool throwOnPermissionFailure)
         {
             SafeRegistryHandle result = null;
-            int ret = Interop.mincore.RegOpenKeyEx(_hkey, name, 0, ((int)rights | (int)_regView), out result);
+            int ret = Interop.Advapi32.RegOpenKeyEx(_hkey, name, 0, ((int)rights | (int)_regView), out result);
             if (ret == 0 && !result.IsInvalid)
             {
                 RegistryKey key = new RegistryKey(result, IsWritable((int)rights), false, _remoteKey, false, _regView);
@@ -242,7 +242,7 @@ namespace Microsoft.Win32
 
                 // open the base key so that RegistryKey.Handle will return a valid handle
                 SafeRegistryHandle result;
-                ret = Interop.mincore.RegOpenKeyEx(baseKey,
+                ret = Interop.Advapi32.RegOpenKeyEx(baseKey,
                     null,
                     0,
                     (int)GetRegistryKeyRights(IsWritable()) | (int)_regView,
@@ -264,7 +264,7 @@ namespace Microsoft.Win32
         {
             int subkeys = 0;
             int junk = 0;
-            int ret = Interop.mincore.RegQueryInfoKey(_hkey,
+            int ret = Interop.Advapi32.RegQueryInfoKey(_hkey,
                                       null,
                                       null,
                                       IntPtr.Zero,
@@ -297,7 +297,7 @@ namespace Microsoft.Win32
                 for (int i = 0; i < subkeys; i++)
                 {
                     namelen = name.Length; // Don't remove this. The API's doesn't work if this is not properly initialized.
-                    int ret = Interop.mincore.RegEnumKeyEx(_hkey,
+                    int ret = Interop.Advapi32.RegEnumKeyEx(_hkey,
                         i,
                         namePtr,
                         ref namelen,
@@ -321,7 +321,7 @@ namespace Microsoft.Win32
         {
             int values = 0;
             int junk = 0;
-            int ret = Interop.mincore.RegQueryInfoKey(_hkey,
+            int ret = Interop.Advapi32.RegQueryInfoKey(_hkey,
                                       null,
                                       null,
                                       IntPtr.Zero,
@@ -355,7 +355,7 @@ namespace Microsoft.Win32
                 {
                     namelen = name.Length;
 
-                    int ret = Interop.mincore.RegEnumValue(_hkey,
+                    int ret = Interop.Advapi32.RegEnumValue(_hkey,
                         i,
                         namePtr,
                         ref namelen,
@@ -384,7 +384,7 @@ namespace Microsoft.Win32
             int type = 0;
             int datasize = 0;
 
-            int ret = Interop.mincore.RegQueryValueEx(_hkey, name, null, ref type, (byte[])null, ref datasize);
+            int ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, (byte[])null, ref datasize);
 
             if (ret != 0)
             {
@@ -395,7 +395,7 @@ namespace Microsoft.Win32
 
                     int r;
                     byte[] blob = new byte[size];
-                    while (Interop.Errors.ERROR_MORE_DATA == (r = Interop.mincore.RegQueryValueEx(_hkey, name, null, ref type, blob, ref sizeInput)))
+                    while (Interop.Errors.ERROR_MORE_DATA == (r = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref sizeInput)))
                     {
                         if (size == int.MaxValue)
                         {
@@ -446,7 +446,7 @@ namespace Microsoft.Win32
                 case Interop.Advapi32.RegistryValues.REG_BINARY:
                     {
                         byte[] blob = new byte[datasize];
-                        ret = Interop.mincore.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
+                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
                         data = blob;
                     }
                     break;
@@ -460,7 +460,7 @@ namespace Microsoft.Win32
                         long blob = 0;
                         Debug.Assert(datasize == 8, "datasize==8");
                         // Here, datasize must be 8 when calling this
-                        ret = Interop.mincore.RegQueryValueEx(_hkey, name, null, ref type, ref blob, ref datasize);
+                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, ref blob, ref datasize);
 
                         data = blob;
                     }
@@ -475,7 +475,7 @@ namespace Microsoft.Win32
                         int blob = 0;
                         Debug.Assert(datasize == 4, "datasize==4");
                         // Here, datasize must be four when calling this
-                        ret = Interop.mincore.RegQueryValueEx(_hkey, name, null, ref type, ref blob, ref datasize);
+                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, ref blob, ref datasize);
 
                         data = blob;
                     }
@@ -497,7 +497,7 @@ namespace Microsoft.Win32
                         }
                         char[] blob = new char[datasize / 2];
 
-                        ret = Interop.mincore.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
+                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
                         if (blob.Length > 0 && blob[blob.Length - 1] == (char)0)
                         {
                             data = new string(blob, 0, blob.Length - 1);
@@ -527,7 +527,7 @@ namespace Microsoft.Win32
                         }
                         char[] blob = new char[datasize / 2];
 
-                        ret = Interop.mincore.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
+                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
 
                         if (blob.Length > 0 && blob[blob.Length - 1] == (char)0)
                         {
@@ -562,7 +562,7 @@ namespace Microsoft.Win32
                         }
                         char[] blob = new char[datasize / 2];
 
-                        ret = Interop.mincore.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
+                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
 
                         // make sure the string is null terminated before processing the data
                         if (blob.Length > 0 && blob[blob.Length - 1] != (char)0)
@@ -634,7 +634,7 @@ namespace Microsoft.Win32
         {
             int type = 0;
             int datasize = 0;
-            int ret = Interop.mincore.RegQueryValueEx(_hkey, name, null, ref type, (byte[])null, ref datasize);
+            int ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, (byte[])null, ref datasize);
             if (ret != 0)
             {
                 Win32Error(ret, null);
@@ -719,8 +719,8 @@ namespace Microsoft.Win32
 
         private static bool IsWritable(int rights)
         {
-            return (rights & (Interop.mincore.RegistryOperations.KEY_SET_VALUE |
-                              Interop.mincore.RegistryOperations.KEY_CREATE_SUB_KEY |
+            return (rights & (Interop.Advapi32.RegistryOperations.KEY_SET_VALUE |
+                              Interop.Advapi32.RegistryOperations.KEY_CREATE_SUB_KEY |
                               (int)RegistryRights.Delete |
                               (int)RegistryRights.TakeOwnership |
                               (int)RegistryRights.ChangePermissions)) != 0;
