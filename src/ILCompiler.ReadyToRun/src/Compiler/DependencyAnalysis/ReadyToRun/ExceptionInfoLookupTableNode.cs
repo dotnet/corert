@@ -45,11 +45,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _method.AppendMangledName(nameMangler, sb);
         }
 
-        public IEnumerable<DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)
-        {
-            return Array.Empty<DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry>();
-        }
-
         public IEnumerable<DependencyNodeCore<NodeFactory>.DependencyListEntry> GetStaticDependencies(NodeFactory context)
         {
             foreach (Relocation reloc in _ehInfo.Relocs)
@@ -58,10 +53,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public IEnumerable<DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context)
-        {
-            return Array.Empty<DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry>();
-        }
+        public IEnumerable<DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
+        public IEnumerable<DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry> SearchDynamicDependencies(
+            List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
     }
 
     public class ExceptionInfoLookupTableNode : HeaderTableNode, IEnumerable<ObjectNode.ObjectData>
