@@ -12,12 +12,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private readonly MethodWithGCInfo _methodNode;
 
-        private readonly MethodEHInfoNode _ehInfoNode;
+        private readonly int _frameInfoIndex;
 
-        public MethodGCInfoNode(MethodWithGCInfo methodNode)
+        public MethodGCInfoNode(MethodWithGCInfo methodNode, int frameInfoIndex)
         {
             _methodNode = methodNode;
-            _ehInfoNode = new MethodEHInfoNode(_methodNode);
+            _frameInfoIndex = frameInfoIndex;
         }
 
         public override bool StaticDependenciesAreComputed => true;
@@ -40,59 +40,38 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 return;
             }
+            byte[] unwindInfo = _methodNode.FrameInfos[_frameInfoIndex].BlobData;
 
-            byte[] gcInfo = _methodNode.GCInfo;
-
-            // Temporary hotfix - this stands for the AMD64 UNWIND_INFO I don't yet know where to get from
-            dataBuilder.EmitLong(0);
-
-            if (gcInfo != null)
+            if (factory.Target.Architecture == Internal.TypeSystem.TargetArchitecture.X64)
             {
-                dataBuilder.EmitBytes(gcInfo);
+                // On Amd64, patch the first byte of the unwind info by setting the flags to EHANDLER | UHANDLER
+                // as that's what CoreCLR does (zapcode.cpp, ZapUnwindData::Save).
+                const byte UNW_FLAG_EHANDLER = 1;
+                const byte UNW_FLAG_UHANDLER = 2;
+                const byte FlagsShift = 3;
+
+                unwindInfo[0] |= (byte)((UNW_FLAG_EHANDLER | UNW_FLAG_UHANDLER) << FlagsShift);
             }
 
-            /* TODO: This is apparently incorrect, a different encoding is needed here
-            ObjectNode.ObjectData ehInfo = _methodNode.EHInfo;
-            ISymbolNode associatedDataNode = _methodNode.GetAssociatedDataNode(factory);
+            dataBuilder.EmitBytes(unwindInfo);
 
-            foreach (FrameInfo frameInfo in _methodNode.FrameInfos)
+            // Personality routine RVA must be 4-aligned
+            int align4Pad = -unwindInfo.Length & 3;
+            dataBuilder.EmitZeros(align4Pad);
+
+            bool isFilterFunclet = (_methodNode.FrameInfos[_frameInfoIndex].Flags & FrameInfoFlags.Filter) != 0;
+            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
+            ISymbolNode personalityRoutine = (isFilterFunclet ? r2rFactory.FilterFuncletPersonalityRoutine : r2rFactory.PersonalityRoutine);
+            dataBuilder.EmitReloc(personalityRoutine, RelocType.IMAGE_REL_BASED_ADDR32NB);
+
+            if (_frameInfoIndex == 0 && _methodNode.GCInfo != null)
             {
-                FrameInfoFlags flags = frameInfo.Flags;
-                flags |= (ehInfo != null ? FrameInfoFlags.HasEHInfo : 0);
-                flags |= (associatedDataNode != null ? FrameInfoFlags.HasAssociatedData : 0);
+                dataBuilder.EmitBytes(_methodNode.GCInfo);
 
-                dataBuilder.EmitBytes(frameInfo.BlobData);
-                dataBuilder.EmitByte((byte)flags);
-
-                if (associatedDataNode != null)
-                {
-                    dataBuilder.EmitReloc(associatedDataNode, RelocType.IMAGE_REL_BASED_ADDR32NB);
-                    associatedDataNode = null;
-                }
-
-                if (ehInfo != null)
-                {
-                    dataBuilder.EmitReloc(_ehInfoNode, RelocType.IMAGE_REL_BASED_ADDR32NB);
-                    ehInfo = null;
-                }
-
-                if (gcInfo != null)
-                {
-                    dataBuilder.EmitBytes(gcInfo);
-                    gcInfo = null;
-                }
-
-                // Align the record to 4 bytes
-                int alignedOffset = (dataBuilder.CountBytes + 3) & -4;
-                int paddingCount = alignedOffset - dataBuilder.CountBytes;
-                dataBuilder.EmitZeros(paddingCount);
+                // Maintain 4-alignment for the next unwind / GC info block
+                align4Pad = -_methodNode.GCInfo.Length & 3;
+                dataBuilder.EmitZeros(align4Pad);
             }
-            */
-        }
-
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
-        {
-            return new DependencyListEntry[] { new DependencyListEntry(_ehInfoNode, "EH info for method") };
         }
 
         protected override string GetName(NodeFactory context)
@@ -102,5 +81,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _methodNode.AppendMangledName(context.NameMangler, sb);
             return sb.ToString();
         }
+
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => null;
     }
 }

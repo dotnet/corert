@@ -271,6 +271,19 @@ namespace ILCompiler.PEWriter
         }
 
         /// <summary>
+        /// Look up RVA for a given symbol. This assumes the section have already been placed.
+        /// </summary>
+        /// <param name="symbol">Symbol to look up</param>
+        /// <returns>RVA of the symbol</returns>
+        public int GetSymbolRVA(ISymbolNode symbol)
+        {
+            SymbolTarget symbolTarget = _symbolMap[symbol];
+            Section section = _sections[symbolTarget.SectionIndex];
+            Debug.Assert(section.RVAWhenPlaced != 0);
+            return section.RVAWhenPlaced + symbolTarget.Offset;
+        }
+
+        /// <summary>
         /// Attach an export symbol to the output PE file.
         /// </summary>
         /// <param name="name">Export symbol identifier</param>
@@ -880,14 +893,26 @@ namespace ILCompiler.PEWriter
         /// <param name="machine">Target machine architecture</param>
         /// <param name="inputReader">Input MSIL reader</param>
         /// <param name="outputStream">Output stream for the final R2R PE file</param>
-        public static void EmitR2R(this SectionBuilder builder, Machine machine, PEReader inputReader, Stream outputStream)
+        public static void EmitR2R(
+            this SectionBuilder builder,
+            Machine machine,
+            PEReader inputReader,
+            Action<PEDirectoriesBuilder> directoriesUpdater,
+            Stream outputStream)
         {
             R2RPEBuilder r2rBuilder = new R2RPEBuilder(
                 machine: machine,
                 peReader: inputReader,
                 sectionNames: builder.GetSections(),
                 sectionSerializer: builder.SerializeSection,
-                directoriesUpdater: builder.UpdateDirectories);
+                directoriesUpdater: (PEDirectoriesBuilder directoriesBuilder) =>
+                {
+                    builder.UpdateDirectories(directoriesBuilder);
+                    if (directoriesUpdater != null)
+                    {
+                        directoriesUpdater(directoriesBuilder);
+                    }
+                });
 
             BlobBuilder outputPeFile = new BlobBuilder();
             r2rBuilder.Serialize(outputPeFile);

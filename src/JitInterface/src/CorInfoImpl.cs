@@ -296,6 +296,19 @@ namespace Internal.JitInterface
 
             int totalClauses = _ehClauses.Length;
 
+#if READYTORUN
+            for (int i = 0; i < _ehClauses.Length; i++)
+            {
+                ref CORINFO_EH_CLAUSE clause = ref _ehClauses[i];
+                builder.EmitUInt((uint)clause.Flags);
+                builder.EmitUInt(clause.TryOffset);
+                builder.EmitUInt(clause.TryOffset + clause.TryLength);
+                builder.EmitUInt(clause.HandlerOffset);
+                builder.EmitUInt(clause.HandlerOffset + clause.HandlerLength);
+                builder.EmitUInt(clause.ClassTokenOrOffset);
+            }
+            Debug.Assert(builder.CountBytes == 6 * sizeof(uint) * _ehClauses.Length);
+#else
             // Count the number of special markers that will be needed
             for (int i = 1; i < _ehClauses.Length; i++)
             {
@@ -394,6 +407,7 @@ namespace Internal.JitInterface
                         break;
                 }
             }
+#endif
 
             return builder.ToObjectData();
         }

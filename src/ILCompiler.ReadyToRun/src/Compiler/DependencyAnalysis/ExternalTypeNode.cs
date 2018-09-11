@@ -50,7 +50,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return comparer.Compare(Type, ((AvailableType)other).Type);
+            return comparer.Compare(Type, ((ExternalTypeNode)other).Type);
         }
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;

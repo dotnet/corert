@@ -106,7 +106,7 @@ namespace ILCompiler
 
                 try
                 {
-                    EcmaModule module = ((EcmaMethod)method).Module;
+                    EcmaModule module = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
 
                     CorInfoImpl perModuleCorInfo;
                     if (!_corInfo.TryGetValue(module, out perModuleCorInfo))

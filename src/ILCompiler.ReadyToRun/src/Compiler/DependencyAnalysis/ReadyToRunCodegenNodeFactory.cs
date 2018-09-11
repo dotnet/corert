@@ -68,6 +68,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public ImportSectionsTableNode ImportSectionsTable;
 
+        public ISymbolNode PersonalityRoutine;
+
+        public ISymbolNode FilterFuncletPersonalityRoutine;
+
         public Import ModuleImport;
 
         public ImportSectionNode EagerImports;
@@ -432,6 +436,34 @@ namespace ILCompiler.DependencyAnalysis
                     result = CreateWriteBarrierHelper();
                     break;
 
+                case ILCompiler.ReadyToRunHelper.CheckedWriteBarrier:
+                    result = CreateCheckedWriteBarrierHelper();
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.Throw:
+                    result = CreateThrowHelper();
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.Rethrow:
+                    result = CreateRethrowHelper();
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.FailFast:
+                    result = CreateFailFastHelper();
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.Stelem_Ref:
+                    result = CreateStElemRefHelper();
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.NewMultiDimArr:
+                    result = CreateNewMultiDimArrHelper();
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.NewMultiDimArr_NonVarArg:
+                    result = CreateNewMultiDimArrNonVarArgHelper();
+                    break;
+
                 default:
                     throw new NotImplementedException();
             }
@@ -478,6 +510,41 @@ namespace ILCompiler.DependencyAnalysis
         private ISymbolNode CreateWriteBarrierHelper()
         {
             return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_WriteBarrier);
+        }
+
+        private ISymbolNode CreateCheckedWriteBarrierHelper()
+        {
+            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_CheckedWriteBarrier);
+        }
+
+        private ISymbolNode CreateThrowHelper()
+        {
+            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Throw);
+        }
+
+        private ISymbolNode CreateRethrowHelper()
+        {
+            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Rethrow);
+        }
+
+        private ISymbolNode CreateFailFastHelper()
+        {
+            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_FailFast);
+        }
+
+        private ISymbolNode CreateStElemRefHelper()
+        {
+            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Stelem_Ref);
+        }
+
+        private ISymbolNode CreateNewMultiDimArrHelper()
+        {
+            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_NewMultiDimArr);
+        }
+
+        private ISymbolNode CreateNewMultiDimArrNonVarArgHelper()
+        {
+            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_NewMultiDimArr_NonVarArg);
         }
 
         public IMethodNode CreateUnboxingStubNode(MethodDesc method, mdToken token)
@@ -657,6 +724,10 @@ namespace ILCompiler.DependencyAnalysis
             RuntimeFunctionsGCInfo = new RuntimeFunctionsGCInfoNode();
             graph.AddRoot(RuntimeFunctionsGCInfo, "GC info is always generated");
 
+            ExceptionInfoLookupTableNode exceptionInfoLookupTableNode = new ExceptionInfoLookupTableNode(this);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.ExceptionInfo, exceptionInfoLookupTableNode, exceptionInfoLookupTableNode);
+            graph.AddRoot(exceptionInfoLookupTableNode, "ExceptionInfoLookupTable is always generated");
+
             MethodEntryPointTable = new MethodEntryPointTableNode(Target);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.MethodDefEntryPoints, MethodEntryPointTable, MethodEntryPointTable);
 
@@ -680,7 +751,19 @@ namespace ILCompiler.DependencyAnalysis
             // All ready-to-run images have a module import helper which gets patched by the runtime on image load
             ModuleImport = new Import(EagerImports, new ReadyToRunHelperSignature(
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Module));
-            EagerImports.AddImport(this, ModuleImport);
+            graph.AddRoot(ModuleImport, "Module import is required by the R2R format spec");
+
+            Import personalityRoutineImport = new Import(EagerImports, new ReadyToRunHelperSignature(
+                ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_PersonalityRoutine));
+            PersonalityRoutine = new ImportThunk(
+                ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_PersonalityRoutine, this, personalityRoutineImport);
+            graph.AddRoot(PersonalityRoutine, "Personality routine is faster to root early rather than referencing it from each unwind info");
+
+            Import filterFuncletPersonalityRoutineImport = new Import(EagerImports, new ReadyToRunHelperSignature(
+                ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_PersonalityRoutineFilterFunclet));
+            FilterFuncletPersonalityRoutine = new ImportThunk(
+                ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_PersonalityRoutineFilterFunclet, this, filterFuncletPersonalityRoutineImport);
+            graph.AddRoot(FilterFuncletPersonalityRoutine, "Filter funclet personality routine is faster to root early rather than referencing it from each unwind info");
 
             MethodImports = new ImportSectionNode(
                 "MethodImports",
