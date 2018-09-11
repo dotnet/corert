@@ -106,14 +106,14 @@ namespace ILCompiler.DependencyAnalysis
                         }
                     }
 
-                    EmitObjectData(_sectionBuilder, nodeContents, name, node.Section, mapFile);
+                    EmitObjectData(nodeContents, name, node.Section, mapFile);
 
                     if (depNode is IEnumerable<ObjectNode.ObjectData> objectDataSource)
                     {
                         int index = 0;
                         foreach (ObjectData data in objectDataSource)
                         {
-                            EmitObjectData(_sectionBuilder, data, name + "@" + index.ToString(), node.Section, mapFile);
+                            EmitObjectData(data, name + "@" + index.ToString(), node.Section, mapFile);
                             index++;
                         }
                     }
@@ -161,7 +161,7 @@ namespace ILCompiler.DependencyAnalysis
         /// Update the PE header directories by setting up the exception directory to point to the runtime functions table.
         /// This is needed for RtlLookupFunctionEntry / RtlLookupFunctionTable to work.
         /// </summary>
-        /// <param name="builder"></param>
+        /// <param name="builder">PE header directory builder can be used to override RVA's / sizes of any of the directories</param>
         private void UpdateDirectories(PEDirectoriesBuilder builder)
         {
             builder.ExceptionTable = new DirectoryEntry(
@@ -169,7 +169,14 @@ namespace ILCompiler.DependencyAnalysis
                 size: _nodeFactory.RuntimeFunctionsTable.TableSize);
         }
 
-        private void EmitObjectData(SectionBuilder sectionBuilder, ObjectData data, string name, ObjectNodeSection section, TextWriter mapFile)
+        /// <summary>
+        /// Emit a single ObjectData into the proper section of the output R2R PE executable.
+        /// </summary>
+        /// <param name="data">ObjectData blob to emit</param>
+        /// <param name="name">Textual representation of the ObjecData blob in the map file</param>
+        /// <param name="section">Section to emit the blob into</param>
+        /// <param name="mapFile">Map file output stream</param>
+        private void EmitObjectData(ObjectData data, string name, ObjectNodeSection section, TextWriter mapFile)
         {
             int targetSectionIndex;
             switch (section.Type)
@@ -207,7 +214,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 #endif
 
-            sectionBuilder.AddObjectData(data, targetSectionIndex, name, mapFile);
+            _sectionBuilder.AddObjectData(data, targetSectionIndex, name, mapFile);
         }
 
         public static void EmitObject(PEReader inputPeReader, string objectFilePath, IEnumerable<DependencyNode> nodes, ReadyToRunCodegenNodeFactory factory)
