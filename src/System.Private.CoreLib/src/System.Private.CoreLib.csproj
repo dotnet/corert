@@ -411,6 +411,12 @@
     <Compile Include="..\..\Common\src\Interop\Windows\ole32\Interop.CoTaskMemAllocFree.cs">
       <Link>Interop\Windows\ole32\Interop.CoTaskMemAllocFree.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\ole32\Interop.CoInitializeEx.cs">
+      <Link>Interop\Windows\ole32\Interop.CoInitializeEx.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\ole32\Interop.CoUninitialize.cs">
+      <Link>Interop\Windows\ole32\Interop.CoUninitialize.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\ole32\Interop.CoGetApartmentType.cs">
       <Link>Interop\Windows\ole32\Interop.CoGetApartmentType.cs</Link>
     </Compile>
