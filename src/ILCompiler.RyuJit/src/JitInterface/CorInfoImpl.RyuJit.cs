@@ -611,9 +611,8 @@ namespace Internal.JitInterface
 
             uint paramCount = (_parameterIndexToNameMap == null) ? 0 : (uint)_parameterIndexToNameMap.Count;
             Dictionary<uint, DebugVarInfo> debugVars = new Dictionary<uint, DebugVarInfo>();
-            int i;
 
-            for (i = 0; i < cVars; i++)
+            for (int i = 0; i < cVars; i++)
             {
                 NativeVarInfo nativeVarInfo = vars[i];
 
@@ -633,17 +632,14 @@ namespace Internal.JitInterface
                 }
             }
 
-            i = 0;
             _debugVarInfos = new DebugVarInfo[debugVars.Count];
-            foreach (var debugVar in debugVars)
-            {
-                _debugVarInfos[i] = debugVar.Value;
-                i++;
-            }
+            debugVars.Values.CopyTo(_debugVarInfos, 0);
         }
 
-        // Create a DebugLocInfo which is a table from native offset to source line.
-        // using native to il offset (pMap) and il to source line (_sequencePoints).
+        /// <summary>
+        /// Create a DebugLocInfo which is a table from native offset to source line.
+        /// using native to il offset (pMap) and il to source line (_sequencePoints).
+        /// </summary>
         private void setBoundaries(CORINFO_METHOD_STRUCT_* ftn, uint cMap, OffsetMapping* pMap)
         {
             Debug.Assert(_debugLocInfos == null);

@@ -524,6 +524,10 @@ namespace Internal.JitInterface
             return new ObjectNode.ObjectData(ehInfoData, Array.Empty<Relocation>(), alignment: 1, definedSymbols: Array.Empty<ISymbolDefinitionNode>());
         }
 
+        /// <summary>
+        /// Create a NativeVarInfo array; a table from native code range to variable location
+        /// on the stack / in a specific register.
+        /// </summary>
         private void setVars(CORINFO_METHOD_STRUCT_* ftn, uint cVars, NativeVarInfo* vars)
         {
             Debug.Assert(_debugVarInfos == null);
@@ -540,24 +544,20 @@ namespace Internal.JitInterface
             }
         }
 
-        // Create a DebugLocInfo which is a table from native offset to source line.
-        // using native to il offset (pMap) and il to source line (_sequencePoints).
+        /// <summary>
+        /// Create a DebugLocInfo array; a table from native offset to IL offset.
+        /// </summary>
         private void setBoundaries(CORINFO_METHOD_STRUCT_* ftn, uint cMap, OffsetMapping* pMap)
         {
             Debug.Assert(_debugLocInfos == null);
-            
-            List<DebugLocInfo> debugLocInfos = new List<DebugLocInfo>();
+
+            _debugLocInfos = new DebugLocInfo[cMap];
             for (int i = 0; i < cMap; i++)
             {
                 OffsetMapping nativeToILInfo = pMap[i];
                 NativeLocInfo nativeLocInfo = new NativeLocInfo { nativeOffset = nativeToILInfo.nativeOffset, ilOffset = nativeToILInfo.ilOffset, source = (uint)nativeToILInfo.source };
                 DebugLocInfo loc = new DebugLocInfo(0, null, nativeLocInfo, 0);
-                debugLocInfos.Add(loc);
-            }
-
-            if (debugLocInfos.Count > 0)
-            {
-                _debugLocInfos = debugLocInfos.ToArray();
+                _debugLocInfos[i] = loc;
             }
         }
     }
