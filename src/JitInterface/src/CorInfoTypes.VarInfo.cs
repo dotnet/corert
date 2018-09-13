@@ -14,13 +14,6 @@ using System.Runtime.InteropServices;
 
 namespace Internal.JitInterface
 {
-    public struct NativeLocInfo
-    {
-        public uint nativeOffset;
-        public uint ilOffset;
-        public uint source;
-    }
-
     public struct NativeVarInfo
     {
         public uint startOffset;

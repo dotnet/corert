@@ -141,12 +141,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             uint previousNativeOffset = 0;
             foreach (var locInfo in method.DebugLocInfos)
             {
-                NativeLocInfo offsetMapping = locInfo.OffsetMapping;
-                writer.WriteUInt(offsetMapping.nativeOffset - previousNativeOffset);
-                writer.WriteUInt(offsetMapping.ilOffset + 3); // Count of items in Internal.JitInterface.MappingTypes to adjust the IL offset by
-                writer.WriteUInt(offsetMapping.source);
+                writer.WriteUInt(locInfo.nativeOffset - previousNativeOffset);
+                writer.WriteUInt(locInfo.ilOffset + 3); // Count of items in Internal.JitInterface.MappingTypes to adjust the IL offset by
+                writer.WriteUInt((uint)locInfo.source);
 
-                previousNativeOffset = offsetMapping.nativeOffset;
+                previousNativeOffset = locInfo.nativeOffset;
             }
 
             return writer.ToArray();
@@ -158,9 +157,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return null;
 
             NibbleWriter writer = new NibbleWriter();
-            writer.WriteUInt((uint)method.DebugVarInfos[0].Ranges.Count);
+            writer.WriteUInt((uint)method.DebugVarInfos.Length);
 
-            foreach (var nativeVarInfo in method.DebugVarInfos[0].Ranges)
+            foreach (var nativeVarInfo in method.DebugVarInfos)
             {
                 writer.WriteUInt(nativeVarInfo.startOffset);
                 writer.WriteUInt(nativeVarInfo.endOffset - nativeVarInfo.startOffset);

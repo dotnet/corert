@@ -16,16 +16,36 @@ namespace Internal.JitInterface
 {
     unsafe partial class CorInfoImpl
     {
+        private struct SequencePoint
+        {
+            public string Document;
+            public int LineNumber;
+        }
+
         private const CORINFO_RUNTIME_ABI TargetABI = CORINFO_RUNTIME_ABI.CORINFO_CORERT_ABI;
 
         private uint OffsetOfDelegateFirstTarget => (uint)(4 * PointerSize); // Delegate::m_functionPointer
 
         private Compilation _compilation;
+        private IMethodCodeNode _methodCodeNode;
+        private DebugLocInfo[] _debugLocInfos;
+        private DebugVarInfo[] _debugVarInfos;
+        private Dictionary<int, SequencePoint> _sequencePoints;
+        private Dictionary<uint, ILLocalVariable> _localSlotToInfoMap;
+        private Dictionary<uint, string> _parameterIndexToNameMap;
+        private TypeDesc[] _variableToTypeDesc;
 
         public CorInfoImpl(Compilation compilation, JitConfigProvider jitConfig)
             : this(jitConfig)
         {
             _compilation = compilation;
+        }
+
+        public void CompileMethod(IMethodCodeNode methodCodeNodeNeedingCode, MethodIL methodIL = null)
+        {
+            _methodCodeNode = methodCodeNodeNeedingCode;
+
+            CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
         }
 
         private void ComputeLookup(ref CORINFO_RESOLVED_TOKEN pResolvedToken, object entity, ReadyToRunHelperId helperId, ref CORINFO_LOOKUP lookup)
@@ -636,6 +656,20 @@ namespace Internal.JitInterface
             debugVars.Values.CopyTo(_debugVarInfos, 0);
         }
 
+        private void updateDebugVarInfo(Dictionary<uint, DebugVarInfo> debugVars, string name,
+                                        bool isParam, NativeVarInfo nativeVarInfo)
+        {
+            DebugVarInfo debugVar;
+
+            if (!debugVars.TryGetValue(nativeVarInfo.varNumber, out debugVar))
+            {
+                debugVar = new DebugVarInfo(name, isParam, _variableToTypeDesc[(int)nativeVarInfo.varNumber]);
+                debugVars[nativeVarInfo.varNumber] = debugVar;
+            }
+
+            debugVar.Ranges.Add(nativeVarInfo);
+        }
+
         /// <summary>
         /// Create a DebugLocInfo which is a table from native offset to source line.
         /// using native to il offset (pMap) and il to source line (_sequencePoints).
@@ -684,13 +718,11 @@ namespace Internal.JitInterface
                         continue;
                 }
 
-                NativeLocInfo nativeLocInfo = new NativeLocInfo { nativeOffset = nativeToILInfo.nativeOffset, ilOffset = nativeToILInfo.ilOffset, source = (uint)nativeToILInfo.source };
-
                 SequencePoint s;
                 if (_sequencePoints.TryGetValue((int)ilOffset, out s))
                 {
                     Debug.Assert(s.Document != null);
-                    DebugLocInfo loc = new DebugLocInfo(nativeOffset, s.Document, nativeLocInfo, s.LineNumber);
+                    DebugLocInfo loc = new DebugLocInfo(nativeOffset, s.Document, s.LineNumber);
                     debugLocInfos.Add(loc);
                     previousNativeOffset = nativeOffset;
                 }
@@ -700,6 +732,109 @@ namespace Internal.JitInterface
             {
                 _debugLocInfos = debugLocInfos.ToArray();
             }
+        }
+
+        private void SetDebugInformation(IMethodNode methodCodeNodeNeedingCode, MethodIL methodIL)
+        {
+            try
+            {
+                MethodDebugInformation debugInfo = _compilation.GetDebugInfo(methodIL);
+
+                // TODO: NoLineNumbers
+                //if (!_compilation.Options.NoLineNumbers)
+                {
+                    IEnumerable<ILSequencePoint> ilSequencePoints = debugInfo.GetSequencePoints();
+                    if (ilSequencePoints != null)
+                    {
+                        SetSequencePoints(ilSequencePoints);
+                    }
+                }
+
+                IEnumerable<ILLocalVariable> localVariables = debugInfo.GetLocalVariables();
+                if (localVariables != null)
+                {
+                    SetLocalVariables(localVariables);
+                }
+
+                IEnumerable<string> parameters = debugInfo.GetParameterNames();
+                if (parameters != null)
+                {
+                    SetParameterNames(parameters);
+                }
+
+                ArrayBuilder<TypeDesc> variableToTypeDesc = new ArrayBuilder<TypeDesc>();
+
+                var signature = MethodBeingCompiled.Signature;
+                if (!signature.IsStatic)
+                {
+                    TypeDesc type = MethodBeingCompiled.OwningType;
+
+                    // This pointer for value types is a byref
+                    if (MethodBeingCompiled.OwningType.IsValueType)
+                        type = type.MakeByRefType();
+
+                    variableToTypeDesc.Add(type);
+                }
+
+                for (int i = 0; i < signature.Length; ++i)
+                {
+                    TypeDesc type = signature[i];
+                    variableToTypeDesc.Add(type);
+                }
+                var locals = methodIL.GetLocals();
+                for (int i = 0; i < locals.Length; ++i)
+                {
+                    TypeDesc type = locals[i].Type;
+                    variableToTypeDesc.Add(type);
+                }
+                _variableToTypeDesc = variableToTypeDesc.ToArray();
+            }
+            catch (Exception e)
+            {
+                // Debug info not successfully loaded.
+                Log.WriteLine(e.Message + " (" + methodCodeNodeNeedingCode.ToString() + ")");
+            }
+        }
+
+        public void SetSequencePoints(IEnumerable<ILSequencePoint> ilSequencePoints)
+        {
+            Debug.Assert(ilSequencePoints != null);
+            Dictionary<int, SequencePoint> sequencePoints = new Dictionary<int, SequencePoint>();
+
+            foreach (var point in ilSequencePoints)
+            {
+                sequencePoints.Add(point.Offset, new SequencePoint() { Document = point.Document, LineNumber = point.LineNumber });
+            }
+
+            _sequencePoints = sequencePoints;
+        }
+
+        public void SetLocalVariables(IEnumerable<ILLocalVariable> localVariables)
+        {
+            Debug.Assert(localVariables != null);
+            var localSlotToInfoMap = new Dictionary<uint, ILLocalVariable>();
+
+            foreach (var v in localVariables)
+            {
+                localSlotToInfoMap[(uint)v.Slot] = v;
+            }
+
+            _localSlotToInfoMap = localSlotToInfoMap;
+        }
+
+        public void SetParameterNames(IEnumerable<string> parameters)
+        {
+            Debug.Assert(parameters != null);
+            var parameterIndexToNameMap = new Dictionary<uint, string>();
+            uint index = 0;
+
+            foreach (var p in parameters)
+            {
+                parameterIndexToNameMap[index] = p;
+                ++index;
+            }
+
+            _parameterIndexToNameMap = parameterIndexToNameMap;
         }
     }
 }

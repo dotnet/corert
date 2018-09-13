@@ -3,10 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 
-using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -25,6 +23,9 @@ namespace Internal.JitInterface
         private uint OffsetOfDelegateFirstTarget => (uint)(3 * PointerSize); // Delegate::m_functionPointer
 
         private readonly ReadyToRunCodegenCompilation _compilation;
+        private IReadyToRunMethodCodeNode _methodCodeNode;
+        private OffsetMapping[] _debugLocInfos;
+        private NativeVarInfo[] _debugVarInfos;
 
         /// <summary>
         /// Input ECMA module. In multi-file compilation, multiple CorInfoImpl objects are created
@@ -38,6 +39,13 @@ namespace Internal.JitInterface
         {
             _compilation = compilation;
             _tokenContext = tokenContext;
+        }
+
+        public void CompileMethod(IReadyToRunMethodCodeNode methodCodeNodeNeedingCode)
+        {
+            _methodCodeNode = methodCodeNodeNeedingCode;
+
+            CompileMethodInternal(methodCodeNodeNeedingCode);
         }
 
         private void ComputeLookup(ref CORINFO_RESOLVED_TOKEN pResolvedToken, object entity, ReadyToRunHelperId helperId, ref CORINFO_LOOKUP lookup)
@@ -535,12 +543,10 @@ namespace Internal.JitInterface
             if (cVars == 0)
                 return;
 
-            _debugVarInfos = new DebugVarInfo[1];
-            _debugVarInfos[0] = new DebugVarInfo();
-            _debugVarInfos[0].Ranges = new List<NativeVarInfo>();
+            _debugVarInfos = new NativeVarInfo[cVars];
             for (int i = 0; i < cVars; i++)
             {
-                _debugVarInfos[0].Ranges.Add(vars[i]);
+                _debugVarInfos[i] = vars[i];
             }
         }
 
@@ -551,13 +557,10 @@ namespace Internal.JitInterface
         {
             Debug.Assert(_debugLocInfos == null);
 
-            _debugLocInfos = new DebugLocInfo[cMap];
+            _debugLocInfos = new OffsetMapping[cMap];
             for (int i = 0; i < cMap; i++)
             {
-                OffsetMapping nativeToILInfo = pMap[i];
-                NativeLocInfo nativeLocInfo = new NativeLocInfo { nativeOffset = nativeToILInfo.nativeOffset, ilOffset = nativeToILInfo.ilOffset, source = (uint)nativeToILInfo.source };
-                DebugLocInfo loc = new DebugLocInfo(0, null, nativeLocInfo, 0);
-                _debugLocInfos[i] = loc;
+                _debugLocInfos[i] = pMap[i];
             }
         }
     }
