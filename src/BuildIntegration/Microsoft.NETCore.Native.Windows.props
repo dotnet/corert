@@ -40,6 +40,7 @@ See the LICENSE file in the project root for more information.
       <NativeLibrary Condition="$(NativeCodeGen) == '' and $(NativeLib) != ''" Include="$(IlcPath)\sdk\bootstrapperdll.lib" />
       <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)\sdk\$(FullRuntimeName).lib" />
       <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)\sdk\System.Private.TypeLoader.Native.lib" />
+      <NativeLibrary Condition="$(NativeCodeGen) == '' and '$(ExperimentalJitSupport)' == 'true'" Include="$(IlcPath)\sdk\System.Private.Jit.Native.lib" />
       <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)\sdk\bootstrappercpp.lib" />
       <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)\sdk\PortableRuntime.lib" />
       <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)\sdk\bootstrappercpp.lib" />

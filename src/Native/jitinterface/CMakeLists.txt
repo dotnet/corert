@@ -7,15 +7,23 @@ set(NATIVE_SOURCES
     corinfoexception.cpp
 )
 
+set (JIT_SOURCES
+    CodeHeap.cpp
+    JITCodeManager.cpp
+    ../Runtime/coreclr/GCInfoDecoder.cpp
+)
+
 if(WIN32 AND CLR_CMAKE_PLATFORM_ARCH_AMD64)
-    set(NATIVE_SOURCES ${NATIVE_SOURCES}
-        CodeHeap.cpp
-        JITCodeManager.cpp
-        ../Runtime/coreclr/GCInfoDecoder.cpp
-    )
 
     add_definitions(-DGCINFODECODER_NO_EE)
     add_definitions(-DFEATURE_REDHAWK)
+    add_definitions(-DFEATURE_SINGLE_MODULE_RUNTIME)
+
+    add_library(System.Private.Jit.Native
+        STATIC
+        ${NATIVE_SOURCES}
+        ${JIT_SOURCES}
+    )
 endif(WIN32 AND CLR_CMAKE_PLATFORM_ARCH_AMD64)
 
 add_library(jitinterface
@@ -27,4 +35,5 @@ install (TARGETS jitinterface DESTINATION tools)
 if(WIN32)
     target_link_libraries(jitinterface ntdll.lib) 
     install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/jitinterface.pdb DESTINATION tools)
+    install (TARGETS System.Private.Jit.Native DESTINATION sdk)
 endif(WIN32)
