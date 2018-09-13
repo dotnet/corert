@@ -26,15 +26,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private DebugVarInfo[] _debugVarInfos;
         private DebugEHClauseInfo[] _debugEHClauseInfos;
 
-        private readonly MethodEHInfoNode _ehInfoNode;
-
         private ReadyToRunCodegenNodeFactory _delayedNodeFactory;
 
         public MethodWithGCInfo(MethodDesc methodDesc, ModuleToken token)
         {
             _method = methodDesc;
             _token = token;
-            _ehInfoNode = new MethodEHInfoNode(this);
         }
 
         public void SetCode(ObjectData data)
@@ -68,11 +65,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            DependencyListEntry[] dependencies = new DependencyListEntry[GCInfoNodes.Length + 1];
-            dependencies[0] = new DependencyListEntry(_ehInfoNode, "EH info");
+            DependencyListEntry[] dependencies = new DependencyListEntry[GCInfoNodes.Length];
             for (int index = 0; index < GCInfoNodes.Length; index++)
             {
-                dependencies[index + 1] = new DependencyListEntry(GCInfoNodes[index], "GC info");
+                dependencies[index] = new DependencyListEntry(GCInfoNodes[index], "GC info");
             }
 
             return new DependencyList(dependencies);

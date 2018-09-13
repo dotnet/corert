@@ -13,62 +13,67 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    class SyntheticSymbolNode : ISymbolDefinitionNode
+    public class EHInfoNode : ObjectNode, ISymbolDefinitionNode
     {
-        MethodWithGCInfo _method;
+        public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
 
-        ObjectNode.ObjectData _ehInfo;
+        public override bool IsShareable => false;
 
-        public SyntheticSymbolNode(MethodWithGCInfo method, ObjectNode.ObjectData ehInfo)
-        {
-            _method = method;
-            _ehInfo = ehInfo;
-        }
+        public override int ClassCode => 354769871;
+
+        public override bool StaticDependenciesAreComputed => true;
 
         public int Offset => 0;
 
-        public bool RepresentsIndirectionCell => false;
+        private ArrayBuilder<byte> _ehInfoBuilder;
 
-        public bool InterestingForDynamicDependencyAnalysis => false;
+        public EHInfoNode()
+        {
+            _ehInfoBuilder = new ArrayBuilder<byte>();
+        }
 
-        public bool HasDynamicDependencies => false;
+        public int AddEHInfo(byte[] ehInfo)
+        {
+            int offset = _ehInfoBuilder.Count;
+            _ehInfoBuilder.Append(ehInfo);
+            return offset;
+        }
 
-        public bool HasConditionalStaticDependencies => false;
-
-        public bool StaticDependenciesAreComputed => true;
-
-        public bool Marked => true;
+        public int Count => _ehInfoBuilder.Count;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("SyntheticSymbolNode->");
-            _method.AppendMangledName(nameMangler, sb);
+            // EH info node is a singleton in the R2R PE file
+            sb.Append("EHInfoNode");
         }
 
-        public IEnumerable<DependencyNodeCore<NodeFactory>.DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            foreach (Relocation reloc in _ehInfo.Relocs)
-            {
-                yield return new DependencyNodeCore<NodeFactory>.DependencyListEntry(reloc.Target, "EHInfo reloc");
-            }
+            return new ObjectData(_ehInfoBuilder.ToArray(), Array.Empty<Relocation>(), alignment: 1, definedSymbols: new ISymbolDefinitionNode[] { this });
         }
 
-        public IEnumerable<DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
-        public IEnumerable<DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry> SearchDynamicDependencies(
-            List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
+        protected override string GetName(NodeFactory context)
+        {
+            Utf8StringBuilder sb = new Utf8StringBuilder();
+            AppendMangledName(context.NameMangler, sb);
+            return sb.ToString();
+        }
     }
 
-    public class ExceptionInfoLookupTableNode : HeaderTableNode, IEnumerable<ObjectNode.ObjectData>
+    public class ExceptionInfoLookupTableNode : HeaderTableNode
     {
         private List<MethodWithGCInfo> _methodNodes;
-        private List<ObjectData> _ehInfoToEmit;
+        private List<int> _ehInfoOffsets;
 
         private readonly NodeFactory _nodeFactory;
+
+        private readonly EHInfoNode _ehInfoNode;
 
         public ExceptionInfoLookupTableNode(NodeFactory nodeFactory)
             : base(nodeFactory.Target)
         {
             _nodeFactory = nodeFactory;
+            _ehInfoNode = new EHInfoNode();
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -76,12 +81,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append(nameMangler.CompilationUnitPrefix);
             sb.Append("__ReadyToRunExceptionInfoLookupTable@");
             sb.Append(Offset.ToString());
-        }
-
-        public IEnumerator<ObjectNode.ObjectData> EnumerateEHInfo()
-        {
-            LayoutMethodsWithEHInfo();
-            return _ehInfoToEmit.GetEnumerator();
         }
 
         internal void LayoutMethodsWithEHInfo()
@@ -93,7 +92,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             _methodNodes = new List<MethodWithGCInfo>();
-            _ehInfoToEmit = new List<ObjectData>();
+            _ehInfoOffsets = new List<int>();
 
             foreach (MethodDesc method in _nodeFactory.MetadataManager.GetCompiledMethods())
             {
@@ -108,20 +107,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 ObjectData ehInfo = methodCodeNode.EHInfo;
                 if (ehInfo != null && ehInfo.Data.Length != 0)
                 {
-                    if (ehInfo.DefinedSymbols == null || ehInfo.DefinedSymbols.Length == 0)
-                    {
-                        // Emit synthetic symbol to represent the EH info node
-                        SyntheticSymbolNode symbol = new SyntheticSymbolNode(methodCodeNode, ehInfo);
-
-                        ehInfo = new ObjectData(
-                            ehInfo.Data,
-                            ehInfo.Relocs,
-                            ehInfo.Alignment,
-                            new ISymbolDefinitionNode[] { symbol });
-                    }
-
                     _methodNodes.Add(methodCodeNode);
-                    _ehInfoToEmit.Add(ehInfo);
+                    _ehInfoOffsets.Add(_ehInfoNode.AddEHInfo(ehInfo.Data));
                 }
             }
         }
@@ -147,34 +134,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             for (int index = 0; index < _methodNodes.Count; index++)
             {
                 exceptionInfoLookupBuilder.EmitReloc(_methodNodes[index], RelocType.IMAGE_REL_BASED_ADDR32NB);
-                exceptionInfoLookupBuilder.EmitReloc(_ehInfoToEmit[index].DefinedSymbols[0], RelocType.IMAGE_REL_BASED_ADDR32NB);
+                exceptionInfoLookupBuilder.EmitReloc(_ehInfoNode, RelocType.IMAGE_REL_BASED_ADDR32NB, _ehInfoOffsets[index]);
             }
 
             // Sentinel record - method RVA = -1, EH info offset = total EH info size
             exceptionInfoLookupBuilder.EmitUInt(~0u);
-            if (_ehInfoToEmit.Count != 0)
-            {
-                ObjectData lastEhInfo = _ehInfoToEmit[_ehInfoToEmit.Count - 1];
-                exceptionInfoLookupBuilder.EmitReloc(lastEhInfo.DefinedSymbols[0], RelocType.IMAGE_REL_BASED_ADDR32NB, lastEhInfo.Data.Length);
-            }
-            else
-            {
-                exceptionInfoLookupBuilder.EmitUInt(0);
-            }
+            exceptionInfoLookupBuilder.EmitUInt((uint)_ehInfoNode.Count);
 
             return exceptionInfoLookupBuilder.ToObjectData();
         }
 
-        public IEnumerator<ObjectData> GetEnumerator()
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            LayoutMethodsWithEHInfo();
-            return _ehInfoToEmit.GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            LayoutMethodsWithEHInfo();
-            return _ehInfoToEmit.GetEnumerator();
+            return new DependencyNodeCore<NodeFactory>.DependencyList(new DependencyListEntry[] { new DependencyListEntry(_ehInfoNode, "EH info array") });
         }
 
         public override int ClassCode => -855231428;

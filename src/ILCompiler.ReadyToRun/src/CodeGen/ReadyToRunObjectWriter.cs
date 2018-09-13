@@ -107,16 +107,6 @@ namespace ILCompiler.DependencyAnalysis
                     }
 
                     EmitObjectData(nodeContents, name, node.Section, mapFile);
-
-                    if (depNode is IEnumerable<ObjectNode.ObjectData> objectDataSource)
-                    {
-                        int index = 0;
-                        foreach (ObjectData data in objectDataSource)
-                        {
-                            EmitObjectData(data, name + "@" + index.ToString(), node.Section, mapFile);
-                            index++;
-                        }
-                    }
                 }
 
                 _sectionBuilder.SetReadyToRunHeaderTable(_nodeFactory.Header, _nodeFactory.Header.GetData(_nodeFactory).Data.Length);
