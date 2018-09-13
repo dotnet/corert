@@ -15,6 +15,9 @@ internal static class Program
     private static int threadStaticInt;
     private static unsafe int Main(string[] args)
     {
+        var g = new Gen<char>();
+        g.TestTypeOf();
+
         Add(1, 2);
         int tempInt = 0;
         int tempInt2 = 0;
@@ -96,8 +99,8 @@ internal static class Program
             PrintLine(boxedInt.ToString());
         }
         
-        var boxedStruct = (object)new BoxStubTest { Value = "Boxed Stub Test: Ok." };
-        PrintLine(boxedStruct.ToString());
+//        var boxedStruct = (object)new BoxStubTest { Value = "Boxed Stub Test: Ok." };
+//        PrintLine(boxedStruct.ToString());
 
         int subResult = tempInt - 1;
         if (subResult == 8)
@@ -185,25 +188,25 @@ internal static class Program
         Action virtualDelegate = tempObj.VirtualDelegateTarget;
         virtualDelegate();
 
-        var arrayTest = new BoxStubTest[] { new BoxStubTest { Value = "Hello" }, new BoxStubTest { Value = "Array" }, new BoxStubTest { Value = "Test" } };
-        foreach(var element in arrayTest)
-            PrintLine(element.Value);
+//        var arrayTest = new BoxStubTest[] { new BoxStubTest { Value = "Hello" }, new BoxStubTest { Value = "Array" }, new BoxStubTest { Value = "Test" } };
+//        foreach(var element in arrayTest)
+//            PrintLine(element.Value);
 
-        arrayTest[1].Value = "Array load/store test: Ok.";
-        PrintLine(arrayTest[1].Value);
-
-        int ii = 0;
-        arrayTest[ii++].Value = "dup ref test: Ok.";
-        PrintLine(arrayTest[0].Value);
-        
-        var largeArrayTest = new long[] { Int64.MaxValue, 0, Int64.MinValue, 0 };
-        if(largeArrayTest[0] == Int64.MaxValue &&
-            largeArrayTest[1] == 0 &&
-            largeArrayTest[2] == Int64.MinValue &&
-            largeArrayTest[3] == 0)
-        {
-            PrintLine("Large array load/store test: Ok.");
-        }
+//        arrayTest[1].Value = "Array load/store test: Ok.";
+//        PrintLine(arrayTest[1].Value);
+//
+//        int ii = 0;
+//        arrayTest[ii++].Value = "dup ref test: Ok.";
+//        PrintLine(arrayTest[0].Value);
+//        
+//        var largeArrayTest = new long[] { Int64.MaxValue, 0, Int64.MinValue, 0 };
+//        if(largeArrayTest[0] == Int64.MaxValue &&
+//            largeArrayTest[1] == 0 &&
+//            largeArrayTest[2] == Int64.MinValue &&
+//            largeArrayTest[3] == 0)
+//        {
+//            PrintLine("Large array load/store test: Ok.");
+//        }
 
         var smallArrayTest = new long[] { Int16.MaxValue, 0, Int16.MinValue, 0 };
         if(smallArrayTest[0] == Int16.MaxValue &&
@@ -239,14 +242,14 @@ internal static class Program
             PrintLine("Type casting with isinst & castclass to interface test: Ok.");
         }
 
-        object arrayCastingTest = new BoxStubTest[] { new BoxStubTest { Value = "Array" }, new BoxStubTest { Value = "Cast" }, new BoxStubTest { Value = "Test" } };
-        PrintLine(((BoxStubTest[])arrayCastingTest)[0].Value);
-        PrintLine(((BoxStubTest[])arrayCastingTest)[1].Value);
-        PrintLine(((BoxStubTest[])arrayCastingTest)[2].Value);
-        if (!(arrayCastingTest is CastingTestClass[]))
-        {   
-            PrintLine("Type casting with isinst & castclass to array test: Ok.");
-        }
+//        object arrayCastingTest = new BoxStubTest[] { new BoxStubTest { Value = "Array" }, new BoxStubTest { Value = "Cast" }, new BoxStubTest { Value = "Test" } };
+//        PrintLine(((BoxStubTest[])arrayCastingTest)[0].Value);
+//        PrintLine(((BoxStubTest[])arrayCastingTest)[1].Value);
+//        PrintLine(((BoxStubTest[])arrayCastingTest)[2].Value);
+//        if (!(arrayCastingTest is CastingTestClass[]))
+//        {   
+//            PrintLine("Type casting with isinst & castclass to array test: Ok.");
+//        }
 
         ldindTest();
 
@@ -500,21 +503,21 @@ public struct TwoByteStr
     public byte second;
 }
 
-public struct BoxStubTest
-{
-    public string Value;
-    public override string ToString()
-    {
-        return Value;
-    }
-
-    public string GetValue()
-    {
-        Program.PrintLine("BoxStubTest.GetValue called");
-        Program.PrintLine(Value);
-        return Value;
-    }
-}
+//public struct BoxStubTest
+//{
+//    public string Value;
+//    public override string ToString()
+//    {
+//        return Value;
+//    }
+//
+//    public string GetValue()
+//    {
+//        Program.PrintLine("BoxStubTest.GetValue called");
+//        Program.PrintLine(Value);
+//        return Value;
+//    }
+//}
 
 public class TestClass
 {
@@ -644,5 +647,13 @@ public struct ItfStruct : ITestItf
     public int GetValue()
     {
         return 4;
+    }
+}
+
+public class Gen<T>
+{
+    internal void TestTypeOf()
+    {
+        var t = typeof(T);
     }
 }
