@@ -14,6 +14,24 @@ using System.Runtime.InteropServices;
 
 namespace Internal.JitInterface
 {
+    public enum VarLocType : uint
+    {
+        VLT_REG,        // variable is in a register
+        VLT_REG_BYREF,  // address of the variable is in a register
+        VLT_REG_FP,     // variable is in an fp register
+        VLT_STK,        // variable is on the stack (memory addressed relative to the frame-pointer)
+        VLT_STK_BYREF,  // address of the variable is on the stack (memory addressed relative to the frame-pointer)
+        VLT_REG_REG,    // variable lives in two registers
+        VLT_REG_STK,    // variable lives partly in a register and partly on the stack
+        VLT_STK_REG,    // reverse of VLT_REG_STK
+        VLT_STK2,       // variable lives in two slots on the stack
+        VLT_FPSTK,      // variable lives on the floating-point stack
+        VLT_FIXED_VA,   // variable is a fixed argument in a varargs function (relative to VARARGS_HANDLE)
+
+        VLT_COUNT,
+        VLT_INVALID
+    };
+
     public struct NativeVarInfo
     {
         public uint startOffset;
@@ -30,6 +48,8 @@ namespace Internal.JitInterface
         public int B;
         public int C;
         public int D;
+
+        public VarLocType LocationType => (VarLocType)(A.ToInt64() & 0xFFFFFFFF);
 
         /*
            Changes to the following types may require revisiting the above layout.
