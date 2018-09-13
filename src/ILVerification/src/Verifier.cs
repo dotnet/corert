@@ -71,6 +71,41 @@ namespace ILVerify
             }
         }
 
+        public IEnumerable<VerificationResult> VerifyInterface(PEReader peReader, TypeDefinitionHandle typeHandle)
+        {
+            if (peReader == null)
+            {
+                throw new ArgumentNullException(nameof(peReader));
+            }
+
+            if (typeHandle.IsNil)
+            {
+                throw new ArgumentNullException(nameof(typeHandle));
+            }
+
+            if (_typeSystemContext.SystemModule == null)
+            {
+                ThrowMissingSystemModule();
+            }
+
+            IEnumerable<VerificationResult> results;
+            try
+            {
+                EcmaModule module = GetModule(peReader);
+                TypeDefinition typeDef = peReader.GetMetadataReader().GetTypeDefinition(typeHandle);
+                results = VerifyInterface(module, typeDef);
+            }
+            catch (VerifierException e)
+            {
+                results = new[] { new VerificationResult() { Message = e.Message } };
+            }
+
+            foreach (var result in results)
+            {
+                yield return result;
+            }
+        }
+
         public IEnumerable<VerificationResult> Verify(PEReader peReader, TypeDefinitionHandle typeHandle)
         {
             if (peReader == null)
@@ -139,28 +174,29 @@ namespace ILVerify
                 yield return result;
             }
         }
-
-        private IEnumerable<VerificationResult> VerifyMethods(EcmaModule module, IEnumerable<MethodDefinitionHandle> methodHandles)
+        private IEnumerable<VerificationResult> VerifyInterface(EcmaModule module, TypeDefinition td)
         {
-            foreach (TypeDefinitionHandle tdh in module.MetadataReader.TypeDefinitions)
+            var builder = new ArrayBuilder<VerificationResult>();
+
+            foreach (InterfaceImplementationHandle ii in td.GetInterfaceImplementations())
             {
-                TypeDefinition td = module.MetadataReader.GetTypeDefinition(tdh);
-                var tmd = td.GetMethods();
-                foreach (InterfaceImplementationHandle ii in td.GetInterfaceImplementations())
+                InterfaceImplementation interfaceImplementation = module.MetadataReader.GetInterfaceImplementation(ii);
+                DefType interfaceType = module.GetType(interfaceImplementation.Interface) as DefType;
+                if (interfaceType == null)
+                    //ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, interfaceImplementation.Interface);
+                    throw new Exception("Load exception");
+
+                foreach (MethodDesc md in interfaceType.GetAllMethods())
                 {
-                    InterfaceImplementation interfaceImplementation = module.MetadataReader.GetInterfaceImplementation(ii);
-                    DefType interfaceType = module.GetType(interfaceImplementation.Interface) as DefType;
-                    if (interfaceType == null)
-                        //ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, interfaceImplementation.Interface);
-                        throw new Exception("Load exception");
 
-                    foreach (MethodDesc md in interfaceType.GetAllMethods())
-                    {
-
-                    }
                 }
             }
 
+            return builder.ToArray();
+        }
+
+        private IEnumerable<VerificationResult> VerifyMethods(EcmaModule module, IEnumerable<MethodDefinitionHandle> methodHandles)
+        {
             foreach (var methodHandle in methodHandles)
             {
                 var method = (EcmaMethod)module.GetMethod(methodHandle);

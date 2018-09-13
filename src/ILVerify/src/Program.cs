@@ -248,7 +248,7 @@ namespace ILVerify
                 // get fully qualified method name
                 var methodName = GetQualifiedMethodName(metadataReader, methodHandle);
 
-                bool verifying = ShouldVerifyMethod(methodName);
+                bool verifying = ShouldVerify(methodName);
                 if (_verbose)
                 {
                     Write(verifying ? "Verifying " : "Skipping ");
@@ -270,6 +270,28 @@ namespace ILVerify
                 methodCounter++;
             }
 
+            foreach (var typeHandle in metadataReader.TypeDefinitions)
+            {
+                // get fully qualified type name
+                var className = GetQualifiedClassName(metadataReader, typeHandle);
+                bool verifying = ShouldVerify(className);
+                if (_verbose)
+                {
+                    Write(verifying ? "Verifying " : "Skipping ");
+                    WriteLine(className);
+                }
+
+                if (verifying)
+                {
+                    var results = _verifier.VerifyInterface(peReader, typeHandle);
+                    foreach (var result in results)
+                    {
+                        PrintResult(result, module, path);
+                        numErrors++;
+                    }
+                }
+            }
+
             if (numErrors > 0)
                 WriteLine(numErrors + " Error(s) Verifying " + path);
             else
@@ -280,6 +302,26 @@ namespace ILVerify
                 WriteLine($"Methods found: {methodCounter}");
                 WriteLine($"Methods verified: {verifiedMethodCounter}");
             }
+        }
+
+        /// <summary>
+        /// This method returns the fully qualified class name.
+        /// </summary>
+        private string GetQualifiedClassName(MetadataReader metadataReader, TypeDefinitionHandle typeHandle)
+        {
+            var typeDef = metadataReader.GetTypeDefinition(typeHandle);
+
+            var typeName = metadataReader.GetString(typeDef.Name);
+            var namespaceName = metadataReader.GetString(typeDef.Namespace);
+            var assemblyName = metadataReader.GetString(metadataReader.IsAssembly ? metadataReader.GetAssemblyDefinition().Name : metadataReader.GetModuleDefinition().Name);
+
+            StringBuilder builder = new StringBuilder();
+            builder.Append($"[{assemblyName}]");
+            if (!string.IsNullOrEmpty(namespaceName))
+                builder.Append($"{namespaceName}.");
+            builder.Append($"{typeName}");
+
+            return builder.ToString();
         }
 
         /// <summary>
@@ -306,7 +348,7 @@ namespace ILVerify
             return builder.ToString();
         }
 
-        private bool ShouldVerifyMethod(string methodName)
+        private bool ShouldVerify(string methodName)
         {
             if (_includePatterns.Count > 0 && !_includePatterns.Any(p => p.IsMatch(methodName)))
             {
