@@ -42,6 +42,12 @@ namespace Internal.JitInterface
             ARM = 0x01c4,
         }
 
+#if SUPPORT_JIT
+        private const string JitSupportLibrary = "*";
+#else
+        private const string JitSupportLibrary = "jitinterface";
+#endif
+
         private IntPtr _jit;
 
         private IntPtr _unmanagedCallbacks; // array of pointers to JIT-EE interface callbacks
@@ -55,7 +61,7 @@ namespace Internal.JitInterface
         [DllImport("clrjitilc", CallingConvention=CallingConvention.StdCall)]
         private extern static IntPtr getJit();
 
-        [DllImport("jitinterface")]
+        [DllImport(JitSupportLibrary)]
         private extern static IntPtr GetJitHost(IntPtr configProvider);
 
         //
@@ -68,15 +74,15 @@ namespace Internal.JitInterface
             return _this;
         }
 
-        [DllImport("jitinterface")]
+        [DllImport(JitSupportLibrary)]
         private extern static CorJitResult JitCompileMethod(out IntPtr exception, 
             IntPtr jit, IntPtr thisHandle, IntPtr callbacks,
             ref CORINFO_METHOD_INFO info, uint flags, out IntPtr nativeEntry, out uint codeSize);
 
-        [DllImport("jitinterface")]
+        [DllImport(JitSupportLibrary)]
         private extern static uint GetMaxIntrinsicSIMDVectorLength(IntPtr jit, CORJIT_FLAGS* flags);
 
-        [DllImport("jitinterface")]
+        [DllImport(JitSupportLibrary)]
         private extern static IntPtr AllocException([MarshalAs(UnmanagedType.LPWStr)]string message, int messageLength);
 
         private IntPtr AllocException(Exception ex)
@@ -93,10 +99,10 @@ namespace Internal.JitInterface
             return nativeException;
         }
 
-        [DllImport("jitinterface")]
+        [DllImport(JitSupportLibrary)]
         private extern static void FreeException(IntPtr obj);
 
-        [DllImport("jitinterface")]
+        [DllImport(JitSupportLibrary)]
         private extern static char* GetExceptionMessage(IntPtr obj);
 
         private Compilation _compilation;
