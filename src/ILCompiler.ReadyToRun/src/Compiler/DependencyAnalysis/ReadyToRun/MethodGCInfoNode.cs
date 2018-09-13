@@ -8,23 +8,16 @@ using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class MethodGCInfoNode : EmbeddedObjectNode, ISymbolDefinitionNode
+    public class MethodGCInfoNode : EmbeddedObjectNode
     {
         private readonly MethodWithGCInfo _methodNode;
 
-        private readonly int _frameInfoIndex;
-
-        public MethodGCInfoNode(MethodWithGCInfo methodNode, int frameInfoIndex)
+        public MethodGCInfoNode(MethodWithGCInfo methodNode)
         {
             _methodNode = methodNode;
-            _frameInfoIndex = frameInfoIndex;
         }
 
         public override bool StaticDependenciesAreComputed => true;
-
-        int ISymbolDefinitionNode.Offset => OffsetFromBeginningOfArray;
-
-        int ISymbolNode.Offset => 0;
 
         public override int ClassCode => 892356612;
 
@@ -34,43 +27,70 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _methodNode.AppendMangledName(nameMangler, sb);
         }
 
+        protected override void OnMarked(NodeFactory factory)
+        {
+            ((ReadyToRunCodegenNodeFactory)factory).RuntimeFunctionsGCInfo.AddEmbeddedObject(this);
+        }
+
+        public int[] CalculateFuncletOffsets()
+        {
+            int[] offsets = new int[_methodNode.FrameInfos.Length];
+            int offset = OffsetFromBeginningOfArray;
+            for (int frameInfoIndex = 0; frameInfoIndex < _methodNode.FrameInfos.Length; frameInfoIndex++)
+            {
+                offsets[frameInfoIndex] = offset;
+                offset += _methodNode.FrameInfos[frameInfoIndex].BlobData.Length;
+                offset += (-offset & 3); // 4-alignment for the personality routine
+                offset += sizeof(uint); // personality routine
+                if (frameInfoIndex == 0 && _methodNode.GCInfo != null)
+                {
+                    offset += _methodNode.GCInfo.Length;
+                    offset += (-offset & 3); // 4-alignment after GC info in 1st funclet
+                }
+            }
+            return offsets;
+        }
+
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
         {
             if (relocsOnly)
             {
                 return;
             }
-            byte[] unwindInfo = _methodNode.FrameInfos[_frameInfoIndex].BlobData;
-
-            if (factory.Target.Architecture == Internal.TypeSystem.TargetArchitecture.X64)
+            for (int frameInfoIndex = 0; frameInfoIndex < _methodNode.FrameInfos.Length; frameInfoIndex++)
             {
-                // On Amd64, patch the first byte of the unwind info by setting the flags to EHANDLER | UHANDLER
-                // as that's what CoreCLR does (zapcode.cpp, ZapUnwindData::Save).
-                const byte UNW_FLAG_EHANDLER = 1;
-                const byte UNW_FLAG_UHANDLER = 2;
-                const byte FlagsShift = 3;
+                byte[] unwindInfo = _methodNode.FrameInfos[frameInfoIndex].BlobData;
 
-                unwindInfo[0] |= (byte)((UNW_FLAG_EHANDLER | UNW_FLAG_UHANDLER) << FlagsShift);
-            }
+                if (factory.Target.Architecture == Internal.TypeSystem.TargetArchitecture.X64)
+                {
+                    // On Amd64, patch the first byte of the unwind info by setting the flags to EHANDLER | UHANDLER
+                    // as that's what CoreCLR does (zapcode.cpp, ZapUnwindData::Save).
+                    const byte UNW_FLAG_EHANDLER = 1;
+                    const byte UNW_FLAG_UHANDLER = 2;
+                    const byte FlagsShift = 3;
 
-            dataBuilder.EmitBytes(unwindInfo);
+                    unwindInfo[0] |= (byte)((UNW_FLAG_EHANDLER | UNW_FLAG_UHANDLER) << FlagsShift);
+                }
 
-            // Personality routine RVA must be 4-aligned
-            int align4Pad = -unwindInfo.Length & 3;
-            dataBuilder.EmitZeros(align4Pad);
+                dataBuilder.EmitBytes(unwindInfo);
 
-            bool isFilterFunclet = (_methodNode.FrameInfos[_frameInfoIndex].Flags & FrameInfoFlags.Filter) != 0;
-            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
-            ISymbolNode personalityRoutine = (isFilterFunclet ? r2rFactory.FilterFuncletPersonalityRoutine : r2rFactory.PersonalityRoutine);
-            dataBuilder.EmitReloc(personalityRoutine, RelocType.IMAGE_REL_BASED_ADDR32NB);
-
-            if (_frameInfoIndex == 0 && _methodNode.GCInfo != null)
-            {
-                dataBuilder.EmitBytes(_methodNode.GCInfo);
-
-                // Maintain 4-alignment for the next unwind / GC info block
-                align4Pad = -_methodNode.GCInfo.Length & 3;
+                // Personality routine RVA must be 4-aligned
+                int align4Pad = -unwindInfo.Length & 3;
                 dataBuilder.EmitZeros(align4Pad);
+
+                bool isFilterFunclet = (_methodNode.FrameInfos[frameInfoIndex].Flags & FrameInfoFlags.Filter) != 0;
+                ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
+                ISymbolNode personalityRoutine = (isFilterFunclet ? r2rFactory.FilterFuncletPersonalityRoutine : r2rFactory.PersonalityRoutine);
+                dataBuilder.EmitReloc(personalityRoutine, RelocType.IMAGE_REL_BASED_ADDR32NB);
+
+                if (frameInfoIndex == 0 && _methodNode.GCInfo != null)
+                {
+                    dataBuilder.EmitBytes(_methodNode.GCInfo);
+
+                    // Maintain 4-alignment for the next unwind / GC info block
+                    align4Pad = -_methodNode.GCInfo.Length & 3;
+                    dataBuilder.EmitZeros(align4Pad);
+                }
             }
         }
 

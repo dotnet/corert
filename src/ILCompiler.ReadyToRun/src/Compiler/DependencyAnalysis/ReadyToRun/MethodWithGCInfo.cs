@@ -13,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class MethodWithGCInfo : ObjectNode, IMethodCodeNode, IMethodBodyNode
     {
-        public MethodGCInfoNode[] GCInfoNodes;
+        public MethodGCInfoNode GCInfoNode;
 
         private readonly MethodDesc _method;
         private readonly ModuleToken _token;
@@ -26,10 +26,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private DebugVarInfo[] _debugVarInfos;
         private DebugEHClauseInfo[] _debugEHClauseInfos;
 
-        private ReadyToRunCodegenNodeFactory _delayedNodeFactory;
-
         public MethodWithGCInfo(MethodDesc methodDesc, ModuleToken token)
         {
+            GCInfoNode = new MethodGCInfoNode(this);
             _method = methodDesc;
             _token = token;
         }
@@ -42,22 +41,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public MethodDesc Method => _method;
 
-        protected override void OnMarked(NodeFactory factory)
-        {
-            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
-            if (GCInfoNodes != null)
-            {
-                foreach (MethodGCInfoNode gcInfoNode in GCInfoNodes)
-                {
-                    r2rFactory.RuntimeFunctionsGCInfo.AddEmbeddedObject(gcInfoNode);
-                }
-            }
-            else
-            {
-                _delayedNodeFactory = r2rFactory;
-            }
-        }
-
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
             return _methodCode;
@@ -65,13 +48,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            DependencyListEntry[] dependencies = new DependencyListEntry[GCInfoNodes.Length];
-            for (int index = 0; index < GCInfoNodes.Length; index++)
-            {
-                dependencies[index] = new DependencyListEntry(GCInfoNodes[index], "GC info");
-            }
-
-            return new DependencyList(dependencies);
+            return new DependencyList(new DependencyListEntry[] { new DependencyListEntry(GCInfoNode, "Unwind & GC info") });
         }
 
         public override bool StaticDependenciesAreComputed => _methodCode != null;
@@ -114,19 +91,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             Debug.Assert(_frameInfos == null);
             _frameInfos = frameInfos;
-
-            GCInfoNodes = new MethodGCInfoNode[_frameInfos.Length];
-            for (int index = 0; index < _frameInfos.Length; index++)
-            {
-                MethodGCInfoNode gcInfoNode = new MethodGCInfoNode(this, index);
-                GCInfoNodes[index] = gcInfoNode;
-                if (_delayedNodeFactory != null)
-                {
-                    _delayedNodeFactory.RuntimeFunctionsGCInfo.AddEmbeddedObject(gcInfoNode);
-                }
-            }
-
-            _delayedNodeFactory = null;
         }
 
         public void InitializeGCInfo(byte[] gcInfo)

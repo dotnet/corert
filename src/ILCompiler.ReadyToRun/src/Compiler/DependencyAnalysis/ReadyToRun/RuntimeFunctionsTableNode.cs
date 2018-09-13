@@ -76,6 +76,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 LayoutRuntimeFunctions();
 
             ObjectDataBuilder runtimeFunctionsBuilder = new ObjectDataBuilder(factory, relocsOnly);
+            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
 
             // Add the symbol representing this object node
             runtimeFunctionsBuilder.AddSymbol(this);
@@ -83,6 +84,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             foreach (MethodWithGCInfo method in _methodNodes)
             {
                 int methodOffset = runtimeFunctionsBuilder.CountBytes;
+                int[] funcletOffsets = method.GCInfoNode.CalculateFuncletOffsets();
 
                 for (int frameIndex = 0; frameIndex < method.FrameInfos.Length; frameIndex++)
                 {
@@ -95,7 +97,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         // On Amd64, the 2nd word contains the EndOffset of the runtime function
                         runtimeFunctionsBuilder.EmitReloc(method, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: frameInfo.EndOffset);
                     }
-                    runtimeFunctionsBuilder.EmitReloc(method.GCInfoNodes[frameIndex], RelocType.IMAGE_REL_BASED_ADDR32NB);
+                    runtimeFunctionsBuilder.EmitReloc(r2rFactory.RuntimeFunctionsGCInfo.StartSymbol, RelocType.IMAGE_REL_BASED_ADDR32NB, funcletOffsets[frameIndex]);
                 }
             }
 
