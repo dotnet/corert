@@ -72,7 +72,7 @@ namespace ILCompiler
 
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);
 
-            List<CorJitFlag> corJitFlags = new List<CorJitFlag>();
+            List<CorJitFlag> corJitFlags = new List<CorJitFlag> { CorJitFlag.CORJIT_FLAG_DEBUG_INFO };
 
             switch (_optimizationMode)
             {

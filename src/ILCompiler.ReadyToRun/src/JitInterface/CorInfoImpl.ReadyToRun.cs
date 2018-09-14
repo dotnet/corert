@@ -5,7 +5,6 @@
 using System;
 using System.Diagnostics;
 
-using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -24,6 +23,9 @@ namespace Internal.JitInterface
         private uint OffsetOfDelegateFirstTarget => (uint)(3 * PointerSize); // Delegate::m_functionPointer
 
         private readonly ReadyToRunCodegenCompilation _compilation;
+        private IReadyToRunMethodCodeNode _methodCodeNode;
+        private OffsetMapping[] _debugLocInfos;
+        private NativeVarInfo[] _debugVarInfos;
 
         /// <summary>
         /// Input ECMA module. In multi-file compilation, multiple CorInfoImpl objects are created
@@ -37,6 +39,13 @@ namespace Internal.JitInterface
         {
             _compilation = compilation;
             _tokenContext = tokenContext;
+        }
+
+        public void CompileMethod(IReadyToRunMethodCodeNode methodCodeNodeNeedingCode)
+        {
+            _methodCodeNode = methodCodeNodeNeedingCode;
+
+            CompileMethodInternal(methodCodeNodeNeedingCode);
         }
 
         private void ComputeLookup(ref CORINFO_RESOLVED_TOKEN pResolvedToken, object entity, ReadyToRunHelperId helperId, ref CORINFO_LOOKUP lookup)
@@ -523,5 +532,36 @@ namespace Internal.JitInterface
             return new ObjectNode.ObjectData(ehInfoData, Array.Empty<Relocation>(), alignment: 1, definedSymbols: Array.Empty<ISymbolDefinitionNode>());
         }
 
+        /// <summary>
+        /// Create a NativeVarInfo array; a table from native code range to variable location
+        /// on the stack / in a specific register.
+        /// </summary>
+        private void setVars(CORINFO_METHOD_STRUCT_* ftn, uint cVars, NativeVarInfo* vars)
+        {
+            Debug.Assert(_debugVarInfos == null);
+
+            if (cVars == 0)
+                return;
+
+            _debugVarInfos = new NativeVarInfo[cVars];
+            for (int i = 0; i < cVars; i++)
+            {
+                _debugVarInfos[i] = vars[i];
+            }
+        }
+
+        /// <summary>
+        /// Create a DebugLocInfo array; a table from native offset to IL offset.
+        /// </summary>
+        private void setBoundaries(CORINFO_METHOD_STRUCT_* ftn, uint cMap, OffsetMapping* pMap)
+        {
+            Debug.Assert(_debugLocInfos == null);
+
+            _debugLocInfos = new OffsetMapping[cMap];
+            for (int i = 0; i < cMap; i++)
+            {
+                _debugLocInfos[i] = pMap[i];
+            }
+        }
     }
 }

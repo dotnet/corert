@@ -4,14 +4,15 @@
 
 using System.Diagnostics;
 
-using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.DependencyAnalysis;
 
+using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class MethodWithGCInfo : ObjectNode, IMethodCodeNode, IMethodBodyNode
+    public class MethodWithGCInfo : ObjectNode, IReadyToRunMethodCodeNode, IMethodBodyNode
     {
         public readonly MethodGCInfoNode GCInfoNode;
 
@@ -22,8 +23,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private FrameInfo[] _frameInfos;
         private byte[] _gcInfo;
         private ObjectData _ehInfo;
-        private DebugLocInfo[] _debugLocInfos;
-        private DebugVarInfo[] _debugVarInfos;
+        private OffsetMapping[] _debugLocInfos;
+        private NativeVarInfo[] _debugVarInfos;
         private DebugEHClauseInfo[] _debugEHClauseInfos;
 
         public MethodWithGCInfo(MethodDesc methodDesc, ModuleToken token)
@@ -105,17 +106,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _ehInfo = ehInfo;
         }
 
-        public DebugLocInfo[] DebugLocInfos => _debugLocInfos;
-        public DebugVarInfo[] DebugVarInfos => _debugVarInfos;
+        public OffsetMapping[] DebugLocInfos => _debugLocInfos;
+        public NativeVarInfo[] DebugVarInfos => _debugVarInfos;
         public DebugEHClauseInfo[] DebugEHClauseInfos => _debugEHClauseInfos;
 
-        public void InitializeDebugLocInfos(DebugLocInfo[] debugLocInfos)
+        public void InitializeDebugLocInfos(OffsetMapping[] debugLocInfos)
         {
             Debug.Assert(_debugLocInfos == null);
             _debugLocInfos = debugLocInfos;
         }
 
-        public void InitializeDebugVarInfos(DebugVarInfo[] debugVarInfos)
+        public void InitializeDebugVarInfos(NativeVarInfo[] debugVarInfos)
         {
             Debug.Assert(_debugVarInfos == null);
             _debugVarInfos = debugVarInfos;

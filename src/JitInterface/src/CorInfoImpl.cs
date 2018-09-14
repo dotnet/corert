@@ -130,24 +130,14 @@ namespace Internal.JitInterface
             }
         }
 
-        private struct SequencePoint
-        {
-            public string Document;
-            public int LineNumber;
-        }
-
-        private IMethodCodeNode _methodCodeNode;
-
         private CORINFO_MODULE_STRUCT_* _methodScope; // Needed to resolve CORINFO_EH_CLAUSE tokens
 
         private bool _isFallbackBodyCompilation; // True if we're compiling a fallback method body after compiling the real body failed
 
-        public void CompileMethod(IMethodCodeNode methodCodeNodeNeedingCode, MethodIL methodIL = null)
+        private void CompileMethodInternal(IMethodNode methodCodeNodeNeedingCode, MethodIL methodIL = null)
         {
             try
             {
-                _methodCodeNode = methodCodeNodeNeedingCode;
-
                 _isFallbackBodyCompilation = methodIL != null;
 
                 CORINFO_METHOD_INFO methodInfo;
@@ -160,7 +150,10 @@ namespace Internal.JitInterface
                 }
 
                 _methodScope = methodInfo.scope;
+
+#if !READYTORUN
                 SetDebugInformation(methodCodeNodeNeedingCode, methodIL);
+#endif
 
                 CorInfoImpl _this = this;
 
@@ -217,68 +210,6 @@ namespace Internal.JitInterface
             finally
             {
                 CompileMethodCleanup();
-            }
-        }
-
-        private void SetDebugInformation(IMethodCodeNode methodCodeNodeNeedingCode, MethodIL methodIL)
-        {
-            try
-            {
-                MethodDebugInformation debugInfo = _compilation.GetDebugInfo(methodIL);
-
-                // TODO: NoLineNumbers
-                //if (!_compilation.Options.NoLineNumbers)
-                {
-                    IEnumerable<ILSequencePoint> ilSequencePoints = debugInfo.GetSequencePoints();
-                    if (ilSequencePoints != null)
-                    {
-                        SetSequencePoints(ilSequencePoints);
-                    }
-                }
-
-                IEnumerable<ILLocalVariable> localVariables = debugInfo.GetLocalVariables();
-                if (localVariables != null)
-                {
-                    SetLocalVariables(localVariables);
-                }
-
-                IEnumerable<string> parameters = debugInfo.GetParameterNames();
-                if (parameters != null)
-                {
-                    SetParameterNames(parameters);
-                }
-
-                ArrayBuilder<TypeDesc> variableToTypeDesc = new ArrayBuilder<TypeDesc>();
-
-                var signature = MethodBeingCompiled.Signature;
-                if (!signature.IsStatic)
-                {
-                    TypeDesc type = MethodBeingCompiled.OwningType;
-
-                    // This pointer for value types is a byref
-                    if (MethodBeingCompiled.OwningType.IsValueType)
-                        type = type.MakeByRefType();
-
-                    variableToTypeDesc.Add(type);
-                }
-
-                for (int i = 0; i < signature.Length; ++i)
-                {
-                    TypeDesc type = signature[i];
-                    variableToTypeDesc.Add(type);
-                }
-                var locals = methodIL.GetLocals();
-                for (int i = 0; i < locals.Length; ++i)
-                {
-                    TypeDesc type = locals[i].Type;
-                    variableToTypeDesc.Add(type);
-                }
-                _variableToTypeDesc = variableToTypeDesc.ToArray();
-            }
-            catch (Exception e)
-            {
-                // Debug info not successfully loaded.
-                Log.WriteLine(e.Message + " (" + methodCodeNodeNeedingCode.ToString() + ")");
             }
         }
 
@@ -376,10 +307,12 @@ namespace Internal.JitInterface
             _gcInfo = null;
             _ehClauses = null;
 
+#if !READYTORUN
             _sequencePoints = null;
             _debugLocInfos = null;
             _debugVarInfos = null;
             _variableToTypeDesc = null;
+#endif
 
             _lastException = null;
         }
@@ -1976,114 +1909,12 @@ namespace Internal.JitInterface
             return HandleToObject(fldHnd).IsStatic;
         }
 
-        public void SetSequencePoints(IEnumerable<ILSequencePoint> ilSequencePoints)
-        {
-            Debug.Assert(ilSequencePoints != null);
-            Dictionary<int, SequencePoint> sequencePoints = new Dictionary<int, SequencePoint>();
-
-            foreach (var point in ilSequencePoints)
-            {
-                sequencePoints.Add(point.Offset, new SequencePoint() { Document = point.Document, LineNumber = point.LineNumber });
-            }
-
-            _sequencePoints = sequencePoints;
-        }
-
-        public void SetLocalVariables(IEnumerable<ILLocalVariable> localVariables)
-        {
-            Debug.Assert(localVariables != null);
-            var localSlotToInfoMap = new Dictionary<uint, ILLocalVariable>();
-
-            foreach (var v in localVariables)
-            {
-                localSlotToInfoMap[(uint)v.Slot] = v;
-            }
-
-            _localSlotToInfoMap = localSlotToInfoMap;
-        }
-
-        public void SetParameterNames(IEnumerable<string> parameters)
-        {
-            Debug.Assert(parameters != null);
-            var parameterIndexToNameMap = new Dictionary<uint, string>();
-            uint index = 0;
-
-            foreach (var p in parameters)
-            {
-                parameterIndexToNameMap[index] = p;
-                ++index;
-            }
-
-            _parameterIndexToNameMap = parameterIndexToNameMap;
-        }
-
         private void getBoundaries(CORINFO_METHOD_STRUCT_* ftn, ref uint cILOffsets, ref uint* pILOffsets, BoundaryTypes* implicitBoundaries)
         {
             // TODO: Debugging
             cILOffsets = 0;
             pILOffsets = null;
             *implicitBoundaries = BoundaryTypes.DEFAULT_BOUNDARIES;
-        }
-
-        // Create a DebugLocInfo which is a table from native offset to source line.
-        // using native to il offset (pMap) and il to source line (_sequencePoints).
-        private void setBoundaries(CORINFO_METHOD_STRUCT_* ftn, uint cMap, OffsetMapping* pMap)
-        {
-            Debug.Assert(_debugLocInfos == null);
-            // No interest if sequencePoints is not populated before.
-            if (_sequencePoints == null)
-            {
-                return;
-            }
-
-            int largestILOffset = 0; // All epiloges point to the largest IL offset.
-            for (int i = 0; i < cMap; i++)
-            {
-                OffsetMapping nativeToILInfo = pMap[i];
-                int currectILOffset = (int)nativeToILInfo.ilOffset;
-                if (currectILOffset > largestILOffset) // Special offsets are negative.
-                {
-                    largestILOffset = currectILOffset;
-                }
-            }
-
-            int previousNativeOffset = -1; 
-            List<DebugLocInfo> debugLocInfos = new List<DebugLocInfo>();
-            for (int i = 0; i < cMap; i++)
-            {
-                OffsetMapping nativeToILInfo = pMap[i];
-                int ilOffset = (int)nativeToILInfo.ilOffset;
-                int nativeOffset = (int)pMap[i].nativeOffset;
-                if (nativeOffset == previousNativeOffset)
-                {
-                    // Save the first one, skip others.
-                    continue;
-                }
-                switch (ilOffset)
-                {
-                    case (int)MappingTypes.PROLOG:
-                        ilOffset = 0;
-                        break;
-                    case (int)MappingTypes.EPILOG:
-                        ilOffset = largestILOffset;
-                        break;
-                    case (int)MappingTypes.NO_MAPPING:
-                        continue;
-                }
-                SequencePoint s;
-                if (_sequencePoints.TryGetValue((int)ilOffset, out s))
-                {
-                    Debug.Assert(s.Document != null);
-                    DebugLocInfo loc = new DebugLocInfo(nativeOffset, s.Document, s.LineNumber);
-                    debugLocInfos.Add(loc);
-                    previousNativeOffset = nativeOffset;
-                }
-            }
-
-            if (debugLocInfos.Count > 0)
-            {
-                _debugLocInfos = debugLocInfos.ToArray();
-            }
         }
 
         private void getVars(CORINFO_METHOD_STRUCT_* ftn, ref uint cVars, ILVarInfo** vars, ref bool extendOthers)
@@ -2095,60 +1926,6 @@ namespace Internal.JitInterface
 
             // Just tell the JIT to extend everything.
             extendOthers = true;
-        }
-
-        private void setVars(CORINFO_METHOD_STRUCT_* ftn, uint cVars, NativeVarInfo* vars)
-        {
-            if (_localSlotToInfoMap == null && _parameterIndexToNameMap == null)
-            {
-                return;
-            }
-
-            uint paramCount = (_parameterIndexToNameMap == null) ? 0 : (uint)_parameterIndexToNameMap.Count;
-            Dictionary<uint, DebugVarInfo> debugVars = new Dictionary<uint, DebugVarInfo>();
-            int i;
-
-            for (i = 0; i < cVars; i++)
-            {
-                NativeVarInfo nativeVarInfo = vars[i];
-
-                if (nativeVarInfo.varNumber < paramCount)
-                {
-                    string name = _parameterIndexToNameMap[nativeVarInfo.varNumber];
-                    updateDebugVarInfo(debugVars, name, true, nativeVarInfo);
-                }
-                else if (_localSlotToInfoMap != null)
-                {
-                    ILLocalVariable ilVar;
-                    uint slotNumber = nativeVarInfo.varNumber - paramCount;
-                    if (_localSlotToInfoMap.TryGetValue(slotNumber, out ilVar))
-                    {
-                        updateDebugVarInfo(debugVars, ilVar.Name, false, nativeVarInfo);
-                    }
-                }
-            }
-
-            i = 0;
-            _debugVarInfos = new DebugVarInfo[debugVars.Count];
-            foreach (var debugVar in debugVars)
-            {
-                _debugVarInfos[i] = debugVar.Value;
-                i++;
-            }
-        }
-
-        private void updateDebugVarInfo(Dictionary<uint, DebugVarInfo> debugVars, string name,
-                                        bool isParam, NativeVarInfo nativeVarInfo)
-        {
-            DebugVarInfo debugVar;
-
-            if (!debugVars.TryGetValue(nativeVarInfo.varNumber, out debugVar))
-            {
-                debugVar = new DebugVarInfo(name, isParam, _variableToTypeDesc[(int)nativeVarInfo.varNumber]);
-                debugVars[nativeVarInfo.varNumber] = debugVar;
-            }
-
-            debugVar.Ranges.Add(nativeVarInfo);
         }
 
         private void* allocateArray(uint cBytes)
@@ -3181,13 +2958,6 @@ namespace Internal.JitInterface
 
         private byte[] _gcInfo;
         private CORINFO_EH_CLAUSE[] _ehClauses;
-
-        private Dictionary<int, SequencePoint> _sequencePoints;
-        private Dictionary<uint, ILLocalVariable> _localSlotToInfoMap;
-        private Dictionary<uint, string> _parameterIndexToNameMap;
-        private DebugLocInfo[] _debugLocInfos;
-        private DebugVarInfo[] _debugVarInfos;
-        private TypeDesc[] _variableToTypeDesc;
 
         private void allocMem(uint hotCodeSize, uint coldCodeSize, uint roDataSize, uint xcptnsCount, CorJitAllocMemFlag flag, ref void* hotCodeBlock, ref void* coldCodeBlock, ref void* roDataBlock)
         {

@@ -72,6 +72,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public ISymbolNode FilterFuncletPersonalityRoutine;
 
+        public DebugInfoTableNode DebugInfoTable;
+
         public Import ModuleImport;
 
         public ImportSectionNode EagerImports;
@@ -739,6 +741,9 @@ namespace ILCompiler.DependencyAnalysis
 
             ImportSectionsTable = new ImportSectionsTableNode(Target);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ImportSections, ImportSectionsTable, ImportSectionsTable.StartSymbol);
+
+            DebugInfoTable = new DebugInfoTableNode(Target);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.DebugInfo, DebugInfoTable, DebugInfoTable);
 
             EagerImports = new ImportSectionNode(
                 "EagerImports",
