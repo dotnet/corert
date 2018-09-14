@@ -491,5 +491,37 @@ namespace Internal.JitInterface
         {
             return _compilation.NodeFactory.ReadyToRunHelper(helperId, entity, token);
         }
+
+        enum EHInfoFields
+        {
+            Flags = 0,
+            TryOffset = 1,
+            TryEnd = 2,
+            HandlerOffset = 3,
+            HandlerEnd = 4,
+            ClassTokenOrOffset = 5,
+
+            Length
+        }
+
+        private ObjectNode.ObjectData EncodeEHInfo()
+        {
+            int totalClauses = _ehClauses.Length;
+            byte[] ehInfoData = new byte[(int)EHInfoFields.Length * sizeof(uint) * totalClauses];
+
+            for (int i = 0; i < totalClauses; i++)
+            {
+                ref CORINFO_EH_CLAUSE clause = ref _ehClauses[i];
+                int clauseOffset = (int)EHInfoFields.Length * sizeof(uint) * i;
+                Array.Copy(BitConverter.GetBytes((uint)clause.Flags), 0, ehInfoData, clauseOffset + (int)EHInfoFields.Flags * sizeof(uint), sizeof(uint));
+                Array.Copy(BitConverter.GetBytes((uint)clause.TryOffset), 0, ehInfoData, clauseOffset + (int)EHInfoFields.TryOffset * sizeof(uint), sizeof(uint));
+                Array.Copy(BitConverter.GetBytes((uint)(clause.TryOffset + clause.TryLength)), 0, ehInfoData, clauseOffset + (int)EHInfoFields.TryEnd * sizeof(uint), sizeof(uint));
+                Array.Copy(BitConverter.GetBytes((uint)clause.HandlerOffset), 0, ehInfoData, clauseOffset + (int)EHInfoFields.HandlerOffset * sizeof(uint), sizeof(uint));
+                Array.Copy(BitConverter.GetBytes((uint)(clause.HandlerOffset + clause.HandlerLength)), 0, ehInfoData, clauseOffset + (int)EHInfoFields.HandlerEnd * sizeof(uint), sizeof(uint));
+                Array.Copy(BitConverter.GetBytes((uint)clause.ClassTokenOrOffset), 0, ehInfoData, clauseOffset + (int)EHInfoFields.ClassTokenOrOffset * sizeof(uint), sizeof(uint));
+            }
+            return new ObjectNode.ObjectData(ehInfoData, Array.Empty<Relocation>(), alignment: 1, definedSymbols: Array.Empty<ISymbolDefinitionNode>());
+        }
+
     }
 }

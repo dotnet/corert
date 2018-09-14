@@ -17,6 +17,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private List<MethodWithGCInfo> _methodNodes;
         private Dictionary<MethodWithGCInfo, int> _insertedMethodNodes;
         private readonly NodeFactory _nodeFactory;
+        private int _tableSize = -1;
 
         public RuntimeFunctionsTableNode(NodeFactory nodeFactory)
             : base(nodeFactory.Target)
@@ -47,6 +48,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _methodNodes = new List<MethodWithGCInfo>();
             _insertedMethodNodes = new Dictionary<MethodWithGCInfo, int>();
 
+            int runtimeFunctionIndex = 0;
+
             foreach (MethodDesc method in _nodeFactory.MetadataManager.GetCompiledMethods())
             {
                 MethodWithGCInfo methodCodeNode = _nodeFactory.MethodEntrypoint(method) as MethodWithGCInfo;
@@ -58,7 +61,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
 
                 _methodNodes.Add(methodCodeNode);
-                _insertedMethodNodes[methodCodeNode] = _methodNodes.Count - 1;
+                _insertedMethodNodes[methodCodeNode] = runtimeFunctionIndex;
+                runtimeFunctionIndex += methodCodeNode.FrameInfos.Length;
             }
         }
 
@@ -72,25 +76,45 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 LayoutRuntimeFunctions();
 
             ObjectDataBuilder runtimeFunctionsBuilder = new ObjectDataBuilder(factory, relocsOnly);
+            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
 
             // Add the symbol representing this object node
             runtimeFunctionsBuilder.AddSymbol(this);
 
             foreach (MethodWithGCInfo method in _methodNodes)
             {
-                // StartOffset of the runtime function
-                runtimeFunctionsBuilder.EmitReloc(method, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: 0);
-                if (!relocsOnly && Target.Architecture == TargetArchitecture.X64)
+                int methodOffset = runtimeFunctionsBuilder.CountBytes;
+                int[] funcletOffsets = method.GCInfoNode.CalculateFuncletOffsets();
+
+                for (int frameIndex = 0; frameIndex < method.FrameInfos.Length; frameIndex++)
                 {
-                    // On Amd64, the 2nd word contains the EndOffset of the runtime function
-                    int methodLength = method.GetData(factory, relocsOnly).Data.Length;
-                    runtimeFunctionsBuilder.EmitReloc(method, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: methodLength);
+                    FrameInfo frameInfo = method.FrameInfos[frameIndex];
+
+                    // StartOffset of the runtime function
+                    runtimeFunctionsBuilder.EmitReloc(method, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: frameInfo.StartOffset);
+                    if (!relocsOnly && Target.Architecture == TargetArchitecture.X64)
+                    {
+                        // On Amd64, the 2nd word contains the EndOffset of the runtime function
+                        runtimeFunctionsBuilder.EmitReloc(method, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: frameInfo.EndOffset);
+                    }
+                    runtimeFunctionsBuilder.EmitReloc(r2rFactory.RuntimeFunctionsGCInfo.StartSymbol, RelocType.IMAGE_REL_BASED_ADDR32NB, funcletOffsets[frameIndex]);
                 }
-                // Emit the GC info RVA
-                runtimeFunctionsBuilder.EmitReloc(method.GCInfoNode, RelocType.IMAGE_REL_BASED_ADDR32NB);
             }
 
+            // Emit sentinel entry
+            runtimeFunctionsBuilder.EmitUInt(~0u);
+
+            _tableSize = runtimeFunctionsBuilder.CountBytes;
             return runtimeFunctionsBuilder.ToObjectData();
+        }
+
+        public int TableSize
+        {
+            get
+            {
+                Debug.Assert(_tableSize >= 0);
+                return _tableSize;
+            }
         }
 
         public override int ClassCode => -855231428;

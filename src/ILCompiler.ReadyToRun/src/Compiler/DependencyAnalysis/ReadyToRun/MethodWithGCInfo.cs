@@ -41,12 +41,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public MethodDesc Method => _method;
 
-        protected override void OnMarked(NodeFactory factory)
-        {
-            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
-            r2rFactory.RuntimeFunctionsGCInfo.AddEmbeddedObject(GCInfoNode);
-        }
-
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
             return _methodCode;
@@ -54,12 +48,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            return new DependencyList(
-                new DependencyListEntry[]
-                {
-                    new DependencyListEntry(GCInfoNode, "GC info"),
-                }
-            );
+            return new DependencyList(new DependencyListEntry[] { new DependencyListEntry(GCInfoNode, "Unwind & GC info") });
         }
 
         public override bool StaticDependenciesAreComputed => _methodCode != null;
