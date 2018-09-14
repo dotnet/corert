@@ -528,6 +528,5 @@ namespace Internal.JitInterface
             }
             return new ObjectNode.ObjectData(ehInfoData, Array.Empty<Relocation>(), alignment: 1, definedSymbols: Array.Empty<ISymbolDefinitionNode>());
         }
-
     }
 }

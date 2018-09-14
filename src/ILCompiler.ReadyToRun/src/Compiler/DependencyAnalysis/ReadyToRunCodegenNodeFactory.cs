@@ -78,6 +78,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public Import ModuleImport;
 
+        public ISymbolNode PersonalityRoutine;
+
+        public ISymbolNode FilterFuncletPersonalityRoutine;
+
         public ImportSectionNode EagerImports;
 
         public ImportSectionNode MethodImports;

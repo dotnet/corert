@@ -14,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class MethodWithGCInfo : ObjectNode, IMethodCodeNode, IMethodBodyNode
     {
-        public readonly MethodGCInfoNode GCInfoNode;
+        public MethodGCInfoNode[] GCInfoNodes;
 
         private readonly MethodDesc _method;
         private readonly SignatureContext _signatureContext;
@@ -29,7 +29,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public MethodWithGCInfo(MethodDesc methodDesc, SignatureContext signatureContext)
         {
-            GCInfoNode = new MethodGCInfoNode(this);
             _method = methodDesc;
             _signatureContext = signatureContext;
         }
@@ -92,6 +91,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             Debug.Assert(_frameInfos == null);
             _frameInfos = frameInfos;
+
+            GCInfoNodes = new MethodGCInfoNode[_frameInfos.Length];
+            for (int index = 0; index < _frameInfos.Length; index++)
+            {
+                MethodGCInfoNode gcInfoNode = new MethodGCInfoNode(this, index);
+                GCInfoNodes[index] = gcInfoNode;
+                if (_delayedNodeFactory != null)
+                {
+                    _delayedNodeFactory.RuntimeFunctionsGCInfo.AddEmbeddedObject(gcInfoNode);
+                }
+            }
+
+            _delayedNodeFactory = null;
         }
 
         public void InitializeGCInfo(byte[] gcInfo)
