@@ -124,7 +124,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 LayoutMethodsWithEHInfo();
 
             ObjectDataBuilder exceptionInfoLookupBuilder = new ObjectDataBuilder(factory, relocsOnly);
-            exceptionInfoLookupBuilder.RequireInitialAlignment(8);
+            exceptionInfoLookupBuilder.RequireInitialAlignment(2 * sizeof(uint));
 
             // Add the symbol representing this object node
             exceptionInfoLookupBuilder.AddSymbol(this);
@@ -148,6 +148,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return new DependencyNodeCore<NodeFactory>.DependencyList(new DependencyListEntry[] { new DependencyListEntry(_ehInfoNode, "EH info array") });
         }
 
-        public override int ClassCode => -855231428;
+        public override int ClassCode => 582513248;
     }
 }

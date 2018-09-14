@@ -13,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class MethodWithGCInfo : ObjectNode, IMethodCodeNode, IMethodBodyNode
     {
-        public MethodGCInfoNode GCInfoNode;
+        public readonly MethodGCInfoNode GCInfoNode;
 
         private readonly MethodDesc _method;
         private readonly ModuleToken _token;
