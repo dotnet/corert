@@ -13,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private readonly MethodDesc _methodDesc;
 
-        private readonly ModuleToken _token;
+        private readonly SignatureContext _signatureContext;
 
         private readonly MethodWithGCInfo _localMethod;
 
@@ -21,14 +21,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadyToRunCodegenNodeFactory factory,
             ReadyToRunFixupKind fixupKind,
             MethodDesc methodDesc,
-            ModuleToken token,
             TypeDesc constrainedType,
+            SignatureContext signatureContext,
             bool isUnboxingStub,
             MethodWithGCInfo localMethod)
-            : base(factory.MethodImports, factory.MethodSignature(fixupKind, methodDesc, token, constrainedType, isUnboxingStub))
+            : base(factory.MethodImports, factory.MethodSignature(fixupKind, methodDesc, constrainedType, signatureContext, isUnboxingStub, isInstantiatingStub: false))
         {
             _methodDesc = methodDesc;
-            _token = token;
+            _signatureContext = signatureContext;
             _localMethod = localMethod;
         }
 
@@ -48,13 +48,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 new DependencyListEntry(_localMethod, "Local method import"),
                 new DependencyListEntry(ImportSignature, "Method fixup signature"),
             };
-        }
-
-        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
-        {
-            base.AppendMangledName(nameMangler, sb);
-            sb.Append(" = ");
-            sb.Append(_token.ToString());
         }
     }
 }

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -10,32 +11,32 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class MethodFixupSignature : Signature
     {
-        private readonly ModuleTokenResolver _resolver;
-
         private readonly ReadyToRunFixupKind _fixupKind;
 
         private readonly MethodDesc _methodDesc;
 
-        private readonly ModuleToken _methodToken;
-
         private readonly TypeDesc _constrainedType;
+
+        private readonly SignatureContext _signatureContext;
 
         private readonly bool _isUnboxingStub;
 
+        private readonly bool _isInstantiatingStub;
+
         public MethodFixupSignature(
-            ModuleTokenResolver resolver, 
             ReadyToRunFixupKind fixupKind, 
             MethodDesc methodDesc, 
-            ModuleToken methodToken,
             TypeDesc constrainedType,
-            bool isUnboxingStub)
+            SignatureContext signatureContext,
+            bool isUnboxingStub,
+            bool isInstantiatingStub)
         {
-            _resolver = resolver;
             _fixupKind = fixupKind;
             _methodDesc = methodDesc;
-            _methodToken = methodToken;
             _constrainedType = constrainedType;
+            _signatureContext = signatureContext;
             _isUnboxingStub = isUnboxingStub;
+            _isInstantiatingStub = isInstantiatingStub;
         }
 
         public override int ClassCode => 150063499;
@@ -46,8 +47,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
             dataBuilder.AddSymbol(this);
 
-            dataBuilder.EmitByte((byte)_fixupKind);
-            dataBuilder.EmitMethodSignature(_methodDesc, _methodToken, _constrainedType, _isUnboxingStub, _methodToken.SignatureContext(_resolver));
+            dataBuilder.EmitUInt((uint)_fixupKind);
+            dataBuilder.EmitMethodSignature(_methodDesc, _constrainedType, _isUnboxingStub, _isInstantiatingStub, _signatureContext);
 
             return dataBuilder.ToObjectData();
         }
@@ -55,12 +56,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append($@"MethodFixupSignature({_fixupKind.ToString()} {_methodToken}): {_methodDesc.ToString()}");
+            sb.Append($@"MethodFixupSignature({_fixupKind.ToString()}: {_methodDesc.ToString()}");
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return _methodToken.CompareTo(((MethodFixupSignature)other)._methodToken);
+            throw new NotImplementedException();
         }
     }
 }
