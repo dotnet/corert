@@ -12,11 +12,6 @@ internal partial class Interop
         WaitObject0 = 0x0u,
         FailFastGenerateExceptionAddress = 0x1u,
         ExceptionNonContinuable = 0x1u,
-        CreateMutexInitialOwner = 0x1u,
-        CreateEventManualReset = 0x1u,
-        CreateEventInitialSet = 0x2u,
-        SemaphoreModifyState = 0x2u,
-        EventModifyState = 0x2u,
         DuplicateSameAccess = 0x2u,
         CreateSuspended = 0x4u,
         WaitAbandoned0 = 0x80u,
@@ -25,7 +20,6 @@ internal partial class Interop
         WaitFailed = 0xFFFFFFFFu,
     }
 
-    // MCG doesn't currently support constants that are not uint.
     internal static IntPtr InvalidHandleValue => new IntPtr(-1);
 
 #pragma warning disable 649

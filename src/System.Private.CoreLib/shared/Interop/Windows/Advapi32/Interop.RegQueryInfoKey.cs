@@ -9,9 +9,9 @@ using System.Text;
 
 internal partial class Interop
 {
-    internal partial class mincore
+    internal partial class Advapi32
     {
-        [DllImport(Libraries.Registry_L1, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryInfoKeyW")]
+        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryInfoKeyW")]
         internal static extern int RegQueryInfoKey(
             SafeRegistryHandle hKey,
             [Out]StringBuilder lpClass,

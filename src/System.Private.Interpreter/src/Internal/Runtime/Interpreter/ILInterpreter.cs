@@ -18,22 +18,10 @@ namespace Internal.Runtime.Interpreter
         private readonly LowLevelStack<StackItem> _stack;
 
         private CallInterceptorArgs _callInterceptorArgs;
-        
-        public LowLevelStack<StackItem> EvaluationStack
-        {
-            get
-            {
-                return _stack;
-            }
-        }
 
-        public TypeSystemContext TypeSystemContext
-        {
-            get
-            {
-                return _context;
-            }
-        }
+        public LowLevelStack<StackItem> EvaluationStack => _stack;
+
+        public TypeSystemContext TypeSystemContext => _context;
 
         public ILInterpreter(TypeSystemContext context, MethodDesc method, MethodIL methodIL)
         {

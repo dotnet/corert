@@ -20,7 +20,7 @@ namespace ILVerification.Tests
         void TestMethodsWithValidIL(ValidILTestCase validIL)
         {
             var results = Verify(validIL);
-            Assert.Equal(0, results.Count());
+            Assert.Empty(results);
         }
 
         [Theory(DisplayName = "")]

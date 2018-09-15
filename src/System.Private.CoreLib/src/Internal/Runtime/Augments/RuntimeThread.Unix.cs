@@ -144,6 +144,14 @@ namespace Internal.Runtime.Augments
             return IntPtr.Zero;
         }
 
+        private void InitializeComOnNewThread()
+        {
+        }
+
+        internal static void InitializeCom()
+        {
+        }
+
         public void Interrupt() => WaitSubsystem.Interrupt(this);
         internal static void UninterruptibleSleep0() => WaitSubsystem.UninterruptibleSleep0();
         private static void SleepInternal(int millisecondsTimeout) => WaitSubsystem.Sleep(millisecondsTimeout);

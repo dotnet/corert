@@ -8,11 +8,11 @@ using System.Runtime.InteropServices;
 
 internal partial class Interop
 {
-    internal partial class mincore
+    internal partial class Advapi32
     {
         // Note: RegCreateKeyEx won't set the last error on failure - it returns
         // an error code if it fails.
-        [DllImport(Libraries.Registry_L1, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegCreateKeyExW")]
+        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegCreateKeyExW")]
         internal static extern int RegCreateKeyEx(
             SafeRegistryHandle hKey,
             string lpSubKey,
@@ -20,7 +20,7 @@ internal partial class Interop
             string lpClass,
             int dwOptions,
             int samDesired,
-            ref Kernel32.SECURITY_ATTRIBUTES secAttrs,
+            ref Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs,
             out SafeRegistryHandle hkResult,
             out int lpdwDisposition);
     }

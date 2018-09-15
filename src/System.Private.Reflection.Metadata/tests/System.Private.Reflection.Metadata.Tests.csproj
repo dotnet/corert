@@ -6,7 +6,7 @@
     <AssemblyName>System.Private.Reflection.Metadata.Tests</AssemblyName>
     <RootNamespace>System.Private.Reflection.Metadata.Tests</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFramework>netstandard1.3</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
   <PropertyGroup>
     <NativeFormatCommonPath>..\..\Common\src\Internal\NativeFormat</NativeFormatCommonPath>
@@ -26,8 +26,11 @@
     <Compile Include="$(MetadataCommonPath)\NativeFormatReaderGen.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.DotNet.BuildTools.TestSuite">
-      <Version>$(XunitNetcoreExtensionsVersion)</Version>
+    <PackageReference Include="xunit">
+      <Version>$(XUnitPackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.DotNet.XUnitExtensions">
+      <Version>$(MicrosoftDotNetXUnitExtensionsVersion)</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>

@@ -50,8 +50,8 @@ namespace ILCompiler.DependencyAnalysisFramework.Tests
                 testGraph.AddRoot("A", "A is root");
                 List<string> results = testGraph.AnalysisResults;
 
-                Assert.True(results.Contains("A"));
-                Assert.True(results.Contains("B"));
+                Assert.Contains("A", results);
+                Assert.Contains("B", results);
             });
         }
 
@@ -64,9 +64,9 @@ namespace ILCompiler.DependencyAnalysisFramework.Tests
                 testGraph.AddRoot("A", "A is root");
                 List<string> results = testGraph.AnalysisResults;
 
-                Assert.True(results.Contains("A"));
-                Assert.False(results.Contains("B"));
-                Assert.False(results.Contains("C"));
+                Assert.Contains("A", results);
+                Assert.DoesNotContain("B", results);
+                Assert.DoesNotContain("C", results);
                 Assert.True(results.Count == 1);
             });
         }
@@ -81,9 +81,9 @@ namespace ILCompiler.DependencyAnalysisFramework.Tests
                 testGraph.AddRoot("C", "C is root");
                 List<string> results = testGraph.AnalysisResults;
 
-                Assert.True(results.Contains("A"));
-                Assert.True(results.Contains("B"));
-                Assert.True(results.Contains("C"));
+                Assert.Contains("A", results);
+                Assert.Contains("B", results);
+                Assert.Contains("C", results);
                 Assert.True(results.Count == 3);
             });
         }

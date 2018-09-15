@@ -9,9 +9,9 @@ using System.Text;
 
 internal partial class Interop
 {
-    internal partial class mincore
+    internal partial class Advapi32
     {
-        [DllImport(Libraries.Registry_L1, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW")]
+        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW")]
         internal static extern int RegQueryValueEx(
             SafeRegistryHandle hKey,
             string lpValueName,
@@ -20,7 +20,7 @@ internal partial class Interop
             [Out] byte[] lpData,
             ref int lpcbData);
 
-        [DllImport(Libraries.Registry_L1, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW")]
+        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW")]
         internal static extern int RegQueryValueEx(
             SafeRegistryHandle hKey,
             string lpValueName,
@@ -29,7 +29,7 @@ internal partial class Interop
             ref int lpData,
             ref int lpcbData);
 
-        [DllImport(Libraries.Registry_L1, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW")]
+        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW")]
         internal static extern int RegQueryValueEx(
             SafeRegistryHandle hKey,
             string lpValueName,
@@ -38,7 +38,7 @@ internal partial class Interop
             ref long lpData,
             ref int lpcbData);
 
-        [DllImport(Libraries.Registry_L1, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW")]
+        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW")]
         internal static extern int RegQueryValueEx(
             SafeRegistryHandle hKey,
             string lpValueName,
@@ -47,7 +47,7 @@ internal partial class Interop
             [Out] char[] lpData,
             ref int lpcbData);
 
-        [DllImport(Libraries.Registry_L1, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW")]
+        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW")]
         internal static extern int RegQueryValueEx(
             SafeRegistryHandle hKey,
             string lpValueName,

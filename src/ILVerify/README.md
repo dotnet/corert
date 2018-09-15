@@ -27,18 +27,6 @@ The code is split into three projects:
 
 To test the ILVerification library we have small methods checked in as .il files testing specific verification scenarios. These tests live under [src/ILVerification/tests/ILTests](../ILVerification/tests/ILTests). Tests are grouped into .il files based on functionalities they test. There is no strict policy here, the goal is to have a few dozen .il files instead of thousands containing each only a single method.
 
-Currently the IL files are NOT compiled automatically. You have to compile manually (We want to automate this step later):
-
-```
-ilasm [filename.il] /dll /ERROR
-```
-
-Note: if you run the tests and get an error similar to this then it means that the .il files were not compiled, or none of them contained methods that follow the naming convention described below:
-
-```
-Result Message:	System.InvalidOperationException : No data found for ILVerify.Tests.ILMethodTester.TestMethodsWithInvalidIL
-```
-
 The test project itself is under [src/ILVerification/tests](../ILVerification/tests)
 
  Method names in the .il files must follow the following naming convention:

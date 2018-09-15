@@ -7,9 +7,9 @@ using System.Runtime.InteropServices;
 
 internal partial class Interop
 {
-    internal partial class mincore
+    internal partial class Advapi32
     {
-        [DllImport(Libraries.Registry_L1)]
+        [DllImport(Libraries.Advapi32)]
         internal static extern int RegFlushKey(SafeRegistryHandle hKey);
     }
 }

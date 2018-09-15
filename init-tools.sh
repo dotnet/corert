@@ -148,9 +148,6 @@ if [ ! -e $__INIT_TOOLS_DONE_MARKER ]; then
 
     Tools/crossgen.sh $__scriptpath/Tools $__PKG_RID
 
-    # CoreRT does not use special copy of the shared runtime for testing
-    cp $__TOOLRUNTIME_DIR/csc.runtimeconfig.json $__TOOLRUNTIME_DIR/xunit.console.netcore.runtimeconfig.json
-
     mkdir -p $__INIT_TOOLS_DONE_MARKER_DIR
     touch $__INIT_TOOLS_DONE_MARKER
 

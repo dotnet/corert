@@ -112,7 +112,7 @@ namespace Internal.Runtime.Augments
 
             if (threadPoolThread)
             {
-                RoInitialize();
+                InitializeCom();
             }
 
             return currentThread;
@@ -148,16 +148,6 @@ namespace Internal.Runtime.Augments
             {
                 _priority = newPriority;
             }
-        }
-
-        /// <summary>
-        /// Ensures the Windows Runtime is initialized on the current thread.
-        /// </summary>
-        internal static void RoInitialize()
-        {
-#if ENABLE_WINRT
-            Interop.WinRT.RoInitialize();
-#endif
         }
 
         /// <summary>
@@ -467,7 +457,7 @@ namespace Internal.Runtime.Augments
             {
                 t_currentThread = thread;
                 System.Threading.ManagedThreadId.SetForCurrentThread(thread._managedThreadId);
-                RoInitialize();
+                thread.InitializeComOnNewThread();
             }
             catch (OutOfMemoryException)
             {

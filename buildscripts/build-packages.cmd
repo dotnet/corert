@@ -27,5 +27,5 @@ exit /b %ERRORLEVEL%
 
 :AfterVarSetup
 
-%_msbuildexe% "%__ProjectDir%\pkg\packages.proj" /m /nologo /flp:v=diag;LogFile=build-packages.log /p:NuPkgRid=%__NugetRuntimeId% /p:OSGroup=%__BuildOS% /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% %__ExtraMsBuildParams%
+"%__DotNetCliPath%\dotnet.exe" msbuild "%__ProjectDir%\pkg\packages.proj" /m /nologo /flp:v=diag;LogFile=build-packages.log /p:NuPkgRid=%__NugetRuntimeId% /p:OSGroup=%__BuildOS% /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% %__ExtraMsBuildParams%
 exit /b %ERRORLEVEL%

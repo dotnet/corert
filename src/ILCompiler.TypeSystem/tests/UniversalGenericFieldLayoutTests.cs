@@ -200,8 +200,8 @@ namespace TypeSystemTests
             Assert.Equal(LayoutInt.Zero, context.UniversalCanonType.GCStaticFieldSize);
             Assert.Equal(LayoutInt.Zero, context.UniversalCanonType.NonGCStaticFieldAlignment);
             Assert.Equal(LayoutInt.Zero, context.UniversalCanonType.NonGCStaticFieldSize);
-            Assert.Equal(LayoutInt.Zero, context.UniversalCanonType.ThreadStaticFieldAlignment);
-            Assert.Equal(LayoutInt.Zero, context.UniversalCanonType.ThreadStaticFieldSize);
+            Assert.Equal(LayoutInt.Zero, context.UniversalCanonType.ThreadGcStaticFieldAlignment);
+            Assert.Equal(LayoutInt.Zero, context.UniversalCanonType.ThreadGcStaticFieldSize);
         }
         [Fact]
         public void TestLayoutOfUniversalCanonType()
@@ -268,7 +268,7 @@ namespace TypeSystemTests
             Assert.Equal(LayoutInt.Indeterminate, genOfUUU.GetFields().ElementAt(2).Offset);
         }
 
-        public void TestIndeterminatedNestedStructFieldPerContext(TypeSystemContext context, ModuleDesc testModule, out InstantiatedType genOfIntNestedInt, out InstantiatedType genOfLongNestedInt)
+        private void TestIndeterminatedNestedStructFieldPerContext(TypeSystemContext context, ModuleDesc testModule, out InstantiatedType genOfIntNestedInt, out InstantiatedType genOfLongNestedInt)
         {
             // Given a struct with all field universal, what is the layout?
             MetadataType tGen = testModule.GetType("GenericTypes", "GenStruct`3");
@@ -310,7 +310,7 @@ namespace TypeSystemTests
             Assert.Equal(LayoutInt.Indeterminate, genOfLongNestedInt.InstanceByteAlignment);
         }
 
-        public void AssertClassIndeterminateSize(TypeSystemContext context, MetadataType type, LayoutInt expectedIndeterminateByteAlignment)
+        private void AssertClassIndeterminateSize(TypeSystemContext context, MetadataType type, LayoutInt expectedIndeterminateByteAlignment)
         {
             Assert.Equal(context.Target.LayoutPointerSize, type.InstanceFieldAlignment);
             Assert.Equal(context.Target.LayoutPointerSize, type.InstanceFieldSize);

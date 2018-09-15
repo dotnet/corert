@@ -6,6 +6,8 @@
     <CoreFxUapVersion>4.7.0-preview1-26831-01</CoreFxUapVersion>
     <MicrosoftNETCoreNativeVersion>3.0.0-preview1-26831-01</MicrosoftNETCoreNativeVersion>
     <MicrosoftNETCoreAppPackageVersion>2.1.0</MicrosoftNETCoreAppPackageVersion>
-    <XunitNetcoreExtensionsVersion>1.0.1-prerelease-02104-02</XunitNetcoreExtensionsVersion>
+    <MicrosoftDotNetTestSdkVersion>15.8.0</MicrosoftDotNetTestSdkVersion>
+    <XUnitPackageVersion>2.4.1-pre.build.4059</XUnitPackageVersion>
+    <MicrosoftDotNetXUnitExtensionsVersion>2.4.0-beta.18420.3</MicrosoftDotNetXUnitExtensionsVersion>
   </PropertyGroup>
 </Project>

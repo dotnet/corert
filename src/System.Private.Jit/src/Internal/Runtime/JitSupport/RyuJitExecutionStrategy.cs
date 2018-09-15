@@ -22,6 +22,8 @@ namespace Internal.Runtime.JitSupport
 {
     public class RyuJitExecutionStrategy : MethodExecutionStrategy
     {
+        private const string NativeJitSupportLibrary = "*";
+
         private CorInfoImpl _corInfoImpl;
         private TypeSystemContext _context;
         private NodeFactory _nodeFactory;
@@ -33,13 +35,13 @@ namespace Internal.Runtime.JitSupport
             return;
         }
 
-        [DllImport("jitinterface")]
+        [DllImport(NativeJitSupportLibrary)]
         static extern IntPtr AllocJittedCode(UInt32 cbCode, UInt32 align, out IntPtr pCodeManager);
 
-        [DllImport("jitinterface")]
+        [DllImport(NativeJitSupportLibrary)]
         static extern void SetEHInfoPtr(IntPtr pCodeManager, IntPtr pbCode, IntPtr ehInfo);
 
-        [DllImport("jitinterface")]
+        [DllImport(NativeJitSupportLibrary)]
         static extern unsafe IntPtr PublishRuntimeFunction(
             IntPtr pCodeManager,
             IntPtr pbCode,
@@ -51,10 +53,10 @@ namespace Internal.Runtime.JitSupport
             byte[] pGCData,
             UInt32 cbGCData);
 
-        [DllImport("jitinterface")]
+        [DllImport(NativeJitSupportLibrary)]
         static extern void UpdateRuntimeFunctionTable(IntPtr pCodeManager);
 
-        [DllImport("jitinterface")]
+        [DllImport(NativeJitSupportLibrary)]
         static extern void InitJitCodeManager(IntPtr mrtModule);
 
         public override IntPtr OnEntryPoint(MethodEntrypointPtr methodEntrypoint, IntPtr callerArgs)
