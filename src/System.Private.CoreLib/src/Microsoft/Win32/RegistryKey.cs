@@ -562,16 +562,4 @@ namespace Microsoft.Win32
         // Its not being used anywhere. 
         public void SetValue(string name, object value, RegistryValueKind valueKind) { }
     }
-
-    [Flags]
-#if REGISTRY_ASSEMBLY
-    public
-#else
-    internal
-#endif
-    enum RegistryValueOptions
-    {
-        None = 0,
-        DoNotExpandEnvironmentNames = 1
-    }
 }

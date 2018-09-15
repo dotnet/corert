@@ -349,39 +349,7 @@
   <ItemGroup Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'">
     <Compile Include="Microsoft\Win32\RegistryKey.cs" />
     <Compile Include="Microsoft\Win32\RegistryKey.Windows.cs" />
-    <Compile Include="Microsoft\Win32\RegistryOptions.cs" />
     <Compile Include="Microsoft\Win32\ThrowHelper.cs" />
-    <Compile Include="System\Security\AccessControl\RegistryRights.cs" />
-    <Compile Include="..\..\Common\src\Interop\Windows\advapi32\Interop.RegDeleteValue.cs">
-      <Link>Interop\Windows\advapi32\Interop.RegDeleteValue.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\advapi32\Interop.RegSetValueEx.cs">
-      <Link>Interop\Windows\advapi32\Interop.RegSetValueEx.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegistryOptions.cs">
-      <Link>Interop\Windows\mincore\Interop.RegistryOptions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegCreateKeyEx.cs">
-      <Link>Interop\Windows\mincore\Interop.RegCreateKeyEx.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegEnumKeyEx.cs">
-      <Link>Interop\Windows\mincore\Interop.RegEnumKeyEx.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegEnumValue.cs">
-      <Link>Interop\Windows\mincore\Interop.RegEnumValue.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegFlushKey.cs">
-      <Link>Interop\Windows\mincore\Interop.RegFlushKey.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegOpenKeyEx.cs">
-      <Link>Interop\Windows\mincore\Interop.RegOpenKeyEx.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegQueryInfoKey.cs">
-      <Link>Interop\Windows\mincore\Interop.RegQueryInfoKey.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegQueryValueEx.cs">
-      <Link>Interop\Windows\mincore\Interop.RegQueryValueEx.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.ExitProcess.cs">
       <Link>Interop\Windows\mincore\Interop.ExitProcess.cs</Link>
     </Compile>
@@ -442,6 +410,12 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\ole32\Interop.CoTaskMemAllocFree.cs">
       <Link>Interop\Windows\ole32\Interop.CoTaskMemAllocFree.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\ole32\Interop.CoInitializeEx.cs">
+      <Link>Interop\Windows\ole32\Interop.CoInitializeEx.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\ole32\Interop.CoUninitialize.cs">
+      <Link>Interop\Windows\ole32\Interop.CoUninitialize.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\ole32\Interop.CoGetApartmentType.cs">
       <Link>Interop\Windows\ole32\Interop.CoGetApartmentType.cs</Link>

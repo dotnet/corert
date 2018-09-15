@@ -18,13 +18,23 @@ static void *s_topAddress = nullptr;
 static DWORD s_pageSize = 0;
 extern HMODULE s_hRuntime;
 
+#if FEATURE_SINGLE_MODULE_RUNTIME
+extern "C" void RhpNewArray();
+#endif
+
 void InitMemoryStatics()
 {
     std::call_once(s_staticInit, []()
     {
         HMODULE module = s_hRuntime;
         if (module != NULL)
+        {
+#if FEATURE_SINGLE_MODULE_RUNTIME
+            s_mrtAddr = &RhpNewArray;
+#else
             s_mrtAddr = GetProcAddress(module, "RhpNewArray");
+#endif
+        }
 
         assert(s_mrtAddr != nullptr);
 

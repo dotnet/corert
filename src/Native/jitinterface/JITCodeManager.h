@@ -51,19 +51,19 @@ typedef DPTR(struct _UNWIND_INFO)      PTR_UNWIND_INFO;
 typedef DPTR(union _UNWIND_CODE)       PTR_UNWIND_CODE;
 #endif // target_amd64
 
-class ReaderWriterLock : private SRWLOCK
+class SlimReaderWriterLock : private SRWLOCK
 {
 public:
-    ReaderWriterLock()
+    SlimReaderWriterLock()
     {
         ::InitializeSRWLock(this);
     }
 
     class ReadHolder
     {
-        ReaderWriterLock * m_pLock;
+        SlimReaderWriterLock * m_pLock;
     public:
-        ReadHolder(ReaderWriterLock * pLock)
+        ReadHolder(SlimReaderWriterLock * pLock)
             : m_pLock(pLock)
         {
             ::AcquireSRWLockShared(m_pLock);
@@ -77,10 +77,10 @@ public:
 
     class WriteHolder
     {
-        ReaderWriterLock * m_pLock;
+        SlimReaderWriterLock * m_pLock;
 
     public:
-        WriteHolder(ReaderWriterLock * pLock)
+        WriteHolder(SlimReaderWriterLock * pLock)
             : m_pLock(pLock)
         {
             ::AcquireSRWLockExclusive(m_pLock);
@@ -167,7 +167,7 @@ class JITCodeManager : ICodeManager
     UInt32 m_cbRange;
 
     // lock to protect m_runtimeFunctions and m_FuncletToMainMethodMap
-    ReaderWriterLock m_lock;
+    SlimReaderWriterLock m_lock;
 
     std::vector<RUNTIME_FUNCTION> m_runtimeFunctions;
     PTR_RUNTIME_FUNCTION m_pRuntimeFunctionTable;

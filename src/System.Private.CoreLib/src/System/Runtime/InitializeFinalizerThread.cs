@@ -13,9 +13,9 @@ namespace System.Runtime
         [RuntimeExport("InitializeFinalizerThread")]
         public static void DoInitialize()
         {
-            // Make sure that the finalizer thread is RoInitialized before any objects are finalized.  If this
+            // Make sure that the finalizer thread is CoInitialized before any objects are finalized.  If this
             // fails, it will throw an exception and that will go unhandled, triggering a FailFast.
-            RuntimeThread.RoInitialize();
+            RuntimeThread.InitializeCom();
         }
     }
 }

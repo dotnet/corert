@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 
 internal partial class Interop
 {
-    internal partial class mincore
+    internal partial class Advapi32
     {
-        [DllImport(Libraries.Registry_L1, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegOpenKeyExW")]
+        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegOpenKeyExW")]
         internal static extern int RegOpenKeyEx(
             SafeRegistryHandle hKey,
             string lpSubKey,
@@ -19,7 +19,7 @@ internal partial class Interop
             out SafeRegistryHandle hkResult);
 
 
-        [DllImport(Libraries.Registry_L1, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegOpenKeyExW")]
+        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegOpenKeyExW")]
         internal static extern int RegOpenKeyEx(
             IntPtr hKey,
             string lpSubKey,
