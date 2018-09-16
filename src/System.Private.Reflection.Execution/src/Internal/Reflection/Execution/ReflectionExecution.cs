@@ -36,10 +36,40 @@ using global::Internal.Metadata.NativeFormat;
 
 using Debug = System.Diagnostics.Debug;
 
+using System.Runtime.InteropServices;
 namespace Internal.Reflection.Execution
 {
     public static class ReflectionExecution
     {
+//        [DllImport("*")]
+//        private static unsafe extern int printf(byte* str, byte* unused);
+//
+//        private static unsafe void PrintString(string s)
+//        {
+//            int length = s.Length;
+//            fixed (char* curChar = s)
+//            {
+//                for (int i = 0; i < length; i++)
+//                {
+//                    TwoByteStr curCharStr = new TwoByteStr();
+//                    curCharStr.first = (byte)(*(curChar + i));
+//                    printf((byte*)&curCharStr, null);
+//                }
+//            }
+//        }
+//
+//        public static void PrintLine(string s)
+//        {
+//            PrintString(s);
+//            PrintString("\n");
+//        }
+//
+//        public struct TwoByteStr
+//        {
+//            public byte first;
+//            public byte second;
+//        }
+
         /// <summary>
         /// Eager initialization of runtime reflection support. As part of ExecutionEnvironmentImplementation
         /// initialization it enumerates the modules and registers the ones containing EmbeddedMetadata reflection blobs
@@ -62,7 +92,8 @@ namespace Internal.Reflection.Execution
                 {
                     AssemblyBinder.DefaultAssemblyNameForGetType,
                 };
-
+//            PrintLine("DefaultAssemblyNamesForGetType.Count");
+//            PrintLine(DefaultAssemblyNamesForGetType.Count.ToString());
             ExecutionEnvironment = executionEnvironment;
         }
 

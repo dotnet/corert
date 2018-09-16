@@ -7,28 +7,37 @@ using System.Runtime.InteropServices;
 #if PLATFORM_WINDOWS
 using CpObj;
 #endif
-
+using System.Collections.Generic;
 internal static class Program
 {
     private static int staticInt;
     [ThreadStatic]
     private static int threadStaticInt;
+    internal static IList<string> DefaultAssemblyNamesForGetType;
+
     private static unsafe int Main(string[] args)
     {
 //        var g = new Gen<char>();
 //        g.TestTypeOf();
         PrintLine("Starting");
 
+        DefaultAssemblyNamesForGetType =
+            new String[]
+            {
+                "a",
+            };
+            PrintLine("DefaultAssemblyNamesForGetType.Count");
+        PrintLine(DefaultAssemblyNamesForGetType.Count.ToString());
 
-        var t = Type.GetType("System.Char, System.Private.CoreLib");
-        if (t == null)
-        {
-            PrintLine("type == null.  Simple class metadata test: Failed");
-        }
-        else
-        {
-            PrintLine("Simple class metadata test: Ok.");
-        }
+//        var t = Type.GetType("System.Char, System.Private.CoreLib");
+//        if (t == null)
+//        {
+//            PrintLine("type == null.  Simple class metadata test: Failed");
+//        }
+//        else
+//        {
+//            PrintLine("Simple class metadata test: Ok.");
+//        }
 
         Add(1, 2);
         int tempInt = 0;
