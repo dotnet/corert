@@ -454,6 +454,17 @@ internal static class Program
         {
             PrintLine("Struct interface test: Ok.");
         }
+
+        ClassWithSealedVTable classWithSealedVTable = new ClassWithSealedVTable();
+        PrintString("Interface dispatch with sealed vtable test: ");
+        if (CallItf(classWithSealedVTable) == 37)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
     }
 
     // Calls the ITestItf interface via a generic to ensure the concrete type is known and
@@ -461,6 +472,11 @@ internal static class Program
     private static int ItfCaller<T>(T obj) where T : ITestItf
     {
         return obj.GetValue();
+    }
+
+    private static int CallItf(ISomeItf asItf)
+    {
+        return asItf.GetValue();
     }
 
     private static void StaticCtorTest()
@@ -850,4 +866,17 @@ public sealed class SealedDerived : MyBase
     {
         return _data * 3;
     }
+}
+
+class ClassWithSealedVTable : ISomeItf
+{
+    public int GetValue()
+    {
+        return 37;
+    }
+}
+
+interface ISomeItf
+{
+    int GetValue();
 }
