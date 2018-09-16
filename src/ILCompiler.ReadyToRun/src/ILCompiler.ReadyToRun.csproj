@@ -64,6 +64,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RvaEmbeddedPointerIndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Signature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\SignatureBuilder.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\SignatureContext.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\StringImport.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\StringImportSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_ARM64\ImportThunk.cs" />

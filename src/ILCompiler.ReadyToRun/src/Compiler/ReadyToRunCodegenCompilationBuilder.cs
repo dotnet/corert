@@ -5,7 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata.Ecma335;
+
 using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.JitInterface;
@@ -62,6 +64,10 @@ namespace ILCompiler
         public override ICompilation ToCompilation()
         {
             var interopStubManager = new CompilerGeneratedInteropStubManager(_compilationGroup, _context, new InteropStateManager(_context.GeneratedAssembly));
+
+            ModuleTokenResolver moduleTokenResolver = new ModuleTokenResolver(_compilationGroup);
+            SignatureContext signatureContext = new SignatureContext(moduleTokenResolver, _inputModule);
+
             ReadyToRunCodegenNodeFactory factory = new ReadyToRunCodegenNodeFactory(
                 _context,
                 _compilationGroup,
@@ -70,7 +76,8 @@ namespace ILCompiler
                 _nameMangler,
                 _vtableSliceProvider,
                 _dictionaryLayoutProvider,
-                _inputModule);
+                moduleTokenResolver,
+                signatureContext);
 
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);
 

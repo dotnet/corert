@@ -35,7 +35,8 @@ namespace ILCompiler.DependencyAnalysis
             NameMangler nameMangler,
             VTableSliceProvider vtableSliceProvider,
             DictionaryLayoutProvider dictionaryLayoutProvider,
-            EcmaModule inputModule)
+            ModuleTokenResolver moduleTokenResolver,
+            SignatureContext signatureContext)
             : base(context,
                   compilationModuleGroup,
                   metadataManager,
@@ -50,8 +51,8 @@ namespace ILCompiler.DependencyAnalysis
             _importStrings = new Dictionary<ModuleToken, ISymbolNode>();
             _r2rHelpers = new Dictionary<ReadyToRunHelperId, Dictionary<object, ISymbolNode>>();
 
-            Resolver = new ModuleTokenResolver(compilationModuleGroup);
-            InputModuleContext = new SignatureContext(Resolver, inputModule);
+            Resolver = moduleTokenResolver;
+            InputModuleContext = signatureContext;
         }
 
         public SignatureContext InputModuleContext;
