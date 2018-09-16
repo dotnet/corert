@@ -15,10 +15,20 @@ internal static class Program
     private static int threadStaticInt;
     private static unsafe int Main(string[] args)
     {
-        var g = new Gen<char>();
-        g.TestTypeOf();
+//        var g = new Gen<char>();
+//        g.TestTypeOf();
         PrintLine("Starting");
 
+
+        var t = Type.GetType("System.Char, System.Private.CoreLib");
+        if (t == null)
+        {
+            PrintLine("type == null.  Simple class metadata test: Failed");
+        }
+        else
+        {
+            PrintLine("Simple class metadata test: Ok.");
+        }
 
         Add(1, 2);
         int tempInt = 0;
