@@ -104,16 +104,21 @@ if "%CoreRT_MultiFileConfiguration%"=="MultiModule" (
 set CoreRT_CoreCLRRuntimeDir=%CoreRT_TestRoot%..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\CoreClrRuntime
 set CoreRT_ReadyToRunTestHarness=%CoreRT_TestRoot%src\tools\ReadyToRun.TestHarness\bin\Debug\netcoreapp2.1\ReadyToRun.TestHarness.dll
 
-if not exist %CoreRT_CoreCLRRuntimeDir% (
-    REM The test build handles restoring external dependencies such as CoreCLR runtime and its test host
-    REM Trigger the test build so it will build but not run tests before we run them here
-    call %CoreRT_TestRoot%..\buildscripts\build-tests.cmd buildtests
+if not exist %CoreRT_CoreCLRRuntimeDir% goto :BuildTests
+if not exist %CoreRT_ReadyToRunTestHarness% goto :BuildTests
+goto :SkipBuildTests
 
-    IF ERRORLEVEL 1 (
-        echo Tests will not be run due to build-tests.cmd failing with error code !ErrorLevel!
-        exit /b !ErrorLevel!
-    )
+:BuildTests
+REM The test build handles restoring external dependencies such as CoreCLR runtime and its test host
+REM Trigger the test build so it will build but not run tests before we run them here
+call %CoreRT_TestRoot%..\buildscripts\build-tests.cmd buildtests
+
+IF ERRORLEVEL 1 (
+    echo Tests will not be run due to build-tests.cmd failing with error code !ErrorLevel!
+    exit /b !ErrorLevel!
 )
+
+:SkipBuildTests
 
 call %CoreRT_TestRoot%testenv.cmd
 

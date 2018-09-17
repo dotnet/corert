@@ -106,7 +106,7 @@ namespace ILCompiler.DependencyAnalysis
                         }
                     }
 
-                    EmitObjectData(nodeContents, name, node.Section, mapFile);
+                    EmitObjectData(nodeContents, nodeIndex, name, node.Section, mapFile);
                 }
 
                 _sectionBuilder.SetReadyToRunHeaderTable(_nodeFactory.Header, _nodeFactory.Header.GetData(_nodeFactory).Data.Length);
@@ -166,7 +166,7 @@ namespace ILCompiler.DependencyAnalysis
         /// <param name="name">Textual representation of the ObjecData blob in the map file</param>
         /// <param name="section">Section to emit the blob into</param>
         /// <param name="mapFile">Map file output stream</param>
-        private void EmitObjectData(ObjectData data, string name, ObjectNodeSection section, TextWriter mapFile)
+        private void EmitObjectData(ObjectData data, int nodeIndex, string name, ObjectNodeSection section, TextWriter mapFile)
         {
             int targetSectionIndex;
             switch (section.Type)
@@ -188,9 +188,9 @@ namespace ILCompiler.DependencyAnalysis
             }
 
 #if DEBUG
-            for (int symbolIndex = 0; symbolIndex < nodeContents.DefinedSymbols.Length; symbolIndex++)
+            for (int symbolIndex = 0; symbolIndex < data.DefinedSymbols.Length; symbolIndex++)
             {
-                ISymbolNode definedSymbol = nodeContents.DefinedSymbols[symbolIndex];
+                ISymbolNode definedSymbol = data.DefinedSymbols[symbolIndex];
                 (ISymbolNode Node, int NodeIndex, int SymbolIndex) alreadyWrittenSymbol;
                 string symbolName = definedSymbol.GetMangledName(_nodeFactory.NameMangler);
                 if (_previouslyWrittenNodeNames.TryGetValue(symbolName, out alreadyWrittenSymbol))

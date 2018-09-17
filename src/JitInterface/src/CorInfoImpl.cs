@@ -315,11 +315,10 @@ namespace Internal.JitInterface
 
 #if !READYTORUN
             _sequencePoints = null;
-            _debugLocInfos = null;
-            _debugVarInfos = null;
             _variableToTypeDesc = null;
 #endif
-
+            _debugLocInfos = null;
+            _debugVarInfos = null;
             _lastException = null;
         }
 

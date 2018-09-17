@@ -6,7 +6,7 @@
     <AssemblyName>ILCompiler.ReadyToRun</AssemblyName>
     <TargetFramework>netstandard1.3</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>READYTORUN</DefineConstants>
+    <DefineConstants>READYTORUN;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
@@ -81,6 +81,7 @@
     <Compile Include="Compiler\ReadyToRunNodeMangler.cs" />
     <Compile Include="Compiler\ReadyToRunSingleAssemblyCompilationModuleGroup.cs" />
     <Compile Include="Compiler\ReadyToRunTableManager.cs" />
+    <Compile Include="Compiler\SystemObjectFieldLayoutAlgorithm.cs" />
     <Compile Include="IL\ReadyToRunILProvider.cs" />
     <Compile Include="JitInterface\CorInfoImpl.ReadyToRun.cs" />
     <Compile Include="ObjectWriter\SectionBuilder.cs" />

@@ -146,7 +146,8 @@ See the LICENSE file in the project root for more information.
     <ItemGroup>
       <ManagedBinary Condition="$(BuildingFrameworkLibrary) != 'true' and '$(BuildingReadyToRunAssembly)' != 'true'" Include="$(IntermediateOutputPath)$(TargetName)$(TargetExt)" />
       <IlcCompileInput Include="@(ManagedBinary)" />
-      <IlcReference Include="@(DefaultFrameworkAssemblies)" />
+      <!-- Skip setting framework defaults for ready-to-run since it uses standard .NETCoreApp framework assemblies -->
+      <IlcReference Include="@(DefaultFrameworkAssemblies)" Condition="'$(NativeCodeGen)' != 'readytorun'" />
     </ItemGroup>
   </Target>
 
