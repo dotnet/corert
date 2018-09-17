@@ -27,6 +27,11 @@
     <RestoreOutputPath>$(IntermediateOutputRootPath)\repro</RestoreOutputPath>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- For Ready To Run testing, use the CoreCLR framework assemblies instead of the AOT ones -->
+    <IlcReference Condition="'$(NativeCodeGen)' == 'readytorun'" Include="$(CoreRT_CoreCLRRuntimeDir)\*.dll" />
+  </ItemGroup>
+
   <!--
     When building a library as a reference, the returned build outputs include both the 
     IL assembly produced by CSC and the native obj produced by Ilc. Separate the native
