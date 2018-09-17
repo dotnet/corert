@@ -100,7 +100,7 @@ if "%CoreRT_MultiFileConfiguration%"=="MultiModule" (
 )
 
 set CoreRT_CoreCLRRuntimeDir=%CoreRT_TestRoot%..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\CoreClrRuntime
-set CoreRT_ReadyToRunTestHarnessDir=%CoreRT_TestRoot%src\tools\ReadyToRun.TestHarness
+set CoreRT_ReadyToRunTestHarness=%CoreRT_TestRoot%src\tools\ReadyToRun.TestHarness\bin\Debug\netcoreapp2.1\ReadyToRun.TestHarness.dll
 
 if not exist %CoreRT_CoreCLRRuntimeDir% (
     REM The test build handles restoring external dependencies such as CoreCLR runtime and its test host
@@ -364,7 +364,7 @@ goto :eof
         set __ExtraTestRunArgs=
         if "%__Mode%"=="readytorun" (
             set __Extension=ni.exe
-            set __ExtraTestRunArgs="%CoreRT_CliDir%\dotnet.exe" %CoreRT_ReadyToRunTestHarnessDir% %CoreRT_CoreCLRRuntimeDir%\CoreRun.exe
+            set __ExtraTestRunArgs="%CoreRT_CliDir%\dotnet.exe" %CoreRT_ReadyToRunTestHarness% %CoreRT_CoreCLRRuntimeDir%\CoreRun.exe
         )
 
         if "!__SavedErrorLevel!"=="0" (

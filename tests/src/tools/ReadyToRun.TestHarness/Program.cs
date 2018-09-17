@@ -25,7 +25,7 @@ namespace ReadyToRun.TestHarness
     class Program
     {
         // Default timeout in milliseconds
-        private const int DefaultTestTimeOut = 60000;
+        private const int DefaultTestTimeOut = 30000;
 
         // Error code returned when events get lost. Use this to re-run the test a few times.
         private const int StatusTestErrorEventsLost = -101;
@@ -41,6 +41,7 @@ namespace ReadyToRun.TestHarness
         private static IReadOnlyList<string> _referenceFilenames = Array.Empty<string>();
         private static string _whitelistFilename;
         private static IReadOnlyList<string> _testargs = Array.Empty<string>();
+        private static bool _noEtl;
 
         static void ShowUsage()
         {
@@ -61,6 +62,7 @@ namespace ReadyToRun.TestHarness
                 syntax.DefineOptionList("r|ref", ref _referenceFilenames, "Paths to referenced assemblies");
                 syntax.DefineOption("w|whitelist", ref _whitelistFilename, "Path to method whitelist file");
                 syntax.DefineOptionList("testargs", ref _testargs, "Args to pass into test");
+                syntax.DefineOption ("noetl", ref _noEtl, "Run the test without ETL enabled");
             });
             return argSyntax;
         }
@@ -104,25 +106,33 @@ namespace ReadyToRun.TestHarness
                 testModules.Add(reference);
             }
 
-            using (var session = new TraceEventSession("ReadyToRunTestSession"))
+            if (_noEtl)
             {
-                var r2rMethodFilter = new ReadyToRunJittedMethods(session, testModules);
-                session.EnableProvider(ClrTraceEventParser.ProviderGuid, TraceEventLevel.Verbose, (ulong)(ClrTraceEventParser.Keywords.Jit | ClrTraceEventParser.Keywords.Loader));
-                
-                Task.Run(() => RunTest(session, passThroughArguments, out exitCode));
-
-                // Block, processing callbacks for events we subscribed to
-                session.Source.Process();
-
-                Console.WriteLine("Test execution " + (exitCode == StatusTestPassed ? "PASSED" : "FAILED"));
-                int analysisResult = AnalyzeResults(r2rMethodFilter, _whitelistFilename);
-
-                Console.WriteLine("Test jitted method analysis " + (analysisResult == StatusTestPassed ? "PASSED" : "FAILED"));
-
-                // If the test passed, return the Jitted method analysis result
-                // If the test failed, return its execution exit code
-                exitCode = exitCode == StatusTestPassed ? analysisResult : exitCode;
+                RunTest(null, passThroughArguments, out exitCode);
             }
+            else
+            {
+                using (var session = new TraceEventSession("ReadyToRunTestSession"))
+                {
+                    var r2rMethodFilter = new ReadyToRunJittedMethods(session, testModules);
+                    session.EnableProvider(ClrTraceEventParser.ProviderGuid, TraceEventLevel.Verbose, (ulong)(ClrTraceEventParser.Keywords.Jit | ClrTraceEventParser.Keywords.Loader));
+                    
+                    Task.Run(() => RunTest(session, passThroughArguments, out exitCode));
+
+                    // Block, processing callbacks for events we subscribed to
+                    session.Source.Process();
+
+                    Console.WriteLine("Test execution " + (exitCode == StatusTestPassed ? "PASSED" : "FAILED"));
+                    int analysisResult = AnalyzeResults(r2rMethodFilter, _whitelistFilename);
+
+                    Console.WriteLine("Test jitted method analysis " + (analysisResult == StatusTestPassed ? "PASSED" : "FAILED"));
+
+                    // If the test passed, return the Jitted method analysis result
+                    // If the test failed, return its execution exit code
+                    exitCode = exitCode == StatusTestPassed ? analysisResult : exitCode;
+                }
+            }
+            
 
             Console.WriteLine($"Final test result: {exitCode}");
             return exitCode;
@@ -223,13 +233,22 @@ namespace ReadyToRun.TestHarness
                     }
                     else
                     {
+                        // Do our best to kill it if there's a timeout, but if it fails, not much we can do
+                        try
+                        {
+                            process.Kill();
+                        }
+                        catch
+                        {
+                        }
+
                         Console.WriteLine("Test execution timed out.");
                         exitCode = StatusTestErrorTimeOut;
                     }
 
                     Console.WriteLine($"Test exited with code {process.ExitCode}");
                     
-                    if (session.EventsLost > 0)
+                    if (session != null && session.EventsLost > 0)
                     {
                         exitCode = StatusTestErrorEventsLost;
                         Console.WriteLine($"Error - {session.EventsLost} got lost in the nether.");
@@ -240,7 +259,7 @@ namespace ReadyToRun.TestHarness
             finally
             {
                 // Stop ETL collection on the main thread
-                session.Stop();
+                session?.Stop();
             }
         }
     }
