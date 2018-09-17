@@ -52,18 +52,29 @@ copy %TestFolder%\*.dll %TestFolder%\native\
 shift
 shift
 
+:: Typically arguments on the command line are separated by spaces. The R2R test harness uses System.CommandLine which uses
+:: a comma to separate multiple arguments in an argument list.
+set "DelimiterTemplate= "
+if /i "%NativeCodeGen%" == "readytorun" (
+    set "DelimiterTemplate=,"
+)
+
 set TestParameters=
 set Delimiter=
 :GetNextParameter
 if "%1"=="" goto :RunTest
 set "TestParameters=%TestParameters%%Delimiter%%1"
-set "Delimiter= "
+set "Delimiter=%DelimiterTemplate%"
 shift
 goto :GetNextParameter
 
 :RunTest
 
-set CoreRunCommandLine=%CoreRT_CoreCLRRuntimeDir%\CoreRun.exe %TestFolder%\native\%TestFileName%.ni.exe %TestParameters%
+set CoreRunCommandLine="%CoreRT_CliDir%\dotnet.exe" %CoreRT_ReadyToRunTestHarness% --corerun %CoreRT_CoreCLRRuntimeDir%\CoreRun.exe --in %TestFolder%native\%TestFileName%.ni.exe --noetl
+if not "%TestParameters%" == "" (
+    set CoreRunCommandLine=%CoreRunCommandLine% --testargs %TestParameters%
+)
+
 if /i "%NativeCodeGen%" == "readytorun" (
     echo %CoreRunCommandLine%
     %CoreRunCommandLine%
