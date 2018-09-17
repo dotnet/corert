@@ -408,68 +408,268 @@ namespace ILCompiler.DependencyAnalysis
                 return result;
             }
 
+            ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper r2rHelper;
             switch (helper)
             {
-                case ILCompiler.ReadyToRunHelper.Box:
-                    result = CreateBoxHelper();
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.Box_Nullable:
-                    result = CreateBoxNullableHelper();
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.Unbox:
-                    result = CreateUnboxHelper();
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.Unbox_Nullable:
-                    result = CreateUnboxNullableHelper();
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.GetRuntimeTypeHandle:
-                    result = CreateGetRuntimeTypeHandleHelper();
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.RngChkFail:
-                    result = CreateRangeCheckFailureHelper();
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.WriteBarrier:
-                    result = CreateWriteBarrierHelper();
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.CheckedWriteBarrier:
-                    result = CreateCheckedWriteBarrierHelper();
-                    break;
-
+                // Exception handling helpers
                 case ILCompiler.ReadyToRunHelper.Throw:
-                    result = CreateThrowHelper();
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Throw;
                     break;
 
                 case ILCompiler.ReadyToRunHelper.Rethrow:
-                    result = CreateRethrowHelper();
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Rethrow;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.Overflow:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Overflow;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.RngChkFail:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_RngChkFail;
                     break;
 
                 case ILCompiler.ReadyToRunHelper.FailFast:
-                    result = CreateFailFastHelper();
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_FailFast;
                     break;
 
+                case ILCompiler.ReadyToRunHelper.ThrowNullRef:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_ThrowNullRef;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.ThrowDivZero:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_ThrowDivZero;
+                    break;
+
+                // Write barriers
+                case ILCompiler.ReadyToRunHelper.WriteBarrier:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_WriteBarrier;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.CheckedWriteBarrier:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_CheckedWriteBarrier;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.ByRefWriteBarrier:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_ByRefWriteBarrier;
+                    break;
+
+                // Array helpers
                 case ILCompiler.ReadyToRunHelper.Stelem_Ref:
-                    result = CreateStElemRefHelper();
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Stelem_Ref;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.Ldelema_Ref:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Ldelema_Ref;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.MemSet:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_MemSet;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.MemCpy:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_MemCpy;
+                    break;
+
+                // Get string handle lazily
+                case ILCompiler.ReadyToRunHelper.GetString:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GetString;
+                    break;
+
+                // Reflection helpers
+                case ILCompiler.ReadyToRunHelper.GetRuntimeTypeHandle:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GetRuntimeTypeHandle;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.GetRuntimeMethodHandle:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GetRuntimeMethodHandle;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.GetRuntimeFieldHandle:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GetRuntimeFieldHandle;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.Box:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Box;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.Box_Nullable:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Box_Nullable;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.Unbox:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Unbox;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.Unbox_Nullable:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Unbox_Nullable;
                     break;
 
                 case ILCompiler.ReadyToRunHelper.NewMultiDimArr:
-                    result = CreateNewMultiDimArrHelper();
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_NewMultiDimArr;
                     break;
 
                 case ILCompiler.ReadyToRunHelper.NewMultiDimArr_NonVarArg:
-                    result = CreateNewMultiDimArrNonVarArgHelper();
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_NewMultiDimArr_NonVarArg;
+                    break;
+
+                // Helpers used with generic handle lookup cases
+                case ILCompiler.ReadyToRunHelper.NewObject:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_NewObject;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.NewArray:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_NewArray;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.CheckCastAny:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_CheckCastAny;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.CheckInstanceAny:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_CheckInstanceAny;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.GenericGcStaticBase:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GenericGcStaticBase;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.GenericNonGcStaticBase:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GenericNonGcStaticBase;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.GenericGcTlsBase:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GenericGcTlsBase;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.GenericNonGcTlsBase:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GenericNonGcTlsBase;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.VirtualFuncPtr:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_VirtualFuncPtr;
+                    break;
+
+                // Long mul/div/shift ops
+                case ILCompiler.ReadyToRunHelper.LMul:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_LMul;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.LMulOfv:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_LMulOfv;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.ULMulOvf:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_ULMulOvf;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.LDiv:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_LDiv;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.LMod:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_LMod;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.ULDiv:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_ULDiv;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.ULMod:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_ULMod;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.LLsh:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_LLsh;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.LRsh:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_LRsh;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.LRsz:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_LRsz;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.Lng2Dbl:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Lng2Dbl;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.ULng2Dbl:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_ULng2Dbl;
+                    break;
+
+                // 32-bit division helpers
+                case ILCompiler.ReadyToRunHelper.Div:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Div;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.Mod:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Mod;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.UDiv:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_UDiv;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.UMod:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_UMod;
+                    break;
+
+                // Floating point conversions
+                case ILCompiler.ReadyToRunHelper.Dbl2Int:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Dbl2Int;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.Dbl2IntOvf:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Dbl2IntOvf;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.Dbl2Lng:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Dbl2Lng;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.Dbl2LngOvf:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Dbl2LngOvf;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.Dbl2UInt:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Dbl2UInt;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.Dbl2UIntOvf:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Dbl2UIntOvf;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.Dbl2ULng:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Dbl2ULng;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.Dbl2ULngOvf:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Dbl2ULngOvf;
+                    break;
+
+                // Floating point ops
+                case ILCompiler.ReadyToRunHelper.DblRem:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DblRem;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.FltRem:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_FltRem;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.DblRound:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DblRound;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.FltRound:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_FltRound;
                     break;
 
                 default:
-                    throw new NotImplementedException();
+                    throw new NotImplementedException(helper.ToString());
             }
 
+            result = GetReadyToRunHelperCell(r2rHelper);
             _helperCache.Add(helper, result);
             return result;
         }
@@ -477,76 +677,6 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode HelperMethodEntrypoint(ILCompiler.ReadyToRunHelper helperId, MethodDesc method)
         {
             return ExternSymbol(helperId);
-        }
-
-        private ISymbolNode CreateBoxHelper()
-        {
-            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Box);
-        }
-
-        private ISymbolNode CreateBoxNullableHelper()
-        {
-            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Box_Nullable);
-        }
-
-        private ISymbolNode CreateUnboxHelper()
-        {
-            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Unbox);
-        }
-
-        private ISymbolNode CreateUnboxNullableHelper()
-        {
-            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Unbox_Nullable);
-        }
-
-        private ISymbolNode CreateGetRuntimeTypeHandleHelper()
-        {
-            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GetRuntimeTypeHandle);
-        }
-
-        private ISymbolNode CreateRangeCheckFailureHelper()
-        {
-            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_RngChkFail);
-        }
-
-        private ISymbolNode CreateWriteBarrierHelper()
-        {
-            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_WriteBarrier);
-        }
-
-        private ISymbolNode CreateCheckedWriteBarrierHelper()
-        {
-            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_CheckedWriteBarrier);
-        }
-
-        private ISymbolNode CreateThrowHelper()
-        {
-            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Throw);
-        }
-
-        private ISymbolNode CreateRethrowHelper()
-        {
-            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Rethrow);
-        }
-
-        private ISymbolNode CreateFailFastHelper()
-        {
-            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_FailFast);
-        }
-
-        private ISymbolNode CreateStElemRefHelper()
-        {
-            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Stelem_Ref);
-        }
-
-        private ISymbolNode CreateNewMultiDimArrHelper()
-        {
-            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_NewMultiDimArr);
-        }
-
-        private ISymbolNode CreateNewMultiDimArrNonVarArgHelper()
-        {
-            return GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_NewMultiDimArr_NonVarArg);
         }
 
         public IMethodNode CreateUnboxingStubNode(MethodDesc method, mdToken token)
