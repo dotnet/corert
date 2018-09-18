@@ -176,15 +176,22 @@ namespace ILVerify
         }
         private IEnumerable<VerificationResult> VerifyInterface(EcmaModule module, TypeDefinition td)
         {
+            string className = module.MetadataReader.GetString(td.Name);
             var builder = new ArrayBuilder<VerificationResult>();
             foreach (InterfaceImplementationHandle ii in td.GetInterfaceImplementations())
             {
                 InterfaceImplementation interfaceImplementation = module.MetadataReader.GetInterfaceImplementation(ii);
                 DefType interfaceType = module.GetType(interfaceImplementation.Interface) as DefType;
-                List<MethodDesc> interfaceMethods = new List<MethodDesc>(interfaceType.GetAllMethods());
+                List<MethodDesc> interfaceMethods = new List<MethodDesc>(interfaceType.GetAllMethods());                
                 foreach (MethodDefinitionHandle mdh in td.GetMethods())
-                {
+                {                    
                     MethodDefinition md = module.MetadataReader.GetMethodDefinition(mdh);
+                    string methodName = module.MetadataReader.GetString(md.Name);
+                    foreach (ParameterHandle parameterHandle in md.GetParameters())
+                    {
+                        Parameter parameter = module.MetadataReader.GetParameter(parameterHandle);
+                        string paramName = module.MetadataReader.GetString(parameter.Name);
+                    }
                 }
             }
 
