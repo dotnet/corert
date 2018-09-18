@@ -177,18 +177,14 @@ namespace ILVerify
         private IEnumerable<VerificationResult> VerifyInterface(EcmaModule module, TypeDefinition td)
         {
             var builder = new ArrayBuilder<VerificationResult>();
-
             foreach (InterfaceImplementationHandle ii in td.GetInterfaceImplementations())
             {
                 InterfaceImplementation interfaceImplementation = module.MetadataReader.GetInterfaceImplementation(ii);
                 DefType interfaceType = module.GetType(interfaceImplementation.Interface) as DefType;
-                if (interfaceType == null)
-                    //ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, interfaceImplementation.Interface);
-                    throw new Exception("Load exception");
-
-                foreach (MethodDesc md in interfaceType.GetAllMethods())
+                List<MethodDesc> interfaceMethods = new List<MethodDesc>(interfaceType.GetAllMethods());
+                foreach (MethodDefinitionHandle mdh in td.GetMethods())
                 {
-
+                    MethodDefinition md = module.MetadataReader.GetMethodDefinition(mdh);
                 }
             }
 

@@ -209,7 +209,7 @@ namespace ILVerify
             if (method.Signature.Length > 0)
             {
                 bool first = true;
-                for(int i = 0; i < method.Signature.Length; i++)
+                for (int i = 0; i < method.Signature.Length; i++)
                 {
                     Internal.TypeSystem.TypeDesc parameter = method.Signature[0];
                     if (first)
@@ -270,7 +270,7 @@ namespace ILVerify
                 methodCounter++;
             }
 
-            foreach (var typeHandle in metadataReader.TypeDefinitions)
+            foreach (TypeDefinitionHandle typeHandle in metadataReader.TypeDefinitions)
             {
                 // get fully qualified type name
                 var className = GetQualifiedClassName(metadataReader, typeHandle);
