@@ -136,9 +136,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 exceptionInfoLookupBuilder.EmitReloc(_ehInfoNode, RelocType.IMAGE_REL_BASED_ADDR32NB, _ehInfoOffsets[index]);
             }
 
-            // Sentinel record - method RVA = -1, EH info offset = total EH info size
+            // Sentinel record - method RVA = -1, EH info offset = end of the EH info block
             exceptionInfoLookupBuilder.EmitUInt(~0u);
-            exceptionInfoLookupBuilder.EmitUInt((uint)_ehInfoNode.Count);
+            exceptionInfoLookupBuilder.EmitReloc(_ehInfoNode, RelocType.IMAGE_REL_BASED_ADDR32NB, _ehInfoNode.Count);
 
             return exceptionInfoLookupBuilder.ToObjectData();
         }
