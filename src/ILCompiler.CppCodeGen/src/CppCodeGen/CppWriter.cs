@@ -1349,7 +1349,7 @@ namespace ILCompiler.CppCodeGen
             {
                 string importName = externC.Key;
                 // TODO: hacky special-case
-                if (importName != "memmove" && importName != "malloc") // some methods are already declared by the CRT headers
+                if (importName != "memmove" && importName != "memset" && importName != "malloc") // some methods are already declared by the CRT headers
                 {
                     sb.AppendLine();
                     AppendCppMethodDeclaration(sb, null, false, importName, externC.Value);
