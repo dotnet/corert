@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Diagnostics;
 
 using ILCompiler.DependencyAnalysis;
@@ -17,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public readonly MethodGCInfoNode GCInfoNode;
 
         private readonly MethodDesc _method;
-        private readonly ModuleToken _token;
+        private readonly SignatureContext _signatureContext;
 
         private ObjectData _methodCode;
         private FrameInfo[] _frameInfos;
@@ -27,11 +28,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private NativeVarInfo[] _debugVarInfos;
         private DebugEHClauseInfo[] _debugEHClauseInfos;
 
-        public MethodWithGCInfo(MethodDesc methodDesc, ModuleToken token)
+        public MethodWithGCInfo(MethodDesc methodDesc, SignatureContext signatureContext)
         {
             GCInfoNode = new MethodGCInfoNode(this);
             _method = methodDesc;
-            _token = token;
+            _signatureContext = signatureContext;
         }
 
         public void SetCode(ObjectData data)
@@ -130,8 +131,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public int CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
         {
-            MethodWithGCInfo otherMethod = (MethodWithGCInfo)other;
-            return _token.CompareTo(otherMethod._token);
+            throw new NotImplementedException();
         }
 
         public int Offset => 0;

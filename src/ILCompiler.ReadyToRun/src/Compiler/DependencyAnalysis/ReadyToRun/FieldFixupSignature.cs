@@ -10,22 +10,22 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class TypeFixupSignature : Signature
+    public class FieldFixupSignature : Signature
     {
         private readonly ReadyToRunFixupKind _fixupKind;
 
-        private readonly TypeDesc _typeDesc;
+        private readonly FieldDesc _fieldDesc;
 
         private readonly SignatureContext _signatureContext;
 
-        public TypeFixupSignature(ReadyToRunFixupKind fixupKind, TypeDesc typeDesc, SignatureContext signatureContext)
+        public FieldFixupSignature(ReadyToRunFixupKind fixupKind, FieldDesc fieldDesc, SignatureContext signatureContext)
         {
             _fixupKind = fixupKind;
-            _typeDesc = typeDesc;
+            _fieldDesc = fieldDesc;
             _signatureContext = signatureContext;
         }
 
-        public override int ClassCode => 255607008;
+        public override int ClassCode => 271828182;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -37,7 +37,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 dataBuilder.AddSymbol(this);
 
                 dataBuilder.EmitByte((byte)_fixupKind);
-                dataBuilder.EmitTypeSignature(_typeDesc, _signatureContext);
+                dataBuilder.EmitFieldSignature(_fieldDesc, _signatureContext);
             }
 
             return dataBuilder.ToObjectData();
@@ -46,7 +46,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append($@"TypeFixupSignature({_fixupKind.ToString()}): {_typeDesc.ToString()}");
+            sb.Append($@"TypeFixupSignature({_fixupKind.ToString()}): {_fieldDesc.ToString()}");
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
@@ -57,7 +57,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencies = new DependencyList();
-            dependencies.Add(factory.NecessaryTypeSymbol(_typeDesc), "Type referenced in a fixup signature");
+            dependencies.Add(factory.NecessaryTypeSymbol(_fieldDesc.OwningType), "Type referenced in a fixup signature");
             return dependencies;
         }
     }

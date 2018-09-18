@@ -5,7 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata.Ecma335;
+
 using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.JitInterface;
@@ -19,8 +21,9 @@ namespace ILCompiler
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
-        private string _inputFilePath;
-        private DependencyAnalysis.ReadyToRun.DevirtualizationManager _r2rDevirtualizationManager;
+        private readonly string _inputFilePath;
+        private readonly EcmaModule _inputModule;
+        private readonly DependencyAnalysis.ReadyToRun.DevirtualizationManager _r2rDevirtualizationManager;
 
 
         public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group, string inputFilePath)
@@ -29,8 +32,8 @@ namespace ILCompiler
             _inputFilePath = inputFilePath;
             _r2rDevirtualizationManager = new DependencyAnalysis.ReadyToRun.DevirtualizationManager(group);
 
-            EcmaModule inputModule = context.GetModuleFromPath(_inputFilePath);
-            ((ReadyToRunCompilerContext)context).InitializeAlgorithm(inputModule.MetadataReader.GetTableRowCount(TableIndex.TypeDef));
+            _inputModule = context.GetModuleFromPath(_inputFilePath);
+            ((ReadyToRunCompilerContext)context).InitializeAlgorithm(_inputModule.MetadataReader.GetTableRowCount(TableIndex.TypeDef));
         }
 
         public override CompilationBuilder UseBackendOptions(IEnumerable<string> options)
@@ -61,6 +64,10 @@ namespace ILCompiler
         public override ICompilation ToCompilation()
         {
             var interopStubManager = new CompilerGeneratedInteropStubManager(_compilationGroup, _context, new InteropStateManager(_context.GeneratedAssembly));
+
+            ModuleTokenResolver moduleTokenResolver = new ModuleTokenResolver(_compilationGroup);
+            SignatureContext signatureContext = new SignatureContext(moduleTokenResolver, _inputModule);
+
             ReadyToRunCodegenNodeFactory factory = new ReadyToRunCodegenNodeFactory(
                 _context,
                 _compilationGroup,
@@ -68,7 +75,9 @@ namespace ILCompiler
                 interopStubManager,
                 _nameMangler,
                 _vtableSliceProvider,
-                _dictionaryLayoutProvider);
+                _dictionaryLayoutProvider,
+                moduleTokenResolver,
+                signatureContext);
 
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);
 
