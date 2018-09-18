@@ -2723,7 +2723,7 @@ namespace Internal.JitInterface
                     {
                         pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                            _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, _signatureContext)
+                            _compilation.NodeFactory.MethodEntrypoint(constrainedType != null ? method : targetMethod, constrainedType, _signatureContext)
 #else
                             _compilation.NodeFactory.MethodEntrypoint(targetMethod)
 #endif
