@@ -151,53 +151,61 @@ namespace ILVerify
 
         private void PrintResult(VerificationResult result, EcmaModule module, string pathOrModuleName)
         {
-            Write("[IL]: Error: ");
-
-            Write("[");
-            Write(pathOrModuleName);
-            Write(" : ");
-
             MetadataReader metadataReader = module.MetadataReader;
-
-            TypeDefinition typeDef = metadataReader.GetTypeDefinition(metadataReader.GetMethodDefinition(result.Method).GetDeclaringType());
-            string typeName = metadataReader.GetString(typeDef.Name);
-            Write(typeName);
-
-            Write("::");
-            var method = (EcmaMethod)module.GetMethod(result.Method);
-            PrintMethod(method);
-            Write("]");
-
-            var args = result.Error;
-            if (args.Code != VerifierError.None)
+            try
             {
-                Write("[offset 0x");
-                Write(args.Offset.ToString("X8"));
+                var method = (EcmaMethod)module.GetMethod(result.Method);
+                Write("[IL]: Error: ");
+
+                Write("[");
+                Write(pathOrModuleName);
+                Write(" : ");
+
+                TypeDefinition typeDef = metadataReader.GetTypeDefinition(metadataReader.GetMethodDefinition(result.Method).GetDeclaringType());
+                string typeName = metadataReader.GetString(typeDef.Name);
+                Write(typeName);
+
+                Write("::");
+
+                PrintMethod(method);
                 Write("]");
 
-                if (args.Found != null)
+                var args = result.Error;
+                if (args.Code != VerifierError.None)
                 {
-                    Write("[found ");
-                    Write(args.Found);
+                    Write("[offset 0x");
+                    Write(args.Offset.ToString("X8"));
                     Write("]");
+
+                    if (args.Found != null)
+                    {
+                        Write("[found ");
+                        Write(args.Found);
+                        Write("]");
+                    }
+
+                    if (args.Expected != null)
+                    {
+                        Write("[expected ");
+                        Write(args.Expected);
+                        Write("]");
+                    }
+
+                    if (args.Token != 0)
+                    {
+                        Write("[token  0x");
+                        Write(args.Token.ToString("X8"));
+                        Write("]");
+                    }
                 }
 
-                if (args.Expected != null)
-                {
-                    Write("[expected ");
-                    Write(args.Expected);
-                    Write("]");
-                }
-
-                if (args.Token != 0)
-                {
-                    Write("[token  0x");
-                    Write(args.Token.ToString("X8"));
-                    Write("]");
-                }
+                Write(" ");
+            }
+            catch(BadImageFormatException)
+            {
+                // If assembly references is not found we cannot read IL
             }
 
-            Write(" ");
             WriteLine(result.Message);
         }
 

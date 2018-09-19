@@ -23,7 +23,28 @@
 	{		
 		.maxstack 8
 
-		IL_0000: ret
+		IL_0000: newobj instance void [System.Runtime]System.NotImplementedException::.ctor()
+		IL_0005: throw
+	}
+
+	.method public final hidebysig newslot virtual 
+		instance void M3 () cil managed 
+	{		
+		.maxstack 8
+
+		IL_0000: newobj instance void [System.Runtime]System.NotImplementedException::.ctor()
+		IL_0005: throw
+	}
+
+	.method public final hidebysig newslot virtual 
+		instance void M4 (
+			int32 i
+		) cil managed 
+	{		
+		.maxstack 8
+
+		IL_0000: newobj instance void [System.Runtime]System.NotImplementedException::.ctor()
+		IL_0005: throw
 	}
 
 	.method public hidebysig specialname rtspecialname 
@@ -35,5 +56,5 @@
 		IL_0001: call instance void [System.Runtime]System.Object::.ctor()
 		IL_0006: ret
 	}
-} 
+}
 

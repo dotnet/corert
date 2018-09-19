@@ -174,9 +174,15 @@ namespace ILVerify
                 yield return result;
             }
         }
+
+        void TmpLogToRemove(string str)
+        {
+            Console.WriteLine(str);
+        }
+
         private IEnumerable<VerificationResult> VerifyInterface(EcmaModule module, TypeDefinition td)
         {
-            string className = module.MetadataReader.GetString(td.Name);
+            TmpLogToRemove(module.MetadataReader.GetString(td.Name));
             var builder = new ArrayBuilder<VerificationResult>();
             foreach (InterfaceImplementationHandle ii in td.GetInterfaceImplementations())
             {

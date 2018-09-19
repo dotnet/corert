@@ -4,14 +4,12 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
-using System.Reflection.PortableExecutable;
-using ILVerify;
-using Internal.TypeSystem.Ecma;
-using Xunit;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
+using ILVerify;
+using Xunit;
 
 namespace ILVerification.Tests
 {
@@ -19,12 +17,15 @@ namespace ILVerification.Tests
     {
         [Fact]
         [Trait("MyTrait", "MyTrait")]
-        public void InvalidClass()
+        public void Test()
         {
-            string testFile = Path.GetFullPath(@"Tests\InterfaceTest.dll");
-            var simpleNameToPathMap = new Dictionary<string, string>();
-            simpleNameToPathMap.Add(Path.GetFileNameWithoutExtension(testFile), testFile);
+            string testFile = Path.GetFullPath(@"Tests\InterfaceImplementation.dll");
+            var simpleNameToPathMap = new Dictionary<string, string>
+            {
+                { Path.GetFileNameWithoutExtension(testFile), testFile }
+            };
             Assembly coreAssembly = typeof(object).GetTypeInfo().Assembly;
+            simpleNameToPathMap.Add("InterfaceDefinition" , @"Tests\InterfaceDefinition.dll");
             simpleNameToPathMap.Add(coreAssembly.GetName().Name, coreAssembly.Location);
             Assembly systemRuntime = Assembly.Load(new AssemblyName("System.Runtime"));
             simpleNameToPathMap.Add(systemRuntime.GetName().Name, systemRuntime.Location);
@@ -32,10 +33,15 @@ namespace ILVerification.Tests
             var typeSystemContext = new ILVerifyTypeSystemContext(resolver);
             typeSystemContext.SetSystemModule(typeSystemContext.GetModule(resolver.Resolve(coreAssembly.GetName().Name)));
             Verifier verifier = new Verifier(typeSystemContext);
-            var module = typeSystemContext.GetModule(resolver.Resolve(new AssemblyName(Path.GetFileNameWithoutExtension(testFile)).Name));
-            var results = verifier.Verify(module.PEReader).ToArray();
-            Assert.NotNull(results);
-            Assert.NotEmpty(results);
+            Internal.TypeSystem.Ecma.EcmaModule module = typeSystemContext.GetModule(resolver.Resolve(new AssemblyName(Path.GetFileNameWithoutExtension(testFile)).Name));
+
+            List<VerificationResult> vr = new List<VerificationResult>();
+            foreach (TypeDefinitionHandle typeHandle in module.PEReader.GetMetadataReader().TypeDefinitions)
+            {
+                vr.AddRange(verifier.VerifyInterface(module.PEReader, typeHandle).ToArray());
+            }
+
+            Assert.NotEmpty(vr);
         }
 
         private static IEnumerable<string> GetAllTestDlls(string assemblyPath)
@@ -51,7 +57,7 @@ namespace ILVerification.Tests
 
         private sealed class TestResolver : ResolverBase
         {
-            Dictionary<string, string> _simpleNameToPathMap;
+            private Dictionary<string, string> _simpleNameToPathMap;
             public TestResolver(Dictionary<string, string> simpleNameToPathMap)
             {
                 _simpleNameToPathMap = simpleNameToPathMap;

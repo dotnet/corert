@@ -22,4 +22,20 @@
 	{
 	}
 
+	.method public hidebysig newslot abstract virtual 
+		instance void M3 (
+			int32 i
+		) cil managed 
+	{
+	}
+
+	.method public hidebysig newslot abstract virtual 
+		instance int32 M4 (
+			int32 i
+		) cil managed 
+	{
+	}
+
 }
+
+
