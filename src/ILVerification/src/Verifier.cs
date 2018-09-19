@@ -184,21 +184,28 @@ namespace ILVerify
         {
             TmpLogToRemove(module.MetadataReader.GetString(td.Name));
             var builder = new ArrayBuilder<VerificationResult>();
+
+            //Get type method
+            foreach (MethodDefinitionHandle m in td.GetMethods())
+            {
+                MethodDefinition md = module.MetadataReader.GetMethodDefinition(m);
+            }
+
             foreach (InterfaceImplementationHandle ii in td.GetInterfaceImplementations())
             {
                 InterfaceImplementation interfaceImplementation = module.MetadataReader.GetInterfaceImplementation(ii);
                 DefType interfaceType = module.GetType(interfaceImplementation.Interface) as DefType;
-                List<MethodDesc> interfaceMethods = new List<MethodDesc>(interfaceType.GetAllMethods());                
-                foreach (MethodDefinitionHandle mdh in td.GetMethods())
-                {                    
-                    MethodDefinition md = module.MetadataReader.GetMethodDefinition(mdh);
-                    string methodName = module.MetadataReader.GetString(md.Name);
-                    foreach (ParameterHandle parameterHandle in md.GetParameters())
-                    {
-                        Parameter parameter = module.MetadataReader.GetParameter(parameterHandle);
-                        string paramName = module.MetadataReader.GetString(parameter.Name);
-                    }
-                }
+                List<MethodDesc> interfaceMethods = new List<MethodDesc>(interfaceType.GetAllMethods());
+                //foreach (MethodDefinitionHandle mdh in td.GetMethods())
+                //{
+                //    MethodDefinition md = module.MetadataReader.GetMethodDefinition(mdh);
+                //    string methodName = module.MetadataReader.GetString(md.Name);
+                //    foreach (ParameterHandle parameterHandle in md.GetParameters())
+                //    {
+                //        Parameter parameter = module.MetadataReader.GetParameter(parameterHandle);
+                //        TmpLogToRemove(module.MetadataReader.GetString(parameter.Name));
+                //    }
+                //}
             }
 
             return builder.ToArray();
