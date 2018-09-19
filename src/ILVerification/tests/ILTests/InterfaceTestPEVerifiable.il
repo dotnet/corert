@@ -6,32 +6,39 @@
 {
 }
 
-.class interface public auto ansi abstract I
-{
-	// Methods
+.class interface public auto ansi abstract Interface
+{	
 	.method public hidebysig newslot abstract virtual 
-		instance void M () cil managed 
+		instance void M1 () cil managed 
 	{
-	} // end of method I::M
+	}
 
-} // end of class I
+	.method public hidebysig newslot abstract virtual 
+		instance void M2 () cil managed 
+	{
+	}
 
+}
 
-.class public auto ansi beforefieldinit C
+.class public auto ansi beforefieldinit Class
 	extends [System.Runtime]System.Object
-	implements I
-{
+	implements Interface
+{	
+	.method public final hidebysig newslot virtual 
+		instance void M1 () cil managed 
+	{		
+		.maxstack 8
+
+		IL_0000: ret
+	}
 
 	.method public hidebysig specialname rtspecialname 
 		instance void .ctor () cil managed 
-	{
-		// Method begins at RVA 0x2057
-		// Code size 7 (0x7)
+	{		
 		.maxstack 8
 
 		IL_0000: ldarg.0
 		IL_0001: call instance void [System.Runtime]System.Object::.ctor()
 		IL_0006: ret
-	} // end of method C::.ctor
-
-} // end of class C
+	}
+} 
