@@ -60,9 +60,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         continue;
                 }
 
-                _methodNodes.Add(methodCodeNode);
-                _insertedMethodNodes[methodCodeNode] = runtimeFunctionIndex;
-                runtimeFunctionIndex += methodCodeNode.FrameInfos.Length;
+                if (!methodCodeNode.IsEmpty)
+                {
+                    _methodNodes.Add(methodCodeNode);
+                    _insertedMethodNodes[methodCodeNode] = runtimeFunctionIndex;
+                    runtimeFunctionIndex += methodCodeNode.FrameInfos.Length;
+                }
             }
         }
 

@@ -75,7 +75,7 @@ namespace ILCompiler
 
         private ILProvider _methodILCache;
         
-        public MethodIL GetMethodIL(MethodDesc method)
+        public virtual MethodIL GetMethodIL(MethodDesc method)
         {
             // Flush the cache when it grows too big
             if (_methodILCache.Count > 1000)

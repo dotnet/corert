@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection.PortableExecutable;
 
+using Internal.IL;
 using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -123,6 +124,10 @@ namespace ILCompiler
                     Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because: {ex.Message}");
                 }
             }
+        }
+        public override MethodIL GetMethodIL(MethodDesc method)
+        {
+            return null;
         }
     }
 }

@@ -43,6 +43,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public MethodDesc Method => _method;
 
+        public bool IsEmpty => _methodCode.Data.Length == 0;
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
             return _methodCode;

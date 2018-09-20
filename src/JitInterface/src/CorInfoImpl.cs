@@ -209,6 +209,9 @@ namespace Internal.JitInterface
             }
             finally
             {
+#if READYTORUN
+                PublishEmptyCode();
+#endif
                 CompileMethodCleanup();
             }
         }
@@ -245,6 +248,14 @@ namespace Internal.JitInterface
             _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
             _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
         }
+
+#if READYTORUN
+        private void PublishEmptyCode()
+        {
+            _methodCodeNode.SetCode(new ObjectNode.ObjectData(Array.Empty<byte>(), null, 1, new ISymbolDefinitionNode[] { _methodCodeNode }));
+            _methodCodeNode.InitializeFrameInfos(Array.Empty<FrameInfo>());
+        }
+#endif
 
         private MethodDesc MethodBeingCompiled
         {
