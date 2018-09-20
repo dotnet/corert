@@ -30,8 +30,13 @@ namespace System
             char* dst = number.digits;
 
             number.scale = 0;
-            number.sign = double.IsNegative(value);
+            number.sign = false;
             *dst = '\0';
+
+            if (value < 0.0)
+            {
+                number.sign = true;
+            }
 
             if (value == 0.0)
             {
