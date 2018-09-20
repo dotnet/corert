@@ -152,9 +152,27 @@ namespace Sequential
 
 namespace Auto
 {
+    struct StructWithBool
+    {
+        bool MyStructBool;
+    }
+
+    struct StructWithIntChar
+    {
+        int MyStructInt;
+        char MyStructChar;
+    }
+
+    struct StructWithChar
+    {
+        char MyStructChar;
+    }
+
     class ClassWithStructs
     {
-        Struct0 MyStruct0;
+        static int MyStaticInt;
+
+        StructWithBool MyStructWithBool;
         bool MyBool1;
         char MyChar1;
         int MyInt;
@@ -163,58 +181,82 @@ namespace Auto
         byte[] MyByteArray;
         string MyString1;
         bool MyBool2;
-        Struct1 MyStruct1;
-        Struct2 MyStruct2;
+        StructWithIntChar MyStructWithIntChar;
+        StructWithChar MyStructWithChar;
     }
 
-    class Class1_7BytesRemaining
+    class BaseClass7BytesRemaining
     {
         bool MyBool1;
-        double MyDouble;
-        long MyLong;
-        byte[] MyByteArray;
+        double MyDouble1;
+        long MyLong1;
+        byte[] MyByteArray1;
         string MyString1;
     }
 
-    class Class2_3BytesRemaining : Class1_7BytesRemaining
+    class BaseClass4BytesRemaining
     {
-        int MyInt2;
-        int MyInt3;
-        string MyString2;
-        bool MyBool3;
-        bool MyBool4;
-        char MyChar2;
+        long MyLong1;
+        uint MyUint1;
     }
 
-    class Class5 : Class1_7BytesRemaining
+    class BaseClass3BytesRemaining
     {
-        bool MyBool4;
-        char MyChar5;
-        long MyLong5;
-        string MyString5;
+        int MyInt1;
+        string MyString1;
+        bool MyBool1;
     }
 
-    class Class6 : Class2_3BytesRemaining // Not aligned
+    class OptimizePartial : BaseClass7BytesRemaining
     {
-        char MyChar6;
-        int MyInt6;
-        string MyString6;
+        bool OptBool;
+        char OptChar;
+        long NoOptLong;
+        string NoOptString;
     }
 
-    struct Struct0
+    class Optimize7Bools : BaseClass7BytesRemaining
     {
-        bool MyStruct0Bool;
+        bool OptBool1;
+        bool OptBool2;
+        bool OptBool3;
+        bool OptBool4;
+        bool OptBool5;
+        bool OptBool6;
+        bool OptBool7;
+        bool NoOptBool8;
+        string NoOptString;
     }
 
-    struct Struct1
+    class OptimizeAlignedFields : BaseClass7BytesRemaining
     {
-        int MyStruct1Int;
-        char MyStruct1Char;
+        bool OptBool1;
+        bool OptBool2;
+        bool OptBool3;
+        bool NoOptBool4;
+        char OptChar1;
+        char OptChar2;
+        string NoOptString;
     }
 
-    struct Struct2
+    class OptimizeLargestField : BaseClass4BytesRemaining
     {
-        char MyStruct2Char;
+        bool NoOptBool;
+        char NoOptChar;
+        int OptInt;
+        string NoOptString;
+    }
+
+    class NoOptimizeMisaligned : BaseClass3BytesRemaining
+    {
+        char NoOptChar;
+        int NoOptInt;
+        string NoOptString;
+    }
+
+    class NoOptimizeCharAtSize2Alignment : BaseClass3BytesRemaining
+    {
+        char NoOptChar;
     }
 }
 

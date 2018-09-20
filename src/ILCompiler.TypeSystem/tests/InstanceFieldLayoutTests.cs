@@ -269,27 +269,27 @@ namespace TypeSystemTests
         [Fact]
         public void TestAutoTypeLayoutClassWithStructs()
         {
-            MetadataType class1Type = _testModule.GetType("Auto", "ClassWithStructs");
+            MetadataType classWithStructsType = _testModule.GetType("Auto", "ClassWithStructs");
 
             // Byte count
-            // Base Class       8
-            // MyByteArray      8
-            // MyString1        8
-            // MyDouble         8
-            // MyLong           8
-            // MyInt            4
-            // MyChar1          2
-            // MyBool1          1
-            // MyBool2          1
-            // MyStruct0        1 + 3 to align up to the next multiple of 4 after placing a value class
-            //                  4 byte padding to make offset % pointer size == 0 to place the next value class
-            // MyStruct1        6 + 2 to align up to the next multiple of 4 after placing a value class
-            // MyStruct2        2 + 2 to align up to the next multiple of 4 after placing a value class + 4 byte padding to make class size % pointer size == 0
+            // Base Class           8
+            // MyByteArray          8
+            // MyString1            8
+            // MyDouble             8
+            // MyLong               8
+            // MyInt                4
+            // MyChar1              2
+            // MyBool1              1
+            // MyBool2              1
+            // MyStructWithBool     1 + 3 to align up to the next multiple of 4 after placing a value class
+            //                      4 byte padding to make offset % pointer size == 0 before placing the next value class
+            // MyStructWithIntChar  6 + 2 to align up to the next multiple of 4 after placing a value class
+            // MyStructWithChar     2 + 2 to align up to the next multiple of 4 after placing a value class + 4 byte padding to make class size % pointer size == 0
             // -------------------
             //                  72 (0x48)
-            Assert.Equal(0x48, class1Type.InstanceByteCount.AsInt);
+            Assert.Equal(0x48, classWithStructsType.InstanceByteCount.AsInt);
 
-            foreach (var f in class1Type.GetFields())
+            foreach (var f in classWithStructsType.GetFields())
             {
                 if (f.IsStatic)
                     continue;
@@ -320,13 +320,13 @@ namespace TypeSystemTests
                     case "MyBool2":
                         Assert.Equal(0x2F, f.Offset.AsInt);
                         break;
-                    case "MyStruct0":
+                    case "MyStructWithBool":
                         Assert.Equal(0x30, f.Offset.AsInt);
                         break;
-                    case "MyStruct1":
+                    case "MyStructWithIntChar":
                         Assert.Equal(0x38, f.Offset.AsInt);
                         break;
-                    case "MyStruct2":
+                    case "MyStructWithChar":
                         Assert.Equal(0x40, f.Offset.AsInt);
                         break;
                     default:
@@ -337,38 +337,38 @@ namespace TypeSystemTests
         }
 
         [Fact]
-        public void TestAutoTypeLayout()
+        public void TestAutoTypeLayoutBaseClass7BytesRemaining()
         {
-            MetadataType class1Type = _testModule.GetType("Auto", "Class1_7BytesRemaining");
+            MetadataType baseClass7BytesRemainingType = _testModule.GetType("Auto", "BaseClass7BytesRemaining");
 
             // Byte count
             // Base Class       8
-            // MyByteArray      8
+            // MyByteArray1     8
             // MyString1        8
-            // MyDouble         8
-            // MyLong           8
+            // MyDouble1        8
+            // MyLong1          8
             // MyBool1          1 + 7 byte padding to make class size % pointer size == 0
             // -------------------
             //                  48 (0x30)
-            Assert.Equal(0x30, class1Type.InstanceByteCount.AsInt);
+            Assert.Equal(0x30, baseClass7BytesRemainingType.InstanceByteCount.AsInt);
 
-            foreach (var f in class1Type.GetFields())
+            foreach (var f in baseClass7BytesRemainingType.GetFields())
             {
                 if (f.IsStatic)
                     continue;
 
                 switch (f.Name)
                 {
-                    case "MyByteArray":
+                    case "MyByteArray1":
                         Assert.Equal(0x08, f.Offset.AsInt);
                         break;
                     case "MyString1":
                         Assert.Equal(0x10, f.Offset.AsInt);
                         break;
-                    case "MyDouble":
+                    case "MyDouble1":
                         Assert.Equal(0x18, f.Offset.AsInt);
                         break;
-                    case "MyLong":
+                    case "MyLong1":
                         Assert.Equal(0x20, f.Offset.AsInt);
                         break;
                     case "MyBool1":
@@ -382,46 +382,169 @@ namespace TypeSystemTests
         }
 
         [Fact]
-        public void TestAutoTypeLayoutInheritanceClass2()
+        public void TestAutoTypeLayoutBaseClass4BytesRemaining()
         {
-            MetadataType class2Type = _testModule.GetType("Auto", "Class2_3BytesRemaining");
+            MetadataType baseClass4BytesRemainingType = _testModule.GetType("Auto", "BaseClass4BytesRemaining");
 
             // Byte count
-            // Base Class       41 (unaligned)
-            // MyBool3          1
-            // MyChar2          2
-            // MyInt2           4
-            // MyString2        8
-            // MyInt3           4
-            // MyBool4          1 + 3 byte padding to make class size % pointer size == 0
+            // Base Class       8
+            // MyLong1          8
+            // MyUint1          4 + 4 byte padding to make class size % pointer size == 0
             // -------------------
-            //                  64 (0x40)
-            Assert.Equal(0x40, class2Type.InstanceByteCount.AsInt);
+            //                  24 (0x18)
+            Assert.Equal(0x18, baseClass4BytesRemainingType.InstanceByteCount.AsInt);
 
-            foreach (var f in class2Type.GetFields())
+            foreach (var f in baseClass4BytesRemainingType.GetFields())
             {
                 if (f.IsStatic)
                     continue;
 
                 switch (f.Name)
                 {
-                    case "MyBool3":
+                    case "MyLong1":
+                        Assert.Equal(0x08, f.Offset.AsInt);
+                        break;
+                    case "MyUint1":
+                        Assert.Equal(0x10, f.Offset.AsInt);
+                        break;
+                    default:
+                        Assert.True(false);
+                        break;
+                }
+            }
+        }
+
+        [Fact]
+        public void TestAutoTypeLayoutBaseClass3BytesRemaining()
+        {
+            MetadataType baseClass3BytesRemainingType = _testModule.GetType("Auto", "BaseClass3BytesRemaining");
+
+            // Byte count
+            // Base Class       8
+            // MyString1        8
+            // MyInt1           4
+            // MyBool1          1 + 3 byte padding to make class size % pointer size == 0
+            // -------------------
+            //                  24 (0x18)
+            Assert.Equal(0x18, baseClass3BytesRemainingType.InstanceByteCount.AsInt);
+
+            foreach (var f in baseClass3BytesRemainingType.GetFields())
+            {
+                if (f.IsStatic)
+                    continue;
+
+                switch (f.Name)
+                {
+                    case "MyString1":
+                        Assert.Equal(0x08, f.Offset.AsInt);
+                        break;
+                    case "MyInt1":
+                        Assert.Equal(0x10, f.Offset.AsInt);
+                        break;
+                    case "MyBool1":
+                        Assert.Equal(0x14, f.Offset.AsInt);
+                        break;
+                    default:
+                        Assert.True(false);
+                        break;
+                }
+            }
+        }
+
+        [Fact]
+        public void TestAutoTypeLayoutOptimizePartial()
+        {
+            MetadataType optimizePartialType = _testModule.GetType("Auto", "OptimizePartial");
+
+            // Byte count
+            // Base Class       41 (unaligned)
+            // OptBool          1
+            // OptChar          2 + 4 byte padding to make class size % pointer size == 0
+            // NoOptString      8
+            // NoOptLong        8
+            // -------------------
+            //                  64 (0x40)
+            Assert.Equal(0x40, optimizePartialType.InstanceByteCount.AsInt);
+
+            foreach (var f in optimizePartialType.GetFields())
+            {
+                if (f.IsStatic)
+                    continue;
+
+                switch (f.Name)
+                {
+                    case "OptBool":
                         Assert.Equal(0x29, f.Offset.AsInt);
                         break;
-                    case "MyChar2":
+                    case "OptChar":
                         Assert.Equal(0x2A, f.Offset.AsInt);
                         break;
-                    case "MyInt2":
+                    case "NoOptString":
+                        Assert.Equal(0x30, f.Offset.AsInt);
+                        break;
+                    case "NoOptLong":
+                        Assert.Equal(0x38, f.Offset.AsInt);
+                        break;
+                    default:
+                        Assert.True(false);
+                        break;
+                }
+            }
+        }
+
+        [Fact]
+        public void TestAutoTypeLayoutOptimize7Bools()
+        {
+            MetadataType optimize7BoolsType = _testModule.GetType("Auto", "Optimize7Bools");
+
+            // Byte count
+            // Base Class       41 (unaligned)
+            // OptBool1         1
+            // OptBool2         1
+            // OptBool3         1
+            // OptBool4         1
+            // OptBool5         1
+            // OptBool6         1
+            // OptBool7         1
+            // NoOptString      8
+            // NoOptBool8       1 + 7 byte padding to make class size % pointer size == 0
+            // -------------------
+            //                  64 (0x40)
+            Assert.Equal(0x40, optimize7BoolsType.InstanceByteCount.AsInt);
+
+            foreach (var f in optimize7BoolsType.GetFields())
+            {
+                if (f.IsStatic)
+                    continue;
+
+                switch (f.Name)
+                {
+                    case "OptBool1":
+                        Assert.Equal(0x29, f.Offset.AsInt);
+                        break;
+                    case "OptBool2":
+                        Assert.Equal(0x2A, f.Offset.AsInt);
+                        break;
+                    case "OptBool3":
+                        Assert.Equal(0x2B, f.Offset.AsInt);
+                        break;
+                    case "OptBool4":
                         Assert.Equal(0x2C, f.Offset.AsInt);
                         break;
-                    case "MyString2":
+                    case "OptBool5":
+                        Assert.Equal(0x2D, f.Offset.AsInt);
+                        break;
+                    case "OptBool6":
+                        Assert.Equal(0x2E, f.Offset.AsInt);
+                        break;
+                    case "OptBool7":
+                        Assert.Equal(0x2F, f.Offset.AsInt);
+                        break;
+                    case "NoOptString":
                         Assert.Equal(0x30, f.Offset.AsInt);
                         break;
-                    case "MyInt3":
+                    case "NoOptBool8":
                         Assert.Equal(0x38, f.Offset.AsInt);
-                        break;
-                    case "MyBool4":
-                        Assert.Equal(0x3C, f.Offset.AsInt);
                         break;
                     default:
                         Assert.True(false);
@@ -431,38 +554,49 @@ namespace TypeSystemTests
         }
 
         [Fact]
-        public void TestAutoTypeLayoutInheritanceClass5()
+        public void TestAutoTypeLayoutOptimizeAlignedFields()
         {
-            MetadataType class2Type = _testModule.GetType("Auto", "Class5");
+            MetadataType optimizeAlignedFieldsType = _testModule.GetType("Auto", "OptimizeAlignedFields");
 
             // Byte count
             // Base Class       41 (unaligned)
-            // MyBool4          1
-            // MyChar5          2
-            // MyBool5          1 + 1 byte padding to make class size % pointer size == 0
-            // MyString5        8
-            // MyLong5          8
+            // OptBool1         1
+            // OptChar1         2
+            // OptChar2         2
+            // OptBool2         1
+            // OptBool3         1
+            // NoOptString      8
+            // NoOptBool4       1 + 7 byte padding to make class size % pointer size == 0
             // -------------------
             //                  64 (0x40)
-            Assert.Equal(0x40, class2Type.InstanceByteCount.AsInt);
+            Assert.Equal(0x40, optimizeAlignedFieldsType.InstanceByteCount.AsInt);
 
-            foreach (var f in class2Type.GetFields())
+            foreach (var f in optimizeAlignedFieldsType.GetFields())
             {
                 if (f.IsStatic)
                     continue;
 
                 switch (f.Name)
                 {
-                    case "MyBool4":
+                    case "OptBool1":
                         Assert.Equal(0x29, f.Offset.AsInt);
                         break;
-                    case "MyChar5":
+                    case "OptChar1":
                         Assert.Equal(0x2A, f.Offset.AsInt);
                         break;
-                    case "MyString5":
+                    case "OptChar2":
+                        Assert.Equal(0x2C, f.Offset.AsInt);
+                        break;
+                    case "OptBool2":
+                        Assert.Equal(0x2E, f.Offset.AsInt);
+                        break;
+                    case "OptBool3":
+                        Assert.Equal(0x2F, f.Offset.AsInt);
+                        break;
+                    case "NoOptString":
                         Assert.Equal(0x30, f.Offset.AsInt);
                         break;
-                    case "MyLong5":
+                    case "NoOptBool4":
                         Assert.Equal(0x38, f.Offset.AsInt);
                         break;
                     default:
@@ -473,34 +607,104 @@ namespace TypeSystemTests
         }
 
         [Fact]
-        public void TestAutoTypeLayoutInheritanceClass6()
+        public void TestAutoTypeLayoutOptimizeLargestField()
         {
-            MetadataType class2Type = _testModule.GetType("Auto", "Class6");
+            MetadataType optimizeLargestFieldType = _testModule.GetType("Auto", "OptimizeLargestField");
 
             // Byte count
-            // Base Class       61 (unaligned) + 3 byte padding to make class size % pointer size == 0
-            // MyString6        8
-            // MyInt6           4
-            // MyChar6          2 + 2 byte padding to make class size % pointer size == 0
+            // Base Class       20 (unaligned)
+            // OptInt           4
+            // NoOptString      8
+            // NoOptChar        2
+            // NoOptBool        1 + 5 byte padding to make class size % pointer size == 0
             // -------------------
-            //                  80 (0x50)
-            Assert.Equal(0x50, class2Type.InstanceByteCount.AsInt);
+            //                  40 (0x28)
+            Assert.Equal(0x28, optimizeLargestFieldType.InstanceByteCount.AsInt);
 
-            foreach (var f in class2Type.GetFields())
+            foreach (var f in optimizeLargestFieldType.GetFields())
             {
                 if (f.IsStatic)
                     continue;
 
                 switch (f.Name)
                 {
-                    case "MyString6":
-                        Assert.Equal(0x40, f.Offset.AsInt);
+                    case "OptInt":
+                        Assert.Equal(0x14, f.Offset.AsInt);
                         break;
-                    case "MyInt6":
-                        Assert.Equal(0x48, f.Offset.AsInt);
+                    case "NoOptString":
+                        Assert.Equal(0x18, f.Offset.AsInt);
                         break;
-                    case "MyChar6":
-                        Assert.Equal(0x4C, f.Offset.AsInt);
+                    case "NoOptChar":
+                        Assert.Equal(0x20, f.Offset.AsInt);
+                        break;
+                    case "NoOptBool":
+                        Assert.Equal(0x22, f.Offset.AsInt);
+                        break;
+                    default:
+                        Assert.True(false);
+                        break;
+                }
+            }
+        }
+
+        [Fact]
+        public void TestAutoTypeLayoutNoOptimizeMisaligned()
+        {
+            MetadataType noOptimizeMisalignedType = _testModule.GetType("Auto", "NoOptimizeMisaligned");
+
+            // Byte count
+            // Base Class       21 (unaligned) + 3 byte padding to make class size % pointer size == 0
+            // NoOptString      8
+            // NoOptInt         4
+            // NoOptChar        2 + 2 byte padding to make class size % pointer size == 0
+            // -------------------
+            //                  40 (0x28)
+            Assert.Equal(0x28, noOptimizeMisalignedType.InstanceByteCount.AsInt);
+
+            foreach (var f in noOptimizeMisalignedType.GetFields())
+            {
+                if (f.IsStatic)
+                    continue;
+
+                switch (f.Name)
+                {
+                    case "NoOptString":
+                        Assert.Equal(0x18, f.Offset.AsInt);
+                        break;
+                    case "NoOptInt":
+                        Assert.Equal(0x20, f.Offset.AsInt);
+                        break;
+                    case "NoOptChar":
+                        Assert.Equal(0x24, f.Offset.AsInt);
+                        break;
+                    default:
+                        Assert.True(false);
+                        break;
+                }
+            }
+        }
+
+        [Fact]
+        public void TestAutoTypeLayoutNoOptimizeCharAtSize2Alignment()
+        {
+            MetadataType noOptimizeCharAtSize2AlignmentType = _testModule.GetType("Auto", "NoOptimizeCharAtSize2Alignment");
+
+            // Byte count
+            // Base Class       21 (unaligned) + 1 byte padding to align char
+            // NoOptChar        2
+            // -------------------
+            //                  24 (0x18)
+            Assert.Equal(0x18, noOptimizeCharAtSize2AlignmentType.InstanceByteCount.AsInt);
+
+            foreach (var f in noOptimizeCharAtSize2AlignmentType.GetFields())
+            {
+                if (f.IsStatic)
+                    continue;
+
+                switch (f.Name)
+                {
+                    case "NoOptChar":
+                        Assert.Equal(0x16, f.Offset.AsInt);
                         break;
                     default:
                         Assert.True(false);
