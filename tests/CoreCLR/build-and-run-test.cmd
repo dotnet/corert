@@ -20,6 +20,9 @@ set TestFileName=%~n2
 
 copy /Y %~dp0\Test.csproj %TestFolder%
 
+:: Cleanup previous test run artifacts since the test may have been run with /NoCleanup
+rd /s /q %TestFolder%\native
+
 ::
 :: The CoreCLR test system configures the VS environment as 32-bit by default,
 :: so override if we're doing a 64-bit test run
@@ -91,7 +94,9 @@ set TestExitCode=!ERRORLEVEL!
 :: CoreCLR pri-0 tests at ~50MB of native artifacts per test, we can easily use 300GB
 :: of disk space and clog up the CI machines
 ::
-rd /s /q %TestFolder%\native
+if not "%CoreRT_NoCleanup%"=="true" (
+    rd /s /q %TestFolder%\native
+)
 
 
 ::
