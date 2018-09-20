@@ -422,17 +422,21 @@ namespace Internal.TypeSystem
                 if (field.IsStatic)
                     continue;
 
-                if (IsByValueClass(field.FieldType))
+                TypeDesc fieldType = field.FieldType;
+                if (IsByValueClass(fieldType))
                 {
                     instanceValueClassFieldCount++;
                 }
-                else if (field.FieldType.IsGCPointer)
+                else if (fieldType.IsGCPointer)
                 {
                     instanceGCPointerFieldsCount++;
                 }
                 else
                 {
-                    var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, packingSize);
+                    
+                    Debug.Assert(fieldType.IsPrimitive || fieldType.IsPointer || fieldType.IsFunctionPointer);
+
+                    var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, packingSize);
                     instanceNonGCPointerFieldsCount[CalculateLog2(fieldSizeAndAlignment.Size.AsInt)]++;
                 }
             }
@@ -465,14 +469,16 @@ namespace Internal.TypeSystem
                 if (field.IsStatic)
                     continue;
 
-                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, packingSize);
+                TypeDesc fieldType = field.FieldType;
+                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, packingSize);
                 largestAlignmentRequired = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequired);
 
-                if (IsByValueClass(field.FieldType))
+
+                if (IsByValueClass(fieldType))
                 {
                     instanceValueClassFieldsArr[instanceValueClassFieldCount++] = field;
                 }
-                else if (field.FieldType.IsGCPointer)
+                else if (fieldType.IsGCPointer)
                 {
                     instanceGCPointerFieldsArr[instanceGCPointerFieldsCount++] = field;
                 }
