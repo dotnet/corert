@@ -2612,11 +2612,13 @@ namespace Internal.JitInterface
 
                 if (targetMethod.IsIntrinsic)
                 {
+#if !READYTORUN
                     // If this is an intrinsic method with a callsite-specific expansion, this will replace
                     // the method with a method the intrinsic expands into. If it's not the special intrinsic,
                     // method stays unchanged.
                     var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
                     targetMethod = _compilation.ExpandIntrinsicForCallsite(targetMethod, methodIL.OwningMethod);
+#endif
 
                     // For multidim array Address method, we pretend the method requires a hidden instantiation argument
                     // (even though it doesn't need one). We'll actually swap the method out for a differnt one with
