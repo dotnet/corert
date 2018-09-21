@@ -207,11 +207,15 @@ namespace Internal.JitInterface
 
                 PublishCode();
             }
-            finally
+            catch (Exception)
             {
 #if READYTORUN
                 PublishEmptyCode();
 #endif
+                throw;
+            }
+            finally
+            {
                 CompileMethodCleanup();
             }
         }

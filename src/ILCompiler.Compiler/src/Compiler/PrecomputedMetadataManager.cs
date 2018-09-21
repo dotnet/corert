@@ -388,7 +388,7 @@ namespace ILCompiler
             MethodDesc requiredGenericFieldsMethod = typeWithMetadataMappings.GetMethod("RequiredGenericFields", null);
             MethodDesc requiredTemplatesMethod = typeWithMetadataMappings.GetMethod("CompilerDeterminedInstantiations", null);
 
-            ILProvider ilProvider = new ILProvider(null);
+            ILProvider ilProvider = new ILProvider(null, readyToRunMode: false);
 
             MetadataLoadedInfo result = new MetadataLoadedInfo();
 
@@ -877,7 +877,7 @@ namespace ILCompiler
             if (dynamicInvokeStubDescriptorMethod == null)
                 return dynamicInvokeMapTable;
 
-            ILProvider ilProvider = new ILProvider(null);
+            ILProvider ilProvider = new ILProvider(null, readyToRunMode: false);
             ILStreamReader il = new ILStreamReader(ilProvider.GetMethodIL(dynamicInvokeStubDescriptorMethod));
             // structure is 
             // REPEAT N TIMES    

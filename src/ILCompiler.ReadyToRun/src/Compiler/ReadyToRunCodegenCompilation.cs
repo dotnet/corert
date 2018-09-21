@@ -125,9 +125,7 @@ namespace ILCompiler
                 }
             }
         }
-        public override MethodIL GetMethodIL(MethodDesc method)
-        {
-            return null;
-        }
+
+        protected override bool IsReadyToRunMode => true;
     }
 }

@@ -15,11 +15,14 @@ namespace Internal.IL
 {
     internal sealed class ILProvider : LockFreeReaderHashtable<MethodDesc, ILProvider.MethodILData>
     {
-        private PInvokeILProvider _pinvokeILProvider;
+        private readonly PInvokeILProvider _pinvokeILProvider;
 
-        public ILProvider(PInvokeILProvider pinvokeILProvider)
+        private readonly bool _readyToRunMode;
+
+        public ILProvider(PInvokeILProvider pinvokeILProvider, bool readyToRunMode)
         {
             _pinvokeILProvider = pinvokeILProvider;
+            _readyToRunMode = readyToRunMode;
         }
 
         private MethodIL TryGetRuntimeImplementedMethodIL(MethodDesc method)
@@ -277,6 +280,10 @@ namespace Internal.IL
 
                 if (method.IsPInvoke)
                 {
+                    if (_readyToRunMode)
+                    {
+                        return null;
+                    }
                     var pregenerated = McgInteropSupport.TryGetPregeneratedPInvoke(method);
                     if (pregenerated == null)
                         return _pinvokeILProvider.EmitIL(method);

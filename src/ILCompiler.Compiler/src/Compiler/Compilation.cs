@@ -69,20 +69,20 @@ namespace ILCompiler
             // https://github.com/dotnet/corert/issues/2149
             if (nodeFactory.IsCppCodegenTemporaryWorkaround) forceLazyPInvokeResolution = false;
             PInvokeILProvider = new PInvokeILProvider(new PInvokeILEmitterConfiguration(forceLazyPInvokeResolution), nodeFactory.InteropStubManager.InteropStateManager);
-
-            _methodILCache = new ILProvider(PInvokeILProvider);
         }
 
         private ILProvider _methodILCache;
         
-        public virtual MethodIL GetMethodIL(MethodDesc method)
+        public MethodIL GetMethodIL(MethodDesc method)
         {
             // Flush the cache when it grows too big
-            if (_methodILCache.Count > 1000)
-                _methodILCache = new ILProvider(PInvokeILProvider);
+            if (_methodILCache == null || _methodILCache.Count > 1000)
+                _methodILCache = new ILProvider(PInvokeILProvider, IsReadyToRunMode);
 
             return _methodILCache.GetMethodIL(method);
         }
+
+        protected virtual bool IsReadyToRunMode => false;
 
         protected abstract void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj);
 
