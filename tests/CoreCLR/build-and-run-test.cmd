@@ -57,9 +57,10 @@ shift
 
 :: Typically arguments on the command line are separated by spaces. The R2R test harness uses System.CommandLine which uses
 :: a comma to separate multiple arguments in an argument list.
-set "Delimiter=--testargs "
+set "Delimiter="
 set "DelimiterTemplate= "
 if /i "%NativeCodeGen%" == "readytorun" (
+    set "Delimiter=--testargs "
     set "DelimiterTemplate= --testargs "
 )
 
