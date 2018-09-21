@@ -426,9 +426,6 @@
   <data name="Arg_RegKeyNotFound" xml:space="preserve">
     <value>The specified registry key does not exist.</value>
   </data>
-  <data name="Arg_RegInvalidKeyName" xml:space="preserve">
-    <value>Registry key name must start with a valid base key name.</value>
-  </data>
   <data name="Arg_SecurityException" xml:space="preserve">
     <value>Security error.</value>
   </data>

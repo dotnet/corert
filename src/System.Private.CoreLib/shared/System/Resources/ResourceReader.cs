@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -15,18 +15,21 @@
 ** 
 ===========================================================*/
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Reflection;
-using System.Runtime.Versioning;
-using System.Text;
-
 namespace System.Resources
 {
+    using System;
+    using System.IO;
+    using System.Text;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Reflection;
+    using System.Security;
+    using System.Globalization;
+    using System.Configuration.Assemblies;
+    using System.Runtime.Versioning;
+    using System.Diagnostics;
+    using System.Diagnostics.Contracts;
+
     // Provides the default implementation of IResourceReader, reading
     // .resources file from the system default binary format.  This class
     // can be treated as an enumerator once.
@@ -102,9 +105,6 @@ namespace System.Resources
         // Version number of .resources file, for compatibility
         private int _version;
 
-#if RESOURCE_FILE_FORMAT_DEBUG
-        private bool _debug;   // Whether this file has debugging stuff in it.
-#endif
 
         public ResourceReader(string fileName)
         {
@@ -117,7 +117,7 @@ namespace System.Resources
             }
             catch
             {
-                _store.Dispose(); // If we threw an exception, close the file.
+                _store.Close(); // If we threw an exception, close the file.
                 throw;
             }
         }
@@ -178,7 +178,7 @@ namespace System.Resources
                     BinaryReader copyOfStore = _store;
                     _store = null;
                     if (copyOfStore != null)
-                        copyOfStore.Dispose();
+                        copyOfStore.Close();
                 }
                 _store = null;
                 _namePositions = null;
@@ -196,38 +196,10 @@ namespace System.Resources
             return buffer[0] | (buffer[1] << 8) | (buffer[2] << 16) | (buffer[3] << 24);
         }
 
-        internal int Read7BitEncodedInt()
-        {
-            // Read out an Int32 7 bits at a time.  The high bit
-            // of the byte when on means to continue reading more bytes.
-            int count = 0;
-            int shift = 0;
-            byte b;
-            do
-            {
-                // Check for a corrupted stream.  Read a max of 5 bytes.
-                // In a future version, add a DataFormatException.
-                if (shift == 5 * 7)  // 5 bytes max per Int32, shift += 7
-                    throw new FormatException(SR.Format_Bad7BitInt32);
-
-                // ReadByte handles end of stream cases for us.
-                b = _store.ReadByte();
-                count |= (b & 0x7F) << shift;
-                shift += 7;
-            } while ((b & 0x80) != 0);
-            return count;
-        }
-
-
-        private void SkipInt32()
-        {
-            _store.BaseStream.Seek(4, SeekOrigin.Current);
-        }
-
 
         private void SkipString()
         {
-            int stringLength = Read7BitEncodedInt();
+            int stringLength = _store.Read7BitEncodedInt();
             if (stringLength < 0)
             {
                 throw new BadImageFormatException(SR.BadImageFormat_NegativeStringLength);
@@ -288,6 +260,7 @@ namespace System.Resources
         {
             Debug.Assert(_store != null, "ResourceReader is closed!");
             int hash = FastResourceComparer.HashFunction(name);
+
             // Binary search over the hashes.  Use the _namePositions array to 
             // determine where they exist in the underlying stream.
             int lo = 0;
@@ -307,7 +280,7 @@ namespace System.Resources
                     c = -1;
                 else
                     c = 1;
-                //BCLDebug.Log("RESMGRFILEFORMAT", "  Probing index "+index+"  lo: "+lo+"  hi: "+hi+"  c: "+c);
+
                 if (c == 0)
                 {
                     success = true;
@@ -367,7 +340,7 @@ namespace System.Resources
         private unsafe bool CompareStringEqualsName(string name)
         {
             Debug.Assert(_store != null, "ResourceReader is closed!");
-            int byteLen = Read7BitEncodedInt();
+            int byteLen = _store.Read7BitEncodedInt();
             if (byteLen < 0)
             {
                 throw new BadImageFormatException(SR.BadImageFormat_NegativeStringLength);
@@ -416,7 +389,7 @@ namespace System.Resources
             {
                 _store.BaseStream.Seek(nameVA + _nameSectionOffset, SeekOrigin.Begin);
                 // Can't use _store.ReadString, since it's using UTF-8!
-                byteLen = Read7BitEncodedInt();
+                byteLen = _store.Read7BitEncodedInt();
                 if (byteLen < 0)
                 {
                     throw new BadImageFormatException(SR.BadImageFormat_NegativeStringLength);
@@ -429,6 +402,7 @@ namespace System.Resources
 
                     string s = null;
                     char* charPtr = (char*)_ums.PositionPointer;
+
                     s = new string(charPtr, 0, byteLen / 2);
 
                     _ums.Position += byteLen;
@@ -472,7 +446,7 @@ namespace System.Resources
             {
                 _store.BaseStream.Seek(nameVA + _nameSectionOffset, SeekOrigin.Begin);
                 SkipString();
-                //BCLDebug.Log("RESMGRFILEFORMAT", "GetValueForNameIndex for index: "+index+"  skip (name length): "+skip);
+
                 int dataPos = _store.ReadInt32();
                 if (dataPos < 0 || dataPos >= _store.BaseStream.Length - _dataSectionOffset)
                 {
@@ -495,7 +469,7 @@ namespace System.Resources
             Debug.Assert(_store != null, "ResourceReader is closed!");
             _store.BaseStream.Seek(_dataSectionOffset + pos, SeekOrigin.Begin);
             string s = null;
-            int typeIndex = Read7BitEncodedInt();
+            int typeIndex = _store.Read7BitEncodedInt();
             if (_version == 1)
             {
                 if (typeIndex == -1)
@@ -570,7 +544,7 @@ namespace System.Resources
         private object _LoadObjectV1(int pos)
         {
             _store.BaseStream.Seek(_dataSectionOffset + pos, SeekOrigin.Begin);
-            int typeIndex = Read7BitEncodedInt();
+            int typeIndex = _store.Read7BitEncodedInt();
             if (typeIndex == -1)
                 return null;
             Type type = FindType(typeIndex);
@@ -645,7 +619,7 @@ namespace System.Resources
         private object _LoadObjectV2(int pos, out ResourceTypeCode typeCode)
         {
             _store.BaseStream.Seek(_dataSectionOffset + pos, SeekOrigin.Begin);
-            typeCode = (ResourceTypeCode)Read7BitEncodedInt();
+            typeCode = (ResourceTypeCode)_store.Read7BitEncodedInt();
 
             switch (typeCode)
             {
@@ -1020,7 +994,7 @@ namespace System.Resources
                 {
                     _store.BaseStream.Position = _nameSectionOffset + GetNamePosition(i);
                     // Skip over name of resource
-                    int numBytesToSkip = Read7BitEncodedInt();
+                    int numBytesToSkip = _store.Read7BitEncodedInt();
                     if (numBytesToSkip < 0)
                     {
                         throw new FormatException(SR.Format(SR.BadImageFormat_ResourcesNameInvalidOffset, numBytesToSkip));
@@ -1044,7 +1018,7 @@ namespace System.Resources
 
                 // Read type code then byte[]
                 _store.BaseStream.Position = _dataSectionOffset + dataPos;
-                ResourceTypeCode typeCode = (ResourceTypeCode)Read7BitEncodedInt();
+                ResourceTypeCode typeCode = (ResourceTypeCode)_store.Read7BitEncodedInt();
                 if (typeCode < 0 || typeCode >= ResourceTypeCode.StartOfUserTypes + _typeTable.Length)
                 {
                     throw new BadImageFormatException(SR.BadImageFormat_InvalidType);

@@ -425,10 +425,6 @@ namespace ILCompiler.CppCodeGen
 
             try
             {
-                // TODO: hacky special-case
-                if (method.Name == "_ecvt_s")
-                    throw new NotImplementedException();
-
                 var ilImporter = new ILImporter(_compilation, this, method, methodIL);
 
                 CompilerTypeSystemContext typeSystemContext = _compilation.TypeSystemContext;
@@ -1349,7 +1345,7 @@ namespace ILCompiler.CppCodeGen
             {
                 string importName = externC.Key;
                 // TODO: hacky special-case
-                if (importName != "memmove" && importName != "malloc") // some methods are already declared by the CRT headers
+                if (importName != "memmove" && importName != "memset" && importName != "malloc") // some methods are already declared by the CRT headers
                 {
                     sb.AppendLine();
                     AppendCppMethodDeclaration(sb, null, false, importName, externC.Value);

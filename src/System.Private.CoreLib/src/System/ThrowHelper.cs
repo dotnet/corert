@@ -332,6 +332,8 @@ namespace System
                     return "comparisonType";
                 case ExceptionArgument.manager:
                     return "manager";
+                case ExceptionArgument.sourceBytesToCopy:
+                    return "sourceBytesToCopy";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -432,7 +434,8 @@ namespace System
         state,
         length,
         comparisonType,
-        manager
+        manager,
+        sourceBytesToCopy
     }
 
     //
