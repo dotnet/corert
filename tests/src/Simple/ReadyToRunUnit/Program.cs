@@ -9,11 +9,13 @@ using System.Text;
 
 internal class Program
 {
+    const int LineCountInitialValue = 0x12345678;
+    
     [ThreadStatic]
     private static string TextFileName = @"C:\Windows\Microsoft.NET\Framework\v4.0.30319\clientexclusionlist.xml";
 
     [ThreadStatic]
-    private static int LineCount = 0x12345678;
+    private static int LineCount = LineCountInitialValue;
 
     private static List<string> _passedTests;
 
@@ -59,6 +61,15 @@ internal class Program
             Console.Error.WriteLine($@"Object is not an int: {obj}");
             return false;
         }
+    }
+    
+    private unsafe static bool CheckNonGCThreadLocalStatic()
+    {
+        fixed (int *lineCountPtr = &LineCount)
+        {
+            Console.WriteLine($@"LineCount: 0x{LineCount:X8}, @ = 0x{(ulong)lineCountPtr:X8}");
+        }
+        return LineCount == LineCountInitialValue;
     }
     
     private static bool ChkCast()
@@ -431,6 +442,7 @@ internal class Program
         RunTest("WriteLine", WriteLine());
         RunTest("IsInstanceOf", IsInstanceOf());
         RunTest("IsInstanceOfValueType", IsInstanceOfValueType());
+        RunTest("CheckNonGCThreadLocalStatic", CheckNonGCThreadLocalStatic());
         RunTest("ChkCast", ChkCast());
         RunTest("ChkCastValueType", ChkCastValueType());
         RunTest("BoxUnbox", BoxUnbox());
