@@ -21,18 +21,31 @@ namespace ILCompiler
         /// </summary>
         private const int ThreadLocalModuleDataBlobOffsetAsIntPtrCount = 3;
 
+        /// <summary>
+        /// In accordance with the algorithm in
+        /// <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/ceeload.cpp">Module::BuildStaticsOffsets</a>
+        /// we need to take the number of type definitions within the MSIL module into account
+        /// when calculating the statics base
+        /// </summary>
         private LayoutInt _initialNonGcStaticsOffset;
+
+        /// <summary>
+        /// The algorithm for laying out non-GC TLS is basically the same as for normal statics except for
+        /// the additive constant representing the DataBlobOffset in the respective CoreCLR structures.
+        /// </summary>
+        private LayoutInt _initialNonGcThreadStaticsOffset;
 
         public ReadyToRunMetadataFieldLayoutAlgorithm(TargetDetails target, int numberOfTypesInModule)
         {
             _initialNonGcStaticsOffset = new LayoutInt(DomainLocalModuleDataBlobOffsetAsIntPtrCount * target.PointerSize + numberOfTypesInModule);
+            _initialNonGcThreadStaticsOffset = new LayoutInt(ThreadLocalModuleDataBlobOffsetAsIntPtrCount * target.PointerSize + numberOfTypesInModule);
         }
 
         protected override void PrepareRuntimeSpecificStaticFieldLayout(TypeSystemContext context, ref ComputedStaticFieldLayout layout)
         {
             layout.NonGcStatics.Size = _initialNonGcStaticsOffset;
             layout.GcStatics.Size = LayoutInt.Zero;
-            layout.ThreadNonGcStatics.Size = LayoutInt.Zero;
+            layout.ThreadNonGcStatics.Size = _initialNonGcThreadStaticsOffset;
             layout.ThreadGcStatics.Size = LayoutInt.Zero;
         }
 
@@ -42,6 +55,11 @@ namespace ILCompiler
             {
                 // No non-GC statics, set statics size to 0
                 layout.NonGcStatics.Size = LayoutInt.Zero;
+            }
+            if (layout.ThreadNonGcStatics.Size == _initialNonGcThreadStaticsOffset)
+            {
+                // No non-GC thread-local statics, set statics size to 0
+                layout.ThreadNonGcStatics.Size = LayoutInt.Zero;
             }
         }
     }
