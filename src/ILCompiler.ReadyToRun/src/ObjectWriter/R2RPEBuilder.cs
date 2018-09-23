@@ -62,12 +62,17 @@ namespace ILCompiler.PEWriter
         /// Name of the text section.
         /// </summary>
         public const string TextSectionName = ".text";
-        
+
+        /// <summary>
+        /// Name of the initialized data section.
+        /// </summary>
+        public const string SDataSectionName = ".sdata";
+
         /// <summary>
         /// Name of the resource section.
         /// </summary>
         public const string RsrcSectionName = ".rsrc";
-        
+
         /// <summary>
         /// Name of the relocation section.
         /// </summary>
@@ -155,6 +160,7 @@ namespace ILCompiler.PEWriter
             ImmutableArray<Section>.Builder sectionListBuilder = ImmutableArray.CreateBuilder<Section>();
 
             int textSectionIndex = -1;
+            int sdataSectionIndex = -1;
             int rsrcSectionIndex = -1;
             int relocSectionIndex = -1;
             
@@ -165,7 +171,11 @@ namespace ILCompiler.PEWriter
                     case TextSectionName:
                         textSectionIndex = sectionIndex;
                         break;
-                    
+
+                    case SDataSectionName:
+                        sdataSectionIndex = sectionIndex;
+                        break;
+
                     case RsrcSectionName:
                         rsrcSectionIndex = sectionIndex;
                         break;
@@ -192,6 +202,12 @@ namespace ILCompiler.PEWriter
                 {
                     sectionListBuilder.Add(new Section(nameCharPair.SectionName, nameCharPair.Characteristics));
                 }
+            }
+
+            if (sdataSectionIndex >= 0 && !sectionNames.Any((sc) => sc.SectionName == SDataSectionName))
+            {
+                SectionHeader sectionHeader = peReader.PEHeaders.SectionHeaders[sdataSectionIndex];
+                sectionListBuilder.Add(new Section(sectionHeader.Name, sectionHeader.SectionCharacteristics));
             }
 
             if (rsrcSectionIndex >= 0 && !sectionNames.Any((sc) => sc.SectionName == RsrcSectionName))

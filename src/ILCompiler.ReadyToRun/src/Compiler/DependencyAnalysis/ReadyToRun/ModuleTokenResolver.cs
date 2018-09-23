@@ -151,22 +151,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void AddModuleTokenForType(TypeDesc type, ModuleToken token)
         {
-            InstantiatedType instantiatedType = type as InstantiatedType;
-            if (instantiatedType != null)
-            {
-                // Collect type tokens for generic arguments
-                switch (token.TokenType)
-                {
-                    case CorTokenType.mdtTypeSpec:
-                        {
-                            TypeSpecification typeSpec = token.MetadataReader.GetTypeSpecification((TypeSpecificationHandle)token.Handle);
-                            typeSpec.DecodeSignature(new TokenResolverProvider(this, token.Module), this);
-                        }
-                        break;
+            bool specialTypeFound = false;
 
-                    default:
-                        throw new NotImplementedException();
-                }
+            // Collect underlying type tokens for type specifications
+            if (token.TokenType == CorTokenType.mdtTypeSpec)
+            {
+                TypeSpecification typeSpec = token.MetadataReader.GetTypeSpecification((TypeSpecificationHandle)token.Handle);
+                typeSpec.DecodeSignature(new TokenResolverProvider(this, token.Module), this);
+                specialTypeFound = true;
             }
 
             if (_compilationModuleGroup.ContainsType(type))
@@ -184,7 +176,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     _typeToRefTokens[ecmaType] = token;
                 }
             }
-            else if (instantiatedType == null)
+            else if (!specialTypeFound)
             {
                 throw new NotImplementedException(type.ToString());
             }
@@ -235,7 +227,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             public DummyTypeInfo GetGenericMethodParameter(ModuleTokenResolver genericContext, int index)
             {
-                throw new NotImplementedException();
+                return DummyTypeInfo.Instance;
             }
 
             public DummyTypeInfo GetGenericTypeParameter(ModuleTokenResolver genericContext, int index)

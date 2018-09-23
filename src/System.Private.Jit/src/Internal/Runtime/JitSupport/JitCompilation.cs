@@ -22,7 +22,7 @@ namespace ILCompiler
             _typeSystemContext = context;
             _typeGetTypeMethodThunks = new TypeGetTypeMethodThunkCache(context.GetWellKnownType(WellKnownType.Object));
             _pInvokeILProvider = new PInvokeILProvider(new PInvokeILEmitterConfiguration(forceLazyResolution: true), null);
-            _methodILCache = new ILProvider(_pInvokeILProvider);
+            _methodILCache = new ILProvider(_pInvokeILProvider, readyToRunMode: false);
             _nodeFactory = new NodeFactory(context);
             _devirtualizationManager = new DevirtualizationManager();
         }
@@ -60,7 +60,7 @@ namespace ILCompiler
         {
             // Flush the cache when it grows too big
             if (_methodILCache.Count > 1000)
-                _methodILCache = new ILProvider(_pInvokeILProvider);
+                _methodILCache = new ILProvider(_pInvokeILProvider, readyToRunMode: false);
 
             return _methodILCache.GetMethodIL(method);
         }

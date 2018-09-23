@@ -977,6 +977,9 @@ namespace Internal.JitInterface
             else
             {
                 TypeDesc type = (TypeDesc)result;
+#if READYTORUN
+                _compilation.NodeFactory.Resolver.AddModuleTokenForType(type, new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token));
+#endif
                 if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
                 {
                     if (type.IsVoid)
@@ -985,10 +988,6 @@ namespace Internal.JitInterface
                     type = type.MakeArrayType();
                 }
                 pResolvedToken.hClass = ObjectToHandle(type);
-
-#if READYTORUN
-                _compilation.NodeFactory.Resolver.AddModuleTokenForType(type, new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token));
-#endif
             }
 
             pResolvedToken.pTypeSpec = null;
@@ -2586,6 +2585,7 @@ namespace Internal.JitInterface
 
             pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
 
+#if !READYTORUN
             bool allowInstParam = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ALLOWINSTPARAM) != 0;
 
             if (directCall && !allowInstParam && targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstArg())
@@ -2621,7 +2621,9 @@ namespace Internal.JitInterface
                         CreateConstLookupToSymbol(_compilation.NodeFactory.FatFunctionPointer(targetMethod));
                 }
             }
-            else if (directCall)
+            else
+#endif
+            if (directCall)
             {
                 bool referencingArrayAddressMethod = false;
 
@@ -2642,7 +2644,9 @@ namespace Internal.JitInterface
                 }
 
                 MethodDesc concreteMethod = targetMethod;
+#if !READYTORUN
                 targetMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+#endif
 
                 pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
 

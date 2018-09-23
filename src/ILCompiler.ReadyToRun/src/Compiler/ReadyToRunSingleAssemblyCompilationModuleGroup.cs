@@ -43,6 +43,13 @@ namespace ILCompiler
 
         public sealed override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)
         {
+            if (method is ArrayMethod)
+            {
+                // TODO-PERF: for now, we never emit native code for array methods as Crossgen ignores
+                // them too. At some point we might be able to "exceed Crossgen CQ" by adding this support.
+                return false;
+            }
+
             if (method.HasInstantiation)
                 return true;
 
