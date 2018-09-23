@@ -388,13 +388,11 @@ namespace ILCompiler
             MethodDesc requiredGenericFieldsMethod = typeWithMetadataMappings.GetMethod("RequiredGenericFields", null);
             MethodDesc requiredTemplatesMethod = typeWithMetadataMappings.GetMethod("CompilerDeterminedInstantiations", null);
 
-            ILProvider ilProvider = new ILProvider(null);
-
             MetadataLoadedInfo result = new MetadataLoadedInfo();
 
             if (fullMetadataMethod != null)
             {
-                MethodIL fullMethodIL = ilProvider.GetMethodIL(fullMetadataMethod);
+                MethodIL fullMethodIL = EcmaMethodIL.Create((EcmaMethod)fullMetadataMethod);
                 ReadMetadataMethod(fullMethodIL, result.AllTypeMappings, result.MethodMappings, result.FieldMappings, metadataModules);
                 foreach (var mapping in result.AllTypeMappings)
                 {
@@ -404,7 +402,7 @@ namespace ILCompiler
 
             if (weakMetadataMethod != null)
             {
-                MethodIL weakMethodIL = ilProvider.GetMethodIL(weakMetadataMethod);
+                MethodIL weakMethodIL = EcmaMethodIL.Create((EcmaMethod)weakMetadataMethod);
                 Dictionary<MethodDesc, int> weakMethodMappings = new Dictionary<MethodDesc, int>();
                 Dictionary<FieldDesc, int> weakFieldMappings = new Dictionary<FieldDesc, int>();
                 ReadMetadataMethod(weakMethodIL, result.WeakReflectedTypeMappings, weakMethodMappings, weakFieldMappings, metadataModules);
@@ -417,7 +415,7 @@ namespace ILCompiler
 
             if (requiredGenericTypesMethod != null)
             {
-                foreach (var type in ReadRequiredGenericsEntities(ilProvider.GetMethodIL(requiredGenericTypesMethod)))
+                foreach (var type in ReadRequiredGenericsEntities(EcmaMethodIL.Create((EcmaMethod)requiredGenericTypesMethod)))
                 {
                     Debug.Assert(type is DefType);
                     result.RequiredGenericTypes.Add((TypeDesc)type);
@@ -426,19 +424,19 @@ namespace ILCompiler
 
             if (requiredGenericMethodsMethod != null)
             {
-                foreach (var method in ReadRequiredGenericsEntities(ilProvider.GetMethodIL(requiredGenericMethodsMethod)))
+                foreach (var method in ReadRequiredGenericsEntities(EcmaMethodIL.Create((EcmaMethod)requiredGenericMethodsMethod)))
                     result.RequiredGenericMethods.Add((MethodDesc)method);
             }
 
             if (requiredGenericFieldsMethod != null)
             {
-                foreach (var field in ReadRequiredGenericsEntities(ilProvider.GetMethodIL(requiredGenericFieldsMethod)))
+                foreach (var field in ReadRequiredGenericsEntities(EcmaMethodIL.Create((EcmaMethod)requiredGenericFieldsMethod)))
                     result.RequiredGenericFields.Add((FieldDesc)field);
             }
 
             if (requiredTemplatesMethod != null)
             {
-                ReadRequiredTemplates(ilProvider.GetMethodIL(requiredTemplatesMethod),
+                ReadRequiredTemplates(EcmaMethodIL.Create((EcmaMethod)requiredTemplatesMethod),
                     result.RequiredTemplateTypes,
                     result.RequiredTemplateMethods,
                     result.RequiredTemplateFields);
@@ -877,8 +875,7 @@ namespace ILCompiler
             if (dynamicInvokeStubDescriptorMethod == null)
                 return dynamicInvokeMapTable;
 
-            ILProvider ilProvider = new ILProvider(null);
-            ILStreamReader il = new ILStreamReader(ilProvider.GetMethodIL(dynamicInvokeStubDescriptorMethod));
+            ILStreamReader il = new ILStreamReader(EcmaMethodIL.Create((EcmaMethod)dynamicInvokeStubDescriptorMethod));
             // structure is 
             // REPEAT N TIMES    
             //ldtoken method
