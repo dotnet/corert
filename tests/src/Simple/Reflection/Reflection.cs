@@ -37,6 +37,7 @@ internal class ReflectionTest
         TestAssemblyAndModuleAttributes.Run();
         TestAttributeExpressions.Run();
         TestParameterAttributes.Run();
+        TestNecessaryEETypeReflection.Run();
 
         //
         // Mostly functionality tests
@@ -501,6 +502,25 @@ internal class ReflectionTest
                 if (toStringGeneric(ref fooGeneric) != "Hello System.Object")
                     throw new Exception();
             }
+        }
+    }
+
+    class TestNecessaryEETypeReflection
+    {
+        struct NeverUsed { }
+
+        public static unsafe void Run()
+        {
+            Console.WriteLine(nameof(TestNecessaryEETypeReflection));
+
+            // Pointer types don't have a constructed EEType form but the compiler should
+            // still track them as reflectable if a typeof happens.
+            Type necessaryType = typeof(NeverUsed*);
+
+            Type neverUsedType = necessaryType.GetElementType();
+
+            if (neverUsedType.Name != nameof(NeverUsed))
+                throw new Exception();
         }
     }
 
