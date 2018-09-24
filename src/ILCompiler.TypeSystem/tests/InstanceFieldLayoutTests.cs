@@ -267,9 +267,41 @@ namespace TypeSystemTests
         }
 
         [Fact]
-        public void TestAutoTypeLayoutClassWithStructs()
+        public void TestAutoLayoutStruct()
         {
-            MetadataType classWithStructsType = _testModule.GetType("Auto", "ClassWithStructs");
+            MetadataType structWithIntCharType = _testModule.GetType("Auto", "StructWithIntChar");
+
+            // Byte count
+            // MyStructInt       4
+            // MyStructChar      2
+            // -------------------
+            //                   8 (0x08)
+            Assert.Equal(0x08, structWithIntCharType.InstanceByteCount.AsInt);
+
+            foreach (var f in structWithIntCharType.GetFields())
+            {
+                if (f.IsStatic)
+                    continue;
+
+                switch (f.Name)
+                {
+                    case "MyStructInt":
+                        Assert.Equal(0x00, f.Offset.AsInt);
+                        break;
+                    case "MyStructChar":
+                        Assert.Equal(0x04, f.Offset.AsInt);
+                        break;
+                    default:
+                        Assert.True(false);
+                        break;
+                }
+            }
+        }
+
+        [Fact]
+        public void TestAutoTypeLayoutClassContainingStructs()
+        {
+            MetadataType classContainingStructsType = _testModule.GetType("Auto", "ClassContainingStructs");
 
             // Byte count
             // Base Class           8
@@ -287,9 +319,9 @@ namespace TypeSystemTests
             // MyStructWithChar     2 + 2 to align up to the next multiple of 4 after placing a value class + 4 byte padding to make class size % pointer size == 0
             // -------------------
             //                  72 (0x48)
-            Assert.Equal(0x48, classWithStructsType.InstanceByteCount.AsInt);
+            Assert.Equal(0x48, classContainingStructsType.InstanceByteCount.AsInt);
 
-            foreach (var f in classWithStructsType.GetFields())
+            foreach (var f in classContainingStructsType.GetFields())
             {
                 if (f.IsStatic)
                     continue;

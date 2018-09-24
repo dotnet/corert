@@ -152,23 +152,26 @@ namespace Sequential
 
 namespace Auto
 {
+    [StructLayout(LayoutKind.Auto)]
     struct StructWithBool
     {
         bool MyStructBool;
     }
 
+    [StructLayout(LayoutKind.Auto)]
     struct StructWithIntChar
     {
-        int MyStructInt;
         char MyStructChar;
+        int MyStructInt;
     }
 
+    [StructLayout(LayoutKind.Auto)]
     struct StructWithChar
     {
         char MyStructChar;
     }
 
-    class ClassWithStructs
+    class ClassContainingStructs
     {
         static int MyStaticInt;
 

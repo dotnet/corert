@@ -432,8 +432,7 @@ namespace Internal.TypeSystem
                     instanceGCPointerFieldsCount++;
                 }
                 else
-                {
-                    
+                {                    
                     Debug.Assert(fieldType.IsPrimitive || fieldType.IsPointer || fieldType.IsFunctionPointer);
 
                     var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, packingSize);
@@ -442,9 +441,9 @@ namespace Internal.TypeSystem
             }
 
             // Initialize three different sets of lists to hold the instance fields
-            //   1. List of value class fields
-            //   2. Lists of GC Pointer fields. These will be stored in arrays that are indexed by the log2(size) of the fields
-            //   3. Lists of remaining fields. These will be stored in arrays that are indexed by the log2(size) of the fields
+            //   1. Array of value class fields
+            //   2. Array of GC Pointer fields
+            //   3. Jagged array of remaining fields. To access the fields of size n, you must index the first array at index log2(n)
             FieldDesc[] instanceValueClassFieldsArr = new FieldDesc[instanceValueClassFieldCount];
             FieldDesc[] instanceGCPointerFieldsArr = new FieldDesc[instanceGCPointerFieldsCount];
             FieldDesc[][] instanceNonGCPointerFieldsArr = new FieldDesc[maxLog2Size + 1][];
@@ -493,11 +492,7 @@ namespace Internal.TypeSystem
             // The next optimization may place non-GC Pointers, so repurpose our
             // counter to keep track of the next non-GC Pointer that must be placed
             // for a given field size
-            for (int i = 0; i <= maxLog2Size; i++)
-            {
-                instanceNonGCPointerFieldsCount[i] = 0;
-            }
-            instanceGCPointerFieldsCount = 0; // The optimization checks against the existence of GC Pointer fields so we must reset this as well
+            Array.Clear(instanceNonGCPointerFieldsCount, 0, instanceNonGCPointerFieldsCount.Length);
 
             // If the position is Indeterminate, proceed immediately to placing the fields
             // This avoids issues with Universal Generic Field layouts whose fields may have Indeterminate sizes or alignments
@@ -525,7 +520,7 @@ namespace Internal.TypeSystem
                         {
                             // Check if there are any elements left to place of the given size
                             if (instanceNonGCPointerFieldsCount[j] < instanceNonGCPointerFieldsArr[j].Length
-                                  || (j == log2PointerSize && instanceGCPointerFieldsCount < instanceGCPointerFieldsArr.Length))
+                                  || (j == log2PointerSize && instanceGCPointerFieldsArr.Length > 0))
                                 break;
                         }
 
@@ -539,7 +534,7 @@ namespace Internal.TypeSystem
                         for (j = i; j >= 0; j--)
                         {
                             if (instanceNonGCPointerFieldsCount[j] < instanceNonGCPointerFieldsArr[j].Length
-                                  || (j == log2PointerSize && instanceGCPointerFieldsCount < instanceGCPointerFieldsArr.Length))
+                                  || (j == log2PointerSize && instanceGCPointerFieldsArr.Length > 0))
                                 break;
                         }
 
@@ -552,7 +547,7 @@ namespace Internal.TypeSystem
 
                         // Assert that we have at least one field of this size
                         Debug.Assert(instanceNonGCPointerFieldsCount[i] < instanceNonGCPointerFieldsArr[i].Length
-                                  || (i == log2PointerSize && instanceGCPointerFieldsCount < instanceGCPointerFieldsArr.Length));
+                                  || (i == log2PointerSize && instanceGCPointerFieldsArr.Length > 0));
 
                         // Avoid reordering of gc fields
                         // Exit if there are no more non-GC fields of this size (pointer size) to place
