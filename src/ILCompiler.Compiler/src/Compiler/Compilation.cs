@@ -488,11 +488,7 @@ namespace ILCompiler
 
             public override MethodIL GetMethodIL(MethodDesc method)
             {
-                MethodIL result = _primaryILProvider.GetMethodIL(method);
-                if (result == null && method.IsPInvoke)
-                    result = _pinvokeProvider.GetMethodIL(method);
-
-                return result;
+                return method.IsPInvoke ? _pinvokeProvider.GetMethodIL(method) : _primaryILProvider.GetMethodIL(method)
             }
         }
     }
