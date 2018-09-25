@@ -1639,6 +1639,16 @@ namespace Internal.IL
             }
             var pointerSize = _compilation.NodeFactory.Target.PointerSize;
 
+            LLVMValueRef fn;
+            if (opcode == ILOpcode.calli)
+            {
+                fn = calliTarget;
+            }
+            else
+            {
+                fn = LLVMFunctionForMethod(callee, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt, constrainedType);
+            }
+
             LLVMValueRef returnAddress;
             LLVMValueRef castReturnAddress = default;
             TypeDesc returnType = signature.ReturnType;
@@ -1711,15 +1721,6 @@ namespace Internal.IL
                 }
             }
 
-            LLVMValueRef fn;
-            if (opcode == ILOpcode.calli)
-            {
-                fn = calliTarget;
-            }
-            else
-            {
-                fn = LLVMFunctionForMethod(callee, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt, constrainedType);
-            }
 
             LLVMValueRef llvmReturn = LLVM.BuildCall(_builder, fn, llvmArgs.ToArray(), string.Empty);
             
