@@ -38,6 +38,10 @@ namespace ILCompiler
         /// </summary>
         public abstract bool ContainsMethodDictionary(MethodDesc method);
         /// <summary>
+        /// If true, "method" is imported from the set of reference assemblies
+        /// </summary>
+        public abstract bool ImportsMethod(MethodDesc method, bool unboxingStub);        
+        /// <summary>
         /// If true, "type" is exported by the set of input assemblies being compiled
         /// </summary>
         public abstract ExportForm GetExportTypeForm(TypeDesc type);

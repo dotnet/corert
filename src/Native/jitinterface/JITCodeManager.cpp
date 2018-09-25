@@ -46,14 +46,24 @@ HMODULE s_hRuntime = NULL;
 pfnRegisterCodeManager s_pfnRegisterCodeManager;
 pfnUnregisterCodeManager s_pfnUnregisterCodeManager;
 
+#if FEATURE_SINGLE_MODULE_RUNTIME
+extern "C" bool RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, UInt32 cbRange);
+extern "C" void UnregisterCodeManager(ICodeManager * pCodeManager);
+#endif
+
 bool InitializeCodeManagerRuntime()
 {
     std::call_once(s_RuntimeInit, []()
     {
         if (s_hRuntime != NULL)
         {
+#if FEATURE_SINGLE_MODULE_RUNTIME
+            s_pfnRegisterCodeManager = &RegisterCodeManager;
+            s_pfnUnregisterCodeManager = &UnregisterCodeManager;
+#else
             s_pfnRegisterCodeManager = (pfnRegisterCodeManager)GetProcAddress(s_hRuntime, "RegisterCodeManager");
             s_pfnUnregisterCodeManager = (pfnUnregisterCodeManager)GetProcAddress(s_hRuntime, "UnregisterCodeManager");
+#endif
         }
     });
 
@@ -259,7 +269,7 @@ bool JITCodeManager::Initialize()
 // Note that main method bodies will not have an entry in the map.
 PTR_RUNTIME_FUNCTION JITCodeManager::AllocRuntimeFunction(PTR_RUNTIME_FUNCTION mainMethod, DWORD beginAddr, DWORD endAddr, DWORD unwindData)
 {
-    ReaderWriterLock::WriteHolder lh(&m_lock);
+    SlimReaderWriterLock::WriteHolder lh(&m_lock);
 
     m_runtimeFunctions.push_back(RUNTIME_FUNCTION());
     PTR_RUNTIME_FUNCTION method = &m_runtimeFunctions.back();
@@ -278,7 +288,7 @@ PTR_RUNTIME_FUNCTION JITCodeManager::AllocRuntimeFunction(PTR_RUNTIME_FUNCTION m
 
 void JITCodeManager::UpdateRuntimeFunctionTable()
 {
-    ReaderWriterLock::WriteHolder lh(&m_lock);
+    SlimReaderWriterLock::WriteHolder lh(&m_lock);
     
     PTR_RUNTIME_FUNCTION pFunctionTable = &m_runtimeFunctions[0];
     DWORD nEntryCount = (DWORD)m_runtimeFunctions.size();
@@ -381,7 +391,7 @@ bool JITCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
     if (RelativePC >= m_cbRange)
         return false;
 
-    ReaderWriterLock::ReadHolder lh(&m_lock);
+    SlimReaderWriterLock::ReadHolder lh(&m_lock);
 
     int MethodIndex = LookupUnwindInfoForMethod((UInt32)RelativePC, m_pRuntimeFunctionTable, 
         0, m_nRuntimeFunctionTable - 1);
@@ -420,7 +430,7 @@ bool JITCodeManager::IsFunclet(MethodInfo * pMethInfo)
     JITMethodInfo * pMethodInfo = (JITMethodInfo *)pMethInfo;
     
     // A funclet will have an entry in funclet to main method map
-    ReaderWriterLock::ReadHolder lh(&m_lock);
+    SlimReaderWriterLock::ReadHolder lh(&m_lock);
     return m_FuncletToMainMethodMap.find(pMethodInfo->runtimeFunction.BeginAddress) != m_FuncletToMainMethodMap.end();
 }
 

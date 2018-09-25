@@ -1,0 +1,8 @@
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <AssemblyName>System.Private.StackTraceMetadata.Experimental</AssemblyName>
+    <DynamicCodeSupport>true</DynamicCodeSupport>
+  </PropertyGroup>
+
+  <Import Project="System.Private.StackTraceMetadata.csproj" />
+</Project>

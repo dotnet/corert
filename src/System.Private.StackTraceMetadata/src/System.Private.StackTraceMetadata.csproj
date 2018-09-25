@@ -1,7 +1,7 @@
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <AssemblyName>System.Private.StackTraceMetadata</AssemblyName>
+    <AssemblyName Condition="'$(AssemblyName)' == ''">System.Private.StackTraceMetadata</AssemblyName>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -11,8 +11,10 @@
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
     <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
-    <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj" />
-    <ProjectReference Include="..\..\System.Private.Reflection.Execution\src\System.Private.Reflection.Execution.csproj" />
+    <ProjectReference Condition="'$(DynamicCodeSupport)' != 'true'" Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj" />
+    <ProjectReference Condition="'$(DynamicCodeSupport)' != 'true'" Include="..\..\System.Private.Reflection.Execution\src\System.Private.Reflection.Execution.csproj" />
+    <ProjectReference Condition="'$(DynamicCodeSupport)' == 'true'" Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.Experimental.csproj" />
+    <ProjectReference Condition="'$(DynamicCodeSupport)' == 'true'" Include="..\..\System.Private.Reflection.Execution\src\System.Private.Reflection.Execution.Experimental.csproj" />
   </ItemGroup>
 
   <ItemGroup>

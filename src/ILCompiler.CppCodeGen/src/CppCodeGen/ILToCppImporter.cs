@@ -694,7 +694,7 @@ namespace Internal.IL
                     {
                         AppendSemicolon();
                         AppendLine();
-                        Append("memset(&");
+                        Append("::memset(&");
                         Append(GetVarName(i, false));
                         Append(",0,sizeof(");
                         Append(_writer.GetCppSignatureTypeName(localType));
@@ -2130,7 +2130,7 @@ namespace Internal.IL
             TypeDesc type = (TypeDesc)_methodIL.GetObject(token);
             var addr = _stack.Pop();
             AppendLine();
-            Append("memset((void*)");
+            Append("::memset((void*)");
             Append(addr);
             Append(",0,sizeof(");
             Append(GetSignatureTypeNameAndAddReference(type));
@@ -2562,7 +2562,7 @@ namespace Internal.IL
             if (_methodIL.IsInitLocals)
             {
                 AppendLine();
-                Append("memset(");
+                Append("::memset(");
                 Append(bufferName);
                 Append(", 0, ");
                 Append(count);

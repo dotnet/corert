@@ -1013,12 +1013,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "modff")]
         internal static extern unsafe float modff(float x, float* intptr);
 
-#if !PLATFORM_UNIX
-        // ExactSpelling = 'true' to force MCG to resolve it to default
-        [DllImport(RuntimeImports.RuntimeLibrary, ExactSpelling = true)]
-        internal static extern unsafe void _ecvt_s(byte* buffer, int sizeInBytes, double value, int count, int* dec, int* sign);
-#endif
-
         [DllImport(RuntimeImports.RuntimeLibrary, ExactSpelling = true)]
         internal static extern unsafe void memmove(byte* dmem, byte* smem, nuint size);
 
