@@ -63,9 +63,9 @@
     <Compile Include="$(CommonBasePath)\Internal\Text\Utf8String.cs" />
     <Compile Include="$(CommonBasePath)\Internal\Text\Utf8StringBuilder.cs" />
     <Compile Include="$(CommonBasePath)\System\Collections\Generic\ArrayBuilder.cs" />
+    <Compile Include="$(TypeSystemBasePath)\IL\CoreRTILProvider.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\EcmaMethodIL.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\ILProvider.cs" />
-    <Compile Include="$(TypeSystemBasePath)\IL\McgInteropSupport.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\HelperExtensions.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\AddrOfIntrinsic.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\ArrayMethodILEmitter.cs" />

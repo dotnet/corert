@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 
+using Internal.IL;
 using Internal.TypeSystem;
 
 using ILCompiler.DependencyAnalysis;
@@ -22,10 +23,11 @@ namespace ILCompiler
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             NodeFactory nodeFactory,
             IEnumerable<ICompilationRootProvider> roots,
+            ILProvider ilProvider,
             DebugInformationProvider debugInformationProvider,
             Logger logger,
             CppCodegenConfigProvider options)
-            : base(dependencyGraph, nodeFactory, GetCompilationRoots(roots, nodeFactory), debugInformationProvider, null, logger)
+            : base(dependencyGraph, nodeFactory, GetCompilationRoots(roots, nodeFactory), ilProvider, debugInformationProvider, null, logger)
         {
             Options = options;
         }

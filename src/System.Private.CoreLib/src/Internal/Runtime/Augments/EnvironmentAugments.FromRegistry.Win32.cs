@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-using Microsoft.Win32;
+using Internal.Win32;
 
 namespace Internal.Runtime.Augments
 {

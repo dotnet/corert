@@ -19,6 +19,26 @@ namespace System
             }
         }
 
+        private static int _formatJapaneseFirstYearAsANumber;
+        public static bool FormatJapaneseFirstYearAsANumber
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return GetCachedSwitchValue("Switch.System.Globalization.FormatJapaneseFirstYearAsANumber", ref _formatJapaneseFirstYearAsANumber);
+            }
+        }
+
+        private static int _enforceLegacyJapaneseDateParsing;
+        public static bool EnforceLegacyJapaneseDateParsing
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return GetCachedSwitchValue("Switch.System.Globalization.EnforceLegacyJapaneseDateParsing", ref _enforceLegacyJapaneseDateParsing);
+            }
+        }
+
         //
         // Implementation details
         //

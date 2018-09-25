@@ -426,6 +426,13 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
+            if (!ConstructedEETypeNode.CreationAllowed(_type))
+            {
+                // If necessary EEType is the highest load level for this type, ask the metadata manager
+                // if we have any dependencies due to reflectability.
+                factory.MetadataManager.GetDependenciesDueToReflectability(ref dependencies, factory, _type);
+            }
+
             return dependencies;
         }
 

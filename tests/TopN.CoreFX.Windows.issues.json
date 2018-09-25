@@ -862,6 +862,10 @@
                 {
                     "name": "System.Tests.BitConverterArray.ConvertFromChar",
                     "reason": "System.ArgumentException"
+                },
+                { 
+                    "name": "System.Tests.ConvertToStringTests.FromBoxedObject",
+                    "reason": "https://github.com/dotnet/coreclr/pull/19775"
                 }
             ]
         }

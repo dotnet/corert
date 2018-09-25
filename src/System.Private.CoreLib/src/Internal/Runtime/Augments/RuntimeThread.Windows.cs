@@ -21,7 +21,12 @@ namespace Internal.Runtime.Augments
         [ThreadStatic]
         private static ApartmentType t_apartmentType;
 
+        [ThreadStatic]
+        private static bool t_comInitializedByUs;
+
         private SafeWaitHandle _osHandle;
+
+        private ApartmentState _initialAppartmentState = ApartmentState.Unknown;
 
         /// <summary>
         /// Used by <see cref="WaitHandle"/>'s multi-wait functions
@@ -286,7 +291,11 @@ namespace Internal.Runtime.Augments
         public ApartmentState GetApartmentState()
         {
             if (this != CurrentThread)
-                throw new InvalidOperationException(SR.Thread_Operation_RequiresCurrentThread);
+            {
+                if (HasStarted())
+                    throw new ThreadStateException();
+                return _initialAppartmentState;
+            }
 
             switch (GetCurrentApartmentType())
             {
@@ -299,8 +308,81 @@ namespace Internal.Runtime.Augments
             }
         }
 
+        public bool TrySetApartmentState(ApartmentState state)
+        {
+            if (this != CurrentThread)
+            {
+                using (LockHolder.Hold(_lock))
+                {
+                    if (HasStarted())
+                        throw new ThreadStateException();
+                    _initialAppartmentState = state;
+                    return true;
+                }
+            }
+
+            if (state != ApartmentState.Unknown)
+            {
+                InitializeCom(state);
+            }
+            else
+            {
+                UninitializeCom();
+            }
+
+            // Clear the cache and check whether new state matches the desired state
+            t_apartmentType = ApartmentType.Unknown;
+            return state == GetApartmentState();
+        }
+
+        private void InitializeComOnNewThread()
+        {
+            InitializeCom(_initialAppartmentState);
+        }
+
+        internal static void InitializeCom(ApartmentState state = ApartmentState.MTA)
+        {
+            if (t_comInitializedByUs)
+                return;
+
+#if ENABLE_WINRT
+            int hr = Interop.WinRT.RoInitialize(
+                (state == ApartmentState.STA) ? Interop.WinRT.RO_INIT_SINGLETHREADED
+                    : Interop.WinRT.RO_INIT_MULTITHREADED);
+#else
+            int hr = Interop.Ole32.CoInitializeEx(IntPtr.Zero,
+                (state == ApartmentState.STA) ? Interop.Ole32.COINIT_APARTMENTTHREADED
+                    : Interop.Ole32.COINIT_MULTITHREADED);
+#endif
+            // RPC_E_CHANGED_MODE indicates this thread has been already initialized with a different
+            // concurrency model. We stay away and let whoever else initialized the COM to be in control.
+            if (hr == HResults.RPC_E_CHANGED_MODE)
+                return;
+            if (hr < 0)
+                throw new OutOfMemoryException();
+
+            t_comInitializedByUs = true;
+
+            // If the thread has already been CoInitialized to the proper mode, then
+            // we don't want to leave an outstanding CoInit so we CoUninit.
+            if (hr > 0)
+                UninitializeCom();
+        }
+
+        private static void UninitializeCom()
+        {
+            if (!t_comInitializedByUs)
+                return;
+
+#if ENABLE_WINRT
+            Interop.WinRT.RoUninitialize();
+#else
+            Interop.Ole32.CoUninitialize();
+#endif
+            t_comInitializedByUs = false;
+        }
+
         // TODO: https://github.com/dotnet/corefx/issues/20766
-        public bool TrySetApartmentState(ApartmentState state) { throw new PlatformNotSupportedException(); }
         public void DisableComObjectEagerCleanup() { }
         public void Interrupt() { throw new PlatformNotSupportedException(); }
 

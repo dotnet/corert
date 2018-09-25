@@ -5,7 +5,7 @@
     <AssemblyName>CoreTestAssembly</AssemblyName>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <IsCoreAssembly>true</IsCoreAssembly>
-    <RunTestsForProject>false</RunTestsForProject>
+    <SkipTestRun>true</SkipTestRun>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Canonicalization.cs" />

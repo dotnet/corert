@@ -276,17 +276,14 @@ namespace ILCompiler
 
             foreach (var constructedType in GetTypesWithRuntimeMapping())
             {
-                if (!IsReflectionBlocked(constructedType))
-                {
-                    reflectableTypes[constructedType] |= MetadataCategory.RuntimeMapping;
+                reflectableTypes[constructedType] |= MetadataCategory.RuntimeMapping;
 
-                    // Also set the description bit if the definition is getting metadata.
-                    TypeDesc constructedTypeDefinition = constructedType.GetTypeDefinition();
-                    if (constructedType != constructedTypeDefinition &&
-                        (reflectableTypes[constructedTypeDefinition] & MetadataCategory.Description) != 0)
-                    {
-                        reflectableTypes[constructedType] |= MetadataCategory.Description;
-                    }
+                // Also set the description bit if the definition is getting metadata.
+                TypeDesc constructedTypeDefinition = constructedType.GetTypeDefinition();
+                if (constructedType != constructedTypeDefinition &&
+                    (reflectableTypes[constructedTypeDefinition] & MetadataCategory.Description) != 0)
+                {
+                    reflectableTypes[constructedType] |= MetadataCategory.Description;
                 }
             }
 

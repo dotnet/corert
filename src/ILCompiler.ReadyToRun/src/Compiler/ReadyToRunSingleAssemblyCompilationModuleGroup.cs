@@ -55,6 +55,11 @@ namespace ILCompiler
             return ContainsMethodBody(method, false);
         }
 
+        public override bool ImportsMethod(MethodDesc method, bool unboxingStub)
+        {
+            return false;
+        }
+
         public sealed override ExportForm GetExportTypeForm(TypeDesc type)
         {
             return ExportForm.None;

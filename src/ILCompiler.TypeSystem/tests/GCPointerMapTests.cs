@@ -35,19 +35,19 @@ namespace TypeSystemTests
 
             {
                 var map = GCPointerMap.FromInstanceLayout(classWithArrayFields);
-                Assert.Equal(map.Size, 3);
+                Assert.Equal(3, map.Size);
                 Assert.Equal("011", map.ToString());
             }
 
             {
                 var map = GCPointerMap.FromInstanceLayout(classWithStringField);
-                Assert.Equal(map.Size, 4);
+                Assert.Equal(4, map.Size);
                 Assert.Equal("0010", map.ToString());
             }
 
             {
                 var map = GCPointerMap.FromInstanceLayout(mixedStruct);
-                Assert.Equal(map.Size, 5);
+                Assert.Equal(5, map.Size);
                 Assert.Equal("01001", map.ToString());
             }
 
@@ -60,19 +60,19 @@ namespace TypeSystemTests
 
             {
                 var map = GCPointerMap.FromInstanceLayout(doubleMixedStructLayout);
-                Assert.Equal(map.Size, 10);
+                Assert.Equal(10, map.Size);
                 Assert.Equal("0100101001", map.ToString());
             }
 
             {
                 var map = GCPointerMap.FromInstanceLayout(explicitlyFarPointer);
-                Assert.Equal(map.Size, 117);
+                Assert.Equal(117, map.Size);
                 Assert.Equal("100000000000000000000000000000000000000000000000000000000000000010000000000000001000000000000000000000000000000001001", map.ToString());
             }
 
             {
                 var map = GCPointerMap.FromInstanceLayout(struct32GcPointers);
-                Assert.Equal(map.Size, 32);
+                Assert.Equal(32, map.Size);
                 Assert.Equal("11111111111111111111111111111111", map.ToString());
             }
         }
@@ -82,7 +82,7 @@ namespace TypeSystemTests
         {
             MetadataType mixedStaticClass = _testModule.GetType("GCPointerMap", "MixedStaticClass");
             var map = GCPointerMap.FromStaticLayout(mixedStaticClass);
-            Assert.Equal(map.Size, 12);
+            Assert.Equal(12, map.Size);
             Assert.Equal("010100101001", map.ToString());
         }
 
@@ -91,7 +91,7 @@ namespace TypeSystemTests
         {
             MetadataType mixedThreadStaticClass = _testModule.GetType("GCPointerMap", "MixedThreadStaticClass");
             var map = GCPointerMap.FromThreadStaticLayout(mixedThreadStaticClass);
-            Assert.Equal(map.Size, 14);
+            Assert.Equal(14, map.Size);
             Assert.Equal("00010010100110", map.ToString());
         }
     }

@@ -34,7 +34,12 @@ namespace ILVerify
 
         public void SetSystemModuleName(AssemblyName name)
         {
-            _typeSystemContext.SetSystemModule(_typeSystemContext.GetModule(_typeSystemContext._resolver.Resolve(name.Name)));
+            PEReader peReader = _typeSystemContext._resolver.Resolve(name.Name);
+            if (peReader is null)
+            {
+                throw new VerifierException("Assembly or module not found: " + name.FullName);
+            }
+            _typeSystemContext.SetSystemModule(_typeSystemContext.GetModule(peReader));
         }
 
         internal EcmaModule GetModule(PEReader peReader)
@@ -161,7 +166,7 @@ namespace ILVerify
         private IEnumerable<VerificationResult> VerifyMethod(EcmaModule module, MethodIL methodIL, MethodDefinitionHandle methodHandle)
         {
             var builder = new ArrayBuilder<VerificationResult>();
-            MethodDesc method = methodIL.OwningMethod; 
+            MethodDesc method = methodIL.OwningMethod;
 
             try
             {

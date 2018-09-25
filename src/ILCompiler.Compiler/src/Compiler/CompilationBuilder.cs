@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 
+using Internal.IL;
+
 namespace ILCompiler
 {
     public abstract class CompilationBuilder
@@ -92,6 +94,10 @@ namespace ILCompiler
 
         public abstract CompilationBuilder UseBackendOptions(IEnumerable<string> options);
 
+        public abstract CompilationBuilder UseILProvider(ILProvider ilProvider);
+
+        protected abstract ILProvider GetILProvider();
+
         protected DependencyAnalyzerBase<NodeFactory> CreateDependencyGraph(NodeFactory factory, IComparer<DependencyNodeCore<NodeFactory>> comparer = null)
         {
             return _dependencyTrackingLevel.CreateDependencyGraph(factory, comparer);
@@ -99,7 +105,7 @@ namespace ILCompiler
 
         public ILScannerBuilder GetILScannerBuilder(CompilationModuleGroup compilationGroup = null)
         {
-            return new ILScannerBuilder(_context, compilationGroup ?? _compilationGroup, _nameMangler);
+            return new ILScannerBuilder(_context, compilationGroup ?? _compilationGroup, _nameMangler, GetILProvider());
         }
 
         public abstract ICompilation ToCompilation();

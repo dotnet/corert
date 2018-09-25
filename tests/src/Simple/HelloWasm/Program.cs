@@ -15,6 +15,8 @@ internal static class Program
     private static int threadStaticInt;
     private static unsafe int Main(string[] args)
     {
+        PrintLine("Starting");
+
         Add(1, 2);
         int tempInt = 0;
         int tempInt2 = 0;
@@ -310,6 +312,8 @@ internal static class Program
             PrintLine("ByReference intrinsics exercise via ReadOnlySpan OK.");
         }
 
+        TestConstrainedClassCalls();
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -490,6 +494,113 @@ internal static class Program
         }
     }
 
+    private static void TestConstrainedClassCalls()
+    {
+        string s = "utf-8";
+
+        PrintString("Direct ToString test: ");
+        string stringDirectToString = s.ToString();
+        if (s.Equals(stringDirectToString))
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintString("Failed. Returned string:\"");
+            PrintString(stringDirectToString);
+            PrintLine("\"");
+        }
+       
+        // Generic calls on methods not defined on object
+        uint dataFromBase = GenericGetData<MyBase>(new MyBase(11));
+        PrintString("Generic call to base class test: ");
+        if (dataFromBase == 11)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
+
+        uint dataFromUnsealed = GenericGetData<UnsealedDerived>(new UnsealedDerived(13));
+        PrintString("Generic call to unsealed derived class test: ");
+        if (dataFromUnsealed == 26)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
+
+        uint dataFromSealed = GenericGetData<SealedDerived>(new SealedDerived(15));
+        PrintString("Generic call to sealed derived class test: ");
+        if (dataFromSealed == 45)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
+
+        uint dataFromUnsealedAsBase = GenericGetData<MyBase>(new UnsealedDerived(17));
+        PrintString("Generic call to unsealed derived class as base test: ");
+        if (dataFromUnsealedAsBase == 34)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
+
+        uint dataFromSealedAsBase = GenericGetData<MyBase>(new SealedDerived(19));
+        PrintString("Generic call to sealed derived class as base test: ");
+        if (dataFromSealedAsBase == 57)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
+
+        // Generic calls to methods defined on object
+        uint hashCodeOfSealedViaGeneric = (uint)GenericGetHashCode<MySealedClass>(new MySealedClass(37));
+        PrintString("Generic GetHashCode for sealed class test: ");
+        if (hashCodeOfSealedViaGeneric == 74)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
+
+        uint hashCodeOfUnsealedViaGeneric = (uint)GenericGetHashCode<MyUnsealedClass>(new MyUnsealedClass(41));
+        PrintString("Generic GetHashCode for unsealed class test: ");
+        if (hashCodeOfUnsealedViaGeneric == 82)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
+    }
+
+    static uint GenericGetData<T>(T obj) where T : MyBase
+    {
+        return obj.GetData();
+    }
+
+    static int GenericGetHashCode<T>(T obj)
+    {
+        return obj.GetHashCode();
+    }
+
     [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
 }
@@ -644,5 +755,99 @@ public struct ItfStruct : ITestItf
     public int GetValue()
     {
         return 4;
+    }
+}
+
+public sealed class MySealedClass
+{
+    uint _data;
+
+    public MySealedClass()
+    {
+        _data = 104;
+    }
+
+    public MySealedClass(uint data)
+    {
+        _data = data;
+    }
+
+    public uint GetData()
+    {
+        return _data;
+    }
+
+    public override int GetHashCode()
+    {
+        return (int)_data * 2;
+    }
+
+    public override string ToString()
+    {
+        Program.PrintLine("MySealedClass.ToString called. Data:");
+        Program.PrintLine(_data.ToString());
+        return _data.ToString();
+    }
+}
+
+public class MyUnsealedClass
+{
+    uint _data;
+
+    public MyUnsealedClass()
+    {
+        _data = 24;
+    }
+
+    public MyUnsealedClass(uint data)
+    {
+        _data = data;
+    }
+
+    public uint GetData()
+    {
+        return _data;
+    }
+
+    public override int GetHashCode()
+    {
+        return (int)_data * 2;
+    }
+
+    public override string ToString()
+    {
+        return _data.ToString();
+    }
+}
+
+public class MyBase
+{
+    protected uint _data;
+    public MyBase(uint data)
+    {
+        _data = data;
+    }
+
+    public virtual uint GetData()
+    {
+        return _data;
+    }
+}
+
+public class UnsealedDerived : MyBase
+{
+    public UnsealedDerived(uint data) : base(data) { }
+    public override uint GetData()
+    {
+        return _data * 2;
+    }
+}
+
+public sealed class SealedDerived : MyBase
+{
+    public SealedDerived(uint data) : base(data) { }
+    public override uint GetData()
+    {
+        return _data * 3;
     }
 }
