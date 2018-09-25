@@ -10,6 +10,7 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
 
+using Internal.IL;
 using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -24,7 +25,7 @@ namespace ILCompiler
         private readonly string _inputFilePath;
         private readonly EcmaModule _inputModule;
         private readonly DependencyAnalysis.ReadyToRun.DevirtualizationManager _r2rDevirtualizationManager;
-
+        private ILProvider _ilProvider = new CoreRTILProvider();
 
         public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group, string inputFilePath)
             : base(context, group, new CoreRTNameMangler(new ReadyToRunNodeMangler(), false))
@@ -59,6 +60,17 @@ namespace ILCompiler
             _ryujitOptions = builder.ToArray();
 
             return this;
+        }
+
+        public override CompilationBuilder UseILProvider(ILProvider ilProvider)
+        {
+            _ilProvider = ilProvider;
+            return this;
+        }
+
+        protected override ILProvider GetILProvider()
+        {
+            return _ilProvider;
         }
 
         public override ICompilation ToCompilation()
@@ -108,6 +120,7 @@ namespace ILCompiler
                 graph,
                 factory,
                 _compilationRoots,
+                _ilProvider,
                 _debugInformationProvider,
                 _logger,
                 _r2rDevirtualizationManager,
