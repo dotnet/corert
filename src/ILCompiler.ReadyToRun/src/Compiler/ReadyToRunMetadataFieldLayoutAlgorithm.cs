@@ -19,9 +19,9 @@ namespace ILCompiler
         /// </summary>
         private ModuleFieldLayoutMap _moduleFieldLayoutMap;
 
-        public ReadyToRunMetadataFieldLayoutAlgorithm(TargetDetails target)
+        public ReadyToRunMetadataFieldLayoutAlgorithm()
         {
-            _moduleFieldLayoutMap = new ModuleFieldLayoutMap(target);
+            _moduleFieldLayoutMap = new ModuleFieldLayoutMap();
         }
 
         public override ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType defType, StaticLayoutKind layoutKind)
@@ -46,16 +46,6 @@ namespace ILCompiler
         private class ModuleFieldLayoutMap : LockFreeReaderHashtable<EcmaModule, ModuleFieldLayout>
         {
             /// <summary>
-            /// <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/class.h#L64">MAX_LOG2_PRIMITIVE_FIELD_SIZE</a>
-            /// </summary>
-            private const int MaxLog2PrimitiveFieldSize = 3;
-
-            /// <summary>
-            /// <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/class.h#L66">MAX_PRIMITIVE_FIELD_SIZE</a>
-            /// </summary>
-            private const int MaxPrimitiveFieldSize = 1 << MaxLog2PrimitiveFieldSize;
-
-            /// <summary>
             /// CoreCLR DomainLocalModule::OffsetOfDataBlob() / sizeof(void *)
             /// </summary>
             private const int DomainLocalModuleDataBlobOffsetAsIntPtrCount = 6;
@@ -65,14 +55,8 @@ namespace ILCompiler
             /// </summary>
             private const int ThreadLocalModuleDataBlobOffsetAsIntPtrCount = 3;
 
-            /// <summary>
-            /// TargetDetails is used to query pointer size for the target architecture.
-            /// </summary>
-            private TargetDetails _target;
-
-            public ModuleFieldLayoutMap(TargetDetails target)
+            public ModuleFieldLayoutMap()
             {
-                _target = target;
             }
 
             protected override bool CompareKeyToValue(EcmaModule key, ModuleFieldLayout value)
@@ -88,6 +72,7 @@ namespace ILCompiler
             protected override ModuleFieldLayout CreateValueFromKey(EcmaModule module)
             {
                 int typeCountInModule = module.MetadataReader.GetTableRowCount(TableIndex.TypeDef);
+                int pointerSize = module.Context.Target.PointerSize;
 
                 // 0 corresponds to "normal" statics, 1 to thread-local statics
                 LayoutInt[] gcStatics = new LayoutInt[2]
@@ -97,8 +82,8 @@ namespace ILCompiler
                 };
                 LayoutInt[] nonGcStatics = new LayoutInt[2]
                 {
-                    new LayoutInt(DomainLocalModuleDataBlobOffsetAsIntPtrCount * _target.PointerSize + typeCountInModule),
-                    new LayoutInt(ThreadLocalModuleDataBlobOffsetAsIntPtrCount * _target.PointerSize + typeCountInModule),
+                    new LayoutInt(DomainLocalModuleDataBlobOffsetAsIntPtrCount * pointerSize + typeCountInModule),
+                    new LayoutInt(ThreadLocalModuleDataBlobOffsetAsIntPtrCount * pointerSize + typeCountInModule),
                 };
                 Dictionary<DefType, FieldAndOffset[]> typeToFieldMap = new Dictionary<DefType, FieldAndOffset[]>();
 
@@ -109,7 +94,7 @@ namespace ILCompiler
                     if (defType.HasInstantiation)
                     {
                         // Generic types are exempt from the static field layout algorithm, see
-                        // <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/ceeload.cpp#L2049">this check</a>.
+                        // <a href="https://github.com/dotnet/coreclr/blob/659af58047a949ed50d11101708538d2e87f2568/src/vm/ceeload.cpp#L2049">this check</a>.
                         continue;
                     }
                     foreach (FieldDesc field in defType.GetFields())
@@ -147,8 +132,8 @@ namespace ILCompiler
                                 case TypeFlags.Pointer:
                                 case TypeFlags.IntPtr:
                                 case TypeFlags.UIntPtr:
-                                    alignment = _target.PointerSize;
-                                    size = _target.PointerSize;
+                                    alignment = pointerSize;
+                                    size = pointerSize;
                                     break;
 
                                 case TypeFlags.Int64:
@@ -158,25 +143,26 @@ namespace ILCompiler
                                     size = 8;
                                     break;
 
-                                case TypeFlags.GenericParameter:
                                 case TypeFlags.SzArray:
                                 case TypeFlags.Array:
                                 case TypeFlags.Class:
                                 case TypeFlags.Interface:
                                     isGcField = true;
-                                    alignment = _target.PointerSize;
-                                    size = _target.PointerSize;
+                                    alignment = pointerSize;
+                                    size = pointerSize;
                                     break;
 
                                 case TypeFlags.ValueType:
+                                case TypeFlags.Nullable:
                                     isGcField = true;
-                                    alignment = _target.PointerSize;
-                                    size = _target.PointerSize;
+                                    alignment = pointerSize;
+                                    size = pointerSize;
                                     if (field.FieldType is EcmaType fieldEcmaType && fieldEcmaType.EcmaModule != module)
                                     {
                                         // Allocate pessimistic non-GC area for cross-module fields as that's what CoreCLR does
-                                        // <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/ceeload.cpp#L2124">here</a>
-                                        nonGcStatics[index] = LayoutInt.AlignUp(nonGcStatics[index], new LayoutInt(MaxPrimitiveFieldSize)) + new LayoutInt(MaxPrimitiveFieldSize);
+                                        // <a href="https://github.com/dotnet/coreclr/blob/659af58047a949ed50d11101708538d2e87f2568/src/vm/ceeload.cpp#L2124">here</a>
+                                        nonGcStatics[index] = LayoutInt.AlignUp(nonGcStatics[index], new LayoutInt(TargetDetails.MaximumPrimitiveSize))
+                                            + new LayoutInt(TargetDetails.MaximumPrimitiveSize);
                                     }
                                     break;
 
@@ -200,7 +186,7 @@ namespace ILCompiler
                     }
                 }
 
-                LayoutInt blockAlignment = new LayoutInt(MaxPrimitiveFieldSize);
+                LayoutInt blockAlignment = new LayoutInt(TargetDetails.MaximumPrimitiveSize);
 
                 return new ModuleFieldLayout(
                     module,
@@ -209,8 +195,6 @@ namespace ILCompiler
                     threadGcStatics: new StaticsBlock() { Size = gcStatics[1], LargestAlignment = blockAlignment },
                     threadNonGcStatics: new StaticsBlock() { Size = nonGcStatics[1], LargestAlignment = blockAlignment },
                     typeToFieldMap: typeToFieldMap);
-
-                throw new NotImplementedException();
             }
 
             protected override int GetKeyHashCode(EcmaModule key)
@@ -239,7 +223,7 @@ namespace ILCompiler
 
             public StaticsBlock ThreadNonGcStatics { get;  }
 
-            public Dictionary<DefType, FieldAndOffset[]> TypeToFieldMap { get; }
+            public IReadOnlyDictionary<DefType, FieldAndOffset[]> TypeToFieldMap { get; }
 
             public ModuleFieldLayout(
                 EcmaModule module, 
@@ -247,7 +231,7 @@ namespace ILCompiler
                 StaticsBlock nonGcStatics, 
                 StaticsBlock threadGcStatics, 
                 StaticsBlock threadNonGcStatics,
-                Dictionary<DefType, FieldAndOffset[]> typeToFieldMap)
+                IReadOnlyDictionary<DefType, FieldAndOffset[]> typeToFieldMap)
             {
                 Module = module;
                 GcStatics = gcStatics;
