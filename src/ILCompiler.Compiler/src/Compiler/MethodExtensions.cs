@@ -95,7 +95,7 @@ namespace ILCompiler
         /// </summary>
         public static bool IsRawPInvoke(this MethodDesc method)
         {
-            return method.IsPInvoke && ((method is Internal.IL.Stubs.PInvokeTargetNativeMethod) || Internal.IL.McgInteropSupport.IsPregeneratedInterop(method));
+            return method.IsPInvoke && (method is Internal.IL.Stubs.PInvokeTargetNativeMethod);
         }
 
         /// <summary>

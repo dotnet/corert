@@ -23,11 +23,12 @@ namespace ILCompiler
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             NodeFactory nodeFactory,
             IEnumerable<ICompilationRootProvider> roots,
+            ILProvider ilProvider,
             DebugInformationProvider debugInformationProvider,
             Logger logger,
             DevirtualizationManager devirtualizationManager,
             JitConfigProvider configProvider)
-            : base(dependencyGraph, nodeFactory, roots, debugInformationProvider, devirtualizationManager, logger)
+            : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, devirtualizationManager, logger)
         {
             _jitConfigProvider = configProvider;
         }

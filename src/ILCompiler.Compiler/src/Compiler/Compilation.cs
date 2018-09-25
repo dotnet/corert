@@ -41,6 +41,7 @@ namespace ILCompiler
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             NodeFactory nodeFactory,
             IEnumerable<ICompilationRootProvider> compilationRoots,
+            ILProvider ilProvider,
             DebugInformationProvider debugInformationProvider,
             DevirtualizationManager devirtualizationManager,
             Logger logger)
@@ -63,25 +64,30 @@ namespace ILCompiler
             _assemblyGetExecutingAssemblyMethodThunks = new AssemblyGetExecutingAssemblyMethodThunkCache(globalModuleGeneratedType);
             _methodBaseGetCurrentMethodThunks = new MethodBaseGetCurrentMethodThunkCache();
 
-            bool? forceLazyPInvokeResolution = null;
-            // TODO: Workaround lazy PInvoke resolution not working with CppCodeGen yet
-            // https://github.com/dotnet/corert/issues/2454
-            // https://github.com/dotnet/corert/issues/2149
-            if (nodeFactory.IsCppCodegenTemporaryWorkaround) forceLazyPInvokeResolution = false;
-            PInvokeILProvider = new PInvokeILProvider(new PInvokeILEmitterConfiguration(forceLazyPInvokeResolution), nodeFactory.InteropStubManager.InteropStateManager);
+            if (!(nodeFactory.InteropStubManager is EmptyInteropStubManager))
+            {
+                bool? forceLazyPInvokeResolution = null;
+                // TODO: Workaround lazy PInvoke resolution not working with CppCodeGen yet
+                // https://github.com/dotnet/corert/issues/2454
+                // https://github.com/dotnet/corert/issues/2149
+                if (nodeFactory.IsCppCodegenTemporaryWorkaround) forceLazyPInvokeResolution = false;
+                PInvokeILProvider = new PInvokeILProvider(new PInvokeILEmitterConfiguration(forceLazyPInvokeResolution), nodeFactory.InteropStubManager.InteropStateManager);
 
-            _methodILCache = new ILProvider(PInvokeILProvider);
+                ilProvider = new CombinedILProvider(ilProvider, PInvokeILProvider);
+            }
+
+            _methodILCache = new ILCache(ilProvider);
         }
 
-        private ILProvider _methodILCache;
-        
+        private ILCache _methodILCache;
+
         public MethodIL GetMethodIL(MethodDesc method)
         {
             // Flush the cache when it grows too big
             if (_methodILCache.Count > 1000)
-                _methodILCache = new ILProvider(PInvokeILProvider);
+                _methodILCache = new ILCache(_methodILCache.ILProvider);
 
-            return _methodILCache.GetMethodIL(method);
+            return _methodILCache.GetOrCreateValue(method).MethodIL;
         }
 
         protected abstract void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj);
@@ -429,6 +435,64 @@ namespace ILCompiler
             public void RootReadOnlyDataBlob(byte[] data, int alignment, string reason, string exportName)
             {
                 _graph.AddRoot(_factory.ReadOnlyDataBlob(exportName, data, alignment), reason);
+            }
+        }
+
+        private sealed class ILCache : LockFreeReaderHashtable<MethodDesc, ILCache.MethodILData>
+        {
+            public ILProvider ILProvider { get; }
+
+            public ILCache(ILProvider provider)
+            {
+                ILProvider = provider;
+            }
+
+            protected override int GetKeyHashCode(MethodDesc key)
+            {
+                return key.GetHashCode();
+            }
+            protected override int GetValueHashCode(MethodILData value)
+            {
+                return value.Method.GetHashCode();
+            }
+            protected override bool CompareKeyToValue(MethodDesc key, MethodILData value)
+            {
+                return Object.ReferenceEquals(key, value.Method);
+            }
+            protected override bool CompareValueToValue(MethodILData value1, MethodILData value2)
+            {
+                return Object.ReferenceEquals(value1.Method, value2.Method);
+            }
+            protected override MethodILData CreateValueFromKey(MethodDesc key)
+            {
+                return new MethodILData() { Method = key, MethodIL = ILProvider.GetMethodIL(key) };
+            }
+
+            internal class MethodILData
+            {
+                public MethodDesc Method;
+                public MethodIL MethodIL;
+            }
+        }
+
+        private sealed class CombinedILProvider : ILProvider
+        {
+            private readonly ILProvider _primaryILProvider;
+            private readonly PInvokeILProvider _pinvokeProvider;
+
+            public CombinedILProvider(ILProvider primaryILProvider, PInvokeILProvider pinvokeILProvider)
+            {
+                _primaryILProvider = primaryILProvider;
+                _pinvokeProvider = pinvokeILProvider;
+            }
+
+            public override MethodIL GetMethodIL(MethodDesc method)
+            {
+                MethodIL result = _primaryILProvider.GetMethodIL(method);
+                if (result == null && method.IsPInvoke)
+                    result = _pinvokeProvider.GetMethodIL(method);
+
+                return result;
             }
         }
     }
