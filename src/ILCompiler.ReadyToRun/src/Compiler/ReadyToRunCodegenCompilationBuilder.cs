@@ -34,7 +34,6 @@ namespace ILCompiler
             _devirtualizationManager = new DependencyAnalysis.ReadyToRun.DevirtualizationManager(group);
 
             _inputModule = context.GetModuleFromPath(_inputFilePath);
-            ((ReadyToRunCompilerContext)context).InitializeAlgorithm(_inputModule.MetadataReader.GetTableRowCount(TableIndex.TypeDef));
         }
 
         public override CompilationBuilder UseBackendOptions(IEnumerable<string> options)

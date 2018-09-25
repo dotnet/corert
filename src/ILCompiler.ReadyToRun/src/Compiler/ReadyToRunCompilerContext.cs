@@ -16,12 +16,7 @@ namespace ILCompiler
         public ReadyToRunCompilerContext(TargetDetails details, SharedGenericsMode genericsMode)
             : base(details, genericsMode)
         {
-        }
-
-        public void InitializeAlgorithm(int numberOfTypesInModule)
-        {
-            Debug.Assert(_r2rFieldLayoutAlgorithm == null);
-            _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm(Target, numberOfTypesInModule);
+            _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm(Target);
         }
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)

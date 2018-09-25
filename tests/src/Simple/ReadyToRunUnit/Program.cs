@@ -7,10 +7,18 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
+internal class Brogram
+{
+    const int LineCountInitialValue = 0x666;
+    [ThreadStatic]
+    public static int LineCount = LineCountInitialValue;
+
+}
+
 internal class Program
 {
     const int LineCountInitialValue = 0x12345678;
-    
+
     [ThreadStatic]
     private static string TextFileName = @"C:\Windows\Microsoft.NET\Framework\v4.0.30319\clientexclusionlist.xml";
 
@@ -69,9 +77,17 @@ internal class Program
         {
             Console.WriteLine($@"LineCount: 0x{LineCount:X8}, @ = 0x{(ulong)lineCountPtr:X8}");
         }
+        fixed (int *lineCountPtr = &Brogram.LineCount)
+        {
+            Console.WriteLine($@"Brogram.LineCount: 0x{Brogram.LineCount:X8}, @ = 0x{(ulong)lineCountPtr:X8}");
+        }
+        fixed (int *lineCountPtr = &LineCount)
+        {
+            Console.WriteLine($@"LineCount: 0x{LineCount:X8}, @ = 0x{(ulong)lineCountPtr:X8}");
+        }
         return LineCount == LineCountInitialValue;
     }
-    
+
     private static bool ChkCast()
     {
         object obj = TextFileName;
@@ -464,8 +480,8 @@ internal class Program
         RunTest("DisposeEnumeratorTest", DisposeEnumeratorTest());
         RunTest("EmptyArrayOfInt", EmptyArrayOfInt());
         RunTest("EnumerateEmptyArrayOfInt", EnumerateEmptyArrayOfInt());
-        // TODO: RunTest("EmptyArrayOfString", EmptyArrayOfString());
-        // TODO: RunTest("EnumerateEmptyArrayOfString", EnumerateEmptyArrayOfString());
+        RunTest("EmptyArrayOfString", EmptyArrayOfString());
+        RunTest("EnumerateEmptyArrayOfString", EnumerateEmptyArrayOfString());
         RunTest("TryCatch", TryCatch());
         RunTest("FileStreamNullRefTryCatch", FileStreamNullRefTryCatch());
 
