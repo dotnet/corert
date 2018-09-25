@@ -178,6 +178,17 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Gets the maximum size of a primitive type
+        /// </summary>
+        public static int MaximumPrimitiveSize
+        {
+            get
+            {
+                return 8;
+            }
+        }
+
+        /// <summary>
         /// Retrieves the size of a well known type.
         /// </summary>
         public LayoutInt GetWellKnownTypeSize(DefType type)
