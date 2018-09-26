@@ -19,19 +19,19 @@ namespace ILCompiler
 {
     public sealed class ReadyToRunCodegenCompilationBuilder : CompilationBuilder
     {
+        private readonly string _inputFilePath;
+        private readonly EcmaModule _inputModule;
+
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
-        private readonly string _inputFilePath;
-        private readonly EcmaModule _inputModule;
-        private readonly DependencyAnalysis.ReadyToRun.DevirtualizationManager _r2rDevirtualizationManager;
-        private ILProvider _ilProvider = new CoreRTILProvider();
+        private ILProvider _ilProvider = new ReadyToRunILProvider();
 
         public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group, string inputFilePath)
             : base(context, group, new CoreRTNameMangler(new ReadyToRunNodeMangler(), false))
         {
             _inputFilePath = inputFilePath;
-            _r2rDevirtualizationManager = new DependencyAnalysis.ReadyToRun.DevirtualizationManager(group);
+            _devirtualizationManager = new DependencyAnalysis.ReadyToRun.DevirtualizationManager(group);
 
             _inputModule = context.GetModuleFromPath(_inputFilePath);
             ((ReadyToRunCompilerContext)context).InitializeAlgorithm(_inputModule.MetadataReader.GetTableRowCount(TableIndex.TypeDef));
@@ -75,7 +75,7 @@ namespace ILCompiler
 
         public override ICompilation ToCompilation()
         {
-            var interopStubManager = new CompilerGeneratedInteropStubManager(_compilationGroup, _context, new InteropStateManager(_context.GeneratedAssembly));
+            var interopStubManager = new EmptyInteropStubManager(_compilationGroup, _context, new InteropStateManager(_context.GeneratedAssembly));
 
             ModuleTokenResolver moduleTokenResolver = new ModuleTokenResolver(_compilationGroup);
             SignatureContext signatureContext = new SignatureContext(moduleTokenResolver, _inputModule);
@@ -123,7 +123,7 @@ namespace ILCompiler
                 _ilProvider,
                 _debugInformationProvider,
                 _logger,
-                _r2rDevirtualizationManager,
+                _devirtualizationManager,
                 jitConfig,
                 _inputFilePath);
         }
