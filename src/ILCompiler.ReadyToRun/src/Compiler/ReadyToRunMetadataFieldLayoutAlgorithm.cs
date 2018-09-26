@@ -193,9 +193,10 @@ namespace ILCompiler
                             LayoutInt[] layout = (isGcField ? gcStatics : nonGcStatics);
                             LayoutInt offset = LayoutInt.AlignUp(layout[index], new LayoutInt(alignment));
                             layout[index] = offset + new LayoutInt(size);
+                            FieldDesc fieldDesc = null;
                             try
                             {
-                                FieldDesc fieldDesc = module.GetField(fieldDefHandle);
+                                fieldDesc = module.GetField(fieldDefHandle);
                                 if (fieldsForType == null)
                                 {
                                     fieldsForType = new List<FieldAndOffset>();
@@ -205,6 +206,14 @@ namespace ILCompiler
                             catch (Exception)
                             {
                                 // ignore unresolvable fields
+                            }
+                            if (fieldDesc != null)
+                            {
+                                TypeDesc fieldType = fieldDesc.FieldType;
+                                if (fieldType.IsByRef || (fieldType.IsValueType && ((DefType)fieldType).IsByRefLike))
+                                {
+                                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, fieldDesc.OwningType);
+                                }
                             }
                         }
                     }
