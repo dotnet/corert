@@ -3,9 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+
+using ILCompiler.DependencyAnalysis.ReadyToRun;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -35,7 +40,7 @@ namespace ILCompiler
                 layout.NonGcStatics = moduleFieldLayout.NonGcStatics;
                 layout.ThreadGcStatics = moduleFieldLayout.ThreadGcStatics;
                 layout.ThreadNonGcStatics = moduleFieldLayout.ThreadNonGcStatics;
-                moduleFieldLayout.TypeToFieldMap.TryGetValue(defType, out layout.Offsets);
+                moduleFieldLayout.TypeToFieldMap.TryGetValue(ecmaType.Handle, out layout.Offsets);
             }
             return layout;
         }
@@ -54,10 +59,6 @@ namespace ILCompiler
             /// CoreCLR ThreadLocalModule::OffsetOfDataBlob() / sizeof(void *)
             /// </summary>
             private const int ThreadLocalModuleDataBlobOffsetAsIntPtrCount = 3;
-
-            public ModuleFieldLayoutMap()
-            {
-            }
 
             protected override bool CompareKeyToValue(EcmaModule key, ModuleFieldLayout value)
             {
@@ -85,104 +86,132 @@ namespace ILCompiler
                     new LayoutInt(DomainLocalModuleDataBlobOffsetAsIntPtrCount * pointerSize + typeCountInModule),
                     new LayoutInt(ThreadLocalModuleDataBlobOffsetAsIntPtrCount * pointerSize + typeCountInModule),
                 };
-                Dictionary<DefType, FieldAndOffset[]> typeToFieldMap = new Dictionary<DefType, FieldAndOffset[]>();
+                Dictionary<TypeDefinitionHandle, FieldAndOffset[]> typeToFieldMap = new Dictionary<TypeDefinitionHandle, FieldAndOffset[]>();
 
-                for (int typeIndex = 1; typeIndex <= typeCountInModule; typeIndex++)
+                foreach (TypeDefinitionHandle typeDefHandle in module.MetadataReader.TypeDefinitions)
                 {
+                    TypeDefinition typeDef = module.MetadataReader.GetTypeDefinition(typeDefHandle);
                     List<FieldAndOffset> fieldsForType = null;
-                    DefType defType = (DefType)module.GetObject(MetadataTokens.TypeDefinitionHandle(typeIndex));
-                    if (defType.HasInstantiation)
+                    if (typeDef.GetGenericParameters().Count != 0)
                     {
                         // Generic types are exempt from the static field layout algorithm, see
                         // <a href="https://github.com/dotnet/coreclr/blob/659af58047a949ed50d11101708538d2e87f2568/src/vm/ceeload.cpp#L2049">this check</a>.
                         continue;
                     }
-                    foreach (FieldDesc field in defType.GetFields())
+                    foreach (FieldDefinitionHandle fieldDefHandle in typeDef.GetFields())
                     {
-                        if (field.IsStatic && !field.IsLiteral)
+                        FieldDefinition fieldDef = module.MetadataReader.GetFieldDefinition(fieldDefHandle);
+                        if ((fieldDef.Attributes & (FieldAttributes.Static | FieldAttributes.Literal)) == FieldAttributes.Static)
                         {
-                            int index = (field.IsThreadStatic ? 1 : 0);
+                            int index = (IsFieldThreadStatic(in fieldDef, module.MetadataReader) ? 1 : 0);
                             int alignment = 1;
                             int size = 0;
                             bool isGcField = false;
 
-                            switch (field.FieldType.UnderlyingType.Category)
+                            CorElementType corElementType;
+                            Handle valueTypeHandle;
+
+                            GetFieldElementTypeAndValueTypeHandle(in fieldDef, module.MetadataReader, out corElementType, out valueTypeHandle);
+
+                            switch (corElementType)
                             {
-                                case TypeFlags.Byte:
-                                case TypeFlags.SByte:
-                                case TypeFlags.Boolean:
+                                case CorElementType.ELEMENT_TYPE_I1:
+                                case CorElementType.ELEMENT_TYPE_U1:
+                                case CorElementType.ELEMENT_TYPE_BOOLEAN:
                                     size = 1;
                                     break;
 
-                                case TypeFlags.Int16:
-                                case TypeFlags.UInt16:
-                                case TypeFlags.Char:
+                                case CorElementType.ELEMENT_TYPE_I2:
+                                case CorElementType.ELEMENT_TYPE_U2:
+                                case CorElementType.ELEMENT_TYPE_CHAR:
                                     alignment = 2;
                                     size = 2;
                                     break;
 
-                                case TypeFlags.Int32:
-                                case TypeFlags.UInt32:
-                                case TypeFlags.Single:
+                                case CorElementType.ELEMENT_TYPE_I4:
+                                case CorElementType.ELEMENT_TYPE_U4:
+                                case CorElementType.ELEMENT_TYPE_R4:
                                     alignment = 4;
                                     size = 4;
                                     break;
 
-                                case TypeFlags.FunctionPointer:
-                                case TypeFlags.Pointer:
-                                case TypeFlags.IntPtr:
-                                case TypeFlags.UIntPtr:
+                                case CorElementType.ELEMENT_TYPE_FNPTR:
+                                case CorElementType.ELEMENT_TYPE_PTR:
+                                case CorElementType.ELEMENT_TYPE_I:
+                                case CorElementType.ELEMENT_TYPE_U:
                                     alignment = pointerSize;
                                     size = pointerSize;
                                     break;
 
-                                case TypeFlags.Int64:
-                                case TypeFlags.UInt64:
-                                case TypeFlags.Double:
+                                case CorElementType.ELEMENT_TYPE_I8:
+                                case CorElementType.ELEMENT_TYPE_U8:
+                                case CorElementType.ELEMENT_TYPE_R8:
                                     alignment = 8;
                                     size = 8;
                                     break;
 
-                                case TypeFlags.SzArray:
-                                case TypeFlags.Array:
-                                case TypeFlags.Class:
-                                case TypeFlags.Interface:
+                                case CorElementType.ELEMENT_TYPE_VAR:
+                                case CorElementType.ELEMENT_TYPE_MVAR:
+                                case CorElementType.ELEMENT_TYPE_STRING:
+                                case CorElementType.ELEMENT_TYPE_SZARRAY:
+                                case CorElementType.ELEMENT_TYPE_ARRAY:
+                                case CorElementType.ELEMENT_TYPE_CLASS:
+                                case CorElementType.ELEMENT_TYPE_OBJECT:
                                     isGcField = true;
                                     alignment = pointerSize;
                                     size = pointerSize;
                                     break;
 
-                                case TypeFlags.ValueType:
-                                case TypeFlags.Nullable:
+                                    // Statics for valuetypes where the valuetype is defined in this module are handled here. 
+                                    // Other valuetype statics utilize the pessimistic model below.
+                                case CorElementType.ELEMENT_TYPE_VALUETYPE:
                                     isGcField = true;
                                     alignment = pointerSize;
                                     size = pointerSize;
-                                    if (field.FieldType is EcmaType fieldEcmaType && fieldEcmaType.EcmaModule != module)
+                                    break;
+
+                                case CorElementType.ELEMENT_TYPE_END:
+                                default:
+                                    isGcField = true;
+                                    alignment = pointerSize;
+                                    size = pointerSize;
+                                    if (!valueTypeHandle.IsNil)
                                     {
                                         // Allocate pessimistic non-GC area for cross-module fields as that's what CoreCLR does
                                         // <a href="https://github.com/dotnet/coreclr/blob/659af58047a949ed50d11101708538d2e87f2568/src/vm/ceeload.cpp#L2124">here</a>
                                         nonGcStatics[index] = LayoutInt.AlignUp(nonGcStatics[index], new LayoutInt(TargetDetails.MaximumPrimitiveSize))
                                             + new LayoutInt(TargetDetails.MaximumPrimitiveSize);
                                     }
+                                    else
+                                    {
+                                        // Field has an unexpected type
+                                        throw new InvalidProgramException();
+                                    }
                                     break;
-
-                                default:
-                                    throw new NotImplementedException(field.FieldType.Category.ToString());
                             }
 
                             LayoutInt[] layout = (isGcField ? gcStatics : nonGcStatics);
                             LayoutInt offset = LayoutInt.AlignUp(layout[index], new LayoutInt(alignment));
                             layout[index] = offset + new LayoutInt(size);
-                            if (fieldsForType == null)
+                            try
                             {
-                                fieldsForType = new List<FieldAndOffset>();
+                                FieldDesc fieldDesc = module.GetField(fieldDefHandle);
+                                if (fieldsForType == null)
+                                {
+                                    fieldsForType = new List<FieldAndOffset>();
+                                }
+                                fieldsForType.Add(new FieldAndOffset(fieldDesc, offset));
                             }
-                            fieldsForType.Add(new FieldAndOffset(field, offset));
+                            catch (Exception)
+                            {
+                                // ignore unresolvable fields
+                            }
                         }
                     }
+
                     if (fieldsForType != null)
                     {
-                        typeToFieldMap.Add(defType, fieldsForType.ToArray());
+                        typeToFieldMap.Add(typeDefHandle, fieldsForType.ToArray());
                     }
                 }
 
@@ -206,6 +235,144 @@ namespace ILCompiler
             {
                 return value.Module.GetHashCode();
             }
+
+            /// <summary>
+            /// Try to locate the ThreadStatic custom attribute on the type (much like EcmaField.cs does in the method InitializeFieldFlags).
+            /// </summary>
+            /// <param name="fieldDef">Field definition</param>
+            /// <param name="metadataReader">Metadata reader for the module</param>
+            /// <returns>true when the field is marked with the ThreadStatic custom attribute</returns>
+            private static bool IsFieldThreadStatic(in FieldDefinition fieldDef, MetadataReader metadataReader)
+            {
+                foreach (CustomAttributeHandle customAttributeHandle in fieldDef.GetCustomAttributes())
+                {
+                    StringHandle namespaceHandle, nameHandle;
+                    if (metadataReader.GetAttributeNamespaceAndName(customAttributeHandle, out namespaceHandle, out nameHandle) &&
+                        metadataReader.StringComparer.Equals(namespaceHandle, "System") &&
+                        metadataReader.StringComparer.Equals(nameHandle, "ThreadStaticAttribute"))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            /// <summary>
+            /// Partially decode field signature to obtain CorElementType and optionally the type handle for VALUETYPE fields.
+            /// </summary>
+            /// <param name="fieldDef">Metadata field definition</param>
+            /// <param name="metadataReader">Metadata reader for the active module</param>
+            /// <param name="corElementType">Output element type decoded from the signature</param>
+            /// <param name="valueTypeHandle">Value type handle decoded from the signature</param>
+            private static void GetFieldElementTypeAndValueTypeHandle(
+                in FieldDefinition fieldDef,
+                MetadataReader metadataReader,
+                out CorElementType corElementType,
+                out Handle valueTypeHandle)
+            {
+                ImmutableArray<byte> signature = metadataReader.GetBlobContent(fieldDef.Signature);
+                int index = 0;
+                SignatureHeader signatureHeader = new SignatureHeader(signature[index++]);
+                if (signatureHeader.Kind != SignatureKind.Field)
+                {
+                    throw new InvalidProgramException();
+                }
+
+                corElementType = ReadElementType(signature, ref index);
+                valueTypeHandle = default(Handle);
+                if (corElementType == CorElementType.ELEMENT_TYPE_GENERICINST)
+                {
+                    corElementType = ReadElementType(signature, ref index);
+                }
+
+                if (corElementType == CorElementType.ELEMENT_TYPE_VALUETYPE)
+                {
+                    valueTypeHandle = ReadCompressedToken(signature, ref index);
+                }
+            }
+
+            /// <summary>
+            /// Extract element type from a field signature after skipping various modifiers.
+            /// </summary>
+            /// <param name="signature">Signature byte array</param>
+            /// <param name="index">On input, index into the signature array. Gets modified to point after the element type on return.</param>
+            /// <returns></returns>
+            private static CorElementType ReadElementType(ImmutableArray<byte> signature, ref int index)
+            {
+                // SigParser::PeekElemType
+                byte signatureByte = signature[index];
+                if (signatureByte < (byte)CorElementType.ELEMENT_TYPE_CMOD_REQD)
+                {
+                    // Fast path
+                    index++;
+                    return (CorElementType)signatureByte;
+                }
+
+                // SigParser::SkipCustomModifiers -> SkipAnyVASentinel
+                if (signatureByte == (byte)CorElementType.ELEMENT_TYPE_SENTINEL)
+                {
+                    signatureByte = signature[++index];
+                }
+
+                // SigParser::SkipCustomModifiers - modifier loop
+                while (signatureByte == (byte)CorElementType.ELEMENT_TYPE_CMOD_REQD ||
+                    signatureByte == (byte)CorElementType.ELEMENT_TYPE_CMOD_OPT)
+                {
+                    index++;
+                    ReadCompressedUInt(signature, ref index);
+                    signatureByte = signature[index];
+                }
+                index++;
+                return (CorElementType)signatureByte;
+            }
+
+            /// <summary>
+            /// Uncompress an unsigned integer from the signature encoding (an equivalent of CorSigUncompressData in CoreCLR).
+            /// </summary>
+            /// <param name="signature">Signature byte array</param>
+            /// <param name="index">Starting index of the compressed uint. Modified to point after the compressed uint on return.</param>
+            /// <returns></returns>
+            private static uint ReadCompressedUInt(ImmutableArray<byte> signature, ref int index)
+            {
+                byte firstByte = signature[index++];
+                if ((firstByte & 0x80) == 0)
+                {
+                    return firstByte;
+                }
+                byte secondByte = signature[index++];
+                if ((firstByte & 0x40) == 0)
+                {
+                    // 2-byte encoding
+                    return (uint)(((firstByte & 0x3F) << 8) | secondByte);
+                }
+                byte thirdByte = signature[index++];
+                byte fourthByte = signature[index++];
+                return (uint)(((firstByte & 0x3F) << 24) | (secondByte << 16) | (thirdByte << 8) | fourthByte);
+            }
+
+            /// <summary>
+            /// Read compressed type token from a signature.
+            /// </summary>
+            /// <param name="signature">Signature byte array</param>
+            /// <param name="index">Starting index of the compressed token in the signature. Gets modified to point after the token on return.</param>
+            /// <returns></returns>
+            private static Handle ReadCompressedToken(ImmutableArray<byte> signature, ref int index)
+            {
+                uint tokenAsUInt = ReadCompressedUInt(signature, ref index);
+                int tokenRowid = (int)(tokenAsUInt >> 2);
+                switch (tokenAsUInt & 3)
+                {
+                    case 0:
+                        return MetadataTokens.TypeDefinitionHandle(tokenRowid);
+                    case 1:
+                        return MetadataTokens.TypeReferenceHandle(tokenRowid);
+                    case 2:
+                        return MetadataTokens.TypeSpecificationHandle(tokenRowid);
+                    default:
+                        // mdtBaseType?
+                        throw new NotImplementedException();
+                };
+            }
         }
 
         /// <summary>
@@ -223,7 +390,7 @@ namespace ILCompiler
 
             public StaticsBlock ThreadNonGcStatics { get;  }
 
-            public IReadOnlyDictionary<DefType, FieldAndOffset[]> TypeToFieldMap { get; }
+            public IReadOnlyDictionary<TypeDefinitionHandle, FieldAndOffset[]> TypeToFieldMap { get; }
 
             public ModuleFieldLayout(
                 EcmaModule module, 
@@ -231,7 +398,7 @@ namespace ILCompiler
                 StaticsBlock nonGcStatics, 
                 StaticsBlock threadGcStatics, 
                 StaticsBlock threadNonGcStatics,
-                IReadOnlyDictionary<DefType, FieldAndOffset[]> typeToFieldMap)
+                IReadOnlyDictionary<TypeDefinitionHandle, FieldAndOffset[]> typeToFieldMap)
             {
                 Module = module;
                 GcStatics = gcStatics;

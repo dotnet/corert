@@ -7,12 +7,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-internal class Brogram
+internal class ClassWithStatic
 {
-    const int LineCountInitialValue = 0x666;
+    public const int StaticValue = 0x666;
+    
     [ThreadStatic]
-    public static int LineCount = LineCountInitialValue;
-
+    public static int Static = StaticValue;
 }
 
 internal class Program
@@ -77,15 +77,16 @@ internal class Program
         {
             Console.WriteLine($@"LineCount: 0x{LineCount:X8}, @ = 0x{(ulong)lineCountPtr:X8}");
         }
-        fixed (int *lineCountPtr = &Brogram.LineCount)
+        fixed (int *staticPtr = &ClassWithStatic.Static)
         {
-            Console.WriteLine($@"Brogram.LineCount: 0x{Brogram.LineCount:X8}, @ = 0x{(ulong)lineCountPtr:X8}");
+            Console.WriteLine($@"ClassWithStatic.Static: 0x{ClassWithStatic.Static:X8}, @ = 0x{(ulong)staticPtr:X8}");
         }
         fixed (int *lineCountPtr = &LineCount)
         {
             Console.WriteLine($@"LineCount: 0x{LineCount:X8}, @ = 0x{(ulong)lineCountPtr:X8}");
         }
-        return LineCount == LineCountInitialValue;
+        return LineCount == LineCountInitialValue &&
+            ClassWithStatic.Static == ClassWithStatic.StaticValue;
     }
 
     private static bool ChkCast()
