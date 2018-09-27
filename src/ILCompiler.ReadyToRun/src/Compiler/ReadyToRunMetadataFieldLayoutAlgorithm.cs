@@ -173,6 +173,10 @@ namespace ILCompiler
                                     isGcField = true;
                                     alignment = pointerSize;
                                     size = pointerSize;
+                                    if (IsTypeByRefLike(valueTypeHandle, module.MetadataReader))
+                                    {
+                                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, fieldDesc.OwningType);
+                                    }
                                     break;
 
                                 case CorElementType.ELEMENT_TYPE_END:
@@ -193,16 +197,6 @@ namespace ILCompiler
                                         throw new InvalidProgramException();
                                     }
                                     break;
-                            }
-
-                            if (!isGcField)
-                            {
-                                // For value type fields, check whether the type is not ByRefLike
-                                TypeDefinition fieldTypeDef = module.MetadataReader.GetTypeDefinition(fieldDef.GetDeclaringType());
-                                if (IsTypeByRefLike(in fieldTypeDef, module.MetadataReader))
-                                {
-                                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, fieldDesc.OwningType);
-                                }
                             }
 
                             LayoutInt[] layout = (isGcField ? gcStatics : nonGcStatics);
@@ -267,21 +261,27 @@ namespace ILCompiler
             /// <summary>
             /// Try to locate the IsByRefLike attribute on the type (much like EcmaType does in ComputeTypeFlags).
             /// </summary>
-            /// <param name="typeDef">Type to analyze</param>
+            /// <param name="typeDefHandle">Handle to the field type to analyze</param>
             /// <param name="metadataReader">Metadata reader for the active module</param>
             /// <returns></returns>
-            private static bool IsTypeByRefLike(in TypeDefinition typeDef, MetadataReader metadataReader)
+            private static bool IsTypeByRefLike(EntityHandle typeDefHandle, MetadataReader metadataReader)
             {
-                foreach (CustomAttributeHandle customAttributeHandle in typeDef.GetCustomAttributes())
+                if (typeDefHandle.Kind == HandleKind.TypeDefinition)
                 {
-                    StringHandle namespaceHandle, nameHandle;
-                    if (metadataReader.GetAttributeNamespaceAndName(customAttributeHandle, out namespaceHandle, out nameHandle) &&
-                        metadataReader.StringComparer.Equals(namespaceHandle, "System.Runtime.CompilerServices") &&
-                        metadataReader.StringComparer.Equals(nameHandle, "IsByRefLikeAttribute"))
+                    TypeDefinition typeDef = metadataReader.GetTypeDefinition((TypeDefinitionHandle)typeDefHandle);
+
+                    foreach (CustomAttributeHandle customAttributeHandle in typeDef.GetCustomAttributes())
                     {
-                        return true;
+                        StringHandle namespaceHandle, nameHandle;
+                        if (metadataReader.GetAttributeNamespaceAndName(customAttributeHandle, out namespaceHandle, out nameHandle) &&
+                            metadataReader.StringComparer.Equals(namespaceHandle, "System.Runtime.CompilerServices") &&
+                            metadataReader.StringComparer.Equals(nameHandle, "IsByRefLikeAttribute"))
+                        {
+                            return true;
+                        }
                     }
                 }
+
                 return false;
             }
 
