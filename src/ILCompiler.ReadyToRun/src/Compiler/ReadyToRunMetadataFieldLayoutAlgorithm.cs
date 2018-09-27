@@ -245,17 +245,7 @@ namespace ILCompiler
             /// <returns>true when the field is marked with the ThreadStatic custom attribute</returns>
             private static bool IsFieldThreadStatic(in FieldDefinition fieldDef, MetadataReader metadataReader)
             {
-                foreach (CustomAttributeHandle customAttributeHandle in fieldDef.GetCustomAttributes())
-                {
-                    StringHandle namespaceHandle, nameHandle;
-                    if (metadataReader.GetAttributeNamespaceAndName(customAttributeHandle, out namespaceHandle, out nameHandle) &&
-                        metadataReader.StringComparer.Equals(namespaceHandle, "System") &&
-                        metadataReader.StringComparer.Equals(nameHandle, "ThreadStaticAttribute"))
-                    {
-                        return true;
-                    }
-                }
-                return false;
+                return !metadataReader.GetCustomAttributeHandle(fieldDef.GetCustomAttributes(), "System", "ThreadStaticAttribute").IsNil;
             }
 
             /// <summary>
@@ -266,23 +256,11 @@ namespace ILCompiler
             /// <returns></returns>
             private static bool IsTypeByRefLike(EntityHandle typeDefHandle, MetadataReader metadataReader)
             {
-                if (typeDefHandle.Kind == HandleKind.TypeDefinition)
-                {
-                    TypeDefinition typeDef = metadataReader.GetTypeDefinition((TypeDefinitionHandle)typeDefHandle);
-
-                    foreach (CustomAttributeHandle customAttributeHandle in typeDef.GetCustomAttributes())
-                    {
-                        StringHandle namespaceHandle, nameHandle;
-                        if (metadataReader.GetAttributeNamespaceAndName(customAttributeHandle, out namespaceHandle, out nameHandle) &&
-                            metadataReader.StringComparer.Equals(namespaceHandle, "System.Runtime.CompilerServices") &&
-                            metadataReader.StringComparer.Equals(nameHandle, "IsByRefLikeAttribute"))
-                        {
-                            return true;
-                        }
-                    }
-                }
-
-                return false;
+                return typeDefHandle.Kind == HandleKind.TypeDefinition &&
+                    !metadataReader.GetCustomAttributeHandle(
+                        metadataReader.GetTypeDefinition((TypeDefinitionHandle)typeDefHandle).GetCustomAttributes(),
+                        "System.Runtime.CompilerServices",
+                        "IsByRefLikeAttribute").IsNil;
             }
 
             /// <summary>
