@@ -210,7 +210,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         continue;
                 }
 
-                Add(methodCodeNode, ((ReadyToRunCodegenNodeFactory)factory).RuntimeFunctionsTable.GetIndex(methodCodeNode));
+                if (!methodCodeNode.IsEmpty)
+                {
+                    Add(methodCodeNode, ((ReadyToRunCodegenNodeFactory)factory).RuntimeFunctionsTable.GetIndex(methodCodeNode));
+                }
             }
 
             NativeWriter writer = new NativeWriter();

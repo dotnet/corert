@@ -142,6 +142,7 @@ namespace Internal.JitInterface
 
         private void CompileMethodInternal(IMethodNode methodCodeNodeNeedingCode, MethodIL methodIL = null)
         {
+            bool codeGotPublished = false;
             try
             {
                 _isFallbackBodyCompilation = methodIL != null;
@@ -212,9 +213,14 @@ namespace Internal.JitInterface
                 }
 
                 PublishCode();
+                codeGotPublished = true;
             }
             finally
             {
+                if (!codeGotPublished)
+                {
+                    PublishEmptyCode();
+                }
                 CompileMethodCleanup();
             }
         }
@@ -250,6 +256,12 @@ namespace Internal.JitInterface
 
             _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
             _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
+        }
+
+        private void PublishEmptyCode()
+        {
+            _methodCodeNode.SetCode(new ObjectNode.ObjectData(Array.Empty<byte>(), null, 1, Array.Empty<ISymbolDefinitionNode>()));
+            _methodCodeNode.InitializeFrameInfos(Array.Empty<FrameInfo>());
         }
 
         private MethodDesc MethodBeingCompiled
