@@ -968,6 +968,10 @@ namespace Internal.JitInterface
             else
             {
                 TypeDesc type = (TypeDesc)result;
+#if READYTORUN
+                _compilation.NodeFactory.Resolver.AddModuleTokenForType(type, new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token));
+#endif
+
                 if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
                 {
                     if (type.IsVoid)
@@ -976,10 +980,6 @@ namespace Internal.JitInterface
                     type = type.MakeArrayType();
                 }
                 pResolvedToken.hClass = ObjectToHandle(type);
-
-#if READYTORUN
-                _compilation.NodeFactory.Resolver.AddModuleTokenForType(type, new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token));
-#endif
             }
 
             pResolvedToken.pTypeSpec = null;
@@ -2729,7 +2729,7 @@ namespace Internal.JitInterface
                     {
                         pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                            _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, _signatureContext)
+                            _compilation.NodeFactory.MethodEntrypoint(constrainedType != null ? method : targetMethod, constrainedType, _signatureContext)
 #else
                             _compilation.NodeFactory.MethodEntrypoint(targetMethod)
 #endif
