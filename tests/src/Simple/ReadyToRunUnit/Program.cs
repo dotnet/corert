@@ -25,7 +25,7 @@ internal class Program
     [ThreadStatic]
     private static int LineCount = LineCountInitialValue;
 
-    private static List<string> _passedTests;
+    private static volatile List<string> _passedTests;
 
     private static List<string> _failedTests;
 

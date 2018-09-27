@@ -109,9 +109,10 @@ namespace ILCompiler
                             bool isGcField = false;
 
                             CorElementType corElementType;
-                            Handle valueTypeHandle;
+                            EntityHandle valueTypeHandle;
 
                             GetFieldElementTypeAndValueTypeHandle(in fieldDef, module.MetadataReader, out corElementType, out valueTypeHandle);
+                            FieldDesc fieldDesc = module.GetField(fieldDefHandle);
 
                             switch (corElementType)
                             {
@@ -162,8 +163,12 @@ namespace ILCompiler
                                     size = pointerSize;
                                     break;
 
-                                    // Statics for valuetypes where the valuetype is defined in this module are handled here. 
-                                    // Other valuetype statics utilize the pessimistic model below.
+                                case CorElementType.ELEMENT_TYPE_BYREF:
+                                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, fieldDesc.OwningType);
+                                    break;
+
+                                // Statics for valuetypes where the valuetype is defined in this module are handled here. 
+                                // Other valuetype statics utilize the pessimistic model below.
                                 case CorElementType.ELEMENT_TYPE_VALUETYPE:
                                     isGcField = true;
                                     alignment = pointerSize;
@@ -190,31 +195,24 @@ namespace ILCompiler
                                     break;
                             }
 
-                            LayoutInt[] layout = (isGcField ? gcStatics : nonGcStatics);
-                            LayoutInt offset = LayoutInt.AlignUp(layout[index], new LayoutInt(alignment));
-                            layout[index] = offset + new LayoutInt(size);
-                            FieldDesc fieldDesc = null;
-                            try
+                            if (!isGcField)
                             {
-                                fieldDesc = module.GetField(fieldDefHandle);
-                                if (fieldsForType == null)
-                                {
-                                    fieldsForType = new List<FieldAndOffset>();
-                                }
-                                fieldsForType.Add(new FieldAndOffset(fieldDesc, offset));
-                            }
-                            catch (Exception)
-                            {
-                                // ignore unresolvable fields
-                            }
-                            if (fieldDesc != null)
-                            {
-                                TypeDesc fieldType = fieldDesc.FieldType;
-                                if (fieldType.IsByRef || (fieldType.IsValueType && ((DefType)fieldType).IsByRefLike))
+                                // For value type fields, check whether the type is not ByRefLike
+                                TypeDefinition fieldTypeDef = module.MetadataReader.GetTypeDefinition(fieldDef.GetDeclaringType());
+                                if (IsTypeByRefLike(in fieldTypeDef, module.MetadataReader))
                                 {
                                     ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, fieldDesc.OwningType);
                                 }
                             }
+
+                            LayoutInt[] layout = (isGcField ? gcStatics : nonGcStatics);
+                            LayoutInt offset = LayoutInt.AlignUp(layout[index], new LayoutInt(alignment));
+                            layout[index] = offset + new LayoutInt(size);
+                            if (fieldsForType == null)
+                            {
+                                fieldsForType = new List<FieldAndOffset>();
+                            }
+                            fieldsForType.Add(new FieldAndOffset(fieldDesc, offset));
                         }
                     }
 
@@ -246,7 +244,7 @@ namespace ILCompiler
             }
 
             /// <summary>
-            /// Try to locate the ThreadStatic custom attribute on the type (much like EcmaField.cs does in the method InitializeFieldFlags).
+            /// Try to locate the ThreadStatic custom attribute on the field (much like EcmaField.cs does in the method InitializeFieldFlags).
             /// </summary>
             /// <param name="fieldDef">Field definition</param>
             /// <param name="metadataReader">Metadata reader for the module</param>
@@ -267,6 +265,27 @@ namespace ILCompiler
             }
 
             /// <summary>
+            /// Try to locate the IsByRefLike attribute on the type (much like EcmaType does in ComputeTypeFlags).
+            /// </summary>
+            /// <param name="typeDef">Type to analyze</param>
+            /// <param name="metadataReader">Metadata reader for the active module</param>
+            /// <returns></returns>
+            private static bool IsTypeByRefLike(in TypeDefinition typeDef, MetadataReader metadataReader)
+            {
+                foreach (CustomAttributeHandle customAttributeHandle in typeDef.GetCustomAttributes())
+                {
+                    StringHandle namespaceHandle, nameHandle;
+                    if (metadataReader.GetAttributeNamespaceAndName(customAttributeHandle, out namespaceHandle, out nameHandle) &&
+                        metadataReader.StringComparer.Equals(namespaceHandle, "System.Runtime.CompilerServices") &&
+                        metadataReader.StringComparer.Equals(nameHandle, "IsByRefLikeAttribute"))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            /// <summary>
             /// Partially decode field signature to obtain CorElementType and optionally the type handle for VALUETYPE fields.
             /// </summary>
             /// <param name="fieldDef">Metadata field definition</param>
@@ -277,26 +296,25 @@ namespace ILCompiler
                 in FieldDefinition fieldDef,
                 MetadataReader metadataReader,
                 out CorElementType corElementType,
-                out Handle valueTypeHandle)
+                out EntityHandle valueTypeHandle)
             {
-                ImmutableArray<byte> signature = metadataReader.GetBlobContent(fieldDef.Signature);
-                int index = 0;
-                SignatureHeader signatureHeader = new SignatureHeader(signature[index++]);
+                BlobReader signature = metadataReader.GetBlobReader(fieldDef.Signature);
+                SignatureHeader signatureHeader = signature.ReadSignatureHeader();
                 if (signatureHeader.Kind != SignatureKind.Field)
                 {
                     throw new InvalidProgramException();
                 }
 
-                corElementType = ReadElementType(signature, ref index);
-                valueTypeHandle = default(Handle);
+                corElementType = ReadElementType(ref signature);
+                valueTypeHandle = default(EntityHandle);
                 if (corElementType == CorElementType.ELEMENT_TYPE_GENERICINST)
                 {
-                    corElementType = ReadElementType(signature, ref index);
+                    corElementType = ReadElementType(ref signature);
                 }
 
                 if (corElementType == CorElementType.ELEMENT_TYPE_VALUETYPE)
                 {
-                    valueTypeHandle = ReadCompressedToken(signature, ref index);
+                    valueTypeHandle = signature.ReadTypeHandle();
                 }
             }
 
@@ -306,81 +324,30 @@ namespace ILCompiler
             /// <param name="signature">Signature byte array</param>
             /// <param name="index">On input, index into the signature array. Gets modified to point after the element type on return.</param>
             /// <returns></returns>
-            private static CorElementType ReadElementType(ImmutableArray<byte> signature, ref int index)
+            private static CorElementType ReadElementType(ref BlobReader signature)
             {
                 // SigParser::PeekElemType
-                byte signatureByte = signature[index];
+                byte signatureByte = signature.ReadByte();
                 if (signatureByte < (byte)CorElementType.ELEMENT_TYPE_CMOD_REQD)
                 {
                     // Fast path
-                    index++;
                     return (CorElementType)signatureByte;
                 }
 
                 // SigParser::SkipCustomModifiers -> SkipAnyVASentinel
                 if (signatureByte == (byte)CorElementType.ELEMENT_TYPE_SENTINEL)
                 {
-                    signatureByte = signature[++index];
+                    signatureByte = signature.ReadByte();
                 }
 
                 // SigParser::SkipCustomModifiers - modifier loop
                 while (signatureByte == (byte)CorElementType.ELEMENT_TYPE_CMOD_REQD ||
                     signatureByte == (byte)CorElementType.ELEMENT_TYPE_CMOD_OPT)
                 {
-                    index++;
-                    ReadCompressedUInt(signature, ref index);
-                    signatureByte = signature[index];
+                    signature.ReadCompressedInteger();
+                    signatureByte = signature.ReadByte();
                 }
-                index++;
                 return (CorElementType)signatureByte;
-            }
-
-            /// <summary>
-            /// Uncompress an unsigned integer from the signature encoding (an equivalent of CorSigUncompressData in CoreCLR).
-            /// </summary>
-            /// <param name="signature">Signature byte array</param>
-            /// <param name="index">Starting index of the compressed uint. Modified to point after the compressed uint on return.</param>
-            /// <returns></returns>
-            private static uint ReadCompressedUInt(ImmutableArray<byte> signature, ref int index)
-            {
-                byte firstByte = signature[index++];
-                if ((firstByte & 0x80) == 0)
-                {
-                    return firstByte;
-                }
-                byte secondByte = signature[index++];
-                if ((firstByte & 0x40) == 0)
-                {
-                    // 2-byte encoding
-                    return (uint)(((firstByte & 0x3F) << 8) | secondByte);
-                }
-                byte thirdByte = signature[index++];
-                byte fourthByte = signature[index++];
-                return (uint)(((firstByte & 0x3F) << 24) | (secondByte << 16) | (thirdByte << 8) | fourthByte);
-            }
-
-            /// <summary>
-            /// Read compressed type token from a signature.
-            /// </summary>
-            /// <param name="signature">Signature byte array</param>
-            /// <param name="index">Starting index of the compressed token in the signature. Gets modified to point after the token on return.</param>
-            /// <returns></returns>
-            private static Handle ReadCompressedToken(ImmutableArray<byte> signature, ref int index)
-            {
-                uint tokenAsUInt = ReadCompressedUInt(signature, ref index);
-                int tokenRowid = (int)(tokenAsUInt >> 2);
-                switch (tokenAsUInt & 3)
-                {
-                    case 0:
-                        return MetadataTokens.TypeDefinitionHandle(tokenRowid);
-                    case 1:
-                        return MetadataTokens.TypeReferenceHandle(tokenRowid);
-                    case 2:
-                        return MetadataTokens.TypeSpecificationHandle(tokenRowid);
-                    default:
-                        // mdtBaseType?
-                        throw new NotImplementedException();
-                };
             }
         }
 
