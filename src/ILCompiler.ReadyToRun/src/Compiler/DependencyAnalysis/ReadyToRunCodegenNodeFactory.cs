@@ -640,6 +640,12 @@ namespace ILCompiler.DependencyAnalysis
                     r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_FltRound;
                     break;
 
+                case ILCompiler.ReadyToRunHelper.GetRefAny:
+                    // TODO-PERF: currently not implemented in Crossgen
+                    ThrowHelper.ThrowInvalidProgramException();
+                    // ThrowInvalidProgramException should never return
+                    throw new NotImplementedException();
+
                 default:
                     throw new NotImplementedException(helper.ToString());
             }

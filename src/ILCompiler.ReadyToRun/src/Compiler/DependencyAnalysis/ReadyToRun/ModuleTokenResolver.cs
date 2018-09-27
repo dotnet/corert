@@ -103,7 +103,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     break;
 
                 case CorTokenType.mdtMemberRef:
-                    AddModuleTokenForMemberReference(method.OwningType, token);
+                    AddModuleTokenForMethodReference(method.OwningType, token);
                     break;
 
                 default:
@@ -111,11 +111,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        private void AddModuleTokenForMemberReference(TypeDesc owningType, ModuleToken token)
+        private void AddModuleTokenForMethodReference(TypeDesc owningType, ModuleToken token)
         {
             MemberReference memberRef = token.MetadataReader.GetMemberReference((MemberReferenceHandle)token.Handle);
             EntityHandle owningTypeHandle = memberRef.Parent;
             AddModuleTokenForType(owningType, new ModuleToken(token.Module, owningTypeHandle));
+
+            memberRef.DecodeMethodSignature<DummyTypeInfo, ModuleTokenResolver>(new TokenResolverProvider(this, token.Module), this);
+        }
+
+        private void AddModuleTokenForFieldReference(TypeDesc owningType, ModuleToken token)
+        {
+            MemberReference memberRef = token.MetadataReader.GetMemberReference((MemberReferenceHandle)token.Handle);
+            EntityHandle owningTypeHandle = memberRef.Parent;
+            AddModuleTokenForType(owningType, new ModuleToken(token.Module, owningTypeHandle));
+            memberRef.DecodeFieldSignature<DummyTypeInfo, ModuleTokenResolver>(new TokenResolverProvider(this, token.Module), this);
         }
 
         public void AddModuleTokenForField(FieldDesc field, ModuleToken token)
@@ -130,7 +140,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             switch (token.TokenType)
             {
                 case CorTokenType.mdtMemberRef:
-                    AddModuleTokenForMemberReference(field.OwningType, token);
+                    AddModuleTokenForFieldReference(field.OwningType, token);
                     break;
 
                 default:
@@ -140,6 +150,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void AddModuleTokenForType(TypeDesc type, ModuleToken token)
         {
+            bool specialTypeFound = false;
+            // Collect underlying type tokens for type specifications
+            if (token.TokenType == CorTokenType.mdtTypeSpec)
+            {
+                TypeSpecification typeSpec = token.MetadataReader.GetTypeSpecification((TypeSpecificationHandle)token.Handle);
+                typeSpec.DecodeSignature(new TokenResolverProvider(this, token.Module), this);
+                specialTypeFound = true;
+            }
+
             if (_compilationModuleGroup.ContainsType(type))
             {
                 // We don't need to store handles within the current compilation group
@@ -155,19 +174,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     _typeToRefTokens[ecmaType] = token;
                 }
             }
-            else if (type is InstantiatedType instantiatedType)
-            {
-                switch (token.TokenType)
-                {
-                    case CorTokenType.mdtTypeSpec:
-                        {
-                            TypeSpecification typeSpec = token.MetadataReader.GetTypeSpecification((TypeSpecificationHandle)token.Handle);
-                            typeSpec.DecodeSignature(new TokenResolverProvider(this, token.Module), this);
-                        }
-                        break;
-                }
-            }
-            else
+            else if (!specialTypeFound)
             {
                 throw new NotImplementedException(type.ToString());
             }
@@ -198,17 +205,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             public DummyTypeInfo GetArrayType(DummyTypeInfo elementType, ArrayShape shape)
             {
-                throw new NotImplementedException();
+                return DummyTypeInfo.Instance;
             }
 
             public DummyTypeInfo GetByReferenceType(DummyTypeInfo elementType)
             {
-                throw new NotImplementedException();
+                return DummyTypeInfo.Instance;
             }
 
             public DummyTypeInfo GetFunctionPointerType(MethodSignature<DummyTypeInfo> signature)
             {
-                throw new NotImplementedException();
+                return DummyTypeInfo.Instance;
             }
 
             public DummyTypeInfo GetGenericInstantiation(DummyTypeInfo genericType, ImmutableArray<DummyTypeInfo> typeArguments)

@@ -438,12 +438,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void EmitFieldSignature(FieldDesc field, SignatureContext context)
         {
-            ModuleToken fieldRefToken = context.GetModuleTokenForField(field);
-            switch (fieldRefToken.TokenType)
+            ModuleToken fieldToken = context.GetModuleTokenForField(field);
+            switch (fieldToken.TokenType)
             {
                 case CorTokenType.mdtMemberRef:
                     EmitUInt((uint)ReadyToRunFieldSigFlags.READYTORUN_FIELD_SIG_MemberRefToken);
-                    EmitTokenRid(fieldRefToken.Token);
+                    EmitTokenRid(fieldToken.Token);
+                    break;
+
+                case CorTokenType.mdtFieldDef:
+                    EmitUInt((uint)0);
+                    EmitTokenRid(fieldToken.Token);
                     break;
 
                 default:
