@@ -16,12 +16,7 @@ namespace ILCompiler
         public ReadyToRunCompilerContext(TargetDetails details, SharedGenericsMode genericsMode)
             : base(details, genericsMode)
         {
-        }
-
-        public void InitializeAlgorithm(int numberOfTypesInModule)
-        {
-            Debug.Assert(_r2rFieldLayoutAlgorithm == null);
-            _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm(Target, numberOfTypesInModule);
+            _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm();
         }
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
@@ -39,6 +34,17 @@ namespace ILCompiler
                 Debug.Assert(_r2rFieldLayoutAlgorithm != null);
                 return _r2rFieldLayoutAlgorithm;
             }
+        }
+
+        protected override bool ComputeHasGCStaticBase(FieldDesc field)
+        {
+            Debug.Assert(field.IsStatic);
+
+            TypeDesc fieldType = field.FieldType;
+            if (fieldType.IsValueType)
+                return ((DefType)fieldType).ContainsGCPointers;
+            else
+                return fieldType.IsGCPointer;
         }
     }
 }

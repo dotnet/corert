@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection.Metadata.Ecma335;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
@@ -34,7 +33,6 @@ namespace ILCompiler
             _devirtualizationManager = new DependencyAnalysis.ReadyToRun.DevirtualizationManager(group);
 
             _inputModule = context.GetModuleFromPath(_inputFilePath);
-            ((ReadyToRunCompilerContext)context).InitializeAlgorithm(_inputModule.MetadataReader.GetTableRowCount(TableIndex.TypeDef));
         }
 
         public override CompilationBuilder UseBackendOptions(IEnumerable<string> options)

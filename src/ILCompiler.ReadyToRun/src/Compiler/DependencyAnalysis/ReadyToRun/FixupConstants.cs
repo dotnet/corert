@@ -253,7 +253,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
     public enum CorElementType : byte
     {
-        Invalid = 0,
+        ELEMENT_TYPE_END = 0,
         ELEMENT_TYPE_VOID = 1,
         ELEMENT_TYPE_BOOLEAN = 2,
         ELEMENT_TYPE_CHAR = 3,
