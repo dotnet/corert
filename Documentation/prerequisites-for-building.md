@@ -8,22 +8,20 @@ The following pre-requisites need to be installed for building the repo:
 
 PowerShell also needs to be available from the PATH environment variable (it's the default). Typically it should be %SYSTEMROOT%\System32\WindowsPowerShell\v1.0\.
 
-# Ubuntu (14.04+)
+# Ubuntu (16.04+)
 
 Install basic dependency packages:
 
 First add a new package source to be able to install clang-3.9:
 ```sh
-echo "deb http://llvm.org/apt/trusty/ llvm-toolchain-trusty-3.9 main" | sudo tee /etc/apt/sources.list.d/llvm.list
+echo "deb http://llvm.org/apt/xenial/ llvm-toolchain-xenial-3.9 main" | sudo tee /etc/apt/sources.list.d/llvm.list
 wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
 sudo apt-get update
 ```
 
 ```sh
-sudo apt-get install cmake clang-3.9 libunwind8 uuid-dev libcurl4-openssl-dev zlib1g-dev libkrb5-dev
+sudo apt-get install cmake clang-3.9 libicu55 uuid-dev libcurl4-openssl-dev zlib1g-dev libkrb5-dev
 ```
-
-On Ubuntu 14.04, also add `libicu52` to the list above.
 
 # macOS (10.12+)
 
