@@ -143,7 +143,7 @@ namespace Internal.IL
                 }
 
                 LLVM.PositionBuilderAtEnd(_builder, trapBlock);
-                EmitTrapCall();
+                EmitTrapCall(_builder);
                 throw;
             }
             finally
@@ -717,15 +717,15 @@ namespace Internal.IL
             CastingStore(varAddress, toStore, varType, $"Variable{index}_");
         }
 
-        private void ImportStoreHelper(LLVMValueRef toStore, LLVMTypeRef valueType, LLVMValueRef basePtr, uint offset, string name = null)
+        private void ImportStoreHelper(LLVMBuilderRef builder, LLVMValueRef toStore, LLVMTypeRef valueType, LLVMValueRef basePtr, uint offset, string name = null)
         {
             LLVMValueRef typedToStore = CastIfNecessary(toStore, valueType, name);
             
-            var storeLocation = LLVM.BuildGEP(_builder, basePtr,
+            var storeLocation = LLVM.BuildGEP(builder, basePtr,
                 new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), offset, LLVMMisc.False) },
                 String.Empty);
             var typedStoreLocation = CastIfNecessary(storeLocation, LLVM.PointerType(valueType, 0), "TypedStore" + (name ?? ""));
-            LLVM.BuildStore(_builder, typedToStore, typedStoreLocation);
+            LLVM.BuildStore(builder, typedToStore, typedStoreLocation);
         }
 
         private LLVMValueRef CastToRawPointer(LLVMValueRef source, string name = null)
@@ -1161,7 +1161,7 @@ namespace Internal.IL
                 new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(type, true), _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr"))
             };
 
-            _stack.Push(CallRuntime(_compilation.TypeSystemContext, TypeCast, function, arguments, type));
+            _stack.Push(CallRuntime(_builder, _compilation.TypeSystemContext, TypeCast, function, arguments, type));
         }
 
         private void ImportLoadNull()
@@ -1183,7 +1183,7 @@ namespace Internal.IL
 
             if (NeedsReturnStackSlot(_signature))
             {
-                ImportStoreHelper(castValue, valueType, LLVM.GetNextParam(LLVM.GetFirstParam(_llvmFunction)), 0);
+                ImportStoreHelper(_builder, castValue, valueType, LLVM.GetNextParam(LLVM.GetFirstParam(_llvmFunction)), 0);
                 LLVM.BuildRetVoid(_builder);
             }
             else
@@ -1230,7 +1230,7 @@ namespace Internal.IL
                     };
                     MetadataType helperType = _compilation.TypeSystemContext.SystemModule.GetKnownType("Internal.Runtime.CompilerHelpers", "ArrayHelpers");
                     MethodDesc helperMethod = helperType.GetKnownMethod("NewObjArray", null);
-                    PushNonNull(HandleCall(helperMethod, helperMethod.Signature, arguments, forcedReturnType: newType));
+                    PushNonNull(HandleCall(_builder, helperMethod, helperMethod.Signature, arguments, forcedReturnType: newType));
                     return;
                 }
                 else if (newType.IsString)
@@ -1263,7 +1263,7 @@ namespace Internal.IL
                     }
                     else
                     {
-                        newObjResult = AllocateObject(callee.OwningType);
+                        newObjResult = AllocateObject(_builder, callee.OwningType);
 
                         //one for the real result and one to be consumed by ctor
                         _stack.InsertAt(newObjResult, _stack.Top - callee.Signature.Length);
@@ -1374,17 +1374,19 @@ namespace Internal.IL
             var pointerSize = method.Context.Target.PointerSize;
             LLVMTypeRef llvmSignature = GetLLVMSignatureForMethod(method.Signature);
             LLVMValueRef functionPtr;
+            var thisPointer = objectPtr.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder);
+            ThrowIfNull(thisPointer);
             if (method.OwningType.IsInterface)
             {
                 var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
                 var interfaceEEType = new LoadExpressionEntry(StackValueKind.ValueType, "interfaceEEType", GetEETypePointerForTypeDesc(method.OwningType, true), eeTypeDesc);
-                var eeTypeExpression = new LoadExpressionEntry(StackValueKind.ValueType, "eeType", objectPtr.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), eeTypeDesc);
-                var targetEntry = CallRuntime(_compilation.TypeSystemContext, DispatchResolve, "FindInterfaceMethodImplementationTarget", new StackEntry[] { eeTypeExpression, interfaceEEType, new ExpressionEntry(StackValueKind.Int32, "slot", slot, GetWellKnownType(WellKnownType.UInt16)) });
+                var eeTypeExpression = new LoadExpressionEntry(StackValueKind.ValueType, "eeType", thisPointer, eeTypeDesc);
+                var targetEntry = CallRuntime(_builder, _compilation.TypeSystemContext, DispatchResolve, "FindInterfaceMethodImplementationTarget", new StackEntry[] { eeTypeExpression, interfaceEEType, new ExpressionEntry(StackValueKind.Int32, "slot", slot, GetWellKnownType(WellKnownType.UInt16)) });
                 functionPtr = targetEntry.ValueAsType(LLVM.PointerType(llvmSignature, 0), _builder);
             }
             else
             {
-                var rawObjectPtr = CastIfNecessary(objectPtr.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(llvmSignature, 0), 0), 0), objectPtr.Name());
+                var rawObjectPtr = CastIfNecessary(thisPointer, LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(llvmSignature, 0), 0), 0), objectPtr.Name());
                 var eeType = LLVM.BuildLoad(_builder, rawObjectPtr, "ldEEType");
                 var slotPtr = LLVM.BuildGEP(_builder, eeType, new LLVMValueRef[] { slot }, "__getslot__");
                 functionPtr = LLVM.BuildLoad(_builder, slotPtr, "ld__getslot__");
@@ -1429,13 +1431,13 @@ namespace Internal.IL
             return LLVM.FunctionType(llvmReturnType, signatureTypes.ToArray(), false);
         }
 
-        private ExpressionEntry AllocateObject(TypeDesc type)
+        private ExpressionEntry AllocateObject(LLVMBuilderRef builder, TypeDesc type)
         {
             MetadataType metadataType = (MetadataType)type;
             var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
             var arguments = new StackEntry[] { new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(metadataType, true), eeTypeDesc) };
             //TODO: call GetNewObjectHelperForType from JitHelper.cs (needs refactoring)
-            return CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhNewObject", arguments, type);
+            return CallRuntime(builder, _compilation.TypeSystemContext, RuntimeExport, "RhNewObject", arguments, type);
         }
 
         private static LLVMValueRef BuildConstInt1(int number)
@@ -1624,10 +1626,10 @@ namespace Internal.IL
                 }
             }
 
-            PushNonNull(HandleCall(callee, signature, argumentValues, opcode, constrainedType, calliTarget));
+            PushNonNull(HandleCall(_builder, callee, signature, argumentValues, opcode, constrainedType, calliTarget));
         }
 
-        private ExpressionEntry HandleCall(MethodDesc callee, MethodSignature signature, StackEntry[] argumentValues, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef), TypeDesc forcedReturnType = null)
+        private ExpressionEntry HandleCall(LLVMBuilderRef builder, MethodDesc callee, MethodSignature signature, StackEntry[] argumentValues, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef), TypeDesc forcedReturnType = null)
         {
             if (opcode == ILOpcode.callvirt && callee.IsVirtual)
             {
@@ -1661,14 +1663,14 @@ namespace Internal.IL
                 returnSlot = new SpilledExpressionEntry(GetStackValueKind(returnType), callee?.Name + "_return", returnType, returnIndex, this);
                 _spilledExpressions.Add(returnSlot);
                 returnAddress = LoadVarAddress(returnIndex, LocalVarKind.Temp, out TypeDesc unused);
-                castReturnAddress = LLVM.BuildPointerCast(_builder, returnAddress, LLVM.PointerType(LLVM.Int8Type(), 0), callee?.Name + "_castreturn");
+                castReturnAddress = LLVM.BuildPointerCast(builder, returnAddress, LLVM.PointerType(LLVM.Int8Type(), 0), callee?.Name + "_castreturn");
             }
 
             int offset = GetTotalParameterOffset() + GetTotalLocalOffset();
             LLVMValueRef shadowStack = LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_llvmFunction),
                 new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)offset, LLVMMisc.False) },
                 String.Empty);
-            var castShadowStack = LLVM.BuildPointerCast(_builder, shadowStack, LLVM.PointerType(LLVM.Int8Type(), 0), "castshadowstack");
+            var castShadowStack = LLVM.BuildPointerCast(builder, shadowStack, LLVM.PointerType(LLVM.Int8Type(), 0), "castshadowstack");
 
             List<LLVMValueRef> llvmArgs = new List<LLVMValueRef>();
             llvmArgs.Add(castShadowStack);
@@ -1715,7 +1717,7 @@ namespace Internal.IL
                     // The previous argument might have left this type unaligned, so pad if necessary
                     argOffset = PadOffset(argType, argOffset);
 
-                    ImportStoreHelper(argValue, valueType, castShadowStack, (uint)argOffset);
+                    ImportStoreHelper(builder, argValue, valueType, castShadowStack, (uint)argOffset);
 
                     argOffset += argType.GetElementSize().AsInt;
                 }
@@ -1762,10 +1764,10 @@ namespace Internal.IL
             }
 
 
-            PushNonNull(ImportRawPInvoke(method, arguments));
+            PushNonNull(ImportRawPInvoke(_builder, method, arguments));
         }
 
-        private ExpressionEntry ImportRawPInvoke(MethodDesc method, StackEntry[] arguments, TypeDesc forcedReturnType = null)
+        private ExpressionEntry ImportRawPInvoke(LLVMBuilderRef builder, MethodDesc method, StackEntry[] arguments, TypeDesc forcedReturnType = null)
         {
             //emscripten dies if this is output because its expected to have i32, i32, i64. But the runtime has defined it as i8*, i8*, i64
             if (method.Name == "memmove")
@@ -1793,7 +1795,7 @@ namespace Internal.IL
                 if (existantDesc != method)
                 {
                     // Set up native parameter types
-                    nativeFunc = MakeExternFunction(method, realMethodName, realNativeFunc);
+                    nativeFunc = MakeExternFunction(builder, method, realMethodName, realNativeFunc);
                 }
                 else
                 {
@@ -1810,23 +1812,23 @@ namespace Internal.IL
             if (nativeFunc.Pointer == IntPtr.Zero)
             {
                 // Set up native parameter types
-                nativeFunc = MakeExternFunction(method, realMethodName);
+                nativeFunc = MakeExternFunction(builder, method, realMethodName);
             }
 
             LLVMValueRef[] llvmArguments = new LLVMValueRef[method.Signature.Length];
             for (int i = 0; i < arguments.Length; i++)
             {
                 TypeDesc signatureType = method.Signature[i];
-                llvmArguments[i] = arguments[i].ValueAsType(GetLLVMTypeForTypeDesc(signatureType), _builder);
+                llvmArguments[i] = arguments[i].ValueAsType(GetLLVMTypeForTypeDesc(signatureType), builder);
             }
 
             // Save the top of the shadow stack in case the callee reverse P/Invokes
             LLVMValueRef stackFrameSize = BuildConstInt32(GetTotalParameterOffset() + GetTotalLocalOffset());
-            LLVM.BuildStore(_builder, LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_llvmFunction), new LLVMValueRef[] { stackFrameSize }, "shadowStackTop"),
+            LLVM.BuildStore(builder, LLVM.BuildGEP(builder, LLVM.GetFirstParam(_llvmFunction), new LLVMValueRef[] { stackFrameSize }, "shadowStackTop"),
                 LLVM.GetNamedGlobal(Module, "t_pShadowStackTop"));
 
             // Don't name the return value if the function returns void, it's invalid
-            var returnValue = LLVM.BuildCall(_builder, nativeFunc, llvmArguments, !method.Signature.ReturnType.IsVoid ? "call" : string.Empty);
+            var returnValue = LLVM.BuildCall(builder, nativeFunc, llvmArguments, !method.Signature.ReturnType.IsVoid ? "call" : string.Empty);
 
             if (!method.Signature.ReturnType.IsVoid)
                 return new ExpressionEntry(GetStackValueKind(method.Signature.ReturnType), "retval", returnValue, forcedReturnType ?? method.Signature.ReturnType);
@@ -1834,7 +1836,7 @@ namespace Internal.IL
                 return null;
         }
 
-        private LLVMValueRef MakeExternFunction(MethodDesc method, string realMethodName, LLVMValueRef realFunction = default(LLVMValueRef))
+        private LLVMValueRef MakeExternFunction(LLVMBuilderRef builder, MethodDesc method, string realMethodName, LLVMValueRef realFunction = default(LLVMValueRef))
         {
             LLVMValueRef nativeFunc;
             LLVMTypeRef[] paramTypes = new LLVMTypeRef[method.Signature.Length];
@@ -1853,7 +1855,7 @@ namespace Internal.IL
             }
             else
             {
-                nativeFunc = LLVM.BuildPointerCast(_builder, realFunction, LLVM.PointerType(nativeFuncType, 0), realMethodName + "__slot__");
+                nativeFunc = LLVM.BuildPointerCast(builder, realFunction, LLVM.PointerType(nativeFuncType, 0), realMethodName + "__slot__");
             }
             return nativeFunc;
         }
@@ -2563,7 +2565,7 @@ namespace Internal.IL
                     throw new NotImplementedException();
 
                 var arguments = new StackEntry[] { new LoadExpressionEntry(StackValueKind.ByRef, "eeType", eeType, eeTypeDesc), boxedObject };
-                PushNonNull(CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhUnbox2", arguments));
+                PushNonNull(CallRuntime(_builder, _compilation.TypeSystemContext, RuntimeExport, "RhUnbox2", arguments));
             }
             else //unbox_any
             {
@@ -2575,7 +2577,7 @@ namespace Internal.IL
                     new ExpressionEntry(StackValueKind.ByRef, "objPtr", untypedObjectValue, type.MakePointerType()),
                     new LoadExpressionEntry(StackValueKind.ByRef, "eeType", eeType, eeTypeDesc)
                 };
-                CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhUnboxAny", arguments);
+                CallRuntime(_builder, _compilation.TypeSystemContext, RuntimeExport, "RhUnboxAny", arguments);
                 PushLoadExpression(GetStackValueKind(type), "unboxed", untypedObjectValue, type);
             }
         }
@@ -2652,7 +2654,7 @@ namespace Internal.IL
 
         private void ImportRethrow()
         {
-            EmitTrapCall();
+            EmitTrapCall(_builder);
         }
 
         private void ImportSizeOf(int token)
@@ -2699,7 +2701,38 @@ namespace Internal.IL
         {
             var exceptionObject = _stack.Pop();
 
-            EmitTrapCall();
+            EmitThrow(_builder, exceptionObject.ValueForStackKind(StackValueKind.ObjRef, _builder, false));
+        }
+
+        private void EmitThrow(LLVMBuilderRef builder, LLVMValueRef exceptionObject)
+        {
+            EmitTrapCall(builder);
+        }
+
+        private void ThrowIfNull(LLVMValueRef entry)
+        {
+            if (NullRefFunction.Pointer == IntPtr.Zero)
+            {
+                NullRefFunction = LLVM.AddFunction(Module, "corert.throwifnull", LLVM.FunctionType(LLVM.VoidType(), new LLVMTypeRef[] { LLVM.PointerType(LLVMTypeRef.Int8Type(), 0) }, false));
+                var builder = LLVM.CreateBuilder();
+                var block = LLVM.AppendBasicBlock(NullRefFunction, "Block");
+                var throwBlock = LLVM.AppendBasicBlock(NullRefFunction, "ThrowBlock");
+                var retBlock = LLVM.AppendBasicBlock(NullRefFunction, "RetBlock");
+                LLVM.PositionBuilderAtEnd(builder, block);
+                var targetParam = LLVM.GetParam(NullRefFunction, 0);
+                LLVM.BuildCondBr(builder, LLVM.BuildICmp(builder, LLVMIntPredicate.LLVMIntEQ, targetParam, LLVM.ConstInt(LLVM.TypeOf(targetParam), 0, LLVMMisc.False), "nullCheck"),
+                    throwBlock, retBlock);
+                LLVM.PositionBuilderAtEnd(builder, throwBlock);
+                MetadataType nullRefType = _compilation.NodeFactory.TypeSystemContext.SystemModule.GetType("System", "NullReferenceException");
+                var expressionEntry = AllocateObject(builder, nullRefType);
+                var ctorDef = nullRefType.GetDefaultConstructor();
+                HandleCall(_builder, ctorDef, ctorDef.Signature, new StackEntry[] { expressionEntry }, ILOpcode.call);
+                EmitThrow(builder, expressionEntry.RawLLVMValue);
+                LLVM.BuildUnreachable(builder);
+                LLVM.PositionBuilderAtEnd(builder, retBlock);
+                LLVM.BuildRetVoid(builder);
+            }
+            LLVM.BuildCall(_builder, NullRefFunction, new LLVMValueRef[] { entry }, string.Empty);
         }
 
         private LLVMValueRef GetInstanceFieldAddress(StackEntry objectEntry, FieldDesc field)
@@ -2812,7 +2845,7 @@ namespace Internal.IL
                 StackEntry classConstructionContext = new AddressExpressionEntry(StackValueKind.NativeInt, "classConstructionContext", classConstructionContextPtr, GetWellKnownType(WellKnownType.IntPtr));
                 MetadataType helperType = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices", "ClassConstructorRunner");
                 MethodDesc helperMethod = helperType.GetKnownMethod("EnsureClassConstructorRun", null);
-                HandleCall(helperMethod, helperMethod.Signature, new StackEntry[] { classConstructionContext });
+                HandleCall(_builder, helperMethod, helperMethod.Signature, new StackEntry[] { classConstructionContext });
             }
         }
 
@@ -2886,12 +2919,12 @@ namespace Internal.IL
             if (type.IsValueType)
             {
                 var arguments = new StackEntry[] { eeTypeEntry, valueAddress };
-                PushNonNull(CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhBox", arguments));
+                PushNonNull(CallRuntime(_builder, _compilation.TypeSystemContext, RuntimeExport, "RhBox", arguments));
             }
             else
             {
                 var arguments = new StackEntry[] { valueAddress, eeTypeEntry };
-                PushNonNull(CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhBoxAny", arguments));
+                PushNonNull(CallRuntime(_builder, _compilation.TypeSystemContext, RuntimeExport, "RhBoxAny", arguments));
             }
         }
 
@@ -2925,7 +2958,7 @@ namespace Internal.IL
             var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("Internal.Runtime", "EEType").MakePointerType();
             var arguments = new StackEntry[] { new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(arrayType, true), eeTypeDesc), sizeOfArray };
             //TODO: call GetNewArrayHelperForType from JitHelper.cs (needs refactoring)
-            PushNonNull(CallRuntime(_compilation.TypeSystemContext, InternalCalls, "RhpNewArray", arguments, arrayType));
+            PushNonNull(CallRuntime(_builder, _compilation.TypeSystemContext, InternalCalls, "RhpNewArray", arguments, arrayType));
         }
 
         private LLVMValueRef ArrayBaseSize()
@@ -3058,14 +3091,14 @@ namespace Internal.IL
         private const string InternalCalls = "InternalCalls";
         private const string TypeCast = "TypeCast";
         private const string DispatchResolve = "DispatchResolve";
-        private ExpressionEntry CallRuntime(TypeSystemContext context, string className, string methodName, StackEntry[] arguments, TypeDesc forcedReturnType = null)
+        private ExpressionEntry CallRuntime(LLVMBuilderRef builder, TypeSystemContext context, string className, string methodName, StackEntry[] arguments, TypeDesc forcedReturnType = null)
         {
             MetadataType helperType = context.SystemModule.GetKnownType("System.Runtime", className);
             MethodDesc helperMethod = helperType.GetKnownMethod(methodName, null);
             if((helperMethod.IsInternalCall && helperMethod.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute")))
-                return ImportRawPInvoke(helperMethod, arguments, forcedReturnType: forcedReturnType);
+                return ImportRawPInvoke(builder, helperMethod, arguments, forcedReturnType: forcedReturnType);
             else
-                return HandleCall(helperMethod, helperMethod.Signature, arguments, forcedReturnType: forcedReturnType);
+                return HandleCall(builder, helperMethod, helperMethod.Signature, arguments, forcedReturnType: forcedReturnType);
         }
 
         private void PushNonNull(StackEntry entry)
@@ -3148,14 +3181,14 @@ namespace Internal.IL
             ThrowHelper.ThrowInvalidProgramException();
         }
 
-        private void EmitTrapCall()
+        private void EmitTrapCall(LLVMBuilderRef builder)
         {
             if (TrapFunction.Pointer == IntPtr.Zero)
             {
                 TrapFunction = LLVM.AddFunction(Module, "llvm.trap", LLVM.FunctionType(LLVM.VoidType(), Array.Empty<LLVMTypeRef>(), false));
             }
-            LLVM.BuildCall(_builder, TrapFunction, Array.Empty<LLVMValueRef>(), string.Empty);
-            LLVM.BuildUnreachable(_builder);
+            LLVM.BuildCall(builder, TrapFunction, Array.Empty<LLVMValueRef>(), string.Empty);
+            LLVM.BuildUnreachable(builder);
         }
 
         private void EmitDoNothingCall()
