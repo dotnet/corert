@@ -1667,7 +1667,7 @@ namespace Internal.IL
             }
 
             int offset = GetTotalParameterOffset() + GetTotalLocalOffset();
-            LLVMValueRef shadowStack = LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_llvmFunction),
+            LLVMValueRef shadowStack = LLVM.BuildGEP(builder, LLVM.GetFirstParam(_llvmFunction),
                 new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)offset, LLVMMisc.False) },
                 String.Empty);
             var castShadowStack = LLVM.BuildPointerCast(builder, shadowStack, LLVM.PointerType(LLVM.Int8Type(), 0), "castshadowstack");
@@ -1704,7 +1704,7 @@ namespace Internal.IL
                 }
 
                 LLVMTypeRef valueType = GetLLVMTypeForTypeDesc(argType);
-                LLVMValueRef argValue = toStore.ValueAsType(valueType, _builder);
+                LLVMValueRef argValue = toStore.ValueAsType(valueType, builder);
 
                 // Pass arguments as parameters if possible
                 if (!isThisParameter && CanStoreTypeOnStack(argType))
@@ -1724,7 +1724,7 @@ namespace Internal.IL
             }
 
 
-            LLVMValueRef llvmReturn = LLVM.BuildCall(_builder, fn, llvmArgs.ToArray(), string.Empty);
+            LLVMValueRef llvmReturn = LLVM.BuildCall(builder, fn, llvmArgs.ToArray(), string.Empty);
             
             if (!returnType.IsVoid)
             {
