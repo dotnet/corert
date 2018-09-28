@@ -330,8 +330,6 @@ namespace ILCompiler
                 dumper.Begin();
             }
 
-            // In multi-module builds, set the compilation unit prefix to prevent ambiguous symbols in linked object files
-            NameMangler.CompilationUnitPrefix = _nodeFactory.CompilationModuleGroup.IsSingleFileCompilation ? "" : Path.GetFileNameWithoutExtension(outputFile);
             CompileInternal(outputFile, dumper);
 
             if (dumper != null)
