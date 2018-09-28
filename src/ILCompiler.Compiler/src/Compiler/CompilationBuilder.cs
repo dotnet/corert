@@ -44,6 +44,12 @@ namespace ILCompiler
             return this;
         }
 
+        public CompilationBuilder UseCompilationUnitPrefix(string prefix)
+        {
+            _nameMangler.CompilationUnitPrefix = prefix;
+            return this;
+        }
+
         public CompilationBuilder UseDependencyTracking(DependencyTrackingLevel trackingLevel)
         {
             _dependencyTrackingLevel = trackingLevel;
