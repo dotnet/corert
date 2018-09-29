@@ -699,6 +699,15 @@ namespace Internal.JitInterface
             return corInfoType;
         }
 
+        private CorInfoType asCorInfoType(TypeDesc type, CORINFO_CLASS_STRUCT_** structType)
+        {
+            var corInfoType = asCorInfoType(type);
+            *structType = ((corInfoType == CorInfoType.CORINFO_TYPE_CLASS) ||
+                (corInfoType == CorInfoType.CORINFO_TYPE_VALUECLASS) ||
+                (corInfoType == CorInfoType.CORINFO_TYPE_BYREF)) ? ObjectToHandle(type) : null;
+            return corInfoType;
+        }
+
         private CORINFO_CONTEXT_STRUCT* contextFromMethod(MethodDesc method)
         {
             return (CORINFO_CONTEXT_STRUCT*)(((ulong)ObjectToHandle(method)) | (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_METHOD);
@@ -2061,11 +2070,20 @@ namespace Internal.JitInterface
             return ObjectToHandle(fieldDesc.OwningType);
         }
 
-        private CorInfoType getFieldType(CORINFO_FIELD_STRUCT_* field, ref CORINFO_CLASS_STRUCT_* structType, CORINFO_CLASS_STRUCT_* memberParent)
+        private CorInfoType getFieldType(CORINFO_FIELD_STRUCT_* field, CORINFO_CLASS_STRUCT_** structType, CORINFO_CLASS_STRUCT_* memberParent)
         {
             FieldDesc fieldDesc = HandleToObject(field);
             TypeDesc fieldType = fieldDesc.FieldType;
-            CorInfoType type = asCorInfoType(fieldType, out structType);
+
+            CorInfoType type;
+            if (structType != null)
+            {
+                type = asCorInfoType(fieldType, structType);
+            }
+            else
+            {
+                type = asCorInfoType(fieldType);
+            }
 
             Debug.Assert(!fieldDesc.OwningType.IsByReferenceOfT ||
                 fieldDesc.OwningType.GetKnownField("_value").FieldType.Category == TypeFlags.IntPtr);
@@ -2220,7 +2238,8 @@ namespace Internal.JitInterface
 
             pResult.fieldAccessor = fieldAccessor;
             pResult.fieldFlags = fieldFlags;
-            pResult.fieldType = getFieldType(pResolvedToken.hField, ref pResult.structType, pResolvedToken.hClass);
+            fixed (CORINFO_CLASS_STRUCT_** pStructType = &pResult.structType)
+                pResult.fieldType = getFieldType(pResolvedToken.hField, pStructType, pResolvedToken.hClass);
             pResult.accessAllowed = CorInfoIsAccessAllowedResult.CORINFO_ACCESS_ALLOWED;
 
             if (!field.IsStatic || !field.HasRva)
