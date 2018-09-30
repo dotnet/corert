@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 
+using Internal.IL;
 using Internal.TypeSystem;
 
 namespace ILCompiler
@@ -17,6 +18,7 @@ namespace ILCompiler
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.
         CppCodegenConfigProvider _config = new CppCodegenConfigProvider(Array.Empty<string>());
+        private ILProvider _ilProvider = new CoreRTILProvider();
 
         public CppCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group)
             : base(context, group, new CoreRTNameMangler(new CppNodeMangler(), true))
@@ -29,13 +31,24 @@ namespace ILCompiler
             return this;
         }
 
+        public override CompilationBuilder UseILProvider(ILProvider ilProvider)
+        {
+            _ilProvider = ilProvider;
+            return this;
+        }
+
+        protected override ILProvider GetILProvider()
+        {
+            return _ilProvider;
+        }
+
         public override ICompilation ToCompilation()
         {
             var interopStubManager = new CompilerGeneratedInteropStubManager(_compilationGroup, _context, new InteropStateManager(_context.GeneratedAssembly));
             CppCodegenNodeFactory factory = new CppCodegenNodeFactory(_context, _compilationGroup, _metadataManager, interopStubManager, _nameMangler, _vtableSliceProvider, _dictionaryLayoutProvider);
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);
 
-            return new CppCodegenCompilation(graph, factory, _compilationRoots, _debugInformationProvider, _logger, _config);
+            return new CppCodegenCompilation(graph, factory, _compilationRoots, _ilProvider, _debugInformationProvider, _logger, _config);
         }
     }
 

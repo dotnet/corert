@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 
 using Internal.TypeSystem;
+using Internal.IL;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
@@ -24,10 +25,11 @@ namespace ILCompiler
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             WebAssemblyCodegenNodeFactory nodeFactory,
             IEnumerable<ICompilationRootProvider> roots,
+            ILProvider ilProvider,
             DebugInformationProvider debugInformationProvider,
             Logger logger,
             WebAssemblyCodegenConfigProvider options)
-            : base(dependencyGraph, nodeFactory, GetCompilationRoots(roots, nodeFactory), debugInformationProvider, null, logger)
+            : base(dependencyGraph, nodeFactory, GetCompilationRoots(roots, nodeFactory), ilProvider, debugInformationProvider, null, logger)
         {
             NodeFactory = nodeFactory;
             Module = LLVM.ModuleCreateWithName("netscripten");
@@ -56,7 +58,7 @@ namespace ILCompiler
         {
             foreach (WebAssemblyMethodCodeNode methodCodeNodeNeedingCode in obj)
             {
-                Internal.IL.ILImporter.CompileMethod(this, methodCodeNodeNeedingCode);
+                ILImporter.CompileMethod(this, methodCodeNodeNeedingCode);
             }
         }
     }
