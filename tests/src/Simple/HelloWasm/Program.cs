@@ -630,7 +630,7 @@ internal static class Program
         }
         else
         {
-            PrintLine("Failed.");
+            PrintLine("Failed.  asm.js (WASM=1) known to fail due to alignment problem, although this problem sometimes means we don't even get this far and fails with an invalid function pointer.");
         }
     }
 
