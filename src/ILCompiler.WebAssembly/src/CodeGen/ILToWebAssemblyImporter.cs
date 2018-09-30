@@ -2724,8 +2724,7 @@ namespace Internal.IL
                 var throwBlock = LLVM.AppendBasicBlock(NullRefFunction, "ThrowBlock");
                 var retBlock = LLVM.AppendBasicBlock(NullRefFunction, "RetBlock");
                 LLVM.PositionBuilderAtEnd(builder, block);
-                var targetParam = LLVM.BuildPtrToInt(builder, LLVM.GetParam(NullRefFunction, 1), LLVMTypeRef.Int32Type(), "objectCastForNullCmp");
-                LLVM.BuildCondBr(builder, LLVM.BuildICmp(builder, LLVMIntPredicate.LLVMIntEQ, targetParam, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 0, LLVMMisc.False), "nullCheck"),
+                LLVM.BuildCondBr(builder, LLVM.BuildICmp(builder, LLVMIntPredicate.LLVMIntEQ, LLVM.GetParam(NullRefFunction, 1), LLVM.ConstPointerNull(LLVM.PointerType(LLVMTypeRef.Int8Type(), 0)), "nullCheck"),
                     throwBlock, retBlock);
                 LLVM.PositionBuilderAtEnd(builder, throwBlock);
                 MetadataType nullRefType = _compilation.NodeFactory.TypeSystemContext.SystemModule.GetType("System", "NullReferenceException");
@@ -2749,10 +2748,9 @@ namespace Internal.IL
                 LLVM.BuildRetVoid(builder);
             }
 
-            LLVMValueRef shadowStack = LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_llvmFunction), new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)GetTotalLocalOffset(), LLVMMisc.False) }, String.Empty);
-            var castShadowStack = LLVM.BuildPointerCast(_builder, shadowStack, LLVM.PointerType(LLVM.Int8Type(), 0), "castshadowstack");
+            LLVMValueRef shadowStack = LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_llvmFunction), new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)(GetTotalLocalOffset() + GetTotalParameterOffset()), LLVMMisc.False) }, String.Empty);
 
-            LLVM.BuildCall(_builder, NullRefFunction, new LLVMValueRef[] { castShadowStack, entry }, string.Empty);
+            LLVM.BuildCall(_builder, NullRefFunction, new LLVMValueRef[] { shadowStack, entry }, string.Empty);
         }
 
         private LLVMValueRef GetInstanceFieldAddress(StackEntry objectEntry, FieldDesc field)
