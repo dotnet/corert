@@ -95,6 +95,10 @@ NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
 
         PROLOG_STACK_ALLOC STACKSIZEOF_ExInfo
 
+        // Calculate  SP at callsite and save into the PAL_LIMITED_CONTEXT
+        add         r4, sp, #(STACKSIZEOF_ExInfo + SIZEOF__PAL_LIMITED_CONTEXT)
+        str         r4, [sp, #(rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__SP)]
+
         mov         r4, r0 // Save exception object
         // r0 = GetThread()
         INLINE_GETTHREAD
