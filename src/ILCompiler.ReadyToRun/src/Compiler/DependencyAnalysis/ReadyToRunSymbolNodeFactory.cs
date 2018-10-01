@@ -11,13 +11,25 @@ namespace ILCompiler.DependencyAnalysis
 {
     using ReadyToRunHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper;
 
-    public sealed partial class ReadyToRunCodegenNodeFactory
+    public sealed partial class ReadyToRunSymbolNodeFactory
     {
+
+        private readonly Dictionary<ModuleToken, ISymbolNode> _importStrings;
+
+        private readonly ReadyToRunCodegenNodeFactory _codegenNodeFactory;
+  
+
+        public ReadyToRunSymbolNodeFactory(ReadyToRunCodegenNodeFactory codegenNodeFactory)
+        {
+            _codegenNodeFactory = codegenNodeFactory;
+            _importStrings = new Dictionary<ModuleToken, ISymbolNode>();
+        }
+
         public ISymbolNode StringLiteral(ModuleToken token)
         {
             if (!_importStrings.TryGetValue(token, out ISymbolNode stringNode))
             {
-                stringNode = new StringImport(StringImports, token);
+                stringNode = new StringImport(_codegenNodeFactory.StringImports, token);
                 _importStrings.Add(token, stringNode);
             }
             return stringNode;
@@ -105,8 +117,8 @@ namespace ILCompiler.DependencyAnalysis
         private ISymbolNode CreateNewHelper(TypeDesc type, SignatureContext signatureContext)
         {
             return new DelayLoadHelperImport(
-                this,
-                HelperImports,
+                _codegenNodeFactory,
+                _codegenNodeFactory.HelperImports,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
                 new NewObjectFixupSignature(type, signatureContext));
         }
@@ -114,8 +126,8 @@ namespace ILCompiler.DependencyAnalysis
         private ISymbolNode CreateNewArrayHelper(ArrayType type, SignatureContext signatureContext)
         {
             return new DelayLoadHelperImport(
-                this,
-                HelperImports,
+                _codegenNodeFactory,
+                _codegenNodeFactory.HelperImports,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
                 new NewArrayFixupSignature(type, signatureContext));
         }
@@ -123,8 +135,8 @@ namespace ILCompiler.DependencyAnalysis
         private ISymbolNode CreateGCStaticBaseHelper(TypeDesc type, SignatureContext signatureContext)
         {
             return new DelayLoadHelperImport(
-                this,
-                HelperImports,
+                _codegenNodeFactory,
+                _codegenNodeFactory.HelperImports,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
                 new TypeFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_StaticBaseGC, type, signatureContext));
         }
@@ -132,8 +144,8 @@ namespace ILCompiler.DependencyAnalysis
         private ISymbolNode CreateNonGCStaticBaseHelper(TypeDesc type, SignatureContext signatureContext)
         {
             return new DelayLoadHelperImport(
-                this,
-                HelperImports,
+                _codegenNodeFactory,
+                _codegenNodeFactory.HelperImports,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
                 new TypeFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_StaticBaseNonGC, type, signatureContext));
         }
@@ -141,8 +153,8 @@ namespace ILCompiler.DependencyAnalysis
         private ISymbolNode CreateThreadGcStaticBaseHelper(TypeDesc type, SignatureContext signatureContext)
         {
             return new DelayLoadHelperImport(
-                this,
-                HelperImports,
+                _codegenNodeFactory,
+                _codegenNodeFactory.HelperImports,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
                 new TypeFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_ThreadStaticBaseGC, type, signatureContext));
         }
@@ -150,8 +162,8 @@ namespace ILCompiler.DependencyAnalysis
         private ISymbolNode CreateThreadNonGcStaticBaseHelper(TypeDesc type, SignatureContext signatureContext)
         {
             return new DelayLoadHelperImport(
-                this,
-                HelperImports,
+                _codegenNodeFactory,
+                _codegenNodeFactory.HelperImports,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
                 new TypeFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_ThreadStaticBaseNonGC, type, signatureContext));
         }
@@ -159,8 +171,8 @@ namespace ILCompiler.DependencyAnalysis
         private ISymbolNode CreateIsInstanceOfHelper(TypeDesc type, SignatureContext signatureContext)
         {
             return new DelayLoadHelperImport(
-                this,
-                HelperImports,
+                _codegenNodeFactory,
+                _codegenNodeFactory.HelperImports,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
                 new TypeFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_IsInstanceOf, type, signatureContext));
         }
@@ -168,8 +180,8 @@ namespace ILCompiler.DependencyAnalysis
         private ISymbolNode CreateCastClassHelper(TypeDesc type, SignatureContext signatureContext)
         {
             return new DelayLoadHelperImport(
-                this,
-                HelperImports,
+                _codegenNodeFactory,
+                _codegenNodeFactory.HelperImports,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_Obj,
                 new TypeFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_ChkCast, type, signatureContext));
         }
@@ -177,24 +189,24 @@ namespace ILCompiler.DependencyAnalysis
         private ISymbolNode CreateTypeHandleHelper(TypeDesc type, SignatureContext signatureContext)
         {
             return new PrecodeHelperImport(
-                this,
+                _codegenNodeFactory,
                 new TypeFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_TypeHandle, type, signatureContext));
         }
 
         private ISymbolNode CreateFieldHandleHelper(FieldDesc field, SignatureContext signatureContext)
         {
             return new PrecodeHelperImport(
-                this,
+                _codegenNodeFactory,
                 new FieldFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_FieldHandle, field, signatureContext));
         }
 
         private ISymbolNode CreateVirtualCallHelper(MethodDesc method, SignatureContext signatureContext)
         {
             return new DelayLoadHelperImport(
-                this,
-                DispatchImports,
+                _codegenNodeFactory,
+                _codegenNodeFactory.DispatchImports,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_Obj,
-                MethodSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry, method,
+                _codegenNodeFactory.MethodSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry, method,
                     constrainedType: null, signatureContext: signatureContext, isUnboxingStub: false, isInstantiatingStub: false));
         }
 
@@ -480,7 +492,7 @@ namespace ILCompiler.DependencyAnalysis
                     throw new NotImplementedException(helper.ToString());
             }
 
-            result = GetReadyToRunHelperCell(r2rHelper);
+            result = _codegenNodeFactory.GetReadyToRunHelperCell(r2rHelper);
             _helperCache.Add(helper, result);
             return result;
         }
@@ -498,8 +510,8 @@ namespace ILCompiler.DependencyAnalysis
             if (!_interfaceDispatchCells.TryGetValue(cellKey, out ISymbolNode dispatchCell))
             {
                 dispatchCell = new DelayLoadHelperImport(
-                    this,
-                    DispatchImports,
+                    _codegenNodeFactory,
+                    _codegenNodeFactory.DispatchImports,
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_MethodCall |
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_FLAG_VSD,
                     MethodSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry, method,
@@ -509,23 +521,6 @@ namespace ILCompiler.DependencyAnalysis
                 _interfaceDispatchCells.Add(cellKey, dispatchCell);
             }
             return dispatchCell;
-        }
-
-        private readonly Dictionary<ReadyToRunHelper, ISymbolNode> _constructedHelpers = new Dictionary<ReadyToRunHelper, ISymbolNode>();
-
-        public ISymbolNode GetReadyToRunHelperCell(ReadyToRunHelper helperId)
-        {
-            if (!_constructedHelpers.TryGetValue(helperId, out ISymbolNode helperCell))
-            {
-                helperCell = CreateReadyToRunHelperCell(helperId);
-                _constructedHelpers.Add(helperId, helperCell);
-            }
-            return helperCell;
-        }
-
-        private ISymbolNode CreateReadyToRunHelperCell(ReadyToRunHelper helperId)
-        {
-            return new Import(EagerImports, new ReadyToRunHelperSignature(helperId));
         }
 
         public ISymbolNode ComputeConstantLookup(ReadyToRunHelperId helperId, object entity, SignatureContext signatureContext)
@@ -540,8 +535,8 @@ namespace ILCompiler.DependencyAnalysis
             if (!_genericDictionaryCache.TryGetValue(method, out ISortableSymbolNode genericDictionary))
             {
                 genericDictionary = new PrecodeHelperImport(
-                    this,
-                    MethodSignature(
+                    _codegenNodeFactory,
+                    _codegenNodeFactory.MethodSignature(
                         ReadyToRunFixupKind.READYTORUN_FIXUP_MethodDictionary,
                         method,
                         constrainedType: null,
@@ -560,7 +555,7 @@ namespace ILCompiler.DependencyAnalysis
             if (!_constructedTypeSymbols.TryGetValue(type, out ISymbolNode symbol))
             {
                 symbol = new PrecodeHelperImport(
-                    this,
+                    _codegenNodeFactory,
                     new TypeFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_TypeDictionary, type, signatureContext));
                 _constructedTypeSymbols.Add(type, symbol);
             }
@@ -574,16 +569,43 @@ namespace ILCompiler.DependencyAnalysis
             TypeAndMethod ctorKey = new TypeAndMethod(delegateType, targetMethod, isUnboxingStub: false, isInstantiatingStub: false);
             if (!_delegateCtors.TryGetValue(ctorKey, out ISymbolNode ctorNode))
             {
-                IMethodNode targetMethodNode = MethodEntrypoint(targetMethod, constrainedType: null, originalMethod: null, signatureContext: signatureContext, isUnboxingStub: false);
+                IMethodNode targetMethodNode = _codegenNodeFactory.MethodEntrypoint(targetMethod, constrainedType: null, signatureContext: signatureContext, isUnboxingStub: false);
 
                 ctorNode = new DelayLoadHelperImport(
-                    this,
-                    HelperImports,
+                    _codegenNodeFactory,
+                    _codegenNodeFactory.HelperImports,
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
                     new DelegateCtorSignature(delegateType, targetMethodNode, signatureContext));
                 _delegateCtors.Add(ctorKey, ctorNode);
             }
             return ctorNode;
+        }
+
+        struct MethodAndCallSite : IEquatable<MethodAndCallSite>
+        {
+            public readonly MethodDesc Method;
+            public readonly string CallSite;
+
+            public MethodAndCallSite(MethodDesc method, string callSite)
+            {
+                CallSite = callSite;
+                Method = method;
+            }
+
+            public bool Equals(MethodAndCallSite other)
+            {
+                return CallSite == other.CallSite && Method == other.Method;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is MethodAndCallSite other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                return (CallSite != null ? CallSite.GetHashCode() : 0) + unchecked(31 * Method.GetHashCode());
+            }
         }
     }
 }

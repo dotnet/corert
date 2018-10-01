@@ -37,6 +37,9 @@ namespace ILCompiler
         private readonly string _inputFilePath;
 
         public new ReadyToRunCodegenNodeFactory NodeFactory { get; }
+
+        public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
+
         internal ReadyToRunCodegenCompilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             ReadyToRunCodegenNodeFactory nodeFactory,
@@ -50,6 +53,7 @@ namespace ILCompiler
             : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, devirtualizationManager, logger)
         {
             NodeFactory = nodeFactory;
+            SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory);
             _corInfo = new Dictionary<EcmaModule, CorInfoImpl>();
             _jitConfigProvider = configProvider;
 

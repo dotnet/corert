@@ -7,25 +7,19 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-using System.Reflection.PortableExecutable;
-
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.JitInterface;
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    using System.Collections.Immutable;
     using ReadyToRunHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper;
 
-    public sealed partial class ReadyToRunCodegenNodeFactory : NodeFactory
+    public sealed class ReadyToRunCodegenNodeFactory : NodeFactory
     {
         private Dictionary<TypeAndMethod, IMethodNode> _importMethods;
-
-        private Dictionary<ModuleToken, ISymbolNode> _importStrings;
 
         public ReadyToRunCodegenNodeFactory(
             CompilerTypeSystemContext context,
@@ -48,7 +42,6 @@ namespace ILCompiler.DependencyAnalysis
                   new ImportedNodeProviderThrowing())
         {
             _importMethods = new Dictionary<TypeAndMethod, IMethodNode>();
-            _importStrings = new Dictionary<ModuleToken, ISymbolNode>();
 
             Resolver = moduleTokenResolver;
             InputModuleContext = signatureContext;
@@ -92,7 +85,24 @@ namespace ILCompiler.DependencyAnalysis
 
         public ImportSectionNode PrecodeImports;
 
-        public IMethodNode MethodEntrypoint(MethodDesc targetMethod, TypeDesc constrainedType, MethodDesc originalMethod, SignatureContext signatureContext, bool isUnboxingStub = false)
+        private readonly Dictionary<ReadyToRunHelper, ISymbolNode> _constructedHelpers = new Dictionary<ReadyToRunHelper, ISymbolNode>();
+
+        public ISymbolNode GetReadyToRunHelperCell(ReadyToRunHelper helperId)
+        {
+            if (!_constructedHelpers.TryGetValue(helperId, out ISymbolNode helperCell))
+            {
+                helperCell = CreateReadyToRunHelperCell(helperId);
+                _constructedHelpers.Add(helperId, helperCell);
+            }
+            return helperCell;
+        }
+
+        private ISymbolNode CreateReadyToRunHelperCell(ReadyToRunHelper helperId)
+        {
+            return new Import(EagerImports, new ReadyToRunHelperSignature(helperId));
+        }
+
+        public IMethodNode MethodEntrypoint(MethodDesc method, TypeDesc constrainedType, SignatureContext signatureContext, bool isUnboxingStub = false)
         {
             return _methodEntrypoints.GetOrAdd(targetMethod, (m) =>
             {
@@ -196,33 +206,6 @@ namespace ILCompiler.DependencyAnalysis
         public IMethodNode CreateUnboxingStubNode(MethodDesc method, mdToken token)
         {
             throw new NotImplementedException();
-        }
-
-        struct MethodAndCallSite : IEquatable<MethodAndCallSite>
-        {
-            public readonly MethodDesc Method;
-            public readonly string CallSite;
-
-            public MethodAndCallSite(MethodDesc method, string callSite)
-            {
-                CallSite = callSite;
-                Method = method;
-            }
-
-            public bool Equals(MethodAndCallSite other)
-            {
-                return CallSite == other.CallSite && Method == other.Method;
-            }
-
-            public override bool Equals(object obj)
-            {
-                return obj is MethodAndCallSite other && Equals(other);
-            }
-
-            public override int GetHashCode()
-            {
-                return (CallSite != null ? CallSite.GetHashCode() : 0) + unchecked(31 * Method.GetHashCode());
-            }
         }
 
         struct MethodAndFixupKind : IEquatable<MethodAndFixupKind>
@@ -492,40 +475,6 @@ namespace ILCompiler.DependencyAnalysis
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)
         {
             throw new NotImplementedException();
-        }
-
-        struct TypeAndMethod : IEquatable<TypeAndMethod>
-        {
-            public readonly TypeDesc Type;
-            public readonly MethodDesc Method;
-            public readonly bool IsUnboxingStub;
-            public readonly bool IsInstantiatingStub;
-
-            public TypeAndMethod(TypeDesc type, MethodDesc method, bool isUnboxingStub, bool isInstantiatingStub)
-            {
-                Type = type;
-                Method = method;
-                IsUnboxingStub = isUnboxingStub;
-                IsInstantiatingStub = isInstantiatingStub;
-            }
-
-            public bool Equals(TypeAndMethod other)
-            {
-                return Type == other.Type &&
-                    Method == other.Method &&
-                    IsUnboxingStub == other.IsUnboxingStub &&
-                    IsInstantiatingStub == other.IsInstantiatingStub;
-            }
-
-            public override bool Equals(object obj)
-            {
-                return obj is TypeAndMethod other && Equals(other);
-            }
-
-            public override int GetHashCode()
-            {
-                return (Type?.GetHashCode() ?? 0) ^ unchecked(Method.GetHashCode() * 31) ^ (IsUnboxingStub ? -0x80000000 : 0) ^ (IsInstantiatingStub ? 0x40000000 : 0);
-            }
-        }
+        }   
     }
 }

@@ -1891,7 +1891,7 @@ namespace Internal.JitInterface
                     {
                         pResult.fieldLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                            _compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType, _signatureContext)
+                            _compilation.SymbolNodeFactory.ReadyToRunHelper(helperId, field.OwningType, _signatureContext)
 #else
                             _compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType)
 #endif
@@ -2683,7 +2683,7 @@ namespace Internal.JitInterface
                     if (targetMethod.RequiresInstMethodDescArg())
                     {
 #if READYTORUN
-                        instParam = _compilation.NodeFactory.MethodGenericDictionary(concreteMethod, _signatureContext);
+                        instParam = _compilation.SymbolNodeFactory.MethodGenericDictionary(concreteMethod, _signatureContext);
 #else
                         instParam = _compilation.NodeFactory.MethodGenericDictionary(concreteMethod);
 #endif
@@ -2692,7 +2692,7 @@ namespace Internal.JitInterface
                     {
                         // Ask for a constructed type symbol because we need the vtable to get to the dictionary
 #if READYTORUN
-                        instParam = _compilation.NodeFactory.ConstructedTypeSymbol(concreteMethod.OwningType, _signatureContext);
+                        instParam = _compilation.SymbolNodeFactory.ConstructedTypeSymbol(concreteMethod.OwningType, _signatureContext);
 #else
                         instParam = _compilation.NodeFactory.ConstructedTypeSymbol(concreteMethod.OwningType);
 #endif
@@ -2794,7 +2794,7 @@ namespace Internal.JitInterface
                     pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_PVALUE;
                     pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
 #if READYTORUN
-                        _compilation.NodeFactory.InterfaceDispatchCell(targetMethod, _signatureContext, isUnboxingStub: false
+                        _compilation.SymbolNodeFactory.InterfaceDispatchCell(targetMethod, _signatureContext, isUnboxingStub: false
 #else
                         _compilation.NodeFactory.InterfaceDispatchCell(targetMethod
 #endif // READYTORUN
