@@ -28,9 +28,10 @@ namespace ILCompiler
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             ILScanNodeFactory nodeFactory,
             IEnumerable<ICompilationRootProvider> roots,
+            ILProvider ilProvider,
             DebugInformationProvider debugInformationProvider,
             Logger logger)
-            : base(dependencyGraph, nodeFactory, roots, debugInformationProvider, null, logger)
+            : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, null, logger)
         {
         }
 
@@ -77,7 +78,6 @@ namespace ILCompiler
 
         ILScanResults IILScanner.Scan()
         {
-            _nodeFactory.NameMangler.CompilationUnitPrefix = "";
             _dependencyGraph.ComputeMarkedNodes();
 
             return new ILScanResults(_dependencyGraph, _nodeFactory);

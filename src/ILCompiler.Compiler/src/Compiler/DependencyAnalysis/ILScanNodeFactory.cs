@@ -37,10 +37,6 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     return new RuntimeImportMethodNode(method);
                 }
-
-                // On CLR this would throw a SecurityException with "ECall methods must be packaged into a system module."
-                // This is a corner case that nobody is likely to care about.
-                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, method);
             }
 
             if (CompilationModuleGroup.ContainsMethodBody(method, false))

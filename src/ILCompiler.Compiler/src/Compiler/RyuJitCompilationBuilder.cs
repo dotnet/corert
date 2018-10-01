@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 
+using Internal.IL;
 using Internal.JitInterface;
 using Internal.TypeSystem;
 
@@ -20,6 +21,7 @@ namespace ILCompiler
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
+        private ILProvider _ilProvider = new CoreRTILProvider();
 
         public RyuJitCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group)
             : base(context, group,
@@ -50,6 +52,17 @@ namespace ILCompiler
             _ryujitOptions = builder.ToArray();
 
             return this;
+        }
+
+        public override CompilationBuilder UseILProvider(ILProvider ilProvider)
+        {
+            _ilProvider = ilProvider;
+            return this;
+        }
+
+        protected override ILProvider GetILProvider()
+        {
+            return _ilProvider;
         }
 
         public override ICompilation ToCompilation()
@@ -91,7 +104,7 @@ namespace ILCompiler
 
             var jitConfig = new JitConfigProvider(jitFlagBuilder.ToArray(), _ryujitOptions);
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory, new ObjectNode.ObjectNodeComparer(new CompilerComparer()));
-            return new RyuJitCompilation(graph, factory, _compilationRoots, _debugInformationProvider, _logger, _devirtualizationManager, jitConfig);
+            return new RyuJitCompilation(graph, factory, _compilationRoots, _ilProvider, _debugInformationProvider, _logger, _devirtualizationManager, jitConfig);
         }
     }
 }
