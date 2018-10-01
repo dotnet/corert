@@ -18,7 +18,7 @@
 	extends [System.Runtime]System.Object
 	implements [InterfaceDefinition]Interface
 {	
-	.method public final hidebysig newslot virtual 
+	.method public final hidebysig newslot 
 		instance void M1 () cil managed 
 	{		
 		.maxstack 8

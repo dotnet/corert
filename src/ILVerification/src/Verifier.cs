@@ -91,9 +91,8 @@ namespace ILVerify
             IEnumerable<VerificationResult> results;
             try
             {
-                EcmaModule module = GetModule(peReader);
-                TypeDefinition typeDef = peReader.GetMetadataReader().GetTypeDefinition(typeHandle);
-                results = VerifyInterface(module, typeDef);
+                EcmaModule module = GetModule(peReader);                
+                results = VerifyInterface(module, typeHandle);
             }
             catch (VerifierException e)
             {
@@ -180,32 +179,22 @@ namespace ILVerify
             Console.WriteLine(str);
         }
 
-        private IEnumerable<VerificationResult> VerifyInterface(EcmaModule module, TypeDefinition td)
+        private IEnumerable<VerificationResult> VerifyInterface(EcmaModule module, TypeDefinitionHandle typeDefinitionHandle)
         {
-            TmpLogToRemove(module.MetadataReader.GetString(td.Name));
-            var builder = new ArrayBuilder<VerificationResult>();
+            EcmaType type = (EcmaType)module.GetObject(typeDefinitionHandle);
+            
+            TmpLogToRemove(type.Name);
 
-            //Get type method
-            foreach (MethodDefinitionHandle m in td.GetMethods())
-            {
-                MethodDefinition md = module.MetadataReader.GetMethodDefinition(m);
-            }
+            var builder = new ArrayBuilder<VerificationResult>();            
 
-            foreach (InterfaceImplementationHandle ii in td.GetInterfaceImplementations())
-            {
-                InterfaceImplementation interfaceImplementation = module.MetadataReader.GetInterfaceImplementation(ii);
-                DefType interfaceType = module.GetType(interfaceImplementation.Interface) as DefType;
-                List<MethodDesc> interfaceMethods = new List<MethodDesc>(interfaceType.GetAllMethods());
-                //foreach (MethodDefinitionHandle mdh in td.GetMethods())
-                //{
-                //    MethodDefinition md = module.MetadataReader.GetMethodDefinition(mdh);
-                //    string methodName = module.MetadataReader.GetString(md.Name);
-                //    foreach (ParameterHandle parameterHandle in md.GetParameters())
-                //    {
-                //        Parameter parameter = module.MetadataReader.GetParameter(parameterHandle);
-                //        TmpLogToRemove(module.MetadataReader.GetString(parameter.Name));
-                //    }
-                //}
+            foreach (DefType interfaceDef in type.ExplicitlyImplementedInterfaces)
+            {                           
+                foreach (MethodDesc interfaceMethodDesc in interfaceDef.GetAllMethods())
+                {
+                    // MethodDesc mimpl = type.ResolveInterfaceMethodTarget(interfaceMethodDesc);
+                    // MethodDesc mimpl = type.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethodDesc);
+                    var mi = MetadataVirtualMethodAlgorithm.ResolveVariantInterfaceMethodToVirtualMethodOnType(interfaceMethodDesc, type);
+                }
             }
 
             return builder.ToArray();
