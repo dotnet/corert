@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using Debug = System.Diagnostics.Debug;
 
 using Internal.TypeSystem;
@@ -38,6 +39,16 @@ namespace ILCompiler
                 Debug.Assert(_r2rFieldLayoutAlgorithm != null);
                 return _r2rFieldLayoutAlgorithm;
             }
+        }
+
+        /// <summary>
+        /// Prevent any synthetic methods being added to types in the base CompilerTypeSystemContext
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        protected override IEnumerable<MethodDesc> GetAllMethods(TypeDesc type)
+        {
+            return type.GetMethods();
         }
 
         protected override bool ComputeHasGCStaticBase(FieldDesc field)

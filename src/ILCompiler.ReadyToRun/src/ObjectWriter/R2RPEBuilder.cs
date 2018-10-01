@@ -183,10 +183,6 @@ namespace ILCompiler.PEWriter
                     case RelocSectionName:
                         relocSectionIndex = sectionIndex;
                         break;
-                    
-                    default:
-                        // Unexpected section in MSIL file
-                        throw new NotSupportedException();
                 }
             }
 

@@ -59,7 +59,7 @@ if /i "%1" == "/dotnetclipath" (set CoreRT_CliDir=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/multimodule" (set CoreRT_MultiFileConfiguration=MultiModule&shift&goto ArgLoop)
 if /i "%1" == "/determinism" (set CoreRT_DeterminismMode=true&shift&goto ArgLoop)
 if /i "%1" == "/nocleanup" (set CoreRT_NoCleanup=true&shift&goto ArgLoop)
-
+if /i "%1" == "/r2rframework" (set CoreRT_R2RFramework=true&shift&goto ArgLoop)
 echo Invalid command line argument: %1
 goto :Usage
 
@@ -78,6 +78,7 @@ echo     /multimodule  : Compile the framework as a .lib and link tests against 
 echo     /determinism  : Compile the test twice with randomized dependency node mark stack to validate
 echo                      compiler determinism in multi-threaded compilation.
 echo     /nocleanup    : Do not delete compiled test artifacts after running each test
+echo     /r2rframework : Create ready-to-run images for the CoreCLR framework assemblies
 echo.
 echo     --- CoreCLR Subset ---
 echo        Top200     : Runs broad coverage / CI validation (~200 tests).
@@ -147,6 +148,10 @@ call "%_VSCOMNTOOLS%\VsDevCmd.bat"
 :RunVCVars
 
 call "!VS150COMNTOOLS!\..\..\VC\Auxiliary\Build\vcvarsall.bat" %CoreRT_HostArch%
+
+:: Eventually we'll always want to compile the framework with r2r before running tests.
+:: During bringup, it's an opt-in separate step.
+if "%CoreRT_R2RFramework%"=="true" goto :TextExtRepoCoreCLRFramework
 if "%CoreRT_RunCoreCLRTests%"=="true" goto :TestExtRepoCoreCLR
 if "%CoreRT_RunCoreFXTests%"=="true" goto :TestExtRepoCoreFX
 
@@ -476,6 +481,23 @@ goto :eof
     echo Tests restored.
     echo CoreCLR tests restored from %TESTS_REMOTE_URL% > %TESTS_SEMAPHORE%
     exit /b 0
+
+:TextExtRepoCoreCLRFramework
+    echo Running external tests
+    if "%CoreRT_TestExtRepo_CoreCLR%" == "" (
+        set CoreRT_TestExtRepo_CoreCLR=%CoreRT_TestRoot%\..\tests_downloaded\CoreCLR
+        call :RestoreCoreCLRTests
+        if errorlevel 1 (
+            exit /b 1
+        )
+    )
+
+    if not exist "%CoreRT_TestExtRepo_CoreCLR%" ((call :Fail "%CoreRT_TestExtRepo_CoreCLR% does not exist") & exit /b 1)
+
+    set NativeCodeGen=readytorun
+
+    call %CoreRT_TestRoot%\CoreCLR\compile-framework.cmd
+    exit /b %ErrorLevel%
 
 :TestExtRepoCoreCLR
     :: Omit the exclude parameter to CoreCLR's test harness if we're running all tests
