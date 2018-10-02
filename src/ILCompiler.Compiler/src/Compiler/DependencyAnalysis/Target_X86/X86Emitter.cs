@@ -82,7 +82,7 @@ namespace ILCompiler.DependencyAnalysis.X86
             {
                 // mov register, [node address]
                 Builder.EmitByte(0x8B);
-                Builder.EmitByte(0x00 | ((byte)register << 3) | 0x5);
+                Builder.EmitByte((byte)(0x00 | ((byte)register << 3) | 0x5));
             }
             else
             {
