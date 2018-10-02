@@ -33,9 +33,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly CompilationModuleGroup _compilationModuleGroup;
 
-        public ModuleTokenResolver(CompilationModuleGroup compilationModuleGroup)
+        private readonly CompilerTypeSystemContext _typeSystemContext;
+
+        public ModuleTokenResolver(CompilationModuleGroup compilationModuleGroup, CompilerTypeSystemContext typeSystemContext)
         {
             _compilationModuleGroup = compilationModuleGroup;
+            _typeSystemContext = typeSystemContext;
         }
 
         public ModuleToken GetModuleTokenForType(EcmaType type)
@@ -280,6 +283,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 throw new NotImplementedException();
             }
         }
+
+        public CompilerTypeSystemContext TypeSystemContext => _typeSystemContext;
     }
 }
 

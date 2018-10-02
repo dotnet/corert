@@ -406,7 +406,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             case HandleKind.MethodDefinition:
                                 {
                                     genericMethodToken = (mdToken)MetadataTokens.GetToken(methodSpec.Method);
-                                    MethodDefinition methodDef = context.MetadataReader.GetMethodDefinition((MethodDefinitionHandle)methodSpec.Method);
+                                    MethodDefinition methodDef = token.MetadataReader.GetMethodDefinition((MethodDefinitionHandle)methodSpec.Method);
                                     TypeDefinitionHandle typeHandle = methodDef.GetDeclaringType();
                                 }
                                 break;

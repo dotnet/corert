@@ -96,6 +96,32 @@ namespace ILCompiler
         }
         private SimpleNameHashtable _simpleNameHashtable = new SimpleNameHashtable();
 
+        private unsafe class MetadataReaderHashtable : LockFreeReaderHashtable<MetadataReader, ModuleData>
+        {
+            protected override int GetKeyHashCode(MetadataReader key)
+            {
+                return unchecked((int)key.MetadataPointer);
+            }
+            protected override int GetValueHashCode(ModuleData value)
+            {
+                return unchecked((int)value.Module.MetadataReader.MetadataPointer);
+            }
+            protected override bool CompareKeyToValue(MetadataReader key, ModuleData value)
+            {
+                return key.MetadataPointer == value.Module.MetadataReader.MetadataPointer;
+            }
+            protected override bool CompareValueToValue(ModuleData value1, ModuleData value2)
+            {
+                return Object.ReferenceEquals(value1.Module, value2.Module);
+            }
+            protected override ModuleData CreateValueFromKey(MetadataReader key)
+            {
+                Debug.Fail("CreateValueFromKey not supported");
+                return null;
+            }
+        }
+        private MetadataReaderHashtable _metadataReaderHashtable = new MetadataReaderHashtable();
+
         private SharedGenericsMode _genericsMode;
         
         public CompilerTypeSystemContext(TargetDetails details, SharedGenericsMode genericsMode)
@@ -165,6 +191,16 @@ namespace ILCompiler
             }
 
             return AddModule(filePath, simpleName, true);
+        }
+
+        public EcmaModule GetModuleFromMetadataReader(MetadataReader metadataReader)
+        {
+            ModuleData moduleData;
+            if (!_metadataReaderHashtable.TryGetValue(metadataReader, out moduleData))
+            {
+                throw new NotImplementedException();
+            }
+            return moduleData.Module;
         }
 
         public EcmaModule GetModuleFromPath(string filePath)
@@ -268,6 +304,7 @@ namespace ILCompiler
                     pdbReader = null; // Ownership has been transferred
 
                     _moduleHashtable.AddOrGetExisting(moduleData);
+                    _metadataReaderHashtable.AddOrGetExisting(moduleData);
                 }
 
                 return module;

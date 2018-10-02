@@ -75,8 +75,8 @@ namespace ILCompiler
         {
             var interopStubManager = new EmptyInteropStubManager(_compilationGroup, _context, new InteropStateManager(_context.GeneratedAssembly));
 
-            ModuleTokenResolver moduleTokenResolver = new ModuleTokenResolver(_compilationGroup);
-            SignatureContext signatureContext = new SignatureContext(moduleTokenResolver, _inputModule);
+            ModuleTokenResolver moduleTokenResolver = new ModuleTokenResolver(_compilationGroup, _context);
+            SignatureContext signatureContext = new SignatureContext(moduleTokenResolver, _context);
 
             ReadyToRunCodegenNodeFactory factory = new ReadyToRunCodegenNodeFactory(
                 _context,

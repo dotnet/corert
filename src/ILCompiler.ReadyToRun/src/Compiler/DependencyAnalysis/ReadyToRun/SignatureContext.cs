@@ -17,15 +17,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private readonly ModuleTokenResolver _resolver;
 
-        private readonly EcmaModule _contextModule;
+        private readonly CompilerTypeSystemContext _typeSystemContext;
 
-        public SignatureContext(ModuleTokenResolver resolver, EcmaModule contextModule)
+        public SignatureContext(ModuleTokenResolver resolver, CompilerTypeSystemContext typeSystemContext)
         {
             _resolver = resolver;
-            _contextModule = contextModule;
+            _typeSystemContext = typeSystemContext;
         }
-
-        public MetadataReader MetadataReader => _contextModule.MetadataReader;
 
         public ModuleToken GetModuleTokenForType(EcmaType type)
         {
@@ -218,9 +216,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public byte[] GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
         {
-            // If the two readers mismatch, we must do something mode complicated and I don't yet know what
-            Debug.Assert(_contextModule.MetadataReader == reader);
-            TypeDesc type = (TypeDesc)_contextModule.GetObject(handle);
+            EcmaModule module = _typeSystemContext.GetModuleFromMetadataReader(reader);
+            TypeDesc type = (TypeDesc)module.GetObject(handle);
             ArraySignatureBuilder builder = new ArraySignatureBuilder();
             builder.EmitTypeSignature(type, this);
             return builder.ToArray();
@@ -229,7 +226,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public byte[] GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
         {
             ArraySignatureBuilder refBuilder = new ArraySignatureBuilder();
-            TypeDesc type = (TypeDesc)_contextModule.GetObject(handle);
+            EcmaModule module = _typeSystemContext.GetModuleFromMetadataReader(reader);
+            TypeDesc type = (TypeDesc)module.GetObject(handle);
 
             refBuilder.EmitElementType(type.IsValueType ? CorElementType.ELEMENT_TYPE_VALUETYPE : CorElementType.ELEMENT_TYPE_CLASS);
             refBuilder.EmitToken((mdToken)MetadataTokens.GetToken(handle));
