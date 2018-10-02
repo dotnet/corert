@@ -18,7 +18,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __getMethodSig(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, CORINFO_SIG_INFO* sig, CORINFO_CLASS_STRUCT_* memberParent);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        [return: MarshalAs(UnmanagedType.I1)]delegate bool __getMethodInfo(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_METHOD_INFO info);
+        [return: MarshalAs(UnmanagedType.I1)]delegate bool __getMethodInfo(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_INFO* info);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CorInfoInline __canInline(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, ref uint pRestrictions);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -172,7 +172,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_CLASS_STRUCT_* __getParentType(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate CorInfoType __getChildType(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* clsHnd, ref CORINFO_CLASS_STRUCT_* clsRet);
+        delegate CorInfoType __getChildType(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_CLASS_STRUCT_** clsRet);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __satisfiesClassConstraints(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -188,13 +188,13 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_CLASS_STRUCT_* __getFieldClass(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate CorInfoType __getFieldType(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, ref CORINFO_CLASS_STRUCT_* structType, CORINFO_CLASS_STRUCT_* memberParent);
+        delegate CorInfoType __getFieldType(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, CORINFO_CLASS_STRUCT_** structType, CORINFO_CLASS_STRUCT_* memberParent);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate uint __getFieldOffset(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.I1)]delegate bool __isWriteBarrierHelperRequired(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate void __getFieldInfo(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_ACCESS_FLAGS flags, ref CORINFO_FIELD_INFO pResult);
+        delegate void __getFieldInfo(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.I1)]delegate bool __isFieldStatic(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* fldHnd);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -212,7 +212,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_ARG_LIST_STRUCT_* __getArgNext(IntPtr _this, IntPtr* ppException, CORINFO_ARG_LIST_STRUCT_* args);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate CorInfoTypeWithMod __getArgType(IntPtr _this, IntPtr* ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args, ref CORINFO_CLASS_STRUCT_* vcTypeRet);
+        delegate CorInfoTypeWithMod __getArgType(IntPtr _this, IntPtr* ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args, CORINFO_CLASS_STRUCT_** vcTypeRet);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_CLASS_STRUCT_* __getArgClass(IntPtr _this, IntPtr* ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -290,7 +290,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __GetProfilingHandle(IntPtr _this, IntPtr* ppException, [MarshalAs(UnmanagedType.Bool)] ref bool pbHookFunction, ref void* pProfilerHandle, [MarshalAs(UnmanagedType.Bool)] ref bool pbIndirectedHandles);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate void __getCallInfo(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, ref CORINFO_CALL_INFO pResult);
+        delegate void __getCallInfo(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __canAccessFamily(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* hCaller, CORINFO_CLASS_STRUCT_* hInstanceType);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -400,12 +400,12 @@ namespace Internal.JitInterface
             }
         }
 
-        [return: MarshalAs(UnmanagedType.I1)]static bool _getMethodInfo(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_METHOD_INFO info)
+        [return: MarshalAs(UnmanagedType.I1)]static bool _getMethodInfo(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_INFO* info)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getMethodInfo(ftn, ref info);
+                return _this.getMethodInfo(ftn, info);
             }
             catch (Exception ex)
             {
@@ -1463,12 +1463,12 @@ namespace Internal.JitInterface
             }
         }
 
-        static CorInfoType _getChildType(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* clsHnd, ref CORINFO_CLASS_STRUCT_* clsRet)
+        static CorInfoType _getChildType(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_CLASS_STRUCT_** clsRet)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getChildType(clsHnd, ref clsRet);
+                return _this.getChildType(clsHnd, clsRet);
             }
             catch (Exception ex)
             {
@@ -1575,12 +1575,12 @@ namespace Internal.JitInterface
             }
         }
 
-        static CorInfoType _getFieldType(IntPtr thisHandle, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, ref CORINFO_CLASS_STRUCT_* structType, CORINFO_CLASS_STRUCT_* memberParent)
+        static CorInfoType _getFieldType(IntPtr thisHandle, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, CORINFO_CLASS_STRUCT_** structType, CORINFO_CLASS_STRUCT_* memberParent)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getFieldType(field, ref structType, memberParent);
+                return _this.getFieldType(field, structType, memberParent);
             }
             catch (Exception ex)
             {
@@ -1617,12 +1617,12 @@ namespace Internal.JitInterface
             }
         }
 
-        static void _getFieldInfo(IntPtr thisHandle, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_ACCESS_FLAGS flags, ref CORINFO_FIELD_INFO pResult)
+        static void _getFieldInfo(IntPtr thisHandle, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                _this.getFieldInfo(ref pResolvedToken, callerHandle, flags, ref pResult);
+                _this.getFieldInfo(ref pResolvedToken, callerHandle, flags, pResult);
             }
             catch (Exception ex)
             {
@@ -1737,12 +1737,12 @@ namespace Internal.JitInterface
             }
         }
 
-        static CorInfoTypeWithMod _getArgType(IntPtr thisHandle, IntPtr* ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args, ref CORINFO_CLASS_STRUCT_* vcTypeRet)
+        static CorInfoTypeWithMod _getArgType(IntPtr thisHandle, IntPtr* ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args, CORINFO_CLASS_STRUCT_** vcTypeRet)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getArgType(sig, args, ref vcTypeRet);
+                return _this.getArgType(sig, args, vcTypeRet);
             }
             catch (Exception ex)
             {
@@ -2274,12 +2274,12 @@ namespace Internal.JitInterface
             }
         }
 
-        static void _getCallInfo(IntPtr thisHandle, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, ref CORINFO_CALL_INFO pResult)
+        static void _getCallInfo(IntPtr thisHandle, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                _this.getCallInfo(ref pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, ref pResult);
+                _this.getCallInfo(ref pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult);
             }
             catch (Exception ex)
             {
