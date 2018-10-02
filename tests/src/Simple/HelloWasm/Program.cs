@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
 #if PLATFORM_WINDOWS
 using CpObj;
 #endif
@@ -314,6 +315,8 @@ internal static class Program
 
         TestConstrainedClassCalls();
 
+        TestArrayItfDispatch();
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -615,6 +618,20 @@ internal static class Program
     static int GenericGetHashCode<T>(T obj)
     {
         return obj.GetHashCode();
+    }
+
+    private static void TestArrayItfDispatch()
+    {
+        ICollection<int> arrayItfDispatchTest = new int[37];
+        PrintString("Array interface dispatch test: ");
+        if (arrayItfDispatchTest.Count == 37)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.  asm.js (WASM=1) known to fail due to alignment problem, although this problem sometimes means we don't even get this far and fails with an invalid function pointer.");
+        }
     }
 
     [DllImport("*")]
