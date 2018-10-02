@@ -40,6 +40,22 @@ namespace ILCompiler.DependencyAnalysis.X64
             Builder.EmitInt(imm32);
         }
 
+        public void EmitMOV(Register regDst, ISymbolNode node)
+        {
+            if (node.RepresentsIndirectionCell)
+            {
+                Builder.EmitByte(0x67);
+                Builder.EmitByte(0x48);
+                Builder.EmitByte(0x8B);
+                Builder.EmitByte((byte)(0x00 | ((byte)regDst << 3) | 0x05));
+                Builder.EmitReloc(node, RelocType.IMAGE_REL_BASED_REL32);
+            }
+            else
+            {
+                EmitLEAQ(regDst, node, delta: 0);
+            }
+        }
+
         public void EmitLEAQ(Register reg, ISymbolNode symbol, int delta = 0)
         {
             AddrMode rexAddrMode = new AddrMode(Register.RAX, null, 0, 0, AddrModeSize.Int64);

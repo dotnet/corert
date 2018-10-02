@@ -111,9 +111,22 @@ namespace ILCompiler.DependencyAnalysis
 
                 _sectionBuilder.SetReadyToRunHeaderTable(_nodeFactory.Header, _nodeFactory.Header.GetData(_nodeFactory).Data.Length);
 
+                Machine targetMachine;
+                switch (_nodeFactory.Target.Architecture)
+                {
+                    case Internal.TypeSystem.TargetArchitecture.X64:
+                        targetMachine = Machine.Amd64;
+                        break;
+                    case Internal.TypeSystem.TargetArchitecture.X86:
+                        targetMachine = Machine.I386;
+                        break;
+                    default:
+                        throw new NotImplementedException(_nodeFactory.Target.Architecture.ToString());
+                }
+
                 using (var peStream = File.Create(_objectFilePath))
                 {
-                    _sectionBuilder.EmitR2R(Machine.Amd64, _inputPeReader, UpdateDirectories, peStream);
+                    _sectionBuilder.EmitR2R(targetMachine, _inputPeReader, UpdateDirectories, peStream);
                 }
 
                 mapFile.WriteLine($@"R2R object emission finished: {DateTime.Now}, {stopwatch.ElapsedMilliseconds} msecs");

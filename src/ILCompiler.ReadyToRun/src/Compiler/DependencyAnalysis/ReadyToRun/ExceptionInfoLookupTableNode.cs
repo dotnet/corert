@@ -120,8 +120,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
             }
 
-            if (_methodNodes == null)
-                LayoutMethodsWithEHInfo();
+            LayoutMethodsWithEHInfo();
 
             ObjectDataBuilder exceptionInfoLookupBuilder = new ObjectDataBuilder(factory, relocsOnly);
             exceptionInfoLookupBuilder.RequireInitialAlignment(2 * sizeof(uint));
@@ -141,6 +140,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             exceptionInfoLookupBuilder.EmitReloc(_ehInfoNode, RelocType.IMAGE_REL_BASED_ADDR32NB, _ehInfoNode.Count);
 
             return exceptionInfoLookupBuilder.ToObjectData();
+        }
+
+        /// <summary>
+        /// CoreCLR runtime asserts that, when the EXCEPTION_INFO table is present, it must have at least
+        /// two entries. When we don't have any EH info to emit, we just skip the entire table.
+        /// </summary>
+        /// <param name="factory">Reference node factory</param>
+        /// <returns></returns>
+        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
+        {
+            LayoutMethodsWithEHInfo();
+            return _methodNodes.Count == 0;
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
