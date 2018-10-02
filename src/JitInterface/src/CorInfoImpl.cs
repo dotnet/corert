@@ -3267,31 +3267,10 @@ namespace Internal.JitInterface
                     if (instParam != null)
                     {
                         pResult->instParamLookup = CreateConstLookupToSymbol(instParam);
+                    }
 
-                        if (!referencingArrayAddressMethod)
-                        {
-                            pResult->codePointerOrStubLookup.constLookup = 
-                                CreateConstLookupToSymbol(_compilation.NodeFactory.ShadowConcreteMethod(concreteMethod));
-                        }
-                        else
-                        {
-                            // We don't want array Address method to be modeled in the generic dependency analysis.
-                            // The method doesn't actually have runtime determined dependencies (won't do
-                            // any generic lookups).
-                            pResult->codePointerOrStubLookup.constLookup = 
-                                CreateConstLookupToSymbol(_compilation.NodeFactory.MethodEntrypoint(targetMethod));
-                        }
-                    }
-                    else if (targetMethod.AcquiresInstMethodTableFromThis())
-                    {
-                        pResult->codePointerOrStubLookup.constLookup = 
-                            CreateConstLookupToSymbol(_compilation.NodeFactory.ShadowConcreteMethod(concreteMethod));
-                    }
-                    else
-                    {
-                        pResult->codePointerOrStubLookup.constLookup = 
-                            CreateConstLookupToSymbol(_compilation.NodeFactory.MethodEntrypoint(targetMethod));
-                    }
+                    pResult->codePointerOrStubLookup.constLookup = 
+                        CreateConstLookupToSymbol(_compilation.NodeFactory.MethodEntrypoint(targetMethod));
                 }
 
                 pResult->nullInstanceCheck = resolvedCallVirt;
