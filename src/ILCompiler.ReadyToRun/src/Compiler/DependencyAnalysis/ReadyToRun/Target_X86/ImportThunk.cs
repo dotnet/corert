@@ -6,6 +6,8 @@ using System;
 using Internal.Text;
 using Internal.TypeSystem;
 
+using ILCompiler.DependencyAnalysis.X86;
+
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     /// <summary>
@@ -14,9 +16,34 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// </summary>
     public partial class ImportThunk
     {
-        protected override void EmitCode(NodeFactory factory, ref X86.X86Emitter instructionEncoder, bool relocsOnly)
+        protected override void EmitCode(NodeFactory factory, ref X86Emitter instructionEncoder, bool relocsOnly)
         {
-            throw new NotImplementedException();
+            switch (_thunkKind)
+            {
+                case Kind.Eager:
+                    break;
+
+                case Kind.DelayLoadHelper:
+                case Kind.VirtualStubDispatch:
+                    instructionEncoder.EmitXOR(Register.EAX, Register.EAX);
+
+                    if (!relocsOnly)
+                    {
+                        // push table index
+                        instructionEncoder.EmitPUSH((sbyte)_instanceCell.Table.IndexFromBeginningOfArray);
+                    }
+
+                    // push [module]
+                    instructionEncoder.EmitPUSH(_moduleImport);
+
+                    break;
+
+                case Kind.Lazy:
+                    // mov edx, [module]
+                    instructionEncoder.EmitMOV(Register.EDX, _moduleImport);
+                    break;
+            }
+            instructionEncoder.EmitJMP(_helperCell);
         }
     }
 }

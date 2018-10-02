@@ -14,20 +14,47 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// </summary>
     public partial class ImportThunk : AssemblyStubNode, ISymbolDefinitionNode
     {
+        enum Kind
+        {
+            Eager,
+            Lazy,
+            DelayLoadHelper,
+            VirtualStubDispatch,
+        }
+
         private readonly ISymbolNode _helperCell;
 
         private readonly Import _instanceCell;
 
         private readonly ISymbolNode _moduleImport;
 
-        private readonly bool _isVirtualStubDispatchCell;
+        private readonly Kind _thunkKind;
 
         public ImportThunk(ReadyToRunHelper helperId, ReadyToRunCodegenNodeFactory factory, Import instanceCell)
         {
             _helperCell = factory.GetReadyToRunHelperCell(helperId & ~ReadyToRunHelper.READYTORUN_HELPER_FLAG_VSD);
             _instanceCell = instanceCell;
             _moduleImport = factory.ModuleImport;
-            _isVirtualStubDispatchCell = (uint)(helperId & ReadyToRunHelper.READYTORUN_HELPER_FLAG_VSD) != 0;
+
+            if ((uint)(helperId & ReadyToRunHelper.READYTORUN_HELPER_FLAG_VSD) != 0)
+            {
+                _thunkKind = Kind.VirtualStubDispatch;
+            }
+            else if (helperId == ReadyToRunHelper.READYTORUN_HELPER_GetString)
+            {
+                _thunkKind = Kind.Lazy;
+            }
+            else if (helperId == ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_MethodCall ||
+                helperId == ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper ||
+                helperId == ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_Obj ||
+                helperId == ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_ObjObj)
+            {
+                _thunkKind = Kind.DelayLoadHelper;
+            }
+            else
+            {
+                _thunkKind = Kind.Eager;
+            }
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

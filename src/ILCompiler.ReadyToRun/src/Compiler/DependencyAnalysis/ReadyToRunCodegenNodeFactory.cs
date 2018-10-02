@@ -646,6 +646,59 @@ namespace ILCompiler.DependencyAnalysis
                     // ThrowInvalidProgramException should never return
                     throw new NotImplementedException();
 
+                // JIT32 x86-specific write barriers
+                case ILCompiler.ReadyToRunHelper.WriteBarrier_EAX:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_WriteBarrier_EAX;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.WriteBarrier_EBX:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_WriteBarrier_EBX;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.WriteBarrier_ECX:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_WriteBarrier_ECX;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.WriteBarrier_ESI:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_WriteBarrier_ESI;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.WriteBarrier_EDI:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_WriteBarrier_EDI;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.WriteBarrier_EBP:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_WriteBarrier_EBP;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.CheckedWriteBarrier_EAX:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_CheckedWriteBarrier_EAX;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.CheckedWriteBarrier_EBX:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_CheckedWriteBarrier_EBX;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.CheckedWriteBarrier_ECX:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_CheckedWriteBarrier_ECX;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.CheckedWriteBarrier_ESI:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_CheckedWriteBarrier_ESI;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.CheckedWriteBarrier_EDI:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_CheckedWriteBarrier_EDI;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.CheckedWriteBarrier_EBP:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_CheckedWriteBarrier_EBP;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.EndCatch:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_EndCatch;
+                    break;
+
                 default:
                     throw new NotImplementedException(helper.ToString());
             }
@@ -875,17 +928,20 @@ namespace ILCompiler.DependencyAnalysis
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Module));
             graph.AddRoot(ModuleImport, "Module import is required by the R2R format spec");
 
-            Import personalityRoutineImport = new Import(EagerImports, new ReadyToRunHelperSignature(
-                ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_PersonalityRoutine));
-            PersonalityRoutine = new ImportThunk(
-                ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_PersonalityRoutine, this, personalityRoutineImport);
-            graph.AddRoot(PersonalityRoutine, "Personality routine is faster to root early rather than referencing it from each unwind info");
+            if (Target.Architecture != TargetArchitecture.X86)
+            {
+                Import personalityRoutineImport = new Import(EagerImports, new ReadyToRunHelperSignature(
+                    ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_PersonalityRoutine));
+                PersonalityRoutine = new ImportThunk(
+                    ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_PersonalityRoutine, this, personalityRoutineImport);
+                graph.AddRoot(PersonalityRoutine, "Personality routine is faster to root early rather than referencing it from each unwind info");
 
-            Import filterFuncletPersonalityRoutineImport = new Import(EagerImports, new ReadyToRunHelperSignature(
-                ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_PersonalityRoutineFilterFunclet));
-            FilterFuncletPersonalityRoutine = new ImportThunk(
-                ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_PersonalityRoutineFilterFunclet, this, filterFuncletPersonalityRoutineImport);
-            graph.AddRoot(FilterFuncletPersonalityRoutine, "Filter funclet personality routine is faster to root early rather than referencing it from each unwind info");
+                Import filterFuncletPersonalityRoutineImport = new Import(EagerImports, new ReadyToRunHelperSignature(
+                    ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_PersonalityRoutineFilterFunclet));
+                FilterFuncletPersonalityRoutine = new ImportThunk(
+                    ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_PersonalityRoutineFilterFunclet, this, filterFuncletPersonalityRoutineImport);
+                graph.AddRoot(FilterFuncletPersonalityRoutine, "Filter funclet personality routine is faster to root early rather than referencing it from each unwind info");
+            }
 
             MethodImports = new ImportSectionNode(
                 "MethodImports",

@@ -18,32 +18,54 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         protected override void EmitCode(NodeFactory factory, ref X64Emitter instructionEncoder, bool relocsOnly)
         {
-            if (!_instanceCell.Table.IsEager)
+            switch (_thunkKind)
             {
-                if (_isVirtualStubDispatchCell)
-                {
-                    // mov rax, r11 - this is the most general case as the value of R11 also propagates
-                    // to the new method after the indirection cell has been updated so the cell content
-                    // can be repeatedly modified as needed during virtual / interface dispatch.
-                    instructionEncoder.EmitMOV(Register.RAX, Register.R11);
-                }
-                else
-                {
+                case Kind.Eager:
+                    break;
+
+                case Kind.DelayLoadHelper:
                     // lea rax, [pCell] - this is the simple case which allows for only one lazy resolution
                     // of the indirection cell; the final method pointer stored in the indirection cell
                     // no longer receives the location of the cell so it cannot modify it repeatedly.
                     instructionEncoder.EmitLEAQ(Register.RAX, _instanceCell);
-                }
-                if (!relocsOnly)
-                {
-                    // push table index
-                    instructionEncoder.EmitPUSH((sbyte)_instanceCell.Table.IndexFromBeginningOfArray);
-                }
 
-                // push [module]
-                instructionEncoder.EmitPUSH(_moduleImport);
-                // TODO: additional tricks regarding UNIX AMD64 ABI
+                    if (!relocsOnly)
+                    {
+                        // push table index
+                        instructionEncoder.EmitPUSH((sbyte)_instanceCell.Table.IndexFromBeginningOfArray);
+                    }
+
+                    // push [module]
+                    instructionEncoder.EmitPUSH(_moduleImport);
+
+                    break;
+
+                case Kind.VirtualStubDispatch:
+                    // mov rax, r11 - this is the most general case as the value of R11 also propagates
+                    // to the new method after the indirection cell has been updated so the cell content
+                    // can be repeatedly modified as needed during virtual / interface dispatch.
+                    instructionEncoder.EmitMOV(Register.RAX, Register.R11);
+
+                    if (!relocsOnly)
+                    {
+                        // push table index
+                        instructionEncoder.EmitPUSH((sbyte)_instanceCell.Table.IndexFromBeginningOfArray);
+                    }
+
+                    // push [module]
+                    instructionEncoder.EmitPUSH(_moduleImport);
+
+                    break;
+
+                case Kind.Lazy:
+                    instructionEncoder.EmitMOV(factory.Target.OperatingSystem == TargetOS.Windows ? Register.RDX : Register.RSI, _moduleImport);
+
+                    break;
+
+                default:
+                    throw new NotImplementedException();
             }
+
             instructionEncoder.EmitJMP(_helperCell);
         }
     }
