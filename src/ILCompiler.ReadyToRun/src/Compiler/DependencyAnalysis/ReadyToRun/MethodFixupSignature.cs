@@ -63,6 +63,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
             sb.Append($@"MethodFixupSignature({_fixupKind.ToString()}: {_methodDesc.ToString()}");
+            if (_constrainedType != null)
+            {
+                sb.Append(" @ ");
+                sb.Append(_constrainedType.ToString());
+            }
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
