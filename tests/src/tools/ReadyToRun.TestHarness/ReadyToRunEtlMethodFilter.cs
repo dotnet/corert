@@ -60,14 +60,15 @@ namespace ReadyToRun.TestHarness
             var signature = "";
             var signatureWithReturnType = data.MethodSignature;
             var openParenIndex = signatureWithReturnType.IndexOf('(');
-            
+
             if (0 <= openParenIndex)
             {
                 signature = signatureWithReturnType.Substring(openParenIndex);
             }
 
             var className = data.MethodNamespace;
-            var lastDot = className.LastIndexOf('.');
+            var firstBox = className.IndexOf('[');
+            var lastDot = className.LastIndexOf('.', firstBox >= 0 ? firstBox : className.Length - 1);
             if (0 <= lastDot)
             {
                 className = className.Substring(lastDot + 1);
