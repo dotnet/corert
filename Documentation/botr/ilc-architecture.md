@@ -36,6 +36,8 @@ Related classes: `CompilationBuilder`, `ICompilation`
 ### Compiler
 Compiler is the core component that the rest of the document is going to talk about. It's responsible for running the compilation process and generating data structures for the target runtime and target base class libraries.
 
+The compiler tries to stay policy free as to what to compile, what data structures to generate, and how to do the compilation. The specific policies are supplied by the compilation driver as part of configuring the compilation.
+
 ### Code generation backends
 ILC is designed to support multiple code generation backends that target the same runtime. What this means is that we have a model where there are common parts within the compiler (determining what needs to be compiled, generating data structures for the underlying runtime), and parts that are specific for a target environment. The common parts (the data structure layout) are not target specific - the target specific differences are limited to general questions, such as "does the target have representation for relative pointers?", but the basic shape of the data structures is the same, no matter the target platform.
 ILC currently supports following codegen backends (with varying levels of completeness):
