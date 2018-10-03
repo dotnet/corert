@@ -612,5 +612,11 @@ namespace Internal.JitInterface
                 _debugLocInfos[i] = pMap[i];
             }
         }
+
+        private void PublishEmptyCode()
+        {
+            _methodCodeNode.SetCode(new ObjectNode.ObjectData(Array.Empty<byte>(), null, 1, Array.Empty<ISymbolDefinitionNode>()));
+            _methodCodeNode.InitializeFrameInfos(Array.Empty<FrameInfo>());
+        }
     }
 }

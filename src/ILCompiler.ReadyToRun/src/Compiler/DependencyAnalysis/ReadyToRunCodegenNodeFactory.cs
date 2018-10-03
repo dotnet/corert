@@ -93,33 +93,47 @@ namespace ILCompiler.DependencyAnalysis
 
         public ImportSectionNode PrecodeImports;
 
-        public IMethodNode MethodEntrypoint(MethodDesc method, TypeDesc constrainedType, SignatureContext signatureContext, bool isUnboxingStub = false)
+        public IMethodNode MethodEntrypoint(MethodDesc targetMethod, TypeDesc constrainedType, MethodDesc originalMethod, SignatureContext signatureContext, bool isUnboxingStub = false)
         {
-            return _methodEntrypoints.GetOrAdd(method, (m) =>
-            {
-                return CreateMethodEntrypointNode(method, constrainedType, signatureContext, isUnboxingStub);
-            });
+            IMethodNode result = _methodEntrypoints.GetOrAdd(targetMethod, (m) =>
+                CreateMethodEntrypointNode(targetMethod, constrainedType, originalMethod, signatureContext, isUnboxingStub)
+            );
+            return result;
         }
 
-        private IMethodNode CreateMethodEntrypointNode(MethodDesc method, TypeDesc constrainedType, SignatureContext signatureContext, bool isUnboxingStub)
+        private IMethodNode CreateMethodEntrypointNode(MethodDesc targetMethod, TypeDesc constrainedType, MethodDesc originalMethod, SignatureContext signatureContext, bool isUnboxingStub)
         {
-            if (method is InstantiatedMethod instantiatedMethod)
+            if (constrainedType != null)
+            {
+                // We may be able to optimize away the constrained call if targetMethod is within the version bubble
+                if (CompilationModuleGroup.ContainsMethodBody(targetMethod, isUnboxingStub))
+                {
+                    constrainedType = null;
+                }
+                else
+                {
+                    targetMethod = originalMethod;
+                }
+            }
+
+            if (targetMethod is InstantiatedMethod instantiatedMethod)
             {
                 return InstantiatedMethodNode(instantiatedMethod, constrainedType, signatureContext, isUnboxingStub);
             }
 
             MethodWithGCInfo localMethod = null;
-            if (CompilationModuleGroup.ContainsMethodBody(method, false))
+
+            if (CompilationModuleGroup.ContainsMethodBody(targetMethod, false))
             {
-                localMethod = new MethodWithGCInfo(method, signatureContext);
+                localMethod = new MethodWithGCInfo(targetMethod, signatureContext);
             }
 
-            return ImportedMethodNode(method, unboxingStub: isUnboxingStub, constrainedType: constrainedType, signatureContext: signatureContext, localMethod: localMethod);
+            return ImportedMethodNode(targetMethod, unboxingStub: isUnboxingStub, constrainedType: constrainedType, signatureContext: signatureContext, localMethod: localMethod);
         }
 
         public IMethodNode StringAllocator(MethodDesc constructor, SignatureContext signatureContext)
         {
-            return MethodEntrypoint(constructor, constrainedType: null, signatureContext: signatureContext, isUnboxingStub: false);
+            return MethodEntrypoint(constructor, constrainedType: null, originalMethod: null, signatureContext: signatureContext, isUnboxingStub: false);
         }
 
         public ISymbolNode StringLiteral(ModuleToken token)
@@ -935,7 +949,7 @@ namespace ILCompiler.DependencyAnalysis
                 PersonalityRoutine = new ImportThunk(
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_PersonalityRoutine, this, personalityRoutineImport);
                 graph.AddRoot(PersonalityRoutine, "Personality routine is faster to root early rather than referencing it from each unwind info");
-
+    
                 Import filterFuncletPersonalityRoutineImport = new Import(EagerImports, new ReadyToRunHelperSignature(
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_PersonalityRoutineFilterFunclet));
                 FilterFuncletPersonalityRoutine = new ImportThunk(
@@ -1039,13 +1053,14 @@ namespace ILCompiler.DependencyAnalysis
 
         private Dictionary<TypeAndMethod, IMethodNode> _shadowConcreteMethods = new Dictionary<TypeAndMethod, IMethodNode>();
 
-        public IMethodNode ShadowConcreteMethod(MethodDesc method, TypeDesc constrainedType, SignatureContext signatureContext, bool isUnboxingStub = false)
+        public IMethodNode ShadowConcreteMethod(MethodDesc method, TypeDesc constrainedType, MethodDesc originalMethod,
+            SignatureContext signatureContext, bool isUnboxingStub = false)
         {
             IMethodNode result;
             TypeAndMethod key = new TypeAndMethod(constrainedType, method, isUnboxingStub, isInstantiatingStub: false);
             if (!_shadowConcreteMethods.TryGetValue(key, out result))
             {
-                result = MethodEntrypoint(method, constrainedType, signatureContext, isUnboxingStub);
+                result = MethodEntrypoint(method, constrainedType, originalMethod, signatureContext, isUnboxingStub);
                 _shadowConcreteMethods.Add(key, result);
             }
             return result;
@@ -1086,7 +1101,7 @@ namespace ILCompiler.DependencyAnalysis
                 throw new NotImplementedException();
             }
 
-            return MethodEntrypoint(method, constrainedType: null, signatureContext: InputModuleContext, isUnboxingStub: false);
+            return MethodEntrypoint(method, constrainedType: null, originalMethod: null, signatureContext: InputModuleContext, isUnboxingStub: false);
         }
 
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)
@@ -1136,8 +1151,7 @@ namespace ILCompiler.DependencyAnalysis
             TypeAndMethod ctorKey = new TypeAndMethod(delegateType, targetMethod, isUnboxingStub: false, isInstantiatingStub: false);
             if (!_delegateCtors.TryGetValue(ctorKey, out ctorNode))
             {
-                IMethodNode targetMethodNode = MethodEntrypoint(targetMethod, constrainedType: null, signatureContext: signatureContext, isUnboxingStub: false);
-
+                IMethodNode targetMethodNode = MethodEntrypoint(targetMethod, constrainedType: null, originalMethod: null, signatureContext: signatureContext, isUnboxingStub: false);
                 ctorNode = new DelayLoadHelperImport(
                     this,
                     HelperImports,

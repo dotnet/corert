@@ -94,6 +94,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return;
             }
 
+            if (_methodToRefTokens.ContainsKey(method))
+            {
+                // This method has already been harvested
+                return;
+            }
+
             _methodToRefTokens[method] = token;
 
             switch (token.TokenType)
@@ -106,6 +112,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     break;
 
                 case CorTokenType.mdtMemberRef:
+                    if ((method.HasInstantiation || method.OwningType.HasInstantiation) &&
+                        !method.IsGenericMethodDefinition && !method.OwningType.IsGenericDefinition)
+                    {
+                        AddModuleTokenForMethod(method.GetTypicalMethodDefinition(), token);
+                    }
                     AddModuleTokenForMethodReference(method.OwningType, token);
                     break;
 
@@ -228,7 +239,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             public DummyTypeInfo GetGenericMethodParameter(ModuleTokenResolver genericContext, int index)
             {
-                throw new NotImplementedException();
+                return DummyTypeInfo.Instance;
             }
 
             public DummyTypeInfo GetGenericTypeParameter(ModuleTokenResolver genericContext, int index)

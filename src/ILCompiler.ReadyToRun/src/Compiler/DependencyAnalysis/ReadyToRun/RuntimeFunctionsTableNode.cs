@@ -84,7 +84,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             foreach (MethodWithGCInfo method in _methodNodes)
             {
                 int methodOffset = runtimeFunctionsBuilder.CountBytes;
-                int[] funcletOffsets = method.GCInfoNode.CalculateFuncletOffsets();
+                int[] funcletOffsets = method.GCInfoNode.CalculateFuncletOffsets(factory);
 
                 for (int frameIndex = 0; frameIndex < method.FrameInfos.Length; frameIndex++)
                 {
