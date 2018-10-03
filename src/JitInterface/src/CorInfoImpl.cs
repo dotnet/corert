@@ -2080,7 +2080,7 @@ namespace Internal.JitInterface
                 fieldDesc.OwningType.GetKnownField("_value").FieldType.Category == TypeFlags.IntPtr);
             if (type == CorInfoType.CORINFO_TYPE_NATIVEINT && fieldDesc.OwningType.IsByReferenceOfT)
             {
-                Debug.Assert(structType == null);
+                Debug.Assert(structType == null || *structType == null);
                 Debug.Assert(fieldDesc.Offset.AsInt == 0);
                 type = CorInfoType.CORINFO_TYPE_BYREF;
             }
