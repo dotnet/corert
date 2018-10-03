@@ -62,7 +62,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append($@"MethodFixupSignature({_fixupKind.ToString()}: {_methodDesc.ToString()}");
+            sb.Append($@"MethodFixupSignature({_fixupKind.ToString()}: {_methodDesc.Signature.ReturnType} {_methodDesc}");
             if (_constrainedType != null)
             {
                 sb.Append(" @ ");
