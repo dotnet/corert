@@ -87,7 +87,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                     EntryPointVertex entryPointVertex = new EntryPointWithBlobVertex((uint)methodIndex, fixupBlob, signatureBlob);
                     hashtableSection.Place(entryPointVertex);
-                    vertexHashtable.Append(unchecked((uint)methodCodeNode.Method.GetHashCode()), entryPointVertex);
+                    vertexHashtable.Append(unchecked((uint)ReadyToRunHashCode.MethodHashCode(methodCodeNode.Method)), entryPointVertex);
                 }
             }
 
