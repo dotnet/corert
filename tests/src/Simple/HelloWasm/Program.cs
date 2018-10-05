@@ -314,10 +314,10 @@ internal static class Program
 
         TestConstrainedClassCalls();
 
-        TestArrayItfDispatch();
-
         TestValueTypeElementIndexing();
         
+        TestArrayItfDispatch();
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -619,6 +619,34 @@ internal static class Program
     static int GenericGetHashCode<T>(T obj)
     {
         return obj.GetHashCode();
+    }
+
+    private static void TestArrayItfDispatch()
+    {
+        ICollection<int> arrayItfDispatchTest = new int[37];
+        PrintString("Array interface dispatch test: ");
+        if (arrayItfDispatchTest.Count == 37)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.  asm.js (WASM=1) known to fail due to alignment problem, although this problem sometimes means we don't even get this far and fails with an invalid function pointer.");
+        }
+    }
+
+    private static void TestValueTypeElementIndexing()
+    {
+        var chars = new[] { 'i', 'p', 's', 'u', 'm' };
+        PrintString("Value type element indexing: ");
+        if (chars[0] == 'i' && chars[1] == 'p' && chars[2] == 's' && chars[3] == 'u' && chars[4] == 'm')
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
     }
 
     private static void TestArrayItfDispatch()
