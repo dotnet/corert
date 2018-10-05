@@ -619,9 +619,6 @@ internal static class Program
         return obj.GetHashCode();
     }
 
-        }
-    }
-
     private static void TestValueTypeElementIndexing()
     {
         var chars = new[] { 'i', 'p', 's', 'u', 'm' };
@@ -633,6 +630,9 @@ internal static class Program
         else
         {
             PrintLine("Failed.");
+        }
+    }
+
     [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
 }
