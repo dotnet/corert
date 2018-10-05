@@ -15,33 +15,7 @@ internal static class Program
     private static int threadStaticInt;
     private static unsafe int Main(string[] args)
     {
-        var str = "12";
-        PrintLine(str);
-        char[] chars = new char[str.Length];
-        fixed (char* pStr = str)
-        {
-            fixed (char* pChars = chars)
-            {
-                Buffer.MemoryCopy(pStr, pChars, str.Length*2, str.Length*2);
-            }
-        }
-        for (var i = 0; i < chars.Length; i++)
-        {
-            PrintLine(chars[i].ToString());
-        }
         PrintLine("Starting");
-
-//        var g = new Gen<char>();
-//        g.TestTypeOf();
-        var t = Type.GetType("System.Char, System.Private.CoreLib");
-        if (t == null)
-        {
-            PrintLine("type == null.  Simple class metadata test: Failed");
-        }
-        else
-        {
-            PrintLine("Simple class metadata test: Ok.");
-        }
 
         Add(1, 2);
         int tempInt = 0;
@@ -342,6 +316,8 @@ internal static class Program
 
         TestArrayItfDispatch();
 
+        TestValueTypeElementIndexing();
+        
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -656,6 +632,20 @@ internal static class Program
         else
         {
             PrintLine("Failed.  asm.js (WASM=1) known to fail due to alignment problem, although this problem sometimes means we don't even get this far and fails with an invalid function pointer.");
+        }
+    }
+
+    private static void TestValueTypeElementIndexing()
+    {
+        var chars = new[] { 'i', 'p', 's', 'u', 'm' };
+        PrintString("Value type element indexing: ");
+        if (chars[0] == 'i' && chars[1] == 'p' && chars[2] == 's' && chars[3] == 'u' && chars[4] == 'm')
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
         }
     }
 
