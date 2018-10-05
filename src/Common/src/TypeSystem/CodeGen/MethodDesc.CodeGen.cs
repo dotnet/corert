@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Runtime.CompilerServices;
-
 namespace Internal.TypeSystem
 {
     // Additional members of MethodDesc related to code generation.
@@ -41,6 +38,29 @@ namespace Internal.TypeSystem
         /// the code of the caller methods aggressively.
         /// </summary>
         public virtual bool IsAggressiveInlining
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value specifying whether this method contains hot code and should
+        /// be aggressively optimized if possible.
+        /// </summary>
+        public virtual bool IsAggressiveOptimization
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value specifying whether this method should not be optimized.
+        /// </summary>
+        public virtual bool IsNoOptimization
         {
             get
             {
@@ -128,6 +148,22 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsAggressiveOptimization
+        {
+            get
+            {
+                return _methodDef.IsAggressiveOptimization;
+            }
+        }
+
+        public override bool IsNoOptimization
+        {
+            get
+            {
+                return _methodDef.IsNoOptimization;
+            }
+        }
+
         public override bool IsAggressiveInlining
         {
             get
@@ -185,6 +221,22 @@ namespace Internal.TypeSystem
             get
             {
                 return _typicalMethodDef.IsNoInlining;
+            }
+        }
+
+        public override bool IsAggressiveOptimization
+        {
+            get
+            {
+                return _typicalMethodDef.IsAggressiveOptimization;
+            }
+        }
+
+        public override bool IsNoOptimization
+        {
+            get
+            {
+                return _typicalMethodDef.IsNoOptimization;
             }
         }
 

@@ -774,6 +774,11 @@ namespace Internal.JitInterface
                 result |= CorInfoFlag.CORINFO_FLG_DONT_INLINE;
             }
 
+            if (method.IsAggressiveOptimization)
+            {
+                result |= CorInfoFlag.CORINFO_FLG_AGGRESSIVE_OPT;
+            }
+
             // TODO: Cache inlining hits
             // Check for an inlining directive.
 
@@ -3788,6 +3793,9 @@ namespace Internal.JitInterface
 
             if (this.MethodBeingCompiled.IsPInvoke)
                 flags.Set(CorJitFlag.CORJIT_FLAG_IL_STUB);
+
+            if (this.MethodBeingCompiled.IsNoOptimization)
+                flags.Set(CorJitFlag.CORJIT_FLAG_MIN_OPT);
 
             return (uint)sizeof(CORJIT_FLAGS);
         }
