@@ -314,6 +314,8 @@ internal static class Program
 
         TestConstrainedClassCalls();
 
+        TestValueTypeElementIndexing();
+        
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -617,6 +619,20 @@ internal static class Program
         return obj.GetHashCode();
     }
 
+        }
+    }
+
+    private static void TestValueTypeElementIndexing()
+    {
+        var chars = new[] { 'i', 'p', 's', 'u', 'm' };
+        PrintString("Value type element indexing: ");
+        if (chars[0] == 'i' && chars[1] == 'p' && chars[2] == 's' && chars[3] == 'u' && chars[4] == 'm')
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
     [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
 }
