@@ -8,7 +8,6 @@ using System.Collections.Generic;
 #if PLATFORM_WINDOWS
 using CpObj;
 #endif
-
 internal static class Program
 {
     private static int staticInt;
@@ -16,7 +15,33 @@ internal static class Program
     private static int threadStaticInt;
     private static unsafe int Main(string[] args)
     {
+        var str = "12";
+        PrintLine(str);
+        char[] chars = new char[str.Length];
+        fixed (char* pStr = str)
+        {
+            fixed (char* pChars = chars)
+            {
+                Buffer.MemoryCopy(pStr, pChars, str.Length*2, str.Length*2);
+            }
+        }
+        for (var i = 0; i < chars.Length; i++)
+        {
+            PrintLine(chars[i].ToString());
+        }
         PrintLine("Starting");
+
+//        var g = new Gen<char>();
+//        g.TestTypeOf();
+        var t = Type.GetType("System.Char, System.Private.CoreLib");
+        if (t == null)
+        {
+            PrintLine("type == null.  Simple class metadata test: Failed");
+        }
+        else
+        {
+            PrintLine("Simple class metadata test: Ok.");
+        }
 
         Add(1, 2);
         int tempInt = 0;
@@ -59,15 +84,15 @@ internal static class Program
         tempObj.TestVirtualMethod("Hello");
         tempObj.TestVirtualMethod2("Hello");
 
-        TwoByteStr str = new TwoByteStr() { first = 1, second = 2 };
-        TwoByteStr str2 = new TwoByteStr() { first = 3, second = 4 };
-        *(&str) = str2;
-        str2 = *(&str);
-
-        if (str2.second == 4)
-        {
-            PrintLine("value type int field test: Ok.");
-        }
+//        TwoByteStr str = new TwoByteStr() { first = 1, second = 2 };
+//        TwoByteStr str2 = new TwoByteStr() { first = 3, second = 4 };
+//        *(&str) = str2;
+//        str2 = *(&str);
+//
+//        if (str2.second == 4)
+//        {
+//            PrintLine("value type int field test: Ok.");
+//        }
         
         staticInt = 5;
         if (staticInt == 5)
@@ -820,6 +845,14 @@ public sealed class MySealedClass
         Program.PrintLine("MySealedClass.ToString called. Data:");
         Program.PrintLine(_data.ToString());
         return _data.ToString();
+    }
+}
+
+public class Gen<T>
+{
+    internal void TestTypeOf()
+    {
+        var t = typeof(T);
     }
 }
 
