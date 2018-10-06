@@ -177,7 +177,7 @@ namespace Internal.IL
             var returnType = _method.Signature.ReturnType;
             if (returnType.RuntimeTypeHandle.Value == typeof(void).TypeHandle.Value)
                 return;
-            
+
             StackItem stackItem = PopWithValidation();
             TypeFlags category = returnType.Category;
 
@@ -270,7 +270,45 @@ namespace Internal.IL
 
         private void ImportUnaryOperation(ILOpcode opCode)
         {
-            throw new NotImplementedException();
+            StackItem stackItem = PopWithValidation();
+            switch (opCode)
+            {
+                case ILOpcode.neg:
+                    {
+                        if (stackItem.Kind == StackValueKind.Int32)
+                        {
+                            int value = stackItem.AsInt32();
+                            _interpreter.EvaluationStack.Push(StackItem.FromInt32(-value));
+                        }
+                        else if (stackItem.Kind == StackValueKind.Int64)
+                        {
+                            long value = stackItem.AsInt64();
+                            _interpreter.EvaluationStack.Push(StackItem.FromInt64(-value));
+                        }
+                        else if (stackItem.Kind == StackValueKind.Float)
+                        {
+                            double value = stackItem.AsDouble();
+                            _interpreter.EvaluationStack.Push(StackItem.FromDouble(-value));
+                        }
+                        break;
+                    }
+                case ILOpcode.not:
+                    {
+                        if (stackItem.Kind == StackValueKind.Int32)
+                        {
+                            int value = stackItem.AsInt32();
+                            _interpreter.EvaluationStack.Push(StackItem.FromInt32(~value));
+                        }
+                        else if (stackItem.Kind == StackValueKind.Int64)
+                        {
+                            long value = stackItem.AsInt64();
+                            _interpreter.EvaluationStack.Push(StackItem.FromInt64(~value));
+                        }
+                        break;
+                    }
+                default:
+                    break;
+            }
         }
 
         private void ImportCpOpj(int token)
