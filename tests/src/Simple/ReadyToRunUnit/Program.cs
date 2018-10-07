@@ -445,6 +445,33 @@ internal class Program
         }
     }
 
+    class InstanceMethodCaller<T> where T : IComparable
+    {
+        public static int Compare(T t, object o)
+        {
+            if ((o is Int32 && 123.CompareTo(o) == 0) ||
+                (o is string && "hello".CompareTo(o) == 0))
+            {
+                return -42;
+            }
+    
+            return t.CompareTo(o);
+        }
+    }
+
+    private static bool InstanceMethodTest()
+    {
+        int intResult = InstanceMethodCaller<int>.Compare(122, 123);
+        const int ExpectedIntResult = -42;
+        Console.WriteLine("Int result: {0}, expected: {1}", intResult, ExpectedIntResult);
+        
+        int stringResult = InstanceMethodCaller<string>.Compare("hello", "world");
+        const int ExpectedStringResult = -1;
+        Console.WriteLine("String result: {0}, expected: {1}", stringResult, ExpectedStringResult);
+        
+        return intResult == ExpectedIntResult && stringResult == ExpectedStringResult;
+    }
+
     public static int Main(string[] args)
     {
         if (args.Length > 0)
@@ -485,6 +512,7 @@ internal class Program
         RunTest("EnumerateEmptyArrayOfString", EnumerateEmptyArrayOfString());
         RunTest("TryCatch", TryCatch());
         RunTest("FileStreamNullRefTryCatch", FileStreamNullRefTryCatch());
+        RunTest("InstanceMethodTest", InstanceMethodTest());
 
         Console.WriteLine($@"{_passedTests.Count} tests pass:");
         foreach (string testName in _passedTests)
