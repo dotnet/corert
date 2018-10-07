@@ -46,7 +46,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     rid = MetadataTokens.GetToken(ecmaType.Handle) & 0x00FFFFFF;
                     Debug.Assert(rid != 0);
 
-                    int hashCode = ReadyToRunHashCode.TypeHashCode(ecmaType);
+                    int hashCode = ReadyToRunHashCode.TypeHashCode(type);
                     typesHashtable.Append(unchecked((uint)hashCode), section.Place(new UnsignedConstant((uint)rid << 1)));
                 }
                 else if (type.IsArray || type.IsMdArray)
