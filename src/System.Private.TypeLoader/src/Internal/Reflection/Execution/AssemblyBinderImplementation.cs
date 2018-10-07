@@ -14,6 +14,7 @@ using Internal.Reflection.Core;
 using Internal.Runtime.TypeLoader;
 
 using Internal.Metadata.NativeFormat;
+using System.Runtime.InteropServices;
 
 namespace Internal.Reflection.Execution
 {
@@ -26,6 +27,37 @@ namespace Internal.Reflection.Execution
     //=============================================================================================================================
     public sealed partial class AssemblyBinderImplementation : AssemblyBinder
     {
+        private static unsafe void PrintString(string s)
+        {
+            int length = s.Length;
+            fixed (char* curChar = s)
+            {
+                for (int i = 0; i < length; i++)
+                {
+                    TwoByteStr curCharStr = new TwoByteStr();
+                    curCharStr.first = (byte)(*(curChar + i));
+                    printf((byte*)&curCharStr, null);
+                }
+            }
+        }
+
+        public struct TwoByteStr
+        {
+            public byte first;
+            public byte second;
+        }
+
+        [DllImport("*")]
+        private static unsafe extern int printf(byte* str, byte* unused);
+
+        public static void PrintLine(string s)
+        {
+            PrintString(s);
+            PrintString("\n");
+        }
+
+
+
         private AssemblyBinderImplementation()
         {
             _scopeGroups = new KeyValuePair<RuntimeAssemblyName, ScopeDefinitionGroup>[0];
@@ -72,12 +104,24 @@ namespace Internal.Reflection.Execution
                 useMscorlibNameCompareFunc = true;
                 compareRefName = AssemblyNameParser.Parse(AssemblyBinder.DefaultAssemblyNameForGetType);
             }
+            PrintString("in for refName ");
+            PrintLine(refName.FullName);
+
+            PrintString("ScopeGroups.Length ");
+            PrintLine(ScopeGroups.Length.ToString());
 
             foreach (KeyValuePair<RuntimeAssemblyName, ScopeDefinitionGroup> group in ScopeGroups)
             {
                 bool nameMatches;
+
+                PrintString("in for group.Key ");
+                PrintLine(group.Key.FullName);
+
                 if (useMscorlibNameCompareFunc)
                 {
+                    PrintString("in for compareRefName ");
+                    PrintLine(compareRefName.FullName);
+
                     nameMatches = MscorlibAssemblyNameMatches(compareRefName, group.Key);
                 }
                 else
@@ -108,6 +152,7 @@ namespace Internal.Reflection.Execution
 
             if (!foundMatch)
             {
+                PrintLine("throwing");
                 exception = preferredException ?? new FileNotFoundException(SR.Format(SR.FileNotFound_AssemblyNotFound, refName.FullName));
                 return false;
             }
