@@ -22,7 +22,7 @@ internal static class Program
         int tempInt = 0;
         int tempInt2 = 0;
         (*(&tempInt)) = 9;
-        if(tempInt == 9)
+        if (tempInt == 9)
         {
             PrintLine("Hello from C#!");
         }
@@ -30,12 +30,12 @@ internal static class Program
         int* targetAddr = (tempInt > 0) ? (&tempInt2) : (&tempInt);
 
         (*targetAddr) = 1;
-        if(tempInt2 == 1 && tempInt == 9)
+        if (tempInt2 == 1 && tempInt == 9)
         {
             PrintLine("basic block stack entry Test: Ok.");
         }
 
-        if(ILHelpers.ILHelpersTest.InlineAssignByte() == 100)
+        if (ILHelpers.ILHelpersTest.InlineAssignByte() == 100)
         {
             PrintLine("Inline assign byte Test: Ok.");
         }
@@ -45,7 +45,7 @@ internal static class Program
         }
 
         int dupTestInt = 9;
-        if(ILHelpers.ILHelpersTest.DupTest(ref dupTestInt) == 209 && dupTestInt == 209)
+        if (ILHelpers.ILHelpersTest.DupTest(ref dupTestInt) == 209 && dupTestInt == 209)
         {
             PrintLine("dup test: Ok.");
         }
@@ -68,20 +68,20 @@ internal static class Program
         {
             PrintLine("value type int field test: Ok.");
         }
-        
+
         staticInt = 5;
         if (staticInt == 5)
         {
             PrintLine("static int field test: Ok.");
         }
 
-        if(threadStaticInt == 0)
+        if (threadStaticInt == 0)
         {
             PrintLine("thread static int initial value field test: Ok.");
         }
 
         threadStaticInt = 9;
-        if(threadStaticInt == 9)
+        if (threadStaticInt == 9)
         {
             PrintLine("thread static int field test: Ok.");
         }
@@ -89,7 +89,7 @@ internal static class Program
         StaticCtorTest();
 
         var boxedInt = (object)tempInt;
-        if(((int)boxedInt) == 9)
+        if (((int)boxedInt) == 9)
         {
             PrintLine("box test: Ok.");
         }
@@ -98,7 +98,7 @@ internal static class Program
             PrintLine("box test: Failed. Value:");
             PrintLine(boxedInt.ToString());
         }
-        
+
         var boxedStruct = (object)new BoxStubTest { Value = "Boxed Stub Test: Ok." };
         PrintLine(boxedStruct.ToString());
 
@@ -143,7 +143,7 @@ internal static class Program
         {
             PrintLine("unsignedShift test: Ok.");
         }
-        
+
         var switchTest0 = SwitchOp(5, 5, 0);
         if (switchTest0 == 10)
         {
@@ -173,14 +173,14 @@ internal static class Program
 #endif
 
         Func<int> staticDelegate = StaticDelegateTarget;
-        if(staticDelegate() == 7)
+        if (staticDelegate() == 7)
         {
             PrintLine("Static delegate test: Ok.");
         }
 
         tempObj.TestInt = 8;
         Func<int> instanceDelegate = tempObj.InstanceDelegateTarget;
-        if(instanceDelegate() == 8)
+        if (instanceDelegate() == 8)
         {
             PrintLine("Instance delegate test: Ok.");
         }
@@ -189,7 +189,7 @@ internal static class Program
         virtualDelegate();
 
         var arrayTest = new BoxStubTest[] { new BoxStubTest { Value = "Hello" }, new BoxStubTest { Value = "Array" }, new BoxStubTest { Value = "Test" } };
-        foreach(var element in arrayTest)
+        foreach (var element in arrayTest)
             PrintLine(element.Value);
 
         arrayTest[1].Value = "Array load/store test: Ok.";
@@ -198,9 +198,9 @@ internal static class Program
         int ii = 0;
         arrayTest[ii++].Value = "dup ref test: Ok.";
         PrintLine(arrayTest[0].Value);
-        
+
         var largeArrayTest = new long[] { Int64.MaxValue, 0, Int64.MinValue, 0 };
-        if(largeArrayTest[0] == Int64.MaxValue &&
+        if (largeArrayTest[0] == Int64.MaxValue &&
             largeArrayTest[1] == 0 &&
             largeArrayTest[2] == Int64.MinValue &&
             largeArrayTest[3] == 0)
@@ -209,13 +209,15 @@ internal static class Program
         }
 
         var smallArrayTest = new long[] { Int16.MaxValue, 0, Int16.MinValue, 0 };
-        if(smallArrayTest[0] == Int16.MaxValue &&
+        if (smallArrayTest[0] == Int16.MaxValue &&
             smallArrayTest[1] == 0 &&
             smallArrayTest[2] == Int16.MinValue &&
             smallArrayTest[3] == 0)
         {
             PrintLine("Small array load/store test: Ok.");
         }
+
+        TestNonIntAlignedStructArray();
 
         IntPtr returnedIntPtr = NewobjValueType();
         if (returnedIntPtr.ToInt32() == 3)
@@ -247,7 +249,7 @@ internal static class Program
         PrintLine(((BoxStubTest[])arrayCastingTest)[1].Value);
         PrintLine(((BoxStubTest[])arrayCastingTest)[2].Value);
         if (!(arrayCastingTest is CastingTestClass[]))
-        {   
+        {
             PrintLine("Type casting with isinst & castclass to array test: Ok.");
         }
 
@@ -276,7 +278,7 @@ internal static class Program
         else
         {
             var toInt = (int)castedDouble;
-//            PrintLine("expected 1m, but was " + castedDouble.ToString());  // double.ToString is not compiling at the time of writing, but this would be better output
+            //            PrintLine("expected 1m, but was " + castedDouble.ToString());  // double.ToString is not compiling at the time of writing, but this would be better output
             PrintLine($"(double) cast test : Failed. Back to int on next line");
             PrintLine(toInt.ToString());
         }
@@ -316,7 +318,7 @@ internal static class Program
         TestConstrainedClassCalls();
 
         TestValueTypeElementIndexing();
-        
+
         TestArrayItfDispatch();
 
         // This test should remain last to get other results before stopping the debugger
@@ -328,7 +330,7 @@ internal static class Program
     }
 
     private static int StaticDelegateTarget()
-    {         
+    {
         return 7;
     }
 
@@ -345,7 +347,7 @@ internal static class Program
             }
         }
     }
-    
+
     public static void PrintLine(string s)
     {
         PrintString(s);
@@ -381,21 +383,21 @@ internal static class Program
     {
         return a >> b;
     }
-    
+
     private static int SwitchOp(int a, int b, int mode)
     {
-        switch(mode)
+        switch (mode)
         {
-          case 0:
-            return a + b;
-          case 1:
-            return a * b;
-          case 2:
-            return a / b;
-          case 3:
-            return a - b;
-          default:
-            return 0;
+            case 0:
+                return a + b;
+            case 1:
+                return a * b;
+            case 2:
+                return a / b;
+            case 3:
+                return a - b;
+            default:
+                return 0;
         }
     }
 
@@ -427,16 +429,16 @@ internal static class Program
     {
         var ldindTarget = new TwoByteStr { first = byte.MaxValue, second = byte.MinValue };
         var ldindField = &ldindTarget.first;
-        if((*ldindField) == byte.MaxValue)
+        if ((*ldindField) == byte.MaxValue)
         {
             ldindTarget.second = byte.MaxValue;
             *ldindField = byte.MinValue;
             //ensure there isnt any overwrite of nearby fields
-            if(ldindTarget.first == byte.MinValue && ldindTarget.second == byte.MaxValue)
+            if (ldindTarget.first == byte.MinValue && ldindTarget.second == byte.MaxValue)
             {
                 PrintLine("ldind test: Ok.");
             }
-            else if(ldindTarget.first != byte.MinValue)
+            else if (ldindTarget.first != byte.MinValue)
             {
                 PrintLine("ldind test: Failed didnt update target.");
             }
@@ -510,7 +512,7 @@ internal static class Program
             PrintLine("NonBeforeFieldInit test: Ok.");
         }
         else
-        { 
+        {
             PrintLine("NonBeforeFieldInitType cctor not run");
         }
     }
@@ -531,7 +533,7 @@ internal static class Program
             PrintString(stringDirectToString);
             PrintLine("\"");
         }
-       
+
         // Generic calls on methods not defined on object
         uint dataFromBase = GenericGetData<MyBase>(new MyBase(11));
         PrintString("Generic call to base class test: ");
@@ -647,6 +649,79 @@ internal static class Program
         else
         {
             PrintLine("Failed.");
+        }
+    }
+
+    struct OddLengthStruct
+    {
+        public UInt16 a, b, c;
+    }
+
+    private static unsafe void TestNonIntAlignedStructArray()
+    {
+        PrintString("Non-int aligned struct array: ");
+
+        OddLengthStruct firstOdd = new OddLengthStruct { a = 1, b = 2, c = 3 };
+        OddLengthStruct secondOdd = new OddLengthStruct { a = 4, b = 5, c = 6 };
+
+        OddLengthStruct[] someOddStructs = new OddLengthStruct[2];
+        someOddStructs[0] = firstOdd;
+        someOddStructs[1] = secondOdd;
+
+        bool success = true;
+        if (someOddStructs[0].a != 1 || someOddStructs[0].b != 2 || someOddStructs[0].c != 3)
+        {
+            PrintLine("Failed reading from first index");
+            success = false;
+        }
+        if (someOddStructs[1].a != 4 || someOddStructs[1].b != 5 || someOddStructs[1].c != 6)
+        {
+            PrintLine("Failed reading from second index");
+            success = false;
+        }
+
+        fixed (OddLengthStruct* pArrStart = someOddStructs)
+        {
+            UInt16* pArr = (ushort*)pArrStart;
+            for (int i = 0; i < 6; i++)
+            {
+                if (*pArr != i + 1)
+                {
+                    PrintLine("Failed reading as ushort pointer");
+                    success = false;
+                }
+                pArr++;
+            }
+        }
+
+        fixed (OddLengthStruct* pArrStart2 = someOddStructs)
+        {
+            byte* pArr2 = (byte*)pArrStart2;
+            for (int i = 0; i < 12; i++)
+            {
+                if (i % 2 == 0)
+                {
+                    if (*pArr2 != ((i / 2) + 1))
+                    {
+                        PrintLine("Failed reading as byte pointer");
+                        success = false;
+                    }
+                }
+                else
+                {
+                    if (*pArr2 != 0)
+                    {
+                        PrintLine("Failed reading as byte pointer");
+                        success = false;
+                    }
+                }
+                pArr2++;
+            }
+        }
+
+        if (success)
+        {
+            PrintLine("Ok.");
         }
     }
 

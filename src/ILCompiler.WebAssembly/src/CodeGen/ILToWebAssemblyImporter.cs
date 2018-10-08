@@ -37,7 +37,9 @@ namespace Internal.IL
         }
 
         public LLVMModuleRef Module { get; }
-        public LLVMContextRef Context { get; }
+        public static LLVMContextRef Context { get; private set; }
+        private static Dictionary<TypeDesc, LLVMTypeRef> LlvmStructs { get; } = new Dictionary<TypeDesc, LLVMTypeRef>();
+        private static MetadataFieldLayoutAlgorithm LayoutAlgorithm { get; } = new MetadataFieldLayoutAlgorithm();
         private readonly MethodDesc _method;
         private readonly MethodIL _methodIL;
         private readonly MethodSignature _signature;
@@ -869,35 +871,97 @@ namespace Internal.IL
                 case TypeFlags.ValueType:
                 case TypeFlags.Nullable:
                     {
-                        int structSize = type.GetElementSize().AsInt;
-
-                        // LLVM thinks certain sizes of struct have a different calling convention than Clang does.
-                        // Treating them as ints fixes that and is more efficient in general
-                        switch (structSize)
+                        if (!LlvmStructs.TryGetValue(type, out LLVMTypeRef llvmStructType))
                         {
-                            case 1:
-                                return LLVM.Int8Type();
-                            case 2:
-                                return LLVM.Int16Type();
-                            case 4:
-                                return LLVM.Int32Type();
-                            case 8:
-                                return LLVM.Int64Type();
-                        }
+                            // LLVM thinks certain sizes of struct have a different calling convention than Clang does.
+                            // Treating them as ints fixes that and is more efficient in general
+                            int structSize = type.GetElementSize().AsInt;
+                            switch (structSize)
+                            {
+                                case 1:
+                                    llvmStructType = LLVM.Int8Type();
+                                    break;
+                                case 2:
+                                    llvmStructType = LLVM.Int16Type();
+                                    break;
+                                case 4:
+                                    llvmStructType = LLVM.Int32Type();
+                                    break;
+                                case 8:
+                                    llvmStructType = LLVM.Int64Type();
+                                    break;
 
-                        int numInts = structSize / 4;
-                        int numBytes = structSize - numInts * 4;
-                        LLVMTypeRef[] structMembers = new LLVMTypeRef[numInts + numBytes];
-                        for (int i = 0; i < numInts; i++)
-                        {
-                            structMembers[i] = LLVM.Int32Type();
-                        }
-                        for (int i = 0; i < numBytes; i++)
-                        {
-                            structMembers[i + numInts] = LLVM.Int8Type();
-                        }
+                                default:
+                                    // Forward-declare the struct in case there's a reference to it in the fields.
+                                    // This must be a named struct or LLVM hits a stack overflow
+                                    llvmStructType = LLVM.StructCreateNamed(Context, type.ToString());
+                                    LlvmStructs[type] = llvmStructType;
 
-                        return LLVM.StructType(structMembers, true);
+                                    ComputedInstanceFieldLayout fieldLayout = LayoutAlgorithm.ComputeInstanceLayout((DefType)type, InstanceLayoutKind.TypeAndFields);
+
+                                    // Sort fields by offset and size in order to handle generating unions
+                                    FieldAndOffset[] sortedFields = fieldLayout.Offsets.OrderBy(fieldAndOffset => fieldAndOffset.Offset.AsInt).
+                                        ThenByDescending(fieldAndOffset => fieldAndOffset.Field.FieldType.GetElementSize().AsInt).ToArray();
+
+                                    List<LLVMTypeRef> llvmFields = new List<LLVMTypeRef>(sortedFields.Length);
+                                    int lastOffset = -1;
+                                    int nextNewOffset = -1;
+                                    TypeDesc prevType = null;
+                                    int totalSize = 0;
+
+                                    foreach (FieldAndOffset fieldAndOffset in sortedFields)
+                                    {
+                                        int curOffset = fieldAndOffset.Offset.AsInt;
+
+                                        if (prevType == null || (curOffset != lastOffset && curOffset >= nextNewOffset))
+                                        {
+                                            // The layout should be in order
+                                            Debug.Assert(curOffset > lastOffset);
+
+                                            int prevElementSize;
+                                            if(prevType == null)
+                                            {
+                                                lastOffset = 0;
+                                                prevElementSize = 0;
+                                            }
+                                            else
+                                            {
+                                                prevElementSize = prevType.GetElementSize().AsInt;
+                                            }
+
+                                            // Pad to this field if necessary
+                                            int paddingSize = curOffset - lastOffset - prevElementSize;
+                                            if (paddingSize > 0)
+                                            {
+                                                AddPaddingFields(paddingSize, llvmFields);
+                                                totalSize += paddingSize;
+                                            }
+
+                                            TypeDesc fieldType = fieldAndOffset.Field.FieldType;
+                                            int fieldSize = fieldType.GetElementSize().AsInt;
+
+                                            llvmFields.Add(GetLLVMTypeForTypeDesc(fieldType));
+
+                                            totalSize += fieldSize;
+                                            lastOffset = curOffset;
+                                            prevType = fieldType;
+                                            nextNewOffset = curOffset + fieldSize;
+                                        }
+                                    }
+
+                                    // If explicit layout is greater than the sum of fields, add padding
+                                    if (totalSize < structSize)
+                                    {
+                                        AddPaddingFields(structSize - totalSize, llvmFields);
+                                    }
+
+                                    LLVM.StructSetBody(llvmStructType, llvmFields.ToArray(), true);
+                                    break;
+                            }
+
+                            LlvmStructs[type] = llvmStructType;
+                        }
+                        return llvmStructType;                        
                     }
 
                 case TypeFlags.Enum:
@@ -908,6 +972,25 @@ namespace Internal.IL
 
                 default:
                     throw new NotImplementedException(type.Category.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Pad out a struct at the current location
+        /// </summary>
+        /// <param name="paddingSize">Number of bytes of padding to add</param>
+        /// <param name="llvmFields">The set of llvm fields in the struct so far</param>
+        private static void AddPaddingFields(int paddingSize, List<LLVMTypeRef> llvmFields)
+        {
+            int numInts = paddingSize / 4;
+            int numBytes = paddingSize - numInts * 4;
+            for (int i = 0; i < numInts; i++)
+            {
+                llvmFields.Add(LLVM.Int32Type());
+            }
+            for (int i = 0; i < numBytes; i++)
+            {
+                llvmFields.Add(LLVM.Int8Type());
             }
         }
 
