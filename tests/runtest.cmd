@@ -151,7 +151,7 @@ call "!VS150COMNTOOLS!\..\..\VC\Auxiliary\Build\vcvarsall.bat" %CoreRT_HostArch%
 
 :: Eventually we'll always want to compile the framework with r2r before running tests.
 :: During bringup, it's an opt-in separate step.
-if "%CoreRT_R2RFramework%"=="true" goto :TextExtRepoCoreCLRFramework
+if "%CoreRT_R2RFramework%"=="true" goto :TestExtRepoCoreCLRFramework
 if "%CoreRT_RunCoreCLRTests%"=="true" goto :TestExtRepoCoreCLR
 if "%CoreRT_RunCoreFXTests%"=="true" goto :TestExtRepoCoreFX
 
@@ -482,7 +482,7 @@ goto :eof
     echo CoreCLR tests restored from %TESTS_REMOTE_URL% > %TESTS_SEMAPHORE%
     exit /b 0
 
-:TextExtRepoCoreCLRFramework
+:TestExtRepoCoreCLRFramework
     echo Running external tests
     if "%CoreRT_TestExtRepo_CoreCLR%" == "" (
         set CoreRT_TestExtRepo_CoreCLR=%CoreRT_TestRoot%\..\tests_downloaded\CoreCLR
