@@ -76,6 +76,40 @@ namespace ILVerify
             }
         }
 
+        public IEnumerable<VerificationResult> VerifyInterface(PEReader peReader, TypeDefinitionHandle typeHandle)
+        {
+            if (peReader == null)
+            {
+                throw new ArgumentNullException(nameof(peReader));
+            }
+
+            if (typeHandle.IsNil)
+            {
+                throw new ArgumentNullException(nameof(typeHandle));
+            }
+
+            if (_typeSystemContext.SystemModule == null)
+            {
+                ThrowMissingSystemModule();
+            }
+
+            IEnumerable<VerificationResult> results;
+            try
+            {
+                EcmaModule module = GetModule(peReader);                
+                results = VerifyInterface(module, typeHandle);
+            }
+            catch (VerifierException e)
+            {
+                results = new[] { new VerificationResult() { Message = e.Message } };
+            }
+
+            foreach (var result in results)
+            {
+                yield return result;
+            }
+        }
+
         public IEnumerable<VerificationResult> Verify(PEReader peReader, TypeDefinitionHandle typeHandle)
         {
             if (peReader == null)
@@ -143,6 +177,32 @@ namespace ILVerify
             {
                 yield return result;
             }
+        }
+
+        void TmpLogToRemove(string str)
+        {
+            Console.WriteLine(str);
+        }
+
+        private IEnumerable<VerificationResult> VerifyInterface(EcmaModule module, TypeDefinitionHandle typeDefinitionHandle)
+        {
+            EcmaType type = (EcmaType)module.GetObject(typeDefinitionHandle);
+            
+            TmpLogToRemove(type.Name);
+
+            var builder = new ArrayBuilder<VerificationResult>();            
+
+            foreach (DefType interfaceDef in type.ExplicitlyImplementedInterfaces)
+            {                           
+                foreach (MethodDesc interfaceMethodDesc in interfaceDef.GetAllMethods())
+                {
+                    // MethodDesc mimpl = type.ResolveInterfaceMethodTarget(interfaceMethodDesc);
+                    // MethodDesc mimpl = type.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethodDesc);
+                    var mi = MetadataVirtualMethodAlgorithm.ResolveVariantInterfaceMethodToVirtualMethodOnType(interfaceMethodDesc, type);
+                }
+            }
+
+            return builder.ToArray();
         }
 
         private IEnumerable<VerificationResult> VerifyMethods(EcmaModule module, IEnumerable<MethodDefinitionHandle> methodHandles)

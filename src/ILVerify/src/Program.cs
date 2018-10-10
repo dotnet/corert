@@ -151,53 +151,61 @@ namespace ILVerify
 
         private void PrintResult(VerificationResult result, EcmaModule module, string pathOrModuleName)
         {
-            Write("[IL]: Error: ");
-
-            Write("[");
-            Write(pathOrModuleName);
-            Write(" : ");
-
             MetadataReader metadataReader = module.MetadataReader;
-
-            TypeDefinition typeDef = metadataReader.GetTypeDefinition(metadataReader.GetMethodDefinition(result.Method).GetDeclaringType());
-            string typeName = metadataReader.GetString(typeDef.Name);
-            Write(typeName);
-
-            Write("::");
-            var method = (EcmaMethod)module.GetMethod(result.Method);
-            PrintMethod(method);
-            Write("]");
-
-            var args = result.Error;
-            if (args.Code != VerifierError.None)
+            try
             {
-                Write("[offset 0x");
-                Write(args.Offset.ToString("X8"));
+                var method = (EcmaMethod)module.GetMethod(result.Method);
+                Write("[IL]: Error: ");
+
+                Write("[");
+                Write(pathOrModuleName);
+                Write(" : ");
+
+                TypeDefinition typeDef = metadataReader.GetTypeDefinition(metadataReader.GetMethodDefinition(result.Method).GetDeclaringType());
+                string typeName = metadataReader.GetString(typeDef.Name);
+                Write(typeName);
+
+                Write("::");
+
+                PrintMethod(method);
                 Write("]");
 
-                if (args.Found != null)
+                var args = result.Error;
+                if (args.Code != VerifierError.None)
                 {
-                    Write("[found ");
-                    Write(args.Found);
+                    Write("[offset 0x");
+                    Write(args.Offset.ToString("X8"));
                     Write("]");
+
+                    if (args.Found != null)
+                    {
+                        Write("[found ");
+                        Write(args.Found);
+                        Write("]");
+                    }
+
+                    if (args.Expected != null)
+                    {
+                        Write("[expected ");
+                        Write(args.Expected);
+                        Write("]");
+                    }
+
+                    if (args.Token != 0)
+                    {
+                        Write("[token  0x");
+                        Write(args.Token.ToString("X8"));
+                        Write("]");
+                    }
                 }
 
-                if (args.Expected != null)
-                {
-                    Write("[expected ");
-                    Write(args.Expected);
-                    Write("]");
-                }
-
-                if (args.Token != 0)
-                {
-                    Write("[token  0x");
-                    Write(args.Token.ToString("X8"));
-                    Write("]");
-                }
+                Write(" ");
+            }
+            catch(BadImageFormatException)
+            {
+                // If assembly references is not found we cannot read IL
             }
 
-            Write(" ");
             WriteLine(result.Message);
         }
 
@@ -209,7 +217,7 @@ namespace ILVerify
             if (method.Signature.Length > 0)
             {
                 bool first = true;
-                for(int i = 0; i < method.Signature.Length; i++)
+                for (int i = 0; i < method.Signature.Length; i++)
                 {
                     Internal.TypeSystem.TypeDesc parameter = method.Signature[0];
                     if (first)
@@ -248,7 +256,7 @@ namespace ILVerify
                 // get fully qualified method name
                 var methodName = GetQualifiedMethodName(metadataReader, methodHandle);
 
-                bool verifying = ShouldVerifyMethod(methodName);
+                bool verifying = ShouldVerify(methodName);
                 if (_verbose)
                 {
                     Write(verifying ? "Verifying " : "Skipping ");
@@ -270,6 +278,28 @@ namespace ILVerify
                 methodCounter++;
             }
 
+            foreach (TypeDefinitionHandle typeHandle in metadataReader.TypeDefinitions)
+            {
+                // get fully qualified type name
+                var className = GetQualifiedClassName(metadataReader, typeHandle);
+                bool verifying = ShouldVerify(className);
+                if (_verbose)
+                {
+                    Write(verifying ? "Verifying " : "Skipping ");
+                    WriteLine(className);
+                }
+
+                if (verifying)
+                {
+                    var results = _verifier.VerifyInterface(peReader, typeHandle);
+                    foreach (var result in results)
+                    {
+                        PrintResult(result, module, path);
+                        numErrors++;
+                    }
+                }
+            }
+
             if (numErrors > 0)
                 WriteLine(numErrors + " Error(s) Verifying " + path);
             else
@@ -280,6 +310,26 @@ namespace ILVerify
                 WriteLine($"Methods found: {methodCounter}");
                 WriteLine($"Methods verified: {verifiedMethodCounter}");
             }
+        }
+
+        /// <summary>
+        /// This method returns the fully qualified class name.
+        /// </summary>
+        private string GetQualifiedClassName(MetadataReader metadataReader, TypeDefinitionHandle typeHandle)
+        {
+            var typeDef = metadataReader.GetTypeDefinition(typeHandle);
+
+            var typeName = metadataReader.GetString(typeDef.Name);
+            var namespaceName = metadataReader.GetString(typeDef.Namespace);
+            var assemblyName = metadataReader.GetString(metadataReader.IsAssembly ? metadataReader.GetAssemblyDefinition().Name : metadataReader.GetModuleDefinition().Name);
+
+            StringBuilder builder = new StringBuilder();
+            builder.Append($"[{assemblyName}]");
+            if (!string.IsNullOrEmpty(namespaceName))
+                builder.Append($"{namespaceName}.");
+            builder.Append($"{typeName}");
+
+            return builder.ToString();
         }
 
         /// <summary>
@@ -306,7 +356,7 @@ namespace ILVerify
             return builder.ToString();
         }
 
-        private bool ShouldVerifyMethod(string methodName)
+        private bool ShouldVerify(string methodName)
         {
             if (_includePatterns.Count > 0 && !_includePatterns.Any(p => p.IsMatch(methodName)))
             {

@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="ILInterfaceTester.cs" />
     <Compile Include="ILMethodTester.cs" />
     <Compile Include="TestDataLoader.cs" />
   </ItemGroup>
