@@ -66,6 +66,22 @@ namespace ILCompiler
         }
 
         /// <summary>
+        /// CoreCLR 3-parameter <a href="https://github.com/dotnet/coreclr/blob/030e0af89bb897554acef575075c69aaf5176268/src/vm/versionresilienthashcode.cpp#L9">GetVersionResilientTypeHashCode</a>
+        /// </summary>
+        /// <param name="type">Type to hash</param>
+        public static int TypeTableHashCode(DefType type)
+        {
+            int hashcode = 0;
+            do
+            {
+                hashcode ^= NameHashCode(type.Namespace, type.Name);
+                type = type.ContainingType;
+            }
+            while (type != null);
+            return hashcode;
+        }
+
+        /// <summary>
         /// CoreCLR 1-parameter <a href="https://github.com/dotnet/coreclr/blob/030e0af89bb897554acef575075c69aaf5176268/src/vm/versionresilienthashcode.cpp#L76">GetVersionResilientTypeHashCode</a>
         /// </summary>
         /// <param name="type">Type to hash</param>
