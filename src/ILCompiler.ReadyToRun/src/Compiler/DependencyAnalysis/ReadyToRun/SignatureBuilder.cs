@@ -269,7 +269,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         EmitElementType(CorElementType.ELEMENT_TYPE_OBJECT);
                     }
-                    else if (typeDesc.IsCanonicalSubtype(CanonicalFormKind.Specific))
+                    else if (typeDesc.IsCanonicalDefinitionType(CanonicalFormKind.Specific))
                     {
                         EmitElementType(CorElementType.ELEMENT_TYPE_CANON_ZAPSIG);
                     }
