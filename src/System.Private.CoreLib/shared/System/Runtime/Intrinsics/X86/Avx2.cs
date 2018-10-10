@@ -408,50 +408,102 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<T> BroadcastScalarToVector256<T>(Vector128<T> value) where T : struct => BroadcastScalarToVector256<T>(value);
 
         /// <summary>
+        /// __m256i _mm256_broadcastb_epi8 (__m128i a)
+        ///   VPBROADCASTB ymm, m8
+        /// The above native signature does not directly correspond to the managed signature. 
+        /// </summary>
+        public static unsafe Vector256<byte> BroadcastScalarToVector256(byte* source) => BroadcastScalarToVector256(source);
+        /// <summary>
+        /// __m256i _mm256_broadcastb_epi8 (__m128i a)
+        ///   VPBROADCASTB ymm, m8
+        /// The above native signature does not directly correspond to the managed signature. 
+        /// </summary>
+        public static unsafe Vector256<sbyte> BroadcastScalarToVector256(sbyte* source) => BroadcastScalarToVector256(source);
+
+        /// <summary>
+        /// __m256i _mm256_broadcastw_epi16 (__m128i a)
+        ///   VPBROADCASTW ymm, m16
+        /// The above native signature does not directly correspond to the managed signature. 
+        /// </summary>
+        public static unsafe Vector256<short> BroadcastScalarToVector256(short* source) => BroadcastScalarToVector256(source);
+        /// <summary>
+        /// __m256i _mm256_broadcastw_epi16 (__m128i a)
+        ///   VPBROADCASTW ymm, m16
+        /// The above native signature does not directly correspond to the managed signature. 
+        /// </summary>
+        public static unsafe Vector256<ushort> BroadcastScalarToVector256(ushort* source) => BroadcastScalarToVector256(source);
+
+        /// <summary>
+        /// __m256i _mm256_broadcastd_epi32 (__m128i a)
+        ///   VPBROADCASTD ymm, m32
+        /// The above native signature does not directly correspond to the managed signature. 
+        /// </summary>
+        public static unsafe Vector256<int> BroadcastScalarToVector256(int* source) => BroadcastScalarToVector256(source);
+        /// <summary>
+        /// __m256i _mm256_broadcastd_epi32 (__m128i a)
+        ///   VPBROADCASTD ymm, m32
+        /// The above native signature does not directly correspond to the managed signature. 
+        /// </summary>
+        public static unsafe Vector256<uint> BroadcastScalarToVector256(uint* source) => BroadcastScalarToVector256(source);
+
+        /// <summary>
+        /// __m256i _mm256_broadcastq_epi64 (__m128i a)
+        ///   VPBROADCASTQ ymm, m64
+        /// The above native signature does not directly correspond to the managed signature. 
+        /// </summary>
+        public static unsafe Vector256<long> BroadcastScalarToVector256(long* source) => BroadcastScalarToVector256(source);
+        /// <summary>
+        /// __m256i _mm256_broadcastq_epi64 (__m128i a)
+        ///   VPBROADCASTQ ymm, m64
+        /// The above native signature does not directly correspond to the managed signature. 
+        /// </summary>
+        public static unsafe Vector256<ulong> BroadcastScalarToVector256(ulong* source) => BroadcastScalarToVector256(source);
+
+        /// <summary>
         /// __m256i _mm256_broadcastsi128_si256 (__m128i a)
-        ///   VBROADCASTI128 xmm, m8
+        ///   VBROADCASTI128 ymm, m128
         /// The above native signature does not directly correspond to the managed signature. 
         /// </summary>
         public static unsafe Vector256<sbyte> BroadcastVector128ToVector256(sbyte* address) => BroadcastVector128ToVector256(address);
         /// <summary>
         /// __m256i _mm256_broadcastsi128_si256 (__m128i a)
-        ///   VBROADCASTI128 xmm, m8
+        ///   VBROADCASTI128 ymm, m128
         /// The above native signature does not directly correspond to the managed signature. 
         /// </summary>
         public static unsafe Vector256<byte> BroadcastVector128ToVector256(byte* address) => BroadcastVector128ToVector256(address);
         /// <summary>
         /// __m256i _mm256_broadcastsi128_si256 (__m128i a)
-        ///   VBROADCASTI128 xmm, m16
+        ///   VBROADCASTI128 ymm, m128
         /// The above native signature does not directly correspond to the managed signature. 
         /// </summary>
         public static unsafe Vector256<short> BroadcastVector128ToVector256(short* address) => BroadcastVector128ToVector256(address);
         /// <summary>
         /// __m256i _mm256_broadcastsi128_si256 (__m128i a)
-        ///   VBROADCASTI128 xmm, m16
+        ///   VBROADCASTI128 ymm, m128
         /// The above native signature does not directly correspond to the managed signature. 
         /// </summary>
         public static unsafe Vector256<ushort> BroadcastVector128ToVector256(ushort* address) => BroadcastVector128ToVector256(address);
         /// <summary>
         /// __m256i _mm256_broadcastsi128_si256 (__m128i a)
-        ///   VBROADCASTI128 xmm, m32
+        ///   VBROADCASTI128 ymm, m128
         /// The above native signature does not directly correspond to the managed signature. 
         /// </summary>
         public static unsafe Vector256<int> BroadcastVector128ToVector256(int* address) => BroadcastVector128ToVector256(address);
         /// <summary>
         /// __m256i _mm256_broadcastsi128_si256 (__m128i a)
-        ///   VBROADCASTI128 xmm, m32
+        ///   VBROADCASTI128 ymm, m128
         /// The above native signature does not directly correspond to the managed signature. 
         /// </summary>
         public static unsafe Vector256<uint> BroadcastVector128ToVector256(uint* address) => BroadcastVector128ToVector256(address);
         /// <summary>
         /// __m256i _mm256_broadcastsi128_si256 (__m128i a)
-        ///   VBROADCASTI128 xmm, m64
+        ///   VBROADCASTI128 ymm, m128
         /// The above native signature does not directly correspond to the managed signature. 
         /// </summary>
         public static unsafe Vector256<long> BroadcastVector128ToVector256(long* address) => BroadcastVector128ToVector256(address);
         /// <summary>
         /// __m256i _mm256_broadcastsi128_si256 (__m128i a)
-        ///   VBROADCASTI128 xmm, m64
+        ///   VBROADCASTI128 ymm, m128
         /// The above native signature does not directly correspond to the managed signature. 
         /// </summary>
         public static unsafe Vector256<ulong> BroadcastVector128ToVector256(ulong* address) => BroadcastVector128ToVector256(address);
@@ -2202,17 +2254,17 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// __m256i _mm256_permutevar8x32_epi32 (__m256i a, __m256i idx)
-        ///   VPERMD ymm, ymm/m256, imm8
+        ///   VPERMD ymm, ymm/m256, ymm
         /// </summary>
         public static Vector256<int> PermuteVar8x32(Vector256<int> left, Vector256<int> control) => PermuteVar8x32(left, control);
         /// <summary>
         /// __m256i _mm256_permutevar8x32_epi32 (__m256i a, __m256i idx)
-        ///   VPERMD ymm, ymm/m256, imm8
+        ///   VPERMD ymm, ymm/m256, ymm
         /// </summary>
         public static Vector256<uint> PermuteVar8x32(Vector256<uint> left, Vector256<uint> control) => PermuteVar8x32(left, control);
         /// <summary>
         /// __m256 _mm256_permutevar8x32_ps (__m256 a, __m256i idx)
-        ///   VPERMPS ymm, ymm/m256, imm8
+        ///   VPERMPS ymm, ymm/m256, ymm
         /// </summary>
         public static Vector256<float> PermuteVar8x32(Vector256<float> left, Vector256<int> control) => PermuteVar8x32(left, control);
 
@@ -2552,12 +2604,12 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<byte> Shuffle(Vector256<byte> value, Vector256<byte> mask) => Shuffle(value, mask);
         /// <summary>
         /// __m256i _mm256_shuffle_epi32 (__m256i a, const int imm8)
-        ///   VPSHUFD ymm, ymm, ymm/m256
+        ///   VPSHUFD ymm, ymm/m256, imm8
         /// </summary>
         public static Vector256<int> Shuffle(Vector256<int> value, byte control) => Shuffle(value, control);
         /// <summary>
         /// __m256i _mm256_shuffle_epi32 (__m256i a, const int imm8)
-        ///   VPSHUFD ymm, ymm, ymm/m256
+        ///   VPSHUFD ymm, ymm/m256, imm8
         /// </summary>
         public static Vector256<uint> Shuffle(Vector256<uint> value, byte control) => Shuffle(value, control);
 
