@@ -95,6 +95,7 @@ namespace ILCompiler
             }
         }
         private SimpleNameHashtable _simpleNameHashtable = new SimpleNameHashtable();
+
         private SharedGenericsMode _genericsMode;
         
         public CompilerTypeSystemContext(TargetDetails details, SharedGenericsMode genericsMode)

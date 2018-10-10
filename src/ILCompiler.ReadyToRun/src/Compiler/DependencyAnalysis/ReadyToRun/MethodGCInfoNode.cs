@@ -76,13 +76,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
 
                 dataBuilder.EmitBytes(unwindInfo);
+                // 4-align after emitting the unwind info
+                dataBuilder.EmitZeros(-unwindInfo.Length & 3);
 
                 if (factory.Target.Architecture != Internal.TypeSystem.TargetArchitecture.X86)
                 {
-                    // Personality routine RVA must be 4-aligned
-                    int align4Pad = -unwindInfo.Length & 3;
-                    dataBuilder.EmitZeros(align4Pad);
-
                     bool isFilterFunclet = (_methodNode.FrameInfos[frameInfoIndex].Flags & FrameInfoFlags.Filter) != 0;
                     ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
                     ISymbolNode personalityRoutine = (isFilterFunclet ? r2rFactory.FilterFuncletPersonalityRoutine : r2rFactory.PersonalityRoutine);

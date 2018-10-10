@@ -95,10 +95,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public IMethodNode MethodEntrypoint(MethodDesc targetMethod, TypeDesc constrainedType, MethodDesc originalMethod, SignatureContext signatureContext, bool isUnboxingStub = false)
         {
-            IMethodNode result = _methodEntrypoints.GetOrAdd(targetMethod, (m) =>
-                CreateMethodEntrypointNode(targetMethod, constrainedType, originalMethod, signatureContext, isUnboxingStub)
-            );
-            return result;
+            return _methodEntrypoints.GetOrAdd(targetMethod, (m) =>
+            {
+                return CreateMethodEntrypointNode(targetMethod, constrainedType, originalMethod, signatureContext, isUnboxingStub);
+            });
         }
 
         private IMethodNode CreateMethodEntrypointNode(MethodDesc targetMethod, TypeDesc constrainedType, MethodDesc originalMethod, SignatureContext signatureContext, bool isUnboxingStub)
@@ -949,7 +949,7 @@ namespace ILCompiler.DependencyAnalysis
                 PersonalityRoutine = new ImportThunk(
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_PersonalityRoutine, this, personalityRoutineImport);
                 graph.AddRoot(PersonalityRoutine, "Personality routine is faster to root early rather than referencing it from each unwind info");
-    
+
                 Import filterFuncletPersonalityRoutineImport = new Import(EagerImports, new ReadyToRunHelperSignature(
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_PersonalityRoutineFilterFunclet));
                 FilterFuncletPersonalityRoutine = new ImportThunk(
