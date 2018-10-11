@@ -56,13 +56,6 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
-        {
-            DependencyList result = new DependencyList();
-            result.Add(new DependencyListEntry(factory.ShadowConcreteMethod(Method, _isUnboxingStub), "Method represented"));
-            return result;
-        }
-
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             var builder = new ObjectDataBuilder(factory, relocsOnly);
