@@ -1894,6 +1894,11 @@ namespace Internal.TypeSystem.Interop
             throw new InvalidProgramException();
         }
 
+        protected override void TransformManagedToNative(ILCodeStream codeStream)
+        {
+            throw new InvalidProgramException();
+        }
+
         protected override void EmitCleanupManaged(ILCodeStream codeStream)
         {
             LoadManagedAddr(codeStream);
