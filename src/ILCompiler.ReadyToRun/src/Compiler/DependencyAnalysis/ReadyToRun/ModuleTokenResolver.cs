@@ -87,16 +87,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void AddModuleTokenForMethod(MethodDesc method, ModuleToken token)
         {
+            if (_methodToRefTokens.ContainsKey(method))
+            {
+                // This method has already been harvested
+                return;
+            }
+
             if (_compilationModuleGroup.ContainsMethodBody(method, unboxingStub: false) && method is EcmaMethod)
             {
                 // We don't need to store handles within the current compilation group
                 // as we can read them directly from the ECMA objects.
-                return;
-            }
-
-            if (_methodToRefTokens.ContainsKey(method))
-            {
-                // This method has already been harvested
                 return;
             }
 
@@ -284,18 +284,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return DummyTypeInfo.Instance;
             }
 
-            public DummyTypeInfo GetTypeFromSpecification(MetadataReader reader, ReadyToRunCodegenNodeFactory genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
-            {
-                throw new NotImplementedException();
-            }
-
             public DummyTypeInfo GetTypeFromSpecification(MetadataReader reader, ModuleTokenResolver genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
             {
                 throw new NotImplementedException();
             }
         }
-
-        public CompilerTypeSystemContext TypeSystemContext => _typeSystemContext;
     }
 }
 
