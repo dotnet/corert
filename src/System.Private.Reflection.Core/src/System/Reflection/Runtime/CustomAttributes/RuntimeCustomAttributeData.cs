@@ -13,7 +13,7 @@ namespace System.Reflection.Runtime.CustomAttributes
     //
     // Common base class for the Runtime's implementation of CustomAttributeData.
     //
-    internal abstract partial class RuntimeCustomAttributeData : RuntimeImplementedCustomAttributeData
+    internal abstract partial class RuntimeCustomAttributeData : CustomAttributeData
     {
         public abstract override Type AttributeType { get; }
 
