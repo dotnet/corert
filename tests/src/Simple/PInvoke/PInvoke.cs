@@ -99,6 +99,9 @@ namespace PInvokeTests
         [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
         private static extern int VerifyAnsiStringBuilderOut([Out]StringBuilder sb);
 
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, EntryPoint = "SafeHandleTest")]
+        public static extern bool HandleRefTest(HandleRef hr, Int64 hrValue);
+
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         public static extern bool SafeHandleTest(SafeMemoryHandle sh1, Int64 sh1Value);
 
@@ -244,6 +247,7 @@ namespace PInvokeTests
             TestString();
             TestStringBuilder();
             TestLastError();
+            TestHandleRef();
             TestSafeHandle();
             TestStringArray();
             TestSizeParamIndex();
@@ -434,6 +438,13 @@ namespace PInvokeTests
             Console.WriteLine("Testing last error");
             ThrowIfNotEquals(true, LastErrorTest(), "GetLastWin32Error is not zero");
             ThrowIfNotEquals(12345, Marshal.GetLastWin32Error(), "Last Error test failed");
+        }
+
+        private static void TestHandleRef()
+        {
+            Console.WriteLine("Testing marshalling HandleRef");
+
+            ThrowIfNotEquals(true, HandleRefTest(new HandleRef(new object(), (IntPtr)2018), 2018), "HandleRef marshalling failed");
         }
 
         private static void TestSafeHandle()
