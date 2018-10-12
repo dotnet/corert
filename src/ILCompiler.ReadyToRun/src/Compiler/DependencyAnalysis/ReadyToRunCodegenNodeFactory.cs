@@ -208,36 +208,7 @@ namespace ILCompiler.DependencyAnalysis
             throw new NotImplementedException();
         }
 
-        struct MethodAndFixupKind : IEquatable<MethodAndFixupKind>
-        {
-            public readonly MethodDesc Method;
-            public readonly bool IsUnboxingStub;
-            public readonly ReadyToRunFixupKind FixupKind;
-
-            public MethodAndFixupKind(MethodDesc method, bool isUnboxingStub, ReadyToRunFixupKind fixupKind)
-            {
-                Method = method;
-                IsUnboxingStub = isUnboxingStub;
-                FixupKind = fixupKind;
-            }
-
-            public bool Equals(MethodAndFixupKind other)
-            {
-                return Method == other.Method && IsUnboxingStub == other.IsUnboxingStub && FixupKind == other.FixupKind;
-            }
-
-            public override bool Equals(object obj)
-            {
-                return obj is MethodAndFixupKind other && Equals(other);
-            }
-
-            public override int GetHashCode()
-            {
-                return (int)Method.GetHashCode() ^ unchecked(31 * (int)FixupKind) ^ (IsUnboxingStub ? -0x80000000 : 0);
-            }
-        }
-
-        Dictionary<ReadyToRunFixupKind, Dictionary<TypeAndMethod, MethodFixupSignature>> _methodSignatures =
+        private readonly Dictionary<ReadyToRunFixupKind, Dictionary<TypeAndMethod, MethodFixupSignature>> _methodSignatures =
             new Dictionary<ReadyToRunFixupKind, Dictionary<TypeAndMethod, MethodFixupSignature>>();
 
         public MethodFixupSignature MethodSignature(
@@ -399,7 +370,7 @@ namespace ILCompiler.DependencyAnalysis
             return methodImport;
         }
 
-        Dictionary<InstantiatedMethod, IMethodNode> _instantiatedMethodImports = new Dictionary<InstantiatedMethod, IMethodNode>();
+        private readonly Dictionary<InstantiatedMethod, IMethodNode> _instantiatedMethodImports = new Dictionary<InstantiatedMethod, IMethodNode>();
 
         private IMethodNode InstantiatedMethodNode(InstantiatedMethod method, TypeDesc constrainedType, SignatureContext signatureContext, bool isUnboxingStub)
         {
