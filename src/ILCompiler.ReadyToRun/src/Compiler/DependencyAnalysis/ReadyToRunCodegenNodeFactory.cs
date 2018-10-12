@@ -125,11 +125,6 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            if (targetMethod is InstantiatedMethod instantiatedMethod)
-            {
-                return InstantiatedMethodNode(instantiatedMethod, constrainedType, signatureContext, isUnboxingStub);
-            }
-
             MethodWithGCInfo localMethod = null;
 
             if (CompilationModuleGroup.ContainsMethodBody(targetMethod, false))
@@ -366,26 +361,6 @@ namespace ILCompiler.DependencyAnalysis
                     localMethod);
                 _importMethods.Add(key, indirectionCell);
                 methodImport = indirectionCell;
-            }
-            return methodImport;
-        }
-
-        private readonly Dictionary<InstantiatedMethod, IMethodNode> _instantiatedMethodImports = new Dictionary<InstantiatedMethod, IMethodNode>();
-
-        private IMethodNode InstantiatedMethodNode(InstantiatedMethod method, TypeDesc constrainedType, SignatureContext signatureContext, bool isUnboxingStub)
-        {
-            IMethodNode methodImport;
-            if (!_instantiatedMethodImports.TryGetValue(method, out methodImport))
-            {
-                methodImport = new ExternalMethodImport(
-                    this,
-                    ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
-                    method,
-                    constrainedType,
-                    signatureContext,
-                    isUnboxingStub,
-                    localMethod: null);
-                _instantiatedMethodImports.Add(method, methodImport);
             }
             return methodImport;
         }

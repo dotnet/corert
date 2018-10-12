@@ -179,6 +179,25 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void EmitTypeSignature(TypeDesc typeDesc, SignatureContext context)
         {
+            if (typeDesc is RuntimeDeterminedType runtimeDeterminedType)
+            {
+                switch (runtimeDeterminedType.RuntimeDeterminedDetailsType.Kind)
+                {
+                    case GenericParameterKind.Type:
+                        EmitElementType(CorElementType.ELEMENT_TYPE_VAR);
+                        break;
+
+                    case GenericParameterKind.Method:
+                        EmitElementType(CorElementType.ELEMENT_TYPE_MVAR);
+                        break;
+
+                    default:
+                        throw new NotImplementedException();
+                }
+                EmitUInt((uint)runtimeDeterminedType.RuntimeDeterminedDetailsType.Index);
+                return;
+            }
+
             if (typeDesc.HasInstantiation && !typeDesc.IsGenericDefinition)
             {
                 EmitInstantiatedTypeSignature((InstantiatedType)typeDesc, context);

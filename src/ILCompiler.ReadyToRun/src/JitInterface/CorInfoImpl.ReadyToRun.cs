@@ -180,7 +180,21 @@ namespace Internal.JitInterface
                         Debug.Assert(typeToInitialize.IsCanonicalSubtype(CanonicalFormKind.Any));
 
                         DefType helperArg = typeToInitialize.ConvertToSharedRuntimeDeterminedForm();
-                        ISymbolNode helper = GetGenericLookupHelper(pGenericLookupKind.runtimeLookupKind, ReadyToRunHelperId.GetNonGCStaticBase, helperArg);
+                        TypeDesc contextType;
+                        if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ)
+                        {
+                            contextType = methodFromContext(pResolvedToken.tokenContext).OwningType;
+                        }
+                        else
+                        {
+                            contextType = null;
+                        }
+                        ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(
+                            pGenericLookupKind.runtimeLookupKind,
+                            ReadyToRunHelperId.GetNonGCStaticBase, 
+                            (TypeDesc)helperArg, 
+                            contextType, 
+                            _signatureContext);
                         pLookup = CreateConstLookupToSymbol(helper);
                     }
                     break;
@@ -190,7 +204,21 @@ namespace Internal.JitInterface
 
                         ReadyToRunHelperId helperId = (ReadyToRunHelperId)pGenericLookupKind.runtimeLookupFlags;
                         object helperArg = HandleToObject((IntPtr)pGenericLookupKind.runtimeLookupArgs);
-                        ISymbolNode helper = GetGenericLookupHelper(pGenericLookupKind.runtimeLookupKind, helperId, helperArg);
+                        TypeDesc contextType;
+                        if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ)
+                        {
+                            contextType = methodFromContext(pResolvedToken.tokenContext).OwningType;
+                        }
+                        else
+                        {
+                            contextType = null;
+                        }
+                        ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(
+                            pGenericLookupKind.runtimeLookupKind,
+                            helperId,
+                            (TypeDesc)helperArg, 
+                            contextType, 
+                            _signatureContext);
                         pLookup = CreateConstLookupToSymbol(helper);
                     }
                     break;

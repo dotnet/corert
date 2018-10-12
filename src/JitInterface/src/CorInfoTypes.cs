@@ -237,6 +237,8 @@ namespace Internal.JitInterface
         CORINFO_LOOKUP_THISOBJ,
         CORINFO_LOOKUP_METHODPARAM,
         CORINFO_LOOKUP_CLASSPARAM,
+
+        CORINFO_LOOKUP_KIND_COUNT
     }
 
     public unsafe struct CORINFO_LOOKUP_KIND

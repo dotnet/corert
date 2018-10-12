@@ -111,7 +111,7 @@ namespace ILCompiler.DependencyAnalysis
         /// The implementation here is not intended to be complete, but represents many conditions
         /// which make a type ineligible to be an EEType. (This function is intended for use in assertions only)
         /// </summary>
-        private static bool TypeCannotHaveEEType(TypeDesc type)
+        public static bool TypeCannotHaveEEType(TypeDesc type)
         {
             if (type.GetTypeDefinition() is INonEmittableType)
                 return true;

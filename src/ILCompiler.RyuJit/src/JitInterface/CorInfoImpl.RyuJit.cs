@@ -836,5 +836,23 @@ namespace Internal.JitInterface
 
             _parameterIndexToNameMap = parameterIndexToNameMap;
         }
+
+        private ISymbolNode GetGenericLookupHelper(CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind, ReadyToRunHelperId helperId, object helperArgument)
+        {
+            // Necessary type handle is not something that can be in a dictionary (only a constructed type).
+            // We only use necessary type handles if we can do a constant lookup.
+            if (helperId == ReadyToRunHelperId.NecessaryTypeHandle)
+                helperId = ReadyToRunHelperId.TypeHandle;
+
+            if (runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ
+                || runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM)
+            {
+                return _compilation.NodeFactory.ReadyToRunHelperFromTypeLookup(helperId, helperArgument, MethodBeingCompiled.OwningType);
+            }
+
+            Debug.Assert(runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM);
+            return _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(helperId, helperArgument, MethodBeingCompiled);
+        }
+
     }
 }
