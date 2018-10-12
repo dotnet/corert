@@ -102,7 +102,7 @@ namespace ILCompiler.DependencyAnalysis
             return new Import(EagerImports, new ReadyToRunHelperSignature(helperId));
         }
 
-        public IMethodNode MethodEntrypoint(MethodDesc method, TypeDesc constrainedType, SignatureContext signatureContext, bool isUnboxingStub = false)
+        public IMethodNode MethodEntrypoint(MethodDesc targetMethod, TypeDesc constrainedType, MethodDesc originalMethod, SignatureContext signatureContext, bool isUnboxingStub = false)
         {
             return _methodEntrypoints.GetOrAdd(targetMethod, (m) =>
             {

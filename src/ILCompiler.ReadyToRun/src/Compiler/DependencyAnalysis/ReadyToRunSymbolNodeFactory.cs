@@ -514,7 +514,7 @@ namespace ILCompiler.DependencyAnalysis
                     _codegenNodeFactory.DispatchImports,
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_MethodCall |
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_FLAG_VSD,
-                    MethodSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry, method,
+                    _codegenNodeFactory.MethodSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry, method,
                         null, signatureContext, isUnboxingStub, isInstantiatingStub: false),
                     callSite);
 
@@ -569,7 +569,7 @@ namespace ILCompiler.DependencyAnalysis
             TypeAndMethod ctorKey = new TypeAndMethod(delegateType, targetMethod, isUnboxingStub: false, isInstantiatingStub: false);
             if (!_delegateCtors.TryGetValue(ctorKey, out ISymbolNode ctorNode))
             {
-                IMethodNode targetMethodNode = _codegenNodeFactory.MethodEntrypoint(targetMethod, constrainedType: null, signatureContext: signatureContext, isUnboxingStub: false);
+                IMethodNode targetMethodNode = _codegenNodeFactory.MethodEntrypoint(targetMethod, constrainedType: null, originalMethod: null, signatureContext: signatureContext, isUnboxingStub: false);
 
                 ctorNode = new DelayLoadHelperImport(
                     _codegenNodeFactory,
