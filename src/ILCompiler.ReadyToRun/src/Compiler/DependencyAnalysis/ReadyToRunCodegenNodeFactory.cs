@@ -301,7 +301,7 @@ namespace ILCompiler.DependencyAnalysis
                 CorCompileImportType.CORCOMPILE_IMPORT_TYPE_STUB_DISPATCH,
                 CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_PCODE,
                 (byte)Target.PointerSize,
-                emitPrecode: true);
+                emitPrecode: false);
             ImportSectionsTable.AddEmbeddedObject(MethodImports);
 
             DispatchImports = new ImportSectionNode(
