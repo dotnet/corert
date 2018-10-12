@@ -50,9 +50,6 @@ namespace ILCompiler
                 return false;
             }
 
-            if (method.HasInstantiation)
-                return true;
-
             return ContainsType(method.OwningType);
         }
 

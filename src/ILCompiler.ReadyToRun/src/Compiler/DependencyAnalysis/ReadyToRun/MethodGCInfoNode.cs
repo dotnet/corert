@@ -32,7 +32,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ((ReadyToRunCodegenNodeFactory)factory).RuntimeFunctionsGCInfo.AddEmbeddedObject(this);
         }
 
-        public int[] CalculateFuncletOffsets()
+        public int[] CalculateFuncletOffsets(NodeFactory factory)
         {
             int[] offsets = new int[_methodNode.FrameInfos.Length];
             int offset = OffsetFromBeginningOfArray;
@@ -41,7 +41,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 offsets[frameInfoIndex] = offset;
                 offset += _methodNode.FrameInfos[frameInfoIndex].BlobData.Length;
                 offset += (-offset & 3); // 4-alignment for the personality routine
-                offset += sizeof(uint); // personality routine
+                if (factory.Target.Architecture != Internal.TypeSystem.TargetArchitecture.X86)
+                {
+                    offset += sizeof(uint); // personality routine
+                }
                 if (frameInfoIndex == 0 && _methodNode.GCInfo != null)
                 {
                     offset += _methodNode.GCInfo.Length;
@@ -73,22 +76,23 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
 
                 dataBuilder.EmitBytes(unwindInfo);
+                // 4-align after emitting the unwind info
+                dataBuilder.EmitZeros(-unwindInfo.Length & 3);
 
-                // Personality routine RVA must be 4-aligned
-                int align4Pad = -unwindInfo.Length & 3;
-                dataBuilder.EmitZeros(align4Pad);
-
-                bool isFilterFunclet = (_methodNode.FrameInfos[frameInfoIndex].Flags & FrameInfoFlags.Filter) != 0;
-                ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
-                ISymbolNode personalityRoutine = (isFilterFunclet ? r2rFactory.FilterFuncletPersonalityRoutine : r2rFactory.PersonalityRoutine);
-                dataBuilder.EmitReloc(personalityRoutine, RelocType.IMAGE_REL_BASED_ADDR32NB);
+                if (factory.Target.Architecture != Internal.TypeSystem.TargetArchitecture.X86)
+                {
+                    bool isFilterFunclet = (_methodNode.FrameInfos[frameInfoIndex].Flags & FrameInfoFlags.Filter) != 0;
+                    ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
+                    ISymbolNode personalityRoutine = (isFilterFunclet ? r2rFactory.FilterFuncletPersonalityRoutine : r2rFactory.PersonalityRoutine);
+                    dataBuilder.EmitReloc(personalityRoutine, RelocType.IMAGE_REL_BASED_ADDR32NB);
+                }
 
                 if (frameInfoIndex == 0 && _methodNode.GCInfo != null)
                 {
                     dataBuilder.EmitBytes(_methodNode.GCInfo);
 
                     // Maintain 4-alignment for the next unwind / GC info block
-                    align4Pad = -_methodNode.GCInfo.Length & 3;
+                    int align4Pad = -_methodNode.GCInfo.Length & 3;
                     dataBuilder.EmitZeros(align4Pad);
                 }
             }

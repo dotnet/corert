@@ -282,8 +282,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         ELEMENT_TYPE_OBJECT = 28,
         ELEMENT_TYPE_SZARRAY = 29,
         ELEMENT_TYPE_MVAR = 30,
+
         ELEMENT_TYPE_CMOD_REQD = 31,
         ELEMENT_TYPE_CMOD_OPT = 32,
+
+        ELEMENT_TYPE_CANON_ZAPSIG = 62,     // zapsig encoding for [mscorlib]System.__Canon
+        ELEMENT_TYPE_MODULE_ZAPSIG = 63,     // zapsig encoding for external module id#
+
         ELEMENT_TYPE_HANDLE = 64,
         ELEMENT_TYPE_SENTINEL = 65,
         ELEMENT_TYPE_PINNED = 69

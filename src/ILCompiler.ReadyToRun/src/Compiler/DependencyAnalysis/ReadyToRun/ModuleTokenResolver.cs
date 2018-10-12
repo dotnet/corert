@@ -33,9 +33,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly CompilationModuleGroup _compilationModuleGroup;
 
-        public ModuleTokenResolver(CompilationModuleGroup compilationModuleGroup)
+        private readonly CompilerTypeSystemContext _typeSystemContext;
+
+        public ModuleTokenResolver(CompilationModuleGroup compilationModuleGroup, CompilerTypeSystemContext typeSystemContext)
         {
             _compilationModuleGroup = compilationModuleGroup;
+            _typeSystemContext = typeSystemContext;
         }
 
         public ModuleToken GetModuleTokenForType(EcmaType type)
@@ -84,6 +87,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void AddModuleTokenForMethod(MethodDesc method, ModuleToken token)
         {
+            if (_methodToRefTokens.ContainsKey(method))
+            {
+                // This method has already been harvested
+                return;
+            }
+
             if (_compilationModuleGroup.ContainsMethodBody(method, unboxingStub: false) && method is EcmaMethod)
             {
                 // We don't need to store handles within the current compilation group
@@ -103,6 +112,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     break;
 
                 case CorTokenType.mdtMemberRef:
+                    if ((method.HasInstantiation || method.OwningType.HasInstantiation) &&
+                        !method.IsGenericMethodDefinition && !method.OwningType.IsGenericDefinition)
+                    {
+                        AddModuleTokenForMethod(method.GetTypicalMethodDefinition(), token);
+                    }
                     AddModuleTokenForMethodReference(method.OwningType, token);
                     break;
 
@@ -225,7 +239,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             public DummyTypeInfo GetGenericMethodParameter(ModuleTokenResolver genericContext, int index)
             {
-                throw new NotImplementedException();
+                return DummyTypeInfo.Instance;
             }
 
             public DummyTypeInfo GetGenericTypeParameter(ModuleTokenResolver genericContext, int index)
@@ -268,11 +282,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 _resolver.AddModuleTokenForType((TypeDesc)_contextModule.GetObject(handle), new ModuleToken(_contextModule, handle));
                 return DummyTypeInfo.Instance;
-            }
-
-            public DummyTypeInfo GetTypeFromSpecification(MetadataReader reader, ReadyToRunCodegenNodeFactory genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
-            {
-                throw new NotImplementedException();
             }
 
             public DummyTypeInfo GetTypeFromSpecification(MetadataReader reader, ModuleTokenResolver genericContext, TypeSpecificationHandle handle, byte rawTypeKind)

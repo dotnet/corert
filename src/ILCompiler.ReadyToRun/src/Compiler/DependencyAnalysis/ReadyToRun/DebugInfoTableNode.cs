@@ -91,6 +91,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         continue;
                 }
 
+                if (methodCodeNode.IsEmpty)
+                {
+                    continue;
+                }
+
                 MemoryStream methodDebugBlob = new MemoryStream();
                 
                 byte[] bounds = CreateBoundsBlobForMethod(methodCodeNode);

@@ -41,7 +41,7 @@ namespace Internal.JitInterface
         {
             _compilation = compilation;
             _tokenContext = tokenContext;
-            _signatureContext = new SignatureContext(_compilation.NodeFactory.Resolver, _tokenContext);
+            _signatureContext = new SignatureContext(_compilation.NodeFactory.Resolver);
         }
 
         public void CompileMethod(IReadyToRunMethodCodeNode methodCodeNodeNeedingCode)
@@ -611,6 +611,12 @@ namespace Internal.JitInterface
             {
                 _debugLocInfos[i] = pMap[i];
             }
+        }
+
+        private void PublishEmptyCode()
+        {
+            _methodCodeNode.SetCode(new ObjectNode.ObjectData(Array.Empty<byte>(), null, 1, Array.Empty<ISymbolDefinitionNode>()));
+            _methodCodeNode.InitializeFrameInfos(Array.Empty<FrameInfo>());
         }
     }
 }

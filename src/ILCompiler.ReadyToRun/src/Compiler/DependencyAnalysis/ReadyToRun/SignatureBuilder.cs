@@ -269,6 +269,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         EmitElementType(CorElementType.ELEMENT_TYPE_OBJECT);
                     }
+                    else if (typeDesc.IsCanonicalDefinitionType(CanonicalFormKind.Specific))
+                    {
+                        EmitElementType(CorElementType.ELEMENT_TYPE_CANON_ZAPSIG);
+                    }
                     else
                     {
                         EmitElementType(CorElementType.ELEMENT_TYPE_CLASS);
@@ -333,8 +337,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void EmitMethodSignature(MethodDesc method, TypeDesc constrainedType, bool isUnboxingStub, bool isInstantiatingStub, SignatureContext context)
         {
-            ModuleToken token = context.GetModuleTokenForMethod(method);
-
             uint flags = 0;
             if (isUnboxingStub)
             {
@@ -349,27 +351,31 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_Constrained;
             }
 
-            switch (token.TokenType)
+            if (method.HasInstantiation || method.OwningType.HasInstantiation)
             {
-                case CorTokenType.mdtMethodDef:
-                    // TODO: module override for methoddefs with external module context
-                    EmitUInt(flags);
-                    EmitMethodDefToken(token);
-                    break;
+                EmitMethodSpecificationSignature(method, flags, context);
+            }
+            else
+            {
+                ModuleToken token = context.GetModuleTokenForMethod(method.GetTypicalMethodDefinition());
+                switch (token.TokenType)
+                {
+                    case CorTokenType.mdtMethodDef:
+                        // TODO: module override for methoddefs with external module context
+                        EmitUInt(flags);
+                        EmitMethodDefToken(token);
+                        break;
 
-                case CorTokenType.mdtMemberRef:
-                    // TODO: module override for methodrefs with external module context
-                    flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MemberRefToken;
-                    EmitUInt(flags);
-                    EmitMethodRefToken(token);
-                    break;
+                    case CorTokenType.mdtMemberRef:
+                        // TODO: module override for methodrefs with external module context
+                        flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MemberRefToken;
+                        EmitUInt(flags);
+                        EmitMethodRefToken(token);
+                        break;
 
-                case CorTokenType.mdtMethodSpec:
-                    EmitMethodSpecificationSignature(method, token, flags, context);
-                    break;
-
-                default:
-                    throw new NotImplementedException();
+                    default:
+                        throw new NotImplementedException();
+                }
             }
 
             if (constrainedType != null)
@@ -390,49 +396,47 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             EmitUInt(RidFromToken(memberRefToken.Token));
         }
 
-        private void EmitMethodSpecificationSignature(MethodDesc method, ModuleToken token, uint flags, SignatureContext context)
+        private void EmitMethodSpecificationSignature(MethodDesc method, uint flags, SignatureContext context)
         {
-            switch (token.TokenType)
+            if (method.HasInstantiation)
             {
-                case CorTokenType.mdtMethodSpec:
-                    {
-                        MethodSpecification methodSpec = token.MetadataReader.GetMethodSpecification((MethodSpecificationHandle)MetadataTokens.Handle((int)token.Token));
+                flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MethodInstantiation
+                    | (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
+            }
 
-                        flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MethodInstantiation;
-                        mdToken genericMethodToken;
+            if (method.OwningType.HasInstantiation)
+            {
+                flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
+            }
 
-                        switch (methodSpec.Method.Kind)
-                        {
-                            case HandleKind.MethodDefinition:
-                                {
-                                    genericMethodToken = (mdToken)MetadataTokens.GetToken(methodSpec.Method);
-                                    MethodDefinition methodDef = context.MetadataReader.GetMethodDefinition((MethodDefinitionHandle)methodSpec.Method);
-                                    TypeDefinitionHandle typeHandle = methodDef.GetDeclaringType();
-                                }
-                                break;
+            ModuleToken genericMethodToken = context.GetModuleTokenForMethod(method.GetTypicalMethodDefinition());
+            switch (genericMethodToken.TokenType)
+            {
+                case CorTokenType.mdtMethodDef:
+                    break;
 
-                            case HandleKind.MemberReference:
-                                flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MemberRefToken;
-                                genericMethodToken = (mdToken)MetadataTokens.GetToken(methodSpec.Method);
-                                break;
+                case CorTokenType.mdtMemberRef:
+                    flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MemberRefToken;
+                    break;
 
-                            default:
-                                throw new NotImplementedException();
-                        }
-
-                        EmitUInt(flags);
-                        EmitTokenRid(genericMethodToken);
-                        ImmutableArray<byte[]> methodTypeSignatures = methodSpec.DecodeSignature<byte[], SignatureContext>(context, context);
-                        EmitUInt((uint)methodTypeSignatures.Length);
-                        foreach (byte[] methodTypeSignature in methodTypeSignatures)
-                        {
-                            EmitBytes(methodTypeSignature);
-                        }
-
-                        break;
-                    }
                 default:
                     throw new NotImplementedException();
+            }
+
+            EmitUInt(flags);
+            if ((flags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
+            {
+                EmitTypeSignature(method.OwningType, context);
+            }
+            EmitTokenRid(genericMethodToken.Token);
+            if (method.HasInstantiation)
+            {
+                Instantiation instantiation = method.Instantiation;
+                EmitUInt((uint)instantiation.Length);
+                for (int typeParamIndex = 0; typeParamIndex < instantiation.Length; typeParamIndex++)
+                {
+                    EmitTypeSignature(instantiation[typeParamIndex], context);
+                }
             }
         }
 

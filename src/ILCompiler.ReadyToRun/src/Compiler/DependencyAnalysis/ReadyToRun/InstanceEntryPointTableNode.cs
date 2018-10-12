@@ -18,44 +18,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class InstanceEntryPointTableNode : HeaderTableNode
     {
-        private struct EntryPoint
-        {
-            public static EntryPoint Null = new EntryPoint(-1, -1, -1, 0);
-            
-            public readonly int MethodIndex;
-            public readonly int FixupIndex;
-            public readonly int SignatureIndex;
-            public readonly int MethodHashCode;
-
-            public bool IsNull => (MethodIndex < 0);
-            
-            public EntryPoint(int methodIndex, int fixupIndex, int signatureIndex, int methodHashCode)
-            {
-                MethodIndex = methodIndex;
-                FixupIndex = fixupIndex;
-                SignatureIndex = signatureIndex;
-                MethodHashCode = methodHashCode;
-            }
-        }
-
-        List<EntryPoint> _ridToEntryPoint;
-
-        List<byte[]> _uniqueFixups;
-        Dictionary<byte[], int> _uniqueFixupIndex;
-
-        List<byte[]> _uniqueSignatures;
-        Dictionary<byte[], int> _uniqueSignatureIndex;
-        
         public InstanceEntryPointTableNode(TargetDetails target)
             : base(target)
         {
-            _ridToEntryPoint = new List<EntryPoint>();
-
-            _uniqueFixups = new List<byte[]>();
-            _uniqueFixupIndex = new Dictionary<byte[], int>(ByteArrayComparer.Instance);
-
-            _uniqueSignatures = new List<byte[]>();
-            _uniqueSignatureIndex = new Dictionary<byte[], int>(ByteArrayComparer.Instance);
         }
         
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -64,64 +29,65 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append("__ReadyToRunInstanceEntryPointTable");
         }
 
-        public void Add(MethodWithGCInfo methodNode, int methodIndex)
-        {
-            // TODO: method instance table
-        }
-
-        private void Add(int rid, int methodIndex, byte[] fixups, byte[] signature, int methodHashCode)
-        {
-            while (_ridToEntryPoint.Count <= rid)
-            {
-                _ridToEntryPoint.Add(EntryPoint.Null);
-            }
-
-            int fixupIndex = -1;
-            if (fixups != null)
-            {
-                if (!_uniqueFixupIndex.TryGetValue(fixups, out fixupIndex))
-                {
-                    fixupIndex = _uniqueFixups.Count;
-                    _uniqueFixupIndex.Add(fixups, fixupIndex);
-                    _uniqueFixups.Add(fixups);
-                }
-            }
-
-            int signatureIndex = -1;
-            if (signature != null)
-            {
-                if (!_uniqueSignatureIndex.TryGetValue(signature, out signatureIndex))
-                {
-                    signatureIndex = _uniqueSignatures.Count;
-                    _uniqueSignatureIndex.Add(signature, signatureIndex);
-                    _uniqueSignatures.Add(signature);
-                }
-            }
-
-            _ridToEntryPoint[rid] = new EntryPoint(methodIndex, fixupIndex, signatureIndex, methodHashCode);
-        }
-
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
+            if (relocsOnly)
+            {
+                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, Array.Empty<ISymbolDefinitionNode>());
+            }
+
+            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             NativeWriter hashtableWriter = new NativeWriter();
 
             Section hashtableSection = hashtableWriter.NewSection();
             VertexHashtable vertexHashtable = new VertexHashtable();
             hashtableSection.Place(vertexHashtable);
 
-            BlobVertex[] fixupBlobs = PlaceBlobs(hashtableSection, _uniqueFixups);
-            BlobVertex[] signatureBlobs = PlaceBlobs(hashtableSection, _uniqueSignatures);
+            Dictionary<byte[], BlobVertex> uniqueFixups = new Dictionary<byte[], BlobVertex>(ByteArrayComparer.Instance);
+            Dictionary<byte[], BlobVertex> uniqueSignatures = new Dictionary<byte[], BlobVertex>(ByteArrayComparer.Instance);
 
-            for (int rid = 0; rid < _ridToEntryPoint.Count; rid++)
+            foreach (MethodDesc method in factory.MetadataManager.GetCompiledMethods())
             {
-                EntryPoint entryPoint = _ridToEntryPoint[rid];
-                if (!entryPoint.IsNull)
+                MethodWithGCInfo methodCodeNode = factory.MethodEntrypoint(method) as MethodWithGCInfo;
+                if (methodCodeNode == null)
                 {
-                    BlobVertex fixupBlobVertex = (entryPoint.FixupIndex >= 0 ? fixupBlobs[entryPoint.FixupIndex] : null);
-                    BlobVertex signatureBlobVertex = (entryPoint.SignatureIndex >= 0 ? signatureBlobs[entryPoint.SignatureIndex] : null);
-                    EntryPointVertex entryPointVertex = new EntryPointWithBlobVertex((uint)entryPoint.MethodIndex, fixupBlobVertex, signatureBlobVertex);
+                    methodCodeNode = ((ExternalMethodImport)factory.MethodEntrypoint(method))?.MethodCodeNode;
+                    if (methodCodeNode == null)
+                        continue;
+                }
+
+                if (!methodCodeNode.IsEmpty && (methodCodeNode.Method.HasInstantiation || methodCodeNode.Method.OwningType.HasInstantiation))
+                {
+                    int methodIndex = r2rFactory.RuntimeFunctionsTable.GetIndex(methodCodeNode);
+
+                    ArraySignatureBuilder signatureBuilder = new ArraySignatureBuilder();
+                    signatureBuilder.EmitMethodSignature(
+                        methodCodeNode.Method, 
+                        constrainedType: null, 
+                        isUnboxingStub: false, 
+                        isInstantiatingStub: false, 
+                        methodCodeNode.SignatureContext);
+                    byte[] signature = signatureBuilder.ToArray();
+                    BlobVertex signatureBlob;
+                    if (!uniqueSignatures.TryGetValue(signature, out signatureBlob))
+                    {
+                        signatureBlob = new BlobVertex(signature);
+                        hashtableSection.Place(signatureBlob);
+                        uniqueSignatures.Add(signature, signatureBlob);
+                    }
+
+                    byte[] fixup = methodCodeNode.GetFixupBlob(factory);
+                    BlobVertex fixupBlob = null;
+                    if (fixup != null && !uniqueFixups.TryGetValue(fixup, out fixupBlob))
+                    {
+                        fixupBlob = new BlobVertex(fixup);
+                        hashtableSection.Place(fixupBlob);
+                        uniqueFixups.Add(fixup, fixupBlob);
+                    }
+
+                    EntryPointVertex entryPointVertex = new EntryPointWithBlobVertex((uint)methodIndex, fixupBlob, signatureBlob);
                     hashtableSection.Place(entryPointVertex);
-                    vertexHashtable.Append(unchecked((uint)entryPoint.MethodHashCode), entryPointVertex);
+                    vertexHashtable.Append(unchecked((uint)ReadyToRunHashCode.MethodHashCode(methodCodeNode.Method)), entryPointVertex);
                 }
             }
 

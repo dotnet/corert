@@ -142,6 +142,9 @@ namespace Internal.JitInterface
 
         private void CompileMethodInternal(IMethodNode methodCodeNodeNeedingCode, MethodIL methodIL = null)
         {
+#if READYTORUN
+            bool codeGotPublished = false;
+#endif
             try
             {
                 _isFallbackBodyCompilation = methodIL != null;
@@ -212,9 +215,18 @@ namespace Internal.JitInterface
                 }
 
                 PublishCode();
+#if READYTORUN
+                codeGotPublished = true;
+#endif
             }
             finally
             {
+#if READYTORUN
+                if (!codeGotPublished)
+                {
+                    PublishEmptyCode();
+                }
+#endif
                 CompileMethodCleanup();
             }
         }
@@ -2658,7 +2670,7 @@ namespace Internal.JitInterface
                     Debug.Assert(!forceUseRuntimeLookup);
                     pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                        _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, _signatureContext)
+                        _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, method, _signatureContext)
 #else
                         _compilation.NodeFactory.MethodEntrypoint(targetMethod)
 #endif
@@ -2694,7 +2706,7 @@ namespace Internal.JitInterface
                         {
                             pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                                _compilation.NodeFactory.ShadowConcreteMethod(constrainedType != null ? method : concreteMethod, constrainedType, _signatureContext)
+                                _compilation.NodeFactory.ShadowConcreteMethod(targetMethod, constrainedType, method, _signatureContext)
 #else
                                 _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod)
 #endif
@@ -2707,7 +2719,7 @@ namespace Internal.JitInterface
                             // any generic lookups).
                             pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                                _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, _signatureContext)
+                                _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, method, _signatureContext)
 #else
                                 _compilation.NodeFactory.MethodEntrypoint(targetMethod)
 #endif
@@ -2718,7 +2730,7 @@ namespace Internal.JitInterface
                     {
                         pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                            _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod, constrainedType, _signatureContext)
+                            _compilation.NodeFactory.ShadowConcreteMethod(targetMethod, constrainedType, method, _signatureContext)
 #else
                             _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod)
 #endif
@@ -2728,7 +2740,7 @@ namespace Internal.JitInterface
                     {
                         pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                            _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, _signatureContext)
+                            _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, method, _signatureContext)
 #else
                             _compilation.NodeFactory.MethodEntrypoint(targetMethod)
 #endif
