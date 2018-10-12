@@ -240,6 +240,12 @@ namespace ILCompiler.DependencyAnalysis
             // Make sure the dictionary can also be populated
             dependencies.Add(factory.ShadowConcreteMethod(_owningMethod), "Dictionary contents");
 
+            // Generic virtual method dictionaries need extra tracking
+            if (_owningMethod.IsVirtual)
+            {
+                dependencies.Add(new DependencyListEntry(factory.GVMDependencies(_owningMethod), "GVM Dependencies Support for method dictionary"));
+            }
+
             return dependencies;
         }
 

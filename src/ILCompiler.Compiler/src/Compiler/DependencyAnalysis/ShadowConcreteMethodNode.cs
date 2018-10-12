@@ -83,15 +83,6 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            if (Method.HasInstantiation)
-            {
-                if (Method.IsVirtual)
-                    dependencies.Add(new DependencyListEntry(factory.GVMDependencies(Method), "GVM Dependencies Support for method dictionary"));
-
-                // Dictionary dependency
-                dependencies.Add(new DependencyListEntry(factory.MethodGenericDictionary(Method), "Method dictionary"));
-            }
-
             return dependencies;
         }
 
