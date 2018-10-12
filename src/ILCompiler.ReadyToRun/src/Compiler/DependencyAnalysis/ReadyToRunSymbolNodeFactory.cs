@@ -11,19 +11,16 @@ namespace ILCompiler.DependencyAnalysis
 {
     using ReadyToRunHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper;
 
-    public sealed partial class ReadyToRunSymbolNodeFactory
+    public sealed class ReadyToRunSymbolNodeFactory
     {
-
-        private readonly Dictionary<ModuleToken, ISymbolNode> _importStrings;
-
         private readonly ReadyToRunCodegenNodeFactory _codegenNodeFactory;
-  
 
         public ReadyToRunSymbolNodeFactory(ReadyToRunCodegenNodeFactory codegenNodeFactory)
         {
             _codegenNodeFactory = codegenNodeFactory;
-            _importStrings = new Dictionary<ModuleToken, ISymbolNode>();
         }
+
+        private readonly Dictionary<ModuleToken, ISymbolNode> _importStrings = new Dictionary<ModuleToken, ISymbolNode>();
 
         public ISymbolNode StringLiteral(ModuleToken token)
         {
@@ -215,12 +212,11 @@ namespace ILCompiler.DependencyAnalysis
             return info.Constructor;
         }
 
-        Dictionary<ILCompiler.ReadyToRunHelper, ISymbolNode> _helperCache = new Dictionary<ILCompiler.ReadyToRunHelper, ISymbolNode>();
+        private readonly Dictionary<ILCompiler.ReadyToRunHelper, ISymbolNode> _helperCache = new Dictionary<ILCompiler.ReadyToRunHelper, ISymbolNode>();
 
         public ISymbolNode ExternSymbol(ILCompiler.ReadyToRunHelper helper)
         {
-            ISymbolNode result;
-            if (_helperCache.TryGetValue(helper, out result))
+            if (_helperCache.TryGetValue(helper, out ISymbolNode result))
             {
                 return result;
             }
@@ -502,7 +498,7 @@ namespace ILCompiler.DependencyAnalysis
             return ExternSymbol(helperId);
         }
 
-        readonly Dictionary<MethodAndCallSite, ISymbolNode> _interfaceDispatchCells = new Dictionary<MethodAndCallSite, ISymbolNode>();
+        private readonly Dictionary<MethodAndCallSite, ISymbolNode> _interfaceDispatchCells = new Dictionary<MethodAndCallSite, ISymbolNode>();
 
         public ISymbolNode InterfaceDispatchCell(MethodDesc method, SignatureContext signatureContext, bool isUnboxingStub, string callSite)
         {
@@ -528,7 +524,7 @@ namespace ILCompiler.DependencyAnalysis
             return ReadyToRunHelper(helperId, entity, signatureContext);
         }
 
-        readonly Dictionary<MethodDesc, ISortableSymbolNode> _genericDictionaryCache = new Dictionary<MethodDesc, ISortableSymbolNode>();
+        private readonly Dictionary<MethodDesc, ISortableSymbolNode> _genericDictionaryCache = new Dictionary<MethodDesc, ISortableSymbolNode>();
 
         public ISortableSymbolNode MethodGenericDictionary(MethodDesc method, SignatureContext signatureContext)
         {
@@ -548,7 +544,7 @@ namespace ILCompiler.DependencyAnalysis
             return genericDictionary;
         }
 
-        readonly Dictionary<TypeDesc, ISymbolNode> _constructedTypeSymbols = new Dictionary<TypeDesc, ISymbolNode>();
+        private readonly Dictionary<TypeDesc, ISymbolNode> _constructedTypeSymbols = new Dictionary<TypeDesc, ISymbolNode>();
 
         public ISymbolNode ConstructedTypeSymbol(TypeDesc type, SignatureContext signatureContext)
         {
