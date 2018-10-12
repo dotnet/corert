@@ -1,4 +1,4 @@
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+﻿<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup Condition="'$(AssemblyName)' == ''">
     <AssemblyName>System.Private.Reflection.Core</AssemblyName>
@@ -8,6 +8,7 @@
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
+    <ProjectGuid>{FF020A67-9100-4898-9B11-23D78FB6A278}</ProjectGuid>
   </PropertyGroup>
   <PropertyGroup Condition="'$(IsProjectNLibrary)' == 'true'">
     <DefineConstants>ENABLE_REFLECTION_TRACE;$(DefineConstants)</DefineConstants>
@@ -271,6 +272,9 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="System\Reflection\Runtime\TypeInfos\Ecma\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="System.Private.TypeLoader.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

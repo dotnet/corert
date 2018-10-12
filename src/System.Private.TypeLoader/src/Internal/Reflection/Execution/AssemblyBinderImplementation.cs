@@ -291,6 +291,7 @@ namespace Internal.Reflection.Execution
         /// <param name="moduleInfo">Module to register</param>
         private void RegisterModule(ModuleInfo moduleInfo)
         {
+            PrintLine("RegisterModule");
             NativeFormatModuleInfo nativeFormatModuleInfo = moduleInfo as NativeFormatModuleInfo;
 
             if (nativeFormatModuleInfo == null)

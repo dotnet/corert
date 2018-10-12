@@ -453,7 +453,7 @@ namespace ILCompiler
 
             useScanner &= !_noScanner;
 
-            bool supportsReflection = !_isWasmCodegen && !_isCppCodegen && _systemModuleName == DefaultSystemModule;
+            bool supportsReflection = !_isCppCodegen && _systemModuleName == DefaultSystemModule;
 
             MetadataManager compilationMetadataManager = supportsReflection ? metadataManager : (MetadataManager)new EmptyMetadataManager(typeSystemContext);
             ILScanResults scanResults = null;

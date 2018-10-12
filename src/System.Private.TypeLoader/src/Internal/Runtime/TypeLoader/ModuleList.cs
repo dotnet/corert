@@ -12,6 +12,7 @@ using System.Threading;
 using Internal.Runtime.Augments;
 using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Execution;
+using System.Runtime.InteropServices;
 
 namespace Internal.Runtime.TypeLoader
 {
@@ -28,6 +29,7 @@ namespace Internal.Runtime.TypeLoader
     /// </summary>
     public unsafe class ModuleInfo
     {
+        public virtual string TypeName { get; } = "ModuleInfo";
         /// <summary>
         /// Module handle is the TypeManager associated with this module.
         /// </summary>
@@ -90,6 +92,8 @@ namespace Internal.Runtime.TypeLoader
 
     public class NativeFormatModuleInfo : ModuleInfo
     {
+        public override string TypeName { get; } = "NativeFormatModuleInfo";
+
         /// <summary>
         /// Initialize module info and construct per-module metadata reader.
         /// </summary>
@@ -319,6 +323,8 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         public NativeFormatModuleInfoEnumerator GetEnumerator()
         {
+            ModuleList.PrintLine("Getenumerator");
+            ModuleList.PrintLine(_moduleMap.Modules.Length.ToString());
             return new NativeFormatModuleInfoEnumerator(_moduleMap, _preferredModuleHandle);
         }
     }
@@ -362,6 +368,9 @@ namespace Internal.Runtime.TypeLoader
             _iterationIndex = -1;
             _currentModule = null;
 
+            ModuleList.PrintString("enumerator ctor for handle ");
+            ModuleList.PrintLine(preferredModuleHandle.LowLevelToString());
+
             if (!preferredModuleHandle.IsNull && 
                 !moduleMap.HandleToModuleIndex.TryGetValue(preferredModuleHandle, out _preferredIndex))
             {
@@ -380,6 +389,7 @@ namespace Internal.Runtime.TypeLoader
                 if (_iterationIndex + 1 >= _modules.Length)
                 {
                     _currentModule = null;
+                    ModuleList.PrintLine("move next past length");
                     return false;
                 }
 
@@ -392,6 +402,9 @@ namespace Internal.Runtime.TypeLoader
                 }
 
                 _currentModule = _modules[moduleIndex] as NativeFormatModuleInfo;
+                ModuleList.PrintString("got a currentModule at index ");
+                ModuleList.PrintLine(moduleIndex.ToString());
+                ModuleList.PrintLine(_modules[moduleIndex].TypeName);
             } while (_currentModule == null);
 
             return true;
@@ -615,6 +628,7 @@ namespace Internal.Runtime.TypeLoader
             _moduleRegistrationCallbacks = default(Action<ModuleInfo>);
             _moduleRegistrationLock = new Lock();
 
+            PrintString("ModuleList cctor");
             RegisterNewModules(ModuleType.Eager);
 
             TypeManagerHandle systemObjectModule = RuntimeAugments.GetModuleFromTypeHandle(RuntimeAugments.RuntimeTypeHandleOf<object>());
@@ -636,6 +650,35 @@ namespace Internal.Runtime.TypeLoader
             get { return TypeLoaderEnvironment.Instance.ModuleList; }
         }
 
+        public static unsafe void PrintString(string s)
+        {
+            int length = s.Length;
+            fixed (char* curChar = s)
+            {
+                for (int i = 0; i < length; i++)
+                {
+                    TwoByteStr curCharStr = new TwoByteStr();
+                    curCharStr.first = (byte)(*(curChar + i));
+                    printf((byte*)&curCharStr, null);
+                }
+            }
+        }
+
+        public struct TwoByteStr
+        {
+            public byte first;
+            public byte second;
+        }
+
+        [DllImport("*")]
+        private static unsafe extern int printf(byte* str, byte* unused);
+
+        public static void PrintLine(string s)
+        {
+            PrintString(s);
+            PrintString("\n");
+        }
+
         /// <summary>
         /// Register a new callback that gets called whenever a new module gets registered.
         /// The module registration happens under a global lock so that the module registration
@@ -644,14 +687,18 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="moduleRegistrationCallback">Method to call whenever a new module is registered</param>
         public static void AddModuleRegistrationCallback(Action<ModuleInfo> newModuleRegistrationCallback)
         {
+            PrintLine("callback registered");
             // Accumulate callbacks to be notified upon module registration
             Instance._moduleRegistrationCallbacks += newModuleRegistrationCallback;
 
             // Invoke the new callback for all modules that have already been registered
             foreach (ModuleInfo moduleInfo in EnumerateModules())
             {
+                PrintLine("calling for existing modules");
+
                 newModuleRegistrationCallback(moduleInfo);
             }
+            PrintLine("callback registered end");
         }
 
         /// <summary>
@@ -680,6 +727,8 @@ namespace Internal.Runtime.TypeLoader
                 int loadedModuleCountUpdated = RuntimeAugments.GetLoadedModules(loadedModuleHandles);
                 Debug.Assert(loadedModuleCount == loadedModuleCountUpdated);
 
+                PrintString("loadmodulesHanles>lenght ");
+                PrintLine(loadedModuleHandles.Length.ToString());
                 LowLevelList<TypeManagerHandle> newModuleHandles = new LowLevelList<TypeManagerHandle>(loadedModuleHandles.Length);
                 foreach (TypeManagerHandle moduleHandle in loadedModuleHandles)
                 {
@@ -701,9 +750,12 @@ namespace Internal.Runtime.TypeLoader
                     Array.Copy(_loadedModuleMap.Modules, 0, updatedModules, 0, oldModuleCount);
                 }
 
+                PrintString("newModuleHandles>lenght ");
+                PrintLine(newModuleHandles.Count.ToString());
                 for (int newModuleIndex = 0; newModuleIndex < newModuleHandles.Count; newModuleIndex++)
                 {
                     ModuleInfo newModuleInfo;
+                    PrintLine("in for");
 
                     unsafe
                     {
@@ -712,18 +764,27 @@ namespace Internal.Runtime.TypeLoader
 
                         if (RuntimeAugments.FindBlob(newModuleHandles[newModuleIndex], (int)ReflectionMapBlob.EmbeddedMetadata, new IntPtr(&pBlob), new IntPtr(&cbBlob)))
                         {
+                            PrintLine("creating native");
+
                             newModuleInfo = new NativeFormatModuleInfo(newModuleHandles[newModuleIndex], moduleType, (IntPtr)pBlob, (int)cbBlob);
                         }
                         else
                         {
+                            PrintLine("creating moduleinfo");
+
                             newModuleInfo = new ModuleInfo(newModuleHandles[newModuleIndex], moduleType);
+                            var x = newModuleHandles[newModuleIndex];
+                            PrintLine(x.LowLevelToString());
                         }
                     }
 
                     updatedModules[oldModuleCount + newModuleIndex] = newModuleInfo;
+                    PrintString("module");
+//                    PrintLine(newModuleInfo.ToString());
 
                     if (_moduleRegistrationCallbacks != null)
                     {
+                        PrintLine("calling callback");
                         _moduleRegistrationCallbacks(newModuleInfo);
                     }
                 }
@@ -731,6 +792,7 @@ namespace Internal.Runtime.TypeLoader
                 // Atomically update the module map
                 _loadedModuleMap = new ModuleMap(updatedModules);
             }
+            PrintLine("exit register");
         }
 
         public void RegisterModule(ModuleInfo newModuleInfo)

@@ -18,6 +18,8 @@ namespace Internal.Runtime.TypeLoader
 {
     public sealed class EcmaModuleInfo : ModuleInfo
     {
+        public override string TypeName { get; } = "EcmaModuleInfo";
+
         /// <summary>
         /// Metadata Reader for this module.
         /// </summary>

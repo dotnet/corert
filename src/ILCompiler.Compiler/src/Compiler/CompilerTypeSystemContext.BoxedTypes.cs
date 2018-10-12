@@ -509,6 +509,7 @@ namespace ILCompiler
 
                 _owningType = owningType;
                 _targetMethod = targetMethod;
+                Debug.Assert(targetMethod.IsMethodDefinition && !targetMethod.HasInstantiation);
             }
 
             public override TypeSystemContext Context => _targetMethod.Context;

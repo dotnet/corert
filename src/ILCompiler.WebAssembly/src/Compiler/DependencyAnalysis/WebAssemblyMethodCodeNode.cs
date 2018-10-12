@@ -58,6 +58,7 @@ namespace ILCompiler.DependencyAnalysis
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             var dependencies = new DependencyList();
+            CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref dependencies, factory, _method);
 
             foreach (Object node in _dependencies)
                 dependencies.Add(node, "Wasm code ");
