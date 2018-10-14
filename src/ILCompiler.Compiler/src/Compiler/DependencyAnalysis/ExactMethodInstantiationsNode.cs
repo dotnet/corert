@@ -115,10 +115,13 @@ namespace ILCompiler.DependencyAnalysis
 
             dependencies = dependencies ?? new DependencyList();
 
-            // Method entry point dependency
-            bool getUnboxingStub = method.OwningType.IsValueType && !method.Signature.IsStatic;
-            IMethodNode methodEntryPointNode = factory.MethodEntrypoint(method, getUnboxingStub);
-            dependencies.Add(new DependencyListEntry(methodEntryPointNode, "Exact method instantiation entry"));
+            if (!factory.MetadataManager.IsReflectionBlocked(method))
+            {
+                // Method entry point dependency
+                bool getUnboxingStub = method.OwningType.IsValueType && !method.Signature.IsStatic;
+                IMethodNode methodEntryPointNode = factory.MethodEntrypoint(method, getUnboxingStub);
+                dependencies.Add(new DependencyListEntry(methodEntryPointNode, "Exact method instantiation entry"));
+            }
 
             // Get native layout dependencies for the declaring type
             dependencies.Add(new DependencyListEntry(factory.NecessaryTypeSymbol(method.OwningType), "Exact method instantiation entry"));
