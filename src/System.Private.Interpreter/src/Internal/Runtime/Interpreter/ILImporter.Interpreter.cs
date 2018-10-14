@@ -9,7 +9,7 @@ using Internal.TypeSystem;
 
 namespace Internal.IL
 {
-    partial class ILImporter
+    unsafe partial class ILImporter
     {
         private class BasicBlock
         {
@@ -265,7 +265,503 @@ namespace Internal.IL
 
         private void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned)
         {
-            throw new NotImplementedException();
+            StackItem stackItem = PopWithValidation();
+            switch (wellKnownType)
+            {
+                case WellKnownType.SByte:
+                    {
+                        sbyte result = default(sbyte);
+                        if (stackItem.Kind == StackValueKind.Int32)
+                        {
+                            if (unsigned)
+                            {
+                                uint value = (uint)stackItem.AsInt32();
+                                result = checkOverflow ? Convert.ToSByte(value) : (sbyte)value;
+                            }
+                            else
+                            {
+                                int value = stackItem.AsInt32();
+                                result = checkOverflow ? Convert.ToSByte(value) : (sbyte)value;
+                            }
+                        }
+                        else if (stackItem.Kind == StackValueKind.Int64)
+                        {
+                            if (unsigned)
+                            {
+                                ulong value = (ulong)stackItem.AsInt64();
+                                result = checkOverflow ? Convert.ToSByte(value) : (sbyte)value;
+                            }
+                            else
+                            {
+                                long value = stackItem.AsInt64();
+                                result = checkOverflow ? Convert.ToSByte(value) : (sbyte)value;
+                            }
+                        }
+                        else if (stackItem.Kind == StackValueKind.Float)
+                        {
+                            double value = stackItem.AsDouble();
+                            result = checkOverflow ? Convert.ToSByte(value) : (sbyte)value;
+                        }
+                        else if (stackItem.Kind == StackValueKind.NativeInt)
+                        {
+                            if (unsigned)
+                            {
+                                UIntPtr value = (UIntPtr)stackItem.AsIntPtr().ToPointer();
+                                result = checkOverflow ? Convert.ToSByte(value.ToUInt64()) : (sbyte)value;
+                            }
+                            else
+                            {
+                                IntPtr value = stackItem.AsIntPtr();
+                                result = checkOverflow ? Convert.ToSByte(value.ToInt64()) : (sbyte)value;
+                            }
+                        }
+                        else
+                        {
+
+                        }
+
+                        _interpreter.EvaluationStack.Push(StackItem.FromInt32(result));
+                        break;
+                    }
+                case WellKnownType.Byte:
+                    {
+                        byte result = default(byte);
+                        if (stackItem.Kind == StackValueKind.Int32)
+                        {
+                            if (unsigned)
+                            {
+                                uint value = (uint)stackItem.AsInt32();
+                                result = checkOverflow ? Convert.ToByte(value) : (byte)value;
+                            }
+                            else
+                            {
+                                int value = stackItem.AsInt32();
+                                result = checkOverflow ? Convert.ToByte(value) : (byte)value;
+                            }
+                        }
+                        else if (stackItem.Kind == StackValueKind.Int64)
+                        {
+                            if (unsigned)
+                            {
+                                ulong value = (ulong)stackItem.AsInt64();
+                                result = checkOverflow ? Convert.ToByte(value) : (byte)value;
+                            }
+                            else
+                            {
+                                long value = stackItem.AsInt64();
+                                result = checkOverflow ? Convert.ToByte(value) : (byte)value;
+                            }
+                        }
+                        else if (stackItem.Kind == StackValueKind.Float)
+                        {
+                            double value = stackItem.AsDouble();
+                            result = checkOverflow ? Convert.ToByte(value) : (byte)value;
+                        }
+                        else if (stackItem.Kind == StackValueKind.NativeInt)
+                        {
+                            if (unsigned)
+                            {
+                                UIntPtr value = (UIntPtr)stackItem.AsIntPtr().ToPointer();
+                                result = checkOverflow ? Convert.ToByte(value.ToUInt64()) : (byte)value;
+                            }
+                            else
+                            {
+                                IntPtr value = stackItem.AsIntPtr();
+                                result = checkOverflow ? Convert.ToByte(value.ToInt64()) : (byte)value;
+                            }
+                        }
+                        else
+                        {
+
+                        }
+
+                        _interpreter.EvaluationStack.Push(StackItem.FromInt32(result));
+                        break;
+                    }
+                case WellKnownType.Int16:
+                    {
+                        short result = default(short);
+                        if (stackItem.Kind == StackValueKind.Int32)
+                        {
+                            if (unsigned)
+                            {
+                                uint value = (uint)stackItem.AsInt32();
+                                result = checkOverflow ? Convert.ToInt16(value) : (short)value;
+                            }
+                            else
+                            {
+                                int value = stackItem.AsInt32();
+                                result = checkOverflow ? Convert.ToInt16(value) : (short)value;
+                            }
+                        }
+                        else if (stackItem.Kind == StackValueKind.Int64)
+                        {
+                            if (unsigned)
+                            {
+                                ulong value = (ulong)stackItem.AsInt64();
+                                result = checkOverflow ? Convert.ToInt16(value) : (short)value;
+                            }
+                            else
+                            {
+                                long value = stackItem.AsInt64();
+                                result = checkOverflow ? Convert.ToInt16(value) : (short)value;
+                            }
+                        }
+                        else if (stackItem.Kind == StackValueKind.Float)
+                        {
+                            double value = stackItem.AsDouble();
+                            result = checkOverflow ? Convert.ToInt16(value) : (short)value;
+                        }
+                        else if (stackItem.Kind == StackValueKind.NativeInt)
+                        {
+                            if (unsigned)
+                            {
+                                UIntPtr value = (UIntPtr)stackItem.AsIntPtr().ToPointer();
+                                result = checkOverflow ? Convert.ToInt16(value.ToUInt64()) : (short)value;
+                            }
+                            else
+                            {
+                                IntPtr value = stackItem.AsIntPtr();
+                                result = checkOverflow ? Convert.ToInt16(value.ToInt64()) : (short)value;
+                            }
+                        }
+                        else
+                        {
+
+                        }
+
+                        _interpreter.EvaluationStack.Push(StackItem.FromInt32(result));
+                        break;
+                    }
+                case WellKnownType.UInt16:
+                    {
+                        ushort result = default(ushort);
+                        if (stackItem.Kind == StackValueKind.Int32)
+                        {
+                            if (unsigned)
+                            {
+                                uint value = (uint)stackItem.AsInt32();
+                                result = checkOverflow ? Convert.ToUInt16(value) : (ushort)value;
+                            }
+                            else
+                            {
+                                int value = stackItem.AsInt32();
+                                result = checkOverflow ? Convert.ToUInt16(value) : (ushort)value;
+                            }
+                        }
+                        else if (stackItem.Kind == StackValueKind.Int64)
+                        {
+                            if (unsigned)
+                            {
+                                ulong value = (ulong)stackItem.AsInt64();
+                                result = checkOverflow ? Convert.ToUInt16(value) : (ushort)value;
+                            }
+                            else
+                            {
+                                long value = stackItem.AsInt64();
+                                result = checkOverflow ? Convert.ToUInt16(value) : (ushort)value;
+                            }
+                        }
+                        else if (stackItem.Kind == StackValueKind.Float)
+                        {
+                            double value = stackItem.AsDouble();
+                            result = checkOverflow ? Convert.ToUInt16(value) : (ushort)value;
+                        }
+                        else if (stackItem.Kind == StackValueKind.NativeInt)
+                        {
+                            if (unsigned)
+                            {
+                                UIntPtr value = (UIntPtr)stackItem.AsIntPtr().ToPointer();
+                                result = checkOverflow ? Convert.ToUInt16(value.ToUInt64()) : (ushort)value;
+                            }
+                            else
+                            {
+                                IntPtr value = stackItem.AsIntPtr();
+                                result = checkOverflow ? Convert.ToUInt16(value.ToInt64()) : (ushort)value;
+                            }
+                        }
+                        else
+                        {
+
+                        }
+
+                        _interpreter.EvaluationStack.Push(StackItem.FromInt32(result));
+                        break;
+                    }
+                case WellKnownType.Int32:
+                    {
+                        int result = default(int);
+                        if (stackItem.Kind == StackValueKind.Int32)
+                        {
+                            if (unsigned)
+                            {
+                                uint value = (uint)stackItem.AsInt32();
+                                result = checkOverflow ? Convert.ToInt32(value) : (int)value;
+                            }
+                            else
+                            {
+                                result = stackItem.AsInt32();
+                            }
+                        }
+                        else if (stackItem.Kind == StackValueKind.Int64)
+                        {
+                            if (unsigned)
+                            {
+                                ulong value = (ulong)stackItem.AsInt64();
+                                result = checkOverflow ? Convert.ToInt32(value) : (int)value;
+                            }
+                            else
+                            {
+                                long value = stackItem.AsInt64();
+                                result = checkOverflow ? Convert.ToInt32(value) : (int)value;
+                            }
+                        }
+                        else if (stackItem.Kind == StackValueKind.Float)
+                        {
+                            double value = stackItem.AsDouble();
+                            result = checkOverflow ? Convert.ToInt32(value) : (int)value;
+                        }
+                        else if (stackItem.Kind == StackValueKind.NativeInt)
+                        {
+                            if (unsigned)
+                            {
+                                UIntPtr value = (UIntPtr)stackItem.AsIntPtr().ToPointer();
+                                result = checkOverflow ? Convert.ToInt32(value.ToUInt64()) : (int)value;
+                            }
+                            else
+                            {
+                                IntPtr value = stackItem.AsIntPtr();
+                                result = checkOverflow ? Convert.ToInt32(value.ToInt64()) : (int)value;
+                            }
+                        }
+                        else
+                        {
+
+                        }
+
+                        _interpreter.EvaluationStack.Push(StackItem.FromInt32(result));
+                        break;
+                    }
+                case WellKnownType.UInt32:
+                    {
+                        uint result = default(uint);
+                        if (stackItem.Kind == StackValueKind.Int32)
+                        {
+                            if (unsigned)
+                            {
+                                result = (uint)stackItem.AsInt32();
+                            }
+                            else
+                            {
+                                int value = stackItem.AsInt32();
+                                result = checkOverflow ? Convert.ToUInt32(value) : (uint)value;
+                            }
+                        }
+                        else if (stackItem.Kind == StackValueKind.Int64)
+                        {
+                            if (unsigned)
+                            {
+                                ulong value = (ulong)stackItem.AsInt64();
+                                result = checkOverflow ? Convert.ToUInt32(value) : (uint)value;
+                            }
+                            else
+                            {
+                                long value = stackItem.AsInt64();
+                                result = checkOverflow ? Convert.ToUInt32(value) : (uint)value;
+                            }
+                        }
+                        else if (stackItem.Kind == StackValueKind.Float)
+                        {
+                            double value = stackItem.AsDouble();
+                            result = checkOverflow ? Convert.ToUInt32(value) : (uint)value;
+                        }
+                        else if (stackItem.Kind == StackValueKind.NativeInt)
+                        {
+                            if (unsigned)
+                            {
+                                UIntPtr value = (UIntPtr)stackItem.AsIntPtr().ToPointer();
+                                result = checkOverflow ? Convert.ToUInt32(value.ToUInt64()) : (uint)value;
+                            }
+                            else
+                            {
+                                IntPtr value = stackItem.AsIntPtr();
+                                result = checkOverflow ? Convert.ToUInt32(value.ToInt64()) : (uint)value;
+                            }
+                        }
+                        else
+                        {
+
+                        }
+
+                        _interpreter.EvaluationStack.Push(StackItem.FromInt32((int)result));
+                        break;
+                    }
+                case WellKnownType.Int64:
+                    {
+                        long result = default(long);
+                        if (stackItem.Kind == StackValueKind.Int32)
+                        {
+                            if (unsigned)
+                            {
+                                result = (uint)stackItem.AsInt32();
+                            }
+                            else
+                            {
+                                result = stackItem.AsInt32();
+                            }
+                        }
+                        else if (stackItem.Kind == StackValueKind.Int64)
+                        {
+                            if (unsigned)
+                            {
+                                ulong value = (ulong)stackItem.AsInt64();
+                                result = checkOverflow ? Convert.ToInt64(value) : (long)value;
+                            }
+                            else
+                            {
+                                result = stackItem.AsInt64();
+                            }
+                        }
+                        else if (stackItem.Kind == StackValueKind.Float)
+                        {
+                            double value = stackItem.AsDouble();
+                            result = checkOverflow ? Convert.ToInt64(value) : (long)value;
+                        }
+                        else if (stackItem.Kind == StackValueKind.NativeInt)
+                        {
+                            if (unsigned)
+                            {
+                                UIntPtr value = (UIntPtr)stackItem.AsIntPtr().ToPointer();
+                                result = (long)value.ToUInt64();
+                            }
+                            else
+                            {
+                                result = stackItem.AsIntPtr().ToInt64();
+                            }
+                        }
+                        else
+                        {
+
+                        }
+
+                        _interpreter.EvaluationStack.Push(StackItem.FromInt64(result));
+                        break;
+                    }
+                case WellKnownType.UInt64:
+                    {
+                        ulong result = default(ulong);
+                        if (stackItem.Kind == StackValueKind.Int32)
+                        {
+                            if (unsigned)
+                            {
+                                uint value = (uint)stackItem.AsInt32();
+                                result = checkOverflow ? Convert.ToUInt64(value) : (ulong)value;
+                            }
+                            else
+                            {
+                                int value = stackItem.AsInt32();
+                                result = checkOverflow ? Convert.ToUInt64(value) : (ulong)value;
+                            }
+                        }
+                        else if (stackItem.Kind == StackValueKind.Int64)
+                        {
+                            if (unsigned)
+                            {
+                                ulong value = (ulong)stackItem.AsInt64();
+                                result = checkOverflow ? Convert.ToUInt64(value) : (ulong)value;
+                            }
+                            else
+                            {
+                                long value = stackItem.AsInt64();
+                                result = checkOverflow ? Convert.ToUInt64(value) : (ulong)value;
+                            }
+                        }
+                        else if (stackItem.Kind == StackValueKind.Float)
+                        {
+                            double value = stackItem.AsDouble();
+                            result = checkOverflow ? Convert.ToUInt64(value) : (ulong)value;
+                        }
+                        else if (stackItem.Kind == StackValueKind.NativeInt)
+                        {
+                            if (unsigned)
+                            {
+                                UIntPtr value = (UIntPtr)stackItem.AsIntPtr().ToPointer();
+                                result = value.ToUInt64();
+                            }
+                            else
+                            {
+                                IntPtr value = stackItem.AsIntPtr();
+                                result = checkOverflow ? Convert.ToUInt64(value.ToInt64()) : (ulong)value;
+                            }
+                        }
+                        else
+                        {
+
+                        }
+
+                        _interpreter.EvaluationStack.Push(StackItem.FromInt64((long)result));
+                        break;
+                    }
+                case WellKnownType.Single:
+                case WellKnownType.Double:
+                    {
+                        double result = default(double);
+                        if (stackItem.Kind == StackValueKind.Int32)
+                        {
+                            if (unsigned)
+                            {
+                                uint value = (uint)stackItem.AsInt32();
+                                result = (double)value;
+                            }
+                            else
+                            {
+                                int value = stackItem.AsInt32();
+                                result = (double)value;
+                            }
+                        }
+                        else if (stackItem.Kind == StackValueKind.Int64)
+                        {
+                            if (unsigned)
+                            {
+                                ulong value = (ulong)stackItem.AsInt64();
+                                result = (double)value;
+                            }
+                            else
+                            {
+                                result = (double)stackItem.AsInt64();
+                            }
+                        }
+                        else if (stackItem.Kind == StackValueKind.Float)
+                        {
+                            result = stackItem.AsDouble();
+                        }
+                        else if (stackItem.Kind == StackValueKind.NativeInt)
+                        {
+                            if (unsigned)
+                            {
+                                UIntPtr value = (UIntPtr)stackItem.AsIntPtr().ToPointer();
+                                result = (double)value;
+                            }
+                            else
+                            {
+                                result = (double)stackItem.AsIntPtr();
+                            }
+                        }
+                        else
+                        {
+
+                        }
+
+                        _interpreter.EvaluationStack.Push(StackItem.FromDouble(result));
+                        break;
+                    }
+                case WellKnownType.IntPtr:
+                    break;
+                case WellKnownType.UIntPtr:
+                    break;
+                default:
+                    break;
+            }
         }
 
         private void ImportUnaryOperation(ILOpcode opCode)
@@ -290,6 +786,7 @@ namespace Internal.IL
                             double value = stackItem.AsDouble();
                             _interpreter.EvaluationStack.Push(StackItem.FromDouble(-value));
                         }
+
                         break;
                     }
                 case ILOpcode.not:
@@ -304,10 +801,13 @@ namespace Internal.IL
                             long value = stackItem.AsInt64();
                             _interpreter.EvaluationStack.Push(StackItem.FromInt64(~value));
                         }
+                        else
+                        {
+                            ThrowHelper.ThrowInvalidProgramException();
+                        }
+
                         break;
                     }
-                default:
-                    break;
             }
         }
 
