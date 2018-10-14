@@ -112,13 +112,19 @@ namespace ILCompiler
                 InstantiatedType boxedType = boxedTypeDefinition.MakeInstantiatedType(owningType.Instantiation);
                 MethodDesc thunk = GetMethodForInstantiatedType(thunkDefinition, boxedType);
                 //TODO: this might be triggered by a struct that implements an interface with a generic method
+                if (thunk.HasInstantiation)
+                {
+                    return targetMethod.Context.GetInstantiatedMethod(thunkDefinition, thunkDefinition.Instantiation);
+                }
                 Debug.Assert(!thunk.HasInstantiation);
                 return thunk;
             }
             else
             {
-                //TODO: this might be triggered by a struct that implements an interface with a generic method
-                Debug.Assert(!thunkDefinition.HasInstantiation);
+                if (thunkDefinition.HasInstantiation)
+                {
+                    return targetMethod.Context.GetInstantiatedMethod(thunkDefinition, thunkDefinition.Instantiation);
+                }
                 return thunkDefinition;
             }
         }
@@ -509,7 +515,6 @@ namespace ILCompiler
 
                 _owningType = owningType;
                 _targetMethod = targetMethod;
-                Debug.Assert(targetMethod.IsMethodDefinition && !targetMethod.HasInstantiation);
             }
 
             public override TypeSystemContext Context => _targetMethod.Context;
@@ -557,12 +562,34 @@ namespace ILCompiler
                     codeStream.EmitLdArg(i + 1);
                 }
 
-                // Call an instance method on the target valuetype
-                codeStream.Emit(ILOpcode.call, emit.NewToken(_targetMethod.InstantiateAsOpen()));
+                TypeDesc owner = _targetMethod.OwningType;
+                MethodDesc methodToInstantiate = _targetMethod;
+                if (owner.HasInstantiation)
+                {
+                    MetadataType instantiatedOwner = (MetadataType)owner.InstantiateAsOpen();
+                    methodToInstantiate = _targetMethod.Context.GetMethodForInstantiatedType(_targetMethod, (InstantiatedType)instantiatedOwner);
+
+                    if (methodToInstantiate.HasInstantiation)
+                    {
+                        TypeSystemContext context = methodToInstantiate.Context;
+
+                        var inst = new TypeDesc[methodToInstantiate.Instantiation.Length];
+                        for (int i = 0; i < inst.Length; i++)
+                        {
+                            inst[i] = context.GetSignatureVariable(i, true);
+                        }
+
+                        methodToInstantiate = context.GetInstantiatedMethod(methodToInstantiate, new Instantiation(inst));
+                    }
+                }
+
+                codeStream.Emit(ILOpcode.call, emit.NewToken(methodToInstantiate));
                 codeStream.Emit(ILOpcode.ret);
 
                 return emit.Link(this);
             }
+
+            public override Instantiation Instantiation => _targetMethod.Instantiation;
         }
 
         /// <summary>
