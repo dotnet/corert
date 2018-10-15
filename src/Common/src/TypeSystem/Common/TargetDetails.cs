@@ -110,7 +110,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return Abi != TargetAbi.CppCodegen;
+                return (Abi != TargetAbi.CppCodegen) && (Architecture != TargetArchitecture.Wasm32);
             }
         }
 

@@ -63,6 +63,8 @@ struct JitInterfaceCallbacks
     void (* LongLifetimeFree)(void * thisHandle, CorInfoException** ppException, void* obj);
     size_t (* getClassModuleIdForStatics)(void * thisHandle, CorInfoException** ppException, void* cls, void* pModule, void** ppIndirection);
     unsigned (* getClassSize)(void * thisHandle, CorInfoException** ppException, void* cls);
+    unsigned (* getHeapClassSize)(void * thisHandle, CorInfoException** ppException, void* cls);
+    int (* canAllocateOnStack)(void * thisHandle, CorInfoException** ppException, void* cls);
     unsigned (* getClassAlignmentRequirement)(void * thisHandle, CorInfoException** ppException, void* cls, int fDoubleAlignHint);
     unsigned (* getClassGClayout)(void * thisHandle, CorInfoException** ppException, void* cls, unsigned char* gcPtrs);
     unsigned (* getClassNumInstanceFields)(void * thisHandle, CorInfoException** ppException, void* cls);
@@ -655,6 +657,24 @@ public:
     {
         CorInfoException* pException = nullptr;
         unsigned _ret = _callbacks->getClassSize(_thisHandle, &pException, cls);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual unsigned getHeapClassSize(void* cls)
+    {
+        CorInfoException* pException = nullptr;
+        unsigned _ret = _callbacks->getHeapClassSize(_thisHandle, &pException, cls);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual int canAllocateOnStack(void* cls)
+    {
+        CorInfoException* pException = nullptr;
+        int _ret = _callbacks->canAllocateOnStack(_thisHandle, &pException, cls);
         if (pException != nullptr)
             throw pException;
         return _ret;

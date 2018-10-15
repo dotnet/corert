@@ -1639,6 +1639,16 @@ namespace Internal.IL
             }
             var pointerSize = _compilation.NodeFactory.Target.PointerSize;
 
+            LLVMValueRef fn;
+            if (opcode == ILOpcode.calli)
+            {
+                fn = calliTarget;
+            }
+            else
+            {
+                fn = LLVMFunctionForMethod(callee, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt, constrainedType);
+            }
+
             LLVMValueRef returnAddress;
             LLVMValueRef castReturnAddress = default;
             TypeDesc returnType = signature.ReturnType;
@@ -1711,15 +1721,6 @@ namespace Internal.IL
                 }
             }
 
-            LLVMValueRef fn;
-            if (opcode == ILOpcode.calli)
-            {
-                fn = calliTarget;
-            }
-            else
-            {
-                fn = LLVMFunctionForMethod(callee, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt, constrainedType);
-            }
 
             LLVMValueRef llvmReturn = LLVM.BuildCall(_builder, fn, llvmArgs.ToArray(), string.Empty);
             
@@ -2980,7 +2981,7 @@ namespace Internal.IL
 
         private LLVMValueRef GetElementAddress(LLVMValueRef elementPosition, LLVMValueRef arrayReference, TypeDesc arrayElementType)
         {
-            var elementSize = arrayElementType.IsValueType ? ((DefType)arrayElementType).InstanceByteCount : arrayElementType.GetElementSize();
+            var elementSize = arrayElementType.GetElementSize();
             LLVMValueRef elementOffset = LLVM.BuildMul(_builder, elementPosition, BuildConstInt32(elementSize.AsInt), "elementOffset");
             LLVMValueRef arrayOffset = LLVM.BuildAdd(_builder, elementOffset, ArrayBaseSize(), "arrayOffset");
             return LLVM.BuildGEP(_builder, arrayReference, new LLVMValueRef[] { arrayOffset }, "elementPointer");

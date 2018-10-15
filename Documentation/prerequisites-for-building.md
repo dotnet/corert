@@ -8,19 +8,19 @@ The following pre-requisites need to be installed for building the repo:
 
 PowerShell also needs to be available from the PATH environment variable (it's the default). Typically it should be %SYSTEMROOT%\System32\WindowsPowerShell\v1.0\.
 
-# Ubuntu (14.04+)
+# Ubuntu (16.04+)
 
 Install basic dependency packages:
 
 First add a new package source to be able to install clang-3.9:
 ```sh
-echo "deb http://llvm.org/apt/trusty/ llvm-toolchain-trusty-3.9 main" | sudo tee /etc/apt/sources.list.d/llvm.list
+echo "deb http://llvm.org/apt/xenial/ llvm-toolchain-xenial-3.9 main" | sudo tee /etc/apt/sources.list.d/llvm.list
 wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
 sudo apt-get update
 ```
 
 ```sh
-sudo apt-get install cmake clang-3.9 libicu52 libunwind8 uuid-dev libcurl4-openssl-dev zlib1g-dev libkrb5-dev
+sudo apt-get install cmake clang-3.9 libicu55 uuid-dev libcurl4-openssl-dev zlib1g-dev libkrb5-dev
 ```
 
 # macOS (10.12+)
@@ -49,15 +49,4 @@ sudo zypper install cmake libuuid-devel icu libcurl-devel zlib-devel
 
 Make sure you run with Ubuntu 16.04 Xenial userland (this is the default after Windows 10 Creators Update, but if you enabled the "Bash on Ubuntu on Windows" feature before the Creators Update, you need to [upgrade manually](https://blogs.msdn.microsoft.com/commandline/2017/04/11/windows-10-creators-update-whats-new-in-bashwsl-windows-console/)). Running `lsb_release -a` will give you the version.
 
-Install basic dependency packages:
-
-First add a new package source to be able to install clang-3.9:
-```sh
-echo "deb http://llvm.org/apt/xenial/ llvm-toolchain-xenial-3.9 main" | sudo tee /etc/apt/sources.list.d/llvm.list
-wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
-sudo apt-get update
-```
-
-```sh
-sudo apt-get install cmake clang-3.9 libunwind8 uuid-dev libcurl4-openssl-dev zlib1g-dev libkrb5-dev
-```
+Then follow the Ubuntu 16.04 instructions above.

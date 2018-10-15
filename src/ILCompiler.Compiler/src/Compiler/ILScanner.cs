@@ -78,7 +78,6 @@ namespace ILCompiler
 
         ILScanResults IILScanner.Scan()
         {
-            _nodeFactory.NameMangler.CompilationUnitPrefix = "";
             _dependencyGraph.ComputeMarkedNodes();
 
             return new ILScanResults(_dependencyGraph, _nodeFactory);

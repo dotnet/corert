@@ -605,6 +605,10 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     Relocation reloc = relocs[nextRelocIndex];
 
+                    // Make sure we've gotten the correct size for the reloc
+                    Debug.Assert(reloc.RelocType == RelocType.IMAGE_REL_BASED_DIR64 ||
+                        reloc.RelocType == RelocType.IMAGE_REL_BASED_HIGHLOW);
+
                     long delta;
                     unsafe
                     {

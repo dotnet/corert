@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
 #if PLATFORM_WINDOWS
 using CpObj;
 #endif
@@ -314,6 +315,10 @@ internal static class Program
 
         TestConstrainedClassCalls();
 
+        TestValueTypeElementIndexing();
+        
+        TestArrayItfDispatch();
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -454,6 +459,17 @@ internal static class Program
         {
             PrintLine("Struct interface test: Ok.");
         }
+
+        ClassWithSealedVTable classWithSealedVTable = new ClassWithSealedVTable();
+        PrintString("Interface dispatch with sealed vtable test: ");
+        if (CallItf(classWithSealedVTable) == 37)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
     }
 
     // Calls the ITestItf interface via a generic to ensure the concrete type is known and
@@ -461,6 +477,11 @@ internal static class Program
     private static int ItfCaller<T>(T obj) where T : ITestItf
     {
         return obj.GetValue();
+    }
+
+    private static int CallItf(ISomeItf asItf)
+    {
+        return asItf.GetValue();
     }
 
     private static void StaticCtorTest()
@@ -599,6 +620,34 @@ internal static class Program
     static int GenericGetHashCode<T>(T obj)
     {
         return obj.GetHashCode();
+    }
+
+    private static void TestArrayItfDispatch()
+    {
+        ICollection<int> arrayItfDispatchTest = new int[37];
+        PrintString("Array interface dispatch test: ");
+        if (arrayItfDispatchTest.Count == 37)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.  asm.js (WASM=1) known to fail due to alignment problem, although this problem sometimes means we don't even get this far and fails with an invalid function pointer.");
+        }
+    }
+
+    private static void TestValueTypeElementIndexing()
+    {
+        var chars = new[] { 'i', 'p', 's', 'u', 'm' };
+        PrintString("Value type element indexing: ");
+        if (chars[0] == 'i' && chars[1] == 'p' && chars[2] == 's' && chars[3] == 'u' && chars[4] == 'm')
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
     }
 
     [DllImport("*")]
@@ -850,4 +899,17 @@ public sealed class SealedDerived : MyBase
     {
         return _data * 3;
     }
+}
+
+class ClassWithSealedVTable : ISomeItf
+{
+    public int GetValue()
+    {
+        return 37;
+    }
+}
+
+interface ISomeItf
+{
+    int GetValue();
 }
