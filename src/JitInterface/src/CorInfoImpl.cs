@@ -2740,7 +2740,7 @@ namespace Internal.JitInterface
 
                         if (!referencingArrayAddressMethod)
                         {
-                            pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+                            pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
                                 _compilation.NodeFactory.ShadowConcreteMethod(targetMethod, constrainedType, method, _signatureContext)
 #else
@@ -2753,7 +2753,7 @@ namespace Internal.JitInterface
                             // We don't want array Address method to be modeled in the generic dependency analysis.
                             // The method doesn't actually have runtime determined dependencies (won't do
                             // any generic lookups).
-                            pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+                            pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
                                 _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, method, _signatureContext)
 #else
@@ -2764,7 +2764,7 @@ namespace Internal.JitInterface
                     }
                     else if (targetMethod.AcquiresInstMethodTableFromThis())
                     {
-                        pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+                        pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
                             _compilation.NodeFactory.ShadowConcreteMethod(targetMethod, constrainedType, method, _signatureContext)
 #else
@@ -2774,16 +2774,13 @@ namespace Internal.JitInterface
                     }
                     else
                     {
-                        pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+                        pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
                             _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, method, _signatureContext)
 #else
                             _compilation.NodeFactory.MethodEntrypoint(targetMethod)
 #endif
                             );
-=======
-                        pResult->instParamLookup = CreateConstLookupToSymbol(instParam);
->>>>>>> 04a45834946322604f4e677f2a141c99992db23f
                     }
 
                     pResult->codePointerOrStubLookup.constLookup = 
