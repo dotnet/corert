@@ -41,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _typeSystemContext = typeSystemContext;
         }
 
-        public ModuleToken GetModuleTokenForType(EcmaType type)
+        public ModuleToken GetModuleTokenForType(EcmaType type, bool throwIfNotFound = true)
         {
             if (_compilationModuleGroup.ContainsType(type))
             {
@@ -55,10 +55,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             // Reverse lookup failed
-            throw new NotImplementedException(type.ToString());
+            if (throwIfNotFound)
+            {
+                throw new NotImplementedException(type.ToString());
+            }
+            else
+            {
+                return default(ModuleToken);
+            }
         }
 
-        public ModuleToken GetModuleTokenForMethod(MethodDesc method)
+        public ModuleToken GetModuleTokenForMethod(MethodDesc method, bool throwIfNotFound = true)
         {
             if (_compilationModuleGroup.ContainsMethodBody(method, unboxingStub: false) &&
                 method is EcmaMethod ecmaMethod)
@@ -72,21 +79,43 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             // Reverse lookup failed
-            throw new NotImplementedException(method.ToString());
+            if (throwIfNotFound)
+            {
+                throw new NotImplementedException(method.ToString());
+            }
+            else
+            {
+                return default(ModuleToken);
+            }
         }
 
-        public ModuleToken GetModuleTokenForField(FieldDesc field)
+        public ModuleToken GetModuleTokenForField(FieldDesc field, bool throwIfNotFound = true)
         {
             if (_compilationModuleGroup.ContainsType(field.OwningType) && field is EcmaField ecmaField)
             {
                 return new ModuleToken(ecmaField.Module, ecmaField.Handle);
             }
 
-            throw new NotImplementedException();
+            if (throwIfNotFound)
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                return default(ModuleToken);
+            }
         }
 
         public void AddModuleTokenForMethod(MethodDesc method, ModuleToken token)
         {
+            // Always remove method instantiation as methodSpec's cannot be used to encode R2R method signatures
+            method = method.GetMethodDefinition();
+            if (token.TokenType == CorTokenType.mdtMethodSpec)
+            {
+                MethodSpecification methodSpec = token.MetadataReader.GetMethodSpecification((MethodSpecificationHandle)token.Handle);
+                token = new ModuleToken(token.Module, methodSpec.Method);
+            }
+
             if (_methodToRefTokens.ContainsKey(method))
             {
                 // This method has already been harvested
@@ -104,16 +133,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             switch (token.TokenType)
             {
-                case CorTokenType.mdtMethodSpec:
-                    {
-                        MethodSpecification methodSpec = token.MetadataReader.GetMethodSpecification((MethodSpecificationHandle)token.Handle);
-                        AddModuleTokenForMethod((MethodDesc)token.Module.GetObject(methodSpec.Method), new ModuleToken(token.Module, methodSpec.Method));
-                    }
-                    break;
-
                 case CorTokenType.mdtMemberRef:
-                    if ((method.HasInstantiation || method.OwningType.HasInstantiation) &&
-                        !method.IsGenericMethodDefinition && !method.OwningType.IsGenericDefinition)
+                    if (method.OwningType.HasInstantiation && !method.OwningType.IsGenericDefinition)
                     {
                         AddModuleTokenForMethod(method.GetTypicalMethodDefinition(), token);
                     }

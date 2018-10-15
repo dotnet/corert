@@ -10,33 +10,33 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class GenericLookupSignature : Signature
+    public class GenericLookupMethodSignature : Signature
     {
         private CORINFO_RUNTIME_LOOKUP_KIND _runtimeLookupKind;
 
         private readonly ReadyToRunFixupKind _fixupKind;
 
-        private readonly TypeDesc _typeArgument;
+        private readonly MethodDesc _methodArgument;
 
         private readonly TypeDesc _contextType;
 
         private readonly SignatureContext _signatureContext;
 
-        public GenericLookupSignature(
-            CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind, 
-            ReadyToRunFixupKind fixupKind, 
-            TypeDesc typeArgument, 
+        public GenericLookupMethodSignature(
+            CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
+            ReadyToRunFixupKind fixupKind,
+            MethodDesc methodArgument,
             TypeDesc contextType,
             SignatureContext signatureContext)
         {
             _runtimeLookupKind = runtimeLookupKind;
             _fixupKind = fixupKind;
-            _typeArgument = typeArgument;
+            _methodArgument = methodArgument;
             _contextType = contextType;
             _signatureContext = signatureContext;
         }
 
-        public override int ClassCode => 258608008;
+        public override int ClassCode => 258609009;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -67,7 +67,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
 
                 dataBuilder.EmitByte((byte)_fixupKind);
-                dataBuilder.EmitTypeSignature(_typeArgument, _signatureContext);
+                dataBuilder.EmitMethodSignature(
+                    _methodArgument, 
+                    constrainedType: null, 
+                    isUnboxingStub: false, 
+                    isInstantiatingStub: false, 
+                    _signatureContext);
             }
 
             return dataBuilder.ToObjectData();
@@ -76,12 +81,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("GenericLookupSignature(");
+            sb.Append("GenericLookupMethodSignature(");
             sb.Append(_runtimeLookupKind.ToString());
             sb.Append(" / ");
             sb.Append(_fixupKind.ToString());
             sb.Append(": ");
-            RuntimeDeterminedTypeHelper.WriteTo(_typeArgument, sb);
+            RuntimeDeterminedTypeHelper.WriteTo(_methodArgument, sb);
             if (_contextType != null)
             {
                 sb.Append(" (");
@@ -98,10 +103,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencies = new DependencyList();
-            if (!NodeFactory.TypeCannotHaveEEType(_typeArgument))
-            {
-                dependencies.Add(factory.NecessaryTypeSymbol(_typeArgument), "Type referenced in a generic lookup signature");
-            }
+            // dependencies.Add(factory.NecessaryTypeSymbol(_methodArgument), "Method referenced in a generic lookup signature");
             return dependencies;
         }
     }

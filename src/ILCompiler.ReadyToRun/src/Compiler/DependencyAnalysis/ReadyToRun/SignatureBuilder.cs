@@ -419,17 +419,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             if (method.HasInstantiation)
             {
-                flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MethodInstantiation
-                    | (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
+                flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MethodInstantiation;
             }
 
-            if (method.OwningType.HasInstantiation)
+            ModuleToken methodToken = context.GetModuleTokenForMethod(method.GetMethodDefinition(), throwIfNotFound: false);
+            if (methodToken.IsNull)
             {
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
+                methodToken = context.GetModuleTokenForMethod(method.GetTypicalMethodDefinition());
             }
 
-            ModuleToken genericMethodToken = context.GetModuleTokenForMethod(method.GetTypicalMethodDefinition());
-            switch (genericMethodToken.TokenType)
+            switch (methodToken.TokenType)
             {
                 case CorTokenType.mdtMethodDef:
                     break;
@@ -447,8 +447,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 EmitTypeSignature(method.OwningType, context);
             }
-            EmitTokenRid(genericMethodToken.Token);
-            if (method.HasInstantiation)
+            EmitTokenRid(methodToken.Token);
+            if ((flags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MethodInstantiation) != 0)
             {
                 Instantiation instantiation = method.Instantiation;
                 EmitUInt((uint)instantiation.Length);

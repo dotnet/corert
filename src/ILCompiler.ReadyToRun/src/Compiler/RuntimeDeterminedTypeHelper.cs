@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 
 using Internal.TypeSystem;
 using Internal.Text;
@@ -17,6 +18,22 @@ namespace ILCompiler
     /// </summary>
     public static class RuntimeDeterminedTypeHelper
     {
+        public static bool Equals(Instantiation instantiation1, Instantiation instantiation2)
+        {
+            if (instantiation1.Length != instantiation2.Length)
+            {
+                return false;
+            }
+            for (int argIndex = 0; argIndex < instantiation1.Length; argIndex++)
+            {
+                if (!Equals(instantiation1[argIndex], instantiation2[argIndex]))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         public static bool Equals(TypeDesc type1, TypeDesc type2)
         {
             if (type1 == type2)
@@ -36,33 +53,47 @@ namespace ILCompiler
                     runtimeDeterminedType1.RuntimeDeterminedDetailsType.Kind == runtimeDeterminedType2.RuntimeDeterminedDetailsType.Kind;
             }
 
-            InstantiatedType instantiatedType1 = type1 as InstantiatedType;
-            InstantiatedType instantiatedType2 = type2 as InstantiatedType;
-            if (instantiatedType1 != null || instantiatedType2 != null)
+            if (type1.GetTypeDefinition() != type2.GetTypeDefinition() ||
+                !Equals(type1.Instantiation, type2.Instantiation))
             {
-                if (instantiatedType1 == null || instantiatedType2 == null)
-                {
-                    return false;
-                }
-                if (instantiatedType1.GetTypeDefinition() != instantiatedType2.GetTypeDefinition())
-                {
-                    return false;
-                }
-                if (instantiatedType1.Instantiation.Length != instantiatedType2.Instantiation.Length)
-                {
-                    return false;
-                }
-                for (int typeArgIndex = 0; typeArgIndex < instantiatedType1.Instantiation.Length; typeArgIndex++)
-                {
-                    if (!Equals(instantiatedType1.Instantiation[typeArgIndex], instantiatedType2.Instantiation[typeArgIndex]))
-                    {
-                        return false;
-                    }
-                }
-                return true;
+                return false;
             }
 
-            throw new NotImplementedException();
+            return true;
+        }
+
+        public static bool Equals(MethodDesc method1, MethodDesc method2)
+        {
+            if (method1 == method2)
+            {
+                return true;
+            }
+            if (!Equals(method1.OwningType, method2.OwningType) ||
+                method1.Signature.Length != method2.Signature.Length ||
+                !Equals(method1.Instantiation, method2.Instantiation) ||
+                !Equals(method1.Signature.ReturnType, method2.Signature.ReturnType))
+            {
+                return false;
+            }
+            for (int argIndex = 0; argIndex < method1.Signature.Length; argIndex++)
+            {
+                if (!Equals(method1.Signature[argIndex], method2.Signature[argIndex]))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public static int GetHashCode(Instantiation instantiation)
+        {
+            int hashcode = unchecked(instantiation.Length << 24);
+            for (int typeArgIndex = 0; typeArgIndex < instantiation.Length; typeArgIndex++)
+            {
+                hashcode = unchecked(hashcode * 73 + GetHashCode(instantiation[typeArgIndex]));
+            }
+            return hashcode;
+
         }
 
         public static int GetHashCode(TypeDesc type)
@@ -72,17 +103,27 @@ namespace ILCompiler
                 return runtimeDeterminedType.RuntimeDeterminedDetailsType.Index ^
                     ((int)runtimeDeterminedType.RuntimeDeterminedDetailsType.Kind << 30);
             }
-            if (type is InstantiatedType instantiatedType)
+            return type.GetTypeDefinition().GetHashCode() ^ GetHashCode(type.Instantiation);
+        }
+
+        public static int GetHashCode(MethodDesc method)
+        {
+            return unchecked(GetHashCode(method.OwningType) + 97 * (
+                method.GetTypicalMethodDefinition().GetHashCode() + 31 * GetHashCode(method.Instantiation)));
+        }
+
+        public static void WriteTo(Instantiation instantiation, Utf8StringBuilder sb)
+        {
+            sb.Append("<");
+            for (int typeArgIndex = 0; typeArgIndex < instantiation.Length; typeArgIndex++)
             {
-                int hashcode = instantiatedType.GetTypeDefinition().GetHashCode() ^ 
-                    unchecked(instantiatedType.Instantiation.Length << 24);
-                for (int typeArgIndex = 0; typeArgIndex < instantiatedType.Instantiation.Length; typeArgIndex++)
+                if (typeArgIndex != 0)
                 {
-                    hashcode = unchecked(hashcode * 73 + GetHashCode(instantiatedType.Instantiation[typeArgIndex]));
+                    sb.Append(", ");
                 }
-                return hashcode;
+                WriteTo(instantiation[typeArgIndex], sb);
             }
-            throw new NotImplementedException();
+            sb.Append(">");
         }
 
         public static void WriteTo(TypeDesc type, Utf8StringBuilder sb)
@@ -107,21 +148,57 @@ namespace ILCompiler
             else if (type is InstantiatedType instantiatedType)
             {
                 sb.Append(instantiatedType.GetTypeDefinition().ToString());
-                sb.Append("<");
-                for (int typeArgIndex = 0; typeArgIndex < instantiatedType.Instantiation.Length; typeArgIndex++)
+                WriteTo(instantiatedType.Instantiation, sb);
+            }
+            else if (type is ArrayType arrayType)
+            {
+                WriteTo(arrayType.ElementType, sb);
+                sb.Append("[");
+                switch (arrayType.Rank)
                 {
-                    if (typeArgIndex != 0)
-                    {
-                        sb.Append(", ");
-                    }
-                    WriteTo(instantiatedType.Instantiation[typeArgIndex], sb);
+                    case 0:
+                        break;
+                    case 1:
+                        sb.Append("*");
+                        break;
+                    default:
+                        sb.Append(new String(',', arrayType.Rank - 1));
+                        break;
                 }
-                sb.Append(">");
+                sb.Append("]");
+            }
+            else if (type is ByRefType byRefType)
+            {
+                WriteTo(byRefType.ParameterType, sb);
+                sb.Append("&");
             }
             else
             {
-                throw new NotImplementedException();
+                Debug.Assert(type is DefType);
+                sb.Append(type.ToString());
             }
+        }
+
+        public static void WriteTo(MethodDesc method, Utf8StringBuilder sb)
+        {
+            WriteTo(method.Signature.ReturnType, sb);
+            sb.Append(" ");
+            WriteTo(method.OwningType, sb);
+            sb.Append(method.Name);
+            if (method.HasInstantiation)
+            {
+                WriteTo(method.Instantiation, sb);
+            }
+            sb.Append("(");
+            for (int argIndex = 0; argIndex < method.Signature.Length; argIndex++)
+            {
+                if (argIndex != 0)
+                {
+                    sb.Append(", ");
+                }
+                WriteTo(method.Signature[argIndex], sb);
+            }
+            sb.Append(")");
         }
     }
 }

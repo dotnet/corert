@@ -21,10 +21,12 @@ namespace ILCompiler.DependencyAnalysis
         {
             _codegenNodeFactory = codegenNodeFactory;
 
-            _genericLookupHelpers = new Dictionary<GenericLookupKey, ISymbolNode>[(int)CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_KIND_COUNT];
-            for (int lookupKindIndex = 0; lookupKindIndex < _genericLookupHelpers.Length; lookupKindIndex++)
+            _genericLookupTypeHelpers = new Dictionary<GenericLookupTypeKey, ISymbolNode>[(int)CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_KIND_COUNT];
+            _genericLookupMethodHelpers = new Dictionary<GenericLookupMethodKey, ISymbolNode>[(int)CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_KIND_COUNT];
+            for (int lookupKindIndex = 0; lookupKindIndex < (int)CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_KIND_COUNT; lookupKindIndex++)
             {
-                _genericLookupHelpers[lookupKindIndex] = new Dictionary<GenericLookupKey, ISymbolNode>();
+                _genericLookupTypeHelpers[lookupKindIndex] = new Dictionary<GenericLookupTypeKey, ISymbolNode>();
+                _genericLookupMethodHelpers[lookupKindIndex] = new Dictionary<GenericLookupMethodKey, ISymbolNode>();
             }
         }
 
@@ -653,96 +655,172 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private class GenericLookupKey : IEquatable<GenericLookupKey>
+        private class GenericLookupTypeKey : IEquatable<GenericLookupTypeKey>
         {
-            public readonly ReadyToRunHelperId HelperId;
+            public readonly ReadyToRunFixupKind FixupKind;
             public readonly TypeDesc TypeArgument;
             public readonly TypeDesc ContextType;
 
-            public GenericLookupKey(ReadyToRunHelperId helperId, TypeDesc typeArgument, TypeDesc contextType)
+            public GenericLookupTypeKey(ReadyToRunFixupKind fixupKind, TypeDesc typeArgument, TypeDesc contextType)
             {
-                HelperId = helperId;
+                FixupKind = fixupKind;
                 TypeArgument = typeArgument;
                 ContextType = contextType;
             }
 
-            public bool Equals(GenericLookupKey other)
+            public bool Equals(GenericLookupTypeKey other)
             {
-                return HelperId == other.HelperId &&
+                return FixupKind == other.FixupKind &&
                     RuntimeDeterminedTypeHelper.Equals(TypeArgument, other.TypeArgument) &&
                     ContextType == other.ContextType;
             }
 
             public override bool Equals(object obj)
             {
-                return obj is GenericLookupKey other && Equals(other);
+                return obj is GenericLookupTypeKey other && Equals(other);
             }
 
             public override int GetHashCode()
             {
-                return unchecked((int)HelperId +
+                return unchecked((int)FixupKind +
                     31 * (RuntimeDeterminedTypeHelper.GetHashCode(TypeArgument) +
                     97 * (ContextType?.GetHashCode() ?? 0)));
             }
-
         }
 
-        private Dictionary<GenericLookupKey, ISymbolNode>[] _genericLookupHelpers;
+        private class GenericLookupMethodKey : IEquatable<GenericLookupMethodKey>
+        {
+            public readonly ReadyToRunFixupKind FixupKind;
+            public readonly MethodDesc MethodArgument;
+            public readonly TypeDesc ContextType;
+
+            public GenericLookupMethodKey(ReadyToRunFixupKind fixupKind, MethodDesc methodArgument, TypeDesc contextType)
+            {
+                FixupKind = fixupKind;
+                MethodArgument = methodArgument;
+                ContextType = contextType;
+            }
+
+            public bool Equals(GenericLookupMethodKey other)
+            {
+                return FixupKind == other.FixupKind &&
+                    RuntimeDeterminedTypeHelper.Equals(MethodArgument, other.MethodArgument) &&
+                    ContextType == other.ContextType;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is GenericLookupMethodKey other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                return unchecked((int)FixupKind +
+                    31 * (RuntimeDeterminedTypeHelper.GetHashCode(MethodArgument) +
+                    97 * (ContextType?.GetHashCode() ?? 0)));
+            }
+        }
+
+        private Dictionary<GenericLookupTypeKey, ISymbolNode>[] _genericLookupTypeHelpers;
+        private Dictionary<GenericLookupMethodKey, ISymbolNode>[] _genericLookupMethodHelpers;
 
         public ISymbolNode GenericLookupHelper(
             CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
             ReadyToRunHelperId helperId,
+            object helperArgument,
+            TypeDesc contextType,
+            SignatureContext signatureContext)
+        {
+            switch (helperId)
+            {
+                case ReadyToRunHelperId.NecessaryTypeHandle:
+                case ReadyToRunHelperId.TypeHandle:
+                    return GenericLookupTypeHelper(
+                        runtimeLookupKind,
+                        ReadyToRunFixupKind.READYTORUN_FIXUP_TypeHandle,
+                        (TypeDesc)helperArgument,
+                        contextType,
+                        signatureContext);
+
+                case ReadyToRunHelperId.MethodHandle:
+                    return GenericLookupMethodHelper(
+                        runtimeLookupKind,
+                        ReadyToRunFixupKind.READYTORUN_FIXUP_MethodHandle,
+                        (MethodDesc)helperArgument,
+                        contextType,
+                        signatureContext);
+
+                case ReadyToRunHelperId.MethodEntry:
+                    return GenericLookupMethodHelper(
+                        runtimeLookupKind,
+                        ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
+                        (MethodDesc)helperArgument,
+                        contextType,
+                        signatureContext);
+
+                case ReadyToRunHelperId.MethodDictionary:
+                    return GenericLookupMethodHelper(
+                        runtimeLookupKind,
+                        ReadyToRunFixupKind.READYTORUN_FIXUP_MethodDictionary,
+                        (MethodDesc)helperArgument,
+                        contextType,
+                        signatureContext);
+
+                case ReadyToRunHelperId.VirtualDispatchCell:
+                    return GenericLookupMethodHelper(
+                        runtimeLookupKind,
+                        ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry,
+                        (MethodDesc)helperArgument,
+                        contextType,
+                        signatureContext);
+
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+
+        private ISymbolNode GenericLookupTypeHelper(
+            CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
+            ReadyToRunFixupKind fixupKind,
             TypeDesc typeArgument,
             TypeDesc contextType,
             SignatureContext signatureContext)
         {
-            Dictionary<GenericLookupKey, ISymbolNode> helpersPerLookupKind = _genericLookupHelpers[(int)runtimeLookupKind];
-            GenericLookupKey key = new GenericLookupKey(helperId, typeArgument, contextType);
+            Dictionary<GenericLookupTypeKey, ISymbolNode> helpersPerLookupKind = _genericLookupTypeHelpers[(int)runtimeLookupKind];
+            GenericLookupTypeKey key = new GenericLookupTypeKey(fixupKind, typeArgument, contextType);
             ISymbolNode node;
             if (!helpersPerLookupKind.TryGetValue(key, out node))
             {
-                node = CreateGenericLookupHelper(runtimeLookupKind, helperId, typeArgument, contextType, signatureContext);
+                node = new DelayLoadHelperImport(
+                    _codegenNodeFactory,
+                    _codegenNodeFactory.HelperImports,
+                    ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
+                    new GenericLookupTypeSignature(runtimeLookupKind, fixupKind, typeArgument, contextType, signatureContext));
                 helpersPerLookupKind.Add(key, node);
             }
             return node;
         }
 
-        private ISymbolNode CreateGenericLookupHelper(
+        private ISymbolNode GenericLookupMethodHelper(
             CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
-            ReadyToRunHelperId helperId,
-            TypeDesc type,
+            ReadyToRunFixupKind fixupKind,
+            MethodDesc methodArgument,
             TypeDesc contextType,
             SignatureContext signatureContext)
         {
-            ReadyToRunFixupKind fixupKind;
-            switch (helperId)
+            Dictionary<GenericLookupMethodKey, ISymbolNode> helpersPerLookupKind = _genericLookupMethodHelpers[(int)runtimeLookupKind];
+            GenericLookupMethodKey key = new GenericLookupMethodKey(fixupKind, methodArgument, contextType);
+            ISymbolNode node;
+            if (!helpersPerLookupKind.TryGetValue(key, out node))
             {
-                case ReadyToRunHelperId.NecessaryTypeHandle:
-                case ReadyToRunHelperId.TypeHandle:
-                    fixupKind = ReadyToRunFixupKind.READYTORUN_FIXUP_TypeHandle;
-                    break;
-
-                case ReadyToRunHelperId.FieldHandle:
-                    fixupKind = ReadyToRunFixupKind.READYTORUN_FIXUP_FieldHandle;
-                    break;
-
-                case ReadyToRunHelperId.MethodHandle:
-                    fixupKind = ReadyToRunFixupKind.READYTORUN_FIXUP_MethodHandle;
-                    break;
-
-                case ReadyToRunHelperId.MethodEntry:
-                    fixupKind = ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry;
-                    break;
-
-                default:
-                    throw new NotImplementedException();
+                node = new DelayLoadHelperImport(
+                    _codegenNodeFactory,
+                    _codegenNodeFactory.HelperImports,
+                    ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
+                    new GenericLookupMethodSignature(runtimeLookupKind, fixupKind, methodArgument, contextType, signatureContext));
+                helpersPerLookupKind.Add(key, node);
             }
-
-            return new DelayLoadHelperImport(
-                _codegenNodeFactory,
-                _codegenNodeFactory.HelperImports,
-                ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
-                new GenericLookupSignature(runtimeLookupKind, fixupKind, type, contextType, signatureContext));
+            return node;
         }
     }
 }

@@ -95,7 +95,7 @@ namespace ILCompiler
                 {
                     hashcode = NestedTypeHashCode(TypeHashCode(containingType), hashcode);
                 }
-                if (type.HasInstantiation)
+                if (type.HasInstantiation && !type.IsGenericDefinition)
                 {
                     return GenericInstanceHashCode(hashcode, type.Instantiation);
                 }

@@ -192,7 +192,7 @@ namespace Internal.JitInterface
                         ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(
                             pGenericLookupKind.runtimeLookupKind,
                             ReadyToRunHelperId.GetNonGCStaticBase, 
-                            (TypeDesc)helperArg, 
+                            helperArg, 
                             contextType, 
                             _signatureContext);
                         pLookup = CreateConstLookupToSymbol(helper);
@@ -216,7 +216,7 @@ namespace Internal.JitInterface
                         ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(
                             pGenericLookupKind.runtimeLookupKind,
                             helperId,
-                            (TypeDesc)helperArg, 
+                            helperArg, 
                             contextType, 
                             _signatureContext);
                         pLookup = CreateConstLookupToSymbol(helper);
