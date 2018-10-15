@@ -69,6 +69,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 dataBuilder.EmitByte((byte)_fixupKind);
                 dataBuilder.EmitMethodSignature(
                     _methodArgument, 
+                    enforceDefEncoding: false,
                     constrainedType: null, 
                     isUnboxingStub: false, 
                     isInstantiatingStub: false, 

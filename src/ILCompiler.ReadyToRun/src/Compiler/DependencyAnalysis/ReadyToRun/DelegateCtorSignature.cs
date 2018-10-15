@@ -42,6 +42,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 builder.EmitByte((byte)ReadyToRunFixupKind.READYTORUN_FIXUP_DelegateCtor);
                 builder.EmitMethodSignature(
                     _targetMethod.Method, 
+                    enforceDefEncoding: false,
                     constrainedType: null, 
                     isUnboxingStub: false, 
                     isInstantiatingStub: false,

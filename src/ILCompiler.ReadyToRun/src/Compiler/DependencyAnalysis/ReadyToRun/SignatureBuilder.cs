@@ -354,7 +354,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public void EmitMethodSignature(MethodDesc method, TypeDesc constrainedType, bool isUnboxingStub, bool isInstantiatingStub, SignatureContext context)
+        public void EmitMethodSignature(
+            MethodDesc method, 
+            bool enforceDefEncoding, 
+            TypeDesc constrainedType, 
+            bool isUnboxingStub, 
+            bool isInstantiatingStub, 
+            SignatureContext context)
         {
             uint flags = 0;
             if (isUnboxingStub)
@@ -372,7 +378,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (method.HasInstantiation || method.OwningType.HasInstantiation)
             {
-                EmitMethodSpecificationSignature(method, flags, context);
+                EmitMethodSpecificationSignature(method, flags, enforceDefEncoding, context);
             }
             else
             {
@@ -415,18 +421,30 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             EmitUInt(RidFromToken(memberRefToken.Token));
         }
 
-        private void EmitMethodSpecificationSignature(MethodDesc method, uint flags, SignatureContext context)
+        private void EmitMethodSpecificationSignature(MethodDesc method, uint flags, bool enforceDefEncoding, SignatureContext context)
         {
             if (method.HasInstantiation)
             {
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MethodInstantiation;
             }
 
-            ModuleToken methodToken = context.GetModuleTokenForMethod(method.GetMethodDefinition(), throwIfNotFound: false);
+            ModuleToken methodToken = default(ModuleToken);
+            if (!enforceDefEncoding)
+            {
+                methodToken = context.GetModuleTokenForMethod(method.GetMethodDefinition(), throwIfNotFound: false);
+            }
             if (methodToken.IsNull)
             {
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
                 methodToken = context.GetModuleTokenForMethod(method.GetTypicalMethodDefinition());
+            }
+
+            if (method.OwningType.HasInstantiation)
+            {
+                // resolveToken currently resolves the token in the context of a given scope;
+                // in such case, we receive a method on instantiated type along with the
+                // generic definition token.
+                flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
             }
 
             switch (methodToken.TokenType)

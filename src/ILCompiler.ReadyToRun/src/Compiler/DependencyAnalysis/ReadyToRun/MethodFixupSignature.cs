@@ -54,7 +54,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             dataBuilder.AddSymbol(this);
 
             dataBuilder.EmitUInt((uint)_fixupKind);
-            dataBuilder.EmitMethodSignature(_methodDesc, _constrainedType, _isUnboxingStub, _isInstantiatingStub, _signatureContext);
+            dataBuilder.EmitMethodSignature(_methodDesc, enforceDefEncoding: false, _constrainedType, _isUnboxingStub, _isInstantiatingStub, _signatureContext);
 
             return dataBuilder.ToObjectData();
         }

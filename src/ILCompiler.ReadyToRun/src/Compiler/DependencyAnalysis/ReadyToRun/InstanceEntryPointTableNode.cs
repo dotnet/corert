@@ -63,6 +63,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     ArraySignatureBuilder signatureBuilder = new ArraySignatureBuilder();
                     signatureBuilder.EmitMethodSignature(
                         methodCodeNode.Method, 
+                        enforceDefEncoding: true,
                         constrainedType: null, 
                         isUnboxingStub: false, 
                         isInstantiatingStub: false, 
