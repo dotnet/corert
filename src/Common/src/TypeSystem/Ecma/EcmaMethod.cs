@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Threading;
-using System.Collections.Generic;
-
-using Internal.TypeSystem;
 
 namespace Internal.TypeSystem.Ecma
 {
@@ -28,6 +24,8 @@ namespace Internal.TypeSystem.Ecma
             public const int RuntimeImplemented     = 0x0080;
             public const int InternalCall           = 0x0100;
             public const int Synchronized           = 0x0200;
+            public const int AggressiveOptimization = 0x0400;
+            public const int NoOptimization         = 0x0800;
 
             public const int AttributeMetadataCache = 0x1000;
             public const int Intrinsic              = 0x2000;
@@ -148,6 +146,15 @@ namespace Internal.TypeSystem.Ecma
                 if ((methodImplAttributes & MethodImplAttributes.NoInlining) != 0)
                     flags |= MethodFlags.NoInlining;
 
+                // System.Reflection.Primitives we build against doesn't define AggressiveOptimization
+                const MethodImplAttributes MethodImplAttributes_AggressiveOptimization = (MethodImplAttributes)0x0200;
+
+                // No optimization bit beats aggressive optimization bit (CLR compatible behavior)
+                if ((methodImplAttributes & MethodImplAttributes.NoOptimization) != 0)
+                    flags |= MethodFlags.NoOptimization;
+                else if ((methodImplAttributes & MethodImplAttributes_AggressiveOptimization) != 0)
+                    flags |= MethodFlags.AggressiveOptimization;
+
                 if ((methodImplAttributes & MethodImplAttributes.AggressiveInlining) != 0)
                     flags |= MethodFlags.AggressiveInlining;
 
@@ -256,6 +263,22 @@ namespace Internal.TypeSystem.Ecma
             get
             {
                 return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.NoInlining) & MethodFlags.NoInlining) != 0;
+            }
+        }
+
+        public override bool IsAggressiveOptimization
+        {
+            get
+            {
+                return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.AggressiveOptimization) & MethodFlags.AggressiveOptimization) != 0;
+            }
+        }
+
+        public override bool IsNoOptimization
+        {
+            get
+            {
+                return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.NoOptimization) & MethodFlags.NoOptimization) != 0;
             }
         }
 

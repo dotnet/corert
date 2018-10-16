@@ -91,6 +91,16 @@ The algorithms are used as an extensibility mechanism in places where partial cl
 
 An interesting property of the type system lays in its ability to compute hash codes that can be reliably computed for any type or method represented within the system at compile time and at runtime. Having the same hash code available at both compile time and runtime is leveraged to build high performance lookup tables used by the CoreRT runtime. The hash code is computed from type names and gets preserved as part of the runtime data structures so that it's available in situations when the type name has been optimized away by the compiler.
 
+## Throwing exceptions from the type system
+
+Throwing an exception from within the type system is a bit more involved than a simple `throw` statement. This is because the type system is designed to be usable in many places and each could have a different requirement about how exceptions are thrown. For example, when the type system is included from the runtime, a `System.TypeLoadException` should be thrown when type loading fails. On the other hand, if a type loading error occurs in a compiler or IL verifier, a `System.TypeLoadException` would be indistinguishable from an actual problem with the managed assemblies that comprise the compiler. Therefore a different exception should be thrown.
+
+Exception throwing within the type system is wrapped in a `ThrowHelper` class. The consumer of the type system provides a definition of this class and its methods. The methods control what exception type will be thrown.
+
+The type system provides a default implementation of the `ThrowHelper` class that throws exceptions deriving from a `TypeSystemException` exception base class. This default implementation is suitable for use in non-runtime scenarios.
+
+The exception messages are assigned string IDs and get consumed by the throw helper as well. We require this indirection to support the compiler scenarios: when a type loading exception occurs during an AOT compilation, the AOT compiler has two tasks - emit a warning to warn the user that this occured, and potentially generate a method body that will throw this exception at runtime when the problematic type is accessed. The localization of the compiler might not match the localization of the class library the compiler output is linking against. Indirecting the actual exception message through the string ID lets us wrap this. The consumer of the type system may reuse the throw helper in places outside the type system where this functionality is needed.
+
 ## Physical architecture
 
 The type system implementation is found in:

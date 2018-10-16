@@ -18,7 +18,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __getMethodSig(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, CORINFO_SIG_INFO* sig, CORINFO_CLASS_STRUCT_* memberParent);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        [return: MarshalAs(UnmanagedType.I1)]delegate bool __getMethodInfo(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_METHOD_INFO info);
+        [return: MarshalAs(UnmanagedType.I1)]delegate bool __getMethodInfo(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_INFO* info);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CorInfoInline __canInline(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, ref uint pRestrictions);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -118,6 +118,10 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate uint __getClassSize(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
+        delegate uint __getHeapClassSize(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
+        [return: MarshalAs(UnmanagedType.Bool)]delegate bool __canAllocateOnStack(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate uint __getClassAlignmentRequirement(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls, [MarshalAs(UnmanagedType.Bool)]bool fDoubleAlignHint);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate uint __getClassGClayout(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls, byte* gcPtrs);
@@ -172,7 +176,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_CLASS_STRUCT_* __getParentType(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate CorInfoType __getChildType(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* clsHnd, ref CORINFO_CLASS_STRUCT_* clsRet);
+        delegate CorInfoType __getChildType(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_CLASS_STRUCT_** clsRet);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __satisfiesClassConstraints(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -188,13 +192,13 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_CLASS_STRUCT_* __getFieldClass(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate CorInfoType __getFieldType(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, ref CORINFO_CLASS_STRUCT_* structType, CORINFO_CLASS_STRUCT_* memberParent);
+        delegate CorInfoType __getFieldType(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, CORINFO_CLASS_STRUCT_** structType, CORINFO_CLASS_STRUCT_* memberParent);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate uint __getFieldOffset(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.I1)]delegate bool __isWriteBarrierHelperRequired(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate void __getFieldInfo(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_ACCESS_FLAGS flags, ref CORINFO_FIELD_INFO pResult);
+        delegate void __getFieldInfo(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.I1)]delegate bool __isFieldStatic(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* fldHnd);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -212,7 +216,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_ARG_LIST_STRUCT_* __getArgNext(IntPtr _this, IntPtr* ppException, CORINFO_ARG_LIST_STRUCT_* args);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate CorInfoTypeWithMod __getArgType(IntPtr _this, IntPtr* ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args, ref CORINFO_CLASS_STRUCT_* vcTypeRet);
+        delegate CorInfoTypeWithMod __getArgType(IntPtr _this, IntPtr* ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args, CORINFO_CLASS_STRUCT_** vcTypeRet);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_CLASS_STRUCT_* __getArgClass(IntPtr _this, IntPtr* ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -290,7 +294,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __GetProfilingHandle(IntPtr _this, IntPtr* ppException, [MarshalAs(UnmanagedType.Bool)] ref bool pbHookFunction, ref void* pProfilerHandle, [MarshalAs(UnmanagedType.Bool)] ref bool pbIndirectedHandles);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate void __getCallInfo(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, ref CORINFO_CALL_INFO pResult);
+        delegate void __getCallInfo(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __canAccessFamily(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* hCaller, CORINFO_CLASS_STRUCT_* hInstanceType);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -400,12 +404,12 @@ namespace Internal.JitInterface
             }
         }
 
-        [return: MarshalAs(UnmanagedType.I1)]static bool _getMethodInfo(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_METHOD_INFO info)
+        [return: MarshalAs(UnmanagedType.I1)]static bool _getMethodInfo(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_INFO* info)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getMethodInfo(ftn, ref info);
+                return _this.getMethodInfo(ftn, info);
             }
             catch (Exception ex)
             {
@@ -1087,6 +1091,34 @@ namespace Internal.JitInterface
             }
         }
 
+        static uint _getHeapClassSize(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.getHeapClassSize(cls);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default(uint);
+            }
+        }
+
+        [return: MarshalAs(UnmanagedType.Bool)]static bool _canAllocateOnStack(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.canAllocateOnStack(cls);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default(bool);
+            }
+        }
+
         static uint _getClassAlignmentRequirement(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls, [MarshalAs(UnmanagedType.Bool)]bool fDoubleAlignHint)
         {
             var _this = GetThis(thisHandle);
@@ -1463,12 +1495,12 @@ namespace Internal.JitInterface
             }
         }
 
-        static CorInfoType _getChildType(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* clsHnd, ref CORINFO_CLASS_STRUCT_* clsRet)
+        static CorInfoType _getChildType(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_CLASS_STRUCT_** clsRet)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getChildType(clsHnd, ref clsRet);
+                return _this.getChildType(clsHnd, clsRet);
             }
             catch (Exception ex)
             {
@@ -1575,12 +1607,12 @@ namespace Internal.JitInterface
             }
         }
 
-        static CorInfoType _getFieldType(IntPtr thisHandle, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, ref CORINFO_CLASS_STRUCT_* structType, CORINFO_CLASS_STRUCT_* memberParent)
+        static CorInfoType _getFieldType(IntPtr thisHandle, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, CORINFO_CLASS_STRUCT_** structType, CORINFO_CLASS_STRUCT_* memberParent)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getFieldType(field, ref structType, memberParent);
+                return _this.getFieldType(field, structType, memberParent);
             }
             catch (Exception ex)
             {
@@ -1617,12 +1649,12 @@ namespace Internal.JitInterface
             }
         }
 
-        static void _getFieldInfo(IntPtr thisHandle, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_ACCESS_FLAGS flags, ref CORINFO_FIELD_INFO pResult)
+        static void _getFieldInfo(IntPtr thisHandle, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                _this.getFieldInfo(ref pResolvedToken, callerHandle, flags, ref pResult);
+                _this.getFieldInfo(ref pResolvedToken, callerHandle, flags, pResult);
             }
             catch (Exception ex)
             {
@@ -1737,12 +1769,12 @@ namespace Internal.JitInterface
             }
         }
 
-        static CorInfoTypeWithMod _getArgType(IntPtr thisHandle, IntPtr* ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args, ref CORINFO_CLASS_STRUCT_* vcTypeRet)
+        static CorInfoTypeWithMod _getArgType(IntPtr thisHandle, IntPtr* ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args, CORINFO_CLASS_STRUCT_** vcTypeRet)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getArgType(sig, args, ref vcTypeRet);
+                return _this.getArgType(sig, args, vcTypeRet);
             }
             catch (Exception ex)
             {
@@ -2274,12 +2306,12 @@ namespace Internal.JitInterface
             }
         }
 
-        static void _getCallInfo(IntPtr thisHandle, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, ref CORINFO_CALL_INFO pResult)
+        static void _getCallInfo(IntPtr thisHandle, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                _this.getCallInfo(ref pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, ref pResult);
+                _this.getCallInfo(ref pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult);
             }
             catch (Exception ex)
             {
@@ -2753,8 +2785,8 @@ namespace Internal.JitInterface
 
         static IntPtr GetUnmanagedCallbacks(out Object keepAlive)
         {
-            IntPtr * callbacks = (IntPtr *)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 174);
-            Object[] delegates = new Object[174];
+            IntPtr * callbacks = (IntPtr *)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 176);
+            Object[] delegates = new Object[176];
 
             var d0 = new __getMethodAttribs(_getMethodAttribs);
             callbacks[0] = Marshal.GetFunctionPointerForDelegate(d0);
@@ -2915,369 +2947,375 @@ namespace Internal.JitInterface
             var d52 = new __getClassSize(_getClassSize);
             callbacks[52] = Marshal.GetFunctionPointerForDelegate(d52);
             delegates[52] = d52;
-            var d53 = new __getClassAlignmentRequirement(_getClassAlignmentRequirement);
+            var d53 = new __getHeapClassSize(_getHeapClassSize);
             callbacks[53] = Marshal.GetFunctionPointerForDelegate(d53);
             delegates[53] = d53;
-            var d54 = new __getClassGClayout(_getClassGClayout);
+            var d54 = new __canAllocateOnStack(_canAllocateOnStack);
             callbacks[54] = Marshal.GetFunctionPointerForDelegate(d54);
             delegates[54] = d54;
-            var d55 = new __getClassNumInstanceFields(_getClassNumInstanceFields);
+            var d55 = new __getClassAlignmentRequirement(_getClassAlignmentRequirement);
             callbacks[55] = Marshal.GetFunctionPointerForDelegate(d55);
             delegates[55] = d55;
-            var d56 = new __getFieldInClass(_getFieldInClass);
+            var d56 = new __getClassGClayout(_getClassGClayout);
             callbacks[56] = Marshal.GetFunctionPointerForDelegate(d56);
             delegates[56] = d56;
-            var d57 = new __checkMethodModifier(_checkMethodModifier);
+            var d57 = new __getClassNumInstanceFields(_getClassNumInstanceFields);
             callbacks[57] = Marshal.GetFunctionPointerForDelegate(d57);
             delegates[57] = d57;
-            var d58 = new __getNewHelper(_getNewHelper);
+            var d58 = new __getFieldInClass(_getFieldInClass);
             callbacks[58] = Marshal.GetFunctionPointerForDelegate(d58);
             delegates[58] = d58;
-            var d59 = new __getNewArrHelper(_getNewArrHelper);
+            var d59 = new __checkMethodModifier(_checkMethodModifier);
             callbacks[59] = Marshal.GetFunctionPointerForDelegate(d59);
             delegates[59] = d59;
-            var d60 = new __getCastingHelper(_getCastingHelper);
+            var d60 = new __getNewHelper(_getNewHelper);
             callbacks[60] = Marshal.GetFunctionPointerForDelegate(d60);
             delegates[60] = d60;
-            var d61 = new __getSharedCCtorHelper(_getSharedCCtorHelper);
+            var d61 = new __getNewArrHelper(_getNewArrHelper);
             callbacks[61] = Marshal.GetFunctionPointerForDelegate(d61);
             delegates[61] = d61;
-            var d62 = new __getSecurityPrologHelper(_getSecurityPrologHelper);
+            var d62 = new __getCastingHelper(_getCastingHelper);
             callbacks[62] = Marshal.GetFunctionPointerForDelegate(d62);
             delegates[62] = d62;
-            var d63 = new __getTypeForBox(_getTypeForBox);
+            var d63 = new __getSharedCCtorHelper(_getSharedCCtorHelper);
             callbacks[63] = Marshal.GetFunctionPointerForDelegate(d63);
             delegates[63] = d63;
-            var d64 = new __getBoxHelper(_getBoxHelper);
+            var d64 = new __getSecurityPrologHelper(_getSecurityPrologHelper);
             callbacks[64] = Marshal.GetFunctionPointerForDelegate(d64);
             delegates[64] = d64;
-            var d65 = new __getUnBoxHelper(_getUnBoxHelper);
+            var d65 = new __getTypeForBox(_getTypeForBox);
             callbacks[65] = Marshal.GetFunctionPointerForDelegate(d65);
             delegates[65] = d65;
-            var d66 = new __getReadyToRunHelper(_getReadyToRunHelper);
+            var d66 = new __getBoxHelper(_getBoxHelper);
             callbacks[66] = Marshal.GetFunctionPointerForDelegate(d66);
             delegates[66] = d66;
-            var d67 = new __getReadyToRunDelegateCtorHelper(_getReadyToRunDelegateCtorHelper);
+            var d67 = new __getUnBoxHelper(_getUnBoxHelper);
             callbacks[67] = Marshal.GetFunctionPointerForDelegate(d67);
             delegates[67] = d67;
-            var d68 = new __getHelperName(_getHelperName);
+            var d68 = new __getReadyToRunHelper(_getReadyToRunHelper);
             callbacks[68] = Marshal.GetFunctionPointerForDelegate(d68);
             delegates[68] = d68;
-            var d69 = new __initClass(_initClass);
+            var d69 = new __getReadyToRunDelegateCtorHelper(_getReadyToRunDelegateCtorHelper);
             callbacks[69] = Marshal.GetFunctionPointerForDelegate(d69);
             delegates[69] = d69;
-            var d70 = new __classMustBeLoadedBeforeCodeIsRun(_classMustBeLoadedBeforeCodeIsRun);
+            var d70 = new __getHelperName(_getHelperName);
             callbacks[70] = Marshal.GetFunctionPointerForDelegate(d70);
             delegates[70] = d70;
-            var d71 = new __getBuiltinClass(_getBuiltinClass);
+            var d71 = new __initClass(_initClass);
             callbacks[71] = Marshal.GetFunctionPointerForDelegate(d71);
             delegates[71] = d71;
-            var d72 = new __getTypeForPrimitiveValueClass(_getTypeForPrimitiveValueClass);
+            var d72 = new __classMustBeLoadedBeforeCodeIsRun(_classMustBeLoadedBeforeCodeIsRun);
             callbacks[72] = Marshal.GetFunctionPointerForDelegate(d72);
             delegates[72] = d72;
-            var d73 = new __getTypeForPrimitiveNumericClass(_getTypeForPrimitiveNumericClass);
+            var d73 = new __getBuiltinClass(_getBuiltinClass);
             callbacks[73] = Marshal.GetFunctionPointerForDelegate(d73);
             delegates[73] = d73;
-            var d74 = new __canCast(_canCast);
+            var d74 = new __getTypeForPrimitiveValueClass(_getTypeForPrimitiveValueClass);
             callbacks[74] = Marshal.GetFunctionPointerForDelegate(d74);
             delegates[74] = d74;
-            var d75 = new __areTypesEquivalent(_areTypesEquivalent);
+            var d75 = new __getTypeForPrimitiveNumericClass(_getTypeForPrimitiveNumericClass);
             callbacks[75] = Marshal.GetFunctionPointerForDelegate(d75);
             delegates[75] = d75;
-            var d76 = new __compareTypesForCast(_compareTypesForCast);
+            var d76 = new __canCast(_canCast);
             callbacks[76] = Marshal.GetFunctionPointerForDelegate(d76);
             delegates[76] = d76;
-            var d77 = new __compareTypesForEquality(_compareTypesForEquality);
+            var d77 = new __areTypesEquivalent(_areTypesEquivalent);
             callbacks[77] = Marshal.GetFunctionPointerForDelegate(d77);
             delegates[77] = d77;
-            var d78 = new __mergeClasses(_mergeClasses);
+            var d78 = new __compareTypesForCast(_compareTypesForCast);
             callbacks[78] = Marshal.GetFunctionPointerForDelegate(d78);
             delegates[78] = d78;
-            var d79 = new __getParentType(_getParentType);
+            var d79 = new __compareTypesForEquality(_compareTypesForEquality);
             callbacks[79] = Marshal.GetFunctionPointerForDelegate(d79);
             delegates[79] = d79;
-            var d80 = new __getChildType(_getChildType);
+            var d80 = new __mergeClasses(_mergeClasses);
             callbacks[80] = Marshal.GetFunctionPointerForDelegate(d80);
             delegates[80] = d80;
-            var d81 = new __satisfiesClassConstraints(_satisfiesClassConstraints);
+            var d81 = new __getParentType(_getParentType);
             callbacks[81] = Marshal.GetFunctionPointerForDelegate(d81);
             delegates[81] = d81;
-            var d82 = new __isSDArray(_isSDArray);
+            var d82 = new __getChildType(_getChildType);
             callbacks[82] = Marshal.GetFunctionPointerForDelegate(d82);
             delegates[82] = d82;
-            var d83 = new __getArrayRank(_getArrayRank);
+            var d83 = new __satisfiesClassConstraints(_satisfiesClassConstraints);
             callbacks[83] = Marshal.GetFunctionPointerForDelegate(d83);
             delegates[83] = d83;
-            var d84 = new __getArrayInitializationData(_getArrayInitializationData);
+            var d84 = new __isSDArray(_isSDArray);
             callbacks[84] = Marshal.GetFunctionPointerForDelegate(d84);
             delegates[84] = d84;
-            var d85 = new __canAccessClass(_canAccessClass);
+            var d85 = new __getArrayRank(_getArrayRank);
             callbacks[85] = Marshal.GetFunctionPointerForDelegate(d85);
             delegates[85] = d85;
-            var d86 = new __getFieldName(_getFieldName);
+            var d86 = new __getArrayInitializationData(_getArrayInitializationData);
             callbacks[86] = Marshal.GetFunctionPointerForDelegate(d86);
             delegates[86] = d86;
-            var d87 = new __getFieldClass(_getFieldClass);
+            var d87 = new __canAccessClass(_canAccessClass);
             callbacks[87] = Marshal.GetFunctionPointerForDelegate(d87);
             delegates[87] = d87;
-            var d88 = new __getFieldType(_getFieldType);
+            var d88 = new __getFieldName(_getFieldName);
             callbacks[88] = Marshal.GetFunctionPointerForDelegate(d88);
             delegates[88] = d88;
-            var d89 = new __getFieldOffset(_getFieldOffset);
+            var d89 = new __getFieldClass(_getFieldClass);
             callbacks[89] = Marshal.GetFunctionPointerForDelegate(d89);
             delegates[89] = d89;
-            var d90 = new __isWriteBarrierHelperRequired(_isWriteBarrierHelperRequired);
+            var d90 = new __getFieldType(_getFieldType);
             callbacks[90] = Marshal.GetFunctionPointerForDelegate(d90);
             delegates[90] = d90;
-            var d91 = new __getFieldInfo(_getFieldInfo);
+            var d91 = new __getFieldOffset(_getFieldOffset);
             callbacks[91] = Marshal.GetFunctionPointerForDelegate(d91);
             delegates[91] = d91;
-            var d92 = new __isFieldStatic(_isFieldStatic);
+            var d92 = new __isWriteBarrierHelperRequired(_isWriteBarrierHelperRequired);
             callbacks[92] = Marshal.GetFunctionPointerForDelegate(d92);
             delegates[92] = d92;
-            var d93 = new __getBoundaries(_getBoundaries);
+            var d93 = new __getFieldInfo(_getFieldInfo);
             callbacks[93] = Marshal.GetFunctionPointerForDelegate(d93);
             delegates[93] = d93;
-            var d94 = new __setBoundaries(_setBoundaries);
+            var d94 = new __isFieldStatic(_isFieldStatic);
             callbacks[94] = Marshal.GetFunctionPointerForDelegate(d94);
             delegates[94] = d94;
-            var d95 = new __getVars(_getVars);
+            var d95 = new __getBoundaries(_getBoundaries);
             callbacks[95] = Marshal.GetFunctionPointerForDelegate(d95);
             delegates[95] = d95;
-            var d96 = new __setVars(_setVars);
+            var d96 = new __setBoundaries(_setBoundaries);
             callbacks[96] = Marshal.GetFunctionPointerForDelegate(d96);
             delegates[96] = d96;
-            var d97 = new __allocateArray(_allocateArray);
+            var d97 = new __getVars(_getVars);
             callbacks[97] = Marshal.GetFunctionPointerForDelegate(d97);
             delegates[97] = d97;
-            var d98 = new __freeArray(_freeArray);
+            var d98 = new __setVars(_setVars);
             callbacks[98] = Marshal.GetFunctionPointerForDelegate(d98);
             delegates[98] = d98;
-            var d99 = new __getArgNext(_getArgNext);
+            var d99 = new __allocateArray(_allocateArray);
             callbacks[99] = Marshal.GetFunctionPointerForDelegate(d99);
             delegates[99] = d99;
-            var d100 = new __getArgType(_getArgType);
+            var d100 = new __freeArray(_freeArray);
             callbacks[100] = Marshal.GetFunctionPointerForDelegate(d100);
             delegates[100] = d100;
-            var d101 = new __getArgClass(_getArgClass);
+            var d101 = new __getArgNext(_getArgNext);
             callbacks[101] = Marshal.GetFunctionPointerForDelegate(d101);
             delegates[101] = d101;
-            var d102 = new __getHFAType(_getHFAType);
+            var d102 = new __getArgType(_getArgType);
             callbacks[102] = Marshal.GetFunctionPointerForDelegate(d102);
             delegates[102] = d102;
-            var d103 = new __GetErrorHRESULT(_GetErrorHRESULT);
+            var d103 = new __getArgClass(_getArgClass);
             callbacks[103] = Marshal.GetFunctionPointerForDelegate(d103);
             delegates[103] = d103;
-            var d104 = new __GetErrorMessage(_GetErrorMessage);
+            var d104 = new __getHFAType(_getHFAType);
             callbacks[104] = Marshal.GetFunctionPointerForDelegate(d104);
             delegates[104] = d104;
-            var d105 = new __FilterException(_FilterException);
+            var d105 = new __GetErrorHRESULT(_GetErrorHRESULT);
             callbacks[105] = Marshal.GetFunctionPointerForDelegate(d105);
             delegates[105] = d105;
-            var d106 = new __HandleException(_HandleException);
+            var d106 = new __GetErrorMessage(_GetErrorMessage);
             callbacks[106] = Marshal.GetFunctionPointerForDelegate(d106);
             delegates[106] = d106;
-            var d107 = new __ThrowExceptionForJitResult(_ThrowExceptionForJitResult);
+            var d107 = new __FilterException(_FilterException);
             callbacks[107] = Marshal.GetFunctionPointerForDelegate(d107);
             delegates[107] = d107;
-            var d108 = new __ThrowExceptionForHelper(_ThrowExceptionForHelper);
+            var d108 = new __HandleException(_HandleException);
             callbacks[108] = Marshal.GetFunctionPointerForDelegate(d108);
             delegates[108] = d108;
-            var d109 = new __runWithErrorTrap(_runWithErrorTrap);
+            var d109 = new __ThrowExceptionForJitResult(_ThrowExceptionForJitResult);
             callbacks[109] = Marshal.GetFunctionPointerForDelegate(d109);
             delegates[109] = d109;
-            var d110 = new __getEEInfo(_getEEInfo);
+            var d110 = new __ThrowExceptionForHelper(_ThrowExceptionForHelper);
             callbacks[110] = Marshal.GetFunctionPointerForDelegate(d110);
             delegates[110] = d110;
-            var d111 = new __getJitTimeLogFilename(_getJitTimeLogFilename);
+            var d111 = new __runWithErrorTrap(_runWithErrorTrap);
             callbacks[111] = Marshal.GetFunctionPointerForDelegate(d111);
             delegates[111] = d111;
-            var d112 = new __getMethodDefFromMethod(_getMethodDefFromMethod);
+            var d112 = new __getEEInfo(_getEEInfo);
             callbacks[112] = Marshal.GetFunctionPointerForDelegate(d112);
             delegates[112] = d112;
-            var d113 = new __getMethodName(_getMethodName);
+            var d113 = new __getJitTimeLogFilename(_getJitTimeLogFilename);
             callbacks[113] = Marshal.GetFunctionPointerForDelegate(d113);
             delegates[113] = d113;
-            var d114 = new __getMethodNameFromMetadata(_getMethodNameFromMetadata);
+            var d114 = new __getMethodDefFromMethod(_getMethodDefFromMethod);
             callbacks[114] = Marshal.GetFunctionPointerForDelegate(d114);
             delegates[114] = d114;
-            var d115 = new __getMethodHash(_getMethodHash);
+            var d115 = new __getMethodName(_getMethodName);
             callbacks[115] = Marshal.GetFunctionPointerForDelegate(d115);
             delegates[115] = d115;
-            var d116 = new __findNameOfToken(_findNameOfToken);
+            var d116 = new __getMethodNameFromMetadata(_getMethodNameFromMetadata);
             callbacks[116] = Marshal.GetFunctionPointerForDelegate(d116);
             delegates[116] = d116;
-            var d117 = new __getSystemVAmd64PassStructInRegisterDescriptor(_getSystemVAmd64PassStructInRegisterDescriptor);
+            var d117 = new __getMethodHash(_getMethodHash);
             callbacks[117] = Marshal.GetFunctionPointerForDelegate(d117);
             delegates[117] = d117;
-            var d118 = new __getThreadTLSIndex(_getThreadTLSIndex);
+            var d118 = new __findNameOfToken(_findNameOfToken);
             callbacks[118] = Marshal.GetFunctionPointerForDelegate(d118);
             delegates[118] = d118;
-            var d119 = new __getInlinedCallFrameVptr(_getInlinedCallFrameVptr);
+            var d119 = new __getSystemVAmd64PassStructInRegisterDescriptor(_getSystemVAmd64PassStructInRegisterDescriptor);
             callbacks[119] = Marshal.GetFunctionPointerForDelegate(d119);
             delegates[119] = d119;
-            var d120 = new __getAddrOfCaptureThreadGlobal(_getAddrOfCaptureThreadGlobal);
+            var d120 = new __getThreadTLSIndex(_getThreadTLSIndex);
             callbacks[120] = Marshal.GetFunctionPointerForDelegate(d120);
             delegates[120] = d120;
-            var d121 = new __getHelperFtn(_getHelperFtn);
+            var d121 = new __getInlinedCallFrameVptr(_getInlinedCallFrameVptr);
             callbacks[121] = Marshal.GetFunctionPointerForDelegate(d121);
             delegates[121] = d121;
-            var d122 = new __getFunctionEntryPoint(_getFunctionEntryPoint);
+            var d122 = new __getAddrOfCaptureThreadGlobal(_getAddrOfCaptureThreadGlobal);
             callbacks[122] = Marshal.GetFunctionPointerForDelegate(d122);
             delegates[122] = d122;
-            var d123 = new __getFunctionFixedEntryPoint(_getFunctionFixedEntryPoint);
+            var d123 = new __getHelperFtn(_getHelperFtn);
             callbacks[123] = Marshal.GetFunctionPointerForDelegate(d123);
             delegates[123] = d123;
-            var d124 = new __getMethodSync(_getMethodSync);
+            var d124 = new __getFunctionEntryPoint(_getFunctionEntryPoint);
             callbacks[124] = Marshal.GetFunctionPointerForDelegate(d124);
             delegates[124] = d124;
-            var d125 = new __getLazyStringLiteralHelper(_getLazyStringLiteralHelper);
+            var d125 = new __getFunctionFixedEntryPoint(_getFunctionFixedEntryPoint);
             callbacks[125] = Marshal.GetFunctionPointerForDelegate(d125);
             delegates[125] = d125;
-            var d126 = new __embedModuleHandle(_embedModuleHandle);
+            var d126 = new __getMethodSync(_getMethodSync);
             callbacks[126] = Marshal.GetFunctionPointerForDelegate(d126);
             delegates[126] = d126;
-            var d127 = new __embedClassHandle(_embedClassHandle);
+            var d127 = new __getLazyStringLiteralHelper(_getLazyStringLiteralHelper);
             callbacks[127] = Marshal.GetFunctionPointerForDelegate(d127);
             delegates[127] = d127;
-            var d128 = new __embedMethodHandle(_embedMethodHandle);
+            var d128 = new __embedModuleHandle(_embedModuleHandle);
             callbacks[128] = Marshal.GetFunctionPointerForDelegate(d128);
             delegates[128] = d128;
-            var d129 = new __embedFieldHandle(_embedFieldHandle);
+            var d129 = new __embedClassHandle(_embedClassHandle);
             callbacks[129] = Marshal.GetFunctionPointerForDelegate(d129);
             delegates[129] = d129;
-            var d130 = new __embedGenericHandle(_embedGenericHandle);
+            var d130 = new __embedMethodHandle(_embedMethodHandle);
             callbacks[130] = Marshal.GetFunctionPointerForDelegate(d130);
             delegates[130] = d130;
-            var d131 = new __getLocationOfThisType(_getLocationOfThisType);
+            var d131 = new __embedFieldHandle(_embedFieldHandle);
             callbacks[131] = Marshal.GetFunctionPointerForDelegate(d131);
             delegates[131] = d131;
-            var d132 = new __getPInvokeUnmanagedTarget(_getPInvokeUnmanagedTarget);
+            var d132 = new __embedGenericHandle(_embedGenericHandle);
             callbacks[132] = Marshal.GetFunctionPointerForDelegate(d132);
             delegates[132] = d132;
-            var d133 = new __getAddressOfPInvokeFixup(_getAddressOfPInvokeFixup);
+            var d133 = new __getLocationOfThisType(_getLocationOfThisType);
             callbacks[133] = Marshal.GetFunctionPointerForDelegate(d133);
             delegates[133] = d133;
-            var d134 = new __getAddressOfPInvokeTarget(_getAddressOfPInvokeTarget);
+            var d134 = new __getPInvokeUnmanagedTarget(_getPInvokeUnmanagedTarget);
             callbacks[134] = Marshal.GetFunctionPointerForDelegate(d134);
             delegates[134] = d134;
-            var d135 = new __GetCookieForPInvokeCalliSig(_GetCookieForPInvokeCalliSig);
+            var d135 = new __getAddressOfPInvokeFixup(_getAddressOfPInvokeFixup);
             callbacks[135] = Marshal.GetFunctionPointerForDelegate(d135);
             delegates[135] = d135;
-            var d136 = new __canGetCookieForPInvokeCalliSig(_canGetCookieForPInvokeCalliSig);
+            var d136 = new __getAddressOfPInvokeTarget(_getAddressOfPInvokeTarget);
             callbacks[136] = Marshal.GetFunctionPointerForDelegate(d136);
             delegates[136] = d136;
-            var d137 = new __getJustMyCodeHandle(_getJustMyCodeHandle);
+            var d137 = new __GetCookieForPInvokeCalliSig(_GetCookieForPInvokeCalliSig);
             callbacks[137] = Marshal.GetFunctionPointerForDelegate(d137);
             delegates[137] = d137;
-            var d138 = new __GetProfilingHandle(_GetProfilingHandle);
+            var d138 = new __canGetCookieForPInvokeCalliSig(_canGetCookieForPInvokeCalliSig);
             callbacks[138] = Marshal.GetFunctionPointerForDelegate(d138);
             delegates[138] = d138;
-            var d139 = new __getCallInfo(_getCallInfo);
+            var d139 = new __getJustMyCodeHandle(_getJustMyCodeHandle);
             callbacks[139] = Marshal.GetFunctionPointerForDelegate(d139);
             delegates[139] = d139;
-            var d140 = new __canAccessFamily(_canAccessFamily);
+            var d140 = new __GetProfilingHandle(_GetProfilingHandle);
             callbacks[140] = Marshal.GetFunctionPointerForDelegate(d140);
             delegates[140] = d140;
-            var d141 = new __isRIDClassDomainID(_isRIDClassDomainID);
+            var d141 = new __getCallInfo(_getCallInfo);
             callbacks[141] = Marshal.GetFunctionPointerForDelegate(d141);
             delegates[141] = d141;
-            var d142 = new __getClassDomainID(_getClassDomainID);
+            var d142 = new __canAccessFamily(_canAccessFamily);
             callbacks[142] = Marshal.GetFunctionPointerForDelegate(d142);
             delegates[142] = d142;
-            var d143 = new __getFieldAddress(_getFieldAddress);
+            var d143 = new __isRIDClassDomainID(_isRIDClassDomainID);
             callbacks[143] = Marshal.GetFunctionPointerForDelegate(d143);
             delegates[143] = d143;
-            var d144 = new __getVarArgsHandle(_getVarArgsHandle);
+            var d144 = new __getClassDomainID(_getClassDomainID);
             callbacks[144] = Marshal.GetFunctionPointerForDelegate(d144);
             delegates[144] = d144;
-            var d145 = new __canGetVarArgsHandle(_canGetVarArgsHandle);
+            var d145 = new __getFieldAddress(_getFieldAddress);
             callbacks[145] = Marshal.GetFunctionPointerForDelegate(d145);
             delegates[145] = d145;
-            var d146 = new __constructStringLiteral(_constructStringLiteral);
+            var d146 = new __getVarArgsHandle(_getVarArgsHandle);
             callbacks[146] = Marshal.GetFunctionPointerForDelegate(d146);
             delegates[146] = d146;
-            var d147 = new __emptyStringLiteral(_emptyStringLiteral);
+            var d147 = new __canGetVarArgsHandle(_canGetVarArgsHandle);
             callbacks[147] = Marshal.GetFunctionPointerForDelegate(d147);
             delegates[147] = d147;
-            var d148 = new __getFieldThreadLocalStoreID(_getFieldThreadLocalStoreID);
+            var d148 = new __constructStringLiteral(_constructStringLiteral);
             callbacks[148] = Marshal.GetFunctionPointerForDelegate(d148);
             delegates[148] = d148;
-            var d149 = new __setOverride(_setOverride);
+            var d149 = new __emptyStringLiteral(_emptyStringLiteral);
             callbacks[149] = Marshal.GetFunctionPointerForDelegate(d149);
             delegates[149] = d149;
-            var d150 = new __addActiveDependency(_addActiveDependency);
+            var d150 = new __getFieldThreadLocalStoreID(_getFieldThreadLocalStoreID);
             callbacks[150] = Marshal.GetFunctionPointerForDelegate(d150);
             delegates[150] = d150;
-            var d151 = new __GetDelegateCtor(_GetDelegateCtor);
+            var d151 = new __setOverride(_setOverride);
             callbacks[151] = Marshal.GetFunctionPointerForDelegate(d151);
             delegates[151] = d151;
-            var d152 = new __MethodCompileComplete(_MethodCompileComplete);
+            var d152 = new __addActiveDependency(_addActiveDependency);
             callbacks[152] = Marshal.GetFunctionPointerForDelegate(d152);
             delegates[152] = d152;
-            var d153 = new __getTailCallCopyArgsThunk(_getTailCallCopyArgsThunk);
+            var d153 = new __GetDelegateCtor(_GetDelegateCtor);
             callbacks[153] = Marshal.GetFunctionPointerForDelegate(d153);
             delegates[153] = d153;
-            var d154 = new __convertPInvokeCalliToCall(_convertPInvokeCalliToCall);
+            var d154 = new __MethodCompileComplete(_MethodCompileComplete);
             callbacks[154] = Marshal.GetFunctionPointerForDelegate(d154);
             delegates[154] = d154;
-            var d155 = new __getMemoryManager(_getMemoryManager);
+            var d155 = new __getTailCallCopyArgsThunk(_getTailCallCopyArgsThunk);
             callbacks[155] = Marshal.GetFunctionPointerForDelegate(d155);
             delegates[155] = d155;
-            var d156 = new __allocMem(_allocMem);
+            var d156 = new __convertPInvokeCalliToCall(_convertPInvokeCalliToCall);
             callbacks[156] = Marshal.GetFunctionPointerForDelegate(d156);
             delegates[156] = d156;
-            var d157 = new __reserveUnwindInfo(_reserveUnwindInfo);
+            var d157 = new __getMemoryManager(_getMemoryManager);
             callbacks[157] = Marshal.GetFunctionPointerForDelegate(d157);
             delegates[157] = d157;
-            var d158 = new __allocUnwindInfo(_allocUnwindInfo);
+            var d158 = new __allocMem(_allocMem);
             callbacks[158] = Marshal.GetFunctionPointerForDelegate(d158);
             delegates[158] = d158;
-            var d159 = new __allocGCInfo(_allocGCInfo);
+            var d159 = new __reserveUnwindInfo(_reserveUnwindInfo);
             callbacks[159] = Marshal.GetFunctionPointerForDelegate(d159);
             delegates[159] = d159;
-            var d160 = new __yieldExecution(_yieldExecution);
+            var d160 = new __allocUnwindInfo(_allocUnwindInfo);
             callbacks[160] = Marshal.GetFunctionPointerForDelegate(d160);
             delegates[160] = d160;
-            var d161 = new __setEHcount(_setEHcount);
+            var d161 = new __allocGCInfo(_allocGCInfo);
             callbacks[161] = Marshal.GetFunctionPointerForDelegate(d161);
             delegates[161] = d161;
-            var d162 = new __setEHinfo(_setEHinfo);
+            var d162 = new __yieldExecution(_yieldExecution);
             callbacks[162] = Marshal.GetFunctionPointerForDelegate(d162);
             delegates[162] = d162;
-            var d163 = new __logMsg(_logMsg);
+            var d163 = new __setEHcount(_setEHcount);
             callbacks[163] = Marshal.GetFunctionPointerForDelegate(d163);
             delegates[163] = d163;
-            var d164 = new __doAssert(_doAssert);
+            var d164 = new __setEHinfo(_setEHinfo);
             callbacks[164] = Marshal.GetFunctionPointerForDelegate(d164);
             delegates[164] = d164;
-            var d165 = new __reportFatalError(_reportFatalError);
+            var d165 = new __logMsg(_logMsg);
             callbacks[165] = Marshal.GetFunctionPointerForDelegate(d165);
             delegates[165] = d165;
-            var d166 = new __allocBBProfileBuffer(_allocBBProfileBuffer);
+            var d166 = new __doAssert(_doAssert);
             callbacks[166] = Marshal.GetFunctionPointerForDelegate(d166);
             delegates[166] = d166;
-            var d167 = new __getBBProfileData(_getBBProfileData);
+            var d167 = new __reportFatalError(_reportFatalError);
             callbacks[167] = Marshal.GetFunctionPointerForDelegate(d167);
             delegates[167] = d167;
-            var d168 = new __recordCallSite(_recordCallSite);
+            var d168 = new __allocBBProfileBuffer(_allocBBProfileBuffer);
             callbacks[168] = Marshal.GetFunctionPointerForDelegate(d168);
             delegates[168] = d168;
-            var d169 = new __recordRelocation(_recordRelocation);
+            var d169 = new __getBBProfileData(_getBBProfileData);
             callbacks[169] = Marshal.GetFunctionPointerForDelegate(d169);
             delegates[169] = d169;
-            var d170 = new __getRelocTypeHint(_getRelocTypeHint);
+            var d170 = new __recordCallSite(_recordCallSite);
             callbacks[170] = Marshal.GetFunctionPointerForDelegate(d170);
             delegates[170] = d170;
-            var d171 = new __getModuleNativeEntryPointRange(_getModuleNativeEntryPointRange);
+            var d171 = new __recordRelocation(_recordRelocation);
             callbacks[171] = Marshal.GetFunctionPointerForDelegate(d171);
             delegates[171] = d171;
-            var d172 = new __getExpectedTargetArchitecture(_getExpectedTargetArchitecture);
+            var d172 = new __getRelocTypeHint(_getRelocTypeHint);
             callbacks[172] = Marshal.GetFunctionPointerForDelegate(d172);
             delegates[172] = d172;
-            var d173 = new __getJitFlags(_getJitFlags);
+            var d173 = new __getModuleNativeEntryPointRange(_getModuleNativeEntryPointRange);
             callbacks[173] = Marshal.GetFunctionPointerForDelegate(d173);
             delegates[173] = d173;
+            var d174 = new __getExpectedTargetArchitecture(_getExpectedTargetArchitecture);
+            callbacks[174] = Marshal.GetFunctionPointerForDelegate(d174);
+            delegates[174] = d174;
+            var d175 = new __getJitFlags(_getJitFlags);
+            callbacks[175] = Marshal.GetFunctionPointerForDelegate(d175);
+            delegates[175] = d175;
 
             keepAlive = delegates;
             return (IntPtr)callbacks;

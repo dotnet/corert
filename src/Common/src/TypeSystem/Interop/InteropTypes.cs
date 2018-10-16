@@ -25,6 +25,11 @@ namespace Internal.TypeSystem.Interop
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "CriticalHandle");
         }
 
+        public static MetadataType GetHandleRef(TypeSystemContext context)
+        {
+            return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "HandleRef");
+        }
+
         public static MetadataType GetMissingMemberException(TypeSystemContext context)
         {
             return context.SystemModule.GetKnownType("System", "MissingMemberException");

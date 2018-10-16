@@ -336,8 +336,6 @@ namespace ILCompiler
                 dumper.Begin();
             }
 
-            // In multi-module builds, set the compilation unit prefix to prevent ambiguous symbols in linked object files
-            NameMangler.CompilationUnitPrefix = _nodeFactory.CompilationModuleGroup.IsSingleFileCompilation ? "" : Path.GetFileNameWithoutExtension(outputFile);
             CompileInternal(outputFile, dumper);
 
             if (dumper != null)
@@ -361,11 +359,15 @@ namespace ILCompiler
 
             public void AddCompilationRoot(MethodDesc method, string reason, string exportName = null)
             {
-                IMethodNode methodEntryPoint = _factory.CanonicalEntrypoint(method);
+                MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                IMethodNode methodEntryPoint = _factory.MethodEntrypoint(canonMethod);
                 _graph.AddRoot(methodEntryPoint, reason);
 
                 if (exportName != null)
                     _factory.NodeAliases.Add(methodEntryPoint, exportName);
+
+                if (canonMethod != method && method.HasInstantiation)
+                    _graph.AddRoot(_factory.MethodGenericDictionary(method), reason);
             }
 
             public void AddCompilationRoot(TypeDesc type, string reason)

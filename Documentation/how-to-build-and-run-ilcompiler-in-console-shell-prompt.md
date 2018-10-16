@@ -27,7 +27,7 @@ You should now be able to use the `dotnet` commands of the CLI tools.
 * Ensure that you have done a repo build per the instructions above.
 * Create a new folder and switch into it. 
 * Run `dotnet new console` on the command/shell prompt. This will add a project template. If you get an error, please ensure the [pre-requisites](prerequisites-for-building.md) are installed. 
-* Modify `.csproj` file that is part of your project. A few lines at the top and at the bottom are different from the default template.
+* Modify `.csproj` file that is part of your project. **Important:** A few lines at the top and at the bottom are different from the default template - don't miss updating them!
 
 ```
 <Project>
