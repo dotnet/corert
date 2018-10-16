@@ -214,8 +214,8 @@
     <Compile Include="System\RuntimeMethodHandle.cs" />
     <Compile Include="System\Diagnostics\Contracts\Contracts.cs" />
     <Compile Include="System\Diagnostics\Debug.CoreRT.cs" />
-    <Compile Include="System\Diagnostics\Debug.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
     <Compile Include="System\Diagnostics\Debugger.cs" />
+    <Compile Include="System\Diagnostics\DebugProvider.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
     <Compile Include="System\Diagnostics\LowLevelDebugFuncEval.cs" />
     <Compile Include="System\Diagnostics\DebuggerGuidedStepThroughAttribute.cs" />
     <Compile Include="System\Diagnostics\DebugAnnotations.cs" />
