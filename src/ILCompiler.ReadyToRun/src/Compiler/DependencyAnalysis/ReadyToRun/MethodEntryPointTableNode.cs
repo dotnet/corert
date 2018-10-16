@@ -57,15 +57,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             foreach (MethodDesc method in factory.MetadataManager.GetCompiledMethods())
             {
-                MethodWithGCInfo methodCodeNode = factory.MethodEntrypoint(method) as MethodWithGCInfo;
-                if (methodCodeNode == null)
+                IMethodNode methodNode = factory.MethodEntrypoint(method);
+                MethodWithGCInfo methodCodeNode = methodNode as MethodWithGCInfo;
+                if (methodCodeNode == null && methodNode is LocalMethodImport localMethodImport)
                 {
-                    methodCodeNode = ((ExternalMethodImport)factory.MethodEntrypoint(method))?.MethodCodeNode;
-                    if (methodCodeNode == null)
-                        continue;
+                    methodCodeNode = localMethodImport.MethodCodeNode;
                 }
 
-                if (!methodCodeNode.IsEmpty && methodCodeNode.Method is EcmaMethod ecmaMethod)
+                if (methodCodeNode != null && !methodCodeNode.IsEmpty && methodCodeNode.Method is EcmaMethod ecmaMethod)
                 {
                     // Strip away the token type bits, keep just the low 24 bits RID
                     uint rid = SignatureBuilder.RidFromToken((mdToken)MetadataTokens.GetToken(ecmaMethod.Handle));

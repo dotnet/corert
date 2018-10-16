@@ -5,19 +5,23 @@
 using System;
 using Internal.TypeSystem;
 
+using ILCompiler.DependencyAnalysis.ReadyToRun;
+
 namespace ILCompiler.DependencyAnalysis
 {
     internal struct TypeAndMethod : IEquatable<TypeAndMethod>
     {
         public readonly TypeDesc Type;
         public readonly MethodDesc Method;
+        public readonly ModuleToken MethodToken;
         public readonly bool IsUnboxingStub;
         public readonly bool IsInstantiatingStub;
 
-        public TypeAndMethod(TypeDesc type, MethodDesc method, bool isUnboxingStub, bool isInstantiatingStub)
+        public TypeAndMethod(TypeDesc type, MethodDesc method, ModuleToken methodToken, bool isUnboxingStub, bool isInstantiatingStub)
         {
             Type = type;
             Method = method;
+            MethodToken = methodToken;
             IsUnboxingStub = isUnboxingStub;
             IsInstantiatingStub = isInstantiatingStub;
         }
@@ -26,6 +30,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             return Type == other.Type &&
                    Method == other.Method &&
+                   MethodToken.Equals(other.MethodToken) &&
                    IsUnboxingStub == other.IsUnboxingStub &&
                    IsInstantiatingStub == other.IsInstantiatingStub;
         }
@@ -37,7 +42,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public override int GetHashCode()
         {
-            return (Type?.GetHashCode() ?? 0) ^ unchecked(Method.GetHashCode() * 31) ^ (IsUnboxingStub ? -0x80000000 : 0) ^ (IsInstantiatingStub ? 0x40000000 : 0);
+            return (Type?.GetHashCode() ?? 0) ^ 
+                unchecked(Method.GetHashCode() * 31  + MethodToken.GetHashCode() * 97) ^ 
+                (IsUnboxingStub ? -0x80000000 : 0) ^ 
+                (IsInstantiatingStub ? 0x40000000 : 0);
         }
     }
 }

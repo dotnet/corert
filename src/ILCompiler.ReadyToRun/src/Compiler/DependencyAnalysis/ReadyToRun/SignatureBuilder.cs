@@ -356,11 +356,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void EmitMethodSignature(
             MethodDesc method, 
-            bool enforceDefEncoding, 
-            TypeDesc constrainedType, 
-            bool isUnboxingStub, 
-            bool isInstantiatingStub, 
-            SignatureContext context)
+            TypeDesc constrainedType,
+            ModuleToken methodToken,
+            bool enforceDefEncoding,
+            SignatureContext context,
+            bool isUnboxingStub,
+            bool isInstantiatingStub)
         {
             uint flags = 0;
             if (isUnboxingStub)
@@ -378,24 +379,27 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (method.HasInstantiation || method.OwningType.HasInstantiation)
             {
-                EmitMethodSpecificationSignature(method, flags, enforceDefEncoding, context);
+                EmitMethodSpecificationSignature(method, methodToken, flags, enforceDefEncoding, context);
             }
             else
             {
-                ModuleToken token = context.GetModuleTokenForMethod(method.GetTypicalMethodDefinition());
-                switch (token.TokenType)
+                if (methodToken.IsNull)
+                {
+                    methodToken = context.GetModuleTokenForMethod(method.GetTypicalMethodDefinition());
+                }
+                switch (methodToken.TokenType)
                 {
                     case CorTokenType.mdtMethodDef:
                         // TODO: module override for methoddefs with external module context
                         EmitUInt(flags);
-                        EmitMethodDefToken(token);
+                        EmitMethodDefToken(methodToken);
                         break;
 
                     case CorTokenType.mdtMemberRef:
                         // TODO: module override for methodrefs with external module context
                         flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MemberRefToken;
                         EmitUInt(flags);
-                        EmitMethodRefToken(token);
+                        EmitMethodRefToken(methodToken);
                         break;
 
                     default:
@@ -421,15 +425,27 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             EmitUInt(RidFromToken(memberRefToken.Token));
         }
 
-        private void EmitMethodSpecificationSignature(MethodDesc method, uint flags, bool enforceDefEncoding, SignatureContext context)
+        private void EmitMethodSpecificationSignature(MethodDesc method, ModuleToken methodToken, 
+            uint flags, bool enforceDefEncoding, SignatureContext context)
         {
             if (method.HasInstantiation)
             {
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MethodInstantiation;
+                if (!methodToken.IsNull)
+                {
+                    if (methodToken.TokenType == CorTokenType.mdtMethodSpec)
+                    {
+                        MethodSpecification methodSpecification = methodToken.MetadataReader.GetMethodSpecification((MethodSpecificationHandle)methodToken.Handle);
+                        methodToken = new ModuleToken(methodToken.Module, methodSpecification.Method);
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
+                    }
+                }
             }
 
-            ModuleToken methodToken = default(ModuleToken);
-            if (!enforceDefEncoding)
+            if (methodToken.IsNull && !enforceDefEncoding)
             {
                 methodToken = context.GetModuleTokenForMethod(method.GetMethodDefinition(), throwIfNotFound: false);
             }

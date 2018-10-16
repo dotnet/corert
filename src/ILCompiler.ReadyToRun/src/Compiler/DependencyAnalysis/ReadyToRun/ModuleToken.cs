@@ -41,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int GetHashCode()
         {
-            return Module.GetHashCode() ^ unchecked((int)(31 * (uint)Token));
+            return IsNull ? 0 : Module.GetHashCode() ^ unchecked((int)(31 * (uint)Token));
         }
 
         public override string ToString()

@@ -83,15 +83,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             foreach (MethodDesc method in ((ReadyToRunTableManager)factory.MetadataManager).GetCompiledMethods())
             {
-                MethodWithGCInfo methodCodeNode = factory.MethodEntrypoint(method) as MethodWithGCInfo;
-                if (methodCodeNode == null)
+                IMethodNode methodNode = factory.MethodEntrypoint(method);
+                MethodWithGCInfo methodCodeNode = methodNode as MethodWithGCInfo;
+                if (methodCodeNode == null && methodNode is LocalMethodImport localMethodImport)
                 {
-                    methodCodeNode = ((ExternalMethodImport)factory.MethodEntrypoint(method))?.MethodCodeNode;
-                    if (methodCodeNode == null)
-                        continue;
+                    methodCodeNode = localMethodImport.MethodCodeNode;
                 }
 
-                if (methodCodeNode.IsEmpty)
+                if (methodCodeNode == null || methodCodeNode.IsEmpty)
                 {
                     continue;
                 }

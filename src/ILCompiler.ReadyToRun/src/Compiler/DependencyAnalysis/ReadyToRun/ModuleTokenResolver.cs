@@ -27,8 +27,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// </summary>
         private readonly Dictionary<EcmaType, ModuleToken> _typeToRefTokens = new Dictionary<EcmaType, ModuleToken>();
 
-        private readonly Dictionary<MethodDesc, ModuleToken> _methodToRefTokens = new Dictionary<MethodDesc, ModuleToken>();
-
         private readonly Dictionary<FieldDesc, ModuleToken> _fieldToRefTokens = new Dictionary<FieldDesc, ModuleToken>();
 
         private readonly CompilationModuleGroup _compilationModuleGroup;
@@ -73,11 +71,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
             }
 
-            if (_methodToRefTokens.TryGetValue(method, out ModuleToken token))
-            {
-                return token;
-            }
-
             // Reverse lookup failed
             if (throwIfNotFound)
             {
@@ -108,51 +101,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void AddModuleTokenForMethod(MethodDesc method, ModuleToken token)
         {
-            // Always remove method instantiation as methodSpec's cannot be used to encode R2R method signatures
-            method = method.GetMethodDefinition();
             if (token.TokenType == CorTokenType.mdtMethodSpec)
             {
                 MethodSpecification methodSpec = token.MetadataReader.GetMethodSpecification((MethodSpecificationHandle)token.Handle);
                 token = new ModuleToken(token.Module, methodSpec.Method);
             }
-
-            if (_methodToRefTokens.ContainsKey(method))
+            if (token.TokenType == CorTokenType.mdtMemberRef)
             {
-                // This method has already been harvested
-                return;
+                MemberReference memberRef = token.MetadataReader.GetMemberReference((MemberReferenceHandle)token.Handle);
+                EntityHandle owningTypeHandle = memberRef.Parent;
+                AddModuleTokenForType(method.OwningType, new ModuleToken(token.Module, owningTypeHandle));
+                memberRef.DecodeMethodSignature<DummyTypeInfo, ModuleTokenResolver>(new TokenResolverProvider(this, token.Module), this);
             }
-
-            if (_compilationModuleGroup.ContainsMethodBody(method, unboxingStub: false) && method is EcmaMethod)
-            {
-                // We don't need to store handles within the current compilation group
-                // as we can read them directly from the ECMA objects.
-                return;
-            }
-
-            _methodToRefTokens[method] = token;
-
-            switch (token.TokenType)
-            {
-                case CorTokenType.mdtMemberRef:
-                    if (method.OwningType.HasInstantiation && !method.OwningType.IsGenericDefinition)
-                    {
-                        AddModuleTokenForMethod(method.GetTypicalMethodDefinition(), token);
-                    }
-                    AddModuleTokenForMethodReference(method.OwningType, token);
-                    break;
-
-                default:
-                    throw new NotImplementedException(token.TokenType.ToString());
-            }
-        }
-
-        private void AddModuleTokenForMethodReference(TypeDesc owningType, ModuleToken token)
-        {
-            MemberReference memberRef = token.MetadataReader.GetMemberReference((MemberReferenceHandle)token.Handle);
-            EntityHandle owningTypeHandle = memberRef.Parent;
-            AddModuleTokenForType(owningType, new ModuleToken(token.Module, owningTypeHandle));
-
-            memberRef.DecodeMethodSignature<DummyTypeInfo, ModuleTokenResolver>(new TokenResolverProvider(this, token.Module), this);
         }
 
         private void AddModuleTokenForFieldReference(TypeDesc owningType, ModuleToken token)

@@ -20,6 +20,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly TypeDesc _contextType;
 
+        private readonly ModuleToken _methodToken;
+
         private readonly SignatureContext _signatureContext;
 
         public GenericLookupMethodSignature(
@@ -27,12 +29,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadyToRunFixupKind fixupKind,
             MethodDesc methodArgument,
             TypeDesc contextType,
+            ModuleToken methodToken,
             SignatureContext signatureContext)
         {
             _runtimeLookupKind = runtimeLookupKind;
             _fixupKind = fixupKind;
             _methodArgument = methodArgument;
             _contextType = contextType;
+            _methodToken = methodToken;
             _signatureContext = signatureContext;
         }
 
@@ -68,12 +72,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 dataBuilder.EmitByte((byte)_fixupKind);
                 dataBuilder.EmitMethodSignature(
-                    _methodArgument, 
+                    _methodArgument,
+                    constrainedType: null,
+                    _methodToken,
                     enforceDefEncoding: false,
-                    constrainedType: null, 
-                    isUnboxingStub: false, 
-                    isInstantiatingStub: false, 
-                    _signatureContext);
+                    _signatureContext,
+                    isUnboxingStub: false,
+                    isInstantiatingStub: false);
             }
 
             return dataBuilder.ToObjectData();
@@ -93,6 +98,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 sb.Append(" (");
                 sb.Append(_contextType.ToString());
                 sb.Append(")");
+            }
+            if (!_methodToken.IsNull)
+            {
+                sb.Append(" [");
+                sb.Append(_methodToken.MetadataReader.GetString(_methodToken.MetadataReader.GetAssemblyDefinition().Name));
+                sb.Append(":");
+                sb.Append(((uint)_methodToken.Token).ToString("X8"));
+                sb.Append("]");
             }
         }
 

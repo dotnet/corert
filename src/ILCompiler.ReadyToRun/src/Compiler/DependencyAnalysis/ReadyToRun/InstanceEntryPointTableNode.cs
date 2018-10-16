@@ -48,26 +48,27 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             foreach (MethodDesc method in factory.MetadataManager.GetCompiledMethods())
             {
-                MethodWithGCInfo methodCodeNode = factory.MethodEntrypoint(method) as MethodWithGCInfo;
-                if (methodCodeNode == null)
+                IMethodNode methodNode = factory.MethodEntrypoint(method);
+                MethodWithGCInfo methodCodeNode = methodNode as MethodWithGCInfo;
+                if (methodCodeNode == null && methodNode is LocalMethodImport localMethodImport)
                 {
-                    methodCodeNode = ((ExternalMethodImport)factory.MethodEntrypoint(method))?.MethodCodeNode;
-                    if (methodCodeNode == null)
-                        continue;
+                    methodCodeNode = localMethodImport.MethodCodeNode;
                 }
 
-                if (!methodCodeNode.IsEmpty && (methodCodeNode.Method.HasInstantiation || methodCodeNode.Method.OwningType.HasInstantiation))
+                if (methodCodeNode != null && !methodCodeNode.IsEmpty && 
+                    (methodCodeNode.Method.HasInstantiation || methodCodeNode.Method.OwningType.HasInstantiation))
                 {
                     int methodIndex = r2rFactory.RuntimeFunctionsTable.GetIndex(methodCodeNode);
 
                     ArraySignatureBuilder signatureBuilder = new ArraySignatureBuilder();
                     signatureBuilder.EmitMethodSignature(
                         methodCodeNode.Method, 
+                        constrainedType: null,
+                        default(ModuleToken),
                         enforceDefEncoding: true,
-                        constrainedType: null, 
+                        methodCodeNode.SignatureContext,
                         isUnboxingStub: false, 
-                        isInstantiatingStub: false, 
-                        methodCodeNode.SignatureContext);
+                        isInstantiatingStub: false);
                     byte[] signature = signatureBuilder.ToArray();
                     BlobVertex signatureBlob;
                     if (!uniqueSignatures.TryGetValue(signature, out signatureBlob))

@@ -52,17 +52,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             foreach (MethodDesc method in _nodeFactory.MetadataManager.GetCompiledMethods())
             {
-                MethodWithGCInfo methodCodeNode = _nodeFactory.MethodEntrypoint(method) as MethodWithGCInfo;
-                if (methodCodeNode == null)
+                IMethodNode methodNode = _nodeFactory.MethodEntrypoint(method);
+                MethodWithGCInfo methodCodeNode = methodNode as MethodWithGCInfo;
+                if (methodCodeNode == null && methodNode is LocalMethodImport localMethodImport)
                 {
-                    methodCodeNode = ((ExternalMethodImport)_nodeFactory.MethodEntrypoint(method))?.MethodCodeNode;
-                    if (methodCodeNode == null)
-                        continue;
+                    methodCodeNode = localMethodImport.MethodCodeNode;
                 }
 
-                _methodNodes.Add(methodCodeNode);
-                _insertedMethodNodes[methodCodeNode] = runtimeFunctionIndex;
-                runtimeFunctionIndex += methodCodeNode.FrameInfos.Length;
+                if (methodCodeNode != null && !methodCodeNode.IsEmpty)
+                {
+                    _methodNodes.Add(methodCodeNode);
+                    _insertedMethodNodes[methodCodeNode] = runtimeFunctionIndex;
+                    runtimeFunctionIndex += methodCodeNode.FrameInfos.Length;
+                }
             }
         }
 

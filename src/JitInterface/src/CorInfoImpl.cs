@@ -2672,7 +2672,8 @@ namespace Internal.JitInterface
                     // Calling a string constructor doesn't call the actual constructor.
                     pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                        _compilation.NodeFactory.StringAllocator(targetMethod, _signatureContext)
+                        _compilation.NodeFactory.StringAllocator(targetMethod, 
+                            new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token), _signatureContext)
 
 #else
                         _compilation.NodeFactory.StringAllocator(targetMethod)
@@ -2689,7 +2690,8 @@ namespace Internal.JitInterface
                     Debug.Assert(!forceUseRuntimeLookup);
                     pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                        _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, method, _signatureContext)
+                        _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, method, 
+                            new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token), _signatureContext)
 #else
                         _compilation.NodeFactory.MethodEntrypoint(targetMethod)
 #endif
@@ -2702,7 +2704,8 @@ namespace Internal.JitInterface
                     if (targetMethod.RequiresInstMethodDescArg())
                     {
 #if READYTORUN
-                        instParam = _compilation.SymbolNodeFactory.MethodGenericDictionary(concreteMethod, _signatureContext);
+                        instParam = _compilation.SymbolNodeFactory.MethodGenericDictionary(concreteMethod, 
+                            new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token), _signatureContext);
 #else
                         instParam = _compilation.NodeFactory.MethodGenericDictionary(concreteMethod);
 #endif
@@ -2777,7 +2780,8 @@ namespace Internal.JitInterface
                     pResult->codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_PVALUE;
                     pResult->codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
 #if READYTORUN
-                        _compilation.SymbolNodeFactory.InterfaceDispatchCell(targetMethod, _signatureContext, isUnboxingStub: false
+                        _compilation.SymbolNodeFactory.InterfaceDispatchCell(targetMethod, 
+                            new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token), _signatureContext, isUnboxingStub: false
 #else
                         _compilation.NodeFactory.InterfaceDispatchCell(targetMethod
 #endif // READYTORUN
