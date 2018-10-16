@@ -2737,51 +2737,15 @@ namespace Internal.JitInterface
                     if (instParam != null)
                     {
                         pResult->instParamLookup = CreateConstLookupToSymbol(instParam);
+                    }
 
-                        if (!referencingArrayAddressMethod)
-                        {
-                            pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+                    pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                                _compilation.NodeFactory.ShadowConcreteMethod(targetMethod, constrainedType, method, _signatureContext)
+                        _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, method, _signatureContext)
 #else
-                                _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod)
+                        _compilation.NodeFactory.MethodEntrypoint(targetMethod)
 #endif
-                                );
-                        }
-                        else
-                        {
-                            // We don't want array Address method to be modeled in the generic dependency analysis.
-                            // The method doesn't actually have runtime determined dependencies (won't do
-                            // any generic lookups).
-                            pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-#if READYTORUN
-                                _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, method, _signatureContext)
-#else
-                                _compilation.NodeFactory.MethodEntrypoint(targetMethod)
-#endif
-                                );
-                        }
-                    }
-                    else if (targetMethod.AcquiresInstMethodTableFromThis())
-                    {
-                        pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-#if READYTORUN
-                            _compilation.NodeFactory.ShadowConcreteMethod(targetMethod, constrainedType, method, _signatureContext)
-#else
-                            _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod)
-#endif
-                            );
-                    }
-                    else
-                    {
-                        pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-#if READYTORUN
-                            _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, method, _signatureContext)
-#else
-                            _compilation.NodeFactory.MethodEntrypoint(targetMethod)
-#endif
-                            );
-                    }
+                        );
                 }
 
                 pResult->nullInstanceCheck = resolvedCallVirt;
