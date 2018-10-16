@@ -2782,9 +2782,6 @@ namespace Internal.JitInterface
 #endif
                             );
                     }
-
-                    pResult->codePointerOrStubLookup.constLookup = 
-                        CreateConstLookupToSymbol(_compilation.NodeFactory.MethodEntrypoint(targetMethod));
                 }
 
                 pResult->nullInstanceCheck = resolvedCallVirt;
