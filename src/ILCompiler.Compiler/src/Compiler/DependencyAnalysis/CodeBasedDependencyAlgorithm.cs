@@ -77,14 +77,6 @@ namespace ILCompiler.DependencyAnalysis
             if (method.HasInstantiation)
             {
                 ExactMethodInstantiationsNode.GetExactMethodInstantiationDependenciesForMethod(ref dependencies, factory, method);
-                
-                if (method.IsVirtual)
-                {
-                    // Generic virtual methods dependency tracking
-                    dependencies = dependencies ?? new DependencyList();
-                    dependencies.Add(new DependencyListEntry(factory.GVMDependencies(method), "GVM Dependencies Support"));
-                }
-
                 GenericMethodsTemplateMap.GetTemplateMethodDependencies(ref dependencies, factory, method);
             }
             else
