@@ -114,7 +114,7 @@ namespace ILCompiler
                 //TODO: this might be triggered by a struct that implements an interface with a generic method
                 if (thunk.HasInstantiation)
                 {
-                    return targetMethod.Context.GetInstantiatedMethod(thunkDefinition, thunkDefinition.Instantiation);
+                    return targetMethod.Context.GetInstantiatedMethod(thunkDefinition, targetMethod.Instantiation);
                 }
                 Debug.Assert(!thunk.HasInstantiation);
                 return thunk;
@@ -123,7 +123,7 @@ namespace ILCompiler
             {
                 if (thunkDefinition.HasInstantiation)
                 {
-                    return targetMethod.Context.GetInstantiatedMethod(thunkDefinition, thunkDefinition.Instantiation);
+                    return targetMethod.Context.GetInstantiatedMethod(thunkDefinition, targetMethod.Instantiation);
                 }
                 return thunkDefinition;
             }

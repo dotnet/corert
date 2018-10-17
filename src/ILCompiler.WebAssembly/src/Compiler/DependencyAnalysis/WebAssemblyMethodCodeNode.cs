@@ -22,6 +22,16 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(!method.IsAbstract);
             _method = method;
+            if (method.Name == "GetField_Unbox")
+            {
+            }
+        }
+
+        protected override void NowMarked()
+        {
+            if (_method.Name == "GetField_Unbox")
+            {
+            }
         }
 
         public void SetDependencies(IEnumerable<Object> dependencies)
