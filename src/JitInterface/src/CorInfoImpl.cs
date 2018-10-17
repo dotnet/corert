@@ -2673,7 +2673,7 @@ namespace Internal.JitInterface
                     pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
                         _compilation.NodeFactory.StringAllocator(targetMethod, 
-                            new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token), _signatureContext)
+                            new ModuleToken(_tokenContext, pResolvedToken.token), _signatureContext)
 
 #else
                         _compilation.NodeFactory.StringAllocator(targetMethod)
@@ -2691,7 +2691,7 @@ namespace Internal.JitInterface
                     pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
                         _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, method, 
-                            new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token), _signatureContext)
+                            new ModuleToken(_tokenContext, pResolvedToken.token), _signatureContext)
 #else
                         _compilation.NodeFactory.MethodEntrypoint(targetMethod)
 #endif
@@ -2705,7 +2705,7 @@ namespace Internal.JitInterface
                     {
 #if READYTORUN
                         instParam = _compilation.SymbolNodeFactory.MethodGenericDictionary(concreteMethod, 
-                            new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token), _signatureContext);
+                            new ModuleToken(_tokenContext, pResolvedToken.token), _signatureContext);
 #else
                         instParam = _compilation.NodeFactory.MethodGenericDictionary(concreteMethod);
 #endif
@@ -2727,7 +2727,8 @@ namespace Internal.JitInterface
 
                     pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                        _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, method, _signatureContext)
+                        _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, method,
+                            new ModuleToken(_tokenContext, pResolvedToken.token), _signatureContext)
 #else
                         _compilation.NodeFactory.MethodEntrypoint(targetMethod)
 #endif
