@@ -2841,7 +2841,13 @@ namespace Internal.JitInterface
 
                     pResult->codePointerOrStubLookup.constLookup = 
                         CreateConstLookupToSymbol(
-                            _compilation.NodeFactory.ReadyToRunHelper(helperId, slotDefiningMethod));
+                            _compilation.NodeFactory.ReadyToRunHelper(helperId, 
+#if READYTORUN
+                            new MethodWithToken(slotDefiningMethod, new ModuleToken(_tokenContext, pResolvedToken.token))
+#else
+                            slotDefiningMethod
+#endif
+                            ));
                 }
 
                 // The current CoreRT ReadyToRun helpers do not handle null thisptr - ask the JIT to emit explicit null checks
