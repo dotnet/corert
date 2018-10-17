@@ -114,7 +114,7 @@ namespace ILCompiler
                 //TODO: this might be triggered by a struct that implements an interface with a generic method
                 if (thunk.HasInstantiation)
                 {
-                    return targetMethod.Context.GetInstantiatedMethod(thunkDefinition, targetMethod.Instantiation);
+                    return thunk.Context.GetInstantiatedMethod(thunk, targetMethod.Instantiation);
                 }
                 Debug.Assert(!thunk.HasInstantiation);
                 return thunk;
@@ -123,7 +123,7 @@ namespace ILCompiler
             {
                 if (thunkDefinition.HasInstantiation)
                 {
-                    return targetMethod.Context.GetInstantiatedMethod(thunkDefinition, targetMethod.Instantiation);
+                    return thunkDefinition.Context.GetInstantiatedMethod(thunkDefinition, targetMethod.Instantiation);
                 }
                 return thunkDefinition;
             }
@@ -562,25 +562,26 @@ namespace ILCompiler
                     codeStream.EmitLdArg(i + 1);
                 }
 
+//                codeStream.Emit(ILOpcode.call, emit.NewToken(_targetMethod.InstantiateAsOpen()));
+
                 TypeDesc owner = _targetMethod.OwningType;
                 MethodDesc methodToInstantiate = _targetMethod;
                 if (owner.HasInstantiation)
                 {
                     MetadataType instantiatedOwner = (MetadataType)owner.InstantiateAsOpen();
                     methodToInstantiate = _targetMethod.Context.GetMethodForInstantiatedType(_targetMethod, (InstantiatedType)instantiatedOwner);
+                }
+                if (methodToInstantiate.HasInstantiation)
+                {
+                    TypeSystemContext context = methodToInstantiate.Context;
 
-                    if (methodToInstantiate.HasInstantiation)
+                    var inst = new TypeDesc[methodToInstantiate.Instantiation.Length];
+                    for (int i = 0; i < inst.Length; i++)
                     {
-                        TypeSystemContext context = methodToInstantiate.Context;
-
-                        var inst = new TypeDesc[methodToInstantiate.Instantiation.Length];
-                        for (int i = 0; i < inst.Length; i++)
-                        {
-                            inst[i] = context.GetSignatureVariable(i, true);
-                        }
-
-                        methodToInstantiate = context.GetInstantiatedMethod(methodToInstantiate, new Instantiation(inst));
+                        inst[i] = context.GetSignatureVariable(i, true);
                     }
+
+                    methodToInstantiate = context.GetInstantiatedMethod(methodToInstantiate, new Instantiation(inst));
                 }
 
                 codeStream.Emit(ILOpcode.call, emit.NewToken(methodToInstantiate));
