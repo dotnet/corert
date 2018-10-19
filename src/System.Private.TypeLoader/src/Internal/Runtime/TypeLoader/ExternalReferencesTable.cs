@@ -23,6 +23,7 @@ namespace Internal.Runtime.TypeLoader
 
         private unsafe bool Initialize(NativeFormatModuleInfo module, ReflectionMapBlob blobId)
         {
+            ModuleList.PrintLine("ERT Initialize for blobId " + ((int)blobId).ToString());
             _moduleHandle = module.Handle;
 
             byte* pBlob;
@@ -31,11 +32,15 @@ namespace Internal.Runtime.TypeLoader
             {
                 _elements = IntPtr.Zero;
                 _elementsCount = 0;
+                ModuleList.PrintLine("ERT Initialize blob not found ");
+
                 return false;
             }
 
             _elements = (IntPtr)pBlob;
             _elementsCount = (uint)(cbBlob / sizeof(TableElement));
+            ModuleList.PrintLine("ERT Initialize blob found count is  " + _elementsCount.ToString());
+            ModuleList.PrintLine("ERT Initialize blob pBlob is  " + _elements.ToString());
 
             return true;
         }
@@ -105,12 +110,20 @@ namespace Internal.Runtime.TypeLoader
                 return (IntPtr)(_moduleHandle.ConvertRVAToPointer(rva));
             }
 #else
+            ModuleList.PrintLine("GetIntPtrFromIndex for index " + index.ToString());
+            ModuleList.PrintLine("GetIntPtrFromIndex count is " + _elementsCount);
+
             if (index >= _elementsCount)
                 throw new BadImageFormatException();
 
             // TODO: indirection through IAT
             int* pRelPtr32 = &((int*)_elements)[index];
-            return (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
+            var x = (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
+            var intptr = (IntPtr)pRelPtr32;
+            ModuleList.PrintLine("GetIntPtrFromIndex  pRelPtr32 is " + intptr.ToString());
+
+            ModuleList.PrintLine("GetIntPtrFromIndex  IntPtr is " + x.ToString());
+            return x;
 #endif
         }
 
@@ -139,12 +152,21 @@ namespace Internal.Runtime.TypeLoader
 
         public RuntimeTypeHandle GetRuntimeTypeHandleFromIndex(uint index)
         {
+            TypeLoader.ModuleList.PrintLine("GetRuntimeTypeHandleFromIndex index " + index.ToString());
             if (this.debuggerPreparedExternalReferences == null)
             {
-                return RuntimeAugments.CreateRuntimeTypeHandle(GetIntPtrFromIndex(index));
+                TypeLoader.ModuleList.PrintLine("debuggerPreparedExternalReferences is null ");
+
+                var h = RuntimeAugments.CreateRuntimeTypeHandle(GetIntPtrFromIndex(index));
+                TypeLoader.ModuleList.PrintString("Handle Value ");
+                TypeLoader.ModuleList.PrintLine(h.Value.ToString());
+                TypeLoader.ModuleList.PrintString("Handle hashcode ");
+                TypeLoader.ModuleList.PrintLine(h.GetHashCode().ToString());
+                return h;
             }
             else
             {
+                TypeLoader.ModuleList.PrintLine("debuggerPreparedExternalReferences to IntPtr " + this.debuggerPreparedExternalReferences[index].ToString());
                 return RuntimeAugments.CreateRuntimeTypeHandle((IntPtr)this.debuggerPreparedExternalReferences[index]);
             }            
         }
@@ -162,6 +184,7 @@ namespace Internal.Runtime.TypeLoader
 
             // TODO: indirection through IAT
             int* pRelPtr32 = &((int*)_elements)[index];
+
             return (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
         }
 #endif

@@ -44,6 +44,35 @@ namespace System
             return this.ToEETypePtr().GetHashCode();
         }
 
+        public static unsafe void PrintString(string s)
+        {
+            int length = s.Length;
+            fixed (char* curChar = s)
+            {
+                for (int i = 0; i < length; i++)
+                {
+                    TwoByteStr curCharStr = new TwoByteStr();
+                    curCharStr.first = (byte)(*(curChar + i));
+                    printf((byte*)&curCharStr, null);
+                }
+            }
+        }
+
+        public struct TwoByteStr
+        {
+            public byte first;
+            public byte second;
+        }
+
+        [DllImport("*")]
+        private static unsafe extern int printf(byte* str, byte* unused);
+
+        public static void PrintLine(string s)
+        {
+            PrintString(s);
+            PrintString("\n");
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(RuntimeTypeHandle handle)
         {
@@ -53,12 +82,52 @@ namespace System
             }
             else if (this.IsNull || handle.IsNull)
             {
+                PrintLine("one is null");
                 return false;
             }
             else
             {
+                PrintLine("checkgin ToEETypePtr");
+                AreTypesEquivalentInternal(this.ToEETypePtr().ToPointer(), handle.ToEETypePtr().ToPointer());
                 return RuntimeImports.AreTypesEquivalent(this.ToEETypePtr(), handle.ToEETypePtr());
             }
+        }
+
+        internal static unsafe bool AreTypesEquivalentInternal(EEType* pType1, EEType* pType2)
+        {
+            PrintString("p1 hashcode ");
+            PrintLine(pType1->HashCode.ToString());
+
+            PrintString("p2 hashcode ");
+            PrintLine(pType2->HashCode.ToString());
+
+            if (pType1 == pType2)
+                return true;
+
+            if (pType1->IsCloned)
+            {
+                pType1 = pType1->CanonicalEEType;
+                PrintLine("p1 is cloned");
+
+            }
+
+            if (pType2->IsCloned)
+            {
+                pType2 = pType2->CanonicalEEType;
+                PrintLine("p2 is cloned");
+            }
+
+            if (pType1 == pType2)
+                return true;
+
+            if (pType1->IsParameterizedType && pType2->IsParameterizedType)
+            {
+                PrintLine("IsParameterizedType");
+                return AreTypesEquivalentInternal(pType1->RelatedParameterType, pType2->RelatedParameterType) && pType1->ParameterizedTypeShape == pType2->ParameterizedTypeShape;
+            }
+
+                PrintLine("not equivalent");
+            return false;
         }
 
         public static bool operator ==(object left, RuntimeTypeHandle right)

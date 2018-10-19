@@ -73,9 +73,13 @@ namespace Internal.Runtime.TypeLoader
                 // Iterate over all modules, starting with the module that defines the EEType
                 foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules(RuntimeAugments.GetModuleFromTypeHandle(key)))
                 {
+                    TypeLoader.ModuleList.PrintLine("checking a module for hashcode " + hashCode.ToString());
+                    TypeLoader.ModuleList.PrintLine(module.TypeName);
                     NativeReader typeMapReader;
                     if (TryGetNativeReaderForBlob(module, ReflectionMapBlob.TypeMap, out typeMapReader))
                     {
+                        TypeLoader.ModuleList.PrintLine("TryGetNativeReaderForBlob true");
+
                         NativeParser typeMapParser = new NativeParser(typeMapReader, 0);
                         NativeHashtable typeHashtable = new NativeHashtable(typeMapParser);
 
@@ -86,13 +90,22 @@ namespace Internal.Runtime.TypeLoader
                         NativeParser entryParser;
                         while (!(entryParser = lookup.GetNext()).IsNull)
                         {
+                            TypeLoader.ModuleList.PrintLine("GetNext");
+
                             RuntimeTypeHandle foundType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
+                            TypeLoader.ModuleList.PrintLine("foundType hash ");
+                            int foundHashCode = GetKeyHashCode(foundType);
+                            TypeLoader.ModuleList.PrintLine(foundHashCode.ToString());
+
                             if (foundType.Equals(key))
                             {
+                            TypeLoader.ModuleList.PrintLine("FoundType");
                                 Handle entryMetadataHandle = entryParser.GetUnsigned().AsHandle();
                                 if (entryMetadataHandle.HandleType == HandleType.TypeDefinition)
                                 {
                                     MetadataReader metadataReader = module.MetadataReader;
+                                    TypeLoader.ModuleList.PrintLine("found something");
+
                                     return new NamedTypeLookupResult()
                                     {
                                         QualifiedTypeDefinition = new QTypeDefinition(metadataReader, entryMetadataHandle.ToTypeDefinitionHandle(metadataReader)),
@@ -104,6 +117,7 @@ namespace Internal.Runtime.TypeLoader
                         }
                     }
                 }
+                TypeLoader.ModuleList.PrintLine("found nothing");
 
                 return new NamedTypeLookupResult()
                 {
@@ -200,6 +214,8 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="typeDefHandle">TypeDef handle for the type</param>
         public unsafe bool TryGetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle, out QTypeDefinition qTypeDefinition)
         {
+            ModuleList.PrintString("hashtable size ");
+            ModuleList.PrintLine(_runtimeTypeHandleToMetadataHashtable.Count.ToString());
             NamedTypeLookupResult result = _runtimeTypeHandleToMetadataHashtable.GetOrCreateValue(runtimeTypeHandle);
             qTypeDefinition = result.QualifiedTypeDefinition;
             return qTypeDefinition.Reader != null;

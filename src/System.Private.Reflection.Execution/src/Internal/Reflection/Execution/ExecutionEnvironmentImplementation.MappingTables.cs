@@ -95,6 +95,36 @@ namespace Internal.Reflection.Execution
             return false;
         }
 
+        private static unsafe void PrintString(string s)
+        {
+            int length = s.Length;
+            fixed (char* curChar = s)
+            {
+                for (int i = 0; i < length; i++)
+                {
+                    TwoByteStr curCharStr = new TwoByteStr();
+                    curCharStr.first = (byte)(*(curChar + i));
+                    printf((byte*)&curCharStr, null);
+                }
+            }
+        }
+
+        public struct TwoByteStr
+        {
+            public byte first;
+            public byte second;
+        }
+
+        [DllImport("*")]
+        private static unsafe extern int printf(byte* str, byte* unused);
+
+        public static void PrintLine(string s)
+        {
+            PrintString(s);
+            PrintString("\n");
+        }
+
+
         /// <summary>
         /// Return the metadata handle for a TypeDef if the pay-for-policy enabled this type as browsable. This is used to obtain name and other information for types
         /// obtained via typeof() or Object.GetType(). This can include generic types (Foo<>) (not to be confused with generic instances of Foo<>).
@@ -107,6 +137,7 @@ namespace Internal.Reflection.Execution
         /// <param name="typeDefHandle">TypeDef handle for the type</param>
         public unsafe sealed override bool TryGetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle, out QTypeDefinition qTypeDefinition)
         {
+            PrintString("TryGetMetadataForNamedType");
             Debug.Assert(!RuntimeAugments.IsGenericType(runtimeTypeHandle));
             return TypeLoaderEnvironment.Instance.TryGetMetadataForNamedType(runtimeTypeHandle, out qTypeDefinition);
         }

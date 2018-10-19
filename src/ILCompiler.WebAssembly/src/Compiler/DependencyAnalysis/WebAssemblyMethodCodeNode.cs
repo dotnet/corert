@@ -74,9 +74,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             var dependencies = new DependencyList();
 
-            if (Method.Name.EndsWith("_Unbox"))
+            if (_method.HasInstantiation && !factory.CanNecessaryTypeSymbol(_method.OwningType))
             {
-                dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(Method), "Target of unboxing"));
+                dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(_method), "Target of unboxing"));
             }
             else
             {

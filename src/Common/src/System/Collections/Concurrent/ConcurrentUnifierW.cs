@@ -7,9 +7,43 @@ using System.Threading;
 using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace System.Collections.Concurrent
 {
+
+    class PrintDebug
+    {
+        public static unsafe void PrintString(string s)
+        {
+            int length = s.Length;
+            fixed (char* curChar = s)
+            {
+                for (int i = 0; i < length; i++)
+                {
+                    TwoByteStr curCharStr = new TwoByteStr();
+                    curCharStr.first = (byte)(*(curChar + i));
+                    printf((byte*)&curCharStr, null);
+                }
+            }
+        }
+
+        public struct TwoByteStr
+        {
+            public byte first;
+            public byte second;
+        }
+
+        [DllImport("*")]
+        private static unsafe extern int printf(byte* str, byte* unused);
+
+        public static void PrintLine(string s)
+        {
+            PrintString(s);
+            PrintString("\n");
+        }
+
+    }
     // Abstract base for a thread-safe dictionary mapping a set of keys (K) to values (V).
     //
     // Value immortality is guaranteed. Once entered into the dictionary, the value never expires
@@ -89,8 +123,12 @@ namespace System.Collections.Concurrent
         //
         public V GetOrAdd(K key)
         {
+            PrintDebug.PrintLine("in GetOrAdd");
             Debug.Assert(key != null);
+            PrintDebug.PrintLine("key is not null");
+
             Debug.Assert(!_lock.IsAcquired, "GetOrAdd called while lock already acquired. A possible cause of this is an Equals or GetHashCode method that causes reentrancy in the table.");
+            PrintDebug.PrintLine("lock not acquired");
 
             int hashCode = key.GetHashCode();
             V value;

@@ -13,6 +13,7 @@ using System.Reflection.Runtime.PropertyInfos;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
+using Internal.Runtime.TypeLoader;
 
 
 //=================================================================================================================
@@ -67,6 +68,8 @@ namespace System.Reflection.Runtime.Assemblies
         /// </summary>
         internal static RuntimeAssembly GetRuntimeAssemblyIfExists(RuntimeAssemblyName assemblyRefName)
         {
+            ModuleList.PrintString("GetRuntimeAssemblyIfExists for");
+            ModuleList.PrintLine(assemblyRefName.Name);
             object runtimeAssemblyOrException = s_assemblyRefNameToAssemblyDispenser.GetOrAdd(assemblyRefName);
             if (runtimeAssemblyOrException is RuntimeAssembly runtimeAssembly)
                 return runtimeAssembly;
