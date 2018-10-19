@@ -68,10 +68,18 @@ namespace ILCompiler.DependencyAnalysis
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             var dependencies = new DependencyList();
-            CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref dependencies, factory, _method);
 
-            foreach (Object node in _dependencies)
-                dependencies.Add(node, "Wasm code ");
+            if (Method.Name.EndsWith("_Unbox"))
+            {
+                dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(Method), "Target of unboxing"));
+            }
+            else
+            {
+                foreach (Object node in _dependencies)
+                    dependencies.Add(node, "Wasm code ");
+
+                CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref dependencies, factory, _method);
+            }
 
             return dependencies;
         }
