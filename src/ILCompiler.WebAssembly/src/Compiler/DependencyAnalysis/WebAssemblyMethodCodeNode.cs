@@ -10,6 +10,7 @@ using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -24,6 +25,10 @@ namespace ILCompiler.DependencyAnalysis
             _method = method;
             if (method.Name == "GetField_Unbox")
             {
+            }
+            if (method.OwningType is EcmaType && ((EcmaType)method.OwningType).Name.EndsWith("ErrorInfo"))
+            {
+
             }
         }
 
