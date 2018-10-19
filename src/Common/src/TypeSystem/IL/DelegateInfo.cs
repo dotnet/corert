@@ -124,7 +124,6 @@ namespace Internal.IL
         private MethodDesc _openStaticThunk;
         private MethodDesc _multicastThunk;
         private MethodDesc _closedStaticThunk;
-        private MethodDesc _invokeThunk;
         private MethodDesc _closedInstanceOverGeneric;
         private MethodDesc _reversePInvokeThunk;
         private MethodDesc _invokeObjectArrayThunk;
@@ -215,17 +214,6 @@ namespace Internal.IL
                     _openInstanceThunk = new DelegateInvokeOpenInstanceThunk(owningDelegate);
                 }
             }
-
-            //
-            // Check whether we have a dynamic invoke stub
-            //
-
-            if ((owningDelegate.SupportedFeatures & DelegateFeature.DynamicInvoke) != 0 &&
-                DynamicInvokeMethodThunk.SupportsSignature(delegateSignature))
-            {
-                var sig = new DynamicInvokeMethodSignature(delegateSignature);
-                _invokeThunk = owningDelegate.Type.Context.GetDynamicInvokeThunk(sig);
-            }
         }
 
         #region Temporary interop logic
@@ -289,8 +277,6 @@ namespace Internal.IL
                         return _multicastThunk;
                     case DelegateThunkKind.ClosedStaticThunk:
                         return _closedStaticThunk;
-                    case DelegateThunkKind.DelegateInvokeThunk:
-                        return _invokeThunk;
                     case DelegateThunkKind.ClosedInstanceThunkOverGenericMethod:
                         return _closedInstanceOverGeneric;
                     case DelegateThunkKind.ReversePinvokeThunk:
