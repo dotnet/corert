@@ -876,19 +876,55 @@ namespace Internal.IL
                             // LLVM thinks certain sizes of struct have a different calling convention than Clang does.
                             // Treating them as ints fixes that and is more efficient in general
                             int structSize = type.GetElementSize().AsInt;
+                            int structAlignment = ((DefType)type).InstanceFieldAlignment.AsInt;
                             switch (structSize)
                             {
                                 case 1:
                                     llvmStructType = LLVM.Int8Type();
                                     break;
                                 case 2:
-                                    llvmStructType = LLVM.Int16Type();
+                                    if (structAlignment == 2)
+                                    {
+                                        llvmStructType = LLVM.Int16Type();
+                                    }
+                                    else
+                                    {
+                                        goto default;
+                                    }
                                     break;
                                 case 4:
-                                    llvmStructType = LLVM.Int32Type();
+                                    if (structAlignment == 4)
+                                    {
+                                        if (StructIsWrappedPrimitive(type, type.Context.GetWellKnownType(WellKnownType.Single)))
+                                        {
+                                            llvmStructType = LLVM.FloatType();
+                                        }
+                                        else
+                                        {
+                                            llvmStructType = LLVM.Int32Type();
+                                        }
+                                    }
+                                    else
+                                    {
+                                        goto default;
+                                    }
                                     break;
                                 case 8:
-                                    llvmStructType = LLVM.Int64Type();
+                                    if (structAlignment == 8)
+                                    {
+                                        if (StructIsWrappedPrimitive(type, type.Context.GetWellKnownType(WellKnownType.Double)))
+                                        {
+                                            llvmStructType = LLVM.DoubleType();
+                                        }
+                                        else
+                                        {
+                                            llvmStructType = LLVM.Int64Type();
+                                        }
+                                    }
+                                    else
+                                    {
+                                        goto default;
+                                    }
                                     break;
 
                                 default:
@@ -897,10 +933,15 @@ namespace Internal.IL
                                     llvmStructType = LLVM.StructCreateNamed(Context, type.ToString());
                                     LlvmStructs[type] = llvmStructType;
 
-                                    ComputedInstanceFieldLayout fieldLayout = LayoutAlgorithm.ComputeInstanceLayout((DefType)type, InstanceLayoutKind.TypeAndFields);
+                                    FieldDesc[] instanceFields = type.GetFields().Where(field => !field.IsStatic).ToArray();
+                                    FieldAndOffset[] fieldLayout = new FieldAndOffset[instanceFields.Length];
+                                    for(int i = 0; i < instanceFields.Length; i++)
+                                    {
+                                        fieldLayout[i] = new FieldAndOffset(instanceFields[i], instanceFields[i].Offset);
+                                    }
 
                                     // Sort fields by offset and size in order to handle generating unions
-                                    FieldAndOffset[] sortedFields = fieldLayout.Offsets.OrderBy(fieldAndOffset => fieldAndOffset.Offset.AsInt).
+                                    FieldAndOffset[] sortedFields = fieldLayout.OrderBy(fieldAndOffset => fieldAndOffset.Offset.AsInt).
                                         ThenByDescending(fieldAndOffset => fieldAndOffset.Field.FieldType.GetElementSize().AsInt).ToArray();
 
                                     List<LLVMTypeRef> llvmFields = new List<LLVMTypeRef>(sortedFields.Length);
@@ -973,6 +1014,61 @@ namespace Internal.IL
                 default:
                     throw new NotImplementedException(type.Category.ToString());
             }
+        }
+
+        /// <summary>
+        /// Returns true if a type is a struct that just wraps a given primitive
+        /// or another struct that does so and can thus be treated as that primitive
+        /// </summary>
+        /// <param name="type">The struct to evaluate</param>
+        /// <param name="primitiveType">The primitive to check for</param>
+        /// <returns>True if the struct is a wrapper of the primitive</returns>
+        private static bool StructIsWrappedPrimitive(TypeDesc type, TypeDesc primitiveType)
+        {
+            Debug.Assert(type.IsValueType);
+            Debug.Assert(primitiveType.IsPrimitive);
+
+            if(type.GetElementSize().AsInt != primitiveType.GetElementSize().AsInt)
+            {
+                return false;
+            }
+
+            FieldDesc[] fields = type.GetFields().ToArray();
+            int instanceFieldCount = 0;
+            bool foundPrimitive = false;
+
+            foreach (FieldDesc field in fields)
+            {
+                if(field.IsStatic)
+                {
+                    continue;
+                }
+
+                instanceFieldCount++;
+
+                // If there's more than one field, figuring out whether this is a primitive gets complicated, so assume it's not
+                if (instanceFieldCount > 1)
+                {
+                    break;
+                }
+
+                TypeDesc fieldType = field.FieldType;
+                if (fieldType == primitiveType)
+                {
+                    foundPrimitive = true;
+                }
+                else if (fieldType.IsValueType && !fieldType.IsPrimitive && StructIsWrappedPrimitive(fieldType, primitiveType))
+                {
+                    foundPrimitive = true;
+                }
+            }
+
+            if(instanceFieldCount == 1 && foundPrimitive)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>
