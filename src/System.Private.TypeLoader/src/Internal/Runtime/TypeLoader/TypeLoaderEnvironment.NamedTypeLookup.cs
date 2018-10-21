@@ -93,7 +93,7 @@ namespace Internal.Runtime.TypeLoader
                             TypeLoader.ModuleList.PrintLine("GetNext");
 
                             RuntimeTypeHandle foundType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
-                            TypeLoader.ModuleList.PrintLine("foundType hash ");
+                            TypeLoader.ModuleList.PrintString("foundType hash ");
                             int foundHashCode = GetKeyHashCode(foundType);
                             TypeLoader.ModuleList.PrintLine(foundHashCode.ToString());
 

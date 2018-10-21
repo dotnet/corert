@@ -95,6 +95,14 @@ namespace System
 
         internal static unsafe bool AreTypesEquivalentInternal(EEType* pType1, EEType* pType2)
         {
+            PrintString("p1  ");
+            PrintLine(((uint)pType1).ToString());
+
+            PrintString("p2  ");
+            PrintLine(((uint)pType2).ToString());
+
+            PrintString("p2 hashcode ");
+            PrintLine(pType2->HashCode.ToString());
             PrintString("p1 hashcode ");
             PrintLine(pType1->HashCode.ToString());
 
