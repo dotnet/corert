@@ -31,6 +31,40 @@ namespace ILCompiler.Compiler.Tests.Assets
                 ((TypeThatWasNeverAllocated)TypeThatWasNeverAllocated.O).GetHashCode();
             }
         }
+
+        class GenericVirtualMethodDirectCallDependencyTest
+        {
+            class NeverAllocated { }
+
+            class Base
+            {
+                public virtual object GenericVirtualCalledDirectly<T>()
+                {
+                    return null;
+                }
+            }
+
+            class Derived : Base
+            {
+                public override object GenericVirtualCalledDirectly<T>()
+                {
+                    return new NeverAllocated();
+                }
+
+                public object CallBaseGenericVirtualDirectly<T>()
+                {
+                    // This is a call in IL, not callvirt
+                    return base.GenericVirtualCalledDirectly<T>();
+                }
+            }
+
+            [NoConstructedEEType(typeof(NeverAllocated))]
+            public static void Entrypoint()
+            {
+                new Base();
+                new Derived().CallBaseGenericVirtualDirectly<object>();
+            }
+        }
     }
 
     #region Custom attributes that define invariants to check

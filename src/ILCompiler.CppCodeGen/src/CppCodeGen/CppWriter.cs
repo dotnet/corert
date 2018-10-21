@@ -788,11 +788,11 @@ namespace ILCompiler.CppCodeGen
                 }
                 else
                 {
-                    i++;
                     if (i + 1 == nextRelocOffset || i + 1 == nodeData.Data.Length)
                     {
                         nodeDataSections.Add(new NodeDataSection(NodeDataSectionType.ByteData, (i + 1) - lastByteIndex));
                     }
+                    i++;
                 }
             }
 
