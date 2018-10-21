@@ -10,37 +10,37 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class GenericLookupMethodSignature : Signature
+    public class GenericLookupSignature : Signature
     {
         private CORINFO_RUNTIME_LOOKUP_KIND _runtimeLookupKind;
 
         private readonly ReadyToRunFixupKind _fixupKind;
 
-        private readonly MethodDesc _methodArgument;
+        private readonly TypeDesc _typeArgument;
+
+        private readonly MethodWithToken _methodArgument;
 
         private readonly TypeDesc _contextType;
 
-        private readonly ModuleToken _methodToken;
-
         private readonly SignatureContext _signatureContext;
 
-        public GenericLookupMethodSignature(
-            CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
-            ReadyToRunFixupKind fixupKind,
-            MethodDesc methodArgument,
+        public GenericLookupSignature(
+            CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind, 
+            ReadyToRunFixupKind fixupKind, 
+            TypeDesc typeArgument, 
+            MethodWithToken methodArgument,
             TypeDesc contextType,
-            ModuleToken methodToken,
             SignatureContext signatureContext)
         {
             _runtimeLookupKind = runtimeLookupKind;
             _fixupKind = fixupKind;
+            _typeArgument = typeArgument;
             _methodArgument = methodArgument;
             _contextType = contextType;
-            _methodToken = methodToken;
             _signatureContext = signatureContext;
         }
 
-        public override int ClassCode => 258609009;
+        public override int ClassCode => 258608008;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -71,14 +71,25 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
 
                 dataBuilder.EmitByte((byte)_fixupKind);
-                dataBuilder.EmitMethodSignature(
-                    _methodArgument,
-                    constrainedType: null,
-                    _methodToken,
-                    enforceDefEncoding: false,
-                    _signatureContext,
-                    isUnboxingStub: false,
-                    isInstantiatingStub: false);
+                if (_typeArgument != null)
+                {
+                    dataBuilder.EmitTypeSignature(_typeArgument, _signatureContext);
+                }
+                else if (_methodArgument != null)
+                {
+                    dataBuilder.EmitMethodSignature(
+                        method: _methodArgument.Method,
+                        constrainedType: null,
+                        methodToken: _methodArgument.Token,
+                        enforceDefEncoding: false,
+                        context: _signatureContext,
+                        isUnboxingStub: false,
+                        isInstantiatingStub: false);
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
             }
 
             return dataBuilder.ToObjectData();
@@ -87,25 +98,36 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("GenericLookupMethodSignature(");
+            sb.Append("GenericLookupSignature(");
             sb.Append(_runtimeLookupKind.ToString());
             sb.Append(" / ");
             sb.Append(_fixupKind.ToString());
             sb.Append(": ");
-            RuntimeDeterminedTypeHelper.WriteTo(_methodArgument, sb);
+            if (_typeArgument != null)
+            {
+                RuntimeDeterminedTypeHelper.WriteTo(_typeArgument, sb);
+            }
+            else if (_methodArgument != null)
+            {
+                RuntimeDeterminedTypeHelper.WriteTo(_methodArgument.Method, sb);
+                if (!_methodArgument.Token.IsNull)
+                {
+                    sb.Append(" [");
+                    sb.Append(_methodArgument.Token.MetadataReader.GetString(_methodArgument.Token.MetadataReader.GetAssemblyDefinition().Name));
+                    sb.Append(":");
+                    sb.Append(((uint)_methodArgument.Token.Token).ToString("X8"));
+                    sb.Append("]");
+                }
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
             if (_contextType != null)
             {
                 sb.Append(" (");
                 sb.Append(_contextType.ToString());
                 sb.Append(")");
-            }
-            if (!_methodToken.IsNull)
-            {
-                sb.Append(" [");
-                sb.Append(_methodToken.MetadataReader.GetString(_methodToken.MetadataReader.GetAssemblyDefinition().Name));
-                sb.Append(":");
-                sb.Append(((uint)_methodToken.Token).ToString("X8"));
-                sb.Append("]");
             }
         }
 
@@ -117,7 +139,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencies = new DependencyList();
-            // dependencies.Add(factory.NecessaryTypeSymbol(_methodArgument), "Method referenced in a generic lookup signature");
+            if (_typeArgument != null && !_typeArgument.IsRuntimeDeterminedSubtype)
+            {
+                dependencies.Add(factory.NecessaryTypeSymbol(_typeArgument), "Type referenced in a generic lookup signature");
+            }
             return dependencies;
         }
     }

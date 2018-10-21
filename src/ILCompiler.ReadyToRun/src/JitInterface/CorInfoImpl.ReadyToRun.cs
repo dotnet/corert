@@ -206,7 +206,6 @@ namespace Internal.JitInterface
                             ReadyToRunHelperId.GetNonGCStaticBase, 
                             helperArg, 
                             contextType, 
-                            new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token),
                             _signatureContext);
                         pLookup = CreateConstLookupToSymbol(helper);
                     }
@@ -217,6 +216,10 @@ namespace Internal.JitInterface
 
                         ReadyToRunHelperId helperId = (ReadyToRunHelperId)pGenericLookupKind.runtimeLookupFlags;
                         object helperArg = HandleToObject((IntPtr)pGenericLookupKind.runtimeLookupArgs);
+                        if (helperArg is MethodDesc methodArg)
+                        {
+                            helperArg = new MethodWithToken(methodArg, new ModuleToken(_tokenContext, pResolvedToken.token));
+                        }
                         TypeDesc contextType;
                         if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ)
                         {
@@ -231,7 +234,6 @@ namespace Internal.JitInterface
                             helperId,
                             helperArg, 
                             contextType, 
-                            new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token),
                             _signatureContext);
                         pLookup = CreateConstLookupToSymbol(helper);
                     }
