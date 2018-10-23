@@ -319,6 +319,7 @@ internal static class Program
         TestArrayItfDispatch();
 
         TestMetaData();
+        TestTryFinally();
 
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
@@ -654,51 +655,50 @@ internal static class Program
     private static void TestMetaData()
     {
 
-//        var t = Type.GetType("System.Char, System.Private.CoreLib");
-//        if (t == null)
-//        {
-//            PrintLine("type == null.  Simple class metadata test: Failed");
-//        }
-//        else
-//        {
-//            if (t.FullName != "System.Char")
-//            {
-//                PrintLine("type != System.Char.  Simple class metadata test: Failed");
-//            }
-//            else PrintLine("Simple class metadata test: Ok.");
-//        }
+        var t = Type.GetType("System.Char, System.Private.CoreLib");
+        if (t == null)
+        {
+            PrintLine("type == null.  Simple class metadata test: Failed");
+        }
+        else
+        {
+            if (t.FullName != "System.Char")
+            {
+                PrintLine("type != System.Char.  Simple class metadata test: Failed");
+            }
+            else PrintLine("Simple class metadata test: Ok.");
+        }
 
-//        var t2 = typeof(Char);
-//        PrintLine("got type second type");
-//        if (t2 == null)
-//        {
-//            PrintLine("type == null.  Simple class metadata test: Failed");
-//        }
-//        else
-//        {
-//            if (t2.FullName != "System.Char")
-//            {
-//                PrintLine("type != System.Char.  Simple class metadata test: Failed");
-//            }
-//            else PrintLine("Simple class metadata test (typeof(Char)): Ok.");
-//        }
+        var typeofChar = typeof(Char);
+        PrintLine("got type second type");
+        if (typeofChar == null)
+        {
+            PrintLine("type == null.  Simple class metadata test: Failed");
+        }
+        else
+        {
+            if (typeofChar.FullName != "System.Char")
+            {
+                PrintLine("type != System.Char.  Simple class metadata test: Failed");
+            }
+            else PrintLine("Simple class metadata test (typeof(Char)): Ok.");
+        }
 
-//        var c = new Char();
-//        var t2 = c.GetType();
-//        PrintLine("got type second type");
-//        if (t2 == null)
-//        {
-//            PrintLine("type == null.  Simple class metadata test: Failed");
-//        }
-//        else
-//        {
-//            if (t2.FullName != "System.Char")
-//            {
-//                PrintLine("type != System.Char.  Simple class metadata test: Failed");
-//            }
-//            else PrintLine("Simple class metadata test (c.GetType()): Ok.");
-//        }
-
+        var c = new Char();
+        var t2 = c.GetType();
+        PrintLine("got type second type");
+        if (t2 == null)
+        {
+            PrintLine("type == null.  Simple class metadata test: Failed");
+        }
+        else
+        {
+            if (t2.FullName != "System.Char")
+            {
+                PrintLine("type != System.Char.  Simple class metadata test: Failed");
+            }
+            else PrintLine("Simple class metadata test (c.GetType()): Ok.");
+        }
 
         var gentT = new Gen<int>();
         var genType = gentT.TestTypeOf();
@@ -712,6 +712,39 @@ internal static class Program
         {
             PrintLine("Ok.");
         }
+    }
+
+    /// <summary>
+    /// Ensures all of the blocks of a try/finally function are hit when there aren't exceptions
+    /// </summary>
+    private static void TestTryFinally()
+    {
+        PrintString("Try/Finally test: ");
+        uint result = TryFinallyInner();
+        if (result == 1111)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed. Result: " + result.ToString());
+        }
+    }
+
+    private static uint TryFinallyInner()
+    {
+        uint result = 1;
+        try
+        {
+            result += 10;
+        }
+        finally
+        {
+            result += 100;
+        }
+        result += 1000;
+
+        return result;
     }
 
     [DllImport("*")]
