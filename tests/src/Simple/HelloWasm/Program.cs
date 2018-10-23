@@ -668,20 +668,37 @@ internal static class Program
 //            else PrintLine("Simple class metadata test: Ok.");
 //        }
 
-        var t2 = typeof(Char);
-        PrintLine("got type second type");
-        if (t2 == null)
-        {
-            PrintLine("type == null.  Simple class metadata test: Failed");
-        }
-        else
-        {
-            if (t2.FullName != "System.Char")
-            {
-                PrintLine("type != System.Char.  Simple class metadata test: Failed");
-            }
-            else PrintLine("Simple class metadata test (typeof(Char)): Ok.");
-        }
+//        var t2 = typeof(Char);
+//        PrintLine("got type second type");
+//        if (t2 == null)
+//        {
+//            PrintLine("type == null.  Simple class metadata test: Failed");
+//        }
+//        else
+//        {
+//            if (t2.FullName != "System.Char")
+//            {
+//                PrintLine("type != System.Char.  Simple class metadata test: Failed");
+//            }
+//            else PrintLine("Simple class metadata test (typeof(Char)): Ok.");
+//        }
+
+//        var c = new Char();
+//        var t2 = c.GetType();
+//        PrintLine("got type second type");
+//        if (t2 == null)
+//        {
+//            PrintLine("type == null.  Simple class metadata test: Failed");
+//        }
+//        else
+//        {
+//            if (t2.FullName != "System.Char")
+//            {
+//                PrintLine("type != System.Char.  Simple class metadata test: Failed");
+//            }
+//            else PrintLine("Simple class metadata test (c.GetType()): Ok.");
+//        }
+
 
         var gentT = new Gen<int>();
         var genType = gentT.TestTypeOf();
