@@ -260,7 +260,223 @@ namespace Internal.IL
 
         private void ImportCompareOperation(ILOpcode opcode)
         {
-            throw new NotImplementedException();
+            bool result = default(bool);
+            StackItem op1 = PopWithValidation();
+            StackItem op2 = PopWithValidation();
+
+            switch (op1.Kind)
+            {
+                case StackValueKind.Int32:
+                    {
+                        int val1 = op1.AsInt32();
+
+                        if (op2.Kind == StackValueKind.Int32 || op2.Kind == StackValueKind.NativeInt)
+                        {
+                            int val2 = op2.Kind == StackValueKind.Int32 ? op2.AsInt32() : op2.AsIntPtr().ToInt32();
+
+                            if (opcode == ILOpcode.ceq)
+                            {
+                                result = val1 == val2;
+                            }
+                            else if (opcode == ILOpcode.cgt)
+                            {
+                                result = val2 > val1;
+                            }
+                            else if (opcode == ILOpcode.cgt_un)
+                            {
+                                result = (uint)val2 > (uint)val1;
+                            }
+                            else if (opcode == ILOpcode.clt)
+                            {
+                                result = val2 < val1;
+                            }
+                            else if (opcode == ILOpcode.clt_un)
+                            {
+                                result = (uint)val2 < (uint)val1;
+                            }
+                        }
+                        else if (op2.Kind == StackValueKind.ValueType &&
+                            (op2.AsValueType().GetType() == typeof(int) || op2.AsValueType().GetType() == typeof(IntPtr)))
+                        {
+                            ValueType valueType = op2.AsValueType();
+                            int val2 = valueType.GetType() == typeof(int) ? (int)valueType : ((IntPtr)valueType).ToInt32();
+
+                            if (opcode == ILOpcode.ceq)
+                            {
+                                result = val1 == val2;
+                            }
+                            else if (opcode == ILOpcode.cgt)
+                            {
+                                result = val2 > val1;
+                            }
+                            else if (opcode == ILOpcode.cgt_un)
+                            {
+                                result = (uint)val2 > (uint)val1;
+                            }
+                            else if (opcode == ILOpcode.clt)
+                            {
+                                result = val2 < val1;
+                            }
+                            else if (opcode == ILOpcode.clt_un)
+                            {
+                                result = (uint)val2 < (uint)val1;
+                            }
+                        }
+                        else
+                        {
+                            ThrowHelper.ThrowInvalidProgramException();
+                        }
+                    }
+                    break;
+                case StackValueKind.Int64:
+                    {
+                        long val1 = op1.AsInt64();
+
+                        if (op2.Kind == StackValueKind.Int64)
+                        {
+                            long val2 = op2.AsInt64();
+
+                            if (opcode == ILOpcode.ceq)
+                            {
+                                result = val1 == val2;
+                            }
+                            else if (opcode == ILOpcode.cgt)
+                            {
+                                result = val2 > val1;
+                            }
+                            else if (opcode == ILOpcode.cgt_un)
+                            {
+                                result = (ulong)val2 > (ulong)val1;
+                            }
+                            else if (opcode == ILOpcode.clt)
+                            {
+                                result = val2 < val1;
+                            }
+                            else if (opcode == ILOpcode.clt_un)
+                            {
+                                result = (ulong)val2 < (ulong)val1;
+                            }
+                        }
+                        else
+                        {
+                            ThrowHelper.ThrowInvalidProgramException();
+                        }
+                    }
+                    break;
+                case StackValueKind.NativeInt:
+                    {
+                        IntPtr val1 = op1.AsIntPtr();
+                        if (op2.Kind == StackValueKind.Int32
+                            || op1.Kind == StackValueKind.Int64
+                            || op2.Kind == StackValueKind.NativeInt)
+                        {
+                            IntPtr val2 = IntPtr.Zero;
+
+                            if (op2.Kind == StackValueKind.Int32)
+                            {
+                                val2 = new IntPtr(op2.AsInt32());
+                            }
+                            else if (op2.Kind == StackValueKind.Int64)
+                            {
+                                val2 = new IntPtr(op2.AsInt64());
+                            }
+                            else
+                            {
+                                val2 = op2.AsIntPtr();
+                            }
+
+                            if (opcode == ILOpcode.ceq)
+                            {
+                                result = val1 == val2;
+                            }
+                            else if (opcode == ILOpcode.cgt)
+                            {
+                                result = (ulong)val2.ToInt64() > (ulong)val1.ToInt64();
+                            }
+                            else if (opcode == ILOpcode.cgt_un)
+                            {
+                                result = ((UIntPtr)val2.ToPointer()).ToUInt64() > ((UIntPtr)val1.ToPointer()).ToUInt64();
+                            }
+                            else if (opcode == ILOpcode.clt)
+                            {
+                                result = (ulong)val2.ToInt64() < (ulong)val1.ToInt64();
+                            }
+                            else if (opcode == ILOpcode.clt_un)
+                            {
+                                result = ((UIntPtr)val2.ToPointer()).ToUInt64() < ((UIntPtr)val1.ToPointer()).ToUInt64();
+                            }
+                        }
+                    }
+                    break;
+                case StackValueKind.Float:
+                    {
+                        double val1 = op1.AsDouble();
+
+                        if (op2.Kind == StackValueKind.Float)
+                        {
+                            double val2 = op2.AsDouble();
+
+                            if (opcode == ILOpcode.ceq)
+                            {
+                                result = (double.IsNaN(val1) || double.IsNaN(val2)) ? false : val1 == val2;
+                            }
+                            else if (opcode == ILOpcode.cgt)
+                            {
+                                result = (double.IsNaN(val1) || double.IsNaN(val2)) ? false : val2 > val1;
+                            }
+                            else if (opcode == ILOpcode.cgt_un)
+                            {
+                                result = val2 > val1;
+                            }
+                            else if (opcode == ILOpcode.clt)
+                            {
+                                result = (double.IsNaN(val1) || double.IsNaN(val2)) ? false : val2 < val1;
+                            }
+                            else if (opcode == ILOpcode.clt_un)
+                            {
+                                result = val2 < val1;
+                            }
+                        }
+                        else
+                        {
+                            ThrowHelper.ThrowInvalidProgramException();
+                        }
+                    }
+                    break;
+                case StackValueKind.ObjRef:
+                    {
+                        object val1 = op1.AsObjectRef();
+
+                        if (op2.Kind == StackValueKind.ObjRef)
+                        {
+                            object val2 = op2.AsObjectRef();
+
+                            if (opcode == ILOpcode.ceq)
+                            {
+                                result = val1 == val2;
+                            }
+                            else
+                            {
+                                // TODO: Find GC addresses of objects and compare them
+                            }
+                        }
+                        else
+                        {
+                            ThrowHelper.ThrowInvalidProgramException();
+                        }
+                    }
+                    break;
+                case StackValueKind.ByRef:
+                    // TODO: Handle ByRef scenarios
+                    break;
+                case StackValueKind.ValueType:
+                case StackValueKind.Unknown:
+                default:
+                    ThrowHelper.ThrowInvalidProgramException();
+                    break;
+            }
+
+            _interpreter.EvaluationStack.Push(StackItem.FromInt32(result ? 1 : 0));
         }
 
         private void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned)
