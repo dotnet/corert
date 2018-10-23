@@ -59,8 +59,8 @@ namespace System.Threading.Tasks
             else
             {
                 // Normal handling for non-LongRunning tasks.
-                bool forceToGlobalQueue = ((task.Options & TaskCreationOptions.PreferFairness) != 0);
-                ThreadPool.UnsafeQueueCustomWorkItem(task, forceToGlobalQueue);
+                bool preferLocal = (task.Options & TaskCreationOptions.PreferFairness) == 0;
+                ThreadPool.UnsafeQueueUserWorkItemInternal(task, preferLocal);
             }
         }
 
@@ -104,13 +104,13 @@ namespace System.Threading.Tasks
             return FilterTasksFromWorkItems(ThreadPool.GetQueuedWorkItems());
         }
 
-        private IEnumerable<Task> FilterTasksFromWorkItems(IEnumerable<IThreadPoolWorkItem> tpwItems)
+        private IEnumerable<Task> FilterTasksFromWorkItems(IEnumerable<object> tpwItems)
         {
-            foreach (IThreadPoolWorkItem tpwi in tpwItems)
+            foreach (object tpwi in tpwItems)
             {
-                if (tpwi is Task)
+                if (tpwi is Task t)
                 {
-                    yield return (Task)tpwi;
+                    yield return t;
                 }
             }
         }

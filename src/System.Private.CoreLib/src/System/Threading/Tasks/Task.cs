@@ -127,7 +127,7 @@ namespace System.Threading.Tasks
     /// </remarks>
     [DebuggerTypeProxy(typeof(SystemThreadingTasks_TaskDebugView))]
     [DebuggerDisplay("Id = {Id}, Status = {Status}, Method = {DebuggerDisplayMethodDescription}")]
-    public class Task : IThreadPoolWorkItem, IAsyncResult, IDisposable
+    public class Task : IAsyncResult, IDisposable
     {
         internal static int s_taskIdCounter; //static counter used to generate unique task IDs
 
@@ -2326,32 +2326,19 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// IThreadPoolWorkItem override, which is the entry function for this task when the TP scheduler decides to run it.
-        /// 
+        /// ThreadPool's entry point into the Task.  The base behavior is simply to
+        /// use the entry point that's not protected from double-invoke; derived internal tasks
+        /// can override to customize their behavior, which is usually done by promises
+        /// that want to reuse the same object as a queued work item.
         /// </summary>
-        void IThreadPoolWorkItem.ExecuteWorkItem()
+        internal virtual void ExecuteFromThreadPool()
         {
             ExecuteEntry(false);
         }
 
         /// <summary>
-        /// The ThreadPool calls this if a ThreadAbortException is thrown while trying to execute this workitem.  This may occur
-        /// before Task would otherwise be able to observe it.  
-        /// </summary>
-        //void IThreadPoolWorkItem.MarkAborted(ThreadAbortException tae)
-        //{
-        //    // If the task has marked itself as Completed, then it either a) already observed this exception (so we shouldn't handle it here)
-        //    // or b) completed before the exception ocurred (in which case it shouldn't count against this Task).
-        //    if (!IsCompleted)
-        //    {
-        //        HandleException(tae);
-        //        FinishThreadAbortedTask(true, false);
-        //    }
-        //}
-
-        /// <summary>
         /// Outermost entry function to execute this task. Handles all aspects of executing a task on the caller thread.
-        /// Currently this is called by IThreadPoolWorkItem.ExecuteWorkItem(), and TaskManager.TryExecuteInline. 
+        /// Currently this is called by ExecuteFromThreadPool, and TaskManager.TryExecuteInline. 
         /// 
         /// </summary>
         /// <param name="bPreventDoubleExecution"> Performs atomic updates to prevent double execution. Should only be set to true
@@ -3175,7 +3162,7 @@ namespace System.Threading.Tasks
                     }
                     else
                     {
-                        ThreadPool.UnsafeQueueCustomWorkItem(new CompletionActionInvoker(singleTaskCompletionAction, this), forceGlobal: false);
+                        ThreadPool.UnsafeQueueUserWorkItemInternal(new CompletionActionInvoker(singleTaskCompletionAction, this), preferLocal: true);
                     }
                     LogFinishCompletionNotification();
                     return;
@@ -3258,7 +3245,7 @@ namespace System.Threading.Tasks
                             }
                             else
                             {
-                                ThreadPool.UnsafeQueueCustomWorkItem(new CompletionActionInvoker(action, this), forceGlobal: false);
+                                ThreadPool.UnsafeQueueUserWorkItemInternal(new CompletionActionInvoker(action, this), preferLocal: true);
                             }
                         }
                     }
@@ -6066,7 +6053,7 @@ namespace System.Threading.Tasks
             m_completingTask = completingTask;
         }
 
-        void IThreadPoolWorkItem.ExecuteWorkItem()
+        void IThreadPoolWorkItem.Execute()
         {
             m_action.Invoke(m_completingTask);
         }

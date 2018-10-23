@@ -359,14 +359,25 @@ namespace ILCompiler.DependencyAnalysis
             if (method.IsAbstract)
                 return false;
 
-            // PInvoke methods, runtime imports, etc. are not permitted on generic types,
+            // PInvoke methods are not permitted on generic types,
             // but let's not crash the compilation because of that.
-            if (method.IsPInvoke || method.IsRuntimeImplemented)
+            if (method.IsPInvoke)
                 return false;
 
-            // InternalCall functions do not really have entrypoints that need to be handled here
-            if (method.IsInternalCall)
-                return false;
+            // CoreRT can generate method bodies for these no matter what (worst case
+            // they'll be throwing), but Project N has trouble with that.
+            //
+            // We don't want to take the "return false" code path on CoreRT because
+            // delegate methods fall into the runtime implemented category on CoreRT, but we
+            // just treat them like regular method bodies. N doesn't have this problem
+            // because they get converted to regular methods in IL transforms.
+            TypeSystemContext context = method.Context;
+            if (context.Target.Abi == TargetAbi.ProjectN)
+            {
+                // InternalCall functions do not really have entrypoints that need to be handled here
+                if (method.IsInternalCall || method.IsRuntimeImplemented)
+                    return false;
+            }
 
             return true;
         }
