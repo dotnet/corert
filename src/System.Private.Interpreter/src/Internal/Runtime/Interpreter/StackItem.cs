@@ -58,12 +58,12 @@ namespace Internal.Runtime.Interpreter
             return _int64;
         }
 
-        public static StackItem FromIntPtr(IntPtr nativeInt)
+        public static StackItem FromNativeInt(IntPtr nativeInt)
         {
             return new StackItem { _nativeInt = nativeInt, _kind = StackValueKind.NativeInt };
         }
 
-        public IntPtr AsIntPtr()
+        public IntPtr AsNativeInt()
         {
             Debug.Assert(_kind == StackValueKind.NativeInt);
             return _nativeInt;

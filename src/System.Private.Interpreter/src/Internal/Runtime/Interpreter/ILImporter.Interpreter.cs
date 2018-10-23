@@ -211,7 +211,7 @@ namespace Internal.IL
                     break;
                 case TypeFlags.IntPtr:
                 case TypeFlags.UIntPtr:
-                    _interpreter.SetReturnValue(stackItem.AsIntPtr());
+                    _interpreter.SetReturnValue(stackItem.AsNativeInt());
                     break;
                 case TypeFlags.Single:
                     _interpreter.SetReturnValue((float)stackItem.AsDouble());
@@ -272,7 +272,7 @@ namespace Internal.IL
 
                         if (op2.Kind == StackValueKind.Int32 || op2.Kind == StackValueKind.NativeInt)
                         {
-                            int val2 = op2.Kind == StackValueKind.Int32 ? op2.AsInt32() : op2.AsIntPtr().ToInt32();
+                            int val2 = op2.Kind == StackValueKind.Int32 ? op2.AsInt32() : op2.AsNativeInt().ToInt32();
 
                             if (opcode == ILOpcode.ceq)
                             {
@@ -365,7 +365,7 @@ namespace Internal.IL
                     break;
                 case StackValueKind.NativeInt:
                     {
-                        IntPtr val1 = op1.AsIntPtr();
+                        IntPtr val1 = op1.AsNativeInt();
                         if (op2.Kind == StackValueKind.Int32
                             || op1.Kind == StackValueKind.Int64
                             || op2.Kind == StackValueKind.NativeInt)
@@ -382,7 +382,7 @@ namespace Internal.IL
                             }
                             else
                             {
-                                val2 = op2.AsIntPtr();
+                                val2 = op2.AsNativeInt();
                             }
 
                             if (opcode == ILOpcode.ceq)
@@ -522,12 +522,12 @@ namespace Internal.IL
                         {
                             if (unsigned)
                             {
-                                UIntPtr value = (UIntPtr)stackItem.AsIntPtr().ToPointer();
+                                UIntPtr value = (UIntPtr)stackItem.AsNativeInt().ToPointer();
                                 result = checkOverflow ? Convert.ToSByte(value.ToUInt64()) : (sbyte)value;
                             }
                             else
                             {
-                                IntPtr value = stackItem.AsIntPtr();
+                                IntPtr value = stackItem.AsNativeInt();
                                 result = checkOverflow ? Convert.ToSByte(value.ToInt64()) : (sbyte)value;
                             }
                         }
@@ -577,12 +577,12 @@ namespace Internal.IL
                         {
                             if (unsigned)
                             {
-                                UIntPtr value = (UIntPtr)stackItem.AsIntPtr().ToPointer();
+                                UIntPtr value = (UIntPtr)stackItem.AsNativeInt().ToPointer();
                                 result = checkOverflow ? Convert.ToByte(value.ToUInt64()) : (byte)value;
                             }
                             else
                             {
-                                IntPtr value = stackItem.AsIntPtr();
+                                IntPtr value = stackItem.AsNativeInt();
                                 result = checkOverflow ? Convert.ToByte(value.ToInt64()) : (byte)value;
                             }
                         }
@@ -632,12 +632,12 @@ namespace Internal.IL
                         {
                             if (unsigned)
                             {
-                                UIntPtr value = (UIntPtr)stackItem.AsIntPtr().ToPointer();
+                                UIntPtr value = (UIntPtr)stackItem.AsNativeInt().ToPointer();
                                 result = checkOverflow ? Convert.ToInt16(value.ToUInt64()) : (short)value;
                             }
                             else
                             {
-                                IntPtr value = stackItem.AsIntPtr();
+                                IntPtr value = stackItem.AsNativeInt();
                                 result = checkOverflow ? Convert.ToInt16(value.ToInt64()) : (short)value;
                             }
                         }
@@ -687,12 +687,12 @@ namespace Internal.IL
                         {
                             if (unsigned)
                             {
-                                UIntPtr value = (UIntPtr)stackItem.AsIntPtr().ToPointer();
+                                UIntPtr value = (UIntPtr)stackItem.AsNativeInt().ToPointer();
                                 result = checkOverflow ? Convert.ToUInt16(value.ToUInt64()) : (ushort)value;
                             }
                             else
                             {
-                                IntPtr value = stackItem.AsIntPtr();
+                                IntPtr value = stackItem.AsNativeInt();
                                 result = checkOverflow ? Convert.ToUInt16(value.ToInt64()) : (ushort)value;
                             }
                         }
@@ -741,12 +741,12 @@ namespace Internal.IL
                         {
                             if (unsigned)
                             {
-                                UIntPtr value = (UIntPtr)stackItem.AsIntPtr().ToPointer();
+                                UIntPtr value = (UIntPtr)stackItem.AsNativeInt().ToPointer();
                                 result = checkOverflow ? Convert.ToInt32(value.ToUInt64()) : (int)value;
                             }
                             else
                             {
-                                IntPtr value = stackItem.AsIntPtr();
+                                IntPtr value = stackItem.AsNativeInt();
                                 result = checkOverflow ? Convert.ToInt32(value.ToInt64()) : (int)value;
                             }
                         }
@@ -795,12 +795,12 @@ namespace Internal.IL
                         {
                             if (unsigned)
                             {
-                                UIntPtr value = (UIntPtr)stackItem.AsIntPtr().ToPointer();
+                                UIntPtr value = (UIntPtr)stackItem.AsNativeInt().ToPointer();
                                 result = checkOverflow ? Convert.ToUInt32(value.ToUInt64()) : (uint)value;
                             }
                             else
                             {
-                                IntPtr value = stackItem.AsIntPtr();
+                                IntPtr value = stackItem.AsNativeInt();
                                 result = checkOverflow ? Convert.ToUInt32(value.ToInt64()) : (uint)value;
                             }
                         }
@@ -847,12 +847,12 @@ namespace Internal.IL
                         {
                             if (unsigned)
                             {
-                                UIntPtr value = (UIntPtr)stackItem.AsIntPtr().ToPointer();
+                                UIntPtr value = (UIntPtr)stackItem.AsNativeInt().ToPointer();
                                 result = (long)value.ToUInt64();
                             }
                             else
                             {
-                                result = stackItem.AsIntPtr().ToInt64();
+                                result = stackItem.AsNativeInt().ToInt64();
                             }
                         }
                         else
@@ -901,12 +901,12 @@ namespace Internal.IL
                         {
                             if (unsigned)
                             {
-                                UIntPtr value = (UIntPtr)stackItem.AsIntPtr().ToPointer();
+                                UIntPtr value = (UIntPtr)stackItem.AsNativeInt().ToPointer();
                                 result = value.ToUInt64();
                             }
                             else
                             {
-                                IntPtr value = stackItem.AsIntPtr();
+                                IntPtr value = stackItem.AsNativeInt();
                                 result = checkOverflow ? Convert.ToUInt64(value.ToInt64()) : (ulong)value;
                             }
                         }
@@ -955,12 +955,12 @@ namespace Internal.IL
                         {
                             if (unsigned)
                             {
-                                UIntPtr value = (UIntPtr)stackItem.AsIntPtr().ToPointer();
+                                UIntPtr value = (UIntPtr)stackItem.AsNativeInt().ToPointer();
                                 result = (double)value;
                             }
                             else
                             {
-                                result = (double)stackItem.AsIntPtr();
+                                result = (double)stackItem.AsNativeInt();
                             }
                         }
                         else
