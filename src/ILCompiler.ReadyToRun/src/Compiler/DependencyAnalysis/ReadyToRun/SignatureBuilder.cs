@@ -256,7 +256,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     return;
 
                 case TypeFlags.Double:
-                    EmitElementType(CorElementType.ELEMENT_TYPE_R4);
+                    EmitElementType(CorElementType.ELEMENT_TYPE_R8);
                     return;
 
                 case TypeFlags.Interface:
