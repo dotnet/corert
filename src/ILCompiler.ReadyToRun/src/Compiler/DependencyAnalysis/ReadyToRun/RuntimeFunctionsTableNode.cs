@@ -16,10 +16,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private List<MethodWithGCInfo> _methodNodes;
         private Dictionary<MethodWithGCInfo, int> _insertedMethodNodes;
-        private readonly NodeFactory _nodeFactory;
+        private readonly ReadyToRunCodegenNodeFactory _nodeFactory;
         private int _tableSize = -1;
 
-        public RuntimeFunctionsTableNode(NodeFactory nodeFactory)
+        public RuntimeFunctionsTableNode(ReadyToRunCodegenNodeFactory nodeFactory)
             : base(nodeFactory.Target)
         {
             _nodeFactory = nodeFactory;
@@ -50,21 +50,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             int runtimeFunctionIndex = 0;
 
-            foreach (MethodDesc method in _nodeFactory.MetadataManager.GetCompiledMethods())
+            foreach (MethodWithGCInfo method in _nodeFactory.EnumerateCompiledMethods())
             {
-                IMethodNode methodNode = _nodeFactory.MethodEntrypoint(method);
-                MethodWithGCInfo methodCodeNode = methodNode as MethodWithGCInfo;
-                if (methodCodeNode == null && methodNode is LocalMethodImport localMethodImport)
-                {
-                    methodCodeNode = localMethodImport.MethodCodeNode;
-                }
-
-                if (methodCodeNode != null && !methodCodeNode.IsEmpty)
-                {
-                    _methodNodes.Add(methodCodeNode);
-                    _insertedMethodNodes[methodCodeNode] = runtimeFunctionIndex;
-                    runtimeFunctionIndex += methodCodeNode.FrameInfos.Length;
-                }
+                _methodNodes.Add(method);
+                _insertedMethodNodes[method] = runtimeFunctionIndex;
+                runtimeFunctionIndex += method.FrameInfos.Length;
             }
         }
 

@@ -133,6 +133,24 @@ namespace ILCompiler.DependencyAnalysis
                 signatureContext);
         }
 
+        public IEnumerable<MethodWithGCInfo> EnumerateCompiledMethods()
+        {
+            foreach (MethodDesc method in MetadataManager.GetCompiledMethods())
+            {
+                IMethodNode methodNode = MethodEntrypoint(method);
+                MethodWithGCInfo methodCodeNode = methodNode as MethodWithGCInfo;
+                if (methodCodeNode == null && methodNode is LocalMethodImport localMethodImport)
+                {
+                    methodCodeNode = localMethodImport.MethodCodeNode;
+                }
+
+                if (methodCodeNode != null && !methodCodeNode.IsEmpty)
+                {
+                    yield return methodCodeNode;
+                }
+            }
+        }
+
         public IMethodNode StringAllocator(MethodDesc constructor, ModuleToken methodToken, SignatureContext signatureContext)
         {
             return MethodEntrypoint(constructor, constrainedType: null, originalMethod: null, 

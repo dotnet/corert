@@ -65,11 +65,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private List<MethodWithGCInfo> _methodNodes;
         private List<int> _ehInfoOffsets;
 
-        private readonly NodeFactory _nodeFactory;
+        private readonly ReadyToRunCodegenNodeFactory _nodeFactory;
 
         private readonly EHInfoNode _ehInfoNode;
 
-        public ExceptionInfoLookupTableNode(NodeFactory nodeFactory)
+        public ExceptionInfoLookupTableNode(ReadyToRunCodegenNodeFactory nodeFactory)
             : base(nodeFactory.Target)
         {
             _nodeFactory = nodeFactory;
@@ -94,24 +94,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _methodNodes = new List<MethodWithGCInfo>();
             _ehInfoOffsets = new List<int>();
 
-            foreach (MethodDesc method in _nodeFactory.MetadataManager.GetCompiledMethods())
+            foreach (MethodWithGCInfo method in _nodeFactory.EnumerateCompiledMethods())
             {
-                IMethodNode methodNode = _nodeFactory.MethodEntrypoint(method);
-                MethodWithGCInfo methodCodeNode = methodNode as MethodWithGCInfo;
-                if (methodCodeNode == null && methodNode is LocalMethodImport localMethodImport)
-                {
-                    methodCodeNode = localMethodImport.MethodCodeNode;
-                }
-
-                if (methodCodeNode == null || methodCodeNode.IsEmpty)
-                {
-                    continue;
-                }
-
-                ObjectData ehInfo = methodCodeNode.EHInfo;
+                ObjectData ehInfo = method.EHInfo;
                 if (ehInfo != null && ehInfo.Data.Length != 0)
                 {
-                    _methodNodes.Add(methodCodeNode);
+                    _methodNodes.Add(method);
                     _ehInfoOffsets.Add(_ehInfoNode.AddEHInfo(ehInfo.Data));
                 }
             }
