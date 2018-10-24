@@ -38,16 +38,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             VertexHashtable typesHashtable = new VertexHashtable();
             section.Place(typesHashtable);
 
+            HashSet<TypeDesc> uniqueTypes = new HashSet<TypeDesc>();
+
             foreach (TypeDesc type in ((ReadyToRunTableManager)factory.MetadataManager).GetTypesWithAvailableTypes())
             {
                 int rid = 0;
                 if (type.GetTypeDefinition() is EcmaType ecmaType)
                 {
-                    rid = MetadataTokens.GetToken(ecmaType.Handle) & 0x00FFFFFF;
-                    Debug.Assert(rid != 0);
+                    if (uniqueTypes.Add(ecmaType))
+                    {
+                        rid = MetadataTokens.GetToken(ecmaType.Handle) & 0x00FFFFFF;
+                        Debug.Assert(rid != 0);
 
-                    int hashCode = ReadyToRunHashCode.TypeTableHashCode(ecmaType);
-                    typesHashtable.Append(unchecked((uint)hashCode), section.Place(new UnsignedConstant((uint)rid << 1)));
+                        int hashCode = ReadyToRunHashCode.TypeTableHashCode(ecmaType);
+                        typesHashtable.Append(unchecked((uint)hashCode), section.Place(new UnsignedConstant((uint)rid << 1)));
+                    }
                 }
                 else if (type.IsArray || type.IsMdArray)
                 {

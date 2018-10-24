@@ -9,7 +9,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class ExternalMethodImport : Import, IMethodNode
+    public class ExternalMethodImport : DelayLoadHelperImport, IMethodNode
     {
         private readonly MethodDesc _methodDesc;
 
@@ -25,7 +25,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             SignatureContext signatureContext,
             bool isUnboxingStub,
             MethodWithGCInfo localMethod)
-            : base(factory.MethodImports, factory.MethodSignature(fixupKind, methodDesc, constrainedType, signatureContext, isUnboxingStub, isInstantiatingStub: false))
+            : base(
+                  factory,
+                  factory.MethodImports, 
+                  ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_MethodCall,
+                  factory.MethodSignature(
+                      fixupKind, 
+                      methodDesc, 
+                      constrainedType, 
+                      signatureContext, 
+                      isUnboxingStub, 
+                      isInstantiatingStub: false))
         {
             _methodDesc = methodDesc;
             _signatureContext = signatureContext;
@@ -39,15 +49,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            if (_localMethod == null)
+            foreach (DependencyListEntry entry in base.GetStaticDependencies(factory))
             {
-                return base.GetStaticDependencies(factory);
+                yield return entry;
             }
-            return new DependencyListEntry[] 
+            if (_localMethod != null)
             {
-                new DependencyListEntry(_localMethod, "Local method import"),
-                new DependencyListEntry(ImportSignature, "Method fixup signature"),
-            };
+                yield return new DependencyListEntry(_localMethod, "Local method import");
+            }
         }
     }
 }
