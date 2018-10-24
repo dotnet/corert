@@ -12,6 +12,7 @@ using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.JitInterface;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -29,8 +30,7 @@ namespace ILCompiler.DependencyAnalysis
             NameMangler nameMangler,
             VTableSliceProvider vtableSliceProvider,
             DictionaryLayoutProvider dictionaryLayoutProvider,
-            ModuleTokenResolver moduleTokenResolver,
-            SignatureContext signatureContext)
+            EcmaModule inputModule)
             : base(context,
                   compilationModuleGroup,
                   metadataManager,
@@ -43,8 +43,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             _importMethods = new Dictionary<TypeAndMethod, IMethodNode>();
 
-            Resolver = moduleTokenResolver;
-            InputModuleContext = signatureContext;
+            Resolver = new ModuleTokenResolver(this, context);
+            InputModuleContext = new SignatureContext(Resolver, inputModule);
+
+            InitializeModuleCells(inputModule);
         }
 
         public SignatureContext InputModuleContext;
@@ -72,6 +74,8 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode FilterFuncletPersonalityRoutine;
 
         public DebugInfoTableNode DebugInfoTable;
+
+        public ModuleImportSectionNode ModuleImports;
 
         public ImportSectionNode EagerImports;
 
@@ -112,25 +116,87 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (!CompilationModuleGroup.ContainsMethodBody(targetMethod, false))
             {
+                if (originalMethod == targetMethod)
+                {
+                    // If the original and target methods are the same, there's no need to encode a type constraint
+                    constrainedType = null;
+                }
+
                 return ImportedMethodNode(constrainedType != null ? originalMethod : targetMethod, constrainedType, methodToken, signatureContext, isUnboxingStub);
             }
 
             return _methodEntrypoints.GetOrAdd(targetMethod, (m) =>
             {
-                return CreateMethodEntrypointNode(targetMethod, signatureContext, isUnboxingStub);
+                return CreateMethodEntrypointNode(targetMethod, constrainedType, methodToken, signatureContext, isUnboxingStub);
             });
         }
 
-        private IMethodNode CreateMethodEntrypointNode(MethodDesc targetMethod, SignatureContext signatureContext, bool isUnboxingStub)
+        private IMethodNode CreateMethodEntrypointNode(
+            MethodDesc targetMethod, 
+            TypeDesc constrainedType,
+            ModuleToken methodToken, 
+            SignatureContext signatureContext, 
+            bool isUnboxingStub)
         {
-            MethodWithGCInfo localMethod = new MethodWithGCInfo(targetMethod, signatureContext);
+            MethodWithGCInfo localMethod = new MethodWithGCInfo(targetMethod, methodToken, signatureContext);
 
             return new LocalMethodImport(
                 this,
                 ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
                 localMethod,
+                constrainedType,
+                methodToken,
                 isUnboxingStub,
                 signatureContext);
+        }
+
+        public IEnumerable<MethodWithGCInfo> LocalMethods()
+        {
+            foreach (MethodDesc method in MetadataManager.GetCompiledMethods())
+            {
+                IMethodNode methodNode = MethodEntrypoint(method);
+                MethodWithGCInfo methodCodeNode = methodNode as MethodWithGCInfo;
+                if (methodCodeNode == null && methodNode is LocalMethodImport localMethodImport)
+                {
+                    methodCodeNode = localMethodImport.MethodCodeNode;
+                }
+
+                if (methodCodeNode != null && !methodCodeNode.IsEmpty)
+                {
+                    yield return methodCodeNode;
+                }
+            }
+        }
+
+        Dictionary<EcmaModule, int> _moduleIndices = new Dictionary<EcmaModule, int>();
+
+        private void InitializeModuleCells(EcmaModule inputModule)
+        {
+            foreach(AssemblyReferenceHandle assemblyRefHandle in inputModule.MetadataReader.AssemblyReferences)
+            {
+                try
+                {
+                    if (inputModule.GetObject(assemblyRefHandle) is EcmaAssembly ecmaAssembly)
+                    {
+                        if (CompilationModuleGroup.ContainsModule(ecmaAssembly))
+                        {
+                            // Record assemblyref within the versioning bubble
+                            ushort assemblyRowid = (ushort)MetadataTokens.GetRowNumber(assemblyRefHandle);
+                            ushort moduleRowid = 0;
+                            _moduleIndices.Add(ecmaAssembly, ModuleImports.AddModuleCell(assemblyRowid, moduleRowid));
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                    // Ignore missing reference assemblies
+                }
+            }
+        }
+
+        public int ModuleIndex(EcmaModule module)
+        {
+            return _moduleIndices[module];
         }
 
         public IEnumerable<MethodWithGCInfo> EnumerateCompiledMethods()
@@ -281,6 +347,9 @@ namespace ILCompiler.DependencyAnalysis
 
             DebugInfoTable = new DebugInfoTableNode(Target);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.DebugInfo, DebugInfoTable, DebugInfoTable);
+
+            ModuleImports = new ModuleImportSectionNode((byte)Target.PointerSize);
+            ImportSectionsTable.AddEmbeddedObject(ModuleImports);
 
             EagerImports = new ImportSectionNode(
                 "EagerImports",

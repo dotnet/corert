@@ -53,7 +53,7 @@ namespace Internal.JitInterface
         {
             _compilation = compilation;
             _tokenContext = tokenContext;
-            _signatureContext = new SignatureContext(_compilation.NodeFactory.Resolver);
+            _signatureContext = new SignatureContext(_compilation.NodeFactory.Resolver, _tokenContext);
         }
 
         public void CompileMethod(IReadyToRunMethodCodeNode methodCodeNodeNeedingCode)

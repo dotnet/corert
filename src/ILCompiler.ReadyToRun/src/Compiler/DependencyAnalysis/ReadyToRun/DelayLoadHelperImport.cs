@@ -40,8 +40,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
         {
-            // This needs to be an empty target pointer since it will be filled in with Module*
-            // when loaded by CoreCLR
+            // Initially the DelayLoadHelper import cell points at a generated assembly thunk.
             dataBuilder.EmitReloc(_delayLoadHelper,
                 factory.Target.PointerSize == 4 ? RelocType.IMAGE_REL_BASED_HIGHLOW : RelocType.IMAGE_REL_BASED_DIR64);
         }

@@ -41,6 +41,11 @@ namespace ILCompiler
                 return true;
             }
 
+            if (type1 == null || type2 == null)
+            {
+                return type1 == null && type2 == null;
+            }
+
             RuntimeDeterminedType runtimeDeterminedType1 = type1 as RuntimeDeterminedType;
             RuntimeDeterminedType runtimeDeterminedType2 = type2 as RuntimeDeterminedType;
             if (runtimeDeterminedType1 != null || runtimeDeterminedType2 != null)
@@ -68,6 +73,12 @@ namespace ILCompiler
             {
                 return true;
             }
+
+            if (method1 == null || method2 == null)
+            {
+                return method1 == null && method2 == null;
+            }
+
             if (!Equals(method1.OwningType, method2.OwningType) ||
                 method1.Signature.Length != method2.Signature.Length ||
                 !Equals(method1.Instantiation, method2.Instantiation) ||
@@ -184,6 +195,7 @@ namespace ILCompiler
             WriteTo(method.Signature.ReturnType, sb);
             sb.Append(" ");
             WriteTo(method.OwningType, sb);
+            sb.Append(".");
             sb.Append(method.Name);
             if (method.HasInstantiation)
             {

@@ -70,17 +70,26 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         throw new NotImplementedException();
                 }
 
-                dataBuilder.EmitByte((byte)_fixupKind);
                 if (_typeArgument != null)
                 {
+                    dataBuilder.EmitByte((byte)_fixupKind);
                     dataBuilder.EmitTypeSignature(_typeArgument, _signatureContext);
                 }
                 else if (_methodArgument != null)
                 {
+                    ModuleToken methodToken = _methodArgument.Token;
+                    if (methodToken.IsNull)
+                    {
+                        methodToken = _signatureContext.GetModuleTokenForMethod(_methodArgument.Method.GetTypicalMethodDefinition());
+                    }
+                    int moduleIndex = _signatureContext.GetModuleIndex(methodToken.Module);
+                    bool useModuleOverride = (moduleIndex >= 0);
+                    dataBuilder.EmitByte((byte)((byte)_fixupKind | (useModuleOverride ? 0x80 : 0)));
+
                     dataBuilder.EmitMethodSignature(
                         method: _methodArgument.Method,
                         constrainedType: null,
-                        methodToken: _methodArgument.Token,
+                        methodToken: methodToken,
                         enforceDefEncoding: false,
                         context: _signatureContext,
                         isUnboxingStub: false,

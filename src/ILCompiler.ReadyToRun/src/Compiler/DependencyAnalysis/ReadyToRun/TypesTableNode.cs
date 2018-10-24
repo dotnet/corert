@@ -32,6 +32,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (relocsOnly)
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
+            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             NativeWriter writer = new NativeWriter();
             Section section = writer.NewSection();
 
@@ -45,7 +46,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 int rid = 0;
                 if (type.GetTypeDefinition() is EcmaType ecmaType)
                 {
-                    if (uniqueTypes.Add(ecmaType))
+                    if (ecmaType.EcmaModule == r2rFactory.InputModuleContext.Module && uniqueTypes.Add(ecmaType))
                     {
                         rid = MetadataTokens.GetToken(ecmaType.Handle) & 0x00FFFFFF;
                         Debug.Assert(rid != 0);

@@ -10,6 +10,11 @@ namespace ILCompiler
 {
     public class SingleFileCompilationModuleGroup : CompilationModuleGroup
     {
+        public sealed override bool ContainsModule(ModuleDesc module)
+        {
+            return false;
+        }
+
         public override bool ContainsType(TypeDesc type)
         {
             return true;

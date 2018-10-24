@@ -23,6 +23,11 @@ namespace ILCompiler
             _compilationModuleSet.Add(context.GeneratedAssembly);
         }
 
+        public sealed override bool ContainsModule(ModuleDesc module)
+        {
+            return _compilationModuleSet.Contains(module);
+        }
+
         public sealed override bool ContainsType(TypeDesc type)
         {
             if (type is EcmaType ecmaType)

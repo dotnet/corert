@@ -57,7 +57,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
             dataBuilder.AddSymbol(this);
 
-            dataBuilder.EmitUInt((uint)_fixupKind);
+            ModuleToken methodToken = _methodToken;
+            if (methodToken.IsNull)
+            {
+                methodToken = _signatureContext.GetModuleTokenForMethod(_methodDesc.GetTypicalMethodDefinition());
+            }
+            int moduleIndex = _signatureContext.GetModuleIndex(methodToken.Module);
+            bool useModuleOverride = (moduleIndex >= 0);
+
+            dataBuilder.EmitByte((byte)((byte)_fixupKind | (useModuleOverride ? 0x80 : 0)));
+            if (useModuleOverride)
+            {
+                dataBuilder.EmitUInt((uint)moduleIndex);
+            }
             dataBuilder.EmitMethodSignature(_methodDesc, _constrainedType, _methodToken, enforceDefEncoding: false,
                 _signatureContext, _isUnboxingStub, _isInstantiatingStub);
 

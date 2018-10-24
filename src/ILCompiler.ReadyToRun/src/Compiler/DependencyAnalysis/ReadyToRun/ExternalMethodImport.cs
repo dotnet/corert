@@ -13,8 +13,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private readonly MethodDesc _methodDesc;
 
-        private readonly SignatureContext _signatureContext;
-
         public ExternalMethodImport(
             ReadyToRunCodegenNodeFactory factory,
             ReadyToRunFixupKind fixupKind,
@@ -37,7 +35,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                       isInstantiatingStub: false))
         {
             _methodDesc = methodDesc;
-            _signatureContext = signatureContext;
         }
 
         public MethodDesc Method => _methodDesc;

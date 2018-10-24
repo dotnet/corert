@@ -22,6 +22,10 @@ namespace ILCompiler
     public abstract class CompilationModuleGroup
     {
         /// <summary>
+        /// If true, "module" is in the set of input assemblies being compiled
+        /// </summary>
+        public abstract bool ContainsModule(ModuleDesc module);
+        /// <summary>
         /// If true, "type" is in the set of input assemblies being compiled
         /// </summary>
         public abstract bool ContainsType(TypeDesc type);

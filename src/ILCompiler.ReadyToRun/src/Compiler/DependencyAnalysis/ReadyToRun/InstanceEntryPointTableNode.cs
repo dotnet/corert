@@ -52,11 +52,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     int methodIndex = r2rFactory.RuntimeFunctionsTable.GetIndex(method);
 
+                    ModuleToken token = method.MethodToken;
+                    if (token.TokenType != Internal.JitInterface.CorTokenType.mdtMethodDef)
+                    {
+                        token = default(ModuleToken);
+                    }
+
                     ArraySignatureBuilder signatureBuilder = new ArraySignatureBuilder();
                     signatureBuilder.EmitMethodSignature(
                         method.Method, 
                         constrainedType: null,
-                        default(ModuleToken),
+                        methodToken: token,
                         enforceDefEncoding: true,
                         method.SignatureContext,
                         isUnboxingStub: false, 

@@ -29,19 +29,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly Dictionary<FieldDesc, ModuleToken> _fieldToRefTokens = new Dictionary<FieldDesc, ModuleToken>();
 
-        private readonly CompilationModuleGroup _compilationModuleGroup;
+        private readonly ReadyToRunCodegenNodeFactory _nodeFactory;
 
         private readonly CompilerTypeSystemContext _typeSystemContext;
 
-        public ModuleTokenResolver(CompilationModuleGroup compilationModuleGroup, CompilerTypeSystemContext typeSystemContext)
+        public ModuleTokenResolver(ReadyToRunCodegenNodeFactory nodeFactory, CompilerTypeSystemContext typeSystemContext)
         {
-            _compilationModuleGroup = compilationModuleGroup;
+            _nodeFactory = nodeFactory;
             _typeSystemContext = typeSystemContext;
         }
 
         public ModuleToken GetModuleTokenForType(EcmaType type, bool throwIfNotFound = true)
         {
-            if (_compilationModuleGroup.ContainsType(type))
+            if (_nodeFactory.CompilationModuleGroup.ContainsType(type))
             {
                 return new ModuleToken(type.EcmaModule, (mdToken)MetadataTokens.GetToken(type.Handle));
             }
@@ -65,7 +65,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public ModuleToken GetModuleTokenForMethod(MethodDesc method, bool throwIfNotFound = true)
         {
-            if (_compilationModuleGroup.ContainsMethodBody(method, unboxingStub: false) &&
+            if (_nodeFactory.CompilationModuleGroup.ContainsMethodBody(method, unboxingStub: false) &&
                 method is EcmaMethod ecmaMethod)
             {
                 return new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
@@ -84,7 +84,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public ModuleToken GetModuleTokenForField(FieldDesc field, bool throwIfNotFound = true)
         {
-            if (_compilationModuleGroup.ContainsType(field.OwningType) && field is EcmaField ecmaField)
+            if (_nodeFactory.CompilationModuleGroup.ContainsType(field.OwningType) && field is EcmaField ecmaField)
             {
                 return new ModuleToken(ecmaField.Module, ecmaField.Handle);
             }
@@ -97,6 +97,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 return default(ModuleToken);
             }
+        }
+
+        public int GetModuleIndex(EcmaModule module)
+        {
+            return _nodeFactory.ModuleIndex(module);
         }
 
         public void AddModuleTokenForMethod(MethodDesc method, ModuleToken token)
@@ -125,7 +130,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void AddModuleTokenForField(FieldDesc field, ModuleToken token)
         {
-            if (_compilationModuleGroup.ContainsType(field.OwningType))
+            if (_nodeFactory.CompilationModuleGroup.ContainsType(field.OwningType))
             {
                 // We don't need to store handles within the current compilation group
                 // as we can read them directly from the ECMA objects.
@@ -154,7 +159,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 specialTypeFound = true;
             }
 
-            if (_compilationModuleGroup.ContainsType(type))
+            if (_nodeFactory.CompilationModuleGroup.ContainsType(type))
             {
                 // We don't need to store handles within the current compilation group
                 // as we can read them directly from the ECMA objects.

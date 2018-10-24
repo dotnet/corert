@@ -251,6 +251,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         READYTORUN_HELPER_FLAG_VSD = 0x10000000,
     }
 
+    [Flags]
     public enum CorElementType : byte
     {
         ELEMENT_TYPE_END = 0,
@@ -291,6 +292,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         ELEMENT_TYPE_HANDLE = 64,
         ELEMENT_TYPE_SENTINEL = 65,
-        ELEMENT_TYPE_PINNED = 69
+        ELEMENT_TYPE_PINNED = 69,
+
+        ELEMENT_TYPE_MODULE_OVERRIDE = 128,  // Followed by encoded uint representing the "other module" indirection cell
     }
 }

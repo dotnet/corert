@@ -57,7 +57,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             foreach (MethodWithGCInfo method in r2rFactory.EnumerateCompiledMethods())
             {
-                if (method.Method is EcmaMethod ecmaMethod)
+                if (method.Method is EcmaMethod ecmaMethod && ecmaMethod.Module == r2rFactory.InputModuleContext.Module)
                 {
                     // Strip away the token type bits, keep just the low 24 bits RID
                     uint rid = SignatureBuilder.RidFromToken((mdToken)MetadataTokens.GetToken(ecmaMethod.Handle));

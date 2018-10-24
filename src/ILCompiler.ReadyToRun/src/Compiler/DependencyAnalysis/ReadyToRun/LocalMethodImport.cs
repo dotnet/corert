@@ -19,6 +19,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadyToRunCodegenNodeFactory factory,
             ReadyToRunFixupKind fixupKind,
             MethodWithGCInfo localMethod,
+            TypeDesc constrainedType,
+            ModuleToken methodToken,
             bool isUnboxingStub,
             SignatureContext signatureContext)
             : base(
@@ -28,8 +30,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                   factory.MethodSignature(
                       fixupKind,
                       localMethod.Method,
-                      constrainedType: null,
-                      methodToken: default(ModuleToken),
+                      constrainedType: constrainedType,
+                      methodToken: methodToken,
                       signatureContext,
                       isUnboxingStub,
                       isInstantiatingStub: false))
@@ -45,9 +47,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            foreach (DependencyListEntry entry in base.GetStaticDependencies(factory))
+            foreach (DependencyListEntry baseEntry in base.GetStaticDependencies(factory))
             {
-                yield return entry;
+                yield return baseEntry;
             }
             yield return new DependencyListEntry(_localMethod, "Local method import");
         }

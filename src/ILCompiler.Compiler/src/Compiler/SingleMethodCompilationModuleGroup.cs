@@ -5,6 +5,7 @@
 using System.Diagnostics;
 
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
@@ -27,6 +28,11 @@ namespace ILCompiler
             {
                 return false;
             }
+        }
+
+        public sealed override bool ContainsModule(ModuleDesc module)
+        {
+            return _method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod && ecmaMethod.Module == module;
         }
 
         public override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)

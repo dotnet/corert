@@ -177,6 +177,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             EmitByte((byte)elementType);
         }
 
+        private void EmitElementTypeWithModuleOverride(CorElementType elementType, EcmaModule targetModule, SignatureContext context)
+        {
+            int moduleImportIndex = context.GetModuleIndex(targetModule);
+            if (moduleImportIndex < 0)
+            {
+                EmitElementType(elementType);
+            }
+            else
+            {
+                EmitElementType(elementType | CorElementType.ELEMENT_TYPE_MODULE_OVERRIDE);
+                EmitUInt((uint)moduleImportIndex);
+            }
+        }
+
         public void EmitTypeSignature(TypeDesc typeDesc, SignatureContext context)
         {
             if (typeDesc is RuntimeDeterminedType runtimeDeterminedType)
@@ -294,27 +308,27 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
                     else
                     {
-                        EmitElementType(CorElementType.ELEMENT_TYPE_CLASS);
-                        EmitTypeToken((EcmaType)typeDesc, context);
+                        EcmaType ecmaType = (EcmaType)typeDesc;
+                        ModuleToken token = context.GetModuleTokenForType(ecmaType);
+                        EmitElementTypeWithModuleOverride(CorElementType.ELEMENT_TYPE_CLASS, token.Module, context);
+                        EmitToken(token.Token);
                     }
                     return;
 
                 case TypeFlags.ValueType:
                 case TypeFlags.Nullable:
                 case TypeFlags.Enum:
-                    EmitElementType(CorElementType.ELEMENT_TYPE_VALUETYPE);
-                    EmitTypeToken((EcmaType)typeDesc, context);
+                    {
+                        EcmaType ecmaType = (EcmaType)typeDesc;
+                        ModuleToken token = context.GetModuleTokenForType(ecmaType);
+                        EmitElementTypeWithModuleOverride(CorElementType.ELEMENT_TYPE_VALUETYPE, token.Module, context);
+                        EmitToken(token.Token);
+                    }
                     return;
 
                 default:
                     throw new NotImplementedException();
             }
-        }
-
-        private void EmitTypeToken(EcmaType type, SignatureContext context)
-        {
-            ModuleToken token = context.GetModuleTokenForType(type);
-            EmitToken(token.Token);
         }
 
         private void EmitInstantiatedTypeSignature(InstantiatedType type, SignatureContext context)
@@ -377,16 +391,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_Constrained;
             }
 
+            if (methodToken.IsNull)
+            {
+                methodToken = context.GetModuleTokenForMethod(method.GetMethodDefinition(), throwIfNotFound: false);
+            }
+            if (methodToken.IsNull)
+            {
+                methodToken = context.GetModuleTokenForMethod(method.GetTypicalMethodDefinition(), throwIfNotFound: true);
+            }
+
             if (method.HasInstantiation || method.OwningType.HasInstantiation)
             {
                 EmitMethodSpecificationSignature(method, methodToken, flags, enforceDefEncoding, context);
             }
             else
             {
-                if (methodToken.IsNull)
-                {
-                    methodToken = context.GetModuleTokenForMethod(method.GetTypicalMethodDefinition());
-                }
                 switch (methodToken.TokenType)
                 {
                     case CorTokenType.mdtMethodDef:
@@ -431,28 +450,33 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (method.HasInstantiation)
             {
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MethodInstantiation;
+
+                if (methodToken.IsNull && !enforceDefEncoding)
+                {
+                    methodToken = context.GetModuleTokenForMethod(method.GetMethodDefinition(), throwIfNotFound: false);
+                }
+                if (methodToken.IsNull)
+                {
+                    flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
+                    methodToken = context.GetModuleTokenForMethod(method.GetTypicalMethodDefinition());
+                }
+
                 if (!methodToken.IsNull)
                 {
-                    if (methodToken.TokenType == CorTokenType.mdtMethodSpec)
+                    switch (methodToken.TokenType)
                     {
-                        MethodSpecification methodSpecification = methodToken.MetadataReader.GetMethodSpecification((MethodSpecificationHandle)methodToken.Handle);
-                        methodToken = new ModuleToken(methodToken.Module, methodSpecification.Method);
-                    }
-                    else
-                    {
-                        throw new NotImplementedException();
+                        case CorTokenType.mdtMethodSpec:
+                            {
+                                MethodSpecification methodSpecification = methodToken.MetadataReader.GetMethodSpecification((MethodSpecificationHandle)methodToken.Handle);
+                                methodToken = new ModuleToken(methodToken.Module, methodSpecification.Method);
+                            }
+                            break;
+                        case CorTokenType.mdtMethodDef:
+                            break;
+                        default:
+                            throw new NotImplementedException();
                     }
                 }
-            }
-
-            if (methodToken.IsNull && !enforceDefEncoding)
-            {
-                methodToken = context.GetModuleTokenForMethod(method.GetMethodDefinition(), throwIfNotFound: false);
-            }
-            if (methodToken.IsNull)
-            {
-                flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
-                methodToken = context.GetModuleTokenForMethod(method.GetTypicalMethodDefinition());
             }
 
             if (method.OwningType.HasInstantiation)
