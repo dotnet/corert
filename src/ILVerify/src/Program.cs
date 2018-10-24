@@ -149,7 +149,22 @@ namespace ILVerify
             return 0;
         }
 
-        private void PrintResult(VerificationResult result, EcmaModule module, string pathOrModuleName)
+        private void PrintInterfaceResult(VerificationResult result, EcmaModule module, string pathOrModuleName)
+        {
+            Write("[MD]: Error: ");
+            Write("[");
+            Write(pathOrModuleName);
+            Write(" : ");
+
+            MetadataReader metadataReader = module.MetadataReader;
+            
+            string typeName = metadataReader.GetString(metadataReader.GetTypeDefinition(result.Type).Name);
+            Write(typeName);
+            Write(" ");
+            WriteLine(result.Message);
+        }
+
+        private void PrintILResult(VerificationResult result, EcmaModule module, string pathOrModuleName)
         {
             Write("[IL]: Error: ");
 
@@ -248,7 +263,7 @@ namespace ILVerify
                 // get fully qualified method name
                 var methodName = GetQualifiedMethodName(metadataReader, methodHandle);
 
-                bool verifying = ShouldVerifyMethod(methodName);
+                bool verifying = ShouldVerifyName(methodName);
                 if (_verbose)
                 {
                     Write(verifying ? "Verifying " : "Skipping ");
@@ -260,7 +275,7 @@ namespace ILVerify
                     var results = _verifier.Verify(peReader, methodHandle);
                     foreach (var result in results)
                     {
-                        PrintResult(result, module, path);
+                        PrintILResult(result, module, path);
                         numErrors++;
                     }
 
@@ -268,6 +283,27 @@ namespace ILVerify
                 }
 
                 methodCounter++;
+            }
+
+            foreach (TypeDefinitionHandle typeHandle in metadataReader.TypeDefinitions)
+            {
+                // get fully qualified type name
+                var className = GetQualifiedClassName(metadataReader, typeHandle);
+                bool verifying = ShouldVerifyName(className);
+                if (_verbose)
+                {
+                    Write(verifying ? "Verifying " : "Skipping ");
+                    WriteLine(className);
+                }
+                if (verifying)
+                {
+                    var results = _verifier.Verify(peReader, typeHandle);
+                    foreach (var result in results)
+                    {
+                        PrintInterfaceResult(result, module, path);
+                        numErrors++;
+                    }
+                }
             }
 
             if (numErrors > 0)
@@ -306,14 +342,34 @@ namespace ILVerify
             return builder.ToString();
         }
 
-        private bool ShouldVerifyMethod(string methodName)
+        /// <summary>
+        /// This method returns the fully qualified class name.
+        /// </summary>
+        private string GetQualifiedClassName(MetadataReader metadataReader, TypeDefinitionHandle typeHandle)
         {
-            if (_includePatterns.Count > 0 && !_includePatterns.Any(p => p.IsMatch(methodName)))
+            var typeDef = metadataReader.GetTypeDefinition(typeHandle);
+            var typeName = metadataReader.GetString(typeDef.Name);
+
+            var namespaceName = metadataReader.GetString(typeDef.Namespace);
+            var assemblyName = metadataReader.GetString(metadataReader.IsAssembly ? metadataReader.GetAssemblyDefinition().Name : metadataReader.GetModuleDefinition().Name);
+
+            StringBuilder builder = new StringBuilder();
+            builder.Append($"[{assemblyName}]");
+            if (!string.IsNullOrEmpty(namespaceName))
+                builder.Append($"{namespaceName}.");
+            builder.Append($"{typeName}");
+
+            return builder.ToString();
+        }
+
+        private bool ShouldVerifyName(string name)
+        {
+            if (_includePatterns.Count > 0 && !_includePatterns.Any(p => p.IsMatch(name)))
             {
                 return false;
             }
 
-            if (_excludePatterns.Any(p => p.IsMatch(methodName)))
+            if (_excludePatterns.Any(p => p.IsMatch(name)))
             {
                 return false;
             }

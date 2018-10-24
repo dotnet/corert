@@ -8,6 +8,7 @@ namespace ILVerify
 {
     public class VerificationResult
     {
+        public TypeDefinitionHandle Type { get; internal set; }
         public MethodDefinitionHandle Method { get; internal set; }
         public VerificationErrorArgs Error { get; internal set; }
         public string Message { get; internal set; }

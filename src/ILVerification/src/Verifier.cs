@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
@@ -71,7 +72,7 @@ namespace ILVerify
             }
         }
 
-        public IEnumerable<VerificationResult> Verify(PEReader peReader, TypeDefinitionHandle typeHandle)
+        public IEnumerable<VerificationResult> Verify(PEReader peReader, TypeDefinitionHandle typeHandle, bool verifyMethods = false)
         {
             if (peReader == null)
             {
@@ -92,8 +93,15 @@ namespace ILVerify
             try
             {
                 EcmaModule module = GetModule(peReader);
-                TypeDefinition typeDef = peReader.GetMetadataReader().GetTypeDefinition(typeHandle);
-                results = VerifyMethods(module, typeDef.GetMethods());
+                MetadataReader metadataReader = peReader.GetMetadataReader();
+                
+                results = VerifyInterface(module, typeHandle);
+
+                if (verifyMethods)
+                {
+                    TypeDefinition typeDef = metadataReader.GetTypeDefinition(typeHandle);
+                    results = results.Union(VerifyMethods(module, typeDef.GetMethods()));
+                }
             }
             catch (VerifierException e)
             {
@@ -221,6 +229,90 @@ namespace ILVerify
                 builder.Add(new VerificationResult()
                 {
                     Method = methodHandle,
+                    Message = e.Message
+                });
+            }
+        }
+
+        private IEnumerable<VerificationResult> VerifyInterface(EcmaModule module, TypeDefinitionHandle typeDefinitionHandle)
+        {
+            var builder = new ArrayBuilder<VerificationResult>();
+            
+            try
+            {
+                TypeDefinition typeDefinition = module.MetadataReader.GetTypeDefinition(typeDefinitionHandle);
+                EcmaType type = (EcmaType)module.GetType(typeDefinitionHandle);
+
+                // if not interface or abstract
+                if (!type.IsInterface && !type.IsAbstract)
+                {
+                    // Look for duplicates.
+                    foreach (var interfaceImplemented in type.ExplicitlyImplementedInterfaces.GroupBy(i => i))
+                    {
+                        if(interfaceImplemented.Count() > 1)
+                        {
+                            builder.Add(new VerificationResult()
+                            {
+                                Type = typeDefinitionHandle,
+                                Error = new VerificationErrorArgs() { Code = VerifierError.InterfaceImplHasDuplicate },
+                                Message = string.Format(_stringResourceManager.Value.GetString(VerifierError.InterfaceImplHasDuplicate.ToString(), CultureInfo.InvariantCulture), interfaceImplemented.Key.ToString())
+                            });
+                        }
+                    }
+
+                    foreach (DefType interfaceImplemented in type.ExplicitlyImplementedInterfaces.Distinct())
+                    {
+                        foreach (MethodDesc method in interfaceImplemented.GetAllMethods())
+                        {
+                            if(type.ResolveInterfaceMethodTarget(method) == null)
+                            {
+                                builder.Add(new VerificationResult()
+                                {
+                                    Type = typeDefinitionHandle,
+                                    Error = new VerificationErrorArgs() { Code = VerifierError.InterfaceMethodNotImplemented },
+                                    Message = string.Format(_stringResourceManager.Value.GetString(VerifierError.InterfaceMethodNotImplemented.ToString(), CultureInfo.InvariantCulture), interfaceImplemented.ToString(), method.ToString())
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            catch (BadImageFormatException)
+            {
+                builder.Add(new VerificationResult()
+                {
+                    Type = typeDefinitionHandle,
+                    Message = "Unable to resolve token"
+                });
+            }
+            catch (NotImplementedException e)
+            {
+                reportException(e);
+            }
+            catch (InvalidProgramException e)
+            {
+                reportException(e);
+            }
+            catch (PlatformNotSupportedException e)
+            {
+                reportException(e);
+            }
+            catch (VerifierException e)
+            {
+                reportException(e);
+            }
+            catch (TypeSystemException e)
+            {
+                reportException(e);
+            }
+
+            return builder.ToArray();
+
+            void reportException(Exception e)
+            {
+                builder.Add(new VerificationResult()
+                {
+                    Type = typeDefinitionHandle,
                     Message = e.Message
                 });
             }

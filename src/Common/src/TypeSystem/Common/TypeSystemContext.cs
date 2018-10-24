@@ -733,7 +733,7 @@ namespace Internal.TypeSystem
         public virtual VirtualMethodAlgorithm GetVirtualMethodAlgorithmForType(TypeDesc type)
         {
             // Type system contexts that support virtual method resolution need to override this.
-            throw new NotSupportedException();
+            return new MetadataVirtualMethodAlgorithm();
         }
 
         // Abstraction to allow different runtimes to have different policy about which fields are 
