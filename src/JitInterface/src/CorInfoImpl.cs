@@ -1428,23 +1428,6 @@ namespace Internal.JitInterface
             return type.IsNullable ? CorInfoHelpFunc.CORINFO_HELP_UNBOX_NULLABLE : CorInfoHelpFunc.CORINFO_HELP_UNBOX;
         }
 
-        private ISymbolNode GetGenericLookupHelper(CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind, ReadyToRunHelperId helperId, object helperArgument)
-        {
-            // Necessary type handle is not something that can be in a dictionary (only a constructed type).
-            // We only use necessary type handles if we can do a constant lookup.
-            if (helperId == ReadyToRunHelperId.NecessaryTypeHandle)
-                helperId = ReadyToRunHelperId.TypeHandle;
-
-            if (runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ
-                || runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM)
-            {
-                return _compilation.NodeFactory.ReadyToRunHelperFromTypeLookup(helperId, helperArgument, MethodBeingCompiled.OwningType);
-            }
-
-            Debug.Assert(runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM);
-            return _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(helperId, helperArgument, MethodBeingCompiled);
-        }
-
         private byte* getHelperName(CorInfoHelpFunc helpFunc)
         {
             return (byte*)GetPin(StringToUTF8(helpFunc.ToString()));
@@ -2689,7 +2672,8 @@ namespace Internal.JitInterface
                     // Calling a string constructor doesn't call the actual constructor.
                     pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                        _compilation.NodeFactory.StringAllocator(targetMethod, _signatureContext)
+                        _compilation.NodeFactory.StringAllocator(targetMethod, 
+                            new ModuleToken(_tokenContext, pResolvedToken.token), _signatureContext)
 
 #else
                         _compilation.NodeFactory.StringAllocator(targetMethod)
@@ -2706,7 +2690,8 @@ namespace Internal.JitInterface
                     Debug.Assert(!forceUseRuntimeLookup);
                     pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                        _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, method, _signatureContext)
+                        _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, method, 
+                            new ModuleToken(_tokenContext, pResolvedToken.token), _signatureContext)
 #else
                         _compilation.NodeFactory.MethodEntrypoint(targetMethod)
 #endif
@@ -2719,7 +2704,8 @@ namespace Internal.JitInterface
                     if (targetMethod.RequiresInstMethodDescArg())
                     {
 #if READYTORUN
-                        instParam = _compilation.SymbolNodeFactory.MethodGenericDictionary(concreteMethod, _signatureContext);
+                        instParam = _compilation.SymbolNodeFactory.MethodGenericDictionary(concreteMethod, 
+                            new ModuleToken(_tokenContext, pResolvedToken.token), _signatureContext);
 #else
                         instParam = _compilation.NodeFactory.MethodGenericDictionary(concreteMethod);
 #endif
@@ -2741,7 +2727,8 @@ namespace Internal.JitInterface
 
                     pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                        _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, method, _signatureContext)
+                        _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, method,
+                            new ModuleToken(_tokenContext, pResolvedToken.token), _signatureContext)
 #else
                         _compilation.NodeFactory.MethodEntrypoint(targetMethod)
 #endif
@@ -2794,7 +2781,8 @@ namespace Internal.JitInterface
                     pResult->codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_PVALUE;
                     pResult->codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
 #if READYTORUN
-                        _compilation.SymbolNodeFactory.InterfaceDispatchCell(targetMethod, _signatureContext, isUnboxingStub: false
+                        _compilation.SymbolNodeFactory.InterfaceDispatchCell(targetMethod, 
+                            new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token), _signatureContext, isUnboxingStub: false
 #else
                         _compilation.NodeFactory.InterfaceDispatchCell(targetMethod
 #endif // READYTORUN
@@ -2853,7 +2841,13 @@ namespace Internal.JitInterface
 
                     pResult->codePointerOrStubLookup.constLookup = 
                         CreateConstLookupToSymbol(
-                            _compilation.NodeFactory.ReadyToRunHelper(helperId, slotDefiningMethod));
+                            _compilation.NodeFactory.ReadyToRunHelper(helperId, 
+#if READYTORUN
+                            new MethodWithToken(slotDefiningMethod, new ModuleToken(_tokenContext, pResolvedToken.token))
+#else
+                            slotDefiningMethod
+#endif
+                            ));
                 }
 
                 // The current CoreRT ReadyToRun helpers do not handle null thisptr - ask the JIT to emit explicit null checks

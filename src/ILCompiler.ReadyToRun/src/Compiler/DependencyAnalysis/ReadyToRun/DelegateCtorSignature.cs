@@ -18,15 +18,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly IMethodNode _targetMethod;
 
+        private readonly ModuleToken _methodToken;
+
         private readonly SignatureContext _signatureContext;
 
         public DelegateCtorSignature(
             TypeDesc delegateType,
             IMethodNode targetMethod,
+            ModuleToken methodToken,
             SignatureContext signatureContext)
         {
             _delegateType = delegateType;
             _targetMethod = targetMethod;
+            _methodToken = methodToken;
             _signatureContext = signatureContext;
         }
 
@@ -42,10 +46,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 builder.EmitByte((byte)ReadyToRunFixupKind.READYTORUN_FIXUP_DelegateCtor);
                 builder.EmitMethodSignature(
                     _targetMethod.Method, 
-                    constrainedType: null, 
-                    isUnboxingStub: false, 
-                    isInstantiatingStub: false,
-                    _signatureContext);
+                    constrainedType: null,
+                    methodToken: _methodToken,
+                    enforceDefEncoding: false,
+                    _signatureContext,
+                    isUnboxingStub: false,
+                    isInstantiatingStub: false);
                 builder.EmitTypeSignature(_delegateType, _signatureContext);
             }
 

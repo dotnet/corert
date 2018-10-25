@@ -179,6 +179,25 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void EmitTypeSignature(TypeDesc typeDesc, SignatureContext context)
         {
+            if (typeDesc is RuntimeDeterminedType runtimeDeterminedType)
+            {
+                switch (runtimeDeterminedType.RuntimeDeterminedDetailsType.Kind)
+                {
+                    case GenericParameterKind.Type:
+                        EmitElementType(CorElementType.ELEMENT_TYPE_VAR);
+                        break;
+
+                    case GenericParameterKind.Method:
+                        EmitElementType(CorElementType.ELEMENT_TYPE_MVAR);
+                        break;
+
+                    default:
+                        throw new NotImplementedException();
+                }
+                EmitUInt((uint)runtimeDeterminedType.RuntimeDeterminedDetailsType.Index);
+                return;
+            }
+
             if (typeDesc.HasInstantiation && !typeDesc.IsGenericDefinition)
             {
                 EmitInstantiatedTypeSignature((InstantiatedType)typeDesc, context);
@@ -335,7 +354,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public void EmitMethodSignature(MethodDesc method, TypeDesc constrainedType, bool isUnboxingStub, bool isInstantiatingStub, SignatureContext context)
+        public void EmitMethodSignature(
+            MethodDesc method, 
+            TypeDesc constrainedType,
+            ModuleToken methodToken,
+            bool enforceDefEncoding,
+            SignatureContext context,
+            bool isUnboxingStub,
+            bool isInstantiatingStub)
         {
             uint flags = 0;
             if (isUnboxingStub)
@@ -353,24 +379,27 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (method.HasInstantiation || method.OwningType.HasInstantiation)
             {
-                EmitMethodSpecificationSignature(method, flags, context);
+                EmitMethodSpecificationSignature(method, methodToken, flags, enforceDefEncoding, context);
             }
             else
             {
-                ModuleToken token = context.GetModuleTokenForMethod(method.GetTypicalMethodDefinition());
-                switch (token.TokenType)
+                if (methodToken.IsNull)
+                {
+                    methodToken = context.GetModuleTokenForMethod(method.GetTypicalMethodDefinition());
+                }
+                switch (methodToken.TokenType)
                 {
                     case CorTokenType.mdtMethodDef:
                         // TODO: module override for methoddefs with external module context
                         EmitUInt(flags);
-                        EmitMethodDefToken(token);
+                        EmitMethodDefToken(methodToken);
                         break;
 
                     case CorTokenType.mdtMemberRef:
                         // TODO: module override for methodrefs with external module context
                         flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MemberRefToken;
                         EmitUInt(flags);
-                        EmitMethodRefToken(token);
+                        EmitMethodRefToken(methodToken);
                         break;
 
                     default:
@@ -396,21 +425,45 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             EmitUInt(RidFromToken(memberRefToken.Token));
         }
 
-        private void EmitMethodSpecificationSignature(MethodDesc method, uint flags, SignatureContext context)
+        private void EmitMethodSpecificationSignature(MethodDesc method, ModuleToken methodToken, 
+            uint flags, bool enforceDefEncoding, SignatureContext context)
         {
             if (method.HasInstantiation)
             {
-                flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MethodInstantiation
-                    | (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
+                flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MethodInstantiation;
+                if (!methodToken.IsNull)
+                {
+                    if (methodToken.TokenType == CorTokenType.mdtMethodSpec)
+                    {
+                        MethodSpecification methodSpecification = methodToken.MetadataReader.GetMethodSpecification((MethodSpecificationHandle)methodToken.Handle);
+                        methodToken = new ModuleToken(methodToken.Module, methodSpecification.Method);
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
+                    }
+                }
+            }
+
+            if (methodToken.IsNull && !enforceDefEncoding)
+            {
+                methodToken = context.GetModuleTokenForMethod(method.GetMethodDefinition(), throwIfNotFound: false);
+            }
+            if (methodToken.IsNull)
+            {
+                flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
+                methodToken = context.GetModuleTokenForMethod(method.GetTypicalMethodDefinition());
             }
 
             if (method.OwningType.HasInstantiation)
             {
+                // resolveToken currently resolves the token in the context of a given scope;
+                // in such case, we receive a method on instantiated type along with the
+                // generic definition token.
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
             }
 
-            ModuleToken genericMethodToken = context.GetModuleTokenForMethod(method.GetTypicalMethodDefinition());
-            switch (genericMethodToken.TokenType)
+            switch (methodToken.TokenType)
             {
                 case CorTokenType.mdtMethodDef:
                     break;
@@ -428,8 +481,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 EmitTypeSignature(method.OwningType, context);
             }
-            EmitTokenRid(genericMethodToken.Token);
-            if (method.HasInstantiation)
+            EmitTokenRid(methodToken.Token);
+            if ((flags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MethodInstantiation) != 0)
             {
                 Instantiation instantiation = method.Instantiation;
                 EmitUInt((uint)instantiation.Length);

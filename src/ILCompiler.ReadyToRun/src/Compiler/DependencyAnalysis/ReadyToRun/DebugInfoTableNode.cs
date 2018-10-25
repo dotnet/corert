@@ -80,26 +80,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             Section section = writer.NewSection();
             VertexArray vertexArray = new VertexArray(section);
             section.Place(vertexArray);
+            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
 
-            foreach (MethodDesc method in ((ReadyToRunTableManager)factory.MetadataManager).GetCompiledMethods())
+            foreach (MethodWithGCInfo method in r2rFactory.EnumerateCompiledMethods())
             {
-                MethodWithGCInfo methodCodeNode = factory.MethodEntrypoint(method) as MethodWithGCInfo;
-                if (methodCodeNode == null)
-                {
-                    methodCodeNode = ((ExternalMethodImport)factory.MethodEntrypoint(method))?.MethodCodeNode;
-                    if (methodCodeNode == null)
-                        continue;
-                }
-
-                if (methodCodeNode.IsEmpty)
-                {
-                    continue;
-                }
-
                 MemoryStream methodDebugBlob = new MemoryStream();
                 
-                byte[] bounds = CreateBoundsBlobForMethod(methodCodeNode);
-                byte[] vars = CreateVarBlobForMethod(methodCodeNode);
+                byte[] bounds = CreateBoundsBlobForMethod(method);
+                byte[] vars = CreateVarBlobForMethod(method);
 
                 NibbleWriter nibbleWriter = new NibbleWriter();
                 nibbleWriter.WriteUInt((uint)(bounds?.Length ?? 0));
@@ -120,7 +108,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 BlobVertex debugBlob = new BlobVertex(methodDebugBlob.ToArray());
 
-                vertexArray.Set(((ReadyToRunCodegenNodeFactory)factory).RuntimeFunctionsTable.GetIndex(methodCodeNode), new DebugInfoVertex(debugBlob));
+                vertexArray.Set(r2rFactory.RuntimeFunctionsTable.GetIndex(method), new DebugInfoVertex(debugBlob));
             }
 
             vertexArray.ExpandLayout();

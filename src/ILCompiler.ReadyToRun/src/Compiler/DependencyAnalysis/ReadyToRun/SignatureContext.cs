@@ -22,19 +22,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _resolver = resolver;
         }
 
-        public ModuleToken GetModuleTokenForType(EcmaType type)
+        public ModuleToken GetModuleTokenForType(EcmaType type, bool throwIfNotFound = true)
         {
-            return _resolver.GetModuleTokenForType(type);
+            return _resolver.GetModuleTokenForType(type, throwIfNotFound);
         }
 
-        public ModuleToken GetModuleTokenForMethod(MethodDesc method)
+        public ModuleToken GetModuleTokenForMethod(MethodDesc method, bool throwIfNotFound = true)
         {
-            return _resolver.GetModuleTokenForMethod(method);
+            return _resolver.GetModuleTokenForMethod(method, throwIfNotFound);
         }
 
-        public ModuleToken GetModuleTokenForField(FieldDesc field)
+        public ModuleToken GetModuleTokenForField(FieldDesc field, bool throwIfNotFound = true)
         {
-            return _resolver.GetModuleTokenForField(field);
+            return _resolver.GetModuleTokenForField(field, throwIfNotFound);
         }
     }
 }

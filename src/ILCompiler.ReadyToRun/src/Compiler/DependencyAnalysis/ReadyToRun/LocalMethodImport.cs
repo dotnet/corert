@@ -9,18 +9,16 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class ExternalMethodImport : DelayLoadHelperImport, IMethodNode
+    public class LocalMethodImport : DelayLoadHelperImport, IMethodNode
     {
-        private readonly MethodDesc _methodDesc;
-
         private readonly SignatureContext _signatureContext;
 
-        public ExternalMethodImport(
+        private readonly MethodWithGCInfo _localMethod;
+
+        public LocalMethodImport(
             ReadyToRunCodegenNodeFactory factory,
             ReadyToRunFixupKind fixupKind,
-            MethodDesc methodDesc,
-            TypeDesc constrainedType,
-            ModuleToken methodToken,
+            MethodWithGCInfo localMethod,
             bool isUnboxingStub,
             SignatureContext signatureContext)
             : base(
@@ -29,19 +27,29 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                   ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_MethodCall,
                   factory.MethodSignature(
                       fixupKind,
-                      methodDesc,
-                      constrainedType,
-                      methodToken,
+                      localMethod.Method,
+                      constrainedType: null,
+                      methodToken: default(ModuleToken),
                       signatureContext,
                       isUnboxingStub,
                       isInstantiatingStub: false))
         {
-            _methodDesc = methodDesc;
             _signatureContext = signatureContext;
+            _localMethod = localMethod;
         }
 
-        public MethodDesc Method => _methodDesc;
+        public MethodDesc Method => _localMethod.Method;
+        public MethodWithGCInfo MethodCodeNode => _localMethod;
 
-        public override int ClassCode => 458823351;
+        public override int ClassCode => 459923351;
+
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        {
+            foreach (DependencyListEntry entry in base.GetStaticDependencies(factory))
+            {
+                yield return entry;
+            }
+            yield return new DependencyListEntry(_localMethod, "Local method import");
+        }
     }
 }

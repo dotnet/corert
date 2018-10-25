@@ -27,8 +27,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// </summary>
         private readonly Dictionary<EcmaType, ModuleToken> _typeToRefTokens = new Dictionary<EcmaType, ModuleToken>();
 
-        private readonly Dictionary<MethodDesc, ModuleToken> _methodToRefTokens = new Dictionary<MethodDesc, ModuleToken>();
-
         private readonly Dictionary<FieldDesc, ModuleToken> _fieldToRefTokens = new Dictionary<FieldDesc, ModuleToken>();
 
         private readonly CompilationModuleGroup _compilationModuleGroup;
@@ -41,7 +39,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _typeSystemContext = typeSystemContext;
         }
 
-        public ModuleToken GetModuleTokenForType(EcmaType type)
+        public ModuleToken GetModuleTokenForType(EcmaType type, bool throwIfNotFound = true)
         {
             if (_compilationModuleGroup.ContainsType(type))
             {
@@ -55,10 +53,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             // Reverse lookup failed
-            throw new NotImplementedException(type.ToString());
+            if (throwIfNotFound)
+            {
+                throw new NotImplementedException(type.ToString());
+            }
+            else
+            {
+                return default(ModuleToken);
+            }
         }
 
-        public ModuleToken GetModuleTokenForMethod(MethodDesc method)
+        public ModuleToken GetModuleTokenForMethod(MethodDesc method, bool throwIfNotFound = true)
         {
             if (_compilationModuleGroup.ContainsMethodBody(method, unboxingStub: false) &&
                 method is EcmaMethod ecmaMethod)
@@ -66,72 +71,48 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
             }
 
-            if (_methodToRefTokens.TryGetValue(method, out ModuleToken token))
-            {
-                return token;
-            }
-
             // Reverse lookup failed
-            throw new NotImplementedException(method.ToString());
+            if (throwIfNotFound)
+            {
+                throw new NotImplementedException(method.ToString());
+            }
+            else
+            {
+                return default(ModuleToken);
+            }
         }
 
-        public ModuleToken GetModuleTokenForField(FieldDesc field)
+        public ModuleToken GetModuleTokenForField(FieldDesc field, bool throwIfNotFound = true)
         {
             if (_compilationModuleGroup.ContainsType(field.OwningType) && field is EcmaField ecmaField)
             {
                 return new ModuleToken(ecmaField.Module, ecmaField.Handle);
             }
 
-            throw new NotImplementedException();
+            if (throwIfNotFound)
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                return default(ModuleToken);
+            }
         }
 
         public void AddModuleTokenForMethod(MethodDesc method, ModuleToken token)
         {
-            if (_methodToRefTokens.ContainsKey(method))
+            if (token.TokenType == CorTokenType.mdtMethodSpec)
             {
-                // This method has already been harvested
-                return;
+                MethodSpecification methodSpec = token.MetadataReader.GetMethodSpecification((MethodSpecificationHandle)token.Handle);
+                token = new ModuleToken(token.Module, methodSpec.Method);
             }
-
-            if (_compilationModuleGroup.ContainsMethodBody(method, unboxingStub: false) && method is EcmaMethod)
+            if (token.TokenType == CorTokenType.mdtMemberRef)
             {
-                // We don't need to store handles within the current compilation group
-                // as we can read them directly from the ECMA objects.
-                return;
+                MemberReference memberRef = token.MetadataReader.GetMemberReference((MemberReferenceHandle)token.Handle);
+                EntityHandle owningTypeHandle = memberRef.Parent;
+                AddModuleTokenForType(method.OwningType, new ModuleToken(token.Module, owningTypeHandle));
+                memberRef.DecodeMethodSignature<DummyTypeInfo, ModuleTokenResolver>(new TokenResolverProvider(this, token.Module), this);
             }
-
-            _methodToRefTokens[method] = token;
-
-            switch (token.TokenType)
-            {
-                case CorTokenType.mdtMethodSpec:
-                    {
-                        MethodSpecification methodSpec = token.MetadataReader.GetMethodSpecification((MethodSpecificationHandle)token.Handle);
-                        AddModuleTokenForMethod((MethodDesc)token.Module.GetObject(methodSpec.Method), new ModuleToken(token.Module, methodSpec.Method));
-                    }
-                    break;
-
-                case CorTokenType.mdtMemberRef:
-                    if ((method.HasInstantiation || method.OwningType.HasInstantiation) &&
-                        !method.IsGenericMethodDefinition && !method.OwningType.IsGenericDefinition)
-                    {
-                        AddModuleTokenForMethod(method.GetTypicalMethodDefinition(), token);
-                    }
-                    AddModuleTokenForMethodReference(method.OwningType, token);
-                    break;
-
-                default:
-                    throw new NotImplementedException(token.TokenType.ToString());
-            }
-        }
-
-        private void AddModuleTokenForMethodReference(TypeDesc owningType, ModuleToken token)
-        {
-            MemberReference memberRef = token.MetadataReader.GetMemberReference((MemberReferenceHandle)token.Handle);
-            EntityHandle owningTypeHandle = memberRef.Parent;
-            AddModuleTokenForType(owningType, new ModuleToken(token.Module, owningTypeHandle));
-
-            memberRef.DecodeMethodSignature<DummyTypeInfo, ModuleTokenResolver>(new TokenResolverProvider(this, token.Module), this);
         }
 
         private void AddModuleTokenForFieldReference(TypeDesc owningType, ModuleToken token)

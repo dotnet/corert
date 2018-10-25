@@ -55,17 +55,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             List<EntryPoint> ridToEntryPoint = new List<EntryPoint>();
 
-            foreach (MethodDesc method in factory.MetadataManager.GetCompiledMethods())
+            foreach (MethodWithGCInfo method in r2rFactory.EnumerateCompiledMethods())
             {
-                MethodWithGCInfo methodCodeNode = factory.MethodEntrypoint(method) as MethodWithGCInfo;
-                if (methodCodeNode == null)
-                {
-                    methodCodeNode = ((ExternalMethodImport)factory.MethodEntrypoint(method))?.MethodCodeNode;
-                    if (methodCodeNode == null)
-                        continue;
-                }
-
-                if (!methodCodeNode.IsEmpty && methodCodeNode.Method is EcmaMethod ecmaMethod)
+                if (method.Method is EcmaMethod ecmaMethod)
                 {
                     // Strip away the token type bits, keep just the low 24 bits RID
                     uint rid = SignatureBuilder.RidFromToken((mdToken)MetadataTokens.GetToken(ecmaMethod.Handle));
@@ -77,8 +69,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         ridToEntryPoint.Add(EntryPoint.Null);
                     }
 
-                    int methodIndex = r2rFactory.RuntimeFunctionsTable.GetIndex(methodCodeNode);
-                    ridToEntryPoint[(int)rid] = new EntryPoint(methodIndex, methodCodeNode);
+                    int methodIndex = r2rFactory.RuntimeFunctionsTable.GetIndex(method);
+                    ridToEntryPoint[(int)rid] = new EntryPoint(methodIndex, method);
                 }
             }
 

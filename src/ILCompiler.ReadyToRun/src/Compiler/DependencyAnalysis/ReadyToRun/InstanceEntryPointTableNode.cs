@@ -46,27 +46,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             Dictionary<byte[], BlobVertex> uniqueFixups = new Dictionary<byte[], BlobVertex>(ByteArrayComparer.Instance);
             Dictionary<byte[], BlobVertex> uniqueSignatures = new Dictionary<byte[], BlobVertex>(ByteArrayComparer.Instance);
 
-            foreach (MethodDesc method in factory.MetadataManager.GetCompiledMethods())
+            foreach (MethodWithGCInfo method in r2rFactory.EnumerateCompiledMethods())
             {
-                MethodWithGCInfo methodCodeNode = factory.MethodEntrypoint(method) as MethodWithGCInfo;
-                if (methodCodeNode == null)
+                if (method.Method.HasInstantiation || method.Method.OwningType.HasInstantiation)
                 {
-                    methodCodeNode = ((ExternalMethodImport)factory.MethodEntrypoint(method))?.MethodCodeNode;
-                    if (methodCodeNode == null)
-                        continue;
-                }
-
-                if (!methodCodeNode.IsEmpty && (methodCodeNode.Method.HasInstantiation || methodCodeNode.Method.OwningType.HasInstantiation))
-                {
-                    int methodIndex = r2rFactory.RuntimeFunctionsTable.GetIndex(methodCodeNode);
+                    int methodIndex = r2rFactory.RuntimeFunctionsTable.GetIndex(method);
 
                     ArraySignatureBuilder signatureBuilder = new ArraySignatureBuilder();
                     signatureBuilder.EmitMethodSignature(
-                        methodCodeNode.Method, 
-                        constrainedType: null, 
+                        method.Method, 
+                        constrainedType: null,
+                        default(ModuleToken),
+                        enforceDefEncoding: true,
+                        method.SignatureContext,
                         isUnboxingStub: false, 
-                        isInstantiatingStub: false, 
-                        methodCodeNode.SignatureContext);
+                        isInstantiatingStub: false);
                     byte[] signature = signatureBuilder.ToArray();
                     BlobVertex signatureBlob;
                     if (!uniqueSignatures.TryGetValue(signature, out signatureBlob))
@@ -76,7 +70,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         uniqueSignatures.Add(signature, signatureBlob);
                     }
 
-                    byte[] fixup = methodCodeNode.GetFixupBlob(factory);
+                    byte[] fixup = method.GetFixupBlob(factory);
                     BlobVertex fixupBlob = null;
                     if (fixup != null && !uniqueFixups.TryGetValue(fixup, out fixupBlob))
                     {
@@ -87,7 +81,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                     EntryPointVertex entryPointVertex = new EntryPointWithBlobVertex((uint)methodIndex, fixupBlob, signatureBlob);
                     hashtableSection.Place(entryPointVertex);
-                    vertexHashtable.Append(unchecked((uint)ReadyToRunHashCode.MethodHashCode(methodCodeNode.Method)), entryPointVertex);
+                    vertexHashtable.Append(unchecked((uint)ReadyToRunHashCode.MethodHashCode(method.Method)), entryPointVertex);
                 }
             }
 

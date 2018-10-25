@@ -16,6 +16,18 @@ using ReadyToRunHelper = ILCompiler.ReadyToRunHelper;
 
 namespace Internal.JitInterface
 {
+    public class MethodWithToken
+    {
+        public readonly MethodDesc Method;
+        public readonly ModuleToken Token;
+
+        public MethodWithToken(MethodDesc method, ModuleToken token)
+        {
+            Method = method;
+            Token = token;
+        }
+    }
+
     unsafe partial class CorInfoImpl
     {
         private const CORINFO_RUNTIME_ABI TargetABI = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
@@ -180,7 +192,21 @@ namespace Internal.JitInterface
                         Debug.Assert(typeToInitialize.IsCanonicalSubtype(CanonicalFormKind.Any));
 
                         DefType helperArg = typeToInitialize.ConvertToSharedRuntimeDeterminedForm();
-                        ISymbolNode helper = GetGenericLookupHelper(pGenericLookupKind.runtimeLookupKind, ReadyToRunHelperId.GetNonGCStaticBase, helperArg);
+                        TypeDesc contextType;
+                        if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ)
+                        {
+                            contextType = methodFromContext(pResolvedToken.tokenContext).OwningType;
+                        }
+                        else
+                        {
+                            contextType = null;
+                        }
+                        ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(
+                            pGenericLookupKind.runtimeLookupKind,
+                            ReadyToRunHelperId.GetNonGCStaticBase, 
+                            helperArg, 
+                            contextType, 
+                            _signatureContext);
                         pLookup = CreateConstLookupToSymbol(helper);
                     }
                     break;
@@ -190,7 +216,25 @@ namespace Internal.JitInterface
 
                         ReadyToRunHelperId helperId = (ReadyToRunHelperId)pGenericLookupKind.runtimeLookupFlags;
                         object helperArg = HandleToObject((IntPtr)pGenericLookupKind.runtimeLookupArgs);
-                        ISymbolNode helper = GetGenericLookupHelper(pGenericLookupKind.runtimeLookupKind, helperId, helperArg);
+                        if (helperArg is MethodDesc methodArg)
+                        {
+                            helperArg = new MethodWithToken(methodArg, new ModuleToken(_tokenContext, pResolvedToken.token));
+                        }
+                        TypeDesc contextType;
+                        if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ)
+                        {
+                            contextType = methodFromContext(pResolvedToken.tokenContext).OwningType;
+                        }
+                        else
+                        {
+                            contextType = null;
+                        }
+                        ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(
+                            pGenericLookupKind.runtimeLookupKind,
+                            helperId,
+                            helperArg, 
+                            contextType, 
+                            _signatureContext);
                         pLookup = CreateConstLookupToSymbol(helper);
                     }
                     break;
@@ -240,7 +284,7 @@ namespace Internal.JitInterface
             {
                 pLookup.lookupKind.needsRuntimeLookup = false;
                 pLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.DelegateCtor(
-                    delegateTypeDesc, targetMethod, _signatureContext));
+                    delegateTypeDesc, targetMethod, new ModuleToken(_tokenContext, (mdToken)pTargetMethod.token), _signatureContext));
             }
         }
 
@@ -534,7 +578,12 @@ namespace Internal.JitInterface
             if (method.IsVirtual)
                 throw new NotImplementedException("getFunctionEntryPoint");
 
-            pResult = CreateConstLookupToSymbol(_compilation.NodeFactory.MethodEntrypoint(method));
+            pResult = CreateConstLookupToSymbol(_compilation.NodeFactory.MethodEntrypoint(
+                method, 
+                constrainedType: null, 
+                originalMethod: null, 
+                methodToken: default(ModuleToken), // TODO!!!!
+                _signatureContext));
         }
 
         private InfoAccessType constructStringLiteral(CORINFO_MODULE_STRUCT_* module, mdToken metaTok, ref void* ppValue)
