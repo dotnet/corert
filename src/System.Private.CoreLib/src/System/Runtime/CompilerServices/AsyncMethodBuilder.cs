@@ -380,7 +380,7 @@ namespace System.Runtime.CompilerServices
         /// It must only be used by the debugger, and only in a single-threaded manner
         /// when no other threads are in the middle of accessing this property or this.Task.
         /// </remarks>
-        private object ObjectIdForDebugger { get { return this.Task; } }
+        internal object ObjectIdForDebugger { get { return this.Task; } }
     }
 
     /// <summary>
