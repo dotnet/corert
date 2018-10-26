@@ -18,22 +18,23 @@ class Program
         TestDelegateToCanonMethods.Run();
         TestVirtualMethodUseTracking.Run();
         TestSlotsInHierarchy.Run();
-        TestReflectionInvoke.Run();
         TestDelegateVirtualMethod.Run();
         TestDelegateInterfaceMethod.Run();
         TestThreadStaticFieldAccess.Run();
         TestConstrainedMethodCalls.Run();
         TestInstantiatingUnboxingStubs.Run();
-        TestMDArrayAddressMethod.Run();
         TestNameManglingCollisionRegression.Run();
         TestSimpleGVMScenarios.Run();
         TestGvmDelegates.Run();
         TestGvmDependencies.Run();
-        TestFieldAccess.Run();
-        TestNativeLayoutGeneration.Run();
         TestInterfaceVTableTracking.Run();
         TestClassVTableTracking.Run();
-
+#if !CODEGEN_CPP
+        TestReflectionInvoke.Run();
+        TestMDArrayAddressMethod.Run();
+        TestFieldAccess.Run();
+        TestNativeLayoutGeneration.Run();
+#endif
         return 100;
     }
 

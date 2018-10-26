@@ -6,6 +6,7 @@
     <OutputPath>$(MSBuildProjectDirectory)\bin\$(Configuration)\$(Platform)\</OutputPath>
     <IntermediateOutputPath>$(MSBuildProjectDirectory)\obj\$(Configuration)\$(Platform)\</IntermediateOutputPath>
     <DebugType Condition="'$(DebugType)' == ''">portable</DebugType>
+    <DefineConstants Condition="$(NativeCodeGen) == 'cpp'">$(DefineConstants);CODEGEN_CPP</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup>
