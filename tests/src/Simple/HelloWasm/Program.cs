@@ -655,14 +655,14 @@ internal static class Program
     private static void TestMetaData()
     {
 
-        var t = Type.GetType("System.Char, System.Private.CoreLib");
-        if (t == null)
+        var typeGetType = Type.GetType("System.Char, System.Private.CoreLib");
+        if (typeGetType == null)
         {
             PrintLine("type == null.  Simple class metadata test: Failed");
         }
         else
         {
-            if (t.FullName != "System.Char")
+            if (typeGetType.FullName != "System.Char")
             {
                 PrintLine("type != System.Char.  Simple class metadata test: Failed");
             }
@@ -670,7 +670,6 @@ internal static class Program
         }
 
         var typeofChar = typeof(Char);
-        PrintLine("got type second type");
         if (typeofChar == null)
         {
             PrintLine("type == null.  Simple class metadata test: Failed");
@@ -684,28 +683,36 @@ internal static class Program
             else PrintLine("Simple class metadata test (typeof(Char)): Ok.");
         }
 
-        var c = new Char();
-        var t2 = c.GetType();
-        PrintLine("got type second type");
-        if (t2 == null)
+        var gentT = new Gen<int>();
+        var genParamType = gentT.TestTypeOf();
+        PrintString("type of generic parameter: ");
+        if (genParamType.FullName != "System.Int32")
         {
-            PrintLine("type == null.  Simple class metadata test: Failed");
+            PrintString("expected System.Int32 but was " + genParamType.FullName);
+            PrintLine(" Failed.");
         }
         else
         {
-            if (t2.FullName != "System.Char")
-            {
-                PrintLine("type != System.Char.  Simple class metadata test: Failed");
-            }
-            else PrintLine("Simple class metadata test (c.GetType()): Ok.");
+            PrintLine("Ok.");
         }
 
-        var gentT = new Gen<int>();
-        var genType = gentT.TestTypeOf();
-        PrintString("type of generic type: ");
-        if (genType.FullName != "System.Int32")
+        var arrayType = typeof(object[]);
+        PrintString("type of array: ");
+        if (arrayType.FullName != "System.Object[]")
         {
-            PrintString("expected System.Int32 but was " + genType.FullName);
+            PrintString("expected System.Object[] but was " + arrayType.FullName);
+            PrintLine(" Failed.");
+        }
+        else
+        {
+            PrintLine("Ok.");
+        }
+
+        var genericType = typeof(List<object>);
+        PrintString("type of generic : ");
+        if (genericType.FullName != "System.Collections.Generic.List`1[[System.Object, System.Private.CoreLib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a]]")
+        {
+            PrintString("expected System.Collections.Generic.List`1[[System.Object, System.Private.CoreLib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a]] but was " + genericType.FullName);
             PrintLine(" Failed.");
         }
         else
