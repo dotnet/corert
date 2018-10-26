@@ -267,35 +267,7 @@ internal static class Program
         if (testMdArrayInstantiation != null && testMdArrayInstantiation.GetLength(0) == 2 && testMdArrayInstantiation.GetLength(1) == 2)
             PrintLine("Multi-dimension array instantiation test: Ok.");
 
-        int intToCast = 1;
-        double castedDouble = (double)intToCast;
-        if (castedDouble == 1d)
-        {
-            PrintLine("(double) cast test: Ok.");
-        }
-        else
-        {
-            var toInt = (int)castedDouble;
-//            PrintLine("expected 1m, but was " + castedDouble.ToString());  // double.ToString is not compiling at the time of writing, but this would be better output
-            PrintLine($"(double) cast test : Failed. Back to int on next line");
-            PrintLine(toInt.ToString());
-        }
-
-        if (1f < 2d && 1d < 2f && 1f == 1d)
-        {
-            PrintLine("different width float comparisons: Ok.");
-        }
-
-        // floats are 7 digits precision, so check some double more precise to make sure there is no loss occurring through some inadvertent cast to float
-        if (10.23456789d != 10.234567891d)
-        {
-            PrintLine("double precision comparison: Ok.");
-        }
-
-        if (12.34567f == 12.34567f && 12.34567f != 12.34568f)
-        {
-            PrintLine("float comparison: Ok.");
-        }
+        floatDoubleTest();
 
         // Create a ByReference<char> through the ReadOnlySpan ctor and call the ByReference.Value via the indexer.
         var span = "123".AsSpan();
@@ -641,6 +613,50 @@ internal static class Program
         var chars = new[] { 'i', 'p', 's', 'u', 'm' };
         PrintString("Value type element indexing: ");
         if (chars[0] == 'i' && chars[1] == 'p' && chars[2] == 's' && chars[3] == 'u' && chars[4] == 'm')
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
+    }
+
+    private static void floatDoubleTest()
+    {
+        int intToCast = 1;
+        double castedDouble = (double)intToCast;
+        if (castedDouble == 1d)
+        {
+            PrintLine("(double) cast test: Ok.");
+        }
+        else
+        {
+            var toInt = (int)castedDouble;
+            //            PrintLine("expected 1m, but was " + castedDouble.ToString());  // double.ToString is not compiling at the time of writing, but this would be better output
+            PrintLine($"(double) cast test : Failed. Back to int on next line");
+            PrintLine(toInt.ToString());
+        }
+
+        if (1f < 2d && 1d < 2f && 1f == 1d)
+        {
+            PrintLine("different width float comparisons: Ok.");
+        }
+
+        // floats are 7 digits precision, so check some double more precise to make sure there is no loss occurring through some inadvertent cast to float
+        if (10.23456789d != 10.234567891d)
+        {
+            PrintLine("double precision comparison: Ok.");
+        }
+
+        if (12.34567f == 12.34567f && 12.34567f != 12.34568f)
+        {
+            PrintLine("float comparison: Ok.");
+        }
+
+        PrintString("Test comparison of float constant: ");
+        var maxFloat = Single.MaxValue;
+        if (maxFloat == Single.MaxValue)
         {
             PrintLine("Ok.");
         }
