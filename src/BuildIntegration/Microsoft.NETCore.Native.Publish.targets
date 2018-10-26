@@ -53,9 +53,10 @@
     <!-- Fail with descriptive error message for common mistake. -->
     <Error Condition="'$(RuntimeIdentifier)' == ''" Text="RuntimeIdentifier is required for native compilation. Try running dotnet publish with the -r option value specified." />
 
-    <!-- Fail with descriptive error message for common unsupported case. -->
-    <Error Condition="'$(OS)' == 'Windows_NT' and !$(RuntimeIdentifier.StartsWith('win'))" Text="Cross-compilation is not supported yet. https://github.com/dotnet/corert/issues/5458" />
-    <Error Condition="'$(OS)' != 'Windows_NT' and $(RuntimeIdentifier.StartsWith('win'))" Text="Cross-compilation is not supported yet. https://github.com/dotnet/corert/issues/5458" />
+    <!-- Fail with descriptive error message for common unsupported cases. -->
+    <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(OS)' == 'Windows_NT' and !$(RuntimeIdentifier.StartsWith('win'))" Text="Cross-compilation is not supported yet. https://github.com/dotnet/corert/issues/5458" />
+    <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(OS)' != 'Windows_NT' and $(RuntimeIdentifier.StartsWith('win'))" Text="Cross-compilation is not supported yet. https://github.com/dotnet/corert/issues/5458" />
+    <Error Condition="'$(DisableUnsupportedError)' != 'true' and !$(RuntimeIdentifier.EndsWith('x64'))" Text="$(RuntimeIdentifier) not supported yet. https://github.com/dotnet/corert/issues/4589" />
 
     <!-- CoreRT SDK and Framework Assemblies need to be defined to avoid CoreCLR implementations being set as compiler inputs -->  
     <Error Condition="'@(PrivateSdkAssemblies)' == ''" Text="The PrivateSdkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />

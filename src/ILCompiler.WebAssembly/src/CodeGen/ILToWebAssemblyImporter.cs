@@ -3024,7 +3024,9 @@ namespace Internal.IL
         private void ImportLoadLength()
         {
             StackEntry arrayReference = _stack.Pop();
-            LLVMValueRef lengthPtr = LLVM.BuildGEP(_builder, arrayReference.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), new LLVMValueRef[] { BuildConstInt32(_compilation.NodeFactory.Target.PointerSize) }, "arrayLength");
+            var arrayReferenceValue = arrayReference.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder);
+            ThrowIfNull(arrayReferenceValue);
+            LLVMValueRef lengthPtr = LLVM.BuildGEP(_builder, arrayReferenceValue, new LLVMValueRef[] { BuildConstInt32(_compilation.NodeFactory.Target.PointerSize) }, "arrayLength");
             LLVMValueRef castLengthPtr = LLVM.BuildPointerCast(_builder, lengthPtr, LLVM.PointerType(LLVM.Int32Type(), 0), "castArrayLength");
             PushLoadExpression(StackValueKind.Int32, "arrayLength", castLengthPtr, GetWellKnownType(WellKnownType.Int32));
         }
@@ -3041,6 +3043,7 @@ namespace Internal.IL
 
         private LLVMValueRef GetElementAddress(LLVMValueRef elementPosition, LLVMValueRef arrayReference, TypeDesc arrayElementType)
         {
+            ThrowIfNull(arrayReference);
             var elementSize = arrayElementType.GetElementSize();
             LLVMValueRef elementOffset = LLVM.BuildMul(_builder, elementPosition, BuildConstInt32(elementSize.AsInt), "elementOffset");
             LLVMValueRef arrayOffset = LLVM.BuildAdd(_builder, elementOffset, ArrayBaseSize(), "arrayOffset");
