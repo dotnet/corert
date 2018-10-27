@@ -175,16 +175,18 @@ See the LICENSE file in the project root for more information.
       Outputs="$(NativeIntermediateOutputPath)%(ManagedBinary.Filename)$(IlcOutputFileExt)"
       DependsOnTargets="$(IlcCompileDependsOn)">
 
+    <PropertyGroup>
+      <ManagedBinaryFilename>%(ManagedBinary.Filename)</ManagedBinaryFilename>
+    </PropertyGroup>
+
     <ItemGroup>
-      <IlcArg Include="@(IlcCompileInput)" />
-      <IlcArg Include="-o:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename)$(IlcOutputFileExt)" />
       <IlcArg Include="@(IlcReference->'-r:%(Identity)')" />
-      <IlcArg Condition="$(IlcGenerateMetadataLog) == 'true'" Include="--metadatalog:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).metadata.csv" />
+      <IlcArg Condition="$(IlcGenerateMetadataLog) == 'true'" Include="--metadatalog:$(NativeIntermediateOutputPath)$(ManagedBinaryFilename).metadata.csv" />
       <IlcArg Condition="$(NativeCodeGen) != ''" Include="--$(NativeCodeGen)" />
       <IlcArg Condition="$(IlcMultiModule) == 'true'" Include="--multifile" />
       <IlcArg Condition="$(Optimize) == 'true'" Include="-O" />
       <IlcArg Condition="$(DebugSymbols) == 'true'" Include="-g" />
-      <IlcArg Condition="$(IlcGenerateMapFile) == 'true'" Include="--map:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).map.xml" />
+      <IlcArg Condition="$(IlcGenerateMapFile) == 'true'" Include="--map:$(NativeIntermediateOutputPath)$(ManagedBinaryFilename).map.xml" />
       <IlcArg Include="@(RdXmlFile->'--rdxml:%(Identity)')" />
       <IlcArg Condition="$(OutputType) == 'Library' and $(NativeLib) != ''" Include="--nativelib" />
       <IlcArg Condition="$(ExportsFile) != ''" Include="--exportsfile:$(ExportsFile)" />
@@ -196,13 +198,28 @@ See the LICENSE file in the project root for more information.
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />
-    <WriteLinesToFile File="$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp" Lines="@(IlcArg)" Overwrite="true" />
+
+    <ItemGroup Condition="'$(NativeCodeGen)' != 'readytorun'">
+      <IlcCmd Include="$(ManagedBinaryFilename)">
+        <ResponseFileName>$(ManagedBinaryFilename).ilc.rsp</ResponseFileName>
+        <CommandLine>@(IlcCompileInput);-o:$(NativeIntermediateOutputPath)$(ManagedBinaryFilename)$(IlcOutputFileExt);@(IlcArg)</CommandLine>
+      </IlcCmd>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(NativeCodeGen)' == 'readytorun'">
+      <IlcCmd Include="@(IlcCompileInput)">
+        <ResponseFileName>%(IlcCompileInput.FileName).ilc.rsp</ResponseFileName>
+        <CommandLine>%(IlcCompileInput.Identity);-o:$(NativeIntermediateOutputPath)%(IlcCompileInput.Filename).ni%(IlcCompileInput.Extension);@(IlcArg)</CommandLine>
+      </IlcCmd>
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(NativeIntermediateOutputPath)%(IlcCmd.ResponseFileName)" Lines="%(IlcCmd.CommandLine)" Overwrite="true" />
 
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(NativeObject)))" />
 
     <Message Text="Generating native code" Importance="high" />
 
-    <Exec Command="&quot;$(IlcPath)\tools\ilc&quot; @&quot;$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp&quot;" />
+    <Exec Command="&quot;$(IlcPath)\tools\ilc&quot; @&quot;$(NativeIntermediateOutputPath)%(IlcCmd.ResponseFileName)&quot;" />
   </Target>
 
   <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Windows.props" Condition="'$(TargetOS)' == 'Windows_NT'" />

@@ -110,6 +110,11 @@ namespace ILCompiler.DependencyAnalysis
             SignatureContext signatureContext, 
             bool isUnboxingStub = false)
         {
+            if (targetMethod == originalMethod)
+            {
+                constrainedType = null;
+            }
+
             if (!CompilationModuleGroup.ContainsMethodBody(targetMethod, false))
             {
                 return ImportedMethodNode(constrainedType != null ? originalMethod : targetMethod, constrainedType, methodToken, signatureContext, isUnboxingStub);
