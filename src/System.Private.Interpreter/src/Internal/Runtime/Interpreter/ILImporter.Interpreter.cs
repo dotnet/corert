@@ -533,7 +533,7 @@ namespace Internal.IL
                         }
                         else
                         {
-
+                            // TODO: Figure out how the CLR converts an object to an integer representation
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt32(result));
@@ -588,7 +588,7 @@ namespace Internal.IL
                         }
                         else
                         {
-
+                            // TODO: Figure out how the CLR converts an object to an integer representation
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt32(result));
@@ -643,7 +643,7 @@ namespace Internal.IL
                         }
                         else
                         {
-
+                            // TODO: Figure out how the CLR converts an object to an integer representation
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt32(result));
@@ -698,7 +698,7 @@ namespace Internal.IL
                         }
                         else
                         {
-
+                            // TODO: Figure out how the CLR converts an object to an integer representation
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt32(result));
@@ -752,7 +752,7 @@ namespace Internal.IL
                         }
                         else
                         {
-
+                            // TODO: Figure out how the CLR converts an object to an integer representation
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt32(result));
@@ -806,7 +806,7 @@ namespace Internal.IL
                         }
                         else
                         {
-
+                            // TODO: Figure out how the CLR converts an object to an integer representation
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt32((int)result));
@@ -857,7 +857,7 @@ namespace Internal.IL
                         }
                         else
                         {
-
+                            // TODO: Figure out how the CLR converts an object to an integer representation
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt64(result));
@@ -912,7 +912,7 @@ namespace Internal.IL
                         }
                         else
                         {
-
+                            // TODO: Figure out how the CLR converts an object to an integer representation
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt64((long)result));
@@ -965,17 +965,117 @@ namespace Internal.IL
                         }
                         else
                         {
-
+                            // TODO: Figure out how the CLR converts an object to an integer representation
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromDouble(result));
                         break;
                     }
                 case WellKnownType.IntPtr:
-                    break;
+                    {
+                        IntPtr result = default(IntPtr);
+                        if (stackItem.Kind == StackValueKind.Int32)
+                        {
+                            if (unsigned)
+                            {
+                                uint value = (uint)stackItem.AsInt32();
+                                result = (IntPtr)value;
+                            }
+                            else
+                            {
+                                int value = stackItem.AsInt32();
+                                result = (IntPtr)value;
+                            }
+                        }
+                        else if (stackItem.Kind == StackValueKind.Int64)
+                        {
+                            if (unsigned)
+                            {
+                                ulong value = (ulong)stackItem.AsInt64();
+                                result = (IntPtr)value;
+                            }
+                            else
+                            {
+                                result = (IntPtr)stackItem.AsInt64();
+                            }
+                        }
+                        else if (stackItem.Kind == StackValueKind.Float)
+                        {
+                            result = (IntPtr)stackItem.AsDouble();
+                        }
+                        else if (stackItem.Kind == StackValueKind.NativeInt)
+                        {
+                            if (unsigned)
+                            {
+                                UIntPtr value = (UIntPtr)stackItem.AsNativeInt().ToPointer();
+                                result = new IntPtr(value.ToPointer());
+                            }
+                            else
+                            {
+                                result = stackItem.AsNativeInt();
+                            }
+                        }
+                        else
+                        {
+                            // TODO: Figure out how the CLR converts an object to an integer representation
+                        }
+
+                        _interpreter.EvaluationStack.Push(StackItem.FromNativeInt(result));
+                        break;
+                    }
                 case WellKnownType.UIntPtr:
-                    break;
+                    {
+                        UIntPtr result = default(UIntPtr);
+                        if (stackItem.Kind == StackValueKind.Int32)
+                        {
+                            if (unsigned)
+                            {
+                                uint value = (uint)stackItem.AsInt32();
+                                result = (UIntPtr)value;
+                            }
+                            else
+                            {
+                                int value = stackItem.AsInt32();
+                                result = (UIntPtr)value;
+                            }
+                        }
+                        else if (stackItem.Kind == StackValueKind.Int64)
+                        {
+                            if (unsigned)
+                            {
+                                ulong value = (ulong)stackItem.AsInt64();
+                                result = (UIntPtr)value;
+                            }
+                            else
+                            {
+                                result = (UIntPtr)stackItem.AsInt64();
+                            }
+                        }
+                        else if (stackItem.Kind == StackValueKind.Float)
+                        {
+                            result = (UIntPtr)stackItem.AsDouble();
+                        }
+                        else if (stackItem.Kind == StackValueKind.NativeInt)
+                        {
+                            if (unsigned)
+                            {
+                                result = (UIntPtr)stackItem.AsNativeInt().ToPointer();
+                            }
+                            else
+                            {
+                                result = new UIntPtr(stackItem.AsNativeInt().ToPointer());
+                            }
+                        }
+                        else
+                        {
+                            // TODO: Figure out how the CLR converts an object to an integer representation
+                        }
+
+                        _interpreter.EvaluationStack.Push(StackItem.FromNativeInt(new IntPtr(result.ToPointer())));
+                        break;
+                    }
                 default:
+                    ThrowHelper.ThrowInvalidProgramException();
                     break;
             }
         }
