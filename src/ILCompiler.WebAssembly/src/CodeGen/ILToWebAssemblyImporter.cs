@@ -2394,6 +2394,7 @@ namespace Internal.IL
 
             LLVMValueRef valueToShiftValue = valueToShift.ValueForStackKind(valueToShift.Kind, _builder, false);
 
+            // while it seems excessive that the bits to shift should need to be 64 bits, the LLVM docs say that both operands must be the same type and a compilation failure results if this is not the case.
             LLVMValueRef rhs;
             if (valueToShiftValue.TypeOf().Equals(LLVM.Int64Type()))
             {
