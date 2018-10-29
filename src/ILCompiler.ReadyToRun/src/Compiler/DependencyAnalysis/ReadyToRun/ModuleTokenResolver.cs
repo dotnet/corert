@@ -104,6 +104,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (token.TokenType == CorTokenType.mdtMethodSpec)
             {
                 MethodSpecification methodSpec = token.MetadataReader.GetMethodSpecification((MethodSpecificationHandle)token.Handle);
+                methodSpec.DecodeSignature<DummyTypeInfo, ModuleTokenResolver>(new TokenResolverProvider(this, token.Module), this);
                 token = new ModuleToken(token.Module, methodSpec.Method);
             }
             if (token.TokenType == CorTokenType.mdtMemberRef)

@@ -53,6 +53,30 @@ namespace ILCompiler
                     runtimeDeterminedType1.RuntimeDeterminedDetailsType.Kind == runtimeDeterminedType2.RuntimeDeterminedDetailsType.Kind;
             }
 
+            ArrayType arrayType1 = type1 as ArrayType;
+            ArrayType arrayType2 = type2 as ArrayType;
+            if (arrayType1 != null || arrayType2 != null)
+            {
+                if (arrayType1 == null || arrayType2 == null)
+                {
+                    return false;
+                }
+                return arrayType1.Rank == arrayType2.Rank &&
+                    arrayType1.IsSzArray == arrayType2.IsSzArray &&
+                    Equals(arrayType1.ElementType, arrayType2.ElementType);
+            }
+
+            ByRefType byRefType1 = type1 as ByRefType;
+            ByRefType byRefType2 = type2 as ByRefType;
+            if (byRefType1 != null || byRefType2 != null)
+            {
+                if (byRefType1 == null || byRefType2 == null)
+                {
+                    return false;
+                }
+                return Equals(byRefType1.ParameterType, byRefType2.ParameterType);
+            }
+
             if (type1.GetTypeDefinition() != type2.GetTypeDefinition() ||
                 !Equals(type1.Instantiation, type2.Instantiation))
             {
@@ -184,6 +208,7 @@ namespace ILCompiler
             WriteTo(method.Signature.ReturnType, sb);
             sb.Append(" ");
             WriteTo(method.OwningType, sb);
+            sb.Append(".");
             sb.Append(method.Name);
             if (method.HasInstantiation)
             {

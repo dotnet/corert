@@ -207,9 +207,10 @@ See the LICENSE file in the project root for more information.
     </ItemGroup>
 
     <ItemGroup Condition="'$(NativeCodeGen)' == 'readytorun'">
+      <IlcCompileInput2 Include="@(IlcCompileInput)" />
       <IlcCmd Include="@(IlcCompileInput)">
         <ResponseFileName>%(IlcCompileInput.FileName).ilc.rsp</ResponseFileName>
-        <CommandLine>%(IlcCompileInput.Identity);-o:$(NativeIntermediateOutputPath)%(IlcCompileInput.Filename).ni%(IlcCompileInput.Extension);@(IlcArg)</CommandLine>
+        <CommandLine>%(IlcCompileInput.Identity);@(IlcCompileInput2 -> '-r:%(Identity);');-o:$(NativeIntermediateOutputPath)%(IlcCompileInput.Filename).ni%(IlcCompileInput.Extension);@(IlcArg)</CommandLine>
       </IlcCmd>
     </ItemGroup>
 
