@@ -161,7 +161,21 @@ namespace ILVerify
             string typeName = metadataReader.GetString(metadataReader.GetTypeDefinition(result.Type).Name);
             Write(typeName);
             Write(" ");
-            WriteLine(result.Message);
+            Write(result.Message);
+            if(result.Error.Code == VerifierError.InterfaceImplHasDuplicate)
+            {
+                InterfaceVerificationErrorArgs args = (InterfaceVerificationErrorArgs)result.Error;
+                WriteLine(". (class:0x{0}; interface:0x{1})", args.TokenClass.ToString("X8"), args.TokenInterface.ToString("X8"));
+            }
+            else if (result.Error.Code == VerifierError.InterfaceMethodNotImplemented)
+            {
+                InterfaceVerificationErrorArgs args = (InterfaceVerificationErrorArgs)result.Error;
+                WriteLine(". (class:0x{0}; interface:0x{1}; method:0x{2})", args.TokenClass.ToString("X8"), args.TokenInterface.ToString("X8"), args.TokenMethod.ToString("X8"));
+            }
+            else
+            {
+                WriteLine(".");
+            }
         }
 
         private void PrintILResult(MethodVerificationResult result, EcmaModule module, string pathOrModuleName)

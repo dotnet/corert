@@ -37,6 +37,8 @@ namespace ILVerify
 
     public class InterfaceVerificationErrorArgs : VerificationErrorArgs
     {
-        
+        public int TokenClass { get; internal set; }
+        public int TokenInterface { get; internal set; }
+        public int TokenMethod { get; internal set; }
     }
 }

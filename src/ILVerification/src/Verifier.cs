@@ -240,42 +240,14 @@ namespace ILVerify
             
             try
             {
-                TypeDefinition typeDefinition = module.MetadataReader.GetTypeDefinition(typeDefinitionHandle);
-                EcmaType type = (EcmaType)module.GetType(typeDefinitionHandle);
+                InterfaceVerifier interfaceVerifier = new InterfaceVerifier(module, typeDefinitionHandle, _stringResourceManager);
 
-                // if not interface or abstract
-                if (!type.IsInterface && !type.IsAbstract)
-                {
-                    // Look for duplicates.
-                    foreach (var interfaceImplemented in type.ExplicitlyImplementedInterfaces.GroupBy(i => i))
-                    {
-                        if(interfaceImplemented.Count() > 1)
-                        {
-                            builder.Add(new InterfaceVerificationResult()
-                            {
-                                Type = typeDefinitionHandle,
-                                Error = new VerificationErrorArgs() { Code = VerifierError.InterfaceImplHasDuplicate },
-                                Message = string.Format(_stringResourceManager.Value.GetString(VerifierError.InterfaceImplHasDuplicate.ToString(), CultureInfo.InvariantCulture), interfaceImplemented.Key.ToString())
-                            });
-                        }
-                    }
+                interfaceVerifier.InterfaceVerificationResult = (interfaceVerificationResult) =>
+                {                    
+                    builder.Add(interfaceVerificationResult);                    
+                };
 
-                    foreach (DefType interfaceImplemented in type.ExplicitlyImplementedInterfaces.Distinct())
-                    {
-                        foreach (MethodDesc method in interfaceImplemented.GetAllMethods())
-                        {
-                            if(type.ResolveInterfaceMethodTarget(method) == null)
-                            {
-                                builder.Add(new InterfaceVerificationResult()
-                                {
-                                    Type = typeDefinitionHandle,
-                                    Error = new VerificationErrorArgs() { Code = VerifierError.InterfaceMethodNotImplemented },
-                                    Message = string.Format(_stringResourceManager.Value.GetString(VerifierError.InterfaceMethodNotImplemented.ToString(), CultureInfo.InvariantCulture), interfaceImplemented.ToString(), method.ToString())
-                                });
-                            }
-                        }
-                    }
-                }
+                interfaceVerifier.Verify();
             }
             catch (BadImageFormatException)
             {

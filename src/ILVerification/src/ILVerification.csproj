@@ -19,6 +19,7 @@
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="ILImporter.Verify.cs" />
     <Compile Include="ILImporter.StackValue.cs" />
+    <Compile Include="InterfaceVerifier.cs" />
     <Compile Include="SimpleArrayOfTRuntimeInterfacesAlgorithm.cs" />
     <Compile Include="ILVerifyTypeSystemContext.cs" />
     <Compile Include="Verifier.cs" />
