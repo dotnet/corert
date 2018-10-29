@@ -1792,6 +1792,9 @@
   <data name="InvalidOperation_TimeoutsNotSupported" xml:space="preserve">
     <value>Timeouts are not supported on this stream.</value>
   </data>
+  <data name="InvalidOperation_TimerAlreadyClosed" xml:space="preserve"> 
+    <value>The Timer was already closed using an incompatible Dispose method.</value> 
+  </data>
   <data name="NotSupported_UnreadableStream" xml:space="preserve">
     <value>Stream does not support reading.</value>
   </data>
