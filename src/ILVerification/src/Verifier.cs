@@ -179,7 +179,7 @@ namespace ILVerify
                 {
                     var codeResource = _stringResourceManager.Value.GetString(args.Code.ToString(), CultureInfo.InvariantCulture);
 
-                    builder.Add(new VerificationResult()
+                    builder.Add(new MethodVerificationResult()
                     {
                         Method = methodHandle,
                         Error = args,
@@ -195,7 +195,7 @@ namespace ILVerify
             }
             catch (BadImageFormatException)
             {
-                builder.Add(new VerificationResult()
+                builder.Add(new MethodVerificationResult()
                 {
                     Method = methodHandle,
                     Message = "Unable to resolve token"
@@ -226,7 +226,7 @@ namespace ILVerify
 
             void reportException(Exception e)
             {
-                builder.Add(new VerificationResult()
+                builder.Add(new MethodVerificationResult()
                 {
                     Method = methodHandle,
                     Message = e.Message
@@ -251,7 +251,7 @@ namespace ILVerify
                     {
                         if(interfaceImplemented.Count() > 1)
                         {
-                            builder.Add(new VerificationResult()
+                            builder.Add(new InterfaceVerificationResult()
                             {
                                 Type = typeDefinitionHandle,
                                 Error = new VerificationErrorArgs() { Code = VerifierError.InterfaceImplHasDuplicate },
@@ -266,7 +266,7 @@ namespace ILVerify
                         {
                             if(type.ResolveInterfaceMethodTarget(method) == null)
                             {
-                                builder.Add(new VerificationResult()
+                                builder.Add(new InterfaceVerificationResult()
                                 {
                                     Type = typeDefinitionHandle,
                                     Error = new VerificationErrorArgs() { Code = VerifierError.InterfaceMethodNotImplemented },
@@ -279,7 +279,7 @@ namespace ILVerify
             }
             catch (BadImageFormatException)
             {
-                builder.Add(new VerificationResult()
+                builder.Add(new InterfaceVerificationResult()
                 {
                     Type = typeDefinitionHandle,
                     Message = "Unable to resolve token"
@@ -310,7 +310,7 @@ namespace ILVerify
 
             void reportException(Exception e)
             {
-                builder.Add(new VerificationResult()
+                builder.Add(new InterfaceVerificationResult()
                 {
                     Type = typeDefinitionHandle,
                     Message = e.Message

@@ -149,7 +149,7 @@ namespace ILVerify
             return 0;
         }
 
-        private void PrintInterfaceResult(VerificationResult result, EcmaModule module, string pathOrModuleName)
+        private void PrintInterfaceResult(InterfaceVerificationResult result, EcmaModule module, string pathOrModuleName)
         {
             Write("[MD]: Error: ");
             Write("[");
@@ -164,7 +164,7 @@ namespace ILVerify
             WriteLine(result.Message);
         }
 
-        private void PrintILResult(VerificationResult result, EcmaModule module, string pathOrModuleName)
+        private void PrintILResult(MethodVerificationResult result, EcmaModule module, string pathOrModuleName)
         {
             Write("[IL]: Error: ");
 
@@ -183,7 +183,7 @@ namespace ILVerify
             PrintMethod(method);
             Write("]");
 
-            var args = result.Error;
+            var args = (MethodVerificationErrorArgs)result.Error;
             if (args.Code != VerifierError.None)
             {
                 Write("[offset 0x");
@@ -273,7 +273,7 @@ namespace ILVerify
                 if (verifying)
                 {
                     var results = _verifier.Verify(peReader, methodHandle);
-                    foreach (var result in results)
+                    foreach (MethodVerificationResult result in results)
                     {
                         PrintILResult(result, module, path);
                         numErrors++;
@@ -298,7 +298,7 @@ namespace ILVerify
                 if (verifying)
                 {
                     var results = _verifier.Verify(peReader, typeHandle);
-                    foreach (var result in results)
+                    foreach (InterfaceVerificationResult result in results)
                     {
                         PrintInterfaceResult(result, module, path);
                         numErrors++;

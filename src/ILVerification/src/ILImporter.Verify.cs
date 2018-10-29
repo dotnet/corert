@@ -510,7 +510,7 @@ again:
             if (_currentBasicBlock != null)
                 _currentBasicBlock.IncrementErrorCount();
 
-            var args = new VerificationErrorArgs() { Code = error, Offset = _currentInstructionOffset };
+            var args = new MethodVerificationErrorArgs() { Code = error, Offset = _currentInstructionOffset };
             ReportVerificationError(args);
         }
 
@@ -519,7 +519,7 @@ again:
             if (_currentBasicBlock != null)
                 _currentBasicBlock.IncrementErrorCount();
 
-            var args = new VerificationErrorArgs()
+            var args = new MethodVerificationErrorArgs()
             {
                 Code = error,
                 Offset = _currentInstructionOffset,
@@ -533,7 +533,7 @@ again:
             if (_currentBasicBlock != null)
                 _currentBasicBlock.IncrementErrorCount();
 
-            var args = new VerificationErrorArgs()
+            var args = new MethodVerificationErrorArgs()
             {
                 Code = error, 
                 Offset = _currentInstructionOffset,
@@ -1175,7 +1175,7 @@ again:
 
         void HandleTokenResolveException(int token)
         {
-            var args = new VerificationErrorArgs()
+            var args = new MethodVerificationErrorArgs()
             {
                 Code = VerifierError.TokenResolve,
                 Offset = _currentInstructionOffset,
