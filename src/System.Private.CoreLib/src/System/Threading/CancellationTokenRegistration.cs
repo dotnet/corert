@@ -7,6 +7,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 namespace System.Threading
 {
@@ -16,7 +17,7 @@ namespace System.Threading
     /// <remarks>
     /// To unregister a callback, dispose the corresponding Registration instance.
     /// </remarks>
-    public readonly struct CancellationTokenRegistration : IEquatable<CancellationTokenRegistration>, IDisposable
+    public readonly struct CancellationTokenRegistration : IEquatable<CancellationTokenRegistration>, IDisposable, IAsyncDisposable
     {
         private readonly CancellationCallbackInfo m_callbackInfo;
         private readonly SparselyPopulatedArrayAddInfo<CancellationCallbackInfo> m_registrationInfo;
@@ -89,11 +90,42 @@ namespace System.Threading
                     !unregisterOccured && //unregistration failed (ie the callback is missing from the list)
                     tokenSource.ThreadIDExecutingCallbacks != Environment.CurrentManagedThreadId) //the executingThreadID is not this threadID.
                 {
-                    // Callback execution is in progress, the executing thread is different to us and has taken the callback for execution
+                    // Callback execution is in progress, the executing thread is different from this thread and has taken the callback for execution
                     // so observe and wait until this target callback is no longer the executing callback.
                     tokenSource.WaitForCallbackToComplete(m_callbackInfo);
                 }
             }
+        }
+
+        /// <summary> 
+        /// Disposes of the registration and unregisters the target callback from the associated  
+        /// <see cref="T:System.Threading.CancellationToken">CancellationToken</see>. 
+        /// The returned <see cref="ValueTask"/> will complete once the associated callback 
+        /// is unregistered without having executed or once it's finished executing, except 
+        /// in the degenerate case where the callback itself is unregistering itself. 
+        /// </summary> 
+        public ValueTask DisposeAsync()
+        {
+            // Same as Dispose, but with WaitForCallbackToCompleteAsync, and returning ValueTask instead of void
+
+            bool unregisterOccured = Unregister();
+
+            var callbackInfo = m_callbackInfo;
+            if (callbackInfo != null)
+            {
+                var tokenSource = callbackInfo.CancellationTokenSource;
+                if (tokenSource.IsCancellationRequested && //running callbacks has commenced.
+                    !tokenSource.IsCancellationCompleted && //running callbacks hasn't finished
+                    !unregisterOccured && //unregistration failed (ie the callback is missing from the list)
+                    tokenSource.ThreadIDExecutingCallbacks != Environment.CurrentManagedThreadId) //the executingThreadID is not this threadID.
+                {
+                    // Callback execution is in progress, the executing thread is different from this thread and has taken the callback for execution
+                    // so observe and wait until this target callback is no longer the executing callback.
+                    return tokenSource.WaitForCallbackToCompleteAsync(m_callbackInfo);
+                }
+            }
+
+            return default;
         }
 
         /// <summary>
