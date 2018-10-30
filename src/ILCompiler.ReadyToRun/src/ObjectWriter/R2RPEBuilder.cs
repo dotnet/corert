@@ -236,7 +236,12 @@ namespace ILCompiler.PEWriter
         {
             PEDirectoriesBuilder builder = new PEDirectoriesBuilder();
 
-            builder.AddressOfEntryPoint = RelocateRVA(_peReader.PEHeaders.PEHeader.AddressOfEntryPoint);
+            if ((_peReader.PEHeaders.CoffHeader.Characteristics & Characteristics.Dll) == 0)
+            {
+                // Only copy over the entrypoint if not building a DLL
+                builder.AddressOfEntryPoint = RelocateRVA(_peReader.PEHeaders.PEHeader.AddressOfEntryPoint);
+            }
+
             builder.ExportTable = RelocateDirectoryEntry(_peReader.PEHeaders.PEHeader.ExportTableDirectory);
             builder.ImportTable = RelocateDirectoryEntry(_peReader.PEHeaders.PEHeader.ImportTableDirectory);
             builder.ResourceTable = RelocateDirectoryEntry(_peReader.PEHeaders.PEHeader.ResourceTableDirectory);
@@ -587,8 +592,18 @@ namespace ILCompiler.PEWriter
         /// </summary>
         /// <param name="peHeaders">Headers to copy</param>
         /// <param name="targetMachineOverride">Target architecture to set in the header</param>
-        public static PEHeaderBuilder Copy(PEHeaders peHeaders, Machine  targetMachineOverride)
+        public static PEHeaderBuilder Copy(PEHeaders peHeaders, Machine targetMachineOverride)
         {
+            bool is64BitTarget = (targetMachineOverride == Machine.Amd64 ||
+                targetMachineOverride == Machine.IA64); // TODO - ARM64
+
+            Characteristics imageCharacteristics = peHeaders.CoffHeader.Characteristics;
+            if (is64BitTarget)
+            {
+                imageCharacteristics &= ~Characteristics.Bit32Machine;
+                imageCharacteristics |= Characteristics.LargeAddressAware;
+            }
+
             return new PEHeaderBuilder(
                 machine: targetMachineOverride,
                 sectionAlignment: peHeaders.PEHeader.SectionAlignment,
@@ -604,7 +619,7 @@ namespace ILCompiler.PEWriter
                 minorSubsystemVersion: peHeaders.PEHeader.MinorSubsystemVersion,
                 subsystem: peHeaders.PEHeader.Subsystem,
                 dllCharacteristics: peHeaders.PEHeader.DllCharacteristics,
-                imageCharacteristics: peHeaders.CoffHeader.Characteristics,
+                imageCharacteristics: imageCharacteristics,
                 sizeOfStackReserve: peHeaders.PEHeader.SizeOfStackReserve,
                 sizeOfStackCommit: peHeaders.PEHeader.SizeOfStackCommit,
                 sizeOfHeapReserve: peHeaders.PEHeader.SizeOfHeapReserve,
