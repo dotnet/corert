@@ -236,12 +236,6 @@ namespace ILCompiler.PEWriter
         {
             PEDirectoriesBuilder builder = new PEDirectoriesBuilder();
 
-            if ((_peReader.PEHeaders.CoffHeader.Characteristics & Characteristics.Dll) == 0)
-            {
-                // Only copy over the entrypoint if not building a DLL
-                builder.AddressOfEntryPoint = RelocateRVA(_peReader.PEHeaders.PEHeader.AddressOfEntryPoint);
-            }
-
             builder.ExportTable = RelocateDirectoryEntry(_peReader.PEHeaders.PEHeader.ExportTableDirectory);
             builder.ImportTable = RelocateDirectoryEntry(_peReader.PEHeaders.PEHeader.ImportTableDirectory);
             builder.ResourceTable = RelocateDirectoryEntry(_peReader.PEHeaders.PEHeader.ResourceTableDirectory);
