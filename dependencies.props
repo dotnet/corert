@@ -9,5 +9,6 @@
     <MicrosoftDotNetTestSdkVersion>15.8.0</MicrosoftDotNetTestSdkVersion>
     <XUnitPackageVersion>2.4.1-pre.build.4059</XUnitPackageVersion>
     <MicrosoftDotNetXUnitExtensionsVersion>2.4.0-beta.18420.3</MicrosoftDotNetXUnitExtensionsVersion>
+    <SystemReflectionMetadataVersion>1.4.3</SystemReflectionMetadataVersion>
   </PropertyGroup>
 </Project>
