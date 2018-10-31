@@ -213,7 +213,7 @@ namespace Internal.IL
 
         public LLVMValueRef ValueAsInt64(LLVMBuilderRef builder, bool signExtend)
         {
-            return ValueAsTypeInternal(LLVM.Int32Type(), builder, signExtend);
+            return ValueAsTypeInternal(LLVM.Int64Type(), builder, signExtend);
         }
 
         protected abstract LLVMValueRef ValueAsTypeInternal(LLVMTypeRef type, LLVMBuilderRef builder, bool signExtend);
