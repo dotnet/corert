@@ -236,9 +236,9 @@ namespace ILCompiler.PEWriter
         {
             PEDirectoriesBuilder builder = new PEDirectoriesBuilder();
 
-            builder.AddressOfEntryPoint = RelocateRVA(_peReader.PEHeaders.PEHeader.AddressOfEntryPoint);
-            builder.ExportTable = RelocateDirectoryEntry(_peReader.PEHeaders.PEHeader.ExportTableDirectory);
-            builder.ImportTable = RelocateDirectoryEntry(_peReader.PEHeaders.PEHeader.ImportTableDirectory);
+            // Don't copy over EntryPoint
+            // Don't copy over Export directory
+            // Don't copy over Import directory
             builder.ResourceTable = RelocateDirectoryEntry(_peReader.PEHeaders.PEHeader.ResourceTableDirectory);
             builder.ExceptionTable = RelocateDirectoryEntry(_peReader.PEHeaders.PEHeader.ExceptionTableDirectory);
             // TODO - missing in PEDirectoriesBuilder
@@ -250,8 +250,8 @@ namespace ILCompiler.PEWriter
             builder.ThreadLocalStorageTable = RelocateDirectoryEntry(_peReader.PEHeaders.PEHeader.ThreadLocalStorageTableDirectory);
             builder.LoadConfigTable = RelocateDirectoryEntry(_peReader.PEHeaders.PEHeader.LoadConfigTableDirectory);
             builder.BoundImportTable = RelocateDirectoryEntry(_peReader.PEHeaders.PEHeader.BoundImportTableDirectory);
-            builder.ImportAddressTable = RelocateDirectoryEntry(_peReader.PEHeaders.PEHeader.ImportAddressTableDirectory);
-            builder.DelayImportTable = RelocateDirectoryEntry(_peReader.PEHeaders.PEHeader.DelayImportTableDirectory);
+            // Don't copy over import address table
+            // Don't copy over delay import table
             builder.CorHeaderTable = RelocateDirectoryEntry(_peReader.PEHeaders.PEHeader.CorHeaderTableDirectory);
 
             if (_directoriesUpdater != null)
@@ -587,8 +587,18 @@ namespace ILCompiler.PEWriter
         /// </summary>
         /// <param name="peHeaders">Headers to copy</param>
         /// <param name="targetMachineOverride">Target architecture to set in the header</param>
-        public static PEHeaderBuilder Copy(PEHeaders peHeaders, Machine  targetMachineOverride)
+        public static PEHeaderBuilder Copy(PEHeaders peHeaders, Machine targetMachineOverride)
         {
+            bool is64BitTarget = (targetMachineOverride == Machine.Amd64 ||
+                targetMachineOverride == Machine.IA64); // TODO - ARM64
+
+            Characteristics imageCharacteristics = peHeaders.CoffHeader.Characteristics;
+            if (is64BitTarget)
+            {
+                imageCharacteristics &= ~Characteristics.Bit32Machine;
+                imageCharacteristics |= Characteristics.LargeAddressAware;
+            }
+
             return new PEHeaderBuilder(
                 machine: targetMachineOverride,
                 sectionAlignment: peHeaders.PEHeader.SectionAlignment,
@@ -604,7 +614,7 @@ namespace ILCompiler.PEWriter
                 minorSubsystemVersion: peHeaders.PEHeader.MinorSubsystemVersion,
                 subsystem: peHeaders.PEHeader.Subsystem,
                 dllCharacteristics: peHeaders.PEHeader.DllCharacteristics,
-                imageCharacteristics: peHeaders.CoffHeader.Characteristics,
+                imageCharacteristics: imageCharacteristics,
                 sizeOfStackReserve: peHeaders.PEHeader.SizeOfStackReserve,
                 sizeOfStackCommit: peHeaders.PEHeader.SizeOfStackCommit,
                 sizeOfHeapReserve: peHeaders.PEHeader.SizeOfHeapReserve,
