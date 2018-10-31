@@ -206,8 +206,10 @@ namespace ILCompiler.DependencyAnalysis
                 _codegenNodeFactory.DispatchImports,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_Obj,
                 _codegenNodeFactory.MethodSignature(
-                    ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry, methodWithToken.Method,
+                    ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry,
+                    targetMethod: methodWithToken.Method,
                     constrainedType: null, 
+                    originalMethod: null,
                     methodWithToken.Token, 
                     signatureContext: signatureContext, 
                     isUnboxingStub: false, 
@@ -558,8 +560,15 @@ namespace ILCompiler.DependencyAnalysis
                     _codegenNodeFactory.DispatchImports,
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_MethodCall |
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_FLAG_VSD,
-                    _codegenNodeFactory.MethodSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry, method,
-                        null, methodToken, signatureContext, isUnboxingStub, isInstantiatingStub: false),
+                    _codegenNodeFactory.MethodSignature(
+                        ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry,
+                        targetMethod: method,
+                        constrainedType: null, 
+                        originalMethod: null,
+                        methodToken: methodToken, 
+                        signatureContext: signatureContext, 
+                        isUnboxingStub: isUnboxingStub, 
+                        isInstantiatingStub: false),
                     callSite);
 
                 _interfaceDispatchCells.Add(cellKey, dispatchCell);
@@ -582,8 +591,9 @@ namespace ILCompiler.DependencyAnalysis
                     _codegenNodeFactory,
                     _codegenNodeFactory.MethodSignature(
                         ReadyToRunFixupKind.READYTORUN_FIXUP_MethodDictionary,
-                        method,
+                        targetMethod: method,
                         constrainedType: null,
+                        originalMethod: null,
                         methodToken: methodToken,
                         signatureContext: signatureContext,
                         isUnboxingStub: false,
@@ -611,7 +621,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public ISymbolNode DelegateCtor(TypeDesc delegateType, MethodDesc targetMethod, ModuleToken methodToken, SignatureContext signatureContext)
         {
-            TypeAndMethod ctorKey = new TypeAndMethod(delegateType, targetMethod, methodToken: methodToken, isUnboxingStub: false, isInstantiatingStub: false);
+            TypeAndMethod ctorKey = new TypeAndMethod(targetMethod, delegateType, targetMethod, methodToken: methodToken, isUnboxingStub: false, isInstantiatingStub: false);
             if (!_delegateCtors.TryGetValue(ctorKey, out ISymbolNode ctorNode))
             {
                 IMethodNode targetMethodNode = _codegenNodeFactory.MethodEntrypoint(
@@ -739,7 +749,7 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.MethodDictionary:
                     return GenericLookupMethodHelper(
                         runtimeLookupKind,
-                        ReadyToRunFixupKind.READYTORUN_FIXUP_MethodDictionary,
+                        ReadyToRunFixupKind.READYTORUN_FIXUP_MethodHandle,
                         (MethodWithToken)helperArgument,
                         contextType,
                         signatureContext);

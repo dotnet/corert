@@ -33,6 +33,10 @@ namespace ILCompiler
             {
                 return ContainsType(instantiatedType.GetTypeDefinition());
             }
+            if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+            {
+                return false;
+            }
             return true;
         }
 

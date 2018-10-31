@@ -11,16 +11,18 @@ namespace ILCompiler.DependencyAnalysis
 {
     internal struct TypeAndMethod : IEquatable<TypeAndMethod>
     {
+        public readonly MethodDesc TargetMethod;
         public readonly TypeDesc Type;
-        public readonly MethodDesc Method;
+        public readonly MethodDesc OriginalMethod;
         public readonly ModuleToken MethodToken;
         public readonly bool IsUnboxingStub;
         public readonly bool IsInstantiatingStub;
 
-        public TypeAndMethod(TypeDesc type, MethodDesc method, ModuleToken methodToken, bool isUnboxingStub, bool isInstantiatingStub)
+        public TypeAndMethod(MethodDesc targetMethod, TypeDesc type, MethodDesc originalMethod, ModuleToken methodToken, bool isUnboxingStub, bool isInstantiatingStub)
         {
+            TargetMethod = targetMethod;
             Type = type;
-            Method = method;
+            OriginalMethod = originalMethod;
             MethodToken = methodToken;
             IsUnboxingStub = isUnboxingStub;
             IsInstantiatingStub = isInstantiatingStub;
@@ -28,8 +30,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public bool Equals(TypeAndMethod other)
         {
-            return Type == other.Type &&
-                   Method == other.Method &&
+            return TargetMethod == other.TargetMethod && 
+                   Type == other.Type &&
+                   OriginalMethod == other.OriginalMethod &&
                    MethodToken.Equals(other.MethodToken) &&
                    IsUnboxingStub == other.IsUnboxingStub &&
                    IsInstantiatingStub == other.IsInstantiatingStub;
@@ -43,7 +46,9 @@ namespace ILCompiler.DependencyAnalysis
         public override int GetHashCode()
         {
             return (Type?.GetHashCode() ?? 0) ^ 
-                unchecked(Method.GetHashCode() * 31  + MethodToken.GetHashCode() * 97) ^ 
+                unchecked(TargetMethod.GetHashCode() * 31 
+                    + (OriginalMethod?.GetHashCode() * 199 ?? 0)
+                    + MethodToken.GetHashCode() * 97) ^ 
                 (IsUnboxingStub ? -0x80000000 : 0) ^ 
                 (IsInstantiatingStub ? 0x40000000 : 0);
         }

@@ -32,7 +32,7 @@ namespace ILCompiler
         public override ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType defType, StaticLayoutKind layoutKind)
         {
             ComputedStaticFieldLayout layout = new ComputedStaticFieldLayout();
-            if (defType is EcmaType ecmaType)
+            if (defType.GetTypeDefinition() is EcmaType ecmaType)
             {
                 // ECMA types are the only ones that can have statics
                 ModuleFieldLayout moduleFieldLayout = _moduleFieldLayoutMap.GetOrCreateValue(ecmaType.EcmaModule);
@@ -40,7 +40,18 @@ namespace ILCompiler
                 layout.NonGcStatics = moduleFieldLayout.NonGcStatics;
                 layout.ThreadGcStatics = moduleFieldLayout.ThreadGcStatics;
                 layout.ThreadNonGcStatics = moduleFieldLayout.ThreadNonGcStatics;
-                moduleFieldLayout.TypeToFieldMap.TryGetValue(ecmaType.Handle, out layout.Offsets);
+                if (defType is EcmaType nonGenericType)
+                {
+                    moduleFieldLayout.TypeToFieldMap.TryGetValue(nonGenericType.Handle, out layout.Offsets);
+                }
+                else if (defType is InstantiatedType instantiatedType)
+                {
+                    layout.Offsets = _moduleFieldLayoutMap.GetOrAddDynamicLayout(defType, moduleFieldLayout);
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
             }
             return layout;
         }
@@ -59,6 +70,16 @@ namespace ILCompiler
             /// CoreCLR ThreadLocalModule::OffsetOfDataBlob() / sizeof(void *)
             /// </summary>
             private const int ThreadLocalModuleDataBlobOffsetAsIntPtrCount = 3;
+
+            /// <summary>
+            /// CoreCLR DomainLocalModule::NormalDynamicEntry::OffsetOfDataBlob for 32-bit platforms
+            /// </summary>
+            private const int DomainLocalModuleNormalDynamicEntryOffsetOfDataBlob32Bit = 4;
+
+            /// <summary>
+            /// CoreCLR DomainLocalModule::NormalDynamicEntry::OffsetOfDataBlob for 64-bit platforms
+            /// </summary>
+            private const int DomainLocalModuleNormalDynamicEntryOffsetOfDataBlob64Bit = 16;
 
             protected override bool CompareKeyToValue(EcmaModule key, ModuleFieldLayout value)
             {
@@ -98,15 +119,17 @@ namespace ILCompiler
                         // <a href="https://github.com/dotnet/coreclr/blob/659af58047a949ed50d11101708538d2e87f2568/src/vm/ceeload.cpp#L2049">this check</a>.
                         continue;
                     }
+
                     foreach (FieldDefinitionHandle fieldDefHandle in typeDef.GetFields())
                     {
                         FieldDefinition fieldDef = module.MetadataReader.GetFieldDefinition(fieldDefHandle);
                         if ((fieldDef.Attributes & (FieldAttributes.Static | FieldAttributes.Literal)) == FieldAttributes.Static)
                         {
                             int index = (IsFieldThreadStatic(in fieldDef, module.MetadataReader) ? 1 : 0);
-                            int alignment = 1;
-                            int size = 0;
-                            bool isGcField = false;
+                            int alignment;
+                            int size;
+                            bool isGcPointerField;
+                            bool isGcBoxedField;
 
                             CorElementType corElementType;
                             EntityHandle valueTypeHandle;
@@ -114,94 +137,19 @@ namespace ILCompiler
                             GetFieldElementTypeAndValueTypeHandle(in fieldDef, module.MetadataReader, out corElementType, out valueTypeHandle);
                             FieldDesc fieldDesc = module.GetField(fieldDefHandle);
 
-                            switch (corElementType)
+                            GetElementTypeInfo(module, fieldDesc, valueTypeHandle, corElementType, pointerSize, out alignment, out size, out isGcPointerField, out isGcBoxedField);
+
+                            LayoutInt offset = LayoutInt.Zero;
+                            if (size != 0)
                             {
-                                case CorElementType.ELEMENT_TYPE_I1:
-                                case CorElementType.ELEMENT_TYPE_U1:
-                                case CorElementType.ELEMENT_TYPE_BOOLEAN:
-                                    size = 1;
-                                    break;
-
-                                case CorElementType.ELEMENT_TYPE_I2:
-                                case CorElementType.ELEMENT_TYPE_U2:
-                                case CorElementType.ELEMENT_TYPE_CHAR:
-                                    alignment = 2;
-                                    size = 2;
-                                    break;
-
-                                case CorElementType.ELEMENT_TYPE_I4:
-                                case CorElementType.ELEMENT_TYPE_U4:
-                                case CorElementType.ELEMENT_TYPE_R4:
-                                    alignment = 4;
-                                    size = 4;
-                                    break;
-
-                                case CorElementType.ELEMENT_TYPE_FNPTR:
-                                case CorElementType.ELEMENT_TYPE_PTR:
-                                case CorElementType.ELEMENT_TYPE_I:
-                                case CorElementType.ELEMENT_TYPE_U:
-                                    alignment = pointerSize;
-                                    size = pointerSize;
-                                    break;
-
-                                case CorElementType.ELEMENT_TYPE_I8:
-                                case CorElementType.ELEMENT_TYPE_U8:
-                                case CorElementType.ELEMENT_TYPE_R8:
-                                    alignment = 8;
-                                    size = 8;
-                                    break;
-
-                                case CorElementType.ELEMENT_TYPE_VAR:
-                                case CorElementType.ELEMENT_TYPE_MVAR:
-                                case CorElementType.ELEMENT_TYPE_STRING:
-                                case CorElementType.ELEMENT_TYPE_SZARRAY:
-                                case CorElementType.ELEMENT_TYPE_ARRAY:
-                                case CorElementType.ELEMENT_TYPE_CLASS:
-                                case CorElementType.ELEMENT_TYPE_OBJECT:
-                                    isGcField = true;
-                                    alignment = pointerSize;
-                                    size = pointerSize;
-                                    break;
-
-                                case CorElementType.ELEMENT_TYPE_BYREF:
-                                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, fieldDesc.OwningType);
-                                    break;
-
-                                // Statics for valuetypes where the valuetype is defined in this module are handled here. 
-                                // Other valuetype statics utilize the pessimistic model below.
-                                case CorElementType.ELEMENT_TYPE_VALUETYPE:
-                                    isGcField = true;
-                                    alignment = pointerSize;
-                                    size = pointerSize;
-                                    if (IsTypeByRefLike(valueTypeHandle, module.MetadataReader))
-                                    {
-                                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, fieldDesc.OwningType);
-                                    }
-                                    break;
-
-                                case CorElementType.ELEMENT_TYPE_END:
-                                default:
-                                    isGcField = true;
-                                    alignment = pointerSize;
-                                    size = pointerSize;
-                                    if (!valueTypeHandle.IsNil)
-                                    {
-                                        // Allocate pessimistic non-GC area for cross-module fields as that's what CoreCLR does
-                                        // <a href="https://github.com/dotnet/coreclr/blob/659af58047a949ed50d11101708538d2e87f2568/src/vm/ceeload.cpp#L2124">here</a>
-                                        nonGcStatics[index] = LayoutInt.AlignUp(nonGcStatics[index], new LayoutInt(TargetDetails.MaximumPrimitiveSize))
-                                            + new LayoutInt(TargetDetails.MaximumPrimitiveSize);
-                                    }
-                                    else
-                                    {
-                                        // Field has an unexpected type
-                                        throw new InvalidProgramException();
-                                    }
-                                    break;
+                                offset = LayoutInt.AlignUp(nonGcStatics[index], new LayoutInt(alignment));
+                                nonGcStatics[index] = offset + new LayoutInt(size);
                             }
-
-                            LayoutInt[] layout = (isGcField ? gcStatics : nonGcStatics);
-                            LayoutInt offset = LayoutInt.AlignUp(layout[index], new LayoutInt(alignment));
-                            layout[index] = offset + new LayoutInt(size);
+                            if (isGcPointerField || isGcBoxedField)
+                            {
+                                offset = LayoutInt.AlignUp(gcStatics[index], new LayoutInt(pointerSize));
+                                gcStatics[index] = offset + new LayoutInt(pointerSize);
+                            }
                             if (fieldsForType == null)
                             {
                                 fieldsForType = new List<FieldAndOffset>();
@@ -226,6 +174,251 @@ namespace ILCompiler
                     threadNonGcStatics: new StaticsBlock() { Size = nonGcStatics[1], LargestAlignment = blockAlignment },
                     typeToFieldMap: typeToFieldMap);
             }
+
+            private void GetElementTypeInfo(
+                EcmaModule module, 
+                FieldDesc fieldDesc,
+                EntityHandle valueTypeHandle, 
+                CorElementType elementType, 
+                int pointerSize, 
+                out int alignment, 
+                out int size, 
+                out bool isGcPointerField,
+                out bool isGcBoxedField)
+            {
+                alignment = 1;
+                size = 0;
+                isGcPointerField = false;
+                isGcBoxedField = false;
+
+                switch (elementType)
+                {
+                    case CorElementType.ELEMENT_TYPE_I1:
+                    case CorElementType.ELEMENT_TYPE_U1:
+                    case CorElementType.ELEMENT_TYPE_BOOLEAN:
+                        size = 1;
+                        break;
+
+                    case CorElementType.ELEMENT_TYPE_I2:
+                    case CorElementType.ELEMENT_TYPE_U2:
+                    case CorElementType.ELEMENT_TYPE_CHAR:
+                        alignment = 2;
+                        size = 2;
+                        break;
+
+                    case CorElementType.ELEMENT_TYPE_I4:
+                    case CorElementType.ELEMENT_TYPE_U4:
+                    case CorElementType.ELEMENT_TYPE_R4:
+                        alignment = 4;
+                        size = 4;
+                        break;
+
+                    case CorElementType.ELEMENT_TYPE_FNPTR:
+                    case CorElementType.ELEMENT_TYPE_PTR:
+                    case CorElementType.ELEMENT_TYPE_I:
+                    case CorElementType.ELEMENT_TYPE_U:
+                        alignment = pointerSize;
+                        size = pointerSize;
+                        break;
+
+                    case CorElementType.ELEMENT_TYPE_I8:
+                    case CorElementType.ELEMENT_TYPE_U8:
+                    case CorElementType.ELEMENT_TYPE_R8:
+                        alignment = 8;
+                        size = 8;
+                        break;
+
+                    case CorElementType.ELEMENT_TYPE_VAR:
+                    case CorElementType.ELEMENT_TYPE_MVAR:
+                    case CorElementType.ELEMENT_TYPE_STRING:
+                    case CorElementType.ELEMENT_TYPE_SZARRAY:
+                    case CorElementType.ELEMENT_TYPE_ARRAY:
+                    case CorElementType.ELEMENT_TYPE_CLASS:
+                    case CorElementType.ELEMENT_TYPE_OBJECT:
+                        isGcPointerField = true;
+                        break;
+
+                    case CorElementType.ELEMENT_TYPE_BYREF:
+                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, fieldDesc.OwningType);
+                        break;
+
+                    // Statics for valuetypes where the valuetype is defined in this module are handled here. 
+                    // Other valuetype statics utilize the pessimistic model below.
+                    case CorElementType.ELEMENT_TYPE_VALUETYPE:
+                        isGcBoxedField = true;
+                        if (IsTypeByRefLike(valueTypeHandle, module.MetadataReader))
+                        {
+                            ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, fieldDesc.OwningType);
+                        }
+                        break;
+
+                    case CorElementType.ELEMENT_TYPE_END:
+                    default:
+                        isGcBoxedField = true;
+                        if (!valueTypeHandle.IsNil)
+                        {
+                            // Allocate pessimistic non-GC area for cross-module fields as that's what CoreCLR does
+                            // <a href="https://github.com/dotnet/coreclr/blob/659af58047a949ed50d11101708538d2e87f2568/src/vm/ceeload.cpp#L2124">here</a>
+                            alignment = TargetDetails.MaximumPrimitiveSize;
+                            size = TargetDetails.MaximumPrimitiveSize;
+                        }
+                        else
+                        {
+                            // Field has an unexpected type
+                            throw new InvalidProgramException();
+                        }
+                        break;
+                }
+            }
+
+            public FieldAndOffset[] GetOrAddDynamicLayout(DefType defType, ModuleFieldLayout moduleFieldLayout)
+            {
+                FieldAndOffset[] fieldsForType;
+                if (!moduleFieldLayout.TryGetDynamicLayout(defType, out fieldsForType))
+                {
+                    fieldsForType = CreateDynamicLayout(defType, moduleFieldLayout.Module);
+                    moduleFieldLayout.AddDynamicLayout(defType, fieldsForType);
+                }
+                return fieldsForType;
+            }
+
+            private FieldAndOffset[] CreateDynamicLayout(DefType defType, EcmaModule module)
+            {
+                List<FieldAndOffset> fieldsForType = null;
+                int pointerSize = module.Context.Target.PointerSize;
+
+                int[][] nonGcStaticsCount = new int[][]
+                {
+                    new int[TargetDetails.MaximumLog2PrimitiveSize + 1],
+                    new int[TargetDetails.MaximumLog2PrimitiveSize + 1],
+                };
+
+                int[] gcPointerCount = new int[2];
+                int[] gcBoxedCount = new int[2];
+
+                foreach (FieldDesc field in defType.GetFields())
+                {
+                    FieldDefinition fieldDef = module.MetadataReader.GetFieldDefinition(((EcmaField)field.GetTypicalFieldDefinition()).Handle);
+                    if ((fieldDef.Attributes & (FieldAttributes.Static | FieldAttributes.Literal)) == FieldAttributes.Static)
+                    {
+                        int index = (IsFieldThreadStatic(in fieldDef, module.MetadataReader) ? 1 : 0);
+                        int alignment;
+                        int size;
+                        bool isGcPointerField;
+                        bool isGcBoxedField;
+
+                        CorElementType corElementType;
+                        EntityHandle valueTypeHandle;
+
+                        GetFieldElementTypeAndValueTypeHandle(in fieldDef, module.MetadataReader, out corElementType, out valueTypeHandle);
+
+                        GetElementTypeInfo(module, field, valueTypeHandle, corElementType, pointerSize, out alignment, out size, out isGcPointerField, out isGcBoxedField);
+                        if (isGcPointerField)
+                        {
+                            gcPointerCount[index]++;
+                        }
+                        else if (isGcBoxedField)
+                        {
+                            gcBoxedCount[index]++;
+                        }
+                        if (size != 0)
+                        {
+                            int log2Size = TargetDetails.GetLog2Size(size);
+                            nonGcStaticsCount[index][log2Size]++;
+                        }
+                    }
+                }
+
+                int nonGcInitialOffset;
+                switch (pointerSize)
+                {
+                    case 4:
+                        nonGcInitialOffset = DomainLocalModuleNormalDynamicEntryOffsetOfDataBlob32Bit;
+                        break;
+
+                    case 8:
+                        nonGcInitialOffset = DomainLocalModuleNormalDynamicEntryOffsetOfDataBlob64Bit;
+                        break;
+
+                    default:
+                        throw new NotImplementedException();
+                }
+
+                LayoutInt[] nonGcStaticFieldOffsets = new LayoutInt[2]
+                {
+                    new LayoutInt(nonGcInitialOffset),
+                    new LayoutInt(nonGcInitialOffset),
+                };
+
+                LayoutInt[][] nonGcStatics = new LayoutInt[][]
+                {
+                    new LayoutInt[TargetDetails.MaximumLog2PrimitiveSize + 1],
+                    new LayoutInt[TargetDetails.MaximumLog2PrimitiveSize + 1],
+                };
+
+                for (int log2Size = TargetDetails.MaximumLog2PrimitiveSize; log2Size >= 0; log2Size--)
+                {
+                    for (int index = 0; index <= 1; index++)
+                    {
+                        LayoutInt offset = nonGcStaticFieldOffsets[index];
+                        nonGcStatics[index][log2Size] = offset;
+                        offset += new LayoutInt(nonGcStaticsCount[index][log2Size] << log2Size);
+                        nonGcStaticFieldOffsets[index] = offset;
+                    }
+                }
+
+                LayoutInt[] gcBoxedFieldOffsets = new LayoutInt[2];
+                LayoutInt[] gcPointerFieldOffsets = new LayoutInt[2] { new LayoutInt(gcBoxedCount[0] * pointerSize), new LayoutInt(gcBoxedCount[1] * pointerSize) };
+
+                foreach (FieldDesc field in defType.GetFields())
+                {
+                    FieldDefinitionHandle fieldDefHandle = ((EcmaField)field.GetTypicalFieldDefinition()).Handle;
+                    FieldDefinition fieldDef = module.MetadataReader.GetFieldDefinition(fieldDefHandle);
+                    if ((fieldDef.Attributes & (FieldAttributes.Static | FieldAttributes.Literal)) == FieldAttributes.Static)
+                    {
+                        int index = (IsFieldThreadStatic(in fieldDef, module.MetadataReader) ? 1 : 0);
+                        int alignment;
+                        int size;
+                        bool isGcPointerField;
+                        bool isGcBoxedField;
+
+                        CorElementType corElementType;
+                        EntityHandle valueTypeHandle;
+
+                        GetFieldElementTypeAndValueTypeHandle(in fieldDef, module.MetadataReader, out corElementType, out valueTypeHandle);
+
+                        GetElementTypeInfo(module, field, valueTypeHandle, corElementType, pointerSize, out alignment, out size, out isGcPointerField, out isGcBoxedField);
+
+                        LayoutInt offset = LayoutInt.Zero;
+
+                        if (size != 0)
+                        {
+                            int log2Size = TargetDetails.GetLog2Size(size);
+                            offset = nonGcStatics[index][log2Size];
+                            nonGcStatics[index][log2Size] += new LayoutInt(1 << log2Size);
+                        }
+                        if (isGcPointerField)
+                        {
+                            offset = gcPointerFieldOffsets[index];
+                            gcPointerFieldOffsets[index] += new LayoutInt(pointerSize);
+                        }
+                        else if (isGcBoxedField)
+                        {
+                            offset = gcBoxedFieldOffsets[index];
+                            gcBoxedFieldOffsets[index] += new LayoutInt(pointerSize);
+                        }
+
+                        if (fieldsForType == null)
+                        {
+                            fieldsForType = new List<FieldAndOffset>();
+                        }
+                        fieldsForType.Add(new FieldAndOffset(field, offset));
+                    }
+                }
+
+                return fieldsForType == null ? null : fieldsForType.ToArray();
+            }
+
 
             protected override int GetKeyHashCode(EcmaModule key)
             {
@@ -346,6 +539,8 @@ namespace ILCompiler
 
             public IReadOnlyDictionary<TypeDefinitionHandle, FieldAndOffset[]> TypeToFieldMap { get; }
 
+            private Dictionary<DefType, FieldAndOffset[]> _genericTypeToFieldMap;
+
             public ModuleFieldLayout(
                 EcmaModule module, 
                 StaticsBlock gcStatics, 
@@ -360,6 +555,18 @@ namespace ILCompiler
                 ThreadGcStatics = threadGcStatics;
                 ThreadNonGcStatics = threadNonGcStatics;
                 TypeToFieldMap = typeToFieldMap;
+
+                _genericTypeToFieldMap = new Dictionary<DefType, FieldAndOffset[]>();
+            }
+
+            public bool TryGetDynamicLayout(DefType instantiatedType, out FieldAndOffset[] fieldMap)
+            {
+                return _genericTypeToFieldMap.TryGetValue(instantiatedType, out fieldMap);
+            }
+
+            public void AddDynamicLayout(DefType instantiatedType, FieldAndOffset[] fieldMap)
+            {
+                _genericTypeToFieldMap.Add(instantiatedType, fieldMap);
             }
         }
     }

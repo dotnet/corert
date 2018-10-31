@@ -28,6 +28,7 @@
   
   <ItemGroup>
     <Compile Include="CodeGen\ReadyToRunObjectWriter.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ConstructedType.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ExceptionInfoLookupTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternalTypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunCodegenNodeFactory.cs" />

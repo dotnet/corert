@@ -178,13 +178,49 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Gets the dyadic logarithm of the maximum size of a primitive type
+        /// </summary>
+        public static int MaximumLog2PrimitiveSize
+        {
+
+            get
+            {
+                return 3;
+            }
+        }
+
+        /// <summary>
         /// Gets the maximum size of a primitive type
         /// </summary>
         public static int MaximumPrimitiveSize
         {
             get
             {
-                return 8;
+                return 1 << MaximumLog2PrimitiveSize;
+            }
+        }
+
+        /// <summary>
+        /// Return the integral value of dyadic logarithm of given size
+        /// up to MaximumLog2PrimitiveSize.
+        /// </summary>
+        /// <param name="size">Size to calculate base 2 logarithm for</param>
+        /// <returns></returns>
+        public static int GetLog2Size(int size)
+        {
+            switch (size)
+            {
+                case 0:
+                case 1:
+                    return 0;
+                case 2:
+                    return 1;
+                case 3:
+                case 4:
+                    return 2;
+                default:
+                    Debug.Assert(MaximumLog2PrimitiveSize == 3);
+                    return MaximumLog2PrimitiveSize;
             }
         }
 

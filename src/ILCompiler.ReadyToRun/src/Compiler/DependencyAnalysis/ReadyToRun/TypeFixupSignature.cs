@@ -36,7 +36,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 dataBuilder.AddSymbol(this);
 
-                dataBuilder.EmitByte((byte)_fixupKind);
+                if (_fixupKind != ReadyToRunFixupKind.READYTORUN_FIXUP_Invalid)
+                {
+                    dataBuilder.EmitByte((byte)_fixupKind);
+                }
                 dataBuilder.EmitTypeSignature(_typeDesc, _signatureContext);
             }
 
@@ -57,7 +60,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencies = new DependencyList();
-            dependencies.Add(factory.NecessaryTypeSymbol(_typeDesc), "Type referenced in a fixup signature");
+            if (!_typeDesc.IsRuntimeDeterminedSubtype)
+            {
+                dependencies.Add(factory.NecessaryTypeSymbol(_typeDesc), "Type referenced in a fixup signature");
+            }
             return dependencies;
         }
     }

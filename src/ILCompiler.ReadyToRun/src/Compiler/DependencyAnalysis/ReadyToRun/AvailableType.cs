@@ -53,9 +53,27 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return comparer.Compare(Type, ((AvailableType)other).Type);
         }
 
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        {
+            if (_type.BaseType != null)
+            {
+                yield return new DependencyListEntry(factory.NecessaryTypeSymbol(_type.BaseType), "Base type");
+            }
+            if (_type.RuntimeInterfaces != null)
+            {
+                foreach (DefType definedInterface in _type.RuntimeInterfaces)
+                {
+                    yield return new DependencyListEntry(factory.NecessaryTypeSymbol(definedInterface), "Defined interface");
+                }
+            }
+            foreach (TypeDesc typeArg in _type.Instantiation)
+            {
+                yield return new DependencyListEntry(factory.NecessaryTypeSymbol(typeArg), "Instantiation argument");
+            }
+        }
+
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => null;
 
         protected override string GetName(NodeFactory factory) => $"Available type {Type.ToString()}";
     }

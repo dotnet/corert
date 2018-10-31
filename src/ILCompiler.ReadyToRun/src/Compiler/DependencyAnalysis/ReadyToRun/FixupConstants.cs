@@ -61,6 +61,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
     public enum ReadyToRunFixupKind
     {
+        READYTORUN_FIXUP_Invalid = 0x00,
+
         READYTORUN_FIXUP_ThisObjDictionaryLookup = 0x07,
         READYTORUN_FIXUP_TypeDictionaryLookup = 0x08,
         READYTORUN_FIXUP_MethodDictionaryLookup = 0x09,

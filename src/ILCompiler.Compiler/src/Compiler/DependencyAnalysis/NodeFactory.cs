@@ -307,12 +307,12 @@ namespace ILCompiler.DependencyAnalysis
 
             _genericReadyToRunHelpersFromDict = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(data =>
             {
-                return new ReadyToRunGenericLookupFromDictionaryNode(this, data.HelperId, data.Target, data.DictionaryOwner);
+                return CreateGenericLookupFromDictionaryNode(this, data.HelperId, data.Target, data.DictionaryOwner);
             });
 
             _genericReadyToRunHelpersFromType = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(data =>
             {
-                return new ReadyToRunGenericLookupFromTypeNode(this, data.HelperId, data.Target, data.DictionaryOwner);
+                return CreateGenericLookupFromTypeNode(this, data.HelperId, data.Target, data.DictionaryOwner);
             });
 
             _indirectionNodes = new NodeCache<ISortableSymbolNode, ISymbolNode>(indirectedNode =>
@@ -439,6 +439,16 @@ namespace ILCompiler.DependencyAnalysis
 
             NativeLayout = new NativeLayoutHelper(this);
             WindowsDebugData = new WindowsDebugDataHelper(this);
+        }
+
+        protected virtual ISymbolNode CreateGenericLookupFromDictionaryNode(NodeFactory factory, ReadyToRunHelperId helperId, object target, TypeSystemEntity dictionaryOwner)
+        {
+            return new ReadyToRunGenericLookupFromDictionaryNode(factory, helperId, target, dictionaryOwner);
+        }
+
+        protected virtual ISymbolNode CreateGenericLookupFromTypeNode(NodeFactory factory, ReadyToRunHelperId helperId, object target, TypeSystemEntity dictionaryOwner)
+        {
+            return new ReadyToRunGenericLookupFromTypeNode(factory, helperId, target, dictionaryOwner);
         }
 
         protected virtual IEETypeNode CreateNecessaryTypeNode(TypeDesc type)
