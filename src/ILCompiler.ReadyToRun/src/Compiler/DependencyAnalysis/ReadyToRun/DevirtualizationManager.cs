@@ -15,11 +15,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _compilationModuleGroup = compilationModuleGroup;
         }
 
-        public override bool IsEffectivelySealed(TypeDesc type)
-        {
-            return !(type is RuntimeDeterminedType) && base.IsEffectivelySealed(type);
-        }
-
         protected override MethodDesc ResolveVirtualMethod(MethodDesc declMethod, DefType implType)
         {
             if (_compilationModuleGroup.ContainsMethodBody(declMethod, unboxingStub: false) &&
