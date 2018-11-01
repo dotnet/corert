@@ -305,15 +305,8 @@ namespace ILCompiler.DependencyAnalysis
 
             _readyToRunHelpers = new NodeCache<ReadyToRunHelperKey, ISymbolNode>(CreateReadyToRunHelperNode);
 
-            _genericReadyToRunHelpersFromDict = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(data =>
-            {
-                return CreateGenericLookupFromDictionaryNode(this, data.HelperId, data.Target, data.DictionaryOwner);
-            });
-
-            _genericReadyToRunHelpersFromType = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(data =>
-            {
-                return CreateGenericLookupFromTypeNode(this, data.HelperId, data.Target, data.DictionaryOwner);
-            });
+            _genericReadyToRunHelpersFromDict = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(CreateGenericLookupFromDictionaryNode);
+            _genericReadyToRunHelpersFromType = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(CreateGenericLookupFromTypeNode);
 
             _indirectionNodes = new NodeCache<ISortableSymbolNode, ISymbolNode>(indirectedNode =>
             {
@@ -441,14 +434,14 @@ namespace ILCompiler.DependencyAnalysis
             WindowsDebugData = new WindowsDebugDataHelper(this);
         }
 
-        protected virtual ISymbolNode CreateGenericLookupFromDictionaryNode(NodeFactory factory, ReadyToRunHelperId helperId, object target, TypeSystemEntity dictionaryOwner)
+        protected virtual ISymbolNode CreateGenericLookupFromDictionaryNode(ReadyToRunGenericHelperKey helperKey)
         {
-            return new ReadyToRunGenericLookupFromDictionaryNode(factory, helperId, target, dictionaryOwner);
+            return new ReadyToRunGenericLookupFromDictionaryNode(this, helperKey.HelperId, helperKey.Target, helperKey.DictionaryOwner);
         }
 
-        protected virtual ISymbolNode CreateGenericLookupFromTypeNode(NodeFactory factory, ReadyToRunHelperId helperId, object target, TypeSystemEntity dictionaryOwner)
+        protected virtual ISymbolNode CreateGenericLookupFromTypeNode(ReadyToRunGenericHelperKey helperKey)
         {
-            return new ReadyToRunGenericLookupFromTypeNode(factory, helperId, target, dictionaryOwner);
+            return new ReadyToRunGenericLookupFromTypeNode(this, helperKey.HelperId, helperKey.Target, helperKey.DictionaryOwner);
         }
 
         protected virtual IEETypeNode CreateNecessaryTypeNode(TypeDesc type)

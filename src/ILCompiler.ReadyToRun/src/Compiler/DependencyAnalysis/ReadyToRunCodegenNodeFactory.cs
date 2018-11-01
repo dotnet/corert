@@ -431,7 +431,14 @@ namespace ILCompiler.DependencyAnalysis
             // Canonical definition types are *not* constructed types (call NecessaryTypeSymbol to get them)
             Debug.Assert(!type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
 
-            return new ConstructedType(this, type);
+            if (CompilationModuleGroup.ContainsType(type))
+            {
+                return new AvailableType(this, type);
+            }
+            else
+            {
+                return new ExternalTypeNode(this, type);
+            }
         }
 
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
@@ -451,9 +458,9 @@ namespace ILCompiler.DependencyAnalysis
             throw new NotImplementedException();
         }
 
-        protected override ISymbolNode CreateGenericLookupFromDictionaryNode(NodeFactory factory, ReadyToRunHelperId helperId, object target, TypeSystemEntity dictionaryOwner)
+        protected override ISymbolNode CreateGenericLookupFromDictionaryNode(ReadyToRunGenericHelperKey helperKey)
         {
-            switch (helperId)
+            switch (helperKey.HelperId)
             {
                 case ReadyToRunHelperId.GetGCStaticBase:
                     return new DelayLoadHelperImport(
@@ -462,7 +469,7 @@ namespace ILCompiler.DependencyAnalysis
                         ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GenericGcStaticBase,
                         new TypeFixupSignature(
                             ReadyToRunFixupKind.READYTORUN_FIXUP_Invalid,
-                            (TypeDesc)target,
+                            (TypeDesc)helperKey.Target,
                             InputModuleContext));
 
                 default:
@@ -470,9 +477,9 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected override ISymbolNode CreateGenericLookupFromTypeNode(NodeFactory factory, ReadyToRunHelperId helperId, object target, TypeSystemEntity dictionaryOwner)
+        protected override ISymbolNode CreateGenericLookupFromTypeNode(ReadyToRunGenericHelperKey helperKey)
         {
-            switch (helperId)
+            switch (helperKey.HelperId)
             {
                 case ReadyToRunHelperId.GetGCStaticBase:
                     return new DelayLoadHelperImport(
@@ -481,7 +488,7 @@ namespace ILCompiler.DependencyAnalysis
                         ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GenericGcStaticBase,
                         new TypeFixupSignature(
                             ReadyToRunFixupKind.READYTORUN_FIXUP_Invalid,
-                            (TypeDesc)target,
+                            (TypeDesc)helperKey.Target,
                             InputModuleContext));
 
                 default:
