@@ -452,6 +452,44 @@ namespace ILCompiler.DependencyAnalysis
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)
         {
             throw new NotImplementedException();
-        }   
+        }
+
+        protected override ISymbolNode CreateGenericLookupFromDictionaryNode(ReadyToRunGenericHelperKey helperKey)
+        {
+            switch (helperKey.HelperId)
+            {
+                case ReadyToRunHelperId.GetGCStaticBase:
+                    return new DelayLoadHelperImport(
+                        this,
+                        HelperImports,
+                        ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GenericGcStaticBase,
+                        new TypeFixupSignature(
+                            ReadyToRunFixupKind.READYTORUN_FIXUP_Invalid,
+                            (TypeDesc)helperKey.Target,
+                            InputModuleContext));
+
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+
+        protected override ISymbolNode CreateGenericLookupFromTypeNode(ReadyToRunGenericHelperKey helperKey)
+        {
+            switch (helperKey.HelperId)
+            {
+                case ReadyToRunHelperId.GetGCStaticBase:
+                    return new DelayLoadHelperImport(
+                        this,
+                        HelperImports,
+                        ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GenericGcStaticBase,
+                        new TypeFixupSignature(
+                            ReadyToRunFixupKind.READYTORUN_FIXUP_Invalid,
+                            (TypeDesc)helperKey.Target,
+                            InputModuleContext));
+
+                default:
+                    throw new NotImplementedException();
+            }
+        }
     }
 }
