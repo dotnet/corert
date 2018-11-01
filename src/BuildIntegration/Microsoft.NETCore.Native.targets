@@ -207,6 +207,8 @@ See the LICENSE file in the project root for more information.
     </ItemGroup>
 
     <ItemGroup Condition="'$(NativeCodeGen)' == 'readytorun'">
+      <!-- We need to copy the item group under a different name so that we can -->
+      <!-- expand it within each iteration of the top loop over @(IlcCompileInput) -->
       <IlcCompileInput2 Include="@(IlcCompileInput)" />
       <IlcCmd Include="@(IlcCompileInput)">
         <ResponseFileName>%(IlcCompileInput.FileName).ilc.rsp</ResponseFileName>
