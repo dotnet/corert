@@ -19,7 +19,7 @@
 
   <ItemGroup>
     <PackageReference Include="System.Reflection.Metadata">
-      <Version>1.4.2</Version>
+      <Version>$(SystemReflectionMetadataVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.ValueTuple">
       <Version>4.3.0</Version>
