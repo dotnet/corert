@@ -420,10 +420,17 @@ namespace ILCompiler
             {
                 Debug.Assert(method.IsVirtual);
 
-                // Virtual method use is tracked on the slot defining method only.
-                MethodDesc slotDefiningMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method);
-                if (!_factory.VTable(slotDefiningMethod.OwningType).HasFixedSlots)
-                    _graph.AddRoot(_factory.VirtualMethodUse(slotDefiningMethod), reason);
+                if (method.HasInstantiation)
+                {
+                    _graph.AddRoot(_factory.GVMDependencies(method), reason);
+                }
+                else
+                {
+                    // Virtual method use is tracked on the slot defining method only.
+                    MethodDesc slotDefiningMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method);
+                    if (!_factory.VTable(slotDefiningMethod.OwningType).HasFixedSlots)
+                        _graph.AddRoot(_factory.VirtualMethodUse(slotDefiningMethod), reason);
+                }
 
                 if (method.IsAbstract)
                 {

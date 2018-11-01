@@ -13,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a hashtable of all type blocked from reflection.
     /// </summary>
-    internal sealed class BlockReflectionTypeMapNode : ObjectNode, ISymbolDefinitionNode
+    public sealed class BlockReflectionTypeMapNode : ObjectNode, ISymbolDefinitionNode
     {
         private ObjectAndOffsetSymbolNode _endSymbol;
         private ExternalReferencesTableNode _externalReferences;

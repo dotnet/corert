@@ -71,7 +71,7 @@ namespace System
             }
         }
 
-        // Still needed by shared\System\Diagnostics\Debug.Unix.cs
+        // Still needed by shared\System\Diagnostics\DebugProvider.Unix.cs
         public static string GetEnvironmentVariable(string variable) => EnvironmentAugments.GetEnvironmentVariable(variable);
 
         public static int CurrentManagedThreadId

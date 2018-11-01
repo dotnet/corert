@@ -106,13 +106,9 @@ namespace System.Reflection.Runtime.Assemblies
         public sealed override event ModuleResolveEventHandler ModuleResolve;
 #pragma warning restore 0067
 
-        public sealed override bool ReflectionOnly
-        {
-            get
-            {
-                return false; // ReflectionOnly loading not supported.
-            }
-        }
+        public sealed override bool ReflectionOnly => false; // ReflectionOnly loading not supported.
+
+        public sealed override bool IsCollectible => false; // Unloading not supported.
 
         internal abstract RuntimeAssemblyName RuntimeAssemblyName { get; }
 
@@ -327,6 +323,3 @@ namespace System.Reflection.Runtime.Assemblies
         }
     }
 }
-
-
-

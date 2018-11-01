@@ -44,18 +44,7 @@ namespace Internal.Runtime.TypeLoader
                     return qTypeDefinition.NativeFormatHandle.GetFullName(qTypeDefinition.NativeFormatReader);
             }
 
-            result = "EEType:0x";
-            ulong num = (ulong)RuntimeAugments.GetPointerFromTypeHandle(rtth);
-
-            int shift = IntPtr.Size * 8;
-            const string HexDigits = "0123456789ABCDEF";
-            while (shift > 0)
-            {
-                shift -= 4;
-                int digit = (int)((num >> shift) & 0xF);
-                result += HexDigits[digit];
-            }
-            return result;
+            return rtth.LowLevelToStringRawEETypeAddress();
         }
 #endif
 
@@ -522,7 +511,19 @@ namespace Internal.Runtime.TypeLoader
 
                     if (!TryGetGenericVirtualMethodPointer(targetTypeHandle, targetMethodNameAndSignature, genericArguments, out methodPointer, out dictionaryPointer))
                     {
-                        Environment.FailFast("GVM method pointer lookup failure");
+                        var sb = new System.Text.StringBuilder();
+                        sb.AppendLine("Generic virtual method pointer lookup failure.");
+                        sb.AppendLine();
+                        sb.AppendLine("Declaring type handle: " + declaringType.LowLevelToStringRawEETypeAddress());
+                        sb.AppendLine("Target type handle: " + targetTypeHandle.LowLevelToStringRawEETypeAddress());
+                        sb.AppendLine("Method name: " + targetMethodNameAndSignature.Name);
+                        sb.AppendLine("Instantiation:");
+                        for (int i = 0; i < genericArguments.Length; i++)
+                        {
+                            sb.AppendLine("  Argument " + i.LowLevelToString() + ": " + genericArguments[i].LowLevelToStringRawEETypeAddress());
+                        }
+
+                        Environment.FailFast(sb.ToString());
                     }
 
                     return true;

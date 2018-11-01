@@ -312,7 +312,7 @@
 
   <ItemGroup>
     <PackageReference Include="System.IO.MemoryMappedFiles" Version="4.3.0" />
-    <PackageReference Include="System.Reflection.Metadata" Version="1.4.1" />
+    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
