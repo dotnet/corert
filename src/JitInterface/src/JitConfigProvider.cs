@@ -10,7 +10,7 @@ using NumberStyles = System.Globalization.NumberStyles;
 
 namespace Internal.JitInterface
 {
-    internal sealed class JitConfigProvider
+    public sealed class JitConfigProvider
     {
         private CorJitFlag[] _jitFlags;
         private Dictionary<string, string> _config = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);

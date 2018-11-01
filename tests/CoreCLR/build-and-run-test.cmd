@@ -20,16 +20,28 @@ set TestFileName=%~n2
 
 copy /Y %~dp0\Test.csproj %TestFolder%
 
+:: Cleanup previous test run artifacts since the test may have been run with /NoCleanup
+rd /s /q %TestFolder%\native
+
 ::
 :: The CoreCLR test system configures the VS environment as 32-bit by default,
 :: so override if we're doing a 64-bit test run
 ::
-if "%CoreRT_BuildArch%" == "x64" (
-    call "%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build\vcvarsall.bat" x64
+if /i not "%NativeCodeGen%" == "readytorun" (
+    if "%CoreRT_BuildArch%" == "x64" (
+        call "%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build\vcvarsall.bat" x64
+    )
 )
 
-echo msbuild /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /p:DisableFrameworkLibGeneration=true %TestFolder%\Test.csproj
-msbuild /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /p:DisableFrameworkLibGeneration=true %TestFolder%\Test.csproj
+set ExtraArgs=
+if /i "%NativeCodeGen%" == "readytorun" (
+    echo READY TO RUN MODE
+    set ExtraArgs="/t:CopyNative"
+)
+
+set MsBuildCommandLine=msbuild /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /p:DisableFrameworkLibGeneration=true "/p:CoreRT_CoreCLRRuntimeDir=%CoreRT_CoreCLRRuntimeDir%" %ExtraArgs% %TestFolder%\Test.csproj
+echo %MsBuildCommandLine%
+%MsBuildCommandLine%
 if errorlevel 1 (
     set TestExitCode=!ERRORLEVEL!
     goto :Cleanup
@@ -43,17 +55,33 @@ copy %TestFolder%\*.dll %TestFolder%\native\
 shift
 shift
 
+:: Typically arguments on the command line are separated by spaces. The R2R test harness uses System.CommandLine which uses
+:: a comma to separate multiple arguments in an argument list.
+set "Delimiter="
+set "DelimiterTemplate= "
+if /i "%NativeCodeGen%" == "readytorun" (
+    set "Delimiter=--testargs "
+    set "DelimiterTemplate= --testargs "
+)
+
 set TestParameters=
-set Delimiter=
 :GetNextParameter
 if "%1"=="" goto :RunTest
 set "TestParameters=%TestParameters%%Delimiter%%1"
-set "Delimiter= "
+set "Delimiter=%DelimiterTemplate%"
 shift
 goto :GetNextParameter
 
 :RunTest
-%TestFolder%\native\%TestExecutable% %TestParameters%
+
+set CoreRunCommandLine="%CoreRT_CliDir%\dotnet.exe" %CoreRT_ReadyToRunTestHarness% --corerun %CoreRT_CoreCLRRuntimeDir%\CoreRun.exe --in %TestFolder%native\%TestFileName%.ni.exe --noetl %TestParameters%
+
+if /i "%NativeCodeGen%" == "readytorun" (
+    echo %CoreRunCommandLine%
+    %CoreRunCommandLine%
+) else (
+    %TestFolder%\native\%TestExecutable% %TestParameters%
+)
 
 set TestExitCode=!ERRORLEVEL!
 
@@ -64,6 +92,33 @@ set TestExitCode=!ERRORLEVEL!
 :: CoreCLR pri-0 tests at ~50MB of native artifacts per test, we can easily use 300GB
 :: of disk space and clog up the CI machines
 ::
-rd /s /q %TestFolder%\native
+if not "%CoreRT_NoCleanup%"=="true" (
+    rd /s /q %TestFolder%\native
+)
+
+
+::
+:: Dev bring-up aid to help populate the inclusion / exclusion files. Ie, tests\ReadyToRun.CoreCLR.issues.targets.
+:: All failing tests will have a file named exclude.txt containing the test cmd file path.
+:: All passing tests will have a file named include.txt containing the test cmd file path.
+::
+:: From <root>\tests_downloaded\CoreCLR gather all the test cmd file names:
+::
+::  for /r %f in (include.txt) do type "%f" >> passed.txt
+::
+::   Or
+::
+::  for /r %f in (exclude.txt) do type "%f" >> failed.txt
+::
+:: You can find / replace to massage the list into the XML format needed in the issues.targets file.
+::
+del %TestFolder%\include.txt
+del %TestFolder%\exclude.txt
+
+if "!TestExitCode!" == "100" (
+    echo %TestFolder%%TestFileName%.cmd > %TestFolder%\include.txt
+) else (
+    echo %TestFolder%%TestFileName%.cmd > %TestFolder%\exclude.txt
+)
 
 exit /b !TestExitCode!

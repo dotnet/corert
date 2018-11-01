@@ -39,6 +39,7 @@
     <TypeLoaderBasePath>..\..\System.Private.TypeLoader\src</TypeLoaderBasePath>
     <CommonBasePath>..\..\Common\src</CommonBasePath>
     <ILCompilerBasePath>..\..\ILCompiler.Compiler\src</ILCompilerBasePath>
+    <ILCompilerRyuJitBasePath>..\..\ILCompiler.RyuJit\src</ILCompilerRyuJitBasePath>
     <DependencyAnalysisFrameworkBasePath>..\..\ILCompiler.DependencyAnalysisFramework\src</DependencyAnalysisFrameworkBasePath>
     <JitInterfaceBasePath>..\..\JitInterface\src</JitInterfaceBasePath>
   </PropertyGroup>
@@ -118,7 +119,6 @@
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\INodeWithCodeInfo.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\ISymbolNode.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\IMethodNode.cs" />
-    <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\IMethodCodeNode.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\IEETypeNode.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\ObjectDataBuilder.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\BlobNode.cs" />
@@ -134,13 +134,14 @@
     <Compile Include="$(ILCompilerBasePath)\Compiler\GenericDictionaryLookup.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\SimdHelper.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\MethodExtensions.cs" />
-    <Compile Include="$(ILCompilerBasePath)\Compiler\MemoryHelper.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\ReadyToRun.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\TypeExtensions.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\NameMangler.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\NodeMangler.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DevirtualizationManager.cs" />
     <Compile Include="$(ILCompilerBasePath)\IL\Stubs\PInvokeILProvider.cs" />
+    <Compile Include="$(ILCompilerRyuJitBasePath)\Compiler\DependencyAnalysis\IMethodCodeNode.cs" />
+    <Compile Include="$(ILCompilerRyuJitBasePath)\JitInterface\CorInfoImpl.RyuJit.cs" />
     <Compile Include="$(DependencyAnalysisFrameworkBasePath)\IDependencyNode.cs" />
     <Compile Include="$(DependencyAnalysisFrameworkBasePath)\DependencyNode.cs" />
     <Compile Include="$(DependencyAnalysisFrameworkBasePath)\DependencyNodeCore.cs" />
@@ -149,7 +150,9 @@
     <Compile Include="$(JitInterfaceBasePath)\CorInfoImpl.cs" />
     <Compile Include="$(JitInterfaceBasePath)\CorInfoImpl.Intrinsics.cs" />
     <Compile Include="$(JitInterfaceBasePath)\CorInfoTypes.cs" />
+    <Compile Include="$(JitInterfaceBasePath)\CorInfoTypes.VarInfo.cs" />
     <Compile Include="$(JitInterfaceBasePath)\JitConfigProvider.cs" />
+    <Compile Include="$(JitInterfaceBasePath)\MemoryHelper.cs" />
     <Compile Include="$(JitInterfaceBasePath)\TypeString.cs" />
     <Compile Include="$(TypeLoaderBasePath)\Internal\TypeSystem\PInvokeTargetNativeMethod.Runtime.cs" />
     <Compile Include="Internal\Runtime\JitSupport\RyuJitExecutionStrategy.cs" />

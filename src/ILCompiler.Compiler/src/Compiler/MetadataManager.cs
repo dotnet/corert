@@ -46,8 +46,8 @@ namespace ILCompiler
         protected readonly DynamicInvokeThunkGenerationPolicy _dynamicInvokeThunkGenerationPolicy;
 
         private List<NonGCStaticsNode> _cctorContextsGenerated = new List<NonGCStaticsNode>();
-        private HashSet<TypeDesc> _typesWithEETypesGenerated = new HashSet<TypeDesc>();
-        private HashSet<TypeDesc> _typesWithConstructedEETypesGenerated = new HashSet<TypeDesc>();
+        private readonly HashSet<TypeDesc> _typesWithEETypesGenerated = new HashSet<TypeDesc>();
+        private readonly HashSet<TypeDesc> _typesWithConstructedEETypesGenerated = new HashSet<TypeDesc>();
         private HashSet<MethodDesc> _methodsGenerated = new HashSet<MethodDesc>();
         private HashSet<GenericDictionaryNode> _genericDictionariesGenerated = new HashSet<GenericDictionaryNode>();
         private HashSet<IMethodBodyNode> _methodBodiesGenerated = new HashSet<IMethodBodyNode>();
@@ -567,7 +567,7 @@ namespace ILCompiler
             return _genericDictionariesGenerated;
         }
 
-        internal IEnumerable<MethodDesc> GetCompiledMethods()
+        public IEnumerable<MethodDesc> GetCompiledMethods()
         {
             return _methodsGenerated;
         }

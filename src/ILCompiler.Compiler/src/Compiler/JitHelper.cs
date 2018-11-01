@@ -262,7 +262,7 @@ namespace ILCompiler
         //
         public static string GetNewObjectHelperForType(TypeDesc type)
         {
-            if (EETypeBuilderHelpers.ComputeRequiresAlign8(type))
+            if (type.RequiresAlign8())
             {
                 if (type.HasFinalizer)
                     return "RhpNewFinalizableAlign8";
@@ -281,7 +281,7 @@ namespace ILCompiler
 
         public static string GetNewArrayHelperForType(TypeDesc type)
         {
-            if (EETypeBuilderHelpers.ComputeRequiresAlign8(type))
+            if (type.RequiresAlign8())
                 return "RhpNewArrayAlign8";
 
             return "RhpNewArray";
