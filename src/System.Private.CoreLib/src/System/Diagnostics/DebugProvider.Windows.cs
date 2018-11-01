@@ -9,9 +9,9 @@ using System.Security;
 
 namespace System.Diagnostics
 {
-    public static partial class Debug
+    public partial class DebugProvider
     {
-        private static void ShowDialog(string stackTrace, string message, string detailMessage, string errorSource)
+        public virtual void ShowDialog(string stackTrace, string message, string detailMessage, string errorSource)
         {
             // We can safely ignore errorSource since it's a CoreCLR specific argument for distinguishing calls from Debug.Assert and Environment.FailFast
             string fullMessage = message + Environment.NewLine + detailMessage;

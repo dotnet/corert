@@ -30,6 +30,9 @@
     <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\framework\*">
       <TargetPath>framework</TargetPath>
     </File>
+    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\inc\*">
+      <TargetPath>inc</TargetPath>
+    </File>
     <!-- Workaround to avoid linker warnings on Windows - include all pdb files for static native libraries -->
     <File Condition="Exists('$(BaseOutputPath)\$(OSPlatformConfig)\sdk\bootstrapper.pdb')" Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\bootstrapper.pdb">
       <TargetPath>sdk</TargetPath>

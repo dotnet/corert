@@ -716,11 +716,15 @@ namespace Internal.IL.Stubs
 
             ILCodeLabel returnNullLabel = emitter.NewCodeLabel();
 
+            bool hasDynamicInvokeThunk = (_delegateInfo.SupportedFeatures & DelegateFeature.DynamicInvoke) != 0 &&
+                DynamicInvokeMethodThunk.SupportsSignature(_delegateInfo.Signature);
+
             ILCodeLabel[] labels = new ILCodeLabel[(int)DelegateThunkCollection.MaxThunkKind];
             for (DelegateThunkKind i = 0; i < DelegateThunkCollection.MaxThunkKind; i++)
             {
                 MethodDesc thunk = _delegateInfo.Thunks[i];
-                if (thunk != null)
+                if (thunk != null || 
+                    (i == DelegateThunkKind.DelegateInvokeThunk && hasDynamicInvokeThunk))
                     labels[(int)i] = emitter.NewCodeLabel();
                 else
                     labels[(int)i] = returnNullLabel;
@@ -733,30 +737,40 @@ namespace Internal.IL.Stubs
 
             for (DelegateThunkKind i = 0; i < DelegateThunkCollection.MaxThunkKind; i++)
             {
-                MethodDesc thunk = _delegateInfo.Thunks[i];
-                if (thunk != null)
-                {
-                    codeStream.EmitLabel(labels[(int)i]);
+                MethodDesc targetMethod = null;
 
-                    if (i == DelegateThunkKind.DelegateInvokeThunk)
+                // Dynamic invoke thunk is special since we're calling into a shared helper
+                if (i == DelegateThunkKind.DelegateInvokeThunk && hasDynamicInvokeThunk)
+                {
+                    Debug.Assert(_delegateInfo.Thunks[i] == null);
+
+                    var sig = new DynamicInvokeMethodSignature(_delegateInfo.Signature);
+                    MethodDesc thunk = Context.GetDynamicInvokeThunk(sig);
+
+                    if (thunk.HasInstantiation)
                     {
-                        // Dynamic invoke thunk is special since we're calling into a shared helper
-                        MethodDesc targetMethod;
-                        if (thunk.HasInstantiation)
-                        {
-                            TypeDesc[] inst = DynamicInvokeMethodThunk.GetThunkInstantiationForMethod(_delegateInfo.Type.InstantiateAsOpen().GetMethod("Invoke", null));
-                            targetMethod = Context.GetInstantiatedMethod(thunk, new Instantiation(inst));
-                        }
-                        else
-                        {
-                            targetMethod = thunk;
-                        }
-                        codeStream.Emit(ILOpcode.ldftn, emitter.NewToken(targetMethod));
+                        TypeDesc[] inst = DynamicInvokeMethodThunk.GetThunkInstantiationForMethod(_delegateInfo.Type.InstantiateAsOpen().GetMethod("Invoke", null));
+                        targetMethod = Context.GetInstantiatedMethod(thunk, new Instantiation(inst));
                     }
                     else
                     {
-                        codeStream.Emit(ILOpcode.ldftn, emitter.NewToken(thunk.InstantiateAsOpen()));
+                        targetMethod = thunk;
                     }
+                }
+                else
+                {
+                    MethodDesc thunk = _delegateInfo.Thunks[i];
+
+                    if (thunk != null)
+                    {
+                        targetMethod = thunk.InstantiateAsOpen();
+                    }
+                }
+
+                if (targetMethod != null)
+                {
+                    codeStream.EmitLabel(labels[(int)i]);
+                    codeStream.Emit(ILOpcode.ldftn, emitter.NewToken(targetMethod));
                     codeStream.Emit(ILOpcode.ret);
                 }
             }

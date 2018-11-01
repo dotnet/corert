@@ -297,6 +297,16 @@ internal static class Program
             PrintLine("float comparison: Ok.");
         }
 
+        long l = 0x1;
+        if (l > 0x7FF0000000000000)
+        {
+            PrintLine("long comparison: Failed");
+        }
+        else
+        {
+            PrintLine("long comparison: Ok");
+        }
+
         // Create a ByReference<char> through the ReadOnlySpan ctor and call the ByReference.Value via the indexer.
         var span = "123".AsSpan();
         if (span[0] != '1'

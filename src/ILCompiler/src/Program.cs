@@ -280,7 +280,7 @@ namespace ILCompiler
             // Initialize type system context
             //
 
-            SharedGenericsMode genericsMode = _useSharedGenerics || (!_isCppCodegen && !_isWasmCodegen) ?
+            SharedGenericsMode genericsMode = _useSharedGenerics || !_isWasmCodegen ?
                 SharedGenericsMode.CanonicalReferenceTypes : SharedGenericsMode.Disabled;
 
             // TODO: compiler switch for SIMD support?
@@ -489,7 +489,7 @@ namespace ILCompiler
 
             useScanner &= !_noScanner;
 
-            bool supportsReflection = !_isReadyToRunCodeGen && !_isWasmCodegen && !_isCppCodegen && _systemModuleName == DefaultSystemModule;
+            bool supportsReflection = !_isReadyToRunCodeGen && !_isWasmCodegen && _systemModuleName == DefaultSystemModule;
 
             MetadataManager compilationMetadataManager;
             if (_isReadyToRunCodeGen)

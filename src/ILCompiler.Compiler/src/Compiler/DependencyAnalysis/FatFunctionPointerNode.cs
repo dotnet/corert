@@ -19,6 +19,8 @@ namespace ILCompiler.DependencyAnalysis
     {
         private bool _isUnboxingStub;
 
+        public bool IsUnboxingStub => _isUnboxingStub;
+
         public FatFunctionPointerNode(MethodDesc methodRepresented, bool isUnboxingStub)
         {
             // We should not create these for methods that don't have a canonical method body

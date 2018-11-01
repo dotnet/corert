@@ -577,7 +577,7 @@ namespace Internal.IL
                         ImportUnaryOperation(opCode);
                         break;
                     case ILOpcode.conv_i1:
-                        ImportConvert(WellKnownType.Byte, false, false);
+                        ImportConvert(WellKnownType.SByte, false, false);
                         break;
                     case ILOpcode.conv_i2:
                         ImportConvert(WellKnownType.Int16, false, false);

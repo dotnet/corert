@@ -20,6 +20,11 @@ namespace ILCompiler.DependencyAnalysis
         protected TypeSystemEntity _dictionaryOwner;
         protected GenericLookupResult _lookupSignature;
 
+        public ReadyToRunHelperId Id => _id;
+        public Object Target => _target;
+        public TypeSystemEntity DictionaryOwner => _dictionaryOwner;
+        public GenericLookupResult LookupSignature => _lookupSignature;
+
         public ReadyToRunGenericHelperNode(NodeFactory factory, ReadyToRunHelperId helperId, object target, TypeSystemEntity dictionaryOwner)
         {
             _id = helperId;

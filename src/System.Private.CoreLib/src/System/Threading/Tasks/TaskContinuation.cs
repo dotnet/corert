@@ -547,7 +547,7 @@ namespace System.Threading.Tasks
             else
             {
                 // We couldn't inline, so now we need to schedule it
-                ThreadPool.UnsafeQueueCustomWorkItem(this, forceGlobal: false);
+                ThreadPool.UnsafeQueueUserWorkItemInternal(this, preferLocal: true);
             }
         }
 
@@ -584,7 +584,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>IThreadPoolWorkItem override, which is the entry function for this when the ThreadPool scheduler decides to run it.</summary>
-        void IThreadPoolWorkItem.ExecuteWorkItem()
+        void IThreadPoolWorkItem.Execute()
         {
             // inline the fast path
             if (m_capturedContext == null)
@@ -689,9 +689,9 @@ namespace System.Threading.Tasks
         /// <param name="action">The action to invoke or queue.</param>
         internal static void UnsafeScheduleAction(Action action)
         {
-            ThreadPool.UnsafeQueueCustomWorkItem(
+            ThreadPool.UnsafeQueueUserWorkItemInternal(
                 new AwaitTaskContinuation(action, flowExecutionContext: false),
-                forceGlobal: false);
+                preferLocal: true);
         }
 
         /// <summary>Throws the exception asynchronously on the ThreadPool.</summary>
