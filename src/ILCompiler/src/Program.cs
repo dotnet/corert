@@ -26,6 +26,7 @@ namespace ILCompiler
         private bool _isCppCodegen;
         private bool _isWasmCodegen;
         private bool _isReadyToRunCodeGen;
+        private bool _isInputVersionBubble;
         private bool _isVerbose;
 
         private string _dgmlLogFileName;
@@ -146,6 +147,7 @@ namespace ILCompiler
                 syntax.DefineOption("cpp", ref _isCppCodegen, "Compile for C++ code-generation");
                 syntax.DefineOption("wasm", ref _isWasmCodegen, "Compile for WebAssembly code-generation");
                 syntax.DefineOption("readytorun", ref _isReadyToRunCodeGen, "Compile for ready-to-run code-generation");
+                syntax.DefineOption("inputbubble", ref _isInputVersionBubble, "True when the entire input forms a version bubble (default = per-assembly bubble)");
                 syntax.DefineOption("nativelib", ref _nativeLib, "Compile as static or shared library");
                 syntax.DefineOption("exportsfile", ref _exportsFile, "File to write exported method definitions");
                 syntax.DefineOption("dgmllog", ref _dgmlLogFileName, "Save result of dependency analysis as DGML");
@@ -356,17 +358,10 @@ namespace ILCompiler
                         compilationRoots.Add(new ExportedMethodsRootProvider(module));
                 }
 
-                if (entrypointModule != null)
+                if (entrypointModule != null && !_isReadyToRunCodeGen)
                 {
-                    if (_isReadyToRunCodeGen)
-                    {
-                        compilationRoots.Add(new ManagedEntryPointRootProvider(entrypointModule));
-                    }
-                    else
-                    {
-                        compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext)));
-                        compilationRoots.Add(new RuntimeConfigurationRootProvider(_runtimeOptions));
-                    }
+                    compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext)));
+                    compilationRoots.Add(new RuntimeConfigurationRootProvider(_runtimeOptions));
                 }
 
                 if (_isReadyToRunCodeGen)
@@ -377,11 +372,19 @@ namespace ILCompiler
                     {
                         EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
 
-                        if (entrypointModule == null)
+                        if (entrypointModule == module)
+                        {
+                            compilationRoots.Add(new ManagedEntryPointRootProvider(entrypointModule));
+                        }
+                        else
                         {
                             compilationRoots.Add(new ReadyToRunLibraryRootProvider(module));
                         }
                         inputModules.Add(module);
+                        if (!_isInputVersionBubble)
+                        {
+                            break;
+                        }
                     }
 
                     compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(typeSystemContext, inputModules);
@@ -443,6 +446,7 @@ namespace ILCompiler
                 foreach (var input in typeSystemContext.InputFilePaths)
                 {
                     inputFilePath = input.Value;
+                    break;
                 }
                 builder = new ReadyToRunCodegenCompilationBuilder(typeSystemContext, compilationGroup, inputFilePath);
             }
