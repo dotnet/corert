@@ -681,7 +681,7 @@ namespace ILCompiler.DependencyAnalysis
                 return LookupKind == other.LookupKind &&
                     FixupKind == other.FixupKind &&
                     RuntimeDeterminedTypeHelper.Equals(TypeArgument, other.TypeArgument) &&
-                    MethodArgument == other.MethodArgument &&
+                    RuntimeDeterminedTypeHelper.Equals(MethodArgument?.Method ?? null, other.MethodArgument?.Method ?? null) &&
                     ContextType == other.ContextType;
             }
 
