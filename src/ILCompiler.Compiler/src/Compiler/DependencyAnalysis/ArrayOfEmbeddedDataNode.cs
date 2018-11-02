@@ -66,9 +66,9 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 node.EncodeData(ref builder, factory, relocsOnly);
-                if (node is ISymbolDefinitionNode)
+                if (node is ISymbolDefinitionNode symbolDef)
                 {
-                    builder.AddSymbol((ISymbolDefinitionNode)node);
+                    builder.AddSymbol(symbolDef);
                 }
             }
         }

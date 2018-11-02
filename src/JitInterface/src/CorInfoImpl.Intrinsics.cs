@@ -230,7 +230,9 @@ namespace Internal.JitInterface
                     break;
 
                 case CorInfoIntrinsics.CORINFO_INTRINSIC_RTH_GetValueInternal:
+#if !READYTORUN
                 case CorInfoIntrinsics.CORINFO_INTRINSIC_InitializeArray:
+#endif
                 case CorInfoIntrinsics.CORINFO_INTRINSIC_ByReference_Ctor:
                 case CorInfoIntrinsics.CORINFO_INTRINSIC_ByReference_Value:
                     if (pMustExpand != null)

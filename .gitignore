@@ -288,3 +288,6 @@ src/ILCompiler/reproNative/repro.cpp
 src/ILCompiler/reproNative/repro.s
 src/ILCompiler/reproNative/reproNative.sln
 src/ILCompiler/reproNative/reproNativeCpp.sln
+
+# Visual Studio Code
+.vscode/

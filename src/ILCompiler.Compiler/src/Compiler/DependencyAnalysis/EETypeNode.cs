@@ -938,7 +938,7 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeRareFlags.HasCctorFlag;
             }
 
-            if (EETypeBuilderHelpers.ComputeRequiresAlign8(_type))
+            if (_type.RequiresAlign8())
             {
                 flags |= (uint)EETypeRareFlags.RequiresAlign8Flag;
             }

@@ -31,11 +31,13 @@ See the LICENSE file in the project root for more information.
     <NativeObjectExt Condition="'$(TargetOS)' == 'Windows_NT'">.obj</NativeObjectExt>
     <NativeObjectExt Condition="'$(TargetOS)' != 'Windows_NT'">.o</NativeObjectExt>
     <NativeObjectExt Condition="'$(NativeCodeGen)' == 'wasm'">.bc</NativeObjectExt>
+    <NativeObjectExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' == 'Exe'">.ni.exe</NativeObjectExt>
+    <NativeObjectExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' != 'Exe'">.ni.dll</NativeObjectExt>
 
     <LibFileExt Condition="'$(TargetOS)' == 'Windows_NT'">.lib</LibFileExt>
     <LibFileExt Condition="'$(TargetOS)' != 'Windows_NT'">.a</LibFileExt>
 
-    <IlcOutputFileExt>$(NativeObjectExt)</IlcOutputFileExt>
+    <IlcOutputFileExt Condition="$(IlcOutputFileExt) == ''">$(NativeObjectExt)</IlcOutputFileExt>
     <IlcOutputFileExt Condition="$(NativeCodeGen) == 'cpp'">.cpp</IlcOutputFileExt>
     <IlcOutputFileExt Condition="'$(NativeCodeGen)' == 'wasm'">.bc</IlcOutputFileExt>
 
@@ -49,6 +51,8 @@ See the LICENSE file in the project root for more information.
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' == 'Windows_NT' and $(NativeLib) == 'Static'">.lib</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' != 'Windows_NT' and $(NativeLib) == 'Static'">.a</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(NativeCodeGen)' == 'wasm'">.html</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' == 'Exe'">.ni.exe</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' != 'Exe'">.ni.dll</NativeBinaryExt>
 
     <ExportsFileExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' == 'Windows_NT' and '$(NativeLib)' == 'Shared'">.def</ExportsFileExt>
     <ExportsFileExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' != 'Windows_NT' and '$(NativeLib)' == 'Shared'">.exports</ExportsFileExt>
@@ -140,9 +144,10 @@ See the LICENSE file in the project root for more information.
 
   <Target Name="ComputeIlcCompileInputs" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)" BeforeTargets="Publish">
     <ItemGroup>
-      <ManagedBinary Condition="$(BuildingFrameworkLibrary) != 'true'" Include="$(IntermediateOutputPath)$(TargetName)$(TargetExt)" />
+      <ManagedBinary Condition="$(BuildingFrameworkLibrary) != 'true' and '$(BuildingReadyToRunAssembly)' != 'true'" Include="$(IntermediateOutputPath)$(TargetName)$(TargetExt)" />
       <IlcCompileInput Include="@(ManagedBinary)" />
-      <IlcReference Include="@(DefaultFrameworkAssemblies)" />
+      <!-- Skip setting framework defaults for ready-to-run since it uses standard .NETCoreApp framework assemblies -->
+      <IlcReference Include="@(DefaultFrameworkAssemblies)" Condition="'$(NativeCodeGen)' != 'readytorun'" />
     </ItemGroup>
   </Target>
 
@@ -221,6 +226,32 @@ See the LICENSE file in the project root for more information.
     <Exec Command="$(CppCompiler) @&quot;$(NativeIntermediateOutputPath)cl.rsp&quot;" Condition="'$(OS)' == 'Windows_NT'" />
   </Target>
   
+  <!--
+      For code generators that emit native binaries directly from ILCompiler. Ie, ReadyToRun code generation
+      directly writes the final PE file 
+  -->
+  <Target Name="CopyNative"
+      Inputs="$(NativeObject)"
+      Outputs="$(NativeBinary)"
+      DependsOnTargets="IlcCompile">
+
+      <Copy SourceFiles="$(NativeObject)" DestinationFiles="$(NativeBinary)" />
+  </Target>
+
+  <Target Name="GetNativeObjects">
+    <ItemGroup>
+      <NativeObjects Include="$(NativeIntermediateOutputPath)*.ni.exe;$(NativeIntermediateOutputPath)*.ni.dll" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="MultiFileCopyNative"
+      Inputs="@(NativeObjects)"
+      Outputs="$(NativeOutputPath)"
+      DependsOnTargets="GetNativeObjects">
+
+      <Copy SourceFiles="@(NativeObjects)" DestinationFolder="$(NativeOutputPath)" />
+  </Target>
+
   <Target Name="LinkNative"
       Inputs="$(NativeObject);@(NativeLibrary)"
       Outputs="$(NativeBinary)"

@@ -32,13 +32,64 @@ namespace ILCompiler.DependencyAnalysis.X86
             {
                 Builder.EmitByte(0xff);
                 Builder.EmitByte(0x25);
-                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_REL32);
+                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_HIGHLOW);
             }
             else
             {
                 Builder.EmitByte(0xE9);
                 Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_REL32);
             }
+        }
+
+        public void EmitXOR(Register register1, Register register2)
+        {
+            Builder.EmitByte(0x33);
+            Builder.EmitByte((byte)(0xC0 | ((byte)register1 << 3) | (byte)register2));
+        }
+
+        public void EmitPUSH(sbyte imm8)
+        {
+            Builder.EmitByte(0x6A);
+            Builder.EmitByte(unchecked((byte)imm8));
+        }
+
+        public void EmitPUSH(ISymbolNode node)
+        {
+            if (node.RepresentsIndirectionCell)
+            {
+                // push eax (arbitrary value)
+                Builder.EmitByte(0x50);
+                // mov eax, [node address]
+                Builder.EmitByte(0x8B);
+                Builder.EmitByte(0x00 | ((byte)Register.EAX << 3) | 0x5);
+                Builder.EmitReloc(node, RelocType.IMAGE_REL_BASED_HIGHLOW);
+                // xchg [esp], eax; this also restores the previous value of eax
+                Builder.EmitByte(0x87);
+                Builder.EmitByte(0x04);
+                Builder.EmitByte(0x24);
+            }
+            else
+            {
+                // push <node address>
+                Builder.EmitByte(0x68);
+                Builder.EmitReloc(node, RelocType.IMAGE_REL_BASED_HIGHLOW);
+            }
+        }
+
+        public void EmitMOV(Register register, ISymbolNode node)
+        {
+            if (node.RepresentsIndirectionCell)
+            {
+                // mov register, [node address]
+                Builder.EmitByte(0x8B);
+                Builder.EmitByte((byte)(0x00 | ((byte)register << 3) | 0x5));
+            }
+            else
+            {
+                // mov register, immediate
+                Builder.EmitByte((byte)(0xB8 + (byte)register));
+            }
+            Builder.EmitReloc(node, RelocType.IMAGE_REL_BASED_HIGHLOW);
         }
 
         public void EmitINT3()
