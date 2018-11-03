@@ -182,7 +182,6 @@ namespace Internal.TypeSystem
         /// </summary>
         public static int MaximumLog2PrimitiveSize
         {
-
             get
             {
                 return 3;

@@ -62,6 +62,22 @@ namespace ILCompiler
         private class ModuleFieldLayoutMap : LockFreeReaderHashtable<EcmaModule, ModuleFieldLayout>
         {
             /// <summary>
+            /// In various helper structures, we refer to regular vs. thread-local statics via indices 0-1.
+            /// </summary>
+            private const int StaticIndexRegular = 0;
+
+            /// <summary>
+            /// In various helper structures, we refer to regular vs. thread-local statics via indices 0-1.
+            /// </summary>
+            private const int StaticIndexThreadLocal = 1;
+
+            /// <summary>
+            /// Number of elements in a helper structure intended to comprise a regular and a thread-local
+            /// statics variant.
+            /// </summary>
+            private const int StaticIndexCount = 2;
+
+            /// <summary>
             /// CoreCLR DomainLocalModule::OffsetOfDataBlob() / sizeof(void *)
             /// </summary>
             private const int DomainLocalModuleDataBlobOffsetAsIntPtrCount = 6;
@@ -97,12 +113,12 @@ namespace ILCompiler
                 int pointerSize = module.Context.Target.PointerSize;
 
                 // 0 corresponds to "normal" statics, 1 to thread-local statics
-                LayoutInt[] gcStatics = new LayoutInt[2]
+                LayoutInt[] gcStatics = new LayoutInt[StaticIndexCount]
                 {
                     LayoutInt.Zero,
                     LayoutInt.Zero
                 };
-                LayoutInt[] nonGcStatics = new LayoutInt[2]
+                LayoutInt[] nonGcStatics = new LayoutInt[StaticIndexCount]
                 {
                     new LayoutInt(DomainLocalModuleDataBlobOffsetAsIntPtrCount * pointerSize + typeCountInModule),
                     new LayoutInt(ThreadLocalModuleDataBlobOffsetAsIntPtrCount * pointerSize + typeCountInModule),
@@ -125,7 +141,7 @@ namespace ILCompiler
                         FieldDefinition fieldDef = module.MetadataReader.GetFieldDefinition(fieldDefHandle);
                         if ((fieldDef.Attributes & (FieldAttributes.Static | FieldAttributes.Literal)) == FieldAttributes.Static)
                         {
-                            int index = (IsFieldThreadStatic(in fieldDef, module.MetadataReader) ? 1 : 0);
+                            int index = (IsFieldThreadStatic(in fieldDef, module.MetadataReader) ? StaticIndexThreadLocal : StaticIndexRegular);
                             int alignment;
                             int size;
                             bool isGcPointerField;
@@ -168,10 +184,10 @@ namespace ILCompiler
 
                 return new ModuleFieldLayout(
                     module,
-                    gcStatics: new StaticsBlock() { Size = gcStatics[0], LargestAlignment = blockAlignment },
-                    nonGcStatics: new StaticsBlock() { Size = nonGcStatics[0], LargestAlignment = blockAlignment },
-                    threadGcStatics: new StaticsBlock() { Size = gcStatics[1], LargestAlignment = blockAlignment },
-                    threadNonGcStatics: new StaticsBlock() { Size = nonGcStatics[1], LargestAlignment = blockAlignment },
+                    gcStatics: new StaticsBlock() { Size = gcStatics[StaticIndexRegular], LargestAlignment = blockAlignment },
+                    nonGcStatics: new StaticsBlock() { Size = nonGcStatics[StaticIndexRegular], LargestAlignment = blockAlignment },
+                    threadGcStatics: new StaticsBlock() { Size = gcStatics[StaticIndexThreadLocal], LargestAlignment = blockAlignment },
+                    threadNonGcStatics: new StaticsBlock() { Size = nonGcStatics[StaticIndexThreadLocal], LargestAlignment = blockAlignment },
                     typeToFieldMap: typeToFieldMap);
             }
 
@@ -287,21 +303,23 @@ namespace ILCompiler
                 List<FieldAndOffset> fieldsForType = null;
                 int pointerSize = module.Context.Target.PointerSize;
 
-                int[][] nonGcStaticsCount = new int[][]
+                // In accordance with CoreCLR runtime conventions,
+                // index 0 corresponds to regular statics, index 1 to thread-local statics.
+                int[][] nonGcStaticsCount = new int[StaticIndexCount][]
                 {
                     new int[TargetDetails.MaximumLog2PrimitiveSize + 1],
                     new int[TargetDetails.MaximumLog2PrimitiveSize + 1],
                 };
 
-                int[] gcPointerCount = new int[2];
-                int[] gcBoxedCount = new int[2];
+                int[] gcPointerCount = new int[StaticIndexCount];
+                int[] gcBoxedCount = new int[StaticIndexCount];
 
                 foreach (FieldDesc field in defType.GetFields())
                 {
                     FieldDefinition fieldDef = module.MetadataReader.GetFieldDefinition(((EcmaField)field.GetTypicalFieldDefinition()).Handle);
                     if ((fieldDef.Attributes & (FieldAttributes.Static | FieldAttributes.Literal)) == FieldAttributes.Static)
                     {
-                        int index = (IsFieldThreadStatic(in fieldDef, module.MetadataReader) ? 1 : 0);
+                        int index = (IsFieldThreadStatic(in fieldDef, module.MetadataReader) ? StaticIndexThreadLocal : StaticIndexRegular);
                         int alignment;
                         int size;
                         bool isGcPointerField;
@@ -344,13 +362,13 @@ namespace ILCompiler
                         throw new NotImplementedException();
                 }
 
-                LayoutInt[] nonGcStaticFieldOffsets = new LayoutInt[2]
+                LayoutInt[] nonGcStaticFieldOffsets = new LayoutInt[StaticIndexCount]
                 {
                     new LayoutInt(nonGcInitialOffset),
                     new LayoutInt(nonGcInitialOffset),
                 };
 
-                LayoutInt[][] nonGcStatics = new LayoutInt[][]
+                LayoutInt[][] nonGcStatics = new LayoutInt[StaticIndexCount][]
                 {
                     new LayoutInt[TargetDetails.MaximumLog2PrimitiveSize + 1],
                     new LayoutInt[TargetDetails.MaximumLog2PrimitiveSize + 1],
@@ -358,7 +376,7 @@ namespace ILCompiler
 
                 for (int log2Size = TargetDetails.MaximumLog2PrimitiveSize; log2Size >= 0; log2Size--)
                 {
-                    for (int index = 0; index <= 1; index++)
+                    for (int index = 0; index < StaticIndexCount; index++)
                     {
                         LayoutInt offset = nonGcStaticFieldOffsets[index];
                         nonGcStatics[index][log2Size] = offset;
@@ -367,8 +385,12 @@ namespace ILCompiler
                     }
                 }
 
-                LayoutInt[] gcBoxedFieldOffsets = new LayoutInt[2];
-                LayoutInt[] gcPointerFieldOffsets = new LayoutInt[2] { new LayoutInt(gcBoxedCount[0] * pointerSize), new LayoutInt(gcBoxedCount[1] * pointerSize) };
+                LayoutInt[] gcBoxedFieldOffsets = new LayoutInt[StaticIndexCount];
+                LayoutInt[] gcPointerFieldOffsets = new LayoutInt[StaticIndexCount] 
+                {
+                    new LayoutInt(gcBoxedCount[StaticIndexRegular] * pointerSize),
+                    new LayoutInt(gcBoxedCount[StaticIndexThreadLocal] * pointerSize)
+                };
 
                 foreach (FieldDesc field in defType.GetFields())
                 {
@@ -376,7 +398,7 @@ namespace ILCompiler
                     FieldDefinition fieldDef = module.MetadataReader.GetFieldDefinition(fieldDefHandle);
                     if ((fieldDef.Attributes & (FieldAttributes.Static | FieldAttributes.Literal)) == FieldAttributes.Static)
                     {
-                        int index = (IsFieldThreadStatic(in fieldDef, module.MetadataReader) ? 1 : 0);
+                        int index = (IsFieldThreadStatic(in fieldDef, module.MetadataReader) ? StaticIndexThreadLocal : StaticIndexRegular);
                         int alignment;
                         int size;
                         bool isGcPointerField;
