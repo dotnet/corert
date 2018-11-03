@@ -110,6 +110,11 @@ namespace ILCompiler.DependencyAnalysis
             SignatureContext signatureContext, 
             bool isUnboxingStub = false)
         {
+            if (targetMethod.HasCustomAttribute("System.Runtime.CompilerServices", "IntrinsicAttribute"))
+            {
+                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.IntrinsicCodeRequiresRuntimeJit, targetMethod);
+            }
+
             if (targetMethod == originalMethod)
             {
                 constrainedType = null;
