@@ -456,11 +456,6 @@ namespace Internal.IL
 
         protected override LLVMValueRef ValueAsTypeInternal(LLVMTypeRef type, LLVMBuilderRef builder, bool signExtend)
         {
-            if (Type.IsWellKnownType(WellKnownType.Single) && type.TypeKind == LLVMTypeKind.LLVMDoubleTypeKind)
-            {
-                var loadedVal = ILImporter.LoadValue(builder, RawLLVMValue, Type, LLVMTypeRef.FloatType(), signExtend, $"fpext_Load{Name}");
-                return LLVM.BuildFPExt(builder, loadedVal, type, $"fpext{Name}");
-            }
             return ILImporter.LoadValue(builder, RawLLVMValue, Type, type, signExtend, $"Load{Name}");
         }
     }
