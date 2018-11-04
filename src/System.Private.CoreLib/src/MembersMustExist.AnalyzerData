@@ -174,7 +174,7 @@ public void System.Runtime.CompilerServices.AsyncTaskMethodBuilder.SetResult()
 public void System.Runtime.CompilerServices.AsyncTaskMethodBuilder.SetException(System.Exception exception)
 internal static void System.Runtime.CompilerServices.AsyncTaskMethodBuilder.SetException(System.Threading.Tasks.Task task, System.Exception exception)
 internal void System.Runtime.CompilerServices.AsyncTaskMethodBuilder.SetNotificationForWaitCompletion(bool enabled)
-private object System.Runtime.CompilerServices.AsyncTaskMethodBuilder.ObjectIdForDebugger.get
+internal object System.Runtime.CompilerServices.AsyncTaskMethodBuilder.ObjectIdForDebugger.get
 public System.Threading.Tasks.Task System.Runtime.CompilerServices.AsyncTaskMethodBuilder.Task.get
 
 # System.Runtime.CompilerServices.RuntimeHelpers
