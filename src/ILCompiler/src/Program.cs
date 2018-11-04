@@ -25,6 +25,8 @@ namespace ILCompiler
         private string _outputFilePath;
         private bool _isCppCodegen;
         private bool _isWasmCodegen;
+        private bool _isReadyToRunCodeGen;
+        private bool _isInputVersionBubble;
         private bool _isVerbose;
 
         private string _dgmlLogFileName;
@@ -144,6 +146,8 @@ namespace ILCompiler
                 syntax.DefineOption("g", ref _enableDebugInfo, "Emit debugging information");
                 syntax.DefineOption("cpp", ref _isCppCodegen, "Compile for C++ code-generation");
                 syntax.DefineOption("wasm", ref _isWasmCodegen, "Compile for WebAssembly code-generation");
+                syntax.DefineOption("readytorun", ref _isReadyToRunCodeGen, "Compile for ready-to-run code-generation");
+                syntax.DefineOption("inputbubble", ref _isInputVersionBubble, "True when the entire input forms a version bubble (default = per-assembly bubble)");
                 syntax.DefineOption("nativelib", ref _nativeLib, "Compile as static or shared library");
                 syntax.DefineOption("exportsfile", ref _exportsFile, "File to write exported method definitions");
                 syntax.DefineOption("dgmllog", ref _dgmlLogFileName, "Save result of dependency analysis as DGML");
@@ -278,14 +282,16 @@ namespace ILCompiler
             // Initialize type system context
             //
 
-            SharedGenericsMode genericsMode = _useSharedGenerics || (!_isCppCodegen && !_isWasmCodegen) ?
+            SharedGenericsMode genericsMode = _useSharedGenerics || !_isWasmCodegen ?
                 SharedGenericsMode.CanonicalReferenceTypes : SharedGenericsMode.Disabled;
 
             // TODO: compiler switch for SIMD support?
             var simdVectorLength = (_isCppCodegen || _isWasmCodegen) ? SimdVectorLength.None : SimdVectorLength.Vector128Bit;
             var targetAbi = _isCppCodegen ? TargetAbi.CppCodegen : TargetAbi.CoreRT;
             var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, targetAbi, simdVectorLength);
-            var typeSystemContext = new CompilerTypeSystemContext(targetDetails, genericsMode);
+            CompilerTypeSystemContext typeSystemContext = (_isReadyToRunCodeGen
+                ? new ReadyToRunCompilerContext(targetDetails, genericsMode)
+                : new CompilerTypeSystemContext(targetDetails, genericsMode));
 
             //
             // TODO: To support our pre-compiled test tree, allow input files that aren't managed assemblies since
@@ -348,16 +354,42 @@ namespace ILCompiler
                         entrypointModule = module;
                     }
 
-                    compilationRoots.Add(new ExportedMethodsRootProvider(module));
+                    if (!_isReadyToRunCodeGen)
+                        compilationRoots.Add(new ExportedMethodsRootProvider(module));
                 }
 
-                if (entrypointModule != null)
+                if (entrypointModule != null && !_isReadyToRunCodeGen)
                 {
                     compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext)));
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(_runtimeOptions));
                 }
 
-                if (_multiFile)
+                if (_isReadyToRunCodeGen)
+                {
+                    List<EcmaModule> inputModules = new List<EcmaModule>();
+
+                    foreach (var inputFile in typeSystemContext.InputFilePaths)
+                    {
+                        EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
+
+                        if (entrypointModule == module)
+                        {
+                            compilationRoots.Add(new ManagedEntryPointRootProvider(entrypointModule));
+                        }
+                        else
+                        {
+                            compilationRoots.Add(new ReadyToRunLibraryRootProvider(module));
+                        }
+                        inputModules.Add(module);
+                        if (!_isInputVersionBubble)
+                        {
+                            break;
+                        }
+                    }
+
+                    compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(typeSystemContext, inputModules);
+                }
+                else if (_multiFile)
                 {
                     List<EcmaModule> inputModules = new List<EcmaModule>();
 
@@ -380,7 +412,8 @@ namespace ILCompiler
                     if (entrypointModule == null && !_nativeLib)
                         throw new Exception("No entrypoint module");
 
-                    compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
+                    if (!_isReadyToRunCodeGen)
+                        compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
                     compilationGroup = new SingleFileCompilationModuleGroup();
                 }
 
@@ -407,6 +440,16 @@ namespace ILCompiler
             CompilationBuilder builder;
             if (_isWasmCodegen)
                 builder = new WebAssemblyCodegenCompilationBuilder(typeSystemContext, compilationGroup);
+            else if (_isReadyToRunCodeGen)
+            {
+                string inputFilePath = "";
+                foreach (var input in typeSystemContext.InputFilePaths)
+                {
+                    inputFilePath = input.Value;
+                    break;
+                }
+                builder = new ReadyToRunCodegenCompilationBuilder(typeSystemContext, compilationGroup, inputFilePath);
+            }
             else if (_isCppCodegen)
                 builder = new CppCodegenCompilationBuilder(typeSystemContext, compilationGroup);
             else
@@ -446,13 +489,22 @@ namespace ILCompiler
             // fixable by using a CompilationGroup for the scanner that has a bigger worldview, but
             // let's cross that bridge when we get there).
             bool useScanner = _useScanner ||
-                (_optimizationMode != OptimizationMode.None && !_isCppCodegen && !_isWasmCodegen && !_multiFile);
+                (_optimizationMode != OptimizationMode.None && !_isCppCodegen && !_isWasmCodegen && !_isReadyToRunCodeGen && !_multiFile);
 
             useScanner &= !_noScanner;
 
-            bool supportsReflection = !_isWasmCodegen && !_isCppCodegen && _systemModuleName == DefaultSystemModule;
+            bool supportsReflection = !_isReadyToRunCodeGen && !_isWasmCodegen && _systemModuleName == DefaultSystemModule;
 
-            MetadataManager compilationMetadataManager = supportsReflection ? metadataManager : (MetadataManager)new EmptyMetadataManager(typeSystemContext);
+            MetadataManager compilationMetadataManager;
+            if (_isReadyToRunCodeGen)
+            {
+                compilationMetadataManager = new ReadyToRunTableManager(typeSystemContext);
+            }
+            else
+            {
+                compilationMetadataManager = supportsReflection ? metadataManager : (MetadataManager)new EmptyMetadataManager(typeSystemContext);
+            }
+            
             ILScanResults scanResults = null;
             if (useScanner)
             {

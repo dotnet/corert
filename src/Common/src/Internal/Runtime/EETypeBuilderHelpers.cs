@@ -141,29 +141,6 @@ namespace Internal.Runtime
             return flags;
         }
 
-        public static bool ComputeRequiresAlign8(TypeDesc type)
-        {
-            if (type.Context.Target.Architecture != TargetArchitecture.ARM)
-            {
-                return false;
-            }
-
-            if (type.IsArray)
-            {
-                var elementType = ((ArrayType)type).ElementType;
-                if ((elementType.IsValueType) && ((DefType)elementType).InstanceByteAlignment.AsInt > 4)
-                {
-                    return true;
-                }
-            }
-            else if (type.IsDefType && ((DefType)type).InstanceByteAlignment.AsInt > 4)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
         // These masks and paddings have been chosen so that the ValueTypePadding field can always fit in a byte of data
         // if the alignment is 8 bytes or less. If the alignment is higher then there may be a need for more bits to hold
         // the rest of the padding data.

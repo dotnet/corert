@@ -2394,16 +2394,26 @@ namespace Internal.IL
 
             LLVMValueRef valueToShiftValue = valueToShift.ValueForStackKind(valueToShift.Kind, _builder, false);
 
+            // while it seems excessive that the bits to shift should need to be 64 bits, the LLVM docs say that both operands must be the same type and a compilation failure results if this is not the case.
+            LLVMValueRef rhs;
+            if (valueToShiftValue.TypeOf().Equals(LLVM.Int64Type()))
+            {
+                rhs = numBitsToShift.ValueAsInt64(_builder, false);
+            }
+            else
+            {
+                rhs = numBitsToShift.ValueAsInt32(_builder, false);
+            }
             switch (opcode)
             {
                 case ILOpcode.shl:
-                    result = LLVM.BuildShl(_builder, valueToShiftValue, numBitsToShift.ValueAsInt32(_builder, false), "shl");
+                    result = LLVM.BuildShl(_builder, valueToShiftValue, rhs, "shl");
                     break;
                 case ILOpcode.shr:
-                    result = LLVM.BuildAShr(_builder, valueToShiftValue, numBitsToShift.ValueAsInt32(_builder, false), "shr");
+                    result = LLVM.BuildAShr(_builder, valueToShiftValue, rhs, "shr");
                     break;
                 case ILOpcode.shr_un:
-                    result = LLVM.BuildLShr(_builder, valueToShiftValue, numBitsToShift.ValueAsInt32(_builder, false), "shr");
+                    result = LLVM.BuildLShr(_builder, valueToShiftValue, rhs, "shr");
                     break;
                 default:
                     throw new InvalidOperationException(); // Should be unreachable

@@ -15,7 +15,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a map of generic virtual method implementations.
     /// </summary>
-    internal sealed class GenericVirtualMethodTableNode : ObjectNode, ISymbolDefinitionNode
+    public sealed class GenericVirtualMethodTableNode : ObjectNode, ISymbolDefinitionNode
     {
         private ObjectAndOffsetSymbolNode _endSymbol;
         private ExternalReferencesTableNode _externalReferences;

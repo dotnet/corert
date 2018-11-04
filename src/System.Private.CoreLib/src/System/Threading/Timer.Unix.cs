@@ -6,6 +6,7 @@ using Internal.Runtime.Augments;
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace System.Threading
 {
@@ -120,16 +121,25 @@ namespace System.Threading
     {
         private void SignalNoCallbacksRunning()
         {
-            SafeWaitHandle waitHandle = _notifyWhenNoCallbacksRunning.SafeWaitHandle;
+            object toSignal = _notifyWhenNoCallbacksRunning;
+            Debug.Assert(toSignal is WaitHandle || toSignal is Task<bool>);
 
-            waitHandle.DangerousAddRef();
-            try
+            if (toSignal is WaitHandle wh)
             {
-                WaitSubsystem.SetEvent(waitHandle.DangerousGetHandle());
+                SafeWaitHandle waitHandle = wh.SafeWaitHandle;
+                waitHandle.DangerousAddRef();
+                try
+                {
+                    WaitSubsystem.SetEvent(waitHandle.DangerousGetHandle());
+                }
+                finally
+                {
+                    waitHandle.DangerousRelease();
+                }
             }
-            finally
+            else
             {
-                waitHandle.DangerousRelease();
+                ((Task<bool>)toSignal).TrySetResult(true);
             }
         }
     }

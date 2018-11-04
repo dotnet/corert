@@ -13,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis
     /// Represents a blob of native metadata describing assemblies, the types in them, and their members.
     /// The data is used at runtime to e.g. support reflection.
     /// </summary>
-    internal sealed class MetadataNode : ObjectNode, ISymbolDefinitionNode
+    public sealed class MetadataNode : ObjectNode, ISymbolDefinitionNode
     {
         ObjectAndOffsetSymbolNode _endSymbol;
 

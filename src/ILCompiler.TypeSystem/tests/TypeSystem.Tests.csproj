@@ -16,7 +16,7 @@
       <Version>$(MicrosoftDotNetXUnitExtensionsVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Reflection.Metadata">
-      <Version>1.4.2</Version>
+      <Version>$(SystemReflectionMetadataVersion)</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>

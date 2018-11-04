@@ -149,60 +149,18 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return _cache.GetOrAdd(key, _creator);
             }
+
+            public TValue GetOrAdd(TKey key, Func<TKey, TValue> creator)
+            {
+                return _cache.GetOrAdd(key, creator);
+            }
         }
 
         private void CreateNodeCaches()
         {
-            _typeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
-            {
-                Debug.Assert(!_compilationModuleGroup.ShouldReferenceThroughImportTable(type));
-                if (_compilationModuleGroup.ContainsType(type))
-                {
-                    if (type.IsGenericDefinition)
-                    {
-                        return new GenericDefinitionEETypeNode(this, type);
-                    }
-                    else if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
-                    {
-                        return new CanonicalDefinitionEETypeNode(this, type);
-                    }
-                    else if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                    {
-                        return new NecessaryCanonicalEETypeNode(this, type);
-                    }
-                    else
-                    {
-                        return new EETypeNode(this, type);
-                    }
-                }
-                else
-                {
-                    return new ExternEETypeSymbolNode(this, type);
-                }
-            });
+            _typeSymbols = new NodeCache<TypeDesc, IEETypeNode>(CreateNecessaryTypeNode);
 
-            _constructedTypeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
-            {
-                // Canonical definition types are *not* constructed types (call NecessaryTypeSymbol to get them)
-                Debug.Assert(!type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
-                Debug.Assert(!_compilationModuleGroup.ShouldReferenceThroughImportTable(type));
-
-                if (_compilationModuleGroup.ContainsType(type))
-                {
-                    if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                    {
-                        return new CanonicalEETypeNode(this, type);
-                    }
-                    else
-                    {
-                        return new ConstructedEETypeNode(this, type);
-                    }
-                }
-                else
-                {
-                    return new ExternEETypeSymbolNode(this, type);
-                }
-            });
+            _constructedTypeSymbols = new NodeCache<TypeDesc, IEETypeNode>(CreateConstructedTypeNode);
 
             _clonedTypeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
             {
@@ -347,15 +305,8 @@ namespace ILCompiler.DependencyAnalysis
 
             _readyToRunHelpers = new NodeCache<ReadyToRunHelperKey, ISymbolNode>(CreateReadyToRunHelperNode);
 
-            _genericReadyToRunHelpersFromDict = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(data =>
-            {
-                return new ReadyToRunGenericLookupFromDictionaryNode(this, data.HelperId, data.Target, data.DictionaryOwner);
-            });
-
-            _genericReadyToRunHelpersFromType = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(data =>
-            {
-                return new ReadyToRunGenericLookupFromTypeNode(this, data.HelperId, data.Target, data.DictionaryOwner);
-            });
+            _genericReadyToRunHelpersFromDict = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(CreateGenericLookupFromDictionaryNode);
+            _genericReadyToRunHelpersFromType = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(CreateGenericLookupFromTypeNode);
 
             _indirectionNodes = new NodeCache<ISortableSymbolNode, ISymbolNode>(indirectedNode =>
             {
@@ -481,6 +432,67 @@ namespace ILCompiler.DependencyAnalysis
 
             NativeLayout = new NativeLayoutHelper(this);
             WindowsDebugData = new WindowsDebugDataHelper(this);
+        }
+
+        protected virtual ISymbolNode CreateGenericLookupFromDictionaryNode(ReadyToRunGenericHelperKey helperKey)
+        {
+            return new ReadyToRunGenericLookupFromDictionaryNode(this, helperKey.HelperId, helperKey.Target, helperKey.DictionaryOwner);
+        }
+
+        protected virtual ISymbolNode CreateGenericLookupFromTypeNode(ReadyToRunGenericHelperKey helperKey)
+        {
+            return new ReadyToRunGenericLookupFromTypeNode(this, helperKey.HelperId, helperKey.Target, helperKey.DictionaryOwner);
+        }
+
+        protected virtual IEETypeNode CreateNecessaryTypeNode(TypeDesc type)
+        {
+            Debug.Assert(!_compilationModuleGroup.ShouldReferenceThroughImportTable(type));
+            if (_compilationModuleGroup.ContainsType(type))
+            {
+                if (type.IsGenericDefinition)
+                {
+                    return new GenericDefinitionEETypeNode(this, type);
+                }
+                else if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                {
+                    return new CanonicalDefinitionEETypeNode(this, type);
+                }
+                else if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                {
+                    return new NecessaryCanonicalEETypeNode(this, type);
+                }
+                else
+                {
+                    return new EETypeNode(this, type);
+                }
+            }
+            else
+            {
+                return new ExternEETypeSymbolNode(this, type);
+            }
+        }
+
+        protected virtual IEETypeNode CreateConstructedTypeNode(TypeDesc type)
+        {
+            // Canonical definition types are *not* constructed types (call NecessaryTypeSymbol to get them)
+            Debug.Assert(!type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
+            Debug.Assert(!_compilationModuleGroup.ShouldReferenceThroughImportTable(type));
+
+            if (_compilationModuleGroup.ContainsType(type))
+            {
+                if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                {
+                    return new CanonicalEETypeNode(this, type);
+                }
+                else
+                {
+                    return new ConstructedEETypeNode(this, type);
+                }
+            }
+            else
+            {
+                return new ExternEETypeSymbolNode(this, type);
+            }
         }
 
         protected abstract IMethodNode CreateMethodEntrypointNode(MethodDesc method);
@@ -721,7 +733,7 @@ namespace ILCompiler.DependencyAnalysis
             return _stringAllocators.GetOrAdd(stringConstructor);
         }
 
-        private NodeCache<MethodDesc, IMethodNode> _methodEntrypoints;
+        protected NodeCache<MethodDesc, IMethodNode> _methodEntrypoints;
         private NodeCache<MethodDesc, IMethodNode> _unboxingStubs;
         private NodeCache<IMethodNode, MethodAssociatedDataNode> _methodAssociatedData;
 

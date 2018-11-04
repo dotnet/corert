@@ -178,6 +178,28 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Gets the dyadic logarithm of the maximum size of a primitive type
+        /// </summary>
+        public static int MaximumLog2PrimitiveSize
+        {
+            get
+            {
+                return 3;
+            }
+        }
+
+        /// <summary>
+        /// Gets the maximum size of a primitive type
+        /// </summary>
+        public static int MaximumPrimitiveSize
+        {
+            get
+            {
+                return 1 << MaximumLog2PrimitiveSize;
+            }
+        }
+
+        /// <summary>
         /// Retrieves the size of a well known type.
         /// </summary>
         public LayoutInt GetWellKnownTypeSize(DefType type)
