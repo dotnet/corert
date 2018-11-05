@@ -380,7 +380,7 @@ goto :eof
 
         set __ExtraTestRunArgs=
         if "%__Mode%"=="readytorun" (
-            set __Extension=exe
+            set __Extension=ni.exe
             set __ExtraTestRunArgs="%CoreRT_CliDir%\dotnet.exe" %CoreRT_ReadyToRunTestHarness% %CoreRT_CoreCLRRuntimeDir%\CoreRun.exe
         )
 

@@ -61,7 +61,6 @@ namespace ILCompiler
 
         public IEnumerable<ExportedTypeInfo> GetExportedTypes()
         {
-            List<ExportedTypeInfo> exportedTypeList = new List<ExportedTypeInfo>();
             foreach (string inputFile in _typeSystemContext.InputFilePaths.Values)
             {
                 EcmaModule module = _typeSystemContext.GetModuleFromPath(inputFile);
@@ -70,11 +69,10 @@ namespace ILCompiler
                     ExportedType exportedType = module.MetadataReader.GetExportedType(exportedTypeHandle);
                     if (exportedType.IsForwarder)
                     {
-                        exportedTypeList.Add(new ExportedTypeInfo(module, exportedTypeHandle));
+                        yield return new ExportedTypeInfo(module, exportedTypeHandle);
                     }
                 }
             }
-            return exportedTypeList;
         }
 
         public override MethodDesc GetCanonicalReflectionInvokeStub(MethodDesc method) => throw new NotImplementedException();
