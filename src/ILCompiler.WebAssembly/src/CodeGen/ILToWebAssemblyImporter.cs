@@ -558,7 +558,7 @@ namespace Internal.IL
                 LLVMValueRef loadValueRef = CastIfNecessaryAndLoad(builder, address, underlyingSourceType, loadName);
                 return CastIntValue(builder, loadValueRef, targetType, signExtend);
             }
-            else if (targetType.TypeKind == LLVMTypeKind.LLVMDoubleTypeKind && underlyingSourceType.IsPrimitive && !underlyingSourceType.IsPointer)
+            else if (targetType.TypeKind == LLVMTypeKind.LLVMDoubleTypeKind)
             {
                 LLVMValueRef loadValueRef = CastIfNecessaryAndLoad(builder, address, underlyingSourceType, loadName);
                 return CastDoubleValue(builder, loadValueRef, targetType);

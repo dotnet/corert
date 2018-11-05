@@ -267,7 +267,7 @@ internal static class Program
         if (testMdArrayInstantiation != null && testMdArrayInstantiation.GetLength(0) == 2 && testMdArrayInstantiation.GetLength(1) == 2)
             PrintLine("Multi-dimension array instantiation test: Ok.");
 
-        floatDoubleTest();
+        FloatDoubleTest();
 
         // Create a ByReference<char> through the ReadOnlySpan ctor and call the ByReference.Value via the indexer.
         var span = "123".AsSpan();
@@ -622,7 +622,7 @@ internal static class Program
         }
     }
 
-    private static void floatDoubleTest()
+    private static void FloatDoubleTest()
     {
         int intToCast = 1;
         double castedDouble = (double)intToCast;
@@ -664,6 +664,18 @@ internal static class Program
         {
             PrintLine("Failed.");
         }
+
+        PrintString("Test comparison of double constant: ");
+        var maxDouble = Double.MaxValue;
+        if (maxDouble == Double.MaxValue)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
+
     }
 
     [DllImport("*")]
