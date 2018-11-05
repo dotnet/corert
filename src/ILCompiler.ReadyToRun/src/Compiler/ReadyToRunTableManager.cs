@@ -4,17 +4,32 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
+    public struct ExportedTypeInfo
+    {
+        public readonly EcmaModule Module;
+        public readonly ExportedTypeHandle Handle;
+
+        public ExportedTypeInfo(EcmaModule module, ExportedTypeHandle handle)
+        {
+            Module = module;
+            Handle = handle;
+        }
+    }
+
     public class ReadyToRunTableManager : MetadataManager
     {
         private readonly HashSet<TypeDesc> _typesWithAvailableTypesGenerated = new HashSet<TypeDesc>();
@@ -42,6 +57,24 @@ namespace ILCompiler
         public IEnumerable<TypeDesc> GetTypesWithAvailableTypes()
         {
             return _typesWithAvailableTypesGenerated;
+        }
+
+        public IEnumerable<ExportedTypeInfo> GetExportedTypes()
+        {
+            List<ExportedTypeInfo> exportedTypeList = new List<ExportedTypeInfo>();
+            foreach (string inputFile in _typeSystemContext.InputFilePaths.Values)
+            {
+                EcmaModule module = _typeSystemContext.GetModuleFromPath(inputFile);
+                foreach (ExportedTypeHandle exportedTypeHandle in module.MetadataReader.ExportedTypes)
+                {
+                    ExportedType exportedType = module.MetadataReader.GetExportedType(exportedTypeHandle);
+                    if (exportedType.IsForwarder)
+                    {
+                        exportedTypeList.Add(new ExportedTypeInfo(module, exportedTypeHandle));
+                    }
+                }
+            }
+            return exportedTypeList;
         }
 
         public override MethodDesc GetCanonicalReflectionInvokeStub(MethodDesc method) => throw new NotImplementedException();

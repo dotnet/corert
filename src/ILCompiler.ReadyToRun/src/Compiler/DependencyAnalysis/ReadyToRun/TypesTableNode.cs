@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
 using Internal.NativeFormat;
@@ -39,8 +40,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             section.Place(typesHashtable);
 
             HashSet<TypeDesc> uniqueTypes = new HashSet<TypeDesc>();
+            ReadyToRunTableManager r2rManager = (ReadyToRunTableManager)factory.MetadataManager;
 
-            foreach (TypeDesc type in ((ReadyToRunTableManager)factory.MetadataManager).GetTypesWithAvailableTypes())
+            foreach (TypeDesc type in r2rManager.GetTypesWithAvailableTypes())
             {
                 int rid = 0;
                 if (type.GetTypeDefinition() is EcmaType ecmaType)
@@ -63,6 +65,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     throw new NotImplementedException();
                 }
+            }
+
+            foreach (ExportedTypeInfo exportedTypeInfo in r2rManager.GetExportedTypes())
+            {
+                ExportedType exportedType = exportedTypeInfo.Module.MetadataReader.GetExportedType(exportedTypeInfo.Handle);
+                string namespaceName = exportedTypeInfo.Module.MetadataReader.GetString(exportedType.Namespace);
+                string typeName = exportedTypeInfo.Module.MetadataReader.GetString(exportedType.Name);
+                int hashCode = ReadyToRunHashCode.NameHashCode(namespaceName, typeName);
+                typesHashtable.Append(unchecked((uint)hashCode), section.Place(new UnsignedConstant(((uint)MetadataTokens.GetRowNumber(exportedTypeInfo.Handle) << 1) | 1)));
             }
 
             MemoryStream writerContent = new MemoryStream();

@@ -60,7 +60,7 @@ namespace ILCompiler
         /// </summary>
         /// <param name="namespacePart">Namespace name</param>
         /// <param name="namePart">Type name within the namespace</param>
-        static int NameHashCode(string namespacePart, string namePart)
+        public static int NameHashCode(string namespacePart, string namePart)
         {
             return NameHashCode(namespacePart) ^ NameHashCode(namePart);
         }
