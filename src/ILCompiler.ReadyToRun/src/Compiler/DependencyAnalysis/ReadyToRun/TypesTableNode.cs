@@ -41,32 +41,43 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             ReadyToRunTableManager r2rManager = (ReadyToRunTableManager)factory.MetadataManager;
 
-            foreach (DefinedTypeInfo definedTypeInfo in r2rManager.GetDefinedTypes())
+            foreach (TypeInfo<TypeDefinitionHandle> defTypeInfo in r2rManager.GetDefinedTypes())
             {
-                TypeDefinitionHandle typeDefHandle = definedTypeInfo.Handle;
+                TypeDefinitionHandle defTypeHandle = defTypeInfo.Handle;
                 int hashCode = 0;
                 for (; ; )
                 {
-                    TypeDefinition typeDef = definedTypeInfo.Module.MetadataReader.GetTypeDefinition(typeDefHandle);
-                    string namespaceName = definedTypeInfo.Module.MetadataReader.GetString(typeDef.Namespace);
-                    string typeName = definedTypeInfo.Module.MetadataReader.GetString(typeDef.Name);
+                    TypeDefinition defType = defTypeInfo.MetadataReader.GetTypeDefinition(defTypeHandle);
+                    string namespaceName = defTypeInfo.MetadataReader.GetString(defType.Namespace);
+                    string typeName = defTypeInfo.MetadataReader.GetString(defType.Name);
                     hashCode ^= ReadyToRunHashCode.NameHashCode(namespaceName, typeName);
-                    if (!typeDef.Attributes.IsNested())
+                    if (!defType.Attributes.IsNested())
                     {
                         break;
                     }
-                    typeDefHandle = typeDef.GetDeclaringType();
+                    defTypeHandle = defType.GetDeclaringType();
                 }
-                typesHashtable.Append(unchecked((uint)hashCode), section.Place(new UnsignedConstant(((uint)MetadataTokens.GetRowNumber(definedTypeInfo.Handle) << 1) | 0)));
+                typesHashtable.Append(unchecked((uint)hashCode), section.Place(new UnsignedConstant(((uint)MetadataTokens.GetRowNumber(defTypeInfo.Handle) << 1) | 0)));
             }
 
-            foreach (ExportedTypeInfo exportedTypeInfo in r2rManager.GetExportedTypes())
+            foreach (TypeInfo<ExportedTypeHandle> expTypeInfo in r2rManager.GetExportedTypes())
             {
-                ExportedType exportedType = exportedTypeInfo.Module.MetadataReader.GetExportedType(exportedTypeInfo.Handle);
-                string namespaceName = exportedTypeInfo.Module.MetadataReader.GetString(exportedType.Namespace);
-                string typeName = exportedTypeInfo.Module.MetadataReader.GetString(exportedType.Name);
-                int hashCode = ReadyToRunHashCode.NameHashCode(namespaceName, typeName);
-                typesHashtable.Append(unchecked((uint)hashCode), section.Place(new UnsignedConstant(((uint)MetadataTokens.GetRowNumber(exportedTypeInfo.Handle) << 1) | 1)));
+                ExportedTypeHandle expTypeHandle = expTypeInfo.Handle;
+                int hashCode = 0;
+                for (; ;)
+                {
+                    ExportedType expType = expTypeInfo.MetadataReader.GetExportedType(expTypeHandle);
+                    string namespaceName = expTypeInfo.MetadataReader.GetString(expType.Namespace);
+                    string typeName = expTypeInfo.MetadataReader.GetString(expType.Name);
+                    hashCode ^= ReadyToRunHashCode.NameHashCode(namespaceName, typeName);
+                    if (expType.Implementation.Kind != HandleKind.ExportedType)
+                    {
+                        // Not a nested class
+                        break;
+                    }
+                    expTypeHandle = (ExportedTypeHandle)expType.Implementation;
+                }
+                typesHashtable.Append(unchecked((uint)hashCode), section.Place(new UnsignedConstant(((uint)MetadataTokens.GetRowNumber(expTypeInfo.Handle) << 1) | 1)));
             }
 
             MemoryStream writerContent = new MemoryStream();

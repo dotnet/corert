@@ -739,7 +739,7 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.MethodDictionary:
                     return GenericLookupMethodHelper(
                         runtimeLookupKind,
-                        ReadyToRunFixupKind.READYTORUN_FIXUP_MethodDictionary,
+                        ReadyToRunFixupKind.READYTORUN_FIXUP_MethodHandle,
                         (MethodWithToken)helperArgument,
                         contextType,
                         signatureContext);

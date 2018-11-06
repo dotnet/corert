@@ -18,26 +18,14 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
-    public struct DefinedTypeInfo
+    public struct TypeInfo<THandle>
     {
-        public readonly EcmaModule Module;
-        public readonly TypeDefinitionHandle Handle;
+        public readonly MetadataReader MetadataReader;
+        public readonly THandle Handle;
 
-        public DefinedTypeInfo(EcmaModule module, TypeDefinitionHandle handle)
+        public TypeInfo(MetadataReader metadataReader, THandle handle)
         {
-            Module = module;
-            Handle = handle;
-        }
-    }
-
-    public struct ExportedTypeInfo
-    {
-        public readonly EcmaModule Module;
-        public readonly ExportedTypeHandle Handle;
-
-        public ExportedTypeInfo(EcmaModule module, ExportedTypeHandle handle)
-        {
-            Module = module;
+            MetadataReader = metadataReader;
             Handle = handle;
         }
     }
@@ -52,30 +40,26 @@ namespace ILCompiler
             // We don't attach any metadata blobs.
         }
 
-        public IEnumerable<DefinedTypeInfo> GetDefinedTypes()
+        public IEnumerable<TypeInfo<TypeDefinitionHandle>> GetDefinedTypes()
         {
             foreach (string inputFile in _typeSystemContext.InputFilePaths.Values)
             {
                 EcmaModule module = _typeSystemContext.GetModuleFromPath(inputFile);
                 foreach (TypeDefinitionHandle typeDefHandle in module.MetadataReader.TypeDefinitions)
                 {
-                    yield return new DefinedTypeInfo(module, typeDefHandle);
+                    yield return new TypeInfo<TypeDefinitionHandle>(module.MetadataReader, typeDefHandle);
                 }
             }
         }
 
-            public IEnumerable<ExportedTypeInfo> GetExportedTypes()
+            public IEnumerable<TypeInfo<ExportedTypeHandle>> GetExportedTypes()
         {
             foreach (string inputFile in _typeSystemContext.InputFilePaths.Values)
             {
                 EcmaModule module = _typeSystemContext.GetModuleFromPath(inputFile);
                 foreach (ExportedTypeHandle exportedTypeHandle in module.MetadataReader.ExportedTypes)
                 {
-                    ExportedType exportedType = module.MetadataReader.GetExportedType(exportedTypeHandle);
-                    if (exportedType.IsForwarder)
-                    {
-                        yield return new ExportedTypeInfo(module, exportedTypeHandle);
-                    }
+                    yield return new TypeInfo<ExportedTypeHandle>(module.MetadataReader, exportedTypeHandle);
                 }
             }
         }
