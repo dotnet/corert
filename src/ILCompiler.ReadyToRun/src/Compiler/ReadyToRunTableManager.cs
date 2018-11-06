@@ -18,6 +18,18 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
+    public struct DefinedTypeInfo
+    {
+        public readonly EcmaModule Module;
+        public readonly TypeDefinitionHandle Handle;
+
+        public DefinedTypeInfo(EcmaModule module, TypeDefinitionHandle handle)
+        {
+            Module = module;
+            Handle = handle;
+        }
+    }
+
     public struct ExportedTypeInfo
     {
         public readonly EcmaModule Module;
@@ -32,8 +44,6 @@ namespace ILCompiler
 
     public class ReadyToRunTableManager : MetadataManager
     {
-        private readonly HashSet<TypeDesc> _typesWithAvailableTypesGenerated = new HashSet<TypeDesc>();
-
         public ReadyToRunTableManager(CompilerTypeSystemContext typeSystemContext)
             : base(typeSystemContext, new NoMetadataBlockingPolicy(), new NoManifestResourceBlockingPolicy(), new NoDynamicInvokeThunkGenerationPolicy()) {}
 
@@ -42,24 +52,19 @@ namespace ILCompiler
             // We don't attach any metadata blobs.
         }
 
-        protected override void Graph_NewMarkedNode(DependencyNodeCore<NodeFactory> obj)
+        public IEnumerable<DefinedTypeInfo> GetDefinedTypes()
         {
-            base.Graph_NewMarkedNode(obj);
-            
-            var eetypeNode = obj as AvailableType;
-            if (eetypeNode != null)
+            foreach (string inputFile in _typeSystemContext.InputFilePaths.Values)
             {
-                _typesWithAvailableTypesGenerated.Add(eetypeNode.Type);
-                return;
+                EcmaModule module = _typeSystemContext.GetModuleFromPath(inputFile);
+                foreach (TypeDefinitionHandle typeDefHandle in module.MetadataReader.TypeDefinitions)
+                {
+                    yield return new DefinedTypeInfo(module, typeDefHandle);
+                }
             }
         }
 
-        public IEnumerable<TypeDesc> GetTypesWithAvailableTypes()
-        {
-            return _typesWithAvailableTypesGenerated;
-        }
-
-        public IEnumerable<ExportedTypeInfo> GetExportedTypes()
+            public IEnumerable<ExportedTypeInfo> GetExportedTypes()
         {
             foreach (string inputFile in _typeSystemContext.InputFilePaths.Values)
             {

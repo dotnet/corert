@@ -39,32 +39,25 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             VertexHashtable typesHashtable = new VertexHashtable();
             section.Place(typesHashtable);
 
-            HashSet<TypeDesc> uniqueTypes = new HashSet<TypeDesc>();
             ReadyToRunTableManager r2rManager = (ReadyToRunTableManager)factory.MetadataManager;
 
-            foreach (TypeDesc type in r2rManager.GetTypesWithAvailableTypes())
+            foreach (DefinedTypeInfo definedTypeInfo in r2rManager.GetDefinedTypes())
             {
-                int rid = 0;
-                if (type.GetTypeDefinition() is EcmaType ecmaType)
+                TypeDefinitionHandle typeDefHandle = definedTypeInfo.Handle;
+                int hashCode = 0;
+                for (; ; )
                 {
-                    if (uniqueTypes.Add(ecmaType))
+                    TypeDefinition typeDef = definedTypeInfo.Module.MetadataReader.GetTypeDefinition(typeDefHandle);
+                    string namespaceName = definedTypeInfo.Module.MetadataReader.GetString(typeDef.Namespace);
+                    string typeName = definedTypeInfo.Module.MetadataReader.GetString(typeDef.Name);
+                    hashCode ^= ReadyToRunHashCode.NameHashCode(namespaceName, typeName);
+                    if (!typeDef.Attributes.IsNested())
                     {
-                        rid = MetadataTokens.GetToken(ecmaType.Handle) & 0x00FFFFFF;
-                        Debug.Assert(rid != 0);
-
-                        int hashCode = ReadyToRunHashCode.TypeTableHashCode(ecmaType);
-                        typesHashtable.Append(unchecked((uint)hashCode), section.Place(new UnsignedConstant((uint)rid << 1)));
+                        break;
                     }
+                    typeDefHandle = typeDef.GetDeclaringType();
                 }
-                else if (type.IsArray || type.IsMdArray)
-                {
-                    // TODO: arrays in type table - should we have a recursive descent into composite types here
-                    // and e.g. add the element type to the type table in case of arrays?
-                }
-                else
-                {
-                    throw new NotImplementedException();
-                }
+                typesHashtable.Append(unchecked((uint)hashCode), section.Place(new UnsignedConstant(((uint)MetadataTokens.GetRowNumber(definedTypeInfo.Handle) << 1) | 0)));
             }
 
             foreach (ExportedTypeInfo exportedTypeInfo in r2rManager.GetExportedTypes())
