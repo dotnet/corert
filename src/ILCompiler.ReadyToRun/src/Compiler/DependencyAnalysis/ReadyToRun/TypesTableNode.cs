@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
 using Internal.NativeFormat;
@@ -38,31 +39,45 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             VertexHashtable typesHashtable = new VertexHashtable();
             section.Place(typesHashtable);
 
-            HashSet<TypeDesc> uniqueTypes = new HashSet<TypeDesc>();
+            ReadyToRunTableManager r2rManager = (ReadyToRunTableManager)factory.MetadataManager;
 
-            foreach (TypeDesc type in ((ReadyToRunTableManager)factory.MetadataManager).GetTypesWithAvailableTypes())
+            foreach (TypeInfo<TypeDefinitionHandle> defTypeInfo in r2rManager.GetDefinedTypes())
             {
-                int rid = 0;
-                if (type.GetTypeDefinition() is EcmaType ecmaType)
+                TypeDefinitionHandle defTypeHandle = defTypeInfo.Handle;
+                int hashCode = 0;
+                for (; ; )
                 {
-                    if (uniqueTypes.Add(ecmaType))
+                    TypeDefinition defType = defTypeInfo.MetadataReader.GetTypeDefinition(defTypeHandle);
+                    string namespaceName = defTypeInfo.MetadataReader.GetString(defType.Namespace);
+                    string typeName = defTypeInfo.MetadataReader.GetString(defType.Name);
+                    hashCode ^= ReadyToRunHashCode.NameHashCode(namespaceName, typeName);
+                    if (!defType.Attributes.IsNested())
                     {
-                        rid = MetadataTokens.GetToken(ecmaType.Handle) & 0x00FFFFFF;
-                        Debug.Assert(rid != 0);
-
-                        int hashCode = ReadyToRunHashCode.TypeTableHashCode(ecmaType);
-                        typesHashtable.Append(unchecked((uint)hashCode), section.Place(new UnsignedConstant((uint)rid << 1)));
+                        break;
                     }
+                    defTypeHandle = defType.GetDeclaringType();
                 }
-                else if (type.IsArray || type.IsMdArray)
+                typesHashtable.Append(unchecked((uint)hashCode), section.Place(new UnsignedConstant(((uint)MetadataTokens.GetRowNumber(defTypeInfo.Handle) << 1) | 0)));
+            }
+
+            foreach (TypeInfo<ExportedTypeHandle> expTypeInfo in r2rManager.GetExportedTypes())
+            {
+                ExportedTypeHandle expTypeHandle = expTypeInfo.Handle;
+                int hashCode = 0;
+                for (; ;)
                 {
-                    // TODO: arrays in type table - should we have a recursive descent into composite types here
-                    // and e.g. add the element type to the type table in case of arrays?
+                    ExportedType expType = expTypeInfo.MetadataReader.GetExportedType(expTypeHandle);
+                    string namespaceName = expTypeInfo.MetadataReader.GetString(expType.Namespace);
+                    string typeName = expTypeInfo.MetadataReader.GetString(expType.Name);
+                    hashCode ^= ReadyToRunHashCode.NameHashCode(namespaceName, typeName);
+                    if (expType.Implementation.Kind != HandleKind.ExportedType)
+                    {
+                        // Not a nested class
+                        break;
+                    }
+                    expTypeHandle = (ExportedTypeHandle)expType.Implementation;
                 }
-                else
-                {
-                    throw new NotImplementedException();
-                }
+                typesHashtable.Append(unchecked((uint)hashCode), section.Place(new UnsignedConstant(((uint)MetadataTokens.GetRowNumber(expTypeInfo.Handle) << 1) | 1)));
             }
 
             MemoryStream writerContent = new MemoryStream();

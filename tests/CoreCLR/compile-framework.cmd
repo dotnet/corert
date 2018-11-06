@@ -7,12 +7,16 @@
 @if not defined _echo @echo off
 setlocal EnableDelayedExpansion
 
-rd /s /q %CoreRT_CoreCLRRuntimeDir%\native
-
 if "%CoreRT_CoreCLRRuntimeDir%" == "" (
     echo set CoreRT_CoreCLRRuntimeDir to CoreCLR folder or run from runtest.cmd
     exit /b 1
 )
+
+rd /s /q %CoreRT_CoreCLRRuntimeDir%\native
+
+mkdir %CoreRT_CoreCLRRuntimeDir%\native
+xcopy /Q /Y %CoreRT_CoreCLRRuntimeDir%\*.exe %CoreRT_CoreCLRRuntimeDir%\native\
+xcopy /Q /Y %CoreRT_CoreCLRRuntimeDir%\*.dll %CoreRT_CoreCLRRuntimeDir%\native\
 
 for %%x in (%CoreRT_CoreCLRRuntimeDir%\Microsoft.*.dll %CoreRT_CoreCLRRuntimeDir%\System.*.dll) do (
     call :CompileAssembly %%x

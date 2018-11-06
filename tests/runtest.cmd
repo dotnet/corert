@@ -60,6 +60,7 @@ if /i "%1" == "/multimodule" (set CoreRT_MultiFileConfiguration=MultiModule&shif
 if /i "%1" == "/determinism" (set CoreRT_DeterminismMode=true&shift&goto ArgLoop)
 if /i "%1" == "/nocleanup" (set CoreRT_NoCleanup=true&shift&goto ArgLoop)
 if /i "%1" == "/r2rframework" (set CoreRT_R2RFramework=true&shift&goto ArgLoop)
+if /i "%1" == "/user2rframework" (set CoreRT_UseR2RFramework=true&shift&goto ArgLoop)
 echo Invalid command line argument: %1
 goto :Usage
 
@@ -104,6 +105,10 @@ if "%CoreRT_MultiFileConfiguration%"=="MultiModule" (
 
 set CoreRT_CoreCLRRuntimeDir=%CoreRT_TestRoot%..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\CoreClrRuntime
 set CoreRT_ReadyToRunTestHarness=%CoreRT_TestRoot%src\tools\ReadyToRun.TestHarness\bin\Debug\netcoreapp2.1\ReadyToRun.TestHarness.dll
+
+rem When using pre-built R2R framework, switch the CoreCLRRuntime folder to its "native" subfolder
+rem where we copy over the CoreCLRRuntime folder and emit the R2R versions of the framework assemblies.
+if /i "%CoreRT_UseR2RFramework%" == "true" (set CoreRT_CoreCLRRuntimeDir=!CoreRT_CoreCLRRuntimeDir!\native)
 
 if not exist %CoreRT_CoreCLRRuntimeDir% goto :BuildTests
 if not exist %CoreRT_ReadyToRunTestHarness% goto :BuildTests
