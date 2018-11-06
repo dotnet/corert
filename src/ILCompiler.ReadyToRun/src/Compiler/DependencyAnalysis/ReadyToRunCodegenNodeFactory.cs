@@ -110,10 +110,7 @@ namespace ILCompiler.DependencyAnalysis
             SignatureContext signatureContext, 
             bool isUnboxingStub = false)
         {
-            if (targetMethod.HasCustomAttribute("System.Runtime.CompilerServices", "IntrinsicAttribute"))
-            {
-                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.IntrinsicCodeRequiresRuntimeJit, targetMethod);
-            }
+            ThrowIfTypeRequiresRuntimeJit(targetMethod.OwningType);
 
             if (targetMethod == originalMethod)
             {
@@ -417,6 +414,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override IEETypeNode CreateNecessaryTypeNode(TypeDesc type)
         {
+            ThrowIfTypeRequiresRuntimeJit(type);
             if (CompilationModuleGroup.ContainsType(type))
             {
                 return new AvailableType(this, type);
@@ -431,7 +429,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             // Canonical definition types are *not* constructed types (call NecessaryTypeSymbol to get them)
             Debug.Assert(!type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
-            
+
+            ThrowIfTypeRequiresRuntimeJit(type);
             if (CompilationModuleGroup.ContainsType(type))
             {
                 return new AvailableType(this, type);
@@ -494,6 +493,16 @@ namespace ILCompiler.DependencyAnalysis
 
                 default:
                     throw new NotImplementedException();
+            }
+        }
+
+        public void ThrowIfTypeRequiresRuntimeJit(TypeDesc type)
+        {
+            if (type.GetTypeDefinition() is DefType defType && 
+                defType.Name == "Vector`1" && 
+                defType.Namespace == "System.Numerics")
+            {
+                ThrowHelper.ThrowRequiresRuntimeJitException(type.ToString());
             }
         }
     }

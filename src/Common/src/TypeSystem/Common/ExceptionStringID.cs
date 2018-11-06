@@ -36,7 +36,7 @@ namespace Internal.TypeSystem
         // BadImageFormatException
         BadImageFormatGeneric,
 
-        // Cannot AOT compile JIT-specific code
-        IntrinsicCodeRequiresRuntimeJit,
+        // Code requires runtime JIT
+        RequiresRuntimeJit,
     }
 }
