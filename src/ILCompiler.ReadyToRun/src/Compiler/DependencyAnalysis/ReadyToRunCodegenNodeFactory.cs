@@ -110,8 +110,6 @@ namespace ILCompiler.DependencyAnalysis
             SignatureContext signatureContext, 
             bool isUnboxingStub = false)
         {
-            ThrowIfTypeRequiresRuntimeJit(targetMethod.OwningType);
-
             if (targetMethod == originalMethod)
             {
                 constrainedType = null;
@@ -491,16 +489,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 default:
                     throw new NotImplementedException();
-            }
-        }
-
-        private SimdHelper _simdHelper;
-
-        public void ThrowIfTypeRequiresRuntimeJit(TypeDesc type)
-        {
-            if (_simdHelper.IsVectorOfT(type))
-            {
-                throw new RequiresRuntimeJitException(type);
             }
         }
     }
