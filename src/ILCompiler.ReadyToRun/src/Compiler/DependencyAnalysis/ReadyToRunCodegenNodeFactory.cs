@@ -496,13 +496,13 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        private static SimdHelper _simdHelper;
+
         public void ThrowIfTypeRequiresRuntimeJit(TypeDesc type)
         {
-            if (type.GetTypeDefinition() is DefType defType && 
-                defType.Name == "Vector`1" && 
-                defType.Namespace == "System.Numerics")
+            if (_simdHelper.IsVectorOfT(type))
             {
-                ThrowHelper.ThrowRequiresRuntimeJitException(type.ToString());
+                throw new RequiresRuntimeJitException(type);
             }
         }
     }

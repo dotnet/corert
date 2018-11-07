@@ -14,12 +14,14 @@ namespace ILCompiler
     {
         private FieldLayoutAlgorithm _r2rFieldLayoutAlgorithm;
         private SystemObjectFieldLayoutAlgorithm _systemObjectFieldLayoutAlgorithm;
+        private VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
 
         public ReadyToRunCompilerContext(TargetDetails details, SharedGenericsMode genericsMode)
             : base(details, genericsMode)
         {
             _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm();
             _systemObjectFieldLayoutAlgorithm = new SystemObjectFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
+            _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm();
         }
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
@@ -30,10 +32,10 @@ namespace ILCompiler
                 throw new NotImplementedException();
             else if (type.IsRuntimeDeterminedType)
                 throw new NotImplementedException();
-            /* TODO
             else if (_simdHelper.IsVectorOfT(type))
-                throw new NotImplementedException();
-            */
+            {
+                return _vectorFieldLayoutAlgorithm;
+            }
             else
             {
                 Debug.Assert(_r2rFieldLayoutAlgorithm != null);
@@ -69,6 +71,61 @@ namespace ILCompiler
         protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)
         {
             return BaseTypeRuntimeInterfacesAlgorithm.Instance;
+        }
+
+        private class VectorFieldLayoutAlgorithm : FieldLayoutAlgorithm
+        {
+            public override bool ComputeContainsGCPointers(DefType type)
+            {
+                // According to MSDN Vector type argument must be a primitive numeric type
+                return false;
+            }
+
+            public override DefType ComputeHomogeneousFloatAggregateElementType(DefType type)
+            {
+                return type;
+            }
+
+            public override ComputedInstanceFieldLayout ComputeInstanceLayout(DefType type, InstanceLayoutKind layoutKind)
+            {
+                List<FieldAndOffset> fieldsAndOffsets = new List<FieldAndOffset>();
+                foreach (FieldDesc field in type.GetFields())
+                {
+                    fieldsAndOffsets.Add(new FieldAndOffset(field, LayoutInt.Indeterminate));
+                }
+                ComputedInstanceFieldLayout instanceLayout = new ComputedInstanceFieldLayout()
+                {
+                    FieldSize = LayoutInt.Indeterminate,
+                    FieldAlignment = LayoutInt.Indeterminate,
+                    ByteCountUnaligned = LayoutInt.Indeterminate,
+                    ByteCountAlignment = LayoutInt.Indeterminate,
+                    Offsets = fieldsAndOffsets.ToArray(),
+                };
+                return instanceLayout;
+            }
+
+            public override ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType type, StaticLayoutKind layoutKind)
+            {
+                List<FieldAndOffset> fieldsAndOffsets = new List<FieldAndOffset>();
+                foreach (FieldDesc field in type.GetFields())
+                {
+                    fieldsAndOffsets.Add(new FieldAndOffset(field, LayoutInt.Indeterminate));
+                }
+                ComputedStaticFieldLayout staticLayout = new ComputedStaticFieldLayout()
+                {
+                    GcStatics = new StaticsBlock() { Size = LayoutInt.Indeterminate, LargestAlignment = LayoutInt.Indeterminate },
+                    NonGcStatics = new StaticsBlock() { Size = LayoutInt.Indeterminate, LargestAlignment = LayoutInt.Indeterminate },
+                    ThreadGcStatics = new StaticsBlock() { Size = LayoutInt.Indeterminate, LargestAlignment = LayoutInt.Indeterminate },
+                    ThreadNonGcStatics = new StaticsBlock() { Size = LayoutInt.Indeterminate, LargestAlignment = LayoutInt.Indeterminate },
+                    Offsets = fieldsAndOffsets.ToArray(),
+                };
+                return staticLayout;
+            }
+
+            public override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
+            {
+                return ValueTypeShapeCharacteristics.None;
+            }
         }
     }
 }

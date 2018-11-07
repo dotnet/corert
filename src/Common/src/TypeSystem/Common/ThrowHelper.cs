@@ -54,12 +54,6 @@ namespace Internal.TypeSystem
             throw new TypeSystemException.BadImageFormatException();
         }
 
-        [System.Diagnostics.DebuggerHidden]
-        public static void ThrowRequiresRuntimeJitException(string reason)
-        {
-            throw new TypeSystemException.RequiresRuntimeJitException(reason);
-        }
-
         private static partial class Format
         {
             public static string OwningModule(TypeDesc type)

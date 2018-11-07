@@ -143,13 +143,5 @@ namespace Internal.TypeSystem
             {
             }
         }
-
-        public class RequiresRuntimeJitException : TypeSystemException
-        {
-            public RequiresRuntimeJitException(string reason)
-                : base(ExceptionStringID.RequiresRuntimeJit, reason)
-            {
-            }
-        }
     }
 }
