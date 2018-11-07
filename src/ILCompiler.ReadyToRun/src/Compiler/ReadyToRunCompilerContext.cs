@@ -97,7 +97,10 @@ namespace ILCompiler
                 List<FieldAndOffset> fieldsAndOffsets = new List<FieldAndOffset>();
                 foreach (FieldDesc field in type.GetFields())
                 {
-                    fieldsAndOffsets.Add(new FieldAndOffset(field, LayoutInt.Indeterminate));
+                    if (!field.IsStatic)
+                    {
+                        fieldsAndOffsets.Add(new FieldAndOffset(field, LayoutInt.Indeterminate));
+                    }
                 }
                 ComputedInstanceFieldLayout instanceLayout = new ComputedInstanceFieldLayout()
                 {
