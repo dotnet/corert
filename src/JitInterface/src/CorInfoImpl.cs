@@ -1237,7 +1237,7 @@ namespace Internal.JitInterface
                 throw new RequiresRuntimeJitException(type);
             }
 #endif
-            return (uint)type.GetElementSize().AsInt;
+            return (uint)classSize.AsInt;
         }
 
         private uint getHeapClassSize(CORINFO_CLASS_STRUCT_* cls)
