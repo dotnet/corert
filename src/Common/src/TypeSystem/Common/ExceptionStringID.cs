@@ -35,8 +35,5 @@ namespace Internal.TypeSystem
 
         // BadImageFormatException
         BadImageFormatGeneric,
-
-        // Code requires runtime JIT
-        RequiresRuntimeJit,
     }
 }
