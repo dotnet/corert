@@ -21,7 +21,7 @@ namespace ILCompiler
         {
             _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm();
             _systemObjectFieldLayoutAlgorithm = new SystemObjectFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
-            _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm();
+            _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
         }
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
@@ -75,15 +75,21 @@ namespace ILCompiler
 
         private class VectorFieldLayoutAlgorithm : FieldLayoutAlgorithm
         {
+            private FieldLayoutAlgorithm _fallbackAlgorithm;
+
+            public VectorFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm)
+            {
+                _fallbackAlgorithm = fallbackAlgorithm;
+            }
+
             public override bool ComputeContainsGCPointers(DefType type)
             {
-                // According to MSDN Vector type argument must be a primitive numeric type
-                return false;
+                return _fallbackAlgorithm.ComputeContainsGCPointers(type);
             }
 
             public override DefType ComputeHomogeneousFloatAggregateElementType(DefType type)
             {
-                return type;
+                return _fallbackAlgorithm.ComputeHomogeneousFloatAggregateElementType(type);
             }
 
             public override ComputedInstanceFieldLayout ComputeInstanceLayout(DefType type, InstanceLayoutKind layoutKind)
@@ -106,25 +112,12 @@ namespace ILCompiler
 
             public override ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType type, StaticLayoutKind layoutKind)
             {
-                List<FieldAndOffset> fieldsAndOffsets = new List<FieldAndOffset>();
-                foreach (FieldDesc field in type.GetFields())
-                {
-                    fieldsAndOffsets.Add(new FieldAndOffset(field, LayoutInt.Indeterminate));
-                }
-                ComputedStaticFieldLayout staticLayout = new ComputedStaticFieldLayout()
-                {
-                    GcStatics = new StaticsBlock() { Size = LayoutInt.Indeterminate, LargestAlignment = LayoutInt.Indeterminate },
-                    NonGcStatics = new StaticsBlock() { Size = LayoutInt.Indeterminate, LargestAlignment = LayoutInt.Indeterminate },
-                    ThreadGcStatics = new StaticsBlock() { Size = LayoutInt.Indeterminate, LargestAlignment = LayoutInt.Indeterminate },
-                    ThreadNonGcStatics = new StaticsBlock() { Size = LayoutInt.Indeterminate, LargestAlignment = LayoutInt.Indeterminate },
-                    Offsets = fieldsAndOffsets.ToArray(),
-                };
-                return staticLayout;
+                return _fallbackAlgorithm.ComputeStaticFieldLayout(type, layoutKind);
             }
 
             public override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
             {
-                return ValueTypeShapeCharacteristics.None;
+                return _fallbackAlgorithm.ComputeValueTypeShapeCharacteristics(type);
             }
         }
     }
