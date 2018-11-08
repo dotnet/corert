@@ -39,7 +39,21 @@ namespace ILCompiler.DependencyAnalysis
         private SectionBuilder _sectionBuilder;
 
 #if DEBUG
-        Dictionary<string, (ISymbolNode Node, int NodeIndex, int SymbolIndex)> _previouslyWrittenNodeNames = new Dictionary<string, (ISymbolNode Node, int NodeIndex, int SymbolIndex)>();
+        private struct NodeInfo
+        {
+            public readonly ISymbolNode Node;
+            public readonly int NodeIndex;
+            public readonly int SymbolIndex;
+
+            public NodeInfo(ISymbolNode node, int nodeIndex, int symbolIndex)
+            {
+                Node = node;
+                NodeIndex = nodeIndex;
+                SymbolIndex = symbolIndex;
+            }
+        }
+
+        Dictionary<string, NodeInfo> _previouslyWrittenNodeNames = new Dictionary<string, NodeInfo>();
 #endif
 
         public ReadyToRunObjectWriter(PEReader inputPeReader, string objectFilePath, IEnumerable<DependencyNode> nodes, ReadyToRunCodegenNodeFactory factory)
@@ -204,7 +218,7 @@ namespace ILCompiler.DependencyAnalysis
             for (int symbolIndex = 0; symbolIndex < data.DefinedSymbols.Length; symbolIndex++)
             {
                 ISymbolNode definedSymbol = data.DefinedSymbols[symbolIndex];
-                (ISymbolNode Node, int NodeIndex, int SymbolIndex) alreadyWrittenSymbol;
+                NodeInfo alreadyWrittenSymbol;
                 string symbolName = definedSymbol.GetMangledName(_nodeFactory.NameMangler);
                 if (_previouslyWrittenNodeNames.TryGetValue(symbolName, out alreadyWrittenSymbol))
                 {
@@ -213,7 +227,7 @@ namespace ILCompiler.DependencyAnalysis
                     Debug.Fail("Duplicate node name emitted to file",
                     $"Symbol {definedSymbol.GetMangledName(_nodeFactory.NameMangler)} has already been written to the output object file {_objectFilePath} with symbol {alreadyWrittenSymbol}");
                 }
-                _previouslyWrittenNodeNames.Add(symbolName, (Node: definedSymbol, NodeIndex: nodeIndex, SymbolIndex: symbolIndex));
+                _previouslyWrittenNodeNames.Add(symbolName, new NodeInfo(definedSymbol, nodeIndex, symbolIndex));
             }
 #endif
 

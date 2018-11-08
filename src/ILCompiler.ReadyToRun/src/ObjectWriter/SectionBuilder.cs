@@ -75,7 +75,19 @@ namespace ILCompiler.PEWriter
             Relocs = relocs;
         }
     }
-    
+
+    public struct SectionInfo
+    {
+        public readonly string SectionName;
+        public readonly SectionCharacteristics Characteristics;
+
+        public SectionInfo(string sectionName, SectionCharacteristics characteristics)
+        {
+            SectionName = sectionName;
+            Characteristics = characteristics;
+        }
+    }
+
     /// <summary>
     /// Section represents a contiguous area of code or data with the same characteristics.
     /// </summary>
@@ -403,23 +415,20 @@ namespace ILCompiler.PEWriter
         /// We filter out name duplicates as we'll end up merging builder sections with the same name
         /// into a single output physical section.
         /// </summary>
-        public IEnumerable<(string SectionName, SectionCharacteristics Characteristics)> GetSections()
+        public IEnumerable<SectionInfo> GetSections()
         {
-            List<(string SectionName, SectionCharacteristics Characteristics)> sectionList =
-                new List<(string SectionName, SectionCharacteristics Characteristics)>();
+            List<SectionInfo> sectionList = new List<SectionInfo>();
             foreach (Section section in _sections)
             {
                 if (!sectionList.Any((sc) => sc.SectionName == section.Name))
                 {
-                    sectionList.Add((SectionName: section.Name, Characteristics: section.Characteristics));
+                    sectionList.Add(new SectionInfo(section.Name, section.Characteristics));
                 }
             }
 
             if (_exportSymbols.Count != 0 && FindSection(".edata") == null)
             {
-                sectionList.Add((SectionName: ".edata", Characteristics:
-                    SectionCharacteristics.ContainsInitializedData |
-                    SectionCharacteristics.MemRead));
+                sectionList.Add(new SectionInfo(".edata", SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead));
             }
 
             return sectionList;
