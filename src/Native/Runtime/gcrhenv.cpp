@@ -1384,11 +1384,6 @@ bool GCToEEInterface::ShouldFinalizeObjectForUnload(void* pDomain, Object* obj)
     return true;
 }
 
-bool GCToEEInterface::ForceFullGCToBeBlocking()
-{
-    return false;
-}
-
 bool GCToEEInterface::EagerFinalized(Object* obj)
 {
     UNREFERENCED_PARAMETER(obj);
