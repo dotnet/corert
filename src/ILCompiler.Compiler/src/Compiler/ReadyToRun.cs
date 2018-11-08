@@ -25,6 +25,7 @@ namespace ILCompiler
         ThrowArgumentOutOfRange     = 0x27,
         ThrowArgument               = 0x28,
         ThrowPlatformNotSupported   = 0x29,
+        ThrowNotImplemented         = 0x2A,
 
         DebugBreak                  = 0x2F,
 
