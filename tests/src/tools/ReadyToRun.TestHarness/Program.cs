@@ -25,7 +25,7 @@ namespace ReadyToRun.TestHarness
     class Program
     {
         // Default timeout in milliseconds
-        private const int DefaultTestTimeOut = 30000;
+        private const int DefaultTestTimeOut = 2 * 60 * 1000;
 
         // Error code returned when events get lost. Use this to re-run the test a few times.
         private const int StatusTestErrorEventsLost = -101;
