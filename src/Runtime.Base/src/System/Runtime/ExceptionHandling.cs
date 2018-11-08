@@ -264,10 +264,10 @@ namespace System.Runtime
             RH_EH_FIRST_RETHROW_FRAME = 2,
         }
 
-        private static void AppendExceptionStackFrameViaClasslib(object exception, IntPtr IP,
+        private static void AppendExceptionStackFrameViaClasslib(object exception, IntPtr ip,
             ref bool isFirstRethrowFrame, ref bool isFirstFrame)
         {
-            IntPtr pAppendStackFrame = (IntPtr)InternalCalls.RhpGetClasslibFunctionFromCodeAddress(IP,
+            IntPtr pAppendStackFrame = (IntPtr)InternalCalls.RhpGetClasslibFunctionFromCodeAddress(ip,
                 ClassLibFunctionId.AppendExceptionStackFrame);
 
             if (pAppendStackFrame != IntPtr.Zero)
@@ -277,7 +277,7 @@ namespace System.Runtime
 
                 try
                 {
-                    CalliIntrinsics.CallVoid(pAppendStackFrame, exception, IP, flags);
+                    CalliIntrinsics.CallVoid(pAppendStackFrame, exception, ip, flags);
                 }
                 catch when (true)
                 {
@@ -795,7 +795,7 @@ namespace System.Runtime
                 "Handling frame must have a valid stack frame pointer");
         }
 
-        private static void UpdateStackTrace(object exceptionObj, UIntPtr curFramePtr, IntPtr IP, 
+        private static void UpdateStackTrace(object exceptionObj, UIntPtr curFramePtr, IntPtr ip, 
             ref bool isFirstRethrowFrame, ref UIntPtr prevFramePtr, ref bool isFirstFrame)
         {
             // We use the fact that all funclet stack frames belonging to the same logical method activation 
@@ -806,7 +806,7 @@ namespace System.Runtime
             // and corresponds to the current 'IP state' of the method.            
             if ((prevFramePtr == UIntPtr.Zero) || (curFramePtr != prevFramePtr))
             {
-                AppendExceptionStackFrameViaClasslib(exceptionObj, IP,
+                AppendExceptionStackFrameViaClasslib(exceptionObj, ip,
                     ref isFirstRethrowFrame, ref isFirstFrame);
             }
             prevFramePtr = curFramePtr;
