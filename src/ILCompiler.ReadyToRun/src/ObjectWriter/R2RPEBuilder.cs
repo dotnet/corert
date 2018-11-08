@@ -144,7 +144,7 @@ namespace ILCompiler.PEWriter
         public R2RPEBuilder(
             Machine machine,
             PEReader peReader,
-            IEnumerable<(string SectionName, SectionCharacteristics Characteristics)> sectionNames = null,
+            IEnumerable<SectionInfo> sectionNames = null,
             Func<string, SectionLocation, BlobBuilder> sectionSerializer = null,
             Action<PEDirectoriesBuilder> directoriesUpdater = null)
             : base(PEHeaderCopier.Copy(peReader.PEHeaders, machine), deterministicIdProvider: null)
@@ -194,9 +194,9 @@ namespace ILCompiler.PEWriter
 
             if (sectionNames != null)
             {
-                foreach ((string SectionName, SectionCharacteristics Characteristics) nameCharPair in sectionNames)
+                foreach (SectionInfo sectionInfo in sectionNames)
                 {
-                    sectionListBuilder.Add(new Section(nameCharPair.SectionName, nameCharPair.Characteristics));
+                    sectionListBuilder.Add(new Section(sectionInfo.SectionName, sectionInfo.Characteristics));
                 }
             }
 
