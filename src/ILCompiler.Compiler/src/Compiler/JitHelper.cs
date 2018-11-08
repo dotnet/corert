@@ -54,6 +54,9 @@ namespace ILCompiler
                 case ReadyToRunHelper.ThrowPlatformNotSupported:
                     methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowPlatformNotSupportedException");
                     break;
+                case ReadyToRunHelper.ThrowNotImplemented:
+                    methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowNotImplementedException");
+                    break;
 
                 case ReadyToRunHelper.DebugBreak:
                     mangledName = "RhDebugBreak";
