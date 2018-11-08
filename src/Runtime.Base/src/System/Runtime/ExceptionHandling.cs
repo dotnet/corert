@@ -634,6 +634,26 @@ namespace System.Runtime
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 
+        private static unsafe byte* GetOriginalPC(byte* controlPC, bool isFirstFrame, bool isInstructionFault)
+        {
+            // Undo the work performed by StackFrameIterator::AdjustReturnAddressBackward() 
+            // such that the true IP is recorded in the exception stack trace
+            if (!isFirstFrame || !isInstructionFault)
+            {
+#if ARM
+                controlPC += 2;
+#elif ARM64
+                controlPC += 4;
+#elif X86 || AMD64
+                controlPC += 1;
+#else
+            #error "Unsupported"
+#endif
+            }
+
+            return controlPC;
+        }
+
         private static void DispatchEx(ref StackFrameIterator frameIter, ref ExInfo exInfo, uint startIdx)
         {
             Debug.Assert(exInfo._passNumber == 1, "expected asm throw routine to set the pass");
@@ -652,23 +672,29 @@ namespace System.Runtime
             bool isFirstFrame = true;
 
             byte* prevControlPC = null;
+            byte* prevOriginalPC = null;
             UIntPtr prevFramePtr = UIntPtr.Zero;
             bool unwoundReversePInvoke = false;
 
-            bool isValid = frameIter.Init(exInfo._pExContext, (exInfo._kind & ExKind.InstructionFaultFlag) != 0);
+            bool isInstructionFault = (exInfo._kind & ExKind.InstructionFaultFlag) != 0;
+            bool isValid = frameIter.Init(exInfo._pExContext, isInstructionFault);
             Debug.Assert(isValid, "RhThrowEx called with an unexpected context");
 
             OnFirstChanceExceptionViaClassLib(exceptionObj);
-            DebuggerNotify.BeginFirstPass(exceptionObj, frameIter.ControlPC, frameIter.SP);
+            byte* originalPC = GetOriginalPC(frameIter.ControlPC, isFirstFrame, isInstructionFault);
+            DebuggerNotify.BeginFirstPass(exceptionObj, originalPC, frameIter.SP);
 
             for (; isValid; isValid = frameIter.Next(out startIdx, out unwoundReversePInvoke))
             {
+                originalPC = GetOriginalPC(frameIter.ControlPC, isFirstFrame, isInstructionFault);
+
                 // For GC stackwalking, we'll happily walk across native code blocks, but for EH dispatch, we
                 // disallow dispatching exceptions across native code.
                 if (unwoundReversePInvoke)
                     break;
 
                 prevControlPC = frameIter.ControlPC;
+                prevOriginalPC = originalPC;
 
                 DebugScanCallFrame(exInfo._passNumber, frameIter.ControlPC, frameIter.SP);
 
@@ -676,9 +702,9 @@ namespace System.Runtime
                 // exInfo._notifyDebuggerSP can be populated by the debugger from out of process
                 // at any time.
                 if (exInfo._notifyDebuggerSP == frameIter.SP)
-                    DebuggerNotify.FirstPassFrameEntered(exceptionObj, frameIter.ControlPC, frameIter.SP);
+                    DebuggerNotify.FirstPassFrameEntered(exceptionObj, originalPC, frameIter.SP);
 
-                UpdateStackTrace(exceptionObj, ref exInfo, ref isFirstRethrowFrame, ref prevFramePtr, ref isFirstFrame);
+                UpdateStackTrace(exceptionObj, exInfo._frameIter.FramePointer, (IntPtr)originalPC, ref isFirstRethrowFrame, ref prevFramePtr, ref isFirstFrame);
 
                 byte* pHandler;
                 if (FindFirstPassHandler(exceptionObj, startIdx, ref frameIter,
@@ -698,7 +724,7 @@ namespace System.Runtime
                 UnhandledExceptionFailFastViaClasslib(
                     RhFailFastReason.PN_UnhandledException,
                     exceptionObj,
-                    (IntPtr)prevControlPC, // IP of the last frame that did not handle the exception
+                    (IntPtr)prevOriginalPC, // IP of the last frame that did not handle the exception
                     ref exInfo);
             }
 
@@ -769,7 +795,7 @@ namespace System.Runtime
                 "Handling frame must have a valid stack frame pointer");
         }
 
-        private static void UpdateStackTrace(object exceptionObj, ref ExInfo exInfo,
+        private static void UpdateStackTrace(object exceptionObj, UIntPtr curFramePtr, IntPtr IP, 
             ref bool isFirstRethrowFrame, ref UIntPtr prevFramePtr, ref bool isFirstFrame)
         {
             // We use the fact that all funclet stack frames belonging to the same logical method activation 
@@ -777,11 +803,10 @@ namespace System.Runtime
             // callbacks for all the funclet stack frames, one right after the other.  The classlib doesn't 
             // want to know about funclets, so we strip them out by only reporting the first frame of a 
             // sequence of funclets.  This is correct because the leafmost funclet is first in the sequence
-            // and corresponds to the current 'IP state' of the method.
-            UIntPtr curFramePtr = exInfo._frameIter.FramePointer;
+            // and corresponds to the current 'IP state' of the method.            
             if ((prevFramePtr == UIntPtr.Zero) || (curFramePtr != prevFramePtr))
             {
-                AppendExceptionStackFrameViaClasslib(exceptionObj, (IntPtr)exInfo._frameIter.ControlPC,
+                AppendExceptionStackFrameViaClasslib(exceptionObj, IP,
                     ref isFirstRethrowFrame, ref isFirstFrame);
             }
             prevFramePtr = curFramePtr;
