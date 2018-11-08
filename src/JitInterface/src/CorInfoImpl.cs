@@ -187,6 +187,13 @@ namespace Internal.JitInterface
                             // Type system exceptions can be turned into code that throws the exception at runtime.
                             _lastException.Throw();
                         }
+#if READYTORUN
+                        else if (_lastException.SourceException is RequiresRuntimeJitException)
+                        {
+                            // Runtime JIT requirement is not a cause for failure, we just mustn't JIT a particular method
+                            _lastException.Throw();
+                        }
+#endif
                         else
                         {
                             // This is just a bug somewhere.
@@ -1220,7 +1227,14 @@ namespace Internal.JitInterface
         private uint getClassSize(CORINFO_CLASS_STRUCT_* cls)
         {
             TypeDesc type = HandleToObject(cls);
-            return (uint)type.GetElementSize().AsInt;
+            LayoutInt classSize = type.GetElementSize();
+#if READYTORUN
+            if (classSize.IsIndeterminate)
+            {
+                throw new RequiresRuntimeJitException(type);
+            }
+#endif
+            return (uint)classSize.AsInt;
         }
 
         private uint getHeapClassSize(CORINFO_CLASS_STRUCT_* cls)

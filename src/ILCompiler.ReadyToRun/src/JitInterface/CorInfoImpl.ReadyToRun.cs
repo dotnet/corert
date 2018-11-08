@@ -28,6 +28,14 @@ namespace Internal.JitInterface
         }
     }
 
+    public class RequiresRuntimeJitException : Exception
+    {
+        public RequiresRuntimeJitException(object reason)
+            : base(reason.ToString())
+        {
+        }
+    }
+
     unsafe partial class CorInfoImpl
     {
         private const CORINFO_RUNTIME_ABI TargetABI = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;

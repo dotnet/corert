@@ -14,12 +14,14 @@ namespace ILCompiler
     {
         private FieldLayoutAlgorithm _r2rFieldLayoutAlgorithm;
         private SystemObjectFieldLayoutAlgorithm _systemObjectFieldLayoutAlgorithm;
+        private VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
 
         public ReadyToRunCompilerContext(TargetDetails details, SharedGenericsMode genericsMode)
             : base(details, genericsMode)
         {
             _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm();
             _systemObjectFieldLayoutAlgorithm = new SystemObjectFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
+            _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
         }
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
@@ -30,10 +32,10 @@ namespace ILCompiler
                 throw new NotImplementedException();
             else if (type.IsRuntimeDeterminedType)
                 throw new NotImplementedException();
-            /* TODO
             else if (_simdHelper.IsVectorOfT(type))
-                throw new NotImplementedException();
-            */
+            {
+                return _vectorFieldLayoutAlgorithm;
+            }
             else
             {
                 Debug.Assert(_r2rFieldLayoutAlgorithm != null);
@@ -69,6 +71,57 @@ namespace ILCompiler
         protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)
         {
             return BaseTypeRuntimeInterfacesAlgorithm.Instance;
+        }
+
+        private class VectorFieldLayoutAlgorithm : FieldLayoutAlgorithm
+        {
+            private FieldLayoutAlgorithm _fallbackAlgorithm;
+
+            public VectorFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm)
+            {
+                _fallbackAlgorithm = fallbackAlgorithm;
+            }
+
+            public override bool ComputeContainsGCPointers(DefType type)
+            {
+                return _fallbackAlgorithm.ComputeContainsGCPointers(type);
+            }
+
+            public override DefType ComputeHomogeneousFloatAggregateElementType(DefType type)
+            {
+                return _fallbackAlgorithm.ComputeHomogeneousFloatAggregateElementType(type);
+            }
+
+            public override ComputedInstanceFieldLayout ComputeInstanceLayout(DefType type, InstanceLayoutKind layoutKind)
+            {
+                List<FieldAndOffset> fieldsAndOffsets = new List<FieldAndOffset>();
+                foreach (FieldDesc field in type.GetFields())
+                {
+                    if (!field.IsStatic)
+                    {
+                        fieldsAndOffsets.Add(new FieldAndOffset(field, LayoutInt.Indeterminate));
+                    }
+                }
+                ComputedInstanceFieldLayout instanceLayout = new ComputedInstanceFieldLayout()
+                {
+                    FieldSize = LayoutInt.Indeterminate,
+                    FieldAlignment = LayoutInt.Indeterminate,
+                    ByteCountUnaligned = LayoutInt.Indeterminate,
+                    ByteCountAlignment = LayoutInt.Indeterminate,
+                    Offsets = fieldsAndOffsets.ToArray(),
+                };
+                return instanceLayout;
+            }
+
+            public override ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType type, StaticLayoutKind layoutKind)
+            {
+                return _fallbackAlgorithm.ComputeStaticFieldLayout(type, layoutKind);
+            }
+
+            public override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
+            {
+                return _fallbackAlgorithm.ComputeValueTypeShapeCharacteristics(type);
+            }
         }
     }
 }
