@@ -301,6 +301,17 @@ internal static class Program
         
         TestArrayItfDispatch();
 
+        int rvaFieldValue = ILHelpers.ILHelpersTest.StaticInitedInt;
+        if (rvaFieldValue == 0x78563412)
+        {
+            PrintLine("RVA static field test: Ok.");
+        }
+        else
+        {
+            PrintLine("RVA static field test: Failed.");
+            PrintLine(rvaFieldValue.ToString());
+        }
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
