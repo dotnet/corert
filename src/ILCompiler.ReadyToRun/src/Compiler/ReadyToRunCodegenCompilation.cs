@@ -80,6 +80,12 @@ namespace ILCompiler
             }
         }
 
+        internal bool IsInheritanceChainLayoutFixedInCurrentVersionBubble(TypeDesc type)
+        {
+            // TODO: implement
+            return true;
+        }
+
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
             foreach (DependencyNodeCore<NodeFactory> dependency in obj)
