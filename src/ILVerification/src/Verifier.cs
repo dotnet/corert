@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
@@ -76,7 +77,7 @@ namespace ILVerify
             }
         }
 
-        public IEnumerable<VerificationResult> Verify(PEReader peReader, TypeDefinitionHandle typeHandle)
+        public IEnumerable<VerificationResult> Verify(PEReader peReader, TypeDefinitionHandle typeHandle, bool verifyMethods = false)
         {
             if (peReader == null)
             {
@@ -97,8 +98,15 @@ namespace ILVerify
             try
             {
                 EcmaModule module = GetModule(peReader);
-                TypeDefinition typeDef = peReader.GetMetadataReader().GetTypeDefinition(typeHandle);
-                results = VerifyMethods(module, typeDef.GetMethods());
+                MetadataReader metadataReader = peReader.GetMetadataReader();
+
+                results = VerifyType(module, typeHandle);
+
+                if (verifyMethods)
+                {
+                    TypeDefinition typeDef = metadataReader.GetTypeDefinition(typeHandle);
+                    results = results.Union(VerifyMethods(module, typeDef.GetMethods()));
+                }
             }
             catch (VerifierException e)
             {
@@ -229,6 +237,12 @@ namespace ILVerify
                     Message = e.Message
                 });
             }
+        }
+
+        private IEnumerable<VerificationResult> VerifyType(EcmaModule module, TypeDefinitionHandle typeHandle)
+        {
+            var builder = new ArrayBuilder<VerificationResult>();
+            return builder.ToArray();
         }
 
         private void ThrowMissingSystemModule()

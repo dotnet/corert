@@ -8,6 +8,7 @@ namespace ILVerify
 {
     public class VerificationResult
     {
+        public TypeDefinitionHandle Type { get; internal set; }
         public MethodDefinitionHandle Method { get; internal set; }
         public VerificationErrorArgs Error { get; internal set; }
         public string Message { get; internal set; }
@@ -16,6 +17,9 @@ namespace ILVerify
     public struct VerificationErrorArgs
     {
         public VerifierError Code { get; internal set; }
+        public int TokenClass { get; internal set; }
+        public int TokenInterface { get; internal set; }
+        public int TokenMethod { get; internal set; }
         public int Offset { get; internal set; }
         public int Token { get; internal set; }
         public string Found { get; internal set; }
