@@ -34,14 +34,14 @@ namespace ILVerification.Tests
 
         /// <summary>
         ///  Returns all class correctly implement based on following naming convention
-        ///  [FriendlyName]_ValidTypeImplementation_Valid
+        ///  [FriendlyName]_ValidType_Valid
         /// </summary>
         /// <returns></returns>
-        public static TheoryData<TestCase> GetTypesWithValidTypeImplementation()
+        public static TheoryData<TestCase> GetTypesWithValidType()
         {
             var typeSelector = new Func<string[], TypeDefinitionHandle, TestCase>((mparams, typeDefinitionHandle) =>
             {
-                if (mparams[1] == "ValidTypeImplementation")
+                if (mparams[1] == "ValidType")
                 {
                     return new ValidTypeTestCase { MetadataToken = MetadataTokens.GetToken(typeDefinitionHandle) };
                 }
@@ -52,14 +52,14 @@ namespace ILVerification.Tests
 
         /// <summary>
         ///  Returns all class doesn't correctly implement based on following naming convention
-        ///  [FriendlyName]_InvalidTypeImplementation_[ExpectedVerifierError1]@[ExpectedVerifierError2]....[ExpectedVerifierErrorN]
+        ///  [FriendlyName]_InvalidType_[ExpectedVerifierError1]@[ExpectedVerifierError2]....[ExpectedVerifierErrorN]
         /// </summary>
         /// <returns></returns>
-        public static TheoryData<TestCase> GetTypesWithInvalidTypeImplementation()
+        public static TheoryData<TestCase> GetTypesWithInvalidType()
         {
             var typeSelector = new Func<string[], TypeDefinitionHandle, TestCase>((mparams, typeDefinitionHandle) =>
             {
-                if (mparams[1] == "InvalidTypeImplementation")
+                if (mparams[1] == "InvalidType")
                 {
                     var verificationErros = new List<VerifierError>();
                     foreach (var expectedError in mparams[2].Split('@'))

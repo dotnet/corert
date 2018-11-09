@@ -15,24 +15,24 @@ namespace ILVerification.Tests
     public class ILTypeVerificationTester
     {
         [Theory(DisplayName = "")]
-        [MemberData(nameof(TestDataLoader.GetTypesWithValidTypeImplementation), MemberType = typeof(TestDataLoader))]
+        [MemberData(nameof(TestDataLoader.GetTypesWithValidType), MemberType = typeof(TestDataLoader))]
         [Trait("", "Valid type implementation tests")]
-        private void TestTypesWithValidImplementation(ValidTypeTestCase validTypeImplementation)
+        private void TestValidTypes(ValidTypeTestCase validType)
         {
-            IEnumerable<VerificationResult> results = Verify(validTypeImplementation);
+            IEnumerable<VerificationResult> results = Verify(validType);
             Assert.Empty(results);
         }
 
         [Theory(DisplayName = "")]
-        [MemberData(nameof(TestDataLoader.GetTypesWithInvalidTypeImplementation), MemberType = typeof(TestDataLoader))]
+        [MemberData(nameof(TestDataLoader.GetTypesWithInvalidType), MemberType = typeof(TestDataLoader))]
         [Trait("", "Invalid type implementation tests")]
-        private void TestTypesWithInvalidImplementation(InvalidTypeTestCase invalidTypeImplementation)
+        private void TestInvalidTypes(InvalidTypeTestCase invalidType)
         {
             IEnumerable<VerificationResult> results = null;
 
             try
             {
-                results = Verify(invalidTypeImplementation);
+                results = Verify(invalidType);
             }
             catch
             {
@@ -44,9 +44,9 @@ namespace ILVerification.Tests
             finally
             {
                 Assert.NotNull(results);
-                Assert.Equal(invalidTypeImplementation.ExpectedVerifierErrors.Count, results.Count());
+                Assert.Equal(invalidType.ExpectedVerifierErrors.Count, results.Count());
 
-                foreach (VerifierError item in invalidTypeImplementation.ExpectedVerifierErrors)
+                foreach (VerifierError item in invalidType.ExpectedVerifierErrors)
                 {
                     IEnumerable<string> actual = results.Select(e => e.Error.Code.ToString());
                     Assert.True(results.Where(r => r.Error.Code == item).Count() > 0, $"Actual errors where: {string.Join(",", actual)}");

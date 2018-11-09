@@ -274,7 +274,7 @@ namespace ILVerify
                 // get fully qualified method name
                 var methodName = GetQualifiedMethodName(metadataReader, methodHandle);
 
-                bool verifying = ShouldVerifyMemeberName(methodName);
+                bool verifying = ShouldVerifyMemberName(methodName);
                 if (_verbose)
                 {
                     Write(verifying ? "Verifying " : "Skipping ");
@@ -305,7 +305,7 @@ namespace ILVerify
             {
                 // get fully qualified type name
                 var className = GetQualifiedClassName(metadataReader, typeHandle);
-                bool verifying = ShouldVerifyMemeberName(className);
+                bool verifying = ShouldVerifyMemberName(className);
                 if (_verbose)
                 {
                     Write(verifying ? "Verifying " : "Skipping ");
@@ -371,14 +371,14 @@ namespace ILVerify
             return builder.ToString();
         }
 
-        private bool ShouldVerifyMemeberName(string memeberName)
+        private bool ShouldVerifyMemberName(string memberName)
         {
-            if (_includePatterns.Count > 0 && !_includePatterns.Any(p => p.IsMatch(memeberName)))
+            if (_includePatterns.Count > 0 && !_includePatterns.Any(p => p.IsMatch(memberName)))
             {
                 return false;
             }
 
-            if (_excludePatterns.Any(p => p.IsMatch(memeberName)))
+            if (_excludePatterns.Any(p => p.IsMatch(memberName)))
             {
                 return false;
             }
