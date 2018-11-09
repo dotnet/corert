@@ -280,11 +280,11 @@ namespace ILVerification.Tests
         public string MethodName { get; set; }
         public int MetadataToken { get; set; }
         public string ModuleName { get; set; }
-        
+
         public virtual void Deserialize(IXunitSerializationInfo info)
         {
             TestName = info.GetValue<string>(nameof(TestName));
-            TestName = info.GetValue<string>(nameof(TypeName));
+            TypeName = info.GetValue<string>(nameof(TypeName));
             MethodName = info.GetValue<string>(nameof(MethodName));
             MetadataToken = info.GetValue<int>(nameof(MetadataToken));
             ModuleName = info.GetValue<string>(nameof(ModuleName));
