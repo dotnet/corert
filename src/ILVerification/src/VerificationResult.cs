@@ -8,21 +8,34 @@ namespace ILVerify
 {
     public class VerificationResult
     {
+        public VerifierError Code { get; internal set; }
         public TypeDefinitionHandle Type { get; internal set; }
         public MethodDefinitionHandle Method { get; internal set; }
-        public VerificationErrorArgs Error { get; internal set; }
         public string Message { get; internal set; }
+        public ErrorArgument[] ErrorArguments { get; set; }
+        public T GetArgumentValue<T>(string name)
+        {
+            for (int i = 0; i < ErrorArguments.Length; i++)
+            {
+                if(ErrorArguments[i].Name == name)
+                    return (T)ErrorArguments[i].Value;
+            }
+
+            return default;
+        }
     }
 
-    public struct VerificationErrorArgs
+    public class ErrorArgument
     {
-        public VerifierError Code { get; internal set; }
-        public int TokenClass { get; internal set; }
-        public int TokenInterface { get; internal set; }
-        public int TokenMethod { get; internal set; }
-        public int Offset { get; internal set; }
-        public int Token { get; internal set; }
-        public string Found { get; internal set; }
-        public string Expected { get; internal set; }
+        public ErrorArgument() { }
+
+        public ErrorArgument(string name, object value)
+        {
+            Name = name;
+            Value = value;
+        }
+
+        public string Name { get; set; }
+        public object Value { get; set; }
     }
 }

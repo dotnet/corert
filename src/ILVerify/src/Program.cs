@@ -149,7 +149,7 @@ namespace ILVerify
             return 0;
         }
 
-        private void PrintResult(VerificationResult result, EcmaModule module, string pathOrModuleName)
+        private void PrintVerifyMethodsResult(VerificationResult result, EcmaModule module, string pathOrModuleName)
         {
             Write("[IL]: Error: ");
 
@@ -168,31 +168,30 @@ namespace ILVerify
             PrintMethod(method);
             Write("]");
 
-            var args = result.Error;
-            if (args.Code != VerifierError.None)
+            if (result.Code != VerifierError.None)
             {
                 Write("[offset 0x");
-                Write(args.Offset.ToString("X8"));
+                Write(result.GetArgumentValue<int>("Offset").ToString("X8"));
                 Write("]");
 
-                if (args.Found != null)
+                if (result.GetArgumentValue<string>("Found") != null)
                 {
                     Write("[found ");
-                    Write(args.Found);
+                    Write(result.GetArgumentValue<string>("Found"));
                     Write("]");
                 }
 
-                if (args.Expected != null)
+                if (result.GetArgumentValue<string>("Expected") != null)
                 {
                     Write("[expected ");
-                    Write(args.Expected);
+                    Write(result.GetArgumentValue<string>("Expected"));
                     Write("]");
                 }
 
-                if (args.Token != 0)
+                if (result.GetArgumentValue<int>("Token") != 0)
                 {
                     Write("[token  0x");
-                    Write(args.Token.ToString("X8"));
+                    Write(result.GetArgumentValue<int>("Token").ToString("X8"));
                     Write("]");
                 }
             }
@@ -286,7 +285,7 @@ namespace ILVerify
                     var results = _verifier.Verify(peReader, methodHandle);
                     foreach (var result in results)
                     {
-                        PrintResult(result, module, path);
+                        PrintVerifyMethodsResult(result, module, path);
                         numErrors++;
                     }
 
@@ -316,7 +315,7 @@ namespace ILVerify
                     var results = _verifier.Verify(peReader, typeHandle);
                     foreach (VerificationResult result in results)
                     {
-                        PrintResult(result, module, path);
+                        PrintVerifyTypesResult(result, module, path);
                         numErrors++;
                     }
 
@@ -325,6 +324,11 @@ namespace ILVerify
 
                 verifiedTypeCounter++;
             }
+        }
+
+        private void PrintVerifyTypesResult(VerificationResult result, EcmaModule module, string pathOrModuleName)
+        {
+
         }
 
         /// <summary>

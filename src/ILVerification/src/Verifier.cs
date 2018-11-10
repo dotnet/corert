@@ -180,15 +180,16 @@ namespace ILVerify
             {
                 var importer = new ILImporter(method, methodIL);
 
-                importer.ReportVerificationError = (args) =>
+                importer.ReportVerificationError = (args, code) =>
                 {
-                    var codeResource = _stringResourceManager.Value.GetString(args.Code.ToString(), CultureInfo.InvariantCulture);
+                    var codeResource = _stringResourceManager.Value.GetString(code.ToString(), CultureInfo.InvariantCulture);
 
                     builder.Add(new VerificationResult()
                     {
+                        Code = code,
                         Method = methodHandle,
-                        Error = args,
-                        Message = string.IsNullOrEmpty(codeResource) ? args.Code.ToString() : codeResource
+                        ErrorArguments = args,
+                        Message = string.IsNullOrEmpty(codeResource) ? code.ToString() : codeResource
                     });
                 };
 

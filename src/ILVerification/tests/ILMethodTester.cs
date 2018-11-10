@@ -48,8 +48,8 @@ namespace ILVerification.Tests
 
                 foreach (var item in invalidIL.ExpectedVerifierErrors)
                 {
-                    var actual = results.Select(e => e.ToString());
-                    Assert.True(results.Where(r => r.Error.Code == item).Count() > 0, $"Actual errors where: {string.Join(",", actual)}");
+                    var actual = results.Select(e => e.Code.ToString());
+                    Assert.True(results.Where(r => r.Code == item).Count() > 0, $"Actual errors where: {string.Join(",", actual)}");
                 }
             }
         }
