@@ -16,6 +16,8 @@ using System.Runtime;
 using System.Runtime.Serialization;
 using System.Threading;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace System.Runtime.CompilerServices
 {
     public static class RuntimeHelpers
@@ -224,6 +226,15 @@ namespace System.Runtime.CompilerServices
         {
             var pEEType = EETypePtr.EETypePtrOf<T>();
             return !pEEType.IsValueType;
+        }
+
+        // Returns true iff the object has a component size;
+        // i.e., is variable length like System.String or Array.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool ObjectHasComponentSize(object obj)
+        {
+            Debug.Assert(obj != null);
+            return obj.EETypePtr.ComponentSize != 0;
         }
 
         // Constrained Execution Regions APIs are NOP's because we do not support CERs in .NET Core at all.

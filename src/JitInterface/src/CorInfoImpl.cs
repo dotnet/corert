@@ -187,6 +187,13 @@ namespace Internal.JitInterface
                             // Type system exceptions can be turned into code that throws the exception at runtime.
                             _lastException.Throw();
                         }
+#if READYTORUN
+                        else if (_lastException.SourceException is RequiresRuntimeJitException)
+                        {
+                            // Runtime JIT requirement is not a cause for failure, we just mustn't JIT a particular method
+                            _lastException.Throw();
+                        }
+#endif
                         else
                         {
                             // This is just a bug somewhere.
@@ -1220,7 +1227,14 @@ namespace Internal.JitInterface
         private uint getClassSize(CORINFO_CLASS_STRUCT_* cls)
         {
             TypeDesc type = HandleToObject(cls);
-            return (uint)type.GetElementSize().AsInt;
+            LayoutInt classSize = type.GetElementSize();
+#if READYTORUN
+            if (classSize.IsIndeterminate)
+            {
+                throw new RequiresRuntimeJitException(type);
+            }
+#endif
+            return (uint)classSize.AsInt;
         }
 
         private uint getHeapClassSize(CORINFO_CLASS_STRUCT_* cls)
@@ -1229,6 +1243,10 @@ namespace Internal.JitInterface
 
             Debug.Assert(!type.IsValueType);
             Debug.Assert(type.IsDefType);
+            Debug.Assert(!type.IsString);
+#if READYTORUN
+            Debug.Assert(_compilation.IsInheritanceChainLayoutFixedInCurrentVersionBubble(type));
+#endif
 
             return (uint)((DefType)type).InstanceByteCount.AsInt;
         }
@@ -1242,7 +1260,10 @@ namespace Internal.JitInterface
 
             bool result = !type.HasFinalizer;
 
-            // TODO: for ready to run, check whether inheritance chain is within the version bubble
+#if READYTORUN
+            if (!_compilation.IsInheritanceChainLayoutFixedInCurrentVersionBubble(type))
+                result = false;
+#endif
 
             return result;
         }
@@ -1323,8 +1344,6 @@ namespace Internal.JitInterface
             uint result = 0;
 
             DefType type = (DefType)HandleToObject(cls);
-
-            Debug.Assert(type.IsValueType);
 
             int pointerSize = PointerSize;
 

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Numerics;
 using System.Text;
 
 internal class ClassWithStatic
@@ -627,6 +628,27 @@ internal class Program
         return result;
     }
 
+    private static bool VectorTestOf<T>(T value1, T value2, T sum)
+        where T : struct
+    {
+        Console.WriteLine("Constructing vector of {0}", value1);
+        Vector<T> vector1 = new Vector<T>(value1);
+        Console.WriteLine("Vector[0] = {0}", vector1[0]);
+        Vector<T> vector2 = new Vector<T>(value2);
+        Vector<T> vectorSum = vector1 + vector2;
+        Console.WriteLine("Vector sum = {0}, {1} expected", vectorSum[0], sum);
+        return vectorSum[0].Equals(sum);
+    }
+
+    private static bool VectorTest()
+    {
+        bool success = true;
+        success &= VectorTestOf<int>(10, 20, 30);
+        success &= VectorTestOf<float>(15.0f, 30.0f, 45.0f);
+        success &= VectorTestOf<double>(50.0, 100.0, 150.0);
+        return success;
+    }
+
     public static int Main(string[] args)
     {
         if (args.Length > 0)
@@ -671,6 +693,7 @@ internal class Program
         RunTest("ThisObjGenericLookupTest", ThisObjGenericLookupTest());
         RunTest("ClassParamGenericLookupTest", ClassParamGenericLookupTest());
         RunTest("MethodParamGenericLookupTest", MethodParamGenericLookupTest());
+        RunTest("VectorTest", VectorTest());
 
         Console.WriteLine($@"{_passedTests.Count} tests pass:");
         foreach (string testName in _passedTests)

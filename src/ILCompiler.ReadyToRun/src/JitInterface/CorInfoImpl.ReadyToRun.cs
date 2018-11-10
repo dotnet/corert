@@ -28,6 +28,14 @@ namespace Internal.JitInterface
         }
     }
 
+    public class RequiresRuntimeJitException : Exception
+    {
+        public RequiresRuntimeJitException(object reason)
+            : base(reason.ToString())
+        {
+        }
+    }
+
     unsafe partial class CorInfoImpl
     {
         private const CORINFO_RUNTIME_ABI TargetABI = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
@@ -323,6 +331,9 @@ namespace Internal.JitInterface
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTEXCEPTION:
                     id = ReadyToRunHelper.ThrowArgument;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_THROW_NOT_IMPLEMENTED:
+                    id = ReadyToRunHelper.ThrowNotImplemented;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED:
                     id = ReadyToRunHelper.ThrowPlatformNotSupported;

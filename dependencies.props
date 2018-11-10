@@ -1,10 +1,10 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <RyuJITVersion>3.0.0-preview1-27013-01</RyuJITVersion>
+    <RyuJITVersion>3.0.0-preview-27109-03</RyuJITVersion>
     <ObjectWriterVersion>1.0.0-alpha-26412-0</ObjectWriterVersion>
-    <CoreFxVersion>4.6.0-preview1-26831-01</CoreFxVersion>
-    <CoreFxUapVersion>4.7.0-preview1-26831-01</CoreFxUapVersion>
-    <MicrosoftNETCoreNativeVersion>3.0.0-preview1-26831-01</MicrosoftNETCoreNativeVersion>
+    <CoreFxVersion>4.6.0-preview.18558.2</CoreFxVersion>
+    <CoreFxUapVersion>4.7.0-preview.18558.2</CoreFxUapVersion>
+    <MicrosoftNETCoreNativeVersion>3.0.0-preview-27108-02</MicrosoftNETCoreNativeVersion>
     <MicrosoftNETCoreAppPackageVersion>2.1.0</MicrosoftNETCoreAppPackageVersion>
     <MicrosoftDotNetTestSdkVersion>15.8.0</MicrosoftDotNetTestSdkVersion>
     <XUnitPackageVersion>2.4.1-pre.build.4059</XUnitPackageVersion>

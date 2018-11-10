@@ -4,21 +4,34 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
+    public struct TypeInfo<THandle>
+    {
+        public readonly MetadataReader MetadataReader;
+        public readonly THandle Handle;
+
+        public TypeInfo(MetadataReader metadataReader, THandle handle)
+        {
+            MetadataReader = metadataReader;
+            Handle = handle;
+        }
+    }
+
     public class ReadyToRunTableManager : MetadataManager
     {
-        private readonly HashSet<TypeDesc> _typesWithAvailableTypesGenerated = new HashSet<TypeDesc>();
-
         public ReadyToRunTableManager(CompilerTypeSystemContext typeSystemContext)
             : base(typeSystemContext, new NoMetadataBlockingPolicy(), new NoManifestResourceBlockingPolicy(), new NoDynamicInvokeThunkGenerationPolicy()) {}
 
@@ -27,21 +40,28 @@ namespace ILCompiler
             // We don't attach any metadata blobs.
         }
 
-        protected override void Graph_NewMarkedNode(DependencyNodeCore<NodeFactory> obj)
+        public IEnumerable<TypeInfo<TypeDefinitionHandle>> GetDefinedTypes()
         {
-            base.Graph_NewMarkedNode(obj);
-            
-            var eetypeNode = obj as AvailableType;
-            if (eetypeNode != null)
+            foreach (string inputFile in _typeSystemContext.InputFilePaths.Values)
             {
-                _typesWithAvailableTypesGenerated.Add(eetypeNode.Type);
-                return;
+                EcmaModule module = _typeSystemContext.GetModuleFromPath(inputFile);
+                foreach (TypeDefinitionHandle typeDefHandle in module.MetadataReader.TypeDefinitions)
+                {
+                    yield return new TypeInfo<TypeDefinitionHandle>(module.MetadataReader, typeDefHandle);
+                }
             }
         }
 
-        public IEnumerable<TypeDesc> GetTypesWithAvailableTypes()
+            public IEnumerable<TypeInfo<ExportedTypeHandle>> GetExportedTypes()
         {
-            return _typesWithAvailableTypesGenerated;
+            foreach (string inputFile in _typeSystemContext.InputFilePaths.Values)
+            {
+                EcmaModule module = _typeSystemContext.GetModuleFromPath(inputFile);
+                foreach (ExportedTypeHandle exportedTypeHandle in module.MetadataReader.ExportedTypes)
+                {
+                    yield return new TypeInfo<ExportedTypeHandle>(module.MetadataReader, exportedTypeHandle);
+                }
+            }
         }
 
         public override MethodDesc GetCanonicalReflectionInvokeStub(MethodDesc method) => throw new NotImplementedException();

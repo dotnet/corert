@@ -866,6 +866,14 @@
                 { 
                     "name": "System.Tests.ConvertToStringTests.FromBoxedObject",
                     "reason": "https://github.com/dotnet/coreclr/pull/19775"
+                },
+                {
+                    "name": "System.Tests.ConvertToDoubleTests.FromString",
+                    "reason": "https://github.com/dotnet/coreclr/pull/20707"
+                },
+                { 
+                    "name": "System.Tests.ConvertToSingleTests.FromString",
+                    "reason": "https://github.com/dotnet/coreclr/pull/20707"
                 }
             ]
         }

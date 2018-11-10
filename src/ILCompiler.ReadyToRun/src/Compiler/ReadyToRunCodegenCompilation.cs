@@ -80,6 +80,12 @@ namespace ILCompiler
             }
         }
 
+        internal bool IsInheritanceChainLayoutFixedInCurrentVersionBubble(TypeDesc type)
+        {
+            // TODO: implement
+            return true;
+        }
+
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
             foreach (DependencyNodeCore<NodeFactory> dependency in obj)
@@ -127,6 +133,10 @@ namespace ILCompiler
                 {
                     // If compilation fails, don't emit code for this method. It will be Jitted at runtime
                     Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because: {ex.Message}");
+                }
+                catch (RequiresRuntimeJitException ex)
+                {
+                    Logger.Writer.WriteLine($"Info: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
                 }
             }
         }

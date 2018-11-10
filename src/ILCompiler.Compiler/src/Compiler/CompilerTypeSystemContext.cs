@@ -27,7 +27,7 @@ namespace ILCompiler
         private ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
         private MetadataVirtualMethodAlgorithm _virtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
 
-        private SimdHelper _simdHelper;
+        protected SimdHelper _simdHelper;
 
         private TypeDesc[] _arrayOfTInterfaces;
         

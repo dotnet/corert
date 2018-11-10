@@ -426,7 +426,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             // Canonical definition types are *not* constructed types (call NecessaryTypeSymbol to get them)
             Debug.Assert(!type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
-            
+
             if (CompilationModuleGroup.ContainsType(type))
             {
                 return new AvailableType(this, type);

@@ -555,15 +555,26 @@ namespace Internal.IL
             var underlyingSourceType = sourceType.UnderlyingType;
             if (targetType.TypeKind == LLVMTypeKind.LLVMIntegerTypeKind && underlyingSourceType.IsPrimitive && !underlyingSourceType.IsPointer)
             {
-                var sourceLLVMType = ILImporter.GetLLVMTypeForTypeDesc(underlyingSourceType);
-                var typedAddress = CastIfNecessary(builder, address, LLVM.PointerType(sourceLLVMType, 0));
-                return CastIntValue(builder, LLVM.BuildLoad(builder, typedAddress, loadName ?? "ldvalue"), targetType, signExtend);
+                LLVMValueRef loadValueRef = CastIfNecessaryAndLoad(builder, address, underlyingSourceType, loadName);
+                return CastIntValue(builder, loadValueRef, targetType, signExtend);
+            }
+            else if (targetType.TypeKind == LLVMTypeKind.LLVMDoubleTypeKind)
+            {
+                LLVMValueRef loadValueRef = CastIfNecessaryAndLoad(builder, address, underlyingSourceType, loadName);
+                return CastDoubleValue(builder, loadValueRef, targetType);
             }
             else
             {
                 var typedAddress = CastIfNecessary(builder, address, LLVM.PointerType(targetType, 0));
                 return LLVM.BuildLoad(builder, typedAddress, loadName ?? "ldvalue");
             }
+        }
+
+        private static LLVMValueRef CastIfNecessaryAndLoad(LLVMBuilderRef builder, LLVMValueRef address, TypeDesc sourceTypeDesc, string loadName)
+        {
+            LLVMTypeRef sourceLLVMType = ILImporter.GetLLVMTypeForTypeDesc(sourceTypeDesc);
+            LLVMValueRef typedAddress = CastIfNecessary(builder, address, LLVM.PointerType(sourceLLVMType, 0));
+            return LLVM.BuildLoad(builder, typedAddress, loadName ?? "ldvalue");
         }
 
         private static LLVMValueRef CastIntValue(LLVMBuilderRef builder, LLVMValueRef value, LLVMTypeRef type, bool signExtend)
@@ -601,6 +612,16 @@ namespace Internal.IL
                 Debug.Assert(typeKind == LLVMTypeKind.LLVMIntegerTypeKind);
                 return LLVM.BuildIntCast(builder, value, type, "intcast");
             }
+        }
+
+        private static LLVMValueRef CastDoubleValue(LLVMBuilderRef builder, LLVMValueRef value, LLVMTypeRef type)
+        {
+            if (LLVM.TypeOf(value).Pointer == type.Pointer)
+            {
+                return value;
+            }
+            Debug.Assert(LLVM.TypeOf(value).TypeKind == LLVMTypeKind.LLVMFloatTypeKind);
+            return LLVM.BuildFPExt(builder, value, type, "fpext");
         }
 
         private LLVMValueRef LoadVarAddress(int index, LocalVarKind kind, out TypeDesc type)
@@ -2818,30 +2839,40 @@ namespace Internal.IL
                 ISymbolNode node;
                 MetadataType owningType = (MetadataType)field.OwningType;
                 LLVMValueRef staticBase;
-                int fieldOffset = field.Offset.AsInt;
+                int fieldOffset;
 
-                // TODO: We need the right thread static per thread
-                if (field.IsThreadStatic)
+                if (field.HasRva)
                 {
-                    node = _compilation.NodeFactory.TypeThreadStaticsSymbol(owningType);
+                    node = (ISymbolNode)_compilation.GetFieldRvaData(field);
                     staticBase = LoadAddressOfSymbolNode(node);
-                }
-
-                else if (field.HasGCStaticBase)
-                {
-                    node = _compilation.NodeFactory.TypeGCStaticsSymbol(owningType);
-
-                    // We can't use GCStatics in the data section until we can successfully call
-                    // InitializeModules on startup, so stick with globals for now
-                    //LLVMValueRef basePtrPtr = LoadAddressOfSymbolNode(node);
-                    //staticBase = LLVM.BuildLoad(_builder, LLVM.BuildLoad(_builder, LLVM.BuildPointerCast(_builder, basePtrPtr, LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(LLVM.Int8Type(), 0), 0), 0), "castBasePtrPtr"), "basePtr"), "base");
-                    staticBase = WebAssemblyObjectWriter.EmitGlobal(Module, field, _compilation.NameMangler);
                     fieldOffset = 0;
                 }
                 else
                 {
-                    node = _compilation.NodeFactory.TypeNonGCStaticsSymbol(owningType);
-                    staticBase = LoadAddressOfSymbolNode(node);
+                    fieldOffset = field.Offset.AsInt;
+
+                    if (field.IsThreadStatic)
+                    {
+                        // TODO: We need the right thread static per thread
+                        node = _compilation.NodeFactory.TypeThreadStaticsSymbol(owningType);
+                        staticBase = LoadAddressOfSymbolNode(node);
+                    }
+                    else if (field.HasGCStaticBase)
+                    {
+                        node = _compilation.NodeFactory.TypeGCStaticsSymbol(owningType);
+
+                        // We can't use GCStatics in the data section until we can successfully call
+                        // InitializeModules on startup, so stick with globals for now
+                        //LLVMValueRef basePtrPtr = LoadAddressOfSymbolNode(node);
+                        //staticBase = LLVM.BuildLoad(_builder, LLVM.BuildLoad(_builder, LLVM.BuildPointerCast(_builder, basePtrPtr, LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(LLVM.Int8Type(), 0), 0), 0), "castBasePtrPtr"), "basePtr"), "base");
+                        staticBase = WebAssemblyObjectWriter.EmitGlobal(Module, field, _compilation.NameMangler);
+                        fieldOffset = 0;
+                    }
+                    else
+                    {
+                        node = _compilation.NodeFactory.TypeNonGCStaticsSymbol(owningType);
+                        staticBase = LoadAddressOfSymbolNode(node);
+                    }
                 }
 
                 _dependencies.Add(node);
