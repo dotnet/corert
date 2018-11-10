@@ -2044,6 +2044,10 @@ namespace Internal.IL
                     targetLLVMFunction = LLVMFunctionForMethod(method, thisPointer, true, null);
                     AddVirtualMethodReference(method);
                 }
+                else
+                {
+                    AddMethodReference(method);
+                }
             }
             else
             {
