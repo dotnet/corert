@@ -312,8 +312,6 @@ internal static class Program
             PrintLine(rvaFieldValue.ToString());
         }
 
-        TestRegisterOfNativeCallback();
-
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -700,21 +698,6 @@ internal static class Program
         }
 
     }
-
-    private delegate void EmCallbackFunc();
-
-    private static void DoNothing() { }
-
-    private static void TestRegisterOfNativeCallback()
-    {
-        PrintString("Register callback with native call: ");
-        var callback = new EmCallbackFunc(DoNothing);
-        emscripten_set_main_loop(callback, 1, 1);
-        PrintLine("Ok.");
-    }
-
-    [DllImport("*")]
-    private static unsafe extern void emscripten_set_main_loop(EmCallbackFunc callback, int fps, int simulate_infinite_loop);
 
     [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
