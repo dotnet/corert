@@ -1243,6 +1243,10 @@ namespace Internal.JitInterface
 
             Debug.Assert(!type.IsValueType);
             Debug.Assert(type.IsDefType);
+            Debug.Assert(!type.IsString);
+#if READYTORUN
+            Debug.Assert(_compilation.IsInheritanceChainLayoutFixedInCurrentVersionBubble(type));
+#endif
 
             return (uint)((DefType)type).InstanceByteCount.AsInt;
         }
@@ -1256,7 +1260,10 @@ namespace Internal.JitInterface
 
             bool result = !type.HasFinalizer;
 
-            // TODO: for ready to run, check whether inheritance chain is within the version bubble
+#if READYTORUN
+            if (!_compilation.IsInheritanceChainLayoutFixedInCurrentVersionBubble(type))
+                result = false;
+#endif
 
             return result;
         }
@@ -1337,8 +1344,6 @@ namespace Internal.JitInterface
             uint result = 0;
 
             DefType type = (DefType)HandleToObject(cls);
-
-            Debug.Assert(type.IsValueType);
 
             int pointerSize = PointerSize;
 
