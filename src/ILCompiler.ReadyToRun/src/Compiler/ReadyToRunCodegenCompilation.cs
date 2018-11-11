@@ -86,6 +86,11 @@ namespace ILCompiler
             return true;
         }
 
+        public override TypeDesc GetTypeOfRuntimeType()
+        {
+            return TypeSystemContext.SystemModule.GetKnownType("System", "RuntimeType");
+        }
+
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
             foreach (DependencyNodeCore<NodeFactory> dependency in obj)

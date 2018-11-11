@@ -761,6 +761,7 @@ namespace Internal.IL
                 }
 
                 // If this is a ldtoken Type / GetValueInternal sequence, we're done.
+                // If this is a ldtoken Type / Type.GetTypeFromHandle sequence, we need one more helper.
                 BasicBlock nextBasicBlock = _basicBlocks[_currentOffset];
                 if (nextBasicBlock == null)
                 {
@@ -772,6 +773,11 @@ namespace Internal.IL
                         {
                             // Codegen expands this and doesn't do the normal ldtoken.
                             return;
+                        }
+                        else if (IsTypeGetTypeFromHandle(method))
+                        {
+                            // Codegen will swap this one for GetRuntimeTypeHandle when optimizing
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeType), "ldtoken");
                         }
                     }
                 }
@@ -1071,6 +1077,20 @@ namespace Internal.IL
                 if (owningType != null)
                 {
                     return owningType.Name == "RuntimeTypeHandle" && owningType.Namespace == "System";
+                }
+            }
+
+            return false;
+        }
+
+        private bool IsTypeGetTypeFromHandle(MethodDesc method)
+        {
+            if (method.IsIntrinsic && method.Name == "GetTypeFromHandle")
+            {
+                MetadataType owningType = method.OwningType as MetadataType;
+                if (owningType != null)
+                {
+                    return owningType.Name == "Type" && owningType.Namespace == "System";
                 }
             }
 

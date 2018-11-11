@@ -1579,8 +1579,14 @@ namespace Internal.JitInterface
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.String));
 
                 case CorInfoClassId.CLASSID_RUNTIME_TYPE:
-                    // This is used in a JIT optimization. It's not applicable due to the structure of CoreRT CoreLib.
-                    return null;
+                    TypeDesc typeOfRuntimeType = _compilation.GetTypeOfRuntimeType();
+
+                    // RyuJIT doesn't expect this to be null and this is used in comparisons.
+                    // Returning null might make RyuJIT think a type with unknown type information (null)
+                    // is a runtime type and that's a pain to debug.
+                    Debug.Assert(typeOfRuntimeType != null);
+
+                    return ObjectToHandle(typeOfRuntimeType);
 
                 default:
                     throw new NotImplementedException();

@@ -31,5 +31,10 @@ namespace Internal.Runtime.CompilerHelpers
             *(IntPtr*)&returnValue = pHandleSignature;
             return returnValue;
         }
+
+        private static Type GetRuntimeType(IntPtr pEEType)
+        {
+            return Type.GetTypeFromHandle(new RuntimeTypeHandle(new EETypePtr(pEEType)));
+        }
     }
 }
