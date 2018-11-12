@@ -35,11 +35,13 @@
     <FileToExclude Include="mscorlib" />
 
     <!-- Pickup a few selected aot-specific files from uapaot instead -->
-    <FileToExclude Include="System.Linq" />
     <FileToExclude Include="System.Linq.Expressions" />
     <FileToExclude Include="System.Text.RegularExpressions" />
     <FileToExclude Include="System.Private.Xml" />
     <FileToExclude Include="System.Private.Xml.Linq" />
+
+    <!-- System.Linq in the aot-specific package is optimized for size -->
+    <FileToExclude Include="System.Linq" />
 
     <!-- TODO: Upstack framework -->
     <FileToExclude Include="System.Private.DataContractSerialization" />
