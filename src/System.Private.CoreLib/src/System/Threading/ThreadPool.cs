@@ -35,6 +35,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
+using Thread = Internal.Runtime.Augments.RuntimeThread;
+
 namespace System.Threading
 {
     internal static class ThreadPoolGlobals
@@ -532,6 +534,7 @@ namespace System.Threading
                 // Set up our thread-local data
                 //
                 ThreadPoolWorkQueueThreadLocals tl = workQueue.EnsureCurrentThreadHasQueue();
+                Thread currentThread = tl.currentThread;
 
                 //
                 // Loop until our quantum expires or there is no work.
@@ -567,7 +570,7 @@ namespace System.Threading
                         SynchronizationContext.SetSynchronizationContext(null);
                         if (workItem is Task task)
                         {
-                            task.ExecuteFromThreadPool();
+                            task.ExecuteFromThreadPool(currentThread);
                         }
                         else
                         {
@@ -644,6 +647,7 @@ namespace System.Threading
 
         public readonly ThreadPoolWorkQueue workQueue;
         public readonly ThreadPoolWorkQueue.WorkStealingQueue workStealingQueue;
+        public readonly Thread currentThread;
         public FastRandom random = new FastRandom(Environment.CurrentManagedThreadId);  // mutable struct, do not copy or make readonly
 
         public ThreadPoolWorkQueueThreadLocals(ThreadPoolWorkQueue tpq)
@@ -651,6 +655,7 @@ namespace System.Threading
             workQueue = tpq;
             workStealingQueue = new ThreadPoolWorkQueue.WorkStealingQueue();
             ThreadPoolWorkQueue.WorkStealingQueueList.Add(workStealingQueue);
+            currentThread = Thread.CurrentThread;
         }
 
         private void CleanUp()
