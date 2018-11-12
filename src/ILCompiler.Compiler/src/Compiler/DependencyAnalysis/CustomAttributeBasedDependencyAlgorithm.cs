@@ -10,6 +10,7 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using MethodAttributes = System.Reflection.MethodAttributes;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -22,7 +23,8 @@ namespace ILCompiler.DependencyAnalysis
         public static void AddDependenciesDueToCustomAttributes(ref DependencyList dependencies, NodeFactory factory, EcmaMethod method)
         {
             MetadataReader reader = method.MetadataReader;
-            MethodDefinition methodDef = reader.GetMethodDefinition(method.Handle);
+            MethodDefinitionHandle methodHandle = method.Handle;
+            MethodDefinition methodDef = reader.GetMethodDefinition(methodHandle);
 
             // Handle custom attributes on the method
             AddDependenciesDueToCustomAttributes(ref dependencies, factory, method.Module, methodDef.GetCustomAttributes());
@@ -32,6 +34,36 @@ namespace ILCompiler.DependencyAnalysis
             {
                 Parameter parameter = reader.GetParameter(parameterHandle);
                 AddDependenciesDueToCustomAttributes(ref dependencies, factory, method.Module, parameter.GetCustomAttributes());
+            }
+
+            // We don't model properties and events as separate entities within the compiler, so ensuring
+            // we can generate custom attributes for the associated events and properties from here
+            // is as good as any other place.
+            //
+            // As a performance optimization, we look for associated events and properties only
+            // if the method is SpecialName. This is required for CLS compliance and compilers we
+            // care about emit accessors like this.
+            if ((methodDef.Attributes & MethodAttributes.SpecialName) != 0)
+            {
+                TypeDefinition declaringType = reader.GetTypeDefinition(methodDef.GetDeclaringType());
+
+                foreach (PropertyDefinitionHandle propertyHandle in declaringType.GetProperties())
+                {
+                    PropertyDefinition property = reader.GetPropertyDefinition(propertyHandle);
+                    PropertyAccessors accessors = property.GetAccessors();
+
+                    if (accessors.Getter == methodHandle || accessors.Setter == methodHandle)
+                        AddDependenciesDueToCustomAttributes(ref dependencies, factory, method.Module, property.GetCustomAttributes());
+                }
+
+                foreach (EventDefinitionHandle eventHandle in declaringType.GetEvents())
+                {
+                    EventDefinition @event = reader.GetEventDefinition(eventHandle);
+                    EventAccessors accessors = @event.GetAccessors();
+
+                    if (accessors.Adder == methodHandle || accessors.Remover == methodHandle || accessors.Raiser == methodHandle)
+                        AddDependenciesDueToCustomAttributes(ref dependencies, factory, method.Module, @event.GetCustomAttributes());
+                }
             }
         }
 
