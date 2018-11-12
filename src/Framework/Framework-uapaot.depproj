@@ -25,6 +25,7 @@
     <FileToInclude Include="mscorlib" />
 
     <!-- Pickup a few selected aot-specific files from uapaot instead -->
+    <FileToInclude Include="System.Linq" />
     <FileToInclude Include="System.Linq.Expressions" />
     <FileToInclude Include="System.Text.RegularExpressions" />
     <FileToInclude Include="System.Private.Xml" />

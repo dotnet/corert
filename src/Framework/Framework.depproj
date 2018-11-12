@@ -35,6 +35,7 @@
     <FileToExclude Include="mscorlib" />
 
     <!-- Pickup a few selected aot-specific files from uapaot instead -->
+    <FileToExclude Include="System.Linq" />
     <FileToExclude Include="System.Linq.Expressions" />
     <FileToExclude Include="System.Text.RegularExpressions" />
     <FileToExclude Include="System.Private.Xml" />
