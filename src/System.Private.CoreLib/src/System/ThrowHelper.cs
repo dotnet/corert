@@ -107,6 +107,11 @@ namespace System
             throw GetArgumentOutOfRangeException(ExceptionArgument.index,
                                                     ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
         }
+        internal static void ThrowValueArgumentOutOfRange_NeedNonNegNumException()
+        {
+            throw GetArgumentOutOfRangeException(ExceptionArgument.value,
+                                                    ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+        }
 
         private static ArgumentException GetWrongKeyTypeArgumentException(object key, Type targetType)
         {
