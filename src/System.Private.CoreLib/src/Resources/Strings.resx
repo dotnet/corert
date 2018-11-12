@@ -2791,4 +2791,7 @@
   <data name="ArgumentOutOfRange_Week_ISO" xml:space="preserve">
     <value>The week parameter must be in the range 1 through 53.</value>
   </data>
+  <data name="BadImageFormat_ResType_SerBlobMismatch" xml:space="preserve">
+    <value>The type serialized in the .resources file was not the same type that the .resources file said it contained. Expected '{0}' but read '{1}'.</value>
+  </data>
 </root>
