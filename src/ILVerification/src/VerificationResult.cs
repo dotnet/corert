@@ -13,15 +13,27 @@ namespace ILVerify
         public MethodDefinitionHandle Method { get; internal set; }
         public string Message { get; internal set; }
         public ErrorArgument[] ErrorArguments { get; set; }
+
         public T GetArgumentValue<T>(string name)
         {
+            TryGetArgumentValue<T>(name, out T argumentValue);
+            return argumentValue;
+        }
+
+        public bool TryGetArgumentValue<T>(string name,out T argumentValue)
+        {
+            argumentValue = default;
+
             for (int i = 0; i < ErrorArguments.Length; i++)
             {
-                if(ErrorArguments[i].Name == name)
-                    return (T)ErrorArguments[i].Value;
+                if (ErrorArguments[i].Name == name)
+                {
+                    argumentValue = (T)ErrorArguments[i].Value;
+                    return true;
+                }
             }
 
-            return default;
+            return false;
         }
     }
 
@@ -35,7 +47,7 @@ namespace ILVerify
             Value = value;
         }
 
-        public string Name { get; set; }
-        public object Value { get; set; }
+        public string Name { get; }
+        public object Value { get; }
     }
 }

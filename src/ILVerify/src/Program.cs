@@ -174,24 +174,24 @@ namespace ILVerify
                 Write(result.GetArgumentValue<int>("Offset").ToString("X8"));
                 Write("]");
 
-                if (result.GetArgumentValue<string>("Found") != null)
+                if (result.TryGetArgumentValue("Found", out string found))
                 {
                     Write("[found ");
-                    Write(result.GetArgumentValue<string>("Found"));
+                    Write(found);
                     Write("]");
                 }
 
-                if (result.GetArgumentValue<string>("Expected") != null)
+                if (result.TryGetArgumentValue("Expected", out string expected))
                 {
                     Write("[expected ");
-                    Write(result.GetArgumentValue<string>("Expected"));
+                    Write(expected);
                     Write("]");
                 }
 
-                if (result.GetArgumentValue<int>("Token") != 0)
+                if (result.TryGetArgumentValue("Token", out int token))
                 {
                     Write("[token  0x");
-                    Write(result.GetArgumentValue<int>("Token").ToString("X8"));
+                    Write(token.ToString("X8"));
                     Write("]");
                 }
             }
