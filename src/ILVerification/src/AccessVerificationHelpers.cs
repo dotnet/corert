@@ -255,7 +255,7 @@ namespace ILVerify
             var assembly = (module as EcmaAssembly);
             if (assembly == null)
             {
-                assembly = ((EcmaModule)module).ReferencingModule as EcmaAssembly;
+                assembly = ((EcmaModule)module).ReferencingAssembly;
             }
             if (assembly != null)
             {

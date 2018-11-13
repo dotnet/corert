@@ -24,7 +24,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        internal ModuleDesc ReferencingModule { get; set; }
+        internal EcmaAssembly ReferencingAssembly { get; set; }
 
         private sealed class EcmaObjectLookupWrapper : IEntityHandleObject
         {

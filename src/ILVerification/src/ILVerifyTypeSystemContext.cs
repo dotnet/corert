@@ -47,7 +47,11 @@ namespace ILVerify
             {
                 throw new VerifierException($"The module '{fileName}' is not expected to be an assembly");
             }
-            module.ReferencingModule = referencingModule;
+            if (module.ReferencingAssembly != null)
+            {
+                throw new VerifierException($"The module '{fileName}' is already referenced by assembly {module.ReferencingAssembly}");
+            }
+            module.ReferencingAssembly = referencingModule as EcmaAssembly;
             return module;
         }
 
