@@ -359,7 +359,7 @@
       }
     },
     {
-      "enabled": false,
+      "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Run build-tests.sh",

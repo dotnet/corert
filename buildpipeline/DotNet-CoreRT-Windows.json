@@ -110,7 +110,7 @@
       }
     },
     {
-      "enabled": false,
+      "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Build tests",
