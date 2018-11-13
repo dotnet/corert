@@ -202,7 +202,7 @@ namespace Internal.IL
             }
         }
 
-        public Action<VerificationErrorArgs> ReportVerificationError
+        public Action<ErrorArgument[], VerifierError> ReportVerificationError
         {
             set;
             private get;
@@ -510,8 +510,11 @@ again:
             if (_currentBasicBlock != null)
                 _currentBasicBlock.IncrementErrorCount();
 
-            var args = new VerificationErrorArgs() { Code = error, Offset = _currentInstructionOffset };
-            ReportVerificationError(args);
+            var args = new ErrorArgument[] 
+            { 
+                new ErrorArgument("Offset", _currentInstructionOffset) 
+            };
+            ReportVerificationError(args, error);
         }
 
         void VerificationError(VerifierError error, object found)
@@ -519,13 +522,12 @@ again:
             if (_currentBasicBlock != null)
                 _currentBasicBlock.IncrementErrorCount();
 
-            var args = new VerificationErrorArgs()
+            var args = new ErrorArgument[]
             {
-                Code = error,
-                Offset = _currentInstructionOffset,
-                Found = found.ToString(),
+                new ErrorArgument("Offset", _currentInstructionOffset),
+                new ErrorArgument("Found", found.ToString())
             };
-            ReportVerificationError(args);
+            ReportVerificationError(args, error);
         }
 
         void VerificationError(VerifierError error, object found, object expected)
@@ -533,14 +535,12 @@ again:
             if (_currentBasicBlock != null)
                 _currentBasicBlock.IncrementErrorCount();
 
-            var args = new VerificationErrorArgs()
+            var args = new ErrorArgument[]
             {
-                Code = error, 
-                Offset = _currentInstructionOffset,
-                Found = found.ToString(),
-                Expected = expected.ToString(),
+                new ErrorArgument("Offset", _currentInstructionOffset),
+                new ErrorArgument("Found", found.ToString())
             };
-            ReportVerificationError(args);
+            ReportVerificationError(args, error);
         }
 
         // Check whether the condition is true. If not, report verification error and continue verification.
@@ -1175,13 +1175,12 @@ again:
 
         void HandleTokenResolveException(int token)
         {
-            var args = new VerificationErrorArgs()
-            {
-                Code = VerifierError.TokenResolve,
-                Offset = _currentInstructionOffset,
-                Token = token
-            };
-            ReportVerificationError(args);
+            var args = new ErrorArgument[]
+             {
+                new ErrorArgument("Offset", _currentInstructionOffset),
+                new ErrorArgument("Token", token)
+             };
+            ReportVerificationError(args, VerifierError.TokenResolve);
             AbortBasicBlockVerification();
         }
 
