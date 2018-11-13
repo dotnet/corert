@@ -252,18 +252,21 @@ namespace ILVerify
 
         private static bool GrantsFriendAccessTo(this ModuleDesc module, ModuleDesc friendModule)
         {
-            var assembly = (EcmaAssembly)module;
-            var friendName = ((IAssemblyDesc)friendModule).GetName();
-
-            foreach (var attribute in assembly.GetDecodedCustomAttributes("System.Runtime.CompilerServices", "InternalsVisibleToAttribute"))
+            var assembly = module as EcmaAssembly;
+            if (assembly != null)
             {
-                AssemblyName friendAttributeName = new AssemblyName((string)attribute.FixedArguments[0].Value);
-                if (!friendName.Name.Equals(friendAttributeName.Name, StringComparison.OrdinalIgnoreCase))
-                    continue;
+                var friendName = ((IAssemblyDesc)friendModule).GetName();
 
-                // Comparing PublicKeyToken, since GetPublicKey returns null due to a bug
-                if (IsSamePublicKey(friendAttributeName.GetPublicKeyToken(), friendName.GetPublicKeyToken()))
-                    return true;
+                foreach (var attribute in assembly.GetDecodedCustomAttributes("System.Runtime.CompilerServices", "InternalsVisibleToAttribute"))
+                {
+                    AssemblyName friendAttributeName = new AssemblyName((string)attribute.FixedArguments[0].Value);
+                    if (!friendName.Name.Equals(friendAttributeName.Name, StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    // Comparing PublicKeyToken, since GetPublicKey returns null due to a bug
+                    if (IsSamePublicKey(friendAttributeName.GetPublicKeyToken(), friendName.GetPublicKeyToken()))
+                        return true;
+                }
             }
             return false;
         }
