@@ -24,7 +24,7 @@ using CausalityRelation = Internal.Runtime.Augments.CausalityRelation;
 using CausalitySource = Internal.Runtime.Augments.CausalitySource;
 using CausalitySynchronousWork = Internal.Runtime.Augments.CausalitySynchronousWork;
 using CausalityTraceLevel = Internal.Runtime.Augments.CausalityTraceLevel;
-using RuntimeThread = Internal.Runtime.Augments.RuntimeThread;
+using Thread = Internal.Runtime.Augments.RuntimeThread;
 
 // Disable the "reference to volatile field not treated as volatile" error.
 #pragma warning disable 0420
@@ -2331,7 +2331,7 @@ namespace System.Threading.Tasks
         /// can override to customize their behavior, which is usually done by promises
         /// that want to reuse the same object as a queued work item.
         /// </summary>
-        internal virtual void ExecuteFromThreadPool()
+        internal virtual void ExecuteFromThreadPool(Thread threadPoolThread)
         {
             ExecuteEntry(false);
         }

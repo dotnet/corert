@@ -35,6 +35,7 @@
 // multiple times for different instantiation. 
 // 
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -105,6 +106,11 @@ namespace System
         internal static void ThrowIndexArgumentOutOfRange_NeedNonNegNumException()
         {
             throw GetArgumentOutOfRangeException(ExceptionArgument.index,
+                                                    ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+        }
+        internal static void ThrowValueArgumentOutOfRange_NeedNonNegNumException()
+        {
+            throw GetArgumentOutOfRangeException(ExceptionArgument.value,
                                                     ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
         }
 
@@ -243,6 +249,36 @@ namespace System
         internal static void ThrowArraySegmentCtorValidationFailedExceptions(Array array, int offset, int count)
         {
             throw GetArraySegmentCtorValidationFailedException(array, offset, count);
+        }
+
+        internal static void ThrowFormatException_BadFormatSpecifier()
+        {
+            throw CreateFormatException_BadFormatSpecifier();
+        }
+
+        private static Exception CreateFormatException_BadFormatSpecifier()
+        {
+            return new FormatException(SR.Argument_BadFormatSpecifier);
+        }
+
+        internal static void ThrowArgumentOutOfRangeException_PrecisionTooLarge()
+        {
+            throw CreateArgumentOutOfRangeException_PrecisionTooLarge();
+        }
+
+        private static Exception CreateArgumentOutOfRangeException_PrecisionTooLarge()
+        {
+            return new ArgumentOutOfRangeException("precision", SR.Format(SR.Argument_PrecisionTooLarge, StandardFormat.MaxPrecision));
+        }
+
+        internal static void ThrowArgumentOutOfRangeException_SymbolDoesNotFit()
+        {
+            throw CreateArgumentOutOfRangeException_SymbolDoesNotFit();
+        }
+
+        private static Exception CreateArgumentOutOfRangeException_SymbolDoesNotFit()
+        {
+            return new ArgumentOutOfRangeException("symbol", SR.Argument_BadFormatSpecifier);
         }
 
         // Allow nulls for reference types and Nullable<U>, but not for value types.

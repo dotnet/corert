@@ -12,27 +12,27 @@ using Xunit;
 
 namespace ILVerification.Tests
 {
-    public class ILMethodTester
+    public class ILTypeVerificationTester
     {
         [Theory(DisplayName = "")]
-        [MemberData(nameof(TestDataLoader.GetMethodsWithValidIL), MemberType = typeof(TestDataLoader))]
-        [Trait("", "Valid IL Tests")]
-        void TestMethodsWithValidIL(ValidILTestCase validIL)
+        [MemberData(nameof(TestDataLoader.GetTypesWithValidType), MemberType = typeof(TestDataLoader))]
+        [Trait("", "Valid type implementation tests")]
+        private void TestValidTypes(ValidTypeTestCase validType)
         {
-            var results = Verify(validIL);
+            IEnumerable<VerificationResult> results = Verify(validType);
             Assert.Empty(results);
         }
 
         [Theory(DisplayName = "")]
-        [MemberData(nameof(TestDataLoader.GetMethodsWithInvalidIL), MemberType = typeof(TestDataLoader))]
-        [Trait("", "Invalid IL Tests")]
-        void TestMethodsWithInvalidIL(InvalidILTestCase invalidIL)
+        [MemberData(nameof(TestDataLoader.GetTypesWithInvalidType), MemberType = typeof(TestDataLoader))]
+        [Trait("", "Invalid type implementation tests")]
+        private void TestInvalidTypes(InvalidTypeTestCase invalidType)
         {
             IEnumerable<VerificationResult> results = null;
-            
+
             try
             {
-                results = Verify(invalidIL);
+                results = Verify(invalidType);
             }
             catch
             {
@@ -44,11 +44,11 @@ namespace ILVerification.Tests
             finally
             {
                 Assert.NotNull(results);
-                Assert.Equal(invalidIL.ExpectedVerifierErrors.Count, results.Count());
+                Assert.Equal(invalidType.ExpectedVerifierErrors.Count, results.Count());
 
-                foreach (var item in invalidIL.ExpectedVerifierErrors)
+                foreach (VerifierError item in invalidType.ExpectedVerifierErrors)
                 {
-                    var actual = results.Select(e => e.Code.ToString());
+                    IEnumerable<string> actual = results.Select(e => e.Code.ToString());
                     Assert.True(results.Where(r => r.Code == item).Count() > 0, $"Actual errors where: {string.Join(",", actual)}");
                 }
             }
@@ -57,10 +57,10 @@ namespace ILVerification.Tests
         private static IEnumerable<VerificationResult> Verify(TestCase testCase)
         {
             EcmaModule module = TestDataLoader.GetModuleForTestAssembly(testCase.ModuleName);
-            var methodHandle = (MethodDefinitionHandle) MetadataTokens.EntityHandle(testCase.MetadataToken);
-            var method = (EcmaMethod)module.GetMethod(methodHandle);
-            var verifier = new Verifier((ILVerifyTypeSystemContext)method.Context);
-            return verifier.Verify(module.PEReader, methodHandle);
+            var typeHandle = (TypeDefinitionHandle)MetadataTokens.EntityHandle(testCase.MetadataToken);
+            var type = (EcmaType)module.GetType(typeHandle);
+            var verifier = new Verifier((ILVerifyTypeSystemContext)type.Context);
+            return verifier.Verify(module.PEReader, typeHandle);
         }
     }
 }
