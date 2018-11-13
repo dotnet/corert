@@ -104,7 +104,7 @@ if "%CoreRT_MultiFileConfiguration%"=="MultiModule" (
 )
 
 set CoreRT_CoreCLRRuntimeDir=%CoreRT_TestRoot%..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\CoreClrRuntime
-set CoreRT_ReadyToRunTestHarness=%CoreRT_TestRoot%src\tools\ReadyToRun.TestHarness\bin\Debug\netcoreapp2.1\ReadyToRun.TestHarness.dll
+set CoreRT_ReadyToRunTestHarness=%CoreRT_TestRoot%src\tools\ReadyToRun.TestHarness\bin\%CoreRT_BuildArch%\%CoreRT_BuildType%\netcoreapp2.1\ReadyToRun.TestHarness.dll
 
 rem When using pre-built R2R framework, switch the CoreCLRRuntime folder to its "native" subfolder
 rem where we copy over the CoreCLRRuntime folder and emit the R2R versions of the framework assemblies.

@@ -36,7 +36,7 @@ IF ERRORLEVEL 1 exit /b %ERRORLEVEL%
 call "!VS%__VSProductVersion%COMNTOOLS!\VsDevCmd.bat"
 echo Commencing build of test components for %__BuildOS%.%__BuildArch%.%__BuildType%
 echo.
-"%__DotNetCliPath%\dotnet.exe" msbuild /ConsoleLoggerParameters:ForceNoAlign "%__ProjectDir%\tests\dirs.proj" %__ExtraMsBuildParams% /p:RepoPath="%__ProjectDir%" /p:RepoLocalBuild="true" /p:NuPkgRid=%__NugetRuntimeId% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=normal;LogFile="%__TestBuildLog%"
+"%__DotNetCliPath%\dotnet.exe" msbuild /ConsoleLoggerParameters:ForceNoAlign "%__ProjectDir%\tests\dirs.proj" %__ExtraMsBuildParams% /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% /p:RepoPath="%__ProjectDir%" /p:RepoLocalBuild="true" /p:NuPkgRid=%__NugetRuntimeId% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=normal;LogFile="%__TestBuildLog%"
 IF NOT ERRORLEVEL 1 (
   findstr /ir /c:".*Warning(s)" /c:".*Error(s)" /c:"Time Elapsed.*" "%__TestBuildLog%"
   goto AfterTestBuild

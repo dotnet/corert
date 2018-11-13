@@ -359,7 +359,7 @@
       }
     },
     {
-      "enabled": false,
+      "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Run build-tests.sh",
@@ -377,7 +377,7 @@
       }
     },
     {
-      "enabled": false,
+      "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Commit changes",
@@ -395,7 +395,7 @@
       }
     },
     {
-      "enabled": false,
+      "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Remove container",
