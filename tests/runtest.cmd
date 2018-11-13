@@ -222,11 +222,9 @@ for /f "delims=" %%a in ('dir /s /aD /b %CoreRT_TestRoot%\src\%CoreRT_TestName%'
             if /i not "%CoreRT_TestCompileMode%" == "cpp" (
                 if /i not "%CoreRT_TestCompileMode%" == "wasm" (
                     if exist "!__SourceFolder!\readytorun" (
-                        if /i not "%CoreRT_BuildType%" == "release" (
-                            set __Mode=readytorun
-                            Call :CompileFile !__SourceFolder! !__SourceFileName! !__SourceFileProj! %__LogDir%\!__RelativePath!
-                            set /a __ReadyToRunTotalTests=!__ReadyToRunTotalTests!+1
-                        )
+                        set __Mode=readytorun
+                        Call :CompileFile !__SourceFolder! !__SourceFileName! !__SourceFileProj! %__LogDir%\!__RelativePath!
+                        set /a __ReadyToRunTotalTests=!__ReadyToRunTotalTests!+1
                     )
                 )
             )
