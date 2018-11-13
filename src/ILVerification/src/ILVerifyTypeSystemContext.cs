@@ -47,6 +47,7 @@ namespace ILVerify
             {
                 throw new VerifierException($"The module '{fileName}' is not expected to be an assembly");
             }
+            module.ReferencingModule = referencingModule;
             return module;
         }
 
