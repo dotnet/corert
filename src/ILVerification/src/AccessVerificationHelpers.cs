@@ -250,20 +250,27 @@ namespace ILVerify
             return false;
         }
 
+        private static EcmaAssembly ToEcmaAssembly(this ModuleDesc module)
+        {
+            EcmaAssembly ecmaAssembly = module as EcmaAssembly;
+            if (ecmaAssembly == null)
+            {
+                ecmaAssembly = ((EcmaModule)module).ReferencingAssembly;
+            }
+            return ecmaAssembly;
+        }   
+
         private static bool GrantsFriendAccessTo(this ModuleDesc module, ModuleDesc friendModule)
         {
-            var assembly = (module as EcmaAssembly);
-            if (assembly == null)
-            {
-                assembly = ((EcmaModule)module).ReferencingAssembly;
-            }
+            var assembly = module.ToEcmaAssembly();
             if (assembly != null)
             {
-                if (assembly == friendModule)
+                var friendAssembly = friendModule.ToEcmaAssembly();
+                if (assembly == friendAssembly)
                 {
                     return true;
                 }
-                var friendName = ((IAssemblyDesc)friendModule).GetName();
+                var friendName = friendAssembly.GetName();
 
                 foreach (var attribute in assembly.GetDecodedCustomAttributes("System.Runtime.CompilerServices", "InternalsVisibleToAttribute"))
                 {
