@@ -1344,105 +1344,100 @@ void ** EECodeManager::GetReturnAddressLocationFromEpilog(GCInfoHeader * pInfoHe
 
     if (pInfoHeader->HasFramePointer())
     {
+        int frameSize = pInfoHeader->GetFrameSize();
+        Int32 saveSize = pInfoHeader->GetPreservedRegsSaveSize() - sizeof(void*);
+        int distance = frameSize + saveSize;
+
+        if (saveSize > 0 || (0x8D == *pbEpilog) /* localloc frame */ )
         {
-            // New Project N frames
+            // regenerate original sp
 
-            int frameSize = pInfoHeader->GetFrameSize();
-            Int32 saveSize = pInfoHeader->GetPreservedRegsSaveSize() - sizeof(void*);
-            int distance = frameSize + saveSize;
+            // lea esp, [ebp-xxx]
+            ASSERT_MSG(0x8D == *pbEpilog, "expected lea esp, [ebp-frame size]");
 
-            if (saveSize > 0 || (0x8D == *pbEpilog) /* localloc frame */ )
+            if (distance <= 128)
             {
-                // regenerate original sp
-
-                // lea esp, [ebp-xxx]
-                ASSERT_MSG(0x8D == *pbEpilog, "expected lea esp, [ebp-frame size]");
-
-                if (distance <= 128)
-                {
-                    // short format (constant as 8-bit integer
-                    ASSERT_MSG(0x65 == *(pbEpilog + 1), "expected lea esp, [ebp-frame size]");
-                    ASSERT_MSG((UInt8)(-distance) == *(pbEpilog + 2), "expected lea esp, [ebp-frame size]");
-                    pbEpilog += 3;
-                }
-                else
-                {
-                    // long formant (constant as 32-bit integer)
-                    ASSERT_MSG(0xA5 == *(pbEpilog + 1), "expected lea esp, [ebp-frame size]");
-                    ASSERT_MSG(-distance == *(Int32*)(pbEpilog + 2), "expected lea esp, [ebp-frame size]");
-                    pbEpilog += 6;
-                }
-
-                CalleeSavedRegMask regMask = pInfoHeader->GetSavedRegs();
-                if (regMask & CSR_MASK_RBX) pbEpilog++; // pop ebx -- 5B
-                if (regMask & CSR_MASK_RSI) pbEpilog++; // pop esi -- 5E
-                if (regMask & CSR_MASK_RDI) pbEpilog++; // pop edi -- 5F
+                // short format (constant as 8-bit integer)
+                ASSERT_MSG(0x65 == *(pbEpilog + 1), "expected lea esp, [ebp-frame size]");
+                ASSERT_MSG((UInt8)(-distance) == *(pbEpilog + 2), "expected lea esp, [ebp-frame size]");
+                pbEpilog += 3;
+            }
+            else
+            {
+                // long format (constant as 32-bit integer)
+                ASSERT_MSG(0xA5 == *(pbEpilog + 1), "expected lea esp, [ebp-frame size]");
+                ASSERT_MSG(-distance == *(Int32*)(pbEpilog + 2), "expected lea esp, [ebp-frame size]");
+                pbEpilog += 6;
             }
 
-            if (frameSize > 0)
-            {
-                // set esp to to EBP frame chain location
-                ASSERT_MSG(0x8B == *pbEpilog, "expected 'mov esp, ebp'");
-                ASSERT_MSG(0xE5 == *(pbEpilog + 1), "expected 'mov esp, ebp'");
-                pbEpilog += 2;
-            }
+            CalleeSavedRegMask regMask = pInfoHeader->GetSavedRegs();
+            if (regMask & CSR_MASK_RBX) pbEpilog++; // pop ebx -- 5B
+            if (regMask & CSR_MASK_RSI) pbEpilog++; // pop esi -- 5E
+            if (regMask & CSR_MASK_RDI) pbEpilog++; // pop edi -- 5F
+        }
 
-            ASSERT_MSG(0x5d == *pbEpilog, "expected 'pop ebp'");
+        if (frameSize > 0)
+        {
+            // set esp to EBP frame chain location
+            ASSERT_MSG(0x8B == *pbEpilog, "expected 'mov esp, ebp'");
+            ASSERT_MSG(0xE5 == *(pbEpilog + 1), "expected 'mov esp, ebp'");
+            pbEpilog += 2;
+        }
 
+        ASSERT_MSG(0x5d == *pbEpilog, "expected 'pop ebp'");
+
+        if (!pInfoHeader->HasDynamicAlignment())
+        {
             // Just use the EBP frame if we haven't popped it yet
             if (pbCurrentIP <= pbEpilog)
-                return (void **)((*(pContext->pRbp)) + sizeof(void *));
-
-            ++pbEpilog; // advance past 'pop ebp'
-
-            if (pInfoHeader->HasDynamicAlignment())
-            {
-                // For x86 dynamically-aligned frames, we have two frame pointers, like this:
-                //
-                // esp -> [main frame]
-                // ebp -> ebp save
-                //        return address
-                //        [variable-sized alignment allocation]
-                // ebx -> ebx save
-                //        Return Address
-                //
-                // The epilog looks like this, with the corresponding changes to the return address location.
-                //
-                //                                       Correct return address location
-                //                                       --------------------------------
-                //      -------------------------------> ebp + 4  (or ebx + 4)
-                //      lea     esp, [ebp-XXX]
-                //      pop     esi
-                //      mov     esp, ebp
-                //      pop     ebp
-                //      -------------------------------> ebx + 4
-                //      mov     esp, ebx
-                //      pop     ebx
-                //      -------------------------------> esp
-                //      ret
-
-                ASSERT_MSG(pInfoHeader->GetParamPointerReg() == RN_EBX, "NYI: non-EBX param pointer");
-
-                ASSERT_MSG(0x8B == *pbEpilog, "expected 'mov esp, ebx'");
-                ASSERT_MSG(0xE3 == *(pbEpilog + 1), "expected 'mov esp, ebx'");
-
-                // At this point the return address is at EBX+4, we fall-through to the code below since it's 
-                // the same there as well.
-
-                pbEpilog += 2; // advance past 'mov esp, ebx'
-
-                ASSERT_MSG(0x5b == *pbEpilog, "expected 'pop ebx'");
-
-                // at this point the return address is at EBX+4
-                if (pbCurrentIP == pbEpilog)
-                    return (void **)((*(pContext->pRbx)) + sizeof(void *));
-
-                ++pbEpilog; // advance past 'pop ebx'
-            }
-
-            // EBP has been popped, dynamic alignment has been undone, so ESP points at the return address
-            return (void **)(pContext->SP);
+                return (void **)(*(pContext->pRbp) + sizeof(void *));
         }
+
+        ++pbEpilog; // advance past 'pop ebp'
+
+        if (pInfoHeader->HasDynamicAlignment())
+        {
+            // For x86 dynamically-aligned frames, we have two frame pointers, like this:
+            //
+            // esp -> [main frame]
+            // ebp -> ebp save
+            //        return address (copy)
+            //        [variable-sized alignment allocation]
+            // ebx -> ebx save
+            //        Return Address
+            //
+            // The epilog looks like this, with the corresponding changes to the return address location.
+            //
+            //                                       Correct return address location
+            //                                       --------------------------------
+            //      -------------------------------> ebx + 4
+            //      lea     esp, [ebp-XXX]
+            //      pop     esi
+            //      mov     esp, ebp
+            //      pop     ebp
+            //      mov     esp, ebx
+            //      pop     ebx
+            //      -------------------------------> esp
+            //      ret
+
+            ASSERT_MSG(pInfoHeader->GetParamPointerReg() == RN_EBX, "NYI: non-EBX param pointer");
+
+            ASSERT_MSG(0x8B == *pbEpilog, "expected 'mov esp, ebx'");
+            ASSERT_MSG(0xE3 == *(pbEpilog + 1), "expected 'mov esp, ebx'");
+
+            pbEpilog += 2; // advance past 'mov esp, ebx'
+
+            ASSERT_MSG(0x5b == *pbEpilog, "expected 'pop ebx'");
+
+            // at this point the return address is at EBX+4
+            if (pbCurrentIP <= pbEpilog)
+                return (void **)(*(pContext->pRbx) + sizeof(void *));
+
+            ++pbEpilog; // advance past 'pop ebx'
+        }
+
+        // EBP has been popped, dynamic alignment has been undone, so ESP points at the return address
+        return (void **)(pContext->SP);
     }
     else
     {
@@ -1795,14 +1790,23 @@ void CheckHijackInEpilog(GCInfoHeader * pInfoHeader, Code * pEpilog, Code * pEpi
     UIntNative SUCCESS_VAL = 0x22222200;
     UIntNative RSP_TEST_VAL = SUCCESS_VAL;
     UIntNative RBP_TEST_VAL = (RSP_TEST_VAL - sizeof(void *));
-
     REGDISPLAY context;
+
 #if defined(_X86_)
-    context.pRbx = &RBP_TEST_VAL;
-    context.pRbp = &RBP_TEST_VAL;
+    UIntNative FAILURE_VAL = 0xbaadf00d;
+
+    if (!pInfoHeader->HasDynamicAlignment())
+    {
+        context.pRbx = &FAILURE_VAL;
+        context.pRbp = &RBP_TEST_VAL;
+    }
+    else
+    {
+        context.pRbx = &RBP_TEST_VAL;
+        context.pRbp = &FAILURE_VAL;
+    }
     context.SP = RSP_TEST_VAL;
 #elif defined(_AMD64_)
-
     int frameSize = pInfoHeader->GetFrameSize();
     bool isNewStyleFP = pInfoHeader->IsFramePointerOffsetFromSP();
     int preservedRegSize = pInfoHeader->GetPreservedRegsSaveSize();
@@ -1836,7 +1840,7 @@ void CheckHijackInEpilog(GCInfoHeader * pInfoHeader, Code * pEpilog, Code * pEpi
 { \
   ASSERT_UNCONDITIONALLY("VERIFY_FAILURE"); \
   return false; \
-} \
+}
 
 #ifdef _X86_
 bool VerifyEpilogBytesX86(GCInfoHeader * pInfoHeader, Code * pEpilogStart, UInt32 epilogSize)
@@ -1849,88 +1853,84 @@ bool VerifyEpilogBytesX86(GCInfoHeader * pInfoHeader, Code * pEpilogStart, UInt3
 
     if (pInfoHeader->HasFramePointer())
     {
+        CHECK_HIJACK_IN_EPILOG();
+
+        int frameSize = pInfoHeader->GetFrameSize();
+        Int32 saveSize = pInfoHeader->GetPreservedRegsSaveSize() - sizeof(void*); // don't count EBP
+        int distance = frameSize + saveSize;
+
+        if (saveSize > 0 || (*pEpilog==0x8d) /* localloc frame */ )
         {
-            // ProjectN frames
+            // lea esp, [ebp-xxx]
 
-            CHECK_HIJACK_IN_EPILOG();
-
-            int frameSize = pInfoHeader->GetFrameSize();
-            Int32 saveSize = pInfoHeader->GetPreservedRegsSaveSize() - sizeof(void*); // don't count EBP
-            int distance = frameSize + saveSize;
-
-            if (saveSize > 0 || (*pEpilog==0x8d) /* localloc frame */ )
-            {
-                // lea esp, [ebp-xxx]
-
-                if (*pEpilog++ != 0x8d)
-                    VERIFY_FAILURE();
-
-                if (distance <= 128)
-                {
-                    if (*pEpilog++ != 0x65)
-                        VERIFY_FAILURE();
-                    if (*pEpilog++ != ((UInt8)-distance))
-                        VERIFY_FAILURE();
-                }
-                else
-                {
-                    if (*pEpilog++ != 0xa5)
-                        VERIFY_FAILURE();
-                    if (*((Int32*&)pEpilog)++ != -distance)
-                        VERIFY_FAILURE();
-                }
-
-                CalleeSavedRegMask regMask = pInfoHeader->GetSavedRegs();
-
-                CHECK_HIJACK_IN_EPILOG();
-                if (regMask & CSR_MASK_RBX)
-                if (*pEpilog++ != 0x5b) // pop ebx
-                    VERIFY_FAILURE();
-
-                CHECK_HIJACK_IN_EPILOG();
-                if (regMask & CSR_MASK_RSI)
-                if (*pEpilog++ != 0x5e) // pop esi
-                    VERIFY_FAILURE();
-
-                CHECK_HIJACK_IN_EPILOG();
-                if (regMask & CSR_MASK_RDI)
-                if (*pEpilog++ != 0x5f) // pop edi
-                    VERIFY_FAILURE();
-            }
-
-            // Reset ESP if necessary
-            if (frameSize > 0)
-            {
-                // 'mov esp, ebp'
-                CHECK_HIJACK_IN_EPILOG();
-                if (*pEpilog++ != 0x8b)
-                    VERIFY_FAILURE();
-                if (*pEpilog++ != 0xE5)
-                    VERIFY_FAILURE();
-            }
-
-            // pop ebp
-            CHECK_HIJACK_IN_EPILOG();
-            if (*pEpilog++ != 0x5d)
+            if (*pEpilog++ != 0x8d)
                 VERIFY_FAILURE();
 
-            if (pInfoHeader->HasDynamicAlignment())
+            if (distance <= 128)
             {
-                ASSERT_MSG(pInfoHeader->GetParamPointerReg() == RN_EBX, "Expecting EBX as param pointer reg");
-                ASSERT_MSG(!(pInfoHeader->GetSavedRegs() & CSR_MASK_RBX), "Not expecting param pointer reg to be saved explicitly");
-
-                // expect 'mov esp, ebx'
-                CHECK_HIJACK_IN_EPILOG();
-                if (*pEpilog++ != 0x8b || *pEpilog++ != 0xE3)
-                {
+                if (*pEpilog++ != 0x65)
                     VERIFY_FAILURE();
-                }
-
-                // pop ebx
-                CHECK_HIJACK_IN_EPILOG();
-                if (*pEpilog++ != 0x5b)
+                if (*pEpilog++ != ((UInt8)-distance))
                     VERIFY_FAILURE();
             }
+            else
+            {
+                if (*pEpilog++ != 0xa5)
+                    VERIFY_FAILURE();
+                if (*((Int32*&)pEpilog)++ != -distance)
+                    VERIFY_FAILURE();
+            }
+
+            CalleeSavedRegMask regMask = pInfoHeader->GetSavedRegs();
+
+            CHECK_HIJACK_IN_EPILOG();
+            if (regMask & CSR_MASK_RBX)
+            if (*pEpilog++ != 0x5b) // pop ebx
+                VERIFY_FAILURE();
+
+            CHECK_HIJACK_IN_EPILOG();
+            if (regMask & CSR_MASK_RSI)
+            if (*pEpilog++ != 0x5e) // pop esi
+                VERIFY_FAILURE();
+
+            CHECK_HIJACK_IN_EPILOG();
+            if (regMask & CSR_MASK_RDI)
+            if (*pEpilog++ != 0x5f) // pop edi
+                VERIFY_FAILURE();
+        }
+
+        // Reset ESP if necessary
+        if (frameSize > 0)
+        {
+            // 'mov esp, ebp'
+            CHECK_HIJACK_IN_EPILOG();
+            if (*pEpilog++ != 0x8b)
+                VERIFY_FAILURE();
+            if (*pEpilog++ != 0xE5)
+                VERIFY_FAILURE();
+        }
+
+        // pop ebp
+        CHECK_HIJACK_IN_EPILOG();
+        if (*pEpilog++ != 0x5d)
+            VERIFY_FAILURE();
+
+        if (pInfoHeader->HasDynamicAlignment())
+        {
+            ASSERT_MSG(pInfoHeader->GetParamPointerReg() == RN_EBX, "Expecting EBX as param pointer reg");
+            ASSERT_MSG(!(pInfoHeader->GetSavedRegs() & CSR_MASK_RBX), "Not expecting param pointer reg to be saved explicitly");
+
+            // expect 'mov esp, ebx'
+            CHECK_HIJACK_IN_EPILOG();
+            if (*pEpilog++ != 0x8b || *pEpilog++ != 0xE3)
+            {
+                VERIFY_FAILURE();
+            }
+
+            // pop ebx
+            CHECK_HIJACK_IN_EPILOG();
+            if (*pEpilog++ != 0x5b)
+                VERIFY_FAILURE();
         }
     }
     else
