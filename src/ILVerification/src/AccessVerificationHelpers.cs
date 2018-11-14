@@ -51,7 +51,7 @@ namespace ILVerify
                 if ((targetTypeDef.Attributes & TypeAttributes.Public) != 0)
                     return true;
                 else
-                    return targetTypeDef.Module.GrantsFriendAccessTo(currentTypeDef.Module);
+                    return currentTypeDef.Module == targetTypeDef.Module || targetTypeDef.Module.GrantsFriendAccessTo(currentTypeDef.Module);
             }
 
             // Target class is nested
@@ -252,12 +252,7 @@ namespace ILVerify
 
         private static EcmaAssembly ToEcmaAssembly(this ModuleDesc module)
         {
-            EcmaAssembly ecmaAssembly = module as EcmaAssembly;
-            if (ecmaAssembly == null)
-            {
-                ecmaAssembly = module.Assembly as EcmaAssembly;
-            }
-            return ecmaAssembly;
+            return module.Assembly as EcmaAssembly;
         }   
 
         private static bool GrantsFriendAccessTo(this ModuleDesc module, ModuleDesc friendModule)

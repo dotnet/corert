@@ -35,7 +35,7 @@ namespace ILVerify
             return ResolveAssemblyOrNetmodule(simpleName, simpleName, null, throwIfNotFound);
         }
 
-        internal override ModuleDesc ResolveModule(ModuleDesc referencingModule, string fileName, bool throwIfNotFound = true)
+        internal override ModuleDesc ResolveModule(IAssemblyDesc referencingModule, string fileName, bool throwIfNotFound = true)
         {
             // Referenced modules are stored without their extension (see CommandLineHelpers.cs), so we have to drop
             // the extension here as well to find a match.
@@ -99,6 +99,10 @@ namespace ILVerify
 
             if (_modulesCache.TryGetValue(peReader, out EcmaModule existingModule))
             {
+                if (containingAssembly != null && existingModule.Assembly != containingAssembly)
+                {
+                    throw new VerifierException($"Containing assembly for module '{existingModule}' must be '{containingAssembly}'");
+                }
                 return existingModule;
             }
 

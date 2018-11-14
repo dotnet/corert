@@ -23,7 +23,7 @@ namespace Internal.TypeSystem.Ecma
                 get;
             }
         }
-        
+
         private sealed class EcmaObjectLookupWrapper : IEntityHandleObject
         {
             private EntityHandle _handle;
@@ -171,7 +171,7 @@ namespace Internal.TypeSystem.Ecma
         {
             ModuleReference moduleReference = _metadataReader.GetModuleReference(handle);
             string fileName = _metadataReader.GetString(moduleReference.Name);
-            return Context.ResolveModule(this, fileName);
+            return Context.ResolveModule(this.Assembly, fileName);
         }
 
         private LockFreeReaderHashtable<EntityHandle, IEntityHandleObject> _resolvedTokens;
