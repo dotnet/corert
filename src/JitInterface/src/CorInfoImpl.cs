@@ -1123,9 +1123,9 @@ namespace Internal.JitInterface
             return HandleToObject(cls).IsValueType;
         }
 
-        private bool canInlineTypeCheckWithObjectVTable(CORINFO_CLASS_STRUCT_* cls)
+        private CorInfoObjectVTableTypeCheckInliningResult canInlineTypeCheckWithObjectVTable(CORINFO_CLASS_STRUCT_* cls)
         {
-            return true;
+            return CorInfoObjectVTableTypeCheckInliningResult.CORINFO_INLINE_TYPECHECK_PASS;
         }
 
         private uint getClassAttribs(CORINFO_CLASS_STRUCT_* cls)

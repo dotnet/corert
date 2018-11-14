@@ -530,6 +530,13 @@ namespace Internal.JitInterface
         INLINE_NEVER = -2,   // This method should never be inlined, regardless of context
     }
 
+    public enum CorInfoObjectVTableTypeCheckInliningResult
+    {
+        CORINFO_INLINE_TYPECHECK_NEVER = 0x00000000, // It's not okay to compare type's vtable with a native type handle
+        CORINFO_INLINE_TYPECHECK_PASS = 0x00000001, // It's okay to compare type's vtable with a native type handle
+        CORINFO_INLINE_TYPECHECK_USE_HELPER = 0x00000002, // Use a specialized helper to compare type's vtable with native type handle
+    }
+
     public enum CorInfoInlineRestrictions
     {
         INLINE_RESPECT_BOUNDARY = 0x00000001, // You can inline if there are no calls from the method being inlined

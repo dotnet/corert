@@ -98,7 +98,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __isValueClass(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        [return: MarshalAs(UnmanagedType.Bool)]delegate bool __canInlineTypeCheckWithObjectVTable(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
+        delegate CorInfoObjectVTableTypeCheckInliningResult __canInlineTypeCheckWithObjectVTable(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate uint __getClassAttribs(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -952,7 +952,7 @@ namespace Internal.JitInterface
             }
         }
 
-        [return: MarshalAs(UnmanagedType.Bool)]static bool _canInlineTypeCheckWithObjectVTable(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls)
+        static CorInfoObjectVTableTypeCheckInliningResult _canInlineTypeCheckWithObjectVTable(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls)
         {
             var _this = GetThis(thisHandle);
             try
@@ -962,7 +962,7 @@ namespace Internal.JitInterface
             catch (Exception ex)
             {
                 *ppException = _this.AllocException(ex);
-                return default(bool);
+                return default(CorInfoObjectVTableTypeCheckInliningResult);
             }
         }
 
