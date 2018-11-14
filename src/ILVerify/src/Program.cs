@@ -149,7 +149,7 @@ namespace ILVerify
             return 0;
         }
 
-        private void PrintResult(VerificationResult result, EcmaModule module, string pathOrModuleName)
+        private void PrintVerifyMethodsResult(VerificationResult result, EcmaModule module, string pathOrModuleName)
         {
             Write("[IL]: Error: ");
 
@@ -168,31 +168,30 @@ namespace ILVerify
             PrintMethod(method);
             Write("]");
 
-            var args = result.Error;
-            if (args.Code != VerifierError.None)
+            if (result.Code != VerifierError.None)
             {
                 Write("[offset 0x");
-                Write(args.Offset.ToString("X8"));
+                Write(result.GetArgumentValue<int>("Offset").ToString("X8"));
                 Write("]");
 
-                if (args.Found != null)
+                if (result.TryGetArgumentValue("Found", out string found))
                 {
                     Write("[found ");
-                    Write(args.Found);
+                    Write(found);
                     Write("]");
                 }
 
-                if (args.Expected != null)
+                if (result.TryGetArgumentValue("Expected", out string expected))
                 {
                     Write("[expected ");
-                    Write(args.Expected);
+                    Write(expected);
                     Write("]");
                 }
 
-                if (args.Token != 0)
+                if (result.TryGetArgumentValue("Token", out int token))
                 {
                     Write("[token  0x");
-                    Write(args.Token.ToString("X8"));
+                    Write(token.ToString("X8"));
                     Write("]");
                 }
             }
@@ -241,6 +240,32 @@ namespace ILVerify
             int numErrors = 0;
             int verifiedMethodCounter = 0;
             int methodCounter = 0;
+            int verifiedTypeCounter = 0;
+            int typeCounter = 0;
+
+            VerifyMethods(peReader, module, path, ref numErrors, ref verifiedMethodCounter, ref methodCounter);
+            VerifyTypes(peReader, module, path, ref numErrors, ref verifiedTypeCounter, ref typeCounter);
+
+            if (numErrors > 0)
+                WriteLine(numErrors + " Error(s) Verifying " + path);
+            else
+                WriteLine("All Classes and Methods in " + path + " Verified.");
+
+            if (_printStatistics)
+            {
+                WriteLine($"Types found: {typeCounter}");
+                WriteLine($"Types verified: {verifiedTypeCounter}");
+
+                WriteLine($"Methods found: {methodCounter}");
+                WriteLine($"Methods verified: {verifiedMethodCounter}");
+            }
+        }
+
+        private void VerifyMethods(PEReader peReader, EcmaModule module, string path, ref int numErrors, ref int verifiedMethodCounter, ref int methodCounter)
+        {
+            numErrors = 0;
+            verifiedMethodCounter = 0;
+            methodCounter = 0;
 
             MetadataReader metadataReader = peReader.GetMetadataReader();
             foreach (var methodHandle in metadataReader.MethodDefinitions)
@@ -248,7 +273,7 @@ namespace ILVerify
                 // get fully qualified method name
                 var methodName = GetQualifiedMethodName(metadataReader, methodHandle);
 
-                bool verifying = ShouldVerifyMethod(methodName);
+                bool verifying = ShouldVerifyMemberName(methodName);
                 if (_verbose)
                 {
                     Write(verifying ? "Verifying " : "Skipping ");
@@ -260,7 +285,7 @@ namespace ILVerify
                     var results = _verifier.Verify(peReader, methodHandle);
                     foreach (var result in results)
                     {
-                        PrintResult(result, module, path);
+                        PrintVerifyMethodsResult(result, module, path);
                         numErrors++;
                     }
 
@@ -269,17 +294,61 @@ namespace ILVerify
 
                 methodCounter++;
             }
+        }
 
-            if (numErrors > 0)
-                WriteLine(numErrors + " Error(s) Verifying " + path);
-            else
-                WriteLine("All Classes and Methods in " + path + " Verified.");
+        private void VerifyTypes(PEReader peReader, EcmaModule module, string path, ref int numErrors, ref int verifiedTypeCounter, ref int typeCounter)
+        {
+            MetadataReader metadataReader = peReader.GetMetadataReader();
 
-            if (_printStatistics)
+            foreach (TypeDefinitionHandle typeHandle in metadataReader.TypeDefinitions)
             {
-                WriteLine($"Methods found: {methodCounter}");
-                WriteLine($"Methods verified: {verifiedMethodCounter}");
+                // get fully qualified type name
+                var className = GetQualifiedClassName(metadataReader, typeHandle);
+                bool verifying = ShouldVerifyMemberName(className);
+                if (_verbose)
+                {
+                    Write(verifying ? "Verifying " : "Skipping ");
+                    WriteLine(className);
+                }
+                if (verifying)
+                {
+                    var results = _verifier.Verify(peReader, typeHandle);
+                    foreach (VerificationResult result in results)
+                    {
+                        PrintVerifyTypesResult(result, module, path);
+                        numErrors++;
+                    }
+
+                    typeCounter++;
+                }
+
+                verifiedTypeCounter++;
             }
+        }
+
+        private void PrintVerifyTypesResult(VerificationResult result, EcmaModule module, string pathOrModuleName)
+        {
+
+        }
+
+        /// <summary>
+        /// This method returns the fully qualified class name.
+        /// </summary>
+        private string GetQualifiedClassName(MetadataReader metadataReader, TypeDefinitionHandle typeHandle)
+        {
+            var typeDef = metadataReader.GetTypeDefinition(typeHandle);
+            var typeName = metadataReader.GetString(typeDef.Name);
+
+            var namespaceName = metadataReader.GetString(typeDef.Namespace);
+            var assemblyName = metadataReader.GetString(metadataReader.IsAssembly ? metadataReader.GetAssemblyDefinition().Name : metadataReader.GetModuleDefinition().Name);
+
+            StringBuilder builder = new StringBuilder();
+            builder.Append($"[{assemblyName}]");
+            if (!string.IsNullOrEmpty(namespaceName))
+                builder.Append($"{namespaceName}.");
+            builder.Append($"{typeName}");
+
+            return builder.ToString();
         }
 
         /// <summary>
@@ -306,14 +375,14 @@ namespace ILVerify
             return builder.ToString();
         }
 
-        private bool ShouldVerifyMethod(string methodName)
+        private bool ShouldVerifyMemberName(string memberName)
         {
-            if (_includePatterns.Count > 0 && !_includePatterns.Any(p => p.IsMatch(methodName)))
+            if (_includePatterns.Count > 0 && !_includePatterns.Any(p => p.IsMatch(memberName)))
             {
                 return false;
             }
 
-            if (_excludePatterns.Any(p => p.IsMatch(methodName)))
+            if (_excludePatterns.Any(p => p.IsMatch(memberName)))
             {
                 return false;
             }

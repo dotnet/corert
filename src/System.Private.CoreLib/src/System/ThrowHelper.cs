@@ -98,6 +98,12 @@ namespace System
         {
             throw new ArgumentException(SR.Argument_OverlapAlignmentMismatch);
         }
+
+        internal static void ThrowArgumentException_CannotExtractScalar(ExceptionArgument argument)
+        {
+            throw GetArgumentException(ExceptionResource.Argument_CannotExtractScalar, argument);
+        }
+
         internal static void ThrowArgumentOutOfRange_IndexException()
         {
             throw GetArgumentOutOfRangeException(ExceptionArgument.index,
@@ -253,32 +259,17 @@ namespace System
 
         internal static void ThrowFormatException_BadFormatSpecifier()
         {
-            throw CreateFormatException_BadFormatSpecifier();
-        }
-
-        private static Exception CreateFormatException_BadFormatSpecifier()
-        {
-            return new FormatException(SR.Argument_BadFormatSpecifier);
+            throw new FormatException(SR.Argument_BadFormatSpecifier);
         }
 
         internal static void ThrowArgumentOutOfRangeException_PrecisionTooLarge()
         {
-            throw CreateArgumentOutOfRangeException_PrecisionTooLarge();
-        }
-
-        private static Exception CreateArgumentOutOfRangeException_PrecisionTooLarge()
-        {
-            return new ArgumentOutOfRangeException("precision", SR.Format(SR.Argument_PrecisionTooLarge, StandardFormat.MaxPrecision));
+            throw new ArgumentOutOfRangeException("precision", SR.Format(SR.Argument_PrecisionTooLarge, StandardFormat.MaxPrecision));
         }
 
         internal static void ThrowArgumentOutOfRangeException_SymbolDoesNotFit()
         {
-            throw CreateArgumentOutOfRangeException_SymbolDoesNotFit();
-        }
-
-        private static Exception CreateArgumentOutOfRangeException_SymbolDoesNotFit()
-        {
-            return new ArgumentOutOfRangeException("symbol", SR.Argument_BadFormatSpecifier);
+            throw new ArgumentOutOfRangeException("symbol", SR.Argument_BadFormatSpecifier);
         }
 
         // Allow nulls for reference types and Nullable<U>, but not for value types.
@@ -316,6 +307,8 @@ namespace System
                     return "startIndex";
                 case ExceptionArgument.task:
                     return "task";
+                case ExceptionArgument.ch:
+                    return "ch";
                 case ExceptionArgument.s:
                     return "s";
                 case ExceptionArgument.input:
@@ -402,6 +395,8 @@ namespace System
                     return SR.ArgumentOutOfRange_SmallCapacity;
                 case ExceptionResource.Argument_InvalidOffLen:
                     return SR.Argument_InvalidOffLen;
+                case ExceptionResource.Argument_CannotExtractScalar:
+                    return SR.Argument_CannotExtractScalar;
                 case ExceptionResource.ArgumentOutOfRange_BiggerThanCollection:
                     return SR.ArgumentOutOfRange_BiggerThanCollection;
                 case ExceptionResource.Serialization_MissingKeys:
@@ -447,6 +442,7 @@ namespace System
         value,
         startIndex,
         task,
+        ch,
         s,
         input,
         ownedMemory,
@@ -492,6 +488,7 @@ namespace System
         ArgumentOutOfRange_NeedNonNegNum,
         ArgumentOutOfRange_SmallCapacity,
         Argument_InvalidOffLen,
+        Argument_CannotExtractScalar,
         ArgumentOutOfRange_BiggerThanCollection,
         Serialization_MissingKeys,
         Serialization_NullKey,
