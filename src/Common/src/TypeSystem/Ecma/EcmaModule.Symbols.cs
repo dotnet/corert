@@ -15,20 +15,20 @@ namespace Internal.TypeSystem.Ecma
             get;
         }
 
-        internal EcmaModule(TypeSystemContext context, PEReader peReader, MetadataReader metadataReader, PdbSymbolReader pdbReader)
-            : this(context, peReader, metadataReader)
+        internal EcmaModule(TypeSystemContext context, PEReader peReader, MetadataReader metadataReader, IAssemblyDesc containingAssembly, PdbSymbolReader pdbReader)
+            : this(context, peReader, metadataReader, containingAssembly)
         {
             PdbReader = pdbReader;
         }
 
-        public static EcmaModule Create(TypeSystemContext context, PEReader peReader, PdbSymbolReader pdbReader)
+        public static EcmaModule Create(TypeSystemContext context, PEReader peReader, IAssemblyDesc containingAssembly, PdbSymbolReader pdbReader)
         {
             MetadataReader metadataReader = CreateMetadataReader(context, peReader);
 
-            if (metadataReader.IsAssembly)
+            if (containingAssembly == null)
                 return new EcmaAssembly(context, peReader, metadataReader, pdbReader);
             else
-                return new EcmaModule(context, peReader, metadataReader, pdbReader);
+                return new EcmaModule(context, peReader, metadataReader, containingAssembly, pdbReader);
         }
     }
 }
