@@ -176,22 +176,22 @@ namespace Internal.TypeSystem.Ecma
 
         private LockFreeReaderHashtable<EntityHandle, IEntityHandleObject> _resolvedTokens;
 
-        internal EcmaModule(TypeSystemContext context, PEReader peReader, MetadataReader metadataReader)
-            : base(context)
+        internal EcmaModule(TypeSystemContext context, PEReader peReader, MetadataReader metadataReader, IAssemblyDesc containingAssembly)
+            : base(context, containingAssembly)
         {
             _peReader = peReader;
             _metadataReader = metadataReader;
             _resolvedTokens = new EcmaObjectLookupHashtable(this);
         }
 
-        public static EcmaModule Create(TypeSystemContext context, PEReader peReader)
+        public static EcmaModule Create(TypeSystemContext context, PEReader peReader, IAssemblyDesc containingAssembly)
         {
             MetadataReader metadataReader = CreateMetadataReader(context, peReader);
 
-            if (metadataReader.IsAssembly)
+            if (containingAssembly == null)
                 return new EcmaAssembly(context, peReader, metadataReader);
             else
-                return new EcmaModule(context, peReader, metadataReader);
+                return new EcmaModule(context, peReader, metadataReader, containingAssembly);
         }
 
         private static MetadataReader CreateMetadataReader(TypeSystemContext context, PEReader peReader)
