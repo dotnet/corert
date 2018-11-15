@@ -117,7 +117,7 @@ goto :SkipBuildTests
 :BuildTests
 REM The test build handles restoring external dependencies such as CoreCLR runtime and its test host
 REM Trigger the test build so it will build but not run tests before we run them here
-call %CoreRT_TestRoot%..\buildscripts\build-tests.cmd buildtests
+call %CoreRT_TestRoot%..\buildscripts\build-tests.cmd %CoreRT_BuildType% %CoreRT_BuildArch% buildtests
 
 IF ERRORLEVEL 1 (
     echo Tests will not be run due to build-tests.cmd failing with error code !ErrorLevel!
