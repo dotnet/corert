@@ -156,6 +156,7 @@ struct JitInterfaceCallbacks
     int (* isRIDClassDomainID)(void * thisHandle, CorInfoException** ppException, void* cls);
     unsigned (* getClassDomainID)(void * thisHandle, CorInfoException** ppException, void* cls, void** ppIndirection);
     void* (* getFieldAddress)(void * thisHandle, CorInfoException** ppException, void* field, void** ppIndirection);
+    void* (* getStaticFieldCurrentClass)(void * thisHandle, CorInfoException** ppException, void* field, bool* pIsSpeculative);
     void* (* getVarArgsHandle)(void * thisHandle, CorInfoException** ppException, void* pSig, void** ppIndirection);
     bool (* canGetVarArgsHandle)(void * thisHandle, CorInfoException** ppException, void* pSig);
     int (* constructStringLiteral)(void * thisHandle, CorInfoException** ppException, void* module, unsigned int metaTok, void** ppValue);
@@ -1445,6 +1446,15 @@ public:
     {
         CorInfoException* pException = nullptr;
         void* _ret = _callbacks->getFieldAddress(_thisHandle, &pException, field, ppIndirection);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual void* getStaticFieldCurrentClass(void* field, bool* pIsSpeculative)
+    {
+        CorInfoException* pException = nullptr;
+        void* _ret = _callbacks->getStaticFieldCurrentClass(_thisHandle, &pException, field, pIsSpeculative);
         if (pException != nullptr)
             throw pException;
         return _ret;
