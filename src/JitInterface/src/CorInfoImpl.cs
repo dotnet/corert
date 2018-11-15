@@ -1123,10 +1123,14 @@ namespace Internal.JitInterface
             return HandleToObject(cls).IsValueType;
         }
 
-        private CorInfoObjectVTableTypeCheckInliningResult canInlineTypeCheckWithObjectVTable(CORINFO_CLASS_STRUCT_* cls)
+        private CorInfoInlineTypeCheck canInlineTypeCheck(CORINFO_CLASS_STRUCT_* cls, CorInfoInlineTypeCheckSource source)
         {
-            return CorInfoObjectVTableTypeCheckInliningResult.CORINFO_INLINE_TYPECHECK_PASS;
+            // TODO: when we support multiple modules at runtime, this will need to do more work
+            // NOTE: cls can be null
+            return CorInfoInlineTypeCheck.CORINFO_INLINE_TYPECHECK_PASS;
         }
+
+        private bool canInlineTypeCheckWithObjectVTable(CORINFO_CLASS_STRUCT_* cls) { throw new NotImplementedException(); }
 
         private uint getClassAttribs(CORINFO_CLASS_STRUCT_* cls)
         {
