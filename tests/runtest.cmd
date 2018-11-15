@@ -117,7 +117,7 @@ goto :SkipBuildTests
 :BuildTests
 REM The test build handles restoring external dependencies such as CoreCLR runtime and its test host
 REM Trigger the test build so it will build but not run tests before we run them here
-call %CoreRT_TestRoot%..\buildscripts\build-tests.cmd buildtests
+call %CoreRT_TestRoot%..\buildscripts\build-tests.cmd %CoreRT_BuildType% %CoreRT_BuildArch% buildtests
 
 IF ERRORLEVEL 1 (
     echo Tests will not be run due to build-tests.cmd failing with error code !ErrorLevel!
@@ -222,11 +222,9 @@ for /f "delims=" %%a in ('dir /s /aD /b %CoreRT_TestRoot%\src\%CoreRT_TestName%'
             if /i not "%CoreRT_TestCompileMode%" == "cpp" (
                 if /i not "%CoreRT_TestCompileMode%" == "wasm" (
                     if exist "!__SourceFolder!\readytorun" (
-                        if /i not "%CoreRT_BuildType%" == "release" (
-                            set __Mode=readytorun
-                            Call :CompileFile !__SourceFolder! !__SourceFileName! !__SourceFileProj! %__LogDir%\!__RelativePath!
-                            set /a __ReadyToRunTotalTests=!__ReadyToRunTotalTests!+1
-                        )
+                        set __Mode=readytorun
+                        Call :CompileFile !__SourceFolder! !__SourceFileName! !__SourceFileProj! %__LogDir%\!__RelativePath!
+                        set /a __ReadyToRunTotalTests=!__ReadyToRunTotalTests!+1
                     )
                 )
             )
