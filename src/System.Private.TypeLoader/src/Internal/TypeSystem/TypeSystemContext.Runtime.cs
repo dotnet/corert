@@ -716,7 +716,7 @@ namespace Internal.TypeSystem
 
             protected override Internal.TypeSystem.Ecma.EcmaModule CreateValueFromKey(EcmaModuleInfo key)
             {
-                Internal.TypeSystem.Ecma.EcmaModule result = new Internal.TypeSystem.Ecma.EcmaModule(_context, key.PE, key.MetadataReader);
+                Internal.TypeSystem.Ecma.EcmaModule result = new Internal.TypeSystem.Ecma.EcmaModule(_context, key.PE, key.MetadataReader, null);
                 result.SetRuntimeModuleInfoUNSAFE(key);
                 return result;
             }

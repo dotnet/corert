@@ -140,5 +140,11 @@ namespace ILCompiler
                 }
             }
         }
+
+        public override bool CanInline(MethodDesc callerMethod, MethodDesc calleeMethod)
+        {
+            // Allow inlining if the target method is within the same version bubble
+            return NodeFactory.CompilationModuleGroup.ContainsMethodBody(calleeMethod, unboxingStub: false);
+        }
     }
 }
