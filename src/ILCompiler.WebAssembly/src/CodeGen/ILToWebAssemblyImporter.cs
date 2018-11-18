@@ -1827,9 +1827,6 @@ namespace Internal.IL
             {
                 realMethodName = ((TypeSystem.Ecma.EcmaMethod)method).GetRuntimeImportName() ?? method.Name;
             }
-            if (realMethodName.IndexOf("emscripten") > -1)
-            {
-            }
             MethodDesc existantDesc;
             LLVMValueRef nativeFunc;
             LLVMValueRef realNativeFunc = LLVM.GetNamedFunction(Module, realMethodName);
@@ -1865,10 +1862,6 @@ namespace Internal.IL
                 llvmArguments[i] = arguments[i].ValueAsType(GetLLVMTypeForTypeDesc(signatureType), _builder);
             }
 
-            if (realMethodName.Contains("NewArray"))
-            {
-
-            }
             // Save the top of the shadow stack in case the callee reverse P/Invokes
             LLVMValueRef stackFrameSize = BuildConstInt32(GetTotalParameterOffset() + GetTotalLocalOffset());
             LLVM.BuildStore(_builder, LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_llvmFunction), new LLVMValueRef[] {stackFrameSize}, "shadowStackTop"),
