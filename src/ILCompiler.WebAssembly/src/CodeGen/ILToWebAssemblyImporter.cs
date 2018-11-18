@@ -1818,7 +1818,7 @@ namespace Internal.IL
             if (method.IsPInvoke)
             {
                 string entrypointName = method.GetPInvokeMethodMetadata().Name;
-                if(!String.IsNullOrEmpty(entrypointName))
+                if (!String.IsNullOrEmpty(entrypointName))
                 {
                     realMethodName = entrypointName;
                 }
@@ -1826,6 +1826,9 @@ namespace Internal.IL
             else if (!method.IsPInvoke && method is TypeSystem.Ecma.EcmaMethod)
             {
                 realMethodName = ((TypeSystem.Ecma.EcmaMethod)method).GetRuntimeImportName() ?? method.Name;
+            }
+            if (realMethodName.IndexOf("emscripten") > -1)
+            {
             }
             MethodDesc existantDesc;
             LLVMValueRef nativeFunc;
@@ -1862,13 +1865,36 @@ namespace Internal.IL
                 llvmArguments[i] = arguments[i].ValueAsType(GetLLVMTypeForTypeDesc(signatureType), _builder);
             }
 
+            if (realMethodName.Contains("NewArray"))
+            {
+
+            }
             // Save the top of the shadow stack in case the callee reverse P/Invokes
             LLVMValueRef stackFrameSize = BuildConstInt32(GetTotalParameterOffset() + GetTotalLocalOffset());
-            LLVM.BuildStore(_builder, LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_llvmFunction), new LLVMValueRef[] { stackFrameSize }, "shadowStackTop"),
+            LLVM.BuildStore(_builder, LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_llvmFunction), new LLVMValueRef[] {stackFrameSize}, "shadowStackTop"),
                 LLVM.GetNamedGlobal(Module, "t_pShadowStackTop"));
 
+            LLVMValueRef pInvokeTransitionFrame = default;
+            LLVMTypeRef pInvokeFunctionType = default;
+            if (method.IsPInvoke)
+            {
+                // add call to go to preemptive mode
+                LLVMTypeRef pInvokeTransitionFrameType =
+                    LLVM.StructType(new LLVMTypeRef[] {LLVM.PointerType(LLVM.Int8Type(), 0), LLVM.PointerType(LLVM.Int8Type(), 0), LLVM.PointerType(LLVM.Int8Type(), 0)}, false);
+                pInvokeFunctionType = LLVM.FunctionType(LLVM.VoidType(), new LLVMTypeRef[] {LLVM.PointerType(pInvokeTransitionFrameType, 0)}, false);
+                pInvokeTransitionFrame = LLVM.BuildAlloca(_builder, pInvokeTransitionFrameType, "PInvokeTransitionFrame");
+                LLVMValueRef RhpPInvoke2 = GetOrCreateLLVMFunction("RhpPInvoke2", pInvokeFunctionType);
+                LLVM.BuildCall(_builder, RhpPInvoke2, new LLVMValueRef[] {pInvokeTransitionFrame}, "");
+            }
             // Don't name the return value if the function returns void, it's invalid
             var returnValue = LLVM.BuildCall(_builder, nativeFunc, llvmArguments, !method.Signature.ReturnType.IsVoid ? "call" : string.Empty);
+
+            if (method.IsPInvoke)
+            {
+                // add call to go to cooperative mode
+                LLVMValueRef RhpPInvokeReturn2 = GetOrCreateLLVMFunction("RhpPInvokeReturn2", pInvokeFunctionType);
+                LLVM.BuildCall(_builder, RhpPInvokeReturn2, new LLVMValueRef[] {pInvokeTransitionFrame}, "");
+            }
 
             if (!method.Signature.ReturnType.IsVoid)
                 return new ExpressionEntry(GetStackValueKind(method.Signature.ReturnType), "retval", returnValue, forcedReturnType ?? method.Signature.ReturnType);
@@ -1878,6 +1904,8 @@ namespace Internal.IL
 
         private LLVMValueRef MakeExternFunction(MethodDesc method, string realMethodName, LLVMValueRef realFunction = default(LLVMValueRef))
         {
+            if(realMethodName.IndexOf("emscripten") > -1)
+            { }
             LLVMValueRef nativeFunc;
             LLVMTypeRef[] paramTypes = new LLVMTypeRef[method.Signature.Length];
             for (int i = 0; i < paramTypes.Length; i++)
@@ -1935,7 +1963,9 @@ namespace Internal.IL
             }
 
             LLVMTypeRef thunkSig = LLVM.FunctionType(GetLLVMTypeForTypeDesc(method.Signature.ReturnType), llvmParams, false);
-            LLVMValueRef thunkFunc = LLVM.AddFunction(compilation.Module, nativeName, thunkSig);
+//            LLVMValueRef thunkFunc = LLVM.AddFunction(compilation.Module, nativeName, thunkSig);
+            LLVMValueRef thunkFunc = GetOrCreateLLVMFunction(nativeName, thunkSig);
+
 
             LLVMBasicBlockRef shadowStackSetupBlock = LLVM.AppendBasicBlock(thunkFunc, "ShadowStackSetupBlock");
             LLVMBasicBlockRef allocateShadowStackBlock = LLVM.AppendBasicBlock(thunkFunc, "allocateShadowStackBlock");
@@ -2052,7 +2082,29 @@ namespace Internal.IL
 
             if (targetLLVMFunction.Pointer.Equals(IntPtr.Zero))
             {
-                targetLLVMFunction = GetOrCreateLLVMFunction(_compilation.NameMangler.GetMangledMethodName(method).ToString(), method.Signature);
+                string mangledName;
+                if (method.IsNativeCallable)
+                {
+                    EcmaMethod ecmaMethod = ((EcmaMethod)method);
+                    mangledName = ecmaMethod.GetNativeCallableExportName();
+                    if (mangledName == null)
+                    {
+                        mangledName = ecmaMethod.Name;
+                    }
+                    LLVMTypeRef[] llvmParams = new LLVMTypeRef[method.Signature.Length];
+                    for (int i = 0; i < llvmParams.Length; i++)
+                    {
+                        llvmParams[i] = GetLLVMTypeForTypeDesc(method.Signature[i]);
+                    }
+                    LLVMTypeRef thunkSig = LLVM.FunctionType(GetLLVMTypeForTypeDesc(method.Signature.ReturnType), llvmParams, false);
+
+                    targetLLVMFunction = GetOrCreateLLVMFunction(mangledName, thunkSig);
+                }
+                else
+                {
+                    mangledName = _compilation.NameMangler.GetMangledMethodName(method).ToString();
+                    targetLLVMFunction = GetOrCreateLLVMFunction(mangledName, method.Signature);
+                }
             }
 
             var entry = new FunctionPointerEntry("ldftn", method, targetLLVMFunction, GetWellKnownType(WellKnownType.IntPtr), opCode == ILOpcode.ldvirtftn);
