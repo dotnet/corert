@@ -466,7 +466,7 @@ namespace Internal.TypeSystem.NativeFormat
                 return null;
             }
 
-            ThrowHelper.ThrowTypeLoadException(objectType);
+            // Class library doesn't have finalizers
             return null;
         }
 
