@@ -80,6 +80,12 @@ namespace ILCompiler
             }
         }
 
+        internal bool IsInheritanceChainLayoutFixedInCurrentVersionBubble(TypeDesc type)
+        {
+            // TODO: implement
+            return true;
+        }
+
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
             foreach (DependencyNodeCore<NodeFactory> dependency in obj)
@@ -133,6 +139,12 @@ namespace ILCompiler
                     Logger.Writer.WriteLine($"Info: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
                 }
             }
+        }
+
+        public override bool CanInline(MethodDesc callerMethod, MethodDesc calleeMethod)
+        {
+            // Allow inlining if the target method is within the same version bubble
+            return NodeFactory.CompilationModuleGroup.ContainsMethodBody(calleeMethod, unboxingStub: false);
         }
     }
 }

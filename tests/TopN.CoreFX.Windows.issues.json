@@ -560,6 +560,30 @@
             "classes": null,
             "methods": [
                 {
+                    "name": "System.Tests.MathFTests.Min",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Tests.MathFTests.Max",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Tests.MathTests.Min_Single",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Tests.MathTests.Min_Double",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Tests.MathTests.Max_Single",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Tests.MathTests.Max_Double",
+                    "reason": "outdated"
+                },
+                {
                     "name": "System.Reflection.Tests.AssemblyNameProxyTests.GetAssemblyName_AssemblyNameProxy",
                     "reason": "Xunit.Sdk.ThrowsException"
                 },
@@ -863,7 +887,7 @@
                     "name": "System.Tests.BitConverterArray.ConvertFromChar",
                     "reason": "System.ArgumentException"
                 },
-                { 
+                {
                     "name": "System.Tests.ConvertToStringTests.FromBoxedObject",
                     "reason": "https://github.com/dotnet/coreclr/pull/19775"
                 },
@@ -871,7 +895,7 @@
                     "name": "System.Tests.ConvertToDoubleTests.FromString",
                     "reason": "https://github.com/dotnet/coreclr/pull/20707"
                 },
-                { 
+                {
                     "name": "System.Tests.ConvertToSingleTests.FromString",
                     "reason": "https://github.com/dotnet/coreclr/pull/20707"
                 }

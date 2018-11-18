@@ -40,10 +40,12 @@
     <FileToExclude Include="System.Private.Xml" />
     <FileToExclude Include="System.Private.Xml.Linq" />
 
+    <!-- System.Linq in the aot-specific package is optimized for size -->
+    <FileToExclude Include="System.Linq" />
+
     <!-- TODO: Upstack framework -->
     <FileToExclude Include="System.Private.DataContractSerialization" />
     <FileToExclude Include="System.Reflection.DispatchProxy" />
-    <FileToExclude Include="System.Data.Common" />
     <FileToExclude Include="System.Diagnostics.StackTrace" />
 
     <!-- TODO: WinRT -->

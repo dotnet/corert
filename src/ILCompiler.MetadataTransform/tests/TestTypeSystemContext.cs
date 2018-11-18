@@ -38,7 +38,7 @@ namespace MetadataTransformTests
             EcmaModule module = null;
             try
             {
-                module = EcmaModule.Create(this, new PEReader(File.OpenRead(simpleName + ".dll")));
+                module = EcmaModule.Create(this, new PEReader(File.OpenRead(simpleName + ".dll")), containingAssembly: null);
             }
             catch (FileNotFoundException)
             {

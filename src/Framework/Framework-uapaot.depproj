@@ -30,6 +30,10 @@
     <FileToInclude Include="System.Private.Xml" />
     <FileToInclude Include="System.Private.Xml.Linq" />
 
+    <!-- System.Linq is built with optimizations for size on AoT -->
+    <!-- See: https://github.com/dotnet/corefx/pull/31025 -->
+    <FileToInclude Include="System.Linq" />
+
     <FileToInclude Include="System.Private.Reflection.Metadata.Ecma335" />
   </ItemGroup>
 

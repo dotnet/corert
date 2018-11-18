@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <Compile Include="ILMethodTester.cs" />
+    <Compile Include="ILTypeVerificationTester.cs" />
     <Compile Include="TestDataLoader.cs" />
   </ItemGroup>
 

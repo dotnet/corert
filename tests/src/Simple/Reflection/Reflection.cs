@@ -37,6 +37,7 @@ internal class ReflectionTest
         TestAssemblyAndModuleAttributes.Run();
         TestAttributeExpressions.Run();
         TestParameterAttributes.Run();
+        TestPropertyAndEventAttributes.Run();
         TestNecessaryEETypeReflection.Run();
 
         //
@@ -307,6 +308,81 @@ internal class ReflectionTest
             var attribute = method.GetParameters()[0].GetCustomAttribute<ParameterAttribute>();
             if (attribute.MemberName != nameof(Method))
                 throw new Exception();
+        }
+    }
+
+    class TestPropertyAndEventAttributes
+    {
+        [Property("MyProperty")]
+        public static int Property
+        {
+#if OPTIMIZED_MODE_WITHOUT_SCANNER
+            [MethodImpl(MethodImplOptions.NoInlining)]
+#endif
+            get;
+#if OPTIMIZED_MODE_WITHOUT_SCANNER
+            [MethodImpl(MethodImplOptions.NoInlining)]
+#endif
+            set;
+        }
+
+        class PropertyAttribute : Attribute
+        {
+            public PropertyAttribute(string value)
+            {
+                Value = value;
+            }
+
+            public string Value { get; }
+        }
+
+        [Event("MyEvent")]
+        public static event Action Event
+        {
+#if OPTIMIZED_MODE_WITHOUT_SCANNER
+            [MethodImpl(MethodImplOptions.NoInlining)]
+#endif
+            add { }
+#if OPTIMIZED_MODE_WITHOUT_SCANNER
+            [MethodImpl(MethodImplOptions.NoInlining)]
+#endif
+            remove { }
+        }
+
+        class EventAttribute : Attribute
+        {
+            public EventAttribute(string value)
+            {
+                Value = value;
+            }
+
+            public string Value { get; }
+        }
+
+        public static void Run()
+        {
+            Console.WriteLine(nameof(TestPropertyAndEventAttributes));
+
+            // Ensure things we reflect on are in the static callgraph
+            if (string.Empty.Length > 0)
+            {
+                Property = 123;
+                Event += null;
+            }
+
+            {
+                PropertyInfo property = typeof(TestPropertyAndEventAttributes).GetProperty(nameof(Property));
+                var attribute = property.GetCustomAttribute<PropertyAttribute>();
+                if (attribute.Value != "MyProperty")
+                    throw new Exception();
+            }
+
+            {
+                EventInfo @event = typeof(TestPropertyAndEventAttributes).GetEvent(nameof(Event));
+                var attribute = @event.GetCustomAttribute<EventAttribute>();
+                if (attribute.Value != "MyEvent")
+                    throw new Exception();
+            }
         }
     }
 
