@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Threading;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 #if PLATFORM_WINDOWS

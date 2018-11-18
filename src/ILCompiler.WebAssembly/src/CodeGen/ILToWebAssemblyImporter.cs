@@ -1818,7 +1818,7 @@ namespace Internal.IL
             if (method.IsPInvoke)
             {
                 string entrypointName = method.GetPInvokeMethodMetadata().Name;
-                if (!String.IsNullOrEmpty(entrypointName))
+                if(!String.IsNullOrEmpty(entrypointName))
                 {
                     realMethodName = entrypointName;
                 }
@@ -1873,7 +1873,7 @@ namespace Internal.IL
             {
                 // add call to go to preemptive mode
                 LLVMTypeRef pInvokeTransitionFrameType =
-                    LLVM.StructType(new LLVMTypeRef[] {LLVM.PointerType(LLVM.Int8Type(), 0), LLVM.PointerType(LLVM.Int8Type(), 0), LLVM.PointerType(LLVM.Int8Type(), 0)}, false);
+                LLVM.StructType(new LLVMTypeRef[] {LLVM.PointerType(LLVM.Int8Type(), 0), LLVM.PointerType(LLVM.Int8Type(), 0), LLVM.PointerType(LLVM.Int8Type(), 0)}, false);
                 pInvokeFunctionType = LLVM.FunctionType(LLVM.VoidType(), new LLVMTypeRef[] {LLVM.PointerType(pInvokeTransitionFrameType, 0)}, false);
                 pInvokeTransitionFrame = LLVM.BuildAlloca(_builder, pInvokeTransitionFrameType, "PInvokeTransitionFrame");
                 LLVMValueRef RhpPInvoke2 = GetOrCreateLLVMFunction("RhpPInvoke2", pInvokeFunctionType);
@@ -1897,8 +1897,6 @@ namespace Internal.IL
 
         private LLVMValueRef MakeExternFunction(MethodDesc method, string realMethodName, LLVMValueRef realFunction = default(LLVMValueRef))
         {
-            if(realMethodName.IndexOf("emscripten") > -1)
-            { }
             LLVMValueRef nativeFunc;
             LLVMTypeRef[] paramTypes = new LLVMTypeRef[method.Signature.Length];
             for (int i = 0; i < paramTypes.Length; i++)
@@ -1956,9 +1954,7 @@ namespace Internal.IL
             }
 
             LLVMTypeRef thunkSig = LLVM.FunctionType(GetLLVMTypeForTypeDesc(method.Signature.ReturnType), llvmParams, false);
-//            LLVMValueRef thunkFunc = LLVM.AddFunction(compilation.Module, nativeName, thunkSig);
             LLVMValueRef thunkFunc = GetOrCreateLLVMFunction(nativeName, thunkSig);
-
 
             LLVMBasicBlockRef shadowStackSetupBlock = LLVM.AppendBasicBlock(thunkFunc, "ShadowStackSetupBlock");
             LLVMBasicBlockRef allocateShadowStackBlock = LLVM.AppendBasicBlock(thunkFunc, "allocateShadowStackBlock");
