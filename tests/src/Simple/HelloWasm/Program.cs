@@ -268,6 +268,7 @@ internal static class Program
             PrintLine("Multi-dimension array instantiation test: Ok.");
 
         FloatDoubleTest();
+
         long l = 0x1;
         if (l > 0x7FF0000000000000)
         {
@@ -902,14 +903,6 @@ public sealed class MySealedClass
         Program.PrintLine("MySealedClass.ToString called. Data:");
         Program.PrintLine(_data.ToString());
         return _data.ToString();
-    }
-}
-
-public class Gen<T>
-{
-    internal Type TestTypeOf()
-    {
-        return typeof(T);
     }
 }
 
