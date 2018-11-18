@@ -1,5 +1,5 @@
 extern "C" {
-    void call_once(void(*f)(void))
+    void test_callback(void(*f)(void))
     {
         f();
     }
