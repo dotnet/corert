@@ -1864,7 +1864,7 @@ namespace Internal.IL
 
             // Save the top of the shadow stack in case the callee reverse P/Invokes
             LLVMValueRef stackFrameSize = BuildConstInt32(GetTotalParameterOffset() + GetTotalLocalOffset());
-            LLVM.BuildStore(_builder, LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_llvmFunction), new LLVMValueRef[] {stackFrameSize}, "shadowStackTop"),
+            LLVM.BuildStore(_builder, LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_llvmFunction), new LLVMValueRef[] { stackFrameSize }, "shadowStackTop"),
                 LLVM.GetNamedGlobal(Module, "t_pShadowStackTop"));
 
             LLVMValueRef pInvokeTransitionFrame = default;
