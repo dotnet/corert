@@ -536,9 +536,10 @@ goto :eof
     echo.
     set CLRCustomTestLauncher=%CoreRT_TestRoot%\CoreCLR\build-and-run-test.cmd
     set XunitTestBinBase=!CoreRT_TestExtRepo_CoreCLR!
+
     pushd %CoreRT_TestRoot%\CoreCLR\runtest
 
-    "%CoreRT_CliDir%\dotnet.exe" msbuild /t:Restore /p:RepoLocalBuild=true src\TestWrappersConfig\XUnitTooling.depproj
+    "%CoreRT_CliDir%\dotnet.exe" msbuild /t:Restore /p:RepoLocalBuild=true /p:Configuration=%CoreRT_BuildType% /p:Platform=%CoreRT_BuildArch% src\TestWrappersConfig\XUnitTooling.depproj
     if errorlevel 1 (
         exit /b 1
     )
