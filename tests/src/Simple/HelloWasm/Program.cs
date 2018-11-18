@@ -8,6 +8,7 @@ using System.Collections.Generic;
 #if PLATFORM_WINDOWS
 using CpObj;
 #endif
+
 internal static class Program
 {
     private static int staticInt;
@@ -16,17 +17,6 @@ internal static class Program
     private static unsafe int Main(string[] args)
     {
         PrintLine("Starting");
-
-        object tempArrayThing = new CastingTestClass[1];
-        if (tempArrayThing is CastingTestClass[])
-        {
-            PrintLine("blap");
-        }
-        object arrayCastingTest2 = new BoxStubTest[] { };
-        if (!(arrayCastingTest2 is CastingTestClass[]))
-        {
-            PrintLine("Type casting with isinst & castclass to array test: Ok.");
-        }
 
         Add(1, 2);
         int tempInt = 0;
@@ -69,15 +59,15 @@ internal static class Program
         tempObj.TestVirtualMethod("Hello");
         tempObj.TestVirtualMethod2("Hello");
 
-//        TwoByteStr str = new TwoByteStr() { first = 1, second = 2 };
-//        TwoByteStr str2 = new TwoByteStr() { first = 3, second = 4 };
-//        *(&str) = str2;
-//        str2 = *(&str);
-//
-//        if (str2.second == 4)
-//        {
-//            PrintLine("value type int field test: Ok.");
-//        }
+        TwoByteStr str = new TwoByteStr() { first = 1, second = 2 };
+        TwoByteStr str2 = new TwoByteStr() { first = 3, second = 4 };
+        *(&str) = str2;
+        str2 = *(&str);
+
+        if (str2.second == 4)
+        {
+            PrintLine("value type int field test: Ok.");
+        }
         
         staticInt = 5;
         if (staticInt == 5)
@@ -277,34 +267,15 @@ internal static class Program
         if (testMdArrayInstantiation != null && testMdArrayInstantiation.GetLength(0) == 2 && testMdArrayInstantiation.GetLength(1) == 2)
             PrintLine("Multi-dimension array instantiation test: Ok.");
 
-        int intToCast = 1;
-        double castedDouble = (double)intToCast;
-        if (castedDouble == 1d)
+        FloatDoubleTest();
+        long l = 0x1;
+        if (l > 0x7FF0000000000000)
         {
-            PrintLine("(double) cast test: Ok.");
+            PrintLine("long comparison: Failed");
         }
         else
         {
-            var toInt = (int)castedDouble;
-//            PrintLine("expected 1m, but was " + castedDouble.ToString());  // double.ToString is not compiling at the time of writing, but this would be better output
-            PrintLine($"(double) cast test : Failed. Back to int on next line");
-            PrintLine(toInt.ToString());
-        }
-
-        if (1f < 2d && 1d < 2f && 1f == 1d)
-        {
-            PrintLine("different width float comparisons: Ok.");
-        }
-
-        // floats are 7 digits precision, so check some double more precise to make sure there is no loss occurring through some inadvertent cast to float
-        if (10.23456789d != 10.234567891d)
-        {
-            PrintLine("double precision comparison: Ok.");
-        }
-
-        if (12.34567f == 12.34567f && 12.34567f != 12.34568f)
-        {
-            PrintLine("float comparison: Ok.");
+            PrintLine("long comparison: Ok");
         }
 
         // Create a ByReference<char> through the ReadOnlySpan ctor and call the ByReference.Value via the indexer.
@@ -329,7 +300,16 @@ internal static class Program
         
         TestArrayItfDispatch();
 
-        TestTryFinally();
+        int rvaFieldValue = ILHelpers.ILHelpersTest.StaticInitedInt;
+        if (rvaFieldValue == 0x78563412)
+        {
+            PrintLine("RVA static field test: Ok.");
+        }
+        else
+        {
+            PrintLine("RVA static field test: Failed.");
+            PrintLine(rvaFieldValue.ToString());
+        }
 
         TestNativeCallback();
 
@@ -717,39 +697,6 @@ internal static class Program
         {
             PrintLine("Failed.");
         }
-    }
-
-    /// <summary>
-    /// Ensures all of the blocks of a try/finally function are hit when there aren't exceptions
-    /// </summary>
-    private static void TestTryFinally()
-    {
-        PrintString("Try/Finally test: ");
-        uint result = TryFinallyInner();
-        if (result == 1111)
-        {
-            PrintLine("Ok.");
-        }
-        else
-        {
-            PrintLine("Failed. Result: " + result.ToString());
-        }
-    }
-
-    private static uint TryFinallyInner()
-    {
-        uint result = 1;
-        try
-        {
-            result += 10;
-        }
-        finally
-        {
-            result += 100;
-        }
-        result += 1000;
-
-        return result;
     }
 
     private static unsafe void TestNativeCallback()
