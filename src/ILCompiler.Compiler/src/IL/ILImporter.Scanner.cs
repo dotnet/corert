@@ -741,6 +741,7 @@ namespace Internal.IL
         private void ImportMkRefAny(int token)
         {
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.TypeHandleToRuntimeType), "mkrefany");
+            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.TypeHandleToRuntimeTypeHandle), "mkrefany");
         }
 
         private void ImportLdToken(int token)

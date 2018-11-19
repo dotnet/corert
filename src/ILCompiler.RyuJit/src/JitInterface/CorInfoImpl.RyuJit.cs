@@ -477,6 +477,9 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_GETREFANY:
                     id = ReadyToRunHelper.GetRefAny;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL:
+                    id = ReadyToRunHelper.TypeHandleToRuntimeTypeHandle;
+                    break;
 
                 default:
                     throw new NotImplementedException(ftnNum.ToString());

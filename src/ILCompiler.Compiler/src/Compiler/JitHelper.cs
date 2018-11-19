@@ -261,6 +261,9 @@ namespace ILCompiler
                 case ReadyToRunHelper.GetRefAny:
                     methodDesc = context.GetHelperEntryPoint("TypedReferenceHelpers", "GetRefAny");
                     break;
+                case ReadyToRunHelper.TypeHandleToRuntimeTypeHandle:
+                    methodDesc = context.GetHelperEntryPoint("TypedReferenceHelpers", "TypeHandleToRuntimeTypeHandleMaybeNull");
+                    break;
 
                 default:
                     throw new NotImplementedException(id.ToString());

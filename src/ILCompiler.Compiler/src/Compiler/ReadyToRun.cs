@@ -126,6 +126,7 @@ namespace ILCompiler
         // TypedReference
         TypeHandleToRuntimeType     = 0x110,
         GetRefAny                   = 0x111,
+        TypeHandleToRuntimeTypeHandle = 0x112,
 
         // JIT32 x86-specific write barriers
         WriteBarrier_EAX            = 0x100,
