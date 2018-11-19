@@ -7,6 +7,7 @@
     <OutputType>Library</OutputType>
     <OutputPath>$(CoreRT_CoreCLRRuntimeDir)\</OutputPath>
     <IntermediateOutputPath>$(CoreRT_CoreCLRRuntimeDir)\</IntermediateOutputPath>
+    <Optimize Condition="'$(Configuration)' == 'Release'">true</Optimize>
   </PropertyGroup>
 
   <ItemGroup>

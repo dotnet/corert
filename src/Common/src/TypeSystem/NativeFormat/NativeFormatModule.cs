@@ -43,8 +43,16 @@ namespace Internal.TypeSystem.NativeFormat
             }
         }
 
+        public override IAssemblyDesc Assembly
+        {
+            get
+            {
+                return this;
+            }
+        }
+
         public NativeFormatModule(TypeSystemContext context, QualifiedScopeDefinition[] assemblyDefinitions)
-            : base(context)
+            : base(context, null)
         {
             _assemblyDefinitions = assemblyDefinitions;
         }

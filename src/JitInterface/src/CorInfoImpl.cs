@@ -2927,6 +2927,14 @@ namespace Internal.JitInterface
             return (void*)ObjectToHandle(_compilation.GetFieldRvaData(fieldDesc));
         }
 
+        private CORINFO_CLASS_STRUCT_* getStaticFieldCurrentClass(CORINFO_FIELD_STRUCT_* field, byte* pIsSpeculative)
+        {
+            if (pIsSpeculative != null)
+                *pIsSpeculative = 1;
+
+            return null;
+        }
+
         private IntPtr getVarArgsHandle(CORINFO_SIG_INFO* pSig, ref void* ppIndirection)
         { throw new NotImplementedException("getVarArgsHandle"); }
         private bool canGetVarArgsHandle(CORINFO_SIG_INFO* pSig)

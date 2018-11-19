@@ -28,6 +28,7 @@ PLAT_ASM_SIZEOF(118, StackFrameIterator)
 PLAT_ASM_OFFSET(08, StackFrameIterator, m_FramePointer)
 PLAT_ASM_OFFSET(0c, StackFrameIterator, m_ControlPC)
 PLAT_ASM_OFFSET(10, StackFrameIterator, m_RegDisplay)
+PLAT_ASM_OFFSET(114, StackFrameIterator, m_OriginalControlPC)
 
 PLAT_ASM_SIZEOF(70, PAL_LIMITED_CONTEXT)
 PLAT_ASM_OFFSET(24, PAL_LIMITED_CONTEXT, IP)

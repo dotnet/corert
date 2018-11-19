@@ -244,6 +244,16 @@ namespace Internal.JitInterface
                         *pMustExpand = 1;
                     break;
 
+                case CorInfoIntrinsics.CORINFO_INTRINSIC_Span_GetItem:
+                case CorInfoIntrinsics.CORINFO_INTRINSIC_ReadOnlySpan_GetItem:
+                    {
+                        // RyuJIT handles integer overload only
+                        var argumentTypeCategory = method.Signature[0].Category;
+                        if (argumentTypeCategory != TypeFlags.Int32)
+                            return CorInfoIntrinsics.CORINFO_INTRINSIC_Illegal;
+                    }
+                    break;
+
                 default:
                     break;
             }

@@ -167,12 +167,6 @@ namespace ILCompiler.DependencyAnalysis
             throw new NotImplementedException();
         }
 
-        public bool CanInline(MethodDesc callerMethod, MethodDesc calleeMethod)
-        {
-            // By default impose no restrictions on inlining
-            return CompilationModuleGroup.ContainsMethodBody(calleeMethod, unboxingStub: false);
-        }
-
         private ModuleToken GetTypeToken(ModuleToken token)
         {
             if (token.IsNull)

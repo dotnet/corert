@@ -306,6 +306,8 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void* __getFieldAddress(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
+        delegate CORINFO_CLASS_STRUCT_* __getStaticFieldCurrentClass(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, byte* pIsSpeculative);
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate IntPtr __getVarArgsHandle(IntPtr _this, IntPtr* ppException, CORINFO_SIG_INFO* pSig, ref void* ppIndirection);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.I1)]delegate bool __canGetVarArgsHandle(IntPtr _this, IntPtr* ppException, CORINFO_SIG_INFO* pSig);
@@ -2388,6 +2390,20 @@ namespace Internal.JitInterface
             {
                 *ppException = _this.AllocException(ex);
                 return default(void*);
+            }
+        }
+
+        static CORINFO_CLASS_STRUCT_* _getStaticFieldCurrentClass(IntPtr thisHandle, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, byte* pIsSpeculative)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.getStaticFieldCurrentClass(field, pIsSpeculative);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default(CORINFO_CLASS_STRUCT_*);
             }
         }
 
