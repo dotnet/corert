@@ -2266,6 +2266,9 @@ namespace ILCompiler.CppCodeGen
                 if (t.IsCanonicalSubtype(CanonicalFormKind.Any))
                     continue;
 
+                if (isThreadStatic)
+                    sb.Append("CORERT_THREAD ");
+
                 sb.Append(GetCppStaticsTypeName(t, isGCStatic, isThreadStatic));
                 sb.Append(" ");
                 sb.Append(GetCppStaticsName(t, isGCStatic, isThreadStatic));
