@@ -1849,7 +1849,11 @@ namespace Internal.JitInterface
                     MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
                     if (contextMethod == MethodBeingCompiled)
                     {
+#if READYTORUN
+                        FieldDesc runtimeDeterminedField = field;
+#else
                         FieldDesc runtimeDeterminedField = (FieldDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+#endif
 
                         ReadyToRunHelperId helperId;
 
@@ -2558,7 +2562,12 @@ namespace Internal.JitInterface
                 {
                     // Constrained calls to methods on enum methods resolve to System.Enum's methods. System.Enum is a reference
                     // type though, so we would fail to resolve and box. We have a special path for those to avoid boxing.
+#if READYTORUN
+                    throw new RequiresRuntimeJitException(method);
+
+#else
                     directMethod = _compilation.TypeSystemContext.TryResolveConstrainedEnumMethod(constrainedType, method);
+#endif
                 }
 
                 if (directMethod != null)
@@ -2640,6 +2649,45 @@ namespace Internal.JitInterface
 
             if (directCall && !allowInstParam && targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstArg())
             {
+#if READYTORUN
+                MethodDesc canonMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                if (pResult->exactContextNeedsRuntimeLookup)
+                {
+                    CORINFO_RUNTIME_LOOKUP_KIND lookupKind = GetGenericRuntimeLookupKind(canonMethod);
+                    ReadyToRunHelperId helperId = ReadyToRunHelperId.MethodHandle;
+                    object helperArg = new MethodWithToken(canonMethod, new ModuleToken(_tokenContext, pResolvedToken.token));
+                    TypeDesc contextType;
+                    if (lookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ)
+                    {
+                        contextType = targetMethod.OwningType;
+                    }
+                    else
+                    {
+                        contextType = null;
+                    }
+                    ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(lookupKind, helperId, helperArg,  contextType, _signatureContext);
+                    pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(helper);
+                    pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
+                    pResult->codePointerOrStubLookup.lookupKind.runtimeLookupFlags = 0;
+                    pResult->codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
+                    pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
+                }
+                else
+                {
+                    pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.DynamicHelperCell(
+                        new MethodWithToken(method, new ModuleToken(_tokenContext, pResolvedToken.token)), _signatureContext));
+
+                    if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0 && 
+                        (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0)
+                    {
+                       pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
+                    }
+                    else
+                    {
+                        pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL;
+                    }
+                }
+#else
                 // JIT needs a single address to call this method but the method needs a hidden argument.
                 // We need a fat function pointer for this that captures both things.
                 targetIsFatFunctionPointer = true;
@@ -2670,6 +2718,7 @@ namespace Internal.JitInterface
                     pResult->codePointerOrStubLookup.constLookup = 
                         CreateConstLookupToSymbol(_compilation.NodeFactory.FatFunctionPointer(targetMethod));
                 }
+#endif
             }
             else if (directCall)
             {
@@ -2770,8 +2819,13 @@ namespace Internal.JitInterface
             {
                 // GVM Call Support
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
-                pResult->codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
                 pResult->nullInstanceCheck = true;
+#if READYTORUN
+                pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+                    _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, method,
+                        new ModuleToken(_tokenContext, pResolvedToken.token), _signatureContext));
+#else
+                pResult->codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
 
                 if (pResult->exactContextNeedsRuntimeLookup)
                 {
@@ -2786,6 +2840,7 @@ namespace Internal.JitInterface
                 // We don't need an instantiation parameter, so let's just not report it. Might be nice to
                 // move that assert to some place later though.
                 targetIsFatFunctionPointer = true;
+#endif
             }
             else
 // In ReadyToRun, we always use the dispatch stub to call virtual methods

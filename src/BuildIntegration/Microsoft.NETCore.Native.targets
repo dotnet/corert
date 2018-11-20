@@ -222,7 +222,7 @@ See the LICENSE file in the project root for more information.
 
     <Message Text="Generating native code" Importance="high" />
 
-    <Exec Command="&quot;$(IlcPath)\tools\ilc&quot; @&quot;$(NativeIntermediateOutputPath)%(IlcCmd.ResponseFileName)&quot;" />
+    <Exec Command="&quot;$(IlcPath)\tools\ilc&quot; @&quot;$(NativeIntermediateOutputPath)%(IlcCmd.ResponseFileName)&quot;" IgnoreExitCode="true" />
   </Target>
 
   <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Windows.props" Condition="'$(TargetOS)' == 'Windows_NT'" />

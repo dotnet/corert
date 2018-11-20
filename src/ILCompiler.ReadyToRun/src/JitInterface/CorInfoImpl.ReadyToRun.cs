@@ -264,11 +264,13 @@ namespace Internal.JitInterface
             MethodDesc targetMethod = HandleToObject(pTargetMethod.hMethod);
             TypeDesc delegateTypeDesc = HandleToObject(delegateType);
 
+#if !READYTORUN
             if (targetMethod.IsSharedByGenericInstantiations)
             {
                 // If the method is not exact, fetch it as a runtime determined method.
                 targetMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pTargetMethod);
             }
+#endif
 
             /* TODO
             bool isLdvirtftn = pTargetMethod.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldvirtftn;
@@ -399,6 +401,13 @@ namespace Internal.JitInterface
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT:
                     id = ReadyToRunHelper.NewArray;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_VIRTUAL_FUNC_PTR:
+                    id = ReadyToRunHelper.VirtualFuncPtr;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR:
+                    id = ReadyToRunHelper.VirtualFuncPtr;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_LMUL:

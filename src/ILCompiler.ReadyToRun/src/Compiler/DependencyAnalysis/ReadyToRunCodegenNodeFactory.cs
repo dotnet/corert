@@ -110,6 +110,11 @@ namespace ILCompiler.DependencyAnalysis
             SignatureContext signatureContext, 
             bool isUnboxingStub = false)
         {
+            if (targetMethod.IsRuntimeDeterminedExactMethod)
+            {
+                Console.WriteLine("RuntimeDetermined: {0}", targetMethod);
+            }
+
             if (targetMethod == originalMethod)
             {
                 constrainedType = null;
@@ -484,6 +489,30 @@ namespace ILCompiler.DependencyAnalysis
                 default:
                     throw new NotImplementedException();
             }
+        }
+
+        private Dictionary<MethodWithToken, ISymbolNode> _dynamicHelperCellCache = new Dictionary<MethodWithToken, ISymbolNode>();
+
+        public ISymbolNode DynamicHelperCell(MethodWithToken methodWithToken, SignatureContext signatureContext)
+        {
+            ISymbolNode result;
+            if (!_dynamicHelperCellCache.TryGetValue(methodWithToken, out result))
+            {
+                result = new DelayLoadHelperImport(
+                    this,
+                    DispatchImports,
+                    ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_Obj,
+                    MethodSignature(
+                        ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry, 
+                        methodWithToken.Method,
+                        constrainedType: null,
+                        methodWithToken.Token,
+                        signatureContext: signatureContext,
+                        isUnboxingStub: false,
+                        isInstantiatingStub: false));
+                _dynamicHelperCellCache.Add(methodWithToken, result);
+            }
+            return result;
         }
     }
 }
