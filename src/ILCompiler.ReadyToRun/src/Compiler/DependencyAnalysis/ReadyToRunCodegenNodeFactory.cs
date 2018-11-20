@@ -110,11 +110,6 @@ namespace ILCompiler.DependencyAnalysis
             SignatureContext signatureContext, 
             bool isUnboxingStub = false)
         {
-            if (targetMethod.IsRuntimeDeterminedExactMethod)
-            {
-                Console.WriteLine("RuntimeDetermined: {0}", targetMethod);
-            }
-
             if (targetMethod == originalMethod)
             {
                 constrainedType = null;
