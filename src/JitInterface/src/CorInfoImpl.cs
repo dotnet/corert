@@ -1123,10 +1123,14 @@ namespace Internal.JitInterface
             return HandleToObject(cls).IsValueType;
         }
 
-        private bool canInlineTypeCheckWithObjectVTable(CORINFO_CLASS_STRUCT_* cls)
+        private CorInfoInlineTypeCheck canInlineTypeCheck(CORINFO_CLASS_STRUCT_* cls, CorInfoInlineTypeCheckSource source)
         {
-            return true;
+            // TODO: when we support multiple modules at runtime, this will need to do more work
+            // NOTE: cls can be null
+            return CorInfoInlineTypeCheck.CORINFO_INLINE_TYPECHECK_PASS;
         }
+
+        private bool canInlineTypeCheckWithObjectVTable(CORINFO_CLASS_STRUCT_* cls) { throw new NotImplementedException(); }
 
         private uint getClassAttribs(CORINFO_CLASS_STRUCT_* cls)
         {
@@ -1579,8 +1583,14 @@ namespace Internal.JitInterface
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.String));
 
                 case CorInfoClassId.CLASSID_RUNTIME_TYPE:
-                    // This is used in a JIT optimization. It's not applicable due to the structure of CoreRT CoreLib.
-                    return null;
+                    TypeDesc typeOfRuntimeType = _compilation.GetTypeOfRuntimeType();
+
+                    // RyuJIT doesn't expect this to be null and this is used in comparisons.
+                    // Returning null might make RyuJIT think a type with unknown type information (null)
+                    // is a runtime type and that's a pain to debug.
+                    Debug.Assert(typeOfRuntimeType != null);
+
+                    return ObjectToHandle(typeOfRuntimeType);
 
                 default:
                     throw new NotImplementedException();

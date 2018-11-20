@@ -53,6 +53,7 @@ struct JitInterfaceCallbacks
     void* (* getTypeInstantiationArgument)(void * thisHandle, CorInfoException** ppException, void* cls, unsigned index);
     int (* appendClassName)(void * thisHandle, CorInfoException** ppException, wchar_t** ppBuf, int* pnBufLen, void* cls, int fNamespace, int fFullInst, int fAssembly);
     int (* isValueClass)(void * thisHandle, CorInfoException** ppException, void* cls);
+    int (* canInlineTypeCheck)(void * thisHandle, CorInfoException** ppException, void* cls, int source);
     int (* canInlineTypeCheckWithObjectVTable)(void * thisHandle, CorInfoException** ppException, void* cls);
     unsigned int (* getClassAttribs)(void * thisHandle, CorInfoException** ppException, void* cls);
     int (* isStructRequiringStackAllocRetBuf)(void * thisHandle, CorInfoException** ppException, void* cls);
@@ -569,6 +570,15 @@ public:
     {
         CorInfoException* pException = nullptr;
         int _ret = _callbacks->isValueClass(_thisHandle, &pException, cls);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual int canInlineTypeCheck(void* cls, int source)
+    {
+        CorInfoException* pException = nullptr;
+        int _ret = _callbacks->canInlineTypeCheck(_thisHandle, &pException, cls, source);
         if (pException != nullptr)
             throw pException;
         return _ret;

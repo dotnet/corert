@@ -48,6 +48,7 @@ namespace ILCompiler
         GetRuntimeTypeHandle        = 0x54,
         GetRuntimeMethodHandle      = 0x55,
         GetRuntimeFieldHandle       = 0x56,
+        GetRuntimeType              = 0x57,
 
         Box                         = 0x58,
         Box_Nullable                = 0x59,
@@ -55,6 +56,8 @@ namespace ILCompiler
         Unbox_Nullable              = 0x5B,
         NewMultiDimArr              = 0x5C,
         NewMultiDimArr_NonVarArg    = 0x5D,
+
+        AreTypesEquivalent          = 0x5E,
 
         // Helpers used with generic handle lookup cases
         NewObject                   = 0x60,
@@ -123,6 +126,7 @@ namespace ILCompiler
         // TypedReference
         TypeHandleToRuntimeType     = 0x110,
         GetRefAny                   = 0x111,
+        TypeHandleToRuntimeTypeHandle = 0x112,
 
         // JIT32 x86-specific write barriers
         WriteBarrier_EAX            = 0x100,
