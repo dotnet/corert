@@ -2,19 +2,26 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
     <RuntimeIdentifiers>$(NuPkgRid)</RuntimeIdentifiers>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <NugetTargetMoniker>.NETCoreApp,Version=v3.0</NugetTargetMoniker>
+    <NugetTargetMonikerShort>netcoreapp3.0</NugetTargetMonikerShort>
     <RidSpecificAssets>true</RidSpecificAssets>
     <OutputPath>$(IntermediateOutputRootPath)CoreClrRuntime</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.App">
-      <Version>2.1.2</Version>
+      <Version>3.0.0-preview1-27101-02</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.TestHost">
       <Version>2.0.8</Version>
     </PackageReference>
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
+      <Version>4.6.0-preview.18571.1</Version>
+    </PackageReference>
+    
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
