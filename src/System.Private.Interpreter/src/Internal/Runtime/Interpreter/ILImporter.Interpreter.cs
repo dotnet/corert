@@ -255,7 +255,149 @@ namespace Internal.IL
 
         private void ImportShiftOperation(ILOpcode opcode)
         {
-            throw new NotImplementedException();
+            StackItem op1 = PopWithValidation();
+            StackItem op2 = PopWithValidation();
+
+            switch (op1.Kind)
+            {
+                case StackValueKind.Int32:
+                    {
+                        int shiftBy = op1.AsInt32();
+                        if (op2.Kind == StackValueKind.Int32)
+                        {
+                            int value = op2.AsInt32();
+                            if (opcode == ILOpcode.shl)
+                            {
+                                value = value << shiftBy;
+                            }
+                            else if (opcode == ILOpcode.shr)
+                            {
+                                value = value >> shiftBy;
+                            }
+                            else if (opcode == ILOpcode.shr_un)
+                            {
+                                value = (int)((uint)value >> shiftBy);
+                            }
+
+                            _interpreter.EvaluationStack.Push(StackItem.FromInt32(value));
+                        }
+                        else if (op2.Kind == StackValueKind.Int64)
+                        {
+                            long value = op2.AsInt64();
+                            if (opcode == ILOpcode.shl)
+                            {
+                                value = value << shiftBy;
+                            }
+                            else if (opcode == ILOpcode.shr)
+                            {
+                                value = value >> shiftBy;
+                            }
+                            else if (opcode == ILOpcode.shr_un)
+                            {
+                                value = (long)((ulong)value >> shiftBy);
+                            }
+
+                            _interpreter.EvaluationStack.Push(StackItem.FromInt64(value));
+                        }
+                        else if (op2.Kind == StackValueKind.NativeInt)
+                        {
+                            IntPtr value = op2.AsNativeInt();
+                            if (opcode == ILOpcode.shl)
+                            {
+                                value = new IntPtr(value.ToInt64() << shiftBy);
+                            }
+                            else if (opcode == ILOpcode.shr)
+                            {
+                                value = new IntPtr(value.ToInt64() >> shiftBy);
+                            }
+                            else if (opcode == ILOpcode.shr_un)
+                            {
+                                UIntPtr uintPtr = new UIntPtr(value.ToPointer());
+                                value = new IntPtr((long)(uintPtr.ToUInt64() >> shiftBy));
+                            }
+
+                            _interpreter.EvaluationStack.Push(StackItem.FromNativeInt(value));
+                        }
+                        else
+                        {
+                            ThrowHelper.ThrowInvalidProgramException();
+                        }
+                    }
+                    break;
+                case StackValueKind.NativeInt:
+                    {
+                        IntPtr shiftBy = op1.AsNativeInt();
+                        if (op2.Kind == StackValueKind.Int32)
+                        {
+                            int value = op2.AsInt32();
+                            if (opcode == ILOpcode.shl)
+                            {
+                                value = value << shiftBy.ToInt32();
+                            }
+                            else if (opcode == ILOpcode.shr)
+                            {
+                                value = value >> shiftBy.ToInt32();
+                            }
+                            else if (opcode == ILOpcode.shr_un)
+                            {
+                                value = (int)((uint)value >> shiftBy.ToInt32());
+                            }
+
+                            _interpreter.EvaluationStack.Push(StackItem.FromInt32(value));
+                        }
+                        else if (op2.Kind == StackValueKind.Int64)
+                        {
+                            long value = op2.AsInt64();
+                            if (opcode == ILOpcode.shl)
+                            {
+                                value = value << shiftBy.ToInt32();
+                            }
+                            else if (opcode == ILOpcode.shr)
+                            {
+                                value = value >> shiftBy.ToInt32();
+                            }
+                            else if (opcode == ILOpcode.shr_un)
+                            {
+                                value = (long)((ulong)value >> shiftBy.ToInt32());
+                            }
+
+                            _interpreter.EvaluationStack.Push(StackItem.FromInt64(value));
+                        }
+                        else if (op2.Kind == StackValueKind.NativeInt)
+                        {
+                            IntPtr value = op2.AsNativeInt();
+                            if (opcode == ILOpcode.shl)
+                            {
+                                value = new IntPtr(value.ToInt64() << shiftBy.ToInt32());
+                            }
+                            else if (opcode == ILOpcode.shr)
+                            {
+                                value = new IntPtr(value.ToInt64() >> shiftBy.ToInt32());
+                            }
+                            else if (opcode == ILOpcode.shr_un)
+                            {
+                                UIntPtr uintPtr = new UIntPtr(value.ToPointer());
+                                value = new IntPtr((long)(uintPtr.ToUInt64() >> shiftBy.ToInt32()));
+                            }
+
+                            _interpreter.EvaluationStack.Push(StackItem.FromNativeInt(value));
+                        }
+                        else
+                        {
+                            ThrowHelper.ThrowInvalidProgramException();
+                        }
+                    }
+                    break;
+                case StackValueKind.Unknown:
+                case StackValueKind.Int64:
+                case StackValueKind.Float:
+                case StackValueKind.ByRef:
+                case StackValueKind.ObjRef:
+                case StackValueKind.ValueType:
+                default:
+                    ThrowHelper.ThrowInvalidProgramException();
+                    break;
+            }
         }
 
         private void ImportCompareOperation(ILOpcode opcode)
@@ -1124,6 +1266,9 @@ namespace Internal.IL
 
                         break;
                     }
+                default:
+                    ThrowHelper.ThrowInvalidProgramException();
+                    break;
             }
         }
 
