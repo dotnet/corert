@@ -1802,6 +1802,31 @@ namespace Internal.JitInterface
         private bool isWriteBarrierHelperRequired(CORINFO_FIELD_STRUCT_* field)
         { throw new NotImplementedException("isWriteBarrierHelperRequired"); }
 
+        private CORINFO_FIELD_ACCESSOR getFieldIntrinsic(FieldDesc field)
+        {
+            var owningType = field.OwningType;
+            if ((owningType.IsWellKnownType(WellKnownType.IntPtr) ||
+                    owningType.IsWellKnownType(WellKnownType.UIntPtr)) &&
+                        field.Name == "Zero")
+            {
+                return CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_ZERO;
+            }
+            // Disabled outside READYTORUN because of https://github.com/dotnet/corert/issues/6601
+#if READYTORUN
+            else if (owningType.IsString && field.Name == "Empty")
+            {
+                return CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_EMPTY_STRING;
+            }
+#endif
+            else if (owningType.Name == "BitConverter" && owningType.Namespace == "System" &&
+                field.Name == "IsLittleEndian")
+            {
+                return CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN;
+            }
+
+            return (CORINFO_FIELD_ACCESSOR)(-1);
+        }
+
         private void getFieldInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult)
         {
 #if DEBUG
@@ -1902,7 +1927,13 @@ namespace Internal.JitInterface
                     pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE;
 
                     ReadyToRunHelperId helperId = ReadyToRunHelperId.Invalid;
-                    if (field.IsThreadStatic)
+                    CORINFO_FIELD_ACCESSOR intrinsicAccessor;
+                    if ((flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_GET) != 0 &&
+                        (intrinsicAccessor = getFieldIntrinsic(field)) != (CORINFO_FIELD_ACCESSOR)(-1))
+                    {
+                        fieldAccessor = intrinsicAccessor;
+                    }
+                    else if (field.IsThreadStatic)
                     {
 #if READYTORUN
                         if (field.HasGCStaticBase)
@@ -1923,17 +1954,7 @@ namespace Internal.JitInterface
                     }
                     else
                     {
-                        var owningType = field.OwningType;
-                        if ((owningType.IsWellKnownType(WellKnownType.IntPtr) ||
-                                owningType.IsWellKnownType(WellKnownType.UIntPtr)) &&
-                                    field.Name == "Zero")
-                        {
-                            fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_ZERO;
-                        }
-                        else
-                        {
-                            helperId = ReadyToRunHelperId.GetNonGCStaticBase;
-                        }
+                        helperId = ReadyToRunHelperId.GetNonGCStaticBase;
                     }
 
                     if (helperId != ReadyToRunHelperId.Invalid)
@@ -2941,7 +2962,10 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("canGetVarArgsHandle"); }
 
         private InfoAccessType emptyStringLiteral(ref void* ppValue)
-        { throw new NotImplementedException("emptyStringLiteral"); }
+        {
+            return constructStringLiteral(_methodScope, (mdToken)CorTokenType.mdtString, ref ppValue);
+        }
+
         private uint getFieldThreadLocalStoreID(CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection)
         { throw new NotImplementedException("getFieldThreadLocalStoreID"); }
         private void setOverride(IntPtr pOverride, CORINFO_METHOD_STRUCT_* currentMethod)
