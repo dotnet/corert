@@ -93,7 +93,7 @@ namespace Internal.Runtime
         ClonedEEType = 0x0001,
 
         /// <summary>
-        /// Represents a paramaterized type. For example a single dimensional array or pointer type
+        /// Represents a parameterized type. For example a single dimensional array or pointer type
         /// </summary>
         ParameterizedEEType = 0x0002,
 
