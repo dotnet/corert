@@ -69,6 +69,12 @@ namespace ILCompiler
         GenericGcTlsBase            = 0x66,
         GenericNonGcTlsBase         = 0x67,
         VirtualFuncPtr              = 0x68,
+        CheckCastClass              = 0x69,
+        CheckInstanceClass          = 0x6A,
+        CheckCastArray              = 0x6B,
+        CheckInstanceArray          = 0x6C,
+        CheckCastInterface          = 0x6D,
+        CheckInstanceInterface      = 0x6E,
 
         // Long mul/div/shift ops
         LMul                        = 0xC0,

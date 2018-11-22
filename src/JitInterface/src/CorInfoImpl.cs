@@ -1412,12 +1412,6 @@ namespace Internal.JitInterface
             return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT;
         }
 
-        private CorInfoHelpFunc getCastingHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fThrowing)
-        {
-            // TODO: optimized helpers
-            return fThrowing ? CorInfoHelpFunc.CORINFO_HELP_CHKCASTANY : CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFANY;
-        }
-
         private CorInfoHelpFunc getSharedCCtorHelper(CORINFO_CLASS_STRUCT_* clsHnd)
         { throw new NotImplementedException("getSharedCCtorHelper"); }
         private CorInfoHelpFunc getSecurityPrologHelper(CORINFO_METHOD_STRUCT_* ftn)
@@ -1637,8 +1631,67 @@ namespace Internal.JitInterface
 
         private TypeCompareState compareTypesForCast(CORINFO_CLASS_STRUCT_* fromClass, CORINFO_CLASS_STRUCT_* toClass)
         {
-            // TODO: Implement
-            return TypeCompareState.May;
+            TypeDesc fromType = HandleToObject(fromClass);
+            TypeDesc toType = HandleToObject(toClass);
+
+            TypeCompareState result = TypeCompareState.May;
+
+            if (toType.IsNullable)
+            {
+                // If casting to Nullable<T>, don't try to optimize
+                result = TypeCompareState.May;
+            }
+            else if (!fromType.IsCanonicalSubtype(CanonicalFormKind.Any) && !toType.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                // If the types are not shared, we can check directly.
+                if (fromType.CanCastTo(toType))
+                    result = TypeCompareState.Must;
+                else
+                    result = TypeCompareState.MustNot;
+            }
+            else if (fromType.IsCanonicalSubtype(CanonicalFormKind.Any) && !toType.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                // Casting from a shared type to an unshared type.
+                // Only handle casts to interface types for now
+                if (toType.IsInterface)
+                {
+                    // Do a preliminary check.
+                    bool canCast = fromType.CanCastTo(toType);
+
+                    // Pass back positive results unfiltered. The unknown type
+                    // parameters in fromClass did not come into play.
+                    if (canCast)
+                    {
+                        result = TypeCompareState.Must;
+                    }
+                    // For negative results, the unknown type parameter in
+                    // fromClass might match some instantiated interface,
+                    // either directly or via variance.
+                    //
+                    // However, CanCastTo will report failure in such cases since
+                    // __Canon won't match the instantiated type on the
+                    // interface (which can't be __Canon since we screened out
+                    // canonical subtypes for toClass above). So only report
+                    // failure if the interface is not instantiated.
+                    else if (!toType.HasInstantiation)
+                    {
+                        result = TypeCompareState.MustNot;
+                    }
+                }
+            }
+
+#if READYTORUN
+            // In R2R it is a breaking change for a previously positive
+            // cast to become negative, but not for a previously negative
+            // cast to become positive. So in R2R a negative result is
+            // always reported back as May.
+            if (result == TypeCompareState.MustNot)
+            {
+                result = TypeCompareState.May;
+            }
+#endif
+
+            return result;
         }
 
         private TypeCompareState compareTypesForEquality(CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2)
