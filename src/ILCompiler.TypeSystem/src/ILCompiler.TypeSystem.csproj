@@ -76,6 +76,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Canon\TypeSystemContext.Canon.cs">
       <Link>TypeSystem\Canon\TypeSystemContext.Canon.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\CodeGen\FieldDesc.CodeGen.cs">
+      <Link>TypeSystem\CodeGen\FieldDesc.CodeGen.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\CodeGen\MethodDesc.CodeGen.cs">
       <Link>TypeSystem\CodeGen\MethodDesc.CodeGen.cs</Link>
     </Compile>
@@ -294,6 +297,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaField.Sorting.cs">
       <Link>Ecma\EcmaField.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaField.CodeGen.cs">
+      <Link>Ecma\EcmaField.CodeGen.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaGenericParameter.Sorting.cs">
       <Link>Ecma\EcmaGenericParameter.Sorting.cs</Link>

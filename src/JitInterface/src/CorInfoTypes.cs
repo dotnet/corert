@@ -1123,6 +1123,7 @@ namespace Internal.JitInterface
 
         CORINFO_FIELD_INTRINSIC_ZERO,           // intrinsic zero (IntPtr.Zero, UIntPtr.Zero)
         CORINFO_FIELD_INTRINSIC_EMPTY_STRING,   // intrinsic emptry string (String.Empty)
+        CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN, // intrinsic BitConverter.IsLittleEndian
     }
 
     // Set of flags returned in CORINFO_FIELD_INFO::fieldFlags
