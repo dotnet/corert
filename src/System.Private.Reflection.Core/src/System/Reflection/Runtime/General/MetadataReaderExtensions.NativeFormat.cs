@@ -537,7 +537,7 @@ namespace System.Reflection.Runtime.General
         //
         // This check performs without instantating the Type object and bloating memory usage. On the flip side,
         // it doesn't check on whether the type is defined in a paricular assembly. The desktop CLR typically doesn't
-        // check this either so this is useful from a compat persective as well.
+        // check this either so this is useful from a compat perspective as well.
         //
         public static bool IsCustomAttributeOfType(this CustomAttributeHandle customAttributeHandle,
                                                    MetadataReader reader,

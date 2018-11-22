@@ -26,7 +26,7 @@ namespace Internal.Runtime.Augments
 
         private SafeWaitHandle _osHandle;
 
-        private ApartmentState _initialAppartmentState = ApartmentState.Unknown;
+        private ApartmentState _initialApartmentState = ApartmentState.Unknown;
 
         /// <summary>
         /// Used by <see cref="WaitHandle"/>'s multi-wait functions
@@ -294,7 +294,7 @@ namespace Internal.Runtime.Augments
             {
                 if (HasStarted())
                     throw new ThreadStateException();
-                return _initialAppartmentState;
+                return _initialApartmentState;
             }
 
             switch (GetCurrentApartmentType())
@@ -316,7 +316,7 @@ namespace Internal.Runtime.Augments
                 {
                     if (HasStarted())
                         throw new ThreadStateException();
-                    _initialAppartmentState = state;
+                    _initialApartmentState = state;
                     return true;
                 }
             }
@@ -337,7 +337,7 @@ namespace Internal.Runtime.Augments
 
         private void InitializeComOnNewThread()
         {
-            InitializeCom(_initialAppartmentState);
+            InitializeCom(_initialApartmentState);
         }
 
         internal static void InitializeCom(ApartmentState state = ApartmentState.MTA)
