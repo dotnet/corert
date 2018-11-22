@@ -58,6 +58,9 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(DynamicCodeSupport)' == 'true'">
     <Compile Include="..\..\Common\src\TypeSystem\CodeGen\TypeDesc.CodeGen.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\CodeGen\FieldDesc.CodeGen.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaField.CodeGen.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\NativeFormat\NativeFormatField.CodeGen.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\ArrayType.RuntimeDetermined.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\ByRefType.RuntimeDetermined.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\DefType.RuntimeDetermined.cs" />

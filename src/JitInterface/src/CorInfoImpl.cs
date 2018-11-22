@@ -1804,6 +1804,8 @@ namespace Internal.JitInterface
 
         private CORINFO_FIELD_ACCESSOR getFieldIntrinsic(FieldDesc field)
         {
+            Debug.Assert(field.IsIntrinsic);
+
             var owningType = field.OwningType;
             if ((owningType.IsWellKnownType(WellKnownType.IntPtr) ||
                     owningType.IsWellKnownType(WellKnownType.UIntPtr)) &&
@@ -1928,7 +1930,8 @@ namespace Internal.JitInterface
 
                     ReadyToRunHelperId helperId = ReadyToRunHelperId.Invalid;
                     CORINFO_FIELD_ACCESSOR intrinsicAccessor;
-                    if ((flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_GET) != 0 &&
+                    if (field.IsIntrinsic &&
+                        (flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_GET) != 0 &&
                         (intrinsicAccessor = getFieldIntrinsic(field)) != (CORINFO_FIELD_ACCESSOR)(-1))
                     {
                         fieldAccessor = intrinsicAccessor;
