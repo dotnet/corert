@@ -177,7 +177,7 @@ namespace Internal.IL
             }
 
             // Keep track of where we are in the llvm signature, starting after the
-            // shadow stack pointer and return adress
+            // shadow stack pointer and return address
             int signatureIndex = 1;
             if (NeedsReturnStackSlot(_signature))
             {
