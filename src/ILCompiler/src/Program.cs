@@ -343,6 +343,7 @@ namespace ILCompiler
             {
                 // Either single file, or multifile library, or multifile consumption.
                 EcmaModule entrypointModule = null;
+                bool systemModuleIsInputModule = false;
                 foreach (var inputFile in typeSystemContext.InputFilePaths)
                 {
                     EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
@@ -353,6 +354,9 @@ namespace ILCompiler
                             throw new Exception("Multiple EXE modules");
                         entrypointModule = module;
                     }
+
+                    if (module == typeSystemContext.SystemModule)
+                        systemModuleIsInputModule = true;
 
                     if (!_isReadyToRunCodeGen)
                         compilationRoots.Add(new ExportedMethodsRootProvider(module));
@@ -412,7 +416,7 @@ namespace ILCompiler
                     if (entrypointModule == null && !_nativeLib)
                         throw new Exception("No entrypoint module");
 
-                    if (!_isReadyToRunCodeGen)
+                    if (!systemModuleIsInputModule)
                         compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
                     compilationGroup = new SingleFileCompilationModuleGroup();
                 }
@@ -472,16 +476,29 @@ namespace ILCompiler
 
             DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy = new DefaultDynamicInvokeThunkGenerationPolicy();
 
-            UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager(
-                compilationGroup,
-                typeSystemContext,
-                mdBlockingPolicy,
-                resBlockingPolicy,
-                _metadataLogFileName,
-                stackTracePolicy,
-                invokeThunkGenerationPolicy,
-                metadataGenerationOptions
-                );
+            bool supportsReflection = !_isReadyToRunCodeGen && !_isWasmCodegen && _systemModuleName == DefaultSystemModule;
+
+            MetadataManager metadataManager;
+            if (_isReadyToRunCodeGen)
+            {
+                metadataManager = new ReadyToRunTableManager(typeSystemContext);
+            }
+            else if (supportsReflection)
+            {
+                metadataManager = new UsageBasedMetadataManager(
+                    compilationGroup,
+                    typeSystemContext,
+                    mdBlockingPolicy,
+                    resBlockingPolicy,
+                    _metadataLogFileName,
+                    stackTracePolicy,
+                    invokeThunkGenerationPolicy,
+                    metadataGenerationOptions);
+            }
+            else
+            {
+                metadataManager = new EmptyMetadataManager(typeSystemContext);
+            }
 
             // Unless explicitly opted in at the command line, we enable scanner for retail builds by default.
             // We don't do this for CppCodegen and Wasm, because those codegens are behind.
@@ -493,18 +510,6 @@ namespace ILCompiler
 
             useScanner &= !_noScanner;
 
-            bool supportsReflection = !_isReadyToRunCodeGen && !_isWasmCodegen && _systemModuleName == DefaultSystemModule;
-
-            MetadataManager compilationMetadataManager;
-            if (_isReadyToRunCodeGen)
-            {
-                compilationMetadataManager = new ReadyToRunTableManager(typeSystemContext);
-            }
-            else
-            {
-                compilationMetadataManager = supportsReflection ? metadataManager : (MetadataManager)new EmptyMetadataManager(typeSystemContext);
-            }
-            
             ILScanResults scanResults = null;
             if (useScanner)
             {
@@ -519,7 +524,8 @@ namespace ILCompiler
 
                 scanResults = scanner.Scan();
 
-                compilationMetadataManager = metadataManager.ToAnalysisBasedMetadataManager();
+                if (metadataManager is UsageBasedMetadataManager usageBasedManager)
+                    metadataManager = usageBasedManager.ToAnalysisBasedMetadataManager();
             }
 
             var logger = new Logger(Console.Out, _isVerbose);
@@ -531,11 +537,11 @@ namespace ILCompiler
             DependencyTrackingLevel trackingLevel = _dgmlLogFileName == null ?
                 DependencyTrackingLevel.None : (_generateFullDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
 
-            compilationRoots.Add(compilationMetadataManager);
+            compilationRoots.Add(metadataManager);
 
             builder
                 .UseBackendOptions(_codegenOptions)
-                .UseMetadataManager(compilationMetadataManager)
+                .UseMetadataManager(metadataManager)
                 .UseLogger(logger)
                 .UseDependencyTracking(trackingLevel)
                 .UseCompilationRoots(compilationRoots)

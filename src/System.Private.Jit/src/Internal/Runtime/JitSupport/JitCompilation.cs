@@ -146,5 +146,12 @@ namespace ILCompiler
         {
             return DelegateCreationInfo.Create(delegateType, target, NodeFactory, followVirtualDispatch);
         }
+
+        public TypeDesc GetTypeOfRuntimeType()
+        {
+            // The current plan seem to be to copy paste from ILCompiler.Compilation, but that's not a sustainable plan
+            throw new NotImplementedException();
+
+        }
     }
 }

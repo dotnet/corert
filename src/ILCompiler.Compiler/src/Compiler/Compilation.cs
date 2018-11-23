@@ -329,6 +329,20 @@ namespace ILCompiler
             return GenericDictionaryLookup.CreateHelperLookup(contextSource);
         }
 
+        /// <summary>
+        /// Gets the type of System.Type descendant that implements runtime types.
+        /// </summary>
+        public virtual TypeDesc GetTypeOfRuntimeType()
+        {
+            ModuleDesc reflectionCoreModule = TypeSystemContext.GetModuleForSimpleName("System.Private.Reflection.Core", false);
+            if (reflectionCoreModule != null)
+            {
+                return reflectionCoreModule.GetKnownType("System.Reflection.Runtime.TypeInfos", "RuntimeTypeInfo");
+            }
+
+            return null;
+        }
+
         CompilationResults ICompilation.Compile(string outputFile, ObjectDumper dumper)
         {
             if (dumper != null)

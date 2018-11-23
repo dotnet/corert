@@ -24,6 +24,7 @@ namespace Internal.TypeSystem.Ecma
 
             public const int AttributeMetadataCache = 0x0100;
             public const int ThreadStatic           = 0x0200;
+            public const int Intrinsic              = 0x0400;
         };
 
         private EcmaType _type;
@@ -151,12 +152,15 @@ namespace Internal.TypeSystem.Ecma
                     if (!metadataReader.GetAttributeNamespaceAndName(attributeHandle, out namespaceHandle, out nameHandle))
                         continue;
 
-                    if (metadataReader.StringComparer.Equals(namespaceHandle, "System"))
+                    if (metadataReader.StringComparer.Equals(nameHandle, "ThreadStaticAttribute")
+                        && metadataReader.StringComparer.Equals(namespaceHandle, "System"))
                     {
-                        if (metadataReader.StringComparer.Equals(nameHandle, "ThreadStaticAttribute"))
-                        {
-                            flags |= FieldFlags.ThreadStatic;
-                        }
+                        flags |= FieldFlags.ThreadStatic;
+                    }
+                    else if (metadataReader.StringComparer.Equals(nameHandle, "IntrinsicAttribute")
+                        && metadataReader.StringComparer.Equals(namespaceHandle, "System.Runtime.CompilerServices"))
+                    {
+                        flags |= FieldFlags.Intrinsic;
                     }
                 }
 

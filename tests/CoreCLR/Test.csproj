@@ -6,6 +6,7 @@
     <OutputType>Exe</OutputType>
     <OutputPath>$(MSBuildProjectDirectory)\</OutputPath>
     <IntermediateOutputPath>$(MSBuildProjectDirectory)\</IntermediateOutputPath>
+    <Optimize Condition="'$(Configuration)' == 'Release'">true</Optimize>
   </PropertyGroup>
 
   <ItemGroup>

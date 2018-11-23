@@ -6,6 +6,8 @@
     <IlcMultiModule>true</IlcMultiModule>
     <NativeIntermediateOutputPath Condition="'$(FrameworkObjPath)' != ''">$(FrameworkObjPath)\</NativeIntermediateOutputPath>
     <BuildingFrameworkLibrary>true</BuildingFrameworkLibrary>
+    <Optimize Condition="'$(Configuration)' == 'Release' and '$(Optimize)' == ''">true</Optimize>
+    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
   </PropertyGroup>
   
   <!-- Part of workaround for lack of secondary build artifact import - https://github.com/Microsoft/msbuild/issues/2807 -->

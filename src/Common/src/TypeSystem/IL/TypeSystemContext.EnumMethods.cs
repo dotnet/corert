@@ -71,6 +71,13 @@ namespace Internal.TypeSystem
 
         protected virtual IEnumerable<MethodDesc> GetAllMethodsForEnum(TypeDesc enumType)
         {
+            if (_objectEqualsMethod == null)
+                _objectEqualsMethod = GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null);
+
+            // If the classlib doesn't have Object.Equals, we don't need this.
+            if (_objectEqualsMethod == null)
+                yield break;
+
             TypeDesc enumTypeDefinition = enumType.GetTypeDefinition();
             EnumInfo info = _enumInfoHashtable.GetOrCreateValue(enumTypeDefinition);
 

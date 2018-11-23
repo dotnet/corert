@@ -29,6 +29,12 @@
 #define CORERT_UNREACHABLE  __builtin_unreachable()
 #endif
 
+#ifdef _MSC_VER
+#define CORERT_THREAD __declspec(thread)
+#else
+#define CORERT_THREAD __thread
+#endif
+
 // Use the bit representation of uint64_t `v` as the bit representation of a double.
 inline double __uint64_to_double(uint64_t v)
 {

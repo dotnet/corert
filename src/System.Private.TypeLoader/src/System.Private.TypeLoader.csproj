@@ -58,6 +58,9 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(DynamicCodeSupport)' == 'true'">
     <Compile Include="..\..\Common\src\TypeSystem\CodeGen\TypeDesc.CodeGen.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\CodeGen\FieldDesc.CodeGen.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaField.CodeGen.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\NativeFormat\NativeFormatField.CodeGen.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\ArrayType.RuntimeDetermined.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\ByRefType.RuntimeDetermined.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\DefType.RuntimeDetermined.cs" />
@@ -77,6 +80,7 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateThunks.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DynamicInvokeMethodThunk.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\EnumThunks.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\ValueTypeGetFieldHelperMethodOverride.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\HelperExtensions.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\ILDisassembler.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\ILOpcode.cs" />
@@ -90,6 +94,7 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.DelegateInfo.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.DynamicInvoke.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.EnumMethods.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.ValueTypeMethods.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.GeneratedAssembly.cs" />
     <Compile Include="Internal\TypeSystem\ILStubMethod.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\MethodForRuntimeDeterminedType.Runtime.cs" />
