@@ -8,6 +8,8 @@
     <NugetTargetMoniker>.NETCoreApp,Version=v3.0</NugetTargetMoniker>
     <NugetTargetMonikerShort>netcoreapp3.0</NugetTargetMonikerShort>
     <RidSpecificAssets>true</RidSpecificAssets>
+    <CoreFXXUnitPackageVersion>2.2.0-beta2-build3300</CoreFXXUnitPackageVersion>
+    <XunitPerformanceApiPackageVersion>1.0.0-beta-build0015</XunitPerformanceApiPackageVersion>
     <OutputPath>$(IntermediateOutputRootPath)CoreClrRuntime</OutputPath>
   </PropertyGroup>
 
@@ -20,6 +22,12 @@
     </PackageReference>
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
       <Version>4.6.0-preview.18571.1</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.core">
+      <Version>$(CoreFXXUnitPackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.performance.core">
+      <Version>$(XunitPerformanceApiPackageVersion)</Version>
     </PackageReference>
     
   </ItemGroup>
