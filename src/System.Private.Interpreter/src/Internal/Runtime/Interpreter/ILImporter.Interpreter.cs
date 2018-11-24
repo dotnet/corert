@@ -634,12 +634,12 @@ namespace Internal.IL
                             if (unsigned)
                             {
                                 uint value = (uint)stackItem.AsInt32();
-                                result = checkOverflow ? Convert.ToSByte(value) : (sbyte)value;
+                                result = checkOverflow ? checked((sbyte)value) : (sbyte)value;
                             }
                             else
                             {
                                 int value = stackItem.AsInt32();
-                                result = checkOverflow ? Convert.ToSByte(value) : (sbyte)value;
+                                result = checkOverflow ? checked((sbyte)value) : (sbyte)value;
                             }
                         }
                         else if (stackItem.Kind == StackValueKind.Int64)
@@ -647,30 +647,30 @@ namespace Internal.IL
                             if (unsigned)
                             {
                                 ulong value = (ulong)stackItem.AsInt64();
-                                result = checkOverflow ? Convert.ToSByte(value) : (sbyte)value;
+                                result = checkOverflow ? checked((sbyte)value) : (sbyte)value;
                             }
                             else
                             {
                                 long value = stackItem.AsInt64();
-                                result = checkOverflow ? Convert.ToSByte(value) : (sbyte)value;
+                                result = checkOverflow ? checked((sbyte)value) : (sbyte)value;
                             }
                         }
                         else if (stackItem.Kind == StackValueKind.Float)
                         {
                             double value = stackItem.AsDouble();
-                            result = checkOverflow ? Convert.ToSByte(value) : (sbyte)value;
+                            result = checkOverflow ? checked((sbyte)value) : (sbyte)value;
                         }
                         else if (stackItem.Kind == StackValueKind.NativeInt)
                         {
                             if (unsigned)
                             {
                                 UIntPtr value = (UIntPtr)stackItem.AsNativeInt().ToPointer();
-                                result = checkOverflow ? Convert.ToSByte(value.ToUInt64()) : (sbyte)value;
+                                result = checkOverflow ? checked((sbyte)value.ToUInt64()) : (sbyte)value;
                             }
                             else
                             {
                                 IntPtr value = stackItem.AsNativeInt();
-                                result = checkOverflow ? Convert.ToSByte(value.ToInt64()) : (sbyte)value;
+                                result = checkOverflow ? checked((sbyte)value.ToInt64()) : (sbyte)value;
                             }
                         }
                         else
@@ -689,12 +689,12 @@ namespace Internal.IL
                             if (unsigned)
                             {
                                 uint value = (uint)stackItem.AsInt32();
-                                result = checkOverflow ? Convert.ToByte(value) : (byte)value;
+                                result = checkOverflow ? checked((byte)value) : (byte)value;
                             }
                             else
                             {
                                 int value = stackItem.AsInt32();
-                                result = checkOverflow ? Convert.ToByte(value) : (byte)value;
+                                result = checkOverflow ? checked((byte)value) : (byte)value;
                             }
                         }
                         else if (stackItem.Kind == StackValueKind.Int64)
@@ -702,30 +702,30 @@ namespace Internal.IL
                             if (unsigned)
                             {
                                 ulong value = (ulong)stackItem.AsInt64();
-                                result = checkOverflow ? Convert.ToByte(value) : (byte)value;
+                                result = checkOverflow ? checked((byte)value) : (byte)value;
                             }
                             else
                             {
                                 long value = stackItem.AsInt64();
-                                result = checkOverflow ? Convert.ToByte(value) : (byte)value;
+                                result = checkOverflow ? checked((byte)value) : (byte)value;
                             }
                         }
                         else if (stackItem.Kind == StackValueKind.Float)
                         {
                             double value = stackItem.AsDouble();
-                            result = checkOverflow ? Convert.ToByte(value) : (byte)value;
+                            result = checkOverflow ? checked((byte)value) : (byte)value;
                         }
                         else if (stackItem.Kind == StackValueKind.NativeInt)
                         {
                             if (unsigned)
                             {
                                 UIntPtr value = (UIntPtr)stackItem.AsNativeInt().ToPointer();
-                                result = checkOverflow ? Convert.ToByte(value.ToUInt64()) : (byte)value;
+                                result = checkOverflow ? checked((byte)value.ToUInt64()) : (byte)value;
                             }
                             else
                             {
                                 IntPtr value = stackItem.AsNativeInt();
-                                result = checkOverflow ? Convert.ToByte(value.ToInt64()) : (byte)value;
+                                result = checkOverflow ? checked((byte)value.ToInt64()) : (byte)value;
                             }
                         }
                         else
@@ -744,12 +744,12 @@ namespace Internal.IL
                             if (unsigned)
                             {
                                 uint value = (uint)stackItem.AsInt32();
-                                result = checkOverflow ? Convert.ToInt16(value) : (short)value;
+                                result = checkOverflow ? checked((short)value) : (short)value;
                             }
                             else
                             {
                                 int value = stackItem.AsInt32();
-                                result = checkOverflow ? Convert.ToInt16(value) : (short)value;
+                                result = checkOverflow ? checked((short)value) : (short)value;
                             }
                         }
                         else if (stackItem.Kind == StackValueKind.Int64)
@@ -757,30 +757,30 @@ namespace Internal.IL
                             if (unsigned)
                             {
                                 ulong value = (ulong)stackItem.AsInt64();
-                                result = checkOverflow ? Convert.ToInt16(value) : (short)value;
+                                result = checkOverflow ? checked((short)value) : (short)value;
                             }
                             else
                             {
                                 long value = stackItem.AsInt64();
-                                result = checkOverflow ? Convert.ToInt16(value) : (short)value;
+                                result = checkOverflow ? checked((short)value) : (short)value;
                             }
                         }
                         else if (stackItem.Kind == StackValueKind.Float)
                         {
                             double value = stackItem.AsDouble();
-                            result = checkOverflow ? Convert.ToInt16(value) : (short)value;
+                            result = checkOverflow ? checked((short)value) : (short)value;
                         }
                         else if (stackItem.Kind == StackValueKind.NativeInt)
                         {
                             if (unsigned)
                             {
                                 UIntPtr value = (UIntPtr)stackItem.AsNativeInt().ToPointer();
-                                result = checkOverflow ? Convert.ToInt16(value.ToUInt64()) : (short)value;
+                                result = checkOverflow ? checked((short)value.ToUInt64()) : (short)value;
                             }
                             else
                             {
                                 IntPtr value = stackItem.AsNativeInt();
-                                result = checkOverflow ? Convert.ToInt16(value.ToInt64()) : (short)value;
+                                result = checkOverflow ? checked((short)value.ToInt64()) : (short)value;
                             }
                         }
                         else
@@ -799,12 +799,12 @@ namespace Internal.IL
                             if (unsigned)
                             {
                                 uint value = (uint)stackItem.AsInt32();
-                                result = checkOverflow ? Convert.ToUInt16(value) : (ushort)value;
+                                result = checkOverflow ? checked((ushort)value) : (ushort)value;
                             }
                             else
                             {
                                 int value = stackItem.AsInt32();
-                                result = checkOverflow ? Convert.ToUInt16(value) : (ushort)value;
+                                result = checkOverflow ? checked((ushort)value) : (ushort)value;
                             }
                         }
                         else if (stackItem.Kind == StackValueKind.Int64)
@@ -812,30 +812,30 @@ namespace Internal.IL
                             if (unsigned)
                             {
                                 ulong value = (ulong)stackItem.AsInt64();
-                                result = checkOverflow ? Convert.ToUInt16(value) : (ushort)value;
+                                result = checkOverflow ? checked((ushort)value) : (ushort)value;
                             }
                             else
                             {
                                 long value = stackItem.AsInt64();
-                                result = checkOverflow ? Convert.ToUInt16(value) : (ushort)value;
+                                result = checkOverflow ? checked((ushort)value) : (ushort)value;
                             }
                         }
                         else if (stackItem.Kind == StackValueKind.Float)
                         {
                             double value = stackItem.AsDouble();
-                            result = checkOverflow ? Convert.ToUInt16(value) : (ushort)value;
+                            result = checkOverflow ? checked((ushort)value) : (ushort)value;
                         }
                         else if (stackItem.Kind == StackValueKind.NativeInt)
                         {
                             if (unsigned)
                             {
                                 UIntPtr value = (UIntPtr)stackItem.AsNativeInt().ToPointer();
-                                result = checkOverflow ? Convert.ToUInt16(value.ToUInt64()) : (ushort)value;
+                                result = checkOverflow ? checked((ushort)value.ToUInt64()) : (ushort)value;
                             }
                             else
                             {
                                 IntPtr value = stackItem.AsNativeInt();
-                                result = checkOverflow ? Convert.ToUInt16(value.ToInt64()) : (ushort)value;
+                                result = checkOverflow ? checked((ushort)value.ToInt64()) : (ushort)value;
                             }
                         }
                         else
@@ -854,7 +854,7 @@ namespace Internal.IL
                             if (unsigned)
                             {
                                 uint value = (uint)stackItem.AsInt32();
-                                result = checkOverflow ? Convert.ToInt32(value) : (int)value;
+                                result = checkOverflow ? checked((int)value) : (int)value;
                             }
                             else
                             {
@@ -866,30 +866,30 @@ namespace Internal.IL
                             if (unsigned)
                             {
                                 ulong value = (ulong)stackItem.AsInt64();
-                                result = checkOverflow ? Convert.ToInt32(value) : (int)value;
+                                result = checkOverflow ? checked((int)value) : (int)value;
                             }
                             else
                             {
                                 long value = stackItem.AsInt64();
-                                result = checkOverflow ? Convert.ToInt32(value) : (int)value;
+                                result = checkOverflow ? checked((int)value) : (int)value;
                             }
                         }
                         else if (stackItem.Kind == StackValueKind.Float)
                         {
                             double value = stackItem.AsDouble();
-                            result = checkOverflow ? Convert.ToInt32(value) : (int)value;
+                            result = checkOverflow ? checked((int)value) : (int)value;
                         }
                         else if (stackItem.Kind == StackValueKind.NativeInt)
                         {
                             if (unsigned)
                             {
                                 UIntPtr value = (UIntPtr)stackItem.AsNativeInt().ToPointer();
-                                result = checkOverflow ? Convert.ToInt32(value.ToUInt64()) : (int)value;
+                                result = checkOverflow ? checked((int)value.ToUInt64()) : (int)value;
                             }
                             else
                             {
                                 IntPtr value = stackItem.AsNativeInt();
-                                result = checkOverflow ? Convert.ToInt32(value.ToInt64()) : (int)value;
+                                result = checkOverflow ? checked((int)value.ToInt64()) : (int)value;
                             }
                         }
                         else
@@ -912,7 +912,7 @@ namespace Internal.IL
                             else
                             {
                                 int value = stackItem.AsInt32();
-                                result = checkOverflow ? Convert.ToUInt32(value) : (uint)value;
+                                result = checkOverflow ? checked((uint)value) : (uint)value;
                             }
                         }
                         else if (stackItem.Kind == StackValueKind.Int64)
@@ -920,30 +920,30 @@ namespace Internal.IL
                             if (unsigned)
                             {
                                 ulong value = (ulong)stackItem.AsInt64();
-                                result = checkOverflow ? Convert.ToUInt32(value) : (uint)value;
+                                result = checkOverflow ? checked((uint)value) : (uint)value;
                             }
                             else
                             {
                                 long value = stackItem.AsInt64();
-                                result = checkOverflow ? Convert.ToUInt32(value) : (uint)value;
+                                result = checkOverflow ? checked((uint)value) : (uint)value;
                             }
                         }
                         else if (stackItem.Kind == StackValueKind.Float)
                         {
                             double value = stackItem.AsDouble();
-                            result = checkOverflow ? Convert.ToUInt32(value) : (uint)value;
+                            result = checkOverflow ? checked((uint)value) : (uint)value;
                         }
                         else if (stackItem.Kind == StackValueKind.NativeInt)
                         {
                             if (unsigned)
                             {
                                 UIntPtr value = (UIntPtr)stackItem.AsNativeInt().ToPointer();
-                                result = checkOverflow ? Convert.ToUInt32(value.ToUInt64()) : (uint)value;
+                                result = checkOverflow ? checked((uint)value.ToUInt64()) : (uint)value;
                             }
                             else
                             {
                                 IntPtr value = stackItem.AsNativeInt();
-                                result = checkOverflow ? Convert.ToUInt32(value.ToInt64()) : (uint)value;
+                                result = checkOverflow ? checked((uint)value.ToInt64()) : (uint)value;
                             }
                         }
                         else
@@ -973,7 +973,7 @@ namespace Internal.IL
                             if (unsigned)
                             {
                                 ulong value = (ulong)stackItem.AsInt64();
-                                result = checkOverflow ? Convert.ToInt64(value) : (long)value;
+                                result = checkOverflow ? checked((long)value) : (long)value;
                             }
                             else
                             {
@@ -983,7 +983,7 @@ namespace Internal.IL
                         else if (stackItem.Kind == StackValueKind.Float)
                         {
                             double value = stackItem.AsDouble();
-                            result = checkOverflow ? Convert.ToInt64(value) : (long)value;
+                            result = checkOverflow ? checked((long)value) : (long)value;
                         }
                         else if (stackItem.Kind == StackValueKind.NativeInt)
                         {
@@ -1013,12 +1013,12 @@ namespace Internal.IL
                             if (unsigned)
                             {
                                 uint value = (uint)stackItem.AsInt32();
-                                result = checkOverflow ? Convert.ToUInt64(value) : (ulong)value;
+                                result = checkOverflow ? checked((ulong)value) : (ulong)value;
                             }
                             else
                             {
                                 int value = stackItem.AsInt32();
-                                result = checkOverflow ? Convert.ToUInt64(value) : (ulong)value;
+                                result = checkOverflow ? checked((ulong)value) : (ulong)value;
                             }
                         }
                         else if (stackItem.Kind == StackValueKind.Int64)
@@ -1026,18 +1026,18 @@ namespace Internal.IL
                             if (unsigned)
                             {
                                 ulong value = (ulong)stackItem.AsInt64();
-                                result = checkOverflow ? Convert.ToUInt64(value) : (ulong)value;
+                                result = checkOverflow ? checked((ulong)value) : (ulong)value;
                             }
                             else
                             {
                                 long value = stackItem.AsInt64();
-                                result = checkOverflow ? Convert.ToUInt64(value) : (ulong)value;
+                                result = checkOverflow ? checked((ulong)value) : (ulong)value;
                             }
                         }
                         else if (stackItem.Kind == StackValueKind.Float)
                         {
                             double value = stackItem.AsDouble();
-                            result = checkOverflow ? Convert.ToUInt64(value) : (ulong)value;
+                            result = checkOverflow ? checked((ulong)value) : (ulong)value;
                         }
                         else if (stackItem.Kind == StackValueKind.NativeInt)
                         {
@@ -1049,7 +1049,7 @@ namespace Internal.IL
                             else
                             {
                                 IntPtr value = stackItem.AsNativeInt();
-                                result = checkOverflow ? Convert.ToUInt64(value.ToInt64()) : (ulong)value;
+                                result = checkOverflow ? checked((ulong)value.ToInt64()) : (ulong)value;
                             }
                         }
                         else
