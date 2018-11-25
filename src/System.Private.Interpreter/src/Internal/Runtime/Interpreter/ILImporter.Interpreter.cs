@@ -133,7 +133,10 @@ namespace Internal.IL
         private void ImportLoadVar(int index, bool argument)
         {
             if (argument)
-                return;
+            {
+                // TODO: Support ldarg.* opcodes
+                throw new NotImplementedException();
+            }
 
             StackItem stackItem = _interpreter.GetVariable(index);
             _interpreter.EvaluationStack.Push(stackItem);
@@ -142,7 +145,10 @@ namespace Internal.IL
         private void ImportStoreVar(int index, bool argument)
         {
             if (argument)
-                return;
+            {
+                // TODO: Support starg.* opcodes
+                throw new NotImplementedException();
+            }
 
             _interpreter.SetVariable(index, PopWithValidation());
         }
@@ -258,138 +264,90 @@ namespace Internal.IL
             StackItem op1 = PopWithValidation();
             StackItem op2 = PopWithValidation();
 
+            int shiftBy = default(int);
+
             switch (op1.Kind)
             {
                 case StackValueKind.Int32:
+                    shiftBy = op1.AsInt32();
+                    break;
+                case StackValueKind.Int64:
+                    shiftBy = (int)op1.AsInt64();
+                    break;
+                case StackValueKind.NativeInt:
+                    shiftBy = op1.AsNativeInt().ToInt32();
+                    break;
+                case StackValueKind.Float:
+                case StackValueKind.Unknown:
+                case StackValueKind.ByRef:
+                case StackValueKind.ObjRef:
+                case StackValueKind.ValueType:
+                default:
+                    ThrowHelper.ThrowInvalidProgramException();
+                    break;
+            }
+
+            switch (op2.Kind)
+            {
+                case StackValueKind.Int32:
                     {
-                        int shiftBy = op1.AsInt32();
-                        if (op2.Kind == StackValueKind.Int32)
+                        int value = op2.AsInt32();
+                        if (opcode == ILOpcode.shl)
                         {
-                            int value = op2.AsInt32();
-                            if (opcode == ILOpcode.shl)
-                            {
-                                value = value << shiftBy;
-                            }
-                            else if (opcode == ILOpcode.shr)
-                            {
-                                value = value >> shiftBy;
-                            }
-                            else if (opcode == ILOpcode.shr_un)
-                            {
-                                value = (int)((uint)value >> shiftBy);
-                            }
+                            value = value << shiftBy;
+                        }
+                        else if (opcode == ILOpcode.shr)
+                        {
+                            value = value >> shiftBy;
+                        }
+                        else if (opcode == ILOpcode.shr_un)
+                        {
+                            value = (int)((uint)value >> shiftBy);
+                        }
 
-                            _interpreter.EvaluationStack.Push(StackItem.FromInt32(value));
-                        }
-                        else if (op2.Kind == StackValueKind.Int64)
+                        _interpreter.EvaluationStack.Push(StackItem.FromInt32(value));
+                    }
+                    break;
+                case StackValueKind.Int64:
+                    {
+                        long value = op2.AsInt64();
+                        if (opcode == ILOpcode.shl)
                         {
-                            long value = op2.AsInt64();
-                            if (opcode == ILOpcode.shl)
-                            {
-                                value = value << shiftBy;
-                            }
-                            else if (opcode == ILOpcode.shr)
-                            {
-                                value = value >> shiftBy;
-                            }
-                            else if (opcode == ILOpcode.shr_un)
-                            {
-                                value = (long)((ulong)value >> shiftBy);
-                            }
+                            value = value << shiftBy;
+                        }
+                        else if (opcode == ILOpcode.shr)
+                        {
+                            value = value >> shiftBy;
+                        }
+                        else if (opcode == ILOpcode.shr_un)
+                        {
+                            value = (long)((ulong)value >> shiftBy);
+                        }
 
-                            _interpreter.EvaluationStack.Push(StackItem.FromInt64(value));
-                        }
-                        else if (op2.Kind == StackValueKind.NativeInt)
-                        {
-                            IntPtr value = op2.AsNativeInt();
-                            if (opcode == ILOpcode.shl)
-                            {
-                                value = new IntPtr(value.ToInt64() << shiftBy);
-                            }
-                            else if (opcode == ILOpcode.shr)
-                            {
-                                value = new IntPtr(value.ToInt64() >> shiftBy);
-                            }
-                            else if (opcode == ILOpcode.shr_un)
-                            {
-                                UIntPtr uintPtr = new UIntPtr(value.ToPointer());
-                                value = new IntPtr((long)(uintPtr.ToUInt64() >> shiftBy));
-                            }
-
-                            _interpreter.EvaluationStack.Push(StackItem.FromNativeInt(value));
-                        }
-                        else
-                        {
-                            ThrowHelper.ThrowInvalidProgramException();
-                        }
+                        _interpreter.EvaluationStack.Push(StackItem.FromInt64(value));
                     }
                     break;
                 case StackValueKind.NativeInt:
                     {
-                        IntPtr shiftBy = op1.AsNativeInt();
-                        if (op2.Kind == StackValueKind.Int32)
+                        IntPtr value = op2.AsNativeInt();
+                        if (opcode == ILOpcode.shl)
                         {
-                            int value = op2.AsInt32();
-                            if (opcode == ILOpcode.shl)
-                            {
-                                value = value << shiftBy.ToInt32();
-                            }
-                            else if (opcode == ILOpcode.shr)
-                            {
-                                value = value >> shiftBy.ToInt32();
-                            }
-                            else if (opcode == ILOpcode.shr_un)
-                            {
-                                value = (int)((uint)value >> shiftBy.ToInt32());
-                            }
+                            value = new IntPtr(value.ToInt64() << shiftBy);
+                        }
+                        else if (opcode == ILOpcode.shr)
+                        {
+                            value = new IntPtr(value.ToInt64() >> shiftBy);
+                        }
+                        else if (opcode == ILOpcode.shr_un)
+                        {
+                            UIntPtr uintPtr = (UIntPtr)value.ToPointer();
+                            value = new IntPtr((long)(uintPtr.ToUInt64() >> shiftBy));
+                        }
 
-                            _interpreter.EvaluationStack.Push(StackItem.FromInt32(value));
-                        }
-                        else if (op2.Kind == StackValueKind.Int64)
-                        {
-                            long value = op2.AsInt64();
-                            if (opcode == ILOpcode.shl)
-                            {
-                                value = value << shiftBy.ToInt32();
-                            }
-                            else if (opcode == ILOpcode.shr)
-                            {
-                                value = value >> shiftBy.ToInt32();
-                            }
-                            else if (opcode == ILOpcode.shr_un)
-                            {
-                                value = (long)((ulong)value >> shiftBy.ToInt32());
-                            }
-
-                            _interpreter.EvaluationStack.Push(StackItem.FromInt64(value));
-                        }
-                        else if (op2.Kind == StackValueKind.NativeInt)
-                        {
-                            IntPtr value = op2.AsNativeInt();
-                            if (opcode == ILOpcode.shl)
-                            {
-                                value = new IntPtr(value.ToInt64() << shiftBy.ToInt32());
-                            }
-                            else if (opcode == ILOpcode.shr)
-                            {
-                                value = new IntPtr(value.ToInt64() >> shiftBy.ToInt32());
-                            }
-                            else if (opcode == ILOpcode.shr_un)
-                            {
-                                UIntPtr uintPtr = new UIntPtr(value.ToPointer());
-                                value = new IntPtr((long)(uintPtr.ToUInt64() >> shiftBy.ToInt32()));
-                            }
-
-                            _interpreter.EvaluationStack.Push(StackItem.FromNativeInt(value));
-                        }
-                        else
-                        {
-                            ThrowHelper.ThrowInvalidProgramException();
-                        }
+                        _interpreter.EvaluationStack.Push(StackItem.FromNativeInt(value));
                     }
                     break;
                 case StackValueKind.Unknown:
-                case StackValueKind.Int64:
                 case StackValueKind.Float:
                 case StackValueKind.ByRef:
                 case StackValueKind.ObjRef:
@@ -415,33 +373,6 @@ namespace Internal.IL
                         if (op2.Kind == StackValueKind.Int32 || op2.Kind == StackValueKind.NativeInt)
                         {
                             int val2 = op2.Kind == StackValueKind.Int32 ? op2.AsInt32() : op2.AsNativeInt().ToInt32();
-
-                            if (opcode == ILOpcode.ceq)
-                            {
-                                result = val1 == val2;
-                            }
-                            else if (opcode == ILOpcode.cgt)
-                            {
-                                result = val2 > val1;
-                            }
-                            else if (opcode == ILOpcode.cgt_un)
-                            {
-                                result = (uint)val2 > (uint)val1;
-                            }
-                            else if (opcode == ILOpcode.clt)
-                            {
-                                result = val2 < val1;
-                            }
-                            else if (opcode == ILOpcode.clt_un)
-                            {
-                                result = (uint)val2 < (uint)val1;
-                            }
-                        }
-                        else if (op2.Kind == StackValueKind.ValueType &&
-                            (op2.AsValueType().GetType() == typeof(int) || op2.AsValueType().GetType() == typeof(IntPtr)))
-                        {
-                            ValueType valueType = op2.AsValueType();
-                            int val2 = valueType.GetType() == typeof(int) ? (int)valueType : ((IntPtr)valueType).ToInt32();
 
                             if (opcode == ILOpcode.ceq)
                             {
@@ -560,11 +491,11 @@ namespace Internal.IL
 
                             if (opcode == ILOpcode.ceq)
                             {
-                                result = (double.IsNaN(val1) || double.IsNaN(val2)) ? false : val1 == val2;
+                                result = val1 == val2;
                             }
                             else if (opcode == ILOpcode.cgt)
                             {
-                                result = (double.IsNaN(val1) || double.IsNaN(val2)) ? false : val2 > val1;
+                                result = val2 > val1;
                             }
                             else if (opcode == ILOpcode.cgt_un)
                             {
@@ -572,7 +503,7 @@ namespace Internal.IL
                             }
                             else if (opcode == ILOpcode.clt)
                             {
-                                result = (double.IsNaN(val1) || double.IsNaN(val2)) ? false : val2 < val1;
+                                result = val2 < val1;
                             }
                             else if (opcode == ILOpcode.clt_un)
                             {
@@ -600,6 +531,7 @@ namespace Internal.IL
                             else
                             {
                                 // TODO: Find GC addresses of objects and compare them
+                                throw new NotImplementedException();
                             }
                         }
                         else
@@ -608,10 +540,8 @@ namespace Internal.IL
                         }
                     }
                     break;
-                case StackValueKind.ByRef:
-                    // TODO: Handle ByRef scenarios
-                    break;
                 case StackValueKind.ValueType:
+                case StackValueKind.ByRef:
                 case StackValueKind.Unknown:
                 default:
                     ThrowHelper.ThrowInvalidProgramException();
@@ -675,7 +605,7 @@ namespace Internal.IL
                         }
                         else
                         {
-                            // TODO: Figure out how the CLR converts an object to an integer representation
+                            ThrowHelper.ThrowInvalidProgramException();
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt32(result));
@@ -730,7 +660,7 @@ namespace Internal.IL
                         }
                         else
                         {
-                            // TODO: Figure out how the CLR converts an object to an integer representation
+                            ThrowHelper.ThrowInvalidProgramException();
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt32(result));
@@ -785,7 +715,7 @@ namespace Internal.IL
                         }
                         else
                         {
-                            // TODO: Figure out how the CLR converts an object to an integer representation
+                            ThrowHelper.ThrowInvalidProgramException();
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt32(result));
@@ -840,7 +770,7 @@ namespace Internal.IL
                         }
                         else
                         {
-                            // TODO: Figure out how the CLR converts an object to an integer representation
+                            ThrowHelper.ThrowInvalidProgramException();
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt32(result));
@@ -894,7 +824,7 @@ namespace Internal.IL
                         }
                         else
                         {
-                            // TODO: Figure out how the CLR converts an object to an integer representation
+                            ThrowHelper.ThrowInvalidProgramException();
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt32(result));
@@ -948,7 +878,7 @@ namespace Internal.IL
                         }
                         else
                         {
-                            // TODO: Figure out how the CLR converts an object to an integer representation
+                            ThrowHelper.ThrowInvalidProgramException();
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt32((int)result));
@@ -999,7 +929,7 @@ namespace Internal.IL
                         }
                         else
                         {
-                            // TODO: Figure out how the CLR converts an object to an integer representation
+                            ThrowHelper.ThrowInvalidProgramException();
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt64(result));
@@ -1054,7 +984,7 @@ namespace Internal.IL
                         }
                         else
                         {
-                            // TODO: Figure out how the CLR converts an object to an integer representation
+                            ThrowHelper.ThrowInvalidProgramException();
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt64((long)result));
@@ -1107,7 +1037,7 @@ namespace Internal.IL
                         }
                         else
                         {
-                            // TODO: Figure out how the CLR converts an object to an integer representation
+                            ThrowHelper.ThrowInvalidProgramException();
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromDouble(result));
@@ -1150,7 +1080,7 @@ namespace Internal.IL
                             if (unsigned)
                             {
                                 UIntPtr value = (UIntPtr)stackItem.AsNativeInt().ToPointer();
-                                result = new IntPtr(value.ToPointer());
+                                result = (IntPtr)value.ToPointer();
                             }
                             else
                             {
@@ -1159,7 +1089,7 @@ namespace Internal.IL
                         }
                         else
                         {
-                            // TODO: Figure out how the CLR converts an object to an integer representation
+                            ThrowHelper.ThrowInvalidProgramException();
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromNativeInt(result));
@@ -1205,15 +1135,15 @@ namespace Internal.IL
                             }
                             else
                             {
-                                result = new UIntPtr(stackItem.AsNativeInt().ToPointer());
+                                result = (UIntPtr)stackItem.AsNativeInt().ToPointer();
                             }
                         }
                         else
                         {
-                            // TODO: Figure out how the CLR converts an object to an integer representation
+                            ThrowHelper.ThrowInvalidProgramException();
                         }
 
-                        _interpreter.EvaluationStack.Push(StackItem.FromNativeInt(new IntPtr(result.ToPointer())));
+                        _interpreter.EvaluationStack.Push(StackItem.FromNativeInt((IntPtr)result.ToPointer()));
                         break;
                     }
                 default:
@@ -1239,14 +1169,22 @@ namespace Internal.IL
                             long value = stackItem.AsInt64();
                             _interpreter.EvaluationStack.Push(StackItem.FromInt64(-value));
                         }
+                        else if (stackItem.Kind == StackValueKind.NativeInt)
+                        {
+                            long value = stackItem.AsInt64();
+                            _interpreter.EvaluationStack.Push(StackItem.FromNativeInt(new IntPtr(-value)));
+                        }
                         else if (stackItem.Kind == StackValueKind.Float)
                         {
                             double value = stackItem.AsDouble();
                             _interpreter.EvaluationStack.Push(StackItem.FromDouble(-value));
                         }
-
-                        break;
+                        else
+                        {
+                            ThrowHelper.ThrowInvalidProgramException();
+                        }
                     }
+                    break;
                 case ILOpcode.not:
                     {
                         if (stackItem.Kind == StackValueKind.Int32)
@@ -1263,9 +1201,8 @@ namespace Internal.IL
                         {
                             ThrowHelper.ThrowInvalidProgramException();
                         }
-
-                        break;
                     }
+                    break;
                 default:
                     ThrowHelper.ThrowInvalidProgramException();
                     break;
