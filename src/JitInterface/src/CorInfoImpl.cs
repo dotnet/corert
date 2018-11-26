@@ -1866,13 +1866,10 @@ namespace Internal.JitInterface
             {
                 return CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_ZERO;
             }
-            // Disabled outside READYTORUN because of https://github.com/dotnet/corert/issues/6601
-#if READYTORUN
             else if (owningType.IsString && field.Name == "Empty")
             {
                 return CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_EMPTY_STRING;
             }
-#endif
             else if (owningType.Name == "BitConverter" && owningType.Namespace == "System" &&
                 field.Name == "IsLittleEndian")
             {
