@@ -695,12 +695,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public void EmitCFICodes(int offset)
         {
-            bool forArm = (_targetPlatform.Architecture == TargetArchitecture.ARMEL || _targetPlatform.Architecture == TargetArchitecture.ARM);
-
             // Emit end the old frame before start a frame.
             if (_offsetToCfiEnd.Contains(offset))
             {
-                if (forArm)
+                if (_targetPlatform.Architecture == TargetArchitecture.ARM)
                     EmitARMFnEnd();
                 else
                     EmitCFIEnd(offset);
@@ -708,7 +706,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_offsetToCfiStart.Contains(offset))
             {
-                if (forArm)
+                if (_targetPlatform.Architecture == TargetArchitecture.ARM)
                     EmitARMFnStart();
                 else
                     EmitCFIStart(offset);
@@ -716,7 +714,7 @@ namespace ILCompiler.DependencyAnalysis
                 byte[] blobSymbolName;
                 if (_offsetToCfiLsdaBlobName.TryGetValue(offset, out blobSymbolName))
                 {
-                    if (forArm)
+                    if (_targetPlatform.Architecture == TargetArchitecture.ARM)
                         EmitARMExIdxLsda(blobSymbolName);
                     else
                         EmitCFILsda(blobSymbolName);
@@ -733,7 +731,7 @@ namespace ILCompiler.DependencyAnalysis
             List<byte[]> cfis;
             if (_offsetToCfis.TryGetValue(offset, out cfis))
             {
-                if (forArm)
+                if (_targetPlatform.Architecture == TargetArchitecture.ARM)
                 {
                     // Unwind insts are generated in the object file in the reversed order on arm,
                     // so we should reverse the cfi list
@@ -1047,7 +1045,7 @@ namespace ILCompiler.DependencyAnalysis
                     // The DWARF CFI unwind is implemented for AMD64 & ARM32 only.
                     TargetArchitecture tarch = factory.Target.Architecture;
                     if (!factory.Target.IsWindows &&
-                        (tarch == TargetArchitecture.X64 || tarch == TargetArchitecture.ARMEL || tarch == TargetArchitecture.ARM))
+                        (tarch == TargetArchitecture.X64 || tarch == TargetArchitecture.ARM))
                         objectWriter.BuildCFIMap(factory, node);
 
                     // Build debug location map

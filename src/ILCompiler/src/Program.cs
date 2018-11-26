@@ -252,7 +252,7 @@ namespace ILCompiler
                 else if (_targetArchitectureStr.Equals("arm", StringComparison.OrdinalIgnoreCase))
                     _targetArchitecture = TargetArchitecture.ARM;
                 else if (_targetArchitectureStr.Equals("armel", StringComparison.OrdinalIgnoreCase))
-                    _targetArchitecture = TargetArchitecture.ARMEL;
+                    _targetArchitecture = TargetArchitecture.ARM;
                 else if (_targetArchitectureStr.Equals("arm64", StringComparison.OrdinalIgnoreCase))
                     _targetArchitecture = TargetArchitecture.ARM64;
                 else if (_targetArchitectureStr.Equals("wasm", StringComparison.OrdinalIgnoreCase))

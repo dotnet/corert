@@ -56,7 +56,6 @@ namespace ILCompiler.DependencyAnalysis
                     return x86Emitter.Builder.ToObjectData();
 
                 case TargetArchitecture.ARM:
-                case TargetArchitecture.ARMEL:
                     ARM.ARMEmitter armEmitter = new ARM.ARMEmitter(factory, relocsOnly);
                     EmitCode(factory, ref armEmitter, relocsOnly);
                     armEmitter.Builder.RequireInitialAlignment(alignment);

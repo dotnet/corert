@@ -2184,8 +2184,7 @@ namespace Internal.JitInterface
                 //      no live GC references in callee saved registers around the PInvoke callsite.
                 int size = 5 * this.PointerSize;
 
-                if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM ||
-                    _compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARMEL)
+                if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
                     size += this.PointerSize; // m_ChainPointer
 
                 return (uint)size;
@@ -3268,7 +3267,7 @@ namespace Internal.JitInterface
             {
                 // TODO: https://github.com/dotnet/corert/issues/3877
                 TargetArchitecture targetArchitecture = _compilation.TypeSystemContext.Target.Architecture;
-                if (targetArchitecture == TargetArchitecture.ARM || targetArchitecture == TargetArchitecture.ARMEL)
+                if (targetArchitecture == TargetArchitecture.ARM)
                     return;
                 throw new NotImplementedException("Arbitrary relocs"); 
             }
@@ -3316,7 +3315,6 @@ namespace Internal.JitInterface
                     return (ushort)ILCompiler.DependencyAnalysis.RelocType.IMAGE_REL_BASED_REL32;
 
                 case TargetArchitecture.ARM:
-                case TargetArchitecture.ARMEL:
                     return (ushort)ILCompiler.DependencyAnalysis.RelocType.IMAGE_REL_BASED_THUMB_BRANCH24;
 
                 default:
@@ -3338,8 +3336,6 @@ namespace Internal.JitInterface
                 case TargetArchitecture.X64:
                     return (uint)ImageFileMachine.AMD64;
                 case TargetArchitecture.ARM:
-                    return (uint)ImageFileMachine.ARM;
-                case TargetArchitecture.ARMEL:
                     return (uint)ImageFileMachine.ARM;
                 case TargetArchitecture.ARM64:
                     return (uint)ImageFileMachine.ARM;

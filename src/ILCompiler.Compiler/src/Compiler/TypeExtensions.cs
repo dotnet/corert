@@ -201,7 +201,7 @@ namespace ILCompiler
         /// </summary>
         public static bool RequiresAlign8(this TypeDesc type)
         {
-            if (type.Context.Target.Architecture != TargetArchitecture.ARM && type.Context.Target.Architecture != TargetArchitecture.ARMEL)
+            if (type.Context.Target.Architecture != TargetArchitecture.ARM)
             {
                 return false;
             }
