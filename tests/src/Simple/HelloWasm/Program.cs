@@ -700,22 +700,32 @@ internal static class Program
         }
     }
 
+    private static bool callbackResult;
     private static unsafe void TestNativeCallback()
     {
-        test_callback(System.Runtime.InteropServices.AddrofIntrinsics.AddrOf<CallbackFunc>(Callback));
-        PrintLine("Previous line should be \"Native callback test: Ok.\" if callback was successful.");
+        CallMe(123);
+        PrintString("Native callback test: ");
+        if (callbackResult)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
     }
 
-    [NativeCallable(CallingConvention = CallingConvention.StdCall)]
-    private static void Callback()
+    [System.Runtime.InteropServices.NativeCallable(EntryPoint = "CallMe")]
+    private static void _CallMe(int x)
     {
-        PrintLine("Native callback test: Ok.");
+        if (x == 123)
+        {
+            callbackResult = true;
+        }
     }
 
-    internal unsafe delegate void CallbackFunc();
-
-    [DllImport("*")]
-    private static unsafe extern void test_callback(IntPtr callback);
+    [System.Runtime.InteropServices.DllImport("*")]
+    private static extern void CallMe(int x);
 
     [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
@@ -1009,15 +1019,5 @@ namespace System.Runtime.InteropServices
     [AttributeUsage((System.AttributeTargets.Method | System.AttributeTargets.Class))]
     internal class McgIntrinsicsAttribute : Attribute
     {
-    }
-
-    [McgIntrinsics]
-    internal static class AddrofIntrinsics
-    {
-        // This method is implemented elsewhere in the toolchain
-        internal static IntPtr AddrOf<T>(T ftn)
-        {
-            throw new PlatformNotSupportedException();
-        }
     }
 }
