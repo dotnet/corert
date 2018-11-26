@@ -1123,10 +1123,14 @@ namespace Internal.JitInterface
             return HandleToObject(cls).IsValueType;
         }
 
-        private bool canInlineTypeCheckWithObjectVTable(CORINFO_CLASS_STRUCT_* cls)
+        private CorInfoInlineTypeCheck canInlineTypeCheck(CORINFO_CLASS_STRUCT_* cls, CorInfoInlineTypeCheckSource source)
         {
-            return true;
+            // TODO: when we support multiple modules at runtime, this will need to do more work
+            // NOTE: cls can be null
+            return CorInfoInlineTypeCheck.CORINFO_INLINE_TYPECHECK_PASS;
         }
+
+        private bool canInlineTypeCheckWithObjectVTable(CORINFO_CLASS_STRUCT_* cls) { throw new NotImplementedException(); }
 
         private uint getClassAttribs(CORINFO_CLASS_STRUCT_* cls)
         {
@@ -1408,12 +1412,6 @@ namespace Internal.JitInterface
             return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT;
         }
 
-        private CorInfoHelpFunc getCastingHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fThrowing)
-        {
-            // TODO: optimized helpers
-            return fThrowing ? CorInfoHelpFunc.CORINFO_HELP_CHKCASTANY : CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFANY;
-        }
-
         private CorInfoHelpFunc getSharedCCtorHelper(CORINFO_CLASS_STRUCT_* clsHnd)
         { throw new NotImplementedException("getSharedCCtorHelper"); }
         private CorInfoHelpFunc getSecurityPrologHelper(CORINFO_METHOD_STRUCT_* ftn)
@@ -1579,8 +1577,14 @@ namespace Internal.JitInterface
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.String));
 
                 case CorInfoClassId.CLASSID_RUNTIME_TYPE:
-                    // This is used in a JIT optimization. It's not applicable due to the structure of CoreRT CoreLib.
-                    return null;
+                    TypeDesc typeOfRuntimeType = _compilation.GetTypeOfRuntimeType();
+
+                    // RyuJIT doesn't expect this to be null and this is used in comparisons.
+                    // Returning null might make RyuJIT think a type with unknown type information (null)
+                    // is a runtime type and that's a pain to debug.
+                    Debug.Assert(typeOfRuntimeType != null);
+
+                    return ObjectToHandle(typeOfRuntimeType);
 
                 default:
                     throw new NotImplementedException();
@@ -1627,8 +1631,67 @@ namespace Internal.JitInterface
 
         private TypeCompareState compareTypesForCast(CORINFO_CLASS_STRUCT_* fromClass, CORINFO_CLASS_STRUCT_* toClass)
         {
-            // TODO: Implement
-            return TypeCompareState.May;
+            TypeDesc fromType = HandleToObject(fromClass);
+            TypeDesc toType = HandleToObject(toClass);
+
+            TypeCompareState result = TypeCompareState.May;
+
+            if (toType.IsNullable)
+            {
+                // If casting to Nullable<T>, don't try to optimize
+                result = TypeCompareState.May;
+            }
+            else if (!fromType.IsCanonicalSubtype(CanonicalFormKind.Any) && !toType.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                // If the types are not shared, we can check directly.
+                if (fromType.CanCastTo(toType))
+                    result = TypeCompareState.Must;
+                else
+                    result = TypeCompareState.MustNot;
+            }
+            else if (fromType.IsCanonicalSubtype(CanonicalFormKind.Any) && !toType.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                // Casting from a shared type to an unshared type.
+                // Only handle casts to interface types for now
+                if (toType.IsInterface)
+                {
+                    // Do a preliminary check.
+                    bool canCast = fromType.CanCastTo(toType);
+
+                    // Pass back positive results unfiltered. The unknown type
+                    // parameters in fromClass did not come into play.
+                    if (canCast)
+                    {
+                        result = TypeCompareState.Must;
+                    }
+                    // For negative results, the unknown type parameter in
+                    // fromClass might match some instantiated interface,
+                    // either directly or via variance.
+                    //
+                    // However, CanCastTo will report failure in such cases since
+                    // __Canon won't match the instantiated type on the
+                    // interface (which can't be __Canon since we screened out
+                    // canonical subtypes for toClass above). So only report
+                    // failure if the interface is not instantiated.
+                    else if (!toType.HasInstantiation)
+                    {
+                        result = TypeCompareState.MustNot;
+                    }
+                }
+            }
+
+#if READYTORUN
+            // In R2R it is a breaking change for a previously positive
+            // cast to become negative, but not for a previously negative
+            // cast to become positive. So in R2R a negative result is
+            // always reported back as May.
+            if (result == TypeCompareState.MustNot)
+            {
+                result = TypeCompareState.May;
+            }
+#endif
+
+            return result;
         }
 
         private TypeCompareState compareTypesForEquality(CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2)
@@ -1792,6 +1855,30 @@ namespace Internal.JitInterface
         private bool isWriteBarrierHelperRequired(CORINFO_FIELD_STRUCT_* field)
         { throw new NotImplementedException("isWriteBarrierHelperRequired"); }
 
+        private CORINFO_FIELD_ACCESSOR getFieldIntrinsic(FieldDesc field)
+        {
+            Debug.Assert(field.IsIntrinsic);
+
+            var owningType = field.OwningType;
+            if ((owningType.IsWellKnownType(WellKnownType.IntPtr) ||
+                    owningType.IsWellKnownType(WellKnownType.UIntPtr)) &&
+                        field.Name == "Zero")
+            {
+                return CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_ZERO;
+            }
+            else if (owningType.IsString && field.Name == "Empty")
+            {
+                return CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_EMPTY_STRING;
+            }
+            else if (owningType.Name == "BitConverter" && owningType.Namespace == "System" &&
+                field.Name == "IsLittleEndian")
+            {
+                return CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN;
+            }
+
+            return (CORINFO_FIELD_ACCESSOR)(-1);
+        }
+
         private void getFieldInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult)
         {
 #if DEBUG
@@ -1892,7 +1979,14 @@ namespace Internal.JitInterface
                     pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE;
 
                     ReadyToRunHelperId helperId = ReadyToRunHelperId.Invalid;
-                    if (field.IsThreadStatic)
+                    CORINFO_FIELD_ACCESSOR intrinsicAccessor;
+                    if (field.IsIntrinsic &&
+                        (flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_GET) != 0 &&
+                        (intrinsicAccessor = getFieldIntrinsic(field)) != (CORINFO_FIELD_ACCESSOR)(-1))
+                    {
+                        fieldAccessor = intrinsicAccessor;
+                    }
+                    else if (field.IsThreadStatic)
                     {
 #if READYTORUN
                         if (field.HasGCStaticBase)
@@ -1913,17 +2007,7 @@ namespace Internal.JitInterface
                     }
                     else
                     {
-                        var owningType = field.OwningType;
-                        if ((owningType.IsWellKnownType(WellKnownType.IntPtr) ||
-                                owningType.IsWellKnownType(WellKnownType.UIntPtr)) &&
-                                    field.Name == "Zero")
-                        {
-                            fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_ZERO;
-                        }
-                        else
-                        {
-                            helperId = ReadyToRunHelperId.GetNonGCStaticBase;
-                        }
+                        helperId = ReadyToRunHelperId.GetNonGCStaticBase;
                     }
 
                     if (helperId != ReadyToRunHelperId.Invalid)
@@ -2931,7 +3015,10 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("canGetVarArgsHandle"); }
 
         private InfoAccessType emptyStringLiteral(ref void* ppValue)
-        { throw new NotImplementedException("emptyStringLiteral"); }
+        {
+            return constructStringLiteral(_methodScope, (mdToken)CorTokenType.mdtString, ref ppValue);
+        }
+
         private uint getFieldThreadLocalStoreID(CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection)
         { throw new NotImplementedException("getFieldThreadLocalStoreID"); }
         private void setOverride(IntPtr pOverride, CORINFO_METHOD_STRUCT_* currentMethod)

@@ -402,8 +402,8 @@ namespace Internal.TypeSystem.Ecma
                 return null;
             }
 
-            // TODO: Better exception type. Should be: "CoreLib doesn't have a required thing in it".
-            throw new NotImplementedException();
+            // Class library doesn't have finalizers
+            return null;
         }
 
         public override IEnumerable<FieldDesc> GetFields()

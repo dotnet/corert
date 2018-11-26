@@ -111,11 +111,18 @@ namespace ILCompiler
                 case ReadyToRunHelper.GetRuntimeTypeHandle:
                     methodDesc = context.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeTypeHandle");
                     break;
+                case ReadyToRunHelper.GetRuntimeType:
+                    methodDesc = context.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeType");
+                    break;
                 case ReadyToRunHelper.GetRuntimeMethodHandle:
                     methodDesc = context.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeMethodHandle");
                     break;
                 case ReadyToRunHelper.GetRuntimeFieldHandle:
                     methodDesc = context.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeFieldHandle");
+                    break;
+
+                case ReadyToRunHelper.AreTypesEquivalent:
+                    mangledName = "RhTypeCast_AreTypesEquivalent";
                     break;
 
                 case ReadyToRunHelper.Lng2Dbl:
@@ -230,6 +237,24 @@ namespace ILCompiler
                 case ReadyToRunHelper.CheckInstanceAny:
                     mangledName = "RhTypeCast_IsInstanceOf2";
                     break;
+                case ReadyToRunHelper.CheckCastInterface:
+                    mangledName = "RhTypeCast_CheckCastInterface2";
+                    break;
+                case ReadyToRunHelper.CheckInstanceInterface:
+                    mangledName = "RhTypeCast_IsInstanceOfInterface2";
+                    break;
+                case ReadyToRunHelper.CheckCastClass:
+                    mangledName = "RhTypeCast_CheckCastClass2";
+                    break;
+                case ReadyToRunHelper.CheckInstanceClass:
+                    mangledName = "RhTypeCast_IsInstanceOfClass2";
+                    break;
+                case ReadyToRunHelper.CheckCastArray:
+                    mangledName = "RhTypeCast_CheckCastArray2";
+                    break;
+                case ReadyToRunHelper.CheckInstanceArray:
+                    mangledName = "RhTypeCast_IsInstanceOfArray2";
+                    break;
 
                 case ReadyToRunHelper.MonitorEnter:
                     methodDesc = context.GetHelperEntryPoint("SynchronizedMethodHelpers", "MonitorEnter");
@@ -253,6 +278,9 @@ namespace ILCompiler
                     break;
                 case ReadyToRunHelper.GetRefAny:
                     methodDesc = context.GetHelperEntryPoint("TypedReferenceHelpers", "GetRefAny");
+                    break;
+                case ReadyToRunHelper.TypeHandleToRuntimeTypeHandle:
+                    methodDesc = context.GetHelperEntryPoint("TypedReferenceHelpers", "TypeHandleToRuntimeTypeHandleMaybeNull");
                     break;
 
                 default:

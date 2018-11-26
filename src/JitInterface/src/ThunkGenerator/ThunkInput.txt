@@ -112,6 +112,8 @@ CorInfoClassId,,int
 CorInfoHelperTailCallSpecialHandling,,int
 CorInfoHelpFunc,,int
 CorInfoInitClassResult,,int
+CorInfoInlineTypeCheck,,int
+CorInfoInlineTypeCheckSource,,int
 CorInfoInline,,int
 CorInfoInstantiationVerification,,int
 CorInfoIntrinsics,,int
@@ -202,6 +204,7 @@ FUNCTIONS
     CORINFO_CLASS_HANDLE getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index)
     int appendClassName(WCHAR** ppBuf, int* pnBufLen, CORINFO_CLASS_HANDLE cls, BOOL fNamespace, BOOL fFullInst, BOOL fAssembly)
     BOOL isValueClass(CORINFO_CLASS_HANDLE cls)
+    CorInfoInlineTypeCheck canInlineTypeCheck(CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source)
     BOOL canInlineTypeCheckWithObjectVTable(CORINFO_CLASS_HANDLE cls)
     DWORD getClassAttribs(CORINFO_CLASS_HANDLE cls)
     BOOL isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls)

@@ -1760,6 +1760,31 @@ namespace Internal.TypeSystem.Interop
 
             LoadNativeArg(callsiteCodeStream);
         }
+
+        protected override void EmitMarshalArgumentNativeToManaged()
+        {
+            throw new NotSupportedException();
+        }
+
+        protected override void EmitMarshalElementNativeToManaged()
+        {
+            throw new NotSupportedException();
+        }
+
+        protected override void EmitMarshalElementManagedToNative()
+        {
+            throw new NotSupportedException();
+        }
+
+        protected override void EmitMarshalFieldManagedToNative()
+        {
+            throw new NotSupportedException();
+        }
+
+        protected override void EmitMarshalFieldNativeToManaged()
+        {
+            throw new NotSupportedException();
+        }
     }
 
     class StringBuilderMarshaller : Marshaller

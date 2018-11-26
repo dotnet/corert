@@ -43,6 +43,12 @@ namespace System.Runtime
             AllowSizeEquivalence = 2,
         }
 
+        [RuntimeExport("RhTypeCast_IsInstanceOfClass2")]
+        public static unsafe object IsInstanceOfClass2(void* pvTargetType, object obj)
+        {
+            return IsInstanceOfClass(obj, pvTargetType);
+        }
+
         [RuntimeExport("RhTypeCast_IsInstanceOfClass")]
         public static unsafe object IsInstanceOfClass(object obj, void* pvTargetType)
         {
@@ -153,6 +159,12 @@ namespace System.Runtime
             }
         }
 
+        [RuntimeExport("RhTypeCast_CheckCastClass2")]
+        public static unsafe object CheckCastClass2(void* pvTargetEEType, object obj)
+        {
+            return CheckCastClass(obj, pvTargetEEType);
+        }
+
         [RuntimeExport("RhTypeCast_CheckCastClass")]
         public static unsafe object CheckCastClass(object obj, void* pvTargetEEType)
         {
@@ -188,6 +200,12 @@ namespace System.Runtime
             // to find the correct classlib.
 
             throw obj.EEType->GetClasslibException(ExceptionIDs.InvalidCast);
+        }
+
+        [RuntimeExport("RhTypeCast_IsInstanceOfArray2")]
+        public static unsafe object IsInstanceOfArray2(void* pvTargetType, object obj)
+        {
+            return IsInstanceOfArray(obj, pvTargetType);
         }
 
         [RuntimeExport("RhTypeCast_IsInstanceOfArray")]
@@ -238,6 +256,12 @@ namespace System.Runtime
             return null;
         }
 
+        [RuntimeExport("RhTypeCast_CheckCastArray2")]
+        public static unsafe object CheckCastArray2(void* pvTargetEEType, object obj)
+        {
+            return CheckCastArray(obj, pvTargetEEType);
+        }
+
         [RuntimeExport("RhTypeCast_CheckCastArray")]
         public static unsafe object CheckCastArray(object obj, void* pvTargetEEType)
         {
@@ -256,6 +280,12 @@ namespace System.Runtime
             }
 
             return result;
+        }
+
+        [RuntimeExport("RhTypeCast_IsInstanceOfInterface2")]
+        public static unsafe object IsInstanceOfInterface2(void* pvTargetType, object obj)
+        {
+            return IsInstanceOfInterface(obj, pvTargetType);
         }
 
         [RuntimeExport("RhTypeCast_IsInstanceOfInterface")]
@@ -734,6 +764,12 @@ namespace System.Runtime
                 return true;
 
             return false;
+        }
+
+        [RuntimeExport("RhTypeCast_CheckCastInterface2")]
+        public static unsafe object CheckCastInterface2(void* pvTargetEEType, object obj)
+        {
+            return CheckCastInterface(obj, pvTargetEEType);
         }
 
         [RuntimeExport("RhTypeCast_CheckCastInterface")]

@@ -13,7 +13,7 @@ using Internal.TypeSystem;
 
 namespace Internal.TypeSystem.NativeFormat
 {
-    public sealed class NativeFormatField : FieldDesc, NativeFormatMetadataUnit.IHandleObject
+    public sealed partial class NativeFormatField : FieldDesc, NativeFormatMetadataUnit.IHandleObject
     {
         private static class FieldFlags
         {
@@ -25,7 +25,8 @@ namespace Internal.TypeSystem.NativeFormat
 
             public const int AttributeMetadataCache = 0x0100;
             public const int ThreadStatic = 0x0200;
-        };
+            public const int Intrinsic = 0x0400;
+        }
 
         private NativeFormatType _type;
         private FieldHandle _handle;
@@ -167,12 +168,15 @@ namespace Internal.TypeSystem.NativeFormat
                     if (!metadataReader.GetAttributeNamespaceAndName(attributeHandle, out namespaceName, out nameHandle))
                         continue;
 
-                    if (namespaceName.Equals("System"))
+                    if (nameHandle.StringEquals("ThreadStaticAttribute", metadataReader)
+                        && namespaceName.Equals("System"))
                     {
-                        if (nameHandle.StringEquals("ThreadStaticAttribute", metadataReader))
-                        {
-                            flags |= FieldFlags.ThreadStatic;
-                        }
+                        flags |= FieldFlags.ThreadStatic;
+                    }
+                    else if (nameHandle.StringEquals("IntrinsicAttribute", metadataReader)
+                        && namespaceName.Equals("System.Runtime.CompilerServices"))
+                    {
+                        flags |= FieldFlags.Intrinsic;
                     }
                 }
 

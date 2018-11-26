@@ -364,13 +364,16 @@ namespace Internal.JitInterface
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE:
-                    id = ReadyToRunHelper.GetRuntimeTypeHandle;
+                    id = ReadyToRunHelper.GetRuntimeType;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD:
                     id = ReadyToRunHelper.GetRuntimeMethodHandle;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD:
                     id = ReadyToRunHelper.GetRuntimeFieldHandle;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE:
+                    id = ReadyToRunHelper.GetRuntimeTypeHandle;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_BOX:
@@ -531,6 +534,9 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_GETREFANY:
                     id = ReadyToRunHelper.GetRefAny;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL:
+                    id = ReadyToRunHelper.TypeHandleToRuntimeTypeHandle;
+                    break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF_EAX:
                     id = ReadyToRunHelper.WriteBarrier_EAX;
@@ -677,6 +683,11 @@ namespace Internal.JitInterface
         {
             _methodCodeNode.SetCode(new ObjectNode.ObjectData(Array.Empty<byte>(), null, 1, Array.Empty<ISymbolDefinitionNode>()));
             _methodCodeNode.InitializeFrameInfos(Array.Empty<FrameInfo>());
+        }
+
+        private CorInfoHelpFunc getCastingHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fThrowing)
+        {
+            return fThrowing ? CorInfoHelpFunc.CORINFO_HELP_CHKCASTANY : CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFANY;
         }
     }
 }

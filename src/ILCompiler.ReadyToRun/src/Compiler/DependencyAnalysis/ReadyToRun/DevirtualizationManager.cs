@@ -23,7 +23,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return base.ResolveVirtualMethod(declMethod, implType);
             }
 
-            // Cannot devirtualize accross version bubble boundary
+            // Cannot devirtualize across version bubble boundary
             return null;
         }
     }

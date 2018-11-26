@@ -1046,7 +1046,7 @@ namespace Internal.IL
             return metadataType.Namespace == typeNamespace && metadataType.Name == typeName;
         }
 
-        private bool ImportIntrinsicCall(MethodDesc method)
+        private bool ImportIntrinsicCall(MethodDesc method, MethodDesc runtimeDeterminedMethod)
         {
             Debug.Assert(method.IsIntrinsic);
 
@@ -1163,6 +1163,38 @@ namespace Internal.IL
                         return true;
                     }
                     break;
+                case "DefaultConstructorOf":
+                    if (IsTypeName(method, "System", "Activator") && method.Instantiation.Length == 1)
+                    {
+                        string expr;
+
+                        if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
+                        {
+                            expr = string.Concat(
+                                "(intptr_t)",
+                                GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.DefaultConstructor, runtimeDeterminedMethod.Instantiation[0]),
+                                "(", GetGenericContext(), ")");
+                        }
+                        else
+                        {
+                            IMethodNode methodNode = (IMethodNode)_compilation.ComputeConstantLookup(ReadyToRunHelperId.DefaultConstructor, method.Instantiation[0]);
+                            _dependencies.Add(methodNode);
+
+                            MethodDesc ctor =  methodNode.Method;
+
+                            expr = string.Concat(
+                                "(intptr_t)&",
+                                _writer.GetCppTypeName(ctor.OwningType),
+                                "::",
+                                _writer.GetCppMethodName(ctor)
+                            );
+                        }
+
+                        PushExpression(StackValueKind.NativeInt, expr);
+
+                        return true;
+                    }
+                    break;
                 default:
                     break;
             }
@@ -1232,7 +1264,7 @@ namespace Internal.IL
 
             if (method.IsIntrinsic)
             {
-                if (ImportIntrinsicCall(method))
+                if (ImportIntrinsicCall(method, runtimeDeterminedMethod))
                     return;
             }
 
