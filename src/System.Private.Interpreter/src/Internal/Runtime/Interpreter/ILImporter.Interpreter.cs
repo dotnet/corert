@@ -181,7 +181,7 @@ namespace Internal.IL
         private void ImportReturn()
         {
             var returnType = _method.Signature.ReturnType;
-            if (returnType.RuntimeTypeHandle.Value == typeof(void).TypeHandle.Value)
+            if (returnType.IsVoid)
                 return;
 
             StackItem stackItem = PopWithValidation();
@@ -242,7 +242,7 @@ namespace Internal.IL
                 case TypeFlags.GenericParameter:
                 default:
                     // TODO: Support more complex return types
-                    break;
+                    throw new NotImplementedException();
             }
         }
 
