@@ -67,8 +67,7 @@ namespace ILCompiler.DependencyAnalysis
             factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref result, factory, _targetMethod);
 
             TargetArchitecture targetArchitecture = factory.Target.Architecture;
-            if (targetArchitecture == TargetArchitecture.ARM ||
-                targetArchitecture == TargetArchitecture.ARMEL)
+            if (targetArchitecture == TargetArchitecture.ARM)
             {
                 result.Add(factory.InitialInterfaceDispatchStub, "Initial interface dispatch stub");
             }
@@ -85,8 +84,7 @@ namespace ILCompiler.DependencyAnalysis
         public override void EncodeData(ref ObjectDataBuilder objData, NodeFactory factory, bool relocsOnly)
         {
             TargetArchitecture targetArchitecture = factory.Target.Architecture;
-            if (targetArchitecture == TargetArchitecture.ARM ||
-                targetArchitecture == TargetArchitecture.ARMEL)
+            if (targetArchitecture == TargetArchitecture.ARM)
             {
                 objData.EmitPointerReloc(factory.InitialInterfaceDispatchStub);
             }

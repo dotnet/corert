@@ -946,7 +946,6 @@ namespace ILCompiler.DependencyAnalysis
             TargetArchitecture targetArch = _type.Context.Target.Architecture;
             if (metadataType != null &&
                 (targetArch == TargetArchitecture.ARM ||
-                targetArch == TargetArchitecture.ARMEL ||
                 targetArch == TargetArchitecture.ARM64) &&
                 metadataType.IsHfa)
             {
