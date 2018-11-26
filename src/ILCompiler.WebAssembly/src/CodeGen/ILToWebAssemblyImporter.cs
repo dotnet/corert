@@ -2075,11 +2075,10 @@ namespace Internal.IL
 
             if (targetLLVMFunction.Pointer.Equals(IntPtr.Zero))
             {
-                string mangledName;
                 if (method.IsNativeCallable)
                 {
                     EcmaMethod ecmaMethod = ((EcmaMethod)method);
-                    mangledName = ecmaMethod.GetNativeCallableExportName();
+                    string mangledName = ecmaMethod.GetNativeCallableExportName();
                     if (mangledName == null)
                     {
                         mangledName = ecmaMethod.Name;
@@ -2095,8 +2094,7 @@ namespace Internal.IL
                 }
                 else
                 {
-                    mangledName = _compilation.NameMangler.GetMangledMethodName(method).ToString();
-                    targetLLVMFunction = GetOrCreateLLVMFunction(mangledName, method.Signature);
+                    targetLLVMFunction = GetOrCreateLLVMFunction(_compilation.NameMangler.GetMangledMethodName(method).ToString(), method.Signature);
                 }
             }
 
