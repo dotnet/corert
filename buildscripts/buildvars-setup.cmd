@@ -139,10 +139,13 @@ call "%_VSCOMNTOOLS%\VsDevCmd.bat"
 if "%VisualStudioVersion%"=="15.0" (
     goto :VS2017
 )
+if "%VisualStudioVersion%"=="16.0" (
+    goto :VS2019
+)
 
 :MissingVersion
-:: Can't find VS 2017
-echo Visual Studio 2017 is a pre-requisite to build this repository.
+:: Can't find VS 2017 ^/ 2019
+echo Visual Studio 2017 or 1029 is a pre-requisite to build this repository.
 echo See: https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md
 exit /b 1
 
@@ -150,6 +153,15 @@ exit /b 1
 :: Setup vars for VS2017
 set __VSVersion=vs2017
 set __VSProductVersion=150
+set __MSBuildVersion=15.0
+if not exist "!VS%__VSProductVersion%COMNTOOLS!\..\..\VC\Auxiliary\Build\vcvarsall.bat" goto :MissingVisualC
+goto :CheckMSBuild
+
+:VS2019
+:: Setup vars for VS2019
+set __VSVersion=vs2019
+set __VSProductVersion=160
+set __MSBuildVersion=Current
 if not exist "!VS%__VSProductVersion%COMNTOOLS!\..\..\VC\Auxiliary\Build\vcvarsall.bat" goto :MissingVisualC
 goto :CheckMSBuild
 
@@ -162,7 +174,7 @@ exit /b 1
 rem The MSBuild that is installed in the shared location is not compatible
 rem with VS2017 C++ projects. I must use the MSBuild located in
 rem C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\MSBuild\15.0\Bin\MSBuild.exe
-set _msbuildexe="%VSINSTALLDIR%\MSBuild\15.0\Bin\MSBuild.exe"
+set _msbuildexe="%VSINSTALLDIR%\MSBuild\%__MSBuildVersion%\bin\MSBuild.exe"
 
 if not exist !_msbuildexe! (echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md for build instructions. && exit /b 1)
 
