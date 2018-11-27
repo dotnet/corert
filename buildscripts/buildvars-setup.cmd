@@ -145,7 +145,7 @@ if "%VisualStudioVersion%"=="16.0" (
 
 :MissingVersion
 :: Can't find VS 2017 ^/ 2019
-echo Visual Studio 2017 or 1029 is a pre-requisite to build this repository.
+echo Visual Studio 2017 or 2019 is a pre-requisite to build this repository.
 echo See: https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md
 exit /b 1
 
