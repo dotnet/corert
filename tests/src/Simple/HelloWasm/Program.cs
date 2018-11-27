@@ -312,6 +312,8 @@ internal static class Program
             PrintLine(rvaFieldValue.ToString());
         }
 
+        TestNativeCallback();
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -696,8 +698,34 @@ internal static class Program
         {
             PrintLine("Failed.");
         }
-
     }
+
+    private static bool callbackResult;
+    private static unsafe void TestNativeCallback()
+    {
+        CallMe(123);
+        PrintString("Native callback test: ");
+        if (callbackResult)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
+    }
+
+    [System.Runtime.InteropServices.NativeCallable(EntryPoint = "CallMe")]
+    private static void _CallMe(int x)
+    {
+        if (x == 123)
+        {
+            callbackResult = true;
+        }
+    }
+
+    [System.Runtime.InteropServices.DllImport("*")]
+    private static extern void CallMe(int x);
 
     [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
@@ -961,4 +989,35 @@ class ClassWithSealedVTable : ISomeItf
 interface ISomeItf
 {
     int GetValue();
+}
+
+namespace System.Runtime.InteropServices
+{
+    /// <summary>
+    /// Any method marked with NativeCallableAttribute can be directly called from
+    /// native code. The function token can be loaded to a local variable using LDFTN
+    /// and passed as a callback to native method.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Method)]
+    public sealed class NativeCallableAttribute : Attribute
+    {
+        public NativeCallableAttribute()
+        {
+        }
+
+        /// <summary>
+        /// Optional. If omitted, compiler will choose one for you.
+        /// </summary>
+        public CallingConvention CallingConvention;
+
+        /// <summary>
+        /// Optional. If omitted, then the method is native callable, but no EAT is emitted.
+        /// </summary>
+        public string EntryPoint;
+    }
+
+    [AttributeUsage((System.AttributeTargets.Method | System.AttributeTargets.Class))]
+    internal class McgIntrinsicsAttribute : Attribute
+    {
+    }
 }
