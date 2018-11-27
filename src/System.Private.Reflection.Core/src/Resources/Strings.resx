@@ -320,7 +320,7 @@
     <value>FieldInfo must be a runtime FieldInfo object.</value>
   </data>
   <data name="Argument_TypedReferenceInvalidField" xml:space="preserve">
-    <value>Field in TypedReferences cannot be static or init only.</value>
+    <value>Field in TypedReferences cannot be static.</value>
   </data>
   <data name="MissingMemberTypeRef" xml:space="preserve">
     <value>FieldInfo does not match the target Type.</value>
