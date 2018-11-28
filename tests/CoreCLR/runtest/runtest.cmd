@@ -7,8 +7,18 @@ set __BuildType=Debug
 set __BuildOS=Windows_NT
 
 :: Default to highest Visual Studio version available
-set __VSVersion=vs2017
-set __VSProductVersion=150
+if "%VisualStudioVersion%"=="15.0" (
+    set __VSVersion=vs2017
+    set __VSProductVersion=150
+    set __MSBuildVersion=15.0
+) else if "%VisualStudioVersion%"=="16.0" (
+    set __VSVersion=vs2019
+    set __VSProductVersion=160
+    set __MSBuildVersion=Current
+) else (
+    echo Unsupported VS version: !VisualStudioVersion!
+    exit /b 1
+)
 
 :: Define a prefix for most output progress messages that come from this script. That makes
 :: it easier to see where these are coming from. Note that there is a trailing space here.
@@ -97,7 +107,7 @@ if not defined VS%__VSProductVersion%COMNTOOLS goto NoVS
 set __VSToolsRoot=!VS%__VSProductVersion%COMNTOOLS!
 if %__VSToolsRoot:~-1%==\ set "__VSToolsRoot=%__VSToolsRoot:~0,-1%"
 
-set _msbuildexe="%VSINSTALLDIR%\MSBuild\15.0\Bin\MSBuild.exe"
+set _msbuildexe="%VSINSTALLDIR%\MSBuild\%__MSBuildVersion%\Bin\MSBuild.exe"
 
 if not exist !_msbuildexe! (echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md for build instructions. && exit /b 1)
 

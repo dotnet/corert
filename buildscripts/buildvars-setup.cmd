@@ -9,6 +9,15 @@ set DOTNET_CLI_TELEMETRY_OPTOUT=1
 set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 set DOTNET_MULTILEVEL_LOOKUP=0
 
+:: msbuild property for tests.targets to make sure xunit.console gets run through the dotnet command
+set BuildingNETCoreAppVertical=true
+
+:: msbuild property for tests.targets to suppress force-building library-based tests as EXE
+set IncludeVSTestReferences=false
+
+:: Don't copy around xunit.console.runtimeconfig.json with incorrect framework version 9.9.9
+set CopyConfigurationFiles=false
+
 :: Set the various build properties here so that CMake and MSBuild can pick them up
 set "__ProjectDir=%~dp0.."
 :: remove trailing slash
