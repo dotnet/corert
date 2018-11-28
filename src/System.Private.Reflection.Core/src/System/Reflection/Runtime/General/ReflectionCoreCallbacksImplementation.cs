@@ -364,7 +364,7 @@ namespace System.Reflection.Runtime.General
             {
                 if (!(flds[i] is RuntimeFieldInfo field))
                     throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo);
-                if (field.IsInitOnly || field.IsStatic)
+                if (field.IsStatic)
                     throw new ArgumentException(SR.Argument_TypedReferenceInvalidField);
 
                 // For proper handling of Nullable<T> don't change to something like 'IsAssignableFrom'
