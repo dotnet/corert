@@ -202,7 +202,7 @@ namespace Internal.Reflection.Execution
                 yield break;
 
             // Implement simple probing for assembly in application base directory and culture specific directory
-            string probingDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            string probingDirectory = AppContext.BaseDirectory;
             string cultureQualifiedDirectory = probingDirectory;
 
             if (!String.IsNullOrEmpty(refName.CultureName))
