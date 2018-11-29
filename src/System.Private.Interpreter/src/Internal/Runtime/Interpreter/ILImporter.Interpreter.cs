@@ -106,7 +106,9 @@ namespace Internal.IL
         {
             bool hasStackItem = _interpreter.EvaluationStack.TryPop(out StackItem stackItem);
             if (!hasStackItem)
+            {
                 ThrowHelper.ThrowInvalidProgramException();
+            }
 
             return stackItem;
         }
@@ -115,7 +117,9 @@ namespace Internal.IL
         {
             bool hasStackItem = _interpreter.EvaluationStack.TryPeek(out StackItem stackItem);
             if (!hasStackItem)
+            {
                 ThrowHelper.ThrowInvalidProgramException();
+            }
 
             return stackItem;
         }
@@ -292,17 +296,20 @@ namespace Internal.IL
                 case StackValueKind.Int32:
                     {
                         int value = op2.AsInt32();
-                        if (opcode == ILOpcode.shl)
+                        switch (opcode)
                         {
-                            value = value << shiftBy;
-                        }
-                        else if (opcode == ILOpcode.shr)
-                        {
-                            value = value >> shiftBy;
-                        }
-                        else if (opcode == ILOpcode.shr_un)
-                        {
-                            value = (int)((uint)value >> shiftBy);
+                            case ILOpcode.shl:
+                                value = value << shiftBy;
+                                break;
+                            case ILOpcode.shr:
+                                value = value >> shiftBy;
+                                break;
+                            case ILOpcode.shr_un:
+                                value = (int)((uint)value >> shiftBy);
+                                break;
+                            default:
+                                Debug.Assert(false);
+                                break;
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt32(value));
@@ -311,17 +318,20 @@ namespace Internal.IL
                 case StackValueKind.Int64:
                     {
                         long value = op2.AsInt64();
-                        if (opcode == ILOpcode.shl)
+                        switch (opcode)
                         {
-                            value = value << shiftBy;
-                        }
-                        else if (opcode == ILOpcode.shr)
-                        {
-                            value = value >> shiftBy;
-                        }
-                        else if (opcode == ILOpcode.shr_un)
-                        {
-                            value = (long)((ulong)value >> shiftBy);
+                            case ILOpcode.shl:
+                                value = value << shiftBy;
+                                break;
+                            case ILOpcode.shr:
+                                value = value >> shiftBy;
+                                break;
+                            case ILOpcode.shr_un:
+                                value = (long)((ulong)value >> shiftBy);
+                                break;
+                            default:
+                                Debug.Assert(false);
+                                break;
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt64(value));
@@ -330,18 +340,21 @@ namespace Internal.IL
                 case StackValueKind.NativeInt:
                     {
                         IntPtr value = op2.AsNativeInt();
-                        if (opcode == ILOpcode.shl)
+                        switch (opcode)
                         {
-                            value = new IntPtr(value.ToInt64() << shiftBy);
-                        }
-                        else if (opcode == ILOpcode.shr)
-                        {
-                            value = new IntPtr(value.ToInt64() >> shiftBy);
-                        }
-                        else if (opcode == ILOpcode.shr_un)
-                        {
-                            UIntPtr uintPtr = (UIntPtr)value.ToPointer();
-                            value = new IntPtr((long)(uintPtr.ToUInt64() >> shiftBy));
+                            case ILOpcode.shl:
+                                value = new IntPtr(value.ToInt64() << shiftBy);
+                                break;
+                            case ILOpcode.shr:
+                                value = new IntPtr(value.ToInt64() >> shiftBy);
+                                break;
+                            case ILOpcode.shr_un:
+                                UIntPtr uintPtr = (UIntPtr)value.ToPointer();
+                                value = new IntPtr((long)(uintPtr.ToUInt64() >> shiftBy));
+                                break;
+                            default:
+                                Debug.Assert(false);
+                                break;
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromNativeInt(value));
@@ -372,27 +385,28 @@ namespace Internal.IL
 
                         if (op2.Kind == StackValueKind.Int32 || op2.Kind == StackValueKind.NativeInt)
                         {
-                            int val2 = op2.Kind == StackValueKind.Int32 ? op2.AsInt32() : op2.AsNativeInt().ToInt32();
+                            long val2 = op2.Kind == StackValueKind.Int32 ? op2.AsInt32() : op2.AsNativeInt().ToInt64();
 
-                            if (opcode == ILOpcode.ceq)
+                            switch (opcode)
                             {
-                                result = val1 == val2;
-                            }
-                            else if (opcode == ILOpcode.cgt)
-                            {
-                                result = val2 > val1;
-                            }
-                            else if (opcode == ILOpcode.cgt_un)
-                            {
-                                result = (uint)val2 > (uint)val1;
-                            }
-                            else if (opcode == ILOpcode.clt)
-                            {
-                                result = val2 < val1;
-                            }
-                            else if (opcode == ILOpcode.clt_un)
-                            {
-                                result = (uint)val2 < (uint)val1;
+                                case ILOpcode.ceq:
+                                    result = val1 == val2;
+                                    break;
+                                case ILOpcode.cgt:
+                                    result = val2 > val1;
+                                    break;
+                                case ILOpcode.cgt_un:
+                                    result = (ulong)val2 > (uint)val1;
+                                    break;
+                                case ILOpcode.clt:
+                                    result = val2 < val1;
+                                    break;
+                                case ILOpcode.clt_un:
+                                    result = (ulong)val2 < (uint)val1;
+                                    break;
+                                default:
+                                    Debug.Assert(false);
+                                    break;
                             }
                         }
                         else
@@ -404,30 +418,30 @@ namespace Internal.IL
                 case StackValueKind.Int64:
                     {
                         long val1 = op1.AsInt64();
-
                         if (op2.Kind == StackValueKind.Int64)
                         {
                             long val2 = op2.AsInt64();
 
-                            if (opcode == ILOpcode.ceq)
+                            switch (opcode)
                             {
-                                result = val1 == val2;
-                            }
-                            else if (opcode == ILOpcode.cgt)
-                            {
-                                result = val2 > val1;
-                            }
-                            else if (opcode == ILOpcode.cgt_un)
-                            {
-                                result = (ulong)val2 > (ulong)val1;
-                            }
-                            else if (opcode == ILOpcode.clt)
-                            {
-                                result = val2 < val1;
-                            }
-                            else if (opcode == ILOpcode.clt_un)
-                            {
-                                result = (ulong)val2 < (ulong)val1;
+                                case ILOpcode.ceq:
+                                    result = val1 == val2;
+                                    break;
+                                case ILOpcode.cgt:
+                                    result = val2 > val1;
+                                    break;
+                                case ILOpcode.cgt_un:
+                                    result = (ulong)val2 > (ulong)val1;
+                                    break;
+                                case ILOpcode.clt:
+                                    result = val2 < val1;
+                                    break;
+                                case ILOpcode.clt_un:
+                                    result = (ulong)val2 < (ulong)val1;
+                                    break;
+                                default:
+                                    Debug.Assert(false);
+                                    break;
                             }
                         }
                         else
@@ -458,25 +472,26 @@ namespace Internal.IL
                                 val2 = op2.AsNativeInt();
                             }
 
-                            if (opcode == ILOpcode.ceq)
+                            switch (opcode)
                             {
-                                result = val1 == val2;
-                            }
-                            else if (opcode == ILOpcode.cgt)
-                            {
-                                result = (ulong)val2.ToInt64() > (ulong)val1.ToInt64();
-                            }
-                            else if (opcode == ILOpcode.cgt_un)
-                            {
-                                result = ((UIntPtr)val2.ToPointer()).ToUInt64() > ((UIntPtr)val1.ToPointer()).ToUInt64();
-                            }
-                            else if (opcode == ILOpcode.clt)
-                            {
-                                result = (ulong)val2.ToInt64() < (ulong)val1.ToInt64();
-                            }
-                            else if (opcode == ILOpcode.clt_un)
-                            {
-                                result = ((UIntPtr)val2.ToPointer()).ToUInt64() < ((UIntPtr)val1.ToPointer()).ToUInt64();
+                                case ILOpcode.ceq:
+                                    result = val1 == val2;
+                                    break;
+                                case ILOpcode.cgt:
+                                    result = val2.ToInt64() > val1.ToInt64();
+                                    break;
+                                case ILOpcode.cgt_un:
+                                    result = ((UIntPtr)val2.ToPointer()).ToUInt64() > ((UIntPtr)val1.ToPointer()).ToUInt64();
+                                    break;
+                                case ILOpcode.clt:
+                                    result = val2.ToInt64() < val1.ToInt64();
+                                    break;
+                                case ILOpcode.clt_un:
+                                    result = ((UIntPtr)val2.ToPointer()).ToUInt64() < ((UIntPtr)val1.ToPointer()).ToUInt64();
+                                    break;
+                                default:
+                                    Debug.Assert(false);
+                                    break;
                             }
                         }
                     }
@@ -488,26 +503,26 @@ namespace Internal.IL
                         if (op2.Kind == StackValueKind.Float)
                         {
                             double val2 = op2.AsDouble();
-
-                            if (opcode == ILOpcode.ceq)
+                            switch (opcode)
                             {
-                                result = val1 == val2;
-                            }
-                            else if (opcode == ILOpcode.cgt)
-                            {
-                                result = val2 > val1;
-                            }
-                            else if (opcode == ILOpcode.cgt_un)
-                            {
-                                result = val2 > val1;
-                            }
-                            else if (opcode == ILOpcode.clt)
-                            {
-                                result = val2 < val1;
-                            }
-                            else if (opcode == ILOpcode.clt_un)
-                            {
-                                result = val2 < val1;
+                                case ILOpcode.ceq:
+                                    result = val1 == val2;
+                                    break;
+                                case ILOpcode.cgt:
+                                    result = val2 > val1;
+                                    break;
+                                case ILOpcode.cgt_un:
+                                    result = val2 > val1;
+                                    break;
+                                case ILOpcode.clt:
+                                    result = val2 < val1;
+                                    break;
+                                case ILOpcode.clt_un:
+                                    result = val2 < val1;
+                                    break;
+                                default:
+                                    Debug.Assert(false);
+                                    break;
                             }
                         }
                         else
@@ -609,8 +624,8 @@ namespace Internal.IL
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt32(result));
-                        break;
                     }
+                    break;
                 case WellKnownType.Byte:
                     {
                         byte result = default(byte);
@@ -664,8 +679,8 @@ namespace Internal.IL
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt32(result));
-                        break;
                     }
+                    break;
                 case WellKnownType.Int16:
                     {
                         short result = default(short);
@@ -719,8 +734,8 @@ namespace Internal.IL
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt32(result));
-                        break;
                     }
+                    break;
                 case WellKnownType.UInt16:
                     {
                         ushort result = default(ushort);
@@ -774,8 +789,8 @@ namespace Internal.IL
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt32(result));
-                        break;
                     }
+                    break;
                 case WellKnownType.Int32:
                     {
                         int result = default(int);
@@ -828,8 +843,8 @@ namespace Internal.IL
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt32(result));
-                        break;
                     }
+                    break;
                 case WellKnownType.UInt32:
                     {
                         uint result = default(uint);
@@ -882,8 +897,8 @@ namespace Internal.IL
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt32((int)result));
-                        break;
                     }
+                    break;
                 case WellKnownType.Int64:
                     {
                         long result = default(long);
@@ -933,8 +948,8 @@ namespace Internal.IL
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt64(result));
-                        break;
                     }
+                    break;
                 case WellKnownType.UInt64:
                     {
                         ulong result = default(ulong);
@@ -988,8 +1003,8 @@ namespace Internal.IL
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt64((long)result));
-                        break;
                     }
+                    break;
                 case WellKnownType.Single:
                 case WellKnownType.Double:
                     {
@@ -1041,8 +1056,8 @@ namespace Internal.IL
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromDouble(result));
-                        break;
                     }
+                    break;
                 case WellKnownType.IntPtr:
                     {
                         IntPtr result = default(IntPtr);
@@ -1093,8 +1108,8 @@ namespace Internal.IL
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromNativeInt(result));
-                        break;
                     }
+                    break;
                 case WellKnownType.UIntPtr:
                     {
                         UIntPtr result = default(UIntPtr);
@@ -1144,8 +1159,8 @@ namespace Internal.IL
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromNativeInt((IntPtr)result.ToPointer()));
-                        break;
                     }
+                    break;
                 default:
                     ThrowHelper.ThrowInvalidProgramException();
                     break;
