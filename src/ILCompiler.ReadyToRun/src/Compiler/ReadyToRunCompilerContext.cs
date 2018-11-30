@@ -73,6 +73,16 @@ namespace ILCompiler
             return BaseTypeRuntimeInterfacesAlgorithm.Instance;
         }
 
+        protected override IEnumerable<MethodDesc> GetAllMethodsForEnum(TypeDesc enumType)
+        {
+            return enumType.GetMethods();
+        }
+
+        protected override IEnumerable<MethodDesc> GetAllMethodsForValueType(TypeDesc valueType)
+        {
+            return valueType.GetMethods();
+        }
+
         private class VectorFieldLayoutAlgorithm : FieldLayoutAlgorithm
         {
             private FieldLayoutAlgorithm _fallbackAlgorithm;
