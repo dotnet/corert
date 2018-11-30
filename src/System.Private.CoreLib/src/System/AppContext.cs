@@ -76,32 +76,21 @@ namespace System
         public static event System.EventHandler<FirstChanceExceptionEventArgs> FirstChanceException;
 
         public static event System.EventHandler ProcessExit;
-        internal static event System.EventHandler Unloading;
 
         private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
             UnhandledException?.Invoke(sender, e);
         }
 
-        internal static void OnFirstChanceException(object sender, FirstChanceExceptionEventArgs e)
-        {
-            FirstChanceException?.Invoke(sender, e);
-        }
-
         [RuntimeExport("OnFirstChanceException")]
         internal static void OnFirstChanceException(object e)
         {
-            OnFirstChanceException(s_appDomain, new FirstChanceExceptionEventArgs((Exception)e));
+            FirstChanceException?.Invoke(s_appDomain, new FirstChanceExceptionEventArgs((Exception)e));
         }
 
         private static void OnProcessExit(object sender, EventArgs e)
         {
             ProcessExit?.Invoke(sender, e);
-        }
-
-        private static void OnUnloading(object sender, EventArgs e)
-        {
-            Unloading?.Invoke(sender, e);
         }
 
         /// <summary>
