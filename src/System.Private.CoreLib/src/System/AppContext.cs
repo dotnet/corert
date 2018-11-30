@@ -13,7 +13,7 @@ namespace System
 {
     public static partial class AppContext
     {
-        private static Dictionary<string, object> s_dataStore = new Dictionary<string, object>();
+        private static readonly Dictionary<string, object> s_dataStore = new Dictionary<string, object>();
         private static Dictionary<string, bool> s_switches;
         private static string s_defaultBaseDirectory;
         // AppDomain lives in CoreFX, but some of this class's events need to pass in AppDomains, so people registering those
