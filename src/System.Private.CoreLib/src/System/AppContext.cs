@@ -56,7 +56,6 @@ namespace System
             {
                 s_dataStore.TryGetValue(name, out data);
             }
-
             return data;
         }
 
