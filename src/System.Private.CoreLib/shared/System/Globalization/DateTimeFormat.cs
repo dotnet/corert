@@ -209,7 +209,7 @@ namespace System
 
         private static void HebrewFormatDigits(StringBuilder outputBuffer, int digits)
         {
-            outputBuffer.Append(HebrewNumber.ToString(digits));
+            HebrewNumber.Append(outputBuffer, digits);
         }
 
         internal static int ParseRepeatPattern(ReadOnlySpan<char> format, int pos, char patternChar)
@@ -655,7 +655,7 @@ namespace System
                         int year = cal.GetYear(dateTime);
                         tokenLen = ParseRepeatPattern(format, i, ch);
                         if (isJapaneseCalendar &&
-                            !AppContextSwitches.FormatJapaneseFirstYearAsANumber &&
+                            !LocalAppContextSwitches.FormatJapaneseFirstYearAsANumber &&
                             year == 1 &&
                             ((i + tokenLen < format.Length && format[i + tokenLen] == DateTimeFormatInfoScanner.CJKYearSuff[0]) ||
                             (i + tokenLen < format.Length - 1 && format[i + tokenLen] == '\'' && format[i + tokenLen + 1] == DateTimeFormatInfoScanner.CJKYearSuff[0])))

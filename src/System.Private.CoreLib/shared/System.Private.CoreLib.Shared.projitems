@@ -318,6 +318,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Int64.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IntPtr.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Lazy.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\LocalAppContextSwitches.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\LocalAppContextSwitches.Common.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Marvin.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Marvin.OrdinalIgnoreCase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Math.cs" />
@@ -893,7 +895,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Advapi32\Interop.RegFlushKey.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Advapi32\Interop.RegistryConstants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Advapi32\Interop.RegOpenKeyEx.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Advapi32\Interop.RegQueryInfoKey.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Advapi32\Interop.RegQueryValueEx.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Advapi32\Interop.RegSetValueEx.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
@@ -987,7 +988,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecureString.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureHardwareIntrinsics)' == 'true' AND ('$(Platform)' == 'x64' OR '$(Platform)' == 'x86')">
+  <ItemGroup Condition="'$(FeatureHardwareIntrinsics)' == 'true' AND ('$(Platform)' == 'x64' OR ('$(Platform)' == 'x86' AND '$(TargetsUnix)' != 'true'))">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Aes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx2.cs" />
@@ -1004,7 +1005,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Sse42.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Ssse3.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureHardwareIntrinsics)' != 'true' OR ('$(Platform)' != 'x64' AND '$(Platform)' != 'x86')">
+  <ItemGroup Condition="'$(FeatureHardwareIntrinsics)' != 'true' OR ('$(Platform)' != 'x64' AND ('$(Platform)' != 'x86' OR ('$(Platform)' == 'x86' AND '$(TargetsUnix)' == 'true')))">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Aes.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx2.PlatformNotSupported.cs" />
