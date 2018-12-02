@@ -13,6 +13,8 @@ using Internal.Runtime.CompilerServices;
 using Internal.Runtime.Augments;
 using Internal.Reflection.Augments;
 
+using CorElementType = System.Runtime.RuntimeImports.RhCorElementType;
+
 namespace System
 {
     [Serializable]
@@ -37,37 +39,37 @@ namespace System
 
             switch (this.EETypePtr.CorElementType)
             {
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
+                case CorElementType.ELEMENT_TYPE_I1:
                     return (Unsafe.As<byte, sbyte>(ref pThisValue) == Unsafe.As<byte, sbyte>(ref pTargetValue)) ?
                         0 : (Unsafe.As<byte, sbyte>(ref pThisValue) < Unsafe.As<byte, sbyte>(ref pTargetValue)) ? -1 : 1;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
+                case CorElementType.ELEMENT_TYPE_U1:
+                case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     return (Unsafe.As<byte, byte>(ref pThisValue) == Unsafe.As<byte, byte>(ref pTargetValue)) ?
                         0 : (Unsafe.As<byte, byte>(ref pThisValue) < Unsafe.As<byte, byte>(ref pTargetValue)) ? -1 : 1;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
+                case CorElementType.ELEMENT_TYPE_I2:
                     return (Unsafe.As<byte, short>(ref pThisValue) == Unsafe.As<byte, short>(ref pTargetValue)) ?
                         0 : (Unsafe.As<byte, short>(ref pThisValue) < Unsafe.As<byte, short>(ref pTargetValue)) ? -1 : 1;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
+                case CorElementType.ELEMENT_TYPE_U2:
+                case CorElementType.ELEMENT_TYPE_CHAR:
                     return (Unsafe.As<byte, ushort>(ref pThisValue) == Unsafe.As<byte, ushort>(ref pTargetValue)) ?
                         0 : (Unsafe.As<byte, ushort>(ref pThisValue) < Unsafe.As<byte, ushort>(ref pTargetValue)) ? -1 : 1;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
+                case CorElementType.ELEMENT_TYPE_I4:
                     return (Unsafe.As<byte, int>(ref pThisValue) == Unsafe.As<byte, int>(ref pTargetValue)) ?
                         0 : (Unsafe.As<byte, int>(ref pThisValue) < Unsafe.As<byte, int>(ref pTargetValue)) ? -1 : 1;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
+                case CorElementType.ELEMENT_TYPE_U4:
                     return (Unsafe.As<byte, uint>(ref pThisValue) == Unsafe.As<byte, uint>(ref pTargetValue)) ?
                         0 : (Unsafe.As<byte, uint>(ref pThisValue) < Unsafe.As<byte, uint>(ref pTargetValue)) ? -1 : 1;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
+                case CorElementType.ELEMENT_TYPE_I8:
                     return (Unsafe.As<byte, long>(ref pThisValue) == Unsafe.As<byte, long>(ref pTargetValue)) ?
                         0 : (Unsafe.As<byte, long>(ref pThisValue) < Unsafe.As<byte, long>(ref pTargetValue)) ? -1 : 1;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
+                case CorElementType.ELEMENT_TYPE_U8:
                     return (Unsafe.As<byte, ulong>(ref pThisValue) == Unsafe.As<byte, ulong>(ref pTargetValue)) ?
                         0 : (Unsafe.As<byte, ulong>(ref pThisValue) < Unsafe.As<byte, ulong>(ref pTargetValue)) ? -1 : 1;
 
@@ -111,25 +113,25 @@ namespace System
 
             switch (this.EETypePtr.CorElementType)
             {
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
+                case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     return Unsafe.As<byte, bool>(ref pValue).GetHashCode();
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
+                case CorElementType.ELEMENT_TYPE_CHAR:
                     return Unsafe.As<byte, char>(ref pValue).GetHashCode();
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
+                case CorElementType.ELEMENT_TYPE_I1:
                     return Unsafe.As<byte, sbyte>(ref pValue).GetHashCode();
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
+                case CorElementType.ELEMENT_TYPE_U1:
                     return Unsafe.As<byte, byte>(ref pValue).GetHashCode();
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
+                case CorElementType.ELEMENT_TYPE_I2:
                     return Unsafe.As<byte, short>(ref pValue).GetHashCode();
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
+                case CorElementType.ELEMENT_TYPE_U2:
                     return Unsafe.As<byte, ushort>(ref pValue).GetHashCode();
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
+                case CorElementType.ELEMENT_TYPE_I4:
                     return Unsafe.As<byte, int>(ref pValue).GetHashCode();
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
+                case CorElementType.ELEMENT_TYPE_U4:
                     return Unsafe.As<byte, uint>(ref pValue).GetHashCode();
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
+                case CorElementType.ELEMENT_TYPE_I8:
                     return Unsafe.As<byte, long>(ref pValue).GetHashCode();
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
+                case CorElementType.ELEMENT_TYPE_U8:
                     return Unsafe.As<byte, ulong>(ref pValue).GetHashCode();
                 default:
                     Environment.FailFast("Unexpected enum underlying type");
@@ -179,32 +181,26 @@ namespace System
                 throw new ArgumentException();
             }
 
-            if (format.Length != 1)
+            if (format.Length == 1)
             {
-                // all acceptable format string are of length 1
-                throw new FormatException(SR.Format_InvalidEnumFormatSpecification);
-            }
+                switch (format[0])
+                {
+                    case 'G':
+                    case 'g':
+                        return DoFormatG(enumInfo, rawValue);
 
-            char formatCh = format[0];
+                    case 'D':
+                    case 'd':
+                        return DoFormatD(rawValue, value.EETypePtr.CorElementType);
 
-            if (formatCh == 'D' || formatCh == 'd')
-            {
-                return DoFormatD(rawValue, value.EETypePtr.CorElementType);
-            }
+                    case 'X':
+                    case 'x':
+                        return DoFormatX(rawValue, value.EETypePtr.CorElementType);
 
-            if (formatCh == 'X' || formatCh == 'x')
-            {
-                return DoFormatX(rawValue, value.EETypePtr.CorElementType);
-            }
-
-            if (formatCh == 'G' || formatCh == 'g')
-            {
-                return DoFormatG(enumInfo, rawValue);
-            }
-
-            if (formatCh == 'F' || formatCh == 'f')
-            {
-                return DoFormatF(enumInfo, rawValue);
+                    case 'F':
+                    case 'f':
+                        return DoFormatF(enumInfo, rawValue);
+                }
             }
 
             throw new FormatException(SR.Format_InvalidEnumFormatSpecification);
@@ -213,74 +209,74 @@ namespace System
         //
         // Helper for Enum.Format(,,"d")
         //
-        private static string DoFormatD(ulong rawValue, RuntimeImports.RhCorElementType corElementType)
+        private static string DoFormatD(ulong rawValue, CorElementType corElementType)
         {
             switch (corElementType)
             {
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
+                case CorElementType.ELEMENT_TYPE_I1:
                     {
                         sbyte result = (sbyte)rawValue;
 
                         return result.ToString();
                     }
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
+                case CorElementType.ELEMENT_TYPE_U1:
                     {
                         byte result = (byte)rawValue;
 
                         return result.ToString();
                     }
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
+                case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     {
                         // direct cast from bool to byte is not allowed
                         bool b = (rawValue != 0);
                         return b.ToString();
                     }
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
+                case CorElementType.ELEMENT_TYPE_I2:
                     {
                         short result = (short)rawValue;
 
                         return result.ToString();
                     }
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
+                case CorElementType.ELEMENT_TYPE_U2:
                     {
                         ushort result = (ushort)rawValue;
 
                         return result.ToString();
                     }
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
+                case CorElementType.ELEMENT_TYPE_CHAR:
                     {
                         char result = (char)rawValue;
 
                         return result.ToString();
                     }
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
+                case CorElementType.ELEMENT_TYPE_U4:
                     {
                         uint result = (uint)rawValue;
 
                         return result.ToString();
                     }
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
+                case CorElementType.ELEMENT_TYPE_I4:
                     {
                         int result = (int)rawValue;
 
                         return result.ToString();
                     }
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
+                case CorElementType.ELEMENT_TYPE_U8:
                     {
                         ulong result = (ulong)rawValue;
 
                         return result.ToString();
                     }
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
+                case CorElementType.ELEMENT_TYPE_I8:
                     {
                         long result = (long)rawValue;
 
@@ -297,25 +293,25 @@ namespace System
         //
         // Helper for Enum.Format(,,"x")
         //
-        private static string DoFormatX(ulong rawValue, RuntimeImports.RhCorElementType corElementType)
+        private static string DoFormatX(ulong rawValue, CorElementType corElementType)
         {
             switch (corElementType)
             {
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
+                case CorElementType.ELEMENT_TYPE_I1:
                     {
                         byte result = (byte)(sbyte)rawValue;
 
                         return result.ToString("X2", null);
                     }
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
+                case CorElementType.ELEMENT_TYPE_U1:
                     {
                         byte result = (byte)rawValue;
 
                         return result.ToString("X2", null);
                     }
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
+                case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     {
                         // direct cast from bool to byte is not allowed
                         byte result = (byte)rawValue;
@@ -323,49 +319,49 @@ namespace System
                         return result.ToString("X2", null);
                     }
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
+                case CorElementType.ELEMENT_TYPE_I2:
                     {
                         ushort result = (ushort)(short)rawValue;
 
                         return result.ToString("X4", null);
                     }
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
+                case CorElementType.ELEMENT_TYPE_U2:
                     {
                         ushort result = (ushort)rawValue;
 
                         return result.ToString("X4", null);
                     }
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
+                case CorElementType.ELEMENT_TYPE_CHAR:
                     {
                         ushort result = (ushort)(char)rawValue;
 
                         return result.ToString("X4", null);
                     }
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
+                case CorElementType.ELEMENT_TYPE_U4:
                     {
                         uint result = (uint)rawValue;
 
                         return result.ToString("X8", null);
                     }
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
+                case CorElementType.ELEMENT_TYPE_I4:
                     {
                         uint result = (uint)(int)rawValue;
 
                         return result.ToString("X8", null);
                     }
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
+                case CorElementType.ELEMENT_TYPE_U8:
                     {
                         ulong result = (ulong)rawValue;
 
                         return result.ToString("X16", null);
                     }
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
+                case CorElementType.ELEMENT_TYPE_I8:
                     {
                         ulong result = (ulong)(long)rawValue;
 
@@ -457,25 +453,25 @@ namespace System
 
             switch (this.EETypePtr.CorElementType)
             {
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
+                case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     return Unsafe.As<byte, bool>(ref pValue);
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
+                case CorElementType.ELEMENT_TYPE_CHAR:
                     return Unsafe.As<byte, char>(ref pValue);
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
+                case CorElementType.ELEMENT_TYPE_I1:
                     return Unsafe.As<byte, sbyte>(ref pValue);
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
+                case CorElementType.ELEMENT_TYPE_U1:
                     return Unsafe.As<byte, byte>(ref pValue);
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
+                case CorElementType.ELEMENT_TYPE_I2:
                     return Unsafe.As<byte, short>(ref pValue);
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
+                case CorElementType.ELEMENT_TYPE_U2:
                     return Unsafe.As<byte, ushort>(ref pValue);
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
+                case CorElementType.ELEMENT_TYPE_I4:
                     return Unsafe.As<byte, int>(ref pValue);
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
+                case CorElementType.ELEMENT_TYPE_U4:
                     return Unsafe.As<byte, uint>(ref pValue);
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
+                case CorElementType.ELEMENT_TYPE_I8:
                     return Unsafe.As<byte, long>(ref pValue);
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
+                case CorElementType.ELEMENT_TYPE_U8:
                     return Unsafe.As<byte, ulong>(ref pValue);
                 default:
                     Environment.FailFast("Unexpected enum underlying type");
@@ -606,7 +602,7 @@ namespace System
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
 
-            if (value.EETypePtr == EETypePtr.EETypePtrOf<string>())
+            if (value is string valueAsString)
             {
                 if (!enumType.IsEnum)
                     throw new ArgumentException(SR.Arg_MustBeEnum);
@@ -614,7 +610,7 @@ namespace System
                 EnumInfo enumInfo = GetEnumInfo(enumType);
                 foreach (KeyValuePair<string, ulong> kv in enumInfo.NamesAndValues)
                 {
-                    if (value.Equals(kv.Key))
+                    if (valueAsString == kv.Key)
                         return true;
                 }
                 return false;
@@ -657,162 +653,48 @@ namespace System
             }
         }
 
-        public static object Parse(Type enumType, string value)
-        {
-            return Parse(enumType, value, ignoreCase: false);
-        }
+        public static object Parse(Type enumType, string value) =>
+            Parse(enumType, value, ignoreCase: false);
 
         public static object Parse(Type enumType, string value, bool ignoreCase)
         {
-            object result;
-            Exception exception;
-            if (!TryParseEnum(enumType, value, ignoreCase, out result, out exception))
-                throw exception;
+            bool success = TryParse(enumType, value, ignoreCase, throwOnFailure: true, out object result);
+            Debug.Assert(success);
             return result;
         }
 
-        public static TEnum Parse<TEnum>(string value) where TEnum : struct
-        {
-            return Parse<TEnum>(value, ignoreCase: false);
-        }
+        public static TEnum Parse<TEnum>(string value) where TEnum : struct =>
+            Parse<TEnum>(value, ignoreCase: false);
 
         public static TEnum Parse<TEnum>(string value, bool ignoreCase) where TEnum : struct
         {
-            object result;
-            Exception exception;
-            if (!TryParseEnum(typeof(TEnum), value, ignoreCase, out result, out exception))
-                throw exception;
-            return (TEnum)result;
+            bool success = TryParse<TEnum>(value, ignoreCase, throwOnFailure: true, out TEnum result);
+            Debug.Assert(success);
+            return result;
         }
 
-        //
-        // Non-boxing overloads for Enum.ToObject().
-        //
-        // The underlying integer type of the enum does not have to match the type of "value." If
-        // the enum type is larger, this api does a value-preserving widening if possible (or a 2's complement
-        // conversion if not.) If the enum type is smaller, the api discards the higher order bits.
-        // Either way, no exception is thrown upon overflow.
-        //
-        [CLSCompliant(false)]
-        public static object ToObject(Type enumType, sbyte value) => ToObjectWorker(enumType, value);
-        public static object ToObject(Type enumType, byte value) => ToObjectWorker(enumType, value);
-        [CLSCompliant(false)]
-        public static object ToObject(Type enumType, ushort value) => ToObjectWorker(enumType, value);
-        public static object ToObject(Type enumType, short value) => ToObjectWorker(enumType, value);
-        [CLSCompliant(false)]
-        public static object ToObject(Type enumType, uint value) => ToObjectWorker(enumType, value);
-        public static object ToObject(Type enumType, int value) => ToObjectWorker(enumType, value);
-        [CLSCompliant(false)]
-        public static object ToObject(Type enumType, ulong value) => ToObjectWorker(enumType, (long)value);
-        public static object ToObject(Type enumType, long value) => ToObjectWorker(enumType, value);
+        public static bool TryParse(Type enumType, string value, out object result) =>
+            TryParse(enumType, value, ignoreCase: false, out result);
 
-        // These are needed to service ToObject(Type, Object).
-        private static object ToObject(Type enumType, char value) => ToObjectWorker(enumType, value);
-        private static object ToObject(Type enumType, bool value) => ToObjectWorker(enumType, value ? 1 : 0);
+        public static bool TryParse(Type enumType, string value, bool ignoreCase, out object result) =>
+            TryParse(enumType, value, ignoreCase, throwOnFailure: false, out result);
 
-        // Common helper for the non-boxing Enum.ToObject() overloads.
-        private static object ToObjectWorker(Type enumType, long value)
+        public static bool TryParse<TEnum>(string value, out TEnum result) where TEnum : struct =>
+            TryParse<TEnum>(value, ignoreCase: false, out result);
+
+        public static bool TryParse<TEnum>(string value, bool ignoreCase, out TEnum result) where TEnum : struct =>
+            TryParse<TEnum>(value, ignoreCase, throwOnFailure: false, out result);
+
+        private static bool TryParse<TEnum>(string value, bool ignoreCase, bool throwOnFailure, out TEnum result) where TEnum : struct
         {
-            if (enumType == null)
-                throw new ArgumentNullException(nameof(enumType));
-
-            if (!enumType.IsEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
-
-            if (!enumType.IsRuntimeImplemented())
-                throw new ArgumentException(SR.Arg_MustBeType, nameof(enumType));
-
-            // Check for the unfortunate "typeof(Outer<>).InnerEnum" corner case.
-            if (enumType.ContainsGenericParameters)
-                throw new InvalidOperationException(SR.Format(SR.Arg_OpenType, enumType.ToString()));
-
-            EETypePtr enumEEType = enumType.TypeHandle.ToEETypePtr();
-            return ToObject(enumEEType, value);
-        }
-
-        internal unsafe static object ToObject(EETypePtr enumEEType, long value)
-        {
-            Debug.Assert(enumEEType.IsEnum);
-
-            byte* pValue = (byte*)&value;
-            AdjustForEndianness(ref pValue, enumEEType);
-            return RuntimeImports.RhBox(enumEEType, pValue);
-        }
-
-        public static object ToObject(Type enumType, object value)
-        {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
-            // Delegate rest of error checking to the other functions
-            TypeCode typeCode = Convert.GetTypeCode(value);
-
-            switch (typeCode)
-            {
-                case TypeCode.Int32:
-                    return ToObject(enumType, (int)value);
-
-                case TypeCode.SByte:
-                    return ToObject(enumType, (sbyte)value);
-
-                case TypeCode.Int16:
-                    return ToObject(enumType, (short)value);
-
-                case TypeCode.Int64:
-                    return ToObject(enumType, (long)value);
-
-                case TypeCode.UInt32:
-                    return ToObject(enumType, (uint)value);
-
-                case TypeCode.Byte:
-                    return ToObject(enumType, (byte)value);
-
-                case TypeCode.UInt16:
-                    return ToObject(enumType, (ushort)value);
-
-                case TypeCode.UInt64:
-                    return ToObject(enumType, (ulong)value);
-
-                case TypeCode.Char:
-                    return ToObject(enumType, (char)value);
-
-                case TypeCode.Boolean:
-                    return ToObject(enumType, (bool)value);
-
-                default:
-                    // All unsigned types will be directly cast
-                    throw new ArgumentException(SR.Arg_MustBeEnumBaseTypeOrEnum, nameof(value));
-            }
-        }
-
-        public static bool TryParse(Type enumType, string value, bool ignoreCase, out object result)
-        {
-            Exception exception;
-            return TryParseEnum(enumType, value, ignoreCase, out result, out exception);
-        }
-
-        public static bool TryParse(Type enumType, string value, out object result)
-        {
-            Exception exception;
-            return TryParseEnum(enumType, value, false, out result, out exception);
-        }
-
-        public static bool TryParse<TEnum>(string value, bool ignoreCase, out TEnum result) where TEnum : struct
-        {
-            Exception exception;
             object tempResult;
-            if (!TryParseEnum(typeof(TEnum), value, ignoreCase, out tempResult, out exception))
+            if (!TryParse(typeof(TEnum), value, ignoreCase, throwOnFailure, out tempResult))
             {
                 result = default(TEnum);
                 return false;
             }
             result = (TEnum)tempResult;
             return true;
-        }
-
-        public static bool TryParse<TEnum>(string value, out TEnum result) where TEnum : struct
-        {
-            return TryParse<TEnum>(value, false, out result);
         }
 
         public override string ToString()
@@ -905,49 +787,49 @@ namespace System
                 result = 0;
                 return false;
             }
-            RuntimeImports.RhCorElementType corElementType = eeType.CorElementType;
+            CorElementType corElementType = eeType.CorElementType;
 
             ref byte pValue = ref value.GetRawData();
 
             switch (corElementType)
             {
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
+                case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     result = Unsafe.As<byte, bool>(ref pValue) ? 1UL : 0UL;
                     return true;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
+                case CorElementType.ELEMENT_TYPE_CHAR:
                     result = (ulong)(long)Unsafe.As<byte, char>(ref pValue);
                     return true;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
+                case CorElementType.ELEMENT_TYPE_I1:
                     result = (ulong)(long)Unsafe.As<byte, sbyte>(ref pValue);
                     return true;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
+                case CorElementType.ELEMENT_TYPE_U1:
                     result = (ulong)(long)Unsafe.As<byte, byte>(ref pValue);
                     return true;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
+                case CorElementType.ELEMENT_TYPE_I2:
                     result = (ulong)(long)Unsafe.As<byte, short>(ref pValue);
                     return true;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
+                case CorElementType.ELEMENT_TYPE_U2:
                     result = (ulong)(long)Unsafe.As<byte, ushort>(ref pValue);
                     return true;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
+                case CorElementType.ELEMENT_TYPE_I4:
                     result = (ulong)(long)Unsafe.As<byte, int>(ref pValue);
                     return true;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
+                case CorElementType.ELEMENT_TYPE_U4:
                     result = (ulong)(long)Unsafe.As<byte, uint>(ref pValue);
                     return true;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
+                case CorElementType.ELEMENT_TYPE_I8:
                     result = (ulong)(long)Unsafe.As<byte, long>(ref pValue);
                     return true;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
+                case CorElementType.ELEMENT_TYPE_U8:
                     result = (ulong)(long)Unsafe.As<byte, ulong>(ref pValue);
                     return true;
 
@@ -973,9 +855,8 @@ namespace System
         //
         // Common funnel for Enum.Parse methods.
         //
-        private static bool TryParseEnum(Type enumType, string value, bool ignoreCase, out object result, out Exception exception)
+        private static bool TryParse(Type enumType, string value, bool ignoreCase, bool throwOnFailure, out object result)
         {
-            exception = null;
             result = null;
 
             if (enumType == null)
@@ -989,7 +870,8 @@ namespace System
 
             if (value == null)
             {
-                exception = new ArgumentNullException(nameof(value));
+                if (throwOnFailure)
+                    throw new ArgumentNullException(nameof(value));
                 return false;
             }
 
@@ -1004,7 +886,8 @@ namespace System
             }
             if (firstNonWhitespaceIndex == -1)
             {
-                exception = new ArgumentException(SR.Arg_MustContainEnumInfo);
+                if (throwOnFailure)
+                    throw new ArgumentException(SR.Arg_MustContainEnumInfo);
                 return false;
             }
 
@@ -1018,7 +901,8 @@ namespace System
 
             if (StillLooksLikeInteger(value, firstNonWhitespaceIndex))
             {
-                exception = new OverflowException();
+                if (throwOnFailure)
+                    throw new OverflowException();
                 return false;
             }
 
@@ -1064,7 +948,8 @@ namespace System
                 }
                 if (!foundMatch)
                 {
-                    exception = new ArgumentException(SR.Format(SR.Arg_EnumValueNotFound, value));
+                    if (throwOnFailure)
+                        throw new ArgumentException(SR.Format(SR.Arg_EnumValueNotFound, value));
                     return false;
                 }
 
@@ -1089,14 +974,14 @@ namespace System
             char firstNonWhitespaceChar = value[valueOffset];
             if (!(char.IsDigit(firstNonWhitespaceChar) || firstNonWhitespaceChar == '+' || firstNonWhitespaceChar == '-'))
                 return false;
-            RuntimeImports.RhCorElementType corElementType = enumEEType.CorElementType;
+            CorElementType corElementType = enumEEType.CorElementType;
 
             value = value.Trim();
             unsafe
             {
                 switch (corElementType)
                 {
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
+                    case CorElementType.ELEMENT_TYPE_BOOLEAN:
                         {
                             bool v;
                             if (!bool.TryParse(value, out v))
@@ -1105,7 +990,7 @@ namespace System
                             return true;
                         }
 
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
+                    case CorElementType.ELEMENT_TYPE_CHAR:
                         {
                             char v;
                             if (!char.TryParse(value, out v))
@@ -1114,7 +999,7 @@ namespace System
                             return true;
                         }
 
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
+                    case CorElementType.ELEMENT_TYPE_I1:
                         {
                             sbyte v;
                             if (!sbyte.TryParse(value, out v))
@@ -1123,7 +1008,7 @@ namespace System
                             return true;
                         }
 
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
+                    case CorElementType.ELEMENT_TYPE_U1:
                         {
                             byte v;
                             if (!byte.TryParse(value, out v))
@@ -1132,7 +1017,7 @@ namespace System
                             return true;
                         }
 
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
+                    case CorElementType.ELEMENT_TYPE_I2:
                         {
                             short v;
                             if (!short.TryParse(value, out v))
@@ -1141,7 +1026,7 @@ namespace System
                             return true;
                         }
 
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
+                    case CorElementType.ELEMENT_TYPE_U2:
                         {
                             ushort v;
                             if (!ushort.TryParse(value, out v))
@@ -1150,7 +1035,7 @@ namespace System
                             return true;
                         }
 
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
+                    case CorElementType.ELEMENT_TYPE_I4:
                         {
                             int v;
                             if (!int.TryParse(value, out v))
@@ -1159,7 +1044,7 @@ namespace System
                             return true;
                         }
 
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
+                    case CorElementType.ELEMENT_TYPE_U4:
                         {
                             uint v;
                             if (!uint.TryParse(value, out v))
@@ -1168,7 +1053,7 @@ namespace System
                             return true;
                         }
 
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
+                    case CorElementType.ELEMENT_TYPE_I8:
                         {
                             long v;
                             if (!long.TryParse(value, out v))
@@ -1177,7 +1062,7 @@ namespace System
                             return true;
                         }
 
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
+                    case CorElementType.ELEMENT_TYPE_U8:
                         {
                             ulong v;
                             if (!ulong.TryParse(value, out v))
@@ -1223,26 +1108,26 @@ namespace System
             // On Debug builds, include the big-endian code to help deter bitrot (the "Conditional("BIGENDIAN")" will prevent it from executing on little-endian). 
             // On Release builds, exclude code to deter IL bloat and toolchain work.
 #if BIGENDIAN || DEBUG
-            RuntimeImports.RhCorElementType corElementType = enumEEType.CorElementType;
+            CorElementType corElementType = enumEEType.CorElementType;
             switch (corElementType)
             {
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
+                case CorElementType.ELEMENT_TYPE_I1:
+                case CorElementType.ELEMENT_TYPE_U1:
                     pValue += sizeof(long) - sizeof(byte);
                     break;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
+                case CorElementType.ELEMENT_TYPE_I2:
+                case CorElementType.ELEMENT_TYPE_U2:
                     pValue += sizeof(long) - sizeof(short);
                     break;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
+                case CorElementType.ELEMENT_TYPE_I4:
+                case CorElementType.ELEMENT_TYPE_U4:
                     pValue += sizeof(long) - sizeof(int);
                     break;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
+                case CorElementType.ELEMENT_TYPE_I8:
+                case CorElementType.ELEMENT_TYPE_U8:
                     break;
 
                 default:
@@ -1282,30 +1167,30 @@ namespace System
         #region IConvertible
         public TypeCode GetTypeCode()
         {
-            RuntimeImports.RhCorElementType corElementType = this.EETypePtr.CorElementType;
+            CorElementType corElementType = this.EETypePtr.CorElementType;
 
             switch (corElementType)
             {
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
-                    return TypeCode.Int32;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
+                case CorElementType.ELEMENT_TYPE_I1:
                     return TypeCode.SByte;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
-                    return TypeCode.Int16;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
-                    return TypeCode.Int64;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
-                    return TypeCode.UInt32;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
+                case CorElementType.ELEMENT_TYPE_U1:
                     return TypeCode.Byte;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
-                    return TypeCode.UInt16;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
-                    return TypeCode.UInt64;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
+                case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     return TypeCode.Boolean;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
+                case CorElementType.ELEMENT_TYPE_I2:
+                    return TypeCode.Int16;
+                case CorElementType.ELEMENT_TYPE_U2:
+                    return TypeCode.UInt16;
+                case CorElementType.ELEMENT_TYPE_CHAR:
                     return TypeCode.Char;
+                case CorElementType.ELEMENT_TYPE_I4:
+                    return TypeCode.Int32;
+                case CorElementType.ELEMENT_TYPE_U4:
+                    return TypeCode.UInt32;
+                case CorElementType.ELEMENT_TYPE_I8:
+                    return TypeCode.Int64;
+                case CorElementType.ELEMENT_TYPE_U8:
+                    return TypeCode.UInt64;
                 default:
                     Debug.Fail("Unknown underlying type.");
                     throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
@@ -1379,7 +1264,7 @@ namespace System
 
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
-            throw new InvalidCastException(string.Format(SR.InvalidCast_FromTo, "Enum", "DateTime"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Enum", "DateTime"));
         }
 
         object IConvertible.ToType(Type type, IFormatProvider provider)
@@ -1387,6 +1272,105 @@ namespace System
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }
         #endregion
+
+        #region ToObject
+        public static object ToObject(Type enumType, object value)
+        {
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
+
+            // Delegate rest of error checking to the other functions
+
+            switch (Convert.GetTypeCode(value))
+            {
+                case TypeCode.Int32:
+                    return ToObject(enumType, (int)value);
+
+                case TypeCode.SByte:
+                    return ToObject(enumType, (sbyte)value);
+
+                case TypeCode.Int16:
+                    return ToObject(enumType, (short)value);
+
+                case TypeCode.Int64:
+                    return ToObject(enumType, (long)value);
+
+                case TypeCode.UInt32:
+                    return ToObject(enumType, (uint)value);
+
+                case TypeCode.Byte:
+                    return ToObject(enumType, (byte)value);
+
+                case TypeCode.UInt16:
+                    return ToObject(enumType, (ushort)value);
+
+                case TypeCode.UInt64:
+                    return ToObject(enumType, (ulong)value);
+
+                case TypeCode.Char:
+                    return ToObject(enumType, (char)value);
+
+                case TypeCode.Boolean:
+                    return ToObject(enumType, (bool)value);
+
+                default:
+                    throw new ArgumentException(SR.Arg_MustBeEnumBaseTypeOrEnum, nameof(value));
+            }
+        }
+
+        //
+        // Non-boxing overloads for Enum.ToObject().
+        //
+        // The underlying integer type of the enum does not have to match the type of "value." If
+        // the enum type is larger, this api does a value-preserving widening if possible (or a 2's complement
+        // conversion if not.) If the enum type is smaller, the api discards the higher order bits.
+        // Either way, no exception is thrown upon overflow.
+        //
+        [CLSCompliant(false)]
+        public static object ToObject(Type enumType, sbyte value) => ToObjectWorker(enumType, value);
+        public static object ToObject(Type enumType, byte value) => ToObjectWorker(enumType, value);
+        [CLSCompliant(false)]
+        public static object ToObject(Type enumType, ushort value) => ToObjectWorker(enumType, value);
+        public static object ToObject(Type enumType, short value) => ToObjectWorker(enumType, value);
+        [CLSCompliant(false)]
+        public static object ToObject(Type enumType, uint value) => ToObjectWorker(enumType, value);
+        public static object ToObject(Type enumType, int value) => ToObjectWorker(enumType, value);
+        [CLSCompliant(false)]
+        public static object ToObject(Type enumType, ulong value) => ToObjectWorker(enumType, (long)value);
+        public static object ToObject(Type enumType, long value) => ToObjectWorker(enumType, value);
+
+        // These are needed to service ToObject(Type, Object).
+        private static object ToObject(Type enumType, char value) => ToObjectWorker(enumType, value);
+        private static object ToObject(Type enumType, bool value) => ToObjectWorker(enumType, value ? 1 : 0);
+
+        // Common helper for the non-boxing Enum.ToObject() overloads.
+        private static object ToObjectWorker(Type enumType, long value)
+        {
+            if (enumType == null)
+                throw new ArgumentNullException(nameof(enumType));
+
+            if (!enumType.IsEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
+
+            if (!enumType.IsRuntimeImplemented())
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(enumType));
+
+            // Check for the unfortunate "typeof(Outer<>).InnerEnum" corner case.
+            if (enumType.ContainsGenericParameters)
+                throw new InvalidOperationException(SR.Format(SR.Arg_OpenType, enumType.ToString()));
+
+            EETypePtr enumEEType = enumType.TypeHandle.ToEETypePtr();
+            return ToObject(enumEEType, value);
+        }
+
+        internal unsafe static object ToObject(EETypePtr enumEEType, long value)
+        {
+            Debug.Assert(enumEEType.IsEnum);
+
+            byte* pValue = (byte*)&value;
+            AdjustForEndianness(ref pValue, enumEEType);
+            return RuntimeImports.RhBox(enumEEType, pValue);
+        }
+        #endregion
     }
 }
-
