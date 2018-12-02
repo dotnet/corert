@@ -1582,7 +1582,16 @@ namespace Internal.JitInterface
                     // RyuJIT doesn't expect this to be null and this is used in comparisons.
                     // Returning null might make RyuJIT think a type with unknown type information (null)
                     // is a runtime type and that's a pain to debug.
-                    Debug.Assert(typeOfRuntimeType != null);
+                    if (typeOfRuntimeType == null)
+                    {
+                        // Make sure that this is not a class library that supports any sort of reflection RyuJIT needs to be aware of.
+                        Debug.Assert(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.Object).GetMethod("GetType", null) == null &&
+                            (_compilation.TypeSystemContext.SystemModule.GetType("System", "Type", false) == null ||
+                            _compilation.TypeSystemContext.SystemModule.GetType("System", "Type", false).GetMethod("GetTypeFromHandle", null) == null));
+
+                        // Report the global module type as the runtime type. This can never be allocated so it won't be confused with anything else.
+                        typeOfRuntimeType = _compilation.TypeSystemContext.SystemModule.GetGlobalModuleType();
+                    }
 
                     return ObjectToHandle(typeOfRuntimeType);
 
