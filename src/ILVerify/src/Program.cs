@@ -328,7 +328,10 @@ namespace ILVerify
 
         private void PrintVerifyTypesResult(VerificationResult result, EcmaModule module, string pathOrModuleName)
         {
-
+            if (result.Code == VerifierError.InterfaceImplHasDuplicate)
+            {
+                Console.WriteLine($"[MD]: Error: {result.Message}, token={result.GetArgumentValue<int>("TokenInterface").ToString("X8")}");
+            }
         }
 
         /// <summary>

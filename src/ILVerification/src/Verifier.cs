@@ -13,6 +13,7 @@ using System.Resources;
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using Internal.TypeVerifier;
 
 namespace ILVerify
 {
@@ -243,7 +244,63 @@ namespace ILVerify
         private IEnumerable<VerificationResult> VerifyType(EcmaModule module, TypeDefinitionHandle typeHandle)
         {
             var builder = new ArrayBuilder<VerificationResult>();
+
+            try
+            {
+                TypeVerifier typeVerifier = new TypeVerifier(module, typeHandle, _stringResourceManager);
+
+                typeVerifier.ReportVerificationError = (args, code, message) =>
+                {
+                    builder.Add(new VerificationResult()
+                    {
+                        Code = code,
+                        Type = typeHandle,
+                        ErrorArguments = args,
+                        Message = message
+                    });
+                };
+
+                typeVerifier.Verify();
+            }
+            catch (BadImageFormatException)
+            {
+                builder.Add(new VerificationResult()
+                {
+                    Type = typeHandle,
+                    Message = "Unable to resolve token"
+                });
+            }
+            catch (NotImplementedException e)
+            {
+                reportException(e);
+            }
+            catch (InvalidProgramException e)
+            {
+                reportException(e);
+            }
+            catch (PlatformNotSupportedException e)
+            {
+                reportException(e);
+            }
+            catch (VerifierException e)
+            {
+                reportException(e);
+            }
+            catch (TypeSystemException e)
+            {
+                reportException(e);
+            }
+
             return builder.ToArray();
+
+            void reportException(Exception e)
+            {
+                builder.Add(new VerificationResult()
+                {
+                    Type = typeHandle,
+                    Message = e.Message
+                });
+            }
         }
 
         private void ThrowMissingSystemModule()

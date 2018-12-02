@@ -438,4 +438,7 @@
   <data name="Volatile" xml:space="preserve">
     <value>Missing ldsfld, stsfld, ldind, stind, ldfld, stfld, ldobj, stobj, initblk, or cpblk.</value>
   </data>
+  <data name="InterfaceImplHasDuplicate" xml:space="preserve">
+    <value>Interface implementation has a duplicate. Class '{0}' Interface: '{1}'</value>
+  </data>
 </root>
