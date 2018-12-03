@@ -3509,40 +3509,23 @@ namespace Internal.IL
         {
             Debug.Assert(!type.IsRuntimeDeterminedSubtype);
 
-            // TODO: Before field init
-
             MethodDesc cctor = type.GetStaticConstructor();
             if (cctor == null)
                 return;
 
-            // TODO: Thread safety
-
             MethodDesc canonCctor = cctor.GetCanonMethodTarget(CanonicalFormKind.Specific);
-
-            string ctorHasRun = _writer.GetCppStaticsName(type) + ".__cctor_has_run";
-            AppendLine();
-            Append("if (!" + ctorHasRun + ") {");
-            Indent();
-            AppendLine();
-            Append(ctorHasRun + " = true;");
-            AppendLine();
-            Append(_writer.GetCppTypeName(canonCctor.OwningType));
-            Append("::");
-            Append(_writer.GetCppMethodName(canonCctor));
-            Append("(");
-
-            if (canonCctor != cctor)
-            {
-                Append(_writer.GetCppTypeName(cctor.OwningType));
-                Append("::__getMethodTable()");
-            }
-
-            Append(");");
-            Exdent();
-            AppendLine();
-            Append("}");
-
             AddMethodReference(canonCctor);
+
+            IMethodNode helperNode = (IMethodNode)_nodeFactory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnNonGCStaticBase);
+
+            Append(_writer.GetCppTypeName(helperNode.Method.OwningType));
+            Append("::");
+            Append(_writer.GetCppMethodName(helperNode.Method));
+            Append("((::System_Private_CoreLib::System::Runtime::CompilerServices::StaticClassConstructionContext*)&");
+            Append(_writer.GetCppStaticsName(type));
+            Append(", (intptr_t)&");
+            Append(_writer.GetCppStaticsName(type));
+            Append(");");
         }
 
         private void AddTypeReference(TypeDesc type, bool constructed)

@@ -1714,19 +1714,9 @@ namespace ILCompiler.CppCodeGen
                             _statics[nodeType] = staticsBuffer;
                         }
 
-                        if (cctor.RequiresInstArg())
-                        {
-                            staticsBuffer.Append("void (*__cctor)(void *);");
-                            staticsBuffer.AppendLine();
-                            staticsBuffer.Append("void *__ctx;");
-                        }
-                        else
-                        {
-                            staticsBuffer.Append("void (*__cctor)();");
-                        }
-
+                        staticsBuffer.Append("void *__cctorMethodAddress;");
                         staticsBuffer.AppendLine();
-                        staticsBuffer.Append("bool __cctor_has_run;");
+                        staticsBuffer.Append("int __initialized;");
                         staticsBuffer.AppendLine();
                     }
                 }
@@ -1841,8 +1831,8 @@ namespace ILCompiler.CppCodeGen
             return rtrHeader.ToString();
         }
 
-        private void OutputCodeForTriggerCctor(CppGenerationBuffer sb, TypeDesc type,
-            string staticsBaseVarName, string staticsVarName)
+        private void OutputCodeForTriggerCctor(CppGenerationBuffer sb, NodeFactory factory,
+            TypeDesc type, string staticsBaseVarName, string staticsVarName)
         {
             type = type.ConvertToCanonForm(CanonicalFormKind.Specific);
             MethodDesc cctor = type.GetStaticConstructor();
@@ -1858,30 +1848,15 @@ namespace ILCompiler.CppCodeGen
             sb.Append(";");
             sb.AppendLine();
 
-            sb.Append("if (!");
-            sb.Append(staticsVarName);
-            sb.Append("->__cctor_has_run) {");
-            sb.Indent();
-            sb.AppendLine();
+            IMethodNode helperNode = (IMethodNode)factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnNonGCStaticBase);
 
-            sb.Append(staticsVarName);
-            sb.Append("->__cctor_has_run = true;");
-            sb.AppendLine();
-
-            sb.Append(staticsVarName);
-            sb.Append("->__cctor(");
-
-            if (cctor.RequiresInstArg())
-            {
-                sb.Append(staticsVarName);
-                sb.Append("->__ctx");
-            }
-
+            sb.Append(GetCppMethodDeclarationName(helperNode.Method.OwningType, GetCppMethodName(helperNode.Method), false));
+            sb.Append("((::System_Private_CoreLib::System::Runtime::CompilerServices::StaticClassConstructionContext*)");
+            sb.Append(staticsBaseVarName);
+            sb.Append(", (intptr_t)");
+            sb.Append(staticsBaseVarName);
             sb.Append(");");
 
-            sb.Exdent();
-            sb.AppendLine();
-            sb.Append("}");
             sb.AppendLine();
         }
 
@@ -2048,7 +2023,7 @@ namespace ILCompiler.CppCodeGen
                         {
                             string staticsVarName = "statics";
 
-                            OutputCodeForTriggerCctor(sb, target, resVarName, staticsVarName);
+                            OutputCodeForTriggerCctor(sb, factory, target, resVarName, staticsVarName);
                         }
                     }
                     break;
@@ -2071,7 +2046,7 @@ namespace ILCompiler.CppCodeGen
 
                             OutputCodeForDictionaryLookup(sb, factory, node, nonGcRegionLookup, ctxVarName, nonGcStaticsBase);
 
-                            OutputCodeForTriggerCctor(sb, target, nonGcStaticsBase, staticsVarName);
+                            OutputCodeForTriggerCctor(sb, factory, target, nonGcStaticsBase, staticsVarName);
                         }
                     }
                     break;
@@ -2094,7 +2069,7 @@ namespace ILCompiler.CppCodeGen
 
                             OutputCodeForDictionaryLookup(sb, factory, node, nonGcRegionLookup, ctxVarName, nonGcStaticsBase);
 
-                            OutputCodeForTriggerCctor(sb, target, nonGcStaticsBase, staticsVarName);
+                            OutputCodeForTriggerCctor(sb, factory, target, nonGcStaticsBase, staticsVarName);
                         }
                     }
                     break;
@@ -2286,16 +2261,14 @@ namespace ILCompiler.CppCodeGen
 
                         if (canonCctor.RequiresInstArg())
                         {
-                            sb.Append("(void (*)(void *)) *(void **)");
+                            sb.Append("(char *)");
                             sb.Append(GetCppFatFunctionPointerNameForMethod(cctor));
-                            sb.Append("(),");
-                            sb.Append("**(void***) (((intptr_t)");
-                            sb.Append(GetCppFatFunctionPointerNameForMethod(cctor));
-                            sb.Append("()) + sizeof(void*))");
+                            sb.Append("() + ");
+                            sb.Append(FatFunctionPointerConstants.Offset.ToString());
                         }
                         else
                         {
-                            sb.Append("&");
+                            sb.Append("(void*)&");
                             sb.Append(GetCppMethodDeclarationName(canonCctor.OwningType, GetCppMethodName(canonCctor)));
                         }
 
