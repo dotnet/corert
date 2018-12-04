@@ -396,10 +396,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         break;
 
                     case CorTokenType.mdtMemberRef:
-                        // TODO: module override for methodrefs with external module context
-                        flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MemberRefToken;
-                        EmitUInt(flags);
-                        EmitMethodRefToken(methodToken);
+                        {
+                            // TODO: module override for methodrefs with external module context
+                            flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MemberRefToken;
+
+                            MemberReference memberRef = methodToken.MetadataReader.GetMemberReference((MemberReferenceHandle)methodToken.Handle);
+                            if (methodToken.Module.GetObject(memberRef.Parent) != (object)method.OwningType)
+                            {
+                                // We have a memberref token for a different type - encode owning type explicitly in the signature
+                                flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
+                            }
+
+                            EmitUInt(flags);
+                            if ((flags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
+                            {
+                                EmitTypeSignature(method.OwningType, context);
+                            }
+                            EmitMethodRefToken(methodToken);
+                        }
                         break;
 
                     default:
