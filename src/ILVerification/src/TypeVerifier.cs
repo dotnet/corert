@@ -1,9 +1,11 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-using System.Resources;
 using ILVerify;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -14,20 +16,22 @@ namespace Internal.TypeVerifier
     {
         private EcmaModule _module;
         private readonly TypeDefinitionHandle _typeDefinitionHandle;
-        private readonly Lazy<ResourceManager> _stringResourceManager;
-        private static readonly string _errorPrefix = "[MD]: Error: ";
 
-        public Action<ErrorArgument[], VerifierError, string, object[]> ReportVerificationError
+        public Action<VerifierError, object[]> ReportVerificationError
         {
             set;
             private get;
         }
 
-        public TypeVerifier(EcmaModule module, TypeDefinitionHandle typeDefinitionHandle, Lazy<ResourceManager> stringResourceManager)
+        private void VerificationError(VerifierError error, params object[] args)
+        {
+            ReportVerificationError(error, args);
+        }
+
+        public TypeVerifier(EcmaModule module, TypeDefinitionHandle typeDefinitionHandle)
         {
             _module = module;
             _typeDefinitionHandle = typeDefinitionHandle;
-            _stringResourceManager = stringResourceManager;
         }
 
         public void Verify()
@@ -75,8 +79,7 @@ namespace Internal.TypeVerifier
                 }
                 else
                 {
-                    string message = _stringResourceManager.Value.GetString(VerifierError.InterfaceImplHasDuplicate.ToString(), CultureInfo.InvariantCulture);
-                    ReportVerificationError(null, VerifierError.InterfaceImplHasDuplicate, $"{_errorPrefix}{message}", new object[] { type.ToString(), interfaceType.ToString(), _module.MetadataReader.GetToken(interfaceHandle) });
+                    VerificationError(VerifierError.InterfaceImplHasDuplicate, type, interfaceType, _module.MetadataReader.GetToken(interfaceHandle));
                 }
             }
 

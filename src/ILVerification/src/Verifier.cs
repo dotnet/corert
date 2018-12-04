@@ -247,16 +247,14 @@ namespace ILVerify
 
             try
             {
-                TypeVerifier typeVerifier = new TypeVerifier(module, typeHandle, _stringResourceManager);
+                TypeVerifier typeVerifier = new TypeVerifier(module, typeHandle);
 
-                typeVerifier.ReportVerificationError = (errorArguments, code, message, args) =>
+                typeVerifier.ReportVerificationError = (code, args) =>
                 {
                     builder.Add(new VerificationResult()
                     {
                         Code = code,
-                        Type = typeHandle,
-                        ErrorArguments = errorArguments,
-                        Message = message,
+                        Message = $"[MD]: Error: {_stringResourceManager.Value.GetString(code.ToString(), CultureInfo.InvariantCulture)}",
                         Args = args
                     });
                 };
