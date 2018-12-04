@@ -1,38 +1,36 @@
-## Building Native Libraries ##
+# Building a Native Libraries with CoreRT
 
-CoreRT can also be used to build native libraries that can be consumed by other programming languages. It can build static libraries that can be linked at compile time or shared libraries that are required at runtime. To build a native library you must first modify the `OutputType` and `TargetFramework` in the above `csproj`:
+This document will guide you through building native libraries that can be consumed by other programming languages with CoreRT. CoreRT can build static libraries that can be linked at compile time or shared libraries that are required at runtime.
 
-```
-<Project>
-  <Import Project="$(MSBuildSDKsPath)\Microsoft.NET.Sdk\Sdk\Sdk.props" />
+## Create .NET Core Class Library project with CoreRT support
 
-  <PropertyGroup>
-    <OutputType>Library</OutputType>
-    <TargetFramework>netstandard2.0</TargetFramework>
-  </PropertyGroup>
+Create a .NET Core class library project using `dotnet new console -o NativeLibrary` and follow the [Hello world](../HelloWorld/README.md) sample instruction to add CoreRT support to it. 
 
-  <Import Project="$(MSBuildSDKsPath)\Microsoft.NET.Sdk\Sdk\Sdk.targets" />
-  <Import Project="$(IlcPath)\build\Microsoft.NETCore.Native.targets" />
-</Project>
+dotnet new console -o HelloWorld
+
+## Building static libraries
+
+```bash
+> dotnet publish /p:NativeLib=Static -r <RID> -c <Configuration>
 ```
 
-Building static libraries:
+where `<Configuration>` is your project configuration (such as Debug or Release) and `<RID>` is the runtime identifier (one of win-x64, linux-x64, osx-x64). For example, if you want to publish a release configuration of your library for a 64-bit version of Windows the command would look like:
 
-``` 
-    dotnet publish /p:NativeLib=Static -r win-x64|linux-x64|osx-x64
+```bash 
+> dotnet publish /p:NativeLib=Static -r win-x64 -c release
 ```
 
-The above command will drop a static library (Windows `.lib`, OSX/Linux `.a`) in `./bin/x64/[configuration]/netstandard2.0/publish/` folder and will have the same name as the folder in which your source file is present.
+The above command will drop a static library (Windows `.lib`, OSX/Linux `.a`) in `./bin/[configuration]/netstandard2.0/[RID]/publish/` folder and will have the same name as the folder in which your source file is present.
 
-Building shared libraries:
+## Building shared libraries
 
-``` 
-    dotnet publish /p:NativeLib=Shared -r win-x64|linux-x64|osx-x64
+```bash
+> dotnet publish /p:NativeLib=Shared -r <RID> -c <Configuration>
 ```
 
-The above command will drop a shared library (Windows `.dll`, OSX `.dylib`, Linux `.so`) in `./bin/x64/[configuration]/netstandard2.0/publish/` folder and will have the same name as the folder in which your source file is present. Building shared libraries on Linux is currently non-functional, see [#4988](https://github.com/dotnet/corert/issues/4988).
+The above command will drop a shared library (Windows `.dll`, OSX `.dylib`, Linux `.so`) in `./bin/[configuration]/netstandard2.0/[RID]/publish/` folder and will have the same name as the folder in which your source file is present. Building shared libraries on Linux is currently non-functional, see [#4988](https://github.com/dotnet/corert/issues/4988).
 
-Exporting methods:
+## Exporting methods
 
 For a C# method in the native library to be consumable by external programs, it has to be explicitly exported using the `[NativeCallable]` attribute. First define the `NativeCallable` class in your project, see [here](https://github.com/dotnet/corert/blob/master/tests/src/Simple/SharedLibrary/NativeCallable.cs). Next, apply the attribute to the method, specifying the `EntryPoint` and `CallingConvention` properties:
 
