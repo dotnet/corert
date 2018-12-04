@@ -244,6 +244,7 @@
     <Compile Include="System\Runtime\CompilerServices\InitializedDataAttributes.cs" />
     <Compile Include="System\Runtime\CompilerServices\InternalCompilerAttributes.cs" />
     <Compile Include="System\Runtime\CompilerServices\ReflectionBlockedAttribute.cs" />
+    <Compile Include="System\Runtime\CompilerServices\RuntimeFeature.CoreRT.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
     <Compile Include="System\Runtime\CompilerServices\NetNativeToolsVersionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\FakeElementAttribute.cs" />
