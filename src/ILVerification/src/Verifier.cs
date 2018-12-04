@@ -249,14 +249,15 @@ namespace ILVerify
             {
                 TypeVerifier typeVerifier = new TypeVerifier(module, typeHandle, _stringResourceManager);
 
-                typeVerifier.ReportVerificationError = (args, code, message) =>
+                typeVerifier.ReportVerificationError = (errorArguments, code, message, args) =>
                 {
                     builder.Add(new VerificationResult()
                     {
                         Code = code,
                         Type = typeHandle,
-                        ErrorArguments = args,
-                        Message = message
+                        ErrorArguments = errorArguments,
+                        Message = message,
+                        Args = args
                     });
                 };
 

@@ -12,6 +12,7 @@ namespace ILVerify
         public TypeDefinitionHandle Type { get; internal set; }
         public MethodDefinitionHandle Method { get; internal set; }
         public string Message { get; internal set; }
+        public object[] Args { get; internal set; }
         public ErrorArgument[] ErrorArguments { get; set; }
 
         public T GetArgumentValue<T>(string name)

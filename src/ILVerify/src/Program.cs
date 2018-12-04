@@ -315,7 +315,7 @@ namespace ILVerify
                     var results = _verifier.Verify(peReader, typeHandle);
                     foreach (VerificationResult result in results)
                     {
-                        PrintVerifyTypesResult(result, module, path);
+                        Console.WriteLine(result.Message, result.Args);
                         numErrors++;
                     }
 
@@ -323,14 +323,6 @@ namespace ILVerify
                 }
 
                 verifiedTypeCounter++;
-            }
-        }
-
-        private void PrintVerifyTypesResult(VerificationResult result, EcmaModule module, string pathOrModuleName)
-        {
-            if (result.Code == VerifierError.InterfaceImplHasDuplicate)
-            {
-                Console.WriteLine($"[MD]: Error: {result.Message}, token={result.GetArgumentValue<int>("TokenInterface").ToString("X8")}");
             }
         }
 

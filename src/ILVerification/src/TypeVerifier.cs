@@ -15,8 +15,9 @@ namespace Internal.TypeVerifier
         private EcmaModule _module;
         private readonly TypeDefinitionHandle _typeDefinitionHandle;
         private readonly Lazy<ResourceManager> _stringResourceManager;
+        private static readonly string _errorPrefix = "[MD]: Error: ";
 
-        public Action<ErrorArgument[], VerifierError, string> ReportVerificationError
+        public Action<ErrorArgument[], VerifierError, string, object[]> ReportVerificationError
         {
             set;
             private get;
@@ -39,49 +40,48 @@ namespace Internal.TypeVerifier
             TypeDefinition typeDefinition = _module.MetadataReader.GetTypeDefinition(_typeDefinitionHandle);
             EcmaType type = (EcmaType)_module.GetType(_typeDefinitionHandle);
 
-            // if not interface or abstract
-            if (!type.IsInterface && !type.IsAbstract)
+            if (type.IsInterface)
             {
-                InterfaceImplementationHandleCollection interfaceHandles = typeDefinition.GetInterfaceImplementations();
-                int count = interfaceHandles.Count;
-                if (count == 0)
+                return;
+            }
+
+            InterfaceImplementationHandleCollection interfaceHandles = typeDefinition.GetInterfaceImplementations();
+            int count = interfaceHandles.Count;
+            if (count == 0)
+            {
+                return;
+            }
+
+            // Look for duplicates.
+            List<InterfaceMetadataObjects> implementedInterfaces = new List<InterfaceMetadataObjects>();
+            foreach (InterfaceImplementationHandle interfaceHandle in interfaceHandles)
+            {
+                InterfaceImplementation interfaceImplementation = _module.MetadataReader.GetInterfaceImplementation(interfaceHandle);
+                DefType interfaceType = _module.GetType(interfaceImplementation.Interface) as DefType;
+                if (interfaceType == null)
                 {
-                    return;
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
                 }
 
-                // Look for duplicates.
-                List<InterfaceMetadataObjects> implementedInterfaces = new List<InterfaceMetadataObjects>();
-                foreach (InterfaceImplementationHandle interfaceHandle in interfaceHandles)
+                InterfaceMetadataObjects imo = new InterfaceMetadataObjects
                 {
-                    InterfaceImplementation interfaceImplementation = _module.MetadataReader.GetInterfaceImplementation(interfaceHandle);
-                    DefType interfaceType = _module.GetType(interfaceImplementation.Interface) as DefType;
-                    if (interfaceType == null)
-                    {
-                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
-                    }
+                    DefType = interfaceType,
+                    InterfaceImplementationHandle = interfaceHandle
+                };
 
-                    InterfaceMetadataObjects imo = new InterfaceMetadataObjects
-                    {
-                        DefType = interfaceType,
-                        InterfaceImplementationHandle = interfaceHandle
-                    };
-
-                    if (!implementedInterfaces.Contains(imo))
-                    {
-                        implementedInterfaces.Add(imo);
-                    }
-                    else
-                    {
-                        var args = new ErrorArgument[]
-                        {
-                            new ErrorArgument("TokenClass", _module.MetadataReader.GetToken(_typeDefinitionHandle)),
-                            new ErrorArgument("TokenInterface", _module.MetadataReader.GetToken(interfaceHandle))
-                        };
-                        string message = _stringResourceManager.Value.GetString(VerifierError.InterfaceImplHasDuplicate.ToString(), CultureInfo.InvariantCulture);
-                        ReportVerificationError(args, VerifierError.InterfaceImplHasDuplicate, string.Format(message, type.ToString(), interfaceType.ToString()));
-                    }
+                if (!implementedInterfaces.Contains(imo))
+                {
+                    implementedInterfaces.Add(imo);
+                }
+                else
+                {
+                    string message = _stringResourceManager.Value.GetString(VerifierError.InterfaceImplHasDuplicate.ToString(), CultureInfo.InvariantCulture);
+                    ReportVerificationError(null, VerifierError.InterfaceImplHasDuplicate, $"{_errorPrefix}{message}", new object[] { type.ToString(), interfaceType.ToString(), _module.MetadataReader.GetToken(interfaceHandle) });
                 }
             }
+
+            // Other check
+
         }
 
         private class InterfaceMetadataObjects : IEquatable<InterfaceMetadataObjects>
