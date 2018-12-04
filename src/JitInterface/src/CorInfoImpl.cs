@@ -1578,13 +1578,7 @@ namespace Internal.JitInterface
 
                 case CorInfoClassId.CLASSID_RUNTIME_TYPE:
                     TypeDesc typeOfRuntimeType = _compilation.GetTypeOfRuntimeType();
-
-                    // RyuJIT doesn't expect this to be null and this is used in comparisons.
-                    // Returning null might make RyuJIT think a type with unknown type information (null)
-                    // is a runtime type and that's a pain to debug.
-                    Debug.Assert(typeOfRuntimeType != null);
-
-                    return ObjectToHandle(typeOfRuntimeType);
+                    return typeOfRuntimeType != null ? ObjectToHandle(typeOfRuntimeType) : null;
 
                 default:
                     throw new NotImplementedException();
@@ -1739,7 +1733,58 @@ namespace Internal.JitInterface
         }
 
         private CORINFO_CLASS_STRUCT_* mergeClasses(CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2)
-        { throw new NotImplementedException("mergeClasses"); }
+        {
+            TypeDesc type1 = HandleToObject(cls1);
+            TypeDesc type2 = HandleToObject(cls2);
+
+            TypeDesc merged = TypeExtensions.MergeTypesToCommonParent(type1, type2);
+
+#if DEBUG
+            // Make sure the merge is reflexive in the cases we "support".
+            TypeDesc reflexive = TypeExtensions.MergeTypesToCommonParent(type2, type1);
+
+            // If both sides are classes than either they have a common non-interface parent (in which case it is
+            // reflexive)
+            // OR they share a common interface, and it can be order dependent (if they share multiple interfaces
+            // in common)
+            if (!type1.IsInterface && !type2.IsInterface)
+            {
+                if (merged.IsInterface)
+                {
+                    Debug.Assert(reflexive.IsInterface);
+                }
+                else
+                {
+                    Debug.Assert(merged == reflexive);
+                }
+            }
+            // Both results must either be interfaces or classes.  They cannot be mixed.
+            Debug.Assert(merged.IsInterface == reflexive.IsInterface);
+
+            // If the result of the merge was a class, then the result of the reflexive merge was the same class.
+            if (!merged.IsInterface)
+            {
+                Debug.Assert(merged == reflexive);
+            }
+
+            // If both sides are arrays, then the result is either an array or g_pArrayClass.  The above is
+            // actually true about the element type for references types, but I think that that is a little
+            // excessive for sanity.
+            if (type1.IsArray && type2.IsArray)
+            {
+                TypeDesc arrayClass = _compilation.TypeSystemContext.GetWellKnownType(WellKnownType.Array);
+                Debug.Assert((merged.IsArray && reflexive.IsArray)
+                         || ((merged == arrayClass) && (reflexive == arrayClass)));
+            }
+
+            // The results must always be assignable
+            Debug.Assert(type1.CanCastTo(merged) && type2.CanCastTo(merged) && type1.CanCastTo(reflexive)
+                     && type2.CanCastTo(reflexive));
+#endif
+
+            return ObjectToHandle(merged);
+        }
+
         private CORINFO_CLASS_STRUCT_* getParentType(CORINFO_CLASS_STRUCT_* cls)
         { throw new NotImplementedException("getParentType"); }
 
