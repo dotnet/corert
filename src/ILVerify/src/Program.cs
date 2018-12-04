@@ -315,7 +315,7 @@ namespace ILVerify
                     var results = _verifier.Verify(peReader, typeHandle);
                     foreach (VerificationResult result in results)
                     {
-                        PrintVerifyTypesResult(result, module, path);
+                        Console.WriteLine(result.Message, result.Args);
                         numErrors++;
                     }
 
@@ -324,11 +324,6 @@ namespace ILVerify
 
                 verifiedTypeCounter++;
             }
-        }
-
-        private void PrintVerifyTypesResult(VerificationResult result, EcmaModule module, string pathOrModuleName)
-        {
-
         }
 
         /// <summary>
