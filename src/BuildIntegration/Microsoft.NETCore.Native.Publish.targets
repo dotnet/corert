@@ -77,7 +77,7 @@
     
   </Target>
 
-  <Target Name="CopyNativePdb" Condition="'$(DebugType)' != 'None' and '$(TargetOS)' == 'Windows_NT'" AfterTargets="Publish">
+  <Target Name="CopyNativePdb" Condition="'$(DebugType)' != 'None' and '$(TargetOS)' == 'Windows_NT' and $(NativeLib) != 'Static'" AfterTargets="Publish">
     <!-- dotnet CLI produces managed debug symbols - substitute with those we generated during native compilation -->
     <Delete Files="$(PublishDir)\$(TargetName).pdb"/>    
     <Copy SourceFiles="$(NativeOutputPath)$(TargetName).pdb" DestinationFolder="$(PublishDir)" />  

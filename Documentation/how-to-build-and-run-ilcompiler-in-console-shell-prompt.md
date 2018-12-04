@@ -75,7 +75,7 @@ From the shell/command prompt, issue the following commands to generate the nati
 
 For CoreRT debug build on Windows, add an extra `/p:AdditionalCppCompilerFlags=/MTd` argument.
 
-## Disabling Native Compilation 
+## Disabling Native Compilation ##
 
 Native compilation can be disabled during publishing by adding an extra `/p:NativeCompilationDuringPublish=false` argument.
 
