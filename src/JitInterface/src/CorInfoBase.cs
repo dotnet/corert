@@ -246,7 +246,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate byte* __getMethodName(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, byte** moduleName);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate byte* __getMethodNameFromMetadata(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, byte** className, byte** namespaceName);
+        delegate byte* __getMethodNameFromMetadata(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, byte** className, byte** namespaceName, byte** enclosingClassName);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate uint __getMethodHash(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -1979,12 +1979,12 @@ namespace Internal.JitInterface
             }
         }
 
-        static byte* _getMethodNameFromMetadata(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, byte** className, byte** namespaceName)
+        static byte* _getMethodNameFromMetadata(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, byte** className, byte** namespaceName, byte** enclosingClassName)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getMethodNameFromMetadata(ftn, className, namespaceName);
+                return _this.getMethodNameFromMetadata(ftn, className, namespaceName, enclosingClassName);
             }
             catch (Exception ex)
             {

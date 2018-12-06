@@ -2311,27 +2311,41 @@ namespace Internal.JitInterface
             return (byte*)GetPin(StringToUTF8(method.Name));
         }
 
-        private byte* getMethodNameFromMetadata(CORINFO_METHOD_STRUCT_* ftn, byte** className, byte** namespaceName)
+        private byte* getMethodNameFromMetadata(CORINFO_METHOD_STRUCT_* ftn, byte** className, byte** namespaceName, byte** enclosingClassName)
         {
             MethodDesc method = HandleToObject(ftn);
+
+            string result = null;
+            string classResult = null;
+            string namespaceResult = null;
+            string enclosingResult = null;
+
+            result = method.Name;
 
             MetadataType owningType = method.OwningType as MetadataType;
             if (owningType != null)
             {
-                if (className != null)
-                    *className = (byte*)GetPin(StringToUTF8(owningType.Name));
-                if (namespaceName != null)
-                    *namespaceName = (byte*)GetPin(StringToUTF8(owningType.Namespace));
-            }
-            else
-            {
-                if (className != null)
-                    *className = null;
-                if (namespaceName != null)
-                    *namespaceName = null;
-            }
+                classResult = owningType.Name;
+                namespaceResult = owningType.Namespace;
 
-            return (byte*)GetPin(StringToUTF8(method.Name));
+                // Query enclosingClassName when the method is in a nested class
+                // and get the namespace of enclosing classes (nested class's namespace is empty)
+                var containingType = owningType.ContainingType;
+                if (containingType != null)
+                {
+                    enclosingResult = containingType.Name;
+                    namespaceResult = containingType.Namespace;
+                }
+            }
+            
+            if (className != null)
+                *className = classResult != null ? (byte*)GetPin(StringToUTF8(classResult)) : null;
+            if (namespaceName != null)
+                *namespaceName = namespaceResult != null ? (byte*)GetPin(StringToUTF8(namespaceResult)) : null;
+            if (enclosingClassName != null)
+                *enclosingClassName = enclosingResult != null ? (byte*)GetPin(StringToUTF8(enclosingResult)) : null;
+
+            return result != null ? (byte*)GetPin(StringToUTF8(result)) : null;
         }
 
         private uint getMethodHash(CORINFO_METHOD_STRUCT_* ftn)
