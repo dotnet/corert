@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 
+using Internal.TypeSystem.Interop;
+
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
@@ -158,11 +160,12 @@ namespace Internal.TypeSystem
 
             // At this point all special cases are handled and all inputs validated
 
-            if (type.IsExplicitLayout)
+            if (!TargetCoreCLR && type.IsExplicitLayout)
             {
                 return ComputeExplicitFieldLayout(type, numInstanceFields);
             }
-            else if (type.IsSequentialLayout || type.Context.Target.Abi == TargetAbi.ProjectN || type.Context.Target.Abi == TargetAbi.CppCodegen)
+            else if (!TargetCoreCLR && (type.IsSequentialLayout || type.Context.Target.Abi == TargetAbi.ProjectN || type.Context.Target.Abi == TargetAbi.CppCodegen) ||
+                TargetCoreCLR && IsBlittable.CheckType(type))
             {
                 return ComputeSequentialFieldLayout(type, numInstanceFields);
             }
@@ -873,7 +876,7 @@ namespace Internal.TypeSystem
             if (type.IsWellKnownType(WellKnownType.Double) || type.IsWellKnownType(WellKnownType.Single))
                 return type;
 
-            for (;;)
+            for (; ; )
             {
                 Debug.Assert(type.IsValueType);
 
@@ -906,6 +909,8 @@ namespace Internal.TypeSystem
                 }
             }
         }
+
+        protected virtual bool TargetCoreCLR => false;
 
         private struct SizeAndAlignment
         {

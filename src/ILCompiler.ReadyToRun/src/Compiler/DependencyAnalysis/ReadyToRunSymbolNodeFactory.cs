@@ -219,6 +219,23 @@ namespace ILCompiler.DependencyAnalysis
             return info.Constructor;
         }
 
+        private readonly Dictionary<FieldDesc, ISymbolNode> _fieldAddressCache = new Dictionary<FieldDesc, ISymbolNode>();
+
+        public ISymbolNode FieldAddress(FieldDesc fieldDesc, SignatureContext signatureContext)
+        {
+            ISymbolNode result;
+            if (!_fieldAddressCache.TryGetValue(fieldDesc, out result))
+            {
+                result = new DelayLoadHelperImport(
+                    _codegenNodeFactory,
+                    _codegenNodeFactory.HelperImports,
+                    ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
+                    new FieldFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_FieldAddress, fieldDesc, signatureContext));
+                _fieldAddressCache.Add(fieldDesc, result);
+            }
+            return result;
+        }
+
         private readonly Dictionary<ILCompiler.ReadyToRunHelper, ISymbolNode> _helperCache = new Dictionary<ILCompiler.ReadyToRunHelper, ISymbolNode>();
 
         public ISymbolNode ExternSymbol(ILCompiler.ReadyToRunHelper helper)
