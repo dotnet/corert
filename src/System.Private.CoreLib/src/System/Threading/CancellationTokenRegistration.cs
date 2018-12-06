@@ -35,7 +35,16 @@ namespace System.Threading
         /// registration isn't associated with a token (such as after the registration has been disposed),
         /// this will return a default token.
         /// </summary>
-        public CancellationToken Token => m_callbackInfo?.CancellationTokenSource.Token ?? default(CancellationToken);
+        public CancellationToken Token
+        {
+            get
+            {
+                CancellationCallbackInfo cci = m_callbackInfo;
+                return cci != null ?
+                    new CancellationToken(cci.CancellationTokenSource) : // avoid CTS.Token, which throws after disposal
+                    default;
+            }
+        }
 
         /// <summary>
         /// Attempts to unregister the item. If it's already being run, this may fail.
