@@ -127,7 +127,7 @@ struct JitInterfaceCallbacks
     const wchar_t* (* getJitTimeLogFilename)(void * thisHandle, CorInfoException** ppException);
     unsigned int (* getMethodDefFromMethod)(void * thisHandle, CorInfoException** ppException, void* hMethod);
     const char* (* getMethodName)(void * thisHandle, CorInfoException** ppException, void* ftn, const char** moduleName);
-    const char* (* getMethodNameFromMetadata)(void * thisHandle, CorInfoException** ppException, void* ftn, const char** className, const char** namespaceName);
+    const char* (* getMethodNameFromMetadata)(void * thisHandle, CorInfoException** ppException, void* ftn, const char** className, const char** namespaceName, const char** enclosingClassName);
     unsigned (* getMethodHash)(void * thisHandle, CorInfoException** ppException, void* ftn);
     size_t (* findNameOfToken)(void * thisHandle, CorInfoException** ppException, void* moduleHandle, unsigned int token, char* szFQName, size_t FQNameCapacity);
     bool (* getSystemVAmd64PassStructInRegisterDescriptor)(void * thisHandle, CorInfoException** ppException, void* structHnd, void* structPassInRegDescPtr);
@@ -1205,10 +1205,10 @@ public:
         return _ret;
     }
 
-    virtual const char* getMethodNameFromMetadata(void* ftn, const char** className, const char** namespaceName)
+    virtual const char* getMethodNameFromMetadata(void* ftn, const char** className, const char** namespaceName, const char** enclosingClassName)
     {
         CorInfoException* pException = nullptr;
-        const char* _ret = _callbacks->getMethodNameFromMetadata(_thisHandle, &pException, ftn, className, namespaceName);
+        const char* _ret = _callbacks->getMethodNameFromMetadata(_thisHandle, &pException, ftn, className, namespaceName, enclosingClassName);
         if (pException != nullptr)
             throw pException;
         return _ret;
