@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.IO;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
@@ -19,33 +20,61 @@ namespace ReadyToRun.TestHarness
     class ReadyToRunJittedMethods
     {
         private ICollection<string> _testModuleNames;
+        private ICollection<string> _testFolderNames;
         private List<long> _testModuleIds = new List<long>();
-        private List<(string, bool)> _methodsJitted = new List<(string name, bool readyToRunRejected)>();
+        private Dictionary<long, string> _testModuleIdToName = new Dictionary<long, string>();
+        private List<(string, string, bool)> _methodsJitted = new List<(string name, string moduleName, bool readyToRunRejected)>();
+        private int _pid = -1;
 
-        public ReadyToRunJittedMethods(TraceEventSession session, ICollection<string> testModuleNames)
+        public ReadyToRunJittedMethods(TraceEventSession session, ICollection<string> testModuleNames, ICollection<string> testFolderNames)
         {
             _testModuleNames = testModuleNames;
+            _testFolderNames = testFolderNames;
             
             session.Source.Clr.LoaderModuleLoad += delegate(ModuleLoadUnloadTraceData data)
             {
-                if (_testModuleNames.Contains(data.ModuleILPath) || _testModuleNames.Contains(data.ModuleNativePath))
+                if (ShouldMonitorModule(data))
                 {
                     Console.WriteLine($"Tracking module {data.ModuleILFileName} with Id {data.ModuleID}");
                     _testModuleIds.Add(data.ModuleID);
+                    _testModuleIdToName[data.ModuleID] = Path.GetFileNameWithoutExtension(data.ModuleILFileName);
                 }
             };
             
             session.Source.Clr.MethodLoadVerbose += delegate (MethodLoadUnloadVerboseTraceData data)
             {
-                if (_testModuleIds.Contains(data.ModuleID) && data.IsJitted)
+                if (data.ProcessID == _pid && _testModuleIds.Contains(data.ModuleID) && data.IsJitted)
                 {
                     Console.WriteLine($"Method loaded {GetName(data)} - {data}");
-                    _methodsJitted.Add((GetName(data), ((int)data.MethodFlags & 0x40) != 0));
+                    _methodsJitted.Add((GetName(data), _testModuleIdToName[data.ModuleID], ((int)data.MethodFlags & 0x40) != 0));
                 }
             };
         }
 
-        public IEnumerable<(string MethodName, bool ReadyToRunRejected)> JittedMethods => _methodsJitted;
+        private bool ShouldMonitorModule(ModuleLoadUnloadTraceData data)
+        {
+            if (data.ProcessID != _pid)
+                return false;
+
+            if (File.Exists(data.ModuleILPath) && _testFolderNames.Contains(Path.GetDirectoryName(data.ModuleILPath).ToAbsoluteDirectoryPath().ToLower()))
+                return true;
+            
+            if (_testModuleNames.Contains(data.ModuleILPath.ToLower()) || _testModuleNames.Contains(data.ModuleNativePath.ToLower()))
+                return true;
+
+            return false;
+        }
+
+        /// <summary>
+        /// Set the process to monitor events for given its Id. This should be set immediately after
+        /// calling Process.Start to ensure no module load events are missed for the runtime instance.
+        /// </summary>
+        public void SetProcessId(int pid)
+        {
+            _pid = pid;
+        }
+
+        public IEnumerable<(string MethodName, string assemblyName, bool ReadyToRunRejected)> JittedMethods => _methodsJitted;
 
         /// <summary>
         /// Returns the number of test assemblies that were loaded by the runtime
