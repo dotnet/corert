@@ -135,7 +135,6 @@
     <Compile Include="Compiler\FrameworkStringResourceBlockingPolicy.cs" />
     <Compile Include="Compiler\GeneratingMetadataManager.cs" />
     <Compile Include="Compiler\InternalCompilerErrorException.cs" />
-    <Compile Include="Compiler\ManagedEntryPointRootProvider.cs" />
     <Compile Include="Compiler\ManifestResourceBlockingPolicy.cs" />
     <Compile Include="Compiler\NoManifestResourceBlockingPolicy.cs" />
     <Compile Include="Compiler\NoMetadataBlockingPolicy.cs" />
