@@ -649,6 +649,50 @@ internal class Program
         return success;
     }
 
+    private enum ByteEnum : byte
+    {
+        Value0,
+        Value1,
+        Value2,
+        Value3,
+    }
+    
+    private enum IntEnum : int
+    {
+        Value0,
+        Value1,
+        Value2,
+        Value3,
+    }
+
+    private static bool EnumHashValueTest()
+    {
+        Console.WriteLine("ByteEnum.Value1.GetHashCode: ", ByteEnum.Value1.GetHashCode());
+        Console.WriteLine("IntEnum.Value3.GetHashCode: ", IntEnum.Value3.GetHashCode());
+        
+        ByteEnum[] byteEnumValues = { ByteEnum.Value3, ByteEnum.Value1, ByteEnum.Value0, ByteEnum.Value2, };
+        foreach (ByteEnum enumValue in byteEnumValues)
+        {
+            Console.WriteLine("{0}.GetHashCode: {1}", enumValue, enumValue.GetHashCode());
+            if (enumValue.GetHashCode() != (int)enumValue)
+            {
+                return false;
+            }
+        }
+        
+        IntEnum[] intEnumValues = { IntEnum.Value2, IntEnum.Value0, IntEnum.Value1, IntEnum.Value3, };
+        foreach (IntEnum enumValue in intEnumValues)
+        {
+            Console.WriteLine("{0}.GetHashCode: {1}", enumValue, enumValue.GetHashCode());
+            if (enumValue.GetHashCode() != (int)enumValue)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public static int Main(string[] args)
     {
         if (args.Length > 0)
@@ -694,6 +738,7 @@ internal class Program
         RunTest("ClassParamGenericLookupTest", ClassParamGenericLookupTest());
         RunTest("MethodParamGenericLookupTest", MethodParamGenericLookupTest());
         RunTest("VectorTest", VectorTest());
+        RunTest("EnumHashValueTest", EnumHashValueTest());
 
         Console.WriteLine($@"{_passedTests.Count} tests pass:");
         foreach (string testName in _passedTests)

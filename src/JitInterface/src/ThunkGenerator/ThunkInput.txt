@@ -278,7 +278,7 @@ FUNCTIONS
     LPCWSTR getJitTimeLogFilename();
     mdMethodDef getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod);
     const char* getMethodName(CORINFO_METHOD_HANDLE ftn, const char **moduleName);
-    const char* getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, const char **className, const char **namespaceName);
+    const char* getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, const char **className, const char **namespaceName, const char **enclosingClassName);
     unsigned getMethodHash(CORINFO_METHOD_HANDLE       ftn);
     size_t findNameOfToken(CORINFO_MODULE_HANDLE       moduleHandle,mdToken                     token, char * szFQName,size_t FQNameCapacity);
     bool getSystemVAmd64PassStructInRegisterDescriptor(CORINFO_CLASS_HANDLE  structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr);

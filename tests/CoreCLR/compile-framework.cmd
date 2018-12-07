@@ -31,6 +31,9 @@ goto :eof
 :: %1 Path to assembly to compile
 :CompileAssembly
 
+:: Skip native libraries picked up by the wildcard spec - currently there's just one
+if /I [%~n1] == [Microsoft.DiaSymReader.Native.amd64] goto :eof
+
 echo Compiling %1
 set TestFileName=%1
 set MsBuildCommandLine=msbuild 

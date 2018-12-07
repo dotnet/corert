@@ -189,5 +189,6 @@ namespace ILVerify
         //IDS_E_ILERROR        "[IL]: Error: "
         //IDS_E_GLOBAL         "<GlobalFunction>"
         //IDS_E_MDTOKEN        "[mdToken=0x%x]"
+        InterfaceImplHasDuplicate             // InterfaceImpl has a duplicate
     }
 }
