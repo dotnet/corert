@@ -253,9 +253,13 @@ namespace Internal.IL
         private void ImportLoadInt(long value, StackValueKind kind)
         {
             if (kind == StackValueKind.Int32)
+            {
                 _interpreter.EvaluationStack.Push(StackItem.FromInt32((int)value));
+            }
             else if (kind == StackValueKind.Int64)
+            {
                 _interpreter.EvaluationStack.Push(StackItem.FromInt64(value));
+            }
         }
 
         private void ImportLoadFloat(double value)
@@ -268,29 +272,12 @@ namespace Internal.IL
             StackItem op1 = PopWithValidation();
             StackItem op2 = PopWithValidation();
 
-            int shiftBy = default(int);
-
-            switch (op1.Kind)
+            if (op1.Kind > StackValueKind.NativeInt)
             {
-                case StackValueKind.Int32:
-                    shiftBy = op1.AsInt32();
-                    break;
-                case StackValueKind.Int64:
-                    shiftBy = (int)op1.AsInt64();
-                    break;
-                case StackValueKind.NativeInt:
-                    shiftBy = op1.AsNativeInt().ToInt32();
-                    break;
-                case StackValueKind.Float:
-                case StackValueKind.Unknown:
-                case StackValueKind.ByRef:
-                case StackValueKind.ObjRef:
-                case StackValueKind.ValueType:
-                default:
-                    ThrowHelper.ThrowInvalidProgramException();
-                    break;
+                ThrowHelper.ThrowInvalidProgramException();
             }
 
+            int shiftBy = op1.AsInt32Unchecked();
             switch (op2.Kind)
             {
                 case StackValueKind.Int32:
@@ -343,14 +330,14 @@ namespace Internal.IL
                         switch (opcode)
                         {
                             case ILOpcode.shl:
-                                value = new IntPtr(value.ToInt64() << shiftBy);
+                                value = (IntPtr)((long)value << shiftBy);
                                 break;
                             case ILOpcode.shr:
-                                value = new IntPtr(value.ToInt64() >> shiftBy);
+                                value = (IntPtr)((long)value >> shiftBy);
                                 break;
                             case ILOpcode.shr_un:
                                 UIntPtr uintPtr = (UIntPtr)value.ToPointer();
-                                value = new IntPtr((long)(uintPtr.ToUInt64() >> shiftBy));
+                                value = (IntPtr)(long)((ulong)uintPtr >> shiftBy);
                                 break;
                             default:
                                 Debug.Assert(false);
@@ -377,187 +364,150 @@ namespace Internal.IL
             StackItem op1 = PopWithValidation();
             StackItem op2 = PopWithValidation();
 
-            switch (op1.Kind)
+            StackValueKind kind = (op1.Kind > op2.Kind) ? op1.Kind : op2.Kind;
+            switch (kind)
             {
                 case StackValueKind.Int32:
                     {
-                        int val1 = op1.AsInt32();
+                        int val1 = op1.AsInt32Unchecked();
+                        int val2 = op2.AsInt32Unchecked();
 
-                        if (op2.Kind == StackValueKind.Int32 || op2.Kind == StackValueKind.NativeInt)
+                        switch (opcode)
                         {
-                            long val2 = op2.Kind == StackValueKind.Int32 ? op2.AsInt32() : op2.AsNativeInt().ToInt64();
-
-                            switch (opcode)
-                            {
-                                case ILOpcode.ceq:
-                                    result = val1 == val2;
-                                    break;
-                                case ILOpcode.cgt:
-                                    result = val2 > val1;
-                                    break;
-                                case ILOpcode.cgt_un:
-                                    result = (ulong)val2 > (uint)val1;
-                                    break;
-                                case ILOpcode.clt:
-                                    result = val2 < val1;
-                                    break;
-                                case ILOpcode.clt_un:
-                                    result = (ulong)val2 < (uint)val1;
-                                    break;
-                                default:
-                                    Debug.Assert(false);
-                                    break;
-                            }
-                        }
-                        else
-                        {
-                            ThrowHelper.ThrowInvalidProgramException();
+                            case ILOpcode.ceq:
+                                result = val1 == val2;
+                                break;
+                            case ILOpcode.cgt:
+                                result = val2 > val1;
+                                break;
+                            case ILOpcode.cgt_un:
+                                result = (uint)val2 > (uint)val1;
+                                break;
+                            case ILOpcode.clt:
+                                result = val2 < val1;
+                                break;
+                            case ILOpcode.clt_un:
+                                result = (uint)val2 < (uint)val1;
+                                break;
+                            default:
+                                Debug.Assert(false);
+                                break;
                         }
                     }
                     break;
                 case StackValueKind.Int64:
                     {
-                        long val1 = op1.AsInt64();
-                        if (op2.Kind == StackValueKind.Int64)
-                        {
-                            long val2 = op2.AsInt64();
+                        long val1 = op1.AsInt64Unchecked();
+                        long val2 = op2.AsInt64Unchecked();
 
-                            switch (opcode)
-                            {
-                                case ILOpcode.ceq:
-                                    result = val1 == val2;
-                                    break;
-                                case ILOpcode.cgt:
-                                    result = val2 > val1;
-                                    break;
-                                case ILOpcode.cgt_un:
-                                    result = (ulong)val2 > (ulong)val1;
-                                    break;
-                                case ILOpcode.clt:
-                                    result = val2 < val1;
-                                    break;
-                                case ILOpcode.clt_un:
-                                    result = (ulong)val2 < (ulong)val1;
-                                    break;
-                                default:
-                                    Debug.Assert(false);
-                                    break;
-                            }
-                        }
-                        else
+                        switch (opcode)
                         {
-                            ThrowHelper.ThrowInvalidProgramException();
+                            case ILOpcode.ceq:
+                                result = val1 == val2;
+                                break;
+                            case ILOpcode.cgt:
+                                result = val2 > val1;
+                                break;
+                            case ILOpcode.cgt_un:
+                                result = (ulong)val2 > (ulong)val1;
+                                break;
+                            case ILOpcode.clt:
+                                result = val2 < val1;
+                                break;
+                            case ILOpcode.clt_un:
+                                result = (ulong)val2 < (ulong)val1;
+                                break;
+                            default:
+                                Debug.Assert(false);
+                                break;
                         }
                     }
                     break;
                 case StackValueKind.NativeInt:
                     {
-                        IntPtr val1 = op1.AsNativeInt();
-                        if (op2.Kind == StackValueKind.Int32
-                            || op1.Kind == StackValueKind.Int64
-                            || op2.Kind == StackValueKind.NativeInt)
+                        IntPtr val1 = op1.AsNativeIntUnchecked();
+                        IntPtr val2 = op1.AsNativeIntUnchecked();
+
+                        switch (opcode)
                         {
-                            IntPtr val2 = IntPtr.Zero;
-
-                            if (op2.Kind == StackValueKind.Int32)
-                            {
-                                val2 = new IntPtr(op2.AsInt32());
-                            }
-                            else if (op2.Kind == StackValueKind.Int64)
-                            {
-                                val2 = new IntPtr(op2.AsInt64());
-                            }
-                            else
-                            {
-                                val2 = op2.AsNativeInt();
-                            }
-
-                            switch (opcode)
-                            {
-                                case ILOpcode.ceq:
-                                    result = val1 == val2;
-                                    break;
-                                case ILOpcode.cgt:
-                                    result = val2.ToInt64() > val1.ToInt64();
-                                    break;
-                                case ILOpcode.cgt_un:
-                                    result = ((UIntPtr)val2.ToPointer()).ToUInt64() > ((UIntPtr)val1.ToPointer()).ToUInt64();
-                                    break;
-                                case ILOpcode.clt:
-                                    result = val2.ToInt64() < val1.ToInt64();
-                                    break;
-                                case ILOpcode.clt_un:
-                                    result = ((UIntPtr)val2.ToPointer()).ToUInt64() < ((UIntPtr)val1.ToPointer()).ToUInt64();
-                                    break;
-                                default:
-                                    Debug.Assert(false);
-                                    break;
-                            }
+                            case ILOpcode.ceq:
+                                result = val1 == val2;
+                                break;
+                            case ILOpcode.cgt:
+                                result = (long)val2 > (long)val1;
+                                break;
+                            case ILOpcode.cgt_un:
+                                result = (long)((UIntPtr)val2.ToPointer()) > (long)((UIntPtr)val1.ToPointer());
+                                break;
+                            case ILOpcode.clt:
+                                result = (long)val2 < (long)val1;
+                                break;
+                            case ILOpcode.clt_un:
+                                result = (long)((UIntPtr)val2.ToPointer()) < (long)((UIntPtr)val1.ToPointer());
+                                break;
+                            default:
+                                Debug.Assert(false);
+                                break;
                         }
                     }
                     break;
                 case StackValueKind.Float:
                     {
-                        double val1 = op1.AsDouble();
-
-                        if (op2.Kind == StackValueKind.Float)
-                        {
-                            double val2 = op2.AsDouble();
-                            switch (opcode)
-                            {
-                                case ILOpcode.ceq:
-                                    result = val1 == val2;
-                                    break;
-                                case ILOpcode.cgt:
-                                    result = val2 > val1;
-                                    break;
-                                case ILOpcode.cgt_un:
-                                    result = val2 > val1;
-                                    break;
-                                case ILOpcode.clt:
-                                    result = val2 < val1;
-                                    break;
-                                case ILOpcode.clt_un:
-                                    result = val2 < val1;
-                                    break;
-                                default:
-                                    Debug.Assert(false);
-                                    break;
-                            }
-                        }
-                        else
+                        if (op1.Kind < StackValueKind.Float || op2.Kind < StackValueKind.Float)
                         {
                             ThrowHelper.ThrowInvalidProgramException();
+                        }
+
+                        double val1 = op1.AsDouble();
+                        double val2 = op2.AsDouble();
+
+                        switch (opcode)
+                        {
+                            case ILOpcode.ceq:
+                                result = val1 == val2;
+                                break;
+                            case ILOpcode.cgt:
+                                result = val2 > val1;
+                                break;
+                            case ILOpcode.cgt_un:
+                                result = val2 > val1;
+                                break;
+                            case ILOpcode.clt:
+                                result = val2 < val1;
+                                break;
+                            case ILOpcode.clt_un:
+                                result = val2 < val1;
+                                break;
+                            default:
+                                Debug.Assert(false);
+                                break;
                         }
                     }
                     break;
                 case StackValueKind.ObjRef:
                     {
-                        object val1 = op1.AsObjectRef();
-
-                        if (op2.Kind == StackValueKind.ObjRef)
-                        {
-                            object val2 = op2.AsObjectRef();
-
-                            if (opcode == ILOpcode.ceq)
-                            {
-                                result = val1 == val2;
-                            }
-                            else
-                            {
-                                // TODO: Find GC addresses of objects and compare them
-                                throw new NotImplementedException();
-                            }
-                        }
-                        else
+                        if (op1.Kind < StackValueKind.ObjRef || op2.Kind < StackValueKind.ObjRef)
                         {
                             ThrowHelper.ThrowInvalidProgramException();
                         }
+
+                        object val1 = op1.AsObjectRef();
+                        object val2 = op2.AsObjectRef();
+
+                        if (opcode == ILOpcode.ceq)
+                        {
+                            result = val1 == val2;
+                        }
+                        else
+                        {
+                            // TODO: Find GC addresses of objects and compare them
+                            throw new NotImplementedException();
+                        }
                     }
                     break;
-                case StackValueKind.ValueType:
-                case StackValueKind.ByRef:
                 case StackValueKind.Unknown:
+                case StackValueKind.ByRef:
+                case StackValueKind.ValueType:
                 default:
                     ThrowHelper.ThrowInvalidProgramException();
                     break;
@@ -1186,8 +1136,8 @@ namespace Internal.IL
                         }
                         else if (stackItem.Kind == StackValueKind.NativeInt)
                         {
-                            long value = stackItem.AsInt64();
-                            _interpreter.EvaluationStack.Push(StackItem.FromNativeInt(new IntPtr(-value)));
+                            IntPtr value = stackItem.AsNativeInt();
+                            _interpreter.EvaluationStack.Push(StackItem.FromNativeInt((IntPtr)(-(long)value)));
                         }
                         else if (stackItem.Kind == StackValueKind.Float)
                         {
@@ -1211,6 +1161,11 @@ namespace Internal.IL
                         {
                             long value = stackItem.AsInt64();
                             _interpreter.EvaluationStack.Push(StackItem.FromInt64(~value));
+                        }
+                        else if (stackItem.Kind == StackValueKind.NativeInt)
+                        {
+                            IntPtr value = stackItem.AsNativeInt();
+                            _interpreter.EvaluationStack.Push(StackItem.FromNativeInt((IntPtr)(~(long)value)));
                         }
                         else
                         {
