@@ -376,7 +376,7 @@ namespace ILCompiler
                     {
                         EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
 
-                        compilationRoots.Add(new ReadyToRunLibraryRootProvider(module));
+                        compilationRoots.Add(new ReadyToRunRootProvider(module));
                         inputModules.Add(module);
                         if (!_isInputVersionBubble)
                         {

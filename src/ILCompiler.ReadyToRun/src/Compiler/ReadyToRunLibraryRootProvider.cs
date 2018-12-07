@@ -10,11 +10,11 @@ namespace ILCompiler
     /// <summary>
     /// Provides compilation group for a library that compiles everything in the input IL module.
     /// </summary>
-    public class ReadyToRunLibraryRootProvider : ICompilationRootProvider
+    public class ReadyToRunRootProvider : ICompilationRootProvider
     {
         private EcmaModule _module;
 
-        public ReadyToRunLibraryRootProvider(EcmaModule module)
+        public ReadyToRunRootProvider(EcmaModule module)
         {
             _module = module;
         }
