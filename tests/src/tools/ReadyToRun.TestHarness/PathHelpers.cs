@@ -10,7 +10,7 @@ namespace ReadyToRun.TestHarness
     /// A set of helper to manipulate paths into a canonicalized form to ensure user-provided paths
     /// match those in the ETW log.
     /// </summary>
-    static class PathHelpers
+    static class PathExtensions
     {
         internal static string ToAbsolutePath(this string argValue) => Path.GetFullPath(argValue);
 

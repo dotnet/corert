@@ -104,7 +104,7 @@ namespace ReadyToRun.TestHarness
 
             var testModules = new HashSet<string>();
             var testFolders = new HashSet<string>();
-            testModules.Add(_testExe);
+            testModules.Add(_testExe.ToLower());
             foreach (string reference in _referenceFilenames)
             {
                 // CoreCLR generates ETW events with all lower case native image files that break our string comparison.
@@ -224,7 +224,7 @@ namespace ReadyToRun.TestHarness
 
         private static string GetFullModuleName(string moduleName, string methodName)
         {
-            return $"{moduleName}!{methodName}";
+            return $"[{moduleName}]{methodName}";
         }
 
         private static void RunTest(TraceEventSession session, ReadyToRunJittedMethods r2rMethodFilter, string testArguments, out int exitCode)
