@@ -1075,11 +1075,13 @@ namespace Internal.JitInterface
             var type = HandleToObject(cls) as MetadataType;
             if (type != null)
             {
-                *namespaceName = (byte*)GetPin(type.Namespace);
-                return (byte*)GetPin(type.Name);
+                if (namespaceName != null)
+                    *namespaceName = (byte*)GetPin(StringToUTF8(type.Namespace));
+                return (byte*)GetPin(StringToUTF8(type.Name));
             }
 
-            *namespaceName = null;
+            if (namespaceName != null)
+                *namespaceName = null;
             return null;
         }
         
@@ -1184,6 +1186,9 @@ namespace Internal.JitInterface
 
             if (_compilation.IsEffectivelySealed(type))
                 result |= CorInfoFlag.CORINFO_FLG_FINAL;
+
+            if (type.IsIntrinsic)
+                result |= CorInfoFlag.CORINFO_FLG_INTRINSIC_TYPE;
 
             if (metadataType != null)
             {
