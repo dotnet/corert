@@ -1201,6 +1201,9 @@ namespace Internal.JitInterface
                 // Assume overlapping fields for explicit layout.
                 if (metadataType.IsExplicitLayout)
                     result |= CorInfoFlag.CORINFO_FLG_OVERLAPPING_FIELDS;
+
+                if (metadataType.IsAbstract)
+                    result |= CorInfoFlag.CORINFO_FLG_ABSTRACT;
             }
 
             return (uint)result;
