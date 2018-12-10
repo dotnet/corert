@@ -155,7 +155,6 @@ namespace System
                 systemTime.Milliseconds = (ushort) dt.Millisecond;
                 hundredNanoSecond = 0;
             }
-
-        };
+        }
     }
 }
