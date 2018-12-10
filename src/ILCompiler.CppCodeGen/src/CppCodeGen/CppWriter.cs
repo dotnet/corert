@@ -1266,6 +1266,8 @@ namespace ILCompiler.CppCodeGen
             {
                 ObjectAndOffsetSymbolNode symbolNode = reloc.Target as ObjectAndOffsetSymbolNode;
 
+                bool isEagerCctorTable = symbolNode.Target is ArrayOfEmbeddedPointersNode<IMethodNode>;
+
                 if ((symbolNode.Target is GenericVirtualMethodTableNode ||
                     symbolNode.Target is InterfaceGenericVirtualMethodTableNode ||
                     symbolNode.Target is ExactMethodInstantiationsNode ||
@@ -1277,12 +1279,21 @@ namespace ILCompiler.CppCodeGen
                     symbolNode.Target is GenericTypesTemplateMap ||
                     symbolNode.Target is GenericMethodsTemplateMap ||
                     symbolNode.Target is GenericTypesHashtableNode ||
-                    symbolNode.Target is TypeMetadataMapNode
+                    symbolNode.Target is TypeMetadataMapNode ||
+                    isEagerCctorTable
                     ) && !(symbolNode.Target as ObjectNode).ShouldSkipEmittingObjectNode(factory))
                 {
+                    string symbolName = isEagerCctorTable ? "eagerCctorTable" :
+                        (symbolNode.Target as ISymbolNode).GetMangledName(factory.NameMangler);
+
                     relocCode.Append("((char *)");
-                    relocCode.Append((symbolNode.Target as ISymbolNode).GetMangledName(factory.NameMangler));
-                    relocCode.Append("()) + ");
+                    relocCode.Append(symbolName);
+
+                    if (!isEagerCctorTable)
+                        relocCode.Append("()");
+
+                    relocCode.Append(") + ");
+
                     relocCode.Append((symbolNode as ISymbolDefinitionNode).Offset.ToString());
                 }
                 else
@@ -1378,7 +1389,7 @@ namespace ILCompiler.CppCodeGen
                     var method = methodCodeNode.Method;
                     var type = method.OwningType;
 
-                    if (type.HasStaticConstructor && method.Equals(type.GetStaticConstructor()))
+                    if (_compilation.TypeSystemContext.HasLazyStaticConstructor(type) && method.Equals(type.GetStaticConstructor()))
                         _typesWithCctor.Add(type);
 
                     List<MethodDesc> methodList;
@@ -1418,6 +1429,7 @@ namespace ILCompiler.CppCodeGen
         public void OutputNodes(IEnumerable<DependencyNode> nodes, NodeFactory factory)
         {
             CppGenerationBuffer dispatchPointers = new CppGenerationBuffer();
+            CppGenerationBuffer eagerCctorPointers = new CppGenerationBuffer();
             CppGenerationBuffer forwardDefinitions = new CppGenerationBuffer();
             CppGenerationBuffer typeDefinitions = new CppGenerationBuffer();
             CppGenerationBuffer methodTables = new CppGenerationBuffer();
@@ -1429,6 +1441,10 @@ namespace ILCompiler.CppCodeGen
             int dispatchMapCount = 0;
             dispatchPointers.AppendLine();
             dispatchPointers.Indent();
+
+            int eagerCctorCount = 0;
+            eagerCctorPointers.AppendLine();
+            eagerCctorPointers.Indent();
 
             //RTR header needs to be declared after all modules have already been output
             ReadyToRunHeaderNode rtrHeaderNode = null;
@@ -1520,6 +1536,21 @@ namespace ILCompiler.CppCodeGen
                         additionalNodes.Append(GetCodeForObjectNode(reloc.Target as ObjectNode, factory));
                     }
                 }
+                else if (node is ArrayOfEmbeddedPointersNode<IMethodNode> eagerCctorTable)
+                {
+                    var eagerCctorTableData = eagerCctorTable.GetData(factory, false);
+                    Debug.Assert(eagerCctorTableData.Relocs.Length == eagerCctorTableData.Data.Length / factory.Target.PointerSize);
+                    foreach (Relocation reloc in eagerCctorTableData.Relocs)
+                    {
+                        var method = reloc.Target as CppMethodCodeNode;
+
+                        eagerCctorPointers.Append("(void *)&");
+                        eagerCctorPointers.Append(GetCppMethodDeclarationName(method.Method.OwningType, GetCppMethodName(method.Method), false));
+                        eagerCctorPointers.Append(",");
+                        eagerCctorPointers.AppendLine();
+                        eagerCctorCount++;
+                    }
+                }
                 else if (node is ReadyToRunHeaderNode)
                     rtrHeaderNode = node as ReadyToRunHeaderNode;
                 else if (node is ReadyToRunGenericHelperNode)
@@ -1554,6 +1585,13 @@ namespace ILCompiler.CppCodeGen
             Out.Write(dispatchMapCount);
             Out.Write("] = {");
             Out.Write(dispatchPointers.ToString());
+            Out.Write("};");
+
+            // Emit pointers to eager cctor table nodes
+            Out.Write("void * eagerCctorTable[");
+            Out.Write(eagerCctorCount);
+            Out.Write("] = {");
+            Out.Write(eagerCctorPointers.ToString());
             Out.Write("};");
 
             Out.Write(rtrHeader);
@@ -1699,7 +1737,7 @@ namespace ILCompiler.CppCodeGen
 
             if (nodeType.IsDefType && !nodeType.IsGenericDefinition)
             {
-                if (nodeType.HasStaticConstructor)
+                if (_compilation.TypeSystemContext.HasLazyStaticConstructor(nodeType))
                 {
                     MethodDesc cctor = nodeType.GetStaticConstructor().GetCanonMethodTarget(CanonicalFormKind.Specific);
 
@@ -2019,7 +2057,7 @@ namespace ILCompiler.CppCodeGen
                     {
                         MetadataType target = (MetadataType)node.Target;
 
-                        if (target.HasStaticConstructor)
+                        if (_compilation.TypeSystemContext.HasLazyStaticConstructor(target))
                         {
                             string staticsVarName = "statics";
 
@@ -2032,7 +2070,7 @@ namespace ILCompiler.CppCodeGen
                     {
                         MetadataType target = (MetadataType)node.Target;
 
-                        if (target.HasStaticConstructor)
+                        if (_compilation.TypeSystemContext.HasLazyStaticConstructor(target))
                         {
                             string staticsVarName = "statics";
                             string nonGcStaticsBase = "nonGcBase";
@@ -2055,7 +2093,7 @@ namespace ILCompiler.CppCodeGen
                     {
                         MetadataType target = (MetadataType)node.Target;
 
-                        if (target.HasStaticConstructor)
+                        if (_compilation.TypeSystemContext.HasLazyStaticConstructor(target))
                         {
                             string staticsVarName = "statics";
                             string nonGcStaticsBase = "nonGcBase";
@@ -2248,7 +2286,7 @@ namespace ILCompiler.CppCodeGen
                 sb.Append(" ");
                 sb.Append(GetCppStaticsName(t, isGCStatic, isThreadStatic));
 
-                if (!isGCStatic && t.HasStaticConstructor)
+                if (!isGCStatic && _compilation.TypeSystemContext.HasLazyStaticConstructor(t))
                 {
                     MethodDesc cctor = t.GetStaticConstructor();
                     MethodDesc canonCctor = cctor.GetCanonMethodTarget(CanonicalFormKind.Specific);

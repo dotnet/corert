@@ -3514,18 +3514,26 @@ namespace Internal.IL
                 return;
 
             MethodDesc canonCctor = cctor.GetCanonMethodTarget(CanonicalFormKind.Specific);
-            AddMethodReference(canonCctor);
 
-            IMethodNode helperNode = (IMethodNode)_nodeFactory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnNonGCStaticBase);
+            if (_nodeFactory.TypeSystemContext.HasEagerStaticConstructor(type))
+            {
+                _dependencies.Add(_nodeFactory.EagerCctorIndirection(canonCctor));
+            }
+            else if (_nodeFactory.TypeSystemContext.HasLazyStaticConstructor(type))
+            {
+                IMethodNode helperNode = (IMethodNode)_nodeFactory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnNonGCStaticBase);
 
-            Append(_writer.GetCppTypeName(helperNode.Method.OwningType));
-            Append("::");
-            Append(_writer.GetCppMethodName(helperNode.Method));
-            Append("((::System_Private_CoreLib::System::Runtime::CompilerServices::StaticClassConstructionContext*)&");
-            Append(_writer.GetCppStaticsName(type));
-            Append(", (intptr_t)&");
-            Append(_writer.GetCppStaticsName(type));
-            Append(");");
+                Append(_writer.GetCppTypeName(helperNode.Method.OwningType));
+                Append("::");
+                Append(_writer.GetCppMethodName(helperNode.Method));
+                Append("((::System_Private_CoreLib::System::Runtime::CompilerServices::StaticClassConstructionContext*)&");
+                Append(_writer.GetCppStaticsName(type));
+                Append(", (intptr_t)&");
+                Append(_writer.GetCppStaticsName(type));
+                Append(");");
+
+                AddMethodReference(canonCctor);
+            }
         }
 
         private void AddTypeReference(TypeDesc type, bool constructed)
