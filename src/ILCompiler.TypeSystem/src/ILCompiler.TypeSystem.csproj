@@ -451,11 +451,11 @@
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\InlineArrayType.Sorting.cs">
       <Link>TypeSystem\Interop\IL\InlineArrayType.Sorting.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\IsBlittable.cs">
-      <Link>Interop\IL\IsBlittable.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\MarshalHelpers.cs">
       <Link>Interop\IL\MarshalHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\MarshalUtils.cs">
+      <Link>Interop\IL\MarshalUtils.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\Marshaller.cs">
       <Link>Interop\IL\Marshaller.cs</Link>

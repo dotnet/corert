@@ -301,8 +301,8 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\TypeSystemConstraintsHelpers.cs">
       <Link>TypeSystem\Common\TypeSystemConstraintsHelpers.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\IsBlittable.cs">
-      <Link>Interop\IL\IsBlittable.cs</Link>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\MarshalUtils.cs">
+      <Link>Interop\IL\MarshalUtils.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

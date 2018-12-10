@@ -6,12 +6,12 @@ using System;
 
 namespace Internal.TypeSystem.Interop
 {
-    public static class IsBlittable
+    public static class MarshalUtils
     {
         /// <summary>
         /// Returns true if this is a type that doesn't require marshalling.
         /// </summary>
-        public static bool CheckType(TypeDesc type)
+        public static bool IsBlittableType(TypeDesc type)
         {
             type = type.UnderlyingType;
 
@@ -35,7 +35,7 @@ namespace Internal.TypeSystem.Interop
                     TypeDesc fieldType = field.FieldType;
 
                     // TODO: we should also reject fields that specify custom marshalling
-                    if (!CheckType(fieldType))
+                    if (!MarshalUtils.IsBlittableType(fieldType))
                     {
                         // This field can still be blittable if it's a Char and marshals as Unicode
                         var owningType = field.OwningType as MetadataType;

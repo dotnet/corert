@@ -9,7 +9,7 @@ using Internal.IL.Stubs;
 
 namespace Internal.TypeSystem.Interop
 {
-    public static partial class MarshalHelpers
+    public static class MarshalHelpers
     {
         public static bool IsStructMarshallingRequired(TypeDesc typeDesc)
         {
@@ -41,7 +41,7 @@ namespace Internal.TypeSystem.Interop
                 return false;
 
             // If it is not blittable we will need struct marshalling
-            return !IsBlittable.CheckType(type);
+            return !MarshalUtils.IsBlittableType(type);
         }
 
         /// <summary>
@@ -450,7 +450,7 @@ namespace Internal.TypeSystem.Interop
                     }
                 }
 
-                if (IsBlittable.CheckType(type))
+                if (MarshalUtils.IsBlittableType(type))
                 {
                     return MarshallerKind.BlittableStruct;
                 }
@@ -735,7 +735,7 @@ namespace Internal.TypeSystem.Interop
                 }
                 else
                 {
-                    if (IsBlittable.CheckType(elementType))
+                    if (MarshalUtils.IsBlittableType(elementType))
                     {
                         switch (nativeType)
                         {

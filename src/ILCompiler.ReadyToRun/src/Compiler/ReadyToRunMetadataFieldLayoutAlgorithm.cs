@@ -14,6 +14,7 @@ using ILCompiler.DependencyAnalysis.ReadyToRun;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using Internal.TypeSystem.Interop;
 
 namespace ILCompiler
 {
@@ -59,8 +60,6 @@ namespace ILCompiler
             }
             return layout;
         }
-
-        protected override bool TargetCoreCLR => true;
 
         /// <summary>
         /// Map from modules to their static field layouts.
@@ -656,6 +655,18 @@ namespace ILCompiler
             public void AddDynamicLayout(DefType instantiatedType, FieldAndOffset[] fieldMap)
             {
                 _genericTypeToFieldMap.Add(instantiatedType, fieldMap);
+            }
+        }
+
+        protected override ComputedInstanceFieldLayout ComputeInstanceFieldLayout(MetadataType type, int numInstanceFields)
+        {
+            if (type.IsValueType && MarshalUtils.IsBlittableType(type))
+            {
+                return ComputeSequentialFieldLayout(type, numInstanceFields);
+            }
+            else
+            {
+                return ComputeAutoFieldLayout(type, numInstanceFields);
             }
         }
     }
