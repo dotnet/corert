@@ -11,29 +11,37 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly ArrayOfEmbeddedDataNode<Import> _imports;
         // TODO: annoying - today there's no way to put signature RVA's into R/O data section
         private readonly ArrayOfEmbeddedPointersNode<Signature> _signatures;
+        private readonly GCRefMapNode _gcRefMap;
 
         private readonly CorCompileImportType _type;
         private readonly CorCompileImportFlags _flags;
         private readonly byte _entrySize;
         private readonly string _name;
         private readonly bool _emitPrecode;
+        private readonly bool _emitGCRefMap;
 
-        public ImportSectionNode(string name, CorCompileImportType importType, CorCompileImportFlags flags, byte entrySize, bool emitPrecode)
+        public ImportSectionNode(string name, CorCompileImportType importType, CorCompileImportFlags flags, byte entrySize, bool emitPrecode, bool emitGCRefMap)
         {
             _name = name;
             _type = importType;
             _flags = flags;
             _entrySize = entrySize;
             _emitPrecode = emitPrecode;
+            _emitGCRefMap = emitGCRefMap;
 
             _imports = new ArrayOfEmbeddedDataNode<Import>(_name + "_ImportBegin", _name + "_ImportEnd", null);
             _signatures = new ArrayOfEmbeddedPointersNode<Signature>(_name + "_SigBegin", _name + "_SigEnd", null);
+            _gcRefMap = (_emitGCRefMap ? new GCRefMapNode(this) : null);
         }
 
         public void AddImport(NodeFactory factory, Import import)
         {
             _imports.AddEmbeddedObject(import);
             _signatures.AddEmbeddedObject(import.ImportSignature);
+            if (_emitGCRefMap)
+            {
+                _gcRefMap.AddImport(import);
+            }
         }
 
         public string Name => _name;
@@ -77,14 +85,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 dataBuilder.EmitUInt(0);
             }
 
-            // Todo: Auxilliary data
-            dataBuilder.EmitUInt(0);
+            if (_emitGCRefMap)
+            {
+                dataBuilder.EmitReloc(_gcRefMap, RelocType.IMAGE_REL_BASED_ADDR32NB, 0);
+            }
+            else
+            {
+                dataBuilder.EmitUInt(0);
+            }
         }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
         {
             yield return new DependencyListEntry(_imports, "Import section fixup data");
             yield return new DependencyListEntry(_signatures, "Import section signatures");
+            if (_emitGCRefMap)
+            {
+                yield return new DependencyListEntry(_gcRefMap, "GC ref map");
+            }
         }
 
         protected override string GetName(NodeFactory context)

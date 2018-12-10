@@ -286,7 +286,8 @@ namespace ILCompiler.DependencyAnalysis
                 CorCompileImportType.CORCOMPILE_IMPORT_TYPE_UNKNOWN,
                 CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_EAGER,
                 (byte)Target.PointerSize,
-                emitPrecode: false);
+                emitPrecode: false,
+                emitGCRefMap: false);
             ImportSectionsTable.AddEmbeddedObject(EagerImports);
 
             // All ready-to-run images have a module import helper which gets patched by the runtime on image load
@@ -314,7 +315,8 @@ namespace ILCompiler.DependencyAnalysis
                 CorCompileImportType.CORCOMPILE_IMPORT_TYPE_STUB_DISPATCH,
                 CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_PCODE,
                 (byte)Target.PointerSize,
-                emitPrecode: false);
+                emitPrecode: false,
+                emitGCRefMap: true);
             ImportSectionsTable.AddEmbeddedObject(MethodImports);
 
             DispatchImports = new ImportSectionNode(
@@ -322,7 +324,8 @@ namespace ILCompiler.DependencyAnalysis
                 CorCompileImportType.CORCOMPILE_IMPORT_TYPE_STUB_DISPATCH,
                 CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_PCODE,
                 (byte)Target.PointerSize,
-                emitPrecode: false);
+                emitPrecode: false,
+                emitGCRefMap: false);
             ImportSectionsTable.AddEmbeddedObject(DispatchImports);
 
             HelperImports = new ImportSectionNode(
@@ -330,7 +333,8 @@ namespace ILCompiler.DependencyAnalysis
                 CorCompileImportType.CORCOMPILE_IMPORT_TYPE_UNKNOWN,
                 CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_PCODE,
                 (byte)Target.PointerSize,
-                emitPrecode: false);
+                emitPrecode: false,
+                emitGCRefMap: false);
             ImportSectionsTable.AddEmbeddedObject(HelperImports);
 
             PrecodeImports = new ImportSectionNode(
@@ -338,7 +342,8 @@ namespace ILCompiler.DependencyAnalysis
                 CorCompileImportType.CORCOMPILE_IMPORT_TYPE_UNKNOWN,
                 CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_PCODE,
                 (byte)Target.PointerSize,
-                emitPrecode: true);
+                emitPrecode: true,
+                emitGCRefMap: false);
             ImportSectionsTable.AddEmbeddedObject(PrecodeImports);
 
             StringImports = new ImportSectionNode(
@@ -346,7 +351,8 @@ namespace ILCompiler.DependencyAnalysis
                 CorCompileImportType.CORCOMPILE_IMPORT_TYPE_STRING_HANDLE,
                 CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_UNKNOWN,
                 (byte)Target.PointerSize,
-                emitPrecode: true);
+                emitPrecode: true,
+                emitGCRefMap: false);
             ImportSectionsTable.AddEmbeddedObject(StringImports);
 
             graph.AddRoot(ImportSectionsTable, "Import sections table is always generated");
