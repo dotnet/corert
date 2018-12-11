@@ -244,9 +244,10 @@ namespace Microsoft.Win32
 #endif // FEATURE_MANAGED_ETW
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
-        [System.Security.SecurityCritical]
-        [DllImport(KERNEL32, CharSet = CharSet.Auto, SetLastError = true)]
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
+        public static extern int GetCurrentThreadId();
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
         internal static extern uint GetCurrentProcessId();
 
         private const int FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;

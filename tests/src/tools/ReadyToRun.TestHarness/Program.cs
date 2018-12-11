@@ -39,13 +39,14 @@ namespace ReadyToRun.TestHarness
         private static string _coreRunExePath;
         private static string _testExe;
         private static IReadOnlyList<string> _referenceFilenames = Array.Empty<string>();
+        private static IReadOnlyList<string> _referenceFolders = Array.Empty<string>();
         private static string _whitelistFilename;
         private static IReadOnlyList<string> _testargs = Array.Empty<string>();
         private static bool _noEtl;
 
         static void ShowUsage()
         {
-            Console.WriteLine("dotnet ReadyToRun.TestHarness --corerun <PathToCoreRun> --in <PathToTestBinary> --ref [ReferencedBinaries] --whitelist [MethodWhiteListFile] --testargs [TestArgs]");
+            Console.WriteLine("dotnet ReadyToRun.TestHarness --corerun <PathToCoreRun> --in <PathToTestBinary> --ref [ReferencedBinaries] --whitelist [MethodWhiteListFile] --testargs [TestArgs] --include [FoldersContainingAssemblies]");
         }
 
         private static ArgumentSyntax ParseCommandLine(string[] args)
@@ -55,11 +56,13 @@ namespace ReadyToRun.TestHarness
                 syntax.ApplicationName = "ReadyToRun.TestHarness";
                 syntax.HandleHelp = false;
                 syntax.HandleErrors = true;
+                syntax.HandleResponseFiles = true;
 
                 syntax.DefineOption("h|help", ref _help, "Help message for R2RDump");
                 syntax.DefineOption("c|corerun", ref _coreRunExePath, "Path to CoreRun");
                 syntax.DefineOption("i|in", ref _testExe, "Path to test exe");
                 syntax.DefineOptionList("r|ref", ref _referenceFilenames, "Paths to referenced assemblies");
+                syntax.DefineOptionList("include", ref _referenceFolders, "Folders containing assemblies to monitor");
                 syntax.DefineOption("w|whitelist", ref _whitelistFilename, "Path to method whitelist file");
                 syntax.DefineOptionList("testargs", ref _testargs, "Args to pass into test");
                 syntax.DefineOption ("noetl", ref _noEtl, "Run the test without ETL enabled");
@@ -100,24 +103,39 @@ namespace ReadyToRun.TestHarness
             }
 
             var testModules = new HashSet<string>();
-            testModules.Add(_testExe);
+            var testFolders = new HashSet<string>();
+            testModules.Add(_testExe.ToLower());
             foreach (string reference in _referenceFilenames)
             {
-                testModules.Add(reference);
+                // CoreCLR generates ETW events with all lower case native image files that break our string comparison.
+                testModules.Add(reference.ToLower());
+            }
+
+            foreach (string reference in _referenceFolders)
+            {
+                string absolutePath = reference.ToAbsoluteDirectoryPath();
+                
+                if (!Directory.Exists(reference))
+                {
+                    Console.WriteLine($"Error: {reference} does not exist.");
+                    ShowUsage();
+                    return exitCode;
+                }
+                testFolders.Add(reference.ToLower());
             }
 
             if (_noEtl)
             {
-                RunTest(null, passThroughArguments, out exitCode);
+                RunTest(null, null, passThroughArguments, out exitCode);
             }
             else
             {
                 using (var session = new TraceEventSession("ReadyToRunTestSession"))
                 {
-                    var r2rMethodFilter = new ReadyToRunJittedMethods(session, testModules);
+                    var r2rMethodFilter = new ReadyToRunJittedMethods(session, testModules, testFolders);
                     session.EnableProvider(ClrTraceEventParser.ProviderGuid, TraceEventLevel.Verbose, (ulong)(ClrTraceEventParser.Keywords.Jit | ClrTraceEventParser.Keywords.Loader));
                     
-                    Task.Run(() => RunTest(session, passThroughArguments, out exitCode));
+                    Task.Run(() => RunTest(session, r2rMethodFilter, passThroughArguments, out exitCode));
 
                     // Block, processing callbacks for events we subscribed to
                     session.Source.Process();
@@ -183,9 +201,10 @@ namespace ReadyToRun.TestHarness
             int jittedMethodCount = 0;
             foreach (var jittedMethod in jittedMethods.JittedMethods)
             {
-                if (!whiteListedMethods.Contains(jittedMethod.MethodName))
+                string fullName = GetFullModuleName(jittedMethod.assemblyName, jittedMethod.MethodName);
+                if (!whiteListedMethods.Contains(jittedMethod.MethodName) && !whiteListedMethods.Contains(fullName))
                 {
-                    Console.WriteLine(jittedMethod.MethodName);
+                    Console.WriteLine(fullName);
                     ++jittedMethodCount;
                 }
             }
@@ -203,7 +222,12 @@ namespace ReadyToRun.TestHarness
             return StatusTestPassed;
         }
 
-        private static void RunTest(TraceEventSession session, string testArguments, out int exitCode)
+        private static string GetFullModuleName(string moduleName, string methodName)
+        {
+            return $"[{moduleName}]{methodName}";
+        }
+
+        private static void RunTest(TraceEventSession session, ReadyToRunJittedMethods r2rMethodFilter, string testArguments, out int exitCode)
         {
             exitCode = -100;
 
@@ -216,6 +240,11 @@ namespace ReadyToRun.TestHarness
                     process.StartInfo.UseShellExecute = false;
                     
                     process.Start();
+
+                    if (r2rMethodFilter != null)
+                    {
+                        r2rMethodFilter.SetProcessId(process.Id);
+                    }
 
                     process.OutputDataReceived += delegate(object sender, DataReceivedEventArgs args)
                     {
