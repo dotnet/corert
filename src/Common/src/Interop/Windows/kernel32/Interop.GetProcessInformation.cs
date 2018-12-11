@@ -17,8 +17,6 @@ internal partial class Interop
             public uint Reserved;
         }
 
-        internal const uint PROCESS_LEAP_SECOND_INFO_FLAG_ENABLE_SIXTY_SECOND = 0x1;
-
         [DllImport(Libraries.Kernel32)]
         internal static unsafe extern bool GetProcessInformation(IntPtr hProcess, int ProcessInformationClass, void* ProcessInformation, int ProcessInformationSize);
     }
