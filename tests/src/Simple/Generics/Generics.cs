@@ -30,6 +30,7 @@ class Program
         TestInterfaceVTableTracking.Run();
         TestClassVTableTracking.Run();
 #if !CODEGEN_CPP
+        TestNullableCasting.Run();
         TestReflectionInvoke.Run();
         TestMDArrayAddressMethod.Run();
         TestFieldAccess.Run();
@@ -1010,7 +1011,7 @@ class Program
         public static void Run()
         {
             var foo1 = new Foo<Atom1>();
-            bool result = DoFrob<Foo<Atom1>, Atom1>(ref foo1, new Atom1[0,0,0]);
+            bool result = DoFrob<Foo<Atom1>, Atom1>(ref foo1, new Atom1[0, 0, 0]);
 
             // If the FrobbedValue doesn't change when we frob, we must have done box+interface call.
             if (foo1.FrobbedValue != 12345)
@@ -1188,7 +1189,7 @@ class Program
         {
             string IFoo<int>.IMethod1<T>(T t1, T t2) { return "SuperDerived.IFoo<int>.IMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
         }
-        
+
 
         class GenBase<A> : IFoo<string>, IFoo<int>
         {
@@ -1604,7 +1605,7 @@ class Program
             public T _t;
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            public DynamicBase() {}
+            public DynamicBase() { }
 
             [MethodImpl(MethodImplOptions.NoInlining)]
             public int SimpleMethod()
@@ -1644,7 +1645,7 @@ class Program
         public class DynamicDerived<T> : DynamicBase<T>
         {
             [MethodImpl(MethodImplOptions.NoInlining)]
-            public DynamicDerived() {}
+            public DynamicDerived() { }
 
             [MethodImpl(MethodImplOptions.NoInlining)]
             public override string VirtualMethod(T t)
@@ -1700,7 +1701,7 @@ class Program
 
             var fooDynamicOfClassType = typeof(Foo<>).MakeGenericType(typeof(ClassType)).GetTypeInfo();
             var fooDynamicOfClassType2 = typeof(Foo<>).MakeGenericType(typeof(ClassType2)).GetTypeInfo();
-            
+
             FieldInfo fi = fooDynamicOfClassType.GetDeclaredField("s_intField");
             FieldInfo fi2 = fooDynamicOfClassType2.GetDeclaredField("s_intField");
             fi.SetValue(null, 1111);
@@ -2105,7 +2106,7 @@ class Program
         {
             public Array Frob()
             {
-                return new Gen<T>[1,1];
+                return new Gen<T>[1, 1];
             }
         }
 
@@ -2145,6 +2146,41 @@ class Program
         {
             // This only really tests whether we can compile this.
             Call<object>();
+        }
+    }
+
+    class TestNullableCasting
+    {
+        struct Mine<T> { }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool CallWithNullable<T>(object m)
+        {
+            return m is T;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool CallWithReferenceType<T>(object m)
+        {
+            return m is Nullable<Mine<T>>;
+        }
+
+        public static void Run()
+        {
+            if (!CallWithNullable<Nullable<Mine<object>>>(new Mine<object>()))
+                throw new Exception();
+
+            if (CallWithNullable<Nullable<Mine<object>>>(new Mine<string>()))
+                throw new Exception();
+
+            if (!CallWithReferenceType<object>(new Mine<object>()))
+                throw new Exception();
+
+            if (CallWithReferenceType<object>(new Mine<string>()))
+                throw new Exception();
+
+            if (!(((object)new Mine<object>()) is Nullable<Mine<object>>))
+                throw new Exception();
         }
     }
 }

@@ -38,12 +38,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public ISymbolNode ReadyToRunHelper(ReadyToRunHelperId id, object target, SignatureContext signatureContext)
         {
-            if (id == ReadyToRunHelperId.NecessaryTypeHandle)
-            {
-                // We treat TypeHandle and NecessaryTypeHandle the same - don't emit two copies of the same import
-                id = ReadyToRunHelperId.TypeHandle;
-            }
-
             if (!_r2rHelpers.TryGetValue(id, out Dictionary<object, ISymbolNode> helperNodeMap))
             {
                 helperNodeMap = new Dictionary<object, ISymbolNode>();
@@ -728,7 +722,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             switch (helperId)
             {
-                case ReadyToRunHelperId.NecessaryTypeHandle:
                 case ReadyToRunHelperId.TypeHandle:
                     return GenericLookupTypeHelper(
                         runtimeLookupKind,

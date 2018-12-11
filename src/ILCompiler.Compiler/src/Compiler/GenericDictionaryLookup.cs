@@ -4,6 +4,8 @@
 
 using System;
 
+using ILCompiler.DependencyAnalysis;
+
 using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
@@ -15,10 +17,30 @@ namespace ILCompiler
     {
         private const short UseHelperOffset = -1;
 
-        private short _offset1;
-        private short _offset2;
+        private readonly object _helperObject;
+
+        private readonly short _offset1;
+        private readonly short _offset2;
 
         public readonly GenericContextSource ContextSource;
+
+        public object HelperObject
+        {
+            get
+            {
+                Debug.Assert(_offset1 == UseHelperOffset);
+                return _helperObject;
+            }
+        }
+
+        public ReadyToRunHelperId HelperId
+        {
+            get
+            {
+                Debug.Assert(_offset1 == UseHelperOffset);
+                return (ReadyToRunHelperId)_offset2;
+            }
+        }
 
         public bool UseHelper
         {
@@ -56,22 +78,23 @@ namespace ILCompiler
             }
         }
 
-        private GenericDictionaryLookup(GenericContextSource contextSource, int offset1, int offset2)
+        private GenericDictionaryLookup(GenericContextSource contextSource, int offset1, int offset2, object helperObject)
         {
             ContextSource = contextSource;
             _offset1 = checked((short)offset1);
             _offset2 = checked((short)offset2);
+            _helperObject = helperObject;
         }
 
         public static GenericDictionaryLookup CreateFixedLookup(GenericContextSource contextSource, int offset1, int offset2 = UseHelperOffset)
         {
             Debug.Assert(offset1 != UseHelperOffset);
-            return new GenericDictionaryLookup(contextSource, offset1, offset2);
+            return new GenericDictionaryLookup(contextSource, offset1, offset2, null);
         }
 
-        public static GenericDictionaryLookup CreateHelperLookup(GenericContextSource contextSource)
+        public static GenericDictionaryLookup CreateHelperLookup(GenericContextSource contextSource, ReadyToRunHelperId helperId, object helperObject)
         {
-            return new GenericDictionaryLookup(contextSource, UseHelperOffset, UseHelperOffset);
+            return new GenericDictionaryLookup(contextSource, UseHelperOffset, checked((short)helperId), helperObject);
         }
     }
 

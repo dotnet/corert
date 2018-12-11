@@ -1410,16 +1410,6 @@ namespace Internal.JitInterface
         private bool checkMethodModifier(CORINFO_METHOD_STRUCT_* hMethod, byte* modifier, bool fOptional)
         { throw new NotImplementedException("checkMethodModifier"); }
 
-        private CorInfoHelpFunc getNewHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle)
-        {
-            return CorInfoHelpFunc.CORINFO_HELP_NEWFAST;
-        }
-
-        private CorInfoHelpFunc getNewArrHelper(CORINFO_CLASS_STRUCT_* arrayCls)
-        {
-            return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT;
-        }
-
         private CorInfoHelpFunc getSharedCCtorHelper(CORINFO_CLASS_STRUCT_* clsHnd)
         { throw new NotImplementedException("getSharedCCtorHelper"); }
         private CorInfoHelpFunc getSecurityPrologHelper(CORINFO_METHOD_STRUCT_* ftn)
@@ -2561,17 +2551,26 @@ namespace Internal.JitInterface
                     }
                 }
 
+#if READYTORUN
+                helperId = ReadyToRunHelperId.TypeHandle;
+#else
                 if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_NewObj
+                        || pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr
                         || pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Box
                         || pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Constrained
                         || (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken && ConstructedEETypeNode.CreationAllowed(td)))
                 {
                     helperId = ReadyToRunHelperId.TypeHandle;
                 }
+                else if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Casting)
+                {
+                    helperId = ReadyToRunHelperId.TypeHandleForCasting;
+                }
                 else
                 {
                     helperId = ReadyToRunHelperId.NecessaryTypeHandle;
                 }
+#endif
             }
 
             Debug.Assert(pResult.compileTimeHandle != null);

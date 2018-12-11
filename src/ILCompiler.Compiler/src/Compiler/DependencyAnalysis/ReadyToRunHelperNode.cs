@@ -35,6 +35,7 @@ namespace ILCompiler.DependencyAnalysis
         MethodEntry,
         VirtualDispatchCell,
         DefaultConstructor,
+        TypeHandleForCasting,
     }
 
     public partial class ReadyToRunHelperNode : AssemblyStubNode, INodeWithDebugInfo
