@@ -154,3 +154,40 @@
 		IL_0006: ret
 	}
 }
+
+.class public auto ansi abstract beforefieldinit MissingMethod_ValidType_AbstractClass
+	extends [System.Runtime]System.Object
+	implements [InterfaceDefinition]Interface
+{
+	.method public final hidebysig newslot virtual 
+		instance void M2 () cil managed 
+	{
+		.maxstack 8
+ 		IL_0000: ret
+	}
+ 	.method public final hidebysig newslot virtual 
+		instance void M3 (
+			int32 i
+		) cil managed 
+	{
+		.maxstack 8
+ 		IL_0000: ret
+	}
+ 	.method public final hidebysig newslot virtual 
+		instance int32 M4 (
+			int32 i
+		) cil managed 
+	{
+		.maxstack 8
+ 		IL_0000: ldc.i4.0
+		IL_0001: ret
+	}
+ 	.method public hidebysig specialname rtspecialname 
+		instance void .ctor () cil managed 
+	{
+		.maxstack 8
+ 		IL_0000: ldarg.0
+		IL_0001: call instance void [System.Runtime]System.Object::.ctor()
+		IL_0006: ret
+	}
+}
