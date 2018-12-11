@@ -5,8 +5,6 @@
 using System;
 using System.Collections.Generic;
 
-using Internal.TypeSystem.Interop;
-
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem

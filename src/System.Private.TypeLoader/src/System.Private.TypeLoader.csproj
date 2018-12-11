@@ -495,9 +495,6 @@
     <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs" Condition="'$(IsProjectNLibrary)' != 'true'">
       <Link>System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\MarshalUtils.cs">
-      <Link>Internal\TypeSystem\Interop\IL\MarshalUtils.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\MetadataType.Interop.cs">
       <Link>Internal\TypeSystem\Interop\MetadataType.Interop.cs</Link>
     </Compile>

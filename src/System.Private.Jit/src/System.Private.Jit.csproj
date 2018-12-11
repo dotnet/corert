@@ -85,6 +85,7 @@
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\UnsafeIntrinsics.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\Marshaller.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\MarshalHelpers.cs" />
+    <Compile Include="$(TypeSystemBasePath)\Interop\IL\MarshalUtils.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\NativeStructType.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\PInvokeDelegateWrapper.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\PInvokeDelegateWrapperConstructor.cs" />

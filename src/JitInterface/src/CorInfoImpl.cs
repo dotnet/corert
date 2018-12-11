@@ -1941,21 +1941,21 @@ namespace Internal.JitInterface
 
             CORINFO_FIELD_ACCESSOR fieldAccessor;
             CORINFO_FIELD_FLAGS fieldFlags = (CORINFO_FIELD_FLAGS)0;
-
-#if READYTORUN
-            bool isGCBoxedStaticField = false;
-            bool isCrossBubbleStaticField = false;
-#endif
+            uint fieldOffset = (field.IsStatic && field.HasRva ? 0xBAADF00D : (uint)field.Offset.AsInt);
 
             if (field.IsStatic)
             {
+                bool allocateStaticOnGCHeap = field.HasGCStaticBase;
+
                 fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_STATIC;
 
 #if READYTORUN
                 if (!field.HasRva && field.FieldType.IsValueType && !field.FieldType.IsPrimitive)
                 {
+                    // statics of struct types are stored as implicitly boxed in CoreCLR i.e.
+                    // we switch over to the GC heap to allocate the box and modify field static flags appropriately
                     fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_STATIC_IN_HEAP;
-                    isGCBoxedStaticField = true;
+                    allocateStaticOnGCHeap = true;
                 }
 #endif
 
@@ -1975,7 +1975,6 @@ namespace Internal.JitInterface
                 else if (field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
                 {
                     // The JIT wants to know how to access a static field on a generic type. We need a runtime lookup.
-
                     fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_READYTORUN_HELPER;
                     pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE;
 
@@ -1992,7 +1991,7 @@ namespace Internal.JitInterface
                         if (field.IsThreadStatic)
                         {
 #if READYTORUN
-                            if (field.HasGCStaticBase || isGCBoxedStaticField)
+                            if (allocateStaticOnGCHeap)
                             {
                                 helperId = ReadyToRunHelperId.GetThreadStaticBase;
                             }
@@ -2004,11 +2003,7 @@ namespace Internal.JitInterface
                             helperId = ReadyToRunHelperId.GetThreadStaticBase;
 #endif
                         }
-                        else if (field.HasGCStaticBase
-#if READYTORUN
-                            || isGCBoxedStaticField
-#endif
-                            )
+                        else if (allocateStaticOnGCHeap)
                         {
                             helperId = ReadyToRunHelperId.GetGCStaticBase;
                         }
@@ -2050,7 +2045,7 @@ namespace Internal.JitInterface
                     else if (field.IsThreadStatic)
                     {
 #if READYTORUN
-                        if (field.HasGCStaticBase || isGCBoxedStaticField)
+                        if (allocateStaticOnGCHeap)
                         {
                             helperId = ReadyToRunHelperId.GetThreadStaticBase;
                         }
@@ -2062,11 +2057,7 @@ namespace Internal.JitInterface
                         helperId = ReadyToRunHelperId.GetThreadStaticBase;
 #endif
                     }
-                    else if (field.HasGCStaticBase
-#if READYTORUN
-                        || isGCBoxedStaticField
-#endif
-                        )
+                    else if (allocateStaticOnGCHeap)
                     {
                         helperId = ReadyToRunHelperId.GetGCStaticBase;
                     }
@@ -2085,11 +2076,9 @@ namespace Internal.JitInterface
                         pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE;
 
                         fieldFlags &= ~CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_STATIC_IN_HEAP; // The dynamic helper takes care of the unboxing
-                        
-                        // Skip emission of "normal" lookup in the conditional block below and fall through to the final chores
-                        helperId = ReadyToRunHelperId.Invalid;
-                        isCrossBubbleStaticField = true;
+                        fieldOffset = 0;
                     }
+                    else
 #endif
 
                     if (helperId != ReadyToRunHelperId.Invalid)
@@ -2116,18 +2105,7 @@ namespace Internal.JitInterface
             pResult->fieldFlags = fieldFlags;
             pResult->fieldType = getFieldType(pResolvedToken.hField, &pResult->structType, pResolvedToken.hClass);
             pResult->accessAllowed = CorInfoIsAccessAllowedResult.CORINFO_ACCESS_ALLOWED;
-
-#if READYTORUN
-            if (isCrossBubbleStaticField)
-            {
-                pResult->offset = 0;
-            }
-            else
-#endif
-            if (!field.IsStatic || !field.HasRva)
-                pResult->offset = (uint)field.Offset.AsInt;
-            else
-                pResult->offset = 0xBAADF00D;
+            pResult->offset = fieldOffset;
 
             // TODO: We need to implement access checks for fields and methods.  See JitInterface.cpp in mrtjit
             //       and STS::AccessCheck::CanAccess.
