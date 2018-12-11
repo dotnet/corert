@@ -114,7 +114,7 @@ namespace System
         }
 
         [Intrinsic]
-        public static int IlogB(double x)
+        public static int ILogB(double x)
         {
             return RuntimeImports.ilogb(x);
         }
