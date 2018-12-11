@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if !PROJECTN
-#define SUPPORTS_VECTOR256
-#endif
-
 using System;
 using Debug = System.Diagnostics.Debug;
 
@@ -119,15 +115,28 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets the maximum alignment to which something can be aligned
         /// </summary>
-        public static int MaximumAlignment
+        public int MaximumAlignment
         {
             get
             {
-#if SUPPORTS_VECTOR256
+                if (Abi == TargetAbi.ProjectN)
+                {
+                    // ProjectN doesn't support hardware intrinsics
+                    return 8;
+                }
+                else if (Architecture == TargetArchitecture.ARM)
+                {
+                    // Corresponds to alignment required for __m128 (there's no __m256)
+                    return 8;
+                }
+                else if (Architecture == TargetArchitecture.ARM64)
+                {
+                    // Corresponds to alignmet required for __m256
+                    return 16;
+                }
+
+                // 256-bit vector is the type with the higest alignment we support
                 return 32;
-#else
-                return 8;
-#endif
             }
         }
 
@@ -140,13 +149,14 @@ namespace Internal.TypeSystem
         {
             get
             {
-#if SUPPORTS_VECTOR256
+                if (Abi == TargetAbi.ProjectN)
+                {
+                    // We use default packing size of 8 irrespective of the platform to match NUTC.
+                    return 8;
+                }
+
                 // We use default packing size of 32 irrespective of the platform.
                 return 32;
-#else
-                // We use default packing size of 8 irrespective of the platform.
-                return 8;
-#endif
             }
         }
 

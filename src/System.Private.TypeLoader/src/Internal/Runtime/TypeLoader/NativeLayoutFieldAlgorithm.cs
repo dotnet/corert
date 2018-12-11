@@ -59,8 +59,10 @@ namespace Internal.Runtime.TypeLoader
                 }
             }
 
+            TargetDetails target = type.Context.Target;
+
             LayoutInt byteCountAlignment = position[InstanceAlignmentEntry];
-            byteCountAlignment = type.Context.Target.GetObjectAlignment(byteCountAlignment);
+            byteCountAlignment = target.GetObjectAlignment(byteCountAlignment);
 
             ComputedInstanceFieldLayout layout = new ComputedInstanceFieldLayout()
             {
@@ -71,13 +73,13 @@ namespace Internal.Runtime.TypeLoader
 
             if (!type.IsValueType)
             {
-                layout.FieldAlignment = type.Context.Target.LayoutPointerSize;
-                layout.FieldSize = type.Context.Target.LayoutPointerSize;
+                layout.FieldAlignment = target.LayoutPointerSize;
+                layout.FieldSize = target.LayoutPointerSize;
             }
             else
             {
                 layout.FieldAlignment = position[InstanceAlignmentEntry];
-                layout.FieldSize = LayoutInt.AlignUp(position[(int)NativeFormat.FieldStorage.Instance], layout.FieldAlignment);
+                layout.FieldSize = LayoutInt.AlignUp(position[(int)NativeFormat.FieldStorage.Instance], layout.FieldAlignment, target);
             }
 
             int curInstanceField = 0;
@@ -371,7 +373,7 @@ namespace Internal.Runtime.TypeLoader
                         alignRequired = LayoutInt.Max(alignRequired, alignment);
                     }
 
-                    position[fieldStorage] = LayoutInt.AlignUp(position[fieldStorage], alignment);
+                    position[fieldStorage] = LayoutInt.AlignUp(position[fieldStorage], alignment, type.Context.Target);
                     TypeLoaderLogger.WriteLine(" --> Field type " + fieldType.ToString() +
                         " storage " + ((uint)(type.NativeLayoutFields[i].FieldStorage)).LowLevelToString() +
                         " offset " + position[fieldStorage].LowLevelToString() +
