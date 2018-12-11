@@ -2,6 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#if !PROJECTN
+#define SUPPORTS_VECTOR256
+#endif
+
 using System;
 using Debug = System.Diagnostics.Debug;
 
@@ -119,7 +123,11 @@ namespace Internal.TypeSystem
         {
             get
             {
+#if SUPPORTS_VECTOR256
+                return 32;
+#else
                 return 8;
+#endif
             }
         }
 
@@ -132,8 +140,13 @@ namespace Internal.TypeSystem
         {
             get
             {
+#if SUPPORTS_VECTOR256
+                // We use default packing size of 32 irrespective of the platform.
+                return 32;
+#else
                 // We use default packing size of 8 irrespective of the platform.
                 return 8;
+#endif
             }
         }
 
