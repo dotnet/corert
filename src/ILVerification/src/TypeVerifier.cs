@@ -84,13 +84,16 @@ namespace Internal.TypeVerifier
                     VerificationError(VerifierError.InterfaceImplHasDuplicate, type, interfaceType, _module.MetadataReader.GetToken(interfaceHandle));
                 }
 
-                // Look for missing method implementation
-                foreach (MethodDesc method in imo.DefType.GetAllMethods())
-                {
-                    MethodDesc resolvedMethod = virtualMethodAlg.ResolveInterfaceMethodToVirtualMethodOnType(method, type);
-                    if (resolvedMethod is null)
+                if (!type.IsAbstract)
+                { 
+                    // Look for missing method implementation
+                    foreach (MethodDesc method in imo.DefType.GetAllMethods())
                     {
-                        VerificationError(VerifierError.InterfaceMethodNotImplemented, type, imo.DefType, method, _module.MetadataReader.GetToken(_typeDefinitionHandle), _module.MetadataReader.GetToken(imo.InterfaceImplementationHandle), _module.MetadataReader.GetToken(((EcmaMethod)method).Handle));
+                        MethodDesc resolvedMethod = virtualMethodAlg.ResolveInterfaceMethodToVirtualMethodOnType(method, type);
+                        if (resolvedMethod is null)
+                        {
+                            VerificationError(VerifierError.InterfaceMethodNotImplemented, type, imo.DefType, method, _module.MetadataReader.GetToken(_typeDefinitionHandle), _module.MetadataReader.GetToken(imo.InterfaceImplementationHandle), _module.MetadataReader.GetToken(((EcmaMethod)method).Handle));
+                        }
                     }
                 }
             }
