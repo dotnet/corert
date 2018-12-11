@@ -14,8 +14,7 @@ namespace System
                 Interop.mincore.GetCurrentProcess(),
                 Interop.Kernel32.ProcessLeapSecondInfo,
                 &info,
-                sizeof(Interop.Kernel32.PROCESS_LEAP_SECOND_INFO)) &&
-                (info.Flags & Interop.Kernel32.PROCESS_LEAP_SECOND_INFO_FLAG_ENABLE_SIXTY_SECOND) != 0;
+                sizeof(Interop.Kernel32.PROCESS_LEAP_SECOND_INFO));
         }
     }
 }
