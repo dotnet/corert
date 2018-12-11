@@ -223,6 +223,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\TargetDetails.cs">
       <Link>TypeSystem\Common\TargetDetails.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\TargetDetails.ToString.cs">
+      <Link>TypeSystem\Common\TargetDetails.ToString.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\ThreadSafeFlags.cs">
       <Link>TypeSystem\Common\ThreadSafeFlags.cs</Link>
     </Compile>
