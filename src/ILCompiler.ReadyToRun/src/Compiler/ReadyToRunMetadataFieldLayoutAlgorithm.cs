@@ -173,7 +173,7 @@ namespace ILCompiler
                         {
                             if (nonGcBytes[staticIndex] != 0)
                             {
-                                offsetsForType.NonGcOffsets[staticIndex] = LayoutInt.AlignUp(nonGcStatics[staticIndex], new LayoutInt(nonGcAlignment[staticIndex]));
+                                offsetsForType.NonGcOffsets[staticIndex] = LayoutInt.AlignUp(nonGcStatics[staticIndex], new LayoutInt(nonGcAlignment[staticIndex]), module.Context.Target);
                                 nonGcStatics[staticIndex] = offsetsForType.NonGcOffsets[staticIndex] + new LayoutInt(nonGcBytes[staticIndex]);
                             }
                             if (gcBytes[staticIndex] != 0)

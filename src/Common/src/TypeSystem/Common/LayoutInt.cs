@@ -113,7 +113,7 @@ namespace Internal.TypeSystem
             return new LayoutInt(Math.Min(left._value, right._value));
         }
 
-        public static LayoutInt AlignUp(LayoutInt value, LayoutInt alignment)
+        public static LayoutInt AlignUp(LayoutInt value, LayoutInt alignment, TargetDetails target)
         {
             if (value.IsIndeterminate || alignment.IsIndeterminate)
             {
@@ -121,13 +121,13 @@ namespace Internal.TypeSystem
                 // alignment is can't change value
                 if (!value.IsIndeterminate)
                 {
-                    if (value.AsInt.AlignUp(TargetDetails.MaximumAlignment) == value.AsInt)
+                    if (value.AsInt.AlignUp(target.MaximumAlignment) == value.AsInt)
                         return value;
                 }
                 return Indeterminate;
             }
 
-            Debug.Assert(alignment._value <= TargetDetails.MaximumAlignment); // Assert that the alignment handling for indeterminate types is safe
+            Debug.Assert(alignment._value <= target.MaximumAlignment); // Assert that the alignment handling for indeterminate types is safe
             Debug.Assert(alignment._value >= 1 || ((value._value == 0) && (alignment._value == 0))); // Alignment to less than one doesn't make sense, except for 0 to 0 alignment
 
             return new LayoutInt(AlignmentHelper.AlignUp(value._value, alignment._value));

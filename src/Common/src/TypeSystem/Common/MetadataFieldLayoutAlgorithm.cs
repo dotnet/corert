@@ -203,7 +203,9 @@ namespace Internal.TypeSystem
 
             result.Offsets = new FieldAndOffset[numStaticFields];
 
-            PrepareRuntimeSpecificStaticFieldLayout(type.Context, ref result);
+            TypeSystemContext context = type.Context;
+
+            PrepareRuntimeSpecificStaticFieldLayout(context, ref result);
 
             int index = 0;
 
@@ -220,9 +222,9 @@ namespace Internal.TypeSystem
                 }
 
                 ref StaticsBlock block = ref GetStaticsBlockForField(ref result, field);
-                SizeAndAlignment sizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, type.Context.Target.DefaultPackingSize);
+                SizeAndAlignment sizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, context.Target.DefaultPackingSize);
 
-                block.Size = LayoutInt.AlignUp(block.Size, sizeAndAlignment.Alignment);
+                block.Size = LayoutInt.AlignUp(block.Size, sizeAndAlignment.Alignment, context.Target);
                 result.Offsets[index] = new FieldAndOffset(field, block.Size);
                 block.Size = block.Size + sizeAndAlignment.Size;
 
@@ -231,7 +233,7 @@ namespace Internal.TypeSystem
                 index++;
             }
 
-            FinalizeRuntimeSpecificStaticFieldLayout(type.Context, ref result);
+            FinalizeRuntimeSpecificStaticFieldLayout(context, ref result);
 
             return result;
         }
@@ -381,7 +383,7 @@ namespace Internal.TypeSystem
 
                 largestAlignmentRequirement = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequirement);
 
-                cumulativeInstanceFieldPos = LayoutInt.AlignUp(cumulativeInstanceFieldPos, fieldSizeAndAlignment.Alignment);
+                cumulativeInstanceFieldPos = LayoutInt.AlignUp(cumulativeInstanceFieldPos, fieldSizeAndAlignment.Alignment, type.Context.Target);
                 offsets[fieldOrdinal] = new FieldAndOffset(field, cumulativeInstanceFieldPos);
                 cumulativeInstanceFieldPos = checked(cumulativeInstanceFieldPos + fieldSizeAndAlignment.Size);
 
@@ -419,10 +421,12 @@ namespace Internal.TypeSystem
             var offsets = new FieldAndOffset[numInstanceFields];
             int fieldOrdinal = 0;
 
+            TypeSystemContext context = type.Context;
+
             // Iterate over the instance fields and keep track of the number of fields of each category
             // For the non-GC Pointer fields, we will keep track of the number of fields by log2(size)
             int maxLog2Size = CalculateLog2(TargetDetails.MaximumPrimitiveSize);
-            int log2PointerSize = CalculateLog2(type.Context.Target.PointerSize);
+            int log2PointerSize = CalculateLog2(context.Target.PointerSize);
             int instanceValueClassFieldCount = 0;
             int instanceGCPointerFieldsCount = 0;
             int[] instanceNonGCPointerFieldsCount = new int[maxLog2Size + 1];
@@ -510,7 +514,7 @@ namespace Internal.TypeSystem
             {
                 // First, place small fields immediately after the parent field bytes if there are a number of field bytes that are not aligned
                 // GC pointer fields and value class fields are not considered for this optimization
-                int parentByteOffsetModulo = cumulativeInstanceFieldPos.AsInt % type.Context.Target.PointerSize;
+                int parentByteOffsetModulo = cumulativeInstanceFieldPos.AsInt % context.Target.PointerSize;
                 if (parentByteOffsetModulo != 0)
                 {
                     for (int i = 0; i < maxLog2Size; i++)
@@ -608,11 +612,11 @@ namespace Internal.TypeSystem
 
                 if (fieldSizeAndAlignment.Alignment.IsIndeterminate)
                 {
-                    cumulativeInstanceFieldPos = LayoutInt.AlignUp(cumulativeInstanceFieldPos, fieldSizeAndAlignment.Alignment);
+                    cumulativeInstanceFieldPos = LayoutInt.AlignUp(cumulativeInstanceFieldPos, fieldSizeAndAlignment.Alignment, context.Target);
                 }
                 else
                 {
-                    cumulativeInstanceFieldPos = LayoutInt.AlignUp(cumulativeInstanceFieldPos, new LayoutInt(type.Context.Target.PointerSize));
+                    cumulativeInstanceFieldPos = LayoutInt.AlignUp(cumulativeInstanceFieldPos, context.Target.LayoutPointerSize, context.Target);
                 }
                 offsets[fieldOrdinal] = new FieldAndOffset(instanceValueClassFieldsArr[i], cumulativeInstanceFieldPos);
 
@@ -647,7 +651,7 @@ namespace Internal.TypeSystem
         {
             var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, packingSize);
 
-            instanceFieldPos = LayoutInt.AlignUp(instanceFieldPos, fieldSizeAndAlignment.Alignment);
+            instanceFieldPos = LayoutInt.AlignUp(instanceFieldPos, fieldSizeAndAlignment.Alignment, field.Context.Target);
             offsets[fieldOrdinal] = new FieldAndOffset(field, instanceFieldPos);
             instanceFieldPos = checked(instanceFieldPos + fieldSizeAndAlignment.Size);
 
@@ -748,7 +752,7 @@ namespace Internal.TypeSystem
         {
             SizeAndAlignment result;
 
-            int targetPointerSize = type.Context.Target.PointerSize;
+            TargetDetails target = type.Context.Target;
 
             // Pad the length of structs to be 1 if they are empty so we have no zero-length structures
             if (type.IsValueType && instanceSize == LayoutInt.Zero)
@@ -758,14 +762,14 @@ namespace Internal.TypeSystem
 
             if (type.IsValueType)
             {
-                instanceSize = LayoutInt.AlignUp(instanceSize, alignment);
+                instanceSize = LayoutInt.AlignUp(instanceSize, alignment, target);
                 result.Size = instanceSize;
                 result.Alignment = alignment;
             }
             else
             {
-                result.Size = new LayoutInt(targetPointerSize);
-                result.Alignment = new LayoutInt(targetPointerSize);
+                result.Size = target.LayoutPointerSize;
+                result.Alignment = target.LayoutPointerSize;
                 if (type.HasBaseType)
                     alignment = LayoutInt.Max(alignment, type.BaseType.InstanceByteAlignment);
             }
@@ -773,7 +777,7 @@ namespace Internal.TypeSystem
             // Determine the alignment needed by the type when allocated
             // This is target specific, and not just pointer sized due to 
             // 8 byte alignment requirements on ARM for longs and doubles
-            alignment = type.Context.Target.GetObjectAlignment(alignment);
+            alignment = target.GetObjectAlignment(alignment);
 
             byteCount.Size = instanceSize;
             byteCount.Alignment = alignment;
