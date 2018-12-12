@@ -454,6 +454,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\MarshalHelpers.cs">
       <Link>Interop\IL\MarshalHelpers.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\MarshalUtils.cs">
+      <Link>Interop\IL\MarshalUtils.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\Marshaller.cs">
       <Link>Interop\IL\Marshaller.cs</Link>
     </Compile>

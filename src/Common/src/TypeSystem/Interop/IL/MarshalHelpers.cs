@@ -11,54 +11,6 @@ namespace Internal.TypeSystem.Interop
 {
     public static class MarshalHelpers
     {
-        /// <summary>
-        /// Returns true if this is a type that doesn't require marshalling.
-        /// </summary>
-        public static bool IsBlittableType(TypeDesc type)
-        {
-            type = type.UnderlyingType;
-
-            if (type.IsValueType)
-            {
-                if (type.IsPrimitive)
-                {
-                    // All primitive types except char and bool are blittable
-                    TypeFlags category = type.Category;
-                    if (category == TypeFlags.Boolean || category == TypeFlags.Char)
-                        return false;
-
-                    return true;
-                }
-
-                foreach (FieldDesc field in type.GetFields())
-                {
-                    if (field.IsStatic)
-                        continue;
-
-                    TypeDesc fieldType = field.FieldType;
-
-                    // TODO: we should also reject fields that specify custom marshalling
-                    if (!MarshalHelpers.IsBlittableType(fieldType))
-                    {
-                        // This field can still be blittable if it's a Char and marshals as Unicode
-                        var owningType = field.OwningType as MetadataType;
-                        if (owningType == null)
-                            return false;
-
-                        if (fieldType.Category != TypeFlags.Char ||
-                            owningType.PInvokeStringFormat == PInvokeStringFormat.AnsiClass)
-                            return false;
-                    }
-                }
-                return true;
-            }
-
-            if (type.IsPointer || type.IsFunctionPointer)
-                return true;
-
-            return false;
-        }
-
         public static bool IsStructMarshallingRequired(TypeDesc typeDesc)
         {
             if (typeDesc is ByRefType)
@@ -89,7 +41,7 @@ namespace Internal.TypeSystem.Interop
                 return false;
 
             // If it is not blittable we will need struct marshalling
-            return !IsBlittableType(type);
+            return !MarshalUtils.IsBlittableType(type);
         }
 
         /// <summary>
@@ -498,7 +450,7 @@ namespace Internal.TypeSystem.Interop
                     }
                 }
 
-                if (MarshalHelpers.IsBlittableType(type))
+                if (MarshalUtils.IsBlittableType(type))
                 {
                     return MarshallerKind.BlittableStruct;
                 }
@@ -783,8 +735,7 @@ namespace Internal.TypeSystem.Interop
                 }
                 else
                 {
-
-                    if (MarshalHelpers.IsBlittableType(elementType))
+                    if (MarshalUtils.IsBlittableType(elementType))
                     {
                         switch (nativeType)
                         {
