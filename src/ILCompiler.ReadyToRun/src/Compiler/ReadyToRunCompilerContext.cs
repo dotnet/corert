@@ -58,10 +58,14 @@ namespace ILCompiler
             Debug.Assert(field.IsStatic);
 
             TypeDesc fieldType = field.FieldType;
-            if (fieldType.IsValueType)
-                return ((DefType)fieldType).ContainsGCPointers;
+            if (fieldType.IsValueType && !fieldType.IsPrimitive)
+            {
+                return true; // In CoreCLR, all structs are implicitly boxed i.e. stored as GC pointers
+            }
             else
+            {
                 return fieldType.IsGCPointer;
+            }
         }
 
         /// <summary>
