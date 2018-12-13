@@ -58,9 +58,9 @@ namespace ILCompiler
             Debug.Assert(field.IsStatic);
 
             TypeDesc fieldType = field.FieldType;
-            if (fieldType.IsValueType && !fieldType.IsPrimitive)
+            if (fieldType.IsValueType)
             {
-                return true; // In CoreCLR, all structs are implicitly boxed i.e. stored as GC pointers
+                return !fieldType.IsPrimitive; // In CoreCLR, all structs are implicitly boxed i.e. stored as GC pointers
             }
             else
             {
