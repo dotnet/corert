@@ -1718,10 +1718,18 @@ namespace ILCompiler.CppCodeGen
             typeDefinitions.Append("class " + mangledName.Substring(current));
             if (!nodeType.IsValueType)
             {
-                // Don't emit inheritance if base type has not been marked for emission
-                if (nodeType.BaseType != null && _emittedTypes.Contains(nodeType.BaseType))
+                if (nodeType.BaseType != null)
                 {
-                    typeDefinitions.Append(" : public " + GetCppTypeName(nodeType.BaseType));
+                    TypeDesc baseType = nodeType.BaseType;
+
+                    if (!nodeType.IsGenericDefinition && baseType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                        baseType = baseType.ConvertToCanonForm(CanonicalFormKind.Specific);
+
+                    // Don't emit inheritance if base type has not been marked for emission
+                    if (_emittedTypes.Contains(baseType))
+                    {
+                        typeDefinitions.Append(" : public " + GetCppTypeName(baseType));
+                    }
                 }
             }
             typeDefinitions.Append(" {");

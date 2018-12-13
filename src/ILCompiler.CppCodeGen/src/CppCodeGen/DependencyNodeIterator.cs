@@ -53,7 +53,11 @@ namespace ILCompiler.Compiler.CppCodeGen
                 EETypeNode baseTypeNode;
                 if (node.Type.BaseType != null)
                 {
-                    _typeToNodeMap.TryGetValue(node.Type.BaseType, out baseTypeNode);
+                    TypeDesc baseType = node.Type.BaseType;
+                    if (!node.Type.IsGenericDefinition && baseType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                        baseType = baseType.ConvertToCanonForm(CanonicalFormKind.Specific);
+
+                    _typeToNodeMap.TryGetValue(baseType, out baseTypeNode);
                     if (!node.Type.IsPrimitive)
                         AddTypeNode(baseTypeNode);
                     else if (!_nodes.Contains(baseTypeNode)) _nodes.Add(baseTypeNode);
