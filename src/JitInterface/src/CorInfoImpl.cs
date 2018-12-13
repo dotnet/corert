@@ -1953,17 +1953,14 @@ namespace Internal.JitInterface
 
             if (field.IsStatic)
             {
-                bool allocateStaticOnGCHeap = field.HasGCStaticBase;
-
                 fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_STATIC;
 
 #if READYTORUN
-                if (!field.HasRva && field.FieldType.IsValueType && !field.FieldType.IsPrimitive)
+                if (field.FieldType.IsValueType && field.HasGCStaticBase)
                 {
                     // statics of struct types are stored as implicitly boxed in CoreCLR i.e.
-                    // we switch over to the GC heap to allocate the box and modify field static flags appropriately
+                    // we need to modify field access flags appropriately
                     fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_STATIC_IN_HEAP;
-                    allocateStaticOnGCHeap = true;
                 }
 #endif
 
@@ -1999,7 +1996,7 @@ namespace Internal.JitInterface
                         if (field.IsThreadStatic)
                         {
 #if READYTORUN
-                            if (allocateStaticOnGCHeap)
+                            if (field.HasGCStaticBase)
                             {
                                 helperId = ReadyToRunHelperId.GetThreadStaticBase;
                             }
@@ -2011,7 +2008,7 @@ namespace Internal.JitInterface
                             helperId = ReadyToRunHelperId.GetThreadStaticBase;
 #endif
                         }
-                        else if (allocateStaticOnGCHeap)
+                        else if (field.HasGCStaticBase)
                         {
                             helperId = ReadyToRunHelperId.GetGCStaticBase;
                         }
@@ -2053,7 +2050,7 @@ namespace Internal.JitInterface
                     else if (field.IsThreadStatic)
                     {
 #if READYTORUN
-                        if (allocateStaticOnGCHeap)
+                        if (field.HasGCStaticBase)
                         {
                             helperId = ReadyToRunHelperId.GetThreadStaticBase;
                         }
@@ -2065,7 +2062,7 @@ namespace Internal.JitInterface
                         helperId = ReadyToRunHelperId.GetThreadStaticBase;
 #endif
                     }
-                    else if (allocateStaticOnGCHeap)
+                    else if (field.HasGCStaticBase)
                     {
                         helperId = ReadyToRunHelperId.GetGCStaticBase;
                     }
