@@ -57,12 +57,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 #if _TARGET_AMD64_
 #pragma warning disable 0169
 #if UNIX_AMD64_ABI
-    struct ReturnBlock
-    {
-        IntPtr returnValue;
-        IntPtr returnValue2;
-    }
-
     struct ArgumentRegisters
     {
         IntPtr rdi;
@@ -72,18 +66,33 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         IntPtr r8;
         IntPtr r9;
     }
-#else // UNIX_AMD64_ABI
-    struct ReturnBlock
+    struct CalleeSavedRegisters
     {
-        IntPtr returnValue;
+        IntPtr r12;
+        IntPtr r13;
+        IntPtr r14;
+        IntPtr r15;
+        IntPtr rbx;
+        IntPtr rbp;
     }
-
+#else // UNIX_AMD64_ABI
     struct ArgumentRegisters
     {
-        IntPtr rdx;
         IntPtr rcx;
+        IntPtr rdx;
         IntPtr r8;
         IntPtr r9;
+    }
+    struct CalleeSavedRegisters
+    {
+        IntPtr rdi;
+        IntPtr rsi;
+        IntPtr rbx;
+        IntPtr rbp;
+        IntPtr r12;
+        IntPtr r13;
+        IntPtr r14;
+        IntPtr r15;
     }
 #endif // UNIX_AMD64_ABI
 #pragma warning restore 0169
@@ -129,14 +138,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     }
 #elif _TARGET_ARM64_
 #pragma warning disable 0169
-    struct ReturnBlock
-    {
-        IntPtr returnValue;
-        IntPtr returnValue2;
-        IntPtr returnValue3;
-        IntPtr returnValue4;
-    }
-
     struct ArgumentRegisters
     {
         IntPtr x0;
@@ -147,13 +148,28 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         IntPtr x5;
         IntPtr x6;
         IntPtr x7;
-        IntPtr x8;
         public static unsafe int GetOffsetOfx8()
         {
             return sizeof(IntPtr) * 8;
         }
     }
 #pragma warning restore 0169
+
+    struct CalleeSavedRegisters
+    {
+        IntPtr x29;
+        IntPtr x30;
+        IntPtr x19;
+        IntPtr x20;
+        IntPtr x21;
+        IntPtr x22;
+        IntPtr x23;
+        IntPtr x24;
+        IntPtr x25;
+        IntPtr x26;
+        IntPtr x27;
+        IntPtr x28;
+    }
 
 #pragma warning disable 0169
     struct FloatArgumentRegisters
@@ -185,12 +201,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     }
 #elif _TARGET_X86_
 #pragma warning disable 0169, 0649
-    struct ReturnBlock
-    {
-        public IntPtr returnValue;
-        public IntPtr returnValue2;
-    }
-
     struct ArgumentRegisters
     {
         public IntPtr edx;
@@ -204,6 +214,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return sizeof(IntPtr);
         }
     }
+    
+    struct CalleeSavedRegisters
+    {
+        public IntPtr edi;
+        public IntPtr esi;
+        public IntPtr ebx;
+        public IntPtr ebp;
+    }
+    
     // This struct isn't used by x86, but exists for compatibility with the definition of the CallDescrData struct
     struct FloatArgumentRegisters
     {
@@ -225,24 +244,25 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     }
 #elif _TARGET_ARM_
 #pragma warning disable 0169
-    struct ReturnBlock
-    {
-        IntPtr returnValue;
-        IntPtr returnValue2;
-        IntPtr returnValue3;
-        IntPtr returnValue4;
-        IntPtr returnValue5;
-        IntPtr returnValue6;
-        IntPtr returnValue7;
-        IntPtr returnValue8;
-    }
-
     struct ArgumentRegisters
     {
         IntPtr r0;
         IntPtr r1;
         IntPtr r2;
         IntPtr r3;
+    }
+
+    struct CalleeSavedRegisters
+    {
+        IntPtr r4;
+        IntPtr r5;
+        IntPtr r6;
+        IntPtr r7;
+        IntPtr r8;
+        IntPtr r9;
+        IntPtr r10;
+        IntPtr r11;
+        IntPtr r14;
     }
 
     struct FloatArgumentRegisters
@@ -274,11 +294,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
 #elif _TARGET_WASM_
 #pragma warning disable 0169
-    struct ReturnBlock
-    {
-        IntPtr returnValue;
-    }
-
     struct ArgumentRegisters
     {
         // No registers on WASM
@@ -320,82 +335,48 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             return 0;
         }
-        public ReturnBlock m_returnBlock;
-        public static unsafe int GetOffsetOfReturnValuesBlock()
-        {
-            return sizeof(ArgumentRegisters);
-        }
-        IntPtr m_ebp;
+        public CalleeSavedRegisters m_calleeSavedRegisters;
         IntPtr m_ReturnAddress;
 #elif _TARGET_AMD64_
 
 #if UNIX_AMD64_ABI
-        public ReturnBlock m_returnBlock;
-        public static unsafe int GetOffsetOfReturnValuesBlock()
-        {
-            return 0;
-        }
-
         public ArgumentRegisters m_argumentRegisters;
         public static unsafe int GetOffsetOfArgumentRegisters()
         {
-            return sizeof(ReturnBlock);
+            return 0;
         }
-
-        IntPtr m_alignmentPadding;
-        IntPtr m_ReturnAddress;
 #else // UNIX_AMD64_ABI
-        IntPtr m_returnBlockPadding;
-        ReturnBlock m_returnBlock;
-        public static unsafe int GetOffsetOfReturnValuesBlock()
-        {
-            return sizeof(IntPtr);
-        }
-        IntPtr m_alignmentPadding;
-        IntPtr m_ReturnAddress;
         public static unsafe int GetOffsetOfArgumentRegisters()
         {
             return sizeof(TransitionBlock);
         }
 #endif // UNIX_AMD64_ABI
+        public CalleeSavedRegisters m_calleeSavedRegisters;
+        IntPtr m_ReturnAddress;
 
 #elif _TARGET_ARM_
-        public ReturnBlock m_returnBlock;
-        public static unsafe int GetOffsetOfReturnValuesBlock()
-        {
-            return 0;
-        }
-
+        public CalleeSavedRegisters m_calleeSavedRegisers;
         public ArgumentRegisters m_argumentRegisters;
         public static unsafe int GetOffsetOfArgumentRegisters()
         {
-            return sizeof(ReturnBlock);
+            return sizeof(CalleeSavedRegisters);
         }
 #elif _TARGET_ARM64_
-        public ReturnBlock m_returnBlock;
-        public static unsafe int GetOffsetOfReturnValuesBlock()
-        {
-            return 0;
-        }
-
-        public ArgumentRegisters m_argumentRegisters;
-        public static unsafe int GetOffsetOfArgumentRegisters()
-        {
-            return sizeof(ReturnBlock);
-        }
-
+        public CalleeSavedRegisters m_calleeSavedRegisters;
         public IntPtr m_alignmentPad;
-#elif _TARGET_WASM_
-        public ReturnBlock m_returnBlock;
-        public static unsafe int GetOffsetOfReturnValuesBlock()
+        public IntPtr m_x8RetBuffReg;
+        public ArgumentRegisters m_argumentRegisters;
+
+        public static unsafe int GetOffsetOfArgumentRegisters()
         {
-            return 0;
+            return sizeof(CalleeSavedRegisters) + 2 * sizeof(IntPtr);
         }
 
+#elif _TARGET_WASM_
         public ArgumentRegisters m_argumentRegisters;
         public static unsafe int GetOffsetOfArgumentRegisters()
         {
-            return sizeof(ReturnBlock);
+            return 0;
         }
 #else
 #error Portability problem
