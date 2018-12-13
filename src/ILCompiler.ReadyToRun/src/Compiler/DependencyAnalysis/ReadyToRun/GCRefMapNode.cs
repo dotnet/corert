@@ -19,14 +19,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public const int GCREFMAP_LOOKUP_STRIDE = 1024;
 
         private readonly ImportSectionNode _importSection;
-        private readonly List<MethodDesc> _methods;
+        private readonly List<IMethodNode> _methods;
 
         private int _index;
 
         public GCRefMapNode(ImportSectionNode importSection)
         {
             _importSection = importSection;
-            _methods = new List<MethodDesc>();
+            _methods = new List<IMethodNode>();
             _index = 0;
         }
 
@@ -48,7 +48,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     _methods.Add(null);
                 }
-                _methods[_index] = methodNode.Method;
+                _methods[_index] = methodNode;
             }
             _index++;
         }
@@ -95,7 +95,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     nextOffsetIndex++;
                     nextMethodIndex += GCREFMAP_LOOKUP_STRIDE;
                 }
-                builder.GetCallRefMap(_methods[methodIndex]);
+                IMethodNode methodNode = _methods[methodIndex];
+                if (methodNode is LocalMethodImport localMethodImport && localMethodImport.MethodCodeNode.IsEmpty)
+                {
+                    // Emit an empty entry into the GC ref map for the uncompilable method
+                    builder.Flush();
+                }
+                else
+                {
+                    builder.GetCallRefMap(methodNode.Method);
+                }
             }
             Debug.Assert(nextOffsetIndex == offsets.Length);
 
