@@ -16,7 +16,7 @@ namespace Internal.TypeVerifier
     {
         private readonly EcmaModule _module;
         private readonly TypeDefinitionHandle _typeDefinitionHandle;
-        private readonly  ILVerifyTypeSystemContext _typeSystemContext;
+        private readonly ILVerifyTypeSystemContext _typeSystemContext;
         public Action<VerifierError, object[]> ReportVerificationError
         {
             set;
@@ -57,6 +57,8 @@ namespace Internal.TypeVerifier
                 return;
             }
 
+            // Look for duplicates and prepare distinct list of implemented interfaces to avoid 
+            // subsequent error duplication
             VirtualMethodAlgorithm virtualMethodAlg = _typeSystemContext.GetVirtualMethodAlgorithmForType(type);
             List<InterfaceMetadataObjects> implementedInterfaces = new List<InterfaceMetadataObjects>();
             foreach (InterfaceImplementationHandle interfaceHandle in interfaceHandles)
@@ -74,7 +76,6 @@ namespace Internal.TypeVerifier
                     InterfaceImplementationHandle = interfaceHandle
                 };
 
-                // Look for duplicates.
                 if (!implementedInterfaces.Contains(imo))
                 {
                     implementedInterfaces.Add(imo);
@@ -83,16 +84,19 @@ namespace Internal.TypeVerifier
                 {
                     VerificationError(VerifierError.InterfaceImplHasDuplicate, type, interfaceType, _module.MetadataReader.GetToken(interfaceHandle));
                 }
+            }
 
+            foreach (InterfaceMetadataObjects implementedInterface in implementedInterfaces)
+            {
                 if (!type.IsAbstract)
-                { 
+                {
                     // Look for missing method implementation
-                    foreach (MethodDesc method in imo.DefType.GetAllMethods())
+                    foreach (MethodDesc method in implementedInterface.DefType.GetAllMethods())
                     {
                         MethodDesc resolvedMethod = virtualMethodAlg.ResolveInterfaceMethodToVirtualMethodOnType(method, type);
                         if (resolvedMethod is null)
                         {
-                            VerificationError(VerifierError.InterfaceMethodNotImplemented, type, imo.DefType, method, _module.MetadataReader.GetToken(_typeDefinitionHandle), _module.MetadataReader.GetToken(imo.InterfaceImplementationHandle), _module.MetadataReader.GetToken(((EcmaMethod)method).Handle));
+                            VerificationError(VerifierError.InterfaceMethodNotImplemented, type, implementedInterface.DefType, method, _module.MetadataReader.GetToken(_typeDefinitionHandle), _module.MetadataReader.GetToken(implementedInterface.InterfaceImplementationHandle), _module.MetadataReader.GetToken(((EcmaMethod)method).Handle));
                         }
                     }
                 }
