@@ -50,28 +50,6 @@ namespace ILCompiler.DependencyAnalysis
 
             switch (id)
             {
-                case ReadyToRunHelperId.NewHelper:
-                case ReadyToRunHelperId.NewArr1:
-                    {
-                        // Make sure that if the EEType can't be generated, we throw the exception now.
-                        // This way we can fail generating code for the method that references the EEType
-                        // and (depending on the policy), we could avoid scraping the entire compilation.
-                        TypeDesc type = (TypeDesc)target;
-                        factory.ConstructedTypeSymbol(type);
-                    }
-                    break;
-                case ReadyToRunHelperId.IsInstanceOf:
-                case ReadyToRunHelperId.CastClass:
-                    {
-                        // Make sure that if the EEType can't be generated, we throw the exception now.
-                        // This way we can fail generating code for the method that references the EEType
-                        // and (depending on the policy), we could avoid scraping the entire compilation.
-                        TypeDesc type = (TypeDesc)target;
-                        factory.NecessaryTypeSymbol(type);
-
-                        Debug.Assert(!type.IsNullable, "Nullable needs to be unwrapped");
-                    }
-                    break;
                 case ReadyToRunHelperId.GetNonGCStaticBase:
                 case ReadyToRunHelperId.GetGCStaticBase:
                 case ReadyToRunHelperId.GetThreadStaticBase:
@@ -109,20 +87,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             switch (_id)
             {
-                case ReadyToRunHelperId.NewHelper:
-                    sb.Append("__NewHelper_").Append(nameMangler.GetMangledTypeName((TypeDesc)_target));
-                    break;
-                case ReadyToRunHelperId.NewArr1:
-                    sb.Append("__NewArr1_").Append(nameMangler.GetMangledTypeName((TypeDesc)_target));
-                    break;
                 case ReadyToRunHelperId.VirtualCall:
                     sb.Append("__VirtualCall_").Append(nameMangler.GetMangledMethodName((MethodDesc)_target));
-                    break;
-                case ReadyToRunHelperId.IsInstanceOf:
-                    sb.Append("__IsInstanceOf_").Append(nameMangler.GetMangledTypeName((TypeDesc)_target));
-                    break;
-                case ReadyToRunHelperId.CastClass:
-                    sb.Append("__CastClass_").Append(nameMangler.GetMangledTypeName((TypeDesc)_target));
                     break;
                 case ReadyToRunHelperId.GetNonGCStaticBase:
                     sb.Append("__GetNonGCStaticBase_").Append(nameMangler.GetMangledTypeName((TypeDesc)_target));
@@ -241,10 +207,6 @@ namespace ILCompiler.DependencyAnalysis
 
             switch (_id)
             {
-                case ReadyToRunHelperId.NewHelper:
-                case ReadyToRunHelperId.NewArr1:
-                case ReadyToRunHelperId.IsInstanceOf:
-                case ReadyToRunHelperId.CastClass:
                 case ReadyToRunHelperId.GetNonGCStaticBase:
                 case ReadyToRunHelperId.GetGCStaticBase:
                 case ReadyToRunHelperId.GetThreadStaticBase:

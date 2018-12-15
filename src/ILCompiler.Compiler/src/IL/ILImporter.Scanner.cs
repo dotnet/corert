@@ -958,7 +958,7 @@ namespace Internal.IL
             }
             else
             {
-                _dependencies.Add(_factory.ReadyToRunHelper(ReadyToRunHelperId.NewArr1, type), "newarr");
+                _dependencies.Add(_factory.ConstructedTypeSymbol(type), "newarr");
             }
         }
 
