@@ -4,6 +4,7 @@
 
 using System;
 
+using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysis;
 
 using Debug = System.Diagnostics.Debug;
@@ -22,8 +23,17 @@ namespace ILCompiler
         private readonly short _offset1;
         private readonly short _offset2;
 
+        /// <summary>
+        /// Gets the information about the source of the generic context for shared code.
+        /// </summary>
         public readonly GenericContextSource ContextSource;
 
+        /// <summary>
+        /// Gets the target object of the lookup. Only valid when <see cref="UseHelper"/> is true.
+        /// This is typically a <see cref="TypeDesc"/> whose <see cref="TypeDesc.IsRuntimeDeterminedSubtype"/>
+        /// is true, a <see cref="FieldDesc"/> on a runtime determined type, a <see cref="MethodDesc"/>, or
+        /// a <see cref="DelegateCreationInfo"/>.
+        /// </summary>
         public object HelperObject
         {
             get
@@ -33,6 +43,9 @@ namespace ILCompiler
             }
         }
 
+        /// <summary>
+        /// Gets the ID of the helper to use if <see cref="UseHelper"/> is true.
+        /// </summary>
         public ReadyToRunHelperId HelperId
         {
             get
@@ -42,6 +55,9 @@ namespace ILCompiler
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether the lookup needs to be performed by calling a helper method. 
+        /// </summary>
         public bool UseHelper
         {
             get
@@ -50,6 +66,9 @@ namespace ILCompiler
             }
         }
 
+        /// <summary>
+        /// Gets the number of indirections to follow. Only valid if <see cref="UseHelper"/> is false.
+        /// </summary>
         public int NumberOfIndirections
         {
             get
