@@ -426,8 +426,20 @@ namespace Internal.IL
                 case StackValueKind.NativeInt:
                     {
                         IntPtr val1 = op1.AsNativeIntUnchecked();
-                        IntPtr val2 = op1.AsNativeIntUnchecked();
-
+                        IntPtr val2 = op2.AsNativeIntUnchecked();
+#if BIT64
+                        if (!opcode.ToString().Contains("un"))
+                        {
+                            if (op1.Kind == StackValueKind.Int32)
+                            {
+                                val1 = (IntPtr)op1.AsInt32();
+                            }
+                            else if (op2.Kind == StackValueKind.Int32)
+                            {
+                                val2 = (IntPtr)op2.AsInt32();
+                            }
+                        }
+#endif
                         switch (opcode)
                         {
                             case ILOpcode.ceq:
@@ -437,13 +449,13 @@ namespace Internal.IL
                                 result = (long)val2 > (long)val1;
                                 break;
                             case ILOpcode.cgt_un:
-                                result = (long)((UIntPtr)val2.ToPointer()) > (long)((UIntPtr)val1.ToPointer());
+                                result = (ulong)((UIntPtr)val2.ToPointer()) > (ulong)((UIntPtr)val1.ToPointer());
                                 break;
                             case ILOpcode.clt:
                                 result = (long)val2 < (long)val1;
                                 break;
                             case ILOpcode.clt_un:
-                                result = (long)((UIntPtr)val2.ToPointer()) < (long)((UIntPtr)val1.ToPointer());
+                                result = (ulong)((UIntPtr)val2.ToPointer()) < (ulong)((UIntPtr)val1.ToPointer());
                                 break;
                             default:
                                 Debug.Assert(false);
@@ -496,7 +508,7 @@ namespace Internal.IL
 
                         if (opcode == ILOpcode.ceq)
                         {
-                            result = val1 == val2;
+                            result = Object.ReferenceEquals(val1, val2);
                         }
                         else
                         {
@@ -505,8 +517,10 @@ namespace Internal.IL
                         }
                     }
                     break;
-                case StackValueKind.Unknown:
                 case StackValueKind.ByRef:
+                    // TODO: Add support for ByRef to StackItem
+                    throw new NotImplementedException();
+                case StackValueKind.Unknown:
                 case StackValueKind.ValueType:
                 default:
                     ThrowHelper.ThrowInvalidProgramException();
