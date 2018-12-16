@@ -172,6 +172,11 @@ void GCToCLREventSink::FirePinObjectAtGCTime(void* object, uint8_t** ppObject)
     UNREFERENCED_PARAMETER(ppObject);
 }
 
+void GCToCLREventSink::FirePinPlugAtGCTime(uint8_t* plugStart, uint8_t* plugEnd, uint8_t* gapBeforeSize)
+{
+    FireEtwPinPlugAtGCTime(plugStart, plugEnd, gapBeforeSize, GetClrInstanceId());
+}
+
 void GCToCLREventSink::FireGCPerHeapHistory_V3(void *freeListAllocated,
                                                void *freeListRejected,
                                                void *endOfSegAllocated,
