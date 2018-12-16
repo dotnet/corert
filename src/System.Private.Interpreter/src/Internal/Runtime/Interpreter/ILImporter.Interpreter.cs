@@ -428,7 +428,7 @@ namespace Internal.IL
                         IntPtr val1 = op1.AsNativeIntUnchecked();
                         IntPtr val2 = op2.AsNativeIntUnchecked();
 #if BIT64
-                        if (!opcode.ToString().Contains("un"))
+                        if (opcode == ILOpcode.ceq || opcode == ILOpcode.cgt || opcode == ILOpcode.clt)
                         {
                             if (op1.Kind == StackValueKind.Int32)
                             {
