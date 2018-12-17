@@ -439,9 +439,9 @@
     <value>Missing ldsfld, stsfld, ldind, stind, ldfld, stfld, ldobj, stobj, initblk, or cpblk.</value>
   </data>
   <data name="InterfaceImplHasDuplicate" xml:space="preserve">
-    <value>Interface implementation has a duplicate. Class '{0}' Interface: '{1}', token=0x{2:X8}</value>
+    <value>Interface implementation has a duplicate. Class '{0}' Interface: '{1}'</value>
   </data>
   <data name="InterfaceMethodNotImplemented" xml:space="preserve">
-    <value>Class implements interface but not method, Class: '{0}' Interface: '{1}' Method: {2}(class:{3:X8} interface:{4:X8} method:{5:X8}).</value>
+    <value>Class implements interface but not method, Class: '{0}' Interface: '{1}' Method: {2}.</value>
   </data>
 </root>

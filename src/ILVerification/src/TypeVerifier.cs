@@ -82,7 +82,7 @@ namespace Internal.TypeVerifier
                 }
                 else
                 {
-                    VerificationError(VerifierError.InterfaceImplHasDuplicate, type, interfaceType, _module.MetadataReader.GetToken(interfaceHandle));
+                    VerificationError(VerifierError.InterfaceImplHasDuplicate, Format(type, interfaceType));
                 }
             }
 
@@ -96,11 +96,16 @@ namespace Internal.TypeVerifier
                         MethodDesc resolvedMethod = virtualMethodAlg.ResolveInterfaceMethodToVirtualMethodOnType(method, type);
                         if (resolvedMethod is null)
                         {
-                            VerificationError(VerifierError.InterfaceMethodNotImplemented, type, implementedInterface.DefType, method, _module.MetadataReader.GetToken(_typeDefinitionHandle), _module.MetadataReader.GetToken(implementedInterface.InterfaceImplementationHandle), _module.MetadataReader.GetToken(((EcmaMethod)method).Handle));
+                            VerificationError(VerifierError.InterfaceMethodNotImplemented, Format(type, implementedInterface.DefType, method));
                         }
                     }
                 }
             }
+        }
+
+        private object[] Format(EcmaType type, DefType interfaceTypeDef, MethodDesc methodDes = null)
+        {
+            return new object[] { type, interfaceTypeDef, methodDes };
         }
 
         private class InterfaceMetadataObjects : IEquatable<InterfaceMetadataObjects>
