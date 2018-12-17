@@ -15,6 +15,7 @@
 #pragma warning(disable:4102) // unreferenced label
 #pragma warning(disable:4244) // possible loss of data
 #pragma warning(disable:4717) // recursive on all control paths
+#pragma warning(disable:4307) // integral constant overflow
 #endif
 
 #ifdef _MSC_VER
