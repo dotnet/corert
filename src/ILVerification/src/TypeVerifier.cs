@@ -103,9 +103,9 @@ namespace Internal.TypeVerifier
             }
         }
 
-        private object[] Format(EcmaType type, DefType interfaceTypeDef, MethodDesc methodDes = null)
+        private object[] Format(EcmaType type, DefType interfaceTypeDef, MethodDesc methodDesc = null)
         {
-            return new object[] { type, interfaceTypeDef, methodDes };
+            return new object[] { type, interfaceTypeDef, methodDesc };
         }
 
         private class InterfaceMetadataObjects : IEquatable<InterfaceMetadataObjects>
