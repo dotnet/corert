@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 using ILVerify;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -16,7 +15,7 @@ namespace Internal.TypeVerifier
     {
         private readonly EcmaModule _module;
         private readonly TypeDefinitionHandle _typeDefinitionHandle;
-        private readonly  ILVerifyTypeSystemContext _typeSystemContext;
+        private readonly ILVerifyTypeSystemContext _typeSystemContext;
         public Action<VerifierError, object[]> ReportVerificationError
         {
             set;
@@ -57,6 +56,8 @@ namespace Internal.TypeVerifier
                 return;
             }
 
+            // Look for duplicates and prepare distinct list of implemented interfaces to avoid 
+            // subsequent error duplication
             VirtualMethodAlgorithm virtualMethodAlg = _typeSystemContext.GetVirtualMethodAlgorithmForType(type);
             List<InterfaceMetadataObjects> implementedInterfaces = new List<InterfaceMetadataObjects>();
             foreach (InterfaceImplementationHandle interfaceHandle in interfaceHandles)
@@ -74,29 +75,50 @@ namespace Internal.TypeVerifier
                     InterfaceImplementationHandle = interfaceHandle
                 };
 
-                // Look for duplicates.
                 if (!implementedInterfaces.Contains(imo))
                 {
                     implementedInterfaces.Add(imo);
                 }
                 else
                 {
-                    VerificationError(VerifierError.InterfaceImplHasDuplicate, type, interfaceType, _module.MetadataReader.GetToken(interfaceHandle));
+                    VerificationError(VerifierError.InterfaceImplHasDuplicate, Format(type), Format(interfaceType));
                 }
+            }
 
+            foreach (InterfaceMetadataObjects implementedInterface in implementedInterfaces)
+            {
                 if (!type.IsAbstract)
-                { 
+                {
                     // Look for missing method implementation
-                    foreach (MethodDesc method in imo.DefType.GetAllMethods())
+                    foreach (MethodDesc method in implementedInterface.DefType.GetAllMethods())
                     {
                         MethodDesc resolvedMethod = virtualMethodAlg.ResolveInterfaceMethodToVirtualMethodOnType(method, type);
                         if (resolvedMethod is null)
                         {
-                            VerificationError(VerifierError.InterfaceMethodNotImplemented, type, imo.DefType, method, _module.MetadataReader.GetToken(_typeDefinitionHandle), _module.MetadataReader.GetToken(imo.InterfaceImplementationHandle), _module.MetadataReader.GetToken(((EcmaMethod)method).Handle));
+                            VerificationError(VerifierError.InterfaceMethodNotImplemented, Format(type), Format(implementedInterface.DefType), Format(method));
                         }
                     }
                 }
             }
+        }
+
+        // Format helpers for future use
+        // The idea is to improve formatting string with tokens value i.e.: 
+        // [Assembly]Class(0x1234) vs current [Assembly]Class
+        // in case somebody will pass '--tokens' switch to ILVerify
+        private string Format(EcmaType type)
+        {
+            return type.ToString();
+        }
+
+        private string Format(DefType interfaceTypeDef)
+        {
+            return interfaceTypeDef.ToString();
+        }
+
+        private string Format(MethodDesc methodDesc)
+        {
+            return methodDesc.ToString();
         }
 
         private class InterfaceMetadataObjects : IEquatable<InterfaceMetadataObjects>
