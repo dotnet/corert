@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 using ILVerify;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -82,7 +81,7 @@ namespace Internal.TypeVerifier
                 }
                 else
                 {
-                    VerificationError(VerifierError.InterfaceImplHasDuplicate, Format(type, interfaceType));
+                    VerificationError(VerifierError.InterfaceImplHasDuplicate, Format(type), Format(interfaceType));
                 }
             }
 
@@ -96,16 +95,30 @@ namespace Internal.TypeVerifier
                         MethodDesc resolvedMethod = virtualMethodAlg.ResolveInterfaceMethodToVirtualMethodOnType(method, type);
                         if (resolvedMethod is null)
                         {
-                            VerificationError(VerifierError.InterfaceMethodNotImplemented, Format(type, implementedInterface.DefType, method));
+                            VerificationError(VerifierError.InterfaceMethodNotImplemented, Format(type), Format(implementedInterface.DefType), Format(method));
                         }
                     }
                 }
             }
         }
 
-        private object[] Format(EcmaType type, DefType interfaceTypeDef, MethodDesc methodDesc = null)
+        // Format helpers for future use
+        // The idea is to improve formatting string with tokens value i.e.: 
+        // [Assembly]Class(0x1234) vs current [Assembly]Class
+        // in case somebody will pass '--tokens' switch to ILVerify
+        private string Format(EcmaType type)
         {
-            return new object[] { type, interfaceTypeDef, methodDesc };
+            return type.ToString();
+        }
+
+        private string Format(DefType interfaceTypeDef)
+        {
+            return interfaceTypeDef.ToString();
+        }
+
+        private string Format(MethodDesc methodDesc)
+        {
+            return methodDesc.ToString();
         }
 
         private class InterfaceMetadataObjects : IEquatable<InterfaceMetadataObjects>
