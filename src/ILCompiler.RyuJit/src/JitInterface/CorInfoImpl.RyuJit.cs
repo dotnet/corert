@@ -296,6 +296,14 @@ namespace Internal.JitInterface
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_NEWSFAST:
                     return _compilation.NodeFactory.ExternSymbol("RhpNewFast");
+                case CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_FINALIZE:
+                    return _compilation.NodeFactory.ExternSymbol("RhpNewFinalizable");
+                case CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN8:
+                    return _compilation.NodeFactory.ExternSymbol("RhpNewFastAlign8");
+                case CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE:
+                    return _compilation.NodeFactory.ExternSymbol("RhpNewFinalizableAlign8");
+                case CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN8_VC:
+                    return _compilation.NodeFactory.ExternSymbol("RhpNewFastMisalign");
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT:
                     id = ReadyToRunHelper.NewArray;
                     break;
@@ -905,13 +913,19 @@ namespace Internal.JitInterface
 
             Debug.Assert(!type.IsString && !type.IsArray && !type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
 
-            // TODO: disambiguate to the specialized helpers we have (see GetNewObjectHelperForType)
-
             if (type.RequiresAlign8())
-                return CorInfoHelpFunc.CORINFO_HELP_NEWFAST;
+            {
+                if (type.HasFinalizer)
+                    return CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE;
+
+                if (type.IsValueType)
+                    return CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN8_VC;
+
+                return CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN8;
+            }
 
             if (type.HasFinalizer)
-                return CorInfoHelpFunc.CORINFO_HELP_NEWFAST;
+                return CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_FINALIZE;
 
             return CorInfoHelpFunc.CORINFO_HELP_NEWSFAST;
         }
