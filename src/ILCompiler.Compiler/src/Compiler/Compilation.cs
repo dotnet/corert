@@ -221,6 +221,7 @@ namespace ILCompiler
                 case ReadyToRunHelperId.TypeHandle:
                 case ReadyToRunHelperId.NecessaryTypeHandle:
                 case ReadyToRunHelperId.DefaultConstructor:
+                case ReadyToRunHelperId.TypeHandleForCasting:
                     return ((TypeDesc)targetOfLookup).IsRuntimeDeterminedSubtype;
 
                 case ReadyToRunHelperId.MethodDictionary:
@@ -245,6 +246,13 @@ namespace ILCompiler
                     return NodeFactory.ConstructedTypeSymbol((TypeDesc)targetOfLookup);
                 case ReadyToRunHelperId.NecessaryTypeHandle:
                     return NodeFactory.NecessaryTypeSymbol((TypeDesc)targetOfLookup);
+                case ReadyToRunHelperId.TypeHandleForCasting:
+                    {
+                        var type = (TypeDesc)targetOfLookup;
+                        if (type.IsNullable)
+                            targetOfLookup = type.Instantiation[0];
+                        return NodeFactory.NecessaryTypeSymbol((TypeDesc)targetOfLookup);
+                    }
                 case ReadyToRunHelperId.MethodDictionary:
                     return NodeFactory.MethodGenericDictionary((MethodDesc)targetOfLookup);
                 case ReadyToRunHelperId.MethodEntry:
@@ -289,6 +297,32 @@ namespace ILCompiler
                 contextSource = GenericContextSource.ThisObject;
             }
 
+            //
+            // Some helpers represent logical concepts that might not be something that can be looked up in a dictionary
+            //
+
+            // Downgrade type handle for casting to a normal type handle if possible
+            if (lookupKind == ReadyToRunHelperId.TypeHandleForCasting)
+            {
+                var type = (TypeDesc)targetOfLookup;
+                if (!type.IsRuntimeDeterminedType ||
+                    (!((RuntimeDeterminedType)type).CanonicalType.IsCanonicalDefinitionType(CanonicalFormKind.Universal) &&
+                    !((RuntimeDeterminedType)type).CanonicalType.IsNullable))
+                {
+                    if (type.IsNullable)
+                    {
+                        targetOfLookup = type.Instantiation[0];
+                    }
+                    lookupKind = ReadyToRunHelperId.NecessaryTypeHandle;
+                }
+            }
+
+            // We don't have separate entries for necessary type handles to avoid possible duplication
+            if (lookupKind == ReadyToRunHelperId.NecessaryTypeHandle)
+            {
+                lookupKind = ReadyToRunHelperId.TypeHandle;
+            }
+
             // Can we do a fixed lookup? Start by checking if we can get to the dictionary.
             // Context source having a vtable with fixed slots is a prerequisite.
             if (contextSource == GenericContextSource.MethodParameter
@@ -326,7 +360,7 @@ namespace ILCompiler
             }
 
             // Fixed lookup not possible - use helper.
-            return GenericDictionaryLookup.CreateHelperLookup(contextSource);
+            return GenericDictionaryLookup.CreateHelperLookup(contextSource, lookupKind, targetOfLookup);
         }
 
         /// <summary>
