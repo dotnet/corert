@@ -17,6 +17,8 @@ namespace Internal.Runtime.Interpreter
         private readonly TypeSystemContext _context;
         private readonly LowLevelStack<StackItem> _stack;
 
+        private StackItem[] _locals;
+
         private CallInterceptorArgs _callInterceptorArgs;
 
         public LowLevelStack<StackItem> EvaluationStack => _stack;
@@ -28,6 +30,7 @@ namespace Internal.Runtime.Interpreter
             _context = context;
             _method = method;
             _methodIL = methodIL;
+            _locals = new StackItem[methodIL.GetLocals().Length];
             _stack = new LowLevelStack<StackItem>();
         }
 
@@ -36,6 +39,16 @@ namespace Internal.Runtime.Interpreter
             _callInterceptorArgs = callInterceptorArgs;
             ILImporter importer = new ILImporter(this, _method, _methodIL);
             importer.Interpret();
+        }
+
+        public StackItem GetVariable(int index)
+        {
+            return _locals[index];
+        }
+
+        public void SetVariable(int index, StackItem stackItem)
+        {
+            _locals[index] = stackItem;
         }
 
         public void SetReturnValue<T>(T value)
