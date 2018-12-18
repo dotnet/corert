@@ -60,7 +60,7 @@ namespace ILCompiler
             TypeDesc fieldType = field.FieldType;
             if (fieldType.IsValueType)
             {
-                return !fieldType.IsPrimitive; // In CoreCLR, all structs are implicitly boxed i.e. stored as GC pointers
+                return !fieldType.IsPrimitive && !fieldType.IsEnum; // In CoreCLR, all structs are implicitly boxed i.e. stored as GC pointers
             }
             else
             {
