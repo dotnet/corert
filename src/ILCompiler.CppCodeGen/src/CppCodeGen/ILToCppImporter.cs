@@ -3378,7 +3378,7 @@ namespace Internal.IL
                 }
                 else
                 {
-                    AddTypeReference(type, false);
+                    AddTypeReference(type, true);
 
                     name = String.Concat(
                         name,
