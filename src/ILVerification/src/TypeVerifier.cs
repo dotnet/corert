@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 using ILVerify;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -14,9 +13,9 @@ namespace Internal.TypeVerifier
 {
     internal class TypeVerifier
     {
-        private EcmaModule _module;
+        private readonly EcmaModule _module;
         private readonly TypeDefinitionHandle _typeDefinitionHandle;
-
+        private readonly ILVerifyTypeSystemContext _typeSystemContext;
         public Action<VerifierError, object[]> ReportVerificationError
         {
             set;
@@ -28,10 +27,11 @@ namespace Internal.TypeVerifier
             ReportVerificationError(error, args);
         }
 
-        public TypeVerifier(EcmaModule module, TypeDefinitionHandle typeDefinitionHandle)
+        public TypeVerifier(EcmaModule module, TypeDefinitionHandle typeDefinitionHandle, ILVerifyTypeSystemContext typeSystemContext)
         {
             _module = module;
             _typeDefinitionHandle = typeDefinitionHandle;
+            _typeSystemContext = typeSystemContext;
         }
 
         public void Verify()
@@ -56,7 +56,9 @@ namespace Internal.TypeVerifier
                 return;
             }
 
-            // Look for duplicates.
+            // Look for duplicates and prepare distinct list of implemented interfaces to avoid 
+            // subsequent error duplication
+            VirtualMethodAlgorithm virtualMethodAlg = _typeSystemContext.GetVirtualMethodAlgorithmForType(type);
             List<InterfaceMetadataObjects> implementedInterfaces = new List<InterfaceMetadataObjects>();
             foreach (InterfaceImplementationHandle interfaceHandle in interfaceHandles)
             {
@@ -79,12 +81,44 @@ namespace Internal.TypeVerifier
                 }
                 else
                 {
-                    VerificationError(VerifierError.InterfaceImplHasDuplicate, type, interfaceType, _module.MetadataReader.GetToken(interfaceHandle));
+                    VerificationError(VerifierError.InterfaceImplHasDuplicate, Format(type), Format(interfaceType));
                 }
             }
 
-            // Other check
+            foreach (InterfaceMetadataObjects implementedInterface in implementedInterfaces)
+            {
+                if (!type.IsAbstract)
+                {
+                    // Look for missing method implementation
+                    foreach (MethodDesc method in implementedInterface.DefType.GetAllMethods())
+                    {
+                        MethodDesc resolvedMethod = virtualMethodAlg.ResolveInterfaceMethodToVirtualMethodOnType(method, type);
+                        if (resolvedMethod is null)
+                        {
+                            VerificationError(VerifierError.InterfaceMethodNotImplemented, Format(type), Format(implementedInterface.DefType), Format(method));
+                        }
+                    }
+                }
+            }
+        }
 
+        // Format helpers for future use
+        // The idea is to improve formatting string with tokens value i.e.: 
+        // [Assembly]Class(0x1234) vs current [Assembly]Class
+        // in case somebody will pass '--tokens' switch to ILVerify
+        private string Format(EcmaType type)
+        {
+            return type.ToString();
+        }
+
+        private string Format(DefType interfaceTypeDef)
+        {
+            return interfaceTypeDef.ToString();
+        }
+
+        private string Format(MethodDesc methodDesc)
+        {
+            return methodDesc.ToString();
         }
 
         private class InterfaceMetadataObjects : IEquatable<InterfaceMetadataObjects>

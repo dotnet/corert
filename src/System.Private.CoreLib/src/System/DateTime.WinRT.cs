@@ -10,6 +10,10 @@ namespace System
         {
             Interop.Kernel32.PROCESS_LEAP_SECOND_INFO info;
 
+            // Store apps don't have access to an API that would let us find out whether leap seconds have been
+            // disabled by policy: this implementation will produce slightly different results from what
+            // we have for Win32. If GetProcessInformation succeeds, we have to act as if leap seconds existed.
+            // They could still have been disabled by policy, but we have no way to check for that.
             return Interop.Kernel32.GetProcessInformation(
                 Interop.mincore.GetCurrentProcess(),
                 Interop.Kernel32.ProcessLeapSecondInfo,

@@ -143,6 +143,7 @@ private:
   const MCExpr *GenTargetExpr(const char *SymbolName,
                               MCSymbolRefExpr::VariantKind Kind, int Delta,
                               bool IsPCRel = false, int Size = 0);
+  void EmitARMExIdxPerOffset();
 
 
 private:
@@ -173,6 +174,8 @@ private:
   std::string TripleName;
 
   MCObjectStreamer *Streamer; // Owned by AsmPrinter
+
+  SmallVector<CFI_CODE, 32> CFIsPerOffset;
 };
 
 // When object writer is created/initialized successfully, it is returned.

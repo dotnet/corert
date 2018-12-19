@@ -38,12 +38,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public ISymbolNode ReadyToRunHelper(ReadyToRunHelperId id, object target, SignatureContext signatureContext)
         {
-            if (id == ReadyToRunHelperId.NecessaryTypeHandle)
-            {
-                // We treat TypeHandle and NecessaryTypeHandle the same - don't emit two copies of the same import
-                id = ReadyToRunHelperId.TypeHandle;
-            }
-
             if (!_r2rHelpers.TryGetValue(id, out Dictionary<object, ISymbolNode> helperNodeMap))
             {
                 helperNodeMap = new Dictionary<object, ISymbolNode>();
@@ -217,6 +211,23 @@ namespace ILCompiler.DependencyAnalysis
         private ISymbolNode CreateDelegateCtorHelper(DelegateCreationInfo info, SignatureContext signatureContext)
         {
             return info.Constructor;
+        }
+
+        private readonly Dictionary<FieldDesc, ISymbolNode> _fieldAddressCache = new Dictionary<FieldDesc, ISymbolNode>();
+
+        public ISymbolNode FieldAddress(FieldDesc fieldDesc, SignatureContext signatureContext)
+        {
+            ISymbolNode result;
+            if (!_fieldAddressCache.TryGetValue(fieldDesc, out result))
+            {
+                result = new DelayLoadHelperImport(
+                    _codegenNodeFactory,
+                    _codegenNodeFactory.HelperImports,
+                    ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
+                    new FieldFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_FieldAddress, fieldDesc, signatureContext));
+                _fieldAddressCache.Add(fieldDesc, result);
+            }
+            return result;
         }
 
         private readonly Dictionary<ILCompiler.ReadyToRunHelper, ISymbolNode> _helperCache = new Dictionary<ILCompiler.ReadyToRunHelper, ISymbolNode>();
@@ -711,7 +722,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             switch (helperId)
             {
-                case ReadyToRunHelperId.NecessaryTypeHandle:
                 case ReadyToRunHelperId.TypeHandle:
                     return GenericLookupTypeHelper(
                         runtimeLookupKind,

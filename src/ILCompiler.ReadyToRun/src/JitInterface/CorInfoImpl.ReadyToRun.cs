@@ -85,18 +85,13 @@ namespace Internal.JitInterface
                 if (contextMethod != MethodBeingCompiled)
                     return;
 
-                // Necessary type handle is not something that can be in a dictionary (only a constructed type).
-                // We only use necessary type handles if we can do a constant lookup.
-                if (helperId == ReadyToRunHelperId.NecessaryTypeHandle)
-                    helperId = ReadyToRunHelperId.TypeHandle;
-
                 GenericDictionaryLookup genericLookup = _compilation.ComputeGenericLookup(contextMethod, helperId, entity);
 
                 if (genericLookup.UseHelper)
                 {
                     lookup.runtimeLookup.indirections = CORINFO.USEHELPER;
-                    lookup.lookupKind.runtimeLookupFlags = (ushort)helperId;
-                    lookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(entity);
+                    lookup.lookupKind.runtimeLookupFlags = (ushort)genericLookup.HelperId;
+                    lookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(genericLookup.HelperObject);
                 }
                 else
                 {
@@ -688,6 +683,16 @@ namespace Internal.JitInterface
         private CorInfoHelpFunc getCastingHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fThrowing)
         {
             return fThrowing ? CorInfoHelpFunc.CORINFO_HELP_CHKCASTANY : CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFANY;
+        }
+
+        private CorInfoHelpFunc getNewHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle)
+        {
+            return CorInfoHelpFunc.CORINFO_HELP_NEWFAST;
+        }
+
+        private CorInfoHelpFunc getNewArrHelper(CORINFO_CLASS_STRUCT_* arrayCls)
+        {
+            return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT;
         }
     }
 }

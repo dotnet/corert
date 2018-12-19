@@ -47,6 +47,11 @@ namespace Internal.Runtime.Interpreter
             return _int32;
         }
 
+        public int AsInt32Unchecked()
+        {
+            return _int32;
+        }
+
         public static StackItem FromInt64(long int64)
         {
             return new StackItem { _int64 = int64, _kind = StackValueKind.Int64 };
@@ -58,14 +63,24 @@ namespace Internal.Runtime.Interpreter
             return _int64;
         }
 
-        public static StackItem FromIntPtr(IntPtr nativeInt)
+        public long AsInt64Unchecked()
+        {
+            return _int64;
+        }
+
+        public static StackItem FromNativeInt(IntPtr nativeInt)
         {
             return new StackItem { _nativeInt = nativeInt, _kind = StackValueKind.NativeInt };
         }
 
-        public IntPtr AsIntPtr()
+        public IntPtr AsNativeInt()
         {
             Debug.Assert(_kind == StackValueKind.NativeInt);
+            return _nativeInt;
+        }
+
+        public IntPtr AsNativeIntUnchecked()
+        {
             return _nativeInt;
         }
 
@@ -80,6 +95,11 @@ namespace Internal.Runtime.Interpreter
             return _double;
         }
 
+        public double AsDoubleUnchecked()
+        {
+            return _double;
+        }
+
         public static StackItem FromValueType(ValueType valueType)
         {
             return new StackItem { _valueType = valueType, _kind = StackValueKind.ValueType };
@@ -91,6 +111,11 @@ namespace Internal.Runtime.Interpreter
             return _valueType;
         }
 
+        public ValueType AsValueTypeUnchecked()
+        {
+            return _valueType;
+        }
+
         public static StackItem FromObjectRef(object obj)
         {
             return new StackItem { _objref = obj, _kind = StackValueKind.ObjRef };
@@ -99,6 +124,11 @@ namespace Internal.Runtime.Interpreter
         public object AsObjectRef()
         {
             Debug.Assert(_kind == StackValueKind.ObjRef);
+            return _objref;
+        }
+
+        public object AsObjectRefUnchecked()
+        {
             return _objref;
         }
     }

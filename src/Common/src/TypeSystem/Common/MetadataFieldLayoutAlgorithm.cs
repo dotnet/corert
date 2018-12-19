@@ -157,7 +157,11 @@ namespace Internal.TypeSystem
             }
 
             // At this point all special cases are handled and all inputs validated
+            return ComputeInstanceFieldLayout(type, numInstanceFields);
+        }
 
+        protected virtual ComputedInstanceFieldLayout ComputeInstanceFieldLayout(MetadataType type, int numInstanceFields)
+        {
             if (type.IsExplicitLayout)
             {
                 return ComputeExplicitFieldLayout(type, numInstanceFields);
@@ -355,7 +359,7 @@ namespace Internal.TypeSystem
             return computedLayout;
         }
 
-        private static ComputedInstanceFieldLayout ComputeSequentialFieldLayout(MetadataType type, int numInstanceFields)
+        protected static ComputedInstanceFieldLayout ComputeSequentialFieldLayout(MetadataType type, int numInstanceFields)
         {
             var offsets = new FieldAndOffset[numInstanceFields];
 
@@ -402,7 +406,7 @@ namespace Internal.TypeSystem
             return computedLayout;
         }
 
-        private static ComputedInstanceFieldLayout ComputeAutoFieldLayout(MetadataType type, int numInstanceFields)
+        protected static ComputedInstanceFieldLayout ComputeAutoFieldLayout(MetadataType type, int numInstanceFields)
         {
             // For types inheriting from another type, field offsets continue on from where they left off
             LayoutInt cumulativeInstanceFieldPos = ComputeBytesUsedInParentType(type);
@@ -873,7 +877,7 @@ namespace Internal.TypeSystem
             if (type.IsWellKnownType(WellKnownType.Double) || type.IsWellKnownType(WellKnownType.Single))
                 return type;
 
-            for (;;)
+            for (; ; )
             {
                 Debug.Assert(type.IsValueType);
 

@@ -117,3 +117,277 @@
 		IL_0006: ret
 	}
 }
+
+.class public auto ansi beforefieldinit MissingMethod_InvalidType_InterfaceMethodNotImplemented
+	extends [System.Runtime]System.Object
+	implements [InterfaceDefinition]Interface
+{
+	.method public final hidebysig newslot virtual 
+		instance void M2 () cil managed 
+	{
+		.maxstack 8
+ 		IL_0000: ret
+	}
+ 	.method public final hidebysig newslot virtual 
+		instance void M3 (
+			int32 i
+		) cil managed 
+	{
+		.maxstack 8
+ 		IL_0000: ret
+	}
+ 	.method public final hidebysig newslot virtual 
+		instance int32 M4 (
+			int32 i
+		) cil managed 
+	{
+		.maxstack 8
+ 		IL_0000: ldc.i4.0
+		IL_0001: ret
+	}
+ 	.method public hidebysig specialname rtspecialname 
+		instance void .ctor () cil managed 
+	{
+		.maxstack 8
+ 		IL_0000: ldarg.0
+		IL_0001: call instance void [System.Runtime]System.Object::.ctor()
+		IL_0006: ret
+	}
+}
+
+.class public auto ansi abstract beforefieldinit MissingMethod_ValidType_AbstractClass
+	extends [System.Runtime]System.Object
+	implements [InterfaceDefinition]Interface
+{
+	.method public final hidebysig newslot virtual 
+		instance void M2 () cil managed 
+	{
+		.maxstack 8
+ 		IL_0000: ret
+	}
+ 	.method public final hidebysig newslot virtual 
+		instance void M3 (
+			int32 i
+		) cil managed 
+	{
+		.maxstack 8
+ 		IL_0000: ret
+	}
+ 	.method public final hidebysig newslot virtual 
+		instance int32 M4 (
+			int32 i
+		) cil managed 
+	{
+		.maxstack 8
+ 		IL_0000: ldc.i4.0
+		IL_0001: ret
+	}
+ 	.method public hidebysig specialname rtspecialname 
+		instance void .ctor () cil managed 
+	{
+		.maxstack 8
+ 		IL_0000: ldarg.0
+		IL_0001: call instance void [System.Runtime]System.Object::.ctor()
+		IL_0006: ret
+	}
+}
+
+.class public auto ansi beforefieldinit InterfaceImplHasDuplicateAndMissingMethod_InvalidType_InterfaceImplHasDuplicate@InterfaceMethodNotImplemented
+	extends [System.Runtime]System.Object
+	implements [InterfaceDefinition]Interface, [InterfaceDefinition]Interface
+{	
+	.method public final hidebysig newslot virtual 
+		instance void M2 () cil managed 
+	{
+		.maxstack 8
+
+		IL_0000: ret
+	}
+
+	.method public final hidebysig newslot virtual 
+		instance void M3 (
+			int32 i
+		) cil managed 
+	{
+		.maxstack 8
+
+		IL_0000: ret
+	}
+
+	.method public final hidebysig newslot virtual 
+		instance int32 M4 (
+			int32 i
+		) cil managed 
+	{
+		.maxstack 8
+
+		IL_0000: ldc.i4.0
+		IL_0001: ret
+	}
+
+	.method public hidebysig specialname rtspecialname 
+		instance void .ctor () cil managed 
+	{
+		.maxstack 8
+
+		IL_0000: ldarg.0
+		IL_0001: call instance void [System.Runtime]System.Object::.ctor()
+		IL_0006: ret
+	}
+}
+
+.class public auto ansi beforefieldinit InvalidReturnTypeM1_InvalidType_InterfaceMethodNotImplemented
+	extends [System.Runtime]System.Object
+	implements [InterfaceDefinition]Interface
+{
+	.method public final hidebysig newslot virtual 
+		instance int32 M1 () cil managed 
+	{
+		.maxstack 8
+
+		IL_0000: ret
+	}
+
+	.method public final hidebysig newslot virtual 
+		instance void M2 () cil managed 
+	{
+		.maxstack 8
+
+		IL_0000: ret
+	}
+
+	.method public final hidebysig newslot virtual 
+		instance void M3 (
+			int32 i
+		) cil managed 
+	{
+		.maxstack 8
+
+		IL_0000: ret
+	}
+
+	.method public final hidebysig newslot virtual 
+		instance int32 M4 (
+			int32 i
+		) cil managed 
+	{
+		.maxstack 8
+
+		IL_0000: ldc.i4.0
+		IL_0001: ret
+	}
+
+	.method public hidebysig specialname rtspecialname 
+		instance void .ctor () cil managed 
+	{
+		.maxstack 8
+
+		IL_0000: ldarg.0
+		IL_0001: call instance void [System.Runtime]System.Object::.ctor()
+		IL_0006: ret
+	}
+}
+
+.class public auto ansi beforefieldinit InvalidParameterTypeM3_InvalidType_InterfaceMethodNotImplemented
+	extends [System.Runtime]System.Object
+	implements [InterfaceDefinition]Interface
+{
+	.method public final hidebysig newslot virtual 
+		instance void M1 () cil managed 
+	{
+		.maxstack 8
+
+		IL_0000: ret
+	}
+
+	.method public final hidebysig newslot virtual 
+		instance void M2 () cil managed 
+	{
+		.maxstack 8
+
+		IL_0000: ret
+	}
+
+	.method public final hidebysig newslot virtual 
+		instance void M3 (
+			int64 i
+		) cil managed 
+	{
+		.maxstack 8
+
+		IL_0000: ret
+	}
+
+	.method public final hidebysig newslot virtual 
+		instance int32 M4 (
+			int32 i
+		) cil managed 
+	{
+		.maxstack 8
+
+		IL_0000: ldc.i4.0
+		IL_0001: ret
+	}
+
+	.method public hidebysig specialname rtspecialname 
+		instance void .ctor () cil managed 
+	{
+		.maxstack 8
+
+		IL_0000: ldarg.0
+		IL_0001: call instance void [System.Runtime]System.Object::.ctor()
+		IL_0006: ret
+	}
+}
+
+.class public auto ansi beforefieldinit InvalidMethodNameM10_InvalidType_InterfaceMethodNotImplemented
+	extends [System.Runtime]System.Object
+	implements [InterfaceDefinition]Interface
+{
+	.method public final hidebysig newslot virtual 
+		instance void M10 () cil managed 
+	{
+		.maxstack 8
+
+		IL_0000: ret
+	}
+
+	.method public final hidebysig newslot virtual 
+		instance void M2 () cil managed 
+	{
+		.maxstack 8
+
+		IL_0000: ret
+	}
+
+	.method public final hidebysig newslot virtual 
+		instance void M3 (
+			int32 i
+		) cil managed 
+	{
+		.maxstack 8
+
+		IL_0000: ret
+	}
+
+	.method public final hidebysig newslot virtual 
+		instance int32 M4 (
+			int32 i
+		) cil managed 
+	{
+		.maxstack 8
+
+		IL_0000: ldc.i4.0
+		IL_0001: ret
+	}
+
+	.method public hidebysig specialname rtspecialname 
+		instance void .ctor () cil managed 
+	{
+		.maxstack 8
+
+		IL_0000: ldarg.0
+		IL_0001: call instance void [System.Runtime]System.Object::.ctor()
+		IL_0006: ret
+	}
+}

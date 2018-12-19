@@ -36,7 +36,7 @@ namespace Internal.Runtime.TypeLoader
             ModuleDesc systemModule = null;
 
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-            systemModule = ((MetadataType)GetWellKnownType(WellKnownType.Void)).Module;
+            systemModule = ((MetadataType)GetWellKnownType(WellKnownType.Object)).Module;
 #endif
 
             InitializeSystemModule(systemModule);

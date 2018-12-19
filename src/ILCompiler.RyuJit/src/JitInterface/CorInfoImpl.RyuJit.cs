@@ -62,18 +62,13 @@ namespace Internal.JitInterface
                 if (contextMethod != MethodBeingCompiled)
                     return;
 
-                // Necessary type handle is not something that can be in a dictionary (only a constructed type).
-                // We only use necessary type handles if we can do a constant lookup.
-                if (helperId == ReadyToRunHelperId.NecessaryTypeHandle)
-                    helperId = ReadyToRunHelperId.TypeHandle;
-
                 GenericDictionaryLookup genericLookup = _compilation.ComputeGenericLookup(contextMethod, helperId, entity);
 
                 if (genericLookup.UseHelper)
                 {
                     lookup.runtimeLookup.indirections = CORINFO.USEHELPER;
-                    lookup.lookupKind.runtimeLookupFlags = (ushort)helperId;
-                    lookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(entity);
+                    lookup.lookupKind.runtimeLookupFlags = (ushort)genericLookup.HelperId;
+                    lookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(genericLookup.HelperObject);
                 }
                 else
                 {
@@ -113,51 +108,10 @@ namespace Internal.JitInterface
             switch (id)
             {
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NEW:
-                    {
-                        var type = HandleToObject(pResolvedToken.hClass);
-                        Debug.Assert(type.IsDefType);
-                        if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                            return false;
-
-                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.NewHelper, type));
-                    }
-                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NEWARR_1:
-                    {
-                        var type = HandleToObject(pResolvedToken.hClass);
-                        Debug.Assert(type.IsSzArray);
-                        if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                            return false;
-
-                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.NewArr1, type));
-                    }
-                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_ISINSTANCEOF:
-                    {
-                        var type = HandleToObject(pResolvedToken.hClass);
-                        if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                            return false;
-
-                        // ECMA-335 III.4.3:  If typeTok is a nullable type, Nullable<T>, it is interpreted as "boxed" T
-                        if (type.IsNullable)
-                            type = type.Instantiation[0];
-
-                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.IsInstanceOf, type));
-                    }
-                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_CHKCAST:
-                    {
-                        var type = HandleToObject(pResolvedToken.hClass);
-                        if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                            return false;
-
-                        // ECMA-335 III.4.3:  If typeTok is a nullable type, Nullable<T>, it is interpreted as "boxed" T
-                        if (type.IsNullable)
-                            type = type.Instantiation[0];
-
-                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.CastClass, type));
-                    }
-                    break;
+                    return false;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE:
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
@@ -340,9 +294,23 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_NEWFAST:
                     id = ReadyToRunHelper.NewObject;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_NEWSFAST:
+                    return _compilation.NodeFactory.ExternSymbol("RhpNewFast");
+                case CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_FINALIZE:
+                    return _compilation.NodeFactory.ExternSymbol("RhpNewFinalizable");
+                case CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN8:
+                    return _compilation.NodeFactory.ExternSymbol("RhpNewFastAlign8");
+                case CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE:
+                    return _compilation.NodeFactory.ExternSymbol("RhpNewFinalizableAlign8");
+                case CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN8_VC:
+                    return _compilation.NodeFactory.ExternSymbol("RhpNewFastMisalign");
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT:
                     id = ReadyToRunHelper.NewArray;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_ALIGN8:
+                    return _compilation.NodeFactory.ExternSymbol("RhpNewArrayAlign8");
+                case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_VC:
+                    return _compilation.NodeFactory.ExternSymbol("RhpNewArray");
 
                 case CorInfoHelpFunc.CORINFO_HELP_LMUL:
                     id = ReadyToRunHelper.LMul;
@@ -872,11 +840,6 @@ namespace Internal.JitInterface
 
         private ISymbolNode GetGenericLookupHelper(CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind, ReadyToRunHelperId helperId, object helperArgument)
         {
-            // Necessary type handle is not something that can be in a dictionary (only a constructed type).
-            // We only use necessary type handles if we can do a constant lookup.
-            if (helperId == ReadyToRunHelperId.NecessaryTypeHandle)
-                helperId = ReadyToRunHelperId.TypeHandle;
-
             if (runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ
                 || runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM)
             {
@@ -942,6 +905,41 @@ namespace Internal.JitInterface
             }
 
             return helper;
+        }
+
+        private CorInfoHelpFunc getNewHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle)
+        {
+            TypeDesc type = HandleToObject(pResolvedToken.hClass);
+
+            Debug.Assert(!type.IsString && !type.IsArray && !type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
+
+            if (type.RequiresAlign8())
+            {
+                if (type.HasFinalizer)
+                    return CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE;
+
+                if (type.IsValueType)
+                    return CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN8_VC;
+
+                return CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN8;
+            }
+
+            if (type.HasFinalizer)
+                return CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_FINALIZE;
+
+            return CorInfoHelpFunc.CORINFO_HELP_NEWSFAST;
+        }
+
+        private CorInfoHelpFunc getNewArrHelper(CORINFO_CLASS_STRUCT_* arrayCls)
+        {
+            TypeDesc type = HandleToObject(arrayCls);
+
+            Debug.Assert(type.IsArray);
+
+            if (type.RequiresAlign8())
+                return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_ALIGN8;
+
+            return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_VC;
         }
     }
 }

@@ -247,7 +247,7 @@ namespace ILVerify
 
             try
             {
-                TypeVerifier typeVerifier = new TypeVerifier(module, typeHandle);
+                TypeVerifier typeVerifier = new TypeVerifier(module, typeHandle, _typeSystemContext);
 
                 typeVerifier.ReportVerificationError = (code, args) =>
                 {
