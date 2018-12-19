@@ -61,4 +61,11 @@ struct PInvokeTransitionFrame
                             // can be an invalid pointer in universal transition cases (which never need to call GetThread)
     uint32_t    m_Flags;  // PInvokeTransitionFrameFlags
 };
+
+// Should be synchronized with System.Private.CoreLib/src/System/Runtime/CompilerServices/StaticClassConstructionContext.cs
+struct StaticClassConstructionContext
+{
+    void*       m_cctorMethodAddress;
+    uint32_t    m_initialized;
+};
 #endif
