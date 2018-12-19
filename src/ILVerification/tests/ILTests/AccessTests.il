@@ -397,6 +397,9 @@
     }
 }
 
+
+// Test for bug https://github.com/dotnet/corert/issues/6693
+
 .class public auto ansi beforefieldinit Issue6693
 	extends [System.Runtime]System.Object
 {
