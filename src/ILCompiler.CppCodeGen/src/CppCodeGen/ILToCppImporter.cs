@@ -1266,6 +1266,8 @@ namespace Internal.IL
             {
                 if (ImportIntrinsicCall(method, runtimeDeterminedMethod))
                     return;
+
+                method = _compilation.ExpandIntrinsicForCallsite(method, _method);
             }
 
             //this assumes that there will only ever be at most one RawPInvoke call in a given method
