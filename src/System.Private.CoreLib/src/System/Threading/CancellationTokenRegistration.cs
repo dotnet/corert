@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-
-////////////////////////////////////////////////////////////////////////////////
-
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace System.Threading
@@ -19,15 +14,43 @@ namespace System.Threading
     /// </remarks>
     public readonly struct CancellationTokenRegistration : IEquatable<CancellationTokenRegistration>, IDisposable, IAsyncDisposable
     {
-        private readonly CancellationCallbackInfo m_callbackInfo;
-        private readonly SparselyPopulatedArrayAddInfo<CancellationCallbackInfo> m_registrationInfo;
+        private readonly long _id;
+        private readonly CancellationTokenSource.CallbackNode _node;
 
-        internal CancellationTokenRegistration(
-            CancellationCallbackInfo callbackInfo,
-            SparselyPopulatedArrayAddInfo<CancellationCallbackInfo> registrationInfo)
+        internal CancellationTokenRegistration(long id, CancellationTokenSource.CallbackNode node)
         {
-            m_callbackInfo = callbackInfo;
-            m_registrationInfo = registrationInfo;
+            _id = id;
+            _node = node;
+        }
+
+        /// <summary>
+        /// Disposes of the registration and unregisters the target callback from the associated 
+        /// <see cref="T:System.Threading.CancellationToken">CancellationToken</see>.
+        /// If the target callback is currently executing, this method will wait until it completes, except
+        /// in the degenerate cases where a callback method unregisters itself.
+        /// </summary>
+        public void Dispose()
+        {
+            CancellationTokenSource.CallbackNode node = _node;
+            if (node != null && !node.Partition.Unregister(_id, node))
+            {
+                WaitForCallbackIfNecessary();
+            }
+        }
+
+        /// <summary>
+        /// Disposes of the registration and unregisters the target callback from the associated 
+        /// <see cref="T:System.Threading.CancellationToken">CancellationToken</see>.
+        /// The returned <see cref="ValueTask"/> will complete once the associated callback
+        /// is unregistered without having executed or once it's finished executing, except
+        /// in the degenerate case where the callback itself is unregistering itself.
+        /// </summary>
+        public ValueTask DisposeAsync()
+        {
+            CancellationTokenSource.CallbackNode node = _node;
+            return node != null && !node.Partition.Unregister(_id, node) ?
+                WaitForCallbackIfNecessaryAsync() :
+                default;
         }
 
         /// <summary>
@@ -39,101 +62,60 @@ namespace System.Threading
         {
             get
             {
-                CancellationCallbackInfo cci = m_callbackInfo;
-                return cci != null ?
-                    new CancellationToken(cci.CancellationTokenSource) : // avoid CTS.Token, which throws after disposal
+                CancellationTokenSource.CallbackNode node = _node;
+                return node != null ?
+                    new CancellationToken(node.Partition.Source) : // avoid CTS.Token, which throws after disposal
                     default;
             }
         }
 
         /// <summary>
-        /// Attempts to unregister the item. If it's already being run, this may fail.
-        /// Entails a full memory fence.
-        /// </summary>
-        /// <returns>True if the callback was found and unregistered, false otherwise.</returns>
-        // Called from System.Runtime.WindowsRuntime. Also see the proposal at https://github.com/dotnet/corefx/issues/14903.
-        //[FriendAccessAllowed]
-        public bool Unregister()
-        {
-            if (m_registrationInfo.Source == null)  //can be null for dummy registrations.
-                return false;
-
-            // Try to remove the callback info from the array.
-            // It is possible the callback info is missing (removed for run, or removed by someone else)
-            // It is also possible there is info in the array but it doesn't match our current registration's callback info.  
-            CancellationCallbackInfo prevailingCallbackInfoInSlot = m_registrationInfo.Source.SafeAtomicRemove(m_registrationInfo.Index, m_callbackInfo);
-
-            if (prevailingCallbackInfoInSlot != m_callbackInfo)
-                return false;  //the callback in the slot wasn't us.
-
-            return true;
-        }
-
-        /// <summary>
         /// Disposes of the registration and unregisters the target callback from the associated 
         /// <see cref="T:System.Threading.CancellationToken">CancellationToken</see>.
-        /// If the target callback is currently executing, this method will wait until it completes, except
-        /// in the degenerate cases where a callback method unregisters itself.
         /// </summary>
-        public void Dispose()
+        public bool Unregister()
         {
-            // Remove the entry from the array.
-            // This call includes a full memory fence which prevents potential reorderings of the reads below
-            bool unregisterOccured = Unregister();
+            CancellationTokenSource.CallbackNode node = _node;
+            return node != null && node.Partition.Unregister(_id, node);
+        }
 
-            // We guarantee that we will not return if the callback is being executed (assuming we are not currently called by the callback itself)
+        private void WaitForCallbackIfNecessary()
+        {
+            // We're a valid registration but we were unable to unregister, which means the callback wasn't in the list,
+            // which means either it already executed or it's currently executing. We guarantee that we will not return
+            // if the callback is being executed (assuming we are not currently called by the callback itself)
             // We achieve this by the following rules:
-            //    1. if we are called in the context of an executing callback, no need to wait (determined by tracking callback-executor threadID)
+            //    1. If we are called in the context of an executing callback, no need to wait (determined by tracking callback-executor threadID)
             //       - if the currently executing callback is this CTR, then waiting would deadlock. (We choose to return rather than deadlock)
             //       - if not, then this CTR cannot be the one executing, hence no need to wait
-            //
-            //    2. if unregistration failed, and we are on a different thread, then the callback may be running under control of cts.Cancel()
+            //    2. If unregistration failed, and we are on a different thread, then the callback may be running under control of cts.Cancel()
             //       => poll until cts.ExecutingCallback is not the one we are trying to unregister.
-
-            var callbackInfo = m_callbackInfo;
-            if (callbackInfo != null)
+            CancellationTokenSource source = _node.Partition.Source;
+            if (source.IsCancellationRequested && // Running callbacks has commenced.
+                !source.IsCancellationCompleted && // Running callbacks hasn't finished.
+                source.ThreadIDExecutingCallbacks != Environment.CurrentManagedThreadId) // The executing thread ID is not this thread's ID.
             {
-                var tokenSource = callbackInfo.CancellationTokenSource;
-                if (tokenSource.IsCancellationRequested && //running callbacks has commenced.
-                    !tokenSource.IsCancellationCompleted && //running callbacks hasn't finished
-                    !unregisterOccured && //unregistration failed (ie the callback is missing from the list)
-                    tokenSource.ThreadIDExecutingCallbacks != Environment.CurrentManagedThreadId) //the executingThreadID is not this threadID.
-                {
-                    // Callback execution is in progress, the executing thread is different from this thread and has taken the callback for execution
-                    // so observe and wait until this target callback is no longer the executing callback.
-                    tokenSource.WaitForCallbackToComplete(m_callbackInfo);
-                }
+                // Callback execution is in progress, the executing thread is different from this thread and has taken the callback for execution
+                // so observe and wait until this target callback is no longer the executing callback.
+                source.WaitForCallbackToComplete(_id);
             }
         }
 
-        /// <summary> 
-        /// Disposes of the registration and unregisters the target callback from the associated  
-        /// <see cref="T:System.Threading.CancellationToken">CancellationToken</see>. 
-        /// The returned <see cref="ValueTask"/> will complete once the associated callback 
-        /// is unregistered without having executed or once it's finished executing, except 
-        /// in the degenerate case where the callback itself is unregistering itself. 
-        /// </summary> 
-        public ValueTask DisposeAsync()
+        private ValueTask WaitForCallbackIfNecessaryAsync()
         {
-            // Same as Dispose, but with WaitForCallbackToCompleteAsync, and returning ValueTask instead of void
+            // Same as WaitForCallbackIfNecessary, except returning a task that'll be completed when callbacks complete.
 
-            bool unregisterOccured = Unregister();
-
-            var callbackInfo = m_callbackInfo;
-            if (callbackInfo != null)
+            CancellationTokenSource source = _node.Partition.Source;
+            if (source.IsCancellationRequested && // Running callbacks has commenced.
+                !source.IsCancellationCompleted && // Running callbacks hasn't finished.
+                source.ThreadIDExecutingCallbacks != Environment.CurrentManagedThreadId) // The executing thread ID is not this thread's ID.
             {
-                var tokenSource = callbackInfo.CancellationTokenSource;
-                if (tokenSource.IsCancellationRequested && //running callbacks has commenced.
-                    !tokenSource.IsCancellationCompleted && //running callbacks hasn't finished
-                    !unregisterOccured && //unregistration failed (ie the callback is missing from the list)
-                    tokenSource.ThreadIDExecutingCallbacks != Environment.CurrentManagedThreadId) //the executingThreadID is not this threadID.
-                {
-                    // Callback execution is in progress, the executing thread is different from this thread and has taken the callback for execution
-                    // so observe and wait until this target callback is no longer the executing callback.
-                    return tokenSource.WaitForCallbackToCompleteAsync(m_callbackInfo);
-                }
+                // Callback execution is in progress, the executing thread is different from this thread and has taken the callback for execution
+                // so get a task that'll complete when this target callback is no longer the executing callback.
+                return source.WaitForCallbackToCompleteAsync(_id);
             }
 
+            // Callback is either already completed, won't execute, or the callback itself is calling this.
             return default;
         }
 
@@ -145,10 +127,7 @@ namespace System.Threading
         /// <param name="left">The first instance.</param>
         /// <param name="right">The second instance.</param>
         /// <returns>True if the instances are equal; otherwise, false.</returns>
-        public static bool operator ==(CancellationTokenRegistration left, CancellationTokenRegistration right)
-        {
-            return left.Equals(right);
-        }
+        public static bool operator ==(CancellationTokenRegistration left, CancellationTokenRegistration right) => left.Equals(right);
 
         /// <summary>
         /// Determines whether two <see cref="T:System.Threading.CancellationTokenRegistration">CancellationTokenRegistration</see> instances are not equal.
@@ -156,10 +135,7 @@ namespace System.Threading
         /// <param name="left">The first instance.</param>
         /// <param name="right">The second instance.</param>
         /// <returns>True if the instances are not equal; otherwise, false.</returns>
-        public static bool operator !=(CancellationTokenRegistration left, CancellationTokenRegistration right)
-        {
-            return !left.Equals(right);
-        }
+        public static bool operator !=(CancellationTokenRegistration left, CancellationTokenRegistration right) => !left.Equals(right);
 
         /// <summary>
         /// Determines whether the current <see cref="T:System.Threading.CancellationTokenRegistration">CancellationTokenRegistration</see> instance is equal to the 
@@ -171,10 +147,7 @@ namespace System.Threading
         /// they both refer to the output of a single call to the same Register method of a 
         /// <see cref="T:System.Threading.CancellationToken">CancellationToken</see>. 
         /// </returns>
-        public override bool Equals(object obj)
-        {
-            return ((obj is CancellationTokenRegistration) && Equals((CancellationTokenRegistration)obj));
-        }
+        public override bool Equals(object obj) => obj is CancellationTokenRegistration && Equals((CancellationTokenRegistration)obj);
 
         /// <summary>
         /// Determines whether the current <see cref="T:System.Threading.CancellationToken">CancellationToken</see> instance is equal to the 
@@ -186,23 +159,12 @@ namespace System.Threading
         /// they both refer to the output of a single call to the same Register method of a 
         /// <see cref="T:System.Threading.CancellationToken">CancellationToken</see>. 
         /// </returns>
-        public bool Equals(CancellationTokenRegistration other)
-        {
-            return m_callbackInfo == other.m_callbackInfo &&
-                   m_registrationInfo.Source == other.m_registrationInfo.Source &&
-                   m_registrationInfo.Index == other.m_registrationInfo.Index;
-        }
+        public bool Equals(CancellationTokenRegistration other) => _node == other._node && _id == other._id;
 
         /// <summary>
         /// Serves as a hash function for a <see cref="T:System.Threading.CancellationTokenRegistration">CancellationTokenRegistration.</see>.
         /// </summary>
         /// <returns>A hash code for the current <see cref="T:System.Threading.CancellationTokenRegistration">CancellationTokenRegistration</see> instance.</returns>
-        public override int GetHashCode()
-        {
-            if (m_registrationInfo.Source != null)
-                return m_registrationInfo.Source.GetHashCode() ^ m_registrationInfo.Index.GetHashCode();
-
-            return m_registrationInfo.Index.GetHashCode();
-        }
+        public override int GetHashCode() => _node != null ? _node.GetHashCode() ^ _id.GetHashCode()  : _id.GetHashCode();
     }
 }

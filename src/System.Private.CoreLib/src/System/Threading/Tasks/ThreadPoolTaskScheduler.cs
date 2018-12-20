@@ -6,15 +6,18 @@
 //
 // TaskScheduler.cs
 //
-
 //
 // This file contains the primary interface and management of tasks and queues.  
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using Internal.Runtime.Augments;
-using Internal.Threading.Tasks.Tracing;
+using System;
+using System.Security;
+using System.Diagnostics;
 using System.Collections.Generic;
+using System.Text;
+
+using Internal.Runtime.Augments;
 
 namespace System.Threading.Tasks
 {
@@ -28,10 +31,11 @@ namespace System.Threading.Tasks
         /// </summary>
         internal ThreadPoolTaskScheduler()
         {
+            int id = base.Id; // force ID creation of the default scheduler
         }
 
         // static delegate for threads allocated to handle LongRunning tasks.
-        private static readonly ParameterizedThreadStart s_longRunningThreadWork = s => ((Task)s).ExecuteEntry(false);
+        private static readonly ParameterizedThreadStart s_longRunningThreadWork = s => ((Task)s).ExecuteEntryUnsafe(threadPoolThread: null);
 
         /// <summary>
         /// Schedules a task to the ThreadPool.
@@ -39,27 +43,18 @@ namespace System.Threading.Tasks
         /// <param name="task">The task to schedule.</param>
         protected internal override void QueueTask(Task task)
         {
-            if (TaskTrace.Enabled)
-            {
-                Task currentTask = Task.InternalCurrent;
-                Task creatingTask = task.m_parent;
-
-                TaskTrace.TaskScheduled(this.Id, currentTask == null ? 0 : currentTask.Id,
-                                                 task.Id, creatingTask == null ? 0 : creatingTask.Id,
-                                                 (int)task.Options);
-            }
-
-            if ((task.Options & TaskCreationOptions.LongRunning) != 0)
+            TaskCreationOptions options = task.Options;
+            if ((options & TaskCreationOptions.LongRunning) != 0)
             {
                 // Run LongRunning tasks on their own dedicated thread.
-                RuntimeThread thread = RuntimeThread.Create(s_longRunningThreadWork, 0);
+                RuntimeThread thread = RuntimeThread.Create(s_longRunningThreadWork);
                 thread.IsBackground = true; // Keep this thread from blocking process shutdown
                 thread.Start(task);
             }
             else
             {
                 // Normal handling for non-LongRunning tasks.
-                bool preferLocal = (task.Options & TaskCreationOptions.PreferFairness) == 0;
+                bool preferLocal = ((options & TaskCreationOptions.PreferFairness) == 0);
                 ThreadPool.UnsafeQueueUserWorkItemInternal(task, preferLocal);
             }
         }
@@ -67,7 +62,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// This internal function will do this:
         ///   (1) If the task had previously been queued, attempt to pop it and return false if that fails.
-        ///   (2) Propagate the return value from Task.ExecuteEntry() back to the caller.
+        ///   (2) Return whether the task is executed
         /// 
         /// IMPORTANT NOTE: TryExecuteTaskInline will NOT throw task exceptions itself. Any wait code path using this function needs
         /// to account for exceptions that need to be propagated, and throw themselves accordingly.
@@ -78,11 +73,9 @@ namespace System.Threading.Tasks
             if (taskWasPreviouslyQueued && !ThreadPool.TryPopCustomWorkItem(task))
                 return false;
 
-            // Propagate the return value of Task.ExecuteEntry()
-            bool rval = false;
             try
             {
-                rval = task.ExecuteEntry(false); // handles switching Task.Current etc.
+                task.ExecuteEntryUnsafe(threadPoolThread: null); // handles switching Task.Current etc.
             }
             finally
             {
@@ -90,7 +83,7 @@ namespace System.Threading.Tasks
                 if (taskWasPreviouslyQueued) NotifyWorkItemProgress();
             }
 
-            return rval;
+            return true;
         }
 
         protected internal override bool TryDequeue(Task task)
