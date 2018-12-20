@@ -217,9 +217,9 @@ namespace ILVerify
         private static bool CanAccessFamily(TypeDesc currentType, TypeDesc targetTypeDef, TypeDesc instanceType)
         {
             // if instanceType is generics and inherit from targetTypeDef members of targetTypeDef are accessible
-            if (instanceType.IsGenericParameter && instanceType.CanCastTo(targetTypeDef))
+            if (instanceType.IsGenericParameter)
             {
-                return true;
+                return instanceType.CanCastTo(targetTypeDef);
             }
 
             // Iterate through all containing types of instance
