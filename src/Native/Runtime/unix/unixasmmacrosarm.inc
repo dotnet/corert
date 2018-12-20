@@ -204,7 +204,7 @@ C_FUNC(\Name):
         .data
         .align      4
 C_FUNC(\Name):
-        .word       1b
+        .word       1b + 1            // Add 1 to indicate thumb code
         .global     C_FUNC(\Name)
         .text
 
