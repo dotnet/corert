@@ -508,8 +508,7 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
     }
 
 #elif _TARGET_ARM_
-    const UInt16 THUMB_BIT = 1;
-    UInt16 * pCode = (UInt16 *)((size_t)pCodeOrg & ~THUMB_BIT);
+    UInt16 * pCode = (UInt16 *)((size_t)pCodeOrg & ~THUMB_CODE);
     // is this "adds r0,4"?
     if (pCode[0] == 0x3004)
     {
@@ -539,7 +538,7 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
     else if (unboxingStub && (pCode[0] & 0xf800) == 0xf000 && (pCode[1] & 0xd000) == 0x9000)
     {
         Int32 distToTarget = GetThumb2BlRel24(pCode);
-        UInt8 * pTarget = (UInt8 *)(pCode + 2) + distToTarget + THUMB_BIT;
+        UInt8 * pTarget = (UInt8 *)(pCode + 2) + distToTarget + THUMB_CODE;
         return (UInt8 *)pTarget;
     }
 
@@ -621,13 +620,12 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetJmpStubCodeTarget, (UInt8 * pCodeOrg))
         return pCodeOrg;
 
 #elif _TARGET_ARM_
-        const UInt16 THUMB_BIT = 1;
-        UInt16 * pCode = (UInt16 *)((size_t)pCodeOrg & ~THUMB_BIT);
+        UInt16 * pCode = (UInt16 *)((size_t)pCodeOrg & ~THUMB_CODE);
         // if this is a jmp stub
         if ((pCode[0] & 0xf800) == 0xf000 && (pCode[1] & 0xd000) == 0x9000)
         {
             Int32 distToTarget = GetThumb2BlRel24(pCode);
-            UInt8 * pTarget = (UInt8 *)(pCode + 2) + distToTarget + THUMB_BIT;
+            UInt8 * pTarget = (UInt8 *)(pCode + 2) + distToTarget + THUMB_CODE;
             return (UInt8 *)pTarget;
         }
 #elif _TARGET_ARM64_

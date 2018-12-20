@@ -30,7 +30,6 @@
 #include "rhbinder.h"
 
 #include "DebugFuncEval.h"
-#include "utilcode.h"
 
 // warning C4061: enumerator '{blah}' in switch of enum '{blarg}' is not explicitly handled by a case label
 #pragma warning(disable:4061)
@@ -80,7 +79,7 @@ GVAL_IMPL_INIT(PTR_VOID, g_RhpRethrow2Addr, PointerToRhpRethrow2);
 #ifdef DACCESS_COMPILE
 #define EQUALS_RETURN_ADDRESS(x, func_name) ((x) == g_ ## func_name ## Addr)
 #else
-#define EQUALS_RETURN_ADDRESS(x, func_name) (((PINSTRToPCODE(dac_cast<TADDR>(x)))) == (PINSTRToPCODE(dac_cast<TADDR>(PointerTo ## func_name))))
+#define EQUALS_RETURN_ADDRESS(x, func_name) (((x)) == (PointerTo ## func_name))
 #endif
 
 #ifdef DACCESS_COMPILE

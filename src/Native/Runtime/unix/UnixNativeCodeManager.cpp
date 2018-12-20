@@ -12,7 +12,6 @@
 #include "UnixNativeCodeManager.h"
 #include "varint.h"
 #include "holder.h"
-#include "utilcode.h"
 
 #include "CommonMacros.inl"
 
