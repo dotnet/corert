@@ -2639,6 +2639,13 @@ namespace Internal.IL
             {
                 AddTypeReference(fieldType, false);
 
+                if (fieldType.IsValueType)
+                {
+                    Append("*(");
+                    Append(_writer.GetCppSignatureTypeName(fieldType));
+                    Append("*)&(");
+                }
+
                 Append("(((");
                 Append(_writer.GetCppStaticsTypeName(owningType, field.HasGCStaticBase, field.IsThreadStatic));
                 Append("*)");
@@ -2648,6 +2655,9 @@ namespace Internal.IL
                 Append("))->");
                 Append(_writer.GetCppFieldName(field));
                 Append(")");
+
+                if (fieldType.IsValueType)
+                    Append(")");
             }
             else
             {
@@ -2781,6 +2791,10 @@ namespace Internal.IL
 
             if (runtimeDeterminedOwningType.IsRuntimeDeterminedSubtype && field.IsStatic)
             {
+                Append("*(");
+                Append(_writer.GetCppSignatureTypeName(fieldType));
+                Append("*)&(");
+
                 Append("(((");
                 Append(_writer.GetCppStaticsTypeName(owningType, field.HasGCStaticBase, field.IsThreadStatic));
                 Append("*)");
@@ -2789,6 +2803,8 @@ namespace Internal.IL
                 Append(GetGenericContext());
                 Append("))->");
                 Append(_writer.GetCppFieldName(field));
+                Append(")");
+
                 Append(")");
             }
             else
