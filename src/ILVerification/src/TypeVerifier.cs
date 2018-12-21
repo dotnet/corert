@@ -92,7 +92,7 @@ namespace Internal.TypeVerifier
                     // Look for missing method implementation
                     foreach (MethodDesc method in implementedInterface.DefType.GetAllMethods())
                     {
-                        MethodDesc resolvedMethod = virtualMethodAlg.ResolveInterfaceMethodToVirtualMethodOnType(method, type);
+                        MethodDesc resolvedMethod = type.ResolveInterfaceMethodTarget(method);
                         if (resolvedMethod is null)
                         {
                             VerificationError(VerifierError.InterfaceMethodNotImplemented, Format(type), Format(implementedInterface.DefType), Format(method));
