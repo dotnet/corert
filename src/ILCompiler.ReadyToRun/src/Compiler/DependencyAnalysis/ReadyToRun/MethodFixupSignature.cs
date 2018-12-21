@@ -57,7 +57,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
             dataBuilder.AddSymbol(this);
 
-            dataBuilder.EmitUInt((uint)_fixupKind);
+            dataBuilder.EmitByte((byte)_fixupKind);
             dataBuilder.EmitMethodSignature(_methodDesc, _constrainedType, _methodToken, enforceDefEncoding: false,
                 _signatureContext, _isUnboxingStub, _isInstantiatingStub);
 

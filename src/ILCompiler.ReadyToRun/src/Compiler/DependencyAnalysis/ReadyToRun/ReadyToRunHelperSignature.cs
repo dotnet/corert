@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             ObjectDataSignatureBuilder builder = new ObjectDataSignatureBuilder();
             builder.AddSymbol(this);
-            builder.EmitUInt((uint)ReadyToRunFixupKind.READYTORUN_FIXUP_Helper);
+            builder.EmitByte((byte)ReadyToRunFixupKind.READYTORUN_FIXUP_Helper);
             builder.EmitUInt((uint)_helperID);
             return builder.ToObjectData();
         }
