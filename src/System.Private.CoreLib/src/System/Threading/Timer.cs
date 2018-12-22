@@ -315,13 +315,16 @@ namespace System.Threading
         private volatile object _notifyWhenNoCallbacksRunning;
 
 
-        internal TimerQueueTimer(TimerCallback timerCallback, object state, uint dueTime, uint period)
+        internal TimerQueueTimer(TimerCallback timerCallback, object state, uint dueTime, uint period, bool flowExecutionContext)
         {
             _timerCallback = timerCallback;
             _state = state;
             m_dueTime = Timeout.UnsignedInfinite;
             m_period = Timeout.UnsignedInfinite;
-            _executionContext = ExecutionContext.Capture();
+            if (flowExecutionContext)
+            {
+                _executionContext = ExecutionContext.Capture();
+            }
 
             //
             // After the following statement, the timer may fire.  No more manipulation of timer state outside of
@@ -562,14 +565,23 @@ namespace System.Threading
         public Timer(TimerCallback callback,
                      object state,
                      int dueTime,
-                     int period)
+                     int period) :
+                     this(callback, state, dueTime, period, flowExecutionContext: true)
+        {
+        }
+
+        internal Timer(TimerCallback callback,
+                       object state,
+                       int dueTime,
+                       int period,
+                       bool flowExecutionContext)
         {
             if (dueTime < -1)
                 throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             if (period < -1)
                 throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
 
-            TimerSetup(callback, state, (uint)dueTime, (uint)period);
+            TimerSetup(callback, state, (uint)dueTime, (uint)period, flowExecutionContext);
         }
 
         public Timer(TimerCallback callback,
@@ -630,12 +642,13 @@ namespace System.Threading
         private void TimerSetup(TimerCallback callback,
                                 object state,
                                 uint dueTime,
-                                uint period)
+                                uint period,
+                                bool flowExecutionContext = true)
         {
             if (callback == null)
                 throw new ArgumentNullException(nameof(TimerCallback));
 
-            _timer = new TimerHolder(new TimerQueueTimer(callback, state, dueTime, period));
+            _timer = new TimerHolder(new TimerQueueTimer(callback, state, dueTime, period, flowExecutionContext));
         }
 
         public bool Change(int dueTime, int period)
@@ -689,11 +702,6 @@ namespace System.Threading
         public ValueTask DisposeAsync()
         {
             return _timer.CloseAsync();
-        }
-
-        internal void KeepRootedWhileScheduled()
-        {
-            GC.SuppressFinalize(_timer);
         }
     }
 }

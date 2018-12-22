@@ -5,7 +5,6 @@
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
 //
-
 //
 // Specialized producer/consumer queues.
 //
@@ -52,11 +51,6 @@ namespace System.Threading.Tasks
         /// <summary>Gets the number of items in the collection.</summary>
         /// <remarks>In many implementations, this method will not be thread-safe.</remarks>
         int Count { get; }
-
-        /// <summary>A thread-safe way to get the number of items in the collection. May synchronize access by locking the provided synchronization object.</summary>
-        /// <param name="syncObj">The sync object used to lock</param>
-        /// <returns>The collection count</returns>
-        int GetCountSafe(object syncObj);
     }
 
     /// <summary>
@@ -80,10 +74,6 @@ namespace System.Threading.Tasks
 
         /// <summary>Gets the number of items in the collection.</summary>
         int IProducerConsumerQueue<T>.Count { get { return base.Count; } }
-
-        /// <summary>A thread-safe way to get the number of items in the collection. May synchronize access by locking the provided synchronization object.</summary>
-        /// <remarks>ConcurrentQueue.Count is thread safe, no need to acquire the lock.</remarks>
-        int IProducerConsumerQueue<T>.GetCountSafe(object syncObj) { return base.Count; }
     }
 
     /// <summary>
@@ -214,7 +204,7 @@ namespace System.Threading.Tasks
             if (first != segment.m_state.m_lastCopy)
             {
                 result = array[first];
-                array[first] = default(T); // Clear the slot to release the element
+                array[first] = default; // Clear the slot to release the element
                 segment.m_state.m_first = (first + 1) & (array.Length - 1);
                 return true;
             }
@@ -249,153 +239,16 @@ namespace System.Threading.Tasks
 
             if (first == segment.m_state.m_last)
             {
-                result = default(T);
+                result = default;
                 return false;
             }
 
             result = array[first];
-            array[first] = default(T); // Clear the slot to release the element
+            array[first] = default; // Clear the slot to release the element
             segment.m_state.m_first = (first + 1) & (segment.m_array.Length - 1);
             segment.m_state.m_lastCopy = segment.m_state.m_last; // Refresh m_lastCopy to ensure that m_first has not passed m_lastCopy
 
             return true;
-        }
-
-        /// <summary>Attempts to peek at an item in the queue.</summary>
-        /// <param name="result">The peeked item.</param>
-        /// <returns>true if an item could be peeked; otherwise, false.</returns>
-        public bool TryPeek(out T result)
-        {
-            Segment segment = m_head;
-            var array = segment.m_array;
-            int first = segment.m_state.m_first; // local copy to avoid multiple volatile reads
-
-            // Fast path: there's obviously data available in the current segment
-            if (first != segment.m_state.m_lastCopy)
-            {
-                result = array[first];
-                return true;
-            }
-            // Slow path: there may not be data available in the current segment
-            else return TryPeekSlow(ref segment, ref array, out result);
-        }
-
-        /// <summary>Attempts to peek at an item in the queue.</summary>
-        /// <param name="array">The array from which the item is peeked.</param>
-        /// <param name="segment">The segment from which the item is peeked.</param>
-        /// <param name="result">The peeked item.</param>
-        /// <returns>true if an item could be peeked; otherwise, false.</returns>
-        private bool TryPeekSlow(ref Segment segment, ref T[] array, out T result)
-        {
-            Debug.Assert(segment != null, "Expected a non-null segment.");
-            Debug.Assert(array != null, "Expected a non-null item array.");
-
-            if (segment.m_state.m_last != segment.m_state.m_lastCopy)
-            {
-                segment.m_state.m_lastCopy = segment.m_state.m_last;
-                return TryPeek(out result); // will only recur once for this peek operation
-            }
-
-            if (segment.m_next != null && segment.m_state.m_first == segment.m_state.m_last)
-            {
-                segment = segment.m_next;
-                array = segment.m_array;
-                m_head = segment;
-            }
-
-            var first = segment.m_state.m_first; // local copy to avoid extraneous volatile reads
-
-            if (first == segment.m_state.m_last)
-            {
-                result = default(T);
-                return false;
-            }
-
-            result = array[first];
-            return true;
-        }
-
-        /// <summary>Attempts to dequeue an item from the queue.</summary>
-        /// <param name="predicate">The predicate that must return true for the item to be dequeued.  If null, all items implicitly return true.</param>
-        /// <param name="result">The dequeued item.</param>
-        /// <returns>true if an item could be dequeued; otherwise, false.</returns>
-        public bool TryDequeueIf(Predicate<T> predicate, out T result)
-        {
-            Segment segment = m_head;
-            var array = segment.m_array;
-            int first = segment.m_state.m_first; // local copy to avoid multiple volatile reads
-
-            // Fast path: there's obviously data available in the current segment
-            if (first != segment.m_state.m_lastCopy)
-            {
-                result = array[first];
-                if (predicate == null || predicate(result))
-                {
-                    array[first] = default(T); // Clear the slot to release the element
-                    segment.m_state.m_first = (first + 1) & (array.Length - 1);
-                    return true;
-                }
-                else
-                {
-                    result = default(T);
-                    return false;
-                }
-            }
-            // Slow path: there may not be data available in the current segment
-            else return TryDequeueIfSlow(predicate, ref segment, ref array, out result);
-        }
-
-        /// <summary>Attempts to dequeue an item from the queue.</summary>
-        /// <param name="predicate">The predicate that must return true for the item to be dequeued.  If null, all items implicitly return true.</param>
-        /// <param name="array">The array from which the item was dequeued.</param>
-        /// <param name="segment">The segment from which the item was dequeued.</param>
-        /// <param name="result">The dequeued item.</param>
-        /// <returns>true if an item could be dequeued; otherwise, false.</returns>
-        private bool TryDequeueIfSlow(Predicate<T> predicate, ref Segment segment, ref T[] array, out T result)
-        {
-            Debug.Assert(segment != null, "Expected a non-null segment.");
-            Debug.Assert(array != null, "Expected a non-null item array.");
-
-            if (segment.m_state.m_last != segment.m_state.m_lastCopy)
-            {
-                segment.m_state.m_lastCopy = segment.m_state.m_last;
-                return TryDequeueIf(predicate, out result); // will only recur once for this dequeue operation
-            }
-
-            if (segment.m_next != null && segment.m_state.m_first == segment.m_state.m_last)
-            {
-                segment = segment.m_next;
-                array = segment.m_array;
-                m_head = segment;
-            }
-
-            var first = segment.m_state.m_first; // local copy to avoid extraneous volatile reads
-
-            if (first == segment.m_state.m_last)
-            {
-                result = default(T);
-                return false;
-            }
-
-            result = array[first];
-            if (predicate == null || predicate(result))
-            {
-                array[first] = default(T); // Clear the slot to release the element
-                segment.m_state.m_first = (first + 1) & (segment.m_array.Length - 1);
-                segment.m_state.m_lastCopy = segment.m_state.m_last; // Refresh m_lastCopy to ensure that m_first has not passed m_lastCopy
-                return true;
-            }
-            else
-            {
-                result = default(T);
-                return false;
-            }
-        }
-
-        public void Clear()
-        {
-            T ignored;
-            while (TryDequeue(out ignored)) ;
         }
 
         /// <summary>Gets whether the collection is currently empty.</summary>
@@ -453,17 +306,6 @@ namespace System.Threading.Tasks
             }
         }
 
-        /// <summary>A thread-safe way to get the number of items in the collection. May synchronize access by locking the provided synchronization object.</summary>
-        /// <remarks>The Count is not thread safe, so we need to acquire the lock.</remarks>
-        int IProducerConsumerQueue<T>.GetCountSafe(object syncObj)
-        {
-            Debug.Assert(syncObj != null, "The syncObj parameter is null.");
-            lock (syncObj)
-            {
-                return Count;
-            }
-        }
-
         /// <summary>A segment in the queue containing one or more items.</summary>
         [StructLayout(LayoutKind.Sequential)]
         private sealed class Segment
@@ -489,7 +331,7 @@ namespace System.Threading.Tasks
         private struct SegmentState
         {
             /// <summary>Padding to reduce false sharing between the segment's array and m_first.</summary>
-            internal PaddingFor32 m_pad0;
+            internal Internal.PaddingFor32 m_pad0;
 
             /// <summary>The index of the current head in the segment.</summary>
             internal volatile int m_first;
@@ -497,7 +339,7 @@ namespace System.Threading.Tasks
             internal int m_lastCopy; // not volatile as read and written by the producer, except for IsEmpty, and there m_lastCopy is only read after reading the volatile m_first
 
             /// <summary>Padding to reduce false sharing between the first and last.</summary>
-            internal PaddingFor32 m_pad1;
+            internal Internal.PaddingFor32 m_pad1;
 
             /// <summary>A copy of the current head index.</summary>
             internal int m_firstCopy; // not voliatle as only read and written by the consumer thread
@@ -505,7 +347,7 @@ namespace System.Threading.Tasks
             internal volatile int m_last;
 
             /// <summary>Padding to reduce false sharing with the last and what's after the segment.</summary>
-            internal PaddingFor32 m_pad2;
+            internal Internal.PaddingFor32 m_pad2;
         }
 
         /// <summary>Debugger type proxy for a SingleProducerSingleConsumerQueue of T.</summary>
@@ -515,39 +357,12 @@ namespace System.Threading.Tasks
             private readonly SingleProducerSingleConsumerQueue<T> m_queue;
 
             /// <summary>Initializes the debug view.</summary>
-            /// <param name="enumerable">The queue being debugged.</param>
+            /// <param name="queue">The queue being debugged.</param>
             public SingleProducerSingleConsumerQueue_DebugView(SingleProducerSingleConsumerQueue<T> queue)
             {
                 Debug.Assert(queue != null, "Expected a non-null queue.");
                 m_queue = queue;
             }
-
-            /// <summary>Gets the contents of the list.</summary>
-            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public T[] Items
-            {
-                get
-                {
-                    LowLevelList<T> list = new LowLevelList<T>();
-                    foreach (T item in m_queue)
-                        list.Add(item);
-                    return list.ToArray();
-                }
-            }
         }
-    }
-
-
-    /// <summary>A placeholder class for common padding constants and eventually routines.</summary>
-    internal static class PaddingHelpers
-    {
-        /// <summary>A size greater than or equal to the size of the most common CPU cache lines.</summary>
-        internal const int CACHE_LINE_SIZE = 128;
-    }
-
-    /// <summary>Padding structure used to minimize false sharing in SingleProducerSingleConsumerQueue{T}.</summary>
-    [StructLayout(LayoutKind.Explicit, Size = PaddingHelpers.CACHE_LINE_SIZE - sizeof(int))] // Based on common case of 64-byte cache lines
-    internal struct PaddingFor32
-    {
     }
 }

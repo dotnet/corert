@@ -170,6 +170,11 @@ namespace System
             throw GetArgumentException(resource, argument);
         }
 
+        internal static void ThrowAggregateException(List<Exception> exceptions)
+        {
+            throw new AggregateException(exceptions);
+        }
+
         internal static void ThrowArgumentException_Argument_InvalidArrayType()
         {
             throw new ArgumentException(SR.Argument_InvalidArrayType);
@@ -225,9 +230,9 @@ namespace System
             throw new SerializationException(GetResourceString(resource));
         }
 
-        internal static void ThrowObjectDisposedException_MemoryDisposed()
+        internal static void ThrowObjectDisposedException(ExceptionResource resource)
         {
-            throw new ObjectDisposedException("OwnedMemory<T>", SR.MemoryDisposed);
+            throw new ObjectDisposedException(null, GetResourceString(resource));
         }
 
         internal static void ThrowNotSupportedException()
@@ -365,6 +370,40 @@ namespace System
                     return "sourceBytesToCopy";
                 case ExceptionArgument.callBack:
                     return "callBack";
+                case ExceptionArgument.creationOptions:
+                    return "creationOptions";
+                case ExceptionArgument.function:
+                    return "function";
+                case ExceptionArgument.scheduler:
+                    return "scheduler";
+                case ExceptionArgument.continuationAction:
+                    return "continuationAction";
+                case ExceptionArgument.continuationFunction:
+                    return "continuationFunction";
+                case ExceptionArgument.tasks:
+                    return "tasks";
+                case ExceptionArgument.asyncResult:
+                    return "asyncResult";
+                case ExceptionArgument.beginMethod:
+                    return "beginMethod";
+                case ExceptionArgument.endMethod:
+                    return "endMethod";
+                case ExceptionArgument.endFunction:
+                    return "endFunction";
+                case ExceptionArgument.cancellationToken:
+                    return "cancellationToken";
+                case ExceptionArgument.continuationOptions:
+                    return "continuationOptions";
+                case ExceptionArgument.delay:
+                    return "delay";
+                case ExceptionArgument.millisecondsDelay:
+                    return "millisecondsDelay";
+                case ExceptionArgument.millisecondsTimeout:
+                    return "millisecondsTimeout";
+                case ExceptionArgument.stateMachine:
+                    return "stateMachine";
+                case ExceptionArgument.timeout:
+                    return "timeout";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -419,6 +458,44 @@ namespace System
                     return SR.NotSupported_StringComparison;
                 case ExceptionResource.ConcurrentCollection_SyncRoot_NotSupported:
                     return SR.ConcurrentCollection_SyncRoot_NotSupported;
+                case ExceptionResource.Task_MultiTaskContinuation_NullTask:
+                    return SR.Task_MultiTaskContinuation_NullTask;
+                case ExceptionResource.InvalidOperation_WrongAsyncResultOrEndCalledMultiple:
+                    return SR.InvalidOperation_WrongAsyncResultOrEndCalledMultiple;
+                case ExceptionResource.Task_MultiTaskContinuation_EmptyTaskList:
+                    return SR.Task_MultiTaskContinuation_EmptyTaskList;
+                case ExceptionResource.Task_Start_TaskCompleted:
+                    return SR.Task_Start_TaskCompleted;
+                case ExceptionResource.Task_Start_Promise:
+                    return SR.Task_Start_Promise;
+                case ExceptionResource.Task_Start_ContinuationTask:
+                    return SR.Task_Start_ContinuationTask;
+                case ExceptionResource.Task_Start_AlreadyStarted:
+                    return SR.Task_Start_AlreadyStarted;
+                case ExceptionResource.Task_RunSynchronously_Continuation:
+                    return SR.Task_RunSynchronously_Continuation;
+                case ExceptionResource.Task_RunSynchronously_Promise:
+                    return SR.Task_RunSynchronously_Promise;
+                case ExceptionResource.Task_RunSynchronously_TaskCompleted:
+                    return SR.Task_RunSynchronously_TaskCompleted;
+                case ExceptionResource.Task_RunSynchronously_AlreadyStarted:
+                    return SR.Task_RunSynchronously_AlreadyStarted;
+                case ExceptionResource.AsyncMethodBuilder_InstanceNotInitialized:
+                    return SR.AsyncMethodBuilder_InstanceNotInitialized;
+                case ExceptionResource.Task_ContinueWith_ESandLR:
+                    return SR.Task_ContinueWith_ESandLR;
+                case ExceptionResource.Task_ContinueWith_NotOnAnything:
+                    return SR.Task_ContinueWith_NotOnAnything;
+                case ExceptionResource.Task_Delay_InvalidDelay:
+                    return SR.Task_Delay_InvalidDelay;
+                case ExceptionResource.Task_Delay_InvalidMillisecondsDelay:
+                    return SR.Task_Delay_InvalidMillisecondsDelay;
+                case ExceptionResource.Task_Dispose_NotCompleted:
+                    return SR.Task_Dispose_NotCompleted;
+                case ExceptionResource.Task_ThrowIfDisposed:
+                    return SR.Task_ThrowIfDisposed;
+                case ExceptionResource.Task_WaitMulti_NullTask:
+                    return SR.Task_WaitMulti_NullTask;
                 default:
                     Debug.Assert(false,
                         "The enum value is not defined, please check the ExceptionResource Enum.");
@@ -470,7 +547,24 @@ namespace System
         comparisonType,
         manager,
         sourceBytesToCopy,
-        callBack
+        callBack,
+        creationOptions,
+        function,
+        scheduler,
+        continuationAction,
+        continuationFunction,
+        tasks,
+        asyncResult,
+        beginMethod,
+        endMethod,
+        endFunction,
+        cancellationToken,
+        continuationOptions,
+        delay,
+        millisecondsDelay,
+        millisecondsTimeout,
+        stateMachine,
+        timeout,
     }
 
     //
@@ -500,5 +594,24 @@ namespace System
         TaskCompletionSourceT_TrySetException_NoExceptions,
         NotSupported_StringComparison,
         ConcurrentCollection_SyncRoot_NotSupported,
+        Task_MultiTaskContinuation_NullTask,
+        InvalidOperation_WrongAsyncResultOrEndCalledMultiple,
+        Task_MultiTaskContinuation_EmptyTaskList,
+        Task_Start_TaskCompleted,
+        Task_Start_Promise,
+        Task_Start_ContinuationTask,
+        Task_Start_AlreadyStarted,
+        Task_RunSynchronously_Continuation,
+        Task_RunSynchronously_Promise,
+        Task_RunSynchronously_TaskCompleted,
+        Task_RunSynchronously_AlreadyStarted,
+        AsyncMethodBuilder_InstanceNotInitialized,
+        Task_ContinueWith_ESandLR,
+        Task_ContinueWith_NotOnAnything,
+        Task_Delay_InvalidDelay,
+        Task_Delay_InvalidMillisecondsDelay,
+        Task_Dispose_NotCompleted,
+        Task_ThrowIfDisposed,
+        Task_WaitMulti_NullTask,
     }
 }

@@ -5,19 +5,18 @@
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
 //
-
 //
 // A task that produces a value.
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System.Runtime.CompilerServices;
+using System.Collections.Generic;
 using System.Diagnostics;
-
+using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 
 // Disable the "reference to volatile field not treated as volatile" error.
 #pragma warning disable 0420
-
 
 namespace System.Threading.Tasks
 {
@@ -63,20 +62,16 @@ namespace System.Threading.Tasks
     [DebuggerTypeProxy(typeof(SystemThreadingTasks_FutureDebugView<>))]
     [DebuggerDisplay("Id = {Id}, Status = {Status}, Method = {DebuggerDisplayMethodDescription}, Result = {DebuggerDisplayResultDescription}")]
     public class Task<TResult> : Task
-#if SUPPORT_IOBSERVABLE        
-        , IObservable<TResult>
-#endif
     {
         internal TResult m_result; // The value itself, if set.
 
-        internal static class TaskWhenAnyCast
-        {
-            // Delegate used by:
-            //     public static Task<Task<TResult>> WhenAny<TResult>(IEnumerable<Task<TResult>> tasks);
-            //     public static Task<Task<TResult>> WhenAny<TResult>(params Task<TResult>[] tasks);
-            // Used to "cast" from Task<Task> to Task<Task<TResult>>.
-            internal static readonly Func<Task<Task>, Task<TResult>> Value = completed => (Task<TResult>)completed.Result;
-        }
+        private static readonly TaskFactory<TResult> s_Factory = new TaskFactory<TResult>();
+
+        // Delegate used by:
+        //     public static Task<Task<TResult>> WhenAny<TResult>(IEnumerable<Task<TResult>> tasks);
+        //     public static Task<Task<TResult>> WhenAny<TResult>(params Task<TResult>[] tasks);
+        // Used to "cast" from Task<Task> to Task<Task<TResult>>.
+        internal static readonly Func<Task<Task>, Task<TResult>> TaskWhenAnyCast = completed => (Task<TResult>)completed.Result;
 
         // Construct a promise-style task without any options. 
         internal Task() :
@@ -93,7 +88,7 @@ namespace System.Threading.Tasks
 
         // Construct a pre-completed Task<TResult>
         internal Task(TResult result) :
-            base(false, TaskCreationOptions.None, default(CancellationToken))
+            base(false, TaskCreationOptions.None, default)
         {
             m_result = result;
         }
@@ -125,7 +120,7 @@ namespace System.Threading.Tasks
         /// The <paramref name="function"/> argument is null.
         /// </exception>
         public Task(Func<TResult> function)
-            : this(function, null, default(CancellationToken),
+            : this(function, null, default,
                 TaskCreationOptions.None, InternalTaskOptions.None, null)
         {
         }
@@ -170,7 +165,7 @@ namespace System.Threading.Tasks
         /// cref="T:System.Threading.Tasks.TaskCreationOptions"/>.
         /// </exception>
         public Task(Func<TResult> function, TaskCreationOptions creationOptions)
-            : this(function, Task.InternalCurrentIfAttached(creationOptions), default(CancellationToken), creationOptions, InternalTaskOptions.None, null)
+            : this(function, Task.InternalCurrentIfAttached(creationOptions), default, creationOptions, InternalTaskOptions.None, null)
         {
         }
 
@@ -213,7 +208,7 @@ namespace System.Threading.Tasks
         /// The <paramref name="function"/> argument is null.
         /// </exception>
         public Task(Func<object, TResult> function, object state)
-            : this(function, state, null, default(CancellationToken),
+            : this(function, state, null, default,
                 TaskCreationOptions.None, InternalTaskOptions.None, null)
         {
         }
@@ -259,7 +254,7 @@ namespace System.Threading.Tasks
         /// cref="T:System.Threading.Tasks.TaskCreationOptions"/>.
         /// </exception>
         public Task(Func<object, TResult> function, object state, TaskCreationOptions creationOptions)
-            : this(function, state, Task.InternalCurrentIfAttached(creationOptions), default(CancellationToken),
+            : this(function, state, Task.InternalCurrentIfAttached(creationOptions), default,
                     creationOptions, InternalTaskOptions.None, null)
         {
         }
@@ -309,7 +304,6 @@ namespace System.Threading.Tasks
         {
         }
 
-
         /// <summary>
         /// Creates a new future object.
         /// </summary>
@@ -319,7 +313,7 @@ namespace System.Threading.Tasks
         /// <param name="cancellationToken">The CancellationToken for the task.</param>
         /// <param name="scheduler">The task scheduler which will be used to execute the future.</param>
         /// <param name="creationOptions">Options to control the future's behavior.</param>
-        /// <param name="internalOptions">Internal options to control the future's behavior.</param>        
+        /// <param name="internalOptions">Internal options to control the future's behavior.</param>
         internal Task(Delegate valueSelector, object state, Task parent, CancellationToken cancellationToken,
             TaskCreationOptions creationOptions, InternalTaskOptions internalOptions, TaskScheduler scheduler) :
             base(valueSelector, state, parent, cancellationToken, creationOptions, internalOptions, scheduler)
@@ -333,11 +327,11 @@ namespace System.Threading.Tasks
         {
             if (function == null)
             {
-                throw new ArgumentNullException(nameof(function));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.function);
             }
             if (scheduler == null)
             {
-                throw new ArgumentNullException(nameof(scheduler));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
             }
 
             // Create and schedule the future.
@@ -353,11 +347,11 @@ namespace System.Threading.Tasks
         {
             if (function == null)
             {
-                throw new ArgumentNullException(nameof(function));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.function);
             }
             if (scheduler == null)
             {
-                throw new ArgumentNullException(nameof(scheduler));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
             }
 
             // Create and schedule the future.
@@ -382,11 +376,7 @@ namespace System.Threading.Tasks
             get
             {
                 Delegate d = m_action;
-                if (d == null)
-                    return "{null}";
-                IntPtr fptr = d.GetNativeFunctionPointer();
-                return "0x" + fptr.ToString("x");
-                //return d != null ? d.Method.ToString() : "{null}";
+                return d != null ? d.Method.ToString() : "{null}";
             }
         }
 
@@ -394,7 +384,6 @@ namespace System.Threading.Tasks
         // internal helper function breaks out logic used by TaskCompletionSource
         internal bool TrySetResult(TResult result)
         {
-            if (IsCompleted) return false;
             Debug.Assert(m_action == null, "Task<T>.TrySetResult(): non-null m_action");
 
             // "Reserve" the completion for this task, while making sure that: (1) No prior reservation
@@ -415,12 +404,13 @@ namespace System.Threading.Tasks
                 // and which can be summarized more concisely with the following snippet from
                 // FinishStageTwo, omitting everything that doesn't pertain to TrySetResult.
                 Interlocked.Exchange(ref m_stateFlags, m_stateFlags | TASK_STATE_RAN_TO_COMPLETION);
-
-                var cp = m_contingentProperties;
-                if (cp != null) cp.SetCompleted();
-
-                FinishStageThree();
-
+                ContingentProperties props = m_contingentProperties;
+                if (props != null)
+                {
+                    NotifyParentIfPotentiallyAttachedTask();
+                    props.SetCompleted();
+                }
+                FinishContinuations();
                 return true;
             }
 
@@ -438,7 +428,7 @@ namespace System.Threading.Tasks
             Debug.Assert(!IsCompleted, "The promise must not yet be completed.");
 
             // If we have a parent, we need to notify it of the completion.  Take the slow path to handle that.
-            if (m_parent != null)
+            if (m_contingentProperties?.m_parent != null)
             {
                 bool success = TrySetResult(result);
 
@@ -487,7 +477,7 @@ namespace System.Threading.Tasks
         internal TResult GetResultCore(bool waitCompletionNotification)
         {
             // If the result has not been calculated yet, wait for it.
-            if (!IsCompleted) InternalWait(Timeout.Infinite, default(CancellationToken)); // won't throw if task faulted or canceled; that's handled below
+            if (!IsCompleted) InternalWait(Timeout.Infinite, default); // won't throw if task faulted or canceled; that's handled below
 
             // Notify the debugger of the wait completion if it's requested such a notification
             if (waitCompletionNotification) NotifyDebuggerOfWaitCompletionIfNecessary();
@@ -501,6 +491,95 @@ namespace System.Threading.Tasks
             return m_result;
         }
 
+        // Allow multiple exceptions to be assigned to a promise-style task.
+        // This is useful when a TaskCompletionSource<T> stands in as a proxy
+        // for a "real" task (as we do in Unwrap(), ContinueWhenAny() and ContinueWhenAll())
+        // and the "real" task ends up with multiple exceptions, which is possible when
+        // a task has children.
+        //
+        // Called from TaskCompletionSource<T>.SetException(IEnumerable<Exception>).
+        internal bool TrySetException(object exceptionObject)
+        {
+            Debug.Assert(m_action == null, "Task<T>.TrySetException(): non-null m_action");
+
+            // TCS.{Try}SetException() should have checked for this
+            Debug.Assert(exceptionObject != null, "Expected non-null exceptionObject argument");
+
+            // Only accept these types.
+            Debug.Assert(
+                (exceptionObject is Exception) || (exceptionObject is IEnumerable<Exception>) ||
+                (exceptionObject is ExceptionDispatchInfo) || (exceptionObject is IEnumerable<ExceptionDispatchInfo>),
+                "Expected exceptionObject to be either Exception, ExceptionDispatchInfo, or IEnumerable<> of one of those");
+
+            bool returnValue = false;
+
+            // "Reserve" the completion for this task, while making sure that: (1) No prior reservation
+            // has been made, (2) The result has not already been set, (3) An exception has not previously 
+            // been recorded, and (4) Cancellation has not been requested.
+            //
+            // If the reservation is successful, then add the exception(s) and finish completion processing.
+            //
+            // The lazy initialization may not be strictly necessary, but I'd like to keep it here
+            // anyway.  Some downstream logic may depend upon an inflated m_contingentProperties.
+            EnsureContingentPropertiesInitialized();
+            if (AtomicStateUpdate(TASK_STATE_COMPLETION_RESERVED,
+                TASK_STATE_COMPLETION_RESERVED | TASK_STATE_RAN_TO_COMPLETION | TASK_STATE_FAULTED | TASK_STATE_CANCELED))
+            {
+                AddException(exceptionObject); // handles singleton exception or exception collection
+                Finish(false);
+                returnValue = true;
+            }
+
+            return returnValue;
+        }
+
+        // internal helper function breaks out logic used by TaskCompletionSource and AsyncMethodBuilder
+        // If the tokenToRecord is not None, it will be stored onto the task.
+        // This method is only valid for promise tasks.
+        internal bool TrySetCanceled(CancellationToken tokenToRecord)
+        {
+            return TrySetCanceled(tokenToRecord, null);
+        }
+
+        // internal helper function breaks out logic used by TaskCompletionSource and AsyncMethodBuilder
+        // If the tokenToRecord is not None, it will be stored onto the task.
+        // If the OperationCanceledException is not null, it will be stored into the task's exception holder.
+        // This method is only valid for promise tasks.
+        internal bool TrySetCanceled(CancellationToken tokenToRecord, object cancellationException)
+        {
+            Debug.Assert(m_action == null, "Task<T>.TrySetCanceled(): non-null m_action");
+#if DEBUG
+            var ceAsEdi = cancellationException as ExceptionDispatchInfo;
+            Debug.Assert(
+                cancellationException == null ||
+                cancellationException is OperationCanceledException ||
+                (ceAsEdi != null && ceAsEdi.SourceException is OperationCanceledException),
+                "Expected null or an OperationCanceledException");
+#endif
+
+            bool returnValue = false;
+
+            // "Reserve" the completion for this task, while making sure that: (1) No prior reservation
+            // has been made, (2) The result has not already been set, (3) An exception has not previously 
+            // been recorded, and (4) Cancellation has not been requested.
+            //
+            // If the reservation is successful, then record the cancellation and finish completion processing.
+            //
+            // Note: I had to access static Task variables through Task<object>
+            // instead of Task, because I have a property named Task and that
+            // was confusing the compiler.  
+            if (AtomicStateUpdate(Task<object>.TASK_STATE_COMPLETION_RESERVED,
+                Task<object>.TASK_STATE_COMPLETION_RESERVED | Task<object>.TASK_STATE_CANCELED |
+                Task<object>.TASK_STATE_FAULTED | Task<object>.TASK_STATE_RAN_TO_COMPLETION))
+            {
+                RecordInternalCancellationRequest(tokenToRecord, cancellationException);
+                CancellationCleanupLogic(); // perform cancellation cleanup actions
+                returnValue = true;
+            }
+
+            return returnValue;
+        }
+
         /// <summary>
         /// Provides access to factory methods for creating <see cref="Task{TResult}"/> instances.
         /// </summary>
@@ -509,17 +588,7 @@ namespace System.Threading.Tasks
         /// of <see cref="System.Threading.Tasks.TaskFactory{TResult}"/>, as would result from using
         /// the default constructor on the factory type.
         /// </remarks>
-        public new static TaskFactory<TResult> Factory
-        {
-            get
-            {
-                if (s_defaultFactory == null)
-                    Interlocked.CompareExchange(ref s_defaultFactory, new TaskFactory<TResult>(), null);
-                return s_defaultFactory;
-            }
-        }
-
-        private static TaskFactory<TResult> s_defaultFactory;
+        public new static TaskFactory<TResult> Factory { get { return s_Factory; } }
 
         /// <summary>
         /// Evaluates the value selector of the Task which is passed in as an object and stores the result.
@@ -564,6 +633,7 @@ namespace System.Threading.Tasks
         }
 
         #endregion
+
         #region Continuation methods
 
         #region Action<Task<TResult>> continuations
@@ -586,7 +656,7 @@ namespace System.Threading.Tasks
         /// </exception>
         public Task ContinueWith(Action<Task<TResult>> continuationAction)
         {
-            return ContinueWith(continuationAction, TaskScheduler.Current, default(CancellationToken), TaskContinuationOptions.None);
+            return ContinueWith(continuationAction, TaskScheduler.Current, default, TaskContinuationOptions.None);
         }
 
 
@@ -640,7 +710,7 @@ namespace System.Threading.Tasks
         /// </exception>
         public Task ContinueWith(Action<Task<TResult>> continuationAction, TaskScheduler scheduler)
         {
-            return ContinueWith(continuationAction, scheduler, default(CancellationToken), TaskContinuationOptions.None);
+            return ContinueWith(continuationAction, scheduler, default, TaskContinuationOptions.None);
         }
 
         /// <summary>
@@ -673,7 +743,7 @@ namespace System.Threading.Tasks
         /// </exception>
         public Task ContinueWith(Action<Task<TResult>> continuationAction, TaskContinuationOptions continuationOptions)
         {
-            return ContinueWith(continuationAction, TaskScheduler.Current, default(CancellationToken), continuationOptions);
+            return ContinueWith(continuationAction, TaskScheduler.Current, default, continuationOptions);
         }
 
         /// <summary>
@@ -726,12 +796,12 @@ namespace System.Threading.Tasks
         {
             if (continuationAction == null)
             {
-                throw new ArgumentNullException(nameof(continuationAction));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationAction);
             }
 
             if (scheduler == null)
             {
-                throw new ArgumentNullException(nameof(scheduler));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
             }
 
             TaskCreationOptions creationOptions;
@@ -775,7 +845,7 @@ namespace System.Threading.Tasks
         /// </exception>
         public Task ContinueWith(Action<Task<TResult>, object> continuationAction, object state)
         {
-            return ContinueWith(continuationAction, state, TaskScheduler.Current, default(CancellationToken), TaskContinuationOptions.None);
+            return ContinueWith(continuationAction, state, TaskScheduler.Current, default, TaskContinuationOptions.None);
         }
 
 
@@ -831,7 +901,7 @@ namespace System.Threading.Tasks
         /// </exception>
         public Task ContinueWith(Action<Task<TResult>, object> continuationAction, object state, TaskScheduler scheduler)
         {
-            return ContinueWith(continuationAction, state, scheduler, default(CancellationToken), TaskContinuationOptions.None);
+            return ContinueWith(continuationAction, state, scheduler, default, TaskContinuationOptions.None);
         }
 
         /// <summary>
@@ -865,7 +935,7 @@ namespace System.Threading.Tasks
         /// </exception>
         public Task ContinueWith(Action<Task<TResult>, object> continuationAction, object state, TaskContinuationOptions continuationOptions)
         {
-            return ContinueWith(continuationAction, state, TaskScheduler.Current, default(CancellationToken), continuationOptions);
+            return ContinueWith(continuationAction, state, TaskScheduler.Current, default, continuationOptions);
         }
 
         /// <summary>
@@ -919,12 +989,12 @@ namespace System.Threading.Tasks
         {
             if (continuationAction == null)
             {
-                throw new ArgumentNullException(nameof(continuationAction));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationAction);
             }
 
             if (scheduler == null)
             {
-                throw new ArgumentNullException(nameof(scheduler));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
             }
 
             TaskCreationOptions creationOptions;
@@ -971,7 +1041,7 @@ namespace System.Threading.Tasks
         /// </exception>
         public Task<TNewResult> ContinueWith<TNewResult>(Func<Task<TResult>, TNewResult> continuationFunction)
         {
-            return ContinueWith<TNewResult>(continuationFunction, TaskScheduler.Current, default(CancellationToken), TaskContinuationOptions.None);
+            return ContinueWith<TNewResult>(continuationFunction, TaskScheduler.Current, default, TaskContinuationOptions.None);
         }
 
 
@@ -1030,7 +1100,7 @@ namespace System.Threading.Tasks
         /// </exception>
         public Task<TNewResult> ContinueWith<TNewResult>(Func<Task<TResult>, TNewResult> continuationFunction, TaskScheduler scheduler)
         {
-            return ContinueWith<TNewResult>(continuationFunction, scheduler, default(CancellationToken), TaskContinuationOptions.None);
+            return ContinueWith<TNewResult>(continuationFunction, scheduler, default, TaskContinuationOptions.None);
         }
 
         /// <summary>
@@ -1072,7 +1142,7 @@ namespace System.Threading.Tasks
         /// </exception>
         public Task<TNewResult> ContinueWith<TNewResult>(Func<Task<TResult>, TNewResult> continuationFunction, TaskContinuationOptions continuationOptions)
         {
-            return ContinueWith<TNewResult>(continuationFunction, TaskScheduler.Current, default(CancellationToken), continuationOptions);
+            return ContinueWith<TNewResult>(continuationFunction, TaskScheduler.Current, default, continuationOptions);
         }
 
         /// <summary>
@@ -1135,12 +1205,12 @@ namespace System.Threading.Tasks
         {
             if (continuationFunction == null)
             {
-                throw new ArgumentNullException(nameof(continuationFunction));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationFunction);
             }
 
             if (scheduler == null)
             {
-                throw new ArgumentNullException(nameof(scheduler));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
             }
 
             TaskCreationOptions creationOptions;
@@ -1187,7 +1257,7 @@ namespace System.Threading.Tasks
         /// </exception>
         public Task<TNewResult> ContinueWith<TNewResult>(Func<Task<TResult>, object, TNewResult> continuationFunction, object state)
         {
-            return ContinueWith<TNewResult>(continuationFunction, state, TaskScheduler.Current, default(CancellationToken), TaskContinuationOptions.None);
+            return ContinueWith<TNewResult>(continuationFunction, state, TaskScheduler.Current, default, TaskContinuationOptions.None);
         }
 
 
@@ -1250,7 +1320,7 @@ namespace System.Threading.Tasks
         public Task<TNewResult> ContinueWith<TNewResult>(Func<Task<TResult>, object, TNewResult> continuationFunction, object state,
             TaskScheduler scheduler)
         {
-            return ContinueWith<TNewResult>(continuationFunction, state, scheduler, default(CancellationToken), TaskContinuationOptions.None);
+            return ContinueWith<TNewResult>(continuationFunction, state, scheduler, default, TaskContinuationOptions.None);
         }
 
         /// <summary>
@@ -1294,7 +1364,7 @@ namespace System.Threading.Tasks
         public Task<TNewResult> ContinueWith<TNewResult>(Func<Task<TResult>, object, TNewResult> continuationFunction, object state,
             TaskContinuationOptions continuationOptions)
         {
-            return ContinueWith<TNewResult>(continuationFunction, state, TaskScheduler.Current, default(CancellationToken), continuationOptions);
+            return ContinueWith<TNewResult>(continuationFunction, state, TaskScheduler.Current, default, continuationOptions);
         }
 
         /// <summary>
@@ -1358,12 +1428,12 @@ namespace System.Threading.Tasks
         {
             if (continuationFunction == null)
             {
-                throw new ArgumentNullException(nameof(continuationFunction));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationFunction);
             }
 
             if (scheduler == null)
             {
-                throw new ArgumentNullException(nameof(scheduler));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
             }
 
             TaskCreationOptions creationOptions;
@@ -1384,77 +1454,11 @@ namespace System.Threading.Tasks
 
             return continuationFuture;
         }
-        #endregion
 
         #endregion
 
-        /// <summary>
-        /// Subscribes an <see cref="IObserver{TResult}"/> to receive notification of the final state of this <see cref="Task{TResult}"/>.
-        /// </summary>
-        /// <param name="observer">
-        /// The <see cref="IObserver{TResult}"/> to call on task completion. If this Task throws an exception, 
-        /// observer.OnError is called with this Task's AggregateException. If this Task RanToCompletion, 
-        /// observer.OnNext is called with this Task's result, followed by a call to observer.OnCompleted.
-        /// If this Task is Canceled,  observer.OnError is called with a TaskCanceledException
-        /// containing this Task's CancellationToken
-        /// </param>
-        /// <returns>An IDisposable object <see cref="Task"/>.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
-        /// The <paramref name="observer"/> argument is null.
-        /// </exception>
-#if SUPPORT_IOBSERVABLE
-        IDisposable IObservable<TResult>.Subscribe(IObserver<TResult> observer)
-        {
-            if (observer == null)
-                throw new System.ArgumentNullException("observer");
-
-
-            var continuationTask =
-                this.ContinueWith(delegate (Task<TResult> observedTask, object taskObserverObject)
-                {
-                    IObserver<TResult> taskObserver = (IObserver<TResult>)taskObserverObject;
-                    if (observedTask.IsFaulted)
-                        taskObserver.OnError(observedTask.Exception);
-                    else if (observedTask.IsCanceled)
-                        taskObserver.OnError(new TaskCanceledException(observedTask));
-                    else
-                    {
-                        taskObserver.OnNext(observedTask.Result);
-                        taskObserver.OnCompleted();
-                    }
-
-                }, observer, TaskScheduler.Default);
-
-            return new DisposableSubscription(this, continuationTask);
-        }
-#endif
+        #endregion
     }
-
-#if SUPPORT_IOBSERVABLE
-    // Class that calls RemoveContinuation if Dispose() is called before task completion
-    internal class DisposableSubscription : IDisposable
-    {
-        private Task _notifyObserverContinuationTask;
-        private Task _observedTask;
-
-        internal DisposableSubscription(Task observedTask, Task notifyObserverContinuationTask)
-        {
-            _observedTask = observedTask;
-            _notifyObserverContinuationTask = notifyObserverContinuationTask;
-        }
-        void IDisposable.Dispose()
-        {
-            Task localObservedTask = _observedTask;
-            Task localNotifyingContinuationTask = _notifyObserverContinuationTask;
-            if (localObservedTask != null && localNotifyingContinuationTask != null && !localObservedTask.IsCompleted)
-            {
-                localObservedTask.RemoveContinuation(localNotifyingContinuationTask);
-            }
-            _observedTask = null;
-            _notifyObserverContinuationTask = null;
-        }
-    }
-#endif
 
     // Proxy class for better debugging experience
     internal class SystemThreadingTasks_FutureDebugView<TResult>
@@ -1466,7 +1470,7 @@ namespace System.Threading.Tasks
             m_task = task;
         }
 
-        public TResult Result { get { return m_task.Status == TaskStatus.RanToCompletion ? m_task.Result : default(TResult); } }
+        public TResult Result { get { return m_task.Status == TaskStatus.RanToCompletion ? m_task.Result : default; } }
         public object AsyncState { get { return m_task.AsyncState; } }
         public TaskCreationOptions CreationOptions { get { return m_task.CreationOptions; } }
         public Exception Exception { get { return m_task.Exception; } }

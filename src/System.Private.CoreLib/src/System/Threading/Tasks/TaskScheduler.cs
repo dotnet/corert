@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -9,8 +9,15 @@
 // This file contains the primary interface and management of tasks and queues.  
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// Disable the "reference to volatile field not treated as volatile" error.
+#pragma warning disable 0420
 
+using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Threading;
+using System.Security;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -240,7 +247,15 @@ namespace System.Threading.Tasks
             get { return true; }
         }
 
+        /// <summary>
+        /// Calls QueueTask() after performing any needed firing of events
+        /// </summary>
+        internal void InternalQueueTask(Task task)
+        {
+            Debug.Assert(task != null);
 
+            this.QueueTask(task);
+        }
 
         ////////////////////////////////////////////////////////////
         //
@@ -271,7 +286,7 @@ namespace System.Threading.Tasks
         /// </summary>
         protected TaskScheduler()
         {
-#if false // Debugger support
+#if CORECLR // Debugger support
             // Register the scheduler in the active scheduler list.  This is only relevant when debugging, 
             // so we only pay the cost if the debugger is attached when the scheduler is created.  This
             // means that the internal TaskScheduler.GetTaskSchedulersForDebugger() will only include
@@ -422,16 +437,13 @@ namespace System.Threading.Tasks
                 throw new InvalidOperationException(SR.TaskScheduler_ExecuteTask_WrongTaskScheduler);
             }
 
-            return task.ExecuteEntry(true);
+            return task.ExecuteEntry();
         }
 
         ////////////////////////////////////////////////////////////
         //
         // Events
         //
-
-        private static EventHandler<UnobservedTaskExceptionEventArgs> _unobservedTaskException;
-        private static readonly Lock _unobservedTaskExceptionLockObject = new Lock();
 
         /// <summary>
         /// Occurs when a faulted <see cref="System.Threading.Tasks.Task"/>'s unobserved exception is about to trigger exception escalation
@@ -443,32 +455,7 @@ namespace System.Threading.Tasks
         /// Each handler is passed a <see cref="T:System.Threading.Tasks.UnobservedTaskExceptionEventArgs"/>
         /// instance, which may be used to examine the exception and to mark it as observed.
         /// </remarks>
-        public static event EventHandler<UnobservedTaskExceptionEventArgs> UnobservedTaskException
-        {
-            add
-            {
-                if (value != null)
-                {
-                    using (LockHolder.Hold(_unobservedTaskExceptionLockObject))
-                    {
-                        _unobservedTaskException += value;
-                    }
-                }
-            }
-
-            remove
-            {
-                using (LockHolder.Hold(_unobservedTaskExceptionLockObject))
-                {
-                    _unobservedTaskException -= value;
-                }
-            }
-        }
-
-
-
-
-
+        public static event EventHandler<UnobservedTaskExceptionEventArgs> UnobservedTaskException;
 
         ////////////////////////////////////////////////////////////
         //
@@ -478,17 +465,7 @@ namespace System.Threading.Tasks
         // This is called by the TaskExceptionHolder finalizer.
         internal static void PublishUnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs ueea)
         {
-            // Lock this logic to prevent just-unregistered handlers from being called.
-            using (LockHolder.Hold(_unobservedTaskExceptionLockObject))
-            {
-                // Since we are under lock, it is technically no longer necessary
-                // to make a copy.  It is done here for convenience.
-                EventHandler<UnobservedTaskExceptionEventArgs> handler = _unobservedTaskException;
-                if (handler != null)
-                {
-                    handler(sender, ueea);
-                }
-            }
+            UnobservedTaskException?.Invoke(sender, ueea);
         }
 
         /// <summary>
@@ -517,7 +494,7 @@ namespace System.Threading.Tasks
             Task[] activeTasksArray = activeTasksSource as Task[];
             if (activeTasksArray == null)
             {
-                activeTasksArray = (new LowLevelList<Task>(activeTasksSource)).ToArray();
+                activeTasksArray = (new List<Task>(activeTasksSource)).ToArray();
             }
 
             // touch all Task.Id fields so that the debugger doesn't need to do a lot of cross-proc calls to generate them
@@ -546,7 +523,7 @@ namespace System.Threading.Tasks
                 return new TaskScheduler[] { s_defaultTaskScheduler };
             }
 
-            LowLevelList<TaskScheduler> schedulers = new LowLevelList<TaskScheduler>();
+            List<TaskScheduler> schedulers = new List<TaskScheduler>();
             foreach (var item in s_activeTaskSchedulers)
             {
                 schedulers.Add(item.Key);
@@ -673,7 +650,7 @@ namespace System.Threading.Tasks
         }
 
         // preallocated SendOrPostCallback delegate
-        private static readonly SendOrPostCallback s_postCallback = s => ((Task)s).ExecuteEntry(true); // with double-execute check because SC could be buggy
+        private static readonly SendOrPostCallback s_postCallback = s => ((Task)s).ExecuteEntry(); // with double-execute check because SC could be buggy
     }
 
     /// <summary>

@@ -5,7 +5,6 @@
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
 //
-
 //
 // An abstraction for holding and aggregating exceptions.
 //
@@ -13,7 +12,6 @@
 
 // Disable the "reference to volatile field not treated as volatile" error.
 #pragma warning disable 0420
-
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -26,22 +24,19 @@ namespace System.Threading.Tasks
     /// An exception holder manages a list of exceptions for one particular task.
     /// It offers the ability to aggregate, but more importantly, also offers intrinsic
     /// support for propagating unhandled exceptions that are never observed. It does
-    /// this by aggregating and throwing if the holder is ever GC'd without the holder's
-    /// contents ever having been requested (e.g. by a Task.Wait, Task.get_Exception, etc).
-    /// This behavior is prominent in .NET 4 but is suppressed by default beyond that release.
+    /// this by aggregating and calling UnobservedTaskException event event if the holder 
+    /// is ever GC'd without the holder's contents ever having been requested 
+    /// (e.g. by a Task.Wait, Task.get_Exception, etc).
     /// </summary>
     internal class TaskExceptionHolder
     {
-        /// <summary>Whether we should propagate exceptions on the finalizer.</summary>
-        private static readonly bool s_failFastOnUnobservedException = ShouldFailFastOnUnobservedException();
-
         /// <summary>The task with which this holder is associated.</summary>
         private readonly Task m_task;
         /// <summary>
         /// The lazily-initialized list of faulting exceptions.  Volatile
         /// so that it may be read to determine whether any exceptions were stored.
         /// </summary>
-        private volatile LowLevelListWithIList<ExceptionDispatchInfo> m_faultExceptions;
+        private volatile List<ExceptionDispatchInfo> m_faultExceptions;
         /// <summary>An exception that triggered the task to cancel.</summary>
         private ExceptionDispatchInfo m_cancellationException;
         /// <summary>Whether the holder was "observed" and thus doesn't cause finalization behavior.</summary>
@@ -57,68 +52,29 @@ namespace System.Threading.Tasks
             m_task = task;
         }
 
-        private static bool ShouldFailFastOnUnobservedException()
-        {
-            bool shouldFailFast = false;
-            //shouldFailFast = System.CLRConfig.CheckThrowUnobservedTaskExceptions();
-            return shouldFailFast;
-        }
-
         /// <summary>
         /// A finalizer that repropagates unhandled exceptions.
         /// </summary>
         ~TaskExceptionHolder()
         {
-            // Raise unhandled exceptions only when we know that neither the process or nor the appdomain is being torn down.
-            // We need to do this filtering because all TaskExceptionHolders will be finalized during shutdown or unload
-            // regardles of reachability of the task (i.e. even if the user code was about to observe the task's exception),
-            // which can otherwise lead to spurious crashes during shutdown.
-            if (m_faultExceptions != null && !m_isHandled
-                && !Environment.HasShutdownStarted /*&& !AppDomain.CurrentDomain.IsFinalizingForUnload() && !s_domainUnloadStarted*/)
+            if (m_faultExceptions != null && !m_isHandled)
             {
                 // We will only propagate if this is truly unhandled. The reason this could
                 // ever occur is somewhat subtle: if a Task's exceptions are observed in some
                 // other finalizer, and the Task was finalized before the holder, the holder
                 // will have been marked as handled before even getting here.
 
-                // Give users a chance to keep this exception from crashing the process
-
-                // First, publish the unobserved exception and allow users to observe it
+                // Publish the unobserved exception and allow users to observe it
                 AggregateException exceptionToThrow = new AggregateException(
                     SR.TaskExceptionHolder_UnhandledException,
                     m_faultExceptions);
                 UnobservedTaskExceptionEventArgs ueea = new UnobservedTaskExceptionEventArgs(exceptionToThrow);
                 TaskScheduler.PublishUnobservedTaskException(m_task, ueea);
-
-                // Now, if we are still unobserved and we're configured to crash on unobserved, throw the exception.
-                // We need to publish the event above even if we're not going to crash, hence
-                // why this check doesn't come at the beginning of the method.
-                if (s_failFastOnUnobservedException && !ueea.m_observed)
-                {
-                    throw exceptionToThrow;
-                }
             }
         }
 
         /// <summary>Gets whether the exception holder is currently storing any exceptions for faults.</summary>
         internal bool ContainsFaultList { get { return m_faultExceptions != null; } }
-
-        /// <summary>
-        /// Add an exception to the holder.  This will ensure the holder is
-        /// in the proper state (handled/unhandled) depending on the list's contents.
-        /// </summary>
-        /// <param name="exceptionObject">
-        /// An exception object (either an Exception, an ExceptionDispatchInfo,
-        /// an IEnumerable{Exception}, or an IEnumerable{ExceptionDispatchInfo}) 
-        /// to add to the list.
-        /// </param>
-        /// <remarks>
-        /// Must be called under lock.
-        /// </remarks>
-        internal void Add(object exceptionObject)
-        {
-            Add(exceptionObject, representsCancellation: false);
-        }
 
         /// <summary>
         /// Add an exception to the holder.  This will ensure the holder is
@@ -195,7 +151,7 @@ namespace System.Threading.Tasks
 
             // Initialize the exceptions list if necessary.  The list should be non-null iff it contains exceptions.
             var exceptions = m_faultExceptions;
-            if (exceptions == null) m_faultExceptions = exceptions = new LowLevelListWithIList<ExceptionDispatchInfo>(1);
+            if (exceptions == null) m_faultExceptions = exceptions = new List<ExceptionDispatchInfo>(1);
             else Debug.Assert(exceptions.Count > 0, "Expected existing exceptions list to have > 0 exceptions.");
 
             // Handle Exception by capturing it into an ExceptionDispatchInfo and storing that
