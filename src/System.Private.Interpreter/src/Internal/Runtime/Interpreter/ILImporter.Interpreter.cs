@@ -1425,6 +1425,18 @@ namespace Internal.IL
                             case ILOpcode.rem_un:
                                 result = (int)((uint)val2 % (uint)val1);
                                 break;
+                            case ILOpcode.and:
+                                result = val1 & val2;
+                                break;
+                            case ILOpcode.or:
+                                result = val1 | val2;
+                                break;
+                            case ILOpcode.xor:
+                                result = val1 ^ val2;
+                                break;
+                            default:
+                                Debug.Assert(false);
+                                break;
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt32(result));
@@ -1477,6 +1489,18 @@ namespace Internal.IL
                             case ILOpcode.rem_un:
                                 result = (long)((ulong)val2 % (ulong)val1);
                                 break;
+                            case ILOpcode.and:
+                                result = val1 & val2;
+                                break;
+                            case ILOpcode.or:
+                                result = val1 | val2;
+                                break;
+                            case ILOpcode.xor:
+                                result = val1 ^ val2;
+                                break;
+                            default:
+                                Debug.Assert(false);
+                                break;
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromInt64(result));
@@ -1503,7 +1527,6 @@ namespace Internal.IL
                             }
                         }
 #endif
-
                         switch (opCode)
                         {
                             case ILOpcode.add:
@@ -1544,6 +1567,18 @@ namespace Internal.IL
                                 break;
                             case ILOpcode.rem_un:
                                 result = (IntPtr)((ulong)(UIntPtr)val2.ToPointer() % (ulong)(UIntPtr)val1.ToPointer());
+                                break;
+                            case ILOpcode.and:
+                                result = (IntPtr)((long)val1 & (long)val2);
+                                break;
+                            case ILOpcode.or:
+                                result = (IntPtr)((long)val1 | (long)val2);
+                                break;
+                            case ILOpcode.xor:
+                                result = (IntPtr)((long)val1 ^ (long)val2);
+                                break;
+                            default:
+                                Debug.Assert(false);
                                 break;
                         }
 
@@ -1592,6 +1627,14 @@ namespace Internal.IL
                             case ILOpcode.rem_un:
                                 result = val2 % val1;
                                 break;
+                            case ILOpcode.and:
+                            case ILOpcode.or:
+                            case ILOpcode.xor:
+                                ThrowHelper.ThrowInvalidProgramException();
+                                break;
+                            default:
+                                Debug.Assert(false);
+                                break;
                         }
 
                         _interpreter.EvaluationStack.Push(StackItem.FromDouble(result));
@@ -1604,6 +1647,7 @@ namespace Internal.IL
                 case StackValueKind.ObjRef:
                 case StackValueKind.ValueType:
                 default:
+                    ThrowHelper.ThrowInvalidProgramException();
                     break;
             }
         }
