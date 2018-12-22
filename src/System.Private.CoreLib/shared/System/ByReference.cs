@@ -11,11 +11,19 @@ namespace System
     // around lack of first class support for byref fields in C# and IL. The JIT and 
     // type loader has special handling for it that turns it into a thin wrapper around ref T.
     [NonVersionable]
-    internal readonly ref struct ByReference<T>
+    internal
+#if !PROJECTN
+    readonly
+#endif
+    ref struct ByReference<T>
     {
         // CS0169: The private field '{blah}' is never used
 #pragma warning disable 169
-         private readonly IntPtr _value;
+         private
+#if !PROJECTN // readonly breaks codegen contract and asserts UTC
+         readonly
+#endif
+         IntPtr _value;
 #pragma warning restore
 
         [Intrinsic]
