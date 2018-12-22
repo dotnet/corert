@@ -229,7 +229,7 @@
     <Compile Include="System\MathF.CoreRT.cs" />
     <Compile Include="System\MissingMemberException.CoreRT.cs" />
     <Compile Include="System\MulticastDelegate.cs" />
-    <Compile Include="System\Object.cs" />
+    <Compile Include="System\Object.CoreRT.cs" />
     <Compile Include="System\Reflection\MissingMetadataException.cs" />
     <Compile Include="System\RuntimeArgumentHandle.cs" />
     <Compile Include="System\Runtime\CompilerServices\ConditionalWeakTable.cs" />
