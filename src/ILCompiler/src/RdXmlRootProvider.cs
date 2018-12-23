@@ -226,6 +226,18 @@ namespace ILCompiler
                     return null;
                 }
 
+                // Constraints in the form of T : U
+                if (c.IsSignatureVariable)
+                {
+                    return null;
+                }
+
+                // Other potentially complex constraints
+                if (c.HasInstantiation)
+                {
+                    return null;
+                }
+
                 result = c;
             }
 
