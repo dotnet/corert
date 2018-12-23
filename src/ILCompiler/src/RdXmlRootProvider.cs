@@ -157,101 +157,19 @@ namespace ILCompiler
         {
             rootProvider.AddCompilationRoot(type, reason);
 
-            // Instantiate generic types over something that will be useful at runtime
             if (type.IsGenericDefinition)
-            {
-                List<TypeDesc> inst = new List<TypeDesc>();
-                foreach (GenericParameterDesc param in type.Instantiation)
-                {
-                    TypeDesc arg = GetTypeThatMeetsConstraints(param);
-
-                    // If we can't come up with an instantiation that meets constraints, we're done
-                    if (arg == null)
-                        return;
-
-                    inst.Add(arg);
-                }
-
-                type = ((MetadataType)type).MakeInstantiatedType(new Instantiation(inst.ToArray()));
-
-                rootProvider.AddCompilationRoot(type, reason);
-            }
+                return;
             
             if (type.IsDefType)
             {
                 foreach (var method in type.GetMethods())
                 {
                     if (method.HasInstantiation)
-                    {
-                        // Instantiate generic methods over something that will be useful at runtime
-                        List<TypeDesc> inst = new List<TypeDesc>();
-                        foreach (GenericParameterDesc param in method.Instantiation)
-                        {
-                            TypeDesc arg = GetTypeThatMeetsConstraints(param);
-
-                            // If we can't come up with an instantiation that meets constraints, we're done
-                            if (arg == null)
-                                break;
-
-                            inst.Add(arg);
-                        }
-
-                        if (inst.Count == method.Instantiation.Length)
-                        {
-                            RootMethod(rootProvider, method.MakeInstantiatedMethod(new Instantiation(inst.ToArray())), reason);
-                        }
-                    }
-                    else
-                    {
-                        RootMethod(rootProvider, method, reason);
-                    }
+                        continue;
+                    
+                    RootMethod(rootProvider, method, reason);
                 }
             }
-        }
-
-        private static TypeDesc GetTypeThatMeetsConstraints(GenericParameterDesc genericParam)
-        {
-            GenericConstraints constraints = genericParam.Constraints;
-            if ((constraints & GenericConstraints.NotNullableValueTypeConstraint) != 0)
-            {
-                return null;
-            }
-
-            TypeDesc result = null;
-            foreach (var c in genericParam.TypeConstraints)
-            {
-                // Can't do multiple type constraints
-                if (result != null)
-                {
-                    return null;
-                }
-
-                // Constraints in the form of T : U
-                if (c.IsSignatureVariable)
-                {
-                    return null;
-                }
-
-                // Other potentially complex constraints
-                if (c.HasInstantiation)
-                {
-                    return null;
-                }
-
-                result = c;
-            }
-
-            // If there's a new() constraint and a type constraint, make sure the
-            // type constraint meets it.
-            if (result != null &&
-                (constraints & GenericConstraints.DefaultConstructorConstraint) != 0 &&
-                result.GetDefaultConstructor() == null)
-            {
-                return null;
-            }
-
-
-            return result ?? genericParam.Context.GetWellKnownType(WellKnownType.Object);
         }
 
         private static void RootMethod(IRootingServiceProvider rootProvider, MethodDesc method, string reason)
