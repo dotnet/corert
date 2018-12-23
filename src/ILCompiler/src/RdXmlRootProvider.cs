@@ -166,7 +166,7 @@ namespace ILCompiler
                 {
                     if (method.HasInstantiation)
                         continue;
-                    
+
                     RootMethod(rootProvider, method, reason);
                 }
             }
