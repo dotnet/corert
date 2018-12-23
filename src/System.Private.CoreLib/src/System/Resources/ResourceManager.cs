@@ -23,24 +23,6 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
 
-namespace System
-{
-    // This class is used to define the name of the base class library
-    internal class CoreLib
-    {
-        public const string Name = "System.Private.CoreLib";
-
-        public static string FixupCoreLibName(string strToFixup)
-        {
-            if (!string.IsNullOrEmpty(strToFixup))
-            {
-                strToFixup = strToFixup.Replace("mscorlib", System.CoreLib.Name);
-            }
-            return strToFixup;
-        }
-    }
-}
-
 namespace System.Resources
 {
     internal static class ExtensionMethods
