@@ -689,12 +689,6 @@ namespace System.Threading
 
     public delegate void WaitOrTimerCallback(object state, bool timedOut);  // signalled or timed out
 
-    /// <summary>Represents a work item that can be executed by the ThreadPool.</summary>
-    public interface IThreadPoolWorkItem
-    {
-        void Execute();
-    }
-
     internal abstract class QueueUserWorkItemCallbackBase : IThreadPoolWorkItem
     {
 #if DEBUG
