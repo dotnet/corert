@@ -12,18 +12,14 @@ namespace System
     // type loader has special handling for it that turns it into a thin wrapper around ref T.
     [NonVersionable]
     internal
-#if !PROJECTN
+#if !PROJECTN // readonly breaks codegen contract and asserts UTC
     readonly
 #endif
     ref struct ByReference<T>
     {
         // CS0169: The private field '{blah}' is never used
 #pragma warning disable 169
-         private
-#if !PROJECTN // readonly breaks codegen contract and asserts UTC
-         readonly
-#endif
-         IntPtr _value;
+         private readonly IntPtr _value;
 #pragma warning restore
 
         [Intrinsic]
