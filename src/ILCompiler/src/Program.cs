@@ -58,6 +58,8 @@ namespace ILCompiler
         private string _singleMethodName;
         private IReadOnlyList<string> _singleMethodGenericArgs;
 
+        private bool _rootAllApplicationAssemblies;
+
         private IReadOnlyList<string> _codegenOptions = Array.Empty<string>();
 
         private IReadOnlyList<string> _rdXmlFilePaths = Array.Empty<string>();
@@ -161,6 +163,7 @@ namespace ILCompiler
                 syntax.DefineOption("usesharedgenerics", ref _useSharedGenerics, "Enable shared generics");
                 syntax.DefineOptionList("codegenopt", ref _codegenOptions, "Define a codegen option");
                 syntax.DefineOptionList("rdxml", ref _rdXmlFilePaths, "RD.XML file(s) for compilation");
+                syntax.DefineOption("rootallapplicationassemblies", ref _rootAllApplicationAssemblies, "Consider all non-framework assemblies dynamically used");
                 syntax.DefineOption("map", ref _mapFileName, "Generate a map file");
                 syntax.DefineOption("metadatalog", ref _metadataLogFileName, "Generate a metadata log file");
                 syntax.DefineOption("nometadatablocking", ref _noMetadataBlocking, "Ignore metadata blocking for internal implementation details");
@@ -427,6 +430,11 @@ namespace ILCompiler
                 foreach (var rdXmlFilePath in _rdXmlFilePaths)
                 {
                     compilationRoots.Add(new RdXmlRootProvider(typeSystemContext, rdXmlFilePath));
+                }
+
+                if (_rootAllApplicationAssemblies)
+                {
+                    compilationRoots.Add(new ApplicationAssemblyRootProvider(typeSystemContext));
                 }
             }
 
