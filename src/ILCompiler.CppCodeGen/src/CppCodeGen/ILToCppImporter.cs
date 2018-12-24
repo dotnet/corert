@@ -2993,11 +2993,9 @@ namespace Internal.IL
 
             AppendSemicolon();
 
-            string typeName = GetStackValueKindCPPTypeName(GetStackValueKind(type), type);
-
             // TODO: Write barrier as necessary
             AppendLine();
-            Append("*(" + typeName + " *)((void **)");
+            Append("*(" + _writer.GetCppSignatureTypeName(type) + " *)((void **)");
             Append(tempName);
             Append(" + 1) = ");
             Append(value);
@@ -3311,9 +3309,9 @@ namespace Internal.IL
                 if (opCode == ILOpcode.unbox_any)
                 {
                     string typeName = GetStackValueKindCPPTypeName(GetStackValueKind(type), type);
-                    Append("*(");
+                    Append("(");
                     Append(typeName);
-                    Append("*)");
+                    Append(")*");
                 }
 
                 Append("(");
