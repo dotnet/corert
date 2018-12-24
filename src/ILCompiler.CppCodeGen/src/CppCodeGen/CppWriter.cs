@@ -524,7 +524,7 @@ namespace ILCompiler.CppCodeGen
             return name;
         }
 
-        public string GetCppStaticsName(TypeDesc type, bool isGCStatic = false, bool isThreadStatic = false)
+        public string GetCppStaticsName(TypeDesc type, bool isGCStatic = false, bool isThreadStatic = false, bool dataNameNeeded = false)
         {
             string name;
             if (isThreadStatic)
@@ -541,7 +541,12 @@ namespace ILCompiler.CppCodeGen
             }
 
             string typeName = GetCppTypeName(type);
-            return typeName.Replace("::", "_") + "_" + name;
+            string res = typeName.Replace("::", "_") + "_" + name;
+
+            if (isGCStatic && !isThreadStatic && dataNameNeeded)
+                res += "__data";
+
+            return res;
         }
 
         public string GetCppStaticsTypeName(TypeDesc type, bool isGCStatic = false, bool isThreadStatic = false)
@@ -1522,11 +1527,11 @@ namespace ILCompiler.CppCodeGen
 
             Out.Write(typeDefinitions.ToString());
 
-            OutputStaticsCode(_statics);
+            OutputStaticsCode(factory, _statics);
 
-            OutputStaticsCode(_gcStatics, true);
+            OutputStaticsCode(factory, _gcStatics, true);
 
-            OutputStaticsCode(_threadStatics, true, true);
+            OutputStaticsCode(factory, _threadStatics, true, true);
 
             Out.Write(indirectionNodes.ToString());
 
@@ -2031,6 +2036,12 @@ namespace ILCompiler.CppCodeGen
                     {
                         MetadataType target = (MetadataType)node.Target;
 
+                        sb.Append(resVarName);
+                        sb.Append(" = **(void ***)");
+                        sb.Append(resVarName);
+                        sb.Append(";");
+                        sb.AppendLine();
+
                         if (_compilation.TypeSystemContext.HasLazyStaticConstructor(target))
                         {
                             string nonGcStaticsBase = "nonGcBase";
@@ -2217,7 +2228,7 @@ namespace ILCompiler.CppCodeGen
             Out.Write(sb.ToString());
         }
 
-        private void OutputStaticsCode(Dictionary<TypeDesc, CppGenerationBuffer> statics,
+        private void OutputStaticsCode(NodeFactory factory, Dictionary<TypeDesc, CppGenerationBuffer> statics,
             bool isGCStatic = false, bool isThreadStatic = false)
         {
             CppGenerationBuffer sb = new CppGenerationBuffer();
@@ -2229,6 +2240,16 @@ namespace ILCompiler.CppCodeGen
                 sb.Append("struct ");
                 sb.Append(GetCppStaticsTypeName(t, isGCStatic, isThreadStatic));
                 sb.Append(" {");
+                sb.Indent();
+                sb.AppendLine();
+
+                if (isGCStatic)
+                {
+                    // GC statics start with a pointer to the "EEType" that signals the size and GCDesc to the GC
+                    sb.Append("void * __pad;");
+                    sb.AppendLine();
+                }
+
                 sb.Append(entry.Value.ToString());
                 sb.Exdent();
                 sb.AppendLine();
@@ -2243,7 +2264,7 @@ namespace ILCompiler.CppCodeGen
 
                 sb.Append(GetCppStaticsTypeName(t, isGCStatic, isThreadStatic));
                 sb.Append(" ");
-                sb.Append(GetCppStaticsName(t, isGCStatic, isThreadStatic));
+                sb.Append(GetCppStaticsName(t, isGCStatic, isThreadStatic, isGCStatic && !isThreadStatic));
 
                 if (!isGCStatic && _compilation.TypeSystemContext.HasLazyStaticConstructor(t))
                 {
@@ -2277,6 +2298,25 @@ namespace ILCompiler.CppCodeGen
 
                 sb.Append(";");
                 sb.AppendLine();
+
+                if (isGCStatic && !isThreadStatic)
+                {
+                    sb.Append(GetCppStaticsTypeName(t, isGCStatic, isThreadStatic));
+                    sb.Append(" *");
+                    sb.Append(GetCppStaticsName(t, isGCStatic, isThreadStatic, true));
+                    sb.Append("__ptr = &");
+                    sb.Append(GetCppStaticsName(t, isGCStatic, isThreadStatic, true));
+                    sb.Append(";");
+                    sb.AppendLine();
+
+                    sb.Append(GetCppStaticsTypeName(t, isGCStatic, isThreadStatic));
+                    sb.Append(" **");
+                    sb.Append(GetCppStaticsName(t, isGCStatic, isThreadStatic));
+                    sb.Append(" = &");
+                    sb.Append(GetCppStaticsName(t, isGCStatic, isThreadStatic, true));
+                    sb.Append("__ptr;");
+                    sb.AppendLine();
+                }
             }
 
             Out.Write(sb.ToString());

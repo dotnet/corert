@@ -2655,7 +2655,7 @@ namespace Internal.IL
 
                 if (field.IsStatic)
                 {
-                    Append(_writer.GetCppStaticsName(owningType, field.HasGCStaticBase, field.IsThreadStatic));
+                    Append(_writer.GetCppStaticsName(owningType, field.HasGCStaticBase, field.IsThreadStatic, true));
                     Append(".");
                     Append(_writer.GetCppFieldName(field));
                 }
@@ -2733,7 +2733,7 @@ namespace Internal.IL
 
                 if (field.IsStatic)
                 {
-                    Append(_writer.GetCppStaticsName(owningType, field.HasGCStaticBase, field.IsThreadStatic));
+                    Append(_writer.GetCppStaticsName(owningType, field.HasGCStaticBase, field.IsThreadStatic, true));
                     Append(".");
                     Append(_writer.GetCppFieldName(field));
                 }
@@ -2800,7 +2800,7 @@ namespace Internal.IL
                 AppendLine();
                 if (field.IsStatic)
                 {
-                    Append(_writer.GetCppStaticsName(owningType, field.HasGCStaticBase, field.IsThreadStatic));
+                    Append(_writer.GetCppStaticsName(owningType, field.HasGCStaticBase, field.IsThreadStatic, true));
                     Append(".");
                     Append(_writer.GetCppFieldName(field));
                 }
