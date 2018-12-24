@@ -1657,9 +1657,116 @@ namespace Internal.IL
             throw new NotImplementedException();
         }
 
-        private void ImportBranch(ILOpcode iLOpcode, BasicBlock basicBlock1, BasicBlock basicBlock2)
+        private void ImportBranch(ILOpcode opcode, BasicBlock target, BasicBlock fallthrough)
         {
-            throw new NotImplementedException();
+            switch (opcode)
+            {
+                case ILOpcode.br:
+                case ILOpcode.br_s:
+                    ImportBasicBlock(target);
+                    break;
+                case ILOpcode.brfalse:
+                case ILOpcode.brfalse_s:
+                    {
+                        int val = PopWithValidation().AsInt32();
+                        if (val == 0)
+                        {
+                            ImportBasicBlock(target);
+                        }
+                        else
+                        {
+                            ImportBasicBlock(fallthrough);
+                        }
+                    }
+                    break;
+                case ILOpcode.brtrue:
+                case ILOpcode.brtrue_s:
+                    {
+                        int val = PopWithValidation().AsInt32();
+                        if (val != 0)
+                        {
+                            ImportBasicBlock(target);
+                        }
+                        else
+                        {
+                            ImportBasicBlock(fallthrough);
+                        }
+                    }
+                    break;
+                case ILOpcode.beq:
+                case ILOpcode.beq_s:
+                    {
+                        ImportCompareOperation(ILOpcode.ceq);
+                        ImportBranch(ILOpcode.brtrue, target, fallthrough);
+                    }
+                    break;
+                case ILOpcode.bge:
+                case ILOpcode.bge_s:
+                    {
+                        ImportCompareOperation(ILOpcode.clt);
+                        ImportBranch(ILOpcode.brfalse, target, fallthrough);
+                    }
+                    break;
+                case ILOpcode.bgt:
+                case ILOpcode.bgt_s:
+                    {
+                        ImportCompareOperation(ILOpcode.cgt);
+                        ImportBranch(ILOpcode.brtrue, target, fallthrough);
+                    }
+                    break;
+                case ILOpcode.ble:
+                case ILOpcode.ble_s:
+                    {
+                        ImportCompareOperation(ILOpcode.cgt);
+                        ImportBranch(ILOpcode.brfalse, target, fallthrough);
+                    }
+                    break;
+                case ILOpcode.blt:
+                case ILOpcode.blt_s:
+                    {
+                        ImportCompareOperation(ILOpcode.clt);
+                        ImportBranch(ILOpcode.brtrue, target, fallthrough);
+                    }
+                    break;
+                case ILOpcode.bne_un:
+                case ILOpcode.bne_un_s:
+                    {
+                        ImportCompareOperation(ILOpcode.ceq);
+                        ImportBranch(ILOpcode.brfalse, target, fallthrough);
+                    }
+                    break;
+                case ILOpcode.bge_un:
+                case ILOpcode.bge_un_s:
+                    {
+                        ImportCompareOperation(ILOpcode.clt_un);
+                        ImportBranch(ILOpcode.brfalse, target, fallthrough);
+                    }
+                    break;
+                case ILOpcode.bgt_un:
+                case ILOpcode.bgt_un_s:
+                    {
+                        ImportCompareOperation(ILOpcode.cgt_un);
+                        ImportBranch(ILOpcode.brtrue, target, fallthrough);
+                    }
+                    break;
+                case ILOpcode.ble_un:
+                case ILOpcode.ble_un_s:
+                    {
+                        ImportCompareOperation(ILOpcode.cgt_un);
+                        ImportBranch(ILOpcode.brfalse, target, fallthrough);
+                    }
+                    break;
+                case ILOpcode.blt_un:
+                case ILOpcode.blt_un_s:
+                    {
+                        ImportCompareOperation(ILOpcode.clt_un);
+                        ImportBranch(ILOpcode.brtrue, target, fallthrough);
+                    }
+                    break;
+                default:
+                    Debug.Assert(false);
+                    break;
+            }
         }
 
         private void ImportCall(ILOpcode opCode, int v)
