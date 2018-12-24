@@ -478,8 +478,8 @@ NESTED_ENTRY RhpCallFilterFunclet, _TEXT, NoHandler
         PROLOG_PUSH "{r4-r11,lr}"
         PROLOG_VPUSH {d8-d15}
 
-        ldr         r12, [r2, #OFFSETOF__REGDISPLAY__pR7]
-        ldr         r7, [r12]
+        ldr         r12, [r2, #OFFSETOF__REGDISPLAY__pR11]
+        ldr         r11, [r12]
 
         mov         r12, r1                              // r12 <- handler funclet address
         // r0 still contains the exception object
