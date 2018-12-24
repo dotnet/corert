@@ -1867,8 +1867,9 @@ namespace Internal.IL
                     {
                         if (canonMethod.RequiresInstMethodDescArg())
                         {
-                            Append("&");
+                            Append("(char*)&");
                             AppendMethodGenericDictionary(method);
+                            Append(" + sizeof(void*)");
                         }
                         else
                         {

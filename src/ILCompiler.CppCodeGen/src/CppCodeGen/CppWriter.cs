@@ -1038,8 +1038,6 @@ namespace ILCompiler.CppCodeGen
             if (node is ISymbolDefinitionNode)
             {
                 offset = (node as ISymbolDefinitionNode).Offset;
-                i = offset;
-                lastByteIndex = offset;
             }
             while (i < nodeData.Data.Length)
             {
@@ -1130,7 +1128,7 @@ namespace ILCompiler.CppCodeGen
             else
                 nodeCode.Append(" } " + mangledName.Replace("::", "_") + " = {");
 
-            nodeCode.Append(GetCodeForNodeData(nodeDataSections, relocs, nodeData.Data, node, offset, factory));
+            nodeCode.Append(GetCodeForNodeData(nodeDataSections, relocs, nodeData.Data, node, 0, factory));
 
             nodeCode.Append("};");
 
@@ -1149,7 +1147,9 @@ namespace ILCompiler.CppCodeGen
                 {
                     nodeCode.Append("return ( ");
                     nodeCode.Append(retType);
-                    nodeCode.Append(")&mt;");
+                    nodeCode.Append(")((char*)&mt + ");
+                    nodeCode.Append(offset.ToString());
+                    nodeCode.Append(");");
                 }
 
                 nodeCode.Exdent();
