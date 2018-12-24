@@ -1275,7 +1275,7 @@ namespace Internal.IL
 
         private void ImportFallthrough(BasicBlock nextBasicBlock)
         {
-            throw new NotImplementedException();
+            ImportBasicBlock(nextBasicBlock);
         }
 
         private void ImportReadOnlyPrefix()
@@ -1652,9 +1652,20 @@ namespace Internal.IL
             }
         }
 
-        private void ImportSwitchJump(int jmpBase, int[] jmpDelta, BasicBlock basicBlock)
+        private void ImportSwitchJump(int jmpBase, int[] jmpDelta, BasicBlock fallthrough)
         {
-            throw new NotImplementedException();
+            int val = PopWithValidation().AsInt32();
+            for (int i = 0; i < jmpDelta.Length; i++)
+            {
+                if (val == i)
+                {
+                    BasicBlock target = _basicBlocks[jmpBase + jmpDelta[i]];
+                    ImportBasicBlock(target);
+                }
+            }
+
+            if (fallthrough != null)
+                ImportFallthrough(fallthrough);
         }
 
         private void ImportBranch(ILOpcode opcode, BasicBlock target, BasicBlock fallthrough)
@@ -1675,7 +1686,7 @@ namespace Internal.IL
                         }
                         else
                         {
-                            ImportBasicBlock(fallthrough);
+                            ImportFallthrough(fallthrough);
                         }
                     }
                     break;
@@ -1689,7 +1700,7 @@ namespace Internal.IL
                         }
                         else
                         {
-                            ImportBasicBlock(fallthrough);
+                            ImportFallthrough(fallthrough);
                         }
                     }
                     break;
