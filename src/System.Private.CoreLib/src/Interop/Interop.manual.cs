@@ -43,9 +43,6 @@ internal partial class Interop
         [DllImport("api-ms-win-core-debug-l1-1-0.dll", EntryPoint = "IsDebuggerPresent", CharSet = CharSet.Unicode)]
         internal extern static bool IsDebuggerPresent();
 
-        [DllImport("api-ms-win-core-debug-l1-1-0.dll", EntryPoint = "OutputDebugStringW", CharSet = CharSet.Unicode)]
-        internal extern static void OutputDebugString(string lpOutputString);
-
         //
         // Wrapper for calling RaiseFailFastException
         //
