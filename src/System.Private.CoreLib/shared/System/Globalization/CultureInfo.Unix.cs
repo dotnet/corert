@@ -11,6 +11,11 @@ namespace System.Globalization
             return null; // ICU doesn't provide a user override
         }
 
+        private static bool SetGlobalDefaultCulture(CultureInfo culture)
+        {
+            return false;
+        }
+
         internal static CultureInfo GetUserDefaultCulture()
         {
             if (GlobalizationMode.Invariant)
@@ -33,7 +38,7 @@ namespace System.Globalization
 
         private static CultureInfo GetUserDefaultUICulture()
         {
-            return s_userDefaultCulture ?? InitializeUserDefaultCulture();
+            return InitializeUserDefaultCulture();
         }
     }
 }

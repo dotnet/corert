@@ -222,7 +222,6 @@
     <Compile Include="System\Enum.cs" />
     <Compile Include="System\Environment.cs" />
     <Compile Include="System\GC.cs" />
-    <Compile Include="System\Globalization\CultureInfo.cs" />
     <Compile Include="System\Helpers.cs" />
     <Compile Include="System\Math.CoreRT.cs" />
     <Compile Include="System\MathF.CoreRT.cs" />
@@ -475,9 +474,6 @@
       <Link>Interop\Windows\mincore\Interop.QueryUnbiasedInterruptTime.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)'=='true' And '$(EnableDummyGlobalizationImplementation)' != 'true'">
-    <Compile Include="System\Globalization\CultureInfo.Windows.cs" />
-  </ItemGroup>
   <ItemGroup Condition="'$(FeaturePortableThreadPool)' == 'true'">
     <Compile Include="System\Threading\ThreadPool.Portable.cs" />
     <Compile Include="System\Threading\ClrThreadPool.cs" />
@@ -502,9 +498,6 @@
     <Compile Include="System\Globalization\CalendarData.Dummy.cs" />
     <Compile Include="System\Globalization\IdnMapping.Dummy.cs" />
     <Compile Include="System\Globalization\Normalization.Dummy.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' And '$(EnableDummyGlobalizationImplementation)' != 'true'">
-    <Compile Include="System\Globalization\CultureInfo.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.Unix.cs" />
