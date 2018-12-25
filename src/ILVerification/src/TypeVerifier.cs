@@ -16,6 +16,8 @@ namespace Internal.TypeVerifier
         private readonly EcmaModule _module;
         private readonly TypeDefinitionHandle _typeDefinitionHandle;
         private readonly ILVerifyTypeSystemContext _typeSystemContext;
+        private readonly bool _displayTokensOnErrorMessage;
+
         public Action<VerifierError, object[]> ReportVerificationError
         {
             set;
@@ -27,11 +29,12 @@ namespace Internal.TypeVerifier
             ReportVerificationError(error, args);
         }
 
-        public TypeVerifier(EcmaModule module, TypeDefinitionHandle typeDefinitionHandle, ILVerifyTypeSystemContext typeSystemContext)
+        public TypeVerifier(EcmaModule module, TypeDefinitionHandle typeDefinitionHandle, ILVerifyTypeSystemContext typeSystemContext, bool displayTokensOnErrorMessage)
         {
             _module = module;
             _typeDefinitionHandle = typeDefinitionHandle;
             _typeSystemContext = typeSystemContext;
+            _displayTokensOnErrorMessage = displayTokensOnErrorMessage;
         }
 
         public void Verify()

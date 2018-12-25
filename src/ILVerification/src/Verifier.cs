@@ -23,10 +23,12 @@ namespace ILVerify
             new Lazy<ResourceManager>(() => new ResourceManager("FxResources.ILVerification.SR", typeof(Verifier).GetTypeInfo().Assembly));
 
         private ILVerifyTypeSystemContext _typeSystemContext;
+        private bool _displayTokensOnErrorMessage;
 
-        public Verifier(IResolver resolver)
+        public Verifier(IResolver resolver, bool displayTokensOnErrorMessage = false)
         {
             _typeSystemContext = new ILVerifyTypeSystemContext(resolver);
+            _displayTokensOnErrorMessage = displayTokensOnErrorMessage;
         }
 
         internal Verifier(ILVerifyTypeSystemContext context)
@@ -179,7 +181,7 @@ namespace ILVerify
 
             try
             {
-                var importer = new ILImporter(method, methodIL);
+                var importer = new ILImporter(method, methodIL, _displayTokensOnErrorMessage);
 
                 importer.ReportVerificationError = (args, code) =>
                 {
@@ -247,7 +249,7 @@ namespace ILVerify
 
             try
             {
-                TypeVerifier typeVerifier = new TypeVerifier(module, typeHandle, _typeSystemContext);
+                TypeVerifier typeVerifier = new TypeVerifier(module, typeHandle, _typeSystemContext, _displayTokensOnErrorMessage);
 
                 typeVerifier.ReportVerificationError = (code, args) =>
                 {
