@@ -1020,6 +1020,7 @@ namespace ILCompiler.CppCodeGen
             List<NodeDataSection> nodeDataSections = new List<NodeDataSection>();
             byte[] actualData = new byte[nodeData.Data.Length];
             Relocation[] relocs = nodeData.Relocs;
+            int[] relocOffsets = new int[relocs.Length];
 
             int nextRelocOffset = -1;
             int nextRelocIndex = -1;
@@ -1048,6 +1049,15 @@ namespace ILCompiler.CppCodeGen
                     int size = _compilation.TypeSystemContext.Target.PointerSize;
                     // Make sure we've gotten the correct size for the reloc
                     System.Diagnostics.Debug.Assert(reloc.RelocType == (size == 8 ? RelocType.IMAGE_REL_BASED_DIR64 : RelocType.IMAGE_REL_BASED_HIGHLOW));
+
+                    if (size == 8)
+                    {
+                        relocOffsets[nextRelocIndex] = (int)BitConverter.ToInt64(nodeData.Data, i);
+                    }
+                    else
+                    {
+                        relocOffsets[nextRelocIndex] = BitConverter.ToInt32(nodeData.Data, i);
+                    }
 
                     // Update nextRelocIndex/Offset
                     if (++nextRelocIndex < relocs.Length)
@@ -1128,7 +1138,7 @@ namespace ILCompiler.CppCodeGen
             else
                 nodeCode.Append(" } " + mangledName.Replace("::", "_") + " = {");
 
-            nodeCode.Append(GetCodeForNodeData(nodeDataSections, relocs, nodeData.Data, node, 0, factory));
+            nodeCode.Append(GetCodeForNodeData(nodeDataSections, relocs, relocOffsets, nodeData.Data, node, 0, factory));
 
             nodeCode.Append("};");
 
@@ -1160,7 +1170,7 @@ namespace ILCompiler.CppCodeGen
             return nodeCode.ToString();
         }
 
-        private String GetCodeForNodeData(List<NodeDataSection> nodeDataSections, Relocation[] relocs, byte[] byteData, DependencyNode node, int offset, NodeFactory factory)
+        private String GetCodeForNodeData(List<NodeDataSection> nodeDataSections, Relocation[] relocs, int[] relocOffsets, byte[] byteData, DependencyNode node, int offset, NodeFactory factory)
         {
             CppGenerationBuffer nodeDataDecl = new CppGenerationBuffer();
             int relocCounter = 0;
@@ -1174,7 +1184,10 @@ namespace ILCompiler.CppCodeGen
                 if (nodeDataSections[i].SectionType == NodeDataSectionType.Relocation)
                 {
                     Relocation reloc = relocs[relocCounter];
+                    nodeDataDecl.Append("(char*)(");
                     nodeDataDecl.Append(GetCodeForReloc(reloc, node, factory));
+                    nodeDataDecl.Append(") + ");
+                    nodeDataDecl.Append(relocOffsets[relocCounter].ToString());
                     nodeDataDecl.Append(",");
                     relocCounter++;
                 }
