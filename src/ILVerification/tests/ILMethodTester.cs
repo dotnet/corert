@@ -59,7 +59,7 @@ namespace ILVerification.Tests
             EcmaModule module = TestDataLoader.GetModuleForTestAssembly(testCase.ModuleName);
             var methodHandle = (MethodDefinitionHandle) MetadataTokens.EntityHandle(testCase.MetadataToken);
             var method = (EcmaMethod)module.GetMethod(methodHandle);
-            var verifier = new Verifier((ILVerifyTypeSystemContext)method.Context);
+            var verifier = new Verifier((ILVerifyTypeSystemContext)method.Context, new VerifierOptions() { IncludeMetadataTokensInErrorMessages = true });
             return verifier.Verify(module.PEReader, methodHandle);
         }
     }
