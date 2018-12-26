@@ -23,12 +23,17 @@ namespace ILVerify
             new Lazy<ResourceManager>(() => new ResourceManager("FxResources.ILVerification.SR", typeof(Verifier).GetTypeInfo().Assembly));
 
         private ILVerifyTypeSystemContext _typeSystemContext;
-        private bool _displayTokensOnErrorMessage;
+        private VerifierOptions _verifierOptions;
 
-        public Verifier(IResolver resolver, bool displayTokensOnErrorMessage = false)
+        public Verifier(IResolver resolver, VerifierOptions verifierOptions)
         {
             _typeSystemContext = new ILVerifyTypeSystemContext(resolver);
-            _displayTokensOnErrorMessage = displayTokensOnErrorMessage;
+            _verifierOptions = verifierOptions ?? GetDefaultVerifierOptions();
+        }
+
+        private VerifierOptions GetDefaultVerifierOptions()
+        {
+            return new VerifierOptions { IncludeMetadataTokensInErrorMessages = false };
         }
 
         internal Verifier(ILVerifyTypeSystemContext context)
@@ -181,7 +186,7 @@ namespace ILVerify
 
             try
             {
-                var importer = new ILImporter(method, methodIL, _displayTokensOnErrorMessage);
+                var importer = new ILImporter(method, methodIL);
 
                 importer.ReportVerificationError = (args, code) =>
                 {
@@ -249,7 +254,7 @@ namespace ILVerify
 
             try
             {
-                TypeVerifier typeVerifier = new TypeVerifier(module, typeHandle, _typeSystemContext, _displayTokensOnErrorMessage);
+                TypeVerifier typeVerifier = new TypeVerifier(module, typeHandle, _typeSystemContext, _verifierOptions);
 
                 typeVerifier.ReportVerificationError = (code, args) =>
                 {
@@ -308,5 +313,10 @@ namespace ILVerify
         {
             throw new VerifierException("No system module specified");
         }
+    }
+
+    public class VerifierOptions
+    {
+        public bool IncludeMetadataTokensInErrorMessages { get; set; }
     }
 }

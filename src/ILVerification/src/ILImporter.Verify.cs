@@ -47,7 +47,6 @@ namespace Internal.IL
 
         readonly bool _initLocals;
         readonly int _maxStack;
-        readonly bool _displayTokensOnErrorMessage;
 
         bool[] _instructionBoundaries; // For IL verification
 
@@ -148,7 +147,7 @@ namespace Internal.IL
             return stackValue;
         }
 
-        public ILImporter(MethodDesc method, MethodIL methodIL, bool displayTokensOnErrorMessage)
+        public ILImporter(MethodDesc method, MethodIL methodIL)
         {
             _typeSystemContext = method.Context;
 
@@ -201,8 +200,6 @@ namespace Internal.IL
             {
                 _exceptionRegions[i] = new ExceptionRegion() { ILRegion = ilExceptionRegions[i] };
             }
-
-            _displayTokensOnErrorMessage = displayTokensOnErrorMessage;
         }
 
         public Action<ErrorArgument[], VerifierError> ReportVerificationError
