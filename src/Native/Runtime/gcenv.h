@@ -179,20 +179,6 @@ public:
 };
 extern EEConfig* g_pConfig;
 
-#ifdef VERIFY_HEAP
-class SyncBlockCache;
-
-extern SyncBlockCache g_sSyncBlockCache;
-
-class SyncBlockCache
-{
-public:
-    static SyncBlockCache *GetSyncBlockCache() { return &g_sSyncBlockCache; }
-    void VerifySyncTableEntry() {}
-};
-
-#endif // VERIFY_HEAP
-
 EXTERN_C UInt32 _tls_index;
 inline UInt16 GetClrInstanceId()
 {
