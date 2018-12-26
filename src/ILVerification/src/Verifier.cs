@@ -38,7 +38,6 @@ namespace ILVerify
             return new VerifierOptions { IncludeMetadataTokensInErrorMessages = false };
         }
 
-
         public void SetSystemModuleName(AssemblyName name)
         {
             PEReader peReader = _typeSystemContext._resolver.Resolve(name.Name);
