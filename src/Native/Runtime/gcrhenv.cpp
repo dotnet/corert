@@ -323,7 +323,7 @@ void RedhawkGCInterface::InitAllocContext(gc_alloc_context * pAllocContext)
 // static
 void RedhawkGCInterface::ReleaseAllocContext(gc_alloc_context * pAllocContext)
 {
-    GCHeapUtilities::GetGCHeap()->FixAllocContext(pAllocContext, FALSE, NULL, NULL);
+    GCHeapUtilities::GetGCHeap()->FixAllocContext(pAllocContext, NULL, NULL);
 }
 
 // static 
@@ -331,16 +331,6 @@ void RedhawkGCInterface::WaitForGCCompletion()
 {
     GCHeapUtilities::GetGCHeap()->WaitUntilGCComplete();
 }
-
-//
-// -----------------------------------------------------------------------------------------------------------
-//
-// Trivial sync block cache. Will no doubt be replaced with a real implementation soon.
-//
-
-#ifdef VERIFY_HEAP
-SyncBlockCache g_sSyncBlockCache;
-#endif // VERIFY_HEAP
 
 //-------------------------------------------------------------------------------------------------
 // Used only by GC initialization, this initializes the EEType used to mark free entries in the GC heap. It
@@ -1526,6 +1516,10 @@ bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)
 }
 
 void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration)
+{
+}
+
+void GCToEEInterface::VerifySyncTableEntry()
 {
 }
 
