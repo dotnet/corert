@@ -34,9 +34,7 @@ namespace System.Diagnostics.Contracts
         /// This method is used internally to trigger a failure indicating to the "programmer" that he is using the interface incorrectly.
         /// It is NEVER used to indicate failure of actual contracts at runtime.
         /// </summary>
-#if FEATURE_UNTRUSTED_CALLERS
-#endif
-        static partial void AssertMustUseRewriter(ContractFailureKind kind, string contractKind)
+        static void AssertMustUseRewriter(ContractFailureKind kind, string contractKind)
         {
             //TODO: Implement CodeContract failure mechanics including enabling CCIRewrite
 
@@ -85,7 +83,7 @@ namespace System.Diagnostics.Contracts
 #if FEATURE_RELIABILITY_CONTRACTS
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
-        static partial void ReportFailure(ContractFailureKind failureKind, string userMessage, string conditionText, Exception innerException)
+        static void ReportFailure(ContractFailureKind failureKind, string userMessage, string conditionText, Exception innerException)
         {
             if (failureKind < ContractFailureKind.Precondition || failureKind > ContractFailureKind.Assume)
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, failureKind), nameof(failureKind));
@@ -274,8 +272,6 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         internal static event EventHandler<ContractFailedEventArgs> InternalContractFailed
         {
-#if FEATURE_UNTRUSTED_CALLERS
-#endif
             add
             {
                 // Eagerly prepare each event handler _marked with a reliability contract_, to 
@@ -293,8 +289,6 @@ namespace System.Runtime.CompilerServices
                     s_contractFailedEvent += value;
                 }
             }
-#if FEATURE_UNTRUSTED_CALLERS
-#endif
             remove
             {
                 lock (s_lockObject)
@@ -313,15 +307,12 @@ namespace System.Runtime.CompilerServices
         /// 2. Determine if the listeneres deem the failure as handled (then resultFailureMessage should be set to null)
         /// 3. Produce a localized resultFailureMessage used in advertising the failure subsequently.
         /// </summary>
-        /// <param name="resultFailureMessage">Should really be out (or the return value), but partial methods are not flexible enough.
         /// On exit: null if the event was handled and should not trigger a failure.
         ///          Otherwise, returns the localized failure message</param>
         [SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate")]
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         [System.Diagnostics.DebuggerNonUserCode]
-#if FEATURE_RELIABILITY_CONTRACTS
-#endif
-        static partial void RaiseContractFailedEventImplementation(ContractFailureKind failureKind, string userMessage, string conditionText, Exception innerException, ref string resultFailureMessage)
+        public static string RaiseContractFailedEvent(ContractFailureKind failureKind, string userMessage, string conditionText, Exception innerException)
         {
             if (failureKind < ContractFailureKind.Precondition || failureKind > ContractFailureKind.Assume)
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, failureKind), nameof(failureKind));
@@ -379,7 +370,7 @@ namespace System.Runtime.CompilerServices
                     returnValue = displayMessage;
                 }
             }
-            resultFailureMessage = returnValue;
+            return returnValue;
         }
 
         /// <summary>
@@ -390,9 +381,7 @@ namespace System.Runtime.CompilerServices
         [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "kind")]
         [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "innerException")]
         [System.Diagnostics.DebuggerNonUserCode]
-#if FEATURE_UNTRUSTED_CALLERS && !FEATURE_CORECLR
-#endif
-        static partial void TriggerFailureImplementation(ContractFailureKind kind, string displayMessage, string userMessage, string conditionText, Exception innerException)
+        public static void TriggerFailure(ContractFailureKind kind, string displayMessage, string userMessage, string conditionText, Exception innerException)
         {
             // If we're here, our intent is to pop up a dialog box (if we can).  For developers 
             // interacting live with a debugger, this is a good experience.  For Silverlight 
@@ -460,9 +449,6 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-#if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
-#endif
         private static string GetDisplayMessage(ContractFailureKind failureKind, string userMessage, string conditionText)
         {
             // Well-formatted English messages will take one of four forms.  A sentence ending in

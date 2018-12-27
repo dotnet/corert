@@ -208,7 +208,6 @@
     <Compile Include="System\IO\FileLoadException.CoreRT.cs" />
     <Compile Include="System\IO\Stream.CoreRT.cs" />
     <Compile Include="System\RuntimeMethodHandle.cs" />
-    <Compile Include="System\Diagnostics\Contracts\Contracts.cs" />
     <Compile Include="System\Diagnostics\Debug.CoreRT.cs" />
     <Compile Include="System\Diagnostics\Debugger.cs" />
     <Compile Include="System\Diagnostics\LowLevelDebugFuncEval.cs" />
