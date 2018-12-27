@@ -1647,9 +1647,6 @@ namespace Internal.IL
                         MethodDesc thunkMethod = delegateInfo.Thunk.Method;
                         AddMethodReference(thunkMethod);
 
-                        // Update stack with new name.
-                        ((ExpressionEntry)_stack[_stack.Top - 2]).Name = temp;
-
                         var sb = new CppGenerationBuffer();
                         AppendLine();
                         sb.Append("(intptr_t)&");
