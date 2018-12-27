@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
+using System.Threading;
 #if PLATFORM_WINDOWS
 using CpObj;
 #endif
@@ -17,6 +18,15 @@ internal static class Program
     private static unsafe int Main(string[] args)
     {
         PrintLine("Starting");
+//        Thread.Sleep(100);
+
+        int classS = new ClassWithSingleThreadStatic().GetStatic();
+        if (classS != 0)
+        {
+            PrintLine("Static should be initialised: Failed");
+        }
+        PrintLine("Static should not be shared: Ok");
+//        ThreadTest();
 
         Add(1, 2);
         int tempInt = 0;
@@ -727,6 +737,50 @@ internal static class Program
     [System.Runtime.InteropServices.DllImport("*")]
     private static extern void CallMe(int x);
 
+    private static unsafe void ThreadTest()
+    {
+
+        //        p_thread pThread;
+        ////        int attr = 0;
+        //        int arg = 0;
+        //        int join;
+        PrintLine("creating thread"); //3 = ESRCH (no thread found)
+
+        Thread t3 = new Thread(() => StartUpB());
+        PrintLine("starting thread"); //3 = ESRCH (no thread found)
+        t3.Start();
+        PrintLine("joining thread"); //3 = ESRCH (no thread found)
+        t3.Join();
+        PrintLine("thread ended"); //3 = ESRCH (no thread found)
+        //        var startFuncPtr = Marshal.GetFunctionPointerForDelegate<ThreadStartFunc>(startDelegate);
+        //        var t = pthread_create((IntPtr)(&pThread), (IntPtr)(0), System.Runtime.InteropServices.AddrofIntrinsics.AddrOf<ThreadStartFunc>(ThreadStart), (IntPtr)(&arg));
+        //        PrintString("thread created:");
+        //        PrintLine(t.ToString());
+        //        PrintString("thread pThread:");
+        //        join = pthread_join((IntPtr)(&pThread), (IntPtr)0);
+        //        PrintString("join result:");
+        //        PrintLine(join.ToString()); //3 = ESRCH (no thread found)
+    }
+
+//    [NativeCallable(CallingConvention = CallingConvention.StdCall)]
+    private static void StartUpB()
+    {
+        PrintLine("in the thread!");
+    }
+
+    //    [NativeCallable(CallingConvention = CallingConvention.StdCall)]
+    //    private static unsafe void ThreadStart(void* arg)
+    //    {
+    //        PrintLine("in the thread!"); 
+    //
+    //        for (var i = 0; i < 1000; i++)
+    //        {
+    //            PrintLine(i.ToString());
+    //        }
+    //        PrintLine("thread finished"); 
+    //    }
+
+
     [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
 }
@@ -990,6 +1044,17 @@ interface ISomeItf
 {
     int GetValue();
 }
+
+class ClassWithSingleThreadStatic
+{
+    [ThreadStatic] static int classStatic;
+
+    public int GetStatic()
+    {
+        return classStatic++; // prevent compiler unused error
+    }
+}
+
 
 namespace System.Runtime.InteropServices
 {

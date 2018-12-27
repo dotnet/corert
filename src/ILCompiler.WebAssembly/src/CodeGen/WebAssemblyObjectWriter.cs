@@ -228,6 +228,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (field.IsStatic)
             {
+                if (field.Name == "t_currentThread")
+                {
+
+                }
                 if (s_staticFieldMapping.TryGetValue(field, out LLVMValueRef existingValue))
                     return existingValue;
                 else
@@ -402,6 +406,10 @@ namespace ILCompiler.DependencyAnalysis
                         int value = BitConverter.ToInt32(currentObjectData, curOffset);
                         var nullptr = LLVM.ConstPointerNull(int8PtrType);
                         var dataVal = LLVM.ConstInt(intType, (uint)value, (LLVMBool)false);
+                        if (value == 2097152)
+                        {
+
+                        }
                         var ptrValAsInt8Ptr = LLVM.ConstGEP(nullptr, new LLVMValueRef[] { dataVal });
 
                         var ptrValue = LLVM.ConstBitCast(ptrValAsInt8Ptr, intPtrType);
@@ -803,6 +811,16 @@ namespace ILCompiler.DependencyAnalysis
 
                     // Build symbol definition map.
                     objectWriter.BuildSymbolDefinitionMap(node, nodeContents.DefinedSymbols);
+
+                    var symbolNode = node as ISymbolNode;
+                    if (symbolNode != null)
+                    {
+                        var mn = symbolNode.GetMangledName(factory.NameMangler);
+                        if (mn.IndexOf("GCStaticEEType_010") > -1)
+                        {
+
+                        }
+                    }
 
                     Relocation[] relocs = nodeContents.Relocs;
                     int nextRelocOffset = -1;
