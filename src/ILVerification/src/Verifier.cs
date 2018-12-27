@@ -32,12 +32,7 @@ namespace ILVerify
         internal Verifier(ILVerifyTypeSystemContext context, VerifierOptions verifierOptions)
         {
             _typeSystemContext = context;
-            _verifierOptions = verifierOptions ?? GetDefaultVerifierOptions();
-        }
-
-        private VerifierOptions GetDefaultVerifierOptions()
-        {
-            return new VerifierOptions();
+            _verifierOptions = verifierOptions ?? new VerifierOptions();
         }
 
         public void SetSystemModuleName(AssemblyName name)
