@@ -25,6 +25,8 @@ namespace ILVerify
         private ILVerifyTypeSystemContext _typeSystemContext;
         private VerifierOptions _verifierOptions;
 
+        public Verifier(IResolver resolver) : this(resolver, new VerifierOptions()) { }
+
         public Verifier(IResolver resolver, VerifierOptions verifierOptions) : this(new ILVerifyTypeSystemContext(resolver), verifierOptions) { }
 
         internal Verifier(ILVerifyTypeSystemContext context, VerifierOptions verifierOptions)
@@ -35,7 +37,7 @@ namespace ILVerify
 
         private VerifierOptions GetDefaultVerifierOptions()
         {
-            return new VerifierOptions { IncludeMetadataTokensInErrorMessages = false };
+            return new VerifierOptions();
         }
 
         public void SetSystemModuleName(AssemblyName name)
