@@ -2228,7 +2228,7 @@ namespace Internal.IL
             }
             else
             {
-                bool isVirtual = opCode == ILOpcode.ldvirtftn && canonMethod.IsVirtual;
+                bool isVirtual = opCode == ILOpcode.ldvirtftn && canonMethod.IsVirtual && !canonMethod.IsFinal && !canonMethod.OwningType.IsSealed();
                 var entry = new LdFtnTokenEntry(StackValueKind.NativeInt, NewTempName(), runtimeDeterminedMethod, isVirtual);
 
                 if (isVirtual)
