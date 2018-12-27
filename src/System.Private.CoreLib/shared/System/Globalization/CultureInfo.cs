@@ -29,6 +29,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
+#if ENABLE_WINRT
+using Internal.Runtime.Augments;
+#endif
 
 namespace System.Globalization
 {
@@ -45,8 +48,8 @@ namespace System.Globalization
         private bool _isReadOnly;
         private CompareInfo _compareInfo;
         private TextInfo _textInfo;
-        internal NumberFormatInfo numInfo;
-        internal DateTimeFormatInfo dateTimeInfo;
+        internal NumberFormatInfo _numInfo;
+        internal DateTimeFormatInfo _dateTimeInfo;
         private Calendar _calendar;
         //
         // The CultureData instance that we are going to read data from.
@@ -405,18 +408,28 @@ namespace System.Globalization
         {
             get
             {
-                CultureInfo ci = GetUserDefaultCultureCacheOverride();
-                if (ci != null)
+#if ENABLE_WINRT
+                WinRTInteropCallbacks callbacks = WinRTInterop.UnsafeCallbacks;
+                if (callbacks != null && callbacks.IsAppxModel())
                 {
-                    return ci;
+                    return (CultureInfo)callbacks.GetUserDefaultCulture();
                 }
+#endif
+#if FEATURE_APPX
+                if (ApplicationModel.IsUap)
+                {
+                    CultureInfo culture = GetCultureInfoForUserPreferredLanguageInAppX();
+                    if (culture != null)
+                        return culture;
+                }
+#endif
 
                 if (s_currentThreadCulture != null)
                 {
                     return s_currentThreadCulture;
                 }
 
-                ci = s_DefaultThreadCurrentCulture;
+                CultureInfo ci = s_DefaultThreadCurrentCulture;
                 if (ci != null)
                 {
                     return ci;
@@ -432,10 +445,24 @@ namespace System.Globalization
                     throw new ArgumentNullException(nameof(value));
                 }
 
-                if (SetGlobalDefaultCulture(value))
+#if ENABLE_WINRT
+                WinRTInteropCallbacks callbacks = WinRTInterop.UnsafeCallbacks;
+                if (callbacks != null && callbacks.IsAppxModel())
                 {
+                    callbacks.SetGlobalDefaultCulture(value);
                     return;
                 }
+#endif
+#if FEATURE_APPX
+                if (ApplicationModel.IsUap)
+                {
+                    if (SetCultureInfoForUserPreferredLanguageInAppX(value))
+                    {
+                        // successfully set the culture, otherwise fallback to legacy path
+                        return;
+                    }
+                }
+#endif
 
                 if (s_asyncLocalCurrentCulture == null)
                 {
@@ -449,13 +476,34 @@ namespace System.Globalization
         {
             get
             {
-                CultureInfo ci = GetUserDefaultCultureCacheOverride();
+#if ENABLE_WINRT
+                WinRTInteropCallbacks callbacks = WinRTInterop.UnsafeCallbacks;
+                if (callbacks != null && callbacks.IsAppxModel())
+                {
+                    return (CultureInfo)callbacks.GetUserDefaultCulture();
+                }
+#endif
+#if FEATURE_APPX
+                if (ApplicationModel.IsUap)
+                {
+                    CultureInfo culture = GetCultureInfoForUserPreferredLanguageInAppX();
+                    if (culture != null)
+                        return culture;
+                }
+#endif
+
+                if (s_currentThreadUICulture != null)
+                {
+                    return s_currentThreadUICulture;
+                }
+
+                CultureInfo ci = s_DefaultThreadCurrentUICulture;
                 if (ci != null)
                 {
                     return ci;
                 }
 
-                return GetCurrentUICultureNoAppX();
+                return UserDefaultUICulture;
             }
 
             set
@@ -467,10 +515,24 @@ namespace System.Globalization
 
                 CultureInfo.VerifyCultureName(value, true);
 
-                if (SetGlobalDefaultCulture(value))
+#if ENABLE_WINRT
+                WinRTInteropCallbacks callbacks = WinRTInterop.UnsafeCallbacks;
+                if (callbacks != null && callbacks.IsAppxModel())
                 {
+                    callbacks.SetGlobalDefaultCulture(value);
                     return;
                 }
+#endif
+#if FEATURE_APPX
+                if (ApplicationModel.IsUap)
+                {
+                    if (SetCultureInfoForUserPreferredLanguageInAppX(value))
+                    {
+                        // successfully set the culture, otherwise fallback to legacy path
+                        return;
+                    }
+                }
+#endif
 
                 if (s_asyncLocalCurrentUICulture == null)
                 {
@@ -482,26 +544,10 @@ namespace System.Globalization
             }
         }
 
+        // TODO: Remove
         internal static CultureInfo GetCurrentUICultureNoAppX()
         {
-            CultureInfo ci = GetUserDefaultCultureCacheOverride();
-            if (ci != null)
-            {
-                return ci;
-            }
-
-            if (s_currentThreadUICulture != null)
-            {
-                return s_currentThreadUICulture;
-            }
-
-            ci = s_DefaultThreadCurrentUICulture;
-            if (ci != null)
-            {
-                return ci;
-            }
-
-            return UserDefaultUICulture;
+            return CurrentUICulture;
         }
 
         internal static void ResetThreadCulture()
@@ -931,13 +977,13 @@ namespace System.Globalization
         {
             get
             {
-                if (numInfo == null)
+                if (_numInfo == null)
                 {
                     NumberFormatInfo temp = new NumberFormatInfo(_cultureData);
                     temp.isReadOnly = _isReadOnly;
-                    Interlocked.CompareExchange(ref numInfo, temp, null);
+                    Interlocked.CompareExchange(ref _numInfo, temp, null);
                 }
-                return (numInfo);
+                return (_numInfo);
             }
             set
             {
@@ -946,7 +992,7 @@ namespace System.Globalization
                     throw new ArgumentNullException(nameof(value), SR.ArgumentNull_Obj);
                 }
                 VerifyWritable();
-                numInfo = value;
+                _numInfo = value;
             }
         }
 
@@ -962,14 +1008,14 @@ namespace System.Globalization
         {
             get
             {
-                if (dateTimeInfo == null)
+                if (_dateTimeInfo == null)
                 {
                     // Change the calendar of DTFI to the specified calendar of this CultureInfo.
                     DateTimeFormatInfo temp = new DateTimeFormatInfo(_cultureData, this.Calendar);
                     temp._isReadOnly = _isReadOnly;
-                    Interlocked.CompareExchange(ref dateTimeInfo, temp, null);
+                    Interlocked.CompareExchange(ref _dateTimeInfo, temp, null);
                 }
-                return (dateTimeInfo);
+                return (_dateTimeInfo);
             }
 
             set
@@ -979,7 +1025,7 @@ namespace System.Globalization
                     throw new ArgumentNullException(nameof(value), SR.ArgumentNull_Obj);
                 }
                 VerifyWritable();
-                dateTimeInfo = value;
+                _dateTimeInfo = value;
             }
         }
 
@@ -1132,13 +1178,13 @@ namespace System.Globalization
             //they've already been allocated.  If this is a derived type, we'll take a more generic codepath.
             if (!_isInherited)
             {
-                if (this.dateTimeInfo != null)
+                if (_dateTimeInfo != null)
                 {
-                    ci.dateTimeInfo = (DateTimeFormatInfo)this.dateTimeInfo.Clone();
+                    ci._dateTimeInfo = (DateTimeFormatInfo)_dateTimeInfo.Clone();
                 }
-                if (this.numInfo != null)
+                if (_numInfo != null)
                 {
-                    ci.numInfo = (NumberFormatInfo)this.numInfo.Clone();
+                    ci._numInfo = (NumberFormatInfo)_numInfo.Clone();
                 }
             }
             else
@@ -1179,13 +1225,13 @@ namespace System.Globalization
                 //they've already been allocated.  If this is a derived type, we'll take a more generic codepath.
                 if (!ci._isInherited)
                 {
-                    if (ci.dateTimeInfo != null)
+                    if (ci._dateTimeInfo != null)
                     {
-                        newInfo.dateTimeInfo = DateTimeFormatInfo.ReadOnly(ci.dateTimeInfo);
+                        newInfo._dateTimeInfo = DateTimeFormatInfo.ReadOnly(ci._dateTimeInfo);
                     }
-                    if (ci.numInfo != null)
+                    if (ci._numInfo != null)
                     {
-                        newInfo.numInfo = NumberFormatInfo.ReadOnly(ci.numInfo);
+                        newInfo._numInfo = NumberFormatInfo.ReadOnly(ci._numInfo);
                     }
                 }
                 else
