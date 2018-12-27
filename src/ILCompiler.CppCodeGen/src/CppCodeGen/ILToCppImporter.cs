@@ -1351,10 +1351,41 @@ namespace Internal.IL
                         LdFtnTokenEntry ldFtnTokenEntry = (LdFtnTokenEntry)_stack.Peek();
                         delegateInfo = _compilation.GetDelegateCtor(canonDelegateType, ldFtnTokenEntry.LdToken, followVirtualDispatch: false);
                         method = delegateInfo.Constructor.Method;
+                        MethodDesc delegateTargetMethod = delegateInfo.TargetMethod;
 
                         if (delegateInfo.NeedsRuntimeLookup && !ldFtnTokenEntry.IsVirtual)
                         {
                             delegateCtorHelper = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.DelegateCtor, delegateInfo);
+                        }
+                        else if (!ldFtnTokenEntry.IsVirtual && delegateTargetMethod.OwningType.IsValueType &&
+                                 !delegateTargetMethod.Signature.IsStatic)
+                        {
+                            var sb = new CppGenerationBuffer();
+
+                            MethodDesc canonDelegateTargetMethod = delegateTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                            ISymbolNode targetNode = delegateInfo.GetTargetNode(_nodeFactory);
+                            _dependencies.Add(targetNode);
+
+                            sb.Append("(");
+
+                            if (delegateTargetMethod != canonDelegateTargetMethod)
+                            {
+                                sb.Append("((intptr_t)");
+                                sb.Append(_writer.GetCppSymbolNodeName(_nodeFactory, targetNode));
+                                sb.Append("()) + ");
+                                sb.Append(FatFunctionPointerConstants.Offset.ToString());
+                            }
+                            else
+                            {
+                                sb.Append("(intptr_t)&");
+                                sb.Append(_writer.GetCppTypeName(canonDelegateTargetMethod.OwningType));
+                                sb.Append("::");
+                                sb.Append(_writer.GetCppSymbolNodeName(_nodeFactory, targetNode));
+                            }
+
+                            sb.Append(")");
+
+                            ldFtnTokenEntry.Name = sb.ToString();
                         }
                     }
                 }
@@ -2264,19 +2295,21 @@ namespace Internal.IL
 
                     PushTemp(entry);
 
-                    bool needUnbox = canonMethod.OwningType.IsValueType && !canonMethod.Signature.IsStatic;
-
                     if (canonMethod.IsSharedByGenericInstantiations && (canonMethod.HasInstantiation || canonMethod.Signature.IsStatic))
                     {
                         if (exactContextNeedsRuntimeLookup)
                         {
-                            // Actual address will be obtained in runtime helper
-                            Append("0");
+                            Append("((intptr_t)");
+                            Append(GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.MethodEntry, runtimeDeterminedMethod));
+                            Append("(");
+                            Append(GetGenericContext());
+                            Append(")) + ");
+                            Append(FatFunctionPointerConstants.Offset.ToString());
                         }
                         else
                         {
                             Append("((intptr_t)");
-                            AppendFatFunctionPointer(runtimeDeterminedMethod, needUnbox);
+                            AppendFatFunctionPointer(runtimeDeterminedMethod);
                             Append("()) + ");
                             Append(FatFunctionPointerConstants.Offset.ToString());
                         }
@@ -2286,7 +2319,7 @@ namespace Internal.IL
                         Append("(intptr_t)&");
                         Append(_writer.GetCppTypeName(canonMethod.OwningType));
                         Append("::");
-                        AppendMethodAndAddReference(canonMethod, needUnbox);
+                        AppendMethodAndAddReference(canonMethod);
                     }
 
                     AppendSemicolon();

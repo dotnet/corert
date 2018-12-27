@@ -2125,15 +2125,12 @@ namespace ILCompiler.CppCodeGen
                         DelegateCreationInfo target = (DelegateCreationInfo)node.Target;
                         MethodDesc constructor = target.Constructor.Method;
 
-                        sb.Append("if (");
-                        sb.Append(argNames[3]);
-                        sb.Append(" == 0) {");
                         sb.Append(argNames[3]);
                         sb.Append(" = ((intptr_t)");
                         sb.Append(resVarName);
                         sb.Append(") + ");
                         sb.Append(FatFunctionPointerConstants.Offset.ToString());
-                        sb.Append(";};");
+                        sb.Append(";");
                         sb.AppendLine();
 
                         sb.Append("::");
