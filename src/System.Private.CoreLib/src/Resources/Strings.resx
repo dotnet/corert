@@ -1039,7 +1039,7 @@
     <value>Input string was either empty or contained only whitespace.</value>
   </data>
   <data name="Format_GuidHexPrefix" xml:space="preserve">
-    <value>Expected hex 0x in '{0}'.</value>
+    <value>Expected 0x prefix.</value>
   </data>
   <data name="Format_GuidInvLen" xml:space="preserve">
     <value>Guid should contain 32 digits with 4 dashes (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).</value>
