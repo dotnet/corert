@@ -307,7 +307,6 @@
     <Compile Include="System\Threading\Volatile.cs" />
     <Compile Include="System\Threading\WaitHandle.cs" />
     <Compile Include="System\Threading\WaitHandleArray.cs" />
-    <Compile Include="System\ThrowHelper.cs" />
     <Compile Include="System\Type.CoreRT.cs" />
     <Compile Include="System\Type.Internal.cs" />
     <Compile Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'=='true'" Include="System\Type.WinRt.cs" />
