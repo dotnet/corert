@@ -23,7 +23,7 @@ namespace ReadyToRun.TestHarness
         private ICollection<string> _testFolderNames;
         private List<long> _testModuleIds = new List<long>();
         private Dictionary<long, string> _testModuleIdToName = new Dictionary<long, string>();
-        private List<(string, string, bool)> _methodsJitted = new List<(string name, string moduleName, bool readyToRunRejected)>();
+        private Dictionary<string, HashSet<string>> _methodsJitted = new Dictionary<string, HashSet<string>>();
         private int _pid = -1;
 
         public ReadyToRunJittedMethods(TraceEventSession session, ICollection<string> testModuleNames, ICollection<string> testFolderNames)
@@ -46,7 +46,15 @@ namespace ReadyToRun.TestHarness
                 if (data.ProcessID == _pid && _testModuleIds.Contains(data.ModuleID) && data.IsJitted)
                 {
                     Console.WriteLine($"Method loaded {GetName(data)} - {data}");
-                    _methodsJitted.Add((GetName(data), _testModuleIdToName[data.ModuleID], ((int)data.MethodFlags & 0x40) != 0));
+                    string methodName = GetName(data);
+                    string moduleName = _testModuleIdToName[data.ModuleID];
+                    HashSet<string> modulesForMethodName;
+                    if (!_methodsJitted.TryGetValue(methodName, out modulesForMethodName))
+                    {
+                        modulesForMethodName = new HashSet<string>();
+                        _methodsJitted.Add(methodName, modulesForMethodName);
+                    }
+                    modulesForMethodName.Add(moduleName);
                 }
             };
         }
@@ -74,7 +82,7 @@ namespace ReadyToRun.TestHarness
             _pid = pid;
         }
 
-        public IEnumerable<(string MethodName, string assemblyName, bool ReadyToRunRejected)> JittedMethods => _methodsJitted;
+        public IReadOnlyDictionary<string, HashSet<string>> JittedMethods => _methodsJitted;
 
         /// <summary>
         /// Returns the number of test assemblies that were loaded by the runtime
