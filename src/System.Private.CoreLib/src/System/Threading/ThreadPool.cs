@@ -393,9 +393,16 @@ namespace System.Threading
         {
         }
 
-        public ThreadPoolWorkQueueThreadLocals EnsureCurrentThreadHasQueue() =>
-            ThreadPoolWorkQueueThreadLocals.threadLocals ??
-            (ThreadPoolWorkQueueThreadLocals.threadLocals = new ThreadPoolWorkQueueThreadLocals(this));
+        public ThreadPoolWorkQueueThreadLocals GetOrCreateThreadLocals() =>
+            ThreadPoolWorkQueueThreadLocals.threadLocals ?? CreateThreadLocals();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private ThreadPoolWorkQueueThreadLocals CreateThreadLocals()
+        {
+            Debug.Assert(ThreadPoolWorkQueueThreadLocals.threadLocals == null);
+
+            return (ThreadPoolWorkQueueThreadLocals.threadLocals = new ThreadPoolWorkQueueThreadLocals(this));
+        }
 
         internal void EnsureThreadRequested()
         {
@@ -528,7 +535,7 @@ namespace System.Threading
                 //
                 // Use operate on workQueue local to try block so it can be enregistered 
                 ThreadPoolWorkQueue workQueue = outerWorkQueue;
-                ThreadPoolWorkQueueThreadLocals tl = workQueue.EnsureCurrentThreadHasQueue();
+                ThreadPoolWorkQueueThreadLocals tl = workQueue.GetOrCreateThreadLocals();
                 Thread currentThread = tl.currentThread;
 
                 // Start on clean ExecutionContext and SynchronizationContext
@@ -698,7 +705,7 @@ namespace System.Threading
         ~QueueUserWorkItemCallbackBase()
         {
             Debug.Assert(
-                executed != 0 || Environment.HasShutdownStarted /*|| AppDomain.CurrentDomain.IsFinalizingForUnload()*/,
+                executed != 0 || Environment.HasShutdownStarted,
                 "A QueueUserWorkItemCallback was never called!");
         }
 #endif
@@ -716,7 +723,7 @@ namespace System.Threading
 
     internal sealed class QueueUserWorkItemCallback : QueueUserWorkItemCallbackBase
     {
-        private WaitCallback _callback;
+        private WaitCallback _callback; // SOS's ThreadPool command depends on this name
         private readonly object _state;
         private readonly ExecutionContext _context;
 
@@ -740,13 +747,14 @@ namespace System.Threading
         public override void Execute()
         {
             base.Execute();
+
             ExecutionContext.RunForThreadPoolUnsafe(_context, s_executionContextShim, this);
         }
     }
 
     internal sealed class QueueUserWorkItemCallback<TState> : QueueUserWorkItemCallbackBase
     {
-        private Action<TState> _callback;
+        private Action<TState> _callback; // SOS's ThreadPool command depends on this name
         private readonly TState _state;
         private readonly ExecutionContext _context;
 
@@ -762,6 +770,7 @@ namespace System.Threading
         public override void Execute()
         {
             base.Execute();
+
             Action<TState> callback = _callback;
             _callback = null;
 
@@ -771,7 +780,7 @@ namespace System.Threading
 
     internal sealed class QueueUserWorkItemCallbackDefaultContext : QueueUserWorkItemCallbackBase
     {
-        private WaitCallback _callback;
+        private WaitCallback _callback; // SOS's ThreadPool command depends on this name
         private readonly object _state;
 
         internal QueueUserWorkItemCallbackDefaultContext(WaitCallback callback, object state)
@@ -786,6 +795,7 @@ namespace System.Threading
         {
             ExecutionContext.CheckThreadPoolAndContextsAreDefault();
             base.Execute();
+
             WaitCallback callback = _callback;
             _callback = null;
 
@@ -797,7 +807,7 @@ namespace System.Threading
 
     internal sealed class QueueUserWorkItemCallbackDefaultContext<TState> : QueueUserWorkItemCallbackBase
     {
-        private Action<TState> _callback;
+        private Action<TState> _callback; // SOS's ThreadPool command depends on this name
         private readonly TState _state;
 
         internal QueueUserWorkItemCallbackDefaultContext(Action<TState> callback, TState state)
@@ -812,6 +822,7 @@ namespace System.Threading
         {
             ExecutionContext.CheckThreadPoolAndContextsAreDefault();
             base.Execute();
+
             Action<TState> callback = _callback;
             _callback = null;
 
