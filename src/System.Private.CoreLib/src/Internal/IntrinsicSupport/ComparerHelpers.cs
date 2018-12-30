@@ -13,7 +13,6 @@ using System;
 using System.Collections.Generic;
 using System.Runtime;
 
-using Internal.IntrinsicSupport;
 using Internal.Runtime.Augments;
 
 namespace Internal.IntrinsicSupport
@@ -113,112 +112,5 @@ namespace Internal.IntrinsicSupport
         {
             return new ObjectComparer<T>();
         }
-
-        // This routine emulates System.Collection.Comparer.Default.Compare(), which lives in the System.Collections.NonGenerics contract.
-        // To avoid adding a reference to that contract just for this hack, we'll replicate the implementation here.
-        internal static int CompareObjects(object x, object y)
-        {
-            if (x == y)
-                return 0;
-
-            if (x == null)
-                return -1;
-
-            if (y == null)
-                return 1;
-
-            {
-                // System.Collection.Comparer.Default.Compare() compares strings using the CurrentCulture.
-                string sx = x as string;
-                string sy = y as string;
-                if (sx != null && sy != null)
-                    return string.Compare(sx, sy, StringComparison.CurrentCulture);
-            }
-
-            IComparable ix = x as IComparable;
-            if (ix != null)
-                return ix.CompareTo(y);
-
-            IComparable iy = y as IComparable;
-            if (iy != null)
-                return -iy.CompareTo(x);
-
-            throw new ArgumentException(SR.Argument_ImplementIComparable);
-        }
     }
 }
-
-namespace System.Collections.Generic
-{ 
-    //-----------------------------------------------------------------------
-    // Implementations of EqualityComparer<T> for the various possible scenarios
-    // Because these are serializable, they must not be renamed
-    //-----------------------------------------------------------------------
-    [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public sealed class GenericComparer<T> : Comparer<T> where T : IComparable<T>
-    {
-        public sealed override int Compare(T x, T y)
-        {
-            if (x != null)
-            {
-                if (y != null)
-                    return x.CompareTo(y);
-
-                return 1;
-            }
-
-            if (y != null)
-                return -1;
-
-            return 0;
-        }
-
-        // Equals method for the comparer itself. 
-        public sealed override bool Equals(object obj) => obj != null && GetType() == obj.GetType();
-
-        public sealed override int GetHashCode() => GetType().GetHashCode();
-    }
-
-    [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public sealed class NullableComparer<T> : Comparer<Nullable<T>> where T : struct, IComparable<T>
-    {
-        public sealed override int Compare(Nullable<T> x, Nullable<T> y)
-        {
-            if (x.HasValue)
-            {
-                if (y.HasValue)
-                    return x.Value.CompareTo(y.Value);
-
-                return 1;
-            }
-
-            if (y.HasValue)
-                return -1;
-
-            return 0;
-        }
-
-        // Equals method for the comparer itself. 
-        public sealed override bool Equals(object obj) => obj != null && GetType() == obj.GetType();
-
-        public sealed override int GetHashCode() => GetType().GetHashCode();
-    }
-
-    [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public sealed class ObjectComparer<T> : Comparer<T>
-    {
-        public sealed override int Compare(T x, T y)
-        {
-            return ComparerHelpers.CompareObjects(x, y);
-        }
-
-        // Equals method for the comparer itself. 
-        public sealed override bool Equals(object obj) => obj != null && GetType() == obj.GetType();
-
-        public sealed override int GetHashCode() => GetType().GetHashCode();
-    }
-}
-
