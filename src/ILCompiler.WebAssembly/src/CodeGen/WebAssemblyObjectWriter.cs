@@ -82,7 +82,15 @@ namespace ILCompiler.DependencyAnalysis
             {
                 ThrowHelper.ThrowInvalidProgramException();
             }
+            if (symbol is TypeThreadStaticIndexNode)
+            {
 
+            }
+            var symbolIdentifier = symbol.GetMangledName(nameMangler);
+            if (symbolIdentifier.IndexOf("TypeThreadStaticIndex") > -1)
+            {
+
+            }
             string symbolAddressGlobalName = symbol.GetMangledName(nameMangler) + "___SYMBOL";
             LLVMValueRef symbolAddress;
             if (s_symbolValues.TryGetValue(symbolAddressGlobalName, out symbolAddress))
@@ -365,10 +373,12 @@ namespace ILCompiler.DependencyAnalysis
                 Node = node;
                 Data = data;
                 ObjectSymbolRefs = objectSymbolRefs;
+                ThreadStaticRegion = false;
             }
             LLVMValueRef Node;
             readonly byte[] Data;
             readonly Dictionary<int, SymbolRefData> ObjectSymbolRefs;
+            public bool ThreadStaticRegion { get; set; } 
 
             public void Fill(LLVMModuleRef module, NodeFactory nodeFactory)
             {
@@ -406,7 +416,7 @@ namespace ILCompiler.DependencyAnalysis
                         int value = BitConverter.ToInt32(currentObjectData, curOffset);
                         var nullptr = LLVM.ConstPointerNull(int8PtrType);
                         var dataVal = LLVM.ConstInt(intType, (uint)value, (LLVMBool)false);
-                        if (value == 2097152)
+                        if (ThreadStaticRegion)
                         {
 
                         }
@@ -445,7 +455,12 @@ namespace ILCompiler.DependencyAnalysis
             var arrayglobal = LLVM.AddGlobalInAddressSpace(Module, LLVM.ArrayType(intPtrType, (uint)countOfPointerSizedElements), realName, 0);
             LLVM.SetLinkage(arrayglobal, LLVMLinkage.LLVMExternalLinkage);
 
-            _dataToFill.Add(new ObjectNodeDataEmission(arrayglobal, _currentObjectData.ToArray(), _currentObjectSymbolRefs));
+            var n = new ObjectNodeDataEmission(arrayglobal, _currentObjectData.ToArray(), _currentObjectSymbolRefs);
+            _dataToFill.Add(n);
+            if (realName == "__ThreadStaticRegionStart")
+            {
+                n.ThreadStaticRegion = true;
+            }
 
             foreach (var symbolIdInfo in _symbolDefs)
             {
@@ -503,6 +518,10 @@ namespace ILCompiler.DependencyAnalysis
         
         public void EmitSymbolDef(LLVMValueRef realSymbol, string symbolIdentifier, int offsetFromSymbolName)
         {
+            if (symbolIdentifier.IndexOf("TypeThreadStaticIndex") > -1)
+            {
+
+            }
             string symbolAddressGlobalName = symbolIdentifier + "___SYMBOL";
             LLVMValueRef symbolAddress;
             var intType = LLVM.Int32Type();
@@ -521,7 +540,10 @@ namespace ILCompiler.DependencyAnalysis
         public int EmitSymbolRef(string realSymbolName, int offsetFromSymbolName, bool isFunction, RelocType relocType, int delta = 0)
         {
             int symbolStartOffset = _currentObjectData.Count;
+            if (realSymbolName.IndexOf("TypeThreadStaticIndex") > -1)
+            {
 
+            }
             // Workaround for ObjectWriter's lack of support for IMAGE_REL_BASED_RELPTR32
             // https://github.com/dotnet/corert/issues/3278
             if (relocType == RelocType.IMAGE_REL_BASED_RELPTR32)
@@ -582,6 +604,10 @@ namespace ILCompiler.DependencyAnalysis
         // Returns size of the emitted symbol reference
         public int EmitSymbolReference(ISymbolNode target, int delta, RelocType relocType)
         {
+            if (target is TypeThreadStaticIndexNode)
+            {
+
+            }
             string realSymbolName = GetBaseSymbolName(target, _nodeFactory.NameMangler, true);
 
             if (realSymbolName == null)
@@ -649,6 +675,10 @@ namespace ILCompiler.DependencyAnalysis
             {
                 foreach (var name in nodes)
                 {
+                    if (name is TypeThreadStaticIndexNode)
+                    {
+
+                    }
                     _sb.Clear();
                     AppendExternCPrefix(_sb);
                     name.AppendMangledName(_nodeFactory.NameMangler, _sb);
@@ -768,6 +798,10 @@ namespace ILCompiler.DependencyAnalysis
                 var listOfOffsets = new List<int>();
                 foreach (DependencyNode depNode in nodes)
                 {
+                    if (depNode is TypeThreadStaticIndexNode)
+                    {
+
+                    }
                     ObjectNode node = depNode as ObjectNode;
                     if (node == null)
                         continue;
@@ -784,6 +818,10 @@ namespace ILCompiler.DependencyAnalysis
 #if DEBUG
                     foreach (ISymbolNode definedSymbol in nodeContents.DefinedSymbols)
                     {
+                        if (definedSymbol is TypeThreadStaticIndexNode)
+                        {
+
+                        }
                         try
                         {
                             _previouslyWrittenNodeNames.Add(definedSymbol.GetMangledName(factory.NameMangler), definedSymbol);
@@ -816,7 +854,7 @@ namespace ILCompiler.DependencyAnalysis
                     if (symbolNode != null)
                     {
                         var mn = symbolNode.GetMangledName(factory.NameMangler);
-                        if (mn.IndexOf("GCStaticEEType_010") > -1)
+                        if (mn == "GCStaticEEType_010")
                         {
 
                         }

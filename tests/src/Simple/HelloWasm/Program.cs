@@ -20,11 +20,28 @@ internal static class Program
         PrintLine("Starting");
 //        Thread.Sleep(100);
 
-        int classS = new ClassWithSingleThreadStatic().GetStatic();
-        if (classS != 0)
+//        threadStaticInt = 1;
+        var firstClass = new ClassWithFourThreadStatics();
+        int classS = firstClass.GetStatic();
+        if (classS != 2)
         {
             PrintLine("Static should be initialised: Failed");
+            PrintLine("Was: " + classS.ToString());
         }
+        int classS2 = new ClassWithFourThreadStatics2().GetStatic();
+        if (classS2 != 2)
+        {
+            PrintLine("Second Static should be initialised: Failed");
+            PrintLine("Was: " + classS2.ToString());
+        }
+        firstClass.IncrementStatics();
+        int classS3 = new ClassWithFourThreadStatics2().GetStatic();
+        if (classS3 != 2)
+        {
+            PrintLine("Second Static 2nd call should be unchanged: Failed");
+            PrintLine("Was: " + classS3.ToString());
+        }
+
         PrintLine("Static should not be shared: Ok");
 //        ThreadTest();
 
@@ -1045,16 +1062,54 @@ interface ISomeItf
     int GetValue();
 }
 
-class ClassWithSingleThreadStatic
+class ClassWithFourThreadStatics
 {
     [ThreadStatic] static int classStatic;
+    [ThreadStatic] static int classStatic2;
+    [ThreadStatic] static int classStatic3;
+    [ThreadStatic] static int classStatic4;
+    [ThreadStatic] static int classStatic5;
 
     public int GetStatic()
     {
-        return classStatic++; // prevent compiler unused error
+        return classStatic2;
+    }
+
+    public void IncrementStatics()
+    {
+        classStatic++; 
+        classStatic2++; 
+        classStatic3++; 
+        classStatic4++;
+        classStatic5++;
     }
 }
 
+class ClassWithFourThreadStatics2
+{
+    [ThreadStatic] static int classStatic;
+    [ThreadStatic] static int classStatic2;
+    [ThreadStatic] static int classStatic3;
+    [ThreadStatic] static int classStatic4;
+    [ThreadStatic] static int classStatic5;
+
+    public int GetStatic()
+    {
+        return classStatic;
+    }
+
+    /// <summary>
+    /// stops compiler error, but never called
+    /// </summary>
+    public void IncrementStatics()
+    {
+        classStatic++;
+        classStatic2++;
+        classStatic3++;
+        classStatic4++;
+        classStatic5++;
+    }
+}
 
 namespace System.Runtime.InteropServices
 {

@@ -59,5 +59,7 @@ namespace ILCompiler.DependencyAnalysis
             // TODO: this is wrong: this returns an assembly stub node
             return new ReadyToRunHelperNode(this, helperCall.HelperId, helperCall.Target);
         }
+
+        public TypeManagerIndirectionNode TypeManagerIndirectionx => TypeManagerIndirection;
     }
 }
