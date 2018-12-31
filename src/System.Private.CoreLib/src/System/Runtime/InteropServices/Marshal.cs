@@ -27,6 +27,11 @@ namespace System.Runtime.InteropServices
             return PInvokeMarshal.GetLastWin32Error();
         }
 
+        internal static void SetLastWin32Error(int errorCode)
+        {
+            PInvokeMarshal.SetLastWin32Error(errorCode);
+        }
+
         public static int GetHRForLastWin32Error()
         {
             return PInvokeMarshal.GetHRForLastWin32Error();
