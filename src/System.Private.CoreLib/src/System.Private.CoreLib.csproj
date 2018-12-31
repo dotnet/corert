@@ -244,7 +244,6 @@
     <Compile Include="System\Runtime\CompilerServices\NetNativeToolsVersionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\FakeElementAttribute.cs" />
     <Compile Include="System\Runtime\ExceptionIDs.cs" />
-    <Compile Include="System\Runtime\ExceptionServices\ExceptionDispatchInfo.cs" />
     <Compile Include="System\Runtime\GcSettings.cs" />
     <Compile Include="System\Runtime\TypeLoaderExports.cs" />
     <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />
