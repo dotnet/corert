@@ -99,7 +99,11 @@ namespace Internal.Runtime.Augments
 
         internal static void ShutdownCore()
         {
-            // Here we'll handle AppDomain.ProcessExit, shut down threading etc.
+            // TODO: shut down threading etc.
+
+#if !WASM // WASMTODO
+            AppContext.OnProcessExit();
+#endif
         }
 
         private static int s_latchedExitCode;
