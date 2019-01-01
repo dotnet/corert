@@ -37,6 +37,11 @@ namespace System.Runtime.Loader
 
         public void SetProfileOptimizationRoot(string directoryPath) { }
         public void StartProfileOptimization(string profile) { }
+
+        internal static void OnProcessExit()
+        {
+            Default.Unloading?.Invoke(Default);
+        }
     }
 
     /// <summary>
