@@ -795,9 +795,6 @@
   <data name="ArgumentNull_Key" xml:space="preserve">
     <value>Key cannot be null.</value>
   </data>
-  <data name="ArgumentNull_Obj" xml:space="preserve">
-    <value>Object cannot be null.</value>
-  </data>
   <data name="ArgumentNull_String" xml:space="preserve">
     <value>String reference not set to an instance of a String.</value>
   </data>
