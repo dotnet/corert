@@ -110,7 +110,7 @@ namespace Internal.TypeVerifier
         {
             if (_verifierOptions.IncludeMetadataTokensInErrorMessages)
             {
-                return $"{type.ToString()}(0x{_module.MetadataReader.GetToken(type.Handle)})";
+                return $"{type}(0x{_module.MetadataReader.GetToken(type.Handle)})";
             }
             else
             { 
@@ -122,7 +122,7 @@ namespace Internal.TypeVerifier
         {
             if (_verifierOptions.IncludeMetadataTokensInErrorMessages)
             {
-                return $"{defType.ToString()}(0x{_module.MetadataReader.GetToken(interfaceImplementationHandle)})";
+                return $"{defType}(0x{_module.MetadataReader.GetToken(interfaceImplementationHandle)})";
             }
             else
             {
@@ -134,7 +134,7 @@ namespace Internal.TypeVerifier
         {
             if (_verifierOptions.IncludeMetadataTokensInErrorMessages)
             {
-                return $"{methodDesc.ToString()}(0x{_module.MetadataReader.GetToken(methodDesc.IsTypicalMethodDefinition ? ((EcmaMethod)methodDesc).Handle : ((EcmaMethod)methodDesc.GetTypicalMethodDefinition()).Handle)})";
+                return $"{methodDesc}(0x{_module.MetadataReader.GetToken(methodDesc.IsTypicalMethodDefinition ? ((EcmaMethod)methodDesc).Handle : ((EcmaMethod)methodDesc.GetTypicalMethodDefinition()).Handle)})";
             }
             else
             {
