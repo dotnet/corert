@@ -483,18 +483,6 @@
     <Compile Include="System\Threading\ClrThreadPool.CpuUtilizationReader.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
     <Compile Include="System\Threading\ClrThreadPool.CpuUtilizationReader.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
   </ItemGroup>
-  <!-- Dummy globalization implementation -->
-  <ItemGroup Condition="'$(EnableDummyGlobalizationImplementation)' == 'true'">
-    <Compile Include="System\Globalization\HijriCalendar.Dummy.cs" />
-    <Compile Include="System\Globalization\JapaneseCalendar.Dummy.cs" />
-    <Compile Include="System\Globalization\CultureInfo.Dummy.cs" />
-    <Compile Include="System\Globalization\CompareInfo.Dummy.cs" />
-    <Compile Include="System\Globalization\CultureData.Dummy.cs" />
-    <Compile Include="System\Globalization\TextInfo.Dummy.cs" />
-    <Compile Include="System\Globalization\CalendarData.Dummy.cs" />
-    <Compile Include="System\Globalization\IdnMapping.Dummy.cs" />
-    <Compile Include="System\Globalization\Normalization.Dummy.cs" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.Unix.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeWaitHandle.Unix.cs" />
