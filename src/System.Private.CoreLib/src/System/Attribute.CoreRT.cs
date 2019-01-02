@@ -2,24 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
-
 namespace System
 {
-    [AttributeUsageAttribute(AttributeTargets.All, Inherited = true, AllowMultiple = false)]
-    [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public abstract partial class Attribute
     {
-        protected Attribute() { }
-
-        //
-        // Compat note: .NET Core changed the behavior of Equals() relative to the full framework:
-        //
-        //    (https://github.com/dotnet/coreclr/pull/6240)
-        //
-        // This implementation implements the .NET Core behavior.
-        //
         public override bool Equals(object obj)
         {
             if (obj == null)
@@ -33,7 +19,6 @@ namespace System
 
             for (int i = 0; i < thisFieldValues.Length; i++)
             {
-                // Visibility check and consistency check are not necessary.
                 object thisResult = thisFieldValues[i];
                 object thatResult = thatfieldValues[i];
 
@@ -41,55 +26,6 @@ namespace System
                 {
                     return false;
                 }
-            }
-
-            return true;
-        }
-
-        // Compares values of custom-attribute fields.    
-        private static bool AreFieldValuesEqual(object thisValue, object thatValue)
-        {
-            if (thisValue == null && thatValue == null)
-                return true;
-            if (thisValue == null || thatValue == null)
-                return false;
-
-            Type thisValueType = thisValue.GetType();
-
-            if (thisValueType.IsArray)
-            {
-                // Ensure both are arrays of the same type.
-                if (!thisValueType.Equals(thatValue.GetType()))
-                {
-                    return false;
-                }
-
-                Array thisValueArray = thisValue as Array;
-                Array thatValueArray = thatValue as Array;
-                if (thisValueArray.Length != thatValueArray.Length)
-                {
-                    return false;
-                }
-
-                // Attributes can only contain single-dimension arrays, so we don't need to worry about 
-                // multidimensional arrays.
-                Debug.Assert(thisValueArray.Rank == 1 && thatValueArray.Rank == 1);
-                for (int j = 0; j < thisValueArray.Length; j++)
-                {
-                    if (!AreFieldValuesEqual(thisValueArray.GetValue(j), thatValueArray.GetValue(j)))
-                    {
-                        return false;
-                    }
-                }
-            }
-            else
-            {
-                // An object of type Attribute will cause a stack overflow. 
-                // However, this should never happen because custom attributes cannot contain values other than
-                // constants, single-dimensional arrays and typeof expressions.
-                Debug.Assert(!(thisValue is Attribute));
-                if (!thisValue.Equals(thatValue))
-                    return false;
             }
 
             return true;
@@ -122,12 +58,6 @@ namespace System
 
             return type.GetHashCode();
         }
-
-        public virtual object TypeId => GetType();
-
-        public virtual bool Match(object obj) => Equals(obj);
-
-        public virtual bool IsDefaultAttribute() => false;
 
         //
         // This non-contract method is known to the IL transformer. See comments around _ILT_ReadFields() for more detail.

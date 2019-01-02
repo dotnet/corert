@@ -269,7 +269,7 @@
     <Compile Include="System\RuntimeExceptionHelpers.cs" />
     <Compile Include="System\EETypePtr.cs" />
     <Compile Include="System\Runtime\RuntimeImports.cs" />
-    <Compile Include="System\Attribute.cs" />
+    <Compile Include="System\Attribute.CoreRT.cs" />
     <Compile Include="System\ModuleHandle.cs" />
     <Compile Include="System\RuntimeFieldHandle.cs" />
     <Compile Include="System\Runtime\CompilerServices\AsyncMethodBuilder.cs" />
