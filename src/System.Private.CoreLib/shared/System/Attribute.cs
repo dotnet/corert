@@ -14,13 +14,7 @@ namespace System
     {
         protected Attribute() { }
 
-        //
-        // Compat note: .NET Core changed the behavior of Equals() relative to the full framework:
-        //
-        //    (https://github.com/dotnet/coreclr/pull/6240)
-        //
-        // This implementation implements the .NET Core behavior.
-        //
+#if !CORERT
         public override bool Equals(object obj)
         {
             if (obj == null)
@@ -29,12 +23,6 @@ namespace System
             if (this.GetType() != obj.GetType())
                 return false;
 
-            return FieldsEquality(obj);
-        }
-
-#if !CORERT
-        private bool FieldsEquality(object obj)
-        {
             Type thisType = this.GetType();
             object thisObj = this;
             object thisResult, thatResult;
@@ -45,9 +33,8 @@ namespace System
 
                 for (int i = 0; i < thisFields.Length; i++)
                 {
-                    // Visibility check and consistency check are not necessary.
-                    thisResult = ((RtFieldInfo)thisFields[i]).UnsafeGetValue(thisObj);
-                    thatResult = ((RtFieldInfo)thisFields[i]).UnsafeGetValue(obj);
+                    thisResult = thisFields[i].GetValue(thisObj);
+                    thatResult = thisFields[i].GetValue(obj);
 
                     if (!AreFieldValuesEqual(thisResult, thatResult))
                     {
@@ -71,8 +58,7 @@ namespace System
 
                 for (int i = 0; i < fields.Length; i++)
                 {
-                    // Visibility check and consistency check are not necessary.
-                    object fieldValue = ((RtFieldInfo)fields[i]).UnsafeGetValue(this);
+                    object fieldValue = fields[i].GetValue(this);
 
                     // The hashcode of an array ignores the contents of the array, so it can produce 
                     // different hashcodes for arrays with the same contents.

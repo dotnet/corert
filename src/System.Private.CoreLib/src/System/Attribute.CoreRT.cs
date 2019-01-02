@@ -6,14 +6,19 @@ namespace System
 {
     public abstract partial class Attribute
     {
-        private bool FieldsEquality(object obj)
+        public override bool Equals(object obj)
         {
+            if (obj == null)
+                return false;
+
+            if (this.GetType() != obj.GetType())
+                return false;
+
             object[] thisFieldValues = this.ReadFields();
             object[] thatfieldValues = ((Attribute)obj).ReadFields();
 
             for (int i = 0; i < thisFieldValues.Length; i++)
             {
-                // Visibility check and consistency check are not necessary.
                 object thisResult = thisFieldValues[i];
                 object thatResult = thatfieldValues[i];
 
