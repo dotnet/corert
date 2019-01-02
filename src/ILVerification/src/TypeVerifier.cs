@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using ILVerify;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -84,7 +85,7 @@ namespace Internal.TypeVerifier
                 }
                 else
                 {
-                    VerificationError(VerifierError.InterfaceImplHasDuplicate, Format(type), Format(interfaceType));
+                    VerificationError(VerifierError.InterfaceImplHasDuplicate, Format(type), Format(imo.DefType, imo.InterfaceImplementationHandle));
                 }
             }
 
@@ -98,30 +99,47 @@ namespace Internal.TypeVerifier
                         MethodDesc resolvedMethod = type.ResolveInterfaceMethodTarget(method);
                         if (resolvedMethod is null)
                         {
-                            VerificationError(VerifierError.InterfaceMethodNotImplemented, Format(type), Format(implementedInterface.DefType), Format(method));
+                            VerificationError(VerifierError.InterfaceMethodNotImplemented, Format(type), Format(implementedInterface.DefType, implementedInterface.InterfaceImplementationHandle), Format(method));
                         }
                     }
                 }
             }
         }
 
-        // Format helpers for future use
-        // The idea is to improve formatting string with tokens value i.e.: 
-        // [Assembly]Class(0x1234) vs current [Assembly]Class
-        // in case somebody will pass '--tokens' switch to ILVerify
         private string Format(EcmaType type)
         {
-            return type.ToString();
+            if (_verifierOptions.IncludeMetadataTokensInErrorMessages)
+            {
+                return $"{type.ToString()}(0x{_module.MetadataReader.GetToken(type.Handle)})";
+            }
+            else
+            { 
+                return type.ToString();
+            }
         }
 
-        private string Format(DefType interfaceTypeDef)
+        private string Format(DefType defType, InterfaceImplementationHandle interfaceImplementationHandle)
         {
-            return interfaceTypeDef.ToString();
+            if (_verifierOptions.IncludeMetadataTokensInErrorMessages)
+            {
+                return $"{defType.ToString()}(0x{_module.MetadataReader.GetToken(interfaceImplementationHandle)})";
+            }
+            else
+            {
+                return defType.ToString();
+            }
         }
 
         private string Format(MethodDesc methodDesc)
         {
-            return methodDesc.ToString();
+            if (_verifierOptions.IncludeMetadataTokensInErrorMessages)
+            {
+                return $"{methodDesc.ToString()}(0x{_module.MetadataReader.GetToken(methodDesc.IsTypicalMethodDefinition ? ((EcmaMethod)methodDesc).Handle : ((EcmaMethod)methodDesc.GetTypicalMethodDefinition()).Handle)})";
+            }
+            else
+            {
+                return methodDesc.ToString();
+            }
         }
 
         private class InterfaceMetadataObjects : IEquatable<InterfaceMetadataObjects>
