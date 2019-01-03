@@ -131,8 +131,6 @@ namespace Internal.Runtime.Augments
         {
             Debug.Assert(this == RuntimeThread.CurrentThread);
 
-            CultureInfo.ResetThreadCulture();
-
             if (_name != null)
             {
                 _name = null;
