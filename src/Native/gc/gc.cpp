@@ -18034,6 +18034,11 @@ void gc_heap::mark_object_simple1 (uint8_t* oo, uint8_t* start THREAD_NUMBER_DCL
                             *mark_stack_tos = oo;
                         }
                     }
+
+                    if (!contain_pointers (oo))
+                    {
+                        goto next_level;
+                    }
                 }
 #endif //COLLECTIBLE_CLASS
 
@@ -18641,6 +18646,11 @@ void gc_heap::background_mark_simple1 (uint8_t* oo THREAD_NUMBER_DCL)
                             *(background_mark_stack_tos++) = class_obj;
                         }
                     }
+
+                    if (!contain_pointers (oo))
+                    {
+                        goto next_level;
+                    }                    
                 }
 #endif //COLLECTIBLE_CLASS
 
@@ -18725,6 +18735,9 @@ void gc_heap::background_mark_simple1 (uint8_t* oo THREAD_NUMBER_DCL)
         }
 #endif //SORT_MARK_STACK
 
+#ifdef COLLECTIBLE_CLASS
+next_level:
+#endif // COLLECTIBLE_CLASS
         allow_fgc();
 
         if (!(background_mark_stack_tos == background_mark_stack_array))
