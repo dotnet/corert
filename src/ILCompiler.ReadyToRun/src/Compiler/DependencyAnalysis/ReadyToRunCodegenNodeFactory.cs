@@ -115,11 +115,6 @@ namespace ILCompiler.DependencyAnalysis
                 constrainedType = null;
             }
 
-            if (MethodRequiresRuntimeJIT(targetMethod))
-            {
-                throw new RequiresRuntimeJitException(targetMethod);
-            }
-
             if (!CompilationModuleGroup.ContainsMethodBody(targetMethod, false))
             {
                 return ImportedMethodNode(constrainedType != null ? originalMethod : targetMethod, constrainedType, methodToken, signatureContext, isUnboxingStub);
@@ -170,20 +165,6 @@ namespace ILCompiler.DependencyAnalysis
         protected override ISymbolNode CreateReadyToRunHelperNode(ReadyToRunHelperKey helperCall)
         {
             throw new NotImplementedException();
-        }
-
-        private bool MethodRequiresRuntimeJIT(MethodDesc method)
-        {
-            if (method.IsInternalCall &&
-                method.Name == "GetTypeFromHandle" &&
-                method.OwningType is DefType owningDefType &&
-                owningDefType.Name == "Type" &&
-                owningDefType.Namespace == "System")
-            {
-                return true;
-            }
-
-            return false;
         }
 
         private ModuleToken GetTypeToken(ModuleToken token)
