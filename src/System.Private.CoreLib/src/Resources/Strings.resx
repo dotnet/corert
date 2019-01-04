@@ -357,6 +357,9 @@
   <data name="Arg_NeedAtLeast1Rank" xml:space="preserve">
     <value>Must provide at least one rank.</value>
   </data>
+  <data name="Arg_Need1DArray" xml:space="preserve">
+    <value>Array was not a one-dimensional array.</value>
+  </data>
   <data name="Arg_Need2DArray" xml:space="preserve">
     <value>Array was not a two-dimensional array.</value>
   </data>
@@ -475,10 +478,13 @@
     <value>Absolute path information is required.</value>
   </data>
   <data name="Argument_AddingDuplicate" xml:space="preserve">
-    <value>An item with the same key has already been added. Key: {0}</value>
+    <value>An item with the same key has already been added.</value>
   </data>
   <data name="Argument_AddingDuplicate__" xml:space="preserve">
     <value>Item has already been added. Key in dictionary: '{0}'  Key being added: '{1}'</value>
+  </data>
+  <data name="Argument_AddingDuplicateWithKey" xml:space="preserve">
+    <value>An item with the same key has already been added. Key: {0}</value>
   </data>
   <data name="Argument_AdjustmentRulesNoNulls" xml:space="preserve">
     <value>The AdjustmentRule array cannot contain null elements.</value>
@@ -2043,6 +2049,9 @@
   </data>
   <data name="ArgumentNull_Path" xml:space="preserve">
     <value>Path cannot be null.</value>
+  </data>
+  <data name="ArgumentNull_SafeHandle" xml:space="preserve">
+    <value>SafeHandle cannot be null.</value>
   </data>
   <data name="Argument_EmptyPath" xml:space="preserve">
     <value>Empty path name is not legal.</value>
