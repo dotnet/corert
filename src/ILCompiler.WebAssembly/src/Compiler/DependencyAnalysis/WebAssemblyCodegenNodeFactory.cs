@@ -60,6 +60,7 @@ namespace ILCompiler.DependencyAnalysis
             return new ReadyToRunHelperNode(this, helperCall.HelperId, helperCall.Target);
         }
 
-        public TypeManagerIndirectionNode TypeManagerIndirectionx => TypeManagerIndirection;
+        // Want this not protected/internal so it can be used to get ThreadStatic base address
+        public new TypeManagerIndirectionNode TypeManagerIndirection => base.TypeManagerIndirection;
     }
 }
