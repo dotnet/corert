@@ -2899,7 +2899,6 @@ namespace Internal.IL
                         // TODO: We need the right thread static per thread
                         ExpressionEntry returnExp;
                         node = TriggerCctorWithThreadStaticStorage(owningType, out returnExp);
-//                        node = _compilation.NodeFactory.TypeThreadStaticsSymbol(owningType);
                         staticBase = returnExp.ValueAsType(returnExp.Type, _builder);
                     }
                     else if (field.HasGCStaticBase)
@@ -2948,10 +2947,6 @@ namespace Internal.IL
         {
             if (_compilation.TypeSystemContext.HasLazyStaticConstructor(type))
             {
-                if (type.Name == "ClassWithFourThreadStatics")
-                {
-
-                }
                 ISymbolNode classConstructionContextSymbol = _compilation.NodeFactory.TypeNonGCStaticsSymbol(type);
                 _dependencies.Add(classConstructionContextSymbol);
                 LLVMValueRef firstNonGcStatic = LoadAddressOfSymbolNode(classConstructionContextSymbol);
@@ -2971,10 +2966,6 @@ namespace Internal.IL
         /// </summary>
         private ISymbolNode TriggerCctorWithThreadStaticStorage(MetadataType type, out ExpressionEntry returnExp)
         {
-            if (type.Name == "ClassWithFourThreadStatics")
-            {
-
-            }
             if (_compilation.TypeSystemContext.HasLazyStaticConstructor(type))
             {
                 ISymbolNode classConstructionContextSymbol = _compilation.NodeFactory.TypeNonGCStaticsSymbol(type);
