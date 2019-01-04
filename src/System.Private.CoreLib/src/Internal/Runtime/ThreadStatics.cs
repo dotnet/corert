@@ -21,18 +21,14 @@ namespace Internal.Runtime
         /// </summary>
         internal static unsafe object GetThreadStaticBaseForType(TypeManagerSlot* pModuleData, int typeTlsIndex)
         {
-            ClassConstructorRunner.PrintLine("GetThreadStaticBaseForType");
-
             // Get the array that holds thread static memory blocks for each type in the given module
             object[] storage = RuntimeImports.RhGetThreadStaticStorageForModule(pModuleData->ModuleIndex);
 
-            ClassConstructorRunner.PrintLine("got storage");
             // Check whether thread static storage has already been allocated for this module and type.
             if ((storage != null) && ((uint)typeTlsIndex < (uint)storage.Length) && (storage[typeTlsIndex] != null))
             {
                 return storage[typeTlsIndex];
             }
-            ClassConstructorRunner.PrintLine("calling slow");
 
             return GetThreadStaticBaseForTypeSlow(pModuleData, typeTlsIndex);
         }

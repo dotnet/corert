@@ -52,13 +52,7 @@ namespace System.Runtime.CompilerServices
 
         private unsafe static object CheckStaticClassConstructionReturnThreadStaticBase(TypeManagerSlot* pModuleData, int typeTlsIndex, StaticClassConstructionContext* context)
         {
-            IntPtr pfnCctor = context->cctorMethodAddress;
-            NoisyLog("CheckStaticClassConstructionReturnThreadStaticBase, cctor={0}, context={1}", pfnCctor, (int)(IntPtr)context);
-            NoisyLog("CheckStaticClassConstructionReturnThreadStaticBase, context={0}, context={1}", (IntPtr)context, (int)(IntPtr)context);
-            NoisyLog("CheckStaticClassConstructionReturnThreadStaticBase, pModuleData={0}, pModuleData={1}", (IntPtr)pModuleData, (int)(IntPtr)pModuleData);
-
             object threadStaticBase = ThreadStatics.GetThreadStaticBaseForType(pModuleData, typeTlsIndex);
-            NoisyLog("CheckStaticClassConstructionReturnThreadStaticBase, got base", pfnCctor, 0);
             EnsureClassConstructorRun(context);
             return threadStaticBase;
         }
@@ -67,13 +61,13 @@ namespace System.Runtime.CompilerServices
         public static unsafe void EnsureClassConstructorRun(StaticClassConstructionContext* pContext)
         {
             IntPtr pfnCctor = pContext->cctorMethodAddress;
-            NoisyLog("EnsureClassConstructorRun, cctor={0}, thread={1}", pfnCctor, 0);
+            NoisyLog("EnsureClassConstructorRun, cctor={0}, thread={1}", pfnCctor, CurrentManagedThreadId);
 
             // If we were called from MRT, this check is redundant but harmless. This is in case someone within classlib
             // (cough, Reflection) needs to call this explicitly.
             if (pContext->initialized == 1)
             {
-                NoisyLog("Cctor already run, cctor={0}, thread={1}", pfnCctor, 0);
+                NoisyLog("Cctor already run, cctor={0}, thread={1}", pfnCctor, CurrentManagedThreadId);
                 return;
             }
 
@@ -139,7 +133,7 @@ namespace System.Runtime.CompilerServices
             {
                 Cctor.Release(cctor);
             }
-            NoisyLog("EnsureClassConstructorRun complete, cctor={0}, thread={1}", pfnCctor, 0);
+            NoisyLog("EnsureClassConstructorRun complete, cctor={0}, thread={1}", pfnCctor, CurrentManagedThreadId);
         }
 
         //=========================================================================================================
@@ -505,46 +499,13 @@ namespace System.Runtime.CompilerServices
             s_cctorGlobalLock = new Lock();
         }
 
-
-        [DllImport("*")]
-        private static unsafe extern int printf(byte* str, byte* unused);
-        public struct TwoByteStr
-        {
-            public byte first;
-            public byte second;
-        }
-
-        private static unsafe void PrintString(string s)
-        {
-            int length = s.Length;
-            fixed (char* curChar = s)
-            {
-                for (int i = 0; i < length; i++)
-                {
-                    TwoByteStr curCharStr = new TwoByteStr();
-                    curCharStr.first = (byte)(*(curChar + i));
-                    printf((byte*)&curCharStr, null);
-                }
-            }
-        }
-
-        public static void PrintLine(string s)
-        {
-            PrintString(s);
-            PrintString("\n");
-        }
-
         [Conditional("ENABLE_NOISY_CCTOR_LOG")]
         private static void NoisyLog(string format, IntPtr cctorMethod, int threadId)
         {
             // We cannot utilize any of the typical number formatting code because it triggers globalization code to run 
             // and this cctor code is layered below globalization.
-            PrintLine("NoisyLog");
-            PrintLine(format);
-            PrintLine(ToHexString(cctorMethod));
-            PrintLine(ToHexString(threadId));
 #if DEBUG
-//            Debug.WriteLine(format, ToHexString(cctorMethod), ToHexString(threadId));
+            Debug.WriteLine(format, ToHexString(cctorMethod), ToHexString(threadId));
 #endif // DEBUG
         }
 
