@@ -18,31 +18,7 @@ internal static class Program
     private static unsafe int Main(string[] args)
     {
         PrintLine("Starting");
-//        Thread.Sleep(100);
 
-//        threadStaticInt = 1;
-        var firstClass = new ClassWithFourThreadStatics();
-        int classS = firstClass.GetStatic();
-        if (classS != 2)
-        {
-            PrintLine("Static should be initialised: Failed");
-            PrintLine("Was: " + classS.ToString());
-        }
-        int classS2 = new ClassWithFourThreadStatics2().GetStatic();
-        if (classS2 != 2)
-        {
-            PrintLine("Second Static should be initialised: Failed");
-            PrintLine("Was: " + classS2.ToString());
-        }
-        firstClass.IncrementStatics();
-        int classS3 = new ClassWithFourThreadStatics2().GetStatic();
-        if (classS3 != 2)
-        {
-            PrintLine("Second Static 2nd call should be unchanged: Failed");
-            PrintLine("Was: " + classS3.ToString());
-        }
-
-        PrintLine("Static should not be shared: Ok");
 //        ThreadTest();
 
         Add(1, 2);
@@ -342,6 +318,8 @@ internal static class Program
         }
 
         TestNativeCallback();
+
+        TestThreadStaticsForSingleThread();
 
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
@@ -829,6 +807,70 @@ internal static class Program
     [System.Runtime.InteropServices.DllImport("*")]
     private static extern void CallMe(int x);
 
+    private static void TestThreadStaticsForSingleThread()
+    {
+        var firstClass = new ClassWithFourThreadStatics();
+        int firstClassStatic = firstClass.GetStatic();
+        PrintString("Static should be initialised: ");
+        if (firstClassStatic == 2)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+            PrintLine("Was: " + firstClassStatic.ToString());
+        }
+        PrintString("Second class with same statics should be initialised: ");
+        int secondClassStatic = new AnotherClassWithFourThreadStatics().GetStatic();
+        if (secondClassStatic == 13)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+            PrintLine("Was: " + secondClassStatic.ToString());
+        }
+
+        PrintString("First class increment statics: ");
+        firstClass.IncrementStatics();
+        firstClassStatic = firstClass.GetStatic();
+        if (firstClassStatic == 3)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+            PrintLine("Was: " + firstClassStatic.ToString());
+        }
+
+        PrintString("Second class should not be overwritten: "); // catches a type of bug where beacuse the 2 types share the same number and types of ThreadStatics, the first class can end up overwriting the second
+        secondClassStatic = new AnotherClassWithFourThreadStatics().GetStatic();
+        if (secondClassStatic == 13)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+            PrintLine("Was: " + secondClassStatic.ToString());
+        }
+
+        PrintString("First class 2nd instance should share static: ");
+        int secondInstanceOfFirstClassStatic = new ClassWithFourThreadStatics().GetStatic();
+        if (secondInstanceOfFirstClassStatic == 3)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+            PrintLine("Was: " + secondInstanceOfFirstClassStatic.ToString());
+        }
+    }
+
     private static unsafe void ThreadTest()
     {
 
@@ -1140,7 +1182,7 @@ interface ISomeItf
 class ClassWithFourThreadStatics
 {
     [ThreadStatic] static int classStatic;
-    [ThreadStatic] static int classStatic2;
+    [ThreadStatic] static int classStatic2 = 2;
     [ThreadStatic] static int classStatic3;
     [ThreadStatic] static int classStatic4;
     [ThreadStatic] static int classStatic5;
@@ -1160,9 +1202,9 @@ class ClassWithFourThreadStatics
     }
 }
 
-class ClassWithFourThreadStatics2
+class AnotherClassWithFourThreadStatics
 {
-    [ThreadStatic] static int classStatic;
+    [ThreadStatic] static int classStatic = 13;
     [ThreadStatic] static int classStatic2;
     [ThreadStatic] static int classStatic3;
     [ThreadStatic] static int classStatic4;
@@ -1174,11 +1216,10 @@ class ClassWithFourThreadStatics2
     }
 
     /// <summary>
-    /// stops compiler error, but never called
+    /// stops field unused compiler error, but never called
     /// </summary>
     public void IncrementStatics()
     {
-        classStatic++;
         classStatic2++;
         classStatic3++;
         classStatic4++;

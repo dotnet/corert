@@ -2975,33 +2975,63 @@ namespace Internal.IL
             {
 
             }
-            ISymbolNode classConstructionContextSymbol = _compilation.NodeFactory.TypeNonGCStaticsSymbol(type);
-            _dependencies.Add(classConstructionContextSymbol);
-            LLVMValueRef firstNonGcStatic = LoadAddressOfSymbolNode(classConstructionContextSymbol);
+            if (_compilation.TypeSystemContext.HasLazyStaticConstructor(type))
+            {
+                ISymbolNode classConstructionContextSymbol = _compilation.NodeFactory.TypeNonGCStaticsSymbol(type);
+                _dependencies.Add(classConstructionContextSymbol);
+                LLVMValueRef firstNonGcStatic = LoadAddressOfSymbolNode(classConstructionContextSymbol);
 
-            // TODO: Codegen could check whether it has already run rather than calling into EnsureClassConstructorRun
-            // but we'd have to figure out how to manage the additional basic blocks
-            LLVMValueRef classConstructionContextPtr = LLVM.BuildGEP(_builder, firstNonGcStatic, new LLVMValueRef[] { BuildConstInt32(-2) }, "classConstructionContext");
-            StackEntry classConstructionContext = new AddressExpressionEntry(StackValueKind.NativeInt, "classConstructionContext", classConstructionContextPtr, GetWellKnownType(WellKnownType.IntPtr));
+                // TODO: Codegen could check whether it has already run rather than calling into EnsureClassConstructorRun
+                // but we'd have to figure out how to manage the additional basic blocks
+                LLVMValueRef classConstructionContextPtr = LLVM.BuildGEP(_builder, firstNonGcStatic, new LLVMValueRef[] {BuildConstInt32(-2)}, "classConstructionContext");
+                StackEntry classConstructionContext = new AddressExpressionEntry(StackValueKind.NativeInt, "classConstructionContext", classConstructionContextPtr,
+                    GetWellKnownType(WellKnownType.IntPtr));
 
-            MetadataType helperType = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices", "ClassConstructorRunner");
-            MethodDesc helperMethod = helperType.GetKnownMethod("CheckStaticClassConstructionReturnThreadStaticBase", null);
+                MetadataType helperType = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices", "ClassConstructorRunner");
+                MethodDesc helperMethod = helperType.GetKnownMethod("CheckStaticClassConstructionReturnThreadStaticBase", null);
 
-            ISymbolNode threadStaticIndexSymbol = _compilation.NodeFactory.TypeThreadStaticIndex(type);
-            LLVMValueRef threadStaticIndex = LoadAddressOfSymbolNode(threadStaticIndexSymbol);
+                ISymbolNode threadStaticIndexSymbol = _compilation.NodeFactory.TypeThreadStaticIndex(type);
+                LLVMValueRef threadStaticIndex = LoadAddressOfSymbolNode(threadStaticIndexSymbol);
 
-            LLVMValueRef typeTlsIndexPtr = LLVM.BuildGEP(_builder, threadStaticIndex, new LLVMValueRef[] { BuildConstInt32(1) }, "typeTlsIndexPtr"); // index is the second field after the ptr.
-            StackEntry tlsIndexExpressionEntry = new LoadExpressionEntry(StackValueKind.ValueType, "typeTlsIndex", typeTlsIndexPtr, GetWellKnownType(WellKnownType.Int32));
+                LLVMValueRef typeTlsIndexPtr =
+                    LLVM.BuildGEP(_builder, threadStaticIndex, new LLVMValueRef[] {BuildConstInt32(1)}, "typeTlsIndexPtr"); // index is the second field after the ptr.
+                StackEntry tlsIndexExpressionEntry = new LoadExpressionEntry(StackValueKind.ValueType, "typeTlsIndex", typeTlsIndexPtr, GetWellKnownType(WellKnownType.Int32));
 
-            var typeIndirectionSectionSymbol = _compilation.NodeFactory.TypeManagerIndirectionx;
-            LLVMValueRef typeIndirectionSection = LoadAddressOfSymbolNode(typeIndirectionSectionSymbol);
-            //TODO: refactor CallRuntime to take a namespace suffix, e.g. ".CompilerServices"
-            returnExp = HandleCall(helperMethod, helperMethod.Signature, new StackEntry[] {
-                                                                                  new AddressExpressionEntry(StackValueKind.NativeInt, "typeManagerSlot", typeIndirectionSection, GetWellKnownType(WellKnownType.IntPtr)),
-                                                                                  tlsIndexExpressionEntry,
-                                                                                  classConstructionContext
-                                                                              });
-            return threadStaticIndexSymbol;
+                var typeIndirectionSectionSymbol = _compilation.NodeFactory.TypeManagerIndirectionx;
+                LLVMValueRef typeIndirectionSection = LoadAddressOfSymbolNode(typeIndirectionSectionSymbol);
+                //TODO: refactor CallRuntime to take a namespace suffix, e.g. ".CompilerServices"
+                returnExp = HandleCall(helperMethod, helperMethod.Signature, new StackEntry[]
+                                                                             {
+                                                                                 new AddressExpressionEntry(StackValueKind.NativeInt, "typeManagerSlot",
+                                                                                     typeIndirectionSection, GetWellKnownType(WellKnownType.IntPtr)),
+                                                                                 tlsIndexExpressionEntry,
+                                                                                 classConstructionContext
+                                                                             });
+                return threadStaticIndexSymbol;
+            }
+            else
+            {
+                MetadataType helperType = _compilation.TypeSystemContext.SystemModule.GetKnownType("Internal.Runtime", "ThreadStatics");
+                MethodDesc helperMethod = helperType.GetKnownMethod("GetThreadStaticBaseForType", null);
+
+                ISymbolNode threadStaticIndexSymbol = _compilation.NodeFactory.TypeThreadStaticIndex(type);
+                LLVMValueRef threadStaticIndex = LoadAddressOfSymbolNode(threadStaticIndexSymbol);
+
+                LLVMValueRef typeTlsIndexPtr =
+                    LLVM.BuildGEP(_builder, threadStaticIndex, new LLVMValueRef[] { BuildConstInt32(1) }, "typeTlsIndexPtr"); // index is the second field after the ptr.
+                StackEntry tlsIndexExpressionEntry = new LoadExpressionEntry(StackValueKind.ValueType, "typeTlsIndex", typeTlsIndexPtr, GetWellKnownType(WellKnownType.Int32));
+
+                var typeIndirectionSectionSymbol = _compilation.NodeFactory.TypeManagerIndirectionx;
+                LLVMValueRef typeIndirectionSection = LoadAddressOfSymbolNode(typeIndirectionSectionSymbol);
+                //TODO: refactor CallRuntime to take a namespace suffix, e.g. ".CompilerServices"
+                returnExp = HandleCall(helperMethod, helperMethod.Signature, new StackEntry[]
+                                                                             {
+                                                                                 new AddressExpressionEntry(StackValueKind.NativeInt, "typeManagerSlot",
+                                                                                     typeIndirectionSection, GetWellKnownType(WellKnownType.IntPtr)),
+                                                                                 tlsIndexExpressionEntry
+                                                                             });
+                return threadStaticIndexSymbol;
+            }
         }
 
         private void ImportLoadField(int token, bool isStatic)
