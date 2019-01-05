@@ -6,6 +6,8 @@
     <AssemblyName>ILCompiler.Build.Tasks</AssemblyName>
     <TargetFramework>netstandard1.3</TargetFramework>
     <OutputPath>$(BaseOutputPath)$(OSPlatformConfig)/tools</OutputPath>
+    <!-- Workaround for https://github.com/dotnet/corert/issues/6306 -->
+    <SkipSigning>true</SkipSigning>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ComputeManagedAssemblies.cs" />
