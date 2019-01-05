@@ -39,7 +39,8 @@ The following manual steps are useful for troubleshooting ObjWriter build issues
     cmake --build . -j 10 --config Release --target install
     cd install/bin
     ```
-    On Windows add the following arguments `-G "Visual Studio 14 2015 Win64" -Thost=x64` to `cmake` configuration command (not the one with `--build`)
+    On Windows add the following arguments `-G "Visual Studio 15 2017 Win64" -Thost=x64` to `cmake` configuration command (not the one with `--build`)
+    Note that `-j 10` on `cmake --build .` is requiring cmake `3.12+`
 
 * For ARM(cross/non-cross) please specify Triple for LLVM as Cmake configuration option:
     ```
