@@ -78,7 +78,7 @@ namespace ILCompiler.DependencyAnalysis
 #endif
 
         [DllImport(NativeObjectWriterFileName)]
-        private static extern IntPtr InitObjWriter(string objectFilePath);
+        private static extern IntPtr InitObjWriter(string objectFilePath, string triple = null);
 
         [DllImport(NativeObjectWriterFileName)]
         private static extern void FinishObjWriter(IntPtr objWriter);
@@ -878,7 +878,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public ObjectWriter(string objectFilePath, NodeFactory factory)
         {
-            _nativeObjectWriter = InitObjWriter(objectFilePath);
+            var triple = GetLLVMTripleFromTarget(factory.Target);
+
+            _nativeObjectWriter = InitObjWriter(objectFilePath, triple);
             if (_nativeObjectWriter == IntPtr.Zero)
             {
                 throw new IOException("Fail to initialize Native Object Writer");
@@ -1200,6 +1202,70 @@ namespace ILCompiler.DependencyAnalysis
         uint ITypesDebugInfoWriter.GetMemberFunctionId(MemberFunctionIdTypeDescriptor memberIdDescriptor)
         {
             return GetMemberFunctionIdTypeIndex(_nativeObjectWriter, memberIdDescriptor);
+        }
+
+        private static string GetLLVMTripleFromTarget(TargetDetails target)
+        {
+            // We create a triple based on the Target
+            // Detect the LLVM arch
+            string arch = null;
+            // Not used
+            string sub = string.Empty;
+            switch (target.Architecture)
+            {
+                case TargetArchitecture.ARM:
+                    arch = "thumbv7";
+                    break;
+                case TargetArchitecture.ARM64:
+                    arch = "aarch64";
+                    break;
+                case TargetArchitecture.X64:
+                    arch = "x86_64";
+                    break;
+                case TargetArchitecture.X86:
+                    arch = "x86";
+                    break;
+                case TargetArchitecture.Wasm32:
+                    arch = "wasm32";
+                    break;
+                default:
+                    throw new InvalidOperationException($"The architecture `{target.Architecture}` is not supported by ObjectWriter");
+            }
+
+            string vendor = null;
+            string sys = null;
+            string abi = null;
+            switch (target.OperatingSystem)
+            {
+                case TargetOS.Windows:
+                    vendor = "pc";
+                    sys = "win32";
+                    abi = "windows";
+                    break;
+                case TargetOS.Linux:
+                case TargetOS.FreeBSD:
+                case TargetOS.NetBSD:
+                    // TODO: vendor for ARM/ARM64 could be changed? We might need another information in TargetDetails to make a decision
+                    vendor = "pc";
+                    sys = "linux";
+                    // TODO: same for ARM/ARM64, quid of gnueabi?
+                    abi = "elf";
+                    break;
+                case TargetOS.OSX:
+                    vendor = "apple";
+                    sys = "darwin";
+                    abi = "macho";
+                    break;
+                case TargetOS.WebAssembly:
+                    vendor = "unknown";
+                    sys = "unknown";
+                    abi = "wasm";
+                    break;
+                default:
+                    throw new InvalidOperationException($"The operating system `{target.OperatingSystem}` is not supported by ObjectWriter");
+            }
+
+            return $"{arch}{sub}-{vendor}-{sys}-{abi}";
         }
     }
 }

@@ -60,8 +60,8 @@ bool error(const Twine &Error) {
   return false;
 }
 
-void ObjectWriter::InitTripleName() {
-  TripleName = sys::getDefaultTargetTriple();
+void ObjectWriter::InitTripleName(const char* tripleName) {
+  TripleName = tripleName != nullptr ? tripleName : sys::getDefaultTargetTriple();
 }
 
 Triple ObjectWriter::GetTriple() {
@@ -77,16 +77,17 @@ Triple ObjectWriter::GetTriple() {
   return TheTriple;
 }
 
-bool ObjectWriter::Init(llvm::StringRef ObjectFilePath) {
+bool ObjectWriter::Init(llvm::StringRef ObjectFilePath, const char* tripleName) {
   llvm_shutdown_obj Y; // Call llvm_shutdown() on exit.
 
   // Initialize targets
-  InitializeNativeTarget();
-  InitializeNativeTargetAsmPrinter();
-
+  InitializeAllTargets();
+  InitializeAllTargetMCs();
+  InitializeAllAsmPrinters();
+  
   TargetMOptions = InitMCTargetOptionsFromFlags();
 
-  InitTripleName();
+  InitTripleName(tripleName);
   Triple TheTriple = GetTriple();
 
   // Get the target specific parser.
