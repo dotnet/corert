@@ -1208,7 +1208,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             // We create a triple based on the Target
             // Detect the LLVM arch
-            string arch = null;
+            string arch;
             // Not used
             string sub = string.Empty;
             switch (target.Architecture)
@@ -1232,9 +1232,9 @@ namespace ILCompiler.DependencyAnalysis
                     throw new InvalidOperationException($"The architecture `{target.Architecture}` is not supported by ObjectWriter");
             }
 
-            string vendor = null;
-            string sys = null;
-            string abi = null;
+            string vendor;
+            string sys;
+            string abi;
             switch (target.OperatingSystem)
             {
                 case TargetOS.Windows:
@@ -1245,10 +1245,8 @@ namespace ILCompiler.DependencyAnalysis
                 case TargetOS.Linux:
                 case TargetOS.FreeBSD:
                 case TargetOS.NetBSD:
-                    // TODO: vendor for ARM/ARM64 could be changed? We might need another information in TargetDetails to make a decision
                     vendor = "pc";
                     sys = "linux";
-                    // TODO: same for ARM/ARM64, quid of gnueabi?
                     abi = "elf";
                     break;
                 case TargetOS.OSX:
