@@ -1207,6 +1207,7 @@ namespace ILCompiler.DependencyAnalysis
         private static string GetLLVMTripleFromTarget(TargetDetails target)
         {
             // We create a triple based on the Target
+            // See https://clang.llvm.org/docs/CrossCompilation.html#target-triple
             // Detect the LLVM arch
             string arch;
             // Not used
