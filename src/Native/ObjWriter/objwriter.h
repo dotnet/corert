@@ -180,9 +180,9 @@ private:
 
 // When object writer is created/initialized successfully, it is returned.
 // Or null object is returned. Client should check this.
-DLL_EXPORT ObjectWriter *InitObjWriter(const char *ObjectFilePath, const char* tripleName = nullptr) {
+DLL_EXPORT ObjectWriter *InitObjWriter(const char *ObjectFilePath, const char* TripleName = nullptr) {
   ObjectWriter *OW = new ObjectWriter();
-  if (OW->Init(ObjectFilePath, tripleName)) {
+  if (OW->Init(ObjectFilePath, TripleName)) {
     return OW;
   }
   delete OW;
