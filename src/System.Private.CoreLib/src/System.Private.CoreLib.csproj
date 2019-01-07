@@ -213,7 +213,7 @@
     <Compile Include="System\Diagnostics\DebugAnnotations.cs" />
     <Compile Include="System\Diagnostics\StackFrame.CoreRT.cs" />
     <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
-    <Compile Include="System\Diagnostics\StackTrace.cs" />
+    <Compile Include="System\Diagnostics\StackTrace.CoreRT.cs" />
     <Compile Include="System\Diagnostics\Tracing\EventSource_CoreRT.cs" />
     <Compile Include="System\Diagnostics\Tracing\UnsafeNativeMethods.cs" />
     <Compile Include="System\Enum.cs" />
