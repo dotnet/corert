@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using ILVerify;
@@ -110,10 +111,10 @@ namespace Internal.TypeVerifier
         {
             if (_verifierOptions.IncludeMetadataTokensInErrorMessages)
             {
-                return $"{type}(0x{_module.MetadataReader.GetToken(type.Handle)})";
+                return string.Format("{0}([{1}]0x{2:X8})", type, type.Module, _module.MetadataReader.GetToken(type.Handle));
             }
             else
-            { 
+            {
                 return type.ToString();
             }
         }
@@ -122,7 +123,8 @@ namespace Internal.TypeVerifier
         {
             if (_verifierOptions.IncludeMetadataTokensInErrorMessages)
             {
-                return $"{defType}(0x{_module.MetadataReader.GetToken(interfaceImplementationHandle)})";
+
+                return string.Format("{0}([{1}]0x{2:X8})", defType, GetModule(defType), _module.MetadataReader.GetToken(interfaceImplementationHandle));
             }
             else
             {
@@ -130,16 +132,58 @@ namespace Internal.TypeVerifier
             }
         }
 
+        private string GetModule(DefType defType)
+        {
+            InstantiatedType instantiatedType = defType as InstantiatedType;
+            if (!(instantiatedType is null))
+            {
+                return instantiatedType.Module.ToString();
+            }
+
+            EcmaType ecmaType = defType as EcmaType;
+            if (!(ecmaType is null))
+            {
+                return ecmaType.Module.ToString();
+            }
+
+            Debug.Fail("ModuleNotFound");
+
+            return "ModuleNotFound";
+        }
+
         private string Format(MethodDesc methodDesc)
         {
             if (_verifierOptions.IncludeMetadataTokensInErrorMessages)
             {
-                return $"{methodDesc}(0x{_module.MetadataReader.GetToken(methodDesc.IsTypicalMethodDefinition ? ((EcmaMethod)methodDesc).Handle : ((EcmaMethod)methodDesc.GetTypicalMethodDefinition()).Handle)})";
+                return string.Format("{0}([{1}]0x{2:X8})", methodDesc, GetModule(methodDesc), _module.MetadataReader.GetToken(((EcmaMethod)methodDesc.GetTypicalMethodDefinition()).Handle));
             }
             else
             {
                 return methodDesc.ToString();
             }
+        }
+
+        private string GetModule(MethodDesc methodDesc)
+        {
+            MethodForInstantiatedType methodForInstantiatedType = methodDesc as MethodForInstantiatedType;
+            if (!(methodForInstantiatedType is null))
+            {
+                InstantiatedType instantiatedType = methodForInstantiatedType.OwningType as InstantiatedType;
+                if (!(instantiatedType is null))
+                {
+                    return instantiatedType.Module.ToString();
+                }
+            }
+
+            EcmaMethod ecmaMethod = methodDesc as EcmaMethod;
+            if (!(ecmaMethod is null))
+            {
+                return ecmaMethod.Module.ToString();
+            }
+
+            Debug.Fail("ModuleNotFound");
+
+            return "ModuleNotFound";
         }
 
         private class InterfaceMetadataObjects : IEquatable<InterfaceMetadataObjects>
