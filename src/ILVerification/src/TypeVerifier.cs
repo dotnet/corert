@@ -140,7 +140,6 @@ namespace Internal.TypeVerifier
             }
 
             Debug.Fail("ModuleNotFound");
-
             return "ModuleNotFound";
         }
 
@@ -158,21 +157,12 @@ namespace Internal.TypeVerifier
 
         private string GetModule(MethodDesc methodDesc)
         {
-            if (methodDesc is MethodForInstantiatedType methodForInstantiatedType)
+            if (methodDesc.GetMethodDefinition().OwningType is MetadataType metadataType)
             {
-                if (methodForInstantiatedType.OwningType is InstantiatedType instantiatedType)
-                {
-                    return instantiatedType.Module.ToString();
-                }
-            }
-
-            if (methodDesc is EcmaMethod ecmaMethod)
-            {
-                return ecmaMethod.Module.ToString();
+                return metadataType.Module.ToString();
             }
 
             Debug.Fail("ModuleNotFound");
-
             return "ModuleNotFound";
         }
 
