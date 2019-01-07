@@ -134,16 +134,9 @@ namespace Internal.TypeVerifier
 
         private string GetModule(DefType defType)
         {
-            InstantiatedType instantiatedType = defType as InstantiatedType;
-            if (!(instantiatedType is null))
+            if (defType is MetadataType metadataType)
             {
-                return instantiatedType.Module.ToString();
-            }
-
-            EcmaType ecmaType = defType as EcmaType;
-            if (!(ecmaType is null))
-            {
-                return ecmaType.Module.ToString();
+                return metadataType.Module.ToString();
             }
 
             Debug.Fail("ModuleNotFound");
@@ -165,18 +158,15 @@ namespace Internal.TypeVerifier
 
         private string GetModule(MethodDesc methodDesc)
         {
-            MethodForInstantiatedType methodForInstantiatedType = methodDesc as MethodForInstantiatedType;
-            if (!(methodForInstantiatedType is null))
+            if (methodDesc is MethodForInstantiatedType methodForInstantiatedType)
             {
-                InstantiatedType instantiatedType = methodForInstantiatedType.OwningType as InstantiatedType;
-                if (!(instantiatedType is null))
+                if (methodForInstantiatedType.OwningType is InstantiatedType instantiatedType)
                 {
                     return instantiatedType.Module.ToString();
                 }
             }
 
-            EcmaMethod ecmaMethod = methodDesc as EcmaMethod;
-            if (!(ecmaMethod is null))
+            if (methodDesc is EcmaMethod ecmaMethod)
             {
                 return ecmaMethod.Module.ToString();
             }
