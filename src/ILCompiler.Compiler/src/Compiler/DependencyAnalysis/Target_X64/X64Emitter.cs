@@ -72,6 +72,14 @@ namespace ILCompiler.DependencyAnalysis.X64
             EmitIndirInstruction(0x8D, reg, ref addrMode);
         }
 
+        public void EmitXORZero(Register reg)
+        {
+            AddrMode rexAddrMode = new AddrMode(reg, null, 0, 0, AddrModeSize.Int64);
+            EmitRexPrefix(reg, ref rexAddrMode);
+            Builder.EmitByte(0x33);
+            Builder.EmitByte((byte)(0xC0 | (((byte)reg & 0x7) << 3) | (((byte)reg & 0x7))));
+        }
+
         public void EmitCMP(ref AddrMode addrMode, sbyte immediate)
         {
             if (addrMode.Size == AddrModeSize.Int16)

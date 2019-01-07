@@ -24,10 +24,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     break;
 
                 case Kind.DelayLoadHelper:
-                    // lea rax, [pCell] - this is the simple case which allows for only one lazy resolution
-                    // of the indirection cell; the final method pointer stored in the indirection cell
-                    // no longer receives the location of the cell so it cannot modify it repeatedly.
-                    instructionEncoder.EmitLEAQ(Register.RAX, _instanceCell);
+                case Kind.AtypicalDelayLoadHelper:
+                    if (_thunkKind == Kind.AtypicalDelayLoadHelper)
+                    {
+                        // lea rax, [pCell] - this is the simple case which allows for only one lazy resolution
+                        // of the indirection cell; the final method pointer stored in the indirection cell
+                        // no longer receives the location of the cell so it cannot modify it repeatedly.
+                        instructionEncoder.EmitLEAQ(Register.RAX, _instanceCell);
+                    }
+                    else
+                    {
+                        // xor rax, rax - no indirection cell info needed for the helper
+                        instructionEncoder.EmitXORZero(Register.RAX);
+                    }
 
                     if (!relocsOnly)
                     {

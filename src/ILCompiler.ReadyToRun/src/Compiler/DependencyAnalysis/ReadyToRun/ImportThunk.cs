@@ -19,6 +19,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             Eager,
             Lazy,
             DelayLoadHelper,
+            AtypicalDelayLoadHelper,
             VirtualStubDispatch,
         }
 

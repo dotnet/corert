@@ -941,5 +941,11 @@ namespace Internal.JitInterface
 
             return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_VC;
         }
+
+        private bool canTailCall(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* declaredCalleeHnd, CORINFO_METHOD_STRUCT_* exactCalleeHnd, bool fIsTailPrefix)
+        {
+            // No restrictions on tailcalls
+            return true;
+        }
     }
 }
