@@ -84,5 +84,15 @@ namespace System.Runtime.InteropServices
             if (errorCode < 0)
                 throw RuntimeAugments.Callbacks.GetExceptionForHR(errorCode);
         }
+
+        internal static IntPtr AllocBSTR(int length)
+        {
+            return PInvokeMarshal.AllocBSTR(length);
+        }
+
+        public static void FreeBSTR(IntPtr ptr)
+        {
+            PInvokeMarshal.FreeBSTR(ptr);
+        }
     }
 }
