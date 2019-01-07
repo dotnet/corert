@@ -65,7 +65,7 @@ namespace System.Runtime.InteropServices
             {
                 if (m_offset != 0)
                 {
-                    throw new IndexOutOfRangeException(SR.ArrayWithOffsetOverflow);
+                    throw new IndexOutOfRangeException(SR.IndexOutOfRange_ArrayWithOffset);
                 }
 
                 return 0;
@@ -75,28 +75,28 @@ namespace System.Runtime.InteropServices
                 Array arrayObj = m_array as Array;
                 if (arrayObj == null)
                 {
-                    throw new ArgumentException(SR.Arg_NotIsomorphic);
+                    throw new ArgumentException(SR.Argument_NotIsomorphic);
                 }
 
                 if (arrayObj.Rank != 1)
                 {
-                    throw new ArgumentException(SR.Arg_NotIsomorphic);
+                    throw new ArgumentException(SR.Argument_NotIsomorphic);
                 }
 
                 if (!arrayObj.IsBlittable())
                 {
-                    throw new ArgumentException(SR.Arg_NotIsomorphic);
+                    throw new ArgumentException(SR.Argument_NotIsomorphic);
                 }
 
                 int totalSize = checked(arrayObj.Length * arrayObj.GetElementSize());
                 if (totalSize > MaxSizeForInterop)
                 {
-                    throw new ArgumentException(SR.StructArrayTooLarge);
+                    throw new ArgumentException(SR.Argument_StructArrayTooLarge);
                 }
 
                 if (m_offset > totalSize)
                 {
-                    throw new IndexOutOfRangeException(SR.ArrayWithOffsetOverflow);
+                    throw new IndexOutOfRangeException(SR.IndexOutOfRange_ArrayWithOffset);
                 }
 
                 return totalSize - m_offset;
