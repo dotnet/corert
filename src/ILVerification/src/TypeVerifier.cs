@@ -63,7 +63,6 @@ namespace Internal.TypeVerifier
 
             // Look for duplicates and prepare distinct list of implemented interfaces to avoid 
             // subsequent error duplication
-            VirtualMethodAlgorithm virtualMethodAlg = _typeSystemContext.GetVirtualMethodAlgorithmForType(type);
             List<InterfaceMetadataObjects> implementedInterfaces = new List<InterfaceMetadataObjects>();
             foreach (InterfaceImplementationHandle interfaceHandle in interfaceHandles)
             {
@@ -77,8 +76,7 @@ namespace Internal.TypeVerifier
                 InterfaceMetadataObjects imo = new InterfaceMetadataObjects
                 {
                     DefType = interfaceType,
-                    InterfaceImplementation = interfaceImplementation,
-                    InterfaceImplementationHandle = interfaceHandle
+                    InterfaceImplementation = interfaceImplementation
                 };
 
                 if (!implementedInterfaces.Contains(imo))
@@ -171,7 +169,6 @@ namespace Internal.TypeVerifier
         {
             public DefType DefType { get; set; }
             public InterfaceImplementation InterfaceImplementation { set; get; }
-            public InterfaceImplementationHandle InterfaceImplementationHandle { get; set; }
             public bool Equals(InterfaceMetadataObjects other)
             {
                 return other.DefType == DefType;
