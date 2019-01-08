@@ -2,29 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*=============================================================================
-**
-**
-**
-** Purpose: This the base interface that must be implemented by all custom
-**          marshalers.
-**
-**
-=============================================================================*/
-
-using System;
-
 namespace System.Runtime.InteropServices
 {
+    // This the base interface that must be implemented by all custom marshalers.
     public interface ICustomMarshaler
     {
-        Object MarshalNativeToManaged(IntPtr pNativeData);
+        object MarshalNativeToManaged(IntPtr pNativeData);
 
-        IntPtr MarshalManagedToNative(Object ManagedObj);
+        IntPtr MarshalManagedToNative(object ManagedObj);
 
         void CleanUpNativeData(IntPtr pNativeData);
 
-        void CleanUpManagedData(Object ManagedObj);
+        void CleanUpManagedData(object ManagedObj);
 
         int GetNativeDataSize();
     }

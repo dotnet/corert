@@ -2,40 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*=============================================================================
-**
-** Class: BStrWrapper.
-**
-**
-** Purpose: Wrapper that is converted to a variant with VT_BSTR.
-**
-**
-=============================================================================*/
-
-using System;
-
 namespace System.Runtime.InteropServices
 {
+    // Wrapper that is converted to a variant with VT_BSTR.
     public sealed class BStrWrapper
     {
-        public BStrWrapper(String value)
+        public BStrWrapper(string value)
         {
-            m_WrappedObject = value;
+            WrappedObject = value;
         }
 
-        public BStrWrapper(Object value)
+        public BStrWrapper(object value)
         {
-            m_WrappedObject = (String)value;
+            WrappedObject = (string)value;
         }
 
-        public String WrappedObject
-        {
-            get
-            {
-                return m_WrappedObject;
-            }
-        }
-
-        private String m_WrappedObject;
+        public string WrappedObject { get; }
     }
 }

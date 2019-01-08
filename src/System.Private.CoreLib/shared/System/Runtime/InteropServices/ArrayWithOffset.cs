@@ -2,18 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices
 {
     public struct ArrayWithOffset
     {
-        // Fromm MAX_SIZE_FOR_INTEROP in mlinfo.h
+        // From MAX_SIZE_FOR_INTEROP in mlinfo.h
         private const int MaxSizeForInterop = 0x7ffffff0;
 
-        public ArrayWithOffset(Object array, int offset)
+        public ArrayWithOffset(object array, int offset)
         {
             m_array = array;
             m_offset = offset;
@@ -21,27 +19,15 @@ namespace System.Runtime.InteropServices
             m_count = CalculateCount();
         }
 
-        public Object GetArray()
-        {
-            return m_array;
-        }
+        public object GetArray() => m_array;
 
-        public int GetOffset()
-        {
-            return m_offset;
-        }
+        public int GetOffset() => m_offset;
 
-        public override int GetHashCode()
-        {
-            return m_count + m_offset;
-        }
+        public override int GetHashCode() => m_count + m_offset;
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
-            if (obj is ArrayWithOffset)
-                return Equals((ArrayWithOffset)obj);
-            else
-                return false;
+            return obj is ArrayWithOffset && Equals((ArrayWithOffset)obj);
         }
 
         public bool Equals(ArrayWithOffset obj)
@@ -59,6 +45,7 @@ namespace System.Runtime.InteropServices
             return !(a == b);
         }
 
+#if !CORECLR // TODO: Cleanup
         private int CalculateCount()
         {
             if (m_array == null)
@@ -102,8 +89,9 @@ namespace System.Runtime.InteropServices
                 return totalSize - m_offset;
             }
         }
+#endif // !CORECLR
 
-        private Object m_array;
+        private object m_array;
         private int m_offset;
         private int m_count;
     }
