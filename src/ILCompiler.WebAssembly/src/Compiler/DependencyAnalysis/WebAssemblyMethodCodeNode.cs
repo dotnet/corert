@@ -22,6 +22,16 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(!method.IsAbstract);
             _method = method;
+            if (method.Name == "GetField_Unbox")
+            {
+            }
+        }
+
+        protected override void NowMarked()
+        {
+            if (_method.Name == "GetField_Unbox")
+            {
+            }
         }
 
         public void SetDependencies(IEnumerable<Object> dependencies)
@@ -58,10 +68,18 @@ namespace ILCompiler.DependencyAnalysis
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             var dependencies = new DependencyList();
-            CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref dependencies, factory, _method);
 
-            foreach (Object node in _dependencies)
-                dependencies.Add(node, "Wasm code ");
+            if (Method.Name.EndsWith("_Unbox"))
+            {
+                dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(Method), "Target of unboxing"));
+            }
+            else
+            {
+                foreach (Object node in _dependencies)
+                    dependencies.Add(node, "Wasm code ");
+
+                CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref dependencies, factory, _method);
+            }
 
             return dependencies;
         }

@@ -57,6 +57,9 @@ namespace ILCompiler.DependencyAnalysis
                 if (!IsMethodEligibleForTracking(method))
                     continue;
 
+//                if(!factory.CanNecessaryTypeSymbol(method.OwningType)) continue;
+//                if (method.OwningType.GetTypeDefinition() is INonEmittableType) continue;
+
                 // Get the method pointer vertex
 
                 bool getUnboxingStub = method.OwningType.IsValueType && !method.Signature.IsStatic;
