@@ -36,15 +36,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append(SectionName);
         }
 
+        protected override string GetName(NodeFactory factory)
+        {
+            Utf8StringBuilder sb = new Utf8StringBuilder();
+            AppendMangledName(factory.NameMangler, sb);
+            return sb.ToString();
+        }
+
         public override IEnumerable<DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => null;
 
         public override IEnumerable<DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
 
-        protected override string GetName(NodeFactory context)
-        {
-            throw new System.NotImplementedException();
-        }
     }
 }
