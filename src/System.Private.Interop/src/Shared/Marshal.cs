@@ -70,16 +70,9 @@ namespace System.Runtime.InteropServices
             return PInvokeMarshal.SecureStringToBSTR(s);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static int GetHRForException(Exception e)
         {
-            if (e == null)
-            {
-                return Interop.COM.S_OK;
-            }
-
-            // @TODO: Setup IErrorInfo
-            return e.HResult;
+            return PInvokeMarshal.GetHRForException(e);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
