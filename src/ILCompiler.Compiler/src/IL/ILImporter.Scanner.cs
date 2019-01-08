@@ -619,27 +619,9 @@ namespace Internal.IL
                     if (instParam != null)
                     {
                         _dependencies.Add(instParam, reason);
+                    }
 
-                        if (!referencingArrayAddressMethod)
-                        {
-                            _dependencies.Add(_compilation.NodeFactory.ShadowConcreteMethod(concreteMethod), reason);
-                        }
-                        else
-                        {
-                            // We don't want array Address method to be modeled in the generic dependency analysis.
-                            // The method doesn't actually have runtime determined dependencies (won't do
-                            // any generic lookups).
-                            _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(targetMethod), reason);
-                        }
-                    }
-                    else if (targetMethod.AcquiresInstMethodTableFromThis())
-                    {
-                        _dependencies.Add(_compilation.NodeFactory.ShadowConcreteMethod(concreteMethod), reason);
-                    }
-                    else
-                    {
-                        _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(targetMethod), reason);
-                    }
+                    _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(targetMethod), reason);
                 }
             }
             else if (method.HasInstantiation)
