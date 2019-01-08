@@ -30,9 +30,6 @@ namespace System.Reflection
         {
             Debug.Assert(s != null);
 
-            PrintLine("Pasring");
-            PrintLine(s);
-
             int indexOfNul = s.IndexOf((char)0);
             if (indexOfNul != -1)
                 s = s.Substring(0, indexOfNul);
@@ -45,17 +42,10 @@ namespace System.Reflection
             string name;
             AssemblyNameLexer.Token token = lexer.GetNext(out name);
             if (token != AssemblyNameLexer.Token.String)
-            {
-                PrintLine("Pasring1");
                 throw new FileLoadException(SR.InvalidAssemblyName);
-            }
-            PrintLine(name);
 
             if (name == string.Empty || name.IndexOfAny(s_illegalCharactersInSimpleName) != -1)
-            {
-                PrintLine("Pasring2");
                 throw new FileLoadException(SR.InvalidAssemblyName);
-            }
 
             Version version = null;
             string cultureName = null;
@@ -67,18 +57,12 @@ namespace System.Reflection
             while (token != AssemblyNameLexer.Token.End)
             {
                 if (token != AssemblyNameLexer.Token.Comma)
-                {
-                PrintLine("Pasring3");
                     throw new FileLoadException(SR.InvalidAssemblyName);
-                }
                 string attributeName;
 
                 token = lexer.GetNext(out attributeName);
                 if (token != AssemblyNameLexer.Token.String)
-                {
-                PrintLine("Pasring4");
                     throw new FileLoadException(SR.InvalidAssemblyName);
-                }
                 token = lexer.GetNext();
 
                 // Compat note: Inside AppX apps, the desktop CLR's AssemblyName parser skips past any elements that don't follow the "<Something>=<Something>" pattern.
@@ -88,31 +72,19 @@ namespace System.Reflection
                     continue;
 
                 if (token != AssemblyNameLexer.Token.Equals)
-                {
-                PrintLine("Pasring5");
                     throw new FileLoadException(SR.InvalidAssemblyName);
-                }
                 string attributeValue;
                 token = lexer.GetNext(out attributeValue);
                 if (token != AssemblyNameLexer.Token.String)
-                {
-                PrintLine("Pasring6");
                     throw new FileLoadException(SR.InvalidAssemblyName);
-                }
 
                 if (attributeName == string.Empty)
-                {
-                PrintLine("Pasring7");
                     throw new FileLoadException(SR.InvalidAssemblyName);
-                }
 
                 for (int i = 0; i < alreadySeen.Count; i++)
                 {
                     if (alreadySeen[i].Equals(attributeName, StringComparison.OrdinalIgnoreCase))
-                    {
-                    PrintLine("Pasring8");
                         throw new FileLoadException(SR.InvalidAssemblyName); // Cannot specify the same attribute twice.
-}
                 }
                 alreadySeen.Add(attributeName);
 
@@ -145,10 +117,7 @@ namespace System.Reflection
                         // nothing to do
                     }
                     else
-                    {
-                    PrintLine("Pasring9");
                         throw new FileLoadException(SR.InvalidAssemblyName);
-                    }
                 }
 
                 if (attributeName.Equals("ContentType", StringComparison.OrdinalIgnoreCase))
@@ -156,45 +125,13 @@ namespace System.Reflection
                     if (attributeValue.Equals("WindowsRuntime", StringComparison.OrdinalIgnoreCase))
                         flags |= (AssemblyNameFlags)(((int)AssemblyContentType.WindowsRuntime) << 9);
                     else
-                    {
-                    PrintLine("Pasring10");
                         throw new FileLoadException(SR.InvalidAssemblyName);
-                    }
                 }
 
                 // Desktop compat: If we got here, the attribute name is unknown to us. Ignore it (as long it's not duplicated.)
                 token = lexer.GetNext();
             }
             return new RuntimeAssemblyName(name, version, cultureName, flags, pkt);
-        }
-
-        private static unsafe void PrintString(string s)
-        {
-            int length = s.Length;
-            fixed (char* curChar = s)
-            {
-                for (int i = 0; i < length; i++)
-                {
-                    TwoByteStr curCharStr = new TwoByteStr();
-                    curCharStr.first = (byte)(*(curChar + i));
-                    printf((byte*)&curCharStr, null);
-                }
-            }
-        }
-
-        public struct TwoByteStr
-        {
-            public byte first;
-            public byte second;
-        }
-
-        [DllImport("*")]
-        private static unsafe extern int printf(byte* str, byte* unused);
-
-        public static void PrintLine(string s)
-        {
-            PrintString(s);
-            PrintString("\n");
         }
 
         private static Version ParseVersion(string attributeValue)
