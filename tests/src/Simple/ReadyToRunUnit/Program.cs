@@ -698,6 +698,25 @@ internal class Program
         return true;
     }
 
+    static bool RVAFieldTest()
+    {
+        ReadOnlySpan<byte> value = new byte[] { 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 };
+        bool match = true;
+        for (byte i = 0; i < value.Length; i++)
+        {
+            if (value[i] != (byte)(9 - i))
+            {
+                match = false;
+                Console.WriteLine(
+                    "Mismatch at offset {0}: value[{0}] = {1}, should be {2}",
+                    i,
+                    value[i],
+                    9 - i);
+            }
+        }
+        return match;
+    }
+
     public static int Main(string[] args)
     {
         if (args.Length > 0)
@@ -744,6 +763,7 @@ internal class Program
         RunTest("MethodParamGenericLookupTest", MethodParamGenericLookupTest());
         RunTest("VectorTest", VectorTest());
         RunTest("EnumHashValueTest", EnumHashValueTest());
+        RunTest("RVAFieldTest", RVAFieldTest());
 
         Console.WriteLine($@"{_passedTests.Count} tests pass:");
         foreach (string testName in _passedTests)

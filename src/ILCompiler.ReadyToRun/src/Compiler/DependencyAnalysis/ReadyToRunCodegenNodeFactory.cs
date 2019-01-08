@@ -485,5 +485,18 @@ namespace ILCompiler.DependencyAnalysis
                     throw new NotImplementedException();
             }
         }
+
+        private Dictionary<string, SectionStartNode> _sectionStartNodes = new Dictionary<string, SectionStartNode>();
+
+        public ISymbolNode SectionStartNode(string sectionName)
+        {
+            SectionStartNode sectionStartNode;
+            if (!_sectionStartNodes.TryGetValue(sectionName, out sectionStartNode))
+            {
+                sectionStartNode = new SectionStartNode(sectionName);
+                _sectionStartNodes.Add(sectionName, sectionStartNode);
+            }
+            return sectionStartNode;
+        }
     }
 }

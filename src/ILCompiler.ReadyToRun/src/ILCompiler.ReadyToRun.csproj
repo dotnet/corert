@@ -64,6 +64,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RuntimeFunctionsGCInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RuntimeFunctionsTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RvaEmbeddedPointerIndirectionNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RVAFieldNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Signature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\SignatureBuilder.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\SignatureContext.cs" />
@@ -76,6 +77,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypeFixupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypesTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunSymbolNodeFactory.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\SectionStartNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeAndMethod.cs" />
     <Compile Include="Compiler\ReadyToRunHashCode.cs" />
     <Compile Include="Compiler\ReadyToRunLibraryRootProvider.cs" />

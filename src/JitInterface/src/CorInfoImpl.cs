@@ -1951,7 +1951,7 @@ namespace Internal.JitInterface
                 fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_STATIC;
 
 #if READYTORUN
-                if (field.FieldType.IsValueType && field.HasGCStaticBase)
+                if (field.FieldType.IsValueType && field.HasGCStaticBase && !field.HasRva)
                 {
                     // statics of struct types are stored as implicitly boxed in CoreCLR i.e.
                     // we need to modify field access flags appropriately
@@ -3097,13 +3097,6 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("isRIDClassDomainID"); }
         private uint getClassDomainID(CORINFO_CLASS_STRUCT_* cls, ref void* ppIndirection)
         { throw new NotImplementedException("getClassDomainID"); }
-
-        private void* getFieldAddress(CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection)
-        {
-            FieldDesc fieldDesc = HandleToObject(field);
-            Debug.Assert(fieldDesc.HasRva);
-            return (void*)ObjectToHandle(_compilation.GetFieldRvaData(fieldDesc));
-        }
 
         private CORINFO_CLASS_STRUCT_* getStaticFieldCurrentClass(CORINFO_FIELD_STRUCT_* field, byte* pIsSpeculative)
         {

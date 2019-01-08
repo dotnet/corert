@@ -952,5 +952,12 @@ namespace Internal.JitInterface
 
             return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_VC;
         }
+
+        private void* getFieldAddress(CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection)
+        {
+            FieldDesc fieldDesc = HandleToObject(field);
+            Debug.Assert(fieldDesc.HasRva);
+            return (void*)ObjectToHandle(_compilation.GetFieldRvaData(fieldDesc));
+        }
     }
 }

@@ -738,5 +738,13 @@ namespace Internal.JitInterface
             }
             return false;
         }
+
+        private void* getFieldAddress(CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection)
+        {
+            FieldDesc fieldDesc = HandleToObject(field);
+            Debug.Assert(fieldDesc.HasRva);
+            ppIndirection = (void*)ObjectToHandle(_compilation.SymbolNodeFactory.GetRvaFieldNode(fieldDesc));
+            return null;
+        }
     }
 }
