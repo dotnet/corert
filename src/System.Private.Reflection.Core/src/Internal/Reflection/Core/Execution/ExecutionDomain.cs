@@ -17,6 +17,7 @@ using System.Reflection.Runtime.MethodInfos.EcmaFormat;
 #endif
 using System.Reflection.Runtime.TypeParsing;
 using System.Reflection.Runtime.CustomAttributes;
+using System.Runtime.InteropServices;
 using Internal.Metadata.NativeFormat;
 using Internal.Runtime.Augments;
 

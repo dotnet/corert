@@ -17,17 +17,6 @@ internal static class Program
     {
         PrintLine("Starting");
 
-        var t = Type.GetType("System.Char, System.Private.CoreLib");
-        if (t == null)
-        {
-            PrintLine("type == null.  Simple class metadata test: Failed");
-        }
-        else
-        {
-            PrintLine("Simple class metadata test: Ok.");
-        }
-
-
         Add(1, 2);
         int tempInt = 0;
         int tempInt2 = 0;
@@ -328,6 +317,8 @@ internal static class Program
         TestValueTypeElementIndexing();
         
         TestArrayItfDispatch();
+
+        TestMetaData();
 
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
@@ -660,6 +651,52 @@ internal static class Program
         }
     }
 
+    private static void TestMetaData()
+    {
+
+        var t = Type.GetType("System.Char, System.Private.CoreLib");
+        if (t == null)
+        {
+            PrintLine("type == null.  Simple class metadata test: Failed");
+        }
+        else
+        {
+            if (t.FullName != "System.Char")
+            {
+                PrintLine("type != System.Char.  Simple class metadata test: Failed");
+            }
+            else PrintLine("Simple class metadata test: Ok.");
+        }
+
+        var t2 = Type.GetType("System.Char, System.Private.CoreLib");
+        PrintLine("got type second type");
+        if (t2 == null)
+        {
+            PrintLine("type == null.  Simple class metadata test: Failed");
+        }
+        else
+        {
+            if (t2.FullName != "System.Char")
+            {
+                PrintLine("type != System.Char.  Simple class metadata test: Failed");
+            }
+            else PrintLine("Simple class metadata test: Ok.");
+        }
+
+        var gentT = new Gen<int>();
+        var genType = gentT.TestTypeOf();
+        PrintString("type of generic type: ");
+        if (genType.FullName != "System.Int32")
+        {
+            PrintString("expected System.Int32 but was " + genType.FullName);
+            PrintLine(" Failed.");
+        }
+        else
+        {
+            PrintLine("Ok.");
+        }
+    }
+
     [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
 }
@@ -851,9 +888,9 @@ public sealed class MySealedClass
 
 public class Gen<T>
 {
-    internal void TestTypeOf()
+    internal Type TestTypeOf()
     {
-        var t = typeof(T);
+        return typeof(T);
     }
 }
 
