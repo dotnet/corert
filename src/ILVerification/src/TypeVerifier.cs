@@ -77,6 +77,7 @@ namespace Internal.TypeVerifier
                 InterfaceMetadataObjects imo = new InterfaceMetadataObjects
                 {
                     DefType = interfaceType,
+                    InterfaceImplementation = interfaceImplementation,
                     InterfaceImplementationHandle = interfaceHandle
                 };
 
@@ -86,7 +87,7 @@ namespace Internal.TypeVerifier
                 }
                 else
                 {
-                    VerificationError(VerifierError.InterfaceImplHasDuplicate, Format(type), Format(imo.DefType, imo.InterfaceImplementationHandle));
+                    VerificationError(VerifierError.InterfaceImplHasDuplicate, Format(type), Format(imo.DefType, imo.InterfaceImplementation));
                 }
             }
 
@@ -100,7 +101,7 @@ namespace Internal.TypeVerifier
                         MethodDesc resolvedMethod = type.ResolveInterfaceMethodTarget(method);
                         if (resolvedMethod is null)
                         {
-                            VerificationError(VerifierError.InterfaceMethodNotImplemented, Format(type), Format(implementedInterface.DefType, implementedInterface.InterfaceImplementationHandle), Format(method));
+                            VerificationError(VerifierError.InterfaceMethodNotImplemented, Format(type), Format(implementedInterface.DefType, implementedInterface.InterfaceImplementation), Format(method));
                         }
                     }
                 }
@@ -119,12 +120,12 @@ namespace Internal.TypeVerifier
             }
         }
 
-        private string Format(DefType defType, InterfaceImplementationHandle interfaceImplementationHandle)
+        private string Format(DefType defType, InterfaceImplementation interfaceImplementation)
         {
             if (_verifierOptions.IncludeMetadataTokensInErrorMessages)
             {
 
-                return string.Format("{0}([{1}]0x{2:X8})", defType, GetModule(defType), _module.MetadataReader.GetToken(interfaceImplementationHandle));
+                return string.Format("{0}([{1}]0x{2:X8})", defType, GetModule(defType), _module.MetadataReader.GetToken(interfaceImplementation.Interface));
             }
             else
             {
@@ -169,6 +170,7 @@ namespace Internal.TypeVerifier
         private class InterfaceMetadataObjects : IEquatable<InterfaceMetadataObjects>
         {
             public DefType DefType { get; set; }
+            public InterfaceImplementation InterfaceImplementation { set; get; }
             public InterfaceImplementationHandle InterfaceImplementationHandle { get; set; }
             public bool Equals(InterfaceMetadataObjects other)
             {
