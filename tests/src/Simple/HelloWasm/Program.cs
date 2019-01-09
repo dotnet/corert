@@ -654,21 +654,21 @@ internal static class Program
     private static void TestMetaData()
     {
 
-        var t = Type.GetType("System.Char, System.Private.CoreLib");
-        if (t == null)
-        {
-            PrintLine("type == null.  Simple class metadata test: Failed");
-        }
-        else
-        {
-            if (t.FullName != "System.Char")
-            {
-                PrintLine("type != System.Char.  Simple class metadata test: Failed");
-            }
-            else PrintLine("Simple class metadata test: Ok.");
-        }
+//        var t = Type.GetType("System.Char, System.Private.CoreLib");
+//        if (t == null)
+//        {
+//            PrintLine("type == null.  Simple class metadata test: Failed");
+//        }
+//        else
+//        {
+//            if (t.FullName != "System.Char")
+//            {
+//                PrintLine("type != System.Char.  Simple class metadata test: Failed");
+//            }
+//            else PrintLine("Simple class metadata test: Ok.");
+//        }
 
-        var t2 = Type.GetType("System.Char, System.Private.CoreLib");
+        var t2 = typeof(Char);
         PrintLine("got type second type");
         if (t2 == null)
         {
@@ -680,7 +680,7 @@ internal static class Program
             {
                 PrintLine("type != System.Char.  Simple class metadata test: Failed");
             }
-            else PrintLine("Simple class metadata test: Ok.");
+            else PrintLine("Simple class metadata test (typeof(Char)): Ok.");
         }
 
         var gentT = new Gen<int>();
