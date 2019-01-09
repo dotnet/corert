@@ -105,12 +105,7 @@ namespace Internal.Runtime.TypeLoader
                 return (IntPtr)(_moduleHandle.ConvertRVAToPointer(rva));
             }
 #else
-            if (index >= _elementsCount)
-                throw new BadImageFormatException();
-
-            // TODO: indirection through IAT
-            int* pRelPtr32 = &((int*)_elements)[index];
-            return (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
+            return GetFieldAddressFromIndex(index);
 #endif
         }
 
@@ -128,12 +123,7 @@ namespace Internal.Runtime.TypeLoader
                 return (IntPtr)(_moduleHandle.ConvertRVAToPointer(rva));
             }
 #else
-            if (index >= _elementsCount)
-                throw new BadImageFormatException();
-
-            // TODO: indirection through IAT
-            int* pRelPtr32 = &((int*)_elements)[index];
-            return (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
+            return GetFieldAddressFromIndex(index);
 #endif
         }
 
@@ -146,7 +136,7 @@ namespace Internal.Runtime.TypeLoader
             else
             {
                 return RuntimeAugments.CreateRuntimeTypeHandle((IntPtr)this.debuggerPreparedExternalReferences[index]);
-            }            
+            }
         }
 
         public IntPtr GetGenericDictionaryFromIndex(uint index)
@@ -161,8 +151,13 @@ namespace Internal.Runtime.TypeLoader
                 throw new BadImageFormatException();
 
             // TODO: indirection through IAT
-            int* pRelPtr32 = &((int*)_elements)[index];
-            return (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
+            if (EEType.SupportsRelativePointers)
+            {
+                int* pRelPtr32 = &((int*)_elements)[index];
+                return (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
+            }
+
+            return (IntPtr)(((void**)_elements)[index]);
         }
 #endif
 
