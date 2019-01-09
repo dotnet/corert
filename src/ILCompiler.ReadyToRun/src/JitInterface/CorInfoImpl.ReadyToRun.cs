@@ -584,18 +584,17 @@ namespace Internal.JitInterface
 
         private void getFunctionEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags)
         {
-            MethodDesc method = HandleToObject(ftn);
+            throw new RequiresRuntimeJitException(HandleToObject(ftn).ToString());
+        }
 
-            // TODO: Implement MapMethodDeclToMethodImpl from CoreCLR
-            if (method.IsVirtual)
-                throw new NotImplementedException("getFunctionEntryPoint");
+        private bool canTailCall(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* declaredCalleeHnd, CORINFO_METHOD_STRUCT_* exactCalleeHnd, bool fIsTailPrefix)
+        {
+            if (fIsTailPrefix)
+            {
+                throw new RequiresRuntimeJitException(nameof(fIsTailPrefix));
+            }
 
-            pResult = CreateConstLookupToSymbol(_compilation.NodeFactory.MethodEntrypoint(
-                method, 
-                constrainedType: null, 
-                originalMethod: null, 
-                methodToken: default(ModuleToken), // TODO!!!!
-                _signatureContext));
+            return false;
         }
 
         private InfoAccessType constructStringLiteral(CORINFO_MODULE_STRUCT_* module, mdToken metaTok, ref void* ppValue)
