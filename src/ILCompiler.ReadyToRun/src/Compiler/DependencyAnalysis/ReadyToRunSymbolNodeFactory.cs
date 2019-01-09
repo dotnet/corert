@@ -496,11 +496,12 @@ namespace ILCompiler.DependencyAnalysis
                     r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_FltRound;
                     break;
 
-                case ILCompiler.ReadyToRunHelper.GetRefAny:
-                    // TODO-PERF: currently not implemented in Crossgen
-                    ThrowHelper.ThrowInvalidProgramException();
-                    // ThrowInvalidProgramException should never return
-                    throw new NotImplementedException();
+                case ILCompiler.ReadyToRunHelper.MonitorEnter:
+                case ILCompiler.ReadyToRunHelper.MonitorExit:
+                case ILCompiler.ReadyToRunHelper.MonitorEnterStatic:
+                case ILCompiler.ReadyToRunHelper.MonitorExitStatic:
+                case ILCompiler.ReadyToRunHelper.GetRefAny: // TODO-PERF: currently not implemented in Crossgen
+                    throw new RequiresRuntimeJitException(helper.ToString());
 
                 // JIT32 x86-specific write barriers
                 case ILCompiler.ReadyToRunHelper.WriteBarrier_EAX:
