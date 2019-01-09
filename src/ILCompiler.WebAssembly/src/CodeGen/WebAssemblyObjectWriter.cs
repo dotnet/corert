@@ -186,11 +186,12 @@ namespace ILCompiler.DependencyAnalysis
 
             EmitDebugMetadata();
 
-            LLVM.WriteBitcodeToFile(Module, _objectFilePath);
 #if DEBUG
             LLVM.PrintModuleToFile(Module, Path.ChangeExtension(_objectFilePath, ".txt"), out string unused2);
 #endif //DEBUG
             LLVM.VerifyModule(Module, LLVMVerifierFailureAction.LLVMAbortProcessAction, out string unused);
+
+            LLVM.WriteBitcodeToFile(Module, _objectFilePath);
 
             //throw new NotImplementedException(); // This function isn't complete
         }
