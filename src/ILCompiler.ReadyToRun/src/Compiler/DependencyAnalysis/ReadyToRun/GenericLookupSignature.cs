@@ -20,7 +20,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly MethodWithToken _methodArgument;
 
-        private readonly TypeDesc _contextType;
+        private readonly MethodContext _methodContext;
 
         private readonly SignatureContext _signatureContext;
 
@@ -29,14 +29,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadyToRunFixupKind fixupKind, 
             TypeDesc typeArgument, 
             MethodWithToken methodArgument,
-            TypeDesc contextType,
+            MethodContext methodContext,
             SignatureContext signatureContext)
         {
             _runtimeLookupKind = runtimeLookupKind;
             _fixupKind = fixupKind;
             _typeArgument = typeArgument;
             _methodArgument = methodArgument;
-            _contextType = contextType;
+            _methodContext = methodContext;
             _signatureContext = signatureContext;
         }
 
@@ -63,7 +63,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                     case CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ:
                         dataBuilder.EmitByte((byte)ReadyToRunFixupKind.READYTORUN_FIXUP_ThisObjDictionaryLookup);
-                        dataBuilder.EmitTypeSignature(_contextType, _signatureContext);
+                        dataBuilder.EmitTypeSignature(_methodContext.Method.OwningType, _signatureContext);
                         break;
 
                     default:
@@ -84,7 +84,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         enforceDefEncoding: false,
                         context: _signatureContext,
                         isUnboxingStub: false,
-                        isInstantiatingStub: false);
+                        isInstantiatingStub: true);
                 }
                 else
                 {
@@ -114,7 +114,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     sb.Append(" [");
                     sb.Append(_methodArgument.Token.MetadataReader.GetString(_methodArgument.Token.MetadataReader.GetAssemblyDefinition().Name));
-                    sb.Append(":");
+                    sb.Append(":"); ;
                     sb.Append(((uint)_methodArgument.Token.Token).ToString("X8"));
                     sb.Append("]");
                 }
@@ -123,10 +123,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 throw new NotImplementedException();
             }
-            if (_contextType != null)
+            if (_methodContext != null)
             {
                 sb.Append(" (");
-                sb.Append(_contextType.ToString());
+                sb.Append(_methodContext.Method.ToString());
+                sb.Append(":0x");
+                sb.Append(_methodContext.Context.ToString());
                 sb.Append(")");
             }
         }

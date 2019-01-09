@@ -7,11 +7,10 @@ using System.Collections.Generic;
 using System.CommandLine;
 using System.Diagnostics;
 using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Session;
 using System.IO;
-using System.Threading;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace ReadyToRun.TestHarness
@@ -65,7 +64,7 @@ namespace ReadyToRun.TestHarness
                 syntax.DefineOptionList("include", ref _referenceFolders, "Folders containing assemblies to monitor");
                 syntax.DefineOption("w|whitelist", ref _whitelistFilename, "Path to method whitelist file");
                 syntax.DefineOptionList("testargs", ref _testargs, "Args to pass into test");
-                syntax.DefineOption ("noetl", ref _noEtl, "Run the test without ETL enabled");
+                syntax.DefineOption("noetl", ref _noEtl, "Run the test without ETL enabled");
             });
             return argSyntax;
         }
@@ -114,7 +113,7 @@ namespace ReadyToRun.TestHarness
             foreach (string reference in _referenceFolders)
             {
                 string absolutePath = reference.ToAbsoluteDirectoryPath();
-                
+
                 if (!Directory.Exists(reference))
                 {
                     Console.WriteLine($"Error: {reference} does not exist.");
@@ -134,7 +133,7 @@ namespace ReadyToRun.TestHarness
                 {
                     var r2rMethodFilter = new ReadyToRunJittedMethods(session, testModules, testFolders);
                     session.EnableProvider(ClrTraceEventParser.ProviderGuid, TraceEventLevel.Verbose, (ulong)(ClrTraceEventParser.Keywords.Jit | ClrTraceEventParser.Keywords.Loader));
-                    
+
                     Task.Run(() => RunTest(session, r2rMethodFilter, passThroughArguments, out exitCode));
 
                     // Block, processing callbacks for events we subscribed to
@@ -150,7 +149,7 @@ namespace ReadyToRun.TestHarness
                     exitCode = exitCode == StatusTestPassed ? analysisResult : exitCode;
                 }
             }
-            
+
 
             Console.WriteLine($"Final test result: {exitCode}");
             return exitCode;
@@ -183,14 +182,32 @@ namespace ReadyToRun.TestHarness
             Console.WriteLine("");
             Console.WriteLine("White listed methods that were jitted (these don't count as test failures):");
             int whiteListedJittedMethodCount = 0;
-            foreach (var jittedMethod in jittedMethods.JittedMethods)
+
+            List<string> jittedMethodNames = new List<string>();
+            foreach (KeyValuePair<string, HashSet<string>> jittedMethod in jittedMethods.JittedMethods.OrderBy(kvp => kvp.Key))
             {
-                if (whiteListedMethods.Contains(jittedMethod.MethodName))
+                bool wasWhiteListed = whiteListedMethods.Contains(jittedMethod.Key);
+                if (!wasWhiteListed)
                 {
-                    Console.WriteLine(jittedMethod.MethodName);
-                    ++whiteListedJittedMethodCount;
+                    // Check assembly-qualified whitelist clauses
+                    wasWhiteListed = true;
+                    foreach (string assemblyName in jittedMethod.Value)
+                    {
+                        string fullName = GetFullModuleName(assemblyName, jittedMethod.Key);
+                        if (!whiteListedMethods.Contains(fullName))
+                        {
+                            jittedMethodNames.Add(fullName);
+                            wasWhiteListed = false;
+                        }
+                    }
+                }
+                if (wasWhiteListed)
+                {
+                    Console.WriteLine(jittedMethod.Key);
+                    whiteListedJittedMethodCount++;
                 }
             }
+
             if (whiteListedJittedMethodCount == 0)
             {
                 Console.WriteLine("-None-");
@@ -198,24 +215,17 @@ namespace ReadyToRun.TestHarness
 
             Console.WriteLine("");
             Console.WriteLine("Methods that were jitted without a whitelist entry (test failure):");
-            int jittedMethodCount = 0;
-            foreach (var jittedMethod in jittedMethods.JittedMethods)
+            foreach (string jittedMethod in jittedMethodNames)
             {
-                string fullName = GetFullModuleName(jittedMethod.assemblyName, jittedMethod.MethodName);
-                if (!whiteListedMethods.Contains(jittedMethod.MethodName) && !whiteListedMethods.Contains(fullName))
-                {
-                    Console.WriteLine(fullName);
-                    ++jittedMethodCount;
-                }
+                Console.WriteLine(jittedMethod);
             }
-            if (jittedMethodCount == 0)
+            if (jittedMethodNames.Count == 0)
             {
                 Console.WriteLine("-None-");
             }
-
-            if (jittedMethodCount > 0)
+            else
             {
-                Console.WriteLine($"Error: {jittedMethodCount} methods were jitted.");
+                Console.WriteLine($"Error: {jittedMethodNames.Count} methods were jitted.");
                 return StatusTestErrorMethodsJitted;
             }
 
@@ -238,7 +248,7 @@ namespace ReadyToRun.TestHarness
                     process.StartInfo.FileName = _coreRunExePath;
                     process.StartInfo.Arguments = _testExe + " " + testArguments;
                     process.StartInfo.UseShellExecute = false;
-                    
+
                     process.Start();
 
                     if (r2rMethodFilter != null)
@@ -246,12 +256,12 @@ namespace ReadyToRun.TestHarness
                         r2rMethodFilter.SetProcessId(process.Id);
                     }
 
-                    process.OutputDataReceived += delegate(object sender, DataReceivedEventArgs args)
+                    process.OutputDataReceived += delegate (object sender, DataReceivedEventArgs args)
                     {
                         Console.WriteLine(args.Data);
                     };
 
-                    process.ErrorDataReceived += delegate(object sender, DataReceivedEventArgs args)
+                    process.ErrorDataReceived += delegate (object sender, DataReceivedEventArgs args)
                     {
                         Console.WriteLine(args.Data);
                     };
@@ -276,7 +286,7 @@ namespace ReadyToRun.TestHarness
                     }
 
                     Console.WriteLine($"Test exited with code {process.ExitCode}");
-                    
+
                     if (session != null && session.EventsLost > 0)
                     {
                         exitCode = StatusTestErrorEventsLost;
