@@ -907,7 +907,7 @@ namespace Internal.JitInterface
             return helper;
         }
 
-        private CorInfoHelpFunc getNewHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle)
+        private CorInfoHelpFunc getNewHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, ref bool pHasSideEffects)
         {
             TypeDesc type = HandleToObject(pResolvedToken.hClass);
 
