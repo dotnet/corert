@@ -1987,7 +1987,12 @@ namespace Internal.JitInterface
                     MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
                     if (contextMethod == MethodBeingCompiled)
                     {
-                        FieldDesc runtimeDeterminedField = (FieldDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+                        FieldDesc runtimeDeterminedField;
+#if READYTORUN
+                        runtimeDeterminedField = field;
+#else
+                        runtimeDeterminedField = (FieldDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+#endif
 
                         ReadyToRunHelperId helperId;
 

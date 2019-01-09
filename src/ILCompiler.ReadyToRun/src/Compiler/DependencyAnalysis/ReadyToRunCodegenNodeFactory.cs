@@ -481,6 +481,16 @@ namespace ILCompiler.DependencyAnalysis
                             (TypeDesc)helperKey.Target,
                             InputModuleContext));
 
+                case ReadyToRunHelperId.GetNonGCStaticBase:
+                    return new DelayLoadHelperImport(
+                        this,
+                        HelperImports,
+                        ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GenericNonGcStaticBase,
+                        new TypeFixupSignature(
+                            ReadyToRunFixupKind.READYTORUN_FIXUP_Invalid,
+                            (TypeDesc)helperKey.Target,
+                            InputModuleContext));
+
                 default:
                     throw new NotImplementedException();
             }
