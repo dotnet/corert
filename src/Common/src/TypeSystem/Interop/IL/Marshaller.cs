@@ -396,6 +396,8 @@ namespace Internal.TypeSystem.Interop
                     return new ByValArrayMarshaller();
                 case MarshallerKind.AnsiCharArray:
                     return new AnsiCharArrayMarshaller();
+                case MarshallerKind.HandleRef:
+                    return new HandleRefMarshaller();
                 default:
                     // ensures we don't throw during create marshaller. We will throw NSE
                     // during EmitIL which will be handled and an Exception method body 
@@ -1875,6 +1877,33 @@ namespace Internal.TypeSystem.Interop
                 LoadManagedValue(codeStream);
                 codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(InteropTypes.GetGC(Context).GetKnownMethod("KeepAlive", null)));
             }
+        }
+    }
+
+    class HandleRefMarshaller : Marshaller
+    {
+        protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
+        {
+            LoadManagedAddr(codeStream);
+            codeStream.Emit(ILOpcode.ldfld, _ilCodeStreams.Emitter.NewToken(InteropTypes.GetHandleRef(Context).GetKnownField("_handle")));
+            StoreNativeValue(codeStream);
+        }
+
+        protected override void TransformNativeToManaged(ILCodeStream codeStream)
+        {
+            throw new InvalidProgramException();
+        }
+
+        protected override void TransformManagedToNative(ILCodeStream codeStream)
+        {
+            throw new InvalidProgramException();
+        }
+
+        protected override void EmitCleanupManaged(ILCodeStream codeStream)
+        {
+            LoadManagedAddr(codeStream);
+            codeStream.Emit(ILOpcode.ldfld, _ilCodeStreams.Emitter.NewToken(InteropTypes.GetHandleRef(Context).GetKnownField("_wrapper")));
+            codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(InteropTypes.GetGC(Context).GetKnownMethod("KeepAlive", null)));
         }
     }
 

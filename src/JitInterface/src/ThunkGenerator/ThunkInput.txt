@@ -212,6 +212,8 @@ FUNCTIONS
     void LongLifetimeFree(void* obj)
     size_t getClassModuleIdForStatics(CORINFO_CLASS_HANDLE cls, CORINFO_MODULE_HANDLE* pModule, VOIDSTARSTAR ppIndirection)
     unsigned getClassSize(CORINFO_CLASS_HANDLE cls)
+    unsigned getHeapClassSize(CORINFO_CLASS_HANDLE        cls)
+    BOOL canAllocateOnStack(CORINFO_CLASS_HANDLE cls)
     unsigned getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, BOOL fDoubleAlignHint)
     unsigned getClassGClayout(CORINFO_CLASS_HANDLE cls, BYTE* gcPtrs)
     unsigned getClassNumInstanceFields(CORINFO_CLASS_HANDLE cls)

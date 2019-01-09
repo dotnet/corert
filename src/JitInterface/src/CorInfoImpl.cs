@@ -1432,6 +1432,30 @@ namespace Internal.JitInterface
             return (uint)type.GetElementSize().AsInt;
         }
 
+        private uint getHeapClassSize(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc type = HandleToObject(cls);
+
+            Debug.Assert(!type.IsValueType);
+            Debug.Assert(type.IsDefType);
+
+            return (uint)((DefType)type).InstanceByteCount.AsInt;
+        }
+
+        private bool canAllocateOnStack(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc type = HandleToObject(cls);
+
+            Debug.Assert(!type.IsValueType);
+            Debug.Assert(type.IsDefType);
+
+            bool result = !type.HasFinalizer;
+
+            // TODO: for ready to run, check whether inheritance chain is within the version bubble
+
+            return result;
+        }
+
         private uint getClassAlignmentRequirement(CORINFO_CLASS_STRUCT_* cls, bool fDoubleAlignHint)
         {
             DefType type = (DefType)HandleToObject(cls);
