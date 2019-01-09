@@ -13,6 +13,7 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 
 using ReadyToRunHelper = ILCompiler.ReadyToRunHelper;
+using System.Collections.Generic;
 
 namespace Internal.JitInterface
 {
@@ -25,6 +26,31 @@ namespace Internal.JitInterface
         {
             Method = method;
             Token = token;
+        }
+    }
+
+    public class MethodContext
+    {
+        public readonly MethodDesc Method;
+        public readonly IntPtr Context;
+
+        public MethodContext(MethodDesc method, IntPtr context)
+        {
+            Method = method;
+            Context = context;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is MethodContext other && Method == other.Method && Context == other.Context;
+        }
+
+        public override int GetHashCode()
+        {
+            int hashCode = -117376276;
+            hashCode = hashCode * -1521134295 + Method.GetHashCode();
+            hashCode = hashCode * -1521134295 + Context.GetHashCode();
+            return hashCode;
         }
     }
 
@@ -195,20 +221,12 @@ namespace Internal.JitInterface
                         Debug.Assert(typeToInitialize.IsCanonicalSubtype(CanonicalFormKind.Any));
 
                         DefType helperArg = typeToInitialize.ConvertToSharedRuntimeDeterminedForm();
-                        TypeDesc contextType;
-                        if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ)
-                        {
-                            contextType = methodFromContext(pResolvedToken.tokenContext).OwningType;
-                        }
-                        else
-                        {
-                            contextType = null;
-                        }
+                        MethodContext contextMethod = new MethodContext(methodFromContext(pResolvedToken.tokenContext), new IntPtr(pResolvedToken.tokenContext));
                         ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(
                             pGenericLookupKind.runtimeLookupKind,
                             ReadyToRunHelperId.GetNonGCStaticBase, 
                             helperArg, 
-                            contextType, 
+                            contextMethod, 
                             _signatureContext);
                         pLookup = CreateConstLookupToSymbol(helper);
                     }
@@ -223,20 +241,12 @@ namespace Internal.JitInterface
                         {
                             helperArg = new MethodWithToken(methodArg, new ModuleToken(_tokenContext, pResolvedToken.token));
                         }
-                        TypeDesc contextType;
-                        if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ)
-                        {
-                            contextType = methodFromContext(pResolvedToken.tokenContext).OwningType;
-                        }
-                        else
-                        {
-                            contextType = null;
-                        }
+                        MethodContext contextMethod = new MethodContext(methodFromContext(pResolvedToken.tokenContext), new IntPtr(pResolvedToken.tokenContext));
                         ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(
                             pGenericLookupKind.runtimeLookupKind,
                             helperId,
                             helperArg, 
-                            contextType, 
+                            contextMethod, 
                             _signatureContext);
                         pLookup = CreateConstLookupToSymbol(helper);
                     }
