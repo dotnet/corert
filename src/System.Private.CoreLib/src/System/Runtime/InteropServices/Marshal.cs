@@ -94,5 +94,10 @@ namespace System.Runtime.InteropServices
         {
             PInvokeMarshal.FreeBSTR(ptr);
         }
+
+        public static int GetHRForException(Exception e)
+        {
+            return PInvokeMarshal.GetHRForException(e);
+        }
     }
 }

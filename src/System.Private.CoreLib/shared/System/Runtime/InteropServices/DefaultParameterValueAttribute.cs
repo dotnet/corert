@@ -2,12 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-
-//
-
-using System;
-
 namespace System.Runtime.InteropServices
 {
     //
@@ -21,11 +15,9 @@ namespace System.Runtime.InteropServices
     {
         public DefaultParameterValueAttribute(object value)
         {
-            this.value = value;
+            Value = value;
         }
 
-        public object Value { get { return this.value; } }
-
-        private object value;
+        public object Value { get; }
     }
 }

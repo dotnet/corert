@@ -2,14 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
 namespace System.Runtime.InteropServices
 {
-    public enum ClassInterfaceType
+    // Wrapper that is converted to a variant with VT_BYREF | VT_VARIANT.
+    public sealed class VariantWrapper
     {
-        None = 0,
-        AutoDispatch = 1,
-        AutoDual = 2
+        public VariantWrapper(Object obj)
+        {
+            WrappedObject = obj;
+        }
+
+        public Object WrappedObject { get; }
     }
 }

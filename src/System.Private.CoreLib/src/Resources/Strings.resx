@@ -687,6 +687,9 @@
   <data name="Argument_NotIsomorphic" xml:space="preserve">
     <value>Object contains non-primitive or non-blittable data.</value>
   </data>
+  <data name="Argument_StructArrayTooLarge" xml:space="preserve">
+    <value>Array size exceeds addressing limitations.</value>
+  </data>
   <data name="Argument_OffsetLocalMismatch" xml:space="preserve">
     <value>The UTC Offset of the local dateTime parameter does not match the offset argument.</value>
   </data>
@@ -2007,6 +2010,9 @@
   </data>
   <data name="IndexOutOfRange_UMSPosition" xml:space="preserve">
     <value>Unmanaged memory stream position was beyond the capacity of the stream.</value>
+  </data>
+  <data name="IndexOutOfRange_ArrayWithOffset" xml:space="preserve">
+    <value>ArrayWithOffset: offset exceeds array size.</value>
   </data>
   <data name="ObjectDisposed_ViewAccessorClosed" xml:space="preserve">
     <value>Cannot access a closed accessor.</value>
