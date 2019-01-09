@@ -221,12 +221,12 @@ namespace Internal.JitInterface
                         Debug.Assert(typeToInitialize.IsCanonicalSubtype(CanonicalFormKind.Any));
 
                         DefType helperArg = typeToInitialize.ConvertToSharedRuntimeDeterminedForm();
-                        MethodContext contextMethod = new MethodContext(methodFromContext(pResolvedToken.tokenContext), new IntPtr(pResolvedToken.tokenContext));
+                        MethodContext methodContext = new MethodContext(methodFromContext(pResolvedToken.tokenContext), new IntPtr(pResolvedToken.tokenContext));
                         ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(
                             pGenericLookupKind.runtimeLookupKind,
                             ReadyToRunHelperId.GetNonGCStaticBase, 
                             helperArg, 
-                            contextMethod, 
+                            methodContext, 
                             _signatureContext);
                         pLookup = CreateConstLookupToSymbol(helper);
                     }
@@ -241,12 +241,12 @@ namespace Internal.JitInterface
                         {
                             helperArg = new MethodWithToken(methodArg, new ModuleToken(_tokenContext, pResolvedToken.token));
                         }
-                        MethodContext contextMethod = new MethodContext(methodFromContext(pResolvedToken.tokenContext), new IntPtr(pResolvedToken.tokenContext));
+                        MethodContext methodContext = new MethodContext(methodFromContext(pResolvedToken.tokenContext), new IntPtr(pResolvedToken.tokenContext));
                         ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(
                             pGenericLookupKind.runtimeLookupKind,
                             helperId,
                             helperArg, 
-                            contextMethod, 
+                            methodContext, 
                             _signatureContext);
                         pLookup = CreateConstLookupToSymbol(helper);
                     }

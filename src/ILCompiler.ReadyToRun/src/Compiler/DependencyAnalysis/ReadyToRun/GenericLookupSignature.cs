@@ -20,7 +20,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly MethodWithToken _methodArgument;
 
-        private readonly MethodContext _contextMethod;
+        private readonly MethodContext _methodContext;
 
         private readonly SignatureContext _signatureContext;
 
@@ -29,14 +29,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadyToRunFixupKind fixupKind, 
             TypeDesc typeArgument, 
             MethodWithToken methodArgument,
-            MethodContext contextMethod,
+            MethodContext methodContext,
             SignatureContext signatureContext)
         {
             _runtimeLookupKind = runtimeLookupKind;
             _fixupKind = fixupKind;
             _typeArgument = typeArgument;
             _methodArgument = methodArgument;
-            _contextMethod = contextMethod;
+            _methodContext = methodContext;
             _signatureContext = signatureContext;
         }
 
@@ -63,7 +63,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                     case CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ:
                         dataBuilder.EmitByte((byte)ReadyToRunFixupKind.READYTORUN_FIXUP_ThisObjDictionaryLookup);
-                        dataBuilder.EmitTypeSignature(_contextMethod.Method.OwningType, _signatureContext);
+                        dataBuilder.EmitTypeSignature(_methodContext.Method.OwningType, _signatureContext);
                         break;
 
                     default:
@@ -123,12 +123,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 throw new NotImplementedException();
             }
-            if (_contextMethod != null)
+            if (_methodContext != null)
             {
                 sb.Append(" (");
-                sb.Append(_contextMethod.Method.ToString());
+                sb.Append(_methodContext.Method.ToString());
                 sb.Append(":0x");
-                sb.Append(_contextMethod.Context.ToString());
+                sb.Append(_methodContext.Context.ToString());
                 sb.Append(")");
             }
         }

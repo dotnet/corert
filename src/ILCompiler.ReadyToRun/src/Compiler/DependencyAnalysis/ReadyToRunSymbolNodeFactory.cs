@@ -677,20 +677,20 @@ namespace ILCompiler.DependencyAnalysis
             public readonly ReadyToRunFixupKind FixupKind;
             public readonly TypeDesc TypeArgument;
             public readonly MethodWithToken MethodArgument;
-            public readonly MethodContext ContextMethod;
+            public readonly MethodContext MethodContext;
 
             public GenericLookupKey(
                 CORINFO_RUNTIME_LOOKUP_KIND lookupKind,
                 ReadyToRunFixupKind fixupKind,
                 TypeDesc typeArgument,
                 MethodWithToken methodArgument,
-                MethodContext contextMethod)
+                MethodContext methodContext)
             {
                 LookupKind = lookupKind;
                 FixupKind = fixupKind;
                 TypeArgument = typeArgument;
                 MethodArgument = methodArgument;
-                ContextMethod = contextMethod;
+                MethodContext = methodContext;
             }
 
             public bool Equals(GenericLookupKey other)
@@ -699,7 +699,7 @@ namespace ILCompiler.DependencyAnalysis
                     FixupKind == other.FixupKind &&
                     RuntimeDeterminedTypeHelper.Equals(TypeArgument, other.TypeArgument) &&
                     RuntimeDeterminedTypeHelper.Equals(MethodArgument?.Method ?? null, other.MethodArgument?.Method ?? null) &&
-                    ContextMethod.Equals(other.ContextMethod);
+                    MethodContext.Equals(other.MethodContext);
             }
 
             public override bool Equals(object obj)
@@ -713,7 +713,7 @@ namespace ILCompiler.DependencyAnalysis
                     (int)FixupKind +
                     (TypeArgument != null ? 31 * RuntimeDeterminedTypeHelper.GetHashCode(TypeArgument) : 0) +
                     (MethodArgument != null ? 31 * RuntimeDeterminedTypeHelper.GetHashCode(MethodArgument.Method) : 0) +
-                    (ContextMethod != null ? ContextMethod.GetHashCode() : 0));
+                    (MethodContext != null ? MethodContext.GetHashCode() : 0));
             }
         }
 
@@ -723,7 +723,7 @@ namespace ILCompiler.DependencyAnalysis
             CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
             ReadyToRunHelperId helperId,
             object helperArgument,
-            MethodContext contextMethod,
+            MethodContext methodContext,
             SignatureContext signatureContext)
         {
             switch (helperId)
@@ -733,7 +733,7 @@ namespace ILCompiler.DependencyAnalysis
                         runtimeLookupKind,
                         ReadyToRunFixupKind.READYTORUN_FIXUP_TypeHandle,
                         (TypeDesc)helperArgument,
-                        contextMethod,
+                        methodContext,
                         signatureContext);
 
                 case ReadyToRunHelperId.MethodHandle:
@@ -741,7 +741,7 @@ namespace ILCompiler.DependencyAnalysis
                         runtimeLookupKind,
                         ReadyToRunFixupKind.READYTORUN_FIXUP_MethodHandle,
                         (MethodWithToken)helperArgument,
-                        contextMethod,
+                        methodContext,
                         signatureContext);
 
                 case ReadyToRunHelperId.MethodEntry:
@@ -749,7 +749,7 @@ namespace ILCompiler.DependencyAnalysis
                         runtimeLookupKind,
                         ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
                         (MethodWithToken)helperArgument,
-                        contextMethod,
+                        methodContext,
                         signatureContext);
 
                 case ReadyToRunHelperId.MethodDictionary:
@@ -757,7 +757,7 @@ namespace ILCompiler.DependencyAnalysis
                         runtimeLookupKind,
                         ReadyToRunFixupKind.READYTORUN_FIXUP_MethodHandle,
                         (MethodWithToken)helperArgument,
-                        contextMethod,
+                        methodContext,
                         signatureContext);
 
                 case ReadyToRunHelperId.VirtualDispatchCell:
@@ -765,7 +765,7 @@ namespace ILCompiler.DependencyAnalysis
                         runtimeLookupKind,
                         ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry,
                         (MethodWithToken)helperArgument,
-                        contextMethod,
+                        methodContext,
                         signatureContext);
 
                 default:
@@ -777,10 +777,10 @@ namespace ILCompiler.DependencyAnalysis
             CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
             ReadyToRunFixupKind fixupKind,
             TypeDesc typeArgument,
-            MethodContext contextMethod,
+            MethodContext methodContext,
             SignatureContext signatureContext)
         {
-            GenericLookupKey key = new GenericLookupKey(runtimeLookupKind, fixupKind, typeArgument, methodArgument: null, contextMethod);
+            GenericLookupKey key = new GenericLookupKey(runtimeLookupKind, fixupKind, typeArgument, methodArgument: null, methodContext);
             ISymbolNode node;
             if (!_genericLookupHelpers.TryGetValue(key, out node))
             {
@@ -788,7 +788,7 @@ namespace ILCompiler.DependencyAnalysis
                     _codegenNodeFactory,
                     _codegenNodeFactory.HelperImports,
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
-                    new GenericLookupSignature(runtimeLookupKind, fixupKind, typeArgument, methodArgument: null, contextMethod, signatureContext));
+                    new GenericLookupSignature(runtimeLookupKind, fixupKind, typeArgument, methodArgument: null, methodContext, signatureContext));
                 _genericLookupHelpers.Add(key, node);
             }
             return node;
@@ -798,10 +798,10 @@ namespace ILCompiler.DependencyAnalysis
             CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
             ReadyToRunFixupKind fixupKind,
             MethodWithToken methodArgument,
-            MethodContext contextMethod,
+            MethodContext methodContext,
             SignatureContext signatureContext)
         {
-            GenericLookupKey key = new GenericLookupKey(runtimeLookupKind, fixupKind, typeArgument: null, methodArgument, contextMethod);
+            GenericLookupKey key = new GenericLookupKey(runtimeLookupKind, fixupKind, typeArgument: null, methodArgument, methodContext);
             ISymbolNode node;
             if (!_genericLookupHelpers.TryGetValue(key, out node))
             {
@@ -809,7 +809,7 @@ namespace ILCompiler.DependencyAnalysis
                     _codegenNodeFactory,
                     _codegenNodeFactory.HelperImports,
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
-                    new GenericLookupSignature(runtimeLookupKind,  fixupKind,  typeArgument: null, methodArgument, contextMethod, signatureContext));
+                    new GenericLookupSignature(runtimeLookupKind,  fixupKind,  typeArgument: null, methodArgument, methodContext, signatureContext));
                 _genericLookupHelpers.Add(key, node);
             }
             return node;
