@@ -107,26 +107,21 @@ namespace ILCompiler
             UnboxingThunk thunkDefinition = _nonGenericUnboxingThunkHashtable.GetOrCreateValue(methodKey);
 
             // Find the thunk on the instantiated version of the reference type.
+            MethodDesc thunk;
             if (owningType != owningTypeDefinition)
             {
                 InstantiatedType boxedType = boxedTypeDefinition.MakeInstantiatedType(owningType.Instantiation);
-                MethodDesc thunk = GetMethodForInstantiatedType(thunkDefinition, boxedType);
-                //TODO: this might be triggered by a struct that implements an interface with a generic method
-                if (thunk.HasInstantiation)
-                {
-                    return thunk.Context.GetInstantiatedMethod(thunk, targetMethod.Instantiation);
-                }
-                Debug.Assert(!thunk.HasInstantiation);
-                return thunk;
+                thunk = GetMethodForInstantiatedType(thunkDefinition, boxedType);
             }
             else
             {
-                if (thunkDefinition.HasInstantiation)
-                {
-                    return thunkDefinition.Context.GetInstantiatedMethod(thunkDefinition, targetMethod.Instantiation);
-                }
-                return thunkDefinition;
+                thunk = thunkDefinition;
             }
+            //TODO: this might be triggered by a struct that implements an interface with a generic method
+            if (thunk.HasInstantiation)
+                thunk = thunk.MakeInstantiatedMethod(targetMethod.Instantiation);
+
+            return thunk;
         }
 
         /// <summary>
@@ -561,8 +556,6 @@ namespace ILCompiler
                 {
                     codeStream.EmitLdArg(i + 1);
                 }
-
-//                codeStream.Emit(ILOpcode.call, emit.NewToken(_targetMethod.InstantiateAsOpen()));
 
                 TypeDesc owner = _targetMethod.OwningType;
                 MethodDesc methodToInstantiate = _targetMethod;

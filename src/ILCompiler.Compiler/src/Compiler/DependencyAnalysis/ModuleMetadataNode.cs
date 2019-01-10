@@ -39,7 +39,7 @@ namespace ILCompiler.DependencyAnalysis
             // have something in an assembly that always generates metadata.
             dependencies.Add(factory.TypeMetadata(_module.GetGlobalModuleType()), "Global module type");
 
-            if(_module is EcmaAssembly) CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, (EcmaAssembly)_module);
+            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, (EcmaAssembly)_module);
 
             return dependencies;
         }
