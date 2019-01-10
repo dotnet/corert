@@ -1895,8 +1895,9 @@ namespace Internal.IL
                     {
                         if (canonMethod.RequiresInstMethodDescArg())
                         {
-                            Append("&");
+                            Append("(char*)&");
                             AppendMethodGenericDictionary(method);
+                            Append(" + sizeof(void*)");
                         }
                         else
                         {
@@ -2695,7 +2696,7 @@ namespace Internal.IL
 
                 if (field.IsStatic)
                 {
-                    Append(_writer.GetCppStaticsName(owningType, field.HasGCStaticBase, field.IsThreadStatic));
+                    Append(_writer.GetCppStaticsName(owningType, field.HasGCStaticBase, field.IsThreadStatic, true));
                     Append(".");
                     Append(_writer.GetCppFieldName(field));
                 }
@@ -2773,7 +2774,7 @@ namespace Internal.IL
 
                 if (field.IsStatic)
                 {
-                    Append(_writer.GetCppStaticsName(owningType, field.HasGCStaticBase, field.IsThreadStatic));
+                    Append(_writer.GetCppStaticsName(owningType, field.HasGCStaticBase, field.IsThreadStatic, true));
                     Append(".");
                     Append(_writer.GetCppFieldName(field));
                 }
@@ -2846,7 +2847,7 @@ namespace Internal.IL
                 AppendLine();
                 if (field.IsStatic)
                 {
-                    Append(_writer.GetCppStaticsName(owningType, field.HasGCStaticBase, field.IsThreadStatic));
+                    Append(_writer.GetCppStaticsName(owningType, field.HasGCStaticBase, field.IsThreadStatic, true));
                     Append(".");
                     Append(_writer.GetCppFieldName(field));
                 }
@@ -3038,11 +3039,9 @@ namespace Internal.IL
 
             AppendSemicolon();
 
-            string typeName = GetStackValueKindCPPTypeName(GetStackValueKind(type), type);
-
             // TODO: Write barrier as necessary
             AppendLine();
-            Append("*(" + typeName + " *)((void **)");
+            Append("*(" + _writer.GetCppSignatureTypeName(type) + " *)((void **)");
             Append(tempName);
             Append(" + 1) = ");
             Append(value);
@@ -3356,9 +3355,9 @@ namespace Internal.IL
                 if (opCode == ILOpcode.unbox_any)
                 {
                     string typeName = GetStackValueKindCPPTypeName(GetStackValueKind(type), type);
-                    Append("*(");
+                    Append("(");
                     Append(typeName);
-                    Append("*)");
+                    Append(")*");
                 }
 
                 Append("(");
@@ -3424,7 +3423,7 @@ namespace Internal.IL
                 }
                 else
                 {
-                    AddTypeReference(type, false);
+                    AddTypeReference(type, true);
 
                     name = String.Concat(
                         name,
