@@ -59,8 +59,5 @@ namespace ILCompiler.DependencyAnalysis
             // TODO: this is wrong: this returns an assembly stub node
             return new ReadyToRunHelperNode(this, helperCall.HelperId, helperCall.Target);
         }
-
-        // Want this not protected/internal so it can be used to get ThreadStatic base address
-        public new TypeManagerIndirectionNode TypeManagerIndirection => base.TypeManagerIndirection;
     }
 }
