@@ -27,6 +27,15 @@ See the LICENSE file in the project root for more information.
     <TargetOS Condition="'$(TargetOS)' == ''">$(OS)</TargetOS>
   </PropertyGroup>
 
+  <!-- Set up the defaults for the compatibility mode -->
+  <PropertyGroup Condition="'$(NativeCodeGen)' != 'readytorun'">
+    <_BuildingInCompatibleMode Condition="$(RootAllApplicationAssemblies) == '' and $(IlcGenerateCompleteTypeMetadata) == '' and $(IlcGenerateStackTraceData) == ''">true</_BuildingInCompatibleMode>
+
+    <RootAllApplicationAssemblies Condition="$(RootAllApplicationAssemblies) == ''">true</RootAllApplicationAssemblies>
+    <IlcGenerateCompleteTypeMetadata Condition="$(IlcGenerateCompleteTypeMetadata) == ''">true</IlcGenerateCompleteTypeMetadata>
+    <IlcGenerateStackTraceData Condition="$(IlcGenerateStackTraceData) == ''">true</IlcGenerateStackTraceData>
+  </PropertyGroup>
+
   <PropertyGroup>
     <NativeObjectExt Condition="'$(TargetOS)' == 'Windows_NT'">.obj</NativeObjectExt>
     <NativeObjectExt Condition="'$(TargetOS)' != 'Windows_NT'">.o</NativeObjectExt>
@@ -223,7 +232,8 @@ See the LICENSE file in the project root for more information.
 
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(NativeObject)))" />
 
-    <Message Text="Generating native code" Importance="high" />
+    <Message Text="Generating native code" Condition="$(_BuildingInCompatibleMode) != 'true'" Importance="high" />
+    <Message Text="Generating compatible native code. To optimize for size or speed, visit https://aka.ms/optimizecorert" Condition="$(_BuildingInCompatibleMode) == 'true'" Importance="high" />
 
     <Exec Command="&quot;$(IlcPath)\tools\ilc&quot; @&quot;$(NativeIntermediateOutputPath)%(IlcCmd.ResponseFileName)&quot;" />
   </Target>
