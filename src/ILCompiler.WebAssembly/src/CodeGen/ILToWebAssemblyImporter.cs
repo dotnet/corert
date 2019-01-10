@@ -205,7 +205,7 @@ namespace Internal.IL
             }
 
             // Keep track of where we are in the llvm signature, starting after the
-            // shadow stack pointer and return adress
+            // shadow stack pointer and return address
             int signatureIndex = 1;
             if (NeedsReturnStackSlot(_signature))
             {
@@ -856,7 +856,6 @@ namespace Internal.IL
             var typedStoreLocation = CastIfNecessary(builder, storeLocation, LLVM.PointerType(valueType, 0), "TypedStore" + (name ?? ""));
             LLVM.BuildStore(builder, typedToStore, typedStoreLocation);
         }
-
 
         private LLVMValueRef CastToRawPointer(LLVMValueRef source, string name = null)
         {
@@ -2131,8 +2130,6 @@ namespace Internal.IL
             return llvmReturn;
         }
 
-
-
         private void AddMethodReference(MethodDesc method)
         {
             _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(method));
@@ -2807,7 +2804,7 @@ namespace Internal.IL
             StackEntry valueToShift = _stack.Pop();
 
             LLVMValueRef valueToShiftValue = valueToShift.ValueForStackKind(valueToShift.Kind, _builder, false);
-            
+
             // while it seems excessive that the bits to shift should need to be 64 bits, the LLVM docs say that both operands must be the same type and a compilation failure results if this is not the case.
             LLVMValueRef rhs;
             if (valueToShiftValue.TypeOf().Equals(LLVM.Int64Type()))
@@ -3658,7 +3655,6 @@ namespace Internal.IL
             LLVM.BuildCall(builder, TrapFunction, Array.Empty<LLVMValueRef>(), string.Empty);
             LLVM.BuildUnreachable(builder);
         }
-
 
         private void EmitDoNothingCall()
         {
