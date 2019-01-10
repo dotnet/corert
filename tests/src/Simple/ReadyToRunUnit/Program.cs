@@ -697,6 +697,80 @@ internal class Program
 
         return true;
     }
+    
+    class MyGen<T>
+    {
+        public static string GcValue;
+        public static int NonGcValue;
+        [ThreadStatic]
+        public static string TlsGcValue;
+        [ThreadStatic]
+        public static int TlsNonGcValue;
+    }
+
+    private static void SetGenericGcStatic<U, V>(string uValue, string vValue)
+    {
+        MyGen<U>.GcValue = uValue;
+        MyGen<V>.GcValue = vValue;
+    }
+
+    private static void SetGenericNonGcStatic<U, V>(int uValue, int vValue)
+    {
+        MyGen<U>.NonGcValue = uValue;
+        MyGen<V>.NonGcValue = vValue;
+    }
+
+    private static void SetGenericTlsGcStatic<U, V>(string uValue, string vValue)
+    {
+        MyGen<U>.TlsGcValue = uValue;
+        MyGen<V>.TlsGcValue = vValue;
+    }
+
+    private static void SetGenericTlsNonGcStatic<U, V>(int uValue, int vValue)
+    {
+        MyGen<U>.TlsNonGcValue = uValue;
+        MyGen<V>.TlsNonGcValue = vValue;
+    }
+
+    private static bool SharedGenericGcStaticTest()
+    {
+        string objectValue = "Hello";
+        string stringValue = "World";
+        SetGenericGcStatic<object, string>(objectValue, stringValue);
+        Console.WriteLine("Object GC value: {0}, expected {1}", MyGen<object>.GcValue, objectValue);
+        Console.WriteLine("String GC value: {0}, expected {1}", MyGen<string>.GcValue, stringValue);
+        return MyGen<object>.GcValue == objectValue && MyGen<string>.GcValue == stringValue;
+    }
+
+    private static bool SharedGenericNonGcStaticTest()
+    {
+        int objectValue = 42;
+        int stringValue = 666;
+        SetGenericNonGcStatic<object, string>(objectValue, stringValue);
+        Console.WriteLine("Object non-GC value: {0}, expected {1}", MyGen<object>.NonGcValue, objectValue);
+        Console.WriteLine("String non-GC value: {0}, expected {1}", MyGen<string>.NonGcValue, stringValue);
+        return MyGen<object>.NonGcValue == objectValue && MyGen<string>.NonGcValue == stringValue;
+    }
+
+    private static bool SharedGenericTlsGcStaticTest()
+    {
+        string objectValue = "Cpaot";
+        string stringValue = "Rules";
+        SetGenericTlsGcStatic<object, string>(objectValue, stringValue);
+        Console.WriteLine("Object TLS GC value: {0}, expected {1}", MyGen<object>.TlsGcValue, objectValue);
+        Console.WriteLine("String TLS GC value: {0}, expected {1}", MyGen<string>.TlsGcValue, stringValue);
+        return MyGen<object>.TlsGcValue == objectValue && MyGen<string>.TlsGcValue == stringValue;
+    }
+
+    private static bool SharedGenericTlsNonGcStaticTest()
+    {
+        int objectValue = 1234;
+        int stringValue = 5678;
+        SetGenericTlsNonGcStatic<object, string>(objectValue, stringValue);
+        Console.WriteLine("Object TLS non-GC value: {0}, expected {1}", MyGen<object>.TlsNonGcValue, objectValue);
+        Console.WriteLine("String TLS non-GC value: {0}, expected {1}", MyGen<string>.TlsNonGcValue, stringValue);
+        return MyGen<object>.TlsNonGcValue == objectValue && MyGen<string>.TlsNonGcValue == stringValue;
+    }
 
     static bool RVAFieldTest()
     {
@@ -764,6 +838,10 @@ internal class Program
         RunTest("VectorTest", VectorTest());
         RunTest("EnumHashValueTest", EnumHashValueTest());
         RunTest("RVAFieldTest", RVAFieldTest());
+        RunTest("SharedGenericGcStaticTest", SharedGenericGcStaticTest());
+        RunTest("SharedGenericNonGcStaticTest", SharedGenericNonGcStaticTest());
+        RunTest("SharedGenericTlsGcStaticTest", SharedGenericTlsGcStaticTest());
+        RunTest("SharedGenericTlsNonGcStaticTest", SharedGenericTlsNonGcStaticTest());
 
         Console.WriteLine($@"{_passedTests.Count} tests pass:");
         foreach (string testName in _passedTests)

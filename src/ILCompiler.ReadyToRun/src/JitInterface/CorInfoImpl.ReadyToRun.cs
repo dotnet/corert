@@ -338,6 +338,24 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.Ldelema_Ref;
                     break;
 
+
+                case CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
+                    id = ReadyToRunHelper.GenericGcStaticBase;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE:
+                    id = ReadyToRunHelper.GenericNonGcStaticBase;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE:
+                    id = ReadyToRunHelper.GenericGcTlsBase;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE:
+                    id = ReadyToRunHelper.GenericNonGcTlsBase;
+                    break;
+
+
                 case CorInfoHelpFunc.CORINFO_HELP_MEMSET:
                     id = ReadyToRunHelper.MemSet;
                     break;
