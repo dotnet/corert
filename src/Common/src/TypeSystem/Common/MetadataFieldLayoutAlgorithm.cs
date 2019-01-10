@@ -157,15 +157,22 @@ namespace Internal.TypeSystem
             }
 
             // At this point all special cases are handled and all inputs validated
+            return ComputeInstanceFieldLayout(type, numInstanceFields);
+        }
 
+        protected virtual ComputedInstanceFieldLayout ComputeInstanceFieldLayout(MetadataType type, int numInstanceFields)
+        {
             if (type.IsExplicitLayout)
             {
                 return ComputeExplicitFieldLayout(type, numInstanceFields);
             }
+            else if (type.IsSequentialLayout || type.Context.Target.Abi == TargetAbi.ProjectN || type.Context.Target.Abi == TargetAbi.CppCodegen)
+            {
+                return ComputeSequentialFieldLayout(type, numInstanceFields);
+            }
             else
             {
-                // Treat auto layout as sequential for now
-                return ComputeSequentialFieldLayout(type, numInstanceFields);
+                return ComputeAutoFieldLayout(type, numInstanceFields);
             }
         }
 
@@ -352,7 +359,7 @@ namespace Internal.TypeSystem
             return computedLayout;
         }
 
-        private static ComputedInstanceFieldLayout ComputeSequentialFieldLayout(MetadataType type, int numInstanceFields)
+        protected static ComputedInstanceFieldLayout ComputeSequentialFieldLayout(MetadataType type, int numInstanceFields)
         {
             var offsets = new FieldAndOffset[numInstanceFields];
 
@@ -397,6 +404,285 @@ namespace Internal.TypeSystem
             computedLayout.Offsets = offsets;
 
             return computedLayout;
+        }
+
+        protected static ComputedInstanceFieldLayout ComputeAutoFieldLayout(MetadataType type, int numInstanceFields)
+        {
+            // For types inheriting from another type, field offsets continue on from where they left off
+            LayoutInt cumulativeInstanceFieldPos = ComputeBytesUsedInParentType(type);
+
+            var layoutMetadata = type.GetClassLayout();
+
+            int packingSize = ComputePackingSize(type, layoutMetadata);
+            LayoutInt largestAlignmentRequired = LayoutInt.One;
+
+            var offsets = new FieldAndOffset[numInstanceFields];
+            int fieldOrdinal = 0;
+
+            // Iterate over the instance fields and keep track of the number of fields of each category
+            // For the non-GC Pointer fields, we will keep track of the number of fields by log2(size)
+            int maxLog2Size = CalculateLog2(TargetDetails.MaximumPrimitiveSize);
+            int log2PointerSize = CalculateLog2(type.Context.Target.PointerSize);
+            int instanceValueClassFieldCount = 0;
+            int instanceGCPointerFieldsCount = 0;
+            int[] instanceNonGCPointerFieldsCount = new int[maxLog2Size + 1];
+
+            foreach (var field in type.GetFields())
+            {
+                if (field.IsStatic)
+                    continue;
+
+                TypeDesc fieldType = field.FieldType;
+                if (IsByValueClass(fieldType))
+                {
+                    instanceValueClassFieldCount++;
+                }
+                else if (fieldType.IsGCPointer)
+                {
+                    instanceGCPointerFieldsCount++;
+                }
+                else
+                {                    
+                    Debug.Assert(fieldType.IsPrimitive || fieldType.IsPointer || fieldType.IsFunctionPointer);
+
+                    var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, packingSize);
+                    instanceNonGCPointerFieldsCount[CalculateLog2(fieldSizeAndAlignment.Size.AsInt)]++;
+                }
+            }
+
+            // Initialize three different sets of lists to hold the instance fields
+            //   1. Array of value class fields
+            //   2. Array of GC Pointer fields
+            //   3. Jagged array of remaining fields. To access the fields of size n, you must index the first array at index log2(n)
+            FieldDesc[] instanceValueClassFieldsArr = new FieldDesc[instanceValueClassFieldCount];
+            FieldDesc[] instanceGCPointerFieldsArr = new FieldDesc[instanceGCPointerFieldsCount];
+            FieldDesc[][] instanceNonGCPointerFieldsArr = new FieldDesc[maxLog2Size + 1][];
+
+            for (int i = 0; i <= maxLog2Size; i++)
+            {
+                instanceNonGCPointerFieldsArr[i] = new FieldDesc[instanceNonGCPointerFieldsCount[i]];
+
+                // Reset the counters to be used later as the index to insert into the arrays
+                instanceNonGCPointerFieldsCount[i] = 0;
+            }
+
+            // Reset the counters to be used later as the index to insert into the array
+            instanceGCPointerFieldsCount = 0;
+            instanceValueClassFieldCount = 0;
+
+            // Iterate over all fields and do the following
+            //   - Add instance fields to the appropriate array (while maintaining the enumerated order)
+            //   - Save the largest alignment we've seen
+            foreach (var field in type.GetFields())
+            {
+                if (field.IsStatic)
+                    continue;
+
+                TypeDesc fieldType = field.FieldType;
+                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, packingSize);
+                largestAlignmentRequired = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequired);
+
+
+                if (IsByValueClass(fieldType))
+                {
+                    instanceValueClassFieldsArr[instanceValueClassFieldCount++] = field;
+                }
+                else if (fieldType.IsGCPointer)
+                {
+                    instanceGCPointerFieldsArr[instanceGCPointerFieldsCount++] = field;
+                }
+                else
+                {
+                    int log2size = CalculateLog2(fieldSizeAndAlignment.Size.AsInt);
+                    instanceNonGCPointerFieldsArr[log2size][instanceNonGCPointerFieldsCount[log2size]++] = field;
+                }
+            }
+
+            // We've finished placing the fields into their appropriate arrays
+            // The next optimization may place non-GC Pointers, so repurpose our
+            // counter to keep track of the next non-GC Pointer that must be placed
+            // for a given field size
+            Array.Clear(instanceNonGCPointerFieldsCount, 0, instanceNonGCPointerFieldsCount.Length);
+
+            // If the position is Indeterminate, proceed immediately to placing the fields
+            // This avoids issues with Universal Generic Field layouts whose fields may have Indeterminate sizes or alignments
+            if (!cumulativeInstanceFieldPos.IsIndeterminate)
+            {
+                // First, place small fields immediately after the parent field bytes if there are a number of field bytes that are not aligned
+                // GC pointer fields and value class fields are not considered for this optimization
+                int parentByteOffsetModulo = cumulativeInstanceFieldPos.AsInt % type.Context.Target.PointerSize;
+                if (parentByteOffsetModulo != 0)
+                {
+                    for (int i = 0; i < maxLog2Size; i++)
+                    {
+                        int j;
+
+                        // Check if the position is aligned such that we could place a larger type
+                        int offsetModulo = cumulativeInstanceFieldPos.AsInt % (1 << (i+1));
+                        if (offsetModulo == 0)
+                        {
+                            continue;
+                        }
+
+                        // Check whether there are any bigger fields
+                        // We must consider both GC Pointers and non-GC Pointers
+                        for (j = i + 1; j <= maxLog2Size; j++)
+                        {
+                            // Check if there are any elements left to place of the given size
+                            if (instanceNonGCPointerFieldsCount[j] < instanceNonGCPointerFieldsArr[j].Length
+                                  || (j == log2PointerSize && instanceGCPointerFieldsArr.Length > 0))
+                                break;
+                        }
+
+                        // Nothing to gain if there are no bigger fields
+                        // (the subsequent loop will place fields from large to small fields)
+                        if (j > maxLog2Size)
+                            break;
+                        
+                        // Check whether there are any small enough fields
+                        // We must consider both GC Pointers and non-GC Pointers
+                        for (j = i; j >= 0; j--)
+                        {
+                            if (instanceNonGCPointerFieldsCount[j] < instanceNonGCPointerFieldsArr[j].Length
+                                  || (j == log2PointerSize && instanceGCPointerFieldsArr.Length > 0))
+                                break;
+                        }
+
+                        // Nothing to do if there are no smaller fields
+                        if (j < 0)
+                            break;
+
+                        // Go back and use the smaller field as filling
+                        i = j;
+
+                        // Assert that we have at least one field of this size
+                        Debug.Assert(instanceNonGCPointerFieldsCount[i] < instanceNonGCPointerFieldsArr[i].Length
+                                  || (i == log2PointerSize && instanceGCPointerFieldsArr.Length > 0));
+
+                        // Avoid reordering of gc fields
+                        // Exit if there are no more non-GC fields of this size (pointer size) to place
+                        if (i == log2PointerSize)
+                        {
+                            if (instanceNonGCPointerFieldsCount[i] >= instanceNonGCPointerFieldsArr[i].Length)
+                                break;
+                        }
+
+                        // Place the field
+                        j = instanceNonGCPointerFieldsCount[i];
+                        FieldDesc field = instanceNonGCPointerFieldsArr[i][j];
+                        PlaceInstanceField(field, packingSize, offsets, ref cumulativeInstanceFieldPos, ref fieldOrdinal);
+
+                        instanceNonGCPointerFieldsCount[i]++;
+                    }
+                }
+            }
+
+            // Next, place GC pointer fields and non-GC pointer fields
+            // Starting with the largest-sized fields, place the GC pointer fields in order then place the non-GC pointer fields in order.
+            // Once the largest-sized fields are placed, repeat with the next-largest-sized group of fields and continue.
+            for (int i = maxLog2Size; i >= 0; i--)
+            {
+                // First, if we're placing the size that also corresponds to the pointer size, place GC pointer fields in order
+                if (i == log2PointerSize)
+                {
+                    for (int j = 0; j < instanceGCPointerFieldsArr.Length; j++)
+                    {
+                        PlaceInstanceField(instanceGCPointerFieldsArr[j], packingSize, offsets, ref cumulativeInstanceFieldPos, ref fieldOrdinal);
+                    }
+                }
+
+                // The start index will be the index that may have been increased in the previous optimization
+                for (int j = instanceNonGCPointerFieldsCount[i]; j < instanceNonGCPointerFieldsArr[i].Length; j++)
+                {
+                    PlaceInstanceField(instanceNonGCPointerFieldsArr[i][j], packingSize, offsets, ref cumulativeInstanceFieldPos, ref fieldOrdinal);
+                }
+            }
+
+            // Place value class fields last
+            for (int i = 0; i < instanceValueClassFieldsArr.Length; i++)
+            {
+                // If the field has an indeterminate alignment, align the cumulative field offset to the indeterminate value
+                // Otherwise, align the cumulative field offset to the PointerSize
+                // This avoids issues with Universal Generic Field layouts whose fields may have Indeterminate sizes or alignments
+                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(instanceValueClassFieldsArr[i].FieldType, packingSize);
+
+                if (fieldSizeAndAlignment.Alignment.IsIndeterminate)
+                {
+                    cumulativeInstanceFieldPos = LayoutInt.AlignUp(cumulativeInstanceFieldPos, fieldSizeAndAlignment.Alignment);
+                }
+                else
+                {
+                    cumulativeInstanceFieldPos = LayoutInt.AlignUp(cumulativeInstanceFieldPos, new LayoutInt(type.Context.Target.PointerSize));
+                }
+                offsets[fieldOrdinal] = new FieldAndOffset(instanceValueClassFieldsArr[i], cumulativeInstanceFieldPos);
+
+                // If the field has an indeterminate size, align the cumulative field offset to the indeterminate value
+                // Otherwise, align the cumulative field offset to the aligned-instance field size
+                // This avoids issues with Universal Generic Field layouts whose fields may have Indeterminate sizes or alignments
+                LayoutInt alignedInstanceFieldBytes = fieldSizeAndAlignment.Size.IsIndeterminate ? fieldSizeAndAlignment.Size : GetAlignedNumInstanceFieldBytes(fieldSizeAndAlignment.Size);
+                cumulativeInstanceFieldPos = checked(cumulativeInstanceFieldPos + alignedInstanceFieldBytes);
+
+                fieldOrdinal++;
+            }
+
+            if (type.IsValueType)
+            {
+                cumulativeInstanceFieldPos = LayoutInt.Max(cumulativeInstanceFieldPos, new LayoutInt(layoutMetadata.Size));
+            }
+
+            SizeAndAlignment instanceByteSizeAndAlignment;
+            var instanceSizeAndAlignment = ComputeInstanceSize(type, cumulativeInstanceFieldPos, largestAlignmentRequired, out instanceByteSizeAndAlignment);
+
+            ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout();
+            computedLayout.FieldAlignment = instanceSizeAndAlignment.Alignment;
+            computedLayout.FieldSize = instanceSizeAndAlignment.Size;
+            computedLayout.ByteCountUnaligned = instanceByteSizeAndAlignment.Size;
+            computedLayout.ByteCountAlignment = instanceByteSizeAndAlignment.Alignment;
+            computedLayout.Offsets = offsets;
+
+            return computedLayout;
+        }
+
+        private static void PlaceInstanceField(FieldDesc field, int packingSize, FieldAndOffset[] offsets, ref LayoutInt instanceFieldPos, ref int fieldOrdinal)
+        {
+            var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, packingSize);
+
+            instanceFieldPos = LayoutInt.AlignUp(instanceFieldPos, fieldSizeAndAlignment.Alignment);
+            offsets[fieldOrdinal] = new FieldAndOffset(field, instanceFieldPos);
+            instanceFieldPos = checked(instanceFieldPos + fieldSizeAndAlignment.Size);
+
+            fieldOrdinal++;
+        }
+
+        // The aligned instance field bytes calculation here matches the calculation of CoreCLR MethodTable::GetAlignedNumInstanceFieldBytes
+        // This will calculate the next multiple of 4 that is greater than or equal to the instance size
+        private static LayoutInt GetAlignedNumInstanceFieldBytes(LayoutInt instanceSize)
+        {
+            uint inputSize = (uint) instanceSize.AsInt;
+            uint result = (uint)(((inputSize + 3) & (~3)));
+            return new LayoutInt((int) result);
+        }
+
+        private static int CalculateLog2(int size)
+        {
+            // Size must be a positive number
+            Debug.Assert(size > 0);
+
+            // Size must be a power of 2
+            Debug.Assert( 0 == (size & (size - 1)));
+
+            int log2size;
+            for (log2size = 0; size > 1; log2size++)
+            {
+                size = size >> 1;
+            }
+
+            return log2size;
+        }
+
+        private static bool IsByValueClass(TypeDesc type)
+        {
+            return type.IsValueType && !type.IsPrimitive;
         }
 
         private static LayoutInt ComputeBytesUsedInParentType(DefType type)
@@ -591,7 +877,7 @@ namespace Internal.TypeSystem
             if (type.IsWellKnownType(WellKnownType.Double) || type.IsWellKnownType(WellKnownType.Single))
                 return type;
 
-            for (;;)
+            for (; ; )
             {
                 Debug.Assert(type.IsValueType);
 

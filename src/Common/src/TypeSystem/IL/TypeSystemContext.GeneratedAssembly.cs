@@ -33,8 +33,10 @@ namespace Internal.TypeSystem
         {
             private MetadataType _globalModuleType;
 
+            public override IAssemblyDesc Assembly => this;
+
             public CompilerGeneratedAssembly(TypeSystemContext context)
-                : base(context)
+                : base(context, null)
             {
                 _globalModuleType = new CompilerGeneratedType(this, "<Module>");
             }

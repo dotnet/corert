@@ -24,6 +24,9 @@
     ResolvedFileToPublish based on the inputs of @(IntermediateAssembly)
     and @(ResolvedAssembliesToPublish). We modify those two item groups
     to control what gets published after CoreRT optimizes the application.
+
+    For .NET Core 3.0, the property has been renamed to _ResolvedCopyLocalPublishAssets
+    in https://github.com/dotnet/sdk/pull/2646.
   -->
   <Target Name="ComputeLinkedFilesToPublish"
           BeforeTargets="ComputeFilesToPublish"
@@ -32,6 +35,9 @@
     <ItemGroup>
       <ResolvedAssembliesToPublish Remove="@(_AssembliesToSkipPublish)" />
       <ResolvedAssembliesToPublish Include="@(_LinkedResolvedAssemblies)" />
+
+      <_ResolvedCopyLocalPublishAssets Remove="@(_AssembliesToSkipPublish)" />
+      <_ResolvedCopyLocalPublishAssets Include="@(_LinkedResolvedAssemblies)" />
     </ItemGroup>
     
     <ItemGroup>
@@ -53,15 +59,16 @@
     <!-- Fail with descriptive error message for common mistake. -->
     <Error Condition="'$(RuntimeIdentifier)' == ''" Text="RuntimeIdentifier is required for native compilation. Try running dotnet publish with the -r option value specified." />
 
-    <!-- Fail with descriptive error message for common unsupported case. -->
-    <Error Condition="'$(OS)' == 'Windows_NT' and !$(RuntimeIdentifier.StartsWith('win'))" Text="Cross-compilation is not supported yet. https://github.com/dotnet/corert/issues/5458" />
-    <Error Condition="'$(OS)' != 'Windows_NT' and $(RuntimeIdentifier.StartsWith('win'))" Text="Cross-compilation is not supported yet. https://github.com/dotnet/corert/issues/5458" />
+    <!-- Fail with descriptive error message for common unsupported cases. -->
+    <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(OS)' == 'Windows_NT' and !$(RuntimeIdentifier.StartsWith('win'))" Text="Cross-compilation is not supported yet. https://github.com/dotnet/corert/issues/5458" />
+    <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(OS)' != 'Windows_NT' and $(RuntimeIdentifier.StartsWith('win'))" Text="Cross-compilation is not supported yet. https://github.com/dotnet/corert/issues/5458" />
+    <Error Condition="'$(DisableUnsupportedError)' != 'true' and !$(RuntimeIdentifier.EndsWith('x64'))" Text="$(RuntimeIdentifier) not supported yet. https://github.com/dotnet/corert/issues/4589" />
 
     <!-- CoreRT SDK and Framework Assemblies need to be defined to avoid CoreCLR implementations being set as compiler inputs -->  
     <Error Condition="'@(PrivateSdkAssemblies)' == ''" Text="The PrivateSdkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
     <Error Condition="'@(FrameworkAssemblies)' == ''" Text="The FrameworkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
 
-    <ComputeManagedAssemblies Assemblies="@(ResolvedAssembliesToPublish)" 
+    <ComputeManagedAssemblies Assemblies="@(ResolvedAssembliesToPublish);@(_ResolvedCopyLocalPublishAssets)"
     DotNetAppHostExecutableName="$(_DotNetAppHostExecutableName)" DotNetHostFxrLibraryName="$(_DotNetHostFxrLibraryName)" DotNetHostPolicyLibraryName="$(_DotNetHostPolicyLibraryName)"
     SdkAssemblies="@(PrivateSdkAssemblies)" FrameworkAssemblies="@(FrameworkAssemblies)">
       <Output TaskParameter="ManagedAssemblies" ItemName="_ManagedResolvedAssembliesToPublish" />
@@ -70,7 +77,7 @@
     
   </Target>
 
-  <Target Name="CopyNativePdb" Condition="'$(DebugType)' != 'None' and '$(TargetOS)' == 'Windows_NT'" AfterTargets="Publish">
+  <Target Name="CopyNativePdb" Condition="'$(DebugType)' != 'None' and '$(TargetOS)' == 'Windows_NT' and $(NativeLib) != 'Static'" AfterTargets="Publish">
     <!-- dotnet CLI produces managed debug symbols - substitute with those we generated during native compilation -->
     <Delete Files="$(PublishDir)\$(TargetName).pdb"/>    
     <Copy SourceFiles="$(NativeOutputPath)$(TargetName).pdb" DestinationFolder="$(PublishDir)" />  

@@ -35,7 +35,7 @@ namespace System.Runtime.InteropServices
                 return null;
             }
 
-            int len = Internal.Runtime.CompilerHelpers.InteropHelpers.strlen((byte*)ptr);
+            int len = string.strlen((byte*)ptr);
             if (len == 0)
             {
                 return string.Empty;

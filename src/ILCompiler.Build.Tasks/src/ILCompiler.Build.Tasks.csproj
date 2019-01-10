@@ -6,6 +6,8 @@
     <AssemblyName>ILCompiler.Build.Tasks</AssemblyName>
     <TargetFramework>netstandard1.3</TargetFramework>
     <OutputPath>$(BaseOutputPath)$(OSPlatformConfig)/tools</OutputPath>
+    <!-- Workaround for https://github.com/dotnet/corert/issues/6306 -->
+    <SkipSigning>true</SkipSigning>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ComputeManagedAssemblies.cs" />
@@ -18,7 +20,7 @@
     <Version>15.3.409</Version>
   </PackageReference>
   <PackageReference Include="System.Reflection.Metadata">
-    <Version>1.4.2</Version>
+    <Version>$(SystemReflectionMetadataVersion)</Version>
   </PackageReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" Condition="'$(IsProjectNLibrary)' != 'true'" />

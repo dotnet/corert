@@ -48,8 +48,8 @@ namespace ILVerification.Tests
 
                 foreach (var item in invalidIL.ExpectedVerifierErrors)
                 {
-                    var actual = results.Select(e => e.ToString());
-                    Assert.True(results.Where(r => r.Error.Code == item).Count() > 0, $"Actual errors where: {string.Join(",", actual)}");
+                    var actual = results.Select(e => e.Code.ToString());
+                    Assert.True(results.Where(r => r.Code == item).Count() > 0, $"Actual errors where: {string.Join(",", actual)}");
                 }
             }
         }
@@ -59,7 +59,7 @@ namespace ILVerification.Tests
             EcmaModule module = TestDataLoader.GetModuleForTestAssembly(testCase.ModuleName);
             var methodHandle = (MethodDefinitionHandle) MetadataTokens.EntityHandle(testCase.MetadataToken);
             var method = (EcmaMethod)module.GetMethod(methodHandle);
-            var verifier = new Verifier((ILVerifyTypeSystemContext)method.Context);
+            var verifier = new Verifier((ILVerifyTypeSystemContext)method.Context, new VerifierOptions() { IncludeMetadataTokensInErrorMessages = true });
             return verifier.Verify(module.PEReader, methodHandle);
         }
     }

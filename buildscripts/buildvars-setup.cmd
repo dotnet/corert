@@ -42,6 +42,7 @@ if /i "%1" == "release"   (set __BuildType=Release&shift&goto Arg_Loop)
 if /i "%1" == "clean"   (set __CleanBuild=1&shift&goto Arg_Loop)
 
 if /i "%1" == "skiptests" (set __SkipTests=1&shift&goto Arg_Loop)
+if /i "%1" == "buildtests" (set __BuildTests=1&shift&goto Arg_Loop)
 if /i "%1" == "skipvsdev" (set __SkipVsDev=1&shift&goto Arg_Loop)
 if /i "%1" == "objwriter" (set __ObjWriterBuild=1&set "__ExtraMsBuildParams=%__ExtraMsBuildParams% /p:ObjWriterBuild=true"&shift&goto Arg_Loop)
 if /i "%1" == "/dotnetclipath" (set __DotNetCliPath=%2&shift&shift&goto Arg_Loop)
@@ -58,6 +59,7 @@ set "__ObjDir=%__RootBinDir%\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__IntermediatesDir=%__RootBinDir%\obj\Native\%__BuildOS%.%__BuildArch%.%__BuildType%\"
 set "__NativeBuildLog=%__LogsDir%\Native_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
 set "__BuildLog=%__LogsDir%\msbuild_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
+set "__TestBuildLog=%__LogsDir%\tests_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
 
 :: Generate path to be set for CMAKE_INSTALL_PREFIX to contain forward slash
 set "__CMakeBinDir=%__BinDir%"

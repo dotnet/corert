@@ -100,6 +100,7 @@ namespace Explicit
 
 namespace Sequential
 {
+    [StructLayout(LayoutKind.Sequential)]
     class Class1
     {
         int MyInt;
@@ -110,11 +111,13 @@ namespace Sequential
         Class1 MyClass1SelfRef;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
     class Class2 : Class1
     {
         int MyInt2;
     }
 
+    // [StructLayout(LayoutKind.Sequential)] is applied by default by the C# compiler
     struct Struct0
     {
         bool b1;
@@ -124,6 +127,7 @@ namespace Sequential
         string s1;
     }
 
+    // [StructLayout(LayoutKind.Sequential)] is applied by default by the C# compiler
     struct Struct1
     {
         Struct0 MyStruct0;
@@ -143,6 +147,119 @@ namespace Sequential
         bool bool1;
         double double1;
         bool bool2;
+    }
+}
+
+namespace Auto
+{
+    [StructLayout(LayoutKind.Auto)]
+    struct StructWithBool
+    {
+        bool MyStructBool;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    struct StructWithIntChar
+    {
+        char MyStructChar;
+        int MyStructInt;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    struct StructWithChar
+    {
+        char MyStructChar;
+    }
+
+    class ClassContainingStructs
+    {
+        static int MyStaticInt;
+
+        StructWithBool MyStructWithBool;
+        bool MyBool1;
+        char MyChar1;
+        int MyInt;
+        double MyDouble;
+        long MyLong;
+        byte[] MyByteArray;
+        string MyString1;
+        bool MyBool2;
+        StructWithIntChar MyStructWithIntChar;
+        StructWithChar MyStructWithChar;
+    }
+
+    class BaseClass7BytesRemaining
+    {
+        bool MyBool1;
+        double MyDouble1;
+        long MyLong1;
+        byte[] MyByteArray1;
+        string MyString1;
+    }
+
+    class BaseClass4BytesRemaining
+    {
+        long MyLong1;
+        uint MyUint1;
+    }
+
+    class BaseClass3BytesRemaining
+    {
+        int MyInt1;
+        string MyString1;
+        bool MyBool1;
+    }
+
+    class OptimizePartial : BaseClass7BytesRemaining
+    {
+        bool OptBool;
+        char OptChar;
+        long NoOptLong;
+        string NoOptString;
+    }
+
+    class Optimize7Bools : BaseClass7BytesRemaining
+    {
+        bool OptBool1;
+        bool OptBool2;
+        bool OptBool3;
+        bool OptBool4;
+        bool OptBool5;
+        bool OptBool6;
+        bool OptBool7;
+        bool NoOptBool8;
+        string NoOptString;
+    }
+
+    class OptimizeAlignedFields : BaseClass7BytesRemaining
+    {
+        bool OptBool1;
+        bool OptBool2;
+        bool OptBool3;
+        bool NoOptBool4;
+        char OptChar1;
+        char OptChar2;
+        string NoOptString;
+    }
+
+    class OptimizeLargestField : BaseClass4BytesRemaining
+    {
+        bool NoOptBool;
+        char NoOptChar;
+        int OptInt;
+        string NoOptString;
+    }
+
+    class NoOptimizeMisaligned : BaseClass3BytesRemaining
+    {
+        char NoOptChar;
+        int NoOptInt;
+        string NoOptString;
+    }
+
+    class NoOptimizeCharAtSize2Alignment : BaseClass3BytesRemaining
+    {
+        char NoOptChar;
     }
 }
 

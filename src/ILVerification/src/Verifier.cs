@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
@@ -12,6 +13,7 @@ using System.Resources;
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using Internal.TypeVerifier;
 
 namespace ILVerify
 {
@@ -21,15 +23,16 @@ namespace ILVerify
             new Lazy<ResourceManager>(() => new ResourceManager("FxResources.ILVerification.SR", typeof(Verifier).GetTypeInfo().Assembly));
 
         private ILVerifyTypeSystemContext _typeSystemContext;
+        private VerifierOptions _verifierOptions;
 
-        public Verifier(IResolver resolver)
-        {
-            _typeSystemContext = new ILVerifyTypeSystemContext(resolver);
-        }
+        public Verifier(IResolver resolver) : this(resolver, null){ }
 
-        internal Verifier(ILVerifyTypeSystemContext context)
+        public Verifier(IResolver resolver, VerifierOptions verifierOptions) : this(new ILVerifyTypeSystemContext(resolver), verifierOptions) { }
+
+        internal Verifier(ILVerifyTypeSystemContext context, VerifierOptions verifierOptions)
         {
             _typeSystemContext = context;
+            _verifierOptions = verifierOptions ?? new VerifierOptions();
         }
 
         public void SetSystemModuleName(AssemblyName name)
@@ -76,7 +79,7 @@ namespace ILVerify
             }
         }
 
-        public IEnumerable<VerificationResult> Verify(PEReader peReader, TypeDefinitionHandle typeHandle)
+        public IEnumerable<VerificationResult> Verify(PEReader peReader, TypeDefinitionHandle typeHandle, bool verifyMethods = false)
         {
             if (peReader == null)
             {
@@ -97,8 +100,15 @@ namespace ILVerify
             try
             {
                 EcmaModule module = GetModule(peReader);
-                TypeDefinition typeDef = peReader.GetMetadataReader().GetTypeDefinition(typeHandle);
-                results = VerifyMethods(module, typeDef.GetMethods());
+                MetadataReader metadataReader = peReader.GetMetadataReader();
+
+                results = VerifyType(module, typeHandle);
+
+                if (verifyMethods)
+                {
+                    TypeDefinition typeDef = metadataReader.GetTypeDefinition(typeHandle);
+                    results = results.Union(VerifyMethods(module, typeDef.GetMethods()));
+                }
             }
             catch (VerifierException e)
             {
@@ -172,15 +182,16 @@ namespace ILVerify
             {
                 var importer = new ILImporter(method, methodIL);
 
-                importer.ReportVerificationError = (args) =>
+                importer.ReportVerificationError = (args, code) =>
                 {
-                    var codeResource = _stringResourceManager.Value.GetString(args.Code.ToString(), CultureInfo.InvariantCulture);
+                    var codeResource = _stringResourceManager.Value.GetString(code.ToString(), CultureInfo.InvariantCulture);
 
                     builder.Add(new VerificationResult()
                     {
+                        Code = code,
                         Method = methodHandle,
-                        Error = args,
-                        Message = string.IsNullOrEmpty(codeResource) ? args.Code.ToString() : codeResource
+                        ErrorArguments = args,
+                        Message = string.IsNullOrEmpty(codeResource) ? code.ToString() : codeResource
                     });
                 };
 
@@ -231,9 +242,75 @@ namespace ILVerify
             }
         }
 
+        private IEnumerable<VerificationResult> VerifyType(EcmaModule module, TypeDefinitionHandle typeHandle)
+        {
+            var builder = new ArrayBuilder<VerificationResult>();
+
+            try
+            {
+                TypeVerifier typeVerifier = new TypeVerifier(module, typeHandle, _typeSystemContext, _verifierOptions);
+
+                typeVerifier.ReportVerificationError = (code, args) =>
+                {
+                    builder.Add(new VerificationResult()
+                    {
+                        Code = code,
+                        Message = $"[MD]: Error: {_stringResourceManager.Value.GetString(code.ToString(), CultureInfo.InvariantCulture)}",
+                        Args = args
+                    });
+                };
+
+                typeVerifier.Verify();
+            }
+            catch (BadImageFormatException)
+            {
+                builder.Add(new VerificationResult()
+                {
+                    Type = typeHandle,
+                    Message = "Unable to resolve token"
+                });
+            }
+            catch (NotImplementedException e)
+            {
+                reportException(e);
+            }
+            catch (InvalidProgramException e)
+            {
+                reportException(e);
+            }
+            catch (PlatformNotSupportedException e)
+            {
+                reportException(e);
+            }
+            catch (VerifierException e)
+            {
+                reportException(e);
+            }
+            catch (TypeSystemException e)
+            {
+                reportException(e);
+            }
+
+            return builder.ToArray();
+
+            void reportException(Exception e)
+            {
+                builder.Add(new VerificationResult()
+                {
+                    Type = typeHandle,
+                    Message = e.Message
+                });
+            }
+        }
+
         private void ThrowMissingSystemModule()
         {
             throw new VerifierException("No system module specified");
         }
+    }
+
+    public class VerifierOptions
+    {
+        public bool IncludeMetadataTokensInErrorMessages { get; set; }
     }
 }

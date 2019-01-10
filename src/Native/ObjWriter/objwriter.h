@@ -50,7 +50,7 @@ enum class RelocType {
 
 class ObjectWriter {
 public:
-  bool Init(StringRef FunctionName);
+  bool Init(StringRef FunctionName, const char* tripleName = nullptr);
   void Finish();
 
   void SwitchSection(const char *SectionName,
@@ -136,13 +136,14 @@ private:
 
   void EmitCVUserDefinedTypesSymbols();
 
-  void InitTripleName();
+  void InitTripleName(const char* tripleName = nullptr);
   Triple GetTriple();
   unsigned GetDFSize();
   bool EmitRelocDirective(const int Offset, StringRef Name, const MCExpr *Expr);
   const MCExpr *GenTargetExpr(const char *SymbolName,
                               MCSymbolRefExpr::VariantKind Kind, int Delta,
                               bool IsPCRel = false, int Size = 0);
+  void EmitARMExIdxPerOffset();
 
 
 private:
@@ -173,13 +174,15 @@ private:
   std::string TripleName;
 
   MCObjectStreamer *Streamer; // Owned by AsmPrinter
+
+  SmallVector<CFI_CODE, 32> CFIsPerOffset;
 };
 
 // When object writer is created/initialized successfully, it is returned.
 // Or null object is returned. Client should check this.
-DLL_EXPORT ObjectWriter *InitObjWriter(const char *ObjectFilePath) {
+DLL_EXPORT ObjectWriter *InitObjWriter(const char *ObjectFilePath, const char* TripleName = nullptr) {
   ObjectWriter *OW = new ObjectWriter();
-  if (OW->Init(ObjectFilePath)) {
+  if (OW->Init(ObjectFilePath, TripleName)) {
     return OW;
   }
   delete OW;

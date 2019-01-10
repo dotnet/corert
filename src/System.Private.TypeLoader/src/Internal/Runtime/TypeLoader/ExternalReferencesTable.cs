@@ -105,7 +105,7 @@ namespace Internal.Runtime.TypeLoader
                 return (IntPtr)(_moduleHandle.ConvertRVAToPointer(rva));
             }
 #else
-            return GetFieldAddressFromIndex(index);
+            return GetAddressFromIndex(index);
 #endif
         }
 
@@ -123,7 +123,7 @@ namespace Internal.Runtime.TypeLoader
                 return (IntPtr)(_moduleHandle.ConvertRVAToPointer(rva));
             }
 #else
-            return GetFieldAddressFromIndex(index);
+            return GetAddressFromIndex(index);
 #endif
         }
 
@@ -145,7 +145,7 @@ namespace Internal.Runtime.TypeLoader
         }
 
 #if !PROJECTN
-        unsafe public IntPtr GetFieldAddressFromIndex(uint index)
+        unsafe public IntPtr GetAddressFromIndex(uint index)
         {
             if (index >= _elementsCount)
                 throw new BadImageFormatException();

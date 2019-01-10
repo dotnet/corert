@@ -2,18 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#define RESOURCE_SATELLITE_CONFIG
-#if !PLATFORM_UNIX
-#define FEATURE_USE_LCID
-#endif // !PLATFORM_UNIX
 #if ENABLE_WINRT
 #define FEATURE_APPX
 #endif // ENABLE_WINRT
 
 using Internal.Reflection.Augments;
-using Internal.Runtime.Augments;
-using Internal.Runtime.CompilerServices;
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -22,24 +15,6 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
-
-namespace System
-{
-    // This class is used to define the name of the base class library
-    internal class CoreLib
-    {
-        public const string Name = "System.Private.CoreLib";
-
-        public static string FixupCoreLibName(string strToFixup)
-        {
-            if (!string.IsNullOrEmpty(strToFixup))
-            {
-                strToFixup = strToFixup.Replace("mscorlib", System.CoreLib.Name);
-            }
-            return strToFixup;
-        }
-    }
-}
 
 namespace System.Resources
 {
@@ -209,13 +184,6 @@ namespace System.Resources
 
         private bool UseManifest;  // Use Assembly manifest, or grovel disk.
 
-#if RESOURCE_SATELLITE_CONFIG
-        private static volatile Dictionary<string, string[]> _installedSatelliteInfo;  // Give the user the option  
-                                                                                       // to prevent certain satellite assembly probes via a config file.
-                                                                                       // Note that config files are per-appdomain, not per-assembly nor process
-        private static volatile bool _checkedConfigFile;  // Did we read the app's config file?
-#endif
-
         // Whether to fall back to the main assembly or a particular 
         // satellite for the neutral resources.
         [OptionalField]
@@ -251,13 +219,10 @@ namespace System.Resources
         //      private static CultureInfo _neutralCulture = null;
 
         // This is our min required ResourceSet type.
-        private static readonly Type _minResourceSet = typeof(ResourceSet);
+        private static readonly Type s_minResourceSet = typeof(ResourceSet);
         // These Strings are used to avoid using Reflection in CreateResourceSet.
-        // The first set are used by ResourceWriter.  The second are used by
-        // InternalResGen.
-        internal static readonly string ResReaderTypeName = typeof(ResourceReader).FullName;
-        internal static readonly string ResSetTypeName = typeof(RuntimeResourceSet).FullName;
-        internal static readonly string MscorlibName = typeof(ResourceReader).GetTypeInfo().Assembly.FullName;
+        internal const string ResReaderTypeName = "System.Resources.ResourceReader";
+        internal const string ResSetTypeName = "System.Resources.RuntimeResourceSet";
         internal const string ResFileExtension = ".resources";
         internal const int ResFileExtensionLength = 10;
 
@@ -343,7 +308,7 @@ namespace System.Resources
             MainAssembly = assembly;
             BaseNameField = baseName;
 
-            if (usingResourceSet != null && (usingResourceSet != _minResourceSet) && !(usingResourceSet.GetTypeInfo().IsSubclassOf(_minResourceSet)))
+            if (usingResourceSet != null && (usingResourceSet != s_minResourceSet) && !(usingResourceSet.GetTypeInfo().IsSubclassOf(s_minResourceSet)))
                 throw new ArgumentException(SR.Arg_ResMgrNotResSet, nameof(usingResourceSet));
             _userResourceSet = usingResourceSet;
 
@@ -774,61 +739,32 @@ namespace System.Resources
         }
 
         // IGNORES VERSION
-        internal static bool CompareNames(string asmTypeName1,
-                                          string typeName2,
-                                          AssemblyName asmName2)
+        internal static bool IsDefaultType(string asmTypeName,
+                                           string typeName)
         {
-            Debug.Assert(asmTypeName1 != null, "asmTypeName1 was unexpectedly null");
+            Debug.Assert(asmTypeName != null, "asmTypeName was unexpectedly null");
 
             // First, compare type names
-            int comma = asmTypeName1.IndexOf(',');
-            if (((comma == -1) ? asmTypeName1.Length : comma) != typeName2.Length)
+            int comma = asmTypeName.IndexOf(',');
+            if (((comma == -1) ? asmTypeName.Length : comma) != typeName.Length)
                 return false;
 
             // case sensitive
-            if (string.Compare(asmTypeName1, 0, typeName2, 0, typeName2.Length, StringComparison.Ordinal) != 0)
+            if (string.Compare(asmTypeName, 0, typeName, 0, typeName.Length, StringComparison.Ordinal) != 0)
                 return false;
             if (comma == -1)
                 return true;
 
             // Now, compare assembly display names (IGNORES VERSION AND PROCESSORARCHITECTURE)
             // also, for  mscorlib ignores everything, since that's what the binder is going to do
-            while (char.IsWhiteSpace(asmTypeName1[++comma])) ;
+            while (char.IsWhiteSpace(asmTypeName[++comma]))
+                ;
 
             // case insensitive
-            AssemblyName an1 = new AssemblyName(asmTypeName1.Substring(comma));
-            if (string.Compare(an1.Name, asmName2.Name, StringComparison.OrdinalIgnoreCase) != 0)
-                return false;
+            AssemblyName an = new AssemblyName(asmTypeName.Substring(comma));
 
             // to match IsMscorlib() in VM
-            if (string.Compare(an1.Name, System.CoreLib.Name, StringComparison.OrdinalIgnoreCase) == 0)
-                return true;
-
-
-            if ((an1.CultureInfo != null) && (asmName2.CultureInfo != null) &&
-#if FEATURE_USE_LCID                
-                (an1.CultureInfo.LCID != asmName2.CultureInfo.LCID)
-#else
-                (an1.CultureInfo.Name != asmName2.CultureInfo.Name)
-#endif                
-                )
-                return false;
-
-            byte[] pkt1 = an1.GetPublicKeyToken();
-            byte[] pkt2 = asmName2.GetPublicKeyToken();
-            if ((pkt1 != null) && (pkt2 != null))
-            {
-                if (pkt1.Length != pkt2.Length)
-                    return false;
-
-                for (int i = 0; i < pkt1.Length; i++)
-                {
-                    if (pkt1[i] != pkt2[i])
-                        return false;
-                }
-            }
-
-            return true;
+            return string.Equals(an.Name, "mscorlib", StringComparison.OrdinalIgnoreCase);
         }
 
 #if FEATURE_APPX
@@ -1246,43 +1182,6 @@ namespace System.Resources
             return ums;
         }
 
-#if RESOURCE_SATELLITE_CONFIG
-        // Internal helper method - gives an end user the ability to prevent
-        // satellite assembly probes for certain cultures via a config file.
-        private bool TryLookingForSatellite(CultureInfo lookForCulture)
-        {
-            if (!_checkedConfigFile)
-            {
-                lock (this)
-                {
-                    if (!_checkedConfigFile)
-                    {
-                        _checkedConfigFile = true;
-                        _installedSatelliteInfo = GetSatelliteAssembliesFromConfig();
-                    }
-                }
-            }
-
-            if (_installedSatelliteInfo == null)
-                return true;
-
-            string[] installedSatellites = (string[])_installedSatelliteInfo[MainAssembly.FullName];
-
-            if (installedSatellites == null)
-                return true;
-
-            // The config file told us what satellites might be installed.
-            int pos = Array.IndexOf(installedSatellites, lookForCulture.Name);
-
-            return pos >= 0;
-        }
-
-        private Dictionary<string, string[]> GetSatelliteAssembliesFromConfig()
-        {
-            return null;
-        }
-#endif  // RESOURCE_SATELLITE_CONFIG
-
         internal class ResourceManagerMediator
         {
             private ResourceManager _rm;
@@ -1364,15 +1263,6 @@ namespace System.Resources
             {
                 get { return _rm.BaseName; }
             }
-
-
-#if RESOURCE_SATELLITE_CONFIG
-            internal bool TryLookingForSatellite(CultureInfo lookForCulture)
-            {
-                return _rm.TryLookingForSatellite(lookForCulture);
-            }
-#endif
-
         }
     }
 }

@@ -194,5 +194,232 @@ namespace ILCompiler
             TypeDesc elementType = arrayType.ElementType;
             return type.IsMdArray || elementType.IsPointer || elementType.IsFunctionPointer;
         }
+
+        /// <summary>
+        /// Determines whether an object of type '<paramref name="type"/>' requires 8-byte alignment on 
+        /// 32bit ARM architectures.
+        /// </summary>
+        public static bool RequiresAlign8(this TypeDesc type)
+        {
+            if (type.Context.Target.Architecture != TargetArchitecture.ARM)
+            {
+                return false;
+            }
+
+            if (type.IsArray)
+            {
+                var elementType = ((ArrayType)type).ElementType;
+                if ((elementType.IsValueType) && ((DefType)elementType).InstanceByteAlignment.AsInt > 4)
+                {
+                    return true;
+                }
+            }
+            else if (type.IsDefType && ((DefType)type).InstanceByteAlignment.AsInt > 4)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        public static TypeDesc MergeTypesToCommonParent(TypeDesc ta, TypeDesc tb)
+        {
+            if (ta == tb)
+            {
+                return ta;
+            }
+
+            // Handle the array case
+            if (ta.IsArray)
+            {
+                if (tb.IsArray)
+                {
+                    return MergeArrayTypesToCommonParent((ArrayType)ta, (ArrayType)tb);
+                }
+                else if (tb.IsInterface)
+                {
+                    // Check to see if we can merge the array to a common interface (such as Derived[] and IList<Base>)
+                    if (ta.CanCastTo(tb))
+                    {
+                        return tb;
+                    }
+                }
+                // keep merging from here
+                ta = ta.Context.GetWellKnownType(WellKnownType.Array);
+            }
+            else if (tb.IsArray)
+            {
+                if (ta.IsInterface && tb.CanCastTo(ta))
+                {
+                    return ta;
+                }
+
+                tb = tb.Context.GetWellKnownType(WellKnownType.Array);
+            }
+
+            Debug.Assert(ta.IsDefType);
+            Debug.Assert(tb.IsDefType);
+
+            if (tb.IsInterface)
+            {
+                if (ta.IsInterface)
+                {
+                    //
+                    // Both classes are interfaces.  Check that if one 
+                    // interface extends the other.
+                    //
+                    // Does tb extend ta ?
+                    //
+                    if (tb.ImplementsEquivalentInterface(ta))
+                    {
+                        return ta;
+                    }
+
+                    //
+                    // Does tb extend ta ?
+                    //
+                    if (ta.ImplementsEquivalentInterface(tb))
+                    {
+                        return tb;
+                    }
+
+                    // No compatible merge found - using Object
+                    return ta.Context.GetWellKnownType(WellKnownType.Object);
+                }
+                else
+                {
+                    return MergeClassWithInterface(ta, tb);
+                }
+            }
+            else if (ta.IsInterface)
+            {
+                return MergeClassWithInterface(tb, ta);
+            }
+
+            int aDepth = 0;
+            int bDepth = 0;
+
+            // find the depth in the class hierarchy for each class
+            for (TypeDesc searchType = ta; searchType != null; searchType = searchType.BaseType)
+            {
+                aDepth++;
+            }
+
+            for (TypeDesc searchType = tb; searchType != null; searchType = searchType.BaseType)
+            {
+                bDepth++;
+            }
+
+            // for whichever class is lower down in the hierarchy, walk up the superclass chain
+            // to the same level as the other class
+            while (aDepth > bDepth)
+            {
+                ta = ta.BaseType;
+                aDepth--;
+            }
+
+            while (bDepth > aDepth)
+            {
+                tb = tb.BaseType;
+                bDepth--;
+            }
+
+            while (ta != tb)
+            {
+                ta = ta.BaseType;
+                tb = tb.BaseType;
+            }
+
+            // If no compatible merge is found, we end up using Object
+
+            Debug.Assert(ta != null);
+
+            return ta;
+        }
+
+        private static TypeDesc MergeArrayTypesToCommonParent(ArrayType ta, ArrayType tb)
+        {
+            Debug.Assert(ta.IsArray && tb.IsArray && ta != tb);
+
+            // if no match on the rank the common ancestor is System.Array
+            if (ta.IsSzArray != tb.IsSzArray || ta.Rank != tb.Rank)
+            {
+                return ta.Context.GetWellKnownType(WellKnownType.Array);
+            }
+
+            TypeDesc taElem = ta.ElementType;
+            TypeDesc tbElem = tb.ElementType;
+            Debug.Assert(taElem != tbElem);
+
+            TypeDesc mergeElem;
+            if (taElem.IsArray && tbElem.IsArray)
+            {
+                mergeElem = MergeArrayTypesToCommonParent((ArrayType)taElem, (ArrayType)tbElem);
+            }
+            else if (taElem.IsGCPointer && tbElem.IsGCPointer)
+            {
+                // Find the common ancestor of the element types.
+                mergeElem = MergeTypesToCommonParent(taElem, tbElem);
+            }
+            else
+            {
+                // The element types have nothing in common.
+                return ta.Context.GetWellKnownType(WellKnownType.Array);
+            }
+
+            if (mergeElem == taElem)
+            {
+                return ta;
+            }
+
+            if (mergeElem == tbElem)
+            {
+                return tb;
+            }
+
+            if (taElem.IsMdArray)
+            {
+                return mergeElem.MakeArrayType(ta.Rank);
+            }
+
+            return mergeElem.MakeArrayType();
+        }
+
+        private static bool ImplementsEquivalentInterface(this TypeDesc type, TypeDesc interfaceType)
+        {
+            foreach (DefType implementedInterface in type.RuntimeInterfaces)
+            {
+                if (implementedInterface == interfaceType)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static TypeDesc MergeClassWithInterface(TypeDesc type, TypeDesc interfaceType)
+        {
+            // Check if the class implements the interface
+            if (type.ImplementsEquivalentInterface(interfaceType))
+            {
+                return interfaceType;
+            }
+
+            // Check if the class and the interface implement a common interface
+            foreach (var potentialCommonInterface in interfaceType.RuntimeInterfaces)
+            {
+                if (type.ImplementsEquivalentInterface(potentialCommonInterface))
+                {
+                    // Found a common interface.  If there are multiple common interfaces, then
+                    // the problem is ambiguous so we'll just take the first one--it's the best
+                    // we can do.
+                    return potentialCommonInterface;
+                }
+            }
+
+            // No compatible merge found - using Object
+            return type.Context.GetWellKnownType(WellKnownType.Object);
+        }
     }
 }

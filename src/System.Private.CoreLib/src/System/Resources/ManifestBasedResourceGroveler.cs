@@ -13,21 +13,13 @@
 **
 ** 
 ===========================================================*/
-#define RESOURCE_SATELLITE_CONFIG
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 using System.Text;
-using System.Threading;
-using Microsoft.Win32;
 
 namespace System.Resources
 {
@@ -70,13 +62,6 @@ namespace System.Resources
                 // don't bother looking in satellites in this case
                 satellite = _mediator.MainAssembly;
             }
-#if RESOURCE_SATELLITE_CONFIG
-            // If our config file says the satellite isn't here, don't ask for it.
-            else if (!lookForCulture.HasInvariantCultureName && !_mediator.TryLookingForSatellite(lookForCulture))
-            {
-                satellite = null;
-            }
-#endif
             else
             {
                 satellite = GetSatelliteAssembly(lookForCulture);
@@ -216,8 +201,8 @@ namespace System.Resources
                     if (resMgrHeaderVersion == ResourceManager.HeaderVersionNumber)
                     {
                         br.ReadInt32();  // We don't want the number of bytes to skip.
-                        readerTypeName = System.CoreLib.FixupCoreLibName(br.ReadString());
-                        resSetTypeName = System.CoreLib.FixupCoreLibName(br.ReadString());
+                        readerTypeName = br.ReadString();
+                        resSetTypeName = br.ReadString();
                     }
                     else if (resMgrHeaderVersion > ResourceManager.HeaderVersionNumber)
                     {
@@ -228,8 +213,8 @@ namespace System.Resources
                         int numBytesToSkip = br.ReadInt32();
                         long endPosition = br.BaseStream.Position + numBytesToSkip;
 
-                        readerTypeName = System.CoreLib.FixupCoreLibName(br.ReadString());
-                        resSetTypeName = System.CoreLib.FixupCoreLibName(br.ReadString());
+                        readerTypeName = br.ReadString();
+                        resSetTypeName = br.ReadString();
 
                         br.BaseStream.Seek(endPosition, SeekOrigin.Begin);
                     }
@@ -248,14 +233,11 @@ namespace System.Resources
                     // the abbreviated ones emitted by InternalResGen.
                     if (CanUseDefaultResourceClasses(readerTypeName, resSetTypeName))
                     {
-                        RuntimeResourceSet rs;
-                        rs = new RuntimeResourceSet(store);
-                        return rs;
+                        return new RuntimeResourceSet(store, permitDeserialization: true);
                     }
                     else
                     {
-                        // we do not want to use partial binding here.
-                        Type readerType = Type.GetType(readerTypeName, true);
+                        Type readerType = Type.GetType(readerTypeName, throwOnError: true);
                         object[] args = new object[1];
                         args[0] = store;
                         IResourceReader reader = (IResourceReader)Activator.CreateInstance(readerType, args);
@@ -287,10 +269,7 @@ namespace System.Resources
 
             if (_mediator.UserResourceSet == null)
             {
-                // Explicitly avoid CreateInstance if possible, because it
-                // requires ReflectionPermission to call private & protected
-                // constructors.  
-                return new RuntimeResourceSet(store);
+                return new RuntimeResourceSet(store, permitDeserialization: true);
             }
             else
             {
@@ -436,17 +415,16 @@ namespace System.Resources
             // Ignore the actual version of the ResourceReader and 
             // RuntimeResourceSet classes.  Let those classes deal with
             // versioning themselves.
-            AssemblyName mscorlib = new AssemblyName(ResourceManager.MscorlibName);
 
             if (readerTypeName != null)
             {
-                if (!ResourceManager.CompareNames(readerTypeName, ResourceManager.ResReaderTypeName, mscorlib))
+                if (!ResourceManager.IsDefaultType(readerTypeName, ResourceManager.ResReaderTypeName))
                     return false;
             }
 
             if (resSetTypeName != null)
             {
-                if (!ResourceManager.CompareNames(resSetTypeName, ResourceManager.ResSetTypeName, mscorlib))
+                if (!ResourceManager.IsDefaultType(resSetTypeName, ResourceManager.ResSetTypeName))
                     return false;
             }
 

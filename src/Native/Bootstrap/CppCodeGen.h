@@ -15,6 +15,7 @@
 #pragma warning(disable:4102) // unreferenced label
 #pragma warning(disable:4244) // possible loss of data
 #pragma warning(disable:4717) // recursive on all control paths
+#pragma warning(disable:4307) // integral constant overflow
 #endif
 
 #ifdef _MSC_VER
@@ -27,6 +28,12 @@
 #define CORERT_UNREACHABLE  __assume(0)
 #else
 #define CORERT_UNREACHABLE  __builtin_unreachable()
+#endif
+
+#ifdef _MSC_VER
+#define CORERT_THREAD __declspec(thread)
+#else
+#define CORERT_THREAD __thread
 #endif
 
 // Use the bit representation of uint64_t `v` as the bit representation of a double.

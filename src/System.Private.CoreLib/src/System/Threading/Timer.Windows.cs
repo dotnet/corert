@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace System.Threading
 {
@@ -66,7 +67,17 @@ namespace System.Threading
     {
         private void SignalNoCallbacksRunning()
         {
-            Interop.Kernel32.SetEvent(_notifyWhenNoCallbacksRunning.SafeWaitHandle);
+            object toSignal = _notifyWhenNoCallbacksRunning;
+            Debug.Assert(toSignal is WaitHandle || toSignal is Task<bool>);
+
+            if (toSignal is WaitHandle wh)
+            {
+                Interop.Kernel32.SetEvent(wh.SafeWaitHandle);
+            }
+            else
+            {
+                ((Task<bool>)toSignal).TrySetResult(true);
+            }
         }
     }
 }

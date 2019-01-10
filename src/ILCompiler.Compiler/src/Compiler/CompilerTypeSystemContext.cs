@@ -27,7 +27,7 @@ namespace ILCompiler
         private ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
         private MetadataVirtualMethodAlgorithm _virtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
 
-        private SimdHelper _simdHelper;
+        protected SimdHelper _simdHelper;
 
         private TypeDesc[] _arrayOfTInterfaces;
         
@@ -236,7 +236,7 @@ namespace ILCompiler
                 PEReader peReader = OpenPEFile(filePath, out mappedViewAccessor);
                 pdbReader = OpenAssociatedSymbolFile(filePath, peReader);
 
-                EcmaModule module = EcmaModule.Create(this, peReader, pdbReader);
+                EcmaModule module = EcmaModule.Create(this, peReader, containingAssembly: null, pdbReader);
 
                 MetadataReader metadataReader = module.MetadataReader;
                 string simpleName = metadataReader.GetString(metadataReader.GetAssemblyDefinition().Name);

@@ -17,10 +17,12 @@
     <ProjectReference Include="..\..\ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj" />
     <ProjectReference Include="..\..\ILCompiler.MetadataTransform\src\ILCompiler.MetadataTransform.csproj" />
     <ProjectReference Include="..\..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.RyuJit\src\ILCompiler.RyuJit.csproj" />
     <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj" />
     <ProjectReference Include="..\..\ILCompiler.Compiler\src\ILCompiler.Compiler.csproj" />
     <ProjectReference Include="..\..\ILCompiler.CppCodeGen\src\ILCompiler.CppCodeGen.csproj" />
     <ProjectReference Include="..\..\ILCompiler.WebAssembly\src\ILCompiler.WebAssembly.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.ReadyToRun\src\ILCompiler.ReadyToRun.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.CommandLine">
@@ -31,6 +33,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="RdXmlRootProvider.cs" />
     <Compile Include="EcmaOnlyDebugInformationProvider.cs" />
+    <Compile Include="ApplicationAssemblyRootProvider.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\CommandLine\CommandLineException.cs">

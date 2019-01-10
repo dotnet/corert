@@ -14,7 +14,7 @@ namespace Internal.IL
     /// Wraps the API and configuration for a particular PInvoke IL emitter. Eventually this will
     /// allow ILProvider to switch out its PInvoke IL generator with another, such as MCG.
     /// </summary>
-    class PInvokeILProvider : ILProvider
+    public class PInvokeILProvider : ILProvider
     {
         private readonly PInvokeILEmitterConfiguration _pInvokeILEmitterConfiguration;
         private readonly InteropStateManager _interopStateManager;

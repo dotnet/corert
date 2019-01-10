@@ -6,11 +6,15 @@
     <OutputType>Exe</OutputType>
     <OutputPath>$(MSBuildProjectDirectory)\</OutputPath>
     <IntermediateOutputPath>$(MSBuildProjectDirectory)\</IntermediateOutputPath>
+    <Optimize Condition="'$(Configuration)' == 'Release'">true</Optimize>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- Some tests consist of multiple assemblies - make sure ILC sees them -->
     <IlcCompileInput Include="$(MSBuildProjectDirectory)\*.dll" />
+
+    <!-- For Ready To Run testing, use the CoreCLR framework assemblies instead of the AOT ones -->
+    <IlcReference Condition="'$(NativeCodeGen)' == 'readytorun'" Include="$(CoreRT_CoreCLRRuntimeDir)\*.dll" />
   </ItemGroup>
 
   <!-- Since tests are already compiled, override Compile target to prevent CSC running -->

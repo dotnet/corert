@@ -29,6 +29,24 @@ exit /b %ERRORLEVEL%
 
 if defined __SkipTests exit /b 0
 
+echo "%__DotNetCliPath%\dotnet.exe" msbuild "%__ProjectDir%\tests\dirs.proj" /nologo /t:Restore /flp:v=normal;LogFile=build-tests-restore.log /p:NuPkgRid=%__NugetRuntimeId% /maxcpucount /p:OSGroup=%__BuildOS% /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% %__ExtraMsBuildParams%
+"%__DotNetCliPath%\dotnet.exe" msbuild "%__ProjectDir%\tests\dirs.proj" /nologo /t:Restore /flp:v=normal;LogFile=build-tests-restore.log /p:NuPkgRid=%__NugetRuntimeId% /maxcpucount /p:OSGroup=%__BuildOS% /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% %__ExtraMsBuildParams%
+IF ERRORLEVEL 1 exit /b %ERRORLEVEL%
+
+call "!VS%__VSProductVersion%COMNTOOLS!\VsDevCmd.bat"
+echo Commencing build of test components for %__BuildOS%.%__BuildArch%.%__BuildType%
+echo.
+"%__DotNetCliPath%\dotnet.exe" msbuild /ConsoleLoggerParameters:ForceNoAlign "%__ProjectDir%\tests\dirs.proj" %__ExtraMsBuildParams% /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% /p:RepoPath="%__ProjectDir%" /p:RepoLocalBuild="true" /p:NuPkgRid=%__NugetRuntimeId% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=normal;LogFile="%__TestBuildLog%"
+IF NOT ERRORLEVEL 1 (
+  findstr /ir /c:".*Warning(s)" /c:".*Error(s)" /c:"Time Elapsed.*" "%__TestBuildLog%"
+  goto AfterTestBuild
+)
+echo Test build failed with exit code %ERRORLEVEL%. Refer !__TestBuildLog! for details.
+exit /b %ERRORLEVEL%
+:AfterTestBuild
+
+if defined __BuildTests exit /b 0
+
 pushd "%__ProjectDir%\tests"
 call "runtest.cmd" %__BuildType% %__BuildArch% /dotnetclipath %__DotNetCliPath%
 set TEST_EXIT_CODE=%ERRORLEVEL%

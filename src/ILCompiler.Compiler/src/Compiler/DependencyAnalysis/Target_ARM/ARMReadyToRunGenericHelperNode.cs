@@ -164,11 +164,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.DelegateCtor:
                     {
-                        ARMDebug.EmitNYIAssert(factory, ref encoder, "DelegateCtor EmitCode is not implemented");
-                        /*
-                       ***
-                       NOT TESTED!!!
-                       ***
                         // This is a weird helper. Codegen populated Arg0 and Arg1 with the values that the constructor
                         // method expects. Codegen also passed us the generic context in Arg2.
                         // We now need to load the delegate target method into Arg2 (using a dictionary lookup)
@@ -191,7 +186,6 @@ namespace ILCompiler.DependencyAnalysis
                         }
 
                         encoder.EmitJMP(target.Constructor);
-                        */
                     }
                     break;
 
@@ -203,6 +197,7 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.MethodEntry:
                 case ReadyToRunHelperId.VirtualDispatchCell:
                 case ReadyToRunHelperId.DefaultConstructor:
+                case ReadyToRunHelperId.TypeHandleForCasting:
                     {
                         EmitDictionaryLookup(factory, ref encoder, contextRegister, encoder.TargetRegister.Result, _lookupSignature, relocsOnly);
                         encoder.EmitRET();

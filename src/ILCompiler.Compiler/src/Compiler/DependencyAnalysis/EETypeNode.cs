@@ -938,7 +938,7 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeRareFlags.HasCctorFlag;
             }
 
-            if (EETypeBuilderHelpers.ComputeRequiresAlign8(_type))
+            if (_type.RequiresAlign8())
             {
                 flags |= (uint)EETypeRareFlags.RequiresAlign8Flag;
             }
@@ -946,7 +946,6 @@ namespace ILCompiler.DependencyAnalysis
             TargetArchitecture targetArch = _type.Context.Target.Architecture;
             if (metadataType != null &&
                 (targetArch == TargetArchitecture.ARM ||
-                targetArch == TargetArchitecture.ARMEL ||
                 targetArch == TargetArchitecture.ARM64) &&
                 metadataType.IsHfa)
             {

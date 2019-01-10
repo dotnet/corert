@@ -72,7 +72,7 @@ namespace ILCompiler
 
                 foreach (TypeDesc type in ((EcmaModule)assembly).GetAllTypes())
                 {
-                    RootType(rootProvider, type);
+                    RootType(rootProvider, type, "RD.XML root");
                 }
             }
 
@@ -103,7 +103,7 @@ namespace ILCompiler
                 if (dynamicDegreeAttribute.Value != "Required All")
                     throw new NotSupportedException();
                 
-                RootType(rootProvider, type);
+                RootType(rootProvider, type, "RD.XML root");
             }
 
             foreach (var element in typeElement.Elements())
@@ -150,12 +150,12 @@ namespace ILCompiler
                 method = method.MakeInstantiatedMethod(methodInst);
             }
 
-            RootMethod(rootProvider, method);
+            RootMethod(rootProvider, method, "RD.XML root");
         }
 
-        private void RootType(IRootingServiceProvider rootProvider, TypeDesc type)
+        public static void RootType(IRootingServiceProvider rootProvider, TypeDesc type, string reason)
         {
-            rootProvider.AddCompilationRoot(type, "RD.XML root");
+            rootProvider.AddCompilationRoot(type, reason);
 
             if (type.IsGenericDefinition)
                 return;
@@ -164,16 +164,15 @@ namespace ILCompiler
             {
                 foreach (var method in type.GetMethods())
                 {
-                    // We don't know what to instantiate generic methods over
                     if (method.HasInstantiation)
                         continue;
 
-                    RootMethod(rootProvider, method);
+                    RootMethod(rootProvider, method, reason);
                 }
             }
         }
 
-        private void RootMethod(IRootingServiceProvider rootProvider, MethodDesc method)
+        private static void RootMethod(IRootingServiceProvider rootProvider, MethodDesc method, string reason)
         {
             try
             {
@@ -181,10 +180,10 @@ namespace ILCompiler
 
                 // Virtual methods should be rooted as if they were called virtually
                 if (method.IsVirtual)
-                    rootProvider.RootVirtualMethodForReflection(method, "RD.XML root");
+                    rootProvider.RootVirtualMethodForReflection(method, reason);
 
                 if (!method.IsAbstract)
-                    rootProvider.AddCompilationRoot(method, "RD.XML root");
+                    rootProvider.AddCompilationRoot(method, reason);
             }
             catch (TypeSystemException)
             {

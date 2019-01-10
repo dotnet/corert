@@ -130,7 +130,7 @@ void StackFrameIterator::EnterInitialInvalidState(Thread * pThreadToWalk)
     m_ShouldSkipRegularGcReporting = false;
     m_pendingFuncletFramePointer = NULL;
     m_pNextExInfo = pThreadToWalk->GetCurExInfo();
-    m_ControlPC = 0;
+    SetControlPC(0);
 }
 
 // Prepare to start a stack walk from the context listed in the supplied PInvokeTransitionFrame.
@@ -171,7 +171,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
     memset(&m_RegDisplay, 0, sizeof(m_RegDisplay));
     m_RegDisplay.SetIP((PCODE)pFrame->m_RIP);
     m_RegDisplay.SetAddrOfIP((PTR_PCODE)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_RIP));
-    m_ControlPC = dac_cast<PTR_VOID>(*(m_RegDisplay.pIP));
+    SetControlPC(dac_cast<PTR_VOID>(*(m_RegDisplay.pIP)));
 
     PTR_UIntNative pPreservedRegsCursor = (PTR_UIntNative)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_PreservedRegs);
 
@@ -188,9 +188,11 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
     if (pFrame->m_Flags & PTFF_SAVE_R9)  { m_RegDisplay.pR9 = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_R10)  { m_RegDisplay.pR10 = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_SP)  { m_RegDisplay.SP  = *pPreservedRegsCursor++; }
-
+#ifdef PROJECTN
     m_RegDisplay.pR7 = (PTR_UIntNative) PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_FramePointer);
-
+#else
+    m_RegDisplay.pR11 = (PTR_UIntNative) PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_FramePointer);
+#endif
     if (pFrame->m_Flags & PTFF_SAVE_R0)  { m_RegDisplay.pR0 = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_R1)  { m_RegDisplay.pR1 = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_R2)  { m_RegDisplay.pR2 = pPreservedRegsCursor++; }
@@ -335,14 +337,20 @@ void StackFrameIterator::InternalInitForEH(Thread * pThreadToWalk, PAL_LIMITED_C
     STRESS_LOG0(LF_STACKWALK, LL_INFO10000, "----Init---- [ EH ]\n");
     InternalInit(pThreadToWalk, pCtx, EHStackWalkFlags);
 
-    // Counteract m_ControlPC adjustment that will be done by PrepareToYieldFrame
-    // We treat the IP as a return-address and adjust backward when doing EH-related things.  The faulting
-    // instruction IP here will be the start of the faulting instruction and so we have the right IP for
-    // EH-related things already.
     if (instructionFault)
-        m_ControlPC = AdjustReturnAddressForward(m_ControlPC);
+    {
+        // We treat the IP as a return-address and adjust backward when doing EH-related things.  The faulting
+        // instruction IP here will be the start of the faulting instruction and so we have the right IP for
+        // EH-related things already.
+        m_dwFlags &= ~ApplyReturnAddressAdjustment;
+        PrepareToYieldFrame();
+        m_dwFlags |= ApplyReturnAddressAdjustment;
+    }
+    else
+    {
+        PrepareToYieldFrame();
+    }
 
-    PrepareToYieldFrame();
     STRESS_LOG1(LF_STACKWALK, LL_INFO10000, "   %p\n", m_ControlPC);
 }
 
@@ -381,7 +389,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     //
     // control state
     //
-    m_ControlPC       = dac_cast<PTR_VOID>(pCtx->GetIp());
+    SetControlPC(dac_cast<PTR_VOID>(pCtx->GetIp()));
     m_RegDisplay.SP   = pCtx->GetSp();
     m_RegDisplay.IP   = pCtx->GetIp();
     m_RegDisplay.pIP  = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, IP);
@@ -546,13 +554,12 @@ PTR_VOID StackFrameIterator::HandleExCollide(PTR_ExInfo pExInfo)
 
         // Sync our 'current' ExInfo with the updated state (we may have skipped other dispatches)
         ResetNextExInfoForSP(m_RegDisplay.GetSP());
-
-        if ((m_dwFlags & ApplyReturnAddressAdjustment) && (curFlags & ApplyReturnAddressAdjustment))
-        {
-            // Counteract our pre-adjusted m_ControlPC, since the caller of this routine will apply the 
-            // adjustment again once we return.
-            m_ControlPC = AdjustReturnAddressForward(m_ControlPC);
-        }
+        
+        // In case m_ControlPC is pre-adjusted, counteract here, since the caller of this routine 
+        // will apply the adjustment again once we return. If the m_ControlPC is not pre-adjusted, 
+        // this is simply an no-op.
+        m_ControlPC = m_OriginalControlPC;
+        
         m_dwFlags = curFlags;
 
         // The iterator has been moved to the "owner frame" (either a parent funclet or the main
@@ -667,7 +674,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     m_RegDisplay.SetAddrOfIP(SP);
     m_RegDisplay.SetIP(*SP++);
     m_RegDisplay.SetSP((UIntNative)dac_cast<TADDR>(SP));
-    m_ControlPC = dac_cast<PTR_VOID>(*(m_RegDisplay.pIP));
+    SetControlPC(dac_cast<PTR_VOID>(*(m_RegDisplay.pIP)));
 
     ASSERT(
         EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ||
@@ -876,7 +883,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 #endif
 
     m_RegDisplay.SetSP((UIntNative)dac_cast<TADDR>(SP));
-    m_ControlPC = dac_cast<PTR_VOID>(*(m_RegDisplay.pIP));
+    SetControlPC(dac_cast<PTR_VOID>(*(m_RegDisplay.pIP)));
 
     // We expect to be called by the runtime's C# EH implementation, and since this function's notion of how 
     // to unwind through the stub is brittle relative to the stub itself, we want to check as soon as we can.
@@ -1058,7 +1065,7 @@ void StackFrameIterator::UnwindUniversalTransitionThunk()
     m_RegDisplay.SetAddrOfIP((PTR_PCODE)addressOfPushedCallerIP);
     m_RegDisplay.SetIP(*addressOfPushedCallerIP);
     m_RegDisplay.SetSP((UIntNative)dac_cast<TADDR>(stackFrame->get_CallerSP()));
-    m_ControlPC = dac_cast<PTR_VOID>(*(m_RegDisplay.pIP));
+    SetControlPC(dac_cast<PTR_VOID>(*(m_RegDisplay.pIP)));
 
     // All universal transition cases rely on conservative GC reporting being applied to the
     // full argument set that flowed into the call.  Report the lower bound of this range (the
@@ -1201,7 +1208,8 @@ void StackFrameIterator::UnwindCallDescrThunk()
     m_RegDisplay.SetAddrOfIP(PTR_TO_MEMBER(CALL_DESCR_CONTEXT, pContext, IP));
     m_RegDisplay.SetIP(pContext->IP);
     m_RegDisplay.SetSP(newSP);
-    m_ControlPC = dac_cast<PTR_VOID>(pContext->IP);
+    SetControlPC(dac_cast<PTR_VOID>(pContext->IP));
+
 #endif // defined(USE_PORTABLE_HELPERS)
 }
 
@@ -1273,7 +1281,7 @@ void StackFrameIterator::UnwindThrowSiteThunk()
     m_RegDisplay.SetAddrOfIP(PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, IP));
     m_RegDisplay.SetIP(pContext->IP);
     m_RegDisplay.SetSP(pContext->GetSp());
-    m_ControlPC = dac_cast<PTR_VOID>(pContext->IP);
+    SetControlPC(dac_cast<PTR_VOID>(pContext->IP));
 
     // We expect the throw site to be in managed code, and since this function's notion of how to unwind 
     // through the stub is brittle relative to the stub itself, we want to check as soon as we can.
@@ -1303,7 +1311,7 @@ UnwindOutOfCurrentManagedFrame:
     m_HijackedReturnValueKind = GCRK_Unknown;
 
 #ifdef _DEBUG
-    m_ControlPC = dac_cast<PTR_VOID>((void*)666);
+    SetControlPC(dac_cast<PTR_VOID>((void*)666));
 #endif // _DEBUG
 
     // Clear any preceding published conservative range.  The current unwind will compute a new range
@@ -1326,7 +1334,7 @@ UnwindOutOfCurrentManagedFrame:
 
         if (pPreviousTransitionFrame == TOP_OF_STACK_MARKER)
         {
-            m_ControlPC = 0;
+            SetControlPC(0);
         }
         else
         {
@@ -1348,7 +1356,7 @@ UnwindOutOfCurrentManagedFrame:
         // if the thread is safe to walk, it better not have a hijack in place.
         ASSERT((ThreadStore::GetCurrentThread() == m_pThread) || !m_pThread->DangerousCrossThreadIsHijacked());
 
-        m_ControlPC = dac_cast<PTR_VOID>(*(m_RegDisplay.GetAddrOfIP()));
+        SetControlPC(dac_cast<PTR_VOID>(*(m_RegDisplay.GetAddrOfIP())));
 
         PTR_VOID collapsingTargetFrame = NULL;
 
@@ -1731,6 +1739,11 @@ bool StackFrameIterator::GetHijackedReturnValueLocation(PTR_RtuObjectRef * pLoca
     return true;
 }
 
+void StackFrameIterator::SetControlPC(PTR_VOID controlPC)
+{
+    m_OriginalControlPC = m_ControlPC = controlPC;
+}
+
 bool StackFrameIterator::IsNonEHThunk(ReturnAddressCategory category)
 {
     switch (category)
@@ -1783,19 +1796,6 @@ void StackFrameIterator::GetStackRangeToReportConservatively(PTR_RtuObjectRef * 
     *ppUpperBound = (PTR_RtuObjectRef)m_pConservativeStackRangeUpperBound;
 }
 
-// helpers to ApplyReturnAddressAdjustment
-// The adjustment is made by EH to ensure that the ControlPC of a callsite stays within the containing try region.
-// We adjust by the minimum instruction size on the target-architecture (1-byte on x86 and AMD64, 2-bytes on ARM)
-PTR_VOID StackFrameIterator::AdjustReturnAddressForward(PTR_VOID controlPC)
-{
-#ifdef _TARGET_ARM_
-    return (PTR_VOID)(((PTR_UInt8)controlPC) + 2);
-#elif defined(_TARGET_ARM64_)
-    return (PTR_VOID)(((PTR_UInt8)controlPC) + 4);
-#else
-    return (PTR_VOID)(((PTR_UInt8)controlPC) + 1);
-#endif
-}
 PTR_VOID StackFrameIterator::AdjustReturnAddressBackward(PTR_VOID controlPC)
 {
 #ifdef _TARGET_ARM_

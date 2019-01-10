@@ -18,7 +18,7 @@ namespace System.IO
     //
     // This class is intended for character output, not bytes.
     // There are methods on the Stream class for writing bytes.
-    public abstract partial class TextWriter : MarshalByRefObject, IDisposable
+    public abstract partial class TextWriter : MarshalByRefObject, IDisposable, IAsyncDisposable
     {
         public static readonly TextWriter Null = new NullTextWriter();
 
@@ -77,6 +77,19 @@ namespace System.IO
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        public virtual ValueTask DisposeAsync()
+        {
+            try
+            {
+                Dispose();
+                return default;
+            }
+            catch (Exception exc)
+            {
+                return new ValueTask(Task.FromException(exc));
+            }
         }
 
         // Clears all buffers for this TextWriter and causes any buffered data to be
@@ -273,8 +286,7 @@ namespace System.IO
         {
             if (value != null)
             {
-                IFormattable f = value as IFormattable;
-                if (f != null)
+                if (value is IFormattable f)
                 {
                     Write(f.ToString(null, FormatProvider));
                 }
@@ -484,8 +496,7 @@ namespace System.IO
             {
                 // Call WriteLine(value.ToString), not Write(Object), WriteLine().
                 // This makes calls to WriteLine(Object) atomic.
-                IFormattable f = value as IFormattable;
-                if (f != null)
+                if (value is IFormattable f)
                 {
                     WriteLine(f.ToString(null, FormatProvider));
                 }
@@ -772,6 +783,12 @@ namespace System.IO
                 // Explicitly pick up a potentially methodimpl'ed Dispose
                 if (disposing)
                     ((IDisposable)_out).Dispose();
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public override ValueTask DisposeAsync()
+            {
+                return _out.DisposeAsync();
             }
 
             [MethodImpl(MethodImplOptions.Synchronized)]

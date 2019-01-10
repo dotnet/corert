@@ -82,7 +82,9 @@ namespace ILCompiler.Metadata
         {
             AssemblyName _assemblyName;
 
-            public ExplicitScopeAssembly(Cts.TypeSystemContext context, AssemblyName assemblyName) : base(context)
+            public override Cts.IAssemblyDesc Assembly => this;
+
+            public ExplicitScopeAssembly(Cts.TypeSystemContext context, AssemblyName assemblyName) : base(context, null)
             {
                 _assemblyName = assemblyName;
             }

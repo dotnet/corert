@@ -82,7 +82,7 @@ See the LICENSE file in the project root for more information.
       <LinkerArg Include="-g" />
       <LinkerArg Include="-Wl,-rpath,'$ORIGIN'" />
       <LinkerArg Include="-Wl,--as-needed" Condition="'$(TargetOS)' != 'OSX'" />
-      <LinkerArg Include="-pthread" />
+      <LinkerArg Include="-pthread" Condition="'$(TargetOS)' != 'OSX'" />
       <LinkerArg Include="-lstdc++" />
       <LinkerArg Include="-ldl" />
       <LinkerArg Include="-lm" />

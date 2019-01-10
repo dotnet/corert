@@ -5,8 +5,6 @@ VisualStudioVersion = 15.0.26228.9
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Private.CoreLib", "System.Private.CoreLib.csproj", "{BE95C560-B508-4588-8907-F9FC5BC1A0CF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Private.TypeLoader", "..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj", "{CC2DE7A8-48BD-4E21-904A-DA4DED6556B8}"
-EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		..\shared\System.Private.CoreLib.Shared.projitems*{be95c560-b508-4588-8907-f9fc5bc1a0cf}*SharedItemsImports = 4
@@ -50,35 +48,11 @@ Global
 		{BE95C560-B508-4588-8907-F9FC5BC1A0CF}.Release|x64.Build.0 = Release|x64
 		{BE95C560-B508-4588-8907-F9FC5BC1A0CF}.Release|x86.ActiveCfg = Release|x86
 		{BE95C560-B508-4588-8907-F9FC5BC1A0CF}.Release|x86.Build.0 = Release|x86
-		{CC2DE7A8-48BD-4E21-904A-DA4DED6556B8}.Debug|arm.ActiveCfg = Debug|arm
-		{CC2DE7A8-48BD-4E21-904A-DA4DED6556B8}.Debug|arm.Build.0 = Debug|arm
-		{CC2DE7A8-48BD-4E21-904A-DA4DED6556B8}.Debug|arm64.ActiveCfg = Debug|arm64
-		{CC2DE7A8-48BD-4E21-904A-DA4DED6556B8}.Debug|arm64.Build.0 = Debug|arm64
-		{CC2DE7A8-48BD-4E21-904A-DA4DED6556B8}.Debug|armel.ActiveCfg = Debug|armel
-		{CC2DE7A8-48BD-4E21-904A-DA4DED6556B8}.Debug|armel.Build.0 = Debug|armel
-		{CC2DE7A8-48BD-4E21-904A-DA4DED6556B8}.Debug|wasm.ActiveCfg = Debug|wasm
-		{CC2DE7A8-48BD-4E21-904A-DA4DED6556B8}.Debug|wasm.Build.0 = Debug|wasm
-		{CC2DE7A8-48BD-4E21-904A-DA4DED6556B8}.Debug|x64.ActiveCfg = Debug|x64
-		{CC2DE7A8-48BD-4E21-904A-DA4DED6556B8}.Debug|x64.Build.0 = Debug|x64
-		{CC2DE7A8-48BD-4E21-904A-DA4DED6556B8}.Debug|x86.ActiveCfg = Debug|x86
-		{CC2DE7A8-48BD-4E21-904A-DA4DED6556B8}.Debug|x86.Build.0 = Debug|x86
-		{CC2DE7A8-48BD-4E21-904A-DA4DED6556B8}.Release|arm.ActiveCfg = Release|arm
-		{CC2DE7A8-48BD-4E21-904A-DA4DED6556B8}.Release|arm.Build.0 = Release|arm
-		{CC2DE7A8-48BD-4E21-904A-DA4DED6556B8}.Release|arm64.ActiveCfg = Release|arm64
-		{CC2DE7A8-48BD-4E21-904A-DA4DED6556B8}.Release|arm64.Build.0 = Release|arm64
-		{CC2DE7A8-48BD-4E21-904A-DA4DED6556B8}.Release|armel.ActiveCfg = Release|armel
-		{CC2DE7A8-48BD-4E21-904A-DA4DED6556B8}.Release|armel.Build.0 = Release|armel
-		{CC2DE7A8-48BD-4E21-904A-DA4DED6556B8}.Release|wasm.ActiveCfg = Release|wasm
-		{CC2DE7A8-48BD-4E21-904A-DA4DED6556B8}.Release|wasm.Build.0 = Release|wasm
-		{CC2DE7A8-48BD-4E21-904A-DA4DED6556B8}.Release|x64.ActiveCfg = Release|x64
-		{CC2DE7A8-48BD-4E21-904A-DA4DED6556B8}.Release|x64.Build.0 = Release|x64
-		{CC2DE7A8-48BD-4E21-904A-DA4DED6556B8}.Release|x86.ActiveCfg = Release|x86
-		{CC2DE7A8-48BD-4E21-904A-DA4DED6556B8}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {037904D7-A58F-4597-9C93-AA9E87518FA7}
+		SolutionGuid = {FFF728A1-6A01-4D73-9FB2-E8DC24CC692B}
 	EndGlobalSection
 EndGlobal

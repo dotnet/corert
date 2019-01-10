@@ -74,6 +74,15 @@ namespace Internal.NativeFormat
 
             return vertex;
         }
+
+        public Vertex Pop()
+        {
+            Vertex vertex = _items[_items.Count - 1];
+            _items.RemoveAt(_items.Count - 1);
+            Debug.Assert(vertex._offset == Vertex.Placed);
+            vertex._offset = Vertex.NotPlaced;
+            return vertex;
+        }
     }
 
 #if NATIVEFORMAT_PUBLICWRITER
@@ -225,6 +234,34 @@ namespace Internal.NativeFormat
                 offset += _offsetAdjustment;
 
             _encoder.WriteSigned(offset - GetCurrentOffset());
+        }
+        
+        public int GetExpectedOffset(Vertex val)
+        {
+            Debug.Assert(val._offset != Vertex.NotPlaced);
+    
+            if (val._iteration == -1)
+            {
+                // If the offsets are not determined yet, use the maximum possible encoding
+                return 0x7FFFFFFF;
+            }
+    
+            int offset = val._offset;
+    
+            // If the offset was not update in this iteration yet, adjust it by delta we have accumulated in this iteration so far.
+            // This adjustment allows the offsets to converge faster.
+            if (val._iteration < _iteration)
+                offset += _offsetAdjustment;
+    
+            return offset;
+        }
+
+        public int GetCurrentOffset(Vertex val)
+        {
+            if (val._iteration != _iteration)
+                return -1;
+
+            return val._offset;
         }
 
         public int GetCurrentOffset()
@@ -509,6 +546,11 @@ namespace Internal.NativeFormat
         }
     }
 
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
     class UnsignedConstant : Vertex
     {
         uint _value;
@@ -1493,6 +1535,409 @@ namespace Internal.NativeFormat
                 return false;
 
             return true;
+        }
+    }
+    
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
+    class BlobVertex : Vertex
+    {
+        private byte[] _data;
+    
+        public BlobVertex(byte[] data)
+        {
+            _data = data;
+        }
+    
+        public int GetSize()
+        {
+            return _data.Length;
+        }
+    
+        internal override void Save(NativeWriter writer)
+        {
+            foreach (byte b in _data)
+            {
+                writer.WriteByte(b);
+            }
+        }
+    }
+
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
+    class EntryPointVertex : Vertex
+    {
+        private uint _methodIndex;
+
+        private BlobVertex _fixups;
+    
+        public EntryPointVertex(uint methodIndex, BlobVertex fixups)
+        {
+            _methodIndex = methodIndex;
+            _fixups = fixups;
+        }
+    
+        internal override void Save(NativeWriter writer)
+        {
+            if (_fixups != null)
+            {
+                int existingOffset = _fixups._offset;
+                if (existingOffset != -1)
+                {
+                    writer.WriteUnsigned((_methodIndex << 2) | 3);
+                    writer.WriteUnsigned((uint)(writer.GetCurrentOffset() - existingOffset));
+                }
+                else
+                {
+                    writer.WriteUnsigned((_methodIndex << 2) | 1);
+                    _fixups.Save(writer);
+                }
+            }
+            else
+            {
+                writer.WriteUnsigned(_methodIndex << 1);
+            }
+        }
+    }
+
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
+    class EntryPointWithBlobVertex : EntryPointVertex
+    {
+        private BlobVertex _blob;
+    
+        public EntryPointWithBlobVertex(uint methodIndex, BlobVertex fixups, BlobVertex blob)
+            : base(methodIndex, fixups)
+        {
+            _blob = blob;
+        }
+    
+        internal override void Save(NativeWriter writer)
+        {
+            _blob.Save(writer);
+            base.Save(writer);
+        }
+    }
+
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
+    class DebugInfoVertex : Vertex
+    {
+        private BlobVertex _debugInfo;
+
+        public DebugInfoVertex(BlobVertex debugInfo)
+        {
+            _debugInfo = debugInfo;
+        }
+
+        internal override void Save(NativeWriter writer)
+        {
+            int existingOffset = writer.GetCurrentOffset(_debugInfo);
+            if (existingOffset != -1)
+            {
+                Debug.Assert(writer.GetCurrentOffset() > existingOffset);
+                writer.WriteUnsigned((uint)(writer.GetCurrentOffset() - existingOffset));
+            }
+            else
+            {
+                writer.WriteUnsigned(0);
+                _debugInfo._iteration = writer.GetNumberOfIterations();
+                _debugInfo._offset = writer.GetCurrentOffset();
+                _debugInfo.Save(writer);
+            }
+        }
+    }
+
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
+    class VertexArray : Vertex
+    {
+        private const int BlockSize = 16;
+
+        private Section _section;
+
+        private List<Vertex> _entries;
+
+        private List<Vertex> _blocks;
+
+        /// <summary>
+        /// Current size of index entry: 0 - uint8, 1 - uint16, 2 - uint32
+        /// </summary>
+        private uint _entryIndexSize;
+
+        class VertexLeaf : Vertex
+        {
+            private Vertex _vertex;
+            private int _leafIndex;
+            
+            public VertexLeaf(Vertex vertex, int leafIndex)
+            {
+                _vertex = vertex;
+                _leafIndex = leafIndex;
+            }
+
+            internal override void Save(NativeWriter writer)
+            {
+                writer.WriteUnsigned((uint)_leafIndex << 2);
+        
+                if (_vertex != null)
+                {
+                    _vertex.Save(writer);
+                }
+            }
+        }
+
+        class VertexTree : Vertex
+        {
+            private Vertex _first;
+            private Vertex _second;
+
+            public VertexTree()
+            {
+                _first = null;
+                _second = null;
+            }
+
+            public VertexTree(Vertex first, Vertex second)
+            {
+                _first = first;
+                _second = second;
+            }
+
+            public void Update(Vertex first, Vertex second)
+            {
+                _first = first;
+                _second = second;
+            }
+
+            internal override void Save(NativeWriter writer)
+            {
+                uint value = (_first != null ? 1u : 0u);
+        
+                if (_second != null)
+                {
+                    value |= 2;
+        
+                    int delta = writer.GetExpectedOffset(_second) - writer.GetCurrentOffset();
+                    Debug.Assert(delta >= 0);
+                    value |= ((uint)delta << 2);
+                }
+        
+                writer.WriteUnsigned(value);
+        
+                if (_first != null)
+                    _first.Save(writer);
+            }
+        }
+
+        public VertexArray(Section section)
+        {
+            _section = section;
+            _entries = new List<Vertex>();
+            _blocks = new List<Vertex>();
+            _entryIndexSize = 0;
+        }
+
+        private Vertex ExpandBlock(int index, int depth, bool place, out bool isLeaf)
+        {
+            if (depth == 1)
+            {
+                Vertex first = (index < _entries.Count ? _entries[index] : null);
+                Vertex second = (index + 1 < _entries.Count ? _entries[index + 1] : null);
+    
+                if (first == null && second == null)
+                {
+                    isLeaf = true;
+                    return null;
+                }
+    
+                if (first == null || second == null)
+                {
+                    VertexLeaf leaf = new VertexLeaf(
+                        first == null ? second : first,
+                        (first == null ? index + 1 : index) & (BlockSize - 1));
+                        
+                    if (place)
+                    {
+                        _section.Place(leaf);
+                    }
+
+                    isLeaf = true;
+                    return leaf;
+                }
+    
+                VertexTree tree = new VertexTree(first, second);
+                if (place)
+                    _section.Place(tree);
+    
+                _section.Place(second);
+    
+                isLeaf = false;
+                return tree;
+            }
+            else
+            {
+                VertexTree tree = new VertexTree();
+                if (place)
+                    _section.Place(tree);
+
+                bool firstIsLeaf;
+                Vertex first = ExpandBlock(index, depth - 1, false, out firstIsLeaf);
+
+                bool secondIsLeaf;
+                Vertex second = ExpandBlock(index + (1 << (depth - 1)), depth - 1, true, out secondIsLeaf);
+    
+                if (first == null && second == null)
+                {
+                    if (place)
+                    {
+                        Vertex pop = _section.Pop();
+                        Debug.Assert(pop == tree);
+                    }
+                    isLeaf = true;
+                    return null;
+                }
+    
+                if (first == null && secondIsLeaf)
+                {
+                    Vertex pop = _section.Pop();
+                    Debug.Assert(pop == second);
+                    if (place)
+                    {
+                        pop = _section.Pop();
+                        Debug.Assert(pop == tree);
+                        _section.Place(second);
+                    }
+    
+                    isLeaf = true;
+                    return second;
+                }
+    
+                if (second == null && firstIsLeaf)
+                {
+                    if (place)
+                    {
+                        Vertex pop = _section.Pop();
+                        Debug.Assert(pop == tree);
+                        _section.Place(first);
+                    }
+    
+                    isLeaf = true;
+                    return first;
+                }
+    
+                tree.Update(first, second);
+                isLeaf = false;
+                return tree;
+            }
+        }
+    
+        public void Set(int index, Vertex element)
+        {
+            while (index >= _entries.Count)
+                _entries.Add(null);
+
+            _entries[index] = element;
+        }
+
+        public void ExpandLayout()
+        {
+            VertexLeaf nullBlock = null;
+            for (int i = 0; i < _entries.Count; i += BlockSize)
+            {
+                bool isLeaf;
+                Vertex block = ExpandBlock(i, 4, true, out isLeaf);
+    
+                if (block == null)
+                {
+                    if (nullBlock == null)
+                    {
+                        nullBlock = new VertexLeaf(vertex: null, leafIndex: BlockSize);
+                        _section.Place(nullBlock);
+                    }
+                    block = nullBlock;
+                }
+    
+                _blocks.Add(block);
+            }
+    
+            // Start with maximum size entries
+            _entryIndexSize = 2;
+        }
+    
+        internal override void Save(NativeWriter writer)
+        {
+            // Lowest two bits are entry index size, the rest is number of elements
+            writer.WriteUnsigned(((uint)_entries.Count << 2) | _entryIndexSize);
+    
+            int blocksOffset = writer.GetCurrentOffset();
+            int maxOffset = 0;
+    
+            foreach (Vertex block in _blocks)
+            {
+                int offset = writer.GetExpectedOffset(block) - blocksOffset;
+                Debug.Assert(offset >= 0);
+    
+                maxOffset = Math.Max(offset, maxOffset);
+    
+                if (_entryIndexSize == 0)
+                {
+                    writer.WriteByte((byte)offset);
+                }
+                else
+                if (_entryIndexSize == 1)
+                {
+                    writer.WriteUInt16((ushort)offset);
+                }
+                else
+                {
+                    writer.WriteUInt32((uint)offset);
+                }
+            }
+    
+            uint newEntryIndexSize = 0;
+            if (maxOffset > 0xFF)
+            {
+                newEntryIndexSize++;
+                if (maxOffset > 0xFFFF)
+                    newEntryIndexSize++;
+            }
+    
+            if (writer.IsGrowing())
+            {
+                if (newEntryIndexSize > _entryIndexSize)
+                {
+                    // Ensure that the table will be redone with new entry index size
+                    writer.UpdateOffsetAdjustment(1);
+    
+                    _entryIndexSize = newEntryIndexSize;
+                }
+            }
+            else
+            {
+                if (newEntryIndexSize < _entryIndexSize)
+                {
+                    // Ensure that the table will be redone with new entry index size
+                    writer.UpdateOffsetAdjustment(-1);
+    
+                    _entryIndexSize = newEntryIndexSize;
+                }
+            }
         }
     }
 

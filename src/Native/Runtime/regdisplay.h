@@ -78,8 +78,11 @@ struct REGDISPLAY
     inline PCODE GetIP() { return IP; }
     inline PTR_PCODE GetAddrOfIP() { return pIP; }
     inline UIntNative GetSP() { return SP; }
+#ifdef PROJECTN
     inline UIntNative GetFP() { return *pR7; }
-
+#else
+    inline UIntNative GetFP() { return *pR11; }
+#endif
     inline void SetIP(PCODE IP) { this->IP = IP; }
     inline void SetAddrOfIP(PTR_PCODE pIP) { this->pIP = pIP; }
     inline void SetSP(UIntNative SP) { this->SP = SP; }

@@ -96,9 +96,27 @@ namespace System
         }
 
         [Intrinsic]
+        public static float FusedMultiplyAdd(float x, float y, float z)
+        {
+            return RuntimeImports.fmaf(x, y, z);
+        }
+
+        [Intrinsic]
+        public static int ILogB(float x)
+        {
+            return RuntimeImports.ilogbf(x);
+        }
+
+        [Intrinsic]
         public static float Log(float x)
         {
             return RuntimeImports.logf(x);
+        }
+
+        [Intrinsic]
+        public static float Log2(float x)
+        {
+            return RuntimeImports.log2f(x);
         }
 
         [Intrinsic]
@@ -111,6 +129,12 @@ namespace System
         public static float Pow(float x, float y)
         {
             return RuntimeImports.powf(x, y);
+        }
+
+        [Intrinsic]
+        public static float ScaleB(float x, int n)
+        {
+            return RuntimeImports.scalbnf(x, n);
         }
 
         [Intrinsic]

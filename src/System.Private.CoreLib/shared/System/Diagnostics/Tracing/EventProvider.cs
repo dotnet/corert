@@ -8,7 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security;
-#if !CORECLR && !ES_BUILD_PN
+#if ES_BUILD_STANDALONE
 using System.Security.Permissions;
 #endif
 #if CORECLR && PLATFORM_WINDOWS
@@ -55,9 +55,9 @@ namespace System.Diagnostics.Tracing
     /// Only here because System.Diagnostics.EventProvider needs one more extensibility hook (when it gets a 
     /// controller callback)
     /// </summary>
-#if !CORECLR && !ES_BUILD_PN
+#if ES_BUILD_STANDALONE
     [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
-#endif // !CORECLR && !ES_BUILD_PN
+#endif
     internal partial class EventProvider : IDisposable
     {
         // This is the windows EVENT_DATA_DESCRIPTOR structure.  We expose it because this is what
@@ -283,6 +283,19 @@ namespace System.Diagnostics.Tracing
                     m_allKeywordMask = allKeyword;
 
                     List<Tuple<SessionInfo, bool>> sessionsChanged = GetSessions();
+
+                    // The GetSessions() logic was here to support the idea that different ETW sessions
+                    // could have different user-defined filters.   (I believe it is currently broken but that is another matter.)
+                    // However in particular GetSessions() does not support EventPipe, only ETW, which is
+                    // the immediate problem.   We work-around establishing the invariant that we always get a
+                    // OnControllerCallback under all circumstances, even if we can't find a delta in the
+                    // ETW logic.  This fixes things for the EventPipe case.
+                    //
+                    // All this session based logic should be reviewed and likely removed, but that is a larger
+                    // change that needs more careful staging.
+                    if (sessionsChanged.Count == 0)
+                        sessionsChanged.Add(new Tuple<SessionInfo, bool>(new SessionInfo(0, 0), true));
+
                     foreach (var session in sessionsChanged)
                     {
                         int sessionChanged = session.Item1.sessionIdBit;
@@ -527,8 +540,10 @@ namespace System.Diagnostics.Tracing
                             int etwSessionId;
                             if (int.TryParse(strId, out etwSessionId))
                             {
+#if ES_BUILD_STANDALONE
                                 // we need to assert this permission for partial trust scenarios
                                 (new RegistryPermission(RegistryPermissionAccess.Read, regKey)).Assert();
+#endif
                                 var data = key.GetValue(valueName) as byte[];
                                 if (data != null)
                                 {
@@ -595,7 +610,7 @@ namespace System.Diagnostics.Tracing
                 string valueName = "ControllerData_Session_" + etwSessionId.ToString(CultureInfo.InvariantCulture);
 
                 // we need to assert this permission for partial trust scenarios
-#if !CORECLR
+#if ES_BUILD_STANDALONE
                 (new RegistryPermission(RegistryPermissionAccess.Read, regKey)).Assert();
 #endif
                 using (var key = Registry.LocalMachine.OpenSubKey(regKey))

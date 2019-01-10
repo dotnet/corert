@@ -25,6 +25,8 @@ namespace ILCompiler
         private string _outputFilePath;
         private bool _isCppCodegen;
         private bool _isWasmCodegen;
+        private bool _isReadyToRunCodeGen;
+        private bool _isInputVersionBubble;
         private bool _isVerbose;
 
         private string _dgmlLogFileName;
@@ -55,6 +57,8 @@ namespace ILCompiler
         private string _singleMethodTypeName;
         private string _singleMethodName;
         private IReadOnlyList<string> _singleMethodGenericArgs;
+
+        private bool _rootAllApplicationAssemblies;
 
         private IReadOnlyList<string> _codegenOptions = Array.Empty<string>();
 
@@ -144,6 +148,8 @@ namespace ILCompiler
                 syntax.DefineOption("g", ref _enableDebugInfo, "Emit debugging information");
                 syntax.DefineOption("cpp", ref _isCppCodegen, "Compile for C++ code-generation");
                 syntax.DefineOption("wasm", ref _isWasmCodegen, "Compile for WebAssembly code-generation");
+                syntax.DefineOption("readytorun", ref _isReadyToRunCodeGen, "Compile for ready-to-run code-generation");
+                syntax.DefineOption("inputbubble", ref _isInputVersionBubble, "True when the entire input forms a version bubble (default = per-assembly bubble)");
                 syntax.DefineOption("nativelib", ref _nativeLib, "Compile as static or shared library");
                 syntax.DefineOption("exportsfile", ref _exportsFile, "File to write exported method definitions");
                 syntax.DefineOption("dgmllog", ref _dgmlLogFileName, "Save result of dependency analysis as DGML");
@@ -157,6 +163,7 @@ namespace ILCompiler
                 syntax.DefineOption("usesharedgenerics", ref _useSharedGenerics, "Enable shared generics");
                 syntax.DefineOptionList("codegenopt", ref _codegenOptions, "Define a codegen option");
                 syntax.DefineOptionList("rdxml", ref _rdXmlFilePaths, "RD.XML file(s) for compilation");
+                syntax.DefineOption("rootallapplicationassemblies", ref _rootAllApplicationAssemblies, "Consider all non-framework assemblies dynamically used");
                 syntax.DefineOption("map", ref _mapFileName, "Generate a map file");
                 syntax.DefineOption("metadatalog", ref _metadataLogFileName, "Generate a metadata log file");
                 syntax.DefineOption("nometadatablocking", ref _noMetadataBlocking, "Ignore metadata blocking for internal implementation details");
@@ -248,7 +255,7 @@ namespace ILCompiler
                 else if (_targetArchitectureStr.Equals("arm", StringComparison.OrdinalIgnoreCase))
                     _targetArchitecture = TargetArchitecture.ARM;
                 else if (_targetArchitectureStr.Equals("armel", StringComparison.OrdinalIgnoreCase))
-                    _targetArchitecture = TargetArchitecture.ARMEL;
+                    _targetArchitecture = TargetArchitecture.ARM;
                 else if (_targetArchitectureStr.Equals("arm64", StringComparison.OrdinalIgnoreCase))
                     _targetArchitecture = TargetArchitecture.ARM64;
                 else if (_targetArchitectureStr.Equals("wasm", StringComparison.OrdinalIgnoreCase))
@@ -278,14 +285,16 @@ namespace ILCompiler
             // Initialize type system context
             //
 
-            SharedGenericsMode genericsMode = _useSharedGenerics || (!_isCppCodegen && !_isWasmCodegen) ?
+            SharedGenericsMode genericsMode = _useSharedGenerics || !_isWasmCodegen ?
                 SharedGenericsMode.CanonicalReferenceTypes : SharedGenericsMode.Disabled;
 
             // TODO: compiler switch for SIMD support?
             var simdVectorLength = (_isCppCodegen || _isWasmCodegen) ? SimdVectorLength.None : SimdVectorLength.Vector128Bit;
             var targetAbi = _isCppCodegen ? TargetAbi.CppCodegen : TargetAbi.CoreRT;
             var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, targetAbi, simdVectorLength);
-            var typeSystemContext = new CompilerTypeSystemContext(targetDetails, genericsMode);
+            CompilerTypeSystemContext typeSystemContext = (_isReadyToRunCodeGen
+                ? new ReadyToRunCompilerContext(targetDetails, genericsMode)
+                : new CompilerTypeSystemContext(targetDetails, genericsMode));
 
             //
             // TODO: To support our pre-compiled test tree, allow input files that aren't managed assemblies since
@@ -337,6 +346,7 @@ namespace ILCompiler
             {
                 // Either single file, or multifile library, or multifile consumption.
                 EcmaModule entrypointModule = null;
+                bool systemModuleIsInputModule = false;
                 foreach (var inputFile in typeSystemContext.InputFilePaths)
                 {
                     EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
@@ -348,16 +358,38 @@ namespace ILCompiler
                         entrypointModule = module;
                     }
 
-                    compilationRoots.Add(new ExportedMethodsRootProvider(module));
+                    if (module == typeSystemContext.SystemModule)
+                        systemModuleIsInputModule = true;
+
+                    if (!_isReadyToRunCodeGen)
+                        compilationRoots.Add(new ExportedMethodsRootProvider(module));
                 }
 
-                if (entrypointModule != null)
+                if (entrypointModule != null && !_isReadyToRunCodeGen)
                 {
                     compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext)));
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(_runtimeOptions));
                 }
 
-                if (_multiFile)
+                if (_isReadyToRunCodeGen)
+                {
+                    List<EcmaModule> inputModules = new List<EcmaModule>();
+
+                    foreach (var inputFile in typeSystemContext.InputFilePaths)
+                    {
+                        EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
+
+                        compilationRoots.Add(new ReadyToRunRootProvider(module));
+                        inputModules.Add(module);
+                        if (!_isInputVersionBubble)
+                        {
+                            break;
+                        }
+                    }
+
+                    compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(typeSystemContext, inputModules);
+                }
+                else if (_multiFile)
                 {
                     List<EcmaModule> inputModules = new List<EcmaModule>();
 
@@ -380,7 +412,8 @@ namespace ILCompiler
                     if (entrypointModule == null && !_nativeLib)
                         throw new Exception("No entrypoint module");
 
-                    compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
+                    if (!systemModuleIsInputModule)
+                        compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
                     compilationGroup = new SingleFileCompilationModuleGroup();
                 }
 
@@ -398,6 +431,11 @@ namespace ILCompiler
                 {
                     compilationRoots.Add(new RdXmlRootProvider(typeSystemContext, rdXmlFilePath));
                 }
+
+                if (_rootAllApplicationAssemblies)
+                {
+                    compilationRoots.Add(new ApplicationAssemblyRootProvider(typeSystemContext));
+                }
             }
 
             //
@@ -407,6 +445,16 @@ namespace ILCompiler
             CompilationBuilder builder;
             if (_isWasmCodegen)
                 builder = new WebAssemblyCodegenCompilationBuilder(typeSystemContext, compilationGroup);
+            else if (_isReadyToRunCodeGen)
+            {
+                string inputFilePath = "";
+                foreach (var input in typeSystemContext.InputFilePaths)
+                {
+                    inputFilePath = input.Value;
+                    break;
+                }
+                builder = new ReadyToRunCodegenCompilationBuilder(typeSystemContext, compilationGroup, inputFilePath);
+            }
             else if (_isCppCodegen)
                 builder = new CppCodegenCompilationBuilder(typeSystemContext, compilationGroup);
             else
@@ -432,16 +480,29 @@ namespace ILCompiler
 
             DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy = new DefaultDynamicInvokeThunkGenerationPolicy();
 
-            UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager(
-                compilationGroup,
-                typeSystemContext,
-                mdBlockingPolicy,
-                resBlockingPolicy,
-                _metadataLogFileName,
-                stackTracePolicy,
-                invokeThunkGenerationPolicy,
-                metadataGenerationOptions
-                );
+            bool supportsReflection = !_isReadyToRunCodeGen && _systemModuleName == DefaultSystemModule;
+
+            MetadataManager metadataManager;
+            if (_isReadyToRunCodeGen)
+            {
+                metadataManager = new ReadyToRunTableManager(typeSystemContext);
+            }
+            else if (supportsReflection)
+            {
+                metadataManager = new UsageBasedMetadataManager(
+                    compilationGroup,
+                    typeSystemContext,
+                    mdBlockingPolicy,
+                    resBlockingPolicy,
+                    _metadataLogFileName,
+                    stackTracePolicy,
+                    invokeThunkGenerationPolicy,
+                    metadataGenerationOptions);
+            }
+            else
+            {
+                metadataManager = new EmptyMetadataManager(typeSystemContext);
+            }
 
             // Unless explicitly opted in at the command line, we enable scanner for retail builds by default.
             // We don't do this for CppCodegen and Wasm, because those codegens are behind.
@@ -449,13 +510,10 @@ namespace ILCompiler
             // fixable by using a CompilationGroup for the scanner that has a bigger worldview, but
             // let's cross that bridge when we get there).
             bool useScanner = _useScanner ||
-                (_optimizationMode != OptimizationMode.None && !_isCppCodegen && !_isWasmCodegen && !_multiFile);
+                (_optimizationMode != OptimizationMode.None && !_isCppCodegen && !_isWasmCodegen && !_isReadyToRunCodeGen && !_multiFile);
 
             useScanner &= !_noScanner;
 
-            bool supportsReflection = !_isCppCodegen && _systemModuleName == DefaultSystemModule;
-
-            MetadataManager compilationMetadataManager = supportsReflection ? metadataManager : (MetadataManager)new EmptyMetadataManager(typeSystemContext);
             ILScanResults scanResults = null;
             if (useScanner)
             {
@@ -470,7 +528,8 @@ namespace ILCompiler
 
                 scanResults = scanner.Scan();
 
-                compilationMetadataManager = metadataManager.ToAnalysisBasedMetadataManager();
+                if (metadataManager is UsageBasedMetadataManager usageBasedManager)
+                    metadataManager = usageBasedManager.ToAnalysisBasedMetadataManager();
             }
 
             var logger = new Logger(Console.Out, _isVerbose);
@@ -482,11 +541,11 @@ namespace ILCompiler
             DependencyTrackingLevel trackingLevel = _dgmlLogFileName == null ?
                 DependencyTrackingLevel.None : (_generateFullDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
 
-            compilationRoots.Add(compilationMetadataManager);
+            compilationRoots.Add(metadataManager);
 
             builder
                 .UseBackendOptions(_codegenOptions)
-                .UseMetadataManager(compilationMetadataManager)
+                .UseMetadataManager(metadataManager)
                 .UseLogger(logger)
                 .UseDependencyTracking(trackingLevel)
                 .UseCompilationRoots(compilationRoots)

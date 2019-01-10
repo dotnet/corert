@@ -14,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Hashtable of all generic method templates used by the TypeLoader at runtime
     /// </summary>
-    internal sealed class GenericMethodsTemplateMap : ObjectNode, ISymbolDefinitionNode
+    public sealed class GenericMethodsTemplateMap : ObjectNode, ISymbolDefinitionNode
     {
         private ObjectAndOffsetSymbolNode _endSymbol;
         private ExternalReferencesTableNode _externalReferences;

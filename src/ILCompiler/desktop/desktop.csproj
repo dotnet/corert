@@ -70,6 +70,9 @@
     <Compile Include="..\src\EcmaOnlyDebugInformationProvider.cs">
       <Link>EcmaOnlyDebugInformationProvider.cs</Link>
     </Compile>
+    <Compile Include="..\src\ApplicationAssemblyRootProvider.cs">
+      <Link>ApplicationAssemblyRootProvider.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\CommandLine\CommandLineException.cs">
@@ -88,6 +91,10 @@
       <Project>{971ae7e7-08c6-48b4-902a-63851e6dac66}</Project>
       <Name>ILCompiler.CppCodegen</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\ILCompiler.RyuJit\src\ILCompiler.RyuJit.csproj">
+      <Project>{69cb6cf1-9b6c-4617-a8b7-f0089ce474fb}</Project>
+      <Name>ILCompiler.RyuJit</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj">
       <Project>{1a9df196-43a9-44bb-b2c6-d62aa56b0e49}</Project>
       <Name>ILCompiler.TypeSystem</Name>
@@ -95,6 +102,9 @@
     <ProjectReference Include="..\..\ILCompiler.WebAssembly\src\ILCompiler.WebAssembly.csproj">
       <Project>{5d796936-ccc1-4e9d-b1a9-36a5aba9b499}</Project>
       <Name>ILCompiler.WebAssembly</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\ILCompiler.ReadyToRun\src\ILCompiler.ReadyToRun.csproj">
+      <Name>ILCompiler.ReadyToRun</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

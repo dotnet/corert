@@ -206,7 +206,7 @@ namespace System.Runtime
         private static void OnFirstChanceExceptionViaClassLib(object exception)
         {
             IntPtr pOnFirstChanceFunction =
-                (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEType((IntPtr)exception.m_pEEType, ClassLibFunctionId.OnFirstChance);
+                (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEType((IntPtr)exception.EEType, ClassLibFunctionId.OnFirstChance);
 
             if (pOnFirstChanceFunction == IntPtr.Zero)
             {
@@ -264,10 +264,10 @@ namespace System.Runtime
             RH_EH_FIRST_RETHROW_FRAME = 2,
         }
 
-        private static void AppendExceptionStackFrameViaClasslib(object exception, IntPtr IP,
+        private static void AppendExceptionStackFrameViaClasslib(object exception, IntPtr ip,
             ref bool isFirstRethrowFrame, ref bool isFirstFrame)
         {
-            IntPtr pAppendStackFrame = (IntPtr)InternalCalls.RhpGetClasslibFunctionFromCodeAddress(IP,
+            IntPtr pAppendStackFrame = (IntPtr)InternalCalls.RhpGetClasslibFunctionFromCodeAddress(ip,
                 ClassLibFunctionId.AppendExceptionStackFrame);
 
             if (pAppendStackFrame != IntPtr.Zero)
@@ -277,7 +277,7 @@ namespace System.Runtime
 
                 try
                 {
-                    CalliIntrinsics.CallVoid(pAppendStackFrame, exception, IP, flags);
+                    CalliIntrinsics.CallVoid(pAppendStackFrame, exception, ip, flags);
                 }
                 catch when (true)
                 {
@@ -652,6 +652,7 @@ namespace System.Runtime
             bool isFirstFrame = true;
 
             byte* prevControlPC = null;
+            byte* prevOriginalPC = null;
             UIntPtr prevFramePtr = UIntPtr.Zero;
             bool unwoundReversePInvoke = false;
 
@@ -659,7 +660,7 @@ namespace System.Runtime
             Debug.Assert(isValid, "RhThrowEx called with an unexpected context");
 
             OnFirstChanceExceptionViaClassLib(exceptionObj);
-            DebuggerNotify.BeginFirstPass(exceptionObj, frameIter.ControlPC, frameIter.SP);
+            DebuggerNotify.BeginFirstPass(exceptionObj, frameIter.OriginalControlPC, frameIter.SP);
 
             for (; isValid; isValid = frameIter.Next(out startIdx, out unwoundReversePInvoke))
             {
@@ -669,6 +670,7 @@ namespace System.Runtime
                     break;
 
                 prevControlPC = frameIter.ControlPC;
+                prevOriginalPC = frameIter.OriginalControlPC;
 
                 DebugScanCallFrame(exInfo._passNumber, frameIter.ControlPC, frameIter.SP);
 
@@ -676,9 +678,9 @@ namespace System.Runtime
                 // exInfo._notifyDebuggerSP can be populated by the debugger from out of process
                 // at any time.
                 if (exInfo._notifyDebuggerSP == frameIter.SP)
-                    DebuggerNotify.FirstPassFrameEntered(exceptionObj, frameIter.ControlPC, frameIter.SP);
+                    DebuggerNotify.FirstPassFrameEntered(exceptionObj, frameIter.OriginalControlPC, frameIter.SP);
 
-                UpdateStackTrace(exceptionObj, ref exInfo, ref isFirstRethrowFrame, ref prevFramePtr, ref isFirstFrame);
+                UpdateStackTrace(exceptionObj, exInfo._frameIter.FramePointer, (IntPtr)frameIter.OriginalControlPC, ref isFirstRethrowFrame, ref prevFramePtr, ref isFirstFrame);
 
                 byte* pHandler;
                 if (FindFirstPassHandler(exceptionObj, startIdx, ref frameIter,
@@ -698,7 +700,7 @@ namespace System.Runtime
                 UnhandledExceptionFailFastViaClasslib(
                     RhFailFastReason.PN_UnhandledException,
                     exceptionObj,
-                    (IntPtr)prevControlPC, // IP of the last frame that did not handle the exception
+                    (IntPtr)prevOriginalPC, // IP of the last frame that did not handle the exception
                     ref exInfo);
             }
 
@@ -769,7 +771,7 @@ namespace System.Runtime
                 "Handling frame must have a valid stack frame pointer");
         }
 
-        private static void UpdateStackTrace(object exceptionObj, ref ExInfo exInfo,
+        private static void UpdateStackTrace(object exceptionObj, UIntPtr curFramePtr, IntPtr ip, 
             ref bool isFirstRethrowFrame, ref UIntPtr prevFramePtr, ref bool isFirstFrame)
         {
             // We use the fact that all funclet stack frames belonging to the same logical method activation 
@@ -777,11 +779,10 @@ namespace System.Runtime
             // callbacks for all the funclet stack frames, one right after the other.  The classlib doesn't 
             // want to know about funclets, so we strip them out by only reporting the first frame of a 
             // sequence of funclets.  This is correct because the leafmost funclet is first in the sequence
-            // and corresponds to the current 'IP state' of the method.
-            UIntPtr curFramePtr = exInfo._frameIter.FramePointer;
+            // and corresponds to the current 'IP state' of the method.            
             if ((prevFramePtr == UIntPtr.Zero) || (curFramePtr != prevFramePtr))
             {
-                AppendExceptionStackFrameViaClasslib(exceptionObj, (IntPtr)exInfo._frameIter.ControlPC,
+                AppendExceptionStackFrameViaClasslib(exceptionObj, ip,
                     ref isFirstRethrowFrame, ref isFirstFrame);
             }
             prevFramePtr = curFramePtr;

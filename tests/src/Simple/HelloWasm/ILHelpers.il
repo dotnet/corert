@@ -18,6 +18,10 @@
 
 .class public ILHelpers.ILHelpersTest
 {
+  // RVA static field
+  .field public static int32 StaticInitedInt at D_00004000
+  .data D_00004000 = bytearray (12 34 56 78)
+
   .method public static void EatArgs(string, object)
   {
     ret

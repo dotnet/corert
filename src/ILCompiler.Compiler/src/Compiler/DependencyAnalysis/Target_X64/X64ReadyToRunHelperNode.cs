@@ -19,14 +19,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             switch (Id)
             {
-                case ReadyToRunHelperId.NewHelper:
-                    {
-                        TypeDesc target = (TypeDesc)Target;
-                        encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.ConstructedTypeSymbol(target));
-                        encoder.EmitJMP(factory.ExternSymbol(JitHelper.GetNewObjectHelperForType(target)));
-                    }
-                    break;
-
                 case ReadyToRunHelperId.VirtualCall:
                     {
                         MethodDesc targetMethod = (MethodDesc)Target;
@@ -49,33 +41,6 @@ namespace ILCompiler.DependencyAnalysis
 
                         AddrMode jmpAddrMode = new AddrMode(encoder.TargetRegister.Result, null, EETypeNode.GetVTableOffset(pointerSize) + (slot * pointerSize), 0, AddrModeSize.Int64);
                         encoder.EmitJmpToAddrMode(ref jmpAddrMode);
-                    }
-                    break;
-
-                case ReadyToRunHelperId.IsInstanceOf:
-                    {
-                        TypeDesc target = (TypeDesc)Target;
-                        encoder.EmitLEAQ(encoder.TargetRegister.Arg1, factory.NecessaryTypeSymbol(target));
-                        encoder.EmitJMP(factory.ExternSymbol(JitHelper.GetCastingHelperNameForType(target, false)));
-                    }
-                    break;
-
-                case ReadyToRunHelperId.CastClass:
-                    {
-                        TypeDesc target = (TypeDesc)Target;
-                        encoder.EmitLEAQ(encoder.TargetRegister.Arg1, factory.NecessaryTypeSymbol(target));
-                        encoder.EmitJMP(factory.ExternSymbol(JitHelper.GetCastingHelperNameForType(target, true)));
-                    }
-                    break;
-
-                case ReadyToRunHelperId.NewArr1:
-                    {
-                        TypeDesc target = (TypeDesc)Target;
-
-                        // TODO: Swap argument order instead
-                        encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg0);
-                        encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.ConstructedTypeSymbol(target));
-                        encoder.EmitJMP(factory.ExternSymbol(JitHelper.GetNewArrayHelperForType(target)));
                     }
                     break;
 

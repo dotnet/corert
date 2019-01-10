@@ -160,14 +160,17 @@ namespace Internal.IL
 
         private ISymbolNode GetGenericLookupHelper(ReadyToRunHelperId helperId, object helperArgument)
         {
+            GenericDictionaryLookup lookup = _compilation.ComputeGenericLookup(_canonMethod, helperId, helperArgument);
+            Debug.Assert(lookup.UseHelper);
+
             if (_canonMethod.RequiresInstMethodDescArg())
             {
-                return _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(helperId, helperArgument, _canonMethod);
+                return _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(lookup.HelperId, lookup.HelperObject, _canonMethod);
             }
             else
             {
                 Debug.Assert(_canonMethod.RequiresInstArg() || _canonMethod.AcquiresInstMethodTableFromThis());
-                return _compilation.NodeFactory.ReadyToRunHelperFromTypeLookup(helperId, helperArgument, _canonMethod.OwningType);
+                return _compilation.NodeFactory.ReadyToRunHelperFromTypeLookup(lookup.HelperId, lookup.HelperObject, _canonMethod.OwningType);
             }
         }
 
@@ -242,28 +245,13 @@ namespace Internal.IL
         {
             TypeDesc type = (TypeDesc)_methodIL.GetObject(token);
 
-            // Nullable needs to be unwrapped
-            if (type.IsNullable)
-                type = type.Instantiation[0];
-
             if (type.IsRuntimeDeterminedSubtype)
             {
-                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, type), "IsInst/CastClass");
+                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandleForCasting, type), "IsInst/CastClass");
             }
             else
             {
-                ReadyToRunHelperId helperId;
-                if (opcode == ILOpcode.isinst)
-                {
-                    helperId = ReadyToRunHelperId.IsInstanceOf;
-                }
-                else
-                {
-                    Debug.Assert(opcode == ILOpcode.castclass);
-                    helperId = ReadyToRunHelperId.CastClass;
-                }
-
-                _dependencies.Add(_factory.ReadyToRunHelper(helperId, type), "IsInst/CastClass");
+                _dependencies.Add(_compilation.ComputeConstantLookup(ReadyToRunHelperId.TypeHandleForCasting, type), "IsInst/CastClass");
             }
         }
         
@@ -741,6 +729,7 @@ namespace Internal.IL
         private void ImportMkRefAny(int token)
         {
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.TypeHandleToRuntimeType), "mkrefany");
+            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.TypeHandleToRuntimeTypeHandle), "mkrefany");
         }
 
         private void ImportLdToken(int token)
@@ -761,6 +750,7 @@ namespace Internal.IL
                 }
 
                 // If this is a ldtoken Type / GetValueInternal sequence, we're done.
+                // If this is a ldtoken Type / Type.GetTypeFromHandle sequence, we need one more helper.
                 BasicBlock nextBasicBlock = _basicBlocks[_currentOffset];
                 if (nextBasicBlock == null)
                 {
@@ -772,6 +762,11 @@ namespace Internal.IL
                         {
                             // Codegen expands this and doesn't do the normal ldtoken.
                             return;
+                        }
+                        else if (IsTypeGetTypeFromHandle(method))
+                        {
+                            // Codegen will swap this one for GetRuntimeTypeHandle when optimizing
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeType), "ldtoken");
                         }
                     }
                 }
@@ -963,7 +958,7 @@ namespace Internal.IL
             }
             else
             {
-                _dependencies.Add(_factory.ReadyToRunHelper(ReadyToRunHelperId.NewArr1, type), "newarr");
+                _dependencies.Add(_factory.ConstructedTypeSymbol(type), "newarr");
             }
         }
 
@@ -1071,6 +1066,20 @@ namespace Internal.IL
                 if (owningType != null)
                 {
                     return owningType.Name == "RuntimeTypeHandle" && owningType.Namespace == "System";
+                }
+            }
+
+            return false;
+        }
+
+        private bool IsTypeGetTypeFromHandle(MethodDesc method)
+        {
+            if (method.IsIntrinsic && method.Name == "GetTypeFromHandle")
+            {
+                MetadataType owningType = method.OwningType as MetadataType;
+                if (owningType != null)
+                {
+                    return owningType.Name == "Type" && owningType.Namespace == "System";
                 }
             }
 

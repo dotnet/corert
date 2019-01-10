@@ -11,12 +11,19 @@ namespace Internal.Runtime.CompilerHelpers
     /// </summary>
     internal static class TypedReferenceHelpers
     {
-        public unsafe static RuntimeTypeHandle TypeHandleToRuntimeTypeMaybeNull(RuntimeTypeHandle typeHandle)
+        public static Type TypeHandleToRuntimeTypeMaybeNull(RuntimeTypeHandle typeHandle)
+        {
+            if (typeHandle.IsNull)
+                return null;
+            return Type.GetTypeFromHandle(typeHandle);
+        }
+
+        public static RuntimeTypeHandle TypeHandleToRuntimeTypeHandleMaybeNull(RuntimeTypeHandle typeHandle)
         {
             return typeHandle;
         }
 
-        public unsafe static ref byte GetRefAny(RuntimeTypeHandle type, TypedReference typedRef)
+        public static ref byte GetRefAny(RuntimeTypeHandle type, TypedReference typedRef)
         {
             if (!TypedReference.RawTargetTypeToken(typedRef).Equals(type))
             {

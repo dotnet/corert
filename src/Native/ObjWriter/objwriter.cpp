@@ -60,8 +60,8 @@ bool error(const Twine &Error) {
   return false;
 }
 
-void ObjectWriter::InitTripleName() {
-  TripleName = sys::getDefaultTargetTriple();
+void ObjectWriter::InitTripleName(const char* tripleName) {
+  TripleName = tripleName != nullptr ? tripleName : sys::getDefaultTargetTriple();
 }
 
 Triple ObjectWriter::GetTriple() {
@@ -77,16 +77,17 @@ Triple ObjectWriter::GetTriple() {
   return TheTriple;
 }
 
-bool ObjectWriter::Init(llvm::StringRef ObjectFilePath) {
+bool ObjectWriter::Init(llvm::StringRef ObjectFilePath, const char* tripleName) {
   llvm_shutdown_obj Y; // Call llvm_shutdown() on exit.
 
   // Initialize targets
-  InitializeNativeTarget();
-  InitializeNativeTargetAsmPrinter();
-
+  InitializeAllTargets();
+  InitializeAllTargetMCs();
+  InitializeAllAsmPrinters();
+  
   TargetMOptions = InitMCTargetOptionsFromFlags();
 
-  InitTripleName();
+  InitTripleName(tripleName);
   Triple TheTriple = GetTriple();
 
   // Get the target specific parser.
@@ -177,6 +178,8 @@ bool ObjectWriter::Init(llvm::StringRef ObjectFilePath) {
     DwarfGenerator.reset(new DwarfGen());
     DwarfGenerator->SetTypeBuilder(static_cast<UserDefinedDwarfTypesBuilder*>(TypeBuilder.get()));
   }
+
+  CFIsPerOffset.set_size(0);
 
   return true;
 }
@@ -890,6 +893,12 @@ ObjectWriter::EmitARMFnStart() {
 }
 
 void ObjectWriter::EmitARMFnEnd() {
+
+  if (!CFIsPerOffset.empty())
+  {
+    EmitARMExIdxPerOffset();
+  }
+
   MCTargetStreamer &TS = *(Streamer->getTargetStreamer());
   ARMTargetStreamer &ATS = static_cast<ARMTargetStreamer &>(TS);
 
@@ -907,30 +916,70 @@ void ObjectWriter::EmitARMExIdxLsda(const char *LsdaBlobSymbolName)
   ATS.emitLsda(T);
 }
 
-void ObjectWriter::EmitARMExIdxCode(int Offset, const char *Blob)
+void ObjectWriter::EmitARMExIdxPerOffset()
 {
   MCTargetStreamer &TS = *(Streamer->getTargetStreamer());
   ARMTargetStreamer &ATS = static_cast<ARMTargetStreamer &>(TS);
-  SmallVector<unsigned, 4> RegList;
+  const MCRegisterInfo *MRI = OutContext->getRegisterInfo();
 
-  const CFI_CODE *CfiCode = (const CFI_CODE *)Blob;
-  switch (CfiCode->CfiOpCode) {
-  case CFI_ADJUST_CFA_OFFSET:
-    assert(CfiCode->DwarfReg == DWARF_REG_ILLEGAL &&
+  SmallVector<unsigned, 32> RegSet;
+  bool IsVector = false;
+
+  // LLVM reverses opcodes that are fed to ARMTargetStreamer, so we do the same,
+  // but per code offset. Opcodes with different code offsets are already given in
+  // the correct order.
+  for (int i = CFIsPerOffset.size() - 1; i >= 0; --i)
+  {
+    unsigned char opCode = CFIsPerOffset[i].CfiOpCode;
+    short Reg = CFIsPerOffset[i].DwarfReg;
+
+    if (RegSet.empty() && opCode == CFI_REL_OFFSET)
+    {
+      IsVector = Reg >= 16;
+    }
+    else if (!RegSet.empty() && opCode != CFI_REL_OFFSET)
+    {
+      ATS.emitRegSave(RegSet, IsVector);
+      RegSet.clear();
+    }
+
+    switch (opCode)
+    {
+    case CFI_REL_OFFSET:
+      assert(IsVector == (Reg >= 16) && "Unexpected Register Type");
+      RegSet.push_back(MRI->getLLVMRegNum(Reg, true));
+      break;
+    case CFI_ADJUST_CFA_OFFSET:
+      assert(Reg == DWARF_REG_ILLEGAL &&
            "Unexpected Register Value for OpAdjustCfaOffset");
-    ATS.emitPad(CfiCode->Offset);
-    break;
-  case CFI_REL_OFFSET:
-    RegList.push_back(CfiCode->DwarfReg + 14); // See ARMRegEncodingTable in ARMGenRegisterInfo.inc by getEncodingValue
-    ATS.emitRegSave(RegList, false);
-    break;
-  case CFI_DEF_CFA_REGISTER:
-    assert(CfiCode->Offset == 0 &&
-           "Unexpected Offset Value for OpDefCfaRegister");
-    ATS.emitMovSP(CfiCode->DwarfReg + 14, 0); // See ARMRegEncodingTable in ARMGenRegisterInfo.inc by getEncodingValue
-    break;
-  default:
-    assert(false && "Unrecognized CFI");
-    break;
+      ATS.emitPad(CFIsPerOffset[i].Offset);
+      break;
+    case CFI_DEF_CFA_REGISTER:
+      ATS.emitMovSP(MRI->getLLVMRegNum(Reg, true));
+      break;
+    default:
+      assert(false && "Unrecognized CFI");
+      break;
+    }
   }
+
+  // if we have some registers left over, emit them
+  if (!RegSet.empty())
+  {
+      ATS.emitRegSave(RegSet, IsVector);
+  }
+
+  CFIsPerOffset.clear();
+}
+
+void ObjectWriter::EmitARMExIdxCode(int Offset, const char *Blob)
+{
+  const CFI_CODE *CfiCode = (const CFI_CODE *)Blob;
+
+  if (!CFIsPerOffset.empty() && CFIsPerOffset[0].CodeOffset != CfiCode->CodeOffset)
+  {
+    EmitARMExIdxPerOffset();
+  }
+  
+  CFIsPerOffset.push_back(*CfiCode);
 }

@@ -58,6 +58,9 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(DynamicCodeSupport)' == 'true'">
     <Compile Include="..\..\Common\src\TypeSystem\CodeGen\TypeDesc.CodeGen.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\CodeGen\FieldDesc.CodeGen.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaField.CodeGen.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\NativeFormat\NativeFormatField.CodeGen.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\ArrayType.RuntimeDetermined.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\ByRefType.RuntimeDetermined.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\DefType.RuntimeDetermined.cs" />
@@ -77,6 +80,7 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateThunks.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DynamicInvokeMethodThunk.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\EnumThunks.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\ValueTypeGetFieldHelperMethodOverride.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\HelperExtensions.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\ILDisassembler.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\ILOpcode.cs" />
@@ -90,6 +94,7 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.DelegateInfo.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.DynamicInvoke.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.EnumMethods.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.ValueTypeMethods.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.GeneratedAssembly.cs" />
     <Compile Include="Internal\TypeSystem\ILStubMethod.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\MethodForRuntimeDeterminedType.Runtime.cs" />
@@ -152,15 +157,6 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\LocalVariableDefinition.cs">
       <Link>Internal\TypeSystem\Common\LocalVariableDefinition.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Interop\MetadataType.Interop.cs">
-      <Link>Internal\TypeSystem\Interop\MetadataType.Interop.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Canon\CanonTypes.Interop.cs">
-      <Link>Internal\TypeSystem\Canon\CanonTypes.Interop.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Interop\InstantiatedType.Interop.cs">
-      <Link>Internal\TypeSystem\Interop\InstantiatedType.Interop.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\MethodDesc.Interop.cs">
       <Link>Internal\TypeSystem\Interop\MethodDesc.Interop.cs</Link>
     </Compile>
@@ -169,9 +165,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\CodeGen\MethodDesc.CodeGen.cs">
       <Link>Internal\TypeSystem\CodeGen\MethodDesc.CodeGen.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Interop\MarshalAsDescriptor.cs">
-      <Link>Internal\TypeSystem\Interop\MarshalAsDescriptor.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -501,6 +494,18 @@
     </Compile>
     <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs" Condition="'$(IsProjectNLibrary)' != 'true'">
       <Link>System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\MetadataType.Interop.cs">
+      <Link>Internal\TypeSystem\Interop\MetadataType.Interop.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\InstantiatedType.Interop.cs">
+      <Link>Internal\TypeSystem\Interop\InstantiatedType.Interop.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Canon\CanonTypes.Interop.cs">
+      <Link>Internal\TypeSystem\Canon\CanonTypes.Interop.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\MarshalAsDescriptor.cs">
+      <Link>Internal\TypeSystem\Interop\MarshalAsDescriptor.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(METADATA_TYPE_LOADER)' != ''">

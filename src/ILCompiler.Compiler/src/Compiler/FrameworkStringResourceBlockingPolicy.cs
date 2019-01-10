@@ -59,7 +59,7 @@ namespace ILCompiler
         /// <summary>
         /// Gets a value indicating whether '<paramref name="module"/>' is a framework assembly.
         /// </summary>
-        private static bool IsFrameworkAssembly(EcmaModule module)
+        public static bool IsFrameworkAssembly(EcmaModule module)
         {
             MetadataReader reader = module.MetadataReader;
 

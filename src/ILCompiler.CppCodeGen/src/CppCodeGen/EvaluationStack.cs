@@ -489,6 +489,24 @@ namespace Internal.IL
         }
     }
 
+    /// <summary>
+    /// Entry representing some ftn token along with its string representation
+    /// </summary>
+    internal class LdFtnTokenEntry : LdTokenEntry<MethodDesc>
+    {
+        public bool IsVirtual { get; }
+
+        public LdFtnTokenEntry(StackValueKind kind, string name, MethodDesc token, bool isVirtual, TypeDesc type = null) : base(kind, name, token, type)
+        {
+            IsVirtual = isVirtual;
+        }
+
+        public override StackEntry Duplicate()
+        {
+            return new LdFtnTokenEntry(Kind, Name, LdToken, IsVirtual, Type);
+        }
+    }
+
     internal class InvalidEntry : StackEntry
     {
         /// <summary>

@@ -53,6 +53,7 @@ struct JitInterfaceCallbacks
     void* (* getTypeInstantiationArgument)(void * thisHandle, CorInfoException** ppException, void* cls, unsigned index);
     int (* appendClassName)(void * thisHandle, CorInfoException** ppException, wchar_t** ppBuf, int* pnBufLen, void* cls, int fNamespace, int fFullInst, int fAssembly);
     int (* isValueClass)(void * thisHandle, CorInfoException** ppException, void* cls);
+    int (* canInlineTypeCheck)(void * thisHandle, CorInfoException** ppException, void* cls, int source);
     int (* canInlineTypeCheckWithObjectVTable)(void * thisHandle, CorInfoException** ppException, void* cls);
     unsigned int (* getClassAttribs)(void * thisHandle, CorInfoException** ppException, void* cls);
     int (* isStructRequiringStackAllocRetBuf)(void * thisHandle, CorInfoException** ppException, void* cls);
@@ -126,7 +127,7 @@ struct JitInterfaceCallbacks
     const wchar_t* (* getJitTimeLogFilename)(void * thisHandle, CorInfoException** ppException);
     unsigned int (* getMethodDefFromMethod)(void * thisHandle, CorInfoException** ppException, void* hMethod);
     const char* (* getMethodName)(void * thisHandle, CorInfoException** ppException, void* ftn, const char** moduleName);
-    const char* (* getMethodNameFromMetadata)(void * thisHandle, CorInfoException** ppException, void* ftn, const char** className, const char** namespaceName);
+    const char* (* getMethodNameFromMetadata)(void * thisHandle, CorInfoException** ppException, void* ftn, const char** className, const char** namespaceName, const char** enclosingClassName);
     unsigned (* getMethodHash)(void * thisHandle, CorInfoException** ppException, void* ftn);
     size_t (* findNameOfToken)(void * thisHandle, CorInfoException** ppException, void* moduleHandle, unsigned int token, char* szFQName, size_t FQNameCapacity);
     bool (* getSystemVAmd64PassStructInRegisterDescriptor)(void * thisHandle, CorInfoException** ppException, void* structHnd, void* structPassInRegDescPtr);
@@ -156,6 +157,7 @@ struct JitInterfaceCallbacks
     int (* isRIDClassDomainID)(void * thisHandle, CorInfoException** ppException, void* cls);
     unsigned (* getClassDomainID)(void * thisHandle, CorInfoException** ppException, void* cls, void** ppIndirection);
     void* (* getFieldAddress)(void * thisHandle, CorInfoException** ppException, void* field, void** ppIndirection);
+    void* (* getStaticFieldCurrentClass)(void * thisHandle, CorInfoException** ppException, void* field, bool* pIsSpeculative);
     void* (* getVarArgsHandle)(void * thisHandle, CorInfoException** ppException, void* pSig, void** ppIndirection);
     bool (* canGetVarArgsHandle)(void * thisHandle, CorInfoException** ppException, void* pSig);
     int (* constructStringLiteral)(void * thisHandle, CorInfoException** ppException, void* module, unsigned int metaTok, void** ppValue);
@@ -568,6 +570,15 @@ public:
     {
         CorInfoException* pException = nullptr;
         int _ret = _callbacks->isValueClass(_thisHandle, &pException, cls);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual int canInlineTypeCheck(void* cls, int source)
+    {
+        CorInfoException* pException = nullptr;
+        int _ret = _callbacks->canInlineTypeCheck(_thisHandle, &pException, cls, source);
         if (pException != nullptr)
             throw pException;
         return _ret;
@@ -1194,10 +1205,10 @@ public:
         return _ret;
     }
 
-    virtual const char* getMethodNameFromMetadata(void* ftn, const char** className, const char** namespaceName)
+    virtual const char* getMethodNameFromMetadata(void* ftn, const char** className, const char** namespaceName, const char** enclosingClassName)
     {
         CorInfoException* pException = nullptr;
-        const char* _ret = _callbacks->getMethodNameFromMetadata(_thisHandle, &pException, ftn, className, namespaceName);
+        const char* _ret = _callbacks->getMethodNameFromMetadata(_thisHandle, &pException, ftn, className, namespaceName, enclosingClassName);
         if (pException != nullptr)
             throw pException;
         return _ret;
@@ -1445,6 +1456,15 @@ public:
     {
         CorInfoException* pException = nullptr;
         void* _ret = _callbacks->getFieldAddress(_thisHandle, &pException, field, ppIndirection);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual void* getStaticFieldCurrentClass(void* field, bool* pIsSpeculative)
+    {
+        CorInfoException* pException = nullptr;
+        void* _ret = _callbacks->getStaticFieldCurrentClass(_thisHandle, &pException, field, pIsSpeculative);
         if (pException != nullptr)
             throw pException;
         return _ret;

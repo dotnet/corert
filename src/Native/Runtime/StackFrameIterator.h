@@ -46,6 +46,7 @@ public:
     PTR_ICodeManager GetCodeManager();
     MethodInfo *     GetMethodInfo();
     bool             GetHijackedReturnValueLocation(PTR_RtuObjectRef * pLocation, GCRefKind * pKind);
+    void             SetControlPC(PTR_VOID controlPC);
 
     static bool     IsValidReturnAddress(PTR_VOID pvAddress);
 
@@ -206,5 +207,6 @@ protected:
                                         // preferred because not all StackFrameIterators require this storage 
                                         // space.  However, the implementation simpler by doing it this way.
     bool                m_ShouldSkipRegularGcReporting;
+    PTR_VOID            m_OriginalControlPC;
 };
 

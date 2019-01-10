@@ -43,13 +43,13 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        internal void InitializeOffsetFromBeginningOfArray(int offset)
+        public void InitializeOffsetFromBeginningOfArray(int offset)
         {
             Debug.Assert(_offset == InvalidOffset || _offset == offset);
             _offset = offset;
         }
 
-        internal void InitializeIndexFromBeginningOfArray(int index)
+        public void InitializeIndexFromBeginningOfArray(int index)
         {
             Debug.Assert(_index == InvalidOffset || _index == index);
             _index = index;

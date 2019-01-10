@@ -25,6 +25,7 @@ namespace ILCompiler
         ThrowArgumentOutOfRange     = 0x27,
         ThrowArgument               = 0x28,
         ThrowPlatformNotSupported   = 0x29,
+        ThrowNotImplemented         = 0x2A,
 
         DebugBreak                  = 0x2F,
 
@@ -47,6 +48,7 @@ namespace ILCompiler
         GetRuntimeTypeHandle        = 0x54,
         GetRuntimeMethodHandle      = 0x55,
         GetRuntimeFieldHandle       = 0x56,
+        GetRuntimeType              = 0x57,
 
         Box                         = 0x58,
         Box_Nullable                = 0x59,
@@ -54,6 +56,8 @@ namespace ILCompiler
         Unbox_Nullable              = 0x5B,
         NewMultiDimArr              = 0x5C,
         NewMultiDimArr_NonVarArg    = 0x5D,
+
+        AreTypesEquivalent          = 0x5E,
 
         // Helpers used with generic handle lookup cases
         NewObject                   = 0x60,
@@ -65,6 +69,12 @@ namespace ILCompiler
         GenericGcTlsBase            = 0x66,
         GenericNonGcTlsBase         = 0x67,
         VirtualFuncPtr              = 0x68,
+        CheckCastClass              = 0x69,
+        CheckInstanceClass          = 0x6A,
+        CheckCastArray              = 0x6B,
+        CheckInstanceArray          = 0x6C,
+        CheckCastInterface          = 0x6D,
+        CheckInstanceInterface      = 0x6E,
 
         // Long mul/div/shift ops
         LMul                        = 0xC0,
@@ -122,5 +132,23 @@ namespace ILCompiler
         // TypedReference
         TypeHandleToRuntimeType     = 0x110,
         GetRefAny                   = 0x111,
+        TypeHandleToRuntimeTypeHandle = 0x112,
+
+        // JIT32 x86-specific write barriers
+        WriteBarrier_EAX            = 0x100,
+        WriteBarrier_EBX            = 0x101,
+        WriteBarrier_ECX            = 0x102,
+        WriteBarrier_ESI            = 0x103,
+        WriteBarrier_EDI            = 0x104,
+        WriteBarrier_EBP            = 0x105,
+        CheckedWriteBarrier_EAX     = 0x106,
+        CheckedWriteBarrier_EBX     = 0x107,
+        CheckedWriteBarrier_ECX     = 0x108,
+        CheckedWriteBarrier_ESI     = 0x109,
+        CheckedWriteBarrier_EDI     = 0x10A,
+        CheckedWriteBarrier_EBP     = 0x10B,
+
+        // JIT32 x86-specific exception handling
+        EndCatch                    = 0x110,
     }
 }

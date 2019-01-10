@@ -15,7 +15,7 @@ namespace ILCompiler
     /// <summary>
     /// Version of Compilation class used for JIT compilation. Should probably be merged with the Compilation class used in AOT compilation
     /// </summary>
-    internal class Compilation
+    public class Compilation
     {
         public Compilation(TypeSystemContext context)
         {
@@ -42,6 +42,12 @@ namespace ILCompiler
         public NodeFactory NodeFactory { get { return _nodeFactory; } }
 
         public NameMangler NameMangler { get { return null; } }
+
+        public virtual bool CanInline(MethodDesc caller, MethodDesc callee)
+        {
+            // No inlining limits by default
+            return true;
+        }
 
         public ObjectNode GetFieldRvaData(FieldDesc field)
         {
@@ -139,6 +145,13 @@ namespace ILCompiler
         public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target, bool followVirtualDispatch)
         {
             return DelegateCreationInfo.Create(delegateType, target, NodeFactory, followVirtualDispatch);
+        }
+
+        public TypeDesc GetTypeOfRuntimeType()
+        {
+            // The current plan seem to be to copy paste from ILCompiler.Compilation, but that's not a sustainable plan
+            throw new NotImplementedException();
+
         }
     }
 }

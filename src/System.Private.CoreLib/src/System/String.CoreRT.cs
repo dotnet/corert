@@ -90,6 +90,7 @@ namespace System
 
 #pragma warning restore
 
+        [Intrinsic]
         public static readonly string Empty = "";
 
         [System.Runtime.CompilerServices.IndexerName("Chars")]

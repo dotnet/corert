@@ -45,6 +45,11 @@ namespace Internal.Runtime.CompilerHelpers
             throw new PlatformNotSupportedException();
         }
 
+        public static void ThrowNotImplementedException()
+        {
+            throw NotImplemented.ByDesign;
+        }
+
         public static void ThrowNotSupportedException()
         {
             throw new NotSupportedException();

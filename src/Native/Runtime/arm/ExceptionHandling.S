@@ -95,6 +95,10 @@ NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
 
         PROLOG_STACK_ALLOC STACKSIZEOF_ExInfo
 
+        // Calculate  SP at callsite and save into the PAL_LIMITED_CONTEXT
+        add         r4, sp, #(STACKSIZEOF_ExInfo + SIZEOF__PAL_LIMITED_CONTEXT)
+        str         r4, [sp, #(rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__SP)]
+
         mov         r4, r0 // Save exception object
         // r0 = GetThread()
         INLINE_GETTHREAD
@@ -198,6 +202,10 @@ NESTED_ENTRY RhpRethrow, _TEXT, NoHandler
 
         PROLOG_STACK_ALLOC STACKSIZEOF_ExInfo
 
+        // Compute and save SP at callsite.
+        add         r1, sp, #(STACKSIZEOF_ExInfo + SIZEOF__PAL_LIMITED_CONTEXT)
+        str         r1, [sp, #(rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__SP)]
+
         // r0 = GetThread();
         INLINE_GETTHREAD
 
@@ -207,6 +215,8 @@ NESTED_ENTRY RhpRethrow, _TEXT, NoHandler
         mov         r3, #0
         str         r3, [r1, #OFFSETOF__ExInfo__m_exception]         // init the exception object to null
         strb        r3, [r1, #OFFSETOF__ExInfo__m_kind]              // init to a deterministic value (ExKind.None)
+        mov         r3, #1
+        strb        r3, [r1, #OFFSETOF__ExInfo__m_passNumber]        // pExInfo->m_passNumber = 1
         mov         r3, #0xFFFFFFFF
         str         r3, [r1, #OFFSETOF__ExInfo__m_idxCurClause]
 
@@ -273,7 +283,7 @@ LOCAL_LABEL(ClearRetry_Catch):
         b           LOCAL_LABEL(ClearRetry_Catch)
 LOCAL_LABEL(ClearSuccess_Catch):
 
-        mov         r1, r4 // Reload exception object
+        mov         r0, r4 // Reload exception object
         mov         r3, r5 // Reload handler funclet address
         mov         r2, r6 // Reload REGDISPLAY pointer
 
@@ -303,13 +313,12 @@ LOCAL_LABEL(ClearSuccess_Catch):
         add         r12, r2, #OFFSETOF__REGDISPLAY__D
         vldm        r12!, {d8-d15}
 
-        ldr         r0, [r2, #OFFSETOF__REGDISPLAY__SP]  // r0 <- establisher frame
-        // r1 <- exception object
-        blx         r3                                   // call handler funclet
-
-        mov         r4, r0    // Save the result
+        // r0 <- exception object
+        blx         r3                                 // call handler funclet
 
         EXPORT_POINTER_TO_ADDRESS PointerToRhpCallCatchFunclet2
+
+        mov         r4, r0    // Save the result
 
         INLINE_GETTHREAD                                 // r0 <- Thread*
         // We must unhijack the thread at this point because the section of stack where the
@@ -404,7 +413,6 @@ LOCAL_LABEL(ClearSuccess):
         add         r12, r1, #OFFSETOF__REGDISPLAY__D
         vldm        r12!, {d8-d15}
 
-        ldr         r0, [r1, #OFFSETOF__REGDISPLAY__SP] // r0 <- establisher frame
         blx         r2                                  // handler funclet address
 
         EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFinallyFunclet2
@@ -470,17 +478,17 @@ NESTED_ENTRY RhpCallFilterFunclet, _TEXT, NoHandler
         PROLOG_PUSH "{r4-r11,lr}"
         PROLOG_VPUSH {d8-d15}
 
-        ldr         r12, [r2, #OFFSETOF__REGDISPLAY__pR7]
-        ldr         r7, [r12]
+        ldr         r12, [r2, #OFFSETOF__REGDISPLAY__pR11]
+        ldr         r11, [r12]
 
         mov         r12, r1                              // r12 <- handler funclet address
-        mov         r1, r0                               // r1 <- exception object
-        ldr         r0, [r2, #OFFSETOF__REGDISPLAY__SP]  // r0 <- establisher frame
+        // r0 still contains the exception object
+        ldr         r1, [r2, #OFFSETOF__REGDISPLAY__SP]  // r1 <- establisher frame
 
         //
         // call the funclet
-        //    r0 = establisher frame
-        //    r1 = exception object
+        //    r0 = exception object
+        //    r1 = establisher frame
         blx         r12
 
         EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFilterFunclet2
