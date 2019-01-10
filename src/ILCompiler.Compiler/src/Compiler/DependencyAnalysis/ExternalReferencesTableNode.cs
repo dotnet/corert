@@ -118,7 +118,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             _endSymbol.SetSymbolOffset(builder.CountBytes);
-
+            
             builder.AddSymbol(this);
             builder.AddSymbol(_endSymbol);
 
