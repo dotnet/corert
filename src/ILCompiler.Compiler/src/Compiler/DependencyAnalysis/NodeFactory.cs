@@ -535,10 +535,6 @@ namespace ILCompiler.DependencyAnalysis
                 return ConstructedTypeSymbol(type);
             }
 
-            if (TypeCannotHaveEEType(type))
-            {
-                // so I can step back and see what exactly in the type is causing the problem (INonEmittableType)
-            }
             Debug.Assert(!TypeCannotHaveEEType(type));
 
             return _typeSymbols.GetOrAdd(type);

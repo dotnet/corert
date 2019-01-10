@@ -8,9 +8,6 @@ using System.Runtime.InteropServices;
 
 internal partial class Interop
 {
-//    [DllImport("*")]
-//    private static unsafe extern int rand();
-
     internal unsafe partial class Sys
     {
         [DllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_GetNonCryptographicallySecureRandomBytes")]
@@ -19,11 +16,6 @@ internal partial class Interop
 
     internal static unsafe void GetRandomBytes(byte* buffer, int length)
     {
-//        for (var i = 0; i < length; i++)
-//        {
-//            *buffer = (byte)(rand() % 256);
-//            buffer++;
-//        }
-//        Sys.GetNonCryptographicallySecureRandomBytes(buffer, length);
+        Sys.GetNonCryptographicallySecureRandomBytes(buffer, length);
     }
 }

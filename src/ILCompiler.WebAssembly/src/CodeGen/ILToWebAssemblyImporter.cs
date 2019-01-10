@@ -15,6 +15,7 @@ using ILCompiler.CodeGen;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.WebAssembly;
+using Internal.IL.Stubs;
 using Internal.TypeSystem.Ecma;
 
 namespace Internal.IL
@@ -100,6 +101,19 @@ namespace Internal.IL
             Module = compilation.Module;
             _compilation = compilation;
             _method = method;
+
+            // stubs for Unix calls which are not available to this target yet
+            if ((method.OwningType as EcmaType)?.Name == "Interop" && method.Name == "GetRandomBytes")
+            {
+                // this would normally fill the buffer parameter, but we'll just leave the buffer as is and that will be our "random" data for now
+                methodIL = new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
+            }
+            else if ((method.OwningType as EcmaType)?.Name == "CalendarData" && method.Name == "EnumCalendarInfo")
+            {
+                // just return false 
+                methodIL = new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.ldc_i4_0, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
+            }
+
             _methodIL = methodIL;
             _mangledName = mangledName;
             _ilBytes = methodIL.GetILBytes();

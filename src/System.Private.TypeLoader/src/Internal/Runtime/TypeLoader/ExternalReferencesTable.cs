@@ -136,7 +136,7 @@ namespace Internal.Runtime.TypeLoader
             else
             {
                 return RuntimeAugments.CreateRuntimeTypeHandle((IntPtr)this.debuggerPreparedExternalReferences[index]);
-            }
+            }            
         }
 
         public IntPtr GetGenericDictionaryFromIndex(uint index)

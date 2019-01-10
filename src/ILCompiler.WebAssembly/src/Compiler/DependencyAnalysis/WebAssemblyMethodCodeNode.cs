@@ -10,7 +10,6 @@ using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.Text;
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -23,20 +22,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(!method.IsAbstract);
             _method = method;
-            if (method.Name == "GetField_Unbox")
-            {
-            }
-            if (method.OwningType is EcmaType && ((EcmaType)method.OwningType).Name.EndsWith("ErrorInfo"))
-            {
-
-            }
-        }
-
-        protected override void NowMarked()
-        {
-            if (_method.Name == "GetField_Unbox")
-            {
-            }
         }
 
         public void SetDependencies(IEnumerable<Object> dependencies)

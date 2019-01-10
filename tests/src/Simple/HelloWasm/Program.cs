@@ -58,15 +58,15 @@ internal static class Program
         tempObj.TestVirtualMethod("Hello");
         tempObj.TestVirtualMethod2("Hello");
 
-//        TwoByteStr str = new TwoByteStr() { first = 1, second = 2 };
-//        TwoByteStr str2 = new TwoByteStr() { first = 3, second = 4 };
-//        *(&str) = str2;
-//        str2 = *(&str);
-//
-//        if (str2.second == 4)
-//        {
-//            PrintLine("value type int field test: Ok.");
-//        }
+        TwoByteStr str = new TwoByteStr() { first = 1, second = 2 };
+        TwoByteStr str2 = new TwoByteStr() { first = 3, second = 4 };
+        *(&str) = str2;
+        str2 = *(&str);
+
+        if (str2.second == 4)
+        {
+            PrintLine("value type int field test: Ok.");
+        }
         
         staticInt = 5;
         if (staticInt == 5)
@@ -647,7 +647,7 @@ internal static class Program
             PrintLine("Failed.");
         }
     }
-    
+
     private static void FloatDoubleTest()
     {
         int intToCast = 1;

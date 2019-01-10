@@ -184,10 +184,8 @@ namespace ILCompiler
             {
                 if (methodNode.Method.OwningType.GetTypeDefinition() is INonEmittableType && IsMethodEligibleForTracking(methodNode.Method))
                 {
-//                    UInt8__System_IConvertible_ToInt16
                     return;
                 }
-//                Debug.Assert(!(methodNode.Method.OwningType is  INonEmittableType) || !IsMethodEligibleForTracking(methodNode.Method));
                 _methodsGenerated.Add(methodNode.Method);
                 return;
             }

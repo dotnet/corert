@@ -414,36 +414,35 @@ namespace System.Globalization
 
         private static unsafe bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, ref EnumCalendarsData callbackContext)
         {
-            return false;
-//            return Interop.Globalization.EnumCalendarInfo(EnumCalendarInfoCallback, localeName, calendarId, dataType, (IntPtr)Unsafe.AsPointer(ref callbackContext));
+            return Interop.Globalization.EnumCalendarInfo(EnumCalendarInfoCallback, localeName, calendarId, dataType, (IntPtr)Unsafe.AsPointer(ref callbackContext));
         }
 
         private static unsafe void EnumCalendarInfoCallback(string calendarString, IntPtr context)
         {
-//            try
-//            {
-//                ref EnumCalendarsData callbackContext = ref Unsafe.As<byte, EnumCalendarsData>(ref *(byte*)context);
-//
-//                if (callbackContext.DisallowDuplicates)
-//                {
-//                    foreach (string existingResult in callbackContext.Results)
-//                    {
-//                        if (string.Equals(calendarString, existingResult, StringComparison.Ordinal))
-//                        {
-//                            // the value is already in the results, so don't add it again
-//                            return;
-//                        }
-//                    }
-//                }
-//
-//                callbackContext.Results.Add(calendarString);
-//            }
-//            catch (Exception e)
-//            {
-//                Debug.Fail(e.ToString());
-//                // we ignore the managed exceptions here because EnumCalendarInfoCallback will get called from the native code.
-//                // If we don't ignore the exception here that can cause the runtime to fail fast.
-//            }
+            try
+            {
+                ref EnumCalendarsData callbackContext = ref Unsafe.As<byte, EnumCalendarsData>(ref *(byte*)context);
+
+                if (callbackContext.DisallowDuplicates)
+                {
+                    foreach (string existingResult in callbackContext.Results)
+                    {
+                        if (string.Equals(calendarString, existingResult, StringComparison.Ordinal))
+                        {
+                            // the value is already in the results, so don't add it again
+                            return;
+                        }
+                    }
+                }
+
+                callbackContext.Results.Add(calendarString);
+            }
+            catch (Exception e)
+            {
+                Debug.Fail(e.ToString());
+                // we ignore the managed exceptions here because EnumCalendarInfoCallback will get called from the native code.
+                // If we don't ignore the exception here that can cause the runtime to fail fast.
+            }
         }
 
         private struct EnumCalendarsData
