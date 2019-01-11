@@ -2904,7 +2904,7 @@ namespace Internal.IL
                     {
                         // TODO: We need the right thread static per thread
                         ExpressionEntry returnExp;
-                        node = TriggerCctorWithThreadStaticStorage(owningType, out returnExp);
+                        node = TriggerCctorWithThreadStaticStorage(owningType, needsCctorCheck, out returnExp);
                         staticBase = returnExp.ValueAsType(returnExp.Type, _builder);
                     }
                     else
@@ -2966,7 +2966,7 @@ namespace Internal.IL
         /// <summary>
         /// Triggers creation of thread static storage and the static constructor if present
         /// </summary>
-        private ISymbolNode TriggerCctorWithThreadStaticStorage(MetadataType type, out ExpressionEntry returnExp)
+        private ISymbolNode TriggerCctorWithThreadStaticStorage(MetadataType type, bool needsCctorCheck, out ExpressionEntry returnExp)
         {
             ISymbolNode threadStaticIndexSymbol = _compilation.NodeFactory.TypeThreadStaticIndex(type);
             LLVMValueRef threadStaticIndex = LoadAddressOfSymbolNode(threadStaticIndexSymbol);
@@ -2976,7 +2976,7 @@ namespace Internal.IL
                 LLVM.BuildGEP(_builder, threadStaticIndex, new LLVMValueRef[] { BuildConstInt32(1) }, "typeTlsIndexPtr"); // index is the second field after the ptr.
             StackEntry tlsIndexExpressionEntry = new LoadExpressionEntry(StackValueKind.ValueType, "typeTlsIndex", typeTlsIndexPtr, GetWellKnownType(WellKnownType.Int32));
 
-            if (_compilation.TypeSystemContext.HasLazyStaticConstructor(type))
+            if (needsCctorCheck)
             {
                 ISymbolNode classConstructionContextSymbol = _compilation.NodeFactory.TypeNonGCStaticsSymbol(type);
                 _dependencies.Add(classConstructionContextSymbol);
