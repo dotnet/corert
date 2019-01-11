@@ -2281,6 +2281,10 @@ namespace Internal.IL
                 }
                 else
                 {
+                    // pop object reference off the stack
+                    if (opCode == ILOpcode.ldvirtftn)
+                        _stack.Pop();
+
                     bool exactContextNeedsRuntimeLookup;
                     if (method.HasInstantiation)
                     {
