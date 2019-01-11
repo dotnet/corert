@@ -835,14 +835,14 @@ namespace ILCompiler.DependencyAnalysis
             return node;
         }
 
-        Dictionary<int, ISymbolNode> _rvaFieldSymbols = new Dictionary<int, ISymbolNode>();
+        Dictionary<int, ObjectNode> _rvaFieldSymbols = new Dictionary<int, ObjectNode>();
 
-        public ISymbolNode GetRvaFieldNode(FieldDesc fieldDesc)
+        public ObjectNode GetRvaFieldNode(FieldDesc fieldDesc)
         {
             Debug.Assert(fieldDesc.HasRva);
             EcmaField ecmaField = (EcmaField)fieldDesc;
             int rva = ecmaField.MetadataReader.GetFieldDefinition(ecmaField.Handle).GetRelativeVirtualAddress();
-            ISymbolNode rvaFieldNode;
+            ObjectNode rvaFieldNode;
             if (!_rvaFieldSymbols.TryGetValue(rva, out rvaFieldNode))
             {
                 PEReader ilReader = ecmaField.Module.PEReader;

@@ -3098,6 +3098,24 @@ namespace Internal.JitInterface
         private uint getClassDomainID(CORINFO_CLASS_STRUCT_* cls, ref void* ppIndirection)
         { throw new NotImplementedException("getClassDomainID"); }
 
+        private void* getFieldAddress(CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection)
+        {
+            FieldDesc fieldDesc = HandleToObject(field);
+            Debug.Assert(fieldDesc.HasRva);
+            ObjectNode node = _compilation.GetFieldRvaData(fieldDesc);
+            void *handle = (void *)ObjectToHandle(node);
+            if (node.RepresentsIndirectionCell)
+            {
+                ppIndirection = handle;
+                return null;
+            }
+            else
+            {
+                ppIndirection = null;
+                return handle;
+            }
+        }
+
         private CORINFO_CLASS_STRUCT_* getStaticFieldCurrentClass(CORINFO_FIELD_STRUCT_* field, byte* pIsSpeculative)
         {
             if (pIsSpeculative != null)
