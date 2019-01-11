@@ -123,14 +123,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 throw new NotImplementedException();
             }
-            if (_methodContext != null)
-            {
-                sb.Append(" (");
-                sb.Append(_methodContext.Method.ToString());
-                sb.Append(":0x");
-                sb.Append(_methodContext.Context.ToString());
-                sb.Append(")");
-            }
+            sb.Append(" (");
+            sb.Append(_methodContext.ToString());
+            sb.Append(")");
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
