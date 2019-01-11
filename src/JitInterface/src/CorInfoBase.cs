@@ -134,7 +134,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __checkMethodModifier(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* hMethod, byte* modifier, [MarshalAs(UnmanagedType.Bool)]bool fOptional);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate CorInfoHelpFunc __getNewHelper(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, [MarshalAs(UnmanagedType.U1)] ref bool pHasSideEffects);
+        delegate CorInfoHelpFunc __getNewHelper(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, byte* pHasSideEffects);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CorInfoHelpFunc __getNewArrHelper(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* arrayCls);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -1207,12 +1207,12 @@ namespace Internal.JitInterface
             }
         }
 
-        static CorInfoHelpFunc _getNewHelper(IntPtr thisHandle, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, [MarshalAs(UnmanagedType.U1)] ref bool pHasSideEffects)
+        static CorInfoHelpFunc _getNewHelper(IntPtr thisHandle, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, byte* pHasSideEffects)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getNewHelper(ref pResolvedToken, callerHandle, ref pHasSideEffects);
+                return _this.getNewHelper(ref pResolvedToken, callerHandle, pHasSideEffects);
             }
             catch (Exception ex)
             {

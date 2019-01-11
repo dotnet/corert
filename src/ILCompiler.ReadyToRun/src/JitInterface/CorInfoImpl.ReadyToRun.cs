@@ -685,8 +685,15 @@ namespace Internal.JitInterface
             return fThrowing ? CorInfoHelpFunc.CORINFO_HELP_CHKCASTANY : CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFANY;
         }
 
-        private CorInfoHelpFunc getNewHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, ref bool pHasSideEffects)
+        private CorInfoHelpFunc getNewHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, byte* pHasSideEffects = null)
         {
+            TypeDesc type = HandleToObject(pResolvedToken.hClass);
+
+            if (pHasSideEffects != null)
+            {
+                *pHasSideEffects = (byte)(type.HasFinalizer ? 1 : 0);
+            }
+
             return CorInfoHelpFunc.CORINFO_HELP_NEWFAST;
         }
 
