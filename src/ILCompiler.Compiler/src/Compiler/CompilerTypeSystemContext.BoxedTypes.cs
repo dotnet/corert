@@ -117,7 +117,6 @@ namespace ILCompiler
             {
                 thunk = thunkDefinition;
             }
-            //TODO: this might be triggered by a struct that implements an interface with a generic method
             if (thunk.HasInstantiation)
                 thunk = thunk.MakeInstantiatedMethod(targetMethod.Instantiation);
 

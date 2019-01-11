@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.CommandLine;
 using System.Runtime.InteropServices;
-using ILCompiler.Compiler;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
