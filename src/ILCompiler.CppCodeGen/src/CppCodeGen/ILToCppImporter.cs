@@ -1351,10 +1351,41 @@ namespace Internal.IL
                         LdFtnTokenEntry ldFtnTokenEntry = (LdFtnTokenEntry)_stack.Peek();
                         delegateInfo = _compilation.GetDelegateCtor(canonDelegateType, ldFtnTokenEntry.LdToken, followVirtualDispatch: false);
                         method = delegateInfo.Constructor.Method;
+                        MethodDesc delegateTargetMethod = delegateInfo.TargetMethod;
 
                         if (delegateInfo.NeedsRuntimeLookup && !ldFtnTokenEntry.IsVirtual)
                         {
                             delegateCtorHelper = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.DelegateCtor, delegateInfo);
+                        }
+                        else if (!ldFtnTokenEntry.IsVirtual && delegateTargetMethod.OwningType.IsValueType &&
+                                 !delegateTargetMethod.Signature.IsStatic)
+                        {
+                            var sb = new CppGenerationBuffer();
+
+                            MethodDesc canonDelegateTargetMethod = delegateTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                            ISymbolNode targetNode = delegateInfo.GetTargetNode(_nodeFactory);
+                            _dependencies.Add(targetNode);
+
+                            sb.Append("(");
+
+                            if (delegateTargetMethod != canonDelegateTargetMethod)
+                            {
+                                sb.Append("((intptr_t)");
+                                sb.Append(_writer.GetCppSymbolNodeName(_nodeFactory, targetNode));
+                                sb.Append("()) + ");
+                                sb.Append(FatFunctionPointerConstants.Offset.ToString());
+                            }
+                            else
+                            {
+                                sb.Append("(intptr_t)&");
+                                sb.Append(_writer.GetCppTypeName(canonDelegateTargetMethod.OwningType));
+                                sb.Append("::");
+                                sb.Append(_writer.GetCppSymbolNodeName(_nodeFactory, targetNode));
+                            }
+
+                            sb.Append(")");
+
+                            ldFtnTokenEntry.Name = sb.ToString();
                         }
                     }
                 }
@@ -1616,9 +1647,6 @@ namespace Internal.IL
                         MethodDesc thunkMethod = delegateInfo.Thunk.Method;
                         AddMethodReference(thunkMethod);
 
-                        // Update stack with new name.
-                        ((ExpressionEntry)_stack[_stack.Top - 2]).Name = temp;
-
                         var sb = new CppGenerationBuffer();
                         AppendLine();
                         sb.Append("(intptr_t)&");
@@ -1867,8 +1895,9 @@ namespace Internal.IL
                     {
                         if (canonMethod.RequiresInstMethodDescArg())
                         {
-                            Append("&");
+                            Append("(char*)&");
                             AppendMethodGenericDictionary(method);
+                            Append(" + sizeof(void*)");
                         }
                         else
                         {
@@ -2197,7 +2226,7 @@ namespace Internal.IL
             }
             else
             {
-                bool isVirtual = opCode == ILOpcode.ldvirtftn && canonMethod.IsVirtual;
+                bool isVirtual = opCode == ILOpcode.ldvirtftn && canonMethod.IsVirtual && !canonMethod.IsFinal && !canonMethod.OwningType.IsSealed();
                 var entry = new LdFtnTokenEntry(StackValueKind.NativeInt, NewTempName(), runtimeDeterminedMethod, isVirtual);
 
                 if (isVirtual)
@@ -2252,6 +2281,10 @@ namespace Internal.IL
                 }
                 else
                 {
+                    // pop object reference off the stack
+                    if (opCode == ILOpcode.ldvirtftn)
+                        _stack.Pop();
+
                     bool exactContextNeedsRuntimeLookup;
                     if (method.HasInstantiation)
                     {
@@ -2264,19 +2297,21 @@ namespace Internal.IL
 
                     PushTemp(entry);
 
-                    bool needUnbox = canonMethod.OwningType.IsValueType && !canonMethod.Signature.IsStatic;
-
                     if (canonMethod.IsSharedByGenericInstantiations && (canonMethod.HasInstantiation || canonMethod.Signature.IsStatic))
                     {
                         if (exactContextNeedsRuntimeLookup)
                         {
-                            // Actual address will be obtained in runtime helper
-                            Append("0");
+                            Append("((intptr_t)");
+                            Append(GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.MethodEntry, runtimeDeterminedMethod));
+                            Append("(");
+                            Append(GetGenericContext());
+                            Append(")) + ");
+                            Append(FatFunctionPointerConstants.Offset.ToString());
                         }
                         else
                         {
                             Append("((intptr_t)");
-                            AppendFatFunctionPointer(runtimeDeterminedMethod, needUnbox);
+                            AppendFatFunctionPointer(runtimeDeterminedMethod);
                             Append("()) + ");
                             Append(FatFunctionPointerConstants.Offset.ToString());
                         }
@@ -2286,7 +2321,7 @@ namespace Internal.IL
                         Append("(intptr_t)&");
                         Append(_writer.GetCppTypeName(canonMethod.OwningType));
                         Append("::");
-                        AppendMethodAndAddReference(canonMethod, needUnbox);
+                        AppendMethodAndAddReference(canonMethod);
                     }
 
                     AppendSemicolon();
@@ -2665,7 +2700,7 @@ namespace Internal.IL
 
                 if (field.IsStatic)
                 {
-                    Append(_writer.GetCppStaticsName(owningType, field.HasGCStaticBase, field.IsThreadStatic));
+                    Append(_writer.GetCppStaticsName(owningType, field.HasGCStaticBase, field.IsThreadStatic, true));
                     Append(".");
                     Append(_writer.GetCppFieldName(field));
                 }
@@ -2743,7 +2778,7 @@ namespace Internal.IL
 
                 if (field.IsStatic)
                 {
-                    Append(_writer.GetCppStaticsName(owningType, field.HasGCStaticBase, field.IsThreadStatic));
+                    Append(_writer.GetCppStaticsName(owningType, field.HasGCStaticBase, field.IsThreadStatic, true));
                     Append(".");
                     Append(_writer.GetCppFieldName(field));
                 }
@@ -2816,7 +2851,7 @@ namespace Internal.IL
                 AppendLine();
                 if (field.IsStatic)
                 {
-                    Append(_writer.GetCppStaticsName(owningType, field.HasGCStaticBase, field.IsThreadStatic));
+                    Append(_writer.GetCppStaticsName(owningType, field.HasGCStaticBase, field.IsThreadStatic, true));
                     Append(".");
                     Append(_writer.GetCppFieldName(field));
                 }
@@ -3008,11 +3043,9 @@ namespace Internal.IL
 
             AppendSemicolon();
 
-            string typeName = GetStackValueKindCPPTypeName(GetStackValueKind(type), type);
-
             // TODO: Write barrier as necessary
             AppendLine();
-            Append("*(" + typeName + " *)((void **)");
+            Append("*(" + _writer.GetCppSignatureTypeName(type) + " *)((void **)");
             Append(tempName);
             Append(" + 1) = ");
             Append(value);
@@ -3326,9 +3359,9 @@ namespace Internal.IL
                 if (opCode == ILOpcode.unbox_any)
                 {
                     string typeName = GetStackValueKindCPPTypeName(GetStackValueKind(type), type);
-                    Append("*(");
+                    Append("(");
                     Append(typeName);
-                    Append("*)");
+                    Append(")*");
                 }
 
                 Append("(");
@@ -3394,7 +3427,7 @@ namespace Internal.IL
                 }
                 else
                 {
-                    AddTypeReference(type, false);
+                    AddTypeReference(type, true);
 
                     name = String.Concat(
                         name,

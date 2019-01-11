@@ -2,18 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices
 {
     public struct ArrayWithOffset
     {
-        // Fromm MAX_SIZE_FOR_INTEROP in mlinfo.h
+        // From MAX_SIZE_FOR_INTEROP in mlinfo.h
         private const int MaxSizeForInterop = 0x7ffffff0;
 
-        public ArrayWithOffset(Object array, int offset)
+        public ArrayWithOffset(object array, int offset)
         {
             m_array = array;
             m_offset = offset;
@@ -21,27 +19,15 @@ namespace System.Runtime.InteropServices
             m_count = CalculateCount();
         }
 
-        public Object GetArray()
-        {
-            return m_array;
-        }
+        public object GetArray() => m_array;
 
-        public int GetOffset()
-        {
-            return m_offset;
-        }
+        public int GetOffset() => m_offset;
 
-        public override int GetHashCode()
-        {
-            return m_count + m_offset;
-        }
+        public override int GetHashCode() => m_count + m_offset;
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
-            if (obj is ArrayWithOffset)
-                return Equals((ArrayWithOffset)obj);
-            else
-                return false;
+            return obj is ArrayWithOffset && Equals((ArrayWithOffset)obj);
         }
 
         public bool Equals(ArrayWithOffset obj)
@@ -59,13 +45,17 @@ namespace System.Runtime.InteropServices
             return !(a == b);
         }
 
+#if CORECLR // TODO: Cleanup
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private extern int CalculateCount();
+#else
         private int CalculateCount()
         {
             if (m_array == null)
             {
                 if (m_offset != 0)
                 {
-                    throw new IndexOutOfRangeException(SR.ArrayWithOffsetOverflow);
+                    throw new IndexOutOfRangeException(SR.IndexOutOfRange_ArrayWithOffset);
                 }
 
                 return 0;
@@ -75,35 +65,36 @@ namespace System.Runtime.InteropServices
                 Array arrayObj = m_array as Array;
                 if (arrayObj == null)
                 {
-                    throw new ArgumentException(SR.Arg_NotIsomorphic);
+                    throw new ArgumentException(SR.Argument_NotIsomorphic);
                 }
 
                 if (arrayObj.Rank != 1)
                 {
-                    throw new ArgumentException(SR.Arg_NotIsomorphic);
+                    throw new ArgumentException(SR.Argument_NotIsomorphic);
                 }
 
                 if (!arrayObj.IsBlittable())
                 {
-                    throw new ArgumentException(SR.Arg_NotIsomorphic);
+                    throw new ArgumentException(SR.Argument_NotIsomorphic);
                 }
 
                 int totalSize = checked(arrayObj.Length * arrayObj.GetElementSize());
                 if (totalSize > MaxSizeForInterop)
                 {
-                    throw new ArgumentException(SR.StructArrayTooLarge);
+                    throw new ArgumentException(SR.Argument_StructArrayTooLarge);
                 }
 
                 if (m_offset > totalSize)
                 {
-                    throw new IndexOutOfRangeException(SR.ArrayWithOffsetOverflow);
+                    throw new IndexOutOfRangeException(SR.IndexOutOfRange_ArrayWithOffset);
                 }
 
                 return totalSize - m_offset;
             }
         }
+#endif // !CORECLR
 
-        private Object m_array;
+        private object m_array;
         private int m_offset;
         private int m_count;
     }

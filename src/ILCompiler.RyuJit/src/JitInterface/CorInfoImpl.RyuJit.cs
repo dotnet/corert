@@ -498,6 +498,12 @@ namespace Internal.JitInterface
             pResult = CreateConstLookupToSymbol(_compilation.NodeFactory.MethodEntrypoint(method));
         }
 
+        private bool canTailCall(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* declaredCalleeHnd, CORINFO_METHOD_STRUCT_* exactCalleeHnd, bool fIsTailPrefix)
+        {
+            // No restrictions on tailcalls
+            return true;
+        }
+
         private InfoAccessType constructStringLiteral(CORINFO_MODULE_STRUCT_* module, mdToken metaTok, ref void* ppValue)
         {
             MethodIL methodIL = (MethodIL)HandleToObject((IntPtr)module);

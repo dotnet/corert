@@ -524,7 +524,7 @@ namespace ILCompiler.CppCodeGen
             return name;
         }
 
-        public string GetCppStaticsName(TypeDesc type, bool isGCStatic = false, bool isThreadStatic = false)
+        public string GetCppStaticsName(TypeDesc type, bool isGCStatic = false, bool isThreadStatic = false, bool dataNameNeeded = false)
         {
             string name;
             if (isThreadStatic)
@@ -541,7 +541,12 @@ namespace ILCompiler.CppCodeGen
             }
 
             string typeName = GetCppTypeName(type);
-            return typeName.Replace("::", "_") + "_" + name;
+            string res = typeName.Replace("::", "_") + "_" + name;
+
+            if (isGCStatic && !isThreadStatic && dataNameNeeded)
+                res += "__data";
+
+            return res;
         }
 
         public string GetCppStaticsTypeName(TypeDesc type, bool isGCStatic = false, bool isThreadStatic = false)
@@ -1015,6 +1020,7 @@ namespace ILCompiler.CppCodeGen
             List<NodeDataSection> nodeDataSections = new List<NodeDataSection>();
             byte[] actualData = new byte[nodeData.Data.Length];
             Relocation[] relocs = nodeData.Relocs;
+            int[] relocOffsets = new int[relocs.Length];
 
             int nextRelocOffset = -1;
             int nextRelocIndex = -1;
@@ -1033,8 +1039,6 @@ namespace ILCompiler.CppCodeGen
             if (node is ISymbolDefinitionNode)
             {
                 offset = (node as ISymbolDefinitionNode).Offset;
-                i = offset;
-                lastByteIndex = offset;
             }
             while (i < nodeData.Data.Length)
             {
@@ -1045,6 +1049,15 @@ namespace ILCompiler.CppCodeGen
                     int size = _compilation.TypeSystemContext.Target.PointerSize;
                     // Make sure we've gotten the correct size for the reloc
                     System.Diagnostics.Debug.Assert(reloc.RelocType == (size == 8 ? RelocType.IMAGE_REL_BASED_DIR64 : RelocType.IMAGE_REL_BASED_HIGHLOW));
+
+                    if (size == 8)
+                    {
+                        relocOffsets[nextRelocIndex] = (int)BitConverter.ToInt64(nodeData.Data, i);
+                    }
+                    else
+                    {
+                        relocOffsets[nextRelocIndex] = BitConverter.ToInt32(nodeData.Data, i);
+                    }
 
                     // Update nextRelocIndex/Offset
                     if (++nextRelocIndex < relocs.Length)
@@ -1125,7 +1138,7 @@ namespace ILCompiler.CppCodeGen
             else
                 nodeCode.Append(" } " + mangledName.Replace("::", "_") + " = {");
 
-            nodeCode.Append(GetCodeForNodeData(nodeDataSections, relocs, nodeData.Data, node, offset, factory));
+            nodeCode.Append(GetCodeForNodeData(nodeDataSections, relocs, relocOffsets, nodeData.Data, node, 0, factory));
 
             nodeCode.Append("};");
 
@@ -1144,7 +1157,9 @@ namespace ILCompiler.CppCodeGen
                 {
                     nodeCode.Append("return ( ");
                     nodeCode.Append(retType);
-                    nodeCode.Append(")&mt;");
+                    nodeCode.Append(")((char*)&mt + ");
+                    nodeCode.Append(offset.ToString());
+                    nodeCode.Append(");");
                 }
 
                 nodeCode.Exdent();
@@ -1155,7 +1170,7 @@ namespace ILCompiler.CppCodeGen
             return nodeCode.ToString();
         }
 
-        private String GetCodeForNodeData(List<NodeDataSection> nodeDataSections, Relocation[] relocs, byte[] byteData, DependencyNode node, int offset, NodeFactory factory)
+        private String GetCodeForNodeData(List<NodeDataSection> nodeDataSections, Relocation[] relocs, int[] relocOffsets, byte[] byteData, DependencyNode node, int offset, NodeFactory factory)
         {
             CppGenerationBuffer nodeDataDecl = new CppGenerationBuffer();
             int relocCounter = 0;
@@ -1169,7 +1184,10 @@ namespace ILCompiler.CppCodeGen
                 if (nodeDataSections[i].SectionType == NodeDataSectionType.Relocation)
                 {
                     Relocation reloc = relocs[relocCounter];
+                    nodeDataDecl.Append("(char*)(");
                     nodeDataDecl.Append(GetCodeForReloc(reloc, node, factory));
+                    nodeDataDecl.Append(") + ");
+                    nodeDataDecl.Append(relocOffsets[relocCounter].ToString());
                     nodeDataDecl.Append(",");
                     relocCounter++;
                 }
@@ -1194,68 +1212,12 @@ namespace ILCompiler.CppCodeGen
                 relocCode.Append("(void*)&");
                 relocCode.Append(GetCppMethodDeclarationName(method.Method.OwningType, GetCppMethodName(method.Method), false));
             }
-            else if (reloc.Target is EETypeNode &&
-                    (node is EETypeNode ||
-                    node is IndirectionNode ||
-                    node is GenericCompositionNode ||
-                    node is TypeGenericDictionaryNode ||
-                    node is MethodGenericDictionaryNode ||
-                    node is ExternalReferencesTableNode))
+            else if (reloc.Target is EETypeNode)
             {
                 var type = (reloc.Target as EETypeNode).Type;
 
                 relocCode.Append(GetCppMethodDeclarationName(type, "__getMethodTable", false));
                 relocCode.Append("()");
-            }
-            // Node is either an non-emitted type or a generic composition - both are ignored for CPP codegen
-            else if ((reloc.Target is TypeManagerIndirectionNode ||
-                reloc.Target is InterfaceDispatchMapNode ||
-                reloc.Target is EETypeOptionalFieldsNode ||
-                reloc.Target is GenericCompositionNode ||
-                reloc.Target is SealedVTableNode ||
-                reloc.Target is TypeGenericDictionaryNode ||
-                reloc.Target is MethodGenericDictionaryNode ||
-                reloc.Target is IndirectionNode ||
-                reloc.Target is GenericVirtualMethodTableNode ||
-                reloc.Target is InterfaceGenericVirtualMethodTableNode ||
-                reloc.Target is RuntimeMethodHandleNode ||
-                reloc.Target is NativeLayoutSignatureNode ||
-                reloc.Target is ExactMethodInstantiationsNode ||
-                reloc.Target is GenericMethodsHashtableNode ||
-                reloc.Target is NativeLayoutInfoNode ||
-                reloc.Target is MetadataNode ||
-                reloc.Target is BlockReflectionTypeMapNode ||
-                reloc.Target is ExternalReferencesTableNode ||
-                reloc.Target is GenericTypesTemplateMap ||
-                reloc.Target is GenericMethodsTemplateMap ||
-                reloc.Target is GenericTypesHashtableNode ||
-                reloc.Target is TypeMetadataMapNode ||
-                reloc.Target is FatFunctionPointerNode
-                ) && !(reloc.Target as ObjectNode).ShouldSkipEmittingObjectNode(factory))
-            {
-                string mangledTargetName = GetCppSymbolNodeName(factory, reloc.Target);
-
-                bool shouldReplaceNamespaceQualifier = reloc.Target is GenericCompositionNode || reloc.Target is EETypeOptionalFieldsNode ||
-                    reloc.Target is SealedVTableNode || reloc.Target is TypeGenericDictionaryNode || reloc.Target is IndirectionNode ||
-                    reloc.Target is MethodGenericDictionaryNode;
-
-                bool shouldUsePointer = reloc.Target is GenericCompositionNode || reloc.Target is TypeGenericDictionaryNode ||
-                    reloc.Target is MethodGenericDictionaryNode;
-
-                bool isRuntimeMethodHandle = reloc.Target is RuntimeMethodHandleNode;
-
-                if (shouldUsePointer)
-                    relocCode.Append("(void *)&");
-                else if (isRuntimeMethodHandle)
-                    relocCode.Append("(void *)(");
-
-                relocCode.Append(shouldReplaceNamespaceQualifier ? mangledTargetName.Replace("::", "_") : mangledTargetName);
-
-                if (!shouldUsePointer)
-                    relocCode.Append("()");
-
-                if (isRuntimeMethodHandle)
-                    relocCode.Append("._value)");
             }
             else if (reloc.Target is ObjectAndOffsetSymbolNode &&
                 (reloc.Target as ObjectAndOffsetSymbolNode).Target is ArrayOfEmbeddedPointersNode<InterfaceDispatchMapNode>)
@@ -1268,18 +1230,8 @@ namespace ILCompiler.CppCodeGen
 
                 bool isEagerCctorTable = symbolNode.Target is ArrayOfEmbeddedPointersNode<IMethodNode>;
 
-                if ((symbolNode.Target is GenericVirtualMethodTableNode ||
-                    symbolNode.Target is InterfaceGenericVirtualMethodTableNode ||
-                    symbolNode.Target is ExactMethodInstantiationsNode ||
-                    symbolNode.Target is GenericMethodsHashtableNode ||
-                    symbolNode.Target is NativeLayoutInfoNode ||
-                    symbolNode.Target is MetadataNode ||
-                    symbolNode.Target is BlockReflectionTypeMapNode ||
-                    symbolNode.Target is ExternalReferencesTableNode ||
-                    symbolNode.Target is GenericTypesTemplateMap ||
-                    symbolNode.Target is GenericMethodsTemplateMap ||
-                    symbolNode.Target is GenericTypesHashtableNode ||
-                    symbolNode.Target is TypeMetadataMapNode ||
+                if ((!(symbolNode.Target is EmbeddedDataContainerNode) &&
+                    !(symbolNode.Target is StackTraceMethodMappingNode) ||
                     isEagerCctorTable
                     ) && !(symbolNode.Target as ObjectNode).ShouldSkipEmittingObjectNode(factory))
                 {
@@ -1319,8 +1271,11 @@ namespace ILCompiler.CppCodeGen
             {
                 var nonGcStaticNode = reloc.Target as NonGCStaticsNode;
 
-                relocCode.Append("(void*)&");
+                relocCode.Append("(char*)&");
                 relocCode.Append(GetCppStaticsName(nonGcStaticNode.Type));
+
+                if (_compilation.TypeSystemContext.HasLazyStaticConstructor(nonGcStaticNode.Type))
+                    relocCode.Append(" + sizeof(StaticClassConstructionContext)");
             }
             else if (reloc.Target is TypeThreadStaticIndexNode)
             {
@@ -1328,6 +1283,38 @@ namespace ILCompiler.CppCodeGen
 
                 relocCode.Append("(void*)&");
                 relocCode.Append(GetCppStaticsName(threadStaticIndexNode.Type, true, true));
+            }
+            else if (!(reloc.Target is ReadyToRunHeaderNode) &&
+                     !(reloc.Target is StackTraceMethodMappingNode) &&
+                     !(reloc.Target as ObjectNode).ShouldSkipEmittingObjectNode(factory))
+            {
+                string mangledTargetName = GetCppSymbolNodeName(factory, reloc.Target);
+
+                bool shouldReplaceNamespaceQualifier = reloc.Target is GenericCompositionNode || reloc.Target is EETypeOptionalFieldsNode ||
+                    reloc.Target is SealedVTableNode || reloc.Target is TypeGenericDictionaryNode || reloc.Target is IndirectionNode ||
+                    reloc.Target is MethodGenericDictionaryNode;
+
+                bool shouldUsePointer = reloc.Target is GenericCompositionNode || reloc.Target is TypeGenericDictionaryNode ||
+                    reloc.Target is MethodGenericDictionaryNode;
+
+                bool isRuntimeMethodHandle = reloc.Target is RuntimeMethodHandleNode;
+                bool isMethodGenericDictionary = reloc.Target is MethodGenericDictionaryNode;
+
+                if (shouldUsePointer)
+                    relocCode.Append("(char *)&");
+                else if (isRuntimeMethodHandle)
+                    relocCode.Append("(void *)(");
+
+                relocCode.Append(shouldReplaceNamespaceQualifier ? mangledTargetName.Replace("::", "_") : mangledTargetName);
+
+                if (isMethodGenericDictionary)
+                    relocCode.Append(" + sizeof(void*)");
+
+                if (!shouldUsePointer)
+                    relocCode.Append("()");
+
+                if (isRuntimeMethodHandle)
+                    relocCode.Append("._value)");
             }
             else
             {
@@ -1455,73 +1442,6 @@ namespace ILCompiler.CppCodeGen
             {
                 if (node is EETypeNode)
                     OutputTypeNode(node as EETypeNode, factory, typeDefinitions, methodTables);
-                else if ((node is EETypeOptionalFieldsNode ||
-                    node is TypeManagerIndirectionNode ||
-                    node is GenericCompositionNode ||
-                    node is BlobNode ||
-                    node is SealedVTableNode ||
-                    node is TypeGenericDictionaryNode ||
-                    node is MethodGenericDictionaryNode ||
-                    node is IndirectionNode ||
-                    node is GenericVirtualMethodTableNode ||
-                    node is InterfaceGenericVirtualMethodTableNode ||
-                    node is RuntimeMethodHandleNode ||
-                    node is NativeLayoutSignatureNode ||
-                    node is ExactMethodInstantiationsNode ||
-                    node is GenericMethodsHashtableNode ||
-                    node is NativeLayoutInfoNode ||
-                    node is MetadataNode ||
-                    node is BlockReflectionTypeMapNode ||
-                    node is ExternalReferencesTableNode ||
-                    node is GenericTypesTemplateMap ||
-                    node is GenericMethodsTemplateMap ||
-                    node is GenericTypesHashtableNode ||
-                    node is TypeMetadataMapNode ||
-                    node is FatFunctionPointerNode
-                    ) && !(node as ObjectNode).ShouldSkipEmittingObjectNode(factory))
-                {
-                    if (node is IndirectionNode)
-                    {
-                        indirectionNodes.Append(GetCodeForObjectNode(node as ObjectNode, factory));
-                    }
-                    else
-                    {
-                        bool shouldUsePointer = node is GenericCompositionNode || node is TypeGenericDictionaryNode ||
-                            node is MethodGenericDictionaryNode;
-
-                        if (shouldUsePointer)
-                        {
-                            string varName = GetCppSymbolNodeName(factory, (ISymbolNode)node).Replace("::", "_");
-                            string structType = "T_" + varName;
-
-                            additionalNodes.Append(GetCodeForObjectNode(node as ObjectNode, factory, false, structType));
-
-                            forwardDefinitions.AppendLine();
-                            forwardDefinitions.Append("extern struct ");
-                            forwardDefinitions.Append(structType);
-                            forwardDefinitions.Append(" ");
-                            forwardDefinitions.Append(varName);
-                            forwardDefinitions.Append(";");
-                        }
-                        else
-                        {
-                            additionalNodes.Append(GetCodeForObjectNode(node as ObjectNode, factory));
-                        }
-                    }
-
-                    if (node is NativeLayoutSignatureNode ||
-                        node is RuntimeMethodHandleNode ||
-                        node is FatFunctionPointerNode)
-                    {
-                        forwardDefinitions.AppendLine();
-                        if (node is RuntimeMethodHandleNode)
-                            forwardDefinitions.Append("::System_Private_CoreLib::System::RuntimeMethodHandle ");
-                        else
-                            forwardDefinitions.Append("void * ");
-                        forwardDefinitions.Append(GetCppSymbolNodeName(factory, (ISymbolNode)node));
-                        forwardDefinitions.Append("();");
-                    }
-                }
                 else if (node is ArrayOfEmbeddedPointersNode<InterfaceDispatchMapNode> dispatchMap)
                 {
                     var dispatchMapData = dispatchMap.GetData(factory, false);
@@ -1555,6 +1475,58 @@ namespace ILCompiler.CppCodeGen
                     rtrHeaderNode = node as ReadyToRunHeaderNode;
                 else if (node is ReadyToRunGenericHelperNode)
                     additionalNodes.Append(GetCodeForReadyToRunGenericHelper(node as ReadyToRunGenericHelperNode, factory));
+                else if (node is ObjectNode &&
+                        !(node is EmbeddedDataContainerNode) &&
+                        !(node is StackTraceMethodMappingNode) &&
+                        !(node is GCStaticsNode) &&
+                        !(node is NonGCStaticsNode) &&
+                        !(node is TypeThreadStaticIndexNode) &&
+                        !(node is InterfaceDispatchMapNode) &&
+                        !(node as ObjectNode).ShouldSkipEmittingObjectNode(factory))
+                {
+                    if (node is IndirectionNode)
+                    {
+                        indirectionNodes.Append(GetCodeForObjectNode(node as ObjectNode, factory));
+                    }
+                    else
+                    {
+                        bool shouldUsePointer = node is GenericCompositionNode || node is TypeGenericDictionaryNode ||
+                            node is MethodGenericDictionaryNode;
+
+                        if (shouldUsePointer)
+                        {
+                            string varName = GetCppSymbolNodeName(factory, (ISymbolNode)node).Replace("::", "_");
+                            string structType = "T_" + varName;
+
+                            additionalNodes.Append(GetCodeForObjectNode(node as ObjectNode, factory, false, structType));
+
+                            forwardDefinitions.AppendLine();
+                            forwardDefinitions.Append("extern struct ");
+                            forwardDefinitions.Append(structType);
+                            forwardDefinitions.Append(" ");
+                            forwardDefinitions.Append(varName);
+                            forwardDefinitions.Append(";");
+                        }
+                        else
+                        {
+                            additionalNodes.Append(GetCodeForObjectNode(node as ObjectNode, factory));
+                        }
+                    }
+
+                    if (node is NativeLayoutSignatureNode ||
+                        node is RuntimeMethodHandleNode ||
+                        node is FatFunctionPointerNode ||
+                        node is GCStaticEETypeNode)
+                    {
+                        forwardDefinitions.AppendLine();
+                        if (node is RuntimeMethodHandleNode)
+                            forwardDefinitions.Append("::System_Private_CoreLib::System::RuntimeMethodHandle ");
+                        else
+                            forwardDefinitions.Append("void * ");
+                        forwardDefinitions.Append(GetCppSymbolNodeName(factory, (ISymbolNode)node));
+                        forwardDefinitions.Append("();");
+                    }
+                }
             }
 
             rtrHeader = GetCodeForReadyToRunHeader(rtrHeaderNode, factory);
@@ -1568,11 +1540,11 @@ namespace ILCompiler.CppCodeGen
 
             Out.Write(typeDefinitions.ToString());
 
-            OutputStaticsCode(_statics);
+            OutputStaticsCode(factory, _statics);
 
-            OutputStaticsCode(_gcStatics, true);
+            OutputStaticsCode(factory, _gcStatics, true);
 
-            OutputStaticsCode(_threadStatics, true, true);
+            OutputStaticsCode(factory, _threadStatics, true, true);
 
             Out.Write(indirectionNodes.ToString());
 
@@ -1764,6 +1736,12 @@ namespace ILCompiler.CppCodeGen
                         staticsBuffer.AppendLine();
                         staticsBuffer.Append("int __initialized;");
                         staticsBuffer.AppendLine();
+
+                        if (_compilation.TypeSystemContext.Target.PointerSize == 8)
+                        {
+                            staticsBuffer.Append("int __pad;");
+                            staticsBuffer.AppendLine();
+                        }
                     }
                 }
 
@@ -1878,28 +1856,16 @@ namespace ILCompiler.CppCodeGen
         }
 
         private void OutputCodeForTriggerCctor(CppGenerationBuffer sb, NodeFactory factory,
-            TypeDesc type, string staticsBaseVarName, string staticsVarName)
+            TypeDesc type, string staticsBaseVarName)
         {
             type = type.ConvertToCanonForm(CanonicalFormKind.Specific);
             MethodDesc cctor = type.GetStaticConstructor();
-
-            sb.Append(GetCppStaticsTypeName(type));
-            sb.Append(" *");
-            sb.Append(staticsVarName);
-            sb.Append(" = ");
-            sb.Append("(");
-            sb.Append(GetCppStaticsTypeName(type));
-            sb.Append("*)");
-            sb.Append(staticsBaseVarName);
-            sb.Append(";");
-            sb.AppendLine();
-
             IMethodNode helperNode = (IMethodNode)factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnNonGCStaticBase);
 
             sb.Append(GetCppMethodDeclarationName(helperNode.Method.OwningType, GetCppMethodName(helperNode.Method), false));
-            sb.Append("((::System_Private_CoreLib::System::Runtime::CompilerServices::StaticClassConstructionContext*)");
+            sb.Append("((::System_Private_CoreLib::System::Runtime::CompilerServices::StaticClassConstructionContext*)((char*)");
             sb.Append(staticsBaseVarName);
-            sb.Append(", (intptr_t)");
+            sb.Append(" - sizeof(StaticClassConstructionContext)), (intptr_t)");
             sb.Append(staticsBaseVarName);
             sb.Append(");");
 
@@ -2067,9 +2033,14 @@ namespace ILCompiler.CppCodeGen
 
                         if (_compilation.TypeSystemContext.HasLazyStaticConstructor(target))
                         {
-                            string staticsVarName = "statics";
+                            OutputCodeForTriggerCctor(sb, factory, target, resVarName);
 
-                            OutputCodeForTriggerCctor(sb, factory, target, resVarName, staticsVarName);
+                            sb.Append(resVarName);
+                            sb.Append(" = ");
+                            sb.Append("(char*)");
+                            sb.Append(resVarName);
+                            sb.Append(" - sizeof(StaticClassConstructionContext);");
+                            sb.AppendLine();
                         }
                     }
                     break;
@@ -2078,9 +2049,14 @@ namespace ILCompiler.CppCodeGen
                     {
                         MetadataType target = (MetadataType)node.Target;
 
+                        sb.Append(resVarName);
+                        sb.Append(" = **(void ***)");
+                        sb.Append(resVarName);
+                        sb.Append(";");
+                        sb.AppendLine();
+
                         if (_compilation.TypeSystemContext.HasLazyStaticConstructor(target))
                         {
-                            string staticsVarName = "statics";
                             string nonGcStaticsBase = "nonGcBase";
 
                             sb.Append("void *");
@@ -2092,7 +2068,7 @@ namespace ILCompiler.CppCodeGen
 
                             OutputCodeForDictionaryLookup(sb, factory, node, nonGcRegionLookup, ctxVarName, nonGcStaticsBase);
 
-                            OutputCodeForTriggerCctor(sb, factory, target, nonGcStaticsBase, staticsVarName);
+                            OutputCodeForTriggerCctor(sb, factory, target, nonGcStaticsBase);
                         }
                     }
                     break;
@@ -2103,7 +2079,6 @@ namespace ILCompiler.CppCodeGen
 
                         if (_compilation.TypeSystemContext.HasLazyStaticConstructor(target))
                         {
-                            string staticsVarName = "statics";
                             string nonGcStaticsBase = "nonGcBase";
 
                             sb.Append("void *");
@@ -2115,7 +2090,7 @@ namespace ILCompiler.CppCodeGen
 
                             OutputCodeForDictionaryLookup(sb, factory, node, nonGcRegionLookup, ctxVarName, nonGcStaticsBase);
 
-                            OutputCodeForTriggerCctor(sb, factory, target, nonGcStaticsBase, staticsVarName);
+                            OutputCodeForTriggerCctor(sb, factory, target, nonGcStaticsBase);
                         }
                     }
                     break;
@@ -2125,15 +2100,12 @@ namespace ILCompiler.CppCodeGen
                         DelegateCreationInfo target = (DelegateCreationInfo)node.Target;
                         MethodDesc constructor = target.Constructor.Method;
 
-                        sb.Append("if (");
-                        sb.Append(argNames[3]);
-                        sb.Append(" == 0) {");
                         sb.Append(argNames[3]);
                         sb.Append(" = ((intptr_t)");
                         sb.Append(resVarName);
                         sb.Append(") + ");
                         sb.Append(FatFunctionPointerConstants.Offset.ToString());
-                        sb.Append(";};");
+                        sb.Append(";");
                         sb.AppendLine();
 
                         sb.Append("::");
@@ -2266,7 +2238,7 @@ namespace ILCompiler.CppCodeGen
             Out.Write(sb.ToString());
         }
 
-        private void OutputStaticsCode(Dictionary<TypeDesc, CppGenerationBuffer> statics,
+        private void OutputStaticsCode(NodeFactory factory, Dictionary<TypeDesc, CppGenerationBuffer> statics,
             bool isGCStatic = false, bool isThreadStatic = false)
         {
             CppGenerationBuffer sb = new CppGenerationBuffer();
@@ -2278,6 +2250,16 @@ namespace ILCompiler.CppCodeGen
                 sb.Append("struct ");
                 sb.Append(GetCppStaticsTypeName(t, isGCStatic, isThreadStatic));
                 sb.Append(" {");
+                sb.Indent();
+                sb.AppendLine();
+
+                if (isGCStatic)
+                {
+                    // GC statics start with a pointer to the "EEType" that signals the size and GCDesc to the GC
+                    sb.Append("void * __pad;");
+                    sb.AppendLine();
+                }
+
                 sb.Append(entry.Value.ToString());
                 sb.Exdent();
                 sb.AppendLine();
@@ -2292,7 +2274,7 @@ namespace ILCompiler.CppCodeGen
 
                 sb.Append(GetCppStaticsTypeName(t, isGCStatic, isThreadStatic));
                 sb.Append(" ");
-                sb.Append(GetCppStaticsName(t, isGCStatic, isThreadStatic));
+                sb.Append(GetCppStaticsName(t, isGCStatic, isThreadStatic, isGCStatic && !isThreadStatic));
 
                 if (!isGCStatic && _compilation.TypeSystemContext.HasLazyStaticConstructor(t))
                 {
@@ -2326,6 +2308,25 @@ namespace ILCompiler.CppCodeGen
 
                 sb.Append(";");
                 sb.AppendLine();
+
+                if (isGCStatic && !isThreadStatic)
+                {
+                    sb.Append(GetCppStaticsTypeName(t, isGCStatic, isThreadStatic));
+                    sb.Append(" *");
+                    sb.Append(GetCppStaticsName(t, isGCStatic, isThreadStatic, true));
+                    sb.Append("__ptr = &");
+                    sb.Append(GetCppStaticsName(t, isGCStatic, isThreadStatic, true));
+                    sb.Append(";");
+                    sb.AppendLine();
+
+                    sb.Append(GetCppStaticsTypeName(t, isGCStatic, isThreadStatic));
+                    sb.Append(" **");
+                    sb.Append(GetCppStaticsName(t, isGCStatic, isThreadStatic));
+                    sb.Append(" = &");
+                    sb.Append(GetCppStaticsName(t, isGCStatic, isThreadStatic, true));
+                    sb.Append("__ptr;");
+                    sb.AppendLine();
+                }
             }
 
             Out.Write(sb.ToString());

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Threading;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 #if PLATFORM_WINDOWS
@@ -316,6 +317,8 @@ internal static class Program
         }
 
         TestNativeCallback();
+
+        TestThreadStaticsForSingleThread();
 
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
@@ -831,6 +834,71 @@ internal static class Program
         return result;
     }
 
+    private static void TestThreadStaticsForSingleThread()
+    {
+        var firstClass = new ClassWithFourThreadStatics();
+        int firstClassStatic = firstClass.GetStatic();
+        PrintString("Static should be initialised: ");
+        if (firstClassStatic == 2)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+            PrintLine("Was: " + firstClassStatic.ToString());
+        }
+        PrintString("Second class with same statics should be initialised: ");
+        int secondClassStatic = new AnotherClassWithFourThreadStatics().GetStatic();
+        if (secondClassStatic == 13)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+            PrintLine("Was: " + secondClassStatic.ToString());
+        }
+
+        PrintString("First class increment statics: ");
+        firstClass.IncrementStatics();
+        firstClassStatic = firstClass.GetStatic();
+        if (firstClassStatic == 3)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+            PrintLine("Was: " + firstClassStatic.ToString());
+        }
+
+        PrintString("Second class should not be overwritten: "); // catches a type of bug where beacuse the 2 types share the same number and types of ThreadStatics, the first class can end up overwriting the second
+        secondClassStatic = new AnotherClassWithFourThreadStatics().GetStatic();
+        if (secondClassStatic == 13)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+            PrintLine("Was: " + secondClassStatic.ToString());
+        }
+
+        PrintString("First class 2nd instance should share static: ");
+        int secondInstanceOfFirstClassStatic = new ClassWithFourThreadStatics().GetStatic();
+        if (secondInstanceOfFirstClassStatic == 3)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+            PrintLine("Was: " + secondInstanceOfFirstClassStatic.ToString());
+        }
+        Thread.Sleep(10);
+    }
+
     [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
 }
@@ -1101,6 +1169,54 @@ class ClassWithSealedVTable : ISomeItf
 interface ISomeItf
 {
     int GetValue();
+}
+
+class ClassWithFourThreadStatics
+{
+    [ThreadStatic] static int classStatic;
+    [ThreadStatic] static int classStatic2 = 2;
+    [ThreadStatic] static int classStatic3;
+    [ThreadStatic] static int classStatic4;
+    [ThreadStatic] static int classStatic5;
+
+    public int GetStatic()
+    {
+        return classStatic2;
+    }
+
+    public void IncrementStatics()
+    {
+        classStatic++;
+        classStatic2++;
+        classStatic3++;
+        classStatic4++;
+        classStatic5++;
+    }
+}
+
+class AnotherClassWithFourThreadStatics
+{
+    [ThreadStatic] static int classStatic = 13;
+    [ThreadStatic] static int classStatic2;
+    [ThreadStatic] static int classStatic3;
+    [ThreadStatic] static int classStatic4;
+    [ThreadStatic] static int classStatic5;
+
+    public int GetStatic()
+    {
+        return classStatic;
+    }
+
+    /// <summary>
+    /// stops field unused compiler error, but never called
+    /// </summary>
+    public void IncrementStatics()
+    {
+        classStatic2++;
+        classStatic3++;
+        classStatic4++;
+        classStatic5++;
+    }
 }
 
 namespace System.Runtime.InteropServices

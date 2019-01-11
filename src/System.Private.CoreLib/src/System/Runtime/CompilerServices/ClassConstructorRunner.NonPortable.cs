@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 namespace System.Runtime.CompilerServices
 {
     //=========================================================================================================
-    // This is the non-portable part of ClassConstructorRunner. It lives in a seaparate .cs file to make
+    // This is the non-portable part of ClassConstructorRunner. It lives in a separate .cs file to make
     // it easier to include the main ClassConstructorRunner source into a desktop project for testing.
     //=========================================================================================================
 

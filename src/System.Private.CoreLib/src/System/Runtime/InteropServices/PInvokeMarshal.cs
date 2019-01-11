@@ -49,6 +49,18 @@ namespace System.Runtime.InteropServices
                 return (dwLastError & 0x0000FFFF) | unchecked((int)0x80070000);
         }
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static int GetHRForException(Exception e)
+        {
+            if (e == null)
+            {
+                return HResults.S_OK;
+            }
+
+            // @TODO: Setup IErrorInfo
+            return e.HResult;
+        }
+
         public static unsafe IntPtr AllocHGlobal(IntPtr cb)
         {
             return MemAlloc(cb);

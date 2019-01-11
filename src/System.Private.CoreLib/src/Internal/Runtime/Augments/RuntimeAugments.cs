@@ -1151,6 +1151,14 @@ namespace Internal.Runtime.Augments
         {
             RuntimeImports.RhYield();
         }
+
+        public static bool SupportsRelativePointers
+        {
+            get
+            {
+                return Internal.Runtime.EEType.SupportsRelativePointers;
+            }
+        }
     }
 }
 

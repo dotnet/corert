@@ -147,9 +147,6 @@
   <data name="Arg_NeedNonNegNumRequired" xml:space="preserve">
     <value>Non-negative number required.</value>
   </data>
-  <data name="Arg_NotIsomorphic" xml:space="preserve">
-    <value>Object contains non-primitive or non-blittable data.</value>
-  </data>
   <data name="Arg_SafeArrayRankMismatchException" xml:space="preserve">
     <value>Specified array was not of the expected rank.</value>
   </data>
@@ -183,14 +180,8 @@
   <data name="BadMarshalField_Null_HString" xml:space="preserve">
     <value>Null strings may not be marshaled in Windows Runtime fields.</value>
   </data>
-  <data name="ArrayWithOffsetOverflow" xml:space="preserve">
-    <value>ArrayWithOffset: offset exceeds array size.</value>
-  </data>
   <data name="InvalidOperation_HCCountOverflow" xml:space="preserve">
     <value>Handle collector count overflows or underflows.</value>
-  </data>
-  <data name="StructArrayTooLarge" xml:space="preserve">
-    <value>Array size exceeds addressing limitations.</value>
   </data>
   <data name="CustomPropertyProvider_DataBindingError" xml:space="preserve">
     <value>Failed to bind to property '{0}'.  {1}</value>

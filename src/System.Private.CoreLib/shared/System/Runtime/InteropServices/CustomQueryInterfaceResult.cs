@@ -2,15 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-
-//
-
 namespace System.Runtime.InteropServices
 {
-    public enum CustomQueryInterfaceMode
+    // The enum of the return value of IQuerable.GetInterface
+    public enum CustomQueryInterfaceResult
     {
-        Ignore = 0,
-        Allow = 1,
+        Handled = 0,
+        NotHandled = 1,
+        Failed = 2,
     }
 }

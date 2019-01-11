@@ -165,6 +165,9 @@
   <data name="Arg_CopyOutOfRange" xml:space="preserve">
     <value>Requested range extends past the end of the array.</value>
   </data>
+  <data name="Arg_COMException" xml:space="preserve">
+    <value>Error HRESULT E_FAIL has been returned from a call to a COM component.</value>
+  </data>
   <data name="Arg_CryptographyException" xml:space="preserve">
     <value>Error occurred during a cryptographic operation.</value>
   </data>
@@ -686,6 +689,9 @@
   </data>
   <data name="Argument_NotIsomorphic" xml:space="preserve">
     <value>Object contains non-primitive or non-blittable data.</value>
+  </data>
+  <data name="Argument_StructArrayTooLarge" xml:space="preserve">
+    <value>Array size exceeds addressing limitations.</value>
   </data>
   <data name="Argument_OffsetLocalMismatch" xml:space="preserve">
     <value>The UTC Offset of the local dateTime parameter does not match the offset argument.</value>
@@ -2007,6 +2013,9 @@
   </data>
   <data name="IndexOutOfRange_UMSPosition" xml:space="preserve">
     <value>Unmanaged memory stream position was beyond the capacity of the stream.</value>
+  </data>
+  <data name="IndexOutOfRange_ArrayWithOffset" xml:space="preserve">
+    <value>ArrayWithOffset: offset exceeds array size.</value>
   </data>
   <data name="ObjectDisposed_ViewAccessorClosed" xml:space="preserve">
     <value>Cannot access a closed accessor.</value>

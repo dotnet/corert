@@ -94,5 +94,14 @@ namespace System.Runtime.InteropServices
         {
             PInvokeMarshal.FreeBSTR(ptr);
         }
+
+        public static int GetHRForException(Exception e)
+        {
+            return PInvokeMarshal.GetHRForException(e);
+        }
+
+        // Used by DispatchWrapper
+        internal static IntPtr GetIDispatchForObject(object o) => throw new PlatformNotSupportedException();
+        internal static int Release(IntPtr pUnk) => throw new PlatformNotSupportedException();
     }
 }
