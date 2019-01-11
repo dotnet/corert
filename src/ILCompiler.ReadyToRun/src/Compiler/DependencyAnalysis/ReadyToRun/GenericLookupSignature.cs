@@ -63,7 +63,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                     case CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ:
                         dataBuilder.EmitByte((byte)ReadyToRunFixupKind.READYTORUN_FIXUP_ThisObjDictionaryLookup);
-                        dataBuilder.EmitTypeSignature(_methodContext.Method.OwningType, _signatureContext);
+                        dataBuilder.EmitTypeSignature(_methodContext.ContextType, _signatureContext);
                         break;
 
                     default:

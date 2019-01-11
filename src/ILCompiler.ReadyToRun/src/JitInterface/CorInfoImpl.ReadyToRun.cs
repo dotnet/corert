@@ -31,20 +31,24 @@ namespace Internal.JitInterface
 
     public struct MethodContext : IEquatable<MethodContext>
     {
-        public readonly MethodDesc Method;
+        public readonly TypeSystemEntity Context;
 
-        public MethodContext(MethodDesc method)
+        public TypeDesc ContextType { get { return (Context is MethodDesc contextAsMethod ? contextAsMethod.OwningType : (TypeDesc)Context); } }
+
+        public MethodDesc ContextMethod { get { return (MethodDesc)Context; } }
+
+        public MethodContext(TypeSystemEntity context)
         {
-            Method = method;
+            Context = context;
         }
 
-        public bool Equals(MethodContext other) => Method == other.Method;
+        public bool Equals(MethodContext other) => Context == other.Context;
 
-        public override bool Equals(object obj) => obj is MethodContext other && Method == other.Method;
+        public override bool Equals(object obj) => obj is MethodContext other && Context == other.Context;
 
-        public override int GetHashCode() => Method.GetHashCode();
+        public override int GetHashCode() => Context.GetHashCode();
 
-        public override string ToString() => Method.ToString();
+        public override string ToString() => Context.ToString();
     }
 
     public class RequiresRuntimeJitException : Exception
@@ -214,7 +218,7 @@ namespace Internal.JitInterface
                         Debug.Assert(typeToInitialize.IsCanonicalSubtype(CanonicalFormKind.Any));
 
                         DefType helperArg = typeToInitialize.ConvertToSharedRuntimeDeterminedForm();
-                        MethodContext methodContext = new MethodContext(methodFromContext(pResolvedToken.tokenContext));
+                        MethodContext methodContext = new MethodContext(entityFromContext(pResolvedToken.tokenContext));
                         ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(
                             pGenericLookupKind.runtimeLookupKind,
                             ReadyToRunHelperId.GetNonGCStaticBase, 
@@ -234,7 +238,7 @@ namespace Internal.JitInterface
                         {
                             helperArg = new MethodWithToken(methodArg, new ModuleToken(_tokenContext, pResolvedToken.token));
                         }
-                        MethodContext methodContext = new MethodContext(methodFromContext(pResolvedToken.tokenContext));
+                        MethodContext methodContext = new MethodContext(entityFromContext(pResolvedToken.tokenContext));
                         ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(
                             pGenericLookupKind.runtimeLookupKind,
                             helperId,
