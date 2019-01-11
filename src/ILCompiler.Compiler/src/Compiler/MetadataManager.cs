@@ -182,10 +182,6 @@ namespace ILCompiler
 
             if (methodNode != null)
             {
-                if (methodNode.Method.OwningType.GetTypeDefinition() is INonEmittableType && IsMethodEligibleForTracking(methodNode.Method))
-                {
-                    return;
-                }
                 _methodsGenerated.Add(methodNode.Method);
                 return;
             }
@@ -193,7 +189,6 @@ namespace ILCompiler
             var reflectableMethodNode = obj as ReflectableMethodNode;
             if (reflectableMethodNode != null)
             {
-                Debug.Assert(!(reflectableMethodNode.Method.OwningType.GetTypeDefinition() is INonEmittableType) || !IsMethodEligibleForTracking(reflectableMethodNode.Method));
                 _methodsGenerated.Add(reflectableMethodNode.Method);
             }
 
@@ -216,24 +211,6 @@ namespace ILCompiler
             }
         }
 
-        private static bool IsMethodEligibleForTracking(MethodDesc method)
-        {
-            // Runtime determined methods should never show up here.
-            Debug.Assert(!method.IsRuntimeDeterminedExactMethod);
-
-            if (method.IsAbstract)
-                return false;
-
-            if (!method.HasInstantiation)
-                return false;
-
-            // This hashtable is only for method instantiations that don't use generic dictionaries,
-            // so check if the given method is shared before proceeding
-            if (method.IsSharedByGenericInstantiations || method.GetCanonMethodTarget(CanonicalFormKind.Specific) != method)
-                return false;
-
-            return true;
-        }
         /// <summary>
         /// Is a method that is reflectable a method which should be placed into the invoke map as invokable?
         /// </summary>

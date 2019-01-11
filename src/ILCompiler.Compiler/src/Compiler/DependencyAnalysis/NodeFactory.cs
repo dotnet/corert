@@ -508,21 +508,6 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<TypeDesc, IEETypeNode> _typeSymbols;
 
-        public bool CanNecessaryTypeSymbol(TypeDesc type)
-        {
-            if (_compilationModuleGroup.ShouldReferenceThroughImportTable(type))
-            {
-                return true;
-            }
-
-            if (_compilationModuleGroup.ShouldPromoteToFullType(type))
-            {
-                return true;
-            }
-
-            return !TypeCannotHaveEEType(type);
-        }
-
         public IEETypeNode NecessaryTypeSymbol(TypeDesc type)
         {
             if (_compilationModuleGroup.ShouldReferenceThroughImportTable(type))
