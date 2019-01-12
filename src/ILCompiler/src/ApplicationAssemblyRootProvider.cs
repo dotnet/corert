@@ -36,7 +36,18 @@ namespace ILCompiler
 
         private void ProcessAssembly(string inputFile, IRootingServiceProvider rootProvider)
         {
-            var assembly = (EcmaModule)_context.ResolveAssembly(new AssemblyName(inputFile), false);
+            EcmaModule assembly;
+            try
+            {
+                assembly = (EcmaModule)_context.ResolveAssembly(new AssemblyName(inputFile), false);
+            }
+            catch (TypeSystemException.BadImageFormatException)
+            {
+                // Native files can sometimes end up in the input. It would be nice if they didn't, but
+                // it's pretty safe to just ignore them.
+                // See: https://github.com/dotnet/corert/issues/2785
+                return;
+            }
 
             if (FrameworkStringResourceBlockingPolicy.IsFrameworkAssembly(assembly))
                 return;
