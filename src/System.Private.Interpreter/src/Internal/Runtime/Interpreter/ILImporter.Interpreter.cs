@@ -1371,7 +1371,285 @@ namespace Internal.IL
 
         private void ImportBinaryOperation(ILOpcode opCode)
         {
-            throw new NotImplementedException();
+            StackItem op1 = PopWithValidation();
+            StackItem op2 = PopWithValidation();
+
+            StackValueKind kind = (op1.Kind > op2.Kind) ? op1.Kind : op2.Kind;
+
+            switch (kind)
+            {
+                case StackValueKind.Int32:
+                    {
+                        int val1 = op1.AsInt32Unchecked();
+                        int val2 = op2.AsInt32Unchecked();
+                        int result = default(int);
+
+                        switch (opCode)
+                        {
+                            case ILOpcode.add:
+                                result = val1 + val2;
+                                break;
+                            case ILOpcode.add_ovf:
+                                result = checked(val1 + val2);
+                                break;
+                            case ILOpcode.add_ovf_un:
+                                result = (int)(checked((uint)val1 + (uint)val2));
+                                break;
+                            case ILOpcode.sub:
+                                result = val2 - val1;
+                                break;
+                            case ILOpcode.sub_ovf:
+                                result = checked(val2 - val1);
+                                break;
+                            case ILOpcode.sub_ovf_un:
+                                result = (int)(checked((uint)val2 - (uint)val1));
+                                break;
+                            case ILOpcode.mul:
+                                result = val1 * val2;
+                                break;
+                            case ILOpcode.mul_ovf:
+                                result = checked(val1 * val2);
+                                break;
+                            case ILOpcode.mul_ovf_un:
+                                result = (int)(checked((uint)val1 * (uint)val2));
+                                break;
+                            case ILOpcode.div:
+                                result = val2 / val1;
+                                break;
+                            case ILOpcode.div_un:
+                                result = (int)((uint)val2 / (uint)val1);
+                                break;
+                            case ILOpcode.rem:
+                                result = val2 % val1;
+                                break;
+                            case ILOpcode.rem_un:
+                                result = (int)((uint)val2 % (uint)val1);
+                                break;
+                            case ILOpcode.and:
+                                result = val1 & val2;
+                                break;
+                            case ILOpcode.or:
+                                result = val1 | val2;
+                                break;
+                            case ILOpcode.xor:
+                                result = val1 ^ val2;
+                                break;
+                            default:
+                                Debug.Assert(false);
+                                break;
+                        }
+
+                        _interpreter.EvaluationStack.Push(StackItem.FromInt32(result));
+                    }
+                    break;
+                case StackValueKind.Int64:
+                    {
+                        long val1 = op1.AsInt64Unchecked();
+                        long val2 = op2.AsInt64Unchecked();
+                        long result = default(long);
+
+                        switch (opCode)
+                        {
+                            case ILOpcode.add:
+                                result = val1 + val2;
+                                break;
+                            case ILOpcode.add_ovf:
+                                result = checked(val1 + val2);
+                                break;
+                            case ILOpcode.add_ovf_un:
+                                result = (long)(checked((ulong)val1 + (ulong)val2));
+                                break;
+                            case ILOpcode.sub:
+                                result = val2 - val1;
+                                break;
+                            case ILOpcode.sub_ovf:
+                                result = checked(val2 - val1);
+                                break;
+                            case ILOpcode.sub_ovf_un:
+                                result = (long)(checked((ulong)val2 - (ulong)val1));
+                                break;
+                            case ILOpcode.mul:
+                                result = val1 * val2;
+                                break;
+                            case ILOpcode.mul_ovf:
+                                result = checked(val1 * val2);
+                                break;
+                            case ILOpcode.mul_ovf_un:
+                                result = (long)(checked((ulong)val1 * (ulong)val2));
+                                break;
+                            case ILOpcode.div:
+                                result = val2 / val1;
+                                break;
+                            case ILOpcode.div_un:
+                                result = (long)((ulong)val2 / (ulong)val1);
+                                break;
+                            case ILOpcode.rem:
+                                result = val2 % val1;
+                                break;
+                            case ILOpcode.rem_un:
+                                result = (long)((ulong)val2 % (ulong)val1);
+                                break;
+                            case ILOpcode.and:
+                                result = val1 & val2;
+                                break;
+                            case ILOpcode.or:
+                                result = val1 | val2;
+                                break;
+                            case ILOpcode.xor:
+                                result = val1 ^ val2;
+                                break;
+                            default:
+                                Debug.Assert(false);
+                                break;
+                        }
+
+                        _interpreter.EvaluationStack.Push(StackItem.FromInt64(result));
+                    }
+                    break;
+                case StackValueKind.NativeInt:
+                    {
+                        IntPtr val1 = op1.AsNativeIntUnchecked();
+                        IntPtr val2 = op2.AsNativeIntUnchecked();
+                        IntPtr result = default(IntPtr);
+#if BIT64
+                        if (opCode == ILOpcode.add || opCode == ILOpcode.add_ovf
+                            || opCode == ILOpcode.sub || opCode == ILOpcode.sub_ovf
+                            || opCode == ILOpcode.mul || opCode == ILOpcode.mul_ovf
+                            || opCode == ILOpcode.div || opCode == ILOpcode.rem)
+                        {
+                            if (op1.Kind == StackValueKind.Int32)
+                            {
+                                val1 = (IntPtr)op1.AsInt32();
+                            }
+                            else if (op2.Kind == StackValueKind.Int32)
+                            {
+                                val2 = (IntPtr)op2.AsInt32();
+                            }
+                        }
+#endif
+                        switch (opCode)
+                        {
+                            case ILOpcode.add:
+                                result = (IntPtr)((long)val1 + (long)val2);
+                                break;
+                            case ILOpcode.add_ovf:
+                                result = (IntPtr)checked((long)val1 + (long)val2);
+                                break;
+                            case ILOpcode.add_ovf_un:
+                                result = (IntPtr)(checked((ulong)(UIntPtr)val1.ToPointer() + (ulong)(UIntPtr)val2.ToPointer()));
+                                break;
+                            case ILOpcode.sub:
+                                result = (IntPtr)((long)val2 - (long)val1);
+                                break;
+                            case ILOpcode.sub_ovf:
+                                result = (IntPtr)checked((long)val2 - (long)val1);
+                                break;
+                            case ILOpcode.sub_ovf_un:
+                                result = (IntPtr)(checked((ulong)(UIntPtr)val2.ToPointer() - (ulong)(UIntPtr)val1.ToPointer()));
+                                break;
+                            case ILOpcode.mul:
+                                result = (IntPtr)((long)val1 * (long)val2);
+                                break;
+                            case ILOpcode.mul_ovf:
+                                result = (IntPtr)checked((long)val1 * (long)val2);
+                                break;
+                            case ILOpcode.mul_ovf_un:
+                                result = (IntPtr)checked((ulong)(UIntPtr)val1.ToPointer() * (ulong)(UIntPtr)val2.ToPointer());
+                                break;
+                            case ILOpcode.div:
+                                result = (IntPtr)((long)val2 / (long)val1);
+                                break;
+                            case ILOpcode.div_un:
+                                result = (IntPtr)((ulong)(UIntPtr)val2.ToPointer() / (ulong)(UIntPtr)val1.ToPointer());
+                                break;
+                            case ILOpcode.rem:
+                                result = (IntPtr)((long)val2 % (long)val1);
+                                break;
+                            case ILOpcode.rem_un:
+                                result = (IntPtr)((ulong)(UIntPtr)val2.ToPointer() % (ulong)(UIntPtr)val1.ToPointer());
+                                break;
+                            case ILOpcode.and:
+                                result = (IntPtr)((long)val1 & (long)val2);
+                                break;
+                            case ILOpcode.or:
+                                result = (IntPtr)((long)val1 | (long)val2);
+                                break;
+                            case ILOpcode.xor:
+                                result = (IntPtr)((long)val1 ^ (long)val2);
+                                break;
+                            default:
+                                Debug.Assert(false);
+                                break;
+                        }
+
+                        _interpreter.EvaluationStack.Push(StackItem.FromNativeInt(result));
+                    }
+                    break;
+                case StackValueKind.Float:
+                    {
+                        if (op1.Kind < StackValueKind.Float || op2.Kind < StackValueKind.Float)
+                        {
+                            ThrowHelper.ThrowInvalidProgramException();
+                        }
+
+                        double val1 = op1.AsDouble();
+                        double val2 = op2.AsDouble();
+                        double result = default(double);
+
+                        switch (opCode)
+                        {
+                            case ILOpcode.add:
+                                result = val1 + val2;
+                                break;
+                            case ILOpcode.add_ovf:
+                            case ILOpcode.add_ovf_un:
+                                result = checked(val1 + val2);
+                                break;
+                            case ILOpcode.sub:
+                                result = val2 - val1;
+                                break;
+                            case ILOpcode.sub_ovf:
+                            case ILOpcode.sub_ovf_un:
+                                result = checked(val2 - val1);
+                                break;
+                            case ILOpcode.mul:
+                                result = val1 * val2;
+                                break;
+                            case ILOpcode.mul_ovf:
+                            case ILOpcode.mul_ovf_un:
+                                result = checked(val1 * val2);
+                                break;
+                            case ILOpcode.div:
+                            case ILOpcode.div_un:
+                                result = val2 / val1;
+                                break;
+                            case ILOpcode.rem:
+                            case ILOpcode.rem_un:
+                                result = val2 % val1;
+                                break;
+                            case ILOpcode.and:
+                            case ILOpcode.or:
+                            case ILOpcode.xor:
+                                ThrowHelper.ThrowInvalidProgramException();
+                                break;
+                            default:
+                                Debug.Assert(false);
+                                break;
+                        }
+
+                        _interpreter.EvaluationStack.Push(StackItem.FromDouble(result));
+                    }
+                    break;
+                case StackValueKind.ByRef:
+                    // TODO: Add support for ByRef to StackItem
+                    throw new NotImplementedException();
+                case StackValueKind.Unknown:
+                case StackValueKind.ObjRef:
+                case StackValueKind.ValueType:
+                default:
+                    ThrowHelper.ThrowInvalidProgramException();
+                    break;
+            }
         }
 
         private void ImportSwitchJump(int jmpBase, int[] jmpDelta, BasicBlock basicBlock)

@@ -77,14 +77,14 @@ namespace ILCompiler
             private const int ThreadLocalModuleDataBlobOffsetAsIntPtrCount = 3;
 
             /// <summary>
-            /// CoreCLR DomainLocalModule::NormalDynamicEntry::OffsetOfDataBlob for 32-bit platforms
+            /// CoreCLR DomainLocalModule::NormalDynamicEntry::OffsetOfDataBlob for X86
             /// </summary>
-            private const int DomainLocalModuleNormalDynamicEntryOffsetOfDataBlob32Bit = 4;
+            private const int DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobX86 = 4;
 
             /// <summary>
-            /// CoreCLR DomainLocalModule::NormalDynamicEntry::OffsetOfDataBlob for 64-bit platforms
+            /// CoreCLR DomainLocalModule::NormalDynamicEntry::OffsetOfDataBlob for Amd64
             /// </summary>
-            private const int DomainLocalModuleNormalDynamicEntryOffsetOfDataBlob64Bit = 16;
+            private const int DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobAmd64 = 8;
 
             protected override bool CompareKeyToValue(EcmaModule key, ModuleFieldLayout value)
             {
@@ -306,14 +306,14 @@ namespace ILCompiler
                 if (!moduleFieldLayout.TryGetDynamicLayout(defType, out fieldsForType))
                 {
                     int nonGcOffset;
-                    switch (moduleFieldLayout.Module.Context.Target.PointerSize)
+                    switch (moduleFieldLayout.Module.Context.Target.Architecture)
                     {
-                        case 4:
-                            nonGcOffset = DomainLocalModuleNormalDynamicEntryOffsetOfDataBlob32Bit;
+                        case TargetArchitecture.X86:
+                            nonGcOffset = DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobX86;
                             break;
 
-                        case 8:
-                            nonGcOffset = DomainLocalModuleNormalDynamicEntryOffsetOfDataBlob64Bit;
+                        case TargetArchitecture.X64:
+                            nonGcOffset = DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobAmd64;
                             break;
 
                         default:

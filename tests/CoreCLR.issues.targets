@@ -986,9 +986,5 @@
     <!-- Expectations about HW exceptions in unmanaged code being catchable -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\pinvoke\calli_excep\calli_excep.*" />
 
-    <!-- These tests use CultureInfo so do not work if we are using dummy globalization -->
-    <ExcludeList Condition="'$(EnableDummyGlobalizationImplementation)' == 'true'" Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M10\b04914\b04914\b04914.*" />
-    <ExcludeList Condition="'$(EnableDummyGlobalizationImplementation)' == 'true'" Include="$(XunitTestBinBase)\Regressions\common\ThreadCulture\ThreadCulture.*" />
-
   </ItemGroup>
 </Project>

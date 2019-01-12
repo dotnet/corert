@@ -23,15 +23,16 @@ namespace ILVerify
             new Lazy<ResourceManager>(() => new ResourceManager("FxResources.ILVerification.SR", typeof(Verifier).GetTypeInfo().Assembly));
 
         private ILVerifyTypeSystemContext _typeSystemContext;
+        private VerifierOptions _verifierOptions;
 
-        public Verifier(IResolver resolver)
-        {
-            _typeSystemContext = new ILVerifyTypeSystemContext(resolver);
-        }
+        public Verifier(IResolver resolver) : this(resolver, null){ }
 
-        internal Verifier(ILVerifyTypeSystemContext context)
+        public Verifier(IResolver resolver, VerifierOptions verifierOptions) : this(new ILVerifyTypeSystemContext(resolver), verifierOptions) { }
+
+        internal Verifier(ILVerifyTypeSystemContext context, VerifierOptions verifierOptions)
         {
             _typeSystemContext = context;
+            _verifierOptions = verifierOptions ?? new VerifierOptions();
         }
 
         public void SetSystemModuleName(AssemblyName name)
@@ -247,7 +248,7 @@ namespace ILVerify
 
             try
             {
-                TypeVerifier typeVerifier = new TypeVerifier(module, typeHandle, _typeSystemContext);
+                TypeVerifier typeVerifier = new TypeVerifier(module, typeHandle, _typeSystemContext, _verifierOptions);
 
                 typeVerifier.ReportVerificationError = (code, args) =>
                 {
@@ -306,5 +307,10 @@ namespace ILVerify
         {
             throw new VerifierException("No system module specified");
         }
+    }
+
+    public class VerifierOptions
+    {
+        public bool IncludeMetadataTokensInErrorMessages { get; set; }
     }
 }

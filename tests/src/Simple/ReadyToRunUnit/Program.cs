@@ -473,40 +473,45 @@ internal class Program
         return intResult == ExpectedIntResult && stringResult == ExpectedStringResult;
     }
 
+    private static string GetTypeName<T>()
+    {
+        return typeof(T).ToString();
+    }
+
+    private static bool CompareArgName(string actual, string expected)
+    {
+        if (actual == expected)
+        {
+            Console.WriteLine("Arg type match: {0}", actual);
+            return true;
+        }
+        else
+        {
+            Console.WriteLine("Arg type mismatch: actual = {0}, expected = {1}", actual, expected);
+            return false;
+        }
+    }
+
     class GenericLookup<T>
     {
         public static bool CheckStaticTypeArg(string typeArgName)
         {
-            return CompareArgName(typeof(T).ToString(), typeArgName);
+            return CompareArgName(GetTypeName<T>(), typeArgName);
         }
         
         public bool CheckInstanceTypeArg(string typeArgName)
         {
-            return CompareArgName(typeof(T).ToString(), typeArgName);
+            return CompareArgName(GetTypeName<T>(), typeArgName);
         }
 
         public static bool CheckStaticTypeArg<U>(string tName, string uName)
         {
-            return CompareArgName(typeof(T).ToString(), tName) && CompareArgName(typeof(U).ToString(), uName);
+            return CompareArgName(GetTypeName<T>(), tName) && CompareArgName(GetTypeName<U>(), uName);
         }
 
         public bool CheckInstanceTypeArg<U>(string tName, string uName)
         {
-            return CompareArgName(typeof(T).ToString(), tName) && CompareArgName(typeof(U).ToString(), uName);
-        }
-
-        private static bool CompareArgName(string actual, string expected)
-        {
-            if (actual == expected)
-            {
-                Console.WriteLine("Arg type match: {0}", actual);
-                return true;
-            }
-            else
-            {
-                Console.WriteLine("Arg type mismatch: actual = {0}, expected = {1}", actual, expected);
-                return false;
-            }
+            return CompareArgName(GetTypeName<T>(), tName) && CompareArgName(GetTypeName<U>(), uName);
         }
     }
 

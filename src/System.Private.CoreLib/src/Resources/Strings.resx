@@ -165,6 +165,9 @@
   <data name="Arg_CopyOutOfRange" xml:space="preserve">
     <value>Requested range extends past the end of the array.</value>
   </data>
+  <data name="Arg_COMException" xml:space="preserve">
+    <value>Error HRESULT E_FAIL has been returned from a call to a COM component.</value>
+  </data>
   <data name="Arg_CryptographyException" xml:space="preserve">
     <value>Error occurred during a cryptographic operation.</value>
   </data>
@@ -357,6 +360,9 @@
   <data name="Arg_NeedAtLeast1Rank" xml:space="preserve">
     <value>Must provide at least one rank.</value>
   </data>
+  <data name="Arg_Need1DArray" xml:space="preserve">
+    <value>Array was not a one-dimensional array.</value>
+  </data>
   <data name="Arg_Need2DArray" xml:space="preserve">
     <value>Array was not a two-dimensional array.</value>
   </data>
@@ -475,10 +481,13 @@
     <value>Absolute path information is required.</value>
   </data>
   <data name="Argument_AddingDuplicate" xml:space="preserve">
-    <value>An item with the same key has already been added. Key: {0}</value>
+    <value>An item with the same key has already been added.</value>
   </data>
   <data name="Argument_AddingDuplicate__" xml:space="preserve">
     <value>Item has already been added. Key in dictionary: '{0}'  Key being added: '{1}'</value>
+  </data>
+  <data name="Argument_AddingDuplicateWithKey" xml:space="preserve">
+    <value>An item with the same key has already been added. Key: {0}</value>
   </data>
   <data name="Argument_AdjustmentRulesNoNulls" xml:space="preserve">
     <value>The AdjustmentRule array cannot contain null elements.</value>
@@ -681,6 +690,9 @@
   <data name="Argument_NotIsomorphic" xml:space="preserve">
     <value>Object contains non-primitive or non-blittable data.</value>
   </data>
+  <data name="Argument_StructArrayTooLarge" xml:space="preserve">
+    <value>Array size exceeds addressing limitations.</value>
+  </data>
   <data name="Argument_OffsetLocalMismatch" xml:space="preserve">
     <value>The UTC Offset of the local dateTime parameter does not match the offset argument.</value>
   </data>
@@ -794,9 +806,6 @@
   </data>
   <data name="ArgumentNull_Key" xml:space="preserve">
     <value>Key cannot be null.</value>
-  </data>
-  <data name="ArgumentNull_Obj" xml:space="preserve">
-    <value>Object cannot be null.</value>
   </data>
   <data name="ArgumentNull_String" xml:space="preserve">
     <value>String reference not set to an instance of a String.</value>
@@ -1039,7 +1048,7 @@
     <value>Input string was either empty or contained only whitespace.</value>
   </data>
   <data name="Format_GuidHexPrefix" xml:space="preserve">
-    <value>Expected hex 0x in '{0}'.</value>
+    <value>Expected 0x prefix.</value>
   </data>
   <data name="Format_GuidInvLen" xml:space="preserve">
     <value>Guid should contain 32 digits with 4 dashes (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).</value>
@@ -2005,6 +2014,9 @@
   <data name="IndexOutOfRange_UMSPosition" xml:space="preserve">
     <value>Unmanaged memory stream position was beyond the capacity of the stream.</value>
   </data>
+  <data name="IndexOutOfRange_ArrayWithOffset" xml:space="preserve">
+    <value>ArrayWithOffset: offset exceeds array size.</value>
+  </data>
   <data name="ObjectDisposed_ViewAccessorClosed" xml:space="preserve">
     <value>Cannot access a closed accessor.</value>
   </data>
@@ -2046,6 +2058,9 @@
   </data>
   <data name="ArgumentNull_Path" xml:space="preserve">
     <value>Path cannot be null.</value>
+  </data>
+  <data name="ArgumentNull_SafeHandle" xml:space="preserve">
+    <value>SafeHandle cannot be null.</value>
   </data>
   <data name="Argument_EmptyPath" xml:space="preserve">
     <value>Empty path name is not legal.</value>

@@ -29,11 +29,11 @@ class Program
         TestGvmDependencies.Run();
         TestInterfaceVTableTracking.Run();
         TestClassVTableTracking.Run();
+        TestReflectionInvoke.Run();
+        TestFieldAccess.Run();
 #if !CODEGEN_CPP
         TestNullableCasting.Run();
-        TestReflectionInvoke.Run();
         TestMDArrayAddressMethod.Run();
-        TestFieldAccess.Run();
         TestNativeLayoutGeneration.Run();
 #endif
         return 100;

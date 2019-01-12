@@ -50,7 +50,7 @@ enum class RelocType {
 
 class ObjectWriter {
 public:
-  bool Init(StringRef FunctionName);
+  bool Init(StringRef FunctionName, const char* tripleName = nullptr);
   void Finish();
 
   void SwitchSection(const char *SectionName,
@@ -136,7 +136,7 @@ private:
 
   void EmitCVUserDefinedTypesSymbols();
 
-  void InitTripleName();
+  void InitTripleName(const char* tripleName = nullptr);
   Triple GetTriple();
   unsigned GetDFSize();
   bool EmitRelocDirective(const int Offset, StringRef Name, const MCExpr *Expr);
@@ -180,9 +180,9 @@ private:
 
 // When object writer is created/initialized successfully, it is returned.
 // Or null object is returned. Client should check this.
-DLL_EXPORT ObjectWriter *InitObjWriter(const char *ObjectFilePath) {
+DLL_EXPORT ObjectWriter *InitObjWriter(const char *ObjectFilePath, const char* TripleName = nullptr) {
   ObjectWriter *OW = new ObjectWriter();
-  if (OW->Init(ObjectFilePath)) {
+  if (OW->Init(ObjectFilePath, TripleName)) {
     return OW;
   }
   delete OW;

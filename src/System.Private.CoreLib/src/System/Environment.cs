@@ -22,13 +22,6 @@ using Internal.DeveloperExperience;
 
 namespace System
 {
-    public enum EnvironmentVariableTarget
-    {
-        Process = 0,
-        User = 1,
-        Machine = 2,
-    }
-
     internal static partial class Environment
     {
         /*==================================TickCount===================================

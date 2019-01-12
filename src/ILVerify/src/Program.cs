@@ -23,6 +23,7 @@ namespace ILVerify
         private bool _help;
         private bool _verbose;
         private bool _printStatistics;
+        private bool _includeMetadataTokensInErrorMessages;
 
         private AssemblyName _systemModule = new AssemblyName("mscorlib");
         private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // map of simple name to file path
@@ -78,6 +79,7 @@ namespace ILVerify
                 syntax.DefineOption("exclude-file", ref excludeFile, "Same as --exclude, but the regular expression(s) are declared line by line in the specified file.");
                 syntax.DefineOption("statistics", ref _printStatistics, "Print verification statistics");
                 syntax.DefineOption("v|verbose", ref _verbose, "Verbose output");
+                syntax.DefineOption("t|tokens", ref _includeMetadataTokensInErrorMessages, "Include metadata tokens in error messages");
 
                 syntax.DefineParameterList("in", ref inputFiles, "Input file(s)");
             });
@@ -138,7 +140,7 @@ namespace ILVerify
             if (_inputFilePaths.Count == 0)
                 throw new CommandLineException("No input files specified");
 
-            _verifier = new Verifier(this);
+            _verifier = new Verifier(this, GetVerifierOptions());
             _verifier.SetSystemModuleName(_systemModule);
 
             foreach (var kvp in _inputFilePaths)
@@ -147,6 +149,11 @@ namespace ILVerify
             }
 
             return 0;
+        }
+
+        private VerifierOptions GetVerifierOptions()
+        {
+            return new VerifierOptions { IncludeMetadataTokensInErrorMessages = _includeMetadataTokensInErrorMessages };
         }
 
         private void PrintVerifyMethodsResult(VerificationResult result, EcmaModule module, string pathOrModuleName)

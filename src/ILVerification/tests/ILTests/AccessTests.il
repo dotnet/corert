@@ -396,3 +396,88 @@
         }
     }
 }
+
+// Test for bugfix https://github.com/dotnet/corert/issues/6693
+
+.class public auto ansi beforefieldinit Issue6693
+	extends [System.Runtime]System.Object
+{
+
+	.class nested public auto ansi abstract beforefieldinit InnerClass`1<(Issue6693) T>
+		extends class Issue6693Base`1<!T>
+	{
+		.method public hidebysig virtual 
+			instance void BaseMethod_Valid (
+				int32 index,
+				!T item
+			) cil managed 
+		{
+			.maxstack 8
+
+			IL_0000: nop
+			IL_0001: ldarg.2
+			IL_0002: box !T
+			IL_0007: callvirt instance void Issue6693::ParentMethod()
+			IL_000c: nop
+			IL_000d: ret
+		}
+
+		.method family hidebysig specialname rtspecialname 
+			instance void .ctor () cil managed 
+		{
+			.maxstack 8
+
+			IL_0000: ldarg.0
+			IL_0001: call instance void class Issue6693Base`1<!T>::.ctor()
+			IL_0006: nop
+			IL_0007: ret
+		}
+	}
+
+	.method family hidebysig 
+		instance void ParentMethod () cil managed 
+	{
+		.maxstack 8
+
+		IL_0000: nop
+		IL_0001: ret
+	}
+
+	.method public hidebysig specialname rtspecialname 
+		instance void .ctor () cil managed 
+	{
+		.maxstack 8
+
+		IL_0000: ldarg.0
+		IL_0001: call instance void [System.Runtime]System.Object::.ctor()
+		IL_0006: nop
+		IL_0007: ret
+	}
+}
+
+.class public auto ansi beforefieldinit Issue6693Base`1<T>
+	extends [System.Runtime]System.Object
+{
+	.method public hidebysig newslot virtual 
+		instance void BaseMethod_Valid (
+			int32 index,
+			!T item
+		) cil managed 
+	{
+		.maxstack 8
+
+		IL_0000: nop
+		IL_0001: ret
+	}
+
+	.method public hidebysig specialname rtspecialname 
+		instance void .ctor () cil managed 
+	{
+		.maxstack 8
+
+		IL_0000: ldarg.0
+		IL_0001: call instance void [System.Runtime]System.Object::.ctor()
+		IL_0006: nop
+		IL_0007: ret
+	}
+}
