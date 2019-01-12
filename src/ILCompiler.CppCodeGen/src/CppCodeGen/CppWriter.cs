@@ -37,7 +37,7 @@ namespace ILCompiler.CppCodeGen
         {
             _compilation = compilation;
 
-            _out = new StreamWriter(new FileStream(outputFilePath, FileMode.Create, FileAccess.Write, FileShare.Read, 4096, false));
+            _out = new StreamWriter(new FileStream(outputFilePath, FileMode.Create, FileAccess.Write, FileShare.Read, 4096, false), Encoding.UTF8);
 
 
             // Unify this list with the one in CppCodegenNodeFactory
