@@ -233,7 +233,7 @@ See the LICENSE file in the project root for more information.
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(NativeObject)))" />
 
     <Message Text="Generating native code" Condition="$(_BuildingInCompatibleMode) != 'true'" Importance="high" />
-    <Message Text="Generating compatible native code. To optimize for size or speed, visit https://aka.ms/optimizecorert" Condition="$(_BuildingInCompatibleMode) == 'true'" Importance="high" />
+    <Message Text="Generating compatible native code. To optimize for size or speed, visit https://aka.ms/OptimizeCoreRT" Condition="$(_BuildingInCompatibleMode) == 'true'" Importance="high" />
 
     <Exec Command="&quot;$(IlcPath)\tools\ilc&quot; @&quot;$(NativeIntermediateOutputPath)%(IlcCmd.ResponseFileName)&quot;" />
   </Target>
