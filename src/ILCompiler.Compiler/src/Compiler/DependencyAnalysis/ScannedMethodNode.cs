@@ -42,6 +42,16 @@ namespace ILCompiler.DependencyAnalysis
         {
             _dependencies = new DependencyList(dependencies);
             CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _dependencies, factory, _method);
+
+            if (factory.TypeSystemContext.IsSpecialUnboxingThunk(_method))
+            {
+                // Special unboxing thunks reference a MethodAssociatedDataNode that points to the non-unboxing version.
+                // This dependency is redundant with the dependency list we constructed above, with a notable
+                // exception of special unboxing thunks for byref-like types. Those don't actually unbox anything
+                // and their body is a dummy. We capture the dependency here.
+                MethodDesc nonUnboxingMethod = factory.TypeSystemContext.GetTargetOfSpecialUnboxingThunk(_method);
+                _dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(nonUnboxingMethod, false), "Non-unboxing method"));
+            }
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
