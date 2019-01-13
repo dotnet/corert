@@ -7,6 +7,7 @@
 #endif // ENABLE_WINRT
 
 using Internal.Reflection.Augments;
+using Internal.Runtime.Augments;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;

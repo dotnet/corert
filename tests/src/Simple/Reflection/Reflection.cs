@@ -30,8 +30,12 @@ internal class ReflectionTest
 #if !OPTIMIZED_MODE_WITHOUT_SCANNER
         TestContainment.Run();
         TestInterfaceMethod.Run();
+        // Need to implement RhGetCodeTarget for CppCodeGen
+#if !CODEGEN_CPP
         TestByRefLikeTypeMethod.Run();
 #endif
+#endif
+
         TestAttributeInheritance.Run();
         TestStringConstructor.Run();
         TestAssemblyAndModuleAttributes.Run();
@@ -46,8 +50,9 @@ internal class ReflectionTest
         TestCreateDelegate.Run();
         TestInstanceFields.Run();
         TestReflectionInvoke.Run();
+#if !CODEGEN_CPP
         TestByRefReturnInvoke.Run();
-
+#endif
         return 100;
     }
 
@@ -687,9 +692,12 @@ internal class ReflectionTest
             if (!HasTypeHandle(usedNestedType))
                 throw new Exception($"{nameof(NeverUsedContainerType.UsedNestedType)} should have an EEType");
 
+            // Need to implement exceptions for CppCodeGen
+#if !CODEGEN_CPP
             // But the containing type doesn't need an EEType
             if (HasTypeHandle(neverUsedContainerType))
                 throw new Exception($"{nameof(NeverUsedContainerType)} should not have an EEType");
+#endif
         }
     }
 

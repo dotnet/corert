@@ -75,7 +75,7 @@ namespace Internal.TypeSystem
         public override Void AppendName(StringBuilder sb, SignatureMethodVariable type, FormatOptions options)
         {
             sb.Append("!!");
-            sb.Append(type.Index);
+            sb.Append(type.Index.ToStringInvariant());
 
             return Void.Value;
         }
@@ -83,7 +83,7 @@ namespace Internal.TypeSystem
         public override Void AppendName(StringBuilder sb, SignatureTypeVariable type, FormatOptions options)
         {
             sb.Append("!");
-            sb.Append(type.Index);
+            sb.Append(type.Index.ToStringInvariant());
 
             return Void.Value;
         }
@@ -173,7 +173,7 @@ namespace Internal.TypeSystem
 
                 // Trim the "System.Private." prefix
                 string assemblyName = ((IAssemblyDesc)mdType.Module).GetName().Name;
-                if (assemblyName.StartsWith("System.Private"))
+                if (assemblyName.StartsWith("System.Private", StringComparison.Ordinal))
                     assemblyName = "S.P" + assemblyName.Substring(14);
 
                 sb.Append(assemblyName);

@@ -1198,11 +1198,8 @@ namespace System.Runtime.InteropServices
         {
 #if ENABLE_WINRT
             return ExceptionHelpers.GetExceptionForHRInternalNoThrow(hr, isWinRTScenario, !isWinRTScenario);
-#elif CORECLR
-            return Marshal.GetExceptionForHR(hr);
 #else
-            // TODO: Map HR to exeption even without COM interop support?
-            return new COMException(hr);
+            return Marshal.GetExceptionForHR(hr);
 #endif
         }
 

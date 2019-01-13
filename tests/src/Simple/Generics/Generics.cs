@@ -29,12 +29,13 @@ class Program
         TestGvmDependencies.Run();
         TestInterfaceVTableTracking.Run();
         TestClassVTableTracking.Run();
+        TestReflectionInvoke.Run();
+        TestFieldAccess.Run();
 #if !CODEGEN_CPP
         TestNullableCasting.Run();
-        TestReflectionInvoke.Run();
         TestMDArrayAddressMethod.Run();
-        TestFieldAccess.Run();
         TestNativeLayoutGeneration.Run();
+        TestByRefLikeVTables.Run();
 #endif
         return 100;
     }
@@ -2180,6 +2181,33 @@ class Program
                 throw new Exception();
 
             if (!(((object)new Mine<object>()) is Nullable<Mine<object>>))
+                throw new Exception();
+        }
+    }
+
+    class TestByRefLikeVTables
+    {
+        class Atom<T> { }
+
+        ref struct RefStruct<T>
+        {
+            public override bool Equals(object o) => o is Atom<T[]>;
+            public override int GetHashCode() => 0;
+
+            public override string ToString()
+            {
+                return typeof(T).ToString();
+            }
+        }
+
+        public static void Run()
+        {
+            // This is a regression test making sure we can build a vtable for the byref-like type.
+            // The vtable is necessary for a generic dictionary lookup in the ToString method.
+            // Method bodies of Equals and GetHashCode become reachable through the magical
+            // "unboxing" thunks we generate for byref-like types, and only through them.
+            RefStruct<string> r = default;
+            if (r.ToString() != "System.String")
                 throw new Exception();
         }
     }

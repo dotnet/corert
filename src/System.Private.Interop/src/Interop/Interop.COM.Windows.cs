@@ -29,8 +29,10 @@ namespace System.Runtime.InteropServices
         {
 #if TARGET_CORE_API_SET
             internal const string CORE_COM = "api-ms-win-core-com-l1-1-0.dll";
+            internal const string WIN_OLE32 = "api-ms-win-ole32-ie-l1-1-0.dll";
 #else
             internal const string CORE_COM = "ole32.dll";
+            internal const string WIN_OLE32 = "ole32.dll";
 #endif
             // @TODO: What is the matching dll in CoreSys?
             // @TODO: Replace the below by the correspondent api-ms-win-core-...-0.dll
@@ -48,14 +50,14 @@ namespace System.Runtime.InteropServices
             IntPtr results
         );
 
-        [DllImport(Libraries.CORE_COM, PreserveSig = false)]
+        [DllImport(Libraries.WIN_OLE32, PreserveSig = false)]
         internal static extern void CreateBindCtx(UInt32 reserved, out IBindCtx ppbc);
 
-        [DllImport(Libraries.CORE_COM, PreserveSig = false)]
+#if !TARGET_CORE_API_SET // MkParseDisplayName and BindMoniker are not available in core API set
+        [DllImport(Libraries.WIN_OLE32, PreserveSig = false)]
         internal static extern void MkParseDisplayName(IBindCtx pbc, [MarshalAs(UnmanagedType.LPWStr)] String szUserName, out UInt32 pchEaten, out IMoniker ppmk);
 
-#if !TARGET_CORE_API_SET // BindMoniker not available in core API set
-        [DllImport(Libraries.CORE_COM, PreserveSig = false)]
+        [DllImport(Libraries.WIN_OLE32, PreserveSig = false)]
         internal static extern void BindMoniker(IMoniker pmk, UInt32 grfOpt, ref Guid iidResult, [MarshalAs(UnmanagedType.Interface)] out Object ppvResult);
 #endif
 
