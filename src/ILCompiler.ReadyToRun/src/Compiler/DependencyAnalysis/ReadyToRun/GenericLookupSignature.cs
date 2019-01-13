@@ -20,7 +20,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly MethodWithToken _methodArgument;
 
-        private readonly MethodContext _methodContext;
+        private readonly GenericContext _methodContext;
 
         private readonly SignatureContext _signatureContext;
 
@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadyToRunFixupKind fixupKind, 
             TypeDesc typeArgument, 
             MethodWithToken methodArgument,
-            MethodContext methodContext,
+            GenericContext methodContext,
             SignatureContext signatureContext)
         {
             _runtimeLookupKind = runtimeLookupKind;

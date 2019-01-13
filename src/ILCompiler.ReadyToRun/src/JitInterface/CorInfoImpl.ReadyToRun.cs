@@ -29,7 +29,7 @@ namespace Internal.JitInterface
         }
     }
 
-    public struct MethodContext : IEquatable<MethodContext>
+    public struct GenericContext : IEquatable<GenericContext>
     {
         public readonly TypeSystemEntity Context;
 
@@ -37,14 +37,14 @@ namespace Internal.JitInterface
 
         public MethodDesc ContextMethod { get { return (MethodDesc)Context; } }
 
-        public MethodContext(TypeSystemEntity context)
+        public GenericContext(TypeSystemEntity context)
         {
             Context = context;
         }
 
-        public bool Equals(MethodContext other) => Context == other.Context;
+        public bool Equals(GenericContext other) => Context == other.Context;
 
-        public override bool Equals(object obj) => obj is MethodContext other && Context == other.Context;
+        public override bool Equals(object obj) => obj is GenericContext other && Context == other.Context;
 
         public override int GetHashCode() => Context.GetHashCode();
 
@@ -218,7 +218,7 @@ namespace Internal.JitInterface
                         Debug.Assert(typeToInitialize.IsCanonicalSubtype(CanonicalFormKind.Any));
 
                         DefType helperArg = typeToInitialize.ConvertToSharedRuntimeDeterminedForm();
-                        MethodContext methodContext = new MethodContext(entityFromContext(pResolvedToken.tokenContext));
+                        GenericContext methodContext = new GenericContext(entityFromContext(pResolvedToken.tokenContext));
                         ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(
                             pGenericLookupKind.runtimeLookupKind,
                             ReadyToRunHelperId.GetNonGCStaticBase, 
@@ -238,7 +238,7 @@ namespace Internal.JitInterface
                         {
                             helperArg = new MethodWithToken(methodArg, new ModuleToken(_tokenContext, pResolvedToken.token));
                         }
-                        MethodContext methodContext = new MethodContext(entityFromContext(pResolvedToken.tokenContext));
+                        GenericContext methodContext = new GenericContext(entityFromContext(pResolvedToken.tokenContext));
                         ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(
                             pGenericLookupKind.runtimeLookupKind,
                             helperId,
