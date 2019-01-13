@@ -272,19 +272,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 throw new NotImplementedException();
             }
 
-            if (type is DefType defType)
+            Debug.Assert(type is DefType);
+            DefType defType = (DefType)type;
+            foreach (FieldDesc field in defType.GetFields())
             {
-                FieldLayoutAlgorithm fieldLayoutAlgorithm = _factory.TypeSystemContext.GetLayoutAlgorithmForType(defType);
-                ComputedInstanceFieldLayout instanceFieldLayout = fieldLayoutAlgorithm.ComputeInstanceLayout(defType, InstanceLayoutKind.TypeAndFields);
-                foreach (FieldAndOffset fieldAndOffset in instanceFieldLayout.Offsets)
+                if (!field.IsStatic)
                 {
-                    FieldDesc field = fieldAndOffset.Field;
-                    GcScanRoots(field.FieldType, argDest, fieldAndOffset.Offset.AsInt, frame);
+                    GcScanRoots(field.FieldType, argDest, field.Offset.AsInt, frame);
                 }
-                return;
             }
-
-            throw new NotImplementedException();
         }
 
         /// <summary>
