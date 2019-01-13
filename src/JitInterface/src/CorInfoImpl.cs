@@ -569,6 +569,11 @@ namespace Internal.JitInterface
             }
         }
 
+        private TypeSystemEntity entityFromContext(CORINFO_CONTEXT_STRUCT* contextStruct)
+        {
+            return (TypeSystemEntity)HandleToObject((IntPtr)((ulong)contextStruct & ~(ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
+        }
+
         private uint getMethodAttribsInternal(MethodDesc method)
         {
             CorInfoFlag result = 0;

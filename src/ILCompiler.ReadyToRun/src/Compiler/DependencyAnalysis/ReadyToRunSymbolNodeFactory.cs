@@ -677,14 +677,14 @@ namespace ILCompiler.DependencyAnalysis
             public readonly ReadyToRunFixupKind FixupKind;
             public readonly TypeDesc TypeArgument;
             public readonly MethodWithToken MethodArgument;
-            public readonly MethodContext MethodContext;
+            public readonly GenericContext MethodContext;
 
             public GenericLookupKey(
                 CORINFO_RUNTIME_LOOKUP_KIND lookupKind,
                 ReadyToRunFixupKind fixupKind,
                 TypeDesc typeArgument,
                 MethodWithToken methodArgument,
-                MethodContext methodContext)
+                GenericContext methodContext)
             {
                 LookupKind = lookupKind;
                 FixupKind = fixupKind;
@@ -713,7 +713,7 @@ namespace ILCompiler.DependencyAnalysis
                     (int)FixupKind +
                     (TypeArgument != null ? 31 * RuntimeDeterminedTypeHelper.GetHashCode(TypeArgument) : 0) +
                     (MethodArgument != null ? 31 * RuntimeDeterminedTypeHelper.GetHashCode(MethodArgument.Method) : 0) +
-                    (MethodContext != null ? MethodContext.GetHashCode() : 0));
+                    MethodContext.GetHashCode());
             }
         }
 
@@ -723,7 +723,7 @@ namespace ILCompiler.DependencyAnalysis
             CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
             ReadyToRunHelperId helperId,
             object helperArgument,
-            MethodContext methodContext,
+            GenericContext methodContext,
             SignatureContext signatureContext)
         {
             switch (helperId)
@@ -777,7 +777,7 @@ namespace ILCompiler.DependencyAnalysis
             CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
             ReadyToRunFixupKind fixupKind,
             TypeDesc typeArgument,
-            MethodContext methodContext,
+            GenericContext methodContext,
             SignatureContext signatureContext)
         {
             GenericLookupKey key = new GenericLookupKey(runtimeLookupKind, fixupKind, typeArgument, methodArgument: null, methodContext);
@@ -798,7 +798,7 @@ namespace ILCompiler.DependencyAnalysis
             CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
             ReadyToRunFixupKind fixupKind,
             MethodWithToken methodArgument,
-            MethodContext methodContext,
+            GenericContext methodContext,
             SignatureContext signatureContext)
         {
             GenericLookupKey key = new GenericLookupKey(runtimeLookupKind, fixupKind, typeArgument: null, methodArgument, methodContext);

@@ -29,29 +29,26 @@ namespace Internal.JitInterface
         }
     }
 
-    public class MethodContext
+    public struct GenericContext : IEquatable<GenericContext>
     {
-        public readonly MethodDesc Method;
-        public readonly IntPtr Context;
+        public readonly TypeSystemEntity Context;
 
-        public MethodContext(MethodDesc method, IntPtr context)
+        public TypeDesc ContextType { get { return (Context is MethodDesc contextAsMethod ? contextAsMethod.OwningType : (TypeDesc)Context); } }
+
+        public MethodDesc ContextMethod { get { return (MethodDesc)Context; } }
+
+        public GenericContext(TypeSystemEntity context)
         {
-            Method = method;
             Context = context;
         }
 
-        public override bool Equals(object obj)
-        {
-            return obj is MethodContext other && Method == other.Method && Context == other.Context;
-        }
+        public bool Equals(GenericContext other) => Context == other.Context;
 
-        public override int GetHashCode()
-        {
-            int hashCode = -117376276;
-            hashCode = hashCode * -1521134295 + Method.GetHashCode();
-            hashCode = hashCode * -1521134295 + Context.GetHashCode();
-            return hashCode;
-        }
+        public override bool Equals(object obj) => obj is GenericContext other && Context == other.Context;
+
+        public override int GetHashCode() => Context.GetHashCode();
+
+        public override string ToString() => Context.ToString();
     }
 
     public class RequiresRuntimeJitException : Exception
@@ -221,7 +218,7 @@ namespace Internal.JitInterface
                         Debug.Assert(typeToInitialize.IsCanonicalSubtype(CanonicalFormKind.Any));
 
                         DefType helperArg = typeToInitialize.ConvertToSharedRuntimeDeterminedForm();
-                        MethodContext methodContext = new MethodContext(methodFromContext(pResolvedToken.tokenContext), new IntPtr(pResolvedToken.tokenContext));
+                        GenericContext methodContext = new GenericContext(entityFromContext(pResolvedToken.tokenContext));
                         ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(
                             pGenericLookupKind.runtimeLookupKind,
                             ReadyToRunHelperId.GetNonGCStaticBase, 
@@ -241,7 +238,7 @@ namespace Internal.JitInterface
                         {
                             helperArg = new MethodWithToken(methodArg, new ModuleToken(_tokenContext, pResolvedToken.token));
                         }
-                        MethodContext methodContext = new MethodContext(methodFromContext(pResolvedToken.tokenContext), new IntPtr(pResolvedToken.tokenContext));
+                        GenericContext methodContext = new GenericContext(entityFromContext(pResolvedToken.tokenContext));
                         ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(
                             pGenericLookupKind.runtimeLookupKind,
                             helperId,
