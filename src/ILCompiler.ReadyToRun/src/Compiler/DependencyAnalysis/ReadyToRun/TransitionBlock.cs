@@ -2,458 +2,217 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-// This file is a line by line port of callingconvention.h from the CLR with the intention that we may wish to merge
-// changes from the CLR in at a later time. As such, the normal coding conventions are ignored.
-//
-
-//
-#if ARM
-#define _TARGET_ARM_
-#define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
-#define CALLDESCR_FPARGREGS                        // CallDescrWorker has FloatArgumentRegisters parameter
-#define ENREGISTERED_RETURNTYPE_MAXSIZE
-#define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
-#define FEATURE_HFA
-#elif ARM64
-#define _TARGET_ARM64_
-#define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
-#define CALLDESCR_FPARGREGS                        // CallDescrWorker has FloatArgumentRegisters parameter
-#define ENREGISTERED_RETURNTYPE_MAXSIZE
-#define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
-#define ENREGISTERED_PARAMTYPE_MAXSIZE
-#define FEATURE_HFA
-#elif X86
-#define _TARGET_X86_
-#define ENREGISTERED_RETURNTYPE_MAXSIZE
-#define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
-#define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
-#elif AMD64
-#if PLATFORM_UNIX
-#define UNIX_AMD64_ABI
-#define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
-#else
-#endif
-#define CALLDESCR_FPARGREGS                        // CallDescrWorker has FloatArgumentRegisters parameter
-#define _TARGET_AMD64_
-#define ENREGISTERED_RETURNTYPE_MAXSIZE
-#define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
-#define ENREGISTERED_PARAMTYPE_MAXSIZE
-#elif WASM
-#define _TARGET_WASM_
-#else
-#error Unknown architecture!
-#endif
-
 // Provides an abstraction over platform specific calling conventions (specifically, the calling convention
 // utilized by the JIT on that platform). The caller enumerates each argument of a signature in turn, and is 
 // provided with information mapping that argument into registers and/or stack locations.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
+
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-#if _TARGET_AMD64_
-#pragma warning disable 0169
-#if UNIX_AMD64_ABI
-    struct ArgumentRegisters
+    internal abstract class TransitionBlock
     {
-        IntPtr rdi;
-        IntPtr rsi;
-        IntPtr rdx;
-        IntPtr rcx;
-        IntPtr r8;
-        IntPtr r9;
-    }
-    struct CalleeSavedRegisters
-    {
-        IntPtr r12;
-        IntPtr r13;
-        IntPtr r14;
-        IntPtr r15;
-        IntPtr rbx;
-        IntPtr rbp;
-    }
-#else // UNIX_AMD64_ABI
-    struct ArgumentRegisters
-    {
-        IntPtr rcx;
-        IntPtr rdx;
-        IntPtr r8;
-        IntPtr r9;
-    }
-    struct CalleeSavedRegisters
-    {
-        IntPtr rdi;
-        IntPtr rsi;
-        IntPtr rbx;
-        IntPtr rbp;
-        IntPtr r12;
-        IntPtr r13;
-        IntPtr r14;
-        IntPtr r15;
-    }
-#endif // UNIX_AMD64_ABI
-#pragma warning restore 0169
-
-#pragma warning disable 0169
-    struct M128A
-    {
-        IntPtr a;
-        IntPtr b;
-    }
-    struct FloatArgumentRegisters
-    {
-        M128A d0;
-        M128A d1;
-        M128A d2;
-        M128A d3;
-#if UNIX_AMD64_ABI
-        M128A d4;
-        M128A d5;
-        M128A d6;
-        M128A d7;
-#endif
-    }
-#pragma warning restore 0169
-
-    struct ArchitectureConstants
-    {
-        // To avoid corner case bugs, limit maximum size of the arguments with sufficient margin
-        public const int MAX_ARG_SIZE = 0xFFFFFF;
-
-#if UNIX_AMD64_ABI
-        public const int NUM_ARGUMENT_REGISTERS = 6;
-#else
-        public const int NUM_ARGUMENT_REGISTERS = 4;
-#endif
-        public const int ARGUMENTREGISTERS_SIZE = NUM_ARGUMENT_REGISTERS * 8;
-        public const int ENREGISTERED_RETURNTYPE_MAXSIZE = 8;
-        public const int ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE = 8;
-        public const int ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE_PRIMITIVE = 8;
-        public const int ENREGISTERED_PARAMTYPE_MAXSIZE = 8;
-        public const int STACK_ELEM_SIZE = 8;
-        public static int StackElemSize(int size) { return (((size) + STACK_ELEM_SIZE - 1) & ~(STACK_ELEM_SIZE - 1)); }
-    }
-#elif _TARGET_ARM64_
-#pragma warning disable 0169
-    struct ArgumentRegisters
-    {
-        IntPtr x0;
-        IntPtr x1;
-        IntPtr x2;
-        IntPtr x3;
-        IntPtr x4;
-        IntPtr x5;
-        IntPtr x6;
-        IntPtr x7;
-        public static unsafe int GetOffsetOfx8()
+        public TransitionBlock()
         {
-            return sizeof(IntPtr) * 8;
-        }
-    }
-#pragma warning restore 0169
-
-    struct CalleeSavedRegisters
-    {
-        IntPtr x29;
-        IntPtr x30;
-        IntPtr x19;
-        IntPtr x20;
-        IntPtr x21;
-        IntPtr x22;
-        IntPtr x23;
-        IntPtr x24;
-        IntPtr x25;
-        IntPtr x26;
-        IntPtr x27;
-        IntPtr x28;
-    }
-
-#pragma warning disable 0169
-    struct FloatArgumentRegisters
-    {
-        double d0;
-        double d1;
-        double d2;
-        double d3;
-        double d4;
-        double d5;
-        double d6;
-        double d7;
-    }
-#pragma warning restore 0169
-
-    struct ArchitectureConstants
-    {
-        // To avoid corner case bugs, limit maximum size of the arguments with sufficient margin
-        public const int MAX_ARG_SIZE = 0xFFFFFF;
-
-        public const int NUM_ARGUMENT_REGISTERS = 8;
-        public const int ARGUMENTREGISTERS_SIZE = NUM_ARGUMENT_REGISTERS * 8;
-        public const int ENREGISTERED_RETURNTYPE_MAXSIZE = 32;                  // bytes (four FP registers: d0,d1,d2 and d3)
-        public const int ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE = 16;          // bytes (two int registers: x0 and x1)
-        public const int ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE_PRIMITIVE = 8;
-        public const int ENREGISTERED_PARAMTYPE_MAXSIZE = 16;                   // bytes (max value type size that can be passed by value)
-        public const int STACK_ELEM_SIZE = 8;
-        public static int StackElemSize(int size) { return (((size) + STACK_ELEM_SIZE - 1) & ~(STACK_ELEM_SIZE - 1)); }
-    }
-#elif _TARGET_X86_
-#pragma warning disable 0169, 0649
-    struct ArgumentRegisters
-    {
-        public IntPtr edx;
-        public static unsafe int GetOffsetOfEdx()
-        {
-            return 0;
-        }
-        public IntPtr ecx;
-        public static unsafe int GetOffsetOfEcx()
-        {
-            return sizeof(IntPtr);
-        }
-    }
-    
-    struct CalleeSavedRegisters
-    {
-        public IntPtr edi;
-        public IntPtr esi;
-        public IntPtr ebx;
-        public IntPtr ebp;
-    }
-    
-    // This struct isn't used by x86, but exists for compatibility with the definition of the CallDescrData struct
-    struct FloatArgumentRegisters
-    {
-    }
-#pragma warning restore 0169, 0649
-
-    struct ArchitectureConstants
-    {
-        // To avoid corner case bugs, limit maximum size of the arguments with sufficient margin
-        public const int MAX_ARG_SIZE = 0xFFFFFF;
-
-        public const int NUM_ARGUMENT_REGISTERS = 2;
-        public const int ARGUMENTREGISTERS_SIZE = NUM_ARGUMENT_REGISTERS * 4;
-        public const int ENREGISTERED_RETURNTYPE_MAXSIZE = 8;
-        public const int ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE = 4;
-        public const int ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE_PRIMITIVE = 4;
-        public const int STACK_ELEM_SIZE = 4;
-        public static int StackElemSize(int size) { return (((size) + STACK_ELEM_SIZE - 1) & ~(STACK_ELEM_SIZE - 1)); }
-    }
-#elif _TARGET_ARM_
-#pragma warning disable 0169
-    struct ArgumentRegisters
-    {
-        IntPtr r0;
-        IntPtr r1;
-        IntPtr r2;
-        IntPtr r3;
-    }
-
-    struct CalleeSavedRegisters
-    {
-        IntPtr r4;
-        IntPtr r5;
-        IntPtr r6;
-        IntPtr r7;
-        IntPtr r8;
-        IntPtr r9;
-        IntPtr r10;
-        IntPtr r11;
-        IntPtr r14;
-    }
-
-    struct FloatArgumentRegisters
-    {
-        double d0;
-        double d1;
-        double d2;
-        double d3;
-        double d4;
-        double d5;
-        double d6;
-        double d7;
-    }
-#pragma warning restore 0169
-
-    struct ArchitectureConstants
-    {
-        // To avoid corner case bugs, limit maximum size of the arguments with sufficient margin
-        public const int MAX_ARG_SIZE = 0xFFFFFF;
-
-        public const int NUM_ARGUMENT_REGISTERS = 4;
-        public const int ARGUMENTREGISTERS_SIZE = NUM_ARGUMENT_REGISTERS * 4;
-        public const int ENREGISTERED_RETURNTYPE_MAXSIZE = 32;
-        public const int ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE = 4;
-        public const int ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE_PRIMITIVE = 8;
-        public const int STACK_ELEM_SIZE = 4;
-        public static int StackElemSize(int size) { return (((size) + STACK_ELEM_SIZE - 1) & ~(STACK_ELEM_SIZE - 1)); }
-    }
-
-#elif _TARGET_WASM_
-#pragma warning disable 0169
-    struct ArgumentRegisters
-    {
-        // No registers on WASM
-    }
-    
-    struct FloatArgumentRegisters
-    {
-        // No registers on WASM
-    }
-#pragma warning restore 0169
-
-    struct ArchitectureConstants
-    {
-        // To avoid corner case bugs, limit maximum size of the arguments with sufficient margin
-        public const int MAX_ARG_SIZE = 0xFFFFFF;
-
-        public const int NUM_ARGUMENT_REGISTERS = 0;
-        public const int ARGUMENTREGISTERS_SIZE = NUM_ARGUMENT_REGISTERS * 4;
-        public const int ENREGISTERED_RETURNTYPE_MAXSIZE = 32;
-        public const int ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE = 4;
-        public const int ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE_PRIMITIVE = 8;
-        public const int STACK_ELEM_SIZE = 4;
-        public static int StackElemSize(int size) { return (((size) + STACK_ELEM_SIZE - 1) & ~(STACK_ELEM_SIZE - 1)); }
-    }
-#endif
-
-    //
-    // TransitionBlock is layout of stack frame of method call, saved argument registers and saved callee saved registers. Even though not 
-    // all fields are used all the time, we use uniform form for simplicity.
-    //
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct TransitionBlock
-    {
-#pragma warning disable 0169,0649
-
-#if _TARGET_X86_
-        public ArgumentRegisters m_argumentRegisters;
-        public static unsafe int GetOffsetOfArgumentRegisters()
-        {
-            return 0;
-        }
-        public CalleeSavedRegisters m_calleeSavedRegisters;
-        IntPtr m_ReturnAddress;
-#elif _TARGET_AMD64_
-
-#if UNIX_AMD64_ABI
-        public ArgumentRegisters m_argumentRegisters;
-        public static unsafe int GetOffsetOfArgumentRegisters()
-        {
-            return 0;
-        }
-#else // UNIX_AMD64_ABI
-        public static unsafe int GetOffsetOfArgumentRegisters()
-        {
-            return sizeof(TransitionBlock);
-        }
-#endif // UNIX_AMD64_ABI
-        public CalleeSavedRegisters m_calleeSavedRegisters;
-        IntPtr m_ReturnAddress;
-
-#elif _TARGET_ARM_
-        public CalleeSavedRegisters m_calleeSavedRegisers;
-        public ArgumentRegisters m_argumentRegisters;
-        public static unsafe int GetOffsetOfArgumentRegisters()
-        {
-            return sizeof(CalleeSavedRegisters);
-        }
-#elif _TARGET_ARM64_
-        public CalleeSavedRegisters m_calleeSavedRegisters;
-        public IntPtr m_alignmentPad;
-        public IntPtr m_x8RetBuffReg;
-        public ArgumentRegisters m_argumentRegisters;
-
-        public static unsafe int GetOffsetOfArgumentRegisters()
-        {
-            return sizeof(CalleeSavedRegisters) + 2 * sizeof(IntPtr);
         }
 
-#elif _TARGET_WASM_
-        public ArgumentRegisters m_argumentRegisters;
-        public static unsafe int GetOffsetOfArgumentRegisters()
+        public static TransitionBlock FromTarget(TargetDetails target)
         {
-            return 0;
-        }
-#else
-#error Portability problem
-#endif
-#pragma warning restore 0169, 0649
+            switch (target.Architecture)
+            {
+                case TargetArchitecture.X86:
+                    return X86TransitionBlock.Instance;
 
-        // The transition block should define everything pushed by callee. The code assumes in number of places that
-        // end of the transition block is caller's stack pointer.
+                case TargetArchitecture.X64:
+                    return target.OperatingSystem == TargetOS.Windows ?
+                        X64WindowsTransitionBlock.Instance :
+                        X64UnixTransitionBlock.Instance;
 
-        public static unsafe byte GetOffsetOfArgs()
-        {
-            return (byte)sizeof(TransitionBlock);
-        }
+                case TargetArchitecture.ARM:
+                    return Arm32TransitionBlock.Instance;
 
+                case TargetArchitecture.ARM64:
+                    return Arm64TransitionBlock.Instance;
 
-        public static bool IsStackArgumentOffset(int offset)
-        {
-            int ofsArgRegs = GetOffsetOfArgumentRegisters();
-
-            return offset >= (int)(ofsArgRegs + ArchitectureConstants.ARGUMENTREGISTERS_SIZE);
+                default:
+                    throw new NotImplementedException(target.Architecture.ToString());
+            }
         }
 
-        public static bool IsArgumentRegisterOffset(int offset)
-        {
-            int ofsArgRegs = GetOffsetOfArgumentRegisters();
+        public const int MaxArgSize = 0xFFFFFF;
 
-            return offset >= ofsArgRegs && offset < (int)(ofsArgRegs + ArchitectureConstants.ARGUMENTREGISTERS_SIZE);
+        // Unix AMD64 ABI: Special offset value to represent  struct passed in registers. Such a struct can span both
+        // general purpose and floating point registers, so it can have two different offsets.
+        public const int StructInRegsOffset = -2;
+
+        public abstract TargetArchitecture Architecture { get; }
+
+        public abstract int PointerSize { get; }
+
+        public int StackElemSize => PointerSize;
+
+        public abstract int NumArgumentRegisters { get; }
+
+        public int SizeOfArgumentRegisters => NumArgumentRegisters * PointerSize;
+
+        public abstract int NumCalleeSavedRegisters { get; }
+
+        public int SizeOfCalleeSavedRegisters => NumCalleeSavedRegisters * PointerSize;
+
+        public abstract int SizeOfTransitionBlock { get; }
+
+        public abstract int OffsetOfArgumentRegisters { get; }
+
+        public abstract int OffsetOfFloatArgumentRegisters { get; }
+
+        public abstract int EnregisteredParamTypeMaxSize { get; }
+
+        public abstract int EnregisteredReturnTypeIntegerMaxSize { get; }
+
+        /// <summary>
+        /// Default implementation of ThisOffset; X86TransitionBlock provides a slightly different implementation.
+        /// </summary>
+        public virtual int ThisOffset { get { return OffsetOfArgumentRegisters;  } }
+
+        /// <summary>
+        /// Recalculate pos in GC ref map to actual offset. This is the default implementation for all architectures
+        /// except for X86 where it's overridden to supply a more complex algorithm.
+        /// </summary>
+        /// <param name="pos"></param>
+        /// <returns></returns>
+        public virtual int OffsetFromGCRefMapPos(int pos)
+        {
+            return OffsetOfArgumentRegisters + pos * PointerSize;
         }
 
-#if !_TARGET_X86_
-        public static unsafe int GetArgumentIndexFromOffset(int offset)
+        /// <summary>
+        /// The transition block should define everything pushed by callee. The code assumes in number of places that
+        /// end of the transition block is caller's stack pointer.
+        /// </summary>
+        public int OffsetOfArgs => SizeOfTransitionBlock;
+
+        public int GetArgumentIndexFromOffset(int offset)
         {
-            return ((offset - GetOffsetOfArgumentRegisters()) / IntPtr.Size);
-        }
-
-        public static int GetStackArgumentIndexFromOffset(int offset)
-        {
-            return (offset - GetOffsetOfArgs()) / ArchitectureConstants.STACK_ELEM_SIZE;
-        }
-#endif
-
-#if CALLDESCR_FPARGREGS
-        public static bool IsFloatArgumentRegisterOffset(int offset)
-        {
-            return offset < 0;
-        }
-
-        public static int GetOffsetOfFloatArgumentRegisters()
-        {
-            return -GetNegSpaceSize();
-        }
-#endif
-
-        public static unsafe int GetNegSpaceSize()
-        {
-            int negSpaceSize = 0;
-#if CALLDESCR_FPARGREGS
-            negSpaceSize += sizeof(FloatArgumentRegisters);
-#endif
-            return negSpaceSize;
-        }
-
-        public static unsafe int Size => sizeof(TransitionBlock);
-
-        public static int GetThisOffset()
-        {
-            // This pointer is in the first argument register by default
-            int ret = TransitionBlock.GetOffsetOfArgumentRegisters();
-
-#if _TARGET_X86_
-            // x86 is special as always
-            ret += ArgumentRegisters.GetOffsetOfEcx();
-#endif
-
-            return ret;
+            Debug.Assert(Architecture != TargetArchitecture.X86);
+            return ((offset - OffsetOfArgumentRegisters) / PointerSize);
         }
 
         public const int InvalidOffset = -1;
+
+        private sealed class X86TransitionBlock : TransitionBlock
+        {
+            public static TransitionBlock Instance = new X86TransitionBlock();
+
+            public override TargetArchitecture Architecture => TargetArchitecture.X86;
+
+            public override int PointerSize => 4;
+
+            public override int NumArgumentRegisters => 2;
+            public override int NumCalleeSavedRegisters => 4;
+            // Argument registers, callee-save registers, return address
+            public override int SizeOfTransitionBlock => SizeOfArgumentRegisters + SizeOfCalleeSavedRegisters + PointerSize;
+            public override int OffsetOfArgumentRegisters => 0;
+            // CALLDESCR_FPARGREGS is not set for X86
+            public override int OffsetOfFloatArgumentRegisters => 0;
+            // offsetof(ArgumentRegisters.ECX)
+            public override int ThisOffset => 4;
+            public override int EnregisteredParamTypeMaxSize => 0;
+            public override int EnregisteredReturnTypeIntegerMaxSize => 4;
+
+            public override int OffsetFromGCRefMapPos(int pos)
+            {
+                if (pos < NumArgumentRegisters)
+                {
+                    return OffsetOfArgumentRegisters + SizeOfArgumentRegisters - (pos + 1) * PointerSize;
+                }
+                else
+                {
+                    return OffsetOfArgs + (pos - NumArgumentRegisters) * PointerSize;
+                }
+            }
+        }
+
+        public const int SizeOfM128A = 16;
+
+        private sealed class X64WindowsTransitionBlock : TransitionBlock
+        {
+            public static TransitionBlock Instance = new X64WindowsTransitionBlock();
+
+            public override TargetArchitecture Architecture => TargetArchitecture.X64;
+            public override int PointerSize => 8;
+            // RCX, RDX, R8, R9
+            public override int NumArgumentRegisters => 4;
+            // RDI, RSI, RBX, RBP, R12, R13, R14, R15
+            public override int NumCalleeSavedRegisters => 8;
+            // Callee-saved registers, return address
+            public override int SizeOfTransitionBlock => SizeOfCalleeSavedRegisters + PointerSize;
+            public override int OffsetOfArgumentRegisters => SizeOfTransitionBlock;
+            // CALLDESCR_FPARGREGS is not set for Amd64 on 
+            public override int OffsetOfFloatArgumentRegisters => 0;
+            public override int EnregisteredParamTypeMaxSize => 8;
+            public override int EnregisteredReturnTypeIntegerMaxSize => 8;
+        }
+
+        private sealed class X64UnixTransitionBlock : TransitionBlock
+        {
+            public static readonly TransitionBlock Instance = new X64UnixTransitionBlock();
+
+            public const int NUM_FLOAT_ARGUMENT_REGISTERS = 8;
+
+            public override TargetArchitecture Architecture => TargetArchitecture.X64;
+            public override int PointerSize => 8;
+            // RDI, RSI, RDX, RCX, R8, R9
+            public override int NumArgumentRegisters => 6;
+            // R12, R13, R14, R15, RBX, RBP
+            public override int NumCalleeSavedRegisters => 6;
+            // Argument registers, callee-saved registers, return address
+            public override int SizeOfTransitionBlock => SizeOfArgumentRegisters + SizeOfCalleeSavedRegisters + PointerSize;
+            public override int OffsetOfArgumentRegisters => 0;
+            public override int OffsetOfFloatArgumentRegisters => SizeOfM128A * NUM_FLOAT_ARGUMENT_REGISTERS;
+            public override int EnregisteredParamTypeMaxSize => 16;
+            public override int EnregisteredReturnTypeIntegerMaxSize => 16;
+        }
+
+        private sealed class Arm32TransitionBlock : TransitionBlock
+        {
+            public static TransitionBlock Instance = new Arm32TransitionBlock();
+
+            public override TargetArchitecture Architecture => TargetArchitecture.ARM;
+            public override int PointerSize => 4;
+            // R0, R1, R2, R3
+            public override int NumArgumentRegisters => 4;
+            // R4, R5, R6, R7, R8, R9, R10, R11, R14
+            public override int NumCalleeSavedRegisters => 9;
+            // Callee-saves, argument registers
+            public override int SizeOfTransitionBlock => SizeOfCalleeSavedRegisters + SizeOfArgumentRegisters;
+            public override int OffsetOfArgumentRegisters => SizeOfCalleeSavedRegisters;
+            // D0..D7
+            public override int OffsetOfFloatArgumentRegisters => 8 * sizeof(double) + PointerSize;
+            public override int EnregisteredParamTypeMaxSize => 0;
+            public override int EnregisteredReturnTypeIntegerMaxSize => 4;
+        }
+
+        private sealed class Arm64TransitionBlock : TransitionBlock
+        {
+            public static TransitionBlock Instance = new Arm64TransitionBlock();
+
+            public override TargetArchitecture Architecture => TargetArchitecture.ARM64;
+            public override int PointerSize => 8;
+            // X0 .. X7
+            public override int NumArgumentRegisters => 8;
+            // X29, X30, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28
+            public override int NumCalleeSavedRegisters => 12;
+            // Callee-saves, padding, m_x8RetBuffReg, argument registers
+            public override int SizeOfTransitionBlock => SizeOfCalleeSavedRegisters + 2 * PointerSize + SizeOfArgumentRegisters;
+            public override int OffsetOfArgumentRegisters => SizeOfCalleeSavedRegisters + 2 * PointerSize;
+            // D0..D7
+            public override int OffsetOfFloatArgumentRegisters => 8 * sizeof(double) + PointerSize;
+            public override int EnregisteredParamTypeMaxSize => 16;
+            public override int EnregisteredReturnTypeIntegerMaxSize => 16;
+        }
     };
 }

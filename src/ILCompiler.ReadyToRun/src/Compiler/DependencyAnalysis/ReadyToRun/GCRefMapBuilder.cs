@@ -51,6 +51,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// </summary>
         public ObjectDataBuilder Builder;
 
+        /// <summary>
+        /// Transition block characteristics for the given output architecture / target OS ABI.
+        /// </summary>
+        private readonly TransitionBlock _transitionBlock;
+
         public GCRefMapBuilder(NodeFactory factory, bool relocsOnly)
         {
             _factory = factory;
@@ -58,10 +63,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _bits = 0;
             _pos = 0;
             Builder = new ObjectDataBuilder(factory, relocsOnly);
+            _transitionBlock = TransitionBlock.FromTarget(factory.Target);
         }
 
         public void GetCallRefMap(MethodDesc method)
         {
+            TransitionBlock transitionBlock = TransitionBlock.FromTarget(method.Context.Target);
+
             bool hasThis = (method.Signature.Flags & MethodSignatureFlags.Static) == 0;
             bool isVarArg = false;
             TypeHandle returnType = new TypeHandle(method.Signature.ReturnType);
@@ -91,7 +99,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             int nStackBytes = argit.SizeOfFrameArgumentArray();
 
             // Allocate a fake stack
-            CORCOMPILE_GCREFMAP_TOKENS[] fakeStack = new CORCOMPILE_GCREFMAP_TOKENS[TransitionBlock.Size + nStackBytes];
+            CORCOMPILE_GCREFMAP_TOKENS[] fakeStack = new CORCOMPILE_GCREFMAP_TOKENS[transitionBlock.SizeOfTransitionBlock + nStackBytes];
 
             // Fill it in
             FakeGcScanRoots(method, argit, fakeStack);
@@ -103,11 +111,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 uint cbStackPop = argit.CbStackPop();
                 WriteStackPop(cbStackPop / (uint)_factory.Target.PointerSize);
 
-                nStackSlots = (uint)(nStackBytes / _factory.Target.PointerSize + ArchitectureConstants.NUM_ARGUMENT_REGISTERS);
+                nStackSlots = (uint)(nStackBytes / _factory.Target.PointerSize + _transitionBlock.NumArgumentRegisters);
             }
             else
             {
-                nStackSlots = (uint)((TransitionBlock.Size + nStackBytes - TransitionBlock.GetOffsetOfArgumentRegisters()) / _factory.Target.PointerSize);
+                nStackSlots = (uint)((transitionBlock.SizeOfTransitionBlock + nStackBytes - _transitionBlock.OffsetOfArgumentRegisters) / _factory.Target.PointerSize);
             }
 
             for (uint pos = 0; pos < nStackSlots; pos++)
@@ -116,13 +124,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 if (_factory.Target.Architecture == TargetArchitecture.X86)
                 {
-                    ofs = (int)(pos < ArchitectureConstants.NUM_ARGUMENT_REGISTERS ?
-                        TransitionBlock.GetOffsetOfArgumentRegisters() + ArchitectureConstants.ARGUMENTREGISTERS_SIZE - (pos + 1) * _factory.Target.PointerSize :
-                        TransitionBlock.GetOffsetOfArgs() + (pos - ArchitectureConstants.NUM_ARGUMENT_REGISTERS) * _factory.Target.PointerSize);
+                    ofs = (int)(pos < _transitionBlock.NumArgumentRegisters ?
+                        _transitionBlock.OffsetOfArgumentRegisters + _transitionBlock.SizeOfArgumentRegisters - (pos + 1) * _factory.Target.PointerSize :
+                        _transitionBlock.OffsetOfArgs + (pos - _transitionBlock.NumArgumentRegisters) * _factory.Target.PointerSize);
                 }
                 else
                 {
-                    ofs = (int)(TransitionBlock.GetOffsetOfArgumentRegisters() + pos * _factory.Target.PointerSize);
+                    ofs = (int)(_transitionBlock.OffsetOfArgumentRegisters + pos * _factory.Target.PointerSize);
                 }
 
                 CORCOMPILE_GCREFMAP_TOKENS token = fakeStack[ofs];
@@ -160,7 +168,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 bool isUnboxingStub = false; // TODO: is this correct?
                 bool interior = method.OwningType.IsValueType && !isUnboxingStub;
 
-                frame[ArgIterator.GetThisOffset()] = (interior ? CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_INTERIOR : CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_REF);
+                frame[_transitionBlock.ThisOffset] = (interior ? CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_INTERIOR : CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_REF);
             }
 
             if (argit.IsVarArg())
@@ -188,7 +196,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             while ((argOffset = argit.GetNextOffset()) != TransitionBlock.InvalidOffset)
             {
                 ArgLocDesc? argLocDescForStructInRegs = argit.GetArgLoc(argOffset);
-                ArgDestination argDest = new ArgDestination(argOffset, argLocDescForStructInRegs);
+                ArgDestination argDest = new ArgDestination(_transitionBlock, argOffset, argLocDescForStructInRegs);
                 GcScanRoots(method.Signature[argIndex], in argDest, delta: 0, frame);
                 argIndex++;
             }
@@ -197,6 +205,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// <summary>
         /// Report GC locations for a single method parameter.
         /// </summary>
+        /// <param name="argIterator">ArgIterator to use for scanning</param>
         /// <param name="type">Parameter type</param>
         /// <param name="argDest">Location of the parameter</param>
         /// <param name="frame">Frame map to update by marking GC locations</param>
@@ -251,20 +260,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private void GcScanValueType(TypeDesc type, ArgDestination argDest, int delta, CORCOMPILE_GCREFMAP_TOKENS[] frame)
         {
-            if (ArgIterator.IsArgPassedByRef(new TypeHandle(type)))
+            if (ArgIterator.IsArgPassedByRef(_transitionBlock, new TypeHandle(type)))
             {
                 argDest.GcMark(frame, delta, interior: true);
                 return;
             }
 
-#if UNIX_AMD64_ABI
             // ReportPointersFromValueTypeArg
-            if (argDest.IsStructPassedInRegs)
+            if (argDest.IsStructPassedInRegs())
             {
                 // ReportPointersFromStructPassedInRegs
                 throw new NotImplementedException();
             }
-#endif
             // ReportPointersFromValueType
             if (type.IsByRefLike)
             {

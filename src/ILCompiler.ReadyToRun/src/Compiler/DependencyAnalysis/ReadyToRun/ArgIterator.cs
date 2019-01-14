@@ -51,6 +51,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
+using ILCompiler;
+
 using Internal.Runtime;
 using Internal.NativeFormat;
 using Internal.TypeSystem;
@@ -75,19 +77,38 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /*FastCall, CDecl */
     }
 
-    public static class CallingConventionInfo
+    /// <summary>
+    /// System V struct passing
+    /// The Classification types are described in the ABI spec at http://www.x86-64.org/documentation/abi.pdf
+    /// </summary>
+    public enum SystemVClassificationType : byte
     {
-        public static bool TypeUsesReturnBuffer(TypeDesc returnType, bool methodWithReturnTypeIsVarArg)
-        {
-            TypeHandle thReturnType = new TypeHandle(returnType);
-            CorElementType typeReturnType = thReturnType.GetCorElementType();
+        SystemVClassificationTypeUnknown            = 0,
+        SystemVClassificationTypeStruct             = 1,
+        SystemVClassificationTypeNoClass            = 2,
+        SystemVClassificationTypeMemory             = 3,
+        SystemVClassificationTypeInteger            = 4,
+        SystemVClassificationTypeIntegerReference   = 5,
+        SystemVClassificationTypeIntegerByRef       = 6,
+        SystemVClassificationTypeSSE                = 7,
+        // SystemVClassificationTypeSSEUp           = Unused, // Not supported by the CLR.
+        // SystemVClassificationTypeX87             = Unused, // Not supported by the CLR.
+        // SystemVClassificationTypeX87Up           = Unused, // Not supported by the CLR.
+        // SystemVClassificationTypeComplexX87      = Unused, // Not supported by the CLR.
 
-            bool usesReturnBuffer;
-            uint fpReturnSizeIgnored;
-            ArgIterator.ComputeReturnValueTreatment(typeReturnType, thReturnType, methodWithReturnTypeIsVarArg, out usesReturnBuffer, out fpReturnSizeIgnored);
+        // Internal flags - never returned outside of the classification implementation.
 
-            return usesReturnBuffer;
-        }
+        // This value represents a very special type with two eightbytes. 
+        // First ByRef, second Integer (platform int).
+        // The VM has a special Elem type for this type - ELEMENT_TYPE_TYPEDBYREF.
+        // This is the classification counterpart for that element type. It is used to detect 
+        // the special TypedReference type and specialize its classification.
+        // This type is represented as a struct with two fields. The classification needs to do
+        // special handling of it since the source/methadata type of the fieds is IntPtr. 
+        // The VM changes the first to ByRef. The second is left as IntPtr (TYP_I_IMPL really). The classification needs to match this and
+        // special handling is warranted (similar thing is done in the getGCLayout function for this type).
+        SystemVClassificationTypeTypedReference     = 8,
+        SystemVClassificationTypeMAX                = 9,
     }
 
     internal unsafe struct TypeHandle
@@ -126,43 +147,49 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public bool RequiresAlign8()
         {
-#if !ARM
-            return false;
-#else
+            if (_type.Context.Target.Architecture != TargetArchitecture.ARM)
+            {
+                return false;
+            }
             if (_isByRef)
             {
                 return false;
             }
-            return _type.RequiresAlign8;
-#endif
+            return _type.RequiresAlign8();
         }
         public bool IsHFA()
         {
-#if !ARM && !ARM64
-            return false;
-#else
+            if (_type.Context.Target.Architecture != TargetArchitecture.ARM &&
+                _type.Context.Target.Architecture != TargetArchitecture.ARM64)
+            {
+                return false;
+            }
             if (_isByRef)
             {
                 return false;
             }
-            return _type.IsHFA;
-#endif
+            return _type is DefType defType && defType.IsHfa;
         }
 
         public CorElementType GetHFAType()
         {
             Debug.Assert(IsHFA());
-#if ARM
-            if (RequiresAlign8())
+            switch (_type.Context.Target.Architecture)
             {
-                return CorElementType.ELEMENT_TYPE_R8;
+                case TargetArchitecture.ARM:
+                    if (RequiresAlign8())
+                    {
+                        return CorElementType.ELEMENT_TYPE_R8;
+                    }
+                    break;
+
+                case TargetArchitecture.ARM64:
+                    if (_type is DefType defType && defType.InstanceFieldAlignment.Equals(new LayoutInt(IntPtr.Size)))
+                    {
+                        return CorElementType.ELEMENT_TYPE_R8;
+                    }
+                    break;
             }
-#elif ARM64
-            if (_type.FieldAlignmentRequirement == IntPtr.Size)
-            {
-                return CorElementType.ELEMENT_TYPE_R8;
-            }
-#endif
             return CorElementType.ELEMENT_TYPE_R4;
         }
 
@@ -202,38 +229,38 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         private static int[] s_elemSizes = new int[]
-            {
-                0, //ELEMENT_TYPE_END          0x0
-                0, //ELEMENT_TYPE_VOID         0x1
-                1, //ELEMENT_TYPE_BOOLEAN      0x2
-                2, //ELEMENT_TYPE_CHAR         0x3
-                1, //ELEMENT_TYPE_I1           0x4
-                1, //ELEMENT_TYPE_U1           0x5
-                2, //ELEMENT_TYPE_I2           0x6
-                2, //ELEMENT_TYPE_U2           0x7
-                4, //ELEMENT_TYPE_I4           0x8
-                4, //ELEMENT_TYPE_U4           0x9
-                8, //ELEMENT_TYPE_I8           0xa
-                8, //ELEMENT_TYPE_U8           0xb
-                4, //ELEMENT_TYPE_R4           0xc
-                8, //ELEMENT_TYPE_R8           0xd
-                -2,//ELEMENT_TYPE_STRING       0xe
-                -2,//ELEMENT_TYPE_PTR          0xf
-                -2,//ELEMENT_TYPE_BYREF        0x10
-                -1,//ELEMENT_TYPE_VALUETYPE    0x11
-                -2,//ELEMENT_TYPE_CLASS        0x12
-                0, //ELEMENT_TYPE_VAR          0x13
-                -2,//ELEMENT_TYPE_ARRAY        0x14
-                0, //ELEMENT_TYPE_GENERICINST  0x15
-                0, //ELEMENT_TYPE_TYPEDBYREF   0x16
-                0, // UNUSED                   0x17
-                -2,//ELEMENT_TYPE_I            0x18
-                -2,//ELEMENT_TYPE_U            0x19
-                0, // UNUSED                   0x1a
-                -2,//ELEMENT_TYPE_FPTR         0x1b
-                -2,//ELEMENT_TYPE_OBJECT       0x1c
-                -2,//ELEMENT_TYPE_SZARRAY      0x1d
-            };
+        {
+            0, //ELEMENT_TYPE_END          0x0
+            0, //ELEMENT_TYPE_VOID         0x1
+            1, //ELEMENT_TYPE_BOOLEAN      0x2
+            2, //ELEMENT_TYPE_CHAR         0x3
+            1, //ELEMENT_TYPE_I1           0x4
+            1, //ELEMENT_TYPE_U1           0x5
+            2, //ELEMENT_TYPE_I2           0x6
+            2, //ELEMENT_TYPE_U2           0x7
+            4, //ELEMENT_TYPE_I4           0x8
+            4, //ELEMENT_TYPE_U4           0x9
+            8, //ELEMENT_TYPE_I8           0xa
+            8, //ELEMENT_TYPE_U8           0xb
+            4, //ELEMENT_TYPE_R4           0xc
+            8, //ELEMENT_TYPE_R8           0xd
+            -2,//ELEMENT_TYPE_STRING       0xe
+            -2,//ELEMENT_TYPE_PTR          0xf
+            -2,//ELEMENT_TYPE_BYREF        0x10
+            -1,//ELEMENT_TYPE_VALUETYPE    0x11
+            -2,//ELEMENT_TYPE_CLASS        0x12
+            0, //ELEMENT_TYPE_VAR          0x13
+            -2,//ELEMENT_TYPE_ARRAY        0x14
+            0, //ELEMENT_TYPE_GENERICINST  0x15
+            0, //ELEMENT_TYPE_TYPEDBYREF   0x16
+            0, // UNUSED                   0x17
+            -2,//ELEMENT_TYPE_I            0x18
+            -2,//ELEMENT_TYPE_U            0x19
+            0, // UNUSED                   0x1a
+            -2,//ELEMENT_TYPE_FPTR         0x1b
+            -2,//ELEMENT_TYPE_OBJECT       0x1c
+            -2,//ELEMENT_TYPE_SZARRAY      0x1d
+        };
 
         unsafe public static int GetElemSize(CorElementType t, TypeHandle thValueType)
         {
@@ -279,18 +306,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public int m_cFloatReg;    // Count of floating point registers used (or 0)
 
         public int m_idxGenReg;    // First general register used (or -1)
-        public int m_cGenReg;      // Count of general registers used (or 0)
+        public short m_cGenReg;      // Count of general registers used (or 0)
+
+        public bool m_isSinglePrecision; // ARM64 - For determining if HFA is single or double precision
+        public bool m_fRequires64BitAlignment;  // ARM - True if the argument should always be aligned (in registers or on the stack
 
         public int m_idxStack;     // First stack slot used (or -1)
         public int m_cStack;       // Count of stack slots used (or 0)
-
-#if _TARGET_ARM64_
-        public bool m_isSinglePrecision;        // For determining if HFA is single or double precision
-#endif
-
-#if _TARGET_ARM_
-        public bool m_fRequires64BitAlignment;  // True if the argument should always be aligned (in registers or on the stack
-#endif
 
         // Initialize to represent a non-placed argument (no register or stack slots referenced).
         public void Init()
@@ -302,30 +324,32 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             m_idxStack = -1;
             m_cStack = 0;
 
-#if _TARGET_ARM64_
             m_isSinglePrecision = false;
-#endif
-
-#if _TARGET_ARM_
             m_fRequires64BitAlignment = false;
-#endif
         }
     };
 
     // The ArgDestination class represents a destination location of an argument.
     internal class ArgDestination
     {
-        // Offset of the argument relative to the m_base. On AMD64 on Unix, it can have a special
+        /// <summary>
+        /// Transition block context.
+        /// </summary>
+        private readonly TransitionBlock _transitionBlock;
+
+        // Offset of the argument relative to the base. On AMD64 on Unix, it can have a special
         // value that represent a struct that contain both general purpose and floating point fields 
         // passed in registers.
-        int _offset;
+        private readonly int _offset;
+
         // For structs passed in registers, this member points to an ArgLocDesc that contains
         // details on the layout of the struct in general purpose and floating point registers.
-        ArgLocDesc? _argLocDescForStructInRegs;
+        private readonly ArgLocDesc? _argLocDescForStructInRegs;
 
         // Construct the ArgDestination
-        public ArgDestination(int offset, ArgLocDesc? argLocDescForStructInRegs)
+        public ArgDestination(TransitionBlock transitionBlock, int offset, ArgLocDesc? argLocDescForStructInRegs)
         {
+            _transitionBlock = transitionBlock;
             _offset = offset;
             _argLocDescForStructInRegs = argLocDescForStructInRegs;
         }
@@ -335,22 +359,75 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             frame[_offset + delta] = interior ? CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_INTERIOR : CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_REF;
         }
 
-#if _TARGET_ARM64_
-
         // Returns true if the ArgDestination represents an HFA struct
         bool IsHFA()
         {
             return _argLocDescForStructInRegs.HasValue;
         }
-#endif // _TARGET_ARM64_
 
-#if UNIX_AMD64_ABI
-
-        // Returns true if the ArgDestination represents a struct passed in registers.
+        // Unix AMD64 ABI: Returns true if the ArgDestination represents a struct passed in registers.
         public bool IsStructPassedInRegs()
         {
-            LIMITED_METHOD_CONTRACT;
-            return m_offset == TransitionBlock.StructInRegsOffset;
+            return _offset == TransitionBlock.StructInRegsOffset;
+        }
+
+        private int GetStructFloatRegDestinationAddress()
+        {
+            Debug.Assert(IsStructPassedInRegs());
+            return _transitionBlock.OffsetOfFloatArgumentRegisters + _argLocDescForStructInRegs.Value.m_idxFloatReg * 16;
+        }
+
+        // Get destination address for non-floating point fields of a struct passed in registers.
+        private int GetStructGenRegDestinationAddress()
+        {
+            Debug.Assert(IsStructPassedInRegs());
+            return _transitionBlock.OffsetOfArgumentRegisters + _argLocDescForStructInRegs.Value.m_idxGenReg * 8;
+        }
+
+        private SystemVClassificationType GetTypeClassification(TypeDesc type)
+        {
+            switch (type.Category)
+            {
+                case Internal.TypeSystem.TypeFlags.Void:
+                    return SystemVClassificationType.SystemVClassificationTypeUnknown;
+
+                case Internal.TypeSystem.TypeFlags.Boolean:
+                case Internal.TypeSystem.TypeFlags.Char:
+                case Internal.TypeSystem.TypeFlags.SByte:
+                case Internal.TypeSystem.TypeFlags.Byte:
+                case Internal.TypeSystem.TypeFlags.Int16:
+                case Internal.TypeSystem.TypeFlags.UInt16:
+                case Internal.TypeSystem.TypeFlags.Int32:
+                case Internal.TypeSystem.TypeFlags.UInt32:
+                case Internal.TypeSystem.TypeFlags.Int64:
+                case Internal.TypeSystem.TypeFlags.UInt64:
+                case Internal.TypeSystem.TypeFlags.IntPtr:
+                case Internal.TypeSystem.TypeFlags.UIntPtr:
+                case Internal.TypeSystem.TypeFlags.Enum:
+                case Internal.TypeSystem.TypeFlags.Pointer:
+                case Internal.TypeSystem.TypeFlags.FunctionPointer:
+                    return SystemVClassificationType.SystemVClassificationTypeInteger;
+
+                case Internal.TypeSystem.TypeFlags.Single:
+                case Internal.TypeSystem.TypeFlags.Double:
+                    return SystemVClassificationType.SystemVClassificationTypeSSE;
+
+                case Internal.TypeSystem.TypeFlags.ByRef:
+                    return SystemVClassificationType.SystemVClassificationTypeIntegerByRef;
+
+                case Internal.TypeSystem.TypeFlags.ValueType:
+                    return SystemVClassificationType.SystemVClassificationTypeStruct;
+
+                case Internal.TypeSystem.TypeFlags.Class:
+                case Internal.TypeSystem.TypeFlags.GenericParameter:
+                case Internal.TypeSystem.TypeFlags.Array:
+                case Internal.TypeSystem.TypeFlags.SzArray:
+                case Internal.TypeSystem.TypeFlags.Interface:
+                    return SystemVClassificationType.SystemVClassificationTypeIntegerReference;
+
+                default:
+                    return SystemVClassificationType.SystemVClassificationTypeUnknown;
+            }
         }
 
         // Report managed object pointers in the struct in registers
@@ -358,49 +435,44 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         //  fn - promotion function to apply to each managed object pointer
         //  sc - scan context to pass to the promotion function
         //  fieldBytes - size of the structure
-        void ReportPointersFromStructInRegisters(promote_func* fn, ScanContext* sc, int fieldBytes)
+        void ReportPointersFromStructInRegisters(TypeDesc type, int delta, CORCOMPILE_GCREFMAP_TOKENS[] frame)
         {
-            LIMITED_METHOD_CONTRACT;
-
             // SPAN-TODO: GC reporting - https://github.com/dotnet/coreclr/issues/8517
 
-            _ASSERTE(IsStructPassedInRegs());
+            Debug.Assert(IsStructPassedInRegs());
 
-            TADDR genRegDest = dac_cast<TADDR>(GetStructGenRegDestinationAddress());
-            INDEBUG(int remainingBytes = fieldBytes;)
-
-            EEClass* eeClass = m_argLocDescForStructInRegs->m_eeClass;
-            _ASSERTE(eeClass != NULL);
-
-            for (int i = 0; i < eeClass->GetNumberEightBytes(); i++)
+            int genRegDest = GetStructGenRegDestinationAddress();
+            foreach (FieldDesc field in type.GetFields())
             {
-                int eightByteSize = eeClass->GetEightByteSize(i);
-                SystemVClassificationType eightByteClassification = eeClass->GetEightByteClassification(i);
-
-                _ASSERTE(remainingBytes >= eightByteSize);
-
-                if (eightByteClassification != SystemVClassificationTypeSSE)
+                if (field.IsStatic)
                 {
-                    if ((eightByteClassification == SystemVClassificationTypeIntegerReference) ||
-                        (eightByteClassification == SystemVClassificationTypeIntegerByRef))
-                    {
-                        _ASSERTE(eightByteSize == 8);
-                        _ASSERTE(IS_ALIGNED((SIZE_T)genRegDest, 8));
-
-                        uint32_t flags = eightByteClassification == SystemVClassificationTypeIntegerByRef ? GC_CALL_INTERIOR : 0;
-                        (*fn)(dac_cast<PTR_PTR_Object>(genRegDest), sc, flags);
-                    }
-
-                    genRegDest += eightByteSize;
+                    continue;
                 }
+                SystemVClassificationType eightByteClassification = GetTypeClassification(field.FieldType);
 
-                INDEBUG(remainingBytes -= eightByteSize;)
+                if (eightByteClassification != SystemVClassificationType.SystemVClassificationTypeSSE)
+                {
+                    if ((eightByteClassification == SystemVClassificationType.SystemVClassificationTypeIntegerReference) ||
+                        (eightByteClassification == SystemVClassificationType.SystemVClassificationTypeIntegerByRef))
+                    {
+                        int eightByteSize = field.FieldType.GetElementSize().AsInt;
+                        Debug.Assert((genRegDest & 7) == 0);
+
+                        CORCOMPILE_GCREFMAP_TOKENS token;
+                        if (eightByteClassification == SystemVClassificationType.SystemVClassificationTypeIntegerByRef)
+                        {
+                            token = CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_INTERIOR;
+                        }
+                        else
+                        {
+                            token = CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_REF;
+                        }
+                        int eightByteIndex = (genRegDest + field.Offset.AsInt) >> 3;
+                        frame[delta + eightByteIndex] = token;
+                    }
+                }
             }
-
-            _ASSERTE(remainingBytes == 0);
         }
-
-#endif // UNIX_AMD64_ABI
     }
 
     internal class ArgIteratorData
@@ -514,6 +586,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private bool _skipFirstArg;
         private bool _extraObjectFirstArg;
         private CallingConventions _interpreterCallingConvention;
+        private TransitionBlock _transitionBlock;
 
         public bool HasThis() { return _hasThis; }
         public bool IsVarArg() { return _argData.IsVarArg(); }
@@ -599,6 +672,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _skipFirstArg = skipFirstArg;
             _extraObjectFirstArg = extraObjectFirstArg;
             _interpreterCallingConvention = callConv;
+            _transitionBlock = TransitionBlock.FromTarget(context.Target);
         }
 
         public void SetHasParamTypeAndReset(bool value)
@@ -634,7 +708,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
 #if _TARGET_AMD64_ && !UNIX_AMD64_ABI
             // The argument registers are not included in the stack size on AMD64
-            size += ArchitectureConstants.ARGUMENTREGISTERS_SIZE;
+            size += (uint)_transitionBlock.SizeOfArgumentRegisters;
 #endif
 
             return (int)size;
@@ -685,7 +759,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         //  *pNumRegistersUsed:  [in,out]: keeps track of the number of argument
         //                       registers assigned previously. The caller should
         //                       initialize this variable to 0 - then each call
-        //                       will update it.
+        //                       will updateit.
         //
         //  typ:                 the signature type
         //=========================================================================
@@ -741,7 +815,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 #if ENREGISTERED_PARAMTYPE_MAXSIZE
 
         // Note that this overload does not handle varargs
-        public static bool IsArgPassedByRef(TypeHandle th)
+        public static bool IsArgPassedByRef(TransitionBlock transitionBlock, TypeHandle th)
         {
             //        LIMITED_METHOD_CONTRACT;
 
@@ -753,7 +827,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             uint size = th.GetSize();
 #if _TARGET_AMD64_
-            return IsArgPassedByRef((int)size);
+            return IsArgPassedByRef(transitionBlock, (int)size);
 #elif _TARGET_ARM64_
             // Composites greater than 16 bytes are passed by reference
             return ((size > ArchitectureConstants.ENREGISTERED_PARAMTYPE_MAXSIZE) && !th.IsHFA());
@@ -764,23 +838,23 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
 #if _TARGET_AMD64_
         // This overload should only be used in AMD64-specific code only.
-        private static bool IsArgPassedByRef(int size)
+        private static bool IsArgPassedByRef(TransitionBlock transitionBlock, int size)
         {
             //        LIMITED_METHOD_CONTRACT;
 
             // If the size is bigger than ENREGISTERED_PARAM_TYPE_MAXSIZE, or if the size is NOT a power of 2, then
             // the argument is passed by reference.
-            return (size > ArchitectureConstants.ENREGISTERED_PARAMTYPE_MAXSIZE) || ((size & (size - 1)) != 0);
+            return (size > transitionBlock.EnregisteredParamTypeMaxSize) || ((size & (size - 1)) != 0);
         }
 #endif
 
         // This overload should be used for varargs only.
-        private static bool IsVarArgPassedByRef(int size)
+        private bool IsVarArgPassedByRef(int size)
         {
             //        LIMITED_METHOD_CONTRACT;
 
 #if _TARGET_AMD64_
-            return IsArgPassedByRef(size);
+            return IsArgPassedByRef(_transitionBlock, size);
 #else
             return (size > ArchitectureConstants.ENREGISTERED_PARAMTYPE_MAXSIZE);
 #endif
@@ -801,7 +875,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 #if ENREGISTERED_PARAMTYPE_MAXSIZE
 #if _TARGET_AMD64_
-            return IsArgPassedByRef(_argSize);
+            return IsArgPassedByRef(_transitionBlock, _argSize);
 #elif _TARGET_ARM64_
             if (_argType == CorElementType.ELEMENT_TYPE_VALUETYPE)
             {
@@ -827,9 +901,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         // Return the offsets of the special arguments
         //------------------------------------------------------------
 
-        public static int GetThisOffset()
+        public int GetThisOffset()
         {
-            return TransitionBlock.GetThisOffset();
+            return _transitionBlock.ThisOffset;
         }
 
         public unsafe int GetRetBuffArgOffset()
@@ -844,7 +918,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             int ret = TransitionBlock.GetOffsetOfArgs();
 #else
             // RetBuf arg is in the first argument register by default
-            int ret = TransitionBlock.GetOffsetOfArgumentRegisters();
+            int ret = _transitionBlock.OffsetOfArgumentRegisters;
 
 #if _TARGET_ARM64_
             ret += ArgumentRegisters.GetOffsetOfx8();
@@ -869,7 +943,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return sizeof(TransitionBlock);
 #else
             // VaSig cookie is after this and retbuf arguments by default.
-            int ret = TransitionBlock.GetOffsetOfArgumentRegisters();
+            int ret = _transitionBlock.OffsetOfArgumentRegisters;
 
             if (this.HasThis())
             {
@@ -908,7 +982,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return sizeof(TransitionBlock);
 #else
             // The hidden arg is after this and retbuf arguments by default.
-            int ret = TransitionBlock.GetOffsetOfArgumentRegisters();
+            int ret = _transitionBlock.OffsetOfArgumentRegisters;
 
             if (this.HasThis())
             {
@@ -1009,7 +1083,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 _idxStack = 0;
                 _idxFPReg = 0;
 #else
-                _curOfs = TransitionBlock.GetOffsetOfArgs() + numRegistersUsed * IntPtr.Size;
+                _curOfs = _transitionBlock.OffsetOfArgs + numRegistersUsed * IntPtr.Size;
 #endif
 #elif _TARGET_ARM_
                 _idxGenReg = numRegistersUsed;
@@ -1159,17 +1233,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             // Each argument takes exactly one slot on AMD64
-            argOfs = _curOfs - TransitionBlock.GetOffsetOfArgs();
+            argOfs = _curOfs - _transitionBlock.OffsetOfArgs;
             _curOfs += IntPtr.Size;
 
-            if ((cFPRegs == 0) || (argOfs >= sizeof(ArgumentRegisters)))
+            if ((cFPRegs == 0) || (argOfs >= _transitionBlock.SizeOfArgumentRegisters))
             {
-                return argOfs + TransitionBlock.GetOffsetOfArgs();
+                return argOfs + _transitionBlock.OffsetOfArgs;
             }
             else
             {
                 int idxFpReg = argOfs / IntPtr.Size;
-                return TransitionBlock.GetOffsetOfFloatArgumentRegisters() + idxFpReg * sizeof(M128A);
+                return _transitionBlock.OffsetOfFloatArgumentRegisters + idxFpReg * TransitionBlock.SizeOfM128A;
             }
 #endif
 #elif _TARGET_ARM_
@@ -1535,7 +1609,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
 #else // _TARGET_X86_
 
-            int maxOffset = TransitionBlock.GetOffsetOfArgs();
+            int maxOffset = _transitionBlock.OffsetOfArgs;
 
             int ofs;
             while (TransitionBlock.InvalidOffset != (ofs = GetNextOffset()))
@@ -1545,7 +1619,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 #if _TARGET_AMD64_
                 // All stack arguments take just one stack slot on AMD64 because of arguments bigger 
                 // than a stack slot are passed by reference. 
-                stackElemSize = ArchitectureConstants.STACK_ELEM_SIZE;
+                stackElemSize = _transitionBlock.StackElemSize;
 #else
                 stackElemSize = ArchitectureConstants.StackElemSize(GetArgSize());
                 if (IsArgPassedByRef())
@@ -1555,7 +1629,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 int endOfs = ofs + stackElemSize;
                 if (endOfs > maxOffset)
                 {
-                    if (endOfs > ArchitectureConstants.MAX_ARG_SIZE)
+                    if (endOfs > TransitionBlock.MaxArgSize)
                     {
                         throw new NotSupportedException();
                     }
@@ -1565,11 +1639,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Clear the iterator started flag
             _ITERATION_STARTED = false;
 
-            int nSizeOfArgStack = maxOffset - TransitionBlock.GetOffsetOfArgs();
+            int nSizeOfArgStack = maxOffset - _transitionBlock.OffsetOfArgs;
 
 #if _TARGET_AMD64_ && !UNIX_AMD64_ABI
-            nSizeOfArgStack = (nSizeOfArgStack > (int)sizeof(ArgumentRegisters)) ?
-                (nSizeOfArgStack - sizeof(ArgumentRegisters)) : 0;
+            nSizeOfArgStack = (nSizeOfArgStack > (int)_transitionBlock.SizeOfArgumentRegisters) ?
+                (nSizeOfArgStack - _transitionBlock.SizeOfArgumentRegisters) : 0;
 #endif
 
 #endif // _TARGET_X86_
@@ -1811,7 +1885,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         //        RETURN_FP_SIZE_SHIFT            = 8,        // The rest of the flags is cached value of GetFPReturnSize
         //    };
 
-        internal static void ComputeReturnValueTreatment(CorElementType type, TypeHandle thRetType, bool isVarArgMethod, out bool usesRetBuffer, out uint fpReturnSize)
+        internal static void ComputeReturnValueTreatment(TransitionBlock transitionBlock, CorElementType type, TypeHandle thRetType, bool isVarArgMethod, out bool usesRetBuffer, out uint fpReturnSize)
 
         {
             usesRetBuffer = false;
@@ -1873,7 +1947,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         }
 #endif
 
-                        if (size <= ArchitectureConstants.ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
+                        if (size <= transitionBlock.EnregisteredReturnTypeIntegerMaxSize)
                             break;
                     }
 #endif // ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
@@ -1894,7 +1968,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (!_RETURN_HAS_RET_BUFFER)
             {
-                ComputeReturnValueTreatment(type, thRetType, this.IsVarArg(), out _RETURN_HAS_RET_BUFFER, out _fpReturnSize);
+                ComputeReturnValueTreatment(_transitionBlock, type, thRetType, this.IsVarArg(), out _RETURN_HAS_RET_BUFFER, out _fpReturnSize);
             }
 
             _RETURN_FLAGS_COMPUTED = true;
@@ -1906,7 +1980,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             //        WRAPPER_NO_CONTRACT; 
             pLoc->Init();
-            pLoc->m_idxGenReg = TransitionBlock.GetArgumentIndexFromOffset(offset);
+            pLoc->m_idxGenReg = _transitionBlock.GetArgumentIndexFromOffset(offset);
             pLoc->m_cGenReg = 1;
         }
 #endif
