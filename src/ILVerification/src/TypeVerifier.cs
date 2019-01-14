@@ -76,7 +76,7 @@ namespace Internal.TypeVerifier
                 InterfaceMetadataObjects imo = new InterfaceMetadataObjects
                 {
                     DefType = interfaceType,
-                    InterfaceImplementation = interfaceImplementation
+                    InterfaceImplementationHandle = interfaceHandle
                 };
 
                 if (!implementedInterfaces.Contains(imo))
@@ -85,7 +85,7 @@ namespace Internal.TypeVerifier
                 }
                 else
                 {
-                    VerificationError(VerifierError.InterfaceImplHasDuplicate, Format(type), Format(imo.DefType, imo.InterfaceImplementation));
+                    VerificationError(VerifierError.InterfaceImplHasDuplicate, Format(type), Format(imo.DefType, imo.InterfaceImplementationHandle));
                 }
             }
 
@@ -99,7 +99,7 @@ namespace Internal.TypeVerifier
                         MethodDesc resolvedMethod = type.ResolveInterfaceMethodTarget(method);
                         if (resolvedMethod is null)
                         {
-                            VerificationError(VerifierError.InterfaceMethodNotImplemented, Format(type), Format(implementedInterface.DefType, implementedInterface.InterfaceImplementation), Format(method));
+                            VerificationError(VerifierError.InterfaceMethodNotImplemented, Format(type), Format(implementedInterface.DefType, implementedInterface.InterfaceImplementationHandle), Format(method));
                         }
                     }
                 }
@@ -110,7 +110,7 @@ namespace Internal.TypeVerifier
         {
             if (_verifierOptions.IncludeMetadataTokensInErrorMessages)
             {
-                return string.Format("{0}([{1}]0x{2:X8})", type, type.Module, _module.MetadataReader.GetToken(type.Handle));
+                return string.Format("{0}([{1}]0x{2:X8})", type, _module, _module.MetadataReader.GetToken(_typeDefinitionHandle));
             }
             else
             {
@@ -118,12 +118,12 @@ namespace Internal.TypeVerifier
             }
         }
 
-        private string Format(DefType defType, InterfaceImplementation interfaceImplementation)
+        private string Format(DefType defType, InterfaceImplementationHandle interfaceImplementation)
         {
             if (_verifierOptions.IncludeMetadataTokensInErrorMessages)
             {
 
-                return string.Format("{0}([{1}]0x{2:X8})", defType, GetModule(defType), _module.MetadataReader.GetToken(interfaceImplementation.Interface));
+                return string.Format("{0}([{1}]0x{2:X8})", defType, _module, _module.MetadataReader.GetToken(interfaceImplementation));
             }
             else
             {
@@ -131,22 +131,11 @@ namespace Internal.TypeVerifier
             }
         }
 
-        private string GetModule(DefType defType)
-        {
-            if (defType is MetadataType metadataType)
-            {
-                return metadataType.Module.ToString();
-            }
-
-            Debug.Fail("ModuleNotFound");
-            return "ModuleNotFound";
-        }
-
         private string Format(MethodDesc methodDesc)
         {
             if (_verifierOptions.IncludeMetadataTokensInErrorMessages)
             {
-                return string.Format("{0}([{1}]0x{2:X8})", methodDesc, GetModule(methodDesc), _module.MetadataReader.GetToken(((EcmaMethod)methodDesc.GetTypicalMethodDefinition()).Handle));
+                return string.Format("{0}([{1}]0x{2:X8})", methodDesc, _module, _module.MetadataReader.GetToken(((EcmaMethod)methodDesc.GetTypicalMethodDefinition()).Handle));
             }
             else
             {
@@ -154,21 +143,10 @@ namespace Internal.TypeVerifier
             }
         }
 
-        private string GetModule(MethodDesc methodDesc)
-        {
-            if (methodDesc.GetMethodDefinition().OwningType is MetadataType metadataType)
-            {
-                return metadataType.Module.ToString();
-            }
-
-            Debug.Fail("ModuleNotFound");
-            return "ModuleNotFound";
-        }
-
         private class InterfaceMetadataObjects : IEquatable<InterfaceMetadataObjects>
         {
             public DefType DefType { get; set; }
-            public InterfaceImplementation InterfaceImplementation { set; get; }
+            public InterfaceImplementationHandle InterfaceImplementationHandle { set; get; }
             public bool Equals(InterfaceMetadataObjects other)
             {
                 return other.DefType == DefType;
