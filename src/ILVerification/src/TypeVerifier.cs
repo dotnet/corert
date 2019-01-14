@@ -145,7 +145,7 @@ namespace Internal.TypeVerifier
         private class InterfaceMetadataObjects : IEquatable<InterfaceMetadataObjects>
         {
             public DefType DefType { get; set; }
-            public InterfaceImplementationHandle InterfaceImplementationHandle { set; get; }
+            public InterfaceImplementationHandle InterfaceImplementationHandle { get; set; }
             public bool Equals(InterfaceMetadataObjects other)
             {
                 return other.DefType == DefType;
