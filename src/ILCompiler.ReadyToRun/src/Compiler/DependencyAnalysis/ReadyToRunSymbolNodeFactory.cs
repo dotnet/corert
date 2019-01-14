@@ -841,6 +841,18 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(fieldDesc.HasRva);
             EcmaField ecmaField = (EcmaField)fieldDesc;
+
+            if (!_codegenNodeFactory.TypeSystemContext.InputFilePaths.ContainsKey(ecmaField.Module.Assembly.GetName().Name))
+            {
+                // TODO: cross-bubble RVA field
+                throw new NotSupportedException($"{ecmaField} ... {ecmaField.Module.Assembly}");
+            }
+            if (_codegenNodeFactory.TypeSystemContext.InputFilePaths.Count > 1)
+            {
+                // TODO: RVA fields in merged multi-file compilation
+                throw new NotSupportedException($"{ecmaField} ... {string.Join("; ", _codegenNodeFactory.TypeSystemContext.InputFilePaths.Keys)}");
+            }
+
             int rva = ecmaField.MetadataReader.GetFieldDefinition(ecmaField.Handle).GetRelativeVirtualAddress();
             ObjectNode rvaFieldNode;
             if (!_rvaFieldSymbols.TryGetValue(rva, out rvaFieldNode))
