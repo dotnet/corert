@@ -51,9 +51,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public abstract TargetArchitecture Architecture { get; }
 
+        public bool IsX86 => Architecture == TargetArchitecture.X86;
+        public bool IsX64 => Architecture == TargetArchitecture.X64;
+        public bool IsARM => Architecture == TargetArchitecture.ARM;
+        public bool IsARM64 => Architecture == TargetArchitecture.ARM64;
+
+        /// <summary>
+        /// This property is only overridden in AMD64 Unix variant of the transition block.
+        /// </summary>
+        public virtual bool IsX64UnixABI => false;
+
         public abstract int PointerSize { get; }
 
-        public int StackElemSize => PointerSize;
+        public int StackElemSize() => PointerSize;
+
+        public int StackElemSize(int size) => (((size) + StackElemSize() - 1) & -StackElemSize());
 
         public abstract int NumArgumentRegisters { get; }
 
@@ -68,6 +80,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public abstract int OffsetOfArgumentRegisters { get; }
 
         public abstract int OffsetOfFloatArgumentRegisters { get; }
+
+        public bool IsFloatArgumentRegisterOffset(int offset) => offset < 0;
 
         public abstract int EnregisteredParamTypeMaxSize { get; }
 
@@ -95,10 +109,30 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// </summary>
         public int OffsetOfArgs => SizeOfTransitionBlock;
 
+        public bool IsStackArgumentOffset(int offset)
+        {
+            int ofsArgRegs = OffsetOfArgumentRegisters;
+
+            return offset >= (int)(ofsArgRegs + SizeOfArgumentRegisters);
+        }
+
+        public bool IsArgumentRegisterOffset(int offset)
+        {
+            int ofsArgRegs = OffsetOfArgumentRegisters;
+
+            return offset >= ofsArgRegs && offset < (int)(ofsArgRegs + SizeOfArgumentRegisters);
+        }
+
         public int GetArgumentIndexFromOffset(int offset)
         {
-            Debug.Assert(Architecture != TargetArchitecture.X86);
+            Debug.Assert(!IsX86);
             return ((offset - OffsetOfArgumentRegisters) / PointerSize);
+        }
+
+        public int GetStackArgumentIndexFromOffset(int offset)
+        {
+            Debug.Assert(!IsX86);
+            return (offset - OffsetOfArgs) / StackElemSize();
         }
 
         public const int InvalidOffset = -1;
@@ -164,6 +198,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             public const int NUM_FLOAT_ARGUMENT_REGISTERS = 8;
 
             public override TargetArchitecture Architecture => TargetArchitecture.X64;
+            public override bool IsX64UnixABI => true;
             public override int PointerSize => 8;
             // RDI, RSI, RDX, RCX, R8, R9
             public override int NumArgumentRegisters => 6;

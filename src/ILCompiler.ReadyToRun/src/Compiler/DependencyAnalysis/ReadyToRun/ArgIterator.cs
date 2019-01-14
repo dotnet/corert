@@ -2,47 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-//
-// This file is a line by line port of CallingConvention.h from the desktop CLR. See reference source in the ReferenceSource directory
-//
-#if ARM
-#define _TARGET_ARM_
-#define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
-#define CALLDESCR_FPARGREGS                        // CallDescrWorker has FloatArgumentRegisters parameter
-#define ENREGISTERED_RETURNTYPE_MAXSIZE
-#define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
-#define FEATURE_HFA
-#elif ARM64
-#define _TARGET_ARM64_
-#define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
-#define CALLDESCR_FPARGREGS                        // CallDescrWorker has FloatArgumentRegisters parameter
-#define ENREGISTERED_RETURNTYPE_MAXSIZE
-#define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
-#define ENREGISTERED_PARAMTYPE_MAXSIZE
-#define FEATURE_HFA
-#elif X86
-#define _TARGET_X86_
-#define ENREGISTERED_RETURNTYPE_MAXSIZE
-#define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
-#define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
-#elif AMD64
-#if UNIXAMD64
-#define UNIX_AMD64_ABI
-#define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
-#else
-#endif
-#define CALLDESCR_FPARGREGS                        // CallDescrWorker has FloatArgumentRegisters parameter
-#define _TARGET_AMD64_
-#define ENREGISTERED_RETURNTYPE_MAXSIZE
-#define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
-#define ENREGISTERED_PARAMTYPE_MAXSIZE
-#elif WASM
-#define _TARGET_WASM_
-#else
-#error Unknown architecture!
-#endif
-
 // Provides an abstraction over platform specific calling conventions (specifically, the calling convention
 // utilized by the JIT on that platform). The caller enumerates each argument of a signature in turn, and is 
 // provided with information mapping that argument into registers and/or stack locations.
@@ -549,16 +508,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             thRetType = _returnType;
             return thRetType.GetCorElementType();
         }
-
-#if CCCONVERTER_TRACE
-        public string GetEETypeDebugName(int argNum)
-        {
-            Internal.TypeSystem.TypeSystemContext context = TypeSystemContextFactory.Create();
-            var result = context.ResolveRuntimeTypeHandle(_parameterTypes[argNum].GetRuntimeTypeHandle()).ToString();
-            TypeSystemContextFactory.Recycle(context);
-            return result;
-        }
-#endif
     }
 
     //-----------------------------------------------------------------------
@@ -574,9 +523,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     // time because of it has the parsed signature available.
     //-----------------------------------------------------------------------
     //template<class ARGITERATOR_BASE>
-    internal unsafe struct ArgIterator //: public ARGITERATOR_BASE
+    internal unsafe struct ArgIterator
     {
         private readonly TypeSystemContext _context;
+
+        private readonly TransitionBlock _transitionBlock;
 
         private bool _hasThis;
         private bool _hasParamType;
@@ -586,7 +537,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private bool _skipFirstArg;
         private bool _extraObjectFirstArg;
         private CallingConventions _interpreterCallingConvention;
-        private TransitionBlock _transitionBlock;
 
         public bool HasThis() { return _hasThis; }
         public bool IsVarArg() { return _argData.IsVarArg(); }
@@ -628,15 +578,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             return _argData.GetReturnType(out thRetType);
         }
-
-#if CCCONVERTER_TRACE
-        public string GetEETypeDebugName(int argNum)
-        {
-            if (_extraObjectFirstArg && argNum == 0)
-                return "System.Object";
-            return _argData.GetEETypeDebugName(_extraObjectFirstArg ? argNum - 1 : argNum);
-        }
-#endif
 
         public void Reset()
         {
@@ -706,10 +647,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             uint size = SizeOfArgStack();
 
-#if _TARGET_AMD64_ && !UNIX_AMD64_ABI
-            // The argument registers are not included in the stack size on AMD64
-            size += (uint)_transitionBlock.SizeOfArgumentRegisters;
-#endif
+            if (_transitionBlock.IsX64 && !_transitionBlock.IsX64UnixABI)
+            {
+                // The argument registers are not included in the stack size on AMD64
+                size += (uint)_transitionBlock.SizeOfArgumentRegisters;
+            }
 
             return (int)size;
         }
@@ -718,16 +660,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public uint CbStackPop()
         {
-#if _TARGET_X86_
-            //        WRAPPER_NO_CONTRACT;
+            if (_transitionBlock.IsX86)
+            {
+                //        WRAPPER_NO_CONTRACT;
 
-            if (this.IsVarArg())
-                return 0;
+                if (this.IsVarArg())
+                    return 0;
+                else
+                    return SizeOfArgStack();
+            }
             else
-                return SizeOfArgStack();
-#else
-            throw new NotImplementedException();
-#endif
+            {
+                throw new NotImplementedException();
+            }
         }
 
         // Is there a hidden parameter for the return parameter? 
@@ -748,9 +693,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return _fpReturnSize;
         }
 
-#if _TARGET_X86_
         //=========================================================================
-        // Indicates whether an argument is to be put in a register using the
+        // X86: Indicates whether an argument is to be put in a register using the
         // default IL calling convention. This should be called on each parameter
         // in the order it appears in the call signature. For a non-static meethod,
         // this function should also be called once for the "this" argument, prior
@@ -759,14 +703,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         //  *pNumRegistersUsed:  [in,out]: keeps track of the number of argument
         //                       registers assigned previously. The caller should
         //                       initialize this variable to 0 - then each call
-        //                       will updateit.
+        //                       will update it.
         //
         //  typ:                 the signature type
         //=========================================================================
-        private static bool IsArgumentInRegister(ref int pNumRegistersUsed, CorElementType typ, TypeHandle thArgType)
+        private static bool IsArgumentInRegister(TransitionBlock transitionBlock, ref int pNumRegistersUsed, CorElementType typ, TypeHandle thArgType)
         {
+            Debug.Assert(transitionBlock.IsX86);
+
             //        LIMITED_METHOD_CONTRACT;
-            if ((pNumRegistersUsed) < ArchitectureConstants.NUM_ARGUMENT_REGISTERS)
+            if ((pNumRegistersUsed) < transitionBlock.NumArgumentRegisters)
             {
                 switch (typ)
                 {
@@ -810,9 +756,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             return (false);
         }
-#endif // _TARGET_X86_
-
-#if ENREGISTERED_PARAMTYPE_MAXSIZE
 
         // Note that this overload does not handle varargs
         public static bool IsArgPassedByRef(TransitionBlock transitionBlock, TypeHandle th)
@@ -820,46 +763,50 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             //        LIMITED_METHOD_CONTRACT;
 
             Debug.Assert(!th.IsNull());
+            Debug.Assert(transitionBlock.EnregisteredParamTypeMaxSize != 0);
 
             // This method only works for valuetypes. It includes true value types, 
             // primitives, enums and TypedReference.
             Debug.Assert(th.IsValueType());
 
             uint size = th.GetSize();
-#if _TARGET_AMD64_
-            return IsArgPassedByRef(transitionBlock, (int)size);
-#elif _TARGET_ARM64_
-            // Composites greater than 16 bytes are passed by reference
-            return ((size > ArchitectureConstants.ENREGISTERED_PARAMTYPE_MAXSIZE) && !th.IsHFA());
-#else
-#error ArgIterator::IsArgPassedByRef
-#endif
+            switch (transitionBlock.Architecture)
+            {
+                case TargetArchitecture.X64:
+                    return IsArgPassedByRef(transitionBlock, (int)size);
+                case TargetArchitecture.ARM64:
+                    // Composites greater than 16 bytes are passed by reference
+                    return ((size > transitionBlock.EnregisteredParamTypeMaxSize) && !th.IsHFA());
+                default:
+                    throw new NotImplementedException(transitionBlock.Architecture.ToString());
+            }
         }
 
-#if _TARGET_AMD64_
         // This overload should only be used in AMD64-specific code only.
         private static bool IsArgPassedByRef(TransitionBlock transitionBlock, int size)
         {
+            Debug.Assert(transitionBlock.Architecture == TargetArchitecture.X64);
             //        LIMITED_METHOD_CONTRACT;
 
             // If the size is bigger than ENREGISTERED_PARAM_TYPE_MAXSIZE, or if the size is NOT a power of 2, then
             // the argument is passed by reference.
             return (size > transitionBlock.EnregisteredParamTypeMaxSize) || ((size & (size - 1)) != 0);
         }
-#endif
 
         // This overload should be used for varargs only.
         private bool IsVarArgPassedByRef(int size)
         {
             //        LIMITED_METHOD_CONTRACT;
 
-#if _TARGET_AMD64_
-            return IsArgPassedByRef(_transitionBlock, size);
-#else
-            return (size > ArchitectureConstants.ENREGISTERED_PARAMTYPE_MAXSIZE);
-#endif
+            if (_transitionBlock.IsX64)
+            {
+                return IsArgPassedByRef(_transitionBlock, size);
+            }
+            else
+            {
+                return (size > _transitionBlock.EnregisteredParamTypeMaxSize);
+            }
         }
-#endif // ENREGISTERED_PARAMTYPE_MAXSIZE
 
         public bool IsArgPassedByRef()
         {
@@ -873,22 +820,28 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 return true;
             }
-#if ENREGISTERED_PARAMTYPE_MAXSIZE
-#if _TARGET_AMD64_
-            return IsArgPassedByRef(_transitionBlock, _argSize);
-#elif _TARGET_ARM64_
-            if (_argType == CorElementType.ELEMENT_TYPE_VALUETYPE)
+            if (_transitionBlock.EnregisteredParamTypeMaxSize != 0)
             {
-                Debug.Assert(!_argTypeHandle.IsNull());
-                return ((_argSize > ArchitectureConstants.ENREGISTERED_PARAMTYPE_MAXSIZE) && (!_argTypeHandle.IsHFA() || IsVarArg()));
+                switch (_transitionBlock.Architecture)
+                {
+
+                    case TargetArchitecture.X64:
+                        return IsArgPassedByRef(_transitionBlock, _argSize);
+                    case TargetArchitecture.ARM64:
+                        if (_argType == CorElementType.ELEMENT_TYPE_VALUETYPE)
+                        {
+                            Debug.Assert(!_argTypeHandle.IsNull());
+                            return ((_argSize > _transitionBlock.EnregisteredParamTypeMaxSize) && (!_argTypeHandle.IsHFA() || IsVarArg()));
+                        }
+                        return false;
+                    default:
+                        throw new NotImplementedException(_transitionBlock.Architecture.ToString());
+                }
             }
-            return false;
-#else
-#error PORTABILITY_ASSERT("ArgIterator::IsArgPassedByRef");
-#endif
-#else // ENREGISTERED_PARAMTYPE_MAXSIZE
-            return false;
-#endif // ENREGISTERED_PARAMTYPE_MAXSIZE
+            else
+            {
+                return false;
+            }
         }
 
         private bool IsArgForcedPassedByRef()
@@ -912,23 +865,29 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             Debug.Assert(this.HasRetBuffArg());
 
-#if _TARGET_X86_
-            // x86 is special as always
-            // DESKTOP BEHAVIOR            ret += this.HasThis() ? ArgumentRegisters.GetOffsetOfEdx() : ArgumentRegisters.GetOffsetOfEcx();
-            int ret = TransitionBlock.GetOffsetOfArgs();
-#else
-            // RetBuf arg is in the first argument register by default
-            int ret = _transitionBlock.OffsetOfArgumentRegisters;
+            int ret;
+            if (_transitionBlock.IsX86)
+            {
+                // x86 is special as always
+                // DESKTOP BEHAVIOR            ret += this.HasThis() ? ArgumentRegisters.GetOffsetOfEdx() : ArgumentRegisters.GetOffsetOfEcx();
+                ret = _transitionBlock.OffsetOfArgs;
+            }
+            else
+            {
+                // RetBuf arg is in the first argument register by default
+                ret = _transitionBlock.OffsetOfArgumentRegisters;
 
-#if _TARGET_ARM64_
-            ret += ArgumentRegisters.GetOffsetOfx8();
-#else
-            // But if there is a this pointer, push it to the second.
-            if (this.HasThis())
-                ret += IntPtr.Size;
-#endif  // _TARGET_ARM64_
-#endif  // _TARGET_X86_
-
+                if (_transitionBlock.IsARM64)
+                {
+                    ret += 8 * sizeof(IntPtr); // offset of x8 in the argument register file
+                }
+                else
+                {
+                    // But if there is a this pointer, push it to the second.
+                    if (this.HasThis())
+                        ret += IntPtr.Size;
+                }
+            }
             return ret;
         }
 
@@ -938,64 +897,70 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             Debug.Assert(this.IsVarArg());
 
-#if _TARGET_X86_
-            // x86 is special as always
-            return sizeof(TransitionBlock);
-#else
-            // VaSig cookie is after this and retbuf arguments by default.
-            int ret = _transitionBlock.OffsetOfArgumentRegisters;
-
-            if (this.HasThis())
+            if (_transitionBlock.IsX86)
             {
-                ret += IntPtr.Size;
+                // x86 is special as always
+                return _transitionBlock.SizeOfTransitionBlock;
             }
-
-            if (this.HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+            else
             {
-                ret += IntPtr.Size;
-            }
+                // VaSig cookie is after this and retbuf arguments by default.
+                int ret = _transitionBlock.OffsetOfArgumentRegisters;
 
-            return ret;
-#endif
+                if (this.HasThis())
+                {
+                    ret += IntPtr.Size;
+                }
+
+                if (this.HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+                {
+                    ret += IntPtr.Size;
+                }
+
+                return ret;
+            }
         }
 
         unsafe public int GetParamTypeArgOffset()
         {
             Debug.Assert(this.HasParamType());
 
-#if _TARGET_X86_
-            // x86 is special as always
-            if (!_SIZE_OF_ARG_STACK_COMPUTED)
-                ForceSigWalk();
-
-            switch (_paramTypeLoc)
+            if (_transitionBlock.IsX86)
             {
-                case ParamTypeLocation.Ecx:// PARAM_TYPE_REGISTER_ECX:
-                    return TransitionBlock.GetOffsetOfArgumentRegisters() + ArgumentRegisters.GetOffsetOfEcx();
-                case ParamTypeLocation.Edx:
-                    return TransitionBlock.GetOffsetOfArgumentRegisters() + ArgumentRegisters.GetOffsetOfEdx();
-                default:
-                    break;
+                // x86 is special as always
+                if (!_SIZE_OF_ARG_STACK_COMPUTED)
+                    ForceSigWalk();
+
+                switch (_paramTypeLoc)
+                {
+                    case ParamTypeLocation.Ecx:// PARAM_TYPE_REGISTER_ECX:
+                        return _transitionBlock.OffsetOfArgumentRegisters + OffsetOfEcx;
+                    case ParamTypeLocation.Edx:
+                        return _transitionBlock.OffsetOfArgumentRegisters + OffsetOfEdx;
+                    default:
+                        break;
+                }
+
+                // The param type arg is last stack argument otherwise
+                return _transitionBlock.SizeOfTransitionBlock;
             }
-
-            // The param type arg is last stack argument otherwise
-            return sizeof(TransitionBlock);
-#else
-            // The hidden arg is after this and retbuf arguments by default.
-            int ret = _transitionBlock.OffsetOfArgumentRegisters;
-
-            if (this.HasThis())
+            else
             {
-                ret += IntPtr.Size;
-            }
+                // The hidden arg is after this and retbuf arguments by default.
+                int ret = _transitionBlock.OffsetOfArgumentRegisters;
 
-            if (this.HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
-            {
-                ret += IntPtr.Size;
-            }
+                if (this.HasThis())
+                {
+                    ret += IntPtr.Size;
+                }
 
-            return ret;
-#endif
+                if (this.HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+                {
+                    ret += IntPtr.Size;
+                }
+
+                return ret;
+            }
         }
 
         //------------------------------------------------------------
@@ -1013,22 +978,23 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (!_ITERATION_STARTED)
             {
                 int numRegistersUsed = 0;
-#if _TARGET_X86_
                 int initialArgOffset = 0;
-#endif 
                 if (this.HasThis())
                     numRegistersUsed++;
 
                 if (this.HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
                 {
-#if !_TARGET_X86_
-                    numRegistersUsed++;
-#else
-                    // DESKTOP BEHAVIOR is to do nothing here, as ret buf is never reached by the scan algorithm that walks backwards
-                    // but in .NET Native, the x86 argument scan is a forward scan, so we need to skip the ret buf arg (which is always
-                    // on the stack)
-                    initialArgOffset = IntPtr.Size;
-#endif
+                    if (!_transitionBlock.IsX86)
+                    {
+                        numRegistersUsed++;
+                    }
+                    else
+                    {
+                        // DESKTOP BEHAVIOR is to do nothing here, as ret buf is never reached by the scan algorithm that walks backwards
+                        // but in .NET Native, the x86 argument scan is a forward scan, so we need to skip the ret buf arg (which is always
+                        // on the stack)
+                        initialArgOffset = IntPtr.Size;
+                    }
                 }
 
                 Debug.Assert(!this.IsVarArg() || !this.HasParamType());
@@ -1039,73 +1005,78 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     numRegistersUsed++;
                 }
 
-#if !_TARGET_X86_
-                if (this.IsVarArg())
+                if (!_transitionBlock.IsX86 && this.IsVarArg())
                 {
                     numRegistersUsed++;
                 }
-#endif
 
-#if _TARGET_X86_
-                if (this.IsVarArg())
+                switch (_transitionBlock.Architecture)
                 {
-                    numRegistersUsed = ArchitectureConstants.NUM_ARGUMENT_REGISTERS; // Nothing else gets passed in registers for varargs
-                }
+                    case TargetArchitecture.X86:
+                        if (this.IsVarArg())
+                        {
+                            numRegistersUsed = _transitionBlock.NumArgumentRegisters; // Nothing else gets passed in registers for varargs
+                        }
 
 #if FEATURE_INTERPRETER
-                switch (_interpreterCallingConvention)
-                {
-                    case CallingConventions.StdCall:
-                        _numRegistersUsed = ArchitectureConstants.NUM_ARGUMENT_REGISTERS;
-                        _curOfs = TransitionBlock.GetOffsetOfArgs() + numRegistersUsed * IntPtr.Size + initialArgOffset;
+                        switch (_interpreterCallingConvention)
+                        {
+                            case CallingConventions.StdCall:
+                                _numRegistersUsed = ArchitectureConstants.NUM_ARGUMENT_REGISTERS;
+                                _curOfs = TransitionBlock.GetOffsetOfArgs() + numRegistersUsed * IntPtr.Size + initialArgOffset;
+                                break;
+
+                            case CallingConventions.ManagedStatic:
+                            case CallingConventions.ManagedInstance:
+                                _numRegistersUsed = numRegistersUsed;
+                                // DESKTOP BEHAVIOR     _curOfs = (int)(TransitionBlock.GetOffsetOfArgs() + SizeOfArgStack());
+                                _curOfs = (int)(TransitionBlock.GetOffsetOfArgs() + initialArgOffset);
+                                break;
+
+                            default:
+                                Environment.FailFast("Unsupported calling convention.");
+                                break;
+                        }
+#endif
+                        _x86NumRegistersUsed = numRegistersUsed;
+                        // DESKTOP BEHAVIOR _curOfs = (int)(TransitionBlock.GetOffsetOfArgs() + SizeOfArgStack());
+                        _x86CurOfs = (int)(_transitionBlock.OffsetOfArgs + initialArgOffset);
                         break;
 
-                    case CallingConventions.ManagedStatic:
-                    case CallingConventions.ManagedInstance:
-                        _numRegistersUsed = numRegistersUsed;
-                        // DESKTOP BEHAVIOR     _curOfs = (int)(TransitionBlock.GetOffsetOfArgs() + SizeOfArgStack());
-                        _curOfs = (int)(TransitionBlock.GetOffsetOfArgs() + initialArgOffset);
+                    case TargetArchitecture.X64:
+                        if (_transitionBlock.IsX64UnixABI)
+                        {
+                            _x64UnixIdxGenReg = numRegistersUsed;
+                            _x64UnixIdxStack = 0;
+                            _x64UnixIdxFPReg = 0;
+                        }
+                        else
+                        {
+                            _x64WindowsCurOfs = _transitionBlock.OffsetOfArgs + numRegistersUsed * IntPtr.Size;
+                        }
+                        break;
+
+                    case TargetArchitecture.ARM:
+                        _armIdxGenReg = numRegistersUsed;
+                        _armIdxStack = 0;
+
+                        _armWFPRegs = 0;
+                        break;
+
+                    case TargetArchitecture.ARM64:
+                        _arm64IdxGenReg = numRegistersUsed;
+                        _arm64IdxStack = 0;
+
+                        _arm64IdxFPReg = 0;
                         break;
 
                     default:
-                        Environment.FailFast("Unsupported calling convention.");
-                        break;
+                        throw new NotImplementedException(_transitionBlock.Architecture.ToString());
                 }
-#else
-                        _numRegistersUsed = numRegistersUsed;
-// DESKTOP BEHAVIOR     _curOfs = (int)(TransitionBlock.GetOffsetOfArgs() + SizeOfArgStack());
-                        _curOfs = (int)(TransitionBlock.GetOffsetOfArgs() + initialArgOffset);
-#endif
 
-#elif _TARGET_AMD64_
-#if UNIX_AMD64_ABI
-                _idxGenReg = numRegistersUsed;
-                _idxStack = 0;
-                _idxFPReg = 0;
-#else
-                _curOfs = _transitionBlock.OffsetOfArgs + numRegistersUsed * IntPtr.Size;
-#endif
-#elif _TARGET_ARM_
-                _idxGenReg = numRegistersUsed;
-                _idxStack = 0;
-
-                _wFPRegs = 0;
-#elif _TARGET_ARM64_
-                _idxGenReg = numRegistersUsed;
-                _idxStack = 0;
-
-                _idxFPReg = 0;
-#elif _TARGET_WASM_
-                throw new NotImplementedException();
-#else
-                PORTABILITY_ASSERT("ArgIterator::GetNextOffset");
-#endif
-
-#if !_TARGET_WASM_
                 _argNum = (_skipFirstArg ? 1 : 0);
 
                 _ITERATION_STARTED = true;
-#endif // !_TARGET_WASM_
             }
 
             if (_argNum >= this.NumFixedArgs())
@@ -1119,19 +1090,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             int argSize = TypeHandle.GetElemSize(argType, _argTypeHandle);
 
-#if _TARGET_ARM64_
-            // NOT DESKTOP BEHAVIOR: The S and D registers overlap, and the UniversalTransitionThunk copies D registers to the transition blocks. We'll need
-            // to work with the D registers here as well.
             bool processingFloatsAsDoublesFromTransitionBlock = false;
-            if (argType == CorElementType.ELEMENT_TYPE_VALUETYPE && _argTypeHandle.IsHFA() && _argTypeHandle.GetHFAType() == CorElementType.ELEMENT_TYPE_R4)
+            if (_transitionBlock.IsARM64)
             {
-                if ((argSize / sizeof(float)) + _idxFPReg <= 8)
+                // NOT DESKTOP BEHAVIOR: The S and D registers overlap, and the UniversalTransitionThunk copies D registers to the transition blocks. We'll need
+                // to work with the D registers here as well.
+                if (argType == CorElementType.ELEMENT_TYPE_VALUETYPE && _argTypeHandle.IsHFA() && _argTypeHandle.GetHFAType() == CorElementType.ELEMENT_TYPE_R4)
                 {
-                    argSize *= 2;
-                    processingFloatsAsDoublesFromTransitionBlock = true;
+                    if ((argSize / sizeof(float)) + _arm64IdxFPReg <= 8)
+                    {
+                        argSize *= 2;
+                        processingFloatsAsDoublesFromTransitionBlock = true;
+                    }
                 }
             }
-#endif
 
             _argType = argType;
             _argSize = argSize;
@@ -1139,359 +1111,366 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             argType = _argForceByRef ? CorElementType.ELEMENT_TYPE_BYREF : argType;
             argSize = _argForceByRef ? IntPtr.Size : argSize;
 
-#pragma warning disable 219,168 // Unused local
             int argOfs;
-#pragma warning restore 219,168
 
-#if _TARGET_X86_
+            switch (_transitionBlock.Architecture)
+            {
+                case TargetArchitecture.X86:
 #if FEATURE_INTERPRETER
-            if (_interpreterCallingConvention != CallingConventions.ManagedStatic && _interpreterCallingConvention != CallingConventions.ManagedInstance)
-            {
-                argOfs = _curOfs;
-                _curOfs += ArchitectureConstants.StackElemSize(argSize);
-                return argOfs;
-            }
+                    if (_interpreterCallingConvention != CallingConventions.ManagedStatic && _interpreterCallingConvention != CallingConventions.ManagedInstance)
+                    {
+                        argOfs = _curOfs;
+                        _curOfs += ArchitectureConstants.StackElemSize(argSize);
+                        return argOfs;
+                    }
 #endif
-            if (IsArgumentInRegister(ref _numRegistersUsed, argType, _argTypeHandle))
-            {
-                return TransitionBlock.GetOffsetOfArgumentRegisters() + (ArchitectureConstants.NUM_ARGUMENT_REGISTERS - _numRegistersUsed) * IntPtr.Size;
-            }
-
-            // DESKTOP BEHAVIOR _curOfs -= ArchitectureConstants.StackElemSize(argSize);
-            // DESKTOP BEHAVIOR return _curOfs;
-            argOfs = _curOfs;
-            _curOfs += ArchitectureConstants.StackElemSize(argSize);
-            Debug.Assert(argOfs >= TransitionBlock.GetOffsetOfArgs());
-            return argOfs;
-#elif _TARGET_AMD64_
-#if UNIX_AMD64_ABI
-            int cFPRegs = 0;
-
-            switch (argType)
-            {
-
-                case CorElementType.ELEMENT_TYPE_R4:
-                    // 32-bit floating point argument.
-                    cFPRegs = 1;
-                    break;
-
-                case CorElementType.ELEMENT_TYPE_R8:
-                    // 64-bit floating point argument.
-                    cFPRegs = 1;
-                    break;
-
-                case CorElementType.ELEMENT_TYPE_VALUETYPE:
+                    if (IsArgumentInRegister(_transitionBlock, ref _x86NumRegistersUsed, argType, _argTypeHandle))
                     {
-                        // UNIXTODO: FEATURE_UNIX_AMD64_STRUCT_PASSING: Passing of structs, HFAs. For now, use the Windows convention.
-                        argSize = IntPtr.Size;
-                        break;
+                        return _transitionBlock.OffsetOfArgumentRegisters + (_transitionBlock.NumArgumentRegisters - _x86NumRegistersUsed) * IntPtr.Size;
                     }
 
-                default:
-                    break;
-            }
+                    // DESKTOP BEHAVIOR _curOfs -= ArchitectureConstants.StackElemSize(argSize);
+                    // DESKTOP BEHAVIOR return _curOfs;
+                    argOfs = _x86CurOfs;
+                    _x86CurOfs += _transitionBlock.StackElemSize(argSize);
+                    Debug.Assert(argOfs >= _transitionBlock.OffsetOfArgs);
+                    return argOfs;
 
-            int cbArg = ArchitectureConstants.StackElemSize(argSize);
-            int cArgSlots = cbArg / ArchitectureConstants.STACK_ELEM_SIZE;
-
-            if (cFPRegs > 0)
-            {
-                if (cFPRegs + m_idxFPReg <= 8)
-                {
-                    int argOfsInner = TransitionBlock.GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
-                    m_idxFPReg += cFPRegs;
-                    return argOfsInner;
-                }
-            }
-            else
-            {
-                if (m_idxGenReg + cArgSlots <= 6)
-                {
-                    int argOfsInner = TransitionBlock.GetOffsetOfArgumentRegisters() + m_idxGenReg * 8;
-                    m_idxGenReg += cArgSlots;
-                    return argOfsInner;
-                }
-            }
-
-            argOfs = TransitionBlock.GetOffsetOfArgs() + m_idxStack * 8;
-            m_idxStack += cArgSlots;
-            return argOfs;
-#else
-            int cFPRegs = 0;
-
-            switch (argType)
-            {
-                case CorElementType.ELEMENT_TYPE_R4:
-                    // 32-bit floating point argument.
-                    cFPRegs = 1;
-                    break;
-
-                case CorElementType.ELEMENT_TYPE_R8:
-                    // 64-bit floating point argument.
-                    cFPRegs = 1;
-                    break;
-            }
-
-            // Each argument takes exactly one slot on AMD64
-            argOfs = _curOfs - _transitionBlock.OffsetOfArgs;
-            _curOfs += IntPtr.Size;
-
-            if ((cFPRegs == 0) || (argOfs >= _transitionBlock.SizeOfArgumentRegisters))
-            {
-                return argOfs + _transitionBlock.OffsetOfArgs;
-            }
-            else
-            {
-                int idxFpReg = argOfs / IntPtr.Size;
-                return _transitionBlock.OffsetOfFloatArgumentRegisters + idxFpReg * TransitionBlock.SizeOfM128A;
-            }
-#endif
-#elif _TARGET_ARM_
-            // First look at the underlying type of the argument to determine some basic properties:
-            //  1) The size of the argument in bytes (rounded up to the stack slot size of 4 if necessary).
-            //  2) Whether the argument represents a floating point primitive (ELEMENT_TYPE_R4 or ELEMENT_TYPE_R8).
-            //  3) Whether the argument requires 64-bit alignment (anything that contains a Int64/UInt64).
-
-            bool fFloatingPoint = false;
-            bool fRequiresAlign64Bit = false;
-
-            switch (argType)
-            {
-                case CorElementType.ELEMENT_TYPE_I8:
-                case CorElementType.ELEMENT_TYPE_U8:
-                    // 64-bit integers require 64-bit alignment on ARM.
-                    fRequiresAlign64Bit = true;
-                    break;
-
-                case CorElementType.ELEMENT_TYPE_R4:
-                    // 32-bit floating point argument.
-                    fFloatingPoint = true;
-                    break;
-
-                case CorElementType.ELEMENT_TYPE_R8:
-                    // 64-bit floating point argument.
-                    fFloatingPoint = true;
-                    fRequiresAlign64Bit = true;
-                    break;
-
-                case CorElementType.ELEMENT_TYPE_VALUETYPE:
+                case TargetArchitecture.X64:
+                    if (_transitionBlock.IsX64UnixABI)
                     {
-                        // Value type case: extract the alignment requirement, note that this has to handle 
-                        // the interop "native value types".
-                        fRequiresAlign64Bit = _argTypeHandle.RequiresAlign8();
+                        int cFPRegs = 0;
 
-                        // Handle HFAs: packed structures of 1-4 floats or doubles that are passed in FP argument
-                        // registers if possible.
-                        if (_argTypeHandle.IsHFA())
-                            fFloatingPoint = true;
-
-                        break;
-                    }
-
-                default:
-                    // The default is are 4-byte arguments (or promoted to 4 bytes), non-FP and don't require any
-                    // 64-bit alignment.
-                    break;
-            }
-
-            // Now attempt to place the argument into some combination of floating point or general registers and
-            // the stack.
-
-            // Save the alignment requirement
-            _fRequires64BitAlignment = fRequiresAlign64Bit;
-
-            int cbArg = ArchitectureConstants.StackElemSize(argSize);
-            int cArgSlots = cbArg / 4;
-
-            // Ignore floating point argument placement in registers if we're dealing with a vararg function (the ABI
-            // specifies this so that vararg processing on the callee side is simplified).
-            if (fFloatingPoint && !this.IsVarArg())
-            {
-                // Handle floating point (primitive) arguments.
-
-                // First determine whether we can place the argument in VFP registers. There are 16 32-bit
-                // and 8 64-bit argument registers that share the same register space (e.g. D0 overlaps S0 and
-                // S1). The ABI specifies that VFP values will be passed in the lowest sequence of registers that
-                // haven't been used yet and have the required alignment. So the sequence (float, double, float)
-                // would be mapped to (S0, D1, S1) or (S0, S2/S3, S1).
-                //
-                // We use a 16-bit bitmap to record which registers have been used so far.
-                //
-                // So we can use the same basic loop for each argument type (float, double or HFA struct) we set up
-                // the following input parameters based on the size and alignment requirements of the arguments:
-                //   wAllocMask : bitmask of the number of 32-bit registers we need (1 for 1, 3 for 2, 7 for 3 etc.)
-                //   cSteps     : number of loop iterations it'll take to search the 16 registers
-                //   cShift     : how many bits to shift the allocation mask on each attempt
-
-                ushort wAllocMask = checked((ushort)((1 << (cbArg / 4)) - 1));
-                ushort cSteps = (ushort)(fRequiresAlign64Bit ? 9 - (cbArg / 8) : 17 - (cbArg / 4));
-                ushort cShift = fRequiresAlign64Bit ? (ushort)2 : (ushort)1;
-
-                // Look through the availability bitmask for a free register or register pair.
-                for (ushort i = 0; i < cSteps; i++)
-                {
-                    if ((_wFPRegs & wAllocMask) == 0)
-                    {
-                        // We found one, mark the register or registers as used. 
-                        _wFPRegs |= wAllocMask;
-
-                        // Indicate the registers used to the caller and return.
-                        return TransitionBlock.GetOffsetOfFloatArgumentRegisters() + (i * cShift * 4);
-                    }
-                    wAllocMask <<= cShift;
-                }
-
-                // The FP argument is going to live on the stack. Once this happens the ABI demands we mark all FP
-                // registers as unavailable.
-                _wFPRegs = 0xffff;
-
-                // Doubles or HFAs containing doubles need the stack aligned appropriately.
-                if (fRequiresAlign64Bit)
-                    _idxStack = ALIGN_UP(_idxStack, 2);
-
-                // Indicate the stack location of the argument to the caller.
-                int argOfsInner = TransitionBlock.GetOffsetOfArgs() + _idxStack * 4;
-
-                // Record the stack usage.
-                _idxStack += cArgSlots;
-
-                return argOfsInner;
-            }
-
-            //
-            // Handle the non-floating point case.
-            //
-
-            if (_idxGenReg < 4)
-            {
-                if (fRequiresAlign64Bit)
-                {
-                    // The argument requires 64-bit alignment. Align either the next general argument register if
-                    // we have any left.  See step C.3 in the algorithm in the ABI spec.       
-                    _idxGenReg = ALIGN_UP(_idxGenReg, 2);
-                }
-
-                int argOfsInner = TransitionBlock.GetOffsetOfArgumentRegisters() + _idxGenReg * 4;
-
-                int cRemainingRegs = 4 - _idxGenReg;
-                if (cArgSlots <= cRemainingRegs)
-                {
-                    // Mark the registers just allocated as used.
-                    _idxGenReg += cArgSlots;
-                    return argOfsInner;
-                }
-
-                // The ABI supports splitting a non-FP argument across registers and the stack. But this is
-                // disabled if the FP arguments already overflowed onto the stack (i.e. the stack index is not
-                // zero). The following code marks the general argument registers as exhausted if this condition
-                // holds.  See steps C.5 in the algorithm in the ABI spec.
-
-                _idxGenReg = 4;
-
-                if (_idxStack == 0)
-                {
-                    _idxStack += cArgSlots - cRemainingRegs;
-                    return argOfsInner;
-                }
-            }
-
-            if (fRequiresAlign64Bit)
-            {
-                // The argument requires 64-bit alignment. If it is going to be passed on the stack, align
-                // the next stack slot.  See step C.6 in the algorithm in the ABI spec.  
-                _idxStack = ALIGN_UP(_idxStack, 2);
-            }
-
-            argOfs = TransitionBlock.GetOffsetOfArgs() + _idxStack * 4;
-
-            // Advance the stack pointer over the argument just placed.
-            _idxStack += cArgSlots;
-
-            return argOfs;
-#elif _TARGET_ARM64_
-
-            int cFPRegs = 0;
-
-            switch (argType)
-            {
-                case CorElementType.ELEMENT_TYPE_R4:
-                    // 32-bit floating point argument.
-                    cFPRegs = 1;
-                    break;
-
-                case CorElementType.ELEMENT_TYPE_R8:
-                    // 64-bit floating point argument.
-                    cFPRegs = 1;
-                    break;
-
-                case CorElementType.ELEMENT_TYPE_VALUETYPE:
-                    {
-                        // Handle HFAs: packed structures of 2-4 floats or doubles that are passed in FP argument
-                        // registers if possible.
-                        if (_argTypeHandle.IsHFA())
+                        switch (argType)
                         {
-                            CorElementType type = _argTypeHandle.GetHFAType();
-                            if (processingFloatsAsDoublesFromTransitionBlock)
-                                cFPRegs = argSize / sizeof(double);
-                            else
-                                cFPRegs = (type == CorElementType.ELEMENT_TYPE_R4) ? (argSize / sizeof(float)) : (argSize / sizeof(double));
+
+                            case CorElementType.ELEMENT_TYPE_R4:
+                                // 32-bit floating point argument.
+                                cFPRegs = 1;
+                                break;
+
+                            case CorElementType.ELEMENT_TYPE_R8:
+                                // 64-bit floating point argument.
+                                cFPRegs = 1;
+                                break;
+
+                            case CorElementType.ELEMENT_TYPE_VALUETYPE:
+                                {
+                                    // UNIXTODO: FEATURE_UNIX_AMD64_STRUCT_PASSING: Passing of structs, HFAs. For now, use the Windows convention.
+                                    argSize = IntPtr.Size;
+                                    break;
+                                }
+
+                            default:
+                                break;
+                        }
+
+                        int cbArg = _transitionBlock.StackElemSize(argSize);
+                        int cArgSlots = cbArg / _transitionBlock.StackElemSize();
+
+                        if (cFPRegs > 0)
+                        {
+                            if (cFPRegs + _x64UnixIdxFPReg <= 8)
+                            {
+                                int argOfsInner = _transitionBlock.OffsetOfFloatArgumentRegisters + _x64UnixIdxFPReg * 8;
+                                _x64UnixIdxFPReg += cFPRegs;
+                                return argOfsInner;
+                            }
                         }
                         else
                         {
-                            // Composite greater than 16bytes should be passed by reference
-                            if (argSize > ArchitectureConstants.ENREGISTERED_PARAMTYPE_MAXSIZE)
+                            if (_x64UnixIdxGenReg + cArgSlots <= 6)
                             {
-                                argSize = IntPtr.Size;
+                                int argOfsInner = _transitionBlock.OffsetOfArgumentRegisters + _x64UnixIdxGenReg * 8;
+                                _x64UnixIdxGenReg += cArgSlots;
+                                return argOfsInner;
                             }
                         }
 
-                        break;
+                        argOfs = _transitionBlock.OffsetOfArgs + _x64UnixIdxStack * 8;
+                        _x64UnixIdxStack += cArgSlots;
+                        return argOfs;
+                    }
+                    else
+                    {
+                        int cFPRegs = 0;
+
+                        switch (argType)
+                        {
+                            case CorElementType.ELEMENT_TYPE_R4:
+                                // 32-bit floating point argument.
+                                cFPRegs = 1;
+                                break;
+
+                            case CorElementType.ELEMENT_TYPE_R8:
+                                // 64-bit floating point argument.
+                                cFPRegs = 1;
+                                break;
+                        }
+
+                        // Each argument takes exactly one slot on AMD64
+                        argOfs = _x64WindowsCurOfs - _transitionBlock.OffsetOfArgs;
+                        _x64WindowsCurOfs += IntPtr.Size;
+
+                        if ((cFPRegs == 0) || (argOfs >= _transitionBlock.SizeOfArgumentRegisters))
+                        {
+                            return argOfs + _transitionBlock.OffsetOfArgs;
+                        }
+                        else
+                        {
+                            int idxFpReg = argOfs / IntPtr.Size;
+                            return _transitionBlock.OffsetOfFloatArgumentRegisters + idxFpReg * TransitionBlock.SizeOfM128A;
+                        }
+                    }
+
+                case TargetArchitecture.ARM:
+                    {
+                        // First look at the underlying type of the argument to determine some basic properties:
+                        //  1) The size of the argument in bytes (rounded up to the stack slot size of 4 if necessary).
+                        //  2) Whether the argument represents a floating point primitive (ELEMENT_TYPE_R4 or ELEMENT_TYPE_R8).
+                        //  3) Whether the argument requires 64-bit alignment (anything that contains a Int64/UInt64).
+
+                        bool fFloatingPoint = false;
+                        bool fRequiresAlign64Bit = false;
+
+                        switch (argType)
+                        {
+                            case CorElementType.ELEMENT_TYPE_I8:
+                            case CorElementType.ELEMENT_TYPE_U8:
+                                // 64-bit integers require 64-bit alignment on ARM.
+                                fRequiresAlign64Bit = true;
+                                break;
+
+                            case CorElementType.ELEMENT_TYPE_R4:
+                                // 32-bit floating point argument.
+                                fFloatingPoint = true;
+                                break;
+
+                            case CorElementType.ELEMENT_TYPE_R8:
+                                // 64-bit floating point argument.
+                                fFloatingPoint = true;
+                                fRequiresAlign64Bit = true;
+                                break;
+
+                            case CorElementType.ELEMENT_TYPE_VALUETYPE:
+                                {
+                                    // Value type case: extract the alignment requirement, note that this has to handle 
+                                    // the interop "native value types".
+                                    fRequiresAlign64Bit = _argTypeHandle.RequiresAlign8();
+
+                                    // Handle HFAs: packed structures of 1-4 floats or doubles that are passed in FP argument
+                                    // registers if possible.
+                                    if (_argTypeHandle.IsHFA())
+                                        fFloatingPoint = true;
+
+                                    break;
+                                }
+
+                            default:
+                                // The default is are 4-byte arguments (or promoted to 4 bytes), non-FP and don't require any
+                                // 64-bit alignment.
+                                break;
+                        }
+
+                        // Now attempt to place the argument into some combination of floating point or general registers and
+                        // the stack.
+
+                        // Save the alignment requirement
+                        _armRequires64BitAlignment = fRequiresAlign64Bit;
+
+                        int cbArg = _transitionBlock.StackElemSize(argSize);
+                        int cArgSlots = cbArg / 4;
+
+                        // Ignore floating point argument placement in registers if we're dealing with a vararg function (the ABI
+                        // specifies this so that vararg processing on the callee side is simplified).
+                        if (fFloatingPoint && !this.IsVarArg())
+                        {
+                            // Handle floating point (primitive) arguments.
+
+                            // First determine whether we can place the argument in VFP registers. There are 16 32-bit
+                            // and 8 64-bit argument registers that share the same register space (e.g. D0 overlaps S0 and
+                            // S1). The ABI specifies that VFP values will be passed in the lowest sequence of registers that
+                            // haven't been used yet and have the required alignment. So the sequence (float, double, float)
+                            // would be mapped to (S0, D1, S1) or (S0, S2/S3, S1).
+                            //
+                            // We use a 16-bit bitmap to record which registers have been used so far.
+                            //
+                            // So we can use the same basic loop for each argument type (float, double or HFA struct) we set up
+                            // the following input parameters based on the size and alignment requirements of the arguments:
+                            //   wAllocMask : bitmask of the number of 32-bit registers we need (1 for 1, 3 for 2, 7 for 3 etc.)
+                            //   cSteps     : number of loop iterations it'll take to search the 16 registers
+                            //   cShift     : how many bits to shift the allocation mask on each attempt
+
+                            ushort wAllocMask = checked((ushort)((1 << (cbArg / 4)) - 1));
+                            ushort cSteps = (ushort)(fRequiresAlign64Bit ? 9 - (cbArg / 8) : 17 - (cbArg / 4));
+                            ushort cShift = fRequiresAlign64Bit ? (ushort)2 : (ushort)1;
+
+                            // Look through the availability bitmask for a free register or register pair.
+                            for (ushort i = 0; i < cSteps; i++)
+                            {
+                                if ((_armWFPRegs & wAllocMask) == 0)
+                                {
+                                    // We found one, mark the register or registers as used. 
+                                    _armWFPRegs |= wAllocMask;
+
+                                    // Indicate the registers used to the caller and return.
+                                    return _transitionBlock.OffsetOfFloatArgumentRegisters + (i * cShift * 4);
+                                }
+                                wAllocMask <<= cShift;
+                            }
+
+                            // The FP argument is going to live on the stack. Once this happens the ABI demands we mark all FP
+                            // registers as unavailable.
+                            _armWFPRegs = 0xffff;
+
+                            // Doubles or HFAs containing doubles need the stack aligned appropriately.
+                            if (fRequiresAlign64Bit)
+                                _armIdxStack = ALIGN_UP(_armIdxStack, 2);
+
+                            // Indicate the stack location of the argument to the caller.
+                            int argOfsInner = _transitionBlock.OffsetOfArgs + _armIdxStack * 4;
+
+                            // Record the stack usage.
+                            _armIdxStack += cArgSlots;
+
+                            return argOfsInner;
+                        }
+
+                        //
+                        // Handle the non-floating point case.
+                        //
+
+                        if (_armIdxGenReg < 4)
+                        {
+                            if (fRequiresAlign64Bit)
+                            {
+                                // The argument requires 64-bit alignment. Align either the next general argument register if
+                                // we have any left.  See step C.3 in the algorithm in the ABI spec.       
+                                _armIdxGenReg = ALIGN_UP(_armIdxGenReg, 2);
+                            }
+
+                            int argOfsInner = _transitionBlock.OffsetOfArgumentRegisters + _armIdxGenReg * 4;
+
+                            int cRemainingRegs = 4 - _armIdxGenReg;
+                            if (cArgSlots <= cRemainingRegs)
+                            {
+                                // Mark the registers just allocated as used.
+                                _armIdxGenReg += cArgSlots;
+                                return argOfsInner;
+                            }
+
+                            // The ABI supports splitting a non-FP argument across registers and the stack. But this is
+                            // disabled if the FP arguments already overflowed onto the stack (i.e. the stack index is not
+                            // zero). The following code marks the general argument registers as exhausted if this condition
+                            // holds.  See steps C.5 in the algorithm in the ABI spec.
+
+                            _armIdxGenReg = 4;
+
+                            if (_armIdxStack == 0)
+                            {
+                                _armIdxStack += cArgSlots - cRemainingRegs;
+                                return argOfsInner;
+                            }
+                        }
+
+                        if (fRequiresAlign64Bit)
+                        {
+                            // The argument requires 64-bit alignment. If it is going to be passed on the stack, align
+                            // the next stack slot.  See step C.6 in the algorithm in the ABI spec.  
+                            _armIdxStack = ALIGN_UP(_armIdxStack, 2);
+                        }
+
+                        argOfs = _transitionBlock.OffsetOfArgs + _armIdxStack * 4;
+
+                        // Advance the stack pointer over the argument just placed.
+                        _armIdxStack += cArgSlots;
+
+                        return argOfs;
+                    }
+
+                case TargetArchitecture.ARM64:
+                    {
+                        int cFPRegs = 0;
+
+                        switch (argType)
+                        {
+                            case CorElementType.ELEMENT_TYPE_R4:
+                                // 32-bit floating point argument.
+                                cFPRegs = 1;
+                                break;
+
+                            case CorElementType.ELEMENT_TYPE_R8:
+                                // 64-bit floating point argument.
+                                cFPRegs = 1;
+                                break;
+
+                            case CorElementType.ELEMENT_TYPE_VALUETYPE:
+                                {
+                                    // Handle HFAs: packed structures of 2-4 floats or doubles that are passed in FP argument
+                                    // registers if possible.
+                                    if (_argTypeHandle.IsHFA())
+                                    {
+                                        CorElementType type = _argTypeHandle.GetHFAType();
+                                        if (processingFloatsAsDoublesFromTransitionBlock)
+                                            cFPRegs = argSize / sizeof(double);
+                                        else
+                                            cFPRegs = (type == CorElementType.ELEMENT_TYPE_R4) ? (argSize / sizeof(float)) : (argSize / sizeof(double));
+                                    }
+                                    else
+                                    {
+                                        // Composite greater than 16bytes should be passed by reference
+                                        if (argSize > _transitionBlock.EnregisteredParamTypeMaxSize)
+                                        {
+                                            argSize = IntPtr.Size;
+                                        }
+                                    }
+
+                                    break;
+                                }
+
+                            default:
+                                break;
+                        }
+
+                        int cbArg = _transitionBlock.StackElemSize(argSize);
+                        int cArgSlots = cbArg / _transitionBlock.StackElemSize();
+
+                        if (cFPRegs > 0 && !this.IsVarArg())
+                        {
+                            if (cFPRegs + _arm64IdxFPReg <= 8)
+                            {
+                                int argOfsInner = _transitionBlock.OffsetOfFloatArgumentRegisters + _arm64IdxFPReg * 8;
+                                _arm64IdxFPReg += cFPRegs;
+                                return argOfsInner;
+                            }
+                            else
+                            {
+                                _arm64IdxFPReg = 8;
+                            }
+                        }
+                        else
+                        {
+                            if (_arm64IdxGenReg + cArgSlots <= 8)
+                            {
+                                int argOfsInner = _transitionBlock.OffsetOfArgumentRegisters + _arm64IdxGenReg * 8;
+                                _arm64IdxGenReg += cArgSlots;
+                                return argOfsInner;
+                            }
+                            else
+                            {
+                                _arm64IdxGenReg = 8;
+                            }
+                        }
+
+                        argOfs = _transitionBlock.OffsetOfArgs + _arm64IdxStack * 8;
+                        _arm64IdxStack += cArgSlots;
+                        return argOfs;
                     }
 
                 default:
-                    break;
+                    throw new NotImplementedException(_transitionBlock.Architecture.ToString());
             }
-
-            int cbArg = ArchitectureConstants.StackElemSize(argSize);
-            int cArgSlots = cbArg / ArchitectureConstants.STACK_ELEM_SIZE;
-
-            if (cFPRegs > 0 && !this.IsVarArg())
-            {
-                if (cFPRegs + _idxFPReg <= 8)
-                {
-                    int argOfsInner = TransitionBlock.GetOffsetOfFloatArgumentRegisters() + _idxFPReg * 8;
-                    _idxFPReg += cFPRegs;
-                    return argOfsInner;
-                }
-                else
-                {
-                    _idxFPReg = 8;
-                }
-            }
-            else
-            {
-                if (_idxGenReg + cArgSlots <= 8)
-                {
-                    int argOfsInner = TransitionBlock.GetOffsetOfArgumentRegisters() + _idxGenReg * 8;
-                    _idxGenReg += cArgSlots;
-                    return argOfsInner;
-                }
-                else
-                {
-                    _idxGenReg = 8;
-                }
-            }
-
-            argOfs = TransitionBlock.GetOffsetOfArgs() + _idxStack * 8;
-            _idxStack += cArgSlots;
-            return argOfs;
-#elif _TARGET_WASM_
-            throw new NotImplementedException();
-#else
-#error            PORTABILITY_ASSERT("ArgIterator::GetNextOffset");
-#endif
         }
-
 
         public CorElementType GetArgType(out TypeHandle pTypeHandle)
         {
@@ -1518,135 +1497,139 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // This can be only used before the actual argument iteration started
             Debug.Assert(!_ITERATION_STARTED);
 
-#if _TARGET_X86_
-            //
-            // x86 is special as always
-            //
-
             int numRegistersUsed = 0;
             int nSizeOfArgStack = 0;
 
-            if (this.HasThis())
-                numRegistersUsed++;
-
-            if (this.HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+            if (_transitionBlock.IsX86)
             {
-                // DESKTOP BEHAVIOR                numRegistersUsed++;
-                // On ProjectN ret buff arg is passed on the call stack as the top stack arg
-                nSizeOfArgStack += IntPtr.Size;
-            }
+                //
+                // x86 is special as always
+                //
 
-            // DESKTOP BEHAVIOR - This block is disabled for x86 as the param arg is the last argument on desktop x86.
-            if (this.HasParamType())
-            {
-                numRegistersUsed++;
-                _paramTypeLoc = (numRegistersUsed == 1) ?
-                    ParamTypeLocation.Ecx : ParamTypeLocation.Edx;
-                Debug.Assert(numRegistersUsed <= 2);
-            }
+                if (this.HasThis())
+                    numRegistersUsed++;
 
-            if (this.IsVarArg())
-            {
-                nSizeOfArgStack += IntPtr.Size;
-                numRegistersUsed = ArchitectureConstants.NUM_ARGUMENT_REGISTERS; // Nothing else gets passed in registers for varargs
-            }
-
-#if FEATURE_INTERPRETER
-            switch (_interpreterCallingConvention)
-            {
-                case CallingConventions.StdCall:
-                    numRegistersUsed = ArchitectureConstants.NUM_ARGUMENT_REGISTERS;
-                    break;
-
-                case CallingConventions.ManagedStatic:
-                case CallingConventions.ManagedInstance:
-                    break;
-
-                default:
-                    Environment.FailFast("Unsupported calling convention.");
-                    break;
-            }
-#endif // FEATURE_INTERPRETER
-
-            int nArgs = this.NumFixedArgs();
-            for (int i = (_skipFirstArg ? 1 : 0); i < nArgs; i++)
-            {
-                TypeHandle thArgType;
-                bool argForcedToBeByref;
-                CorElementType type = this.GetArgumentType(i, out thArgType, out argForcedToBeByref);
-                if (argForcedToBeByref)
-                    type = CorElementType.ELEMENT_TYPE_BYREF;
-
-                if (!IsArgumentInRegister(ref numRegistersUsed, type, thArgType))
+                if (this.HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
                 {
-                    int structSize = TypeHandle.GetElemSize(type, thArgType);
-
-                    nSizeOfArgStack += ArchitectureConstants.StackElemSize(structSize);
-
-                    if (nSizeOfArgStack > ArchitectureConstants.MAX_ARG_SIZE)
-                    {
-                        throw new NotSupportedException();
-                    }
+                    // DESKTOP BEHAVIOR                numRegistersUsed++;
+                    // On ProjectN ret buff arg is passed on the call stack as the top stack arg
+                    nSizeOfArgStack += IntPtr.Size;
                 }
-            }
 
-#if DESKTOP            // DESKTOP BEHAVIOR
-            if (this.HasParamType())
-            {
-                if (numRegistersUsed < ArchitectureConstants.NUM_ARGUMENT_REGISTERS)
+                // DESKTOP BEHAVIOR - This block is disabled for x86 as the param arg is the last argument on desktop x86.
+                if (this.HasParamType())
                 {
                     numRegistersUsed++;
-                    paramTypeLoc = (numRegistersUsed == 1) ?
+                    _paramTypeLoc = (numRegistersUsed == 1) ?
                         ParamTypeLocation.Ecx : ParamTypeLocation.Edx;
+                    Debug.Assert(numRegistersUsed <= 2);
                 }
-                else
+
+                if (this.IsVarArg())
                 {
                     nSizeOfArgStack += IntPtr.Size;
-                    paramTypeLoc = ParamTypeLocation.Stack;
+                    numRegistersUsed = _transitionBlock.NumArgumentRegisters; // Nothing else gets passed in registers for varargs
                 }
-            }
-#endif // DESKTOP BEHAVIOR
 
-#else // _TARGET_X86_
-
-            int maxOffset = _transitionBlock.OffsetOfArgs;
-
-            int ofs;
-            while (TransitionBlock.InvalidOffset != (ofs = GetNextOffset()))
-            {
-                int stackElemSize;
-
-#if _TARGET_AMD64_
-                // All stack arguments take just one stack slot on AMD64 because of arguments bigger 
-                // than a stack slot are passed by reference. 
-                stackElemSize = _transitionBlock.StackElemSize;
-#else
-                stackElemSize = ArchitectureConstants.StackElemSize(GetArgSize());
-                if (IsArgPassedByRef())
-                    stackElemSize = ArchitectureConstants.STACK_ELEM_SIZE;
-#endif
-
-                int endOfs = ofs + stackElemSize;
-                if (endOfs > maxOffset)
+#if FEATURE_INTERPRETER
+                switch (_interpreterCallingConvention)
                 {
-                    if (endOfs > TransitionBlock.MaxArgSize)
+                    case CallingConventions.StdCall:
+                        numRegistersUsed = ArchitectureConstants.NUM_ARGUMENT_REGISTERS;
+                        break;
+
+                    case CallingConventions.ManagedStatic:
+                    case CallingConventions.ManagedInstance:
+                        break;
+
+                    default:
+                        Environment.FailFast("Unsupported calling convention.");
+                        break;
+                }
+#endif // FEATURE_INTERPRETER
+
+                int nArgs = this.NumFixedArgs();
+                for (int i = (_skipFirstArg ? 1 : 0); i < nArgs; i++)
+                {
+                    TypeHandle thArgType;
+                    bool argForcedToBeByref;
+                    CorElementType type = this.GetArgumentType(i, out thArgType, out argForcedToBeByref);
+                    if (argForcedToBeByref)
+                        type = CorElementType.ELEMENT_TYPE_BYREF;
+
+                    if (!IsArgumentInRegister(_transitionBlock, ref numRegistersUsed, type, thArgType))
                     {
-                        throw new NotSupportedException();
+                        int structSize = TypeHandle.GetElemSize(type, thArgType);
+
+                        nSizeOfArgStack += _transitionBlock.StackElemSize(structSize);
+
+                        if (nSizeOfArgStack > TransitionBlock.MaxArgSize)
+                        {
+                            throw new NotSupportedException();
+                        }
                     }
-                    maxOffset = endOfs;
+                }
+
+#if DESKTOP            // DESKTOP BEHAVIOR
+                if (this.HasParamType())
+                {
+                    if (numRegistersUsed < ArchitectureConstants.NUM_ARGUMENT_REGISTERS)
+                    {
+                        numRegistersUsed++;
+                        paramTypeLoc = (numRegistersUsed == 1) ?
+                            ParamTypeLocation.Ecx : ParamTypeLocation.Edx;
+                    }
+                    else
+                    {
+                        nSizeOfArgStack += IntPtr.Size;
+                        paramTypeLoc = ParamTypeLocation.Stack;
+                    }
+                }
+#endif // DESKTOP BEHAVIOR
+            }
+            else
+            {
+                int maxOffset = _transitionBlock.OffsetOfArgs;
+
+                int ofs;
+                while (TransitionBlock.InvalidOffset != (ofs = GetNextOffset()))
+                {
+                    int stackElemSize;
+
+                    if (_transitionBlock.IsX64)
+                    {
+                        // All stack arguments take just one stack slot on AMD64 because of arguments bigger 
+                        // than a stack slot are passed by reference. 
+                        stackElemSize = _transitionBlock.StackElemSize();
+                    }
+                    else
+                    {
+                        stackElemSize = _transitionBlock.StackElemSize(GetArgSize());
+                        if (IsArgPassedByRef())
+                            stackElemSize = _transitionBlock.StackElemSize();
+                    }
+
+                    int endOfs = ofs + stackElemSize;
+                    if (endOfs > maxOffset)
+                    {
+                        if (endOfs > TransitionBlock.MaxArgSize)
+                        {
+                            throw new NotSupportedException();
+                        }
+                        maxOffset = endOfs;
+                    }
+                }
+                // Clear the iterator started flag
+                _ITERATION_STARTED = false;
+
+                nSizeOfArgStack = maxOffset - _transitionBlock.OffsetOfArgs;
+
+                if (_transitionBlock.IsX64 && !_transitionBlock.IsX64UnixABI)
+                {
+                    nSizeOfArgStack = (nSizeOfArgStack > (int)_transitionBlock.SizeOfArgumentRegisters) ?
+                        (nSizeOfArgStack - _transitionBlock.SizeOfArgumentRegisters) : 0;
                 }
             }
-            // Clear the iterator started flag
-            _ITERATION_STARTED = false;
-
-            int nSizeOfArgStack = maxOffset - _transitionBlock.OffsetOfArgs;
-
-#if _TARGET_AMD64_ && !UNIX_AMD64_ABI
-            nSizeOfArgStack = (nSizeOfArgStack > (int)_transitionBlock.SizeOfArgumentRegisters) ?
-                (nSizeOfArgStack - _transitionBlock.SizeOfArgumentRegisters) : 0;
-#endif
-
-#endif // _TARGET_X86_
 
             // Cache the result
             _nSizeOfArgStack = nSizeOfArgStack;
@@ -1655,163 +1638,179 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             this.Reset();
         }
 
-
-#if !_TARGET_X86_
         // Accessors for built in argument descriptions of the special implicit parameters not mentioned directly
         // in signatures (this pointer and the like). Whether or not these can be used successfully before all the
         // explicit arguments have been scanned is platform dependent.
-        public unsafe void GetThisLoc(ArgLocDesc* pLoc) { GetSimpleLoc(GetThisOffset(), pLoc); }
-        public unsafe void GetRetBuffArgLoc(ArgLocDesc* pLoc) { GetSimpleLoc(GetRetBuffArgOffset(), pLoc); }
-        public unsafe void GetParamTypeLoc(ArgLocDesc* pLoc) { GetSimpleLoc(GetParamTypeArgOffset(), pLoc); }
-        public unsafe void GetVASigCookieLoc(ArgLocDesc* pLoc) { GetSimpleLoc(GetVASigCookieOffset(), pLoc); }
-#endif // !_TARGET_X86_
+        public unsafe void GetThisLoc(ArgLocDesc* pLoc)
+        {
+            Debug.Assert(!_transitionBlock.IsX86);
+            GetSimpleLoc(GetThisOffset(), pLoc);
+        }
+        public unsafe void GetRetBuffArgLoc(ArgLocDesc* pLoc)
+        {
+            Debug.Assert(!_transitionBlock.IsX86);
+            GetSimpleLoc(GetRetBuffArgOffset(), pLoc);
+        }
 
-#if _TARGET_ARM_
+        public unsafe void GetParamTypeLoc(ArgLocDesc* pLoc)
+        {
+            Debug.Assert(!_transitionBlock.IsX86);
+            GetSimpleLoc(GetParamTypeArgOffset(), pLoc);
+        }
+
+        public unsafe void GetVASigCookieLoc(ArgLocDesc* pLoc)
+        {
+            Debug.Assert(!_transitionBlock.IsX86);
+            GetSimpleLoc(GetVASigCookieOffset(), pLoc);
+        }
+
         // Get layout information for the argument that the ArgIterator is currently visiting.
         public ArgLocDesc? GetArgLoc(int argOffset)
         {
-            //        LIMITED_METHOD_CONTRACT;
-
-            ArgLocDesc pLoc = new ArgLocDesc();
-
-            pLoc.m_fRequires64BitAlignment = _fRequires64BitAlignment;
-
-            int cSlots = (GetArgSize() + 3) / 4;
-
-            if (TransitionBlock.IsFloatArgumentRegisterOffset(argOffset))
+            switch (_transitionBlock.Architecture)
             {
-                pLoc.m_idxFloatReg = (argOffset - TransitionBlock.GetOffsetOfFloatArgumentRegisters()) / 4;
-                pLoc.m_cFloatReg = cSlots;
-                return;
-            }
+                case TargetArchitecture.ARM:
+                    {
+                        //        LIMITED_METHOD_CONTRACT;
 
-            if (!TransitionBlock.IsStackArgumentOffset(argOffset))
-            {
-                pLoc.m_idxGenReg = TransitionBlock.GetArgumentIndexFromOffset(argOffset);
+                        ArgLocDesc pLoc = new ArgLocDesc();
 
-                if (cSlots <= (4 - pLoc.m_idxGenReg))
-                {
-                    pLoc.m_cGenReg = cSlots;
-                }
-                else
-                {
-                    pLoc.m_cGenReg = 4 - pLoc->m_idxGenReg;
+                        pLoc.m_fRequires64BitAlignment = _armRequires64BitAlignment;
 
-                    pLoc.m_idxStack = 0;
-                    pLoc.m_cStack = cSlots - pLoc->m_cGenReg;
-                }
+                        int cSlots = (GetArgSize() + 3) / 4;
+
+                        if (_transitionBlock.IsFloatArgumentRegisterOffset(argOffset))
+                        {
+                            pLoc.m_idxFloatReg = (argOffset - _transitionBlock.OffsetOfFloatArgumentRegisters) / 4;
+                            pLoc.m_cFloatReg = cSlots;
+                            return pLoc;
+                        }
+
+                        if (!_transitionBlock.IsStackArgumentOffset(argOffset))
+                        {
+                            pLoc.m_idxGenReg = _transitionBlock.GetArgumentIndexFromOffset(argOffset);
+
+                            if (cSlots <= (4 - pLoc.m_idxGenReg))
+                            {
+                                pLoc.m_cGenReg = (short)cSlots;
+                            }
+                            else
+                            {
+                                pLoc.m_cGenReg = (short)(4 - pLoc.m_idxGenReg);
+
+                                pLoc.m_idxStack = 0;
+                                pLoc.m_cStack = cSlots - pLoc.m_cGenReg;
+                            }
+                        }
+                        else
+                        {
+                            pLoc.m_idxStack = _transitionBlock.GetArgumentIndexFromOffset(argOffset) - 4;
+                            pLoc.m_cStack = cSlots;
+                        }
+                        return pLoc;
+                    }
+
+                case TargetArchitecture.ARM64:
+                    {
+                        //        LIMITED_METHOD_CONTRACT;
+
+                        ArgLocDesc pLoc = new ArgLocDesc();
+
+                        if (_transitionBlock.IsFloatArgumentRegisterOffset(argOffset))
+                        {
+                            // Dividing by 8 as size of each register in FloatArgumentRegisters is 8 bytes.
+                            pLoc.m_idxFloatReg = (argOffset - _transitionBlock.OffsetOfFloatArgumentRegisters) / 8;
+
+                            if (!_argTypeHandle.IsNull() && _argTypeHandle.IsHFA())
+                            {
+                                CorElementType type = _argTypeHandle.GetHFAType();
+                                bool isFloatType = (type == CorElementType.ELEMENT_TYPE_R4);
+
+                                // DESKTOP BEHAVIOR pLoc->m_cFloatReg = isFloatType ? GetArgSize() / sizeof(float) : GetArgSize() / sizeof(double);
+                                pLoc.m_cFloatReg = GetArgSize() / sizeof(double);
+                                pLoc.m_isSinglePrecision = isFloatType;
+                            }
+                            else
+                            {
+                                pLoc.m_cFloatReg = 1;
+                            }
+                            return pLoc;
+                        }
+
+                        int cSlots = (GetArgSize() + 7) / 8;
+
+                        // Composites greater than 16bytes are passed by reference
+                        TypeHandle dummy;
+                        if (GetArgType(out dummy) == CorElementType.ELEMENT_TYPE_VALUETYPE && GetArgSize() > _transitionBlock.EnregisteredParamTypeMaxSize)
+                        {
+                            cSlots = 1;
+                        }
+
+                        if (!_transitionBlock.IsStackArgumentOffset(argOffset))
+                        {
+                            pLoc.m_idxGenReg = _transitionBlock.GetArgumentIndexFromOffset(argOffset);
+                            pLoc.m_cGenReg = (short)cSlots;
+                        }
+                        else
+                        {
+                            pLoc.m_idxStack = _transitionBlock.GetStackArgumentIndexFromOffset(argOffset);
+                            pLoc.m_cStack = cSlots;
+                        }
+                        return pLoc;
+                    }
+
+                case TargetArchitecture.X64:
+                    if (_transitionBlock.IsX64UnixABI)
+                    {
+                        //        LIMITED_METHOD_CONTRACT;
+
+                        if (argOffset == TransitionBlock.StructInRegsOffset)
+                        {
+                            // We always already have argLocDesc for structs passed in registers, we 
+                            // compute it in the GetNextOffset for those since it is always needed.
+                            Debug.Assert(false);
+                            return null;
+                        }
+
+                        ArgLocDesc pLoc = new ArgLocDesc();
+
+                        if (_transitionBlock.IsFloatArgumentRegisterOffset(argOffset))
+                        {
+                            // Dividing by 8 as size of each register in FloatArgumentRegisters is 8 bytes.
+                            pLoc.m_idxFloatReg = (argOffset - _transitionBlock.OffsetOfFloatArgumentRegisters) / 8;
+
+                            // UNIXTODO: Passing of structs, HFAs. For now, use the Windows convention.
+                            pLoc.m_cFloatReg = 1;
+                            return pLoc;
+                        }
+
+                        // UNIXTODO: Passing of structs, HFAs. For now, use the Windows convention.
+                        int cSlots = 1;
+
+                        if (!_transitionBlock.IsStackArgumentOffset(argOffset))
+                        {
+                            pLoc.m_idxGenReg = _transitionBlock.GetArgumentIndexFromOffset(argOffset);
+                            pLoc.m_cGenReg = (short)cSlots;
+                        }
+                        else
+                        {
+                            pLoc.m_idxStack = (argOffset - _transitionBlock.OffsetOfArgs) / 8;
+                            pLoc.m_cStack = cSlots;
+                        }
+                        return pLoc;
+                    }
+                    else
+                    {
+                        return null;
+                    }
+
+                case TargetArchitecture.X86:
+                    return null;
+
+                default:
+                    throw new NotImplementedException(_transitionBlock.Architecture.ToString());
             }
-            else
-            {
-                pLoc.m_idxStack = TransitionBlock.GetArgumentIndexFromOffset(argOffset) - 4;
-                pLoc.m_cStack = cSlots;
-            }
-            return argLocDesc;
         }
-#endif // _TARGET_ARM_
-
-#if _TARGET_ARM64_
-        // Get layout information for the argument that the ArgIterator is currently visiting.
-        public ArgLocDesc? GetArgLoc(int argOffset)
-        {
-            //        LIMITED_METHOD_CONTRACT;
-
-            ArgLocDesc pLoc = new ArgLocDesc();
-
-            if (TransitionBlock.IsFloatArgumentRegisterOffset(argOffset))
-            {
-                // Dividing by 8 as size of each register in FloatArgumentRegisters is 8 bytes.
-                pLoc->m_idxFloatReg = (argOffset - TransitionBlock.GetOffsetOfFloatArgumentRegisters()) / 8;
-
-                if (!_argTypeHandle.IsNull() && _argTypeHandle.IsHFA())
-                {
-                    CorElementType type = _argTypeHandle.GetHFAType();
-                    bool isFloatType = (type == CorElementType.ELEMENT_TYPE_R4);
-
-                    // DESKTOP BEHAVIOR pLoc->m_cFloatReg = isFloatType ? GetArgSize() / sizeof(float) : GetArgSize() / sizeof(double);
-                    pLoc->m_cFloatReg = GetArgSize() / sizeof(double);
-                    pLoc->m_isSinglePrecision = isFloatType;
-                }
-                else
-                {
-                    pLoc->m_cFloatReg = 1;
-                }
-                return;
-            }
-
-            int cSlots = (GetArgSize() + 7) / 8;
-
-            // Composites greater than 16bytes are passed by reference
-            TypeHandle dummy;
-            if (GetArgType(out dummy) == CorElementType.ELEMENT_TYPE_VALUETYPE && GetArgSize() > ArchitectureConstants.ENREGISTERED_PARAMTYPE_MAXSIZE)
-            {
-                cSlots = 1;
-            }
-
-            if (!TransitionBlock.IsStackArgumentOffset(argOffset))
-            {
-                pLoc->m_idxGenReg = TransitionBlock.GetArgumentIndexFromOffset(argOffset);
-                pLoc->m_cGenReg = cSlots;
-            }
-            else
-            {
-                pLoc->m_idxStack = TransitionBlock.GetStackArgumentIndexFromOffset(argOffset);
-                pLoc->m_cStack = cSlots;
-            }
-            return pLoc;
-        }
-#endif // _TARGET_ARM64_
-
-#if _TARGET_AMD64_ && UNIX_AMD64_ABI
-        // Get layout information for the argument that the ArgIterator is currently visiting.
-        public ArgLocDesc? GetArgLoc(int argOffset)
-        {
-            //        LIMITED_METHOD_CONTRACT;
-
-            if (argOffset == TransitionBlock.StructInRegsOffset)
-            {
-                // We always already have argLocDesc for structs passed in registers, we 
-                // compute it in the GetNextOffset for those since it is always needed.
-                Debug.Assert(false);
-                return null;
-            }
-        
-            ArgLocDesc pLoc = new ArgLocDesc();
-
-            if (TransitionBlock.IsFloatArgumentRegisterOffset(argOffset))
-            {
-                // Dividing by 8 as size of each register in FloatArgumentRegisters is 8 bytes.
-                pLoc.m_idxFloatReg = (argOffset - TransitionBlock.GetOffsetOfFloatArgumentRegisters()) / 8;
-
-                // UNIXTODO: Passing of structs, HFAs. For now, use the Windows convention.
-                pLoc.m_cFloatReg = 1;
-                return;
-            }
-
-            // UNIXTODO: Passing of structs, HFAs. For now, use the Windows convention.
-            int cSlots = 1;
-
-            if (!TransitionBlock.IsStackArgumentOffset(argOffset))
-            {
-                pLoc.m_idxGenReg = TransitionBlock.GetArgumentIndexFromOffset(argOffset);
-                pLoc.m_cGenReg = cSlots;
-            }
-            else
-            {
-                pLoc.m_idxStack = (argOffset - TransitionBlock.GetOffsetOfArgs()) / 8;
-                pLoc.m_cStack = cSlots;
-            }
-            return pLoc;
-        }
-#endif // _TARGET_AMD64_ && UNIX_AMD64_ABI
-
-#if (_TARGET_AMD64_ && !UNIX_AMD64_ABI) || _TARGET_X86_
-        // Get layout information for the argument that the ArgIterator is currently visiting.
-        public ArgLocDesc? GetArgLoc(int argOffset)
-        {
-            return null;
-        }
-#endif
 
         private int _nSizeOfArgStack;      // Cached value of SizeOfArgStack
 
@@ -1824,34 +1823,23 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private TypeHandle _argTypeHandleOfByRefParam;
         private bool _argForceByRef;
 
-#if _TARGET_X86_
-        private int _curOfs;           // Current position of the stack iterator
-        private int _numRegistersUsed;
-#endif
+        private int _x86CurOfs;           // Current position of the stack iterator
+        private int _x86NumRegistersUsed;
 
-#if _TARGET_AMD64_
-#if UNIX_AMD64_ABI
-        int _idxGenReg;
-        int _idxStack;
-        int _idxFPReg;
-#else
-        private int _curOfs;           // Current position of the stack iterator
-#endif
-#endif
+        private int _x64UnixIdxGenReg;
+        private int _x64UnixIdxStack;
+        private int _x64UnixIdxFPReg;
+        private int _x64WindowsCurOfs;           // Current position of the stack iterator
 
-#if _TARGET_ARM_
-        private int _idxGenReg;        // Next general register to be assigned a value
-        private int _idxStack;         // Next stack slot to be assigned a value
+        private int _armIdxGenReg;        // Next general register to be assigned a value
+        private int _armIdxStack;         // Next stack slot to be assigned a value
 
-        private ushort _wFPRegs;          // Bitmask of available floating point argument registers (s0-s15/d0-d7)
-        private bool _fRequires64BitAlignment; // Cached info about the current arg
-#endif
+        private ushort _armWFPRegs;          // Bitmask of available floating point argument registers (s0-s15/d0-d7)
+        private bool _armRequires64BitAlignment; // Cached info about the current arg
 
-#if _TARGET_ARM64_
-        private int _idxGenReg;        // Next general register to be assigned a value
-        private int _idxStack;         // Next stack slot to be assigned a value
-        private int _idxFPReg;         // Next FP register to be assigned a value
-#endif
+        private int _arm64IdxGenReg;        // Next general register to be assigned a value
+        private int _arm64IdxStack;         // Next stack slot to be assigned a value
+        private int _arm64IdxFPReg;         // Next FP register to be assigned a value
 
         // These are enum flags in CallingConventions.h, but that's really ugly in C#, so I've changed them to bools.
         private bool _ITERATION_STARTED; // Started iterating over arguments
@@ -1860,25 +1848,25 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private bool _RETURN_HAS_RET_BUFFER; // Cached value of HasRetBuffArg
         private uint _fpReturnSize;
 
-        //        enum {
         /*        ITERATION_STARTED               = 0x0001,   
                 SIZE_OF_ARG_STACK_COMPUTED      = 0x0002,
                 RETURN_FLAGS_COMPUTED           = 0x0004,
                 RETURN_HAS_RET_BUFFER           = 0x0008,   // Cached value of HasRetBuffArg
         */
-#if _TARGET_X86_
         private enum ParamTypeLocation
         {
             Stack,
             Ecx,
             Edx
         }
+        private const int OffsetOfEcx = 0 * sizeof(int);
+        private const int OffsetOfEdx = 1 * sizeof(int);
+
         private ParamTypeLocation _paramTypeLoc;
-        /*        PARAM_TYPE_REGISTER_MASK        = 0x0030,
+        /* X86: PARAM_TYPE_REGISTER_MASK        = 0x0030,
                 PARAM_TYPE_REGISTER_STACK       = 0x0010,
                 PARAM_TYPE_REGISTER_ECX         = 0x0020,
                 PARAM_TYPE_REGISTER_EDX         = 0x0030,*/
-#endif
 
         //        METHOD_INVOKE_NEEDS_ACTIVATION  = 0x0040,   // Flag used by ArgIteratorForMethodInvoke
 
@@ -1895,13 +1883,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 case CorElementType.ELEMENT_TYPE_TYPEDBYREF:
                     throw new NotSupportedException();
-#if ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
-                //                    if (sizeof(TypedByRef) > ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
-                //                        flags |= RETURN_HAS_RET_BUFFER;
-#else
-//                    flags |= RETURN_HAS_RET_BUFFER;
-#endif
-                //                    break;
 
                 case CorElementType.ELEMENT_TYPE_R4:
                     fpReturnSize = sizeof(float);
@@ -1912,45 +1893,49 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     break;
 
                 case CorElementType.ELEMENT_TYPE_VALUETYPE:
-#if ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
                     {
                         Debug.Assert(!thRetType.IsNull() && thRetType.IsValueType());
 
-#if FEATURE_HFA
                         if (thRetType.IsHFA() && !isVarArgMethod)
                         {
                             CorElementType hfaType = thRetType.GetHFAType();
 
-#if _TARGET_ARM64_
-                            // DESKTOP BEHAVIOR fpReturnSize = (hfaType == CorElementType.ELEMENT_TYPE_R4) ? (4 * (uint)sizeof(float)) : (4 * (uint)sizeof(double));
-                            // S and D registers overlap. Since we copy D registers in the UniversalTransitionThunk, we'll
-                            // thread floats like doubles during copying.
-                            fpReturnSize = 4 * (uint)sizeof(double);
-#else
-                            fpReturnSize = (hfaType == CorElementType.ELEMENT_TYPE_R4) ?
-                                (4 * (uint)sizeof(float)) :
-                                (4 * (uint)sizeof(double));
-#endif
+                            switch (transitionBlock.Architecture)
+                            {
+                                case TargetArchitecture.ARM:
+                                    fpReturnSize = (hfaType == CorElementType.ELEMENT_TYPE_R4) ?
+                                        (4 * (uint)sizeof(float)) :
+                                        (4 * (uint)sizeof(double));
+                                    break;
 
+                                case TargetArchitecture.ARM64:
+                                    // DESKTOP BEHAVIOR fpReturnSize = (hfaType == CorElementType.ELEMENT_TYPE_R4) ? (4 * (uint)sizeof(float)) : (4 * (uint)sizeof(double));
+                                    // S and D registers overlap. Since we copy D registers in the UniversalTransitionThunk, we'll
+                                    // thread floats like doubles during copying.
+                                    fpReturnSize = 4 * (uint)sizeof(double);
+                                    break;
+
+                                default:
+                                    throw new NotImplementedException();
+                            }
                             break;
                         }
-#endif
 
                         uint size = thRetType.GetSize();
 
-#if _TARGET_X86_ || _TARGET_AMD64_
-                        // Return value types of size which are not powers of 2 using a RetBuffArg
-                        if ((size & (size - 1)) != 0)
+                        if (transitionBlock.IsX86 || transitionBlock.IsX64)
                         {
-                            usesRetBuffer = true;
-                            break;
+                            // Return value types of size which are not powers of 2 using a RetBuffArg
+                            if ((size & (size - 1)) != 0)
+                            {
+                                usesRetBuffer = true;
+                                break;
+                            }
                         }
-#endif
 
                         if (size <= transitionBlock.EnregisteredReturnTypeIntegerMaxSize)
                             break;
                     }
-#endif // ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 
                     // Value types are returned using return buffer by default
                     usesRetBuffer = true;
@@ -1974,36 +1959,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _RETURN_FLAGS_COMPUTED = true;
         }
 
-
-#if !_TARGET_X86_
         private unsafe void GetSimpleLoc(int offset, ArgLocDesc* pLoc)
         {
+            Debug.Assert(!_transitionBlock.IsX86);
             //        WRAPPER_NO_CONTRACT; 
             pLoc->Init();
             pLoc->m_idxGenReg = _transitionBlock.GetArgumentIndexFromOffset(offset);
             pLoc->m_cGenReg = 1;
         }
-#endif
 
         public static int ALIGN_UP(int input, int align_to)
         {
             return (input + (align_to - 1)) & ~(align_to - 1);
         }
 
-        public static bool IS_ALIGNED(IntPtr val, int alignment)
-        {
-            Debug.Assert(0 == (alignment & (alignment - 1)));
-            return 0 == (val.ToInt64() & (alignment - 1));
-        }
-
-        public static bool IsRetBuffPassedAsFirstArg()
+        public bool IsRetBuffPassedAsFirstArg()
         {
             //        WRAPPER_NO_CONTRACT; 
-#if !_TARGET_ARM64_
-            return true;
-#else
-            return false;
-#endif
+            return !_transitionBlock.IsARM64;
         }
     };
 }
