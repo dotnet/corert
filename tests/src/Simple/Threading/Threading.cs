@@ -963,11 +963,12 @@ internal static class ThreadPoolTests
         WaitCallback wc = null;
         wc = data =>
         {
-            if (Interlocked.Decrement(ref iterationCount) == 0)
+            int n = Interlocked.Decrement(ref iterationCount);
+            if (n == 0)
             {
                 done.Set();
             }
-            else
+            else if (n > 0)
             {
                 ThreadPool.QueueUserWorkItem(wc);
             }
