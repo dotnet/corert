@@ -122,7 +122,6 @@ namespace Internal.TypeVerifier
         {
             if (_verifierOptions.IncludeMetadataTokensInErrorMessages)
             {
-
                 return string.Format("{0}([{1}]0x{2:X8})", defType, _module, _module.MetadataReader.GetToken(interfaceImplementation.Interface));
             }
             else
