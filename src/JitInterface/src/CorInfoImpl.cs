@@ -1454,13 +1454,18 @@ namespace Internal.JitInterface
 
             MethodDesc md = HandleToObject(method);
             TypeDesc type = fd != null ? fd.OwningType : typeFromContext(context);
+            MetadataType typeToInit = (MetadataType)type;
 
-            if (!_compilation.HasLazyStaticConstructor(type) || _isFallbackBodyCompilation)
+            if (_isFallbackBodyCompilation ||
+#if READYTORUN
+                IsClassPreInited(type)
+#else
+                !_compilation.HasLazyStaticConstructor(type)
+#endif
+                )
             {
                 return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
             }
-
-            MetadataType typeToInit = (MetadataType)type;
 
             if (fd == null)
             {

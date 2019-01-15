@@ -98,11 +98,10 @@ namespace ILCompiler
 
         private SharedGenericsMode _genericsMode;
         
-        public CompilerTypeSystemContext(TargetDetails details, SharedGenericsMode genericsMode, bool supportsLazyCctors = false)
+        public CompilerTypeSystemContext(TargetDetails details, SharedGenericsMode genericsMode)
             : base(details)
         {
             _genericsMode = genericsMode;
-            _supportsLazyCctors = supportsLazyCctors;
 
             _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
 
@@ -131,7 +130,7 @@ namespace ILCompiler
         public override void SetSystemModule(ModuleDesc systemModule)
         {
             base.SetSystemModule(systemModule);
-            _supportsLazyCctors = _supportsLazyCctors || (systemModule.GetType("System.Runtime.CompilerServices", "ClassConstructorRunner", false) != null);
+            _supportsLazyCctors = systemModule.GetType("System.Runtime.CompilerServices", "ClassConstructorRunner", false) != null;
         }
 
         public override ModuleDesc ResolveAssembly(System.Reflection.AssemblyName name, bool throwIfNotFound)

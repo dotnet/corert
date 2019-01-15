@@ -208,9 +208,6 @@ namespace Internal.JitInterface
                         pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.ReadyToRunHelper(ReadyToRunHelperId.CctorTrigger, type, _signatureContext));
                     }
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE:
-                    // This helper is only used in CoreRT, not in the CoreCLR runtime
-                    throw new NotImplementedException(id.ToString());
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
                     {
                         Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
@@ -689,6 +686,57 @@ namespace Internal.JitInterface
         private CorInfoHelpFunc getNewArrHelper(CORINFO_CLASS_STRUCT_* arrayCls)
         {
             return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT;
+        }
+
+        private static bool IsClassPreInited(TypeDesc type)
+        {
+            if (type.IsGenericDefinition)
+            {
+                return true;
+            }
+            if (type.HasStaticConstructor)
+            {
+                return false;
+            }
+            if (HasBoxedRegularStatics(type))
+            {
+                return false;
+            }
+            if (IsDynamicStatics(type))
+            {
+                return false;
+            }
+            return true;
+        }
+
+        private static bool HasBoxedRegularStatics(TypeDesc type)
+        {
+            foreach (FieldDesc field in type.GetFields())
+            {
+                if (field.IsStatic && 
+                    !field.IsLiteral && 
+                    field.FieldType.IsValueType &&
+                    !field.FieldType.UnderlyingType.IsPrimitive)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static bool IsDynamicStatics(TypeDesc type)
+        {
+            if (type.HasInstantiation)
+            {
+                foreach (FieldDesc field in type.GetFields())
+                {
+                    if (field.IsStatic && !field.IsLiteral)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
     }
 }
