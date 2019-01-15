@@ -921,6 +921,22 @@
             "classes": null,
             "methods": [
                 {
+                    "name": "System.Tests.TimeSpanTests.Parse_Invalid",
+                    "reason": "Temporary disabling till merging the PR https://github.com/dotnet/corefx/pull/34561"
+                },
+                {
+                    "name": "System.Tests.TimeSpanTests.Parse_Span",
+                    "reason": "Temporary disabling till merging the PR https://github.com/dotnet/corefx/pull/34561"
+                },
+                {
+                    "name": "System.Tests.TimeSpanTests.Parse_Span_Invalid",
+                    "reason": "Temporary disabling till merging the PR https://github.com/dotnet/corefx/pull/34561"
+                },
+                {
+                    "name": "System.Tests.TimeSpanTests.Parse",
+                    "reason": "Temporary disabling till merging the PR https://github.com/dotnet/corefx/pull/34561"
+                },
+                {
                     "name": "System.Text.Tests.StringBuilderTests.Equals",
                     "reason": "Because of a change in StringBuilder, this test is outdated."
                 },
