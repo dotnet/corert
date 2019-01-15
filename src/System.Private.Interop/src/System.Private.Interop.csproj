@@ -44,13 +44,8 @@
     <Compile Include="Shared\Marshal.cs" />
     <Compile Condition="'$(EnableWinRT)'=='true'" Include="Shared\WindowsRuntimeMarshal.cs" />
     <Compile Include="System\Runtime\InteropServices\ComEventsHelper.cs" />
-    <Compile Include="System\Runtime\InteropServices\InvalidComObjectException.cs" />
-    <Compile Include="System\Runtime\InteropServices\InvalidOleVariantTypeException.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal.cs" />
     <Compile Include="System\Runtime\InteropServices\MissingInteropDataException.cs" />
-    <Compile Include="System\Runtime\InteropServices\SafeArrayRankMismatchException.cs" />
-    <Compile Include="System\Runtime\InteropServices\SafeArrayTypeMismatchException.cs" />
-    <Compile Include="System\Runtime\InteropServices\SEHException.cs" />
     <Compile Include="System\Runtime\InteropServices\Variant.cs" />
     <Compile Include="System\Runtime\InteropServices\HandleCollector.cs" />
     <Compile Include="System\Runtime\InteropServices\ComAwareEventInfo.cs" />
