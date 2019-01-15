@@ -432,6 +432,12 @@
   <data name="Arg_RegKeyNotFound" xml:space="preserve">
     <value>The specified registry key does not exist.</value>
   </data>
+  <data name="Arg_SafeArrayRankMismatchException" xml:space="preserve">
+    <value>Specified array was not of the expected rank.</value>
+  </data>
+  <data name="Arg_SafeArrayTypeMismatchException" xml:space="preserve">
+    <value>Specified array was not of the expected type.</value>
+  </data>
   <data name="Arg_SecurityException" xml:space="preserve">
     <value>Security error.</value>
   </data>
@@ -1848,6 +1854,12 @@
   </data>
   <data name="Arg_InvalidFilterCriteriaException" xml:space="preserve">
     <value>Specified filter criteria was invalid.</value>
+  </data>
+  <data name="Arg_InvalidComObjectException" xml:space="preserve">
+    <value>Attempt has been made to use a COM object that does not have a backing class factory.</value>
+  </data>
+  <data name="Arg_InvalidOleVariantTypeException" xml:space="preserve">
+    <value>Specified OLE variant was invalid.</value>
   </data>
   <data name="Arg_ParmArraySize" xml:space="preserve">
     <value>Must specify one or more parameters.</value>
