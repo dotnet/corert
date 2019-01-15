@@ -442,6 +442,6 @@
     <value>Interface implementation has a duplicate. Class '{0}' Interface: '{1}'</value>
   </data>
   <data name="InterfaceMethodNotImplemented" xml:space="preserve">
-    <value>Class implements interface but not method, Class: '{0}' Interface: '{1}' Method: '{2}'.</value>
+    <value>Class implements interface but not method, Class: '{0}' Interface: '{1}' Missing method: '{2}'.</value>
   </data>
 </root>
