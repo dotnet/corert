@@ -140,23 +140,10 @@ namespace Internal.TypeVerifier
                 ILVerifyTypeSystemContext typeSystemContext = (ILVerifyTypeSystemContext)ecmaAssembly.Context;
                 EcmaModule module = typeSystemContext.GetModule(ecmaAssembly.PEReader);
                 MetadataReader reader = ecmaAssembly.PEReader.GetMetadataReader();
-                
-                TypeDefinitionHandle typeDefHandleToken = default;
-                foreach (TypeDefinitionHandle typeDefHandle in reader.TypeDefinitions)
-                {
-                    if (typeDesc == module.GetType(typeDefHandle))
-                    {
-                        typeDefHandleToken = typeDefHandle;
-                        break;
-                    }
-                }
 
-                Debug.Assert(typeDefHandleToken != default);
-
-                return string.Format("{0}([{1}]Interface type token 0x{2:X8}  Method token 0x{3:X8})",
+                return string.Format("{0}([{1}]0x{2:X8})",
                                     methodDesc,
                                     module,
-                                    reader.GetToken(typeDefHandleToken),
                                     reader.GetToken(((EcmaMethod)methodDesc.GetTypicalMethodDefinition()).Handle));
             }
             else
