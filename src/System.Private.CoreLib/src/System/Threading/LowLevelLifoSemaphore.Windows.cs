@@ -22,7 +22,11 @@ namespace System.Threading
         public LowLevelLifoSemaphore(int initialSignalCount, int maximumSignalCount)
         {
             Debug.Assert(initialSignalCount >= 0, "Windows LowLevelLifoSemaphore does not support a negative signal count"); // TODO: Track actual signal count to enable this
-            _completionPort = Interop.Kernel32.CreateIoCompletionPort(new IntPtr(-1), IntPtr.Zero, UIntPtr.Zero, 1);
+            Debug.Assert(maximumSignalCount > 0);
+            Debug.Assert(initialSignalCount <= maximumSignalCount);
+
+            _completionPort =
+                Interop.Kernel32.CreateIoCompletionPort(new IntPtr(-1), IntPtr.Zero, UIntPtr.Zero, maximumSignalCount);
             if (_completionPort == IntPtr.Zero)
             {
                 var error = Marshal.GetLastWin32Error();
@@ -33,8 +37,18 @@ namespace System.Threading
             Release(initialSignalCount);
         }
 
+        ~LowLevelLifoSemaphore()
+        {
+            if (_completionPort != IntPtr.Zero)
+            {
+                Dispose();
+            }
+        }
+
         public bool Wait(int timeoutMs)
         {
+            Debug.Assert(timeoutMs >= -1);
+
             bool success = Interop.Kernel32.GetQueuedCompletionStatus(_completionPort, out var numberOfBytes, out var completionKey, out var pointerToOverlapped, timeoutMs);
             Debug.Assert(success || (Marshal.GetLastWin32Error() == WaitHandle.WaitTimeout));
             return success;
@@ -42,6 +56,8 @@ namespace System.Threading
 
         public int Release(int count)
         {
+            Debug.Assert(count > 0);
+
             for (int i = 0; i < count; i++)
             {
                 if(!Interop.Kernel32.PostQueuedCompletionStatus(_completionPort, 1, UIntPtr.Zero, IntPtr.Zero))
@@ -57,7 +73,11 @@ namespace System.Threading
 
         public void Dispose()
         {
+            Debug.Assert(_completionPort != IntPtr.Zero);
+
             Interop.Kernel32.CloseHandle(_completionPort);
+            _completionPort = IntPtr.Zero;
+            GC.SuppressFinalize(this);
         }
     }
 }

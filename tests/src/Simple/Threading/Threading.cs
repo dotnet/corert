@@ -50,6 +50,9 @@ internal static class Runner
         Console.WriteLine("    ThreadPoolTests.ThreadPoolCanPickUpMultipleJobsWhenThreadsAreAvailable");
         ThreadPoolTests.ThreadPoolCanPickUpMultipleJobsWhenThreadsAreAvailable();
 
+        Console.WriteLine("    ThreadPoolTests.ThreadPoolCanProcessManyWorkItemsInParallelWithoutDeadlocking");
+        ThreadPoolTests.ThreadPoolCanProcessManyWorkItemsInParallelWithoutDeadlocking();
+
         // This test takes a long time to run (min 42 seconds sleeping). Enable for manual testing.
         // Console.WriteLine("    ThreadPoolTests.RunJobsAfterThreadTimeout");
         // ThreadPoolTests.RunJobsAfterThreadTimeout();
@@ -948,6 +951,34 @@ internal static class ThreadPoolTests
         ThreadPool.QueueUserWorkItem(Job);
         testJobCompleted.CheckedWait();
         e0.Set();
+    }
+
+    // See https://github.com/dotnet/corert/issues/6780
+    [Fact]
+    public static void ThreadPoolCanProcessManyWorkItemsInParallelWithoutDeadlocking()
+    {
+        int iterationCount = 100_000;
+        var done = new ManualResetEvent(false);
+
+        WaitCallback wc = null;
+        wc = data =>
+        {
+            int n = Interlocked.Decrement(ref iterationCount);
+            if (n == 0)
+            {
+                done.Set();
+            }
+            else if (n > 0)
+            {
+                ThreadPool.QueueUserWorkItem(wc);
+            }
+        };
+
+        for (int i = 0, n = Environment.ProcessorCount; i < n; ++i)
+        {
+            ThreadPool.QueueUserWorkItem(wc);
+        }
+        done.WaitOne();
     }
 
     private static WaitCallback CreateRecursiveJob(int jobCount, int targetJobCount, AutoResetEvent testJobCompleted)
