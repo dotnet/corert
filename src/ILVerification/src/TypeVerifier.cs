@@ -141,10 +141,7 @@ namespace Internal.TypeVerifier
                 EcmaModule module = typeSystemContext.GetModule(ecmaAssembly.PEReader);
                 MetadataReader reader = ecmaAssembly.PEReader.GetMetadataReader();
 
-                return string.Format("{0}([{1}]0x{2:X8})",
-                                    methodDesc,
-                                    module,
-                                    reader.GetToken(((EcmaMethod)methodDesc.GetTypicalMethodDefinition()).Handle));
+                return string.Format("{0}([{1}]0x{2:X8})", methodDesc, module, reader.GetToken(((EcmaMethod)methodDesc.GetTypicalMethodDefinition()).Handle));
             }
             else
             {
