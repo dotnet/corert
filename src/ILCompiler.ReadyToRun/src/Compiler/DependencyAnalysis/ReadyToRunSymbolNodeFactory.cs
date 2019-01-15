@@ -99,8 +99,12 @@ namespace ILCompiler.DependencyAnalysis
                     helperNode = CreateDelegateCtorHelper((DelegateCreationInfo)target, signatureContext);
                     break;
 
+                case ReadyToRunHelperId.CctorTrigger:
+                    helperNode = CreateCctorTrigger((TypeDesc)target, signatureContext);
+                    break;
+
                 default:
-                    throw new NotImplementedException();
+                    throw new NotImplementedException(id.ToString());
             }
 
             helperNodeMap.Add(target, helperNode);
@@ -211,6 +215,15 @@ namespace ILCompiler.DependencyAnalysis
         private ISymbolNode CreateDelegateCtorHelper(DelegateCreationInfo info, SignatureContext signatureContext)
         {
             return info.Constructor;
+        }
+
+        private ISymbolNode CreateCctorTrigger(TypeDesc type, SignatureContext signatureContext)
+        {
+            return new DelayLoadHelperImport(
+                _codegenNodeFactory,
+                _codegenNodeFactory.DispatchImports,
+                ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
+                new TypeFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_CctorTrigger, type, signatureContext));
         }
 
         private readonly Dictionary<FieldDesc, ISymbolNode> _fieldAddressCache = new Dictionary<FieldDesc, ISymbolNode>();

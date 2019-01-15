@@ -25,6 +25,7 @@ namespace ILCompiler.DependencyAnalysis
         GetThreadNonGcStaticBase,
         DelegateCtor,
         ResolveVirtualFunction,
+        CctorTrigger,
 
         // The following helpers are used for generic lookups only
         TypeHandle,

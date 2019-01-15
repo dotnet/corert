@@ -205,27 +205,7 @@ namespace Internal.JitInterface
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.ReadyToRunHelper(ReadyToRunHelperId.GetNonGCStaticBase, type, _signatureContext));
-                    }
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE:
-                    {
-                        // Token == 0 means "initialize this class". We only expect RyuJIT to call it for this case.
-                        Debug.Assert(pResolvedToken.token == 0 && pResolvedToken.tokenScope == null);
-                        Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
-
-                        DefType typeToInitialize = (DefType)MethodBeingCompiled.OwningType;
-                        Debug.Assert(typeToInitialize.IsCanonicalSubtype(CanonicalFormKind.Any));
-
-                        DefType helperArg = typeToInitialize.ConvertToSharedRuntimeDeterminedForm();
-                        GenericContext methodContext = new GenericContext(entityFromContext(pResolvedToken.tokenContext));
-                        ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(
-                            pGenericLookupKind.runtimeLookupKind,
-                            ReadyToRunHelperId.GetNonGCStaticBase, 
-                            helperArg, 
-                            methodContext, 
-                            _signatureContext);
-                        pLookup = CreateConstLookupToSymbol(helper);
+                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.ReadyToRunHelper(ReadyToRunHelperId.CctorTrigger, type, _signatureContext));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
@@ -706,6 +686,57 @@ namespace Internal.JitInterface
         private CorInfoHelpFunc getNewArrHelper(CORINFO_CLASS_STRUCT_* arrayCls)
         {
             return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT;
+        }
+
+        private static bool IsClassPreInited(TypeDesc type)
+        {
+            if (type.IsGenericDefinition)
+            {
+                return true;
+            }
+            if (type.HasStaticConstructor)
+            {
+                return false;
+            }
+            if (HasBoxedRegularStatics(type))
+            {
+                return false;
+            }
+            if (IsDynamicStatics(type))
+            {
+                return false;
+            }
+            return true;
+        }
+
+        private static bool HasBoxedRegularStatics(TypeDesc type)
+        {
+            foreach (FieldDesc field in type.GetFields())
+            {
+                if (field.IsStatic && 
+                    !field.IsLiteral && 
+                    field.FieldType.IsValueType &&
+                    !field.FieldType.UnderlyingType.IsPrimitive)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static bool IsDynamicStatics(TypeDesc type)
+        {
+            if (type.HasInstantiation)
+            {
+                foreach (FieldDesc field in type.GetFields())
+                {
+                    if (field.IsStatic && !field.IsLiteral)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
     }
 }
