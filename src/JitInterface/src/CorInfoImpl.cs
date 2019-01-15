@@ -1967,7 +1967,11 @@ namespace Internal.JitInterface
                     fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_RVA_ADDRESS;
 
                     // We are not going through a helper. The constructor has to be triggered explicitly.
+#if READYTORUN
+                    if (!IsClassPreInited(field.OwningType))
+#else
                     if (_compilation.HasLazyStaticConstructor(field.OwningType))
+#endif
                     {
                         fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_INITCLASS;
                     }
