@@ -66,15 +66,15 @@ namespace Internal.TypeVerifier
             foreach (InterfaceImplementationHandle interfaceHandle in interfaceHandles)
             {
                 InterfaceImplementation interfaceImplementation = _module.MetadataReader.GetInterfaceImplementation(interfaceHandle);
-                DefType interfaceType = _module.GetType(interfaceImplementation.Interface) as DefType;
-                if (interfaceType == null)
+                TypeDesc interfaceTypeDesc = _module.GetType(interfaceImplementation.Interface) as TypeDesc;
+                if (interfaceTypeDesc == null)
                 {
                     ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
                 }
 
                 InterfaceMetadataObjects imo = new InterfaceMetadataObjects
                 {
-                    InterfaceDefType = interfaceType,
+                    InterfaceTypeDesc = interfaceTypeDesc,
                     InterfaceImplementation = interfaceImplementation
                 };
 
@@ -84,7 +84,7 @@ namespace Internal.TypeVerifier
                 }
                 else
                 {
-                    VerificationError(VerifierError.InterfaceImplHasDuplicate, Format(type), Format(_module, imo.InterfaceDefType, imo.InterfaceImplementation));
+                    VerificationError(VerifierError.InterfaceImplHasDuplicate, Format(type, _typeDefinitionHandle), Format(imo.InterfaceTypeDesc, _module, imo.InterfaceImplementation));
                 }
             }
 
@@ -93,26 +93,31 @@ namespace Internal.TypeVerifier
                 if (!type.IsAbstract)
                 {
                     // Look for missing method implementation
-                    foreach (MethodDesc method in implementedInterface.InterfaceDefType.GetAllMethods())
+                    foreach (MethodDesc method in implementedInterface.InterfaceTypeDesc.GetAllMethods())
                     {
+                        if (method.Signature.IsStatic)
+                        {
+                            continue;
+                        }
+
                         MethodDesc resolvedMethod = type.ResolveInterfaceMethodTarget(method);
                         if (resolvedMethod is null)
                         {
-                            VerificationError(VerifierError.InterfaceMethodNotImplemented, Format(type), Format(_module, implementedInterface.InterfaceDefType, implementedInterface.InterfaceImplementation), Format(method));
+                            VerificationError(VerifierError.InterfaceMethodNotImplemented, Format(type, _typeDefinitionHandle), Format(implementedInterface.InterfaceTypeDesc, _module, implementedInterface.InterfaceImplementation), Format(method));
                         }
                     }
                 }
             }
         }
 
-        private string Format(EcmaType type)
+        private string Format(TypeDesc type, TypeDefinitionHandle typeDefinitionHandle)
         {
             if (_verifierOptions.IncludeMetadataTokensInErrorMessages)
             {
                 TypeDesc typeDesc = type.GetTypeDefinition();
                 EcmaModule module = (EcmaModule)((MetadataType)typeDesc).Module;
 
-                return string.Format("{0}([{1}]0x{2:X8})", type, module, module.MetadataReader.GetToken(_typeDefinitionHandle));
+                return string.Format("{0}([{1}]0x{2:X8})", type, module, module.MetadataReader.GetToken(typeDefinitionHandle));
             }
             else
             {
@@ -120,15 +125,15 @@ namespace Internal.TypeVerifier
             }
         }
 
-        private string Format(EcmaModule module, DefType interfaceDefType, InterfaceImplementation interfaceImplementation)
+        private string Format(TypeDesc interfaceTypeDesc, EcmaModule module, InterfaceImplementation interfaceImplementation)
         {
             if (_verifierOptions.IncludeMetadataTokensInErrorMessages)
             {
-                return string.Format("{0}([{1}]0x{2:X8})", interfaceDefType, module, module.MetadataReader.GetToken(interfaceImplementation.Interface));
+                return string.Format("{0}([{1}]0x{2:X8})", interfaceTypeDesc, module, module.MetadataReader.GetToken(interfaceImplementation.Interface));
             }
             else
             {
-                return interfaceDefType.ToString();
+                return interfaceTypeDesc.ToString();
             }
         }
 
@@ -149,11 +154,11 @@ namespace Internal.TypeVerifier
 
         private class InterfaceMetadataObjects : IEquatable<InterfaceMetadataObjects>
         {
-            public DefType InterfaceDefType { get; set; }
+            public TypeDesc InterfaceTypeDesc { get; set; }
             public InterfaceImplementation InterfaceImplementation { get; set; }
             public bool Equals(InterfaceMetadataObjects other)
             {
-                return other.InterfaceDefType == InterfaceDefType;
+                return other.InterfaceTypeDesc == InterfaceTypeDesc;
             }
         }
     }
