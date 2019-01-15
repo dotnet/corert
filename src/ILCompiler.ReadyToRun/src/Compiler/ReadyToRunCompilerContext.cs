@@ -17,7 +17,7 @@ namespace ILCompiler
         private VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
 
         public ReadyToRunCompilerContext(TargetDetails details, SharedGenericsMode genericsMode)
-            : base(details, genericsMode)
+            : base(details, genericsMode, supportsLazyCctors: true)
         {
             _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm();
             _systemObjectFieldLayoutAlgorithm = new SystemObjectFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);

@@ -205,29 +205,12 @@ namespace Internal.JitInterface
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.ReadyToRunHelper(ReadyToRunHelperId.GetNonGCStaticBase, type, _signatureContext));
+                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.ReadyToRunHelper(ReadyToRunHelperId.CctorTrigger, type, _signatureContext));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE:
-                    {
-                        // Token == 0 means "initialize this class". We only expect RyuJIT to call it for this case.
-                        Debug.Assert(pResolvedToken.token == 0 && pResolvedToken.tokenScope == null);
-                        Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
-
-                        DefType typeToInitialize = (DefType)MethodBeingCompiled.OwningType;
-                        Debug.Assert(typeToInitialize.IsCanonicalSubtype(CanonicalFormKind.Any));
-
-                        DefType helperArg = typeToInitialize.ConvertToSharedRuntimeDeterminedForm();
-                        GenericContext methodContext = new GenericContext(entityFromContext(pResolvedToken.tokenContext));
-                        ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(
-                            pGenericLookupKind.runtimeLookupKind,
-                            ReadyToRunHelperId.GetNonGCStaticBase, 
-                            helperArg, 
-                            methodContext, 
-                            _signatureContext);
-                        pLookup = CreateConstLookupToSymbol(helper);
-                    }
-                    break;
+                    // This helper is only used in CoreRT, not in the CoreCLR runtime
+                    throw new NotImplementedException(id.ToString());
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
                     {
                         Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
