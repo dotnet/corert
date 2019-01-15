@@ -1465,6 +1465,7 @@ namespace Internal.JitInterface
             {
                 return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
             }
+
             MetadataType typeToInit = (MetadataType)type;
 
             if (fd == null)
