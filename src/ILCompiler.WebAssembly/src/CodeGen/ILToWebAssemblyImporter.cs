@@ -1351,8 +1351,15 @@ namespace Internal.IL
                 // We could compact the set of argSlots to only those that we'd keep on the stack, but currently don't
                 potentialRealArgIndex++;
 
+                if (CanStoreTypeOnStack(_signature[index]))
+                {
+                    if (CanStoreTypeOnStack(_signature[i]) && !CanStoreVariableOnStack(_signature[index]) && !CanStoreVariableOnStack(_signature[i]))
+                    {
+                        offset = PadNextOffset(_signature[i], offset);
+                    }
+                }
                 // if this is a shadow stack arg, then only count other shadow stack args as stack args come later
-                if (!CanStoreVariableOnStack(_signature[i]) && (CanStoreTypeOnStack(_signature[index]) || !CanStoreTypeOnStack(_signature[i])))
+                else if (!CanStoreVariableOnStack(_signature[i]) && !CanStoreTypeOnStack(_signature[i]))
                 {
                     offset = PadNextOffset(_signature[i], offset);
                 }
