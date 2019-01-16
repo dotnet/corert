@@ -1085,14 +1085,17 @@ namespace System.Runtime.CompilerServices
 #if CORERT
             RuntimeAugments.ReportUnhandledException(edi.SourceException);
 #else
-            // If we have the new error reporting APIs, report this error.  Otherwise, Propagate the exception(s) on the ThreadPool
+
 #if FEATURE_COMINTEROP
-            if (!WindowsRuntimeMarshal.ReportUnhandledError(edi.SourceException))
+            // If we have the new error reporting APIs, report this error.
+            if (WindowsRuntimeMarshal.ReportUnhandledError(edi.SourceException))
+                return;
 #endif // FEATURE_COMINTEROP
-            {
-                ThreadPool.QueueUserWorkItem(state => ((ExceptionDispatchInfo)state).Throw(), edi);
-            }
-#endif
+
+            // Propagate the exception(s) on the ThreadPool
+            ThreadPool.QueueUserWorkItem(state => ((ExceptionDispatchInfo)state).Throw(), edi);
+
+#endif // CORERT
         }
 
         /// <summary>
