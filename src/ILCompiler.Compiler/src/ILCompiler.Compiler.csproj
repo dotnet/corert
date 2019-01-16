@@ -346,6 +346,7 @@
     <Compile Include="Compiler\UtcNodeMangler.cs" />
     <Compile Include="Compiler\SimdHelper.cs" />
     <Compile Include="Compiler\UtcStackTraceEmissionPolicy.cs" />
+    <Compile Include="Compiler\VectorFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\VectorOfTFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\VirtualMethodCallHelper.cs" />
     <Compile Include="Compiler\VTableSliceProvider.cs" />
