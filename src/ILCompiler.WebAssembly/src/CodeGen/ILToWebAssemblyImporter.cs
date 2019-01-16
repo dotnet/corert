@@ -1333,12 +1333,26 @@ namespace Internal.IL
             int potentialRealArgIndex = 0;
 
             offset = thisSize;
+
+            if (!CanStoreVariableOnStack(argType) && CanStoreTypeOnStack(argType))
+            {
+                // this is an arg that was passed on the stack and is now copied to the shadow stack: move past args that are passed on shadow stack
+                for (int i = 0; i < _signature.Length; i++)
+                {
+                    if (!CanStoreTypeOnStack(_signature[i]))
+                    {
+                        offset = PadNextOffset(_signature[i], offset);
+                    }
+                }
+            }
+
             for (int i = 0; i < index; i++)
             {
                 // We could compact the set of argSlots to only those that we'd keep on the stack, but currently don't
                 potentialRealArgIndex++;
 
-                if (!CanStoreVariableOnStack(_signature[i]))
+                // if this is a shadow stack arg, then only count other shadow stack args as stack args come later
+                if (!CanStoreVariableOnStack(_signature[i]) && (CanStoreTypeOnStack(_signature[index]) || !CanStoreTypeOnStack(_signature[i])))
                 {
                     offset = PadNextOffset(_signature[i], offset);
                 }

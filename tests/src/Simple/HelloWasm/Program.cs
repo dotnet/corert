@@ -318,6 +318,8 @@ internal static class Program
 
         TestNativeCallback();
 
+        TestArgsWithMixedTypesAndExceptionRegions();
+
         TestThreadStaticsForSingleThread();
 
         // This test should remain last to get other results before stopping the debugger
@@ -832,6 +834,58 @@ internal static class Program
         result += 1000;
 
         return result;
+    }
+
+    private static void TestArgsWithMixedTypesAndExceptionRegions()
+    {
+        new MixedArgFuncClass().MixedArgFunc(1, null, 2, null);
+    }
+
+    class MixedArgFuncClass
+    {
+        public void MixedArgFunc(int firstInt, object shadowStackArg, int secondInt, object secondShadowStackArg)
+        {
+            PrintString("MixedParamFuncWithExceptionRegions does not overwrite args : ");
+            bool ok = true;
+            int p1 = firstInt;
+            try // add a try/catch to get _exceptionRegions.Length > 0 and copy stack args to shadow stack
+            {
+                if (shadowStackArg != null)
+                {
+                    ok = false;
+                }
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            if (p1 != 1)
+            {
+                PrintString("p1 not 1, was ");
+                PrintLine(p1.ToString());
+                ok = false;
+            }
+
+            if (secondInt != 2)
+            {
+                PrintString("secondInt not 2, was ");
+                PrintLine(secondInt.ToString());
+                ok = false;
+            }
+            if (secondShadowStackArg != null)
+            {
+                PrintLine("secondShadowStackArg != null");
+                ok = false;
+            }
+            if (ok)
+            {
+                PrintLine("Ok.");
+            }
+            else
+            {
+                PrintLine("Failed.");
+            }
+        }
     }
 
     private static void TestThreadStaticsForSingleThread()
