@@ -493,6 +493,10 @@ namespace System.Runtime.CompilerServices
             // object's identity to track this specific builder/state machine.  As such, we proceed to
             // overwrite whatever's there anyway, even if it's non-null.
 #if CORERT
+            // DebugFinalizableAsyncStateMachineBox looks like a small type, but it actually is not because
+            // it will have a copy of all the slots from its parent. It will add another hundred(s) bytes
+            // per each async method in CoreRT / ProjectN binaries without adding much value. Avoid
+            // generating this extra code until a better solution is implemented.
             var box = new AsyncStateMachineBox<TStateMachine>();
 #else
             var box = AsyncMethodBuilderCore.TrackAsyncMethodCompletion ?
@@ -598,6 +602,7 @@ namespace System.Runtime.CompilerServices
                     StateMachine = default;
                     Context = default;
 
+#if !CORERT
                     // In case this is a state machine box with a finalizer, suppress its finalization
                     // as it's now complete.  We only need the finalizer to run if the box is collected
                     // without having been completed.
@@ -605,6 +610,7 @@ namespace System.Runtime.CompilerServices
                     {
                         GC.SuppressFinalize(this);
                     }
+#endif
                 }
 
                 if (loggingOn)
@@ -648,6 +654,10 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(m_task == null);
 #if CORERT
+            // DebugFinalizableAsyncStateMachineBox looks like a small type, but it actually is not because
+            // it will have a copy of all the slots from its parent. It will add another hundred(s) bytes
+            // per each async method in CoreRT / ProjectN binaries without adding much value. Avoid
+            // generating this extra code until a better solution is implemented.
             return (m_task = new AsyncStateMachineBox<IAsyncStateMachine>());
 #else
             return (m_task = AsyncMethodBuilderCore.TrackAsyncMethodCompletion ?
