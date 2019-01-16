@@ -492,15 +492,20 @@ namespace System.Runtime.CompilerServices
             // cases is we lose the ability to properly step in the debugger, as the debugger uses that
             // object's identity to track this specific builder/state machine.  As such, we proceed to
             // overwrite whatever's there anyway, even if it's non-null.
+#if CORERT
+            var box = new AsyncStateMachineBox<TStateMachine>();
+#else
             var box = AsyncMethodBuilderCore.TrackAsyncMethodCompletion ?
                 CreateDebugFinalizableAsyncStateMachineBox<TStateMachine>() :
                 new AsyncStateMachineBox<TStateMachine>();
+#endif
             m_task = box; // important: this must be done before storing stateMachine into box.StateMachine!
             box.StateMachine = stateMachine;
             box.Context = currentContext;
             return box;
         }
 
+#if !CORERT
         // Avoid forcing the JIT to build DebugFinalizableAsyncStateMachineBox<TStateMachine> unless it's actually needed.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static AsyncStateMachineBox<TStateMachine> CreateDebugFinalizableAsyncStateMachineBox<TStateMachine>()
@@ -527,6 +532,7 @@ namespace System.Runtime.CompilerServices
                 }
             }
         }
+#endif
 
         /// <summary>A strongly-typed box for Task-based async state machines.</summary>
         /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
@@ -641,9 +647,13 @@ namespace System.Runtime.CompilerServices
         private Task<TResult> InitializeTaskAsStateMachineBox()
         {
             Debug.Assert(m_task == null);
+#if CORERT
+            return (m_task = new AsyncStateMachineBox<IAsyncStateMachine>());
+#else
             return (m_task = AsyncMethodBuilderCore.TrackAsyncMethodCompletion ?
                 CreateDebugFinalizableAsyncStateMachineBox<IAsyncStateMachine>() :
                 new AsyncStateMachineBox<IAsyncStateMachine>());
+#endif
         }
 
         /// <summary>
@@ -998,12 +1008,14 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+#if !CORERT
         /// <summary>Gets whether we should be tracking async method completions for eventing.</summary>
         internal static bool TrackAsyncMethodCompletion
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => TplEtwProvider.Log.IsEnabled(EventLevel.Warning, TplEtwProvider.Keywords.AsyncMethod);
         }
+#endif
 
         /// <summary>Gets a description of the state of the state machine object, suitable for debug purposes.</summary>
         /// <param name="stateMachine">The state machine object.</param>
