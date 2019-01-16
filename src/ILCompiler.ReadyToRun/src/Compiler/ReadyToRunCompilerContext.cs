@@ -4,9 +4,11 @@
 
 using System;
 using System.Collections.Generic;
-using Debug = System.Diagnostics.Debug;
 
 using Internal.TypeSystem;
+
+using Debug = System.Diagnostics.Debug;
+using VectorIntrinsicFieldLayoutAlgorithm = ILCompiler.VectorFieldLayoutAlgorithm;
 
 namespace ILCompiler
 {
@@ -15,6 +17,7 @@ namespace ILCompiler
         private FieldLayoutAlgorithm _r2rFieldLayoutAlgorithm;
         private SystemObjectFieldLayoutAlgorithm _systemObjectFieldLayoutAlgorithm;
         private VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
+        VectorIntrinsicFieldLayoutAlgorithm _vectorIntrinsicFieldLayoutAlgorithm;
 
         public ReadyToRunCompilerContext(TargetDetails details, SharedGenericsMode genericsMode)
             : base(details, genericsMode)
@@ -22,6 +25,7 @@ namespace ILCompiler
             _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm();
             _systemObjectFieldLayoutAlgorithm = new SystemObjectFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
             _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
+            _vectorIntrinsicFieldLayoutAlgorithm = new VectorIntrinsicFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
         }
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
@@ -35,6 +39,10 @@ namespace ILCompiler
             else if (_simdHelper.IsVectorOfT(type))
             {
                 return _vectorFieldLayoutAlgorithm;
+            }
+            else if (VectorIntrinsicFieldLayoutAlgorithm.IsVectorType(type))
+            {
+                return _vectorIntrinsicFieldLayoutAlgorithm;
             }
             else
             {

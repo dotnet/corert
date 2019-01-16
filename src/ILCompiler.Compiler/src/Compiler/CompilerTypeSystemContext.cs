@@ -23,6 +23,7 @@ namespace ILCompiler
         private MetadataFieldLayoutAlgorithm _metadataFieldLayoutAlgorithm = new CompilerMetadataFieldLayoutAlgorithm();
         private RuntimeDeterminedFieldLayoutAlgorithm _runtimeDeterminedFieldLayoutAlgorithm = new RuntimeDeterminedFieldLayoutAlgorithm();
         private VectorOfTFieldLayoutAlgorithm _vectorOfTFieldLayoutAlgorithm;
+        private VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
         private MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
         private ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
         private MetadataVirtualMethodAlgorithm _virtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
@@ -104,6 +105,7 @@ namespace ILCompiler
             _genericsMode = genericsMode;
 
             _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
+            _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
 
             GenericsConfig = new SharedGenericsConfiguration();
         }
@@ -289,6 +291,8 @@ namespace ILCompiler
                 return _runtimeDeterminedFieldLayoutAlgorithm;
             else if (_simdHelper.IsVectorOfT(type))
                 return _vectorOfTFieldLayoutAlgorithm;
+            else if (VectorFieldLayoutAlgorithm.IsVectorType(type))
+                return _vectorFieldLayoutAlgorithm;
             else
                 return _metadataFieldLayoutAlgorithm;
         }
