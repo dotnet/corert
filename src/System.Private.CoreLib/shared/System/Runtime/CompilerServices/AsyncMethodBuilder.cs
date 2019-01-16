@@ -14,19 +14,15 @@ using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
-using System.Text;
+#if FEATURE_COMINTEROP
+using System.Runtime.InteropServices.WindowsRuntime;
+#endif // FEATURE_COMINTEROP
 using System.Threading;
 using System.Threading.Tasks;
-
-using Internal.Runtime.Augments;
+using System.Text;
 using Internal.Runtime.CompilerServices;
-
-using AsyncStatus = Internal.Runtime.Augments.AsyncStatus;
-using CausalityRelation = Internal.Runtime.Augments.CausalityRelation;
-using CausalitySource = Internal.Runtime.Augments.CausalitySource;
-using CausalityTraceLevel = Internal.Runtime.Augments.CausalityTraceLevel;
-using CausalitySynchronousWork = Internal.Runtime.Augments.CausalitySynchronousWork;
-using Thread = Internal.Runtime.Augments.RuntimeThread;
+using Internal.Runtime.Augments;
+using Internal.Threading.Tasks;
 
 namespace System.Runtime.CompilerServices
 {
@@ -95,12 +91,9 @@ namespace System.Runtime.CompilerServices
         /// <summary>Completes the method builder successfully.</summary>
         public void SetResult()
         {
-            Task taskIfDebuggingEnabled = this.GetTaskIfDebuggingEnabled();
-            if (taskIfDebuggingEnabled != null)
+            if (AsyncCausalitySupport.LoggingOn)
             {
-                if (DebuggerSupport.LoggingOn)
-                    DebuggerSupport.TraceOperationCompletion(CausalityTraceLevel.Required, taskIfDebuggingEnabled, AsyncStatus.Completed);
-                DebuggerSupport.RemoveFromActiveTasks(taskIfDebuggingEnabled);
+                AsyncCausalitySupport.TraceOperationCompletedSuccess(this.Task);
             }
 
             // Mark the builder as completed.  As this is a void-returning method, this mostly
@@ -124,11 +117,9 @@ namespace System.Runtime.CompilerServices
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.exception);
             }
 
-            Task taskIfDebuggingEnabled = this.GetTaskIfDebuggingEnabled();
-            if (taskIfDebuggingEnabled != null)
+            if (AsyncCausalitySupport.LoggingOn)
             {
-                if (DebuggerSupport.LoggingOn)
-                    DebuggerSupport.TraceOperationCompletion(CausalityTraceLevel.Required, taskIfDebuggingEnabled, AsyncStatus.Error);
+                AsyncCausalitySupport.TraceOperationCompletedError(this.Task);
             }
 
             if (_synchronizationContext != null)
@@ -173,7 +164,7 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>Lazily instantiate the Task in a non-thread-safe manner.</summary>
-        internal Task Task => _builder.Task;
+        private Task Task => _builder.Task;
 
         /// <summary>
         /// Gets an object that may be used to uniquely identify this builder to the debugger.
@@ -197,11 +188,7 @@ namespace System.Runtime.CompilerServices
     public struct AsyncTaskMethodBuilder
     {
         /// <summary>A cached VoidTaskResult task used for builders that complete synchronously.</summary>
-#if PROJECTN
-        private static readonly Task<VoidTaskResult> s_cachedCompleted = AsyncTaskCache.CreateCacheableTask<VoidTaskResult>(default(VoidTaskResult));
-#else
         private readonly static Task<VoidTaskResult> s_cachedCompleted = AsyncTaskMethodBuilder<VoidTaskResult>.s_defaultResultTask;
-#endif
 
         /// <summary>The generic builder object to which this non-generic instance delegates.</summary>
         private AsyncTaskMethodBuilder<VoidTaskResult> m_builder; // mutable struct: must not be readonly. Debugger depends on the exact name of this field.
@@ -309,10 +296,8 @@ namespace System.Runtime.CompilerServices
     /// </remarks>
     public struct AsyncTaskMethodBuilder<TResult>
     {
-#if !PROJECTN
         /// <summary>A cached task for default(TResult).</summary>
         internal readonly static Task<TResult> s_defaultResultTask = AsyncTaskCache.CreateCacheableTask(default(TResult));
-#endif
 
         /// <summary>The lazily-initialized built task.</summary>
         private Task<TResult> m_task; // lazily-initialized: must not be readonly. Debugger depends on the exact name of this field.
@@ -501,11 +486,40 @@ namespace System.Runtime.CompilerServices
             // cases is we lose the ability to properly step in the debugger, as the debugger uses that
             // object's identity to track this specific builder/state machine.  As such, we proceed to
             // overwrite whatever's there anyway, even if it's non-null.
-            var box = new AsyncStateMachineBox<TStateMachine>();
+            var box = AsyncMethodBuilderCore.TrackAsyncMethodCompletion ?
+                CreateDebugFinalizableAsyncStateMachineBox<TStateMachine>() :
+                new AsyncStateMachineBox<TStateMachine>();
             m_task = box; // important: this must be done before storing stateMachine into box.StateMachine!
             box.StateMachine = stateMachine;
             box.Context = currentContext;
             return box;
+        }
+
+        // Avoid forcing the JIT to build DebugFinalizableAsyncStateMachineBox<TStateMachine> unless it's actually needed.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static AsyncStateMachineBox<TStateMachine> CreateDebugFinalizableAsyncStateMachineBox<TStateMachine>()
+            where TStateMachine : IAsyncStateMachine =>
+            new DebugFinalizableAsyncStateMachineBox<TStateMachine>();
+
+        /// <summary>
+        /// Provides an async state machine box with a finalizer that will fire an EventSource
+        /// event about the state machine if it's being finalized without having been completed.
+        /// </summary>
+        /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
+        private sealed class DebugFinalizableAsyncStateMachineBox<TStateMachine> : // SOS DumpAsync command depends on this name
+            AsyncStateMachineBox<TStateMachine>
+            where TStateMachine : IAsyncStateMachine
+        {
+            ~DebugFinalizableAsyncStateMachineBox()
+            {
+                // If the state machine is being finalized, something went wrong during its processing,
+                // e.g. it awaited something that got collected without itself having been completed.
+                // Fire an event with details about the state machine to help with debugging.
+                if (!IsCompleted) // double-check it's not completed, just to help minimize false positives
+                {
+                    TplEtwProvider.Log.IncompleteAsyncMethod(this);
+                }
+            }
         }
 
         /// <summary>A strongly-typed box for Task-based async state machines.</summary>
@@ -515,7 +529,12 @@ namespace System.Runtime.CompilerServices
             where TStateMachine : IAsyncStateMachine
         {
             /// <summary>Delegate used to invoke on an ExecutionContext when passed an instance of this box type.</summary>
-            private static readonly ContextCallback s_callback = s => ((AsyncStateMachineBox<TStateMachine>)s).StateMachine.MoveNext();
+            private static readonly ContextCallback s_callback = s =>
+            {
+                Debug.Assert(s is AsyncStateMachineBox<TStateMachine>);
+                // Only used privately to pass directly to EC.Run
+                Unsafe.As<AsyncStateMachineBox<TStateMachine>>(s).StateMachine.MoveNext();
+            };
 
             /// <summary>A delegate to the <see cref="MoveNext()"/> method.</summary>
             private Action _moveNextAction;
@@ -527,18 +546,20 @@ namespace System.Runtime.CompilerServices
             /// <summary>A delegate to the <see cref="MoveNext()"/> method.</summary>
             public Action MoveNextAction => _moveNextAction ?? (_moveNextAction = new Action(MoveNext));
 
-            internal sealed override void ExecuteFromThreadPool(Thread threadPoolThread) => MoveNext(threadPoolThread);
+            internal sealed override void ExecuteFromThreadPool(RuntimeThread threadPoolThread) => MoveNext(threadPoolThread);
 
             /// <summary>Calls MoveNext on <see cref="StateMachine"/></summary>
             public void MoveNext() => MoveNext(threadPoolThread: null);
 
-            private void MoveNext(Thread threadPoolThread)
+            private void MoveNext(RuntimeThread threadPoolThread)
             {
                 Debug.Assert(!IsCompleted);
 
-                bool loggingOn = DebuggerSupport.LoggingOn;
-                if (DebuggerSupport.LoggingOn)
-                    DebuggerSupport.TraceSynchronousWorkStart(CausalityTraceLevel.Required, this, CausalitySynchronousWork.Execution);
+                bool loggingOn = AsyncCausalitySupport.LoggingOn;
+                if (loggingOn)
+                {
+                    AsyncCausalitySupport.TraceSynchronousWorkStart(this);
+                }
 
                 ExecutionContext context = Context;
                 if (context == null)
@@ -564,11 +585,19 @@ namespace System.Runtime.CompilerServices
                     // if this Task / state machine box is held onto.
                     StateMachine = default;
                     Context = default;
+
+                    // In case this is a state machine box with a finalizer, suppress its finalization
+                    // as it's now complete.  We only need the finalizer to run if the box is collected
+                    // without having been completed.
+                    if (AsyncMethodBuilderCore.TrackAsyncMethodCompletion)
+                    {
+                        GC.SuppressFinalize(this);
+                    }
                 }
 
                 if (loggingOn)
                 {
-                    DebuggerSupport.TraceSynchronousWorkCompletion(CausalityTraceLevel.Required, CausalitySynchronousWork.Execution);
+                    AsyncCausalitySupport.TraceSynchronousWorkCompletion();
                 }
             }
 
@@ -606,7 +635,9 @@ namespace System.Runtime.CompilerServices
         private Task<TResult> InitializeTaskAsStateMachineBox()
         {
             Debug.Assert(m_task == null);
-            return (m_task = new AsyncStateMachineBox<IAsyncStateMachine>());
+            return (m_task = AsyncMethodBuilderCore.TrackAsyncMethodCompletion ?
+                CreateDebugFinalizableAsyncStateMachineBox<IAsyncStateMachine>() :
+                new AsyncStateMachineBox<IAsyncStateMachine>());
         }
 
         /// <summary>
@@ -637,13 +668,31 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(m_task != null, "Expected non-null task");
 
-            if (DebuggerSupport.LoggingOn)
-                DebuggerSupport.TraceOperationCompletion(CausalityTraceLevel.Required, m_task, AsyncStatus.Completed);
-            DebuggerSupport.RemoveFromActiveTasks(m_task);
+            if (AsyncCausalitySupport.LoggingOn || System.Threading.Tasks.Task.s_asyncDebuggingEnabled)
+            {
+                LogExistingTaskCompletion();
+            }
 
             if (!m_task.TrySetResult(result))
             {
                 ThrowHelper.ThrowInvalidOperationException(ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted);
+            }
+        }
+
+        /// <summary>Handles logging for the successful completion of an operation.</summary>
+        private void LogExistingTaskCompletion()
+        {
+            Debug.Assert(m_task != null);
+
+            if (AsyncCausalitySupport.LoggingOn)
+            {
+                AsyncCausalitySupport.TraceOperationCompletedSuccess(m_task);
+            }
+
+            // only log if we have a real task that was previously created
+            if (System.Threading.Tasks.Task.s_asyncDebuggingEnabled)
+            {
+                System.Threading.Tasks.Task.RemoveFromActiveTasks(m_task.Id);
             }
         }
 
@@ -689,8 +738,7 @@ namespace System.Runtime.CompilerServices
             Task<TResult> task = this.Task;
 
             // If the exception represents cancellation, cancel the task.  Otherwise, fault the task.
-            var oce = exception as OperationCanceledException;
-            bool successfullySet = oce != null ?
+            bool successfullySet = exception is OperationCanceledException oce ?
                 task.TrySetCanceled(oce.CancellationToken, oce) :
                 task.TrySetException(exception);
 
@@ -752,12 +800,6 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // method looks long, but for a given TResult it results in a relatively small amount of asm
         internal static Task<TResult> GetTaskForResult(TResult result)
         {
-#if PROJECTN
-            // Currently NUTC does not perform the optimization needed by this method.  The result is that
-            // every call to this method results in quite a lot of work, including many allocations, which 
-            // is the opposite of the intent.  For now, let's just return a new Task each time.
-            // Bug 719350 tracks re-optimizing this in ProjectN.
-#else
             // The goal of this function is to be give back a cached task if possible,
             // or to otherwise give back a new task.  To give back a cached task,
             // we need to be able to evaluate the incoming result value, and we need
@@ -830,7 +872,6 @@ namespace System.Runtime.CompilerServices
             {
                 return s_defaultResultTask;
             }
-#endif
 
             // No cached task is available.  Manufacture a new one for this result.
             return new Task<TResult>(result);
@@ -840,8 +881,8 @@ namespace System.Runtime.CompilerServices
     /// <summary>Provides a cache of closed generic tasks for async methods.</summary>
     internal static class AsyncTaskCache
     {
-#if !PROJECTN
         // All static members are initialized inline to ensure type is beforefieldinit
+
         /// <summary>A cached Task{Boolean}.Result == true.</summary>
         internal readonly static Task<bool> TrueTask = CreateCacheableTask(true);
         /// <summary>A cached Task{Boolean}.Result == false.</summary>
@@ -864,7 +905,6 @@ namespace System.Runtime.CompilerServices
             }
             return tasks;
         }
-#endif
 
         /// <summary>Creates a non-disposable task.</summary>
         /// <typeparam name="TResult">Specifies the result type.</typeparam>
@@ -908,8 +948,8 @@ namespace System.Runtime.CompilerServices
 
             // enregistrer variables with 0 post-fix so they can be used in registers without EH forcing them to stack
             // Capture references to Thread Contexts
-            Thread currentThread0 = Thread.CurrentThread;
-            Thread currentThread = currentThread0;
+            RuntimeThread currentThread0 = RuntimeThread.CurrentThread;
+            RuntimeThread currentThread = currentThread0;
             ExecutionContext previousExecutionCtx0 = currentThread0.ExecutionContext;
 
             // Store current ExecutionContext and SynchronizationContext as "previousXxx".
@@ -926,7 +966,7 @@ namespace System.Runtime.CompilerServices
             {
                 // Re-enregistrer variables post EH with 1 post-fix so they can be used in registers rather than from stack
                 SynchronizationContext previousSyncCtx1 = previousSyncCtx;
-                Thread currentThread1 = currentThread;
+                RuntimeThread currentThread1 = currentThread;
                 // The common case is that these have not changed, so avoid the cost of a write barrier if not needed.
                 if (previousSyncCtx1 != currentThread1.SynchronizationContext)
                 {
@@ -938,16 +978,16 @@ namespace System.Runtime.CompilerServices
                 ExecutionContext currentExecutionCtx1 = currentThread1.ExecutionContext;
                 if (previousExecutionCtx1 != currentExecutionCtx1)
                 {
-                    // Restore changed ExecutionContext back to previous
-                    currentThread1.ExecutionContext = previousExecutionCtx1;
-                    if ((currentExecutionCtx1 != null && currentExecutionCtx1.HasChangeNotifications) ||
-                        (previousExecutionCtx1 != null && previousExecutionCtx1.HasChangeNotifications))
-                    {
-                        // There are change notifications; trigger any affected
-                        ExecutionContext.OnValuesChanged(currentExecutionCtx1, previousExecutionCtx1);
-                    }
+                    ExecutionContext.RestoreChangedContextToThread(currentThread1, previousExecutionCtx1, currentExecutionCtx1);
                 }
             }
+        }
+
+        /// <summary>Gets whether we should be tracking async method completions for eventing.</summary>
+        internal static bool TrackAsyncMethodCompletion
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => TplEtwProvider.Log.IsEnabled(EventLevel.Warning, TplEtwProvider.Keywords.AsyncMethod);
         }
 
         /// <summary>Gets a description of the state of the state machine object, suitable for debug purposes.</summary>
@@ -972,11 +1012,6 @@ namespace System.Runtime.CompilerServices
         internal static Action CreateContinuationWrapper(Action continuation, Action<Action,Task> invokeAction, Task innerTask) =>
             new ContinuationWrapper(continuation, invokeAction, innerTask).Invoke;
 
-        /// <summary>This helper routine is targeted by the debugger. Its purpose is to remove any delegate wrappers introduced by
-        /// the framework that the debugger doesn't want to see.</summar
-#if PROJECTN
-        [DependencyReductionRoot]
-#endif
         internal static Action TryGetStateMachineForDebugger(Action action) // debugger depends on this exact name/signature
         {
             object target = action.Target;
@@ -994,30 +1029,38 @@ namespace System.Runtime.CompilerServices
         /// <param name="targetContext">The target context on which to propagate the exception.  Null to use the ThreadPool.</param>
         internal static void ThrowAsync(Exception exception, SynchronizationContext targetContext)
         {
-            if (exception == null) throw new ArgumentNullException(nameof(exception));
+            // Capture the exception into an ExceptionDispatchInfo so that its 
+            // stack trace and Watson bucket info will be preserved
+            var edi = ExceptionDispatchInfo.Capture(exception);
 
             // If the user supplied a SynchronizationContext...
             if (targetContext != null)
             {
                 try
                 {
-                    // Capture the exception into an ExceptionDispatchInfo so that its 
-                    // stack trace and Watson bucket info will be preserved
-                    var edi = ExceptionDispatchInfo.Capture(exception);
-
                     // Post the throwing of the exception to that context, and return.
                     targetContext.Post(state => ((ExceptionDispatchInfo)state).Throw(), edi);
                     return;
                 }
                 catch (Exception postException)
                 {
-                    // If something goes horribly wrong in the Post, we'll treat this a *both* exceptions
-                    // going unhandled.
-                    RuntimeAugments.ReportUnhandledException(new AggregateException(exception, postException));
+                    // If something goes horribly wrong in the Post, we'll 
+                    // propagate both exceptions on the ThreadPool
+                    edi = ExceptionDispatchInfo.Capture(new AggregateException(exception, postException));
                 }
             }
 
-            RuntimeAugments.ReportUnhandledException(exception);
+#if CORERT
+            RuntimeAugments.ReportUnhandledException(edi.SourceException);
+#else
+            // If we have the new error reporting APIs, report this error.  Otherwise, Propagate the exception(s) on the ThreadPool
+#if FEATURE_COMINTEROP
+            if (!WindowsRuntimeMarshal.ReportUnhandledError(edi.SourceException))
+#endif // FEATURE_COMINTEROP
+            {
+                ThreadPool.QueueUserWorkItem(state => ((ExceptionDispatchInfo)state).Throw(), edi);
+            }
+#endif
         }
 
         /// <summary>

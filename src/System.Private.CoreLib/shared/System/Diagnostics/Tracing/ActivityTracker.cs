@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using System.Threading;
+using System.Runtime.CompilerServices;
 #if !ES_BUILD_AGAINST_DOTNET_V35
 using Contract = System.Diagnostics.Contracts.Contract;
 #else
@@ -624,6 +625,7 @@ namespace System.Diagnostics.Tracing
         public class Keywords
         {
             public const EventKeywords TasksFlowActivityIds = (EventKeywords)0x80;
+            public const EventKeywords AsyncMethod = (EventKeywords)0x100;
             public const EventKeywords Debug = (EventKeywords)0x20000;
         }
 
@@ -633,6 +635,20 @@ namespace System.Diagnostics.Tracing
         public void DebugFacilityMessage(string Facility, string Message) { WriteEvent(1, Facility, Message); }
         public void DebugFacilityMessage1(string Facility, string Message, string Arg) { WriteEvent(2, Facility, Message, Arg); }
         public void SetActivityId(Guid Id) { WriteEvent(3, Id); }
+
+        public void IncompleteAsyncMethod(IAsyncStateMachineBox stateMachineBox)
+        {
+            System.Diagnostics.Debug.Assert(stateMachineBox != null);
+            if (IsEnabled(EventLevel.Warning, Keywords.AsyncMethod))
+            {
+                IAsyncStateMachine stateMachine = stateMachineBox.GetStateMachineObject();
+                if (stateMachine != null)
+                {
+                    string description = AsyncMethodBuilderCore.GetAsyncStateMachineDescription(stateMachine);
+                    WriteEvent(27, description);
+                }
+            }
+        }
     }
 #endif
 

@@ -58,6 +58,18 @@ namespace Internal.Threading.Tasks
         {
             DebuggerSupport.TraceOperationCompletion(CausalityTraceLevel.Required, task, AsyncStatus.Error);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void TraceSynchronousWorkStart(Task task)
+        {
+            DebuggerSupport.TraceSynchronousWorkStart(CausalityTraceLevel.Required, task, CausalitySynchronousWork.Execution);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void TraceSynchronousWorkCompletion()
+        {
+            DebuggerSupport.TraceSynchronousWorkCompletion(CausalityTraceLevel.Required, CausalitySynchronousWork.Execution);
+        }
     }
 }
 
