@@ -188,7 +188,11 @@ namespace System.Runtime.CompilerServices
     public struct AsyncTaskMethodBuilder
     {
         /// <summary>A cached VoidTaskResult task used for builders that complete synchronously.</summary>
+#if PROJECTN
+        private static readonly Task<VoidTaskResult> s_cachedCompleted = AsyncTaskCache.CreateCacheableTask<VoidTaskResult>(default(VoidTaskResult));
+#else
         private readonly static Task<VoidTaskResult> s_cachedCompleted = AsyncTaskMethodBuilder<VoidTaskResult>.s_defaultResultTask;
+#endif
 
         /// <summary>The generic builder object to which this non-generic instance delegates.</summary>
         private AsyncTaskMethodBuilder<VoidTaskResult> m_builder; // mutable struct: must not be readonly. Debugger depends on the exact name of this field.
@@ -296,8 +300,10 @@ namespace System.Runtime.CompilerServices
     /// </remarks>
     public struct AsyncTaskMethodBuilder<TResult>
     {
+#if !PROJECTN
         /// <summary>A cached task for default(TResult).</summary>
         internal readonly static Task<TResult> s_defaultResultTask = AsyncTaskCache.CreateCacheableTask(default(TResult));
+#endif
 
         /// <summary>The lazily-initialized built task.</summary>
         private Task<TResult> m_task; // lazily-initialized: must not be readonly. Debugger depends on the exact name of this field.
@@ -800,6 +806,12 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // method looks long, but for a given TResult it results in a relatively small amount of asm
         internal static Task<TResult> GetTaskForResult(TResult result)
         {
+#if PROJECTN
+            // Currently NUTC does not perform the optimization needed by this method.  The result is that
+            // every call to this method results in quite a lot of work, including many allocations, which 
+            // is the opposite of the intent.  For now, let's just return a new Task each time.
+            // Bug 719350 tracks re-optimizing this in ProjectN.
+#else
             // The goal of this function is to be give back a cached task if possible,
             // or to otherwise give back a new task.  To give back a cached task,
             // we need to be able to evaluate the incoming result value, and we need
@@ -872,6 +884,7 @@ namespace System.Runtime.CompilerServices
             {
                 return s_defaultResultTask;
             }
+#endif
 
             // No cached task is available.  Manufacture a new one for this result.
             return new Task<TResult>(result);
@@ -881,6 +894,7 @@ namespace System.Runtime.CompilerServices
     /// <summary>Provides a cache of closed generic tasks for async methods.</summary>
     internal static class AsyncTaskCache
     {
+#if !PROJECTN
         // All static members are initialized inline to ensure type is beforefieldinit
 
         /// <summary>A cached Task{Boolean}.Result == true.</summary>
@@ -905,6 +919,7 @@ namespace System.Runtime.CompilerServices
             }
             return tasks;
         }
+#endif
 
         /// <summary>Creates a non-disposable task.</summary>
         /// <typeparam name="TResult">Specifies the result type.</typeparam>
@@ -1012,6 +1027,11 @@ namespace System.Runtime.CompilerServices
         internal static Action CreateContinuationWrapper(Action continuation, Action<Action,Task> invokeAction, Task innerTask) =>
             new ContinuationWrapper(continuation, invokeAction, innerTask).Invoke;
 
+        /// <summary>This helper routine is targeted by the debugger. Its purpose is to remove any delegate wrappers introduced by
+        /// the framework that the debugger doesn't want to see.</summary>
+#if PROJECTN
+        [DependencyReductionRoot]
+#endif
         internal static Action TryGetStateMachineForDebugger(Action action) // debugger depends on this exact name/signature
         {
             object target = action.Target;
