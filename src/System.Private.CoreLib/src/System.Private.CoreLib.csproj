@@ -43,6 +43,9 @@
     <FeaturePortableThreadPool Condition="'$(FeaturePortableThreadPool)' == ''">false</FeaturePortableThreadPool>
     <FeaturePortableThreadPool Condition="'$(TargetsUnix)' == 'true'">true</FeaturePortableThreadPool>
   </PropertyGroup>
+  <PropertyGroup>
+    <FeatureHardwareIntrinsics Condition="'$(IsProjectNLibrary)' != 'true'">true</FeatureHardwareIntrinsics>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\Internal\Runtime\RuntimeConstants.cs">
       <Link>Internal\Runtime\RuntimeConstants.cs</Link>

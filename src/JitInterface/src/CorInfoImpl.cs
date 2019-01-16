@@ -580,6 +580,8 @@ namespace Internal.JitInterface
 
             // CORINFO_FLG_PROTECTED - verification only
 
+            TypeDesc owningType = method.OwningType;
+
             if (method.Signature.IsStatic)
                 result |= CorInfoFlag.CORINFO_FLG_STATIC;
 
@@ -633,7 +635,7 @@ namespace Internal.JitInterface
                 result |= CorInfoFlag.CORINFO_FLG_FORCEINLINE;
             }
 
-            if (method.OwningType.IsDelegate && method.Name == "Invoke")
+            if (owningType.IsDelegate && method.Name == "Invoke")
             {
                 // This is now used to emit efficient invoke code for any delegate invoke,
                 // including multicast.
@@ -642,7 +644,25 @@ namespace Internal.JitInterface
                 // RyuJIT special cases this method; it would assert if it's not final
                 // and we might not have set the bit in the code above.
                 result |= CorInfoFlag.CORINFO_FLG_FINAL;
-           }
+            }
+
+            // Check for hardware intrinsics
+            if (owningType.IsIntrinsic && owningType is MetadataType mdType)
+            {
+                TargetArchitecture targetArch = owningType.Context.Target.Architecture;
+
+                if (targetArch == TargetArchitecture.X64 || targetArch == TargetArchitecture.X86)
+                {
+                    mdType = (MetadataType)mdType.ContainingType ?? mdType;
+                    if (mdType.Namespace == "System.Runtime.Intrinsics.X86")
+                        result |= CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC;
+                }
+                else if (targetArch == TargetArchitecture.ARM64)
+                {
+                    if (mdType.Namespace == "System.Runtime.Intrinsics.Arm.Arm64")
+                        result |= CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC;
+                }
+            }
 
             result |= CorInfoFlag.CORINFO_FLG_NOSECURITYWRAP;
 
