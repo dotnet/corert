@@ -50,3 +50,47 @@ sudo zypper install cmake libuuid-devel icu libcurl-devel zlib-devel
 Make sure you run with Ubuntu 16.04 Xenial userland (this is the default after Windows 10 Creators Update, but if you enabled the "Bash on Ubuntu on Windows" feature before the Creators Update, you need to [upgrade manually](https://blogs.msdn.microsoft.com/commandline/2017/04/11/windows-10-creators-update-whats-new-in-bashwsl-windows-console/)). Running `lsb_release -a` will give you the version.
 
 Then follow the Ubuntu 16.04 instructions above.
+
+# clang 3.9 not found on Linux
+
+If you encounter this error, CoreRT could not find the clang executable
+```
+error : Platform linker ('clang-3.9') not found. Try installing clang-3.9 or the appropriate package for your platform to resolve the problem.
+```
+
+CoreRT expect by default clang-3.9 installed (see above). You can override this by setting an environment variable.
+
+```
+export CppCompilerAndLinker=clang
+```
+
+This works for building CoreCR itself as well as building with CoreRT.
+When filing bugs, please make sure to mention the clang version you are using, if you override this.
+
+# libObjWriter.so not found on Linux
+
+```
+EXEC : error : Unable to load shared library 'objwriter' or one of its dependencies. In order to help diagnose loading problems, consider setting the LD_DEBUG environment variable: libobjwriter: cannot open shared object file: No such file or directory 
+```
+
+This is the default error message when a [DLLImport] could not be loaded. CoreRT nuget packages distribute this file, but it might be failing to load depencies.
+Make sure to install all dependencies. If the error persists, use ldd to find out if you lack any dependencies. 
+
+```
+ldd /home/<username>/.nuget/packages/runtime.linux-x64.microsoft.dotnet.ilcompiler/<nuget_package_version>/tools/libobjwriter.so
+    linux-vdso.so.1 (0x00007ffe9bbea000)
+    librt.so.1 => /usr/lib/librt.so.1 (0x00007f8f52142000)
+    libdl.so.2 => /usr/lib/libdl.so.2 (0x00007f8f5213d000)
+    libtinfo.so.5 => not found
+    libpthread.so.0 => /usr/lib/libpthread.so.0 (0x00007f8f5211c000)
+    libz.so.1 => /usr/lib/libz.so.1 (0x00007f8f51f05000)
+    libm.so.6 => /usr/lib/libm.so.6 (0x00007f8f51d80000)
+    libstdc++.so.6 => /usr/lib/libstdc++.so.6 (0x00007f8f51bef000)
+    libgcc_s.so.1 => /usr/lib/libgcc_s.so.1 (0x00007f8f51bd5000)
+    libc.so.6 => /usr/lib/libc.so.6 (0x00007f8f51a11000)
+    /usr/lib64/ld-linux-x86-64.so.2 (0x00007f8f53358000)
+```
+
+In this Arch Linux example, libtinfo.so.5 is missing. Its part of ncurses5 but aur has a compatibility package here: 
+https://aur.archlinux.org/packages/ncurses5-compat-libs/
+After installing it should work fine
