@@ -1951,7 +1951,7 @@ namespace Internal.JitInterface
                 fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_STATIC;
 
 #if READYTORUN
-                if (field.FieldType.IsValueType && field.HasGCStaticBase)
+                if (field.FieldType.IsValueType && field.HasGCStaticBase && !field.HasRva)
                 {
                     // statics of struct types are stored as implicitly boxed in CoreCLR i.e.
                     // we need to modify field access flags appropriately
@@ -3102,7 +3102,18 @@ namespace Internal.JitInterface
         {
             FieldDesc fieldDesc = HandleToObject(field);
             Debug.Assert(fieldDesc.HasRva);
-            return (void*)ObjectToHandle(_compilation.GetFieldRvaData(fieldDesc));
+            ObjectNode node = _compilation.GetFieldRvaData(fieldDesc);
+            void *handle = (void *)ObjectToHandle(node);
+            if (node.RepresentsIndirectionCell)
+            {
+                ppIndirection = handle;
+                return null;
+            }
+            else
+            {
+                ppIndirection = null;
+                return handle;
+            }
         }
 
         private CORINFO_CLASS_STRUCT_* getStaticFieldCurrentClass(CORINFO_FIELD_STRUCT_* field, byte* pIsSpeculative)

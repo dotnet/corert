@@ -151,5 +151,7 @@ namespace ILCompiler
             // Allow inlining if the target method is within the same version bubble
             return NodeFactory.CompilationModuleGroup.ContainsMethodBody(calleeMethod, unboxingStub: false);
         }
+
+        public override ObjectNode GetFieldRvaData(FieldDesc field) => SymbolNodeFactory.GetRvaFieldNode(field);
     }
 }
