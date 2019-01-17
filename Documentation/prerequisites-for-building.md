@@ -73,7 +73,7 @@ When filing bugs, please make sure to mention the clang version you are using, i
 EXEC : error : Unable to load shared library 'objwriter' or one of its dependencies. In order to help diagnose loading problems, consider setting the LD_DEBUG environment variable: libobjwriter: cannot open shared object file: No such file or directory 
 ```
 
-This is the default error message when a [DLLImport] could not be loaded. CoreRT nuget packages distribute this file, but it might be failing to load depencies.
+This is the default error message when a `[DllImport]` could not be loaded. CoreRT nuget packages distribute this file, but it might be failing to load dependencies.
 Make sure to install all dependencies. If the error persists, use ldd to find out if you lack any dependencies. 
 
 ```
@@ -91,6 +91,6 @@ ldd /home/<username>/.nuget/packages/runtime.linux-x64.microsoft.dotnet.ilcompil
     /usr/lib64/ld-linux-x86-64.so.2 (0x00007f8f53358000)
 ```
 
-In this Arch Linux example, libtinfo.so.5 is missing. Its part of ncurses5 but aur has a compatibility package here: 
+In this Arch Linux example, libtinfo.so.5 is missing. Its part of ncurses5 but AUR has a compatibility package here: 
 https://aur.archlinux.org/packages/ncurses5-compat-libs/
 After installing it should work fine
