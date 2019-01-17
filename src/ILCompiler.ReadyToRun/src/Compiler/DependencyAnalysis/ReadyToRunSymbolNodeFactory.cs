@@ -840,9 +840,9 @@ namespace ILCompiler.DependencyAnalysis
         public ObjectNode GetRvaFieldNode(FieldDesc fieldDesc)
         {
             Debug.Assert(fieldDesc.HasRva);
-            EcmaField ecmaField = (EcmaField)fieldDesc;
+            EcmaField ecmaField = (EcmaField)fieldDesc.GetTypicalFieldDefinition();
 
-            if (!_codegenNodeFactory.TypeSystemContext.InputFilePaths.ContainsKey(ecmaField.Module.Assembly.GetName().Name))
+            if (!_codegenNodeFactory.CompilationModuleGroup.ContainsType(ecmaField.OwningType))
             {
                 // TODO: cross-bubble RVA field
                 throw new NotSupportedException($"{ecmaField} ... {ecmaField.Module.Assembly}");
