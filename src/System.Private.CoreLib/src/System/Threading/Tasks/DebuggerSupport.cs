@@ -61,36 +61,5 @@ namespace System.Threading.Tasks
 
         private static readonly LowLevelDictionary<int, Task> s_activeTasks = new LowLevelDictionary<int, Task>();
         private static readonly object s_activeTasksLock = new object();
-
-        //==============================================================================================================
-        // This section of the class wraps calls to get the lazy-created Task object for the purpose of reporting
-        // async causality events to the debugger.
-        //==============================================================================================================
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Task GetTaskIfDebuggingEnabled(this AsyncVoidMethodBuilder builder)
-        {
-            if (LoggingOn || Task.s_asyncDebuggingEnabled)
-                return builder.Task;
-            else
-                return null;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Task GetTaskIfDebuggingEnabled(this AsyncTaskMethodBuilder builder)
-        {
-            if (LoggingOn || Task.s_asyncDebuggingEnabled)
-                return builder.Task;
-            else
-                return null;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Task GetTaskIfDebuggingEnabled<TResult>(this AsyncTaskMethodBuilder<TResult> builder)
-        {
-            if (LoggingOn || Task.s_asyncDebuggingEnabled)
-                return builder.Task;
-            else
-                return null;
-        }
     }
 }

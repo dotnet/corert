@@ -25,6 +25,7 @@ namespace ILCompiler.DependencyAnalysis
         GetThreadNonGcStaticBase,
         DelegateCtor,
         ResolveVirtualFunction,
+        CctorTrigger,
 
         // The following helpers are used for generic lookups only
         TypeHandle,
@@ -40,10 +41,10 @@ namespace ILCompiler.DependencyAnalysis
 
     public partial class ReadyToRunHelperNode : AssemblyStubNode, INodeWithDebugInfo
     {
-        private ReadyToRunHelperId _id;
-        private Object _target;
+        private readonly ReadyToRunHelperId _id;
+        private readonly Object _target;
 
-        public ReadyToRunHelperNode(NodeFactory factory, ReadyToRunHelperId id, Object target)
+        public ReadyToRunHelperNode(ReadyToRunHelperId id, Object target)
         {
             _id = id;
             _target = target;

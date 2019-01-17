@@ -29,29 +29,26 @@ namespace Internal.JitInterface
         }
     }
 
-    public class MethodContext
+    public struct GenericContext : IEquatable<GenericContext>
     {
-        public readonly MethodDesc Method;
-        public readonly IntPtr Context;
+        public readonly TypeSystemEntity Context;
 
-        public MethodContext(MethodDesc method, IntPtr context)
+        public TypeDesc ContextType { get { return (Context is MethodDesc contextAsMethod ? contextAsMethod.OwningType : (TypeDesc)Context); } }
+
+        public MethodDesc ContextMethod { get { return (MethodDesc)Context; } }
+
+        public GenericContext(TypeSystemEntity context)
         {
-            Method = method;
             Context = context;
         }
 
-        public override bool Equals(object obj)
-        {
-            return obj is MethodContext other && Method == other.Method && Context == other.Context;
-        }
+        public bool Equals(GenericContext other) => Context == other.Context;
 
-        public override int GetHashCode()
-        {
-            int hashCode = -117376276;
-            hashCode = hashCode * -1521134295 + Method.GetHashCode();
-            hashCode = hashCode * -1521134295 + Context.GetHashCode();
-            return hashCode;
-        }
+        public override bool Equals(object obj) => obj is GenericContext other && Context == other.Context;
+
+        public override int GetHashCode() => Context.GetHashCode();
+
+        public override string ToString() => Context.ToString();
     }
 
     public class RequiresRuntimeJitException : Exception
@@ -208,27 +205,7 @@ namespace Internal.JitInterface
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.ReadyToRunHelper(ReadyToRunHelperId.GetNonGCStaticBase, type, _signatureContext));
-                    }
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE:
-                    {
-                        // Token == 0 means "initialize this class". We only expect RyuJIT to call it for this case.
-                        Debug.Assert(pResolvedToken.token == 0 && pResolvedToken.tokenScope == null);
-                        Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
-
-                        DefType typeToInitialize = (DefType)MethodBeingCompiled.OwningType;
-                        Debug.Assert(typeToInitialize.IsCanonicalSubtype(CanonicalFormKind.Any));
-
-                        DefType helperArg = typeToInitialize.ConvertToSharedRuntimeDeterminedForm();
-                        MethodContext methodContext = new MethodContext(methodFromContext(pResolvedToken.tokenContext), new IntPtr(pResolvedToken.tokenContext));
-                        ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(
-                            pGenericLookupKind.runtimeLookupKind,
-                            ReadyToRunHelperId.GetNonGCStaticBase, 
-                            helperArg, 
-                            methodContext, 
-                            _signatureContext);
-                        pLookup = CreateConstLookupToSymbol(helper);
+                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.ReadyToRunHelper(ReadyToRunHelperId.CctorTrigger, type, _signatureContext));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
@@ -241,7 +218,7 @@ namespace Internal.JitInterface
                         {
                             helperArg = new MethodWithToken(methodArg, new ModuleToken(_tokenContext, pResolvedToken.token));
                         }
-                        MethodContext methodContext = new MethodContext(methodFromContext(pResolvedToken.tokenContext), new IntPtr(pResolvedToken.tokenContext));
+                        GenericContext methodContext = new GenericContext(entityFromContext(pResolvedToken.tokenContext));
                         ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(
                             pGenericLookupKind.runtimeLookupKind,
                             helperId,
@@ -694,14 +671,72 @@ namespace Internal.JitInterface
             return fThrowing ? CorInfoHelpFunc.CORINFO_HELP_CHKCASTANY : CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFANY;
         }
 
-        private CorInfoHelpFunc getNewHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle)
+        private CorInfoHelpFunc getNewHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, byte* pHasSideEffects = null)
         {
+            TypeDesc type = HandleToObject(pResolvedToken.hClass);
+
+            if (pHasSideEffects != null)
+            {
+                *pHasSideEffects = (byte)(type.HasFinalizer ? 1 : 0);
+            }
+
             return CorInfoHelpFunc.CORINFO_HELP_NEWFAST;
         }
 
         private CorInfoHelpFunc getNewArrHelper(CORINFO_CLASS_STRUCT_* arrayCls)
         {
             return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT;
+        }
+
+        private static bool IsClassPreInited(TypeDesc type)
+        {
+            if (type.IsGenericDefinition)
+            {
+                return true;
+            }
+            if (type.HasStaticConstructor)
+            {
+                return false;
+            }
+            if (HasBoxedRegularStatics(type))
+            {
+                return false;
+            }
+            if (IsDynamicStatics(type))
+            {
+                return false;
+            }
+            return true;
+        }
+
+        private static bool HasBoxedRegularStatics(TypeDesc type)
+        {
+            foreach (FieldDesc field in type.GetFields())
+            {
+                if (field.IsStatic && 
+                    !field.IsLiteral && 
+                    field.FieldType.IsValueType &&
+                    !field.FieldType.UnderlyingType.IsPrimitive)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static bool IsDynamicStatics(TypeDesc type)
+        {
+            if (type.HasInstantiation)
+            {
+                foreach (FieldDesc field in type.GetFields())
+                {
+                    if (field.IsStatic && !field.IsLiteral)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
     }
 }

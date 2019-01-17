@@ -99,8 +99,12 @@ namespace ILCompiler.DependencyAnalysis
                     helperNode = CreateDelegateCtorHelper((DelegateCreationInfo)target, signatureContext);
                     break;
 
+                case ReadyToRunHelperId.CctorTrigger:
+                    helperNode = CreateCctorTrigger((TypeDesc)target, signatureContext);
+                    break;
+
                 default:
-                    throw new NotImplementedException();
+                    throw new NotImplementedException(id.ToString());
             }
 
             helperNodeMap.Add(target, helperNode);
@@ -211,6 +215,15 @@ namespace ILCompiler.DependencyAnalysis
         private ISymbolNode CreateDelegateCtorHelper(DelegateCreationInfo info, SignatureContext signatureContext)
         {
             return info.Constructor;
+        }
+
+        private ISymbolNode CreateCctorTrigger(TypeDesc type, SignatureContext signatureContext)
+        {
+            return new DelayLoadHelperImport(
+                _codegenNodeFactory,
+                _codegenNodeFactory.DispatchImports,
+                ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
+                new TypeFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_CctorTrigger, type, signatureContext));
         }
 
         private readonly Dictionary<FieldDesc, ISymbolNode> _fieldAddressCache = new Dictionary<FieldDesc, ISymbolNode>();
@@ -677,14 +690,14 @@ namespace ILCompiler.DependencyAnalysis
             public readonly ReadyToRunFixupKind FixupKind;
             public readonly TypeDesc TypeArgument;
             public readonly MethodWithToken MethodArgument;
-            public readonly MethodContext MethodContext;
+            public readonly GenericContext MethodContext;
 
             public GenericLookupKey(
                 CORINFO_RUNTIME_LOOKUP_KIND lookupKind,
                 ReadyToRunFixupKind fixupKind,
                 TypeDesc typeArgument,
                 MethodWithToken methodArgument,
-                MethodContext methodContext)
+                GenericContext methodContext)
             {
                 LookupKind = lookupKind;
                 FixupKind = fixupKind;
@@ -713,7 +726,7 @@ namespace ILCompiler.DependencyAnalysis
                     (int)FixupKind +
                     (TypeArgument != null ? 31 * RuntimeDeterminedTypeHelper.GetHashCode(TypeArgument) : 0) +
                     (MethodArgument != null ? 31 * RuntimeDeterminedTypeHelper.GetHashCode(MethodArgument.Method) : 0) +
-                    (MethodContext != null ? MethodContext.GetHashCode() : 0));
+                    MethodContext.GetHashCode());
             }
         }
 
@@ -723,7 +736,7 @@ namespace ILCompiler.DependencyAnalysis
             CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
             ReadyToRunHelperId helperId,
             object helperArgument,
-            MethodContext methodContext,
+            GenericContext methodContext,
             SignatureContext signatureContext)
         {
             switch (helperId)
@@ -777,7 +790,7 @@ namespace ILCompiler.DependencyAnalysis
             CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
             ReadyToRunFixupKind fixupKind,
             TypeDesc typeArgument,
-            MethodContext methodContext,
+            GenericContext methodContext,
             SignatureContext signatureContext)
         {
             GenericLookupKey key = new GenericLookupKey(runtimeLookupKind, fixupKind, typeArgument, methodArgument: null, methodContext);
@@ -798,7 +811,7 @@ namespace ILCompiler.DependencyAnalysis
             CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
             ReadyToRunFixupKind fixupKind,
             MethodWithToken methodArgument,
-            MethodContext methodContext,
+            GenericContext methodContext,
             SignatureContext signatureContext)
         {
             GenericLookupKey key = new GenericLookupKey(runtimeLookupKind, fixupKind, typeArgument: null, methodArgument, methodContext);

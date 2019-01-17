@@ -20,7 +20,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly MethodWithToken _methodArgument;
 
-        private readonly MethodContext _methodContext;
+        private readonly GenericContext _methodContext;
 
         private readonly SignatureContext _signatureContext;
 
@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadyToRunFixupKind fixupKind, 
             TypeDesc typeArgument, 
             MethodWithToken methodArgument,
-            MethodContext methodContext,
+            GenericContext methodContext,
             SignatureContext signatureContext)
         {
             _runtimeLookupKind = runtimeLookupKind;
@@ -63,7 +63,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                     case CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ:
                         dataBuilder.EmitByte((byte)ReadyToRunFixupKind.READYTORUN_FIXUP_ThisObjDictionaryLookup);
-                        dataBuilder.EmitTypeSignature(_methodContext.Method.OwningType, _signatureContext);
+                        dataBuilder.EmitTypeSignature(_methodContext.ContextType, _signatureContext);
                         break;
 
                     default:
@@ -123,14 +123,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 throw new NotImplementedException();
             }
-            if (_methodContext != null)
-            {
-                sb.Append(" (");
-                sb.Append(_methodContext.Method.ToString());
-                sb.Append(":0x");
-                sb.Append(_methodContext.Context.ToString());
-                sb.Append(")");
-            }
+            sb.Append(" (");
+            sb.Append(_methodContext.ToString());
+            sb.Append(")");
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)

@@ -23,7 +23,7 @@ namespace System.Threading
             private static void WorkerThreadStart()
             {
                 ClrThreadPoolEventSource.Log.WorkerThreadStart(ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts).numExistingThreads);
-                RuntimeThread currentThread = RuntimeThread.CurrentThread;
+
                 while (true)
                 {
                     while (WaitForRequest())
@@ -189,7 +189,14 @@ namespace System.Threading
                 ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts);
                 while (true)
                 {
-                    if (counts.numExistingThreads <= counts.numThreadsGoal)
+                    /// When there are more threads processing work than the thread count goal, hill climbing must have decided
+                    /// to decrease the number of threads. Stop processing if the counts can be updated. We may have more
+                    /// threads existing than the thread count goal and that is ok, the cold ones will eventually time out if
+                    /// the thread count goal is not increased again. This logic is a bit different from the original CoreCLR
+                    /// code from which this implementation was ported, which turns a processing thread into a retired thread
+                    /// and checks for pending requests like <see cref="RemoveWorkingWorker"/>. In this implementation there are
+                    /// no retired threads, so only the count of threads processing work is considered.
+                    if (counts.numProcessingWork <= counts.numThreadsGoal)
                     {
                         return false;
                     }
