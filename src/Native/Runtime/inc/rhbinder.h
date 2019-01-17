@@ -783,8 +783,13 @@ struct PInvokeTransitionFrame
 // RBX, RSI, RDI, RAX, RSP
 #define PInvokeTransitionFrame_SaveRegs_count 5
 #elif defined(_TARGET_ARM_)
+#ifdef PROJECTN
 // R4-R6,R8-R10, R0, SP
 #define PInvokeTransitionFrame_SaveRegs_count 8
+#else // PROJECTN
+// R4-R10, R0, SP
+#define PInvokeTransitionFrame_SaveRegs_count 9
+#endif // PROJECTN
 #endif
 #define PInvokeTransitionFrame_MAX_SIZE (sizeof(PInvokeTransitionFrame) + (POINTER_SIZE * PInvokeTransitionFrame_SaveRegs_count))
 
