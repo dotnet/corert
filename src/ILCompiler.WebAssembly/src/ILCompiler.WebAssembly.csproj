@@ -46,6 +46,7 @@
     <Compile Include="Compiler\DependencyAnalysis\WebAssemblyCodegenNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WebAssemblyMethodCodeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WebAssemblyVTableSlotNode.cs" />
+    <Compile Include="Compiler\WebAssemblyMetadataBlockingPolicy.cs" />
     <Compile Include="Compiler\WebAssemblyNodeMangler.cs" />
     <Compile Include="Compiler\WebAssemblyCodegenCompilation.cs" />
     <Compile Include="Compiler\WebAssemblyCodegenCompilationBuilder.cs" />

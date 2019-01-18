@@ -44,15 +44,17 @@ namespace ILCompiler.DependencyAnalysis
             else
                 dependencies.Add(factory.ModuleMetadata(_type.Module), "Containing module of a reflectable type");
 
+            var mdManager = (UsageBasedMetadataManager)factory.MetadataManager;
             if (_type.IsDelegate)
             {
                 // A delegate type metadata is rather useless without the Invoke method.
                 // If someone reflects on a delegate, chances are they're going to look at the signature.
-                dependencies.Add(factory.MethodMetadata(_type.GetMethod("Invoke", null)), "Delegate invoke method metadata");
+                var invokeMethod = _type.GetMethod("Invoke", null);
+                if (!mdManager.IsReflectionBlocked(invokeMethod))
+                    dependencies.Add(factory.MethodMetadata(invokeMethod), "Delegate invoke method metadata");
             }
 
             // If the user asked for complete metadata to be generated for all types that are getting metadata, ensure that.
-            var mdManager = (UsageBasedMetadataManager)factory.MetadataManager;
             if ((mdManager._generationOptions & UsageBasedMetadataGenerationOptions.CompleteTypesOnly) != 0)
             {
                 foreach (MethodDesc method in _type.GetMethods())
