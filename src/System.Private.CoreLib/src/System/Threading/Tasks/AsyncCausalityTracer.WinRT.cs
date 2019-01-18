@@ -4,18 +4,13 @@
 
 using System.Runtime.CompilerServices;
 using WinRTInterop = Internal.Runtime.Augments.WinRTInterop;
-using AsyncStatus = Internal.Runtime.Augments.AsyncStatus;
-using CausalityRelation = Internal.Runtime.Augments.CausalityRelation;
-using CausalitySource = Internal.Runtime.Augments.CausalitySource;
-using CausalityTraceLevel = Internal.Runtime.Augments.CausalityTraceLevel;
-using CausalitySynchronousWork = Internal.Runtime.Augments.CausalitySynchronousWork;
 
 namespace System.Threading.Tasks
 {
     //
     // WinRT-specific implementation of AsyncCausality events
     //
-    internal static partial class DebuggerSupport
+    internal static class AsyncCausalityTracer
     {
         //==============================================================================================================
         // This section of the class encapsulates the call to AsyncCausalityTracer for the async-aware callstacks.
@@ -39,7 +34,7 @@ namespace System.Threading.Tasks
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void TraceOperationCompletion(CausalityTraceLevel traceLevel, Task task, AsyncStatus status)
+        public static void TraceOperationCompletion(CausalityTraceLevel traceLevel, Task task, AsyncCausalityStatus status)
         {
             if (LoggingOn)
             {
@@ -81,7 +76,7 @@ namespace System.Threading.Tasks
             return 0x0000000100000000LU | (ulong)(uint)(task.Id);
         }
 
-        static DebuggerSupport()
+        static AsyncCausalityTracer()
         {
             WinRTInterop.Callbacks.InitTracingStatusChanged(loggingOn => s_loggingOn = loggingOn);
         }
