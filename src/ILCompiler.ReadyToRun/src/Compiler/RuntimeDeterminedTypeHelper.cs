@@ -109,6 +109,17 @@ namespace ILCompiler
             return true;
         }
 
+        public static bool Equals(FieldDesc field1, FieldDesc field2)
+        {
+            if (field1 == null || field2 == null)
+            {
+                return field1 == null && field2 == null;
+            }
+            return field1.Name == field2.Name &&
+                RuntimeDeterminedTypeHelper.Equals(field1.OwningType, field2.OwningType) &&
+                RuntimeDeterminedTypeHelper.Equals(field1.FieldType, field2.FieldType);
+        }
+
         public static int GetHashCode(Instantiation instantiation)
         {
             int hashcode = unchecked(instantiation.Length << 24);
@@ -134,6 +145,11 @@ namespace ILCompiler
         {
             return unchecked(GetHashCode(method.OwningType) + 97 * (
                 method.GetTypicalMethodDefinition().GetHashCode() + 31 * GetHashCode(method.Instantiation)));
+        }
+
+        public static int GetHashCode(FieldDesc field)
+        {
+            return unchecked(GetHashCode(field.OwningType) + 97 * GetHashCode(field.FieldType) + 31 * field.Name.GetHashCode());
         }
 
         public static void WriteTo(Instantiation instantiation, Utf8StringBuilder sb)

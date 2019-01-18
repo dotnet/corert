@@ -2522,8 +2522,11 @@ namespace Internal.JitInterface
                 MemoryHelper.FillMemory((byte*)tmp, 0xcc, Marshal.SizeOf<CORINFO_GENERICHANDLE_RESULT>());
 #endif
             ReadyToRunHelperId helperId = ReadyToRunHelperId.Invalid;
-            object target = null;
-
+            TypeSystemEntity target = null;
+#if READYTORUN
+            bool needsRuntimeLookup;
+            pResult.compileTimeHandle = null;
+#endif
             if (!fEmbedParent && pResolvedToken.hMethod != null)
             {
                 MethodDesc md = HandleToObject(pResolvedToken.hMethod);
@@ -2533,8 +2536,6 @@ namespace Internal.JitInterface
 
                 Debug.Assert(md.OwningType == td);
 
-                pResult.compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(md);
-
                 if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken)
                     helperId = ReadyToRunHelperId.MethodHandle;
                 else
@@ -2543,7 +2544,11 @@ namespace Internal.JitInterface
                     helperId = ReadyToRunHelperId.MethodDictionary;
                 }
                 
-                target = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+                target = (TypeSystemEntity)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+
+#if READYTORUN
+                needsRuntimeLookup = md.IsSharedByGenericInstantiations;
+#endif
             }
             else if (!fEmbedParent && pResolvedToken.hField != null)
             {
@@ -2555,14 +2560,17 @@ namespace Internal.JitInterface
 
                 Debug.Assert(pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken);
                 helperId = ReadyToRunHelperId.FieldHandle;
-                target = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+                target = (TypeSystemEntity)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+
+#if READYTORUN
+                needsRuntimeLookup = td.IsCanonicalSubtype(CanonicalFormKind.Any) && fd.IsStatic;
+#endif
             }
             else
             {
                 TypeDesc td = HandleToObject(pResolvedToken.hClass);
 
                 pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS;
-                pResult.compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)pResolvedToken.hClass;
 
                 object obj = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
                 target = obj as TypeDesc;
@@ -2570,9 +2578,9 @@ namespace Internal.JitInterface
                 {
                     Debug.Assert(fEmbedParent);
 
-                    if (obj is MethodDesc)
+                    if (obj is MethodDesc objAsMethod)
                     {
-                        target = ((MethodDesc)obj).OwningType;
+                        target = objAsMethod.OwningType;
                     }
                     else
                     {
@@ -2582,6 +2590,7 @@ namespace Internal.JitInterface
                 }
 
 #if READYTORUN
+                needsRuntimeLookup = td.IsCanonicalSubtype(CanonicalFormKind.Any);
                 helperId = ReadyToRunHelperId.TypeHandle;
 #else
                 if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_NewObj
@@ -2603,9 +2612,20 @@ namespace Internal.JitInterface
 #endif
             }
 
-            Debug.Assert(pResult.compileTimeHandle != null);
-            
+#if READYTORUN
+            if (needsRuntimeLookup)
+            {
+                ComputeRuntimeLookupForSharedGenericToken(helperId, ref pResolvedToken, target, ref pResult.lookup);
+            }
+            else
+            {
+                pResult.lookup.lookupKind.needsRuntimeLookup = false;
+                pResult.lookup.constLookup = CreateConstLookupToSymbol(
+                    _compilation.SymbolNodeFactory.ReadyToRunHelper(helperId, target, _signatureContext));
+            }
+#else
             ComputeLookup(ref pResolvedToken, target, helperId, ref pResult.lookup);
+#endif
         }
 
         private CORINFO_RUNTIME_LOOKUP_KIND GetGenericRuntimeLookupKind(MethodDesc method)
