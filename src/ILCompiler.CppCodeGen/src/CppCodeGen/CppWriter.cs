@@ -658,6 +658,9 @@ namespace ILCompiler.CppCodeGen
             if (methodIL == null)
                 return;
 
+            if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(method))
+                methodIL = HardwareIntrinsicHelpers.GetUnsupportedImplementationIL(method);
+
             try
             {
                 var ilImporter = new ILImporter(_compilation, this, method, methodIL);

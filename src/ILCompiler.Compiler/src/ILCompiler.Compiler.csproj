@@ -134,6 +134,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ImportedNodeProvider.cs" />
     <Compile Include="Compiler\FrameworkStringResourceBlockingPolicy.cs" />
     <Compile Include="Compiler\GeneratingMetadataManager.cs" />
+    <Compile Include="Compiler\HardwareIntrinsicHelpers.cs" />
     <Compile Include="Compiler\InternalCompilerErrorException.cs" />
     <Compile Include="Compiler\ManifestResourceBlockingPolicy.cs" />
     <Compile Include="Compiler\NoManifestResourceBlockingPolicy.cs" />

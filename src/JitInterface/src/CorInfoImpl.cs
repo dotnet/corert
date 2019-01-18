@@ -642,7 +642,11 @@ namespace Internal.JitInterface
                 // RyuJIT special cases this method; it would assert if it's not final
                 // and we might not have set the bit in the code above.
                 result |= CorInfoFlag.CORINFO_FLG_FINAL;
-           }
+            }
+
+            // Check for hardware intrinsics
+            if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(method))
+                result |= CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC;
 
             result |= CorInfoFlag.CORINFO_FLG_NOSECURITYWRAP;
 
