@@ -38,7 +38,7 @@ namespace ILCompiler
 
         public static MethodIL GetUnsupportedImplementationIL(MethodDesc method)
         {
-            if (method.Name == "IsSupported")
+            if (method.Name == "get_IsSupported")
             {
                 return new ILStubMethodIL(method,
                     new byte[] {
