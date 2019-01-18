@@ -94,7 +94,7 @@ LEAF_ENTRY RhpInterfaceDispatchSlow, _TEXT
         // r10 contains indirection cell address, move to r11 where it will be passed by
         // the universal transition thunk as an argument to RhpCidResolve
         mov r11, r10
-        lea r10, [rip + C_FUNC(RhpCidResolve)]
-        jmp C_FUNC(RhpUniversalTransition_DebugStepTailCall)
+        lea r10, [rip + EXTERNAL_C_FUNC(RhpCidResolve)]
+        jmp EXTERNAL_C_FUNC(RhpUniversalTransition_DebugStepTailCall)
 
 LEAF_END RhpInterfaceDispatchSlow, _TEXT

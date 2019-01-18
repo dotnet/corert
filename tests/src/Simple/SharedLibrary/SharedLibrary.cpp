@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
 #elif __APPLE__
     void *handle = dlopen(strcat(argv[0], ".dylib"), RTLD_LAZY);
 #else
-    void *handle = dlopen(strcat(argv[0], ".so"), RTLD_LAZY);
+    void *handle = dlopen("SharedLibrary.so", RTLD_LAZY);
 #endif
 
     if (!handle)

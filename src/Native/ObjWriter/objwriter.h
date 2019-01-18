@@ -63,7 +63,7 @@ public:
   void EmitAlignment(int ByteAlignment);
   void EmitBlob(int BlobSize, const char *Blob);
   void EmitIntValue(uint64_t Value, unsigned Size);
-  void EmitSymbolDef(const char *SymbolName);
+  void EmitSymbolDef(const char *SymbolName, bool global);
   void EmitWinFrameInfo(const char *FunctionName, int StartOffset,
                         int EndOffset, const char *BlobSymbolName);
   int EmitSymbolRef(const char *SymbolName, RelocType RelocType, int Delta);
@@ -225,9 +225,9 @@ DLL_EXPORT void EmitIntValue(ObjectWriter *OW, uint64_t Value, unsigned Size) {
   OW->EmitIntValue(Value, Size);
 }
 
-DLL_EXPORT void EmitSymbolDef(ObjectWriter *OW, const char *SymbolName) {
+DLL_EXPORT void EmitSymbolDef(ObjectWriter *OW, const char *SymbolName, bool global) {
   assert(OW && "ObjWriter is null");
-  OW->EmitSymbolDef(SymbolName);
+  OW->EmitSymbolDef(SymbolName, global);
 }
 
 DLL_EXPORT int EmitSymbolRef(ObjectWriter *OW, const char *SymbolName,

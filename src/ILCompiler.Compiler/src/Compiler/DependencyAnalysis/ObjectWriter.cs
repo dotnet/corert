@@ -180,14 +180,14 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         [DllImport(NativeObjectWriterFileName)]
-        private static extern void EmitSymbolDef(IntPtr objWriter, byte[] symbolName);
-        public void EmitSymbolDef(byte[] symbolName)
+        private static extern void EmitSymbolDef(IntPtr objWriter, byte[] symbolName, int global);
+        public void EmitSymbolDef(byte[] symbolName, bool global)
         {
-            EmitSymbolDef(_nativeObjectWriter, symbolName);
+            EmitSymbolDef(_nativeObjectWriter, symbolName, global ? 1 : 0);
         }
-        public void EmitSymbolDef(Utf8StringBuilder symbolName)
+        public void EmitSymbolDef(Utf8StringBuilder symbolName, bool global)
         {
-            EmitSymbolDef(_nativeObjectWriter, symbolName.Append('\0').UnderlyingArray);
+            EmitSymbolDef(_nativeObjectWriter, symbolName.Append('\0').UnderlyingArray, global ? 1 : 0);
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -529,7 +529,7 @@ namespace ILCompiler.DependencyAnalysis
                 byte[] blobSymbolName = _sb.Append(_currentNodeZeroTerminatedName).ToUtf8String().UnderlyingArray;
 
                 EmitAlignment(4);
-                EmitSymbolDef(blobSymbolName);
+                EmitSymbolDef(blobSymbolName, false);
 
                 FrameInfoFlags flags = frameInfo.Flags;
                 flags |= ehInfo != null ? FrameInfoFlags.HasEHInfo : 0;
@@ -561,7 +561,7 @@ namespace ILCompiler.DependencyAnalysis
                     // TODO: Place EHInfo into different section for better locality
                     Debug.Assert(ehInfo.Alignment == 1);
                     Debug.Assert(ehInfo.DefinedSymbols.Length == 0);
-                    EmitSymbolDef(_sb /* ehInfo */);
+                    EmitSymbolDef(_sb /* ehInfo */, false);
                     EmitBlobWithRelocs(ehInfo.Data, ehInfo.Relocs);
                     ehInfo = null;
                 }
@@ -618,7 +618,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 _sb.Clear().Append("_lsda").Append(i.ToStringInvariant()).Append(_currentNodeZeroTerminatedName);
                 byte[] blobSymbolName = _sb.ToUtf8String().UnderlyingArray;
-                EmitSymbolDef(blobSymbolName);
+                EmitSymbolDef(blobSymbolName, false);
 
                 FrameInfoFlags flags = frameInfo.Flags;
                 flags |= ehInfo != null ? FrameInfoFlags.HasEHInfo : 0;
@@ -658,7 +658,7 @@ namespace ILCompiler.DependencyAnalysis
                     // TODO: Place EHInfo into different section for better locality
                     Debug.Assert(ehInfo.Alignment == 1);
                     Debug.Assert(ehInfo.DefinedSymbols.Length == 0);
-                    EmitSymbolDef(_sb /* ehInfo */);
+                    EmitSymbolDef(_sb /* ehInfo */, false);
                     EmitBlobWithRelocs(ehInfo.Data, ehInfo.Relocs);
                     ehInfo = null;
                 }
@@ -859,7 +859,7 @@ namespace ILCompiler.DependencyAnalysis
                     AppendExternCPrefix(_sb);
                     name.AppendMangledName(_nodeFactory.NameMangler, _sb);
 
-                    EmitSymbolDef(_sb);
+                    EmitSymbolDef(_sb, false);
 
                     string alternateName = _nodeFactory.GetSymbolAlternateName(name);
                     if (alternateName != null)
@@ -868,7 +868,7 @@ namespace ILCompiler.DependencyAnalysis
                         AppendExternCPrefix(_sb);
                         _sb.Append(alternateName);
 
-                        EmitSymbolDef(_sb);
+                        EmitSymbolDef(_sb, true);
                     }
                 }
             }
@@ -971,13 +971,13 @@ namespace ILCompiler.DependencyAnalysis
                                                             ObjectNodeSection.ManagedCodeStartSection :
                                                             objectWriter.GetSharedSection(ObjectNodeSection.ManagedCodeStartSection, "__managedcode_a");
                     objectWriter.SetSection(codeStartSection);
-                    objectWriter.EmitSymbolDef(new Utf8StringBuilder().Append("__managedcode_a"));
+                    objectWriter.EmitSymbolDef(new Utf8StringBuilder().Append("__managedcode_a"), true);
                     objectWriter.EmitIntValue(0, 1);
                     ObjectNodeSection codeEndSection = factory.CompilationModuleGroup.IsSingleFileCompilation ?
                                                             ObjectNodeSection.ManagedCodeEndSection :
                                                             objectWriter.GetSharedSection(ObjectNodeSection.ManagedCodeEndSection, "__managedcode_z");
                     objectWriter.SetSection(codeEndSection);
-                    objectWriter.EmitSymbolDef(new Utf8StringBuilder().Append("__managedcode_z"));
+                    objectWriter.EmitSymbolDef(new Utf8StringBuilder().Append("__managedcode_z"), true);
                     objectWriter.EmitIntValue(1, 1);
                 }
                 else
