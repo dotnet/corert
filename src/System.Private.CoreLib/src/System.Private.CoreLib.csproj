@@ -146,8 +146,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Condition="'$(EnableWinRT)'=='true'" Include="Internal\Runtime\Augments\WinRTInterop.cs" />
-    <Compile Include="Internal\Runtime\Augments\AsyncCausalityTracer.cs" />
-    <Compile Include="Internal\Threading\Tasks\AsyncCausalitySupport.cs" />
     <Compile Include="Internal\Threading\Tasks\Tracing\TaskTrace.cs" />
     <Compile Include="Interop\Interop.manual.cs" />
     <Compile Include="Interop\Interop.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
@@ -290,9 +288,7 @@
     <Compile Include="System\Threading\SynchronizationContext.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
     <Compile Include="System\Threading\SynchronizationContext.Dummy.cs" Condition="'$(EnableWinRT)' != 'true'" />
     <Compile Include="System\Threading\SyncTable.cs" Condition="'$(UseSyncTable)' == 'true'" />
-    <Compile Include="System\Threading\Tasks\DebuggerSupport.cs" />
-    <Compile Include="System\Threading\Tasks\DebuggerSupport.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
-    <Compile Include="System\Threading\Tasks\DebuggerSupport.Dummy.cs" Condition="'$(EnableWinRT)' != 'true'" />
+    <Compile Include="System\Threading\Tasks\AsyncCausalityTracer.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
     <Compile Include="System\Threading\Tasks\FutureFactory.cs" />
     <Compile Include="System\Threading\Tasks\Task.cs" />
     <Compile Include="System\Threading\Tasks\TaskContinuation.cs" />
@@ -605,6 +601,9 @@
       <Link>Internal\Runtime\LowLevelStringConverter.cs</Link>
     </Compile>
   </ItemGroup>
+  <PropertyGroup>
+    <FeatureAsyncCausalityTracer Condition="'$(EnableWinRT)' == 'true'">true</FeatureAsyncCausalityTracer>
+  </PropertyGroup>
   <!-- For now, link Runtime.Base into System.Private.CoreLib for CoreRT until there is proper multifile build -->
   <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <InPlaceRuntime>true</InPlaceRuntime>
