@@ -25,13 +25,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         CORCOMPILE_IMPORT_FLAGS_PCODE = 0x0004,   // Section contains pointers to code.
     }
 
-    public static class CorInfoRuntimeLookup
-    {
-        // CORINFO_RUNTIME_LOOKUP indicates the details of the runtime lookup
-        // operation to be performed.
-        public const ushort CORINFO_USEHELPER = 0xffff;
-    }
-
     /// <summary>
     /// Constants for method and field encoding
     /// </summary>

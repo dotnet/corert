@@ -1996,37 +1996,20 @@ namespace Internal.JitInterface
 #else
                     fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_READYTORUN_HELPER;
                     pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE;
-#endif
 
                     // Don't try to compute the runtime lookup if we're inlining. The JIT is going to abort the inlining
                     // attempt anyway.
                     MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
                     if (contextMethod == MethodBeingCompiled)
                     {
-                        FieldDesc runtimeDeterminedField;
-#if READYTORUN
-                        runtimeDeterminedField = field;
-#else
-                        runtimeDeterminedField = (FieldDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-#endif
+                        FieldDesc runtimeDeterminedField = (FieldDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
 
                         ReadyToRunHelperId helperId;
 
                         // Find out what kind of base do we need to look up.
                         if (field.IsThreadStatic)
                         {
-#if READYTORUN
-                            if (field.HasGCStaticBase)
-                            {
-                                helperId = ReadyToRunHelperId.GetThreadStaticBase;
-                            }
-                            else
-                            {
-                                helperId = ReadyToRunHelperId.GetThreadNonGcStaticBase;
-                            }
-#else
                             helperId = ReadyToRunHelperId.GetThreadStaticBase;
-#endif
                         }
                         else if (field.HasGCStaticBase)
                         {
@@ -2053,6 +2036,7 @@ namespace Internal.JitInterface
 
                         pResult->fieldLookup = CreateConstLookupToSymbol(helper);
                     }
+#endif // READYTORUN
                 }
                 else
                 {
@@ -2522,11 +2506,8 @@ namespace Internal.JitInterface
                 MemoryHelper.FillMemory((byte*)tmp, 0xcc, Marshal.SizeOf<CORINFO_GENERICHANDLE_RESULT>());
 #endif
             ReadyToRunHelperId helperId = ReadyToRunHelperId.Invalid;
-            TypeSystemEntity target = null;
-#if READYTORUN
-            bool needsRuntimeLookup;
-            pResult.compileTimeHandle = null;
-#endif
+            object target = null;
+
             if (!fEmbedParent && pResolvedToken.hMethod != null)
             {
                 MethodDesc md = HandleToObject(pResolvedToken.hMethod);
@@ -2536,6 +2517,8 @@ namespace Internal.JitInterface
 
                 Debug.Assert(md.OwningType == td);
 
+                pResult.compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(md);
+
                 if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken)
                     helperId = ReadyToRunHelperId.MethodHandle;
                 else
@@ -2544,11 +2527,7 @@ namespace Internal.JitInterface
                     helperId = ReadyToRunHelperId.MethodDictionary;
                 }
                 
-                target = (TypeSystemEntity)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-
-#if READYTORUN
-                needsRuntimeLookup = md.IsSharedByGenericInstantiations;
-#endif
+                target = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
             }
             else if (!fEmbedParent && pResolvedToken.hField != null)
             {
@@ -2560,17 +2539,14 @@ namespace Internal.JitInterface
 
                 Debug.Assert(pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken);
                 helperId = ReadyToRunHelperId.FieldHandle;
-                target = (TypeSystemEntity)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-
-#if READYTORUN
-                needsRuntimeLookup = td.IsCanonicalSubtype(CanonicalFormKind.Any) && fd.IsStatic;
-#endif
+                target = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
             }
             else
             {
                 TypeDesc td = HandleToObject(pResolvedToken.hClass);
 
                 pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS;
+                pResult.compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)pResolvedToken.hClass;
 
                 object obj = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
                 target = obj as TypeDesc;
@@ -2590,7 +2566,6 @@ namespace Internal.JitInterface
                 }
 
 #if READYTORUN
-                needsRuntimeLookup = td.IsCanonicalSubtype(CanonicalFormKind.Any);
                 helperId = ReadyToRunHelperId.TypeHandle;
 #else
                 if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_NewObj
@@ -2612,20 +2587,9 @@ namespace Internal.JitInterface
 #endif
             }
 
-#if READYTORUN
-            if (needsRuntimeLookup)
-            {
-                ComputeRuntimeLookupForSharedGenericToken(helperId, ref pResolvedToken, target, ref pResult.lookup);
-            }
-            else
-            {
-                pResult.lookup.lookupKind.needsRuntimeLookup = false;
-                pResult.lookup.constLookup = CreateConstLookupToSymbol(
-                    _compilation.SymbolNodeFactory.ReadyToRunHelper(helperId, target, _signatureContext));
-            }
-#else
+            Debug.Assert(pResult.compileTimeHandle != null);
+
             ComputeLookup(ref pResolvedToken, target, helperId, ref pResult.lookup);
-#endif
         }
 
         private CORINFO_RUNTIME_LOOKUP_KIND GetGenericRuntimeLookupKind(MethodDesc method)
