@@ -302,7 +302,7 @@ namespace System.Threading.Tasks
             m_taskScheduler = scheduler;
 
             if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceOperationCreation(CausalityTraceLevel.Required, m_task.Id, "Task.ContinueWith: " + task.m_action, 0);
+                AsyncCausalityTracer.TraceOperationCreation(m_task, "Task.ContinueWith: " + task.m_action);
 
             if (Task.s_asyncDebuggingEnabled)
                 Task.AddToActiveTasks(m_task);
@@ -333,7 +333,7 @@ namespace System.Threading.Tasks
                 if (!continuationTask.IsCanceled && AsyncCausalityTracer.LoggingOn)
                 {
                     // Log now that we are sure that this continuation is being ran
-                    AsyncCausalityTracer.TraceOperationRelation(CausalityTraceLevel.Important, continuationTask.Id, CausalityRelation.AssignDelegate);
+                    AsyncCausalityTracer.TraceOperationRelation(continuationTask, CausalityRelation.AssignDelegate);
                 }
                 continuationTask.m_taskScheduler = m_taskScheduler;
 

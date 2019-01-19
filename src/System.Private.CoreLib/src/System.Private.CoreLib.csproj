@@ -46,6 +46,9 @@
   <PropertyGroup>
     <FeatureHardwareIntrinsics Condition="'$(IsProjectNLibrary)' != 'true'">true</FeatureHardwareIntrinsics>
   </PropertyGroup>
+  <PropertyGroup>
+    <FeatureAsyncCausalityTracer Condition="'$(EnableWinRT)' == 'true'">true</FeatureAsyncCausalityTracer>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\Internal\Runtime\RuntimeConstants.cs">
       <Link>Internal\Runtime\RuntimeConstants.cs</Link>
@@ -601,9 +604,6 @@
       <Link>Internal\Runtime\LowLevelStringConverter.cs</Link>
     </Compile>
   </ItemGroup>
-  <PropertyGroup>
-    <FeatureAsyncCausalityTracer Condition="'$(EnableWinRT)' == 'true'">true</FeatureAsyncCausalityTracer>
-  </PropertyGroup>
   <!-- For now, link Runtime.Base into System.Private.CoreLib for CoreRT until there is proper multifile build -->
   <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <InPlaceRuntime>true</InPlaceRuntime>
