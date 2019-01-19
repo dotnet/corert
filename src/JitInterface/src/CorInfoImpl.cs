@@ -569,6 +569,11 @@ namespace Internal.JitInterface
             }
         }
 
+        private TypeSystemEntity entityFromContext(CORINFO_CONTEXT_STRUCT* contextStruct)
+        {
+            return (TypeSystemEntity)HandleToObject((IntPtr)((ulong)contextStruct & ~(ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
+        }
+
         private uint getMethodAttribsInternal(MethodDesc method)
         {
             CorInfoFlag result = 0;
@@ -637,7 +642,11 @@ namespace Internal.JitInterface
                 // RyuJIT special cases this method; it would assert if it's not final
                 // and we might not have set the bit in the code above.
                 result |= CorInfoFlag.CORINFO_FLG_FINAL;
-           }
+            }
+
+            // Check for hardware intrinsics
+            if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(method))
+                result |= CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC;
 
             result |= CorInfoFlag.CORINFO_FLG_NOSECURITYWRAP;
 
@@ -1450,7 +1459,13 @@ namespace Internal.JitInterface
             MethodDesc md = HandleToObject(method);
             TypeDesc type = fd != null ? fd.OwningType : typeFromContext(context);
 
-            if (!_compilation.HasLazyStaticConstructor(type) || _isFallbackBodyCompilation)
+            if (_isFallbackBodyCompilation ||
+#if READYTORUN
+                IsClassPreInited(type)
+#else
+                !_compilation.HasLazyStaticConstructor(type)
+#endif
+                )
             {
                 return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
             }
@@ -1940,7 +1955,7 @@ namespace Internal.JitInterface
                 fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_STATIC;
 
 #if READYTORUN
-                if (field.FieldType.IsValueType && field.HasGCStaticBase)
+                if (field.FieldType.IsValueType && field.HasGCStaticBase && !field.HasRva)
                 {
                     // statics of struct types are stored as implicitly boxed in CoreCLR i.e.
                     // we need to modify field access flags appropriately
@@ -1956,7 +1971,11 @@ namespace Internal.JitInterface
                     fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_RVA_ADDRESS;
 
                     // We are not going through a helper. The constructor has to be triggered explicitly.
+#if READYTORUN
+                    if (!IsClassPreInited(field.OwningType))
+#else
                     if (_compilation.HasLazyStaticConstructor(field.OwningType))
+#endif
                     {
                         fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_INITCLASS;
                     }
@@ -3087,7 +3106,18 @@ namespace Internal.JitInterface
         {
             FieldDesc fieldDesc = HandleToObject(field);
             Debug.Assert(fieldDesc.HasRva);
-            return (void*)ObjectToHandle(_compilation.GetFieldRvaData(fieldDesc));
+            ObjectNode node = _compilation.GetFieldRvaData(fieldDesc);
+            void *handle = (void *)ObjectToHandle(node);
+            if (node.RepresentsIndirectionCell)
+            {
+                ppIndirection = handle;
+                return null;
+            }
+            else
+            {
+                ppIndirection = null;
+                return handle;
+            }
         }
 
         private CORINFO_CLASS_STRUCT_* getStaticFieldCurrentClass(CORINFO_FIELD_STRUCT_* field, byte* pIsSpeculative)

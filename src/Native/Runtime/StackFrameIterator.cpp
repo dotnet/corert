@@ -182,8 +182,12 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
     if (pFrame->m_Flags & PTFF_SAVE_R4)  { m_RegDisplay.pR4 = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_R5)  { m_RegDisplay.pR5 = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_R6)  { m_RegDisplay.pR6 = pPreservedRegsCursor++; }
+#ifdef PROJECTN
     ASSERT(!(pFrame->m_Flags & PTFF_SAVE_R7)); // R7 should never contain a GC ref because we require
                                                // a frame pointer for methods with pinvokes
+#else
+    if (pFrame->m_Flags & PTFF_SAVE_R7)  { m_RegDisplay.pR7 = pPreservedRegsCursor++; }
+#endif
     if (pFrame->m_Flags & PTFF_SAVE_R8)  { m_RegDisplay.pR8 = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_R9)  { m_RegDisplay.pR9 = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_R10)  { m_RegDisplay.pR10 = pPreservedRegsCursor++; }

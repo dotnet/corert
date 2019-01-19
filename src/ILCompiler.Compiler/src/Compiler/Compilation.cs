@@ -114,7 +114,7 @@ namespace ILCompiler
         /// <summary>
         /// Gets an object representing the static data for RVA mapped fields from the PE image.
         /// </summary>
-        public ObjectNode GetFieldRvaData(FieldDesc field)
+        public virtual ObjectNode GetFieldRvaData(FieldDesc field)
         {
             if (field.GetType() == typeof(PInvokeLazyFixupField))
             {

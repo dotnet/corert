@@ -43,7 +43,7 @@ namespace Internal.IL.Stubs
             //
             if (_targetMethod is DelegateMarshallingMethodThunk delegateMethod)
             {
-                _flags = ((EcmaType)delegateMethod.DelegateType).GetDelegatePInvokeFlags();
+                _flags = ((EcmaType)delegateMethod.DelegateType.GetTypeDefinition()).GetDelegatePInvokeFlags();
             }
             else
             {

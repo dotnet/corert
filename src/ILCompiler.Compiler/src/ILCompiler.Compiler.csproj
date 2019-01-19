@@ -134,6 +134,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ImportedNodeProvider.cs" />
     <Compile Include="Compiler\FrameworkStringResourceBlockingPolicy.cs" />
     <Compile Include="Compiler\GeneratingMetadataManager.cs" />
+    <Compile Include="Compiler\HardwareIntrinsicHelpers.cs" />
     <Compile Include="Compiler\InternalCompilerErrorException.cs" />
     <Compile Include="Compiler\ManifestResourceBlockingPolicy.cs" />
     <Compile Include="Compiler\NoManifestResourceBlockingPolicy.cs" />
@@ -346,6 +347,7 @@
     <Compile Include="Compiler\UtcNodeMangler.cs" />
     <Compile Include="Compiler\SimdHelper.cs" />
     <Compile Include="Compiler\UtcStackTraceEmissionPolicy.cs" />
+    <Compile Include="Compiler\VectorFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\VectorOfTFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\VirtualMethodCallHelper.cs" />
     <Compile Include="Compiler\VTableSliceProvider.cs" />

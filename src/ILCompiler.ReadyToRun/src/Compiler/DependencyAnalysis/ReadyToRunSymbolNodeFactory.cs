@@ -4,10 +4,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection.PortableExecutable;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 
 using Internal.JitInterface;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -99,8 +102,12 @@ namespace ILCompiler.DependencyAnalysis
                     helperNode = CreateDelegateCtorHelper((DelegateCreationInfo)target, signatureContext);
                     break;
 
+                case ReadyToRunHelperId.CctorTrigger:
+                    helperNode = CreateCctorTrigger((TypeDesc)target, signatureContext);
+                    break;
+
                 default:
-                    throw new NotImplementedException();
+                    throw new NotImplementedException(id.ToString());
             }
 
             helperNodeMap.Add(target, helperNode);
@@ -211,6 +218,15 @@ namespace ILCompiler.DependencyAnalysis
         private ISymbolNode CreateDelegateCtorHelper(DelegateCreationInfo info, SignatureContext signatureContext)
         {
             return info.Constructor;
+        }
+
+        private ISymbolNode CreateCctorTrigger(TypeDesc type, SignatureContext signatureContext)
+        {
+            return new DelayLoadHelperImport(
+                _codegenNodeFactory,
+                _codegenNodeFactory.DispatchImports,
+                ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
+                new TypeFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_CctorTrigger, type, signatureContext));
         }
 
         private readonly Dictionary<FieldDesc, ISymbolNode> _fieldAddressCache = new Dictionary<FieldDesc, ISymbolNode>();
@@ -503,6 +519,10 @@ namespace ILCompiler.DependencyAnalysis
                 case ILCompiler.ReadyToRunHelper.GetRefAny: // TODO-PERF: currently not implemented in Crossgen
                     throw new RequiresRuntimeJitException(helper.ToString());
 
+                case ILCompiler.ReadyToRunHelper.TypeHandleToRuntimeTypeHandle:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GetRuntimeTypeHandle;
+                    break;
+
                 // JIT32 x86-specific write barriers
                 case ILCompiler.ReadyToRunHelper.WriteBarrier_EAX:
                     r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_WriteBarrier_EAX;
@@ -677,14 +697,14 @@ namespace ILCompiler.DependencyAnalysis
             public readonly ReadyToRunFixupKind FixupKind;
             public readonly TypeDesc TypeArgument;
             public readonly MethodWithToken MethodArgument;
-            public readonly MethodContext MethodContext;
+            public readonly GenericContext MethodContext;
 
             public GenericLookupKey(
                 CORINFO_RUNTIME_LOOKUP_KIND lookupKind,
                 ReadyToRunFixupKind fixupKind,
                 TypeDesc typeArgument,
                 MethodWithToken methodArgument,
-                MethodContext methodContext)
+                GenericContext methodContext)
             {
                 LookupKind = lookupKind;
                 FixupKind = fixupKind;
@@ -713,7 +733,7 @@ namespace ILCompiler.DependencyAnalysis
                     (int)FixupKind +
                     (TypeArgument != null ? 31 * RuntimeDeterminedTypeHelper.GetHashCode(TypeArgument) : 0) +
                     (MethodArgument != null ? 31 * RuntimeDeterminedTypeHelper.GetHashCode(MethodArgument.Method) : 0) +
-                    (MethodContext != null ? MethodContext.GetHashCode() : 0));
+                    MethodContext.GetHashCode());
             }
         }
 
@@ -723,7 +743,7 @@ namespace ILCompiler.DependencyAnalysis
             CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
             ReadyToRunHelperId helperId,
             object helperArgument,
-            MethodContext methodContext,
+            GenericContext methodContext,
             SignatureContext signatureContext)
         {
             switch (helperId)
@@ -777,7 +797,7 @@ namespace ILCompiler.DependencyAnalysis
             CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
             ReadyToRunFixupKind fixupKind,
             TypeDesc typeArgument,
-            MethodContext methodContext,
+            GenericContext methodContext,
             SignatureContext signatureContext)
         {
             GenericLookupKey key = new GenericLookupKey(runtimeLookupKind, fixupKind, typeArgument, methodArgument: null, methodContext);
@@ -798,7 +818,7 @@ namespace ILCompiler.DependencyAnalysis
             CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
             ReadyToRunFixupKind fixupKind,
             MethodWithToken methodArgument,
-            MethodContext methodContext,
+            GenericContext methodContext,
             SignatureContext signatureContext)
         {
             GenericLookupKey key = new GenericLookupKey(runtimeLookupKind, fixupKind, typeArgument: null, methodArgument, methodContext);
@@ -813,6 +833,53 @@ namespace ILCompiler.DependencyAnalysis
                 _genericLookupHelpers.Add(key, node);
             }
             return node;
+        }
+
+        Dictionary<int, ObjectNode> _rvaFieldSymbols = new Dictionary<int, ObjectNode>();
+
+        public ObjectNode GetRvaFieldNode(FieldDesc fieldDesc)
+        {
+            Debug.Assert(fieldDesc.HasRva);
+            EcmaField ecmaField = (EcmaField)fieldDesc.GetTypicalFieldDefinition();
+
+            if (!_codegenNodeFactory.CompilationModuleGroup.ContainsType(ecmaField.OwningType))
+            {
+                // TODO: cross-bubble RVA field
+                throw new NotSupportedException($"{ecmaField} ... {ecmaField.Module.Assembly}");
+            }
+            if (_codegenNodeFactory.TypeSystemContext.InputFilePaths.Count > 1)
+            {
+                // TODO: RVA fields in merged multi-file compilation
+                throw new NotSupportedException($"{ecmaField} ... {string.Join("; ", _codegenNodeFactory.TypeSystemContext.InputFilePaths.Keys)}");
+            }
+
+            int rva = ecmaField.MetadataReader.GetFieldDefinition(ecmaField.Handle).GetRelativeVirtualAddress();
+            ObjectNode rvaFieldNode;
+            if (!_rvaFieldSymbols.TryGetValue(rva, out rvaFieldNode))
+            {
+                PEReader ilReader = ecmaField.Module.PEReader;
+                int sectionIndex;
+                int sectionRelativeOffset = 0;
+                ISymbolNode sectionStartNode = null;
+                for (sectionIndex = ilReader.PEHeaders.SectionHeaders.Length - 1; sectionIndex >= 0; sectionIndex--)
+                {
+                    SectionHeader sectionHeader = ilReader.PEHeaders.SectionHeaders[sectionIndex];
+                    if (rva >= sectionHeader.VirtualAddress && rva < sectionHeader.VirtualAddress + sectionHeader.VirtualSize)
+                    {
+                        sectionRelativeOffset = rva - sectionHeader.VirtualAddress;
+                        sectionStartNode = _codegenNodeFactory.SectionStartNode(sectionHeader.Name);
+                        break;
+                    }
+                }
+                if (sectionIndex < 0)
+                {
+                    // Target section for the RVA field was not found
+                    throw new NotImplementedException(fieldDesc.ToString());
+                }
+                rvaFieldNode = new RVAFieldNode(sectionStartNode, sectionRelativeOffset);
+                _rvaFieldSymbols.Add(rva, rvaFieldNode);
+            }
+            return rvaFieldNode;
         }
     }
 }
