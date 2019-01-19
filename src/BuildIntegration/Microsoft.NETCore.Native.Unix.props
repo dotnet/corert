@@ -88,7 +88,6 @@ See the LICENSE file in the project root for more information.
       <LinkerArg Include="-lm" />
       <LinkerArg Include="-lcurl" />
       <LinkerArg Include="-lz" />
-      <LinkerArg Include="-nopie" Condition="'$(TargetOS)' == 'Linux'" />
       <LinkerArg Include="-lgssapi_krb5" Condition="'$(TargetOS)' != 'OSX'" />
       <LinkerArg Include="-lrt" Condition="'$(TargetOS)' != 'OSX'" />
       <LinkerArg Include="-licucore" Condition="'$(TargetOS)' == 'OSX'" />

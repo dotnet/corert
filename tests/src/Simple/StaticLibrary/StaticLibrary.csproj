@@ -39,7 +39,6 @@
       <NativeRunnerLinkerArg Include="-lm" />
       <NativeRunnerLinkerArg Include="-lcurl" />
       <NativeRunnerLinkerArg Include="-lz" />
-      <NativeRunnerLinkerArg Include="-nopie" Condition="'$(TargetOS)' == 'Linux'" />
       <NativeRunnerLinkerArg Include="-lrt" Condition="'$(TargetOS)' != 'OSX'" />
       <NativeRunnerLinkerArg Include="-licucore" Condition="'$(TargetOS)' == 'OSX'" />
     </ItemGroup>
