@@ -28,10 +28,6 @@ namespace System.Threading
 {
     internal static class ThreadPoolGlobals
     {
-        //Per-appDomain quantum (in ms) for which the thread keeps processing
-        //requests in the current domain.
-        public const uint TP_QUANTUM = 30U;
-
         public static readonly int processorCount = Environment.ProcessorCount;
 
         public static volatile bool vmTpInitialized;
@@ -786,17 +782,6 @@ namespace System.Threading
 
     public delegate void WaitOrTimerCallback(object state, bool timedOut);  // signaled or timed out
 
-    //
-    // This type is necessary because VS 2010's debugger looks for a method named _ThreadPoolWaitCallbacck.PerformWaitCallback
-    // on the stack to determine if a thread is a ThreadPool thread or not.  We have a better way to do this for .NET 4.5, but
-    // still need to maintain compatibility with VS 2010.  When compat with VS 2010 is no longer an issue, this type may be
-    // removed.
-    //
-    internal static class _ThreadPoolWaitCallback
-    {
-        internal static bool PerformWaitCallback() => ThreadPoolWorkQueue.Dispatch();
-    }
-
     internal abstract class QueueUserWorkItemCallbackBase : IThreadPoolWorkItem
     {
 #if DEBUG
@@ -987,7 +972,7 @@ namespace System.Threading
     public static partial class ThreadPool
     {
         [CLSCompliant(false)]
-        public static RegisteredWaitHandle RegisterWaitForSingleObject(  // throws RegisterWaitException
+        public static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
              object state,
@@ -1001,7 +986,7 @@ namespace System.Threading
         }
 
         [CLSCompliant(false)]
-        public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(  // throws RegisterWaitException
+        public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
              object state,
@@ -1014,7 +999,7 @@ namespace System.Threading
             return RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
 
-        public static RegisteredWaitHandle RegisterWaitForSingleObject(  // throws RegisterWaitException
+        public static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
              object state,
@@ -1027,7 +1012,7 @@ namespace System.Threading
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, true);
         }
 
-        public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(  // throws RegisterWaitException
+        public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
              object state,
@@ -1040,7 +1025,7 @@ namespace System.Threading
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
 
-        public static RegisteredWaitHandle RegisterWaitForSingleObject(  // throws RegisterWaitException
+        public static RegisteredWaitHandle RegisterWaitForSingleObject(
             WaitHandle waitObject,
             WaitOrTimerCallback callBack,
             object state,
@@ -1053,7 +1038,7 @@ namespace System.Threading
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, true);
         }
 
-        public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(  // throws RegisterWaitException
+        public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
             WaitHandle waitObject,
             WaitOrTimerCallback callBack,
             object state,
