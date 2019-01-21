@@ -218,6 +218,7 @@
     <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
     <Compile Include="System\Diagnostics\StackTrace.CoreRT.cs" />
     <Compile Include="System\Diagnostics\Tracing\EventSource_CoreRT.cs" />
+    <Compile Include="System\Diagnostics\Tracing\FrameworkEventSource.cs" />
     <Compile Include="System\Diagnostics\Tracing\UnsafeNativeMethods.cs" />
     <Compile Include="System\Enum.cs" />
     <Compile Include="System\Environment.cs" />
@@ -294,7 +295,7 @@
     <Compile Include="System\Threading\Tasks\AsyncCausalityTracer.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
     <Compile Include="System\Threading\Tasks\Task.cs" />
     <Compile Include="System\Threading\Tasks\TaskContinuation.cs" />
-    <Compile Include="System\Threading\ThreadPool.cs" />
+    <Compile Include="System\Threading\ThreadPool.CoreRT.cs" />
     <Compile Include="System\Threading\ThreadPoolCallbackWrapper.cs" />
     <Compile Include="System\Threading\Timer.cs" />
     <Compile Include="System\Threading\Volatile.cs" />

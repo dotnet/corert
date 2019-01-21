@@ -11,17 +11,16 @@
 **
 =============================================================================*/
 
-#pragma warning disable 0420
-
-using Internal.Runtime.Augments;
-using Internal.Runtime.CompilerServices;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
+using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using Internal.Runtime.CompilerServices;
 
 using Thread = Internal.Runtime.Augments.RuntimeThread;
 
@@ -29,7 +28,14 @@ namespace System.Threading
 {
     internal static class ThreadPoolGlobals
     {
+        //Per-appDomain quantum (in ms) for which the thread keeps processing
+        //requests in the current domain.
+        public const uint TP_QUANTUM = 30U;
+
         public static readonly int processorCount = Environment.ProcessorCount;
+
+        public static volatile bool vmTpInitialized;
+        public static bool enableWorkerTracking;
 
         public static readonly ThreadPoolWorkQueue workQueue = new ThreadPoolWorkQueue();
 
@@ -46,6 +52,7 @@ namespace System.Threading
         };
     }
 
+    [StructLayout(LayoutKind.Sequential)] // enforce layout so that padding reduces false sharing
     internal sealed class ThreadPoolWorkQueue
     {
         internal static class WorkStealingQueueList
@@ -116,7 +123,7 @@ namespace System.Threading
         internal sealed class WorkStealingQueue
         {
             private const int INITIAL_SIZE = 32;
-            internal volatile object[] m_array = new object[INITIAL_SIZE];
+            internal volatile object[] m_array = new object[INITIAL_SIZE]; // SOS's ThreadPool command depends on this name
             private volatile int m_mask = INITIAL_SIZE - 1;
 
 #if DEBUG
@@ -382,15 +389,21 @@ namespace System.Threading
             }
         }
 
-        internal readonly ConcurrentQueue<object> workItems = new ConcurrentQueue<object>();
-        
+        internal bool loggingEnabled;
+        internal readonly ConcurrentQueue<object> workItems = new ConcurrentQueue<object>(); // SOS's ThreadPool command depends on this name
+
+        private Internal.PaddingFor32 pad1;
+
         private volatile int numOutstandingThreadRequests = 0;
 
         // The number of threads executing work items in the Dispatch method
         internal volatile int numWorkingThreads;
 
+        private Internal.PaddingFor32 pad2;
+
         public ThreadPoolWorkQueue()
         {
+            loggingEnabled = FrameworkEventSource.Log.IsEnabled(EventLevel.Verbose, FrameworkEventSource.Keywords.ThreadPool | FrameworkEventSource.Keywords.ThreadTransfer);
         }
 
         public ThreadPoolWorkQueueThreadLocals GetOrCreateThreadLocals() =>
@@ -408,6 +421,9 @@ namespace System.Threading
         {
             //
             // If we have not yet requested #procs threads, then request a new thread.
+            //
+            // CoreCLR: Note that there is a separate count in the VM which has already been incremented
+            // by the VM by the time we reach this point.
             //
             int count = numOutstandingThreadRequests;
             while (count < ThreadPoolGlobals.processorCount)
@@ -428,6 +444,9 @@ namespace System.Threading
             // One of our outstanding thread requests has been satisfied.
             // Decrement the count so that future calls to EnsureThreadRequested will succeed.
             //
+            // CoreCLR: Note that there is a separate count in the VM which has already been decremented
+            // by the VM by the time we reach this point.
+            //
             int count = numOutstandingThreadRequests;
             while (count > 0)
             {
@@ -442,6 +461,11 @@ namespace System.Threading
 
         public void Enqueue(object callback, bool forceGlobal)
         {
+            Debug.Assert((callback is IThreadPoolWorkItem) ^ (callback is Task));
+
+            if (loggingEnabled)
+                System.Diagnostics.Tracing.FrameworkEventSource.Log.ThreadPoolEnqueueWorkObject(callback);
+
             ThreadPoolWorkQueueThreadLocals tl = null;
             if (!forceGlobal)
                 tl = ThreadPoolWorkQueueThreadLocals.threadLocals;
@@ -518,9 +542,15 @@ namespace System.Threading
             // From this point on, we are responsible for requesting another thread if we stop working for any
             // reason, and we believe there might still be work in the queue.
             //
+            // CoreCLR: Note that if this thread is aborted before we get a chance to request another one, the VM will
+            // record a thread request on our behalf.  So we don't need to worry about getting aborted right here.
+            //
             outerWorkQueue.MarkThreadRequestSatisfied();
 
             Interlocked.Increment(ref outerWorkQueue.numWorkingThreads);
+
+            // Has the desire for logging changed since the last time we entered?
+            outerWorkQueue.loggingEnabled = FrameworkEventSource.Log.IsEnabled(EventLevel.Verbose, FrameworkEventSource.Keywords.ThreadPool | FrameworkEventSource.Keywords.ThreadTransfer);
 
             //
             // Assume that we're going to need another thread if this one returns to the VM.  We'll set this to 
@@ -566,14 +596,47 @@ namespace System.Threading
                         return true;
                     }
 
+                    if (workQueue.loggingEnabled)
+                        System.Diagnostics.Tracing.FrameworkEventSource.Log.ThreadPoolDequeueWorkObject(workItem);
+
                     //
                     // If we found work, there may be more work.  Ask for another thread so that the other work can be processed
                     // in parallel.  Note that this will only ask for a max of #procs threads, so it's safe to call it for every dequeue.
                     //
                     workQueue.EnsureThreadRequested();
 
-                    if (workItem is Task task)
+                    //
+                    // Execute the workitem outside of any finally blocks, so that it can be aborted if needed.
+                    //
+                    if (ThreadPoolGlobals.enableWorkerTracking)
                     {
+                        bool reportedStatus = false;
+                        try
+                        {
+                            ThreadPool.ReportThreadStatus(isWorking: true);
+                            reportedStatus = true;
+                            if (workItem is Task task)
+                            {
+                                task.ExecuteFromThreadPool(currentThread);
+                            }
+                            else
+                            {
+                                Debug.Assert(workItem is IThreadPoolWorkItem);
+                                Unsafe.As<IThreadPoolWorkItem>(workItem).Execute();
+                            }
+                        }
+                        finally
+                        {
+                            if (reportedStatus)
+                                ThreadPool.ReportThreadStatus(isWorking: false);
+                        }
+                    }
+                    else if (workItem is Task task)
+                    {
+                        // Check for Task first as it's currently faster to type check
+                        // for Task and then Unsafe.As for the interface, rather than
+                        // vice versa, in particular when the object implements a bunch
+                        // of interfaces.
                         task.ExecuteFromThreadPool(currentThread);
                     }
                     else
@@ -582,7 +645,7 @@ namespace System.Threading
                         Unsafe.As<IThreadPoolWorkItem>(workItem).Execute();
                     }
 
-                    RuntimeThread.CurrentThread.ResetThreadPoolThread();
+                    Thread.CurrentThread.ResetThreadPoolThread();
 
                     // Release refs
                     outerWorkItem = workItem = null;
@@ -590,13 +653,37 @@ namespace System.Threading
                     // Return to clean ExecutionContext and SynchronizationContext
                     ExecutionContext.ResetThreadPoolThread(currentThread);
 
+                    // 
+                    // Notify the VM that we executed this workitem.  This is also our opportunity to ask whether Hill Climbing wants
+                    // us to return the thread to the pool or not.
+                    //
                     if (!ThreadPool.NotifyWorkItemComplete())
                         return false;
                 }
 
-                // If we get here, it's because our quantum expired.
+                // If we get here, it's because our quantum expired.  Tell the VM we're returning normally.
                 return true;
             }
+#if !CORERT
+            catch (ThreadAbortException tae)
+            {
+                //
+                // This is here to catch the case where this thread is aborted between the time we exit the finally block in the dispatch
+                // loop, and the time we execute the work item.  QueueUserWorkItemCallback uses this to update its accounting of whether
+                // it was executed or not (in debug builds only).  Task uses this to communicate the ThreadAbortException to anyone
+                // who waits for the task to complete.
+                //
+                if (outerWorkItem is Task task)
+                {
+                    task.MarkAbortedFromThreadPool(tae);
+                }
+
+                //
+                // In this case, the VM is going to request another thread on our behalf.  No need to do it twice.
+                //
+                needAnotherThread = false;
+            }
+#endif
             catch (Exception e)
             {
                 // Work items should not allow exceptions to escape.  For example, Task catches and stores any exceptions.
@@ -605,9 +692,6 @@ namespace System.Threading
             }
             finally
             {
-                int numWorkers = Interlocked.Decrement(ref outerWorkQueue.numWorkingThreads);
-                Debug.Assert(numWorkers >= 0);
-
                 //
                 // If we are exiting for any reason other than that the queue is definitely empty, ask for another
                 // thread to pick up where we left off.
@@ -615,6 +699,12 @@ namespace System.Threading
                 if (needAnotherThread)
                     outerWorkQueue.EnsureThreadRequested();
             }
+
+#if !CORERT
+            // we can never reach this point, but the C# compiler doesn't know that, because it doesn't know the ThreadAbortException will be reraised above.
+            Debug.Fail("Should never reach this point");
+            return true;
+#endif
         }
     }
 
@@ -643,7 +733,7 @@ namespace System.Threading
         }
     }
 
-    // Holds a WorkStealingQueue, and remmoves it from the list when this object is no longer referened.
+    // Holds a WorkStealingQueue, and removes it from the list when this object is no longer referenced.
     internal sealed class ThreadPoolWorkQueueThreadLocals
     {
         [ThreadStatic]
@@ -652,7 +742,7 @@ namespace System.Threading
         public readonly ThreadPoolWorkQueue workQueue;
         public readonly ThreadPoolWorkQueue.WorkStealingQueue workStealingQueue;
         public readonly Thread currentThread;
-        public FastRandom random = new FastRandom(Environment.CurrentManagedThreadId);  // mutable struct, do not copy or make readonly
+        public FastRandom random = new FastRandom(Thread.CurrentThread.ManagedThreadId); // mutable struct, do not copy or make readonly
 
         public ThreadPoolWorkQueueThreadLocals(ThreadPoolWorkQueue tpq)
         {
@@ -685,16 +775,27 @@ namespace System.Threading
             // Since the purpose of calling CleanUp is to transfer any pending workitems into the global
             // queue so that they will be executed by another thread, there's no point in doing this cleanup
             // if we're in the process of shutting down or unloading the AD.  In those cases, the work won't
-            // execute anyway.  And there are subtle races involved there that would lead us to do the wrong
+            // execute anyway.  And there are subtle race conditions involved there that would lead us to do the wrong
             // thing anyway.  So we'll only clean up if this is a "normal" finalization.
-            if (!(Environment.HasShutdownStarted /*|| AppDomain.CurrentDomain.IsFinalizingForUnload()*/))
+            if (!Environment.HasShutdownStarted)
                 CleanUp();
         }
     }
 
     public delegate void WaitCallback(object state);
 
-    public delegate void WaitOrTimerCallback(object state, bool timedOut);  // signalled or timed out
+    public delegate void WaitOrTimerCallback(object state, bool timedOut);  // signaled or timed out
+
+    //
+    // This type is necessary because VS 2010's debugger looks for a method named _ThreadPoolWaitCallbacck.PerformWaitCallback
+    // on the stack to determine if a thread is a ThreadPool thread or not.  We have a better way to do this for .NET 4.5, but
+    // still need to maintain compatibility with VS 2010.  When compat with VS 2010 is no longer an issue, this type may be
+    // removed.
+    //
+    internal static class _ThreadPoolWaitCallback
+    {
+        internal static bool PerformWaitCallback() => ThreadPoolWorkQueue.Dispatch();
+    }
 
     internal abstract class QueueUserWorkItemCallbackBase : IThreadPoolWorkItem
     {
@@ -865,8 +966,9 @@ namespace System.Threading
         }
 
         // call back helper
-        internal static void PerformWaitOrTimerCallback(_ThreadPoolWaitOrTimerCallback helper, bool timedOut)
+        internal static void PerformWaitOrTimerCallback(object state, bool timedOut)
         {
+            _ThreadPoolWaitOrTimerCallback helper = (_ThreadPoolWaitOrTimerCallback)state;
             Debug.Assert(helper != null, "Null state passed to PerformWaitOrTimerCallback!");
             // call directly if it is an unsafe call OR EC flow is suppressed
             ExecutionContext context = helper._executionContext;
@@ -885,12 +987,13 @@ namespace System.Threading
     public static partial class ThreadPool
     {
         [CLSCompliant(false)]
-        public static RegisteredWaitHandle RegisterWaitForSingleObject(
+        public static RegisteredWaitHandle RegisterWaitForSingleObject(  // throws RegisterWaitException
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
              object state,
              uint millisecondsTimeOutInterval,
-             bool executeOnlyOnce)
+             bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
+             )
         {
             if (millisecondsTimeOutInterval > (uint)int.MaxValue && millisecondsTimeOutInterval != uint.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
@@ -898,36 +1001,65 @@ namespace System.Threading
         }
 
         [CLSCompliant(false)]
-        public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
+        public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(  // throws RegisterWaitException
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
              object state,
              uint millisecondsTimeOutInterval,
-             bool executeOnlyOnce)
+             bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
+             )
         {
             if (millisecondsTimeOutInterval > (uint)int.MaxValue && millisecondsTimeOutInterval != uint.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             return RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
 
-        public static RegisteredWaitHandle RegisterWaitForSingleObject(
+        public static RegisteredWaitHandle RegisterWaitForSingleObject(  // throws RegisterWaitException
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
              object state,
              int millisecondsTimeOutInterval,
-             bool executeOnlyOnce)
+             bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
+             )
         {
             if (millisecondsTimeOutInterval < -1)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, true);
         }
 
-        public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
+        public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(  // throws RegisterWaitException
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
              object state,
              int millisecondsTimeOutInterval,
-             bool executeOnlyOnce)
+             bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
+             )
+        {
+            if (millisecondsTimeOutInterval < -1)
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, false);
+        }
+
+        public static RegisteredWaitHandle RegisterWaitForSingleObject(  // throws RegisterWaitException
+            WaitHandle waitObject,
+            WaitOrTimerCallback callBack,
+            object state,
+            long millisecondsTimeOutInterval,
+            bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
+        )
+        {
+            if (millisecondsTimeOutInterval < -1)
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, true);
+        }
+
+        public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(  // throws RegisterWaitException
+            WaitHandle waitObject,
+            WaitOrTimerCallback callBack,
+            object state,
+            long millisecondsTimeOutInterval,
+            bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
+        )
         {
             if (millisecondsTimeOutInterval < -1)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
@@ -935,48 +1067,34 @@ namespace System.Threading
         }
 
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
-            WaitHandle waitObject,
-            WaitOrTimerCallback callBack,
-            object state,
-            long millisecondsTimeOutInterval,
-            bool executeOnlyOnce)
+                          WaitHandle waitObject,
+                          WaitOrTimerCallback callBack,
+                          object state,
+                          TimeSpan timeout,
+                          bool executeOnlyOnce
+                          )
         {
-            if (millisecondsTimeOutInterval < -1 || millisecondsTimeOutInterval > int.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, true);
-        }
-
-        public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
-            WaitHandle waitObject,
-            WaitOrTimerCallback callBack,
-            object state,
-            long millisecondsTimeOutInterval,
-            bool executeOnlyOnce)
-        {
-            if (millisecondsTimeOutInterval < -1 || millisecondsTimeOutInterval > int.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, false);
-        }
-
-        public static RegisteredWaitHandle RegisterWaitForSingleObject(
-            WaitHandle waitObject,
-            WaitOrTimerCallback callBack,
-            object state,
-            TimeSpan timeout,
-            bool executeOnlyOnce)
-        {
-            int tm = WaitHandle.ToTimeoutMilliseconds(timeout);
+            long tm = (long)timeout.TotalMilliseconds;
+            if (tm < -1)
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            if (tm > (long)int.MaxValue)
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_LessEqualToIntegerMaxVal);
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)tm, executeOnlyOnce, true);
         }
 
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
-            WaitHandle waitObject,
-            WaitOrTimerCallback callBack,
-            object state,
-            TimeSpan timeout,
-            bool executeOnlyOnce)
+                          WaitHandle waitObject,
+                          WaitOrTimerCallback callBack,
+                          object state,
+                          TimeSpan timeout,
+                          bool executeOnlyOnce
+                          )
         {
-            int tm = WaitHandle.ToTimeoutMilliseconds(timeout);
+            long tm = (long)timeout.TotalMilliseconds;
+            if (tm < -1)
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            if (tm > (long)int.MaxValue)
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_LessEqualToIntegerMaxVal);
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)tm, executeOnlyOnce, false);
         }
 
@@ -987,8 +1105,10 @@ namespace System.Threading
         {
             if (callBack == null)
             {
-                throw new ArgumentNullException(nameof(callBack));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.callBack);
             }
+
+            EnsureVMInitialized();
 
             ExecutionContext context = ExecutionContext.Capture();
 
@@ -1005,12 +1125,14 @@ namespace System.Threading
         {
             if (callBack == null)
             {
-                throw new ArgumentNullException(nameof(callBack));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.callBack);
             }
+
+            EnsureVMInitialized();
 
             ExecutionContext context = ExecutionContext.Capture();
 
-            object tpcallBack = context == ExecutionContext.Default ?
+            object tpcallBack = (context == null || context.IsDefault) ?
                 new QueueUserWorkItemCallbackDefaultContext<TState>(callBack, state) :
                 (object)new QueueUserWorkItemCallback<TState>(callBack, state, context);
 
@@ -1023,7 +1145,7 @@ namespace System.Threading
         {
             if (callBack == null)
             {
-                throw new ArgumentNullException(nameof(callBack));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.callBack);
             }
 
             // If the callback is the runtime-provided invocation of an IAsyncStateMachineBox,
@@ -1044,6 +1166,8 @@ namespace System.Threading
                 return true;
             }
 
+            EnsureVMInitialized();
+
             ThreadPoolGlobals.workQueue.Enqueue(
                 new QueueUserWorkItemCallbackDefaultContext<TState>(callBack, state), forceGlobal: !preferLocal);
 
@@ -1054,8 +1178,10 @@ namespace System.Threading
         {
             if (callBack == null)
             {
-                throw new ArgumentNullException(nameof(callBack));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.callBack);
             }
+
+            EnsureVMInitialized();
 
             object tpcallBack = new QueueUserWorkItemCallbackDefaultContext(callBack, state);
 
@@ -1084,6 +1210,9 @@ namespace System.Threading
         internal static void UnsafeQueueUserWorkItemInternal(object callBack, bool preferLocal)
         {
             Debug.Assert((callBack is IThreadPoolWorkItem) ^ (callBack is Task));
+
+            EnsureVMInitialized();
+
             ThreadPoolGlobals.workQueue.Enqueue(callBack, forceGlobal: !preferLocal);
         }
 
@@ -1091,13 +1220,15 @@ namespace System.Threading
         internal static bool TryPopCustomWorkItem(object workItem)
         {
             Debug.Assert(null != workItem);
-            return ThreadPoolGlobals.workQueue.LocalFindAndPop(workItem);
+            return
+                ThreadPoolGlobals.vmTpInitialized && // if not initialized, so there's no way this workitem was ever queued.
+                ThreadPoolGlobals.workQueue.LocalFindAndPop(workItem);
         }
 
         // Get all workitems.  Called by TaskScheduler in its debugger hooks.
         internal static IEnumerable<object> GetQueuedWorkItems()
         {
-            // Enumerate the global queue
+            // Enumerate global queue
             foreach (object workItem in ThreadPoolGlobals.workQueue.workItems)
             {
                 yield return workItem;
@@ -1168,33 +1299,5 @@ namespace System.Threading
 
         internal static object[] GetLocallyQueuedWorkItemsForDebugger() =>
             ToObjectArray(GetLocallyQueuedWorkItems());
-
-        unsafe private static void NativeOverlappedCallback(object obj)
-        {
-            NativeOverlapped* overlapped = (NativeOverlapped*)(IntPtr)obj;
-            _IOCompletionCallback.PerformIOCompletionCallback(0, 0, overlapped);
-        }
-
-        [CLSCompliant(false)]
-        unsafe public static bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped)
-        {
-            // OS doesn't signal handle, so do it here (CoreCLR does this assignment in ThreadPoolNative::CorPostQueuedCompletionStatus)
-            overlapped->InternalLow = (IntPtr)0;
-            // Both types of callbacks are executed on the same thread pool
-            return UnsafeQueueUserWorkItem(NativeOverlappedCallback, (IntPtr)overlapped);
-        }
-
-        [Obsolete("ThreadPool.BindHandle(IntPtr) has been deprecated.  Please use ThreadPool.BindHandle(SafeHandle) instead.", false)]
-        public static bool BindHandle(IntPtr osHandle)
-        {
-            throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
-        }
-
-        public static bool BindHandle(SafeHandle osHandle)
-        {
-            throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
-        }
-
-        internal static bool IsThreadPoolThread { get { return ThreadPoolWorkQueueThreadLocals.threadLocals != null; } }
     }
 }
