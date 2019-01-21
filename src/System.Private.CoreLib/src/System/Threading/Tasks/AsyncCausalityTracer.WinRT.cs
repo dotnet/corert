@@ -4,18 +4,27 @@
 
 using System.Runtime.CompilerServices;
 using WinRTInterop = Internal.Runtime.Augments.WinRTInterop;
-using AsyncStatus = Internal.Runtime.Augments.AsyncStatus;
-using CausalityRelation = Internal.Runtime.Augments.CausalityRelation;
-using CausalitySource = Internal.Runtime.Augments.CausalitySource;
-using CausalityTraceLevel = Internal.Runtime.Augments.CausalityTraceLevel;
-using CausalitySynchronousWork = Internal.Runtime.Augments.CausalitySynchronousWork;
 
 namespace System.Threading.Tasks
 {
+    internal enum CausalitySource
+    {
+        Application = 0,
+        Library = 1,
+        System = 2,
+    }
+
+    internal enum CausalityTraceLevel
+    {
+        Required = 0,
+        Important = 1,
+        Verbose = 2,
+    }
+
     //
     // WinRT-specific implementation of AsyncCausality events
     //
-    internal static partial class DebuggerSupport
+    internal static class AsyncCausalityTracer
     {
         //==============================================================================================================
         // This section of the class encapsulates the call to AsyncCausalityTracer for the async-aware callstacks.
@@ -30,47 +39,47 @@ namespace System.Threading.Tasks
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void TraceOperationCreation(CausalityTraceLevel traceLevel, Task task, String operationName, ulong relatedContext)
+        public static void TraceOperationCreation(Task task, string operationName)
         {
             if (LoggingOn)
             {
-                WinRTInterop.Callbacks.TraceOperationCreation(traceLevel, CausalitySource.Library, s_platformId, task.OperationId(), operationName, relatedContext);
+                WinRTInterop.Callbacks.TraceOperationCreation((int)CausalityTraceLevel.Required, (int)CausalitySource.Library, s_platformId, task.OperationId(), operationName, relatedContext:  0);
             }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void TraceOperationCompletion(CausalityTraceLevel traceLevel, Task task, AsyncStatus status)
+        public static void TraceOperationCompletion(Task task, AsyncCausalityStatus status)
         {
             if (LoggingOn)
             {
-                WinRTInterop.Callbacks.TraceOperationCompletion(traceLevel, CausalitySource.Library, s_platformId, task.OperationId(), status);
+                WinRTInterop.Callbacks.TraceOperationCompletion((int)CausalityTraceLevel.Required, (int)CausalitySource.Library, s_platformId, task.OperationId(), (int)status);
             }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void TraceOperationRelation(CausalityTraceLevel traceLevel, Task task, CausalityRelation relation)
+        public static void TraceOperationRelation(Task task, CausalityRelation relation)
         {
             if (LoggingOn)
             {
-                WinRTInterop.Callbacks.TraceOperationRelation(traceLevel, CausalitySource.Library, s_platformId, task.OperationId(), relation);
+                WinRTInterop.Callbacks.TraceOperationRelation((int)CausalityTraceLevel.Important, (int)CausalitySource.Library, s_platformId, task.OperationId(), (int)relation);
             }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void TraceSynchronousWorkStart(CausalityTraceLevel traceLevel, Task task, CausalitySynchronousWork work)
+        public static void TraceSynchronousWorkStart(Task task, CausalitySynchronousWork work)
         {
             if (LoggingOn)
             {
-                WinRTInterop.Callbacks.TraceSynchronousWorkStart(traceLevel, CausalitySource.Library, s_platformId, task.OperationId(), work);
+                WinRTInterop.Callbacks.TraceSynchronousWorkStart((int)CausalityTraceLevel.Required, (int)CausalitySource.Library, s_platformId, task.OperationId(), (int)work);
             }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void TraceSynchronousWorkCompletion(CausalityTraceLevel traceLevel, CausalitySynchronousWork work)
+        public static void TraceSynchronousWorkCompletion(CausalitySynchronousWork work)
         {
             if (LoggingOn)
             {
-                WinRTInterop.Callbacks.TraceSynchronousWorkCompletion(traceLevel, CausalitySource.Library, work);
+                WinRTInterop.Callbacks.TraceSynchronousWorkCompletion((int)CausalityTraceLevel.Required, (int)CausalitySource.Library, (int)work);
             }
         }
 
@@ -81,7 +90,7 @@ namespace System.Threading.Tasks
             return 0x0000000100000000LU | (ulong)(uint)(task.Id);
         }
 
-        static DebuggerSupport()
+        static AsyncCausalityTracer()
         {
             WinRTInterop.Callbacks.InitTracingStatusChanged(loggingOn => s_loggingOn = loggingOn);
         }

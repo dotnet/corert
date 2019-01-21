@@ -98,7 +98,7 @@ namespace ILCompiler.PEWriter
         /// <summary>
         /// Callback which is called to emit the data for each section.
         /// </summary>
-        private Func<string, SectionLocation, BlobBuilder> _sectionSerializer;
+        private Func<string, SectionLocation, int, BlobBuilder> _sectionSerializer;
 
         /// <summary>
         /// Optional callback can be used to adjust the default directory table obtained by relocating
@@ -145,7 +145,7 @@ namespace ILCompiler.PEWriter
             Machine machine,
             PEReader peReader,
             IEnumerable<SectionInfo> sectionNames = null,
-            Func<string, SectionLocation, BlobBuilder> sectionSerializer = null,
+            Func<string, SectionLocation, int, BlobBuilder> sectionSerializer = null,
             Action<PEDirectoriesBuilder> directoriesUpdater = null)
             : base(PEHeaderCopier.Copy(peReader.PEHeaders, machine), deterministicIdProvider: null)
         {
@@ -301,6 +301,7 @@ namespace ILCompiler.PEWriter
             BlobBuilder sectionDataBuilder = null;
             bool haveCustomSection = _customSections.Contains(name);
             int sectionIndex = _peReader.PEHeaders.SectionHeaders.Count() - 1;
+            int sectionStartRva = location.RelativeVirtualAddress;
             while (sectionIndex >= 0 && _peReader.PEHeaders.SectionHeaders[sectionIndex].Name != name)
             {
                 sectionIndex--;
@@ -365,7 +366,7 @@ namespace ILCompiler.PEWriter
 
             if (_sectionSerializer != null)
             {
-                BlobBuilder extraData = _sectionSerializer(name, location);
+                BlobBuilder extraData = _sectionSerializer(name, location, sectionStartRva);
                 if (extraData != null)
                 {
                     if (sectionDataBuilder == null)

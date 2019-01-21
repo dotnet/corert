@@ -134,6 +134,7 @@
     <Compile Include="$(ILCompilerBasePath)\Compiler\JitHelper.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\GenericDictionaryLookup.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\SimdHelper.cs" />
+    <Compile Include="$(ILCompilerBasePath)\Compiler\HardwareIntrinsicHelpers.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\MethodExtensions.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\ReadyToRun.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\TypeExtensions.cs" />

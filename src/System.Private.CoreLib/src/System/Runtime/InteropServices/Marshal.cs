@@ -103,5 +103,10 @@ namespace System.Runtime.InteropServices
         // Used by DispatchWrapper
         internal static IntPtr GetIDispatchForObject(object o) => throw new PlatformNotSupportedException();
         internal static int Release(IntPtr pUnk) => throw new PlatformNotSupportedException();
+
+        internal static bool IsPinnable(object o)
+        {
+            return o.EETypePtr.MightBeBlittable();
+        }
     }
 }

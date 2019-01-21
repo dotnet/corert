@@ -82,6 +82,7 @@ namespace ILCompiler.DependencyAnalysis
                 mapFile.WriteLine($@"R2R object emission started: {DateTime.Now}");
 
                 _sectionBuilder = new SectionBuilder();
+                _sectionBuilder.SetSectionStartNodeLookup(_nodeFactory.SectionStartNode);
 
                 _textSectionIndex = _sectionBuilder.AddSection(R2RPEBuilder.TextSectionName, SectionCharacteristics.ContainsCode | SectionCharacteristics.MemExecute | SectionCharacteristics.MemRead, 512);
                 _rdataSectionIndex = _sectionBuilder.AddSection(".rdata", SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead, 512);

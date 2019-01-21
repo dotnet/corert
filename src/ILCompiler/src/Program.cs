@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.CommandLine;
 using System.Runtime.InteropServices;
-
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -466,8 +465,11 @@ namespace ILCompiler
             var stackTracePolicy = _emitStackTraceData ?
                 (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
 
-            MetadataBlockingPolicy mdBlockingPolicy = _noMetadataBlocking ?
-                (MetadataBlockingPolicy)new NoMetadataBlockingPolicy() : new BlockedInternalsBlockingPolicy();
+            MetadataBlockingPolicy mdBlockingPolicy = _isWasmCodegen 
+                ? new WebAssemblyMetadataBlockingPolicy()
+                : _noMetadataBlocking 
+                    ? (MetadataBlockingPolicy)new NoMetadataBlockingPolicy() 
+                    : new BlockedInternalsBlockingPolicy();
 
             ManifestResourceBlockingPolicy resBlockingPolicy = new NoManifestResourceBlockingPolicy();
 
@@ -477,7 +479,7 @@ namespace ILCompiler
 
             DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy = new DefaultDynamicInvokeThunkGenerationPolicy();
 
-            bool supportsReflection = !_isReadyToRunCodeGen && !_isWasmCodegen && _systemModuleName == DefaultSystemModule;
+            bool supportsReflection = !_isReadyToRunCodeGen && _systemModuleName == DefaultSystemModule;
 
             MetadataManager metadataManager;
             if (_isReadyToRunCodeGen)

@@ -17,12 +17,6 @@ using System.Runtime.CompilerServices;
 
 using Internal.Runtime.Augments;
 
-using AsyncStatus = Internal.Runtime.Augments.AsyncStatus;
-using CausalityRelation = Internal.Runtime.Augments.CausalityRelation;
-using CausalitySource = Internal.Runtime.Augments.CausalitySource;
-using CausalityTraceLevel = Internal.Runtime.Augments.CausalityTraceLevel;
-using CausalitySynchronousWork = Internal.Runtime.Augments.CausalitySynchronousWork;
-
 namespace System.Threading.Tasks
 {
     // Task type used to implement: Task ContinueWith(Action<Task,...>)
@@ -307,9 +301,11 @@ namespace System.Threading.Tasks
             m_options = options;
             m_taskScheduler = scheduler;
 
-            if (DebuggerSupport.LoggingOn)
-                DebuggerSupport.TraceOperationCreation(CausalityTraceLevel.Required, m_task, "Task.ContinueWith: " + task.m_action, 0);
-            DebuggerSupport.AddToActiveTasks(m_task);
+            if (AsyncCausalityTracer.LoggingOn)
+                AsyncCausalityTracer.TraceOperationCreation(m_task, "Task.ContinueWith: " + task.m_action);
+
+            if (Task.s_asyncDebuggingEnabled)
+                Task.AddToActiveTasks(m_task);
         }
 
         /// <summary>Invokes the continuation for the target completion task.</summary>
@@ -334,10 +330,10 @@ namespace System.Threading.Tasks
             Task continuationTask = m_task;
             if (isRightKind)
             {
-                if (!continuationTask.IsCanceled && DebuggerSupport.LoggingOn)
+                if (!continuationTask.IsCanceled && AsyncCausalityTracer.LoggingOn)
                 {
                     // Log now that we are sure that this continuation is being ran
-                    DebuggerSupport.TraceOperationRelation(CausalityTraceLevel.Important, continuationTask, CausalityRelation.AssignDelegate);
+                    AsyncCausalityTracer.TraceOperationRelation(continuationTask, CausalityRelation.AssignDelegate);
                 }
                 continuationTask.m_taskScheduler = m_taskScheduler;
 

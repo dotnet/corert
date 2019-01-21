@@ -1071,6 +1071,8 @@ namespace Internal.TypeSystem.Interop
                         case TypeFlags.UInt32:
                         case TypeFlags.Int64:
                         case TypeFlags.UInt64:
+                        case TypeFlags.IntPtr:
+                        case TypeFlags.UIntPtr:
                             break;
                         default:
                             throw new InvalidProgramException("Invalid SizeParamIndex, parameter must be  of type int/uint");
@@ -1380,7 +1382,7 @@ namespace Internal.TypeSystem.Interop
 
         protected override void TransformNativeToManaged(ILCodeStream codeStream)
         {
-            if (IsManagedByRef && !In)
+            if ((IsManagedByRef && !In) || (MarshalDirection == MarshalDirection.Reverse && MarshallerType == MarshallerType.Argument))
                 base.TransformNativeToManaged(codeStream);
         }
 

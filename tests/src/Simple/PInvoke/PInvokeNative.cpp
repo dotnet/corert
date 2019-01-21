@@ -336,6 +336,14 @@ DLL_EXPORT bool __stdcall ReversePInvoke_String(StringFuncPtr fnPtr)
     return fnPtr(str);
 }
 
+typedef bool(__stdcall *ArrayFuncPtr) (int *, size_t sz);
+DLL_EXPORT bool __stdcall ReversePInvoke_Array(ArrayFuncPtr fnPtr)
+{
+    int a[42];
+    for (int i = 0; i < 42; i++) a[i] = i;
+    return fnPtr(a, 42);
+}
+
 bool CheckString(char *str)
 {
    return CompareAnsiString(str, "Hello World!") == 1;

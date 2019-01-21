@@ -43,6 +43,12 @@
     <FeaturePortableThreadPool Condition="'$(FeaturePortableThreadPool)' == ''">false</FeaturePortableThreadPool>
     <FeaturePortableThreadPool Condition="'$(TargetsUnix)' == 'true'">true</FeaturePortableThreadPool>
   </PropertyGroup>
+  <PropertyGroup>
+    <FeatureHardwareIntrinsics Condition="'$(IsProjectNLibrary)' != 'true'">true</FeatureHardwareIntrinsics>
+  </PropertyGroup>
+  <PropertyGroup>
+    <FeatureAsyncCausalityTracer Condition="'$(EnableWinRT)' == 'true'">true</FeatureAsyncCausalityTracer>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\Internal\Runtime\RuntimeConstants.cs">
       <Link>Internal\Runtime\RuntimeConstants.cs</Link>
@@ -143,8 +149,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Condition="'$(EnableWinRT)'=='true'" Include="Internal\Runtime\Augments\WinRTInterop.cs" />
-    <Compile Include="Internal\Runtime\Augments\AsyncCausalityTracer.cs" />
-    <Compile Include="Internal\Threading\Tasks\AsyncCausalitySupport.cs" />
     <Compile Include="Internal\Threading\Tasks\Tracing\TaskTrace.cs" />
     <Compile Include="Interop\Interop.manual.cs" />
     <Compile Include="Interop\Interop.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
@@ -197,7 +201,6 @@
     <Compile Include="System\Collections\Generic\EqualityComparer.CoreRT.cs" />
     <Compile Include="System\Collections\Generic\EqualOnlyComparer.cs" />
     <Compile Include="System\DefaultBinder.CanConvert.cs" />
-    <Compile Include="System\Diagnostics\Contracts\ContractsBCL.cs" />
     <Compile Include="System\Globalization\GlobalizationMode.cs" />
     <Compile Include="System\Globalization\GlobalizationMode.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
     <Compile Include="System\Globalization\GlobalizationMode.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
@@ -288,13 +291,9 @@
     <Compile Include="System\Threading\SynchronizationContext.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
     <Compile Include="System\Threading\SynchronizationContext.Dummy.cs" Condition="'$(EnableWinRT)' != 'true'" />
     <Compile Include="System\Threading\SyncTable.cs" Condition="'$(UseSyncTable)' == 'true'" />
-    <Compile Include="System\Threading\Tasks\DebuggerSupport.cs" />
-    <Compile Include="System\Threading\Tasks\DebuggerSupport.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
-    <Compile Include="System\Threading\Tasks\DebuggerSupport.Dummy.cs" Condition="'$(EnableWinRT)' != 'true'" />
-    <Compile Include="System\Threading\Tasks\FutureFactory.cs" />
+    <Compile Include="System\Threading\Tasks\AsyncCausalityTracer.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
     <Compile Include="System\Threading\Tasks\Task.cs" />
     <Compile Include="System\Threading\Tasks\TaskContinuation.cs" />
-    <Compile Include="System\Threading\Tasks\TaskFactory.cs" />
     <Compile Include="System\Threading\ThreadPool.cs" />
     <Compile Include="System\Threading\ThreadPoolCallbackWrapper.cs" />
     <Compile Include="System\Threading\Timer.cs" />
