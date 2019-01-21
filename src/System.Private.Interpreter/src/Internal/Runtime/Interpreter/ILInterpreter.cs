@@ -11,29 +11,6 @@ using Internal.TypeSystem;
 
 namespace Internal.Runtime.Interpreter
 {
-    //
-    // Corresponds to "I.12.3.2.1 The evaluation stack" in ECMA spec
-    //
-    internal enum StackValueKind
-    {
-        /// <summary>An unknow type.</summary>
-        Unknown,
-        /// <summary>Any signed or unsigned integer values that can be represented as a 32-bit entity.</summary>
-        Int32,
-        /// <summary>Any signed or unsigned integer values that can be represented as a 64-bit entity.</summary>
-        Int64,
-        /// <summary>Underlying platform pointer type represented as an integer of the appropriate size.</summary>
-        NativeInt,
-        /// <summary>Any float value.</summary>
-        Float,
-        /// <summary>A managed pointer.</summary>
-        ByRef,
-        /// <summary>An object reference.</summary>
-        ObjRef,
-        /// <summary>A value type which is not any of the primitive one.</summary>
-        ValueType
-    }
-
     internal unsafe class ILInterpreter
     {
         private readonly MethodDesc _method;
@@ -90,9 +67,9 @@ namespace Internal.Runtime.Interpreter
             _callInterceptorArgs = callInterceptorArgs;
             ILReader reader = new ILReader(_methodIL);
 
-            while (reader.Read(out ILInstruction instruction))
+            while (reader.Read(out ILOpcode opcode))
             {
-                switch (instruction.Opcode)
+                switch (opcode)
                 {
                     case ILOpcode.nop:
                         // Do nothing!
@@ -100,24 +77,21 @@ namespace Internal.Runtime.Interpreter
                     case ILOpcode.break_:
                         throw new NotImplementedException();
                     case ILOpcode.ldarg_0:
-                        throw new NotImplementedException();
                     case ILOpcode.ldarg_1:
-                        throw new NotImplementedException();
                     case ILOpcode.ldarg_2:
-                        throw new NotImplementedException();
                     case ILOpcode.ldarg_3:
                         throw new NotImplementedException();
                     case ILOpcode.ldloc_0:
                     case ILOpcode.ldloc_1:
                     case ILOpcode.ldloc_2:
                     case ILOpcode.ldloc_3:
-                        InterpretLoadLocal(instruction.Opcode - ILOpcode.ldloc_0);
+                        InterpretLoadLocal(opcode - ILOpcode.ldloc_0);
                         break;
                     case ILOpcode.stloc_0:
                     case ILOpcode.stloc_1:
                     case ILOpcode.stloc_2:
                     case ILOpcode.stloc_3:
-                        InterpretStoreLocal(instruction.Opcode - ILOpcode.stloc_0);
+                        InterpretStoreLocal(opcode - ILOpcode.stloc_0);
                         break;
                     case ILOpcode.ldarg_s:
                         throw new NotImplementedException();
@@ -126,12 +100,12 @@ namespace Internal.Runtime.Interpreter
                     case ILOpcode.starg_s:
                         throw new NotImplementedException();
                     case ILOpcode.ldloc_s:
-                        InterpretLoadLocal(instruction.Operand.AsInt32());
+                        InterpretLoadLocal(reader.ReadILByte());
                         break;
                     case ILOpcode.ldloca_s:
                         throw new NotImplementedException();
                     case ILOpcode.stloc_s:
-                        InterpretStoreLocal(instruction.Operand.AsInt32());
+                        InterpretStoreLocal(reader.ReadILByte());
                         break;
                     case ILOpcode.ldnull:
                         InterpretLoadNull();
@@ -148,20 +122,22 @@ namespace Internal.Runtime.Interpreter
                     case ILOpcode.ldc_i4_6:
                     case ILOpcode.ldc_i4_7:
                     case ILOpcode.ldc_i4_8:
-                        InterpretLoadConstant(instruction.Opcode - ILOpcode.ldc_i4_0);
+                        InterpretLoadConstant(opcode - ILOpcode.ldc_i4_0);
                         break;
                     case ILOpcode.ldc_i4_s:
-                        InterpretLoadConstant(instruction.Operand.AsInt32());
+                        InterpretLoadConstant((sbyte)reader.ReadILByte());
                         break;
                     case ILOpcode.ldc_i4:
-                        InterpretLoadConstant(instruction.Operand.AsInt32());
+                        InterpretLoadConstant((int)reader.ReadILUInt32());
                         break;
                     case ILOpcode.ldc_i8:
-                        InterpretLoadConstant(instruction.Operand.AsInt64());
+                        InterpretLoadConstant((long)reader.ReadILUInt64());
                         break;
                     case ILOpcode.ldc_r4:
+                        InterpretLoadConstant(reader.ReadILFloat());
+                        break;
                     case ILOpcode.ldc_r8:
-                        InterpretLoadConstant(instruction.Operand.AsDouble());
+                        InterpretLoadConstant(reader.ReadILDouble());
                         break;
                     case ILOpcode.dup:
                         InterpretDup();
@@ -278,22 +254,16 @@ namespace Internal.Runtime.Interpreter
                     case ILOpcode.and:
                     case ILOpcode.or:
                     case ILOpcode.xor:
-                    case ILOpcode.add_ovf:
-                    case ILOpcode.add_ovf_un:
-                    case ILOpcode.mul_ovf:
-                    case ILOpcode.mul_ovf_un:
-                    case ILOpcode.sub_ovf:
-                    case ILOpcode.sub_ovf_un:
-                        InterpretBinaryOperation(instruction.Opcode);
+                        InterpretBinaryOperation(opcode);
                         break;
                     case ILOpcode.shl:
                     case ILOpcode.shr:
                     case ILOpcode.shr_un:
-                        InterpretShiftOperation(instruction.Opcode);
+                        InterpretShiftOperation(opcode);
                         break;
                     case ILOpcode.neg:
                     case ILOpcode.not:
-                        InterpretUnaryOperation(instruction.Opcode);
+                        InterpretUnaryOperation(opcode);
                         break;
                     case ILOpcode.conv_i1:
                         InterpretConvertOperation(WellKnownType.SByte, false, false);
@@ -326,10 +296,7 @@ namespace Internal.Runtime.Interpreter
                     case ILOpcode.ldobj:
                         throw new NotImplementedException();
                     case ILOpcode.ldstr:
-                        {
-                            string str = (string)_methodIL.GetObject(instruction.Operand.AsInt32());
-                            InterpretLoadConstant(str);
-                        }
+                        InterpretLoadConstant((string)_methodIL.GetObject(reader.ReadILToken()));
                         break;
                     case ILOpcode.newobj:
                         throw new NotImplementedException();
@@ -487,6 +454,14 @@ namespace Internal.Runtime.Interpreter
                     case ILOpcode.conv_ovf_u:
                         InterpretConvertOperation(WellKnownType.UIntPtr, true, false);
                         break;
+                    case ILOpcode.add_ovf:
+                    case ILOpcode.add_ovf_un:
+                    case ILOpcode.mul_ovf:
+                    case ILOpcode.mul_ovf_un:
+                    case ILOpcode.sub_ovf:
+                    case ILOpcode.sub_ovf_un:
+                        InterpretBinaryOperation(opcode);
+                        break;
                     case ILOpcode.endfinally:
                         throw new NotImplementedException();
                     case ILOpcode.leave:
@@ -498,8 +473,6 @@ namespace Internal.Runtime.Interpreter
                     case ILOpcode.conv_u:
                         InterpretConvertOperation(WellKnownType.UIntPtr, false, false);
                         break;
-                    case ILOpcode.prefix1:
-                        throw new NotImplementedException();
                     case ILOpcode.arglist:
                         throw new NotImplementedException();
                     case ILOpcode.ceq:
@@ -507,7 +480,7 @@ namespace Internal.Runtime.Interpreter
                     case ILOpcode.cgt_un:
                     case ILOpcode.clt:
                     case ILOpcode.clt_un:
-                        InterpretCompareOperation(instruction.Opcode);
+                        InterpretCompareOperation(opcode);
                         break;
                     case ILOpcode.ldftn:
                         throw new NotImplementedException();
