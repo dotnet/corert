@@ -292,10 +292,8 @@
     <Compile Include="System\Threading\SynchronizationContext.Dummy.cs" Condition="'$(EnableWinRT)' != 'true'" />
     <Compile Include="System\Threading\SyncTable.cs" Condition="'$(UseSyncTable)' == 'true'" />
     <Compile Include="System\Threading\Tasks\AsyncCausalityTracer.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
-    <Compile Include="System\Threading\Tasks\FutureFactory.cs" />
     <Compile Include="System\Threading\Tasks\Task.cs" />
     <Compile Include="System\Threading\Tasks\TaskContinuation.cs" />
-    <Compile Include="System\Threading\Tasks\TaskFactory.cs" />
     <Compile Include="System\Threading\ThreadPool.cs" />
     <Compile Include="System\Threading\ThreadPoolCallbackWrapper.cs" />
     <Compile Include="System\Threading\Timer.cs" />
