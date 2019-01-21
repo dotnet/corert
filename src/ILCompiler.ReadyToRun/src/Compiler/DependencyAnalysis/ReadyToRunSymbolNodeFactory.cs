@@ -202,7 +202,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private ISymbolNode CreateVirtualCallHelper(MethodWithToken methodWithToken, SignatureContext signatureContext)
         {
-            return new DelayLoadHelperImport(
+            return new DelayLoadHelperMethodImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.DispatchImports,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_Obj,
@@ -585,7 +585,7 @@ namespace ILCompiler.DependencyAnalysis
             MethodAndCallSite cellKey = new MethodAndCallSite(method, callSite);
             if (!_interfaceDispatchCells.TryGetValue(cellKey, out ISymbolNode dispatchCell))
             {
-                dispatchCell = new DelayLoadHelperImport(
+                dispatchCell = new DelayLoadHelperMethodImport(
                     _codegenNodeFactory,
                     _codegenNodeFactory.DispatchImports,
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_MethodCall |
@@ -610,7 +610,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (!_genericDictionaryCache.TryGetValue(method, out ISortableSymbolNode genericDictionary))
             {
-                genericDictionary = new PrecodeHelperImport(
+                genericDictionary = new PrecodeHelperMethodImport(
                     _codegenNodeFactory,
                     _codegenNodeFactory.MethodSignature(
                         ReadyToRunFixupKind.READYTORUN_FIXUP_MethodDictionary,
