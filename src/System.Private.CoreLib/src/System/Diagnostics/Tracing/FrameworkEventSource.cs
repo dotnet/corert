@@ -4,7 +4,7 @@
 
 namespace System.Diagnostics.Tracing
 {
-    sealed internal class FrameworkEventSource : EventSource
+    sealed internal class FrameworkEventSource
     {
         // Defines the singleton instance for the Resources ETW provider
         public static readonly FrameworkEventSource Log = new FrameworkEventSource();
@@ -19,10 +19,9 @@ namespace System.Diagnostics.Tracing
             public const EventKeywords ThreadTransfer = (EventKeywords)0x0010;
         }
 
-        // The FrameworkEventSource GUID is {8E9F5090-2D75-4d03-8A81-E5AFBF85DAF1}
-        private FrameworkEventSource()
-            : base(new Guid(0x8e9f5090, 0x2d75, 0x4d03, 0x8a, 0x81, 0xe5, 0xaf, 0xbf, 0x85, 0xda, 0xf1), "System.Diagnostics.Eventing.FrameworkEventSource")
+        public bool IsEnabled(EventLevel level, EventKeywords keywords)
         {
+            return false;
         }
 
         public void ThreadPoolEnqueueWorkObject(object workID)
