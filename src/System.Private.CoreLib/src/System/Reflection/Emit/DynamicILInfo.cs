@@ -6,40 +6,27 @@ namespace System.Reflection.Emit
 {
     public class DynamicILInfo
     {
+        internal DynamicILInfo(DynamicMethod method, byte[] methodSignature)
+        {
+            ReflectionEmitThrower.ThrowPlatformNotSupportedException();
+        }
+
         public DynamicMethod DynamicMethod { get { return default; } }
 
-        public void SetCode(byte[] code, int maxStackSize)
-        {
-            ReflectionEmitThrower.ThrowPlatformNotSupportedException();
-        }
+        public void SetCode(byte[] code, int maxStackSize) { }
 
         [CLSCompliant(false)]
-        public unsafe void SetCode(byte* code, int codeSize, int maxStackSize)
-        {
-            ReflectionEmitThrower.ThrowPlatformNotSupportedException();
-        }
+        public unsafe void SetCode(byte* code, int codeSize, int maxStackSize) { }
 
-        public void SetExceptions(byte[] exceptions)
-        {
-            ReflectionEmitThrower.ThrowPlatformNotSupportedException();
-        }
+        public void SetExceptions(byte[] exceptions) { }
 
         [CLSCompliant(false)]
-        public unsafe void SetExceptions(byte* exceptions, int exceptionsSize)
-        {
-            ReflectionEmitThrower.ThrowPlatformNotSupportedException();
-        }
+        public unsafe void SetExceptions(byte* exceptions, int exceptionsSize) { }
 
-        public void SetLocalSignature(byte[] localSignature)
-        {
-            ReflectionEmitThrower.ThrowPlatformNotSupportedException();
-        }
+        public void SetLocalSignature(byte[] localSignature) { }
 
         [CLSCompliant(false)]
-        public unsafe void SetLocalSignature(byte* localSignature, int signatureSize)
-        {
-            ReflectionEmitThrower.ThrowPlatformNotSupportedException();
-        }
+        public unsafe void SetLocalSignature(byte* localSignature, int signatureSize) { }
 
         public int GetTokenFor(RuntimeMethodHandle method)
         {
