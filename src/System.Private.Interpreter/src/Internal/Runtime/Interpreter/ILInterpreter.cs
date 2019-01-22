@@ -155,59 +155,53 @@ namespace Internal.Runtime.Interpreter
                         InterpretReturn();
                         break;
                     case ILOpcode.br_s:
-                        throw new NotImplementedException();
                     case ILOpcode.brfalse_s:
-                        throw new NotImplementedException();
                     case ILOpcode.brtrue_s:
-                        throw new NotImplementedException();
                     case ILOpcode.beq_s:
-                        throw new NotImplementedException();
                     case ILOpcode.bge_s:
-                        throw new NotImplementedException();
                     case ILOpcode.bgt_s:
-                        throw new NotImplementedException();
                     case ILOpcode.ble_s:
-                        throw new NotImplementedException();
                     case ILOpcode.blt_s:
-                        throw new NotImplementedException();
                     case ILOpcode.bne_un_s:
-                        throw new NotImplementedException();
                     case ILOpcode.bge_un_s:
-                        throw new NotImplementedException();
                     case ILOpcode.bgt_un_s:
-                        throw new NotImplementedException();
                     case ILOpcode.ble_un_s:
-                        throw new NotImplementedException();
                     case ILOpcode.blt_un_s:
-                        throw new NotImplementedException();
+                        {
+                            int delta = (sbyte)reader.ReadILByte();
+                            InterpretBranch(ref reader, opcode, reader.Offset + delta);
+                        }
+                        break;
                     case ILOpcode.br:
-                        throw new NotImplementedException();
                     case ILOpcode.brfalse:
-                        throw new NotImplementedException();
                     case ILOpcode.brtrue:
-                        throw new NotImplementedException();
                     case ILOpcode.beq:
-                        throw new NotImplementedException();
                     case ILOpcode.bge:
-                        throw new NotImplementedException();
                     case ILOpcode.bgt:
-                        throw new NotImplementedException();
                     case ILOpcode.ble:
-                        throw new NotImplementedException();
                     case ILOpcode.blt:
-                        throw new NotImplementedException();
                     case ILOpcode.bne_un:
-                        throw new NotImplementedException();
                     case ILOpcode.bge_un:
-                        throw new NotImplementedException();
                     case ILOpcode.bgt_un:
-                        throw new NotImplementedException();
                     case ILOpcode.ble_un:
-                        throw new NotImplementedException();
                     case ILOpcode.blt_un:
-                        throw new NotImplementedException();
+                        {
+                            int delta = (int)reader.ReadILUInt32();
+                            InterpretBranch(ref reader, opcode, reader.Offset + delta);
+                        }
+                        break;
                     case ILOpcode.switch_:
-                        throw new NotImplementedException();
+                        {
+                            var count = reader.ReadILUInt32();
+                            var jmpBase = reader.Offset + (int)(4 * count);
+                            var jmpDelta = new int[count];
+
+                            for (uint i = 0; i < count; i++)
+                                jmpDelta[i] = (int)reader.ReadILUInt32();
+
+                            InterpretSwitch(ref reader, jmpBase, jmpDelta);
+                        }
+                        break;
                     case ILOpcode.ldind_i1:
                         throw new NotImplementedException();
                     case ILOpcode.ldind_u1:
@@ -1869,6 +1863,116 @@ namespace Internal.Runtime.Interpreter
                 default:
                     ThrowHelper.ThrowInvalidProgramException();
                     break;
+            }
+        }
+
+        private void InterpretBranch(ref ILReader reader, ILOpcode opcode, int target)
+        {
+            switch (opcode)
+            {
+                case ILOpcode.br_s:
+                case ILOpcode.br:
+                    reader.Seek(target);
+                    break;
+                case ILOpcode.brfalse_s:
+                case ILOpcode.brfalse:
+                    {
+                        int value = PopWithValidation().AsInt32();
+                        if (value == 0)
+                            reader.Seek(target);
+                    }
+                    break;
+                case ILOpcode.brtrue_s:
+                case ILOpcode.brtrue:
+                    {
+                        int value = PopWithValidation().AsInt32();
+                        if (value != 0)
+                            reader.Seek(target);
+                    }
+                    break;
+                case ILOpcode.beq_s:
+                case ILOpcode.beq:
+                    {
+                        InterpretCompareOperation(ILOpcode.ceq);
+                        InterpretBranch(ref reader, ILOpcode.brtrue, target);
+                    }
+                    break;
+                case ILOpcode.bge_s:
+                case ILOpcode.bge:
+                    {
+                        InterpretCompareOperation(ILOpcode.clt);
+                        InterpretBranch(ref reader, ILOpcode.brfalse, target);
+                    }
+                    break;
+                case ILOpcode.bgt_s:
+                case ILOpcode.bgt:
+                    {
+                        InterpretCompareOperation(ILOpcode.cgt);
+                        InterpretBranch(ref reader, ILOpcode.brtrue, target);
+                    }
+                    break;
+                case ILOpcode.ble_s:
+                case ILOpcode.ble:
+                    {
+                        InterpretCompareOperation(ILOpcode.cgt);
+                        InterpretBranch(ref reader, ILOpcode.brfalse, target);
+                    }
+                    break;
+                case ILOpcode.blt_s:
+                case ILOpcode.blt:
+                    {
+                        InterpretCompareOperation(ILOpcode.clt);
+                        InterpretBranch(ref reader, ILOpcode.brtrue, target);
+                    }
+                    break;
+                case ILOpcode.bne_un_s:
+                case ILOpcode.bne_un:
+                    {
+                        InterpretCompareOperation(ILOpcode.ceq);
+                        InterpretBranch(ref reader, ILOpcode.brfalse, target);
+                    }
+                    break;
+                case ILOpcode.bge_un_s:
+                case ILOpcode.bge_un:
+                    {
+                        InterpretCompareOperation(ILOpcode.clt_un);
+                        InterpretBranch(ref reader, ILOpcode.brfalse, target);
+                    }
+                    break;
+                case ILOpcode.bgt_un_s:
+                case ILOpcode.bgt_un:
+                    {
+                        InterpretCompareOperation(ILOpcode.cgt_un);
+                        InterpretBranch(ref reader, ILOpcode.brtrue, target);
+                    }
+                    break;
+                case ILOpcode.ble_un_s:
+                case ILOpcode.ble_un:
+                    {
+                        InterpretCompareOperation(ILOpcode.cgt_un);
+                        InterpretBranch(ref reader, ILOpcode.brfalse, target);
+                    }
+                    break;
+                case ILOpcode.blt_un_s:
+                case ILOpcode.blt_un:
+                    {
+                        InterpretCompareOperation(ILOpcode.clt_un);
+                        InterpretBranch(ref reader, ILOpcode.brtrue, target);
+                    }
+                    break;
+                default:
+                    Debug.Assert(false);
+                    break;
+            }
+        }
+
+        private void InterpretSwitch(ref ILReader reader, int jmpBase, int[] jmpDelta)
+        {
+            int value = PopWithValidation().AsInt32();
+            for (int i = 0; i < jmpDelta.Length; i++)
+            {
+                if (value == i)
+                    reader.Seek(jmpBase + jmpDelta[i]);
             }
         }
     }
