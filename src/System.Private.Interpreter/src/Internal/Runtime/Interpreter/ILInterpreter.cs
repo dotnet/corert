@@ -65,10 +65,11 @@ namespace Internal.Runtime.Interpreter
         public void InterpretMethod(ref CallInterceptorArgs callInterceptorArgs)
         {
             _callInterceptorArgs = callInterceptorArgs;
-            ILReader reader = new ILReader(_methodIL);
+            ILReader reader = new ILReader(_methodIL.GetILBytes());
 
-            while (reader.Read(out ILOpcode opcode))
+            while (reader.HasNext)
             {
+                ILOpcode opcode = reader.ReadILOpcode();
                 switch (opcode)
                 {
                     case ILOpcode.nop:
