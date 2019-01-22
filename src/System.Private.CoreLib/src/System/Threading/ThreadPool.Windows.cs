@@ -244,6 +244,9 @@ namespace System.Threading
 
         private static IntPtr s_work;
 
+        // The number of threads executing work items in the Dispatch method
+        private static volatile int numWorkingThreads;
+
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
         {
             // Not supported at present
@@ -273,7 +276,7 @@ namespace System.Threading
         public static void GetAvailableThreads(out int workerThreads, out int completionPortThreads)
         {
             // Make sure we return a non-negative value if thread pool defaults are changed
-            int availableThreads = Math.Max(MaxThreadCount - ThreadPoolGlobals.workQueue.numWorkingThreads, 0);
+            int availableThreads = Math.Max(MaxThreadCount - numWorkingThreads, 0);
 
             workerThreads = availableThreads;
             completionPortThreads = availableThreads;
@@ -301,7 +304,10 @@ namespace System.Threading
         {
             var wrapper = ThreadPoolCallbackWrapper.Enter();
             Debug.Assert(s_work == work);
+            Interlocked.Increment(ref numWorkingThreads);
             ThreadPoolWorkQueue.Dispatch();
+            int numWorkers = Interlocked.Decrement(ref numWorkingThreads);
+            Debug.Assert(numWorkers >= 0);
             // We reset the thread after executing each callback
             wrapper.Exit(resetThread: false);
         }
