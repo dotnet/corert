@@ -1876,17 +1876,41 @@ namespace Internal.Runtime.Interpreter
                     break;
                 case ILOpcode.brfalse_s:
                 case ILOpcode.brfalse:
-                    {
-                        int value = PopWithValidation().AsInt32();
-                        if (value == 0)
-                            reader.Seek(target);
-                    }
-                    break;
                 case ILOpcode.brtrue_s:
                 case ILOpcode.brtrue:
                     {
-                        int value = PopWithValidation().AsInt32();
-                        if (value != 0)
+                        bool value = default(bool);
+                        StackItem stackItem = PopWithValidation();
+
+                        switch (stackItem.Kind)
+                        {
+                            case StackValueKind.Int32:
+                                value = stackItem.AsInt32() != 0;
+                                break;
+                            case StackValueKind.Int64:
+                                value = stackItem.AsInt64() != 0;
+                                break;
+                            case StackValueKind.NativeInt:
+                                value = stackItem.AsNativeInt() != IntPtr.Zero;
+                                break;
+                            case StackValueKind.ByRef:
+                                // TODO: Add support for ByRef types
+                                throw new NotImplementedException();
+                            case StackValueKind.ObjRef:
+                                value = !(stackItem.AsObjectRef() is null);
+                                break;
+                            case StackValueKind.Unknown:
+                            case StackValueKind.Float:
+                            case StackValueKind.ValueType:
+                            default:
+                                ThrowHelper.ThrowInvalidProgramException();
+                                break;
+                        }
+
+                        if (value && (opcode == ILOpcode.brtrue_s || opcode == ILOpcode.brtrue))
+                            reader.Seek(target);
+
+                        if (!value && (opcode == ILOpcode.brfalse_s || opcode == ILOpcode.brfalse))
                             reader.Seek(target);
                     }
                     break;
