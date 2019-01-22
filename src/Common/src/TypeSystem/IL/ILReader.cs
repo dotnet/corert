@@ -20,9 +20,25 @@ namespace Internal.IL
             }
         }
 
-        public ILReader(MethodIL methodIL)
+        public int Size
         {
-            _ilBytes = methodIL.GetILBytes();
+            get
+            {
+                return _ilBytes.Length;
+            }
+        }
+
+        public bool HasNext
+        {
+            get
+            {
+                return _currentOffset < _ilBytes.Length;
+            }
+        }
+
+        public ILReader(byte[] ilBytes)
+        {
+            _ilBytes = ilBytes;
             _currentOffset = 0;
         }
 
@@ -73,19 +89,26 @@ namespace Internal.IL
             return *(double*)(&value);
         }
 
-        public bool Read(out ILOpcode opcode)
+        public ILOpcode ReadILOpcode()
         {
-            opcode = default(byte);
-            if (_currentOffset == _ilBytes.Length)
-                return false;
-
-            opcode = (ILOpcode)ReadILByte();
+            ILOpcode opcode = (ILOpcode)ReadILByte();
             if (opcode == ILOpcode.prefix1)
             {
                 opcode = (ILOpcode)(0x100 + ReadILByte());
             }
 
-            return true;
+            return opcode;
+        }
+
+        public ILOpcode PeekILOpcode()
+        {
+            ILOpcode opcode = (ILOpcode)_ilBytes[_currentOffset];
+            if (opcode == ILOpcode.prefix1)
+            {
+                opcode = (ILOpcode)(0x100 + _ilBytes[_currentOffset + 1]);
+            }
+
+            return opcode;
         }
 
         public void Seek(int offset)
