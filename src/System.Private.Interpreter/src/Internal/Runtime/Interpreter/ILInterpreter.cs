@@ -1907,11 +1907,16 @@ namespace Internal.Runtime.Interpreter
                                 break;
                         }
 
-                        if (value && (opcode == ILOpcode.brtrue_s || opcode == ILOpcode.brtrue))
-                            reader.Seek(target);
-
-                        if (!value && (opcode == ILOpcode.brfalse_s || opcode == ILOpcode.brfalse))
-                            reader.Seek(target);
+                        if (value)
+                        {
+                            if (opcode == ILOpcode.brtrue_s || opcode == ILOpcode.brtrue)
+                                reader.Seek(target);
+                        }
+                        else
+                        {
+                            if (opcode == ILOpcode.brfalse_s || opcode == ILOpcode.brfalse)
+                                reader.Seek(target);
+                        }
                     }
                     break;
                 case ILOpcode.beq_s:
