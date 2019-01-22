@@ -305,7 +305,7 @@ namespace System.Threading
             var wrapper = ThreadPoolCallbackWrapper.Enter();
             Debug.Assert(s_work == work);
             Interlocked.Increment(ref numWorkingThreads);
-            ThreadPoolWorkQueue.Dispatch();
+            ThreadPoolWorkQueue.DispatchWithExceptionHandling();
             int numWorkers = Interlocked.Decrement(ref numWorkingThreads);
             Debug.Assert(numWorkers >= 0);
             // We reset the thread after executing each callback

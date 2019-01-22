@@ -31,7 +31,7 @@ namespace System.Threading
                         if (TakeActiveRequest())
                         {
                             Volatile.Write(ref ThreadPoolInstance._separated.lastDequeueTime, Environment.TickCount);
-                            if (ThreadPoolWorkQueue.Dispatch())
+                            if (ThreadPoolWorkQueue.DispatchWithExceptionHandling())
                             {
                                 // If the queue runs out of work for us, we need to update the number of working workers to reflect that we are done working for now
                                 RemoveWorkingWorker();

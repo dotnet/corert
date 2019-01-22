@@ -27,11 +27,28 @@ using Thread = Internal.Runtime.Augments.RuntimeThread;
 
 namespace System.Threading
 {
+    internal sealed partial class ThreadPoolWorkQueue
+    {
+        internal static bool DispatchWithExceptionHandling()
+        {
+            try
+            {
+                return Dispatch();
+            }
+            catch (Exception e)
+            {
+                // Work items should not allow exceptions to escape.  For example, Task catches and stores any exceptions.
+                Environment.FailFast("Unhandled exception in ThreadPool dispatch loop", e);
+                return true; // Will never actually be executed because Environment.FailFast doesn't return
+            }
+        }
+    }
+
     public static partial class ThreadPool
     {
-        private static void EnsureVMInitialized()
+        private static void EnsureInitialized()
         {
-            ThreadPoolGlobals.vmTpInitialized = true;
+            ThreadPoolGlobals.threadPoolInitialized = true;
             ThreadPoolGlobals.enableWorkerTracking = false;
         }
 
@@ -64,7 +81,5 @@ namespace System.Threading
         {
             throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
         }
-
-        internal static bool IsThreadPoolThread { get { return ThreadPoolWorkQueueThreadLocals.threadLocals != null; } }
     }
 }
