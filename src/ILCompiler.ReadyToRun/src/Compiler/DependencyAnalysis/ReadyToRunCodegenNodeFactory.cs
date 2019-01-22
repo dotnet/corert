@@ -156,12 +156,6 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public IMethodNode StringAllocator(MethodDesc constructor, ModuleToken methodToken, SignatureContext signatureContext)
-        {
-            return MethodEntrypoint(constructor, constrainedType: null, originalMethod: null, 
-                methodToken: methodToken, signatureContext: signatureContext, isUnboxingStub: false);
-        }
-
         protected override ISymbolNode CreateReadyToRunHelperNode(ReadyToRunHelperKey helperCall)
         {
             throw new NotImplementedException();
@@ -518,6 +512,30 @@ namespace ILCompiler.DependencyAnalysis
                 _sectionStartNodes.Add(sectionName, sectionStartNode);
             }
             return sectionStartNode;
+        }
+
+        private Dictionary<MethodWithToken, ISymbolNode> _dynamicHelperCellCache = new Dictionary<MethodWithToken, ISymbolNode>();
+
+        public ISymbolNode DynamicHelperCell(MethodWithToken methodWithToken, SignatureContext signatureContext)
+        {
+            ISymbolNode result;
+            if (!_dynamicHelperCellCache.TryGetValue(methodWithToken, out result))
+            {
+                result = new DelayLoadHelperImport(
+                    this,
+                    DispatchImports,
+                    ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_Obj,
+                    MethodSignature(
+                        ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry,
+                        methodWithToken.Method,
+                        constrainedType: null,
+                        methodWithToken.Token,
+                        signatureContext: signatureContext,
+                        isUnboxingStub: false,
+                        isInstantiatingStub: false));
+                _dynamicHelperCellCache.Add(methodWithToken, result);
+            }
+            return result;
         }
     }
 }

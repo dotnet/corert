@@ -791,6 +791,45 @@ internal class Program
         return match;
     }
 
+    internal class ClassWithVirtual
+    {
+        public bool VirtualCalledFlag = false;
+
+        public virtual void Virtual()
+        {
+            Console.WriteLine("Virtual called");
+            VirtualCalledFlag = true;
+        }
+    }
+
+    public class BaseClass
+    {
+        public virtual int MyGvm<T>()
+        {
+            Console.WriteLine("MyGvm returning 100");
+            return 100;
+        }
+    }
+
+    // Test that ldvirtftn can load a virtual instance delegate method
+    public static bool VirtualDelegateLoadTest()
+    {
+        bool success = true;
+
+        var classWithVirtual = new ClassWithVirtual();
+
+        Action virtualMethod = classWithVirtual.Virtual;
+        virtualMethod();
+
+        success &= classWithVirtual.VirtualCalledFlag;
+
+        
+        var bc = new BaseClass();
+        success &= (bc.MyGvm<int>() == 100);
+
+        return success;
+    }
+
     public static int Main(string[] args)
     {
         if (args.Length > 0)
@@ -842,6 +881,7 @@ internal class Program
         RunTest("SharedGenericNonGcStaticTest", SharedGenericNonGcStaticTest());
         RunTest("SharedGenericTlsGcStaticTest", SharedGenericTlsGcStaticTest());
         RunTest("SharedGenericTlsNonGcStaticTest", SharedGenericTlsNonGcStaticTest());
+        RunTest("VirtualDelegateLoadTest", VirtualDelegateLoadTest());
 
         Console.WriteLine($@"{_passedTests.Count} tests pass:");
         foreach (string testName in _passedTests)

@@ -1215,9 +1215,7 @@ namespace Internal.JitInterface
                 // move that assert to some place later though.
                 targetIsFatFunctionPointer = true;
             }
-            else
-            // In ReadyToRun, we always use the dispatch stub to call virtual methods
-            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0
+            else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0
                 && targetMethod.OwningType.IsInterface)
             {
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB;
@@ -1242,8 +1240,7 @@ namespace Internal.JitInterface
                         ));
                 }
             }
-            else
-            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0
+            else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0
                 && _compilation.HasFixedSlotVTable(targetMethod.OwningType))
             {
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_VTABLE;
