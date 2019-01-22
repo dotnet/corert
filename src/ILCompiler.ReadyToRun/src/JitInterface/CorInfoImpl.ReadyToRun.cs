@@ -28,6 +28,22 @@ namespace Internal.JitInterface
             Method = method;
             Token = token;
         }
+
+        public override bool Equals(object obj)
+        {
+            return obj is MethodWithToken methodWithToken &&
+                Equals(methodWithToken);
+        }
+
+        public override int GetHashCode()
+        {
+            return Method.GetHashCode() ^ unchecked(17 * Token.GetHashCode());
+        }
+
+        public bool Equals(MethodWithToken methodWithToken)
+        {
+            return Method == methodWithToken.Method && Token.Equals(methodWithToken.Token);
+        }
     }
 
     public struct GenericContext : IEquatable<GenericContext>
@@ -376,7 +392,12 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT:
                     id = ReadyToRunHelper.NewArray;
                     break;
-
+                case CorInfoHelpFunc.CORINFO_HELP_VIRTUAL_FUNC_PTR:
+                    id = ReadyToRunHelper.VirtualFuncPtr;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR:
+                    id = ReadyToRunHelper.VirtualFuncPtr;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_LMUL:
                     id = ReadyToRunHelper.LMul;
                     break;
@@ -768,7 +789,6 @@ namespace Internal.JitInterface
 
             bool resolvedConstraint = false;
             bool forceUseRuntimeLookup = false;
-            bool targetIsFatFunctionPointer = false;
 
             MethodDesc methodAfterConstraintResolution = method;
             if (constrainedType == null)
@@ -846,6 +866,11 @@ namespace Internal.JitInterface
             bool directCall = false;
             bool resolvedCallVirt = false;
 
+            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0)
+            {
+                directCall = true;
+            }
+            else
             if (targetMethod.Signature.IsStatic)
             {
                 // Static methods are always direct calls
@@ -871,103 +896,93 @@ namespace Internal.JitInterface
 
             pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
 
-            bool allowInstParam = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ALLOWINSTPARAM) != 0;
-
-            if (directCall && !allowInstParam && targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstArg())
+            if (directCall)
             {
-                // JIT needs a single address to call this method but the method needs a hidden argument.
-                // We need a fat function pointer for this that captures both things.
-                targetIsFatFunctionPointer = true;
+                bool allowInstParam = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ALLOWINSTPARAM) != 0;
+                MethodDesc canonMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-                // JIT won't expect fat function pointers unless this is e.g. delegate creation
-                Debug.Assert((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0);
-
-                pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
-
-                if (pResult->exactContextNeedsRuntimeLookup)
+                if (pResult->exactContextNeedsRuntimeLookup && !allowInstParam && targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstArg())
                 {
+                    CORINFO_RUNTIME_LOOKUP_KIND lookupKind = GetGenericRuntimeLookupKind(canonMethod);
+                    ReadyToRunHelperId helperId = ReadyToRunHelperId.MethodHandle;
+                    object helperArg = new MethodWithToken(canonMethod, new ModuleToken(_tokenContext, pResolvedToken.token));
+                    GenericContext methodContext = new GenericContext(entityFromContext(pResolvedToken.tokenContext));
+                    ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(lookupKind, helperId, helperArg, methodContext, _signatureContext);
+                    pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(helper);
                     pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
                     pResult->codePointerOrStubLookup.lookupKind.runtimeLookupFlags = 0;
                     pResult->codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
-
-                    // Do not bother computing the runtime lookup if we are inlining. The JIT is going
-                    // to abort the inlining attempt anyway.
-                    MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
-                    if (contextMethod == MethodBeingCompiled)
-                    {
-                        pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
-                        pResult->codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodEntry;
-                        pResult->codePointerOrStubLookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(GetRuntimeDeterminedObjectForToken(ref pResolvedToken));
-                    }
+                    pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
                 }
                 else
                 {
-                    pResult->codePointerOrStubLookup.constLookup =
-                        CreateConstLookupToSymbol(_compilation.NodeFactory.FatFunctionPointer(targetMethod));
-                }
-            }
-            else if (directCall)
-            {
-                bool referencingArrayAddressMethod = false;
+                    bool referencingArrayAddressMethod = false;
 
-                if (targetMethod.IsIntrinsic)
-                {
-                    // For multidim array Address method, we pretend the method requires a hidden instantiation argument
-                    // (even though it doesn't need one). We'll actually swap the method out for a differnt one with
-                    // a matching calling convention later. See ArrayMethod for a description.
-                    referencingArrayAddressMethod = targetMethod.IsArrayAddressMethod();
-                }
-
-                MethodDesc concreteMethod = targetMethod;
-                targetMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-
-                pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL;
-
-                if (targetMethod.IsConstructor && targetMethod.OwningType.IsString)
-                {
-                    // Calling a string constructor doesn't call the actual constructor.
-                    pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-                        _compilation.NodeFactory.StringAllocator(targetMethod,
-                            new ModuleToken(_tokenContext, pResolvedToken.token), _signatureContext)
-                        );
-                }
-                else if (pResult->exactContextNeedsRuntimeLookup)
-                {
-                    // Nothing to do... The generic handle lookup gets embedded in to the codegen
-                    // during the jitting of the call.
-                    // (Note: The generic lookup in R2R is performed by a call to a helper at runtime, not by
-                    // codegen emitted at crossgen time)
-
-                    Debug.Assert(!forceUseRuntimeLookup);
-                    pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-                        _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, method,
-                            new ModuleToken(_tokenContext, pResolvedToken.token), _signatureContext)
-                        );
-                }
-                else
-                {
-                    ISymbolNode instParam = null;
-
-                    if (targetMethod.RequiresInstMethodDescArg())
+                    if (targetMethod.IsIntrinsic)
                     {
-                        instParam = _compilation.SymbolNodeFactory.MethodGenericDictionary(concreteMethod,
-                            new ModuleToken(_tokenContext, pResolvedToken.token), _signatureContext);
-                    }
-                    else if (targetMethod.RequiresInstMethodTableArg() || referencingArrayAddressMethod)
-                    {
-                        // Ask for a constructed type symbol because we need the vtable to get to the dictionary
-                        instParam = _compilation.SymbolNodeFactory.ConstructedTypeSymbol(concreteMethod.OwningType, _signatureContext);
+                        // For multidim array Address method, we pretend the method requires a hidden instantiation argument
+                        // (even though it doesn't need one). We'll actually swap the method out for a differnt one with
+                        // a matching calling convention later. See ArrayMethod for a description.
+                        referencingArrayAddressMethod = targetMethod.IsArrayAddressMethod();
                     }
 
-                    if (instParam != null)
+                    MethodDesc concreteMethod = targetMethod;
+                    targetMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+                    pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL;
+
+                    // Compensate for always treating delegates as direct calls above
+                    if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0 && (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0 && !resolvedCallVirt)
                     {
-                        pResult->instParamLookup = CreateConstLookupToSymbol(instParam);
+                        pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
                     }
 
-                    pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-                        _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, method,
-                            new ModuleToken(_tokenContext, pResolvedToken.token), _signatureContext)
-                        );
+                    if (pResult->exactContextNeedsRuntimeLookup)
+                    {
+                        // Nothing to do... The generic handle lookup gets embedded in to the codegen
+                        // during the jitting of the call.
+                        // (Note: The generic lookup in R2R is performed by a call to a helper at runtime, not by
+                        // codegen emitted at crossgen time)
+
+                        Debug.Assert(!forceUseRuntimeLookup);
+                        pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+                            _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, method,
+                                new ModuleToken(_tokenContext, pResolvedToken.token), _signatureContext)
+                            );
+                    }
+                    else
+                    {
+                        ISymbolNode instParam = null;
+
+                        if (targetMethod.RequiresInstMethodDescArg())
+                        {
+                            instParam = _compilation.SymbolNodeFactory.MethodGenericDictionary(concreteMethod,
+                                new ModuleToken(_tokenContext, pResolvedToken.token), _signatureContext);
+                        }
+                        else if (targetMethod.RequiresInstMethodTableArg() || referencingArrayAddressMethod)
+                        {
+                            // Ask for a constructed type symbol because we need the vtable to get to the dictionary
+                            instParam = _compilation.SymbolNodeFactory.ConstructedTypeSymbol(concreteMethod.OwningType, _signatureContext);
+                        }
+
+                        if (instParam != null)
+                        {
+                            pResult->instParamLookup = CreateConstLookupToSymbol(instParam);
+                        }
+
+                        if (pResult->kind == CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN)
+                        {
+                            pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.DynamicHelperCell(
+                                new MethodWithToken(targetMethod, new ModuleToken(_tokenContext, pResolvedToken.token)), _signatureContext));
+                        }
+                        else
+                        {
+                            pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+                            _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, method,
+                                new ModuleToken(_tokenContext, pResolvedToken.token), _signatureContext)
+                            );
+                        }
+                    }
                 }
 
                 pResult->nullInstanceCheck = resolvedCallVirt;
@@ -976,26 +991,14 @@ namespace Internal.JitInterface
             {
                 // GVM Call Support
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
-                pResult->codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
                 pResult->nullInstanceCheck = true;
-
-                if (pResult->exactContextNeedsRuntimeLookup)
-                {
-                    ComputeLookup(ref pResolvedToken,
-                        GetRuntimeDeterminedObjectForToken(ref pResolvedToken),
-                        ReadyToRunHelperId.MethodHandle,
-                        ref pResult->codePointerOrStubLookup);
-                    Debug.Assert(pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup);
-                }
-
-                // RyuJIT will assert if we report CORINFO_CALLCONV_PARAMTYPE for a result of a ldvirtftn
-                // We don't need an instantiation parameter, so let's just not report it. Might be nice to
-                // move that assert to some place later though.
-                targetIsFatFunctionPointer = true;
+                pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+                    _compilation.NodeFactory.DynamicHelperCell(
+                        new MethodWithToken(targetMethod, new ModuleToken(_tokenContext, pResolvedToken.token)), _signatureContext));
             }
             else
+            // In ReadyToRun, we always use the dispatch stub to call virtual methods
             {
-                // In ReadyToRun, we always use the dispatch stub to call virtual methods
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB;
 
                 if (pResult->exactContextNeedsRuntimeLookup)
@@ -1026,7 +1029,7 @@ namespace Internal.JitInterface
             pResult->classFlags = getClassAttribsInternal(targetMethod.OwningType);
 
             pResult->methodFlags = getMethodAttribsInternal(targetMethod);
-            Get_CORINFO_SIG_INFO(targetMethod, &pResult->sig, targetIsFatFunctionPointer);
+            Get_CORINFO_SIG_INFO(targetMethod, &pResult->sig);
 
             if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_VERIFICATION) != 0)
             {
