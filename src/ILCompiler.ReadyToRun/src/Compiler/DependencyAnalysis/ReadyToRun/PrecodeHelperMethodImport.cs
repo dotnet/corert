@@ -15,12 +15,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// </summary>
     public class PrecodeHelperMethodImport : PrecodeHelperImport, IMethodNode
     {
-        private readonly MethodFixupSignature _signature;
+        private readonly MethodDesc _methodDesc;
 
-        public PrecodeHelperMethodImport(ReadyToRunCodegenNodeFactory factory, MethodFixupSignature signature)
+        public PrecodeHelperMethodImport(ReadyToRunCodegenNodeFactory factory, MethodDesc methodDesc, Signature signature)
             : base(factory, signature)
         {
-            _signature = signature;
+            _methodDesc = methodDesc;
         }
 
         protected override string GetName(NodeFactory factory)
@@ -30,6 +30,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int ClassCode => 668765432;
 
-        public MethodDesc Method => _signature.Method;
+        public MethodDesc Method => _methodDesc;
     }
 }

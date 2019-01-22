@@ -206,6 +206,7 @@ namespace ILCompiler.DependencyAnalysis
                 _codegenNodeFactory,
                 _codegenNodeFactory.DispatchImports,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_Obj,
+                methodWithToken.Method,
                 _codegenNodeFactory.MethodSignature(
                     ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry, methodWithToken.Method,
                     constrainedType: null, 
@@ -590,6 +591,7 @@ namespace ILCompiler.DependencyAnalysis
                     _codegenNodeFactory.DispatchImports,
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_MethodCall |
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_FLAG_VSD,
+                    method,
                     _codegenNodeFactory.MethodSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry, method,
                         null, methodToken, signatureContext, isUnboxingStub, isInstantiatingStub: false),
                     callSite);
@@ -612,6 +614,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 genericDictionary = new PrecodeHelperMethodImport(
                     _codegenNodeFactory,
+                    method,
                     _codegenNodeFactory.MethodSignature(
                         ReadyToRunFixupKind.READYTORUN_FIXUP_MethodDictionary,
                         method,
@@ -859,10 +862,11 @@ namespace ILCompiler.DependencyAnalysis
             ISymbolNode node;
             if (!_genericLookupHelpers.TryGetValue(key, out node))
             {
-                node = new DelayLoadHelperImport(
+                node = new DelayLoadHelperMethodImport(
                     _codegenNodeFactory,
                     _codegenNodeFactory.HelperImports,
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
+                    methodArgument.Method,
                     new GenericLookupSignature(runtimeLookupKind,  fixupKind,  typeArgument: null, methodArgument, fieldArgument: null, methodContext, signatureContext));
                 _genericLookupHelpers.Add(key, node);
             }

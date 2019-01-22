@@ -325,7 +325,7 @@ namespace ILCompiler.DependencyAnalysis
                 CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_PCODE,
                 (byte)Target.PointerSize,
                 emitPrecode: false,
-                emitGCRefMap: false);
+                emitGCRefMap: true);
             ImportSectionsTable.AddEmbeddedObject(DispatchImports);
 
             HelperImports = new ImportSectionNode(

@@ -15,7 +15,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// </summary>
     public class DelayLoadHelperMethodImport : DelayLoadHelperImport, IMethodNode
     {
-        private readonly MethodFixupSignature _signature;
+        private readonly MethodDesc _methodDesc;
 
         private readonly ReadyToRunHelper _helper;
 
@@ -25,12 +25,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadyToRunCodegenNodeFactory factory, 
             ImportSectionNode importSectionNode, 
             ReadyToRunHelper helper, 
-            MethodFixupSignature methodSignature, 
+            MethodDesc methodDesc,
+            Signature instanceSignature, 
             string callSite = null)
-            : base(factory, importSectionNode, helper, methodSignature, callSite)
+            : base(factory, importSectionNode, helper, instanceSignature, callSite)
         {
             _helper = helper;
-            _signature = methodSignature;
+            _methodDesc = methodDesc;
             _delayLoadHelper = new ImportThunk(helper, factory, this);
         }
 
@@ -49,6 +50,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int ClassCode => 192837465;
 
-        public MethodDesc Method => _signature.Method;
+        public MethodDesc Method => _methodDesc;
     }
 }

@@ -96,9 +96,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     nextMethodIndex += GCREFMAP_LOOKUP_STRIDE;
                 }
                 IMethodNode methodNode = _methods[methodIndex];
-                if (methodNode is LocalMethodImport localMethodImport && localMethodImport.MethodCodeNode.IsEmpty)
+                if (methodNode == null)
                 {
-                    // Emit an empty entry into the GC ref map for the uncompilable method
+                    // Flush an empty GC ref map block to prevent
+                    // the indexed records to fall out of sync with methods
                     builder.Flush();
                 }
                 else
