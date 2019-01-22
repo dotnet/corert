@@ -524,7 +524,7 @@ namespace System.Threading
         /// <c>true</c> if this thread did as much work as was available or its quantum expired.
         /// <c>false</c> if this thread stopped working early.
         /// </returns>
-        internal static bool Dispatch()
+        internal static bool Dispatch(bool failFastOnExceptions = true)
         {
             ThreadPoolWorkQueue outerWorkQueue = ThreadPoolGlobals.workQueue;
 
@@ -641,7 +641,7 @@ namespace System.Threading
                         Unsafe.As<IThreadPoolWorkItem>(workItem).Execute();
                     }
 
-                    Thread.CurrentThread.ResetThreadPoolThread();
+                    currentThread.ResetThreadPoolThread();
 
                     // Release refs
                     outerWorkItem = workItem = null;
@@ -680,7 +680,7 @@ namespace System.Threading
                 needAnotherThread = false;
             }
 #endif
-            catch (Exception e)
+            catch (Exception e) when (failFastOnExceptions)
             {
                 // Work items should not allow exceptions to escape.  For example, Task catches and stores any exceptions.
                 Environment.FailFast("Unhandled exception in ThreadPool dispatch loop", e);
@@ -688,6 +688,9 @@ namespace System.Threading
             }
             finally
             {
+                int numWorkers = Interlocked.Decrement(ref outerWorkQueue.numWorkingThreads);
+                Debug.Assert(numWorkers >= 0);
+
                 //
                 // If we are exiting for any reason other than that the queue is definitely empty, ask for another
                 // thread to pick up where we left off.
@@ -951,9 +954,8 @@ namespace System.Threading
         }
 
         // call back helper
-        internal static void PerformWaitOrTimerCallback(object state, bool timedOut)
+        internal static void PerformWaitOrTimerCallback(_ThreadPoolWaitOrTimerCallback helper, bool timedOut)
         {
-            _ThreadPoolWaitOrTimerCallback helper = (_ThreadPoolWaitOrTimerCallback)state;
             Debug.Assert(helper != null, "Null state passed to PerformWaitOrTimerCallback!");
             // call directly if it is an unsafe call OR EC flow is suppressed
             ExecutionContext context = helper._executionContext;
