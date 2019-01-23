@@ -6,7 +6,7 @@ namespace System.Reflection.Emit
 {
     public class DynamicILInfo
     {
-        internal DynamicILInfo(DynamicMethod method, byte[] methodSignature)
+        internal DynamicILInfo()
         {
             ReflectionEmitThrower.ThrowPlatformNotSupportedException();
         }
