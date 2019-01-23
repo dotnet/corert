@@ -61,6 +61,7 @@ if /i "%1" == "/determinism" (set CoreRT_DeterminismMode=true&shift&goto ArgLoop
 if /i "%1" == "/nocleanup" (set CoreRT_NoCleanup=true&shift&goto ArgLoop)
 if /i "%1" == "/r2rframework" (set CoreRT_R2RFramework=true&shift&goto ArgLoop)
 if /i "%1" == "/user2rframework" (set CoreRT_UseR2RFramework=true&shift&goto ArgLoop)
+if /i "%1" == "/gcstresslevel" (set __GCSTRESSLEVEL=%2&set __TestTimeout=3600000&shift&shift&goto ArgLoop) 
 echo Invalid command line argument: %1
 goto :Usage
 
@@ -80,6 +81,7 @@ echo     /determinism  : Compile the test twice with randomized dependency node 
 echo                      compiler determinism in multi-threaded compilation.
 echo     /nocleanup    : Do not delete compiled test artifacts after running each test
 echo     /r2rframework : Create ready-to-run images for the CoreCLR framework assemblies
+echo     /gcstresslevel: GC stress level to use for testing
 echo.
 echo     --- CoreCLR Subset ---
 echo        Top200     : Runs broad coverage / CI validation (~200 tests).
@@ -556,8 +558,9 @@ goto :eof
         )
         call %CoreRT_TestRoot%\CoreCLR\build-and-run-test.cmd !TestFolderName! !TestFileName!
     ) else (
-        echo runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% %CoreCLRExcludeText% %CoreRT_CoreCLRTargetsFile% LogsDir %__LogDir%
-        call runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% %CoreCLRExcludeText% %CoreRT_CoreCLRTargetsFile% LogsDir %__LogDir%
+        set __RunTestCommand=runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% %CoreCLRExcludeText% %CoreRT_CoreCLRTargetsFile% LogsDir %__LogDir%
+        echo !__RunTestCommand!
+        call !__RunTestCommand!
     )
     
     set __SavedErrorLevel=%ErrorLevel%
