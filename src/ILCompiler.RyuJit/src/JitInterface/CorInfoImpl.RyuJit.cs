@@ -12,6 +12,10 @@ using Internal.TypeSystem;
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
 
+#if SUPPORT_JIT
+using MethodCodeNode = Internal.Runtime.JitSupport.JitMethodCodeNode;
+#endif
+
 namespace Internal.JitInterface
 {
     unsafe partial class CorInfoImpl
@@ -27,7 +31,7 @@ namespace Internal.JitInterface
         private uint OffsetOfDelegateFirstTarget => (uint)(4 * PointerSize); // Delegate::m_functionPointer
 
         private Compilation _compilation;
-        private IMethodCodeNode _methodCodeNode;
+        private MethodCodeNode _methodCodeNode;
         private DebugLocInfo[] _debugLocInfos;
         private DebugVarInfo[] _debugVarInfos;
         private Dictionary<int, SequencePoint> _sequencePoints;
@@ -41,7 +45,7 @@ namespace Internal.JitInterface
             _compilation = compilation;
         }
 
-        public void CompileMethod(IMethodCodeNode methodCodeNodeNeedingCode, MethodIL methodIL = null)
+        public void CompileMethod(MethodCodeNode methodCodeNodeNeedingCode, MethodIL methodIL = null)
         {
             _methodCodeNode = methodCodeNodeNeedingCode;
 
