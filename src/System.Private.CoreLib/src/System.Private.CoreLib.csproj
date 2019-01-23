@@ -169,6 +169,7 @@
     <Compile Include="System\Reflection\Emit\AssemblyBuilder.cs" />
     <Compile Include="System\Reflection\Emit\ConstructorBuilder.cs" />
     <Compile Include="System\Reflection\Emit\CustomAttributeBuilder.cs" />
+    <Compile Include="System\Reflection\Emit\DynamicILInfo.cs" />
     <Compile Include="System\Reflection\Emit\DynamicMethod.cs" />
     <Compile Include="System\Reflection\Emit\EnumBuilder.cs" />
     <Compile Include="System\Reflection\Emit\EventBuilder.cs" />
