@@ -34159,8 +34159,6 @@ BOOL GCHeap::IsInFrozenSegment (Object * object)
 // returns TRUE if the pointer is in one of the GC heaps.
 bool GCHeap::IsHeapPointer (void* vpObject, bool small_heap_only)
 {
-    STATIC_CONTRACT_SO_TOLERANT;
-
     // removed STATIC_CONTRACT_CAN_TAKE_LOCK here because find_segment 
     // no longer calls GCEvent::Wait which eventually takes a lock.
 
