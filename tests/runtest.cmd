@@ -14,6 +14,7 @@ set CoreRT_RunCoreFXTests=
 set CoreRT_CoreCLRTargetsFile=
 set CoreRT_TestLogFileName=testResults.xml
 set CoreRT_TestName=*
+set CoreRT_GCStressLevel=
 
 :ArgLoop
 if "%1" == "" goto :ArgsDone
@@ -61,7 +62,7 @@ if /i "%1" == "/determinism" (set CoreRT_DeterminismMode=true&shift&goto ArgLoop
 if /i "%1" == "/nocleanup" (set CoreRT_NoCleanup=true&shift&goto ArgLoop)
 if /i "%1" == "/r2rframework" (set CoreRT_R2RFramework=true&shift&goto ArgLoop)
 if /i "%1" == "/user2rframework" (set CoreRT_UseR2RFramework=true&shift&goto ArgLoop)
-if /i "%1" == "/gcstresslevel" (set __GCSTRESSLEVEL=%2&set __TestTimeout=3600000&shift&shift&goto ArgLoop) 
+if /i "%1" == "/gcstresslevel" (set CoreRT_GCStressLevel=%2&shift&shift&goto ArgLoop)
 echo Invalid command line argument: %1
 goto :Usage
 
@@ -561,6 +562,7 @@ goto :eof
         call %CoreRT_TestRoot%\CoreCLR\build-and-run-test.cmd !TestFolderName! !TestFileName!
     ) else (
         set __RunTestCommand=runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% %CoreCLRExcludeText% %CoreRT_CoreCLRTargetsFile% LogsDir %__LogDir%
+        if not "%CoreRT_GCStressLevel%" == "" ( set __RunTestCommand=!__RunTestCommand! gcstresslevel !CoreRT_GCStressLevel! )
         echo !__RunTestCommand!
         call !__RunTestCommand!
     )
