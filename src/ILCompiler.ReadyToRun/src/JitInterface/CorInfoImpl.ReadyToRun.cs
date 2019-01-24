@@ -111,7 +111,7 @@ namespace Internal.JitInterface
                     return;
                 }
 
-                // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary availabled to store the lookup. 
+                // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary available to store the lookup. 
                 // All callers of ComputeRuntimeLookupForSharedGenericToken have to filter out this case. We can't do much about it here.
                 Debug.Assert(contextMethod.IsSharedByGenericInstantiations);
 
