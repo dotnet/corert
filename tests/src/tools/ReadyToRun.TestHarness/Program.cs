@@ -24,7 +24,10 @@ namespace ReadyToRun.TestHarness
     class Program
     {
         // Default timeout in milliseconds
-        private const int DefaultTestTimeOut = 2 * 60 * 1000;
+        private const int NormalTestTimeout = 2 * 60 * 1000;
+
+        // Timeout under GC stress in milliseconds
+        private const int GCStressTestTimeout = 30 * 60 * 1000;
 
         // Error code returned when events get lost. Use this to re-run the test a few times.
         private const int StatusTestErrorEventsLost = -101;
@@ -266,7 +269,9 @@ namespace ReadyToRun.TestHarness
                         Console.WriteLine(args.Data);
                     };
 
-                    if (process.WaitForExit(DefaultTestTimeOut))
+                    int timeoutToUse = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("__GCSTRESSLEVEL")) ? NormalTestTimeout : GCStressTestTimeout;
+
+                    if (process.WaitForExit(timeoutToUse))
                     {
                         exitCode = process.ExitCode;
                     }
@@ -281,7 +286,7 @@ namespace ReadyToRun.TestHarness
                         {
                         }
 
-                        Console.WriteLine("Test execution timed out.");
+                        Console.WriteLine("Test execution timed out after {0} seconds.", timeoutToUse / 1000);
                         exitCode = StatusTestErrorTimeOut;
                     }
 
