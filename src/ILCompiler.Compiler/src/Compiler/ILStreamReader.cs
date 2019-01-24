@@ -3,12 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Text;
 
 using Internal.TypeSystem;
 using Internal.IL;
-
-using Debug = System.Diagnostics.Debug;
 
 namespace Internal.Compiler
 {
@@ -21,145 +18,33 @@ namespace Internal.Compiler
     /// </summary>
     public struct ILStreamReader
     {
-        private byte[] _ilBytes;
-        private MethodIL _methodIL;
-        private int _currentOffset;
+        private ILReader _reader;
+        private readonly MethodIL _methodIL;
 
         public ILStreamReader(MethodIL methodIL)
         {
             _methodIL = methodIL;
-            _ilBytes = methodIL.GetILBytes();
-            _currentOffset = 0;
-        }
-
-        //
-        // IL stream reading
-        //
-
-        private byte ReadILByte()
-        {
-            return _ilBytes[_currentOffset++];
-        }
-
-        private ILOpcode ReadILOpcode()
-        {
-            return (ILOpcode)ReadILByte();
-        }
-        
-        private byte PeekILByte()
-        {
-            return _ilBytes[_currentOffset];
-        }
-
-        private ILOpcode PeekILOpcode()
-        {
-            return (ILOpcode)PeekILByte();
-        }
-
-        private bool TryReadILByte(out byte ilbyte)
-        {
-            if (_currentOffset >= _ilBytes.Length)
-                throw new BadImageFormatException();
-
-            ilbyte = ReadILByte();
-            return true;
-        }
-
-        private UInt16 ReadILUInt16()
-        {
-            UInt16 val = (UInt16)(_ilBytes[_currentOffset] + (_ilBytes[_currentOffset + 1] << 8));
-            _currentOffset += 2;
-            return val;
-        }
-
-        private bool TryReadILUInt16(out UInt16 ilUint16)
-        {
-            if (checked(_currentOffset + 1) >= _ilBytes.Length)
-                throw new BadImageFormatException();
-
-            ilUint16 = ReadILUInt16();
-            return true;
-        }
-
-        private UInt32 ReadILUInt32()
-        {
-            UInt32 val = (UInt32)(_ilBytes[_currentOffset] + (_ilBytes[_currentOffset + 1] << 8) + (_ilBytes[_currentOffset + 2] << 16) + (_ilBytes[_currentOffset + 3] << 24));
-            _currentOffset += 4;
-            return val;
-        }
-
-        private bool TryReadILUInt32(out UInt32 ilUint32)
-        {
-            if (checked(_currentOffset + 3) >= _ilBytes.Length)
-                throw new BadImageFormatException();
-
-            ilUint32 = ReadILUInt32();
-            return true;
-        }
-
-        private int ReadILToken()
-        {
-            return (int)ReadILUInt32();
-        }
-
-        private bool TryReadILToken(out int ilToken)
-        {
-            uint ilTokenUint;
-            bool result = TryReadILUInt32(out ilTokenUint);
-            ilToken = (int)ilTokenUint;
-            return result;
-        }
-
-        private ulong ReadILUInt64()
-        {
-            ulong value = ReadILUInt32();
-            value |= (((ulong)ReadILUInt32()) << 32);
-            return value;
-        }
-
-        private unsafe float ReadILFloat()
-        {
-            uint value = ReadILUInt32();
-            return *(float*)(&value);
-        }
-
-        private unsafe double ReadILDouble()
-        {
-            ulong value = ReadILUInt64();
-            return *(double*)(&value);
-        }
-
-        private void SkipIL(int bytes)
-        {
-            _currentOffset += bytes;
+            _reader = new ILReader(methodIL.GetILBytes());
         }
 
         public bool HasNextInstruction
         {
             get
             {
-                return _currentOffset < _ilBytes.Length;
-            }
-        }
-
-        public int CodeSize
-        {
-            get
-            {
-                return _ilBytes.Length;
+                return _reader.HasNext;
             }
         }
 
         public bool TryReadLdtoken(out int token)
         {
-            if (PeekILOpcode() != ILOpcode.ldtoken)
+            if (_reader.PeekILOpcode() != ILOpcode.ldtoken)
             {
                 token = 0;
                 return false;
             }
 
-            ReadILOpcode();
-            token = ReadILToken();
+            _reader.ReadILOpcode();
+            token = _reader.ReadILToken();
             return true;
         }
 
@@ -201,27 +86,27 @@ namespace Internal.Compiler
 
         public bool TryReadLdcI4(out int value)
         {
-            ILOpcode opcode = PeekILOpcode();
+            ILOpcode opcode = _reader.PeekILOpcode();
 
             if (opcode == ILOpcode.ldc_i4) // ldc.i4
             {
-                ReadILOpcode();
-                value = unchecked((int)ReadILUInt32());
+                _reader.ReadILOpcode();
+                value = unchecked((int)_reader.ReadILUInt32());
                 return true;
             }
 
             if ((opcode >= ILOpcode.ldc_i4_m1) && (opcode <= ILOpcode.ldc_i4_8)) // ldc.m1 to ldc.i4.8
             {
-                ReadILOpcode();
+                _reader.ReadILOpcode();
                 value = -1 + ((int)opcode) - 0x15;
                 return true;
             }
 
             if (opcode == ILOpcode.ldc_i4_s) // ldc.i4.s
             {
-                ReadILOpcode();
+                _reader.ReadILOpcode();
 
-                value = (int)unchecked((sbyte)ReadILByte());
+                value = (int)unchecked((sbyte)_reader.ReadILByte());
                 return true;
             }
             value = 0;
@@ -239,10 +124,10 @@ namespace Internal.Compiler
 
         public bool TryReadRet()
         {
-            ILOpcode opcode = PeekILOpcode();
+            ILOpcode opcode = _reader.PeekILOpcode();
             if (opcode == ILOpcode.ret)
             {
-                ReadILOpcode();
+                _reader.ReadILOpcode();
                 return true;
             }
             return false;
@@ -256,10 +141,10 @@ namespace Internal.Compiler
 
         public bool TryReadPop()
         {
-            ILOpcode opcode = PeekILOpcode();
+            ILOpcode opcode = _reader.PeekILOpcode();
             if (opcode == ILOpcode.pop)
             {
-                ReadILOpcode();
+                _reader.ReadILOpcode();
                 return true;
             }
             return false;
@@ -273,14 +158,14 @@ namespace Internal.Compiler
 
         public bool TryReadLdstr(out string ldstrString)
         {
-            if (PeekILOpcode() != ILOpcode.ldstr)
+            if (_reader.PeekILOpcode() != ILOpcode.ldstr)
             {
                 ldstrString = null;
                 return false;
             }
 
-            ReadILOpcode();
-            int token = ReadILToken();
+            _reader.ReadILOpcode();
+            int token = _reader.ReadILToken();
             ldstrString = (string)_methodIL.GetObject(token);
             return true;
         }

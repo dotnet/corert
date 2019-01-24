@@ -13,14 +13,10 @@
 ** 
 ===========================================================*/
 
-using System;
 using System.IO;
-using Microsoft.Win32;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
-using System.Runtime.Versioning;
 using System.Diagnostics;
 
 /* 
@@ -74,7 +70,7 @@ using System.Diagnostics;
 
 namespace System.Runtime
 {
-    public sealed class MemoryFailPoint : CriticalFinalizerObject, IDisposable
+    public sealed partial class MemoryFailPoint : CriticalFinalizerObject, IDisposable
     {
         // Find the top section of user mode memory.  Avoid the last 64K.
         // Windows reserves that block for the kernel, apparently, and doesn't
@@ -82,7 +78,7 @@ namespace System.Runtime
         // chunks, we don't have to special case this.  Also, we need to
         // deal with 32 bit machines in 3 GB mode.
         // Using Win32's GetSystemInfo should handle all this for us.
-        private static readonly ulong s_topOfMemory;
+        private static readonly ulong s_topOfMemory = GetTopOfMemory();
 
         // Walking the address space is somewhat expensive, taking around half
         // a millisecond.  Doing that per transaction limits us to a max of 
@@ -130,24 +126,17 @@ namespace System.Runtime
         // Note: This may become dynamically tunable in the future.
         // Also note that we can have different segment sizes for the normal vs. 
         // large object heap.  We currently use the max of the two.
-        private static readonly ulong s_GCSegmentSize = RuntimeImports.RhGetGCSegmentSize();
+        private static readonly ulong s_GCSegmentSize = GC.GetSegmentSize();
 
         // For multi-threaded workers, we want to ensure that if two workers
         // use a MemoryFailPoint at the same time, and they both succeed, that
         // they don't trample over each other's memory.  Keep a process-wide
         // count of "reserved" memory, and decrement this in Dispose and
-        // in the critical finalizer.  See 
-        // SharedStatics.MemoryFailPointReservedMemory
+        // in the critical finalizer.
+        private static long s_failPointReservedMemory;
 
         private ulong _reservedMemory;  // The size of this request (from user)
         private bool _mustSubtractReservation; // Did we add data to SharedStatics?
-
-        static MemoryFailPoint()
-        {
-            Interop.Kernel32.SYSTEM_INFO info = new Interop.Kernel32.SYSTEM_INFO();
-            Interop.Kernel32.GetSystemInfo(ref info);
-            s_topOfMemory = (ulong)info.lpMaximumApplicationAddress;
-        }
 
         // We can remove this link demand in a future version - we will
         // have scenarios for this in partial trust in the future, but
@@ -192,7 +181,11 @@ namespace System.Runtime
             // would probably work, but do some thinking first.)
             for (int stage = 0; stage < 3; stage++)
             {
-                CheckForAvailableMemory(out availPageFile, out totalAddressSpaceFree);
+                if (!CheckForAvailableMemory(out availPageFile, out totalAddressSpaceFree))
+                {
+                    // _mustSubtractReservation == false
+                    return;
+                }
 
                 // If we have enough room, then skip some stages.
                 // Note that multiple threads can still lead to a race condition for our free chunk
@@ -245,22 +238,13 @@ namespace System.Runtime
                         if (!needPageFile)
                             continue;
 
+                        // Attempt to grow the OS's page file.  Note that we ignore
+                        // any allocation routines from the host intentionally.
+                        RuntimeHelpers.PrepareConstrainedRegions();
+
                         // This shouldn't overflow due to the if clauses above.
                         UIntPtr numBytes = new UIntPtr(segmentSize);
-                        unsafe
-                        {
-#if ENABLE_WINRT
-                            void* pMemory = Interop.mincore.VirtualAllocFromApp(null, numBytes, Interop.Kernel32.MEM_COMMIT, Interop.Kernel32.PAGE_READWRITE);
-#else
-                            void* pMemory = Interop.Kernel32.VirtualAlloc(null, numBytes, Interop.Kernel32.MEM_COMMIT, Interop.Kernel32.PAGE_READWRITE);
-#endif
-                            if (pMemory != null)
-                            {
-                                bool r = Interop.Kernel32.VirtualFree(pMemory, UIntPtr.Zero, Interop.Kernel32.MEM_RELEASE);
-                                if (!r)
-                                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
-                            }
-                        }
+                        GrowPageFileIfNecessaryAndPossible(numBytes);
                         continue;
 
                     case 2:
@@ -305,82 +289,11 @@ namespace System.Runtime
             if (LastKnownFreeAddressSpace < 0)
                 CheckForFreeAddressSpace(segmentSize, true);
 
+            RuntimeHelpers.PrepareConstrainedRegions();
+
             AddMemoryFailPointReservation((long)size);
             _mustSubtractReservation = true;
         }
-
-        private static void CheckForAvailableMemory(out ulong availPageFile, out ulong totalAddressSpaceFree)
-        {
-            bool r;
-            Interop.Kernel32.MEMORYSTATUSEX memory = new Interop.Kernel32.MEMORYSTATUSEX();
-            r = Interop.Kernel32.GlobalMemoryStatusEx(ref memory);
-            if (!r)
-                throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
-            availPageFile = memory.availPageFile;
-            totalAddressSpaceFree = memory.availVirtual;
-            // Console.WriteLine($"Memory gate:  Mem load: {memory.memoryLoad}%  Available memory (physical + page file): {(memory.availPageFile >> 20)} MB  Total free address space: {memory.availVirtual >> 20} MB  GC Heap: {(GC.GetTotalMemory(true) >> 20)} MB");
-        }
-
-        // Based on the shouldThrow parameter, this will throw an exception, or 
-        // returns whether there is enough space.  In all cases, we update
-        // our last known free address space, hopefully avoiding needing to 
-        // probe again.
-        private static unsafe bool CheckForFreeAddressSpace(ulong size, bool shouldThrow)
-        {
-            // Start walking the address space at 0.  VirtualAlloc may wrap
-            // around the address space.  We don't need to find the exact
-            // pages that VirtualAlloc would return - we just need to
-            // know whether VirtualAlloc could succeed.
-            ulong freeSpaceAfterGCHeap = MemFreeAfterAddress(null, size);
-
-            // Console.WriteLine($"MemoryFailPoint: Checked for free VA space.  Found enough? {(freeSpaceAfterGCHeap >= size)}  Asked for: {size}  Found: {freeSpaceAfterGCHeap}");
-
-            // We may set these without taking a lock - I don't believe
-            // this will hurt, as long as we never increment this number in 
-            // the Dispose method.  If we do an extra bit of checking every
-            // once in a while, but we avoid taking a lock, we may win.
-            LastKnownFreeAddressSpace = (long)freeSpaceAfterGCHeap;
-            LastTimeCheckingAddressSpace = Environment.TickCount;
-
-            if (freeSpaceAfterGCHeap < size && shouldThrow)
-                throw new InsufficientMemoryException(SR.InsufficientMemory_MemFailPoint_VAFrag);
-            return freeSpaceAfterGCHeap >= size;
-        }
-
-        // Returns the amount of consecutive free memory available in a block
-        // of pages.  If we didn't have enough address space, we still return 
-        // a positive value < size, to help potentially avoid the overhead of 
-        // this check if we use a MemoryFailPoint with a smaller size next.
-        private static unsafe ulong MemFreeAfterAddress(void* address, ulong size)
-        {
-            if (size >= s_topOfMemory)
-                return 0;
-
-            ulong largestFreeRegion = 0;
-            Interop.Kernel32.MEMORY_BASIC_INFORMATION memInfo = new Interop.Kernel32.MEMORY_BASIC_INFORMATION();
-            UIntPtr sizeOfMemInfo = (UIntPtr)sizeof(Interop.Kernel32.MEMORY_BASIC_INFORMATION);
-
-            while (((ulong)address) + size < s_topOfMemory)
-            {
-                UIntPtr r = Interop.Kernel32.VirtualQuery(address, ref memInfo, sizeOfMemInfo);
-                if (r == UIntPtr.Zero)
-                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
-
-                ulong regionSize = memInfo.RegionSize.ToUInt64();
-                if (memInfo.State == Interop.Kernel32.MEM_FREE)
-                {
-                    if (regionSize >= size)
-                        return regionSize;
-                    else
-                        largestFreeRegion = Math.Max(largestFreeRegion, regionSize);
-                }
-                address = (void*)((ulong)address + regionSize);
-            }
-            return largestFreeRegion;
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void GetMemorySettings(out ulong maxGCSegmentSize, out ulong topOfMemory);
 
         ~MemoryFailPoint()
         {
@@ -407,6 +320,8 @@ namespace System.Runtime
             // within the GC heap.
             if (_mustSubtractReservation)
             {
+                RuntimeHelpers.PrepareConstrainedRegions();
+
                 AddMemoryFailPointReservation(-((long)_reservedMemory));
                 _mustSubtractReservation = false;
             }
@@ -425,27 +340,23 @@ namespace System.Runtime
             */
         }
 
-        // This is the total amount of memory currently "reserved" via
-        // all MemoryFailPoints allocated within the process.
-        // Stored as a long because we need to use Interlocked.Add.
-        private static long s_memFailPointReservedMemory;
-
         internal static long AddMemoryFailPointReservation(long size)
         {
             // Size can legitimately be negative - see Dispose.
-            return Interlocked.Add(ref s_memFailPointReservedMemory, (long)size);
+            return Interlocked.Add(ref s_failPointReservedMemory, (long)size);
         }
 
         internal static ulong MemoryFailPointReservedMemory
         {
             get
             {
-                Debug.Assert(Volatile.Read(ref s_memFailPointReservedMemory) >= 0, "Process-wide MemoryFailPoint reserved memory was negative!");
-                return (ulong)Volatile.Read(ref s_memFailPointReservedMemory);
+                Debug.Assert(Volatile.Read(ref s_failPointReservedMemory) >= 0, "Process-wide MemoryFailPoint reserved memory was negative!");
+                return (ulong)Volatile.Read(ref s_failPointReservedMemory);
             }
         }
 
 #if DEBUG
+        [Serializable]
         internal sealed class MemoryFailPointState
         {
             private ulong _segmentSize;
