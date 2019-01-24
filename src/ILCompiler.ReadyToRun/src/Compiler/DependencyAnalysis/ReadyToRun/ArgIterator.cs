@@ -70,7 +70,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         SystemVClassificationTypeMAX                = 9,
     }
 
-    internal unsafe struct TypeHandle
+    internal struct TypeHandle
     {
         public TypeHandle(TypeDesc type)
         {
@@ -96,12 +96,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public bool IsValueType() { if (_isByRef) return false; return _type.IsValueType; }
         public bool IsPointerType() { if (_isByRef) return false; return _type.IsPointer; }
 
-        public unsafe uint GetSize()
+        public int PointerSize => _type.Context.Target.PointerSize;
+
+        public int GetSize()
         {
             if (IsValueType())
-                return (uint)_type.GetElementSize().AsInt;
+                return _type.GetElementSize().AsInt;
             else
-                return (uint)IntPtr.Size;
+                return PointerSize;
         }
 
         public bool RequiresAlign8()
@@ -143,7 +145,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     break;
 
                 case TargetArchitecture.ARM64:
-                    if (_type is DefType defType && defType.InstanceFieldAlignment.Equals(new LayoutInt(IntPtr.Size)))
+                    if (_type is DefType defType && defType.InstanceFieldAlignment.Equals(new LayoutInt(_type.Context.Target.PointerSize)))
                     {
                         return CorElementType.ELEMENT_TYPE_R8;
                     }
@@ -221,7 +223,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             -2,//ELEMENT_TYPE_SZARRAY      0x1d
         };
 
-        unsafe public static int GetElemSize(CorElementType t, TypeHandle thValueType)
+        public static int GetElemSize(CorElementType t, TypeHandle thValueType)
         {
             if (((int)t) <= 0x1d)
             {
@@ -232,7 +234,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
                 if (elemSize == -2)
                 {
-                    return IntPtr.Size;
+                    return thValueType.PointerSize;
                 }
                 return elemSize;
             }
@@ -523,7 +525,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     // time because of it has the parsed signature available.
     //-----------------------------------------------------------------------
     //template<class ARGITERATOR_BASE>
-    internal unsafe struct ArgIterator
+    internal struct ArgIterator
     {
         private readonly TypeSystemContext _context;
 
@@ -538,10 +540,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private bool _extraObjectFirstArg;
         private CallingConventions _interpreterCallingConvention;
 
-        public bool HasThis() { return _hasThis; }
-        public bool IsVarArg() { return _argData.IsVarArg(); }
-        public bool HasParamType() { return _hasParamType; }
-        public int NumFixedArgs() { return _argData.NumFixedArgs() + (_extraFunctionPointerArg ? 1 : 0) + (_extraObjectFirstArg ? 1 : 0); }
+        public bool HasThis => _hasThis;
+        public bool IsVarArg => _argData.IsVarArg();
+        public bool HasParamType => _hasParamType;
+        public int NumFixedArgs => _argData.NumFixedArgs() + (_extraFunctionPointerArg ? 1 : 0) + (_extraObjectFirstArg ? 1 : 0);
 
         // Argument iteration.
         public CorElementType GetArgumentType(int argNum, out TypeHandle thArgType, out bool forceByRefReturn)
@@ -616,18 +618,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _transitionBlock = TransitionBlock.FromTarget(context.Target);
         }
 
-        public void SetHasParamTypeAndReset(bool value)
-        {
-            _hasParamType = value;
-            Reset();
-        }
-
-        public void SetHasThisAndReset(bool value)
-        {
-            _hasThis = value;
-            Reset();
-        }
-
         private uint SizeOfArgStack()
         {
             //        WRAPPER_NO_CONTRACT;
@@ -664,7 +654,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 //        WRAPPER_NO_CONTRACT;
 
-                if (this.IsVarArg())
+                if (IsVarArg)
                     return 0;
                 else
                     return SizeOfArgStack();
@@ -693,121 +683,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return _fpReturnSize;
         }
 
-        //=========================================================================
-        // X86: Indicates whether an argument is to be put in a register using the
-        // default IL calling convention. This should be called on each parameter
-        // in the order it appears in the call signature. For a non-static meethod,
-        // this function should also be called once for the "this" argument, prior
-        // to calling it for the "real" arguments. Pass in a typ of ELEMENT_TYPE_CLASS.
-        //
-        //  *pNumRegistersUsed:  [in,out]: keeps track of the number of argument
-        //                       registers assigned previously. The caller should
-        //                       initialize this variable to 0 - then each call
-        //                       will update it.
-        //
-        //  typ:                 the signature type
-        //=========================================================================
-        private static bool IsArgumentInRegister(TransitionBlock transitionBlock, ref int pNumRegistersUsed, CorElementType typ, TypeHandle thArgType)
-        {
-            Debug.Assert(transitionBlock.IsX86);
-
-            //        LIMITED_METHOD_CONTRACT;
-            if ((pNumRegistersUsed) < transitionBlock.NumArgumentRegisters)
-            {
-                switch (typ)
-                {
-                    case CorElementType.ELEMENT_TYPE_BOOLEAN:
-                    case CorElementType.ELEMENT_TYPE_CHAR:
-                    case CorElementType.ELEMENT_TYPE_I1:
-                    case CorElementType.ELEMENT_TYPE_U1:
-                    case CorElementType.ELEMENT_TYPE_I2:
-                    case CorElementType.ELEMENT_TYPE_U2:
-                    case CorElementType.ELEMENT_TYPE_I4:
-                    case CorElementType.ELEMENT_TYPE_U4:
-                    case CorElementType.ELEMENT_TYPE_STRING:
-                    case CorElementType.ELEMENT_TYPE_PTR:
-                    case CorElementType.ELEMENT_TYPE_BYREF:
-                    case CorElementType.ELEMENT_TYPE_CLASS:
-                    case CorElementType.ELEMENT_TYPE_ARRAY:
-                    case CorElementType.ELEMENT_TYPE_I:
-                    case CorElementType.ELEMENT_TYPE_U:
-                    case CorElementType.ELEMENT_TYPE_FNPTR:
-                    case CorElementType.ELEMENT_TYPE_OBJECT:
-                    case CorElementType.ELEMENT_TYPE_SZARRAY:
-                        pNumRegistersUsed++;
-                        return true;
-
-                    case CorElementType.ELEMENT_TYPE_VALUETYPE:
-                        {
-                            // On ProjectN valuetypes of integral size are passed enregistered
-                            int structSize = TypeHandle.GetElemSize(typ, thArgType);
-                            switch (structSize)
-                            {
-                                case 1:
-                                case 2:
-                                case 4:
-                                    pNumRegistersUsed++;
-                                    return true;
-                            }
-                            break;
-                        }
-                }
-            }
-
-            return (false);
-        }
-
-        // Note that this overload does not handle varargs
-        public static bool IsArgPassedByRef(TransitionBlock transitionBlock, TypeHandle th)
-        {
-            //        LIMITED_METHOD_CONTRACT;
-
-            Debug.Assert(!th.IsNull());
-            Debug.Assert(transitionBlock.EnregisteredParamTypeMaxSize != 0);
-
-            // This method only works for valuetypes. It includes true value types, 
-            // primitives, enums and TypedReference.
-            Debug.Assert(th.IsValueType());
-
-            uint size = th.GetSize();
-            switch (transitionBlock.Architecture)
-            {
-                case TargetArchitecture.X64:
-                    return IsArgPassedByRef(transitionBlock, (int)size);
-                case TargetArchitecture.ARM64:
-                    // Composites greater than 16 bytes are passed by reference
-                    return ((size > transitionBlock.EnregisteredParamTypeMaxSize) && !th.IsHFA());
-                default:
-                    throw new NotImplementedException(transitionBlock.Architecture.ToString());
-            }
-        }
-
-        // This overload should only be used in AMD64-specific code only.
-        private static bool IsArgPassedByRef(TransitionBlock transitionBlock, int size)
-        {
-            Debug.Assert(transitionBlock.Architecture == TargetArchitecture.X64);
-            //        LIMITED_METHOD_CONTRACT;
-
-            // If the size is bigger than ENREGISTERED_PARAM_TYPE_MAXSIZE, or if the size is NOT a power of 2, then
-            // the argument is passed by reference.
-            return (size > transitionBlock.EnregisteredParamTypeMaxSize) || ((size & (size - 1)) != 0);
-        }
-
-        // This overload should be used for varargs only.
-        private bool IsVarArgPassedByRef(int size)
-        {
-            //        LIMITED_METHOD_CONTRACT;
-
-            if (_transitionBlock.IsX64)
-            {
-                return IsArgPassedByRef(_transitionBlock, size);
-            }
-            else
-            {
-                return (size > _transitionBlock.EnregisteredParamTypeMaxSize);
-            }
-        }
-
         public bool IsArgPassedByRef()
         {
             //        LIMITED_METHOD_CONTRACT;
@@ -826,12 +701,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
 
                     case TargetArchitecture.X64:
-                        return IsArgPassedByRef(_transitionBlock, _argSize);
+                        return _transitionBlock.IsArgPassedByRef(_argSize);
                     case TargetArchitecture.ARM64:
                         if (_argType == CorElementType.ELEMENT_TYPE_VALUETYPE)
                         {
                             Debug.Assert(!_argTypeHandle.IsNull());
-                            return ((_argSize > _transitionBlock.EnregisteredParamTypeMaxSize) && (!_argTypeHandle.IsHFA() || IsVarArg()));
+                            return ((_argSize > _transitionBlock.EnregisteredParamTypeMaxSize) && (!_argTypeHandle.IsHFA() || IsVarArg));
                         }
                         return false;
                     default:
@@ -859,43 +734,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return _transitionBlock.ThisOffset;
         }
 
-        public unsafe int GetRetBuffArgOffset()
+        public int GetVASigCookieOffset()
         {
             //            WRAPPER_NO_CONTRACT;
 
-            Debug.Assert(this.HasRetBuffArg());
-
-            int ret;
-            if (_transitionBlock.IsX86)
-            {
-                // x86 is special as always
-                // DESKTOP BEHAVIOR            ret += this.HasThis() ? ArgumentRegisters.GetOffsetOfEdx() : ArgumentRegisters.GetOffsetOfEcx();
-                ret = _transitionBlock.OffsetOfArgs;
-            }
-            else
-            {
-                // RetBuf arg is in the first argument register by default
-                ret = _transitionBlock.OffsetOfArgumentRegisters;
-
-                if (_transitionBlock.IsARM64)
-                {
-                    ret += 8 * sizeof(IntPtr); // offset of x8 in the argument register file
-                }
-                else
-                {
-                    // But if there is a this pointer, push it to the second.
-                    if (this.HasThis())
-                        ret += IntPtr.Size;
-                }
-            }
-            return ret;
-        }
-
-        unsafe public int GetVASigCookieOffset()
-        {
-            //            WRAPPER_NO_CONTRACT;
-
-            Debug.Assert(this.IsVarArg());
+            Debug.Assert(IsVarArg);
 
             if (_transitionBlock.IsX86)
             {
@@ -907,12 +750,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // VaSig cookie is after this and retbuf arguments by default.
                 int ret = _transitionBlock.OffsetOfArgumentRegisters;
 
-                if (this.HasThis())
+                if (HasThis)
                 {
                     ret += IntPtr.Size;
                 }
 
-                if (this.HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+                if (HasRetBuffArg() && _transitionBlock.IsRetBuffPassedAsFirstArg)
                 {
                     ret += IntPtr.Size;
                 }
@@ -921,9 +764,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        unsafe public int GetParamTypeArgOffset()
+        public int GetParamTypeArgOffset()
         {
-            Debug.Assert(this.HasParamType());
+            Debug.Assert(HasParamType);
 
             if (_transitionBlock.IsX86)
             {
@@ -949,12 +792,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // The hidden arg is after this and retbuf arguments by default.
                 int ret = _transitionBlock.OffsetOfArgumentRegisters;
 
-                if (this.HasThis())
+                if (HasThis)
                 {
                     ret += IntPtr.Size;
                 }
 
-                if (this.HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+                if (HasRetBuffArg() && _transitionBlock.IsRetBuffPassedAsFirstArg)
                 {
                     ret += IntPtr.Size;
                 }
@@ -970,7 +813,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         // Returns TransitionBlock::InvalidOffset once you've hit the end 
         // of the list.
         //------------------------------------------------------------
-        public unsafe int GetNextOffset()
+        public int GetNextOffset()
         {
             //            WRAPPER_NO_CONTRACT;
             //            SUPPORTS_DAC;
@@ -979,10 +822,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 int numRegistersUsed = 0;
                 int initialArgOffset = 0;
-                if (this.HasThis())
+                if (HasThis)
                     numRegistersUsed++;
 
-                if (this.HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+                if (HasRetBuffArg() && _transitionBlock.IsRetBuffPassedAsFirstArg)
                 {
                     if (!_transitionBlock.IsX86)
                     {
@@ -997,15 +840,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
                 }
 
-                Debug.Assert(!this.IsVarArg() || !this.HasParamType());
+                Debug.Assert(!IsVarArg || !HasParamType);
 
                 // DESKTOP BEHAVIOR - This block is disabled for x86 as the param arg is the last argument on desktop x86.
-                if (this.HasParamType())
+                if (HasParamType)
                 {
                     numRegistersUsed++;
                 }
 
-                if (!_transitionBlock.IsX86 && this.IsVarArg())
+                if (!_transitionBlock.IsX86 && IsVarArg)
                 {
                     numRegistersUsed++;
                 }
@@ -1013,7 +856,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 switch (_transitionBlock.Architecture)
                 {
                     case TargetArchitecture.X86:
-                        if (this.IsVarArg())
+                        if (IsVarArg)
                         {
                             numRegistersUsed = _transitionBlock.NumArgumentRegisters; // Nothing else gets passed in registers for varargs
                         }
@@ -1079,10 +922,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 _ITERATION_STARTED = true;
             }
 
-            if (_argNum >= this.NumFixedArgs())
+            if (_argNum >= NumFixedArgs)
                 return TransitionBlock.InvalidOffset;
 
-            CorElementType argType = this.GetArgumentType(_argNum, out _argTypeHandle, out _argForceByRef);
+            CorElementType argType = GetArgumentType(_argNum, out _argTypeHandle, out _argForceByRef);
 
             _argTypeHandleOfByRefParam = (argType == CorElementType.ELEMENT_TYPE_BYREF ? _argData.GetByRefArgumentType(_argNum) : default(TypeHandle));
 
@@ -1124,7 +967,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         return argOfs;
                     }
 #endif
-                    if (IsArgumentInRegister(_transitionBlock, ref _x86NumRegistersUsed, argType, _argTypeHandle))
+                    if (_transitionBlock.IsArgumentInRegister(ref _x86NumRegistersUsed, argType, _argTypeHandle))
                     {
                         return _transitionBlock.OffsetOfArgumentRegisters + (_transitionBlock.NumArgumentRegisters - _x86NumRegistersUsed) * IntPtr.Size;
                     }
@@ -1283,7 +1126,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                         // Ignore floating point argument placement in registers if we're dealing with a vararg function (the ABI
                         // specifies this so that vararg processing on the callee side is simplified).
-                        if (fFloatingPoint && !this.IsVarArg())
+                        if (fFloatingPoint && !IsVarArg)
                         {
                             // Handle floating point (primitive) arguments.
 
@@ -1435,7 +1278,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         int cbArg = _transitionBlock.StackElemSize(argSize);
                         int cArgSlots = cbArg / _transitionBlock.StackElemSize();
 
-                        if (cFPRegs > 0 && !this.IsVarArg())
+                        if (cFPRegs > 0 && !IsVarArg)
                         {
                             if (cFPRegs + _arm64IdxFPReg <= 8)
                             {
@@ -1492,7 +1335,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return _argSize;
         }
 
-        private unsafe void ForceSigWalk()
+        private void ForceSigWalk()
         {
             // This can be only used before the actual argument iteration started
             Debug.Assert(!_ITERATION_STARTED);
@@ -1506,10 +1349,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // x86 is special as always
                 //
 
-                if (this.HasThis())
+                if (HasThis)
                     numRegistersUsed++;
 
-                if (this.HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+                if (HasRetBuffArg() && _transitionBlock.IsRetBuffPassedAsFirstArg)
                 {
                     // DESKTOP BEHAVIOR                numRegistersUsed++;
                     // On ProjectN ret buff arg is passed on the call stack as the top stack arg
@@ -1517,7 +1360,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
 
                 // DESKTOP BEHAVIOR - This block is disabled for x86 as the param arg is the last argument on desktop x86.
-                if (this.HasParamType())
+                if (HasParamType)
                 {
                     numRegistersUsed++;
                     _paramTypeLoc = (numRegistersUsed == 1) ?
@@ -1525,7 +1368,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     Debug.Assert(numRegistersUsed <= 2);
                 }
 
-                if (this.IsVarArg())
+                if (IsVarArg)
                 {
                     nSizeOfArgStack += IntPtr.Size;
                     numRegistersUsed = _transitionBlock.NumArgumentRegisters; // Nothing else gets passed in registers for varargs
@@ -1548,16 +1391,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
 #endif // FEATURE_INTERPRETER
 
-                int nArgs = this.NumFixedArgs();
+                int nArgs = NumFixedArgs;
                 for (int i = (_skipFirstArg ? 1 : 0); i < nArgs; i++)
                 {
                     TypeHandle thArgType;
                     bool argForcedToBeByref;
-                    CorElementType type = this.GetArgumentType(i, out thArgType, out argForcedToBeByref);
+                    CorElementType type = GetArgumentType(i, out thArgType, out argForcedToBeByref);
                     if (argForcedToBeByref)
                         type = CorElementType.ELEMENT_TYPE_BYREF;
 
-                    if (!IsArgumentInRegister(_transitionBlock, ref numRegistersUsed, type, thArgType))
+                    if (!_transitionBlock.IsArgumentInRegister(ref numRegistersUsed, type, thArgType))
                     {
                         int structSize = TypeHandle.GetElemSize(type, thArgType);
 
@@ -1571,7 +1414,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
 
 #if DESKTOP            // DESKTOP BEHAVIOR
-                if (this.HasParamType())
+                if (HasParamType())
                 {
                     if (numRegistersUsed < ArchitectureConstants.NUM_ARGUMENT_REGISTERS)
                     {
@@ -1635,33 +1478,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _nSizeOfArgStack = nSizeOfArgStack;
             _SIZE_OF_ARG_STACK_COMPUTED = true;
 
-            this.Reset();
-        }
-
-        // Accessors for built in argument descriptions of the special implicit parameters not mentioned directly
-        // in signatures (this pointer and the like). Whether or not these can be used successfully before all the
-        // explicit arguments have been scanned is platform dependent.
-        public unsafe void GetThisLoc(ArgLocDesc* pLoc)
-        {
-            Debug.Assert(!_transitionBlock.IsX86);
-            GetSimpleLoc(GetThisOffset(), pLoc);
-        }
-        public unsafe void GetRetBuffArgLoc(ArgLocDesc* pLoc)
-        {
-            Debug.Assert(!_transitionBlock.IsX86);
-            GetSimpleLoc(GetRetBuffArgOffset(), pLoc);
-        }
-
-        public unsafe void GetParamTypeLoc(ArgLocDesc* pLoc)
-        {
-            Debug.Assert(!_transitionBlock.IsX86);
-            GetSimpleLoc(GetParamTypeArgOffset(), pLoc);
-        }
-
-        public unsafe void GetVASigCookieLoc(ArgLocDesc* pLoc)
-        {
-            Debug.Assert(!_transitionBlock.IsX86);
-            GetSimpleLoc(GetVASigCookieOffset(), pLoc);
+            Reset();
         }
 
         // Get layout information for the argument that the ArgIterator is currently visiting.
@@ -1873,110 +1690,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         //        RETURN_FP_SIZE_SHIFT            = 8,        // The rest of the flags is cached value of GetFPReturnSize
         //    };
 
-        internal static void ComputeReturnValueTreatment(TransitionBlock transitionBlock, CorElementType type, TypeHandle thRetType, bool isVarArgMethod, out bool usesRetBuffer, out uint fpReturnSize)
-
-        {
-            usesRetBuffer = false;
-            fpReturnSize = 0;
-
-            switch (type)
-            {
-                case CorElementType.ELEMENT_TYPE_TYPEDBYREF:
-                    throw new NotSupportedException();
-
-                case CorElementType.ELEMENT_TYPE_R4:
-                    fpReturnSize = sizeof(float);
-                    break;
-
-                case CorElementType.ELEMENT_TYPE_R8:
-                    fpReturnSize = sizeof(double);
-                    break;
-
-                case CorElementType.ELEMENT_TYPE_VALUETYPE:
-                    {
-                        Debug.Assert(!thRetType.IsNull() && thRetType.IsValueType());
-
-                        if (thRetType.IsHFA() && !isVarArgMethod)
-                        {
-                            CorElementType hfaType = thRetType.GetHFAType();
-
-                            switch (transitionBlock.Architecture)
-                            {
-                                case TargetArchitecture.ARM:
-                                    fpReturnSize = (hfaType == CorElementType.ELEMENT_TYPE_R4) ?
-                                        (4 * (uint)sizeof(float)) :
-                                        (4 * (uint)sizeof(double));
-                                    break;
-
-                                case TargetArchitecture.ARM64:
-                                    // DESKTOP BEHAVIOR fpReturnSize = (hfaType == CorElementType.ELEMENT_TYPE_R4) ? (4 * (uint)sizeof(float)) : (4 * (uint)sizeof(double));
-                                    // S and D registers overlap. Since we copy D registers in the UniversalTransitionThunk, we'll
-                                    // thread floats like doubles during copying.
-                                    fpReturnSize = 4 * (uint)sizeof(double);
-                                    break;
-
-                                default:
-                                    throw new NotImplementedException();
-                            }
-                            break;
-                        }
-
-                        uint size = thRetType.GetSize();
-
-                        if (transitionBlock.IsX86 || transitionBlock.IsX64)
-                        {
-                            // Return value types of size which are not powers of 2 using a RetBuffArg
-                            if ((size & (size - 1)) != 0)
-                            {
-                                usesRetBuffer = true;
-                                break;
-                            }
-                        }
-
-                        if (size <= transitionBlock.EnregisteredReturnTypeIntegerMaxSize)
-                            break;
-                    }
-
-                    // Value types are returned using return buffer by default
-                    usesRetBuffer = true;
-                    break;
-
-                default:
-                    break;
-            }
-        }
-
         private void ComputeReturnFlags()
         {
             TypeHandle thRetType;
-            CorElementType type = this.GetReturnType(out thRetType, out _RETURN_HAS_RET_BUFFER);
+            CorElementType type = GetReturnType(out thRetType, out _RETURN_HAS_RET_BUFFER);
 
             if (!_RETURN_HAS_RET_BUFFER)
             {
-                ComputeReturnValueTreatment(_transitionBlock, type, thRetType, this.IsVarArg(), out _RETURN_HAS_RET_BUFFER, out _fpReturnSize);
+                _transitionBlock.ComputeReturnValueTreatment(type, thRetType, IsVarArg, out _RETURN_HAS_RET_BUFFER, out _fpReturnSize);
             }
 
             _RETURN_FLAGS_COMPUTED = true;
         }
 
-        private unsafe void GetSimpleLoc(int offset, ArgLocDesc* pLoc)
-        {
-            Debug.Assert(!_transitionBlock.IsX86);
-            //        WRAPPER_NO_CONTRACT; 
-            pLoc->Init();
-            pLoc->m_idxGenReg = _transitionBlock.GetArgumentIndexFromOffset(offset);
-            pLoc->m_cGenReg = 1;
-        }
-
         public static int ALIGN_UP(int input, int align_to)
         {
             return (input + (align_to - 1)) & ~(align_to - 1);
-        }
-
-        public bool IsRetBuffPassedAsFirstArg()
-        {
-            //        WRAPPER_NO_CONTRACT; 
-            return !_transitionBlock.IsARM64;
         }
     };
 }

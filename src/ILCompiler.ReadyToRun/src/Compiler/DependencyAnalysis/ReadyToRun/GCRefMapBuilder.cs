@@ -150,7 +150,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private void FakeGcScanRoots(MethodDesc method, ArgIterator argit, CORCOMPILE_GCREFMAP_TOKENS[] frame)
         {
             // Encode generic instantiation arg
-            if (argit.HasParamType())
+            if (argit.HasParamType)
             {
                 if (method.RequiresInstMethodDescArg())
                 {
@@ -163,7 +163,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             // If the function has a this pointer, add it to the mask
-            if (argit.HasThis())
+            if (argit.HasThis)
             {
                 bool isUnboxingStub = false; // TODO: is this correct?
                 bool interior = method.OwningType.IsValueType && !isUnboxingStub;
@@ -171,7 +171,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 frame[_transitionBlock.ThisOffset] = (interior ? CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_INTERIOR : CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_REF);
             }
 
-            if (argit.IsVarArg())
+            if (argit.IsVarArg)
             {
                 frame[argit.GetVASigCookieOffset()] = CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_VASIG_COOKIE;
 
@@ -183,7 +183,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // so always promote it.
             if (argit.HasRetBuffArg())
             {
-                frame[argit.GetRetBuffArgOffset()] = CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_INTERIOR;
+                frame[_transitionBlock.GetRetBuffArgOffset(argit.HasThis)] = CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_INTERIOR;
             }
 
             //
@@ -260,7 +260,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private void GcScanValueType(TypeDesc type, ArgDestination argDest, int delta, CORCOMPILE_GCREFMAP_TOKENS[] frame)
         {
-            if (ArgIterator.IsArgPassedByRef(_transitionBlock, new TypeHandle(type)))
+            if (_transitionBlock.IsArgPassedByRef(new TypeHandle(type)))
             {
                 argDest.GcMark(frame, delta, interior: true);
                 return;
