@@ -471,7 +471,7 @@ namespace System.Threading.Tasks
                 // we don't in AwaitTaskContinuation.Run, since here it expands what's allowed as opposed
                 // to in AwaitTaskContinuation.Run where it restricts what's allowed.
                 bool inlineIfPossible = canInlineContinuationTask &&
-                    (TaskScheduler.InternalCurrent == m_scheduler || ThreadPool.IsThreadPoolThread);
+                    (TaskScheduler.InternalCurrent == m_scheduler || RuntimeThread.CurrentThread.IsThreadPoolThread);
 
                 // Create the continuation task task. If we're allowed to inline, try to do so.  
                 // The target scheduler may still deny us from executing on this thread, in which case this'll be queued.
