@@ -80,8 +80,10 @@ echo     /multimodule  : Compile the framework as a .lib and link tests against 
 echo     /determinism  : Compile the test twice with randomized dependency node mark stack to validate
 echo                      compiler determinism in multi-threaded compilation.
 echo     /nocleanup    : Do not delete compiled test artifacts after running each test
-echo     /r2rframework : Create ready-to-run images for the CoreCLR framework assemblies
-echo     /gcstresslevel: GC stress level to use for testing
+echo.
+echo     --- CPAOT-specific flags ---
+echo       /r2rframework : Create ready-to-run images for the CoreCLR framework assemblies
+echo       /gcstresslevel: GC stress level to use for testing
 echo.
 echo     --- CoreCLR Subset ---
 echo        Top200     : Runs broad coverage / CI validation (~200 tests).
