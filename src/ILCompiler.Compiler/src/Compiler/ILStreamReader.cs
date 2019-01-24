@@ -18,7 +18,7 @@ namespace Internal.Compiler
     /// </summary>
     public struct ILStreamReader
     {
-        private readonly ILReader _reader;
+        private ILReader _reader;
         private readonly MethodIL _methodIL;
 
         public ILStreamReader(MethodIL methodIL)
