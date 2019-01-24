@@ -357,9 +357,6 @@
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.ConditionVariable.cs">
       <Link>Interop\Windows\kernel32\Interop.ConditionVariable.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.GetSystemTimes.cs">
-      <Link>Interop\Windows\kernel32\Interop.GetSystemTimes.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.GetModuleFileName.cs">
       <Link>Interop\Windows\kernel32\Interop.GetModuleFileName.cs</Link>
     </Compile>
@@ -450,19 +447,6 @@
       <Link>Interop\Windows\mincore\Interop.QueryUnbiasedInterruptTime.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(FeaturePortableThreadPool)' == 'true'">
-    <Compile Include="System\Threading\ThreadPool.Portable.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.cs" />
-    <Compile Include="System\Threading\ClrThreadPoolEventSource.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.GateThread.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.HillClimbing.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.HillClimbing.Complex.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.ThreadCounts.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.WaitThread.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.WorkerThread.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.CpuUtilizationReader.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
-    <Compile Include="System\Threading\ClrThreadPool.CpuUtilizationReader.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.Unix.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeWaitHandle.Unix.cs" />
@@ -490,9 +474,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Exit.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Exit.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetCpuUtilization.cs">
-      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetCpuUtilization.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetEnv.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetEnv.cs</Link>
