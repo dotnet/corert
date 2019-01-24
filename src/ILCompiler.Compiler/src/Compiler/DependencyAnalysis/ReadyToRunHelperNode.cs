@@ -30,7 +30,6 @@ namespace ILCompiler.DependencyAnalysis
         // The following helpers are used for generic lookups only
         TypeHandle,
         NecessaryTypeHandle,
-        DeclaringTypeHandle,
         MethodHandle,
         FieldHandle,
         MethodDictionary,

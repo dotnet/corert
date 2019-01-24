@@ -102,6 +102,7 @@
     <Compile Include="Internal\IntrinsicSupport\ComparerHelpers.cs" />
     <Compile Include="Internal\IntrinsicSupport\EqualityComparerHelpers.cs" />
     <Compile Include="Internal\Reflection\Augments\ReflectionAugments.cs" />
+    <Compile Include="Internal\Runtime\Augments\SpinLockTraceCallbacks.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\HasEmbeddedStringResourcesAttribute.cs" />
     <Compile Include="Internal\Runtime\EEType.Runtime.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ThrowHelpers.cs" />
@@ -116,6 +117,7 @@
     <Compile Include="Internal\Runtime\CompilerServices\RuntimeSignature.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\OpenMethodResolver.cs" />
     <Compile Include="Internal\Runtime\TypeLoaderExceptionHelper.cs" />
+    <Compile Include="Internal\Threading\Tracing\SpinLockTrace.cs" />
     <Compile Include="Internal\Toolchain\NonExecutableAttribute.cs" />
     <Compile Include="Internal\DeveloperExperience\DeveloperExperience.cs" />
     <Compile Include="Internal\Runtime\Augments\RuntimeAugments.cs" />
@@ -134,6 +136,7 @@
     <Compile Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)' != 'true'" Include="Internal\Runtime\Augments\EnvironmentAugments.FromRegistry.Win32.cs" />
     <Compile Condition="'$(TargetsUnix)'=='true' or '$(EnableWinRT)'=='true'" Include="Internal\Runtime\Augments\EnvironmentAugments.FromRegistry.WithoutRegistry.cs" />
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.cs" />
+    <Compile Include="Internal\Runtime\Augments\TaskTraceCallbacks.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\Reflection\Core\NonPortable\IRuntimeImplementedType.cs" />
@@ -146,6 +149,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Condition="'$(EnableWinRT)'=='true'" Include="Internal\Runtime\Augments\WinRTInterop.cs" />
+    <Compile Include="Internal\Threading\Tasks\Tracing\TaskTrace.cs" />
     <Compile Include="Interop\Interop.manual.cs" />
     <Compile Include="Interop\Interop.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
     <Compile Include="System\Runtime\CompilerServices\CastableObject.cs" />
@@ -165,7 +169,6 @@
     <Compile Include="System\Reflection\Emit\AssemblyBuilder.cs" />
     <Compile Include="System\Reflection\Emit\ConstructorBuilder.cs" />
     <Compile Include="System\Reflection\Emit\CustomAttributeBuilder.cs" />
-    <Compile Include="System\Reflection\Emit\DynamicILInfo.cs" />
     <Compile Include="System\Reflection\Emit\DynamicMethod.cs" />
     <Compile Include="System\Reflection\Emit\EnumBuilder.cs" />
     <Compile Include="System\Reflection\Emit\EventBuilder.cs" />
@@ -215,7 +218,6 @@
     <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
     <Compile Include="System\Diagnostics\StackTrace.CoreRT.cs" />
     <Compile Include="System\Diagnostics\Tracing\EventSource_CoreRT.cs" />
-    <Compile Include="System\Diagnostics\Tracing\FrameworkEventSource.cs" />
     <Compile Include="System\Diagnostics\Tracing\UnsafeNativeMethods.cs" />
     <Compile Include="System\Enum.cs" />
     <Compile Include="System\Environment.cs" />
@@ -278,6 +280,7 @@
     <Compile Include="System\Threading\Condition.cs" />
     <Compile Include="System\Threading\FirstLevelSpinWaiter.cs" />
     <Compile Include="System\Threading\Interlocked.cs" />
+    <Compile Include="System\Threading\IOCompletionCallback.cs" />
     <Compile Include="System\Threading\LockHolder.cs" />
     <Compile Include="System\Threading\LowLevelLock.cs" />
     <Compile Include="System\Threading\LowLevelMonitor.cs" />
@@ -289,8 +292,9 @@
     <Compile Include="System\Threading\SynchronizationContext.Dummy.cs" Condition="'$(EnableWinRT)' != 'true'" />
     <Compile Include="System\Threading\SyncTable.cs" Condition="'$(UseSyncTable)' == 'true'" />
     <Compile Include="System\Threading\Tasks\AsyncCausalityTracer.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
+    <Compile Include="System\Threading\Tasks\Task.cs" />
     <Compile Include="System\Threading\Tasks\TaskContinuation.cs" />
-    <Compile Include="System\Threading\ThreadPool.CoreRT.cs" />
+    <Compile Include="System\Threading\ThreadPool.cs" />
     <Compile Include="System\Threading\ThreadPoolCallbackWrapper.cs" />
     <Compile Include="System\Threading\Timer.cs" />
     <Compile Include="System\Threading\Volatile.cs" />
@@ -331,6 +335,7 @@
     <Compile Include="System\DateTime.Win32.cs" Condition="'$(EnableWinRT)'!='true'"/>
     <Compile Include="System\DateTime.WinRT.cs" Condition="'$(EnableWinRT)'=='true'"/>
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Windows.cs" />
+    <Compile Include="System\Runtime\MemoryFailPoint.cs" />
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.FileTimeToSystemTime.cs">
       <Link>Interop\Windows\kernel32\Interop.FileTimeToSystemTime.cs</Link>
     </Compile>
@@ -348,6 +353,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.ExpandEnvironmentStrings.cs">
       <Link>Interop\Windows\kernel32\Interop.ExpandEnvironmentStrings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.Memory.cs">
+      <Link>Interop\Windows\kernel32\Interop.Memory.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.CompletionPort.cs">
       <Link>Interop\Windows\kernel32\Interop.CompletionPort.cs</Link>
@@ -372,6 +380,12 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SetLastError.cs">
       <Link>Interop\Windows\mincore\Interop.SetLastError.cs</Link>
+    </Compile>
+    <Compile Condition="'$(EnableWinRT)' == 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.VirtualAllocFromApp.cs">
+      <Link>Interop\Windows\mincore\Interop.VirtualAllocFromApp.cs</Link>
+    </Compile>
+    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\kernel32\Interop.VirtualAlloc.cs">
+      <Link>Interop\Windows\kernel32\Interop.VirtualAlloc.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.DateTime.cs">
       <Link>Interop\Windows\mincore\Interop.DateTime.cs</Link>

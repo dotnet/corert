@@ -142,6 +142,7 @@
     <Compile Include="$(ILCompilerBasePath)\Compiler\NodeMangler.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DevirtualizationManager.cs" />
     <Compile Include="$(ILCompilerBasePath)\IL\Stubs\PInvokeILProvider.cs" />
+    <Compile Include="$(ILCompilerRyuJitBasePath)\Compiler\DependencyAnalysis\IMethodCodeNode.cs" />
     <Compile Include="$(ILCompilerRyuJitBasePath)\JitInterface\CorInfoImpl.RyuJit.cs" />
     <Compile Include="$(DependencyAnalysisFrameworkBasePath)\IDependencyNode.cs" />
     <Compile Include="$(DependencyAnalysisFrameworkBasePath)\DependencyNode.cs" />

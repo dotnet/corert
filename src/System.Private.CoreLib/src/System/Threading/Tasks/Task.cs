@@ -13,15 +13,12 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
-using Internal.Runtime.Augments;
-using Internal.Runtime.CompilerServices;
 
-#if CORERT
+using Internal.Threading.Tasks.Tracing;
+
 using Thread = Internal.Runtime.Augments.RuntimeThread;
-#endif
 
 // Disable the "reference to volatile field not treated as volatile" error.
 #pragma warning disable 0420
@@ -204,9 +201,11 @@ namespace System.Threading.Tasks
         // m_continuationObject is set to this when the task completes.
         private static readonly object s_taskCompletionSentinel = new object();
 
+#pragma warning disable 0649   // Yes, C#, we know that s_asyncDebuggingEnabled is never assigned to by code...
         // A private flag that would be set (only) by the debugger
         // When true the Async Causality logging trace is enabled as well as a dictionary to relate operation ids with Tasks
         internal static bool s_asyncDebuggingEnabled; //false by default
+#pragma warning restore 0649
 
         // This dictonary relates the task id, from an operation id located in the Async Causality log to the actual
         // task. This is to be used by the debugger ONLY. Task in this dictionary represent current active tasks.
@@ -218,11 +217,9 @@ namespace System.Threading.Tasks
         internal static bool AddToActiveTasks(Task task)
         {
             Debug.Assert(task != null, "Null Task objects can't be added to the ActiveTasks collection");
-
-            int taskId = task.Id;
             lock (s_activeTasksLock)
             {
-                s_currentActiveTasks[taskId] = task;
+                s_currentActiveTasks[task.Id] = task;
             }
             //always return true to keep signature as bool for backwards compatibility
             return true;
@@ -230,10 +227,9 @@ namespace System.Threading.Tasks
 
         internal static void RemoveFromActiveTasks(Task task)
         {
-            int taskId = task.Id;
             lock (s_activeTasksLock)
             {
-                s_currentActiveTasks.Remove(taskId);
+                s_currentActiveTasks.Remove(task.Id);
             }
         }
 
@@ -527,10 +523,6 @@ namespace System.Threading.Tasks
             }
 
             TaskConstructorCore(action, state, cancellationToken, creationOptions, internalOptions, scheduler);
-
-            Debug.Assert(m_contingentProperties == null || m_contingentProperties.m_capturedContext == null,
-                "Captured an ExecutionContext when one was already captured.");
-            CapturedContext = ExecutionContext.Capture();
         }
 
         /// <summary>
@@ -607,6 +599,10 @@ namespace System.Threading.Tasks
 
                 AssignCancellationToken(cancellationToken, null, null);
             }
+
+            Debug.Assert(m_contingentProperties == null || m_contingentProperties.m_capturedContext == null,
+                "Captured an ExecutionContext when one was already captured.");
+            CapturedContext = ExecutionContext.Capture();
         }
 
         /// <summary>
@@ -680,7 +676,8 @@ namespace System.Threading.Tasks
             var targetTask = o as Task;
             if (targetTask == null)
             {
-                if (o is Tuple<Task, Task, TaskContinuation> tuple)
+                var tuple = o as Tuple<Task, Task, TaskContinuation>;
+                if (tuple != null)
                 {
                     targetTask = tuple.Item1;
 
@@ -884,19 +881,6 @@ namespace System.Threading.Tasks
         internal bool MarkStarted()
         {
             return AtomicStateUpdate(TASK_STATE_STARTED, TASK_STATE_CANCELED | TASK_STATE_STARTED);
-        }
-
-        internal void FireTaskScheduledIfNeeded(TaskScheduler ts)
-        {
-            if ((m_stateFlags & Task.TASK_STATE_TASKSCHEDULED_WAS_FIRED) == 0)
-            {
-                m_stateFlags |= Task.TASK_STATE_TASKSCHEDULED_WAS_FIRED;
-
-                Task currentTask = Task.InternalCurrent;
-                Task parentTask = m_contingentProperties?.m_parent;
-                TplEtwProvider.Log.TaskScheduled(ts.Id, currentTask == null ? 0 : currentTask.Id,
-                                     this.Id, parentTask == null ? 0 : parentTask.Id, (int)this.Options);
-            }
         }
 
         /// <summary>
@@ -1197,29 +1181,6 @@ namespace System.Threading.Tasks
             return t;
         }
 
-        /// <summary>
-        /// Gets a unique ID for a <see cref="Task">Task</see> or task continuation instance.
-        /// </summary>
-        internal static int NewId()
-        {
-            int newId = 0;
-            // We need to repeat if Interlocked.Increment wraps around and returns 0.
-            // Otherwise next time this task's Id is queried it will get a new value
-            do
-            {
-                newId = Interlocked.Increment(ref s_taskIdCounter);
-            }
-            while (newId == 0);
-
-            if (TplEtwProvider.Log.IsEnabled())
-                TplEtwProvider.Log.NewID(newId);
-
-            return newId;
-        }
-
-
-        /////////////
-        // properties
 
         /// <summary>
         /// Gets a unique ID for this <see cref="Task">Task</see> instance.
@@ -1234,7 +1195,15 @@ namespace System.Threading.Tasks
             {
                 if (m_taskId == 0)
                 {
-                    int newId = NewId();
+                    int newId = 0;
+                    // We need to repeat if Interlocked.Increment wraps around and returns 0.
+                    // Otherwise next time this task's Id is queried it will get a new value
+                    do
+                    {
+                        newId = Interlocked.Increment(ref s_taskIdCounter);
+                    }
+                    while (newId == 0);
+
                     Interlocked.CompareExchange(ref m_taskId, newId, 0);
                 }
 
@@ -1635,7 +1604,7 @@ namespace System.Threading.Tasks
 
 
         /// <summary>
-        /// Disposes the <see cref="Task"/>, releasing all of its unmanaged resources.  
+        /// Disposes the <see cref="Task"/>, releasing all of its unmanaged resources.
         /// </summary>
         /// <remarks>
         /// Unlike most of the members of <see cref="Task"/>, this method is not thread-safe.
@@ -1645,11 +1614,11 @@ namespace System.Threading.Tasks
         /// <see cref="System.Threading.Tasks.TaskStatus.Canceled">Canceled</see>.
         /// </remarks>
         /// <exception cref="T:System.InvalidOperationException">
-        /// The exception that is thrown if the <see cref="Task"/> is not in 
+        /// The exception that is thrown if the <see cref="Task"/> is not in
         /// one of the final states: <see cref="System.Threading.Tasks.TaskStatus.RanToCompletion">RanToCompletion</see>,
         /// <see cref="System.Threading.Tasks.TaskStatus.Faulted">Faulted</see>, or
         /// <see cref="System.Threading.Tasks.TaskStatus.Canceled">Canceled</see>.
-        /// </exception>        
+        /// </exception>
         public void Dispose()
         {
             Dispose(true);
@@ -1657,7 +1626,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// Disposes the <see cref="Task"/>, releasing all of its unmanaged resources.  
+        /// Disposes the <see cref="Task"/>, releasing all of its unmanaged resources.
         /// </summary>
         /// <param name="disposing">
         /// A Boolean value that indicates whether this method is being called due to a call to <see
@@ -1755,7 +1724,7 @@ namespace System.Threading.Tasks
             if (AsyncCausalityTracer.LoggingOn && (Options & (TaskCreationOptions)InternalTaskOptions.ContinuationTask) == 0)
             {
                 //For all other task than TaskContinuations we want to log. TaskContinuations log in their constructor
-                AsyncCausalityTracer.TraceOperationCreation(this, "Task: " + m_action.Method.Name);
+                AsyncCausalityTracer.TraceOperationCreation(this, "Task: " + m_action);
             }
 
 
@@ -1764,6 +1733,11 @@ namespace System.Threading.Tasks
                 // Queue to the indicated scheduler.
                 m_taskScheduler.InternalQueueTask(this);
             }
+            //catch (ThreadAbortException tae)
+            //{
+            //    AddException(tae);
+            //    FinishThreadAbortedTask(true, false);
+            //}
             catch (Exception e)
             {
                 // The scheduler had a problem queueing this task.  Record the exception, leaving this task in
@@ -2356,23 +2330,18 @@ namespace System.Threading.Tasks
             Task previousTask = currentTaskSlot;
 
             // ETW event for Task Started
-            var etwLog = TplEtwProvider.Log;
-            Guid savedActivityID = new Guid();
-            bool etwIsEnabled = etwLog.IsEnabled();
-            if (etwIsEnabled)
+            if (TaskTrace.Enabled)
             {
-                if (etwLog.TasksSetActivityIds)
-                    EventSource.SetCurrentThreadActivityId(TplEtwProvider.CreateGuidForTaskID(this.Id), out savedActivityID);
                 // previousTask holds the actual "current task" we want to report in the event
                 if (previousTask != null)
-                    etwLog.TaskStarted(previousTask.m_taskScheduler.Id, previousTask.Id, this.Id);
+                    TaskTrace.TaskStarted(previousTask.m_taskScheduler.Id, previousTask.Id, this.Id);
                 else
-                    etwLog.TaskStarted(TaskScheduler.Current.Id, 0, this.Id);
+                    TaskTrace.TaskStarted(TaskScheduler.Current.Id, 0, this.Id);
             }
 
-            bool loggingOn = AsyncCausalityTracer.LoggingOn;
-            if (loggingOn)
-                AsyncCausalityTracer.TraceSynchronousWorkStart(this, CausalitySynchronousWork.Execution);
+            if (AsyncCausalityTracer.LoggingOn)
+                AsyncCausalityTracer.TraceSynchronousWorkStart( this, CausalitySynchronousWork.Execution);
+
 
             try
             {
@@ -2407,7 +2376,7 @@ namespace System.Threading.Tasks
                     HandleException(exn);
                 }
 
-                if (loggingOn)
+                if (AsyncCausalityTracer.LoggingOn)
                     AsyncCausalityTracer.TraceSynchronousWorkCompletion(CausalitySynchronousWork.Execution);
 
                 Finish(true);
@@ -2417,26 +2386,18 @@ namespace System.Threading.Tasks
                 currentTaskSlot = previousTask;
 
                 // ETW event for Task Completed
-                if (etwIsEnabled)
+                if (TaskTrace.Enabled)
                 {
                     // previousTask holds the actual "current task" we want to report in the event
                     if (previousTask != null)
-                        etwLog.TaskCompleted(previousTask.m_taskScheduler.Id, previousTask.Id, this.Id, IsFaulted);
+                        TaskTrace.TaskCompleted(previousTask.m_taskScheduler.Id, previousTask.Id, this.Id, IsFaulted);
                     else
-                        etwLog.TaskCompleted(TaskScheduler.Current.Id, 0, this.Id, IsFaulted);
-
-                    if (etwLog.TasksSetActivityIds)
-                        EventSource.SetCurrentThreadActivityId(savedActivityID);
+                        TaskTrace.TaskCompleted(TaskScheduler.Current.Id, 0, this.Id, IsFaulted);
                 }
             }
         }
 
-        private static readonly ContextCallback s_ecCallback = obj =>
-        {
-            Debug.Assert(obj is Task);
-            // Only used privately to pass directly to EC.Run
-            Unsafe.As<Task>(obj).InnerInvoke();
-        };
+        private static readonly ContextCallback s_ecCallback = obj => ((Task)obj).InnerInvoke();
 
         /// <summary>
         /// The actual code which invokes the body of the task. This can be overridden in derived types.
@@ -2445,13 +2406,14 @@ namespace System.Threading.Tasks
         {
             // Invoke the delegate
             Debug.Assert(m_action != null, "Null action in InnerInvoke()");
-            if (m_action is Action action)
+            var action = m_action as Action;
+            if (action != null)
             {
                 action();
                 return;
             }
-
-            if (m_action is Action<object> actionWithState)
+            var actionWithState = m_action as Action<object>;
+            if (actionWithState != null)
             {
                 actionWithState(m_stateObject);
                 return;
@@ -2468,7 +2430,8 @@ namespace System.Threading.Tasks
         {
             Debug.Assert(unhandledException != null);
 
-            if (unhandledException is OperationCanceledException exceptionAsOce && IsCancellationRequested &&
+            OperationCanceledException exceptionAsOce = unhandledException as OperationCanceledException;
+            if (exceptionAsOce != null && IsCancellationRequested &&
                 m_contingentProperties.m_cancellationToken == exceptionAsOce.CancellationToken)
             {
                 // All conditions are satisfied for us to go into canceled state in Finish().
@@ -2810,7 +2773,17 @@ namespace System.Threading.Tasks
             }
             catch (Exception e)
             {
-                throw new TaskSchedulerException(e);
+                // we 1) either received an unexpected exception originating from a custom scheduler, which needs to be wrapped in a TSE and thrown
+                //    2) or a a ThreadAbortException, which we need to skip here, because it would already have been handled in Task.Execute
+                //if (!(e is ThreadAbortException))
+                {
+                    TaskSchedulerException tse = new TaskSchedulerException(e);
+                    throw tse;
+                }
+                //else
+                //{
+                //    throw;
+                //}
             }
         }
 
@@ -2834,14 +2807,12 @@ namespace System.Threading.Tasks
             }
 
             // ETW event for Task Wait Begin
-            var etwLog = TplEtwProvider.Log;
-            bool etwIsEnabled = etwLog.IsEnabled();
-            if (etwIsEnabled)
+            if (TaskTrace.Enabled)
             {
                 Task currentTask = Task.InternalCurrent;
-                etwLog.TaskWaitBegin(
+                TaskTrace.TaskWaitBegin_Synchronous(
                     (currentTask != null ? currentTask.m_taskScheduler.Id : TaskScheduler.Default.Id), (currentTask != null ? currentTask.Id : 0),
-                    this.Id, TplEtwProvider.TaskWaitBehavior.Synchronous, 0);
+                    this.Id);
             }
 
             // Alert a listening debugger that we can't make forward progress unless it slips threads.
@@ -2867,19 +2838,17 @@ namespace System.Threading.Tasks
             Debug.Assert(IsCompleted || millisecondsTimeout != Timeout.Infinite);
 
             // ETW event for Task Wait End
-            if (etwIsEnabled)
+            if (TaskTrace.Enabled)
             {
                 Task currentTask = Task.InternalCurrent;
                 if (currentTask != null)
                 {
-                    etwLog.TaskWaitEnd(currentTask.m_taskScheduler.Id, currentTask.Id, this.Id);
+                    TaskTrace.TaskWaitEnd(currentTask.m_taskScheduler.Id, currentTask.Id, this.Id);
                 }
                 else
                 {
-                    etwLog.TaskWaitEnd(TaskScheduler.Default.Id, 0, this.Id);
+                    TaskTrace.TaskWaitEnd(TaskScheduler.Default.Id, 0, this.Id);
                 }
-                // logically the continuation is empty so we immediately fire
-                etwLog.TaskWaitContinuationComplete(this.Id);
             }
 
             return returnValue;
@@ -3008,7 +2977,10 @@ namespace System.Threading.Tasks
                     // the cancellation logic run its course (record the request, attempt atomic state transition and do cleanup where appropriate)
                     // Here we will only record a TaskSchedulerException, which will later be thrown at function exit.
 
-                    tse = new TaskSchedulerException(e);
+                    //if (!(e is ThreadAbortException))
+                    {
+                        tse = new TaskSchedulerException(e);
+                    }
                 }
 
                 bool bRequiresAtomicStartTransition = ts != null && ts.RequiresAtomicStartTransition;
@@ -3171,8 +3143,6 @@ namespace System.Threading.Tasks
         //
 
 
-
-
         /// <summary>
         /// Runs all of the continuations, as appropriate.
         /// </summary>
@@ -3192,18 +3162,12 @@ namespace System.Threading.Tasks
         {
             Debug.Assert(continuationObject != null);
 
-            TplEtwProvider etw = TplEtwProvider.Log;
-            bool tplEtwProviderLoggingEnabled = etw.IsEnabled();
-            if (tplEtwProviderLoggingEnabled)
-            {
-                etw.RunningContinuation(Id, continuationObject);
-            }
-
             if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceSynchronousWorkStart(this, CausalitySynchronousWork.CompletionNotification);
+                AsyncCausalityTracer.TraceSynchronousWorkStart( this, CausalitySynchronousWork.CompletionNotification);
 
             // Skip synchronous execution of continuations if this task's thread was aborted
             bool canInlineContinuations = !(((m_stateFlags & TASK_STATE_THREAD_WAS_ABORTED) != 0) ||
+                                             //(RuntimeThread.CurrentThread.ThreadState == ThreadState.AbortRequested) ||
                                              ((m_stateFlags & (int)TaskCreationOptions.RunContinuationsAsynchronously) != 0));
 
             switch (continuationObject)
@@ -3255,10 +3219,6 @@ namespace System.Threading.Tasks
                 if (continuations[i] is StandardTaskContinuation tc &&
                     (tc.m_options & TaskContinuationOptions.ExecuteSynchronously) == 0)
                 {
-                    if (tplEtwProviderLoggingEnabled)
-                    {
-                        etw.RunningContinuationList(Id, i, tc);
-                    }
                     continuations[i] = null; // so that we can skip this later
                     tc.Run(this, canInlineContinuations);
                 }
@@ -3275,10 +3235,6 @@ namespace System.Threading.Tasks
                     continue;
                 }
                 continuations[i] = null; // to enable free'ing up memory earlier
-                if (tplEtwProviderLoggingEnabled)
-                {
-                    etw.RunningContinuationList(Id, i, currentContinuation);
-                }
 
                 switch (currentContinuation)
                 {
@@ -3316,7 +3272,8 @@ namespace System.Threading.Tasks
             }
         }
 
-        private static void LogFinishCompletionNotification()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void LogFinishCompletionNotification()
         {
             if (AsyncCausalityTracer.LoggingOn)
                 AsyncCausalityTracer.TraceSynchronousWorkCompletion(CausalitySynchronousWork.CompletionNotification);
@@ -4217,27 +4174,6 @@ namespace System.Threading.Tasks
             // the motions of queuing up the continuation for eventual execution.
             if (!continuationTask.IsCompleted)
             {
-                // We need additional correlation produced here to ensure that at least the continuation 
-                // code will be correlatable to the currrent activity that initiated "this" task:
-                //  . when the antecendent ("this") is a promise we have very little control over where 
-                //    the code for the promise will run (e.g. it can be a task from a user provided 
-                //    TaskCompletionSource or from a classic Begin/End async operation); this user or 
-                //    system code will likely not have stamped an activity id on the thread, so there's
-                //    generally no easy correlation that can be provided between the current activity
-                //    and the promise. Also the continuation code may run practically on any thread. 
-                //    Since there may be no correlation between the current activity and the TCS's task
-                //    activity, we ensure we at least create a correlation from the current activity to
-                //    the continuation that runs when the promise completes.
-                if ((this.Options & (TaskCreationOptions)InternalTaskOptions.PromiseTask) != 0 &&
-                    !(this is ITaskCompletionAction))
-                {
-                    var etwLog = TplEtwProvider.Log;
-                    if (etwLog.IsEnabled())
-                    {
-                        etwLog.AwaitTaskContinuationScheduled(TaskScheduler.Current.Id, Task.CurrentId ?? 0, continuationTask.Id);
-                    }
-                }
-
                 // Attempt to enqueue the continuation
                 bool continuationQueued = AddTaskContinuation(continuation, addBeforeOthers: false);
 
@@ -4359,7 +4295,9 @@ namespace System.Threading.Tasks
             // Task is completed. Nothing to do here.
             if (continuationsLocalRef == s_taskCompletionSentinel) return;
 
-            if (!(continuationsLocalRef is List<object> continuationsLocalListRef))
+            List<object> continuationsLocalListRef = continuationsLocalRef as List<object>;
+
+            if (continuationsLocalListRef == null)
             {
                 // This is not a list. If we have a single object (the one we want to remove) we try to replace it with an empty list.
                 // Note we cannot go back to a null state, since it will mess up the AddTaskContinuation logic.
@@ -5447,13 +5385,15 @@ namespace System.Threading.Tasks
         public static Task WhenAll(IEnumerable<Task> tasks)
         {
             // Take a more efficient path if tasks is actually an array
-            if (tasks is Task[] taskArray)
+            Task[] taskArray = tasks as Task[];
+            if (taskArray != null)
             {
                 return WhenAll(taskArray);
             }
 
             // Skip a List allocation/copy if tasks is a collection
-            if (tasks is ICollection<Task> taskCollection)
+            ICollection<Task> taskCollection = tasks as ICollection<Task>;
+            if (taskCollection != null)
             {
                 int index = 0;
                 taskArray = new Task[taskCollection.Count];
@@ -5692,13 +5632,15 @@ namespace System.Threading.Tasks
         public static Task<TResult[]> WhenAll<TResult>(IEnumerable<Task<TResult>> tasks)
         {
             // Take a more efficient route if tasks is actually an array
-            if (tasks is Task<TResult>[] taskArray)
+            Task<TResult>[] taskArray = tasks as Task<TResult>[];
+            if (taskArray != null)
             {
                 return WhenAll<TResult>(taskArray);
             }
 
             // Skip a List allocation/copy if tasks is a collection
-            if (tasks is ICollection<Task<TResult>> taskCollection)
+            ICollection<Task<TResult>> taskCollection = tasks as ICollection<Task<TResult>>;
+            if (taskCollection != null)
             {
                 int index = 0;
                 taskArray = new Task<TResult>[taskCollection.Count];
@@ -5879,7 +5821,7 @@ namespace System.Threading.Tasks
                         if (AsyncCausalityTracer.LoggingOn)
                             AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Completed);
 
-                        if (Task.s_asyncDebuggingEnabled)
+                        if (s_asyncDebuggingEnabled)
                             RemoveFromActiveTasks(this);
 
                         TrySetResult(results);
@@ -6048,9 +5990,10 @@ namespace System.Threading.Tasks
             return new UnwrapPromise<TResult>(outerTask, lookForOce);
         }
 
-#if PROJECTN
+        //
+        // This helper routine is targeted by the debugger.
+        //
         [DependencyReductionRoot]
-#endif
         internal virtual Delegate[] GetDelegateContinuationsForDebugger()
         {
             //Avoid an infinite loop by making sure the continuation object is not a reference to istelf.
@@ -6064,17 +6007,20 @@ namespace System.Threading.Tasks
         {
             if (continuationObject != null)
             {
-                if (continuationObject is Action singleAction)
+                Action singleAction = continuationObject as Action;
+                if (singleAction != null)
                 {
                     return new Delegate[] { AsyncMethodBuilderCore.TryGetStateMachineForDebugger(singleAction) };
                 }
 
-                if (continuationObject is TaskContinuation taskContinuation)
+                TaskContinuation taskContinuation = continuationObject as TaskContinuation;
+                if (taskContinuation != null)
                 {
                     return taskContinuation.GetDelegateContinuationsForDebugger();
                 }
 
-                if (continuationObject is Task continuationTask)
+                Task continuationTask = continuationObject as Task;
+                if (continuationTask != null)
                 {
                     Debug.Assert(continuationTask.m_action == null);
                     Delegate[] delegates = continuationTask.GetDelegateContinuationsForDebugger();
@@ -6084,20 +6030,22 @@ namespace System.Threading.Tasks
 
                 //We need this ITaskCompletionAction after the Task because in the case of UnwrapPromise
                 //the VS debugger is more interested in the continuation than the internal invoke()
-                if (continuationObject is ITaskCompletionAction singleCompletionAction)
+                ITaskCompletionAction singleCompletionAction = continuationObject as ITaskCompletionAction;
+                if (singleCompletionAction != null)
                 {
                     return new Delegate[] { new Action<Task>(singleCompletionAction.Invoke) };
                 }
 
-                if (continuationObject is List<object> continuationList)
+                List<object> continuationList = continuationObject as List<object>;
+                if (continuationList != null)
                 {
                     List<Delegate> result = new List<Delegate>();
                     foreach (object obj in continuationList)
                     {
-                        var innerDelegates = GetDelegatesFromContinuationObject(obj);
+                        Delegate[] innerDelegates = GetDelegatesFromContinuationObject(obj);
                         if (innerDelegates != null)
                         {
-                            foreach (var del in innerDelegates)
+                            foreach (Delegate del in innerDelegates)
                             {
                                 if (del != null)
                                     result.Add(del);
@@ -6112,10 +6060,10 @@ namespace System.Threading.Tasks
             return null;
         }
 
-#if PROJECTN
+        //
+        // This helper routine is targeted by the debugger.
+        //
         [DependencyReductionRoot]
-#endif
-        //Do not remove: VS debugger calls this API directly using func-eval to populate data in the tasks window
         private static Task GetActiveTaskFromId(int taskId)
         {
             Task task = null;
@@ -6535,14 +6483,15 @@ namespace System.Threading.Tasks
 
                 // Otherwise, process the inner task it returned.
                 case TaskStatus.RanToCompletion:
-                    ProcessInnerTask(task is Task<Task<TResult>> taskOfTaskOfTResult ? // it's either a Task<Task> or Task<Task<TResult>>
+                    var taskOfTaskOfTResult = task as Task<Task<TResult>>; // it's either a Task<Task> or Task<Task<TResult>>
+                    ProcessInnerTask(taskOfTaskOfTResult != null ?
                         taskOfTaskOfTResult.Result : ((Task<Task>)task).Result);
                     break;
             }
         }
 
         /// <summary>Transfer the completion status from "task" to ourself.</summary>
-        /// <param name="task">The source task whose results should be transfered to this.</param>
+        /// <param name="task">The source task whose results should be transfered to <paramref name="promise"/>.</param>
         /// <param name="lookForOce">Whether or not to look for OperationCanceledExceptions in task's exceptions if it faults.</param>
         /// <returns>true if the transfer was successful; otherwise, false.</returns>
         private bool TrySetFromTask(Task task, bool lookForOce)
@@ -6581,7 +6530,7 @@ namespace System.Threading.Tasks
                     if (AsyncCausalityTracer.LoggingOn)
                         AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Completed);
 
-                    if (Task.s_asyncDebuggingEnabled)
+                    if (s_asyncDebuggingEnabled)
                         RemoveFromActiveTasks(this);
 
                     result = TrySetResult(taskTResult != null ? taskTResult.Result : default);

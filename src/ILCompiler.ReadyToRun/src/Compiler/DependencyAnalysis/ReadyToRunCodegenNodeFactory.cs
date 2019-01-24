@@ -448,57 +448,42 @@ namespace ILCompiler.DependencyAnalysis
             throw new NotImplementedException();
         }
 
-        private ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper GetGenericStaticHelper(ReadyToRunHelperId helperId)
+        protected override ISymbolNode CreateGenericLookupFromDictionaryNode(ReadyToRunGenericHelperKey helperKey)
         {
-            ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper r2rHelper;
-
-            switch (helperId)
+            switch (helperKey.HelperId)
             {
                 case ReadyToRunHelperId.GetGCStaticBase:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GenericGcStaticBase;
-                    break;
-
-                case ReadyToRunHelperId.GetNonGCStaticBase:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GenericNonGcStaticBase;
-                    break;
-
-                case ReadyToRunHelperId.GetThreadStaticBase:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GenericGcTlsBase;
-                    break;
-
-                case ReadyToRunHelperId.GetThreadNonGcStaticBase:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GenericNonGcTlsBase;
-                    break;
+                    return new DelayLoadHelperImport(
+                        this,
+                        HelperImports,
+                        ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GenericGcStaticBase,
+                        new TypeFixupSignature(
+                            ReadyToRunFixupKind.READYTORUN_FIXUP_Invalid,
+                            (TypeDesc)helperKey.Target,
+                            InputModuleContext));
 
                 default:
                     throw new NotImplementedException();
             }
-
-            return r2rHelper;
-        }
-
-        protected override ISymbolNode CreateGenericLookupFromDictionaryNode(ReadyToRunGenericHelperKey helperKey)
-        {
-            return new DelayLoadHelperImport(
-                this,
-                HelperImports,
-                GetGenericStaticHelper(helperKey.HelperId),
-                new TypeFixupSignature(
-                    ReadyToRunFixupKind.READYTORUN_FIXUP_Invalid,
-                    (TypeDesc)helperKey.Target,
-                    InputModuleContext));
         }
 
         protected override ISymbolNode CreateGenericLookupFromTypeNode(ReadyToRunGenericHelperKey helperKey)
         {
-            return new DelayLoadHelperImport(
-                this,
-                HelperImports,
-                GetGenericStaticHelper(helperKey.HelperId),
-                new TypeFixupSignature(
-                    ReadyToRunFixupKind.READYTORUN_FIXUP_Invalid,
-                    (TypeDesc)helperKey.Target,
-                    InputModuleContext));
+            switch (helperKey.HelperId)
+            {
+                case ReadyToRunHelperId.GetGCStaticBase:
+                    return new DelayLoadHelperImport(
+                        this,
+                        HelperImports,
+                        ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GenericGcStaticBase,
+                        new TypeFixupSignature(
+                            ReadyToRunFixupKind.READYTORUN_FIXUP_Invalid,
+                            (TypeDesc)helperKey.Target,
+                            InputModuleContext));
+
+                default:
+                    throw new NotImplementedException();
+            }
         }
 
         private Dictionary<string, SectionStartNode> _sectionStartNodes = new Dictionary<string, SectionStartNode>();

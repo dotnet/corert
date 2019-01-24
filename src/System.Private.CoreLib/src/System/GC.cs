@@ -646,10 +646,5 @@ namespace System
             lastRecordedHeapSize = default;
             lastRecordedFragmentation = default;
         }
-
-        internal static ulong GetSegmentSize()
-        {
-            return RuntimeImports.RhGetGCSegmentSize();
-        }
     }
 }

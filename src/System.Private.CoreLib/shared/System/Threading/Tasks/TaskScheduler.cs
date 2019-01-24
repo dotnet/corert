@@ -197,9 +197,12 @@ namespace System.Threading.Tasks
             bool bInlined = false;
             try
             {
+#if CORECLR
                 if (TplEtwProvider.Log.IsEnabled())
+                {
                     task.FireTaskScheduledIfNeeded(this);
-
+                }
+#endif
                 bInlined = TryExecuteTaskInline(task, taskWasPreviouslyQueued);
             }
             finally
@@ -252,8 +255,12 @@ namespace System.Threading.Tasks
         {
             Debug.Assert(task != null);
 
+#if CORECLR
             if (TplEtwProvider.Log.IsEnabled())
+            {
                 task.FireTaskScheduledIfNeeded(this);
+            }
+#endif
 
             this.QueueTask(task);
         }

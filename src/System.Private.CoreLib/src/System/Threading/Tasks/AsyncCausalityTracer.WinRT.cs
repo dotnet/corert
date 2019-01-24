@@ -26,10 +26,6 @@ namespace System.Threading.Tasks
     //
     internal static class AsyncCausalityTracer
     {
-        public static void EnableToETW(bool enabled)
-        {
-        }
-
         //==============================================================================================================
         // This section of the class encapsulates the call to AsyncCausalityTracer for the async-aware callstacks.
         //==============================================================================================================

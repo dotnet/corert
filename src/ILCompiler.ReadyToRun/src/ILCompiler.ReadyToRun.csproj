@@ -101,6 +101,19 @@
     <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
       <Link>Common\ArrayBuilder.cs</Link>
     </Compile>
+
+    <!-- To clean this up, we should move IMethodCodeNode to a common location -->
+    <Compile Include="..\..\ILCompiler.RyuJit\src\Compiler\DependencyAnalysis\IMethodCodeNode.cs">
+      <Link>DependencyAnalysis\IMethodCodeNode.cs</Link>
+    </Compile>
+
+    <!--
+      JitHelper is CoreRT specific. Refactor so it's not needed in the ReadyToRun project
+    -->
+    <Compile Include="..\..\ILCompiler.Compiler\src\Compiler\JitHelper.cs">
+      <Link>Compiler\JitHelper.cs</Link>
+    </Compile>
+
     <Compile Include="..\..\Common\src\TypeSystem\IL\HelperExtensions.cs">
       <Link>IL\HelperExtensions.cs</Link>
     </Compile>

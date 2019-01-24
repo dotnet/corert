@@ -20,8 +20,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly MethodWithToken _methodArgument;
 
-        private readonly FieldDesc _fieldArgument;
-
         private readonly GenericContext _methodContext;
 
         private readonly SignatureContext _signatureContext;
@@ -31,7 +29,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadyToRunFixupKind fixupKind, 
             TypeDesc typeArgument, 
             MethodWithToken methodArgument,
-            FieldDesc fieldArgument,
             GenericContext methodContext,
             SignatureContext signatureContext)
         {
@@ -39,7 +36,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _fixupKind = fixupKind;
             _typeArgument = typeArgument;
             _methodArgument = methodArgument;
-            _fieldArgument = fieldArgument;
             _methodContext = methodContext;
             _signatureContext = signatureContext;
         }
@@ -89,10 +85,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         context: _signatureContext,
                         isUnboxingStub: false,
                         isInstantiatingStub: true);
-                }
-                else if (_fieldArgument != null)
-                {
-                    dataBuilder.EmitFieldSignature(_fieldArgument, _signatureContext);
                 }
                 else
                 {

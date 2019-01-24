@@ -1,0 +1,26 @@
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <AssemblyName>System.Private.Threading</AssemblyName>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <OutputType>Library</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+    <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
+    <Compile Include="Internal\Threading\SpinLockTraceCallbacksImplementation.cs" />
+    <Compile Include="Internal\Threading\TaskTraceCallbacksImplementation.cs" />
+    <Compile Include="System\Threading\CDSsyncETWBCLProvider.cs" />
+    <Compile Include="System\Threading\Tasks\TPLETWProvider.cs" />
+    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\__BlockReflectionAttribute.cs" Condition="'$(IsProjectNLibrary)' != 'true'">
+      <Link>System\Runtime\CompilerServices\__BlockReflectionAttribute.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
