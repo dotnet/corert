@@ -1983,6 +1983,21 @@ namespace Internal.JitInterface
                 else if (field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
                 {
                     // The JIT wants to know how to access a static field on a generic type. We need a runtime lookup.
+#if READYTORUN
+                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER;
+                    if (field.IsThreadStatic)
+                    {
+                        pResult->helper = (field.HasGCStaticBase ?
+                            CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE:
+                            CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE);
+                    }
+                    else
+                    {
+                        pResult->helper = (field.HasGCStaticBase ?
+                            CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
+                            CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE);
+                    }
+#else
                     fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_READYTORUN_HELPER;
                     pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE;
 
@@ -1998,18 +2013,7 @@ namespace Internal.JitInterface
                         // Find out what kind of base do we need to look up.
                         if (field.IsThreadStatic)
                         {
-#if READYTORUN
-                            if (field.HasGCStaticBase)
-                            {
-                                helperId = ReadyToRunHelperId.GetThreadStaticBase;
-                            }
-                            else
-                            {
-                                helperId = ReadyToRunHelperId.GetThreadNonGcStaticBase;
-                            }
-#else
                             helperId = ReadyToRunHelperId.GetThreadStaticBase;
-#endif
                         }
                         else if (field.HasGCStaticBase)
                         {
@@ -2036,6 +2040,7 @@ namespace Internal.JitInterface
 
                         pResult->fieldLookup = CreateConstLookupToSymbol(helper);
                     }
+#endif // READYTORUN
                 }
                 else
                 {
@@ -2553,9 +2558,9 @@ namespace Internal.JitInterface
                 {
                     Debug.Assert(fEmbedParent);
 
-                    if (obj is MethodDesc)
+                    if (obj is MethodDesc objAsMethod)
                     {
-                        target = ((MethodDesc)obj).OwningType;
+                        target = objAsMethod.OwningType;
                     }
                     else
                     {
@@ -2587,7 +2592,7 @@ namespace Internal.JitInterface
             }
 
             Debug.Assert(pResult.compileTimeHandle != null);
-            
+
             ComputeLookup(ref pResolvedToken, target, helperId, ref pResult.lookup);
         }
 

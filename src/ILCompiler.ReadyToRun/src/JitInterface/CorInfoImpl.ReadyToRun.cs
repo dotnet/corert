@@ -99,47 +99,49 @@ namespace Internal.JitInterface
             if (_compilation.NeedsRuntimeLookup(helperId, entity))
             {
                 lookup.lookupKind.needsRuntimeLookup = true;
+
                 lookup.runtimeLookup.signature = null;
 
                 MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
 
                 // Do not bother computing the runtime lookup if we are inlining. The JIT is going
                 // to abort the inlining attempt anyway.
-                if (contextMethod != MethodBeingCompiled)
-                    return;
-
-                GenericDictionaryLookup genericLookup = _compilation.ComputeGenericLookup(contextMethod, helperId, entity);
-
-                if (genericLookup.UseHelper)
+                if (contextMethod != _methodCodeNode.Method)
                 {
-                    lookup.runtimeLookup.indirections = CORINFO.USEHELPER;
-                    lookup.lookupKind.runtimeLookupFlags = (ushort)genericLookup.HelperId;
-                    lookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(genericLookup.HelperObject);
+                    return;
+                }
+
+                // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary available to store the lookup. 
+                // All callers of ComputeRuntimeLookupForSharedGenericToken have to filter out this case. We can't do much about it here.
+                Debug.Assert(contextMethod.IsSharedByGenericInstantiations);
+
+                if (contextMethod.RequiresInstMethodDescArg())
+                {
+                    lookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM;
                 }
                 else
                 {
-                    if (genericLookup.ContextSource == GenericContextSource.MethodParameter)
+                    if (contextMethod.RequiresInstMethodTableArg())
                     {
-                        lookup.runtimeLookup.helper = CorInfoHelpFunc.CORINFO_HELP_RUNTIMEHANDLE_METHOD;
+                        lookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM;
                     }
                     else
                     {
-                        lookup.runtimeLookup.helper = CorInfoHelpFunc.CORINFO_HELP_RUNTIMEHANDLE_CLASS;
+                        lookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ;
                     }
-
-                    lookup.runtimeLookup.indirections = (ushort)genericLookup.NumberOfIndirections;
-                    lookup.runtimeLookup.offset0 = (IntPtr)genericLookup[0];
-                    if (genericLookup.NumberOfIndirections > 1)
-                        lookup.runtimeLookup.offset1 = (IntPtr)genericLookup[1];
-                    lookup.runtimeLookup.testForFixup = false; // TODO: this will be needed in true multifile
-                    lookup.runtimeLookup.testForNull = false;
-                    lookup.runtimeLookup.indirectFirstOffset = false;
-                    lookup.runtimeLookup.indirectSecondOffset = false;
-                    lookup.lookupKind.runtimeLookupFlags = 0;
-                    lookup.lookupKind.runtimeLookupArgs = null;
                 }
 
-                lookup.lookupKind.runtimeLookupKind = GetLookupKindFromContextSource(genericLookup.ContextSource);
+                // Unless we decide otherwise, just do the lookup via a helper function
+                lookup.runtimeLookup.indirections = CORINFO.USEHELPER;
+
+                lookup.lookupKind.runtimeLookupFlags = (ushort)helperId;
+                lookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(entity);
+
+                lookup.runtimeLookup.indirectFirstOffset = false;
+                lookup.runtimeLookup.indirectSecondOffset = false;
+
+                // For R2R compilations, we don't generate the dictionary lookup signatures (dictionary lookups are done in a 
+                // different way that is more version resilient... plus we can't have pointers to existing MTs/MDs in the sigs)
             }
             else
             {
@@ -246,36 +248,9 @@ namespace Internal.JitInterface
             MethodDesc targetMethod = HandleToObject(pTargetMethod.hMethod);
             TypeDesc delegateTypeDesc = HandleToObject(delegateType);
 
-            if (targetMethod.IsSharedByGenericInstantiations)
-            {
-                // If the method is not exact, fetch it as a runtime determined method.
-                targetMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pTargetMethod);
-            }
-
-            /* TODO
-            bool isLdvirtftn = pTargetMethod.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldvirtftn;
-            DelegateCreationInfo delegateInfo = _compilation.GetDelegateCtor(delegateTypeDesc, targetMethod, isLdvirtftn);
-
-            if (delegateInfo.NeedsRuntimeLookup)
-            {
-                pLookup.lookupKind.needsRuntimeLookup = true;
-
-                MethodDesc contextMethod = methodFromContext(pTargetMethod.tokenContext);
-
-                // We should not be inlining these. RyuJIT should have aborted inlining already.
-                Debug.Assert(contextMethod == MethodBeingCompiled);
-
-                pLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
-                pLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.DelegateCtor;
-                pLookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(delegateInfo);
-            }
-            else
-            */
-            {
-                pLookup.lookupKind.needsRuntimeLookup = false;
-                pLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.DelegateCtor(
+            pLookup.lookupKind.needsRuntimeLookup = false;
+            pLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.DelegateCtor(
                     delegateTypeDesc, targetMethod, new ModuleToken(_tokenContext, (mdToken)pTargetMethod.token), _signatureContext));
-            }
         }
 
         private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum)
@@ -337,6 +312,24 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_LDELEMA_REF:
                     id = ReadyToRunHelper.Ldelema_Ref;
                     break;
+
+
+                case CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
+                    id = ReadyToRunHelper.GenericGcStaticBase;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE:
+                    id = ReadyToRunHelper.GenericNonGcStaticBase;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE:
+                    id = ReadyToRunHelper.GenericGcTlsBase;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE:
+                    id = ReadyToRunHelper.GenericNonGcTlsBase;
+                    break;
+
 
                 case CorInfoHelpFunc.CORINFO_HELP_MEMSET:
                     id = ReadyToRunHelper.MemSet;
