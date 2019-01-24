@@ -2973,8 +2973,17 @@ namespace Internal.IL
                         escaped.Append("\\\"");
                         break;
                     default:
-                        // TODO: handle all characters < 32
-                        escaped.Append(c);
+                        // TODO: Unicode string literals
+                        if (c > 0x7F)
+                        {
+                            escaped.Append("?");
+                            break;
+                        }
+
+                        if (c < 0x20)
+                            escaped.Append("\\X" + ((int)c).ToStringInvariant("X2"));
+                        else
+                            escaped.Append(c);
                         break;
                 }
             }
@@ -3462,9 +3471,9 @@ namespace Internal.IL
 
             var bufferName = NewTempName();
             AppendLine();
-            Append("void* ");
+            Append("intptr_t ");
             Append(bufferName);
-            Append(" = alloca(");
+            Append(" = (intptr_t)alloca(");
             Append(count);
             Append(")");
             AppendSemicolon();
@@ -3472,7 +3481,7 @@ namespace Internal.IL
             if (_methodIL.IsInitLocals)
             {
                 AppendLine();
-                Append("::memset(");
+                Append("::memset((void*)");
                 Append(bufferName);
                 Append(", 0, ");
                 Append(count);
