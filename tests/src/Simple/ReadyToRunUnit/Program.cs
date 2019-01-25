@@ -431,6 +431,84 @@ internal class Program
         }
     }
 
+    private class GenException<T> : Exception {}
+    
+    private static bool GenericTryCatch<T>()
+    {
+        Exception thrown = new GenException<T>();
+        try
+        {
+            throw thrown;
+        }
+        catch (GenException<T>)
+        {
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Caught {0} (expected {1})", ex.GetType(), thrown.GetType());
+            return false;
+        }
+    }
+
+    private class RefX1<T> {}
+    private class RefX2<T,U> {}
+    private struct ValX1<T> {}
+    private struct ValX2<T,U> {}
+    private struct ValX3<T,U,V>{}
+
+    private static bool GenericTryCatchTest()
+    {
+        bool success = true;
+        success = GenericTryCatch<double>() && success;
+        success = GenericTryCatch<string>() && success;
+        success = GenericTryCatch<object>() && success;
+        success = GenericTryCatch<Guid>() && success;
+
+        success = GenericTryCatch<int[]>() && success;
+        success = GenericTryCatch<double[,]>() && success;
+        success = GenericTryCatch<string[][][]>() && success;
+        success = GenericTryCatch<object[,,,]>() && success;
+        success = GenericTryCatch<Guid[][,,,][]>() && success;
+
+        success = GenericTryCatch<RefX1<int>[]>() && success;
+        success = GenericTryCatch<RefX1<double>[,]>() && success;
+        success = GenericTryCatch<RefX1<string>[][][]>() && success;
+        success = GenericTryCatch<RefX1<object>[,,,]>() && success;
+        success = GenericTryCatch<RefX1<Guid>[][,,,][]>() && success;
+        success = GenericTryCatch<RefX2<int,int>[]>() && success;
+        success = GenericTryCatch<RefX2<double,double>[,]>() && success;
+        success = GenericTryCatch<RefX2<string,string>[][][]>() && success;
+        success = GenericTryCatch<RefX2<object,object>[,,,]>() && success;
+        success = GenericTryCatch<RefX2<Guid,Guid>[][,,,][]>() && success;
+        success = GenericTryCatch<ValX1<int>[]>() && success;
+        success = GenericTryCatch<ValX1<double>[,]>() && success;
+        success = GenericTryCatch<ValX1<string>[][][]>() && success;
+        success = GenericTryCatch<ValX1<object>[,,,]>() && success;
+        success = GenericTryCatch<ValX1<Guid>[][,,,][]>() && success;
+
+        success = GenericTryCatch<ValX2<int,int>[]>() && success;
+        success = GenericTryCatch<ValX2<double,double>[,]>() && success;
+        success = GenericTryCatch<ValX2<string,string>[][][]>() && success;
+        success = GenericTryCatch<ValX2<object,object>[,,,]>() && success;
+        success = GenericTryCatch<ValX2<Guid,Guid>[][,,,][]>() && success;
+
+        success = GenericTryCatch<ValX1<int>>() && success;
+        success = GenericTryCatch<ValX1<RefX1<int>>>() && success;
+        success = GenericTryCatch<ValX2<int,string>>() && success;
+        success = GenericTryCatch<ValX3<int,string,Guid>>() && success;
+
+        success = GenericTryCatch<ValX1<ValX1<int>>>() && success;
+        success = GenericTryCatch<ValX1<ValX1<ValX1<string>>>>() && success;
+        success = GenericTryCatch<ValX1<ValX1<ValX1<ValX1<Guid>>>>>() && success;
+
+        success = GenericTryCatch<ValX1<ValX2<int,string>>>() && success;
+        success = GenericTryCatch<ValX2<ValX2<ValX1<int>,ValX3<int,string, ValX1<ValX2<int,string>>>>,ValX2<ValX1<int>,ValX3<int,string, ValX1<ValX2<int,string>>>>>>() && success;
+        success = GenericTryCatch<ValX3<ValX1<int[][,,,]>,ValX2<object[,,,][][],Guid[][][]>,ValX3<double[,,,,,,,,,,],Guid[][][][,,,,][,,,,][][][],string[][][][][][][][][][][]>>>();
+        
+        return success;
+    }
+
     private static bool FileStreamNullRefTryCatch()
     {
         try
@@ -869,6 +947,7 @@ internal class Program
         RunTest("EmptyArrayOfString", EmptyArrayOfString());
         RunTest("EnumerateEmptyArrayOfString", EnumerateEmptyArrayOfString());
         RunTest("TryCatch", TryCatch());
+        RunTest("GenericTryCatchTest", GenericTryCatchTest());
         RunTest("FileStreamNullRefTryCatch", FileStreamNullRefTryCatch());
         RunTest("InstanceMethodTest", InstanceMethodTest());
         RunTest("ThisObjGenericLookupTest", ThisObjGenericLookupTest());
