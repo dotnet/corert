@@ -25,6 +25,7 @@
   <PropertyGroup>
     <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
     <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
+    <TargetsCoreRT>true</TargetsCoreRT>
     <UseSyncTable>true</UseSyncTable>
     <DefineConstants>netcoreapp;EETYPE_TYPE_MANAGER;ES_BUILD_PN;ES_SESSION_INFO;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
