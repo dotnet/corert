@@ -43,6 +43,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _isInstantiatingStub = isInstantiatingStub;
         }
 
+        public MethodDesc Method => _methodDesc;
+
         public override int ClassCode => 150063499;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
