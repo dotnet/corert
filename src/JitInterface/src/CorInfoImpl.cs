@@ -395,7 +395,6 @@ namespace Internal.JitInterface
             methodInfo->EHcount = (uint)methodIL.GetExceptionRegions().Length;
             methodInfo->options = methodIL.IsInitLocals ? CorInfoOptions.CORINFO_OPT_INIT_LOCALS : (CorInfoOptions)0;
 
-#if READYTORUN
             if (method.IsSharedByGenericInstantiations)
             {
                 if (method.AcquiresInstMethodTableFromThis())
@@ -411,7 +410,6 @@ namespace Internal.JitInterface
                     methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_FROM_METHODTABLE;
                 }
             }
-#endif
 
             methodInfo->regionKind = CorInfoRegionKind.CORINFO_REGION_NONE;
             Get_CORINFO_SIG_INFO(method, &methodInfo->args);
