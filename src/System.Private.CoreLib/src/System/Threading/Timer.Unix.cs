@@ -26,11 +26,8 @@ namespace System.Threading
         /// </summary>
         private static volatile int s_nextTimerDuration;
 
-        private void SetTimer(uint actualDuration)
+        private bool SetTimer(uint actualDuration)
         {
-            // This function is called with the TimerQueue lock acquired
-            Debug.Assert(Lock.IsAcquired);
-
             // Note: AutoResetEvent.WaitOne takes an Int32 value as a timeout.
             // The TimerQueue code ensures that timer duration is not greater than max Int32 value
             Debug.Assert(actualDuration <= (uint)int.MaxValue);
@@ -50,6 +47,8 @@ namespace System.Threading
             {
                 s_timerEvent.Set();
             }
+
+            return true;
         }
 
 
@@ -57,7 +56,7 @@ namespace System.Threading
         /// This method is executed on a dedicated a timer thread. Its purpose is
         /// to handle timer request and notify the TimerQueue when a timer expires.
         /// </summary>
-        private static void TimerThread()
+        private void TimerThread()
         {
             int currentTimerInterval;
 
@@ -92,7 +91,7 @@ namespace System.Threading
                 // Check whether TimerQueue needs to process expired timers.
                 if (timerHasExpired)
                 {
-                    Instance.FireNextTimers();
+                    FireNextTimers();
 
                     // When FireNextTimers() installs a new timer, it also sets the timer event.
                     // Reset the event so the timer thread is not woken up right away unnecessary.
@@ -121,7 +120,7 @@ namespace System.Threading
     {
         private void SignalNoCallbacksRunning()
         {
-            object toSignal = _notifyWhenNoCallbacksRunning;
+            object toSignal = m_notifyWhenNoCallbacksRunning;
             Debug.Assert(toSignal is WaitHandle || toSignal is Task<bool>);
 
             if (toSignal is WaitHandle wh)

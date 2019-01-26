@@ -18,18 +18,19 @@ namespace System.Threading
         [NativeCallable(CallingConvention = CallingConvention.StdCall)]
         private static void TimerCallback(IntPtr instance, IntPtr context, IntPtr timer)
         {
+            int id = (int)context;
             var wrapper = ThreadPoolCallbackWrapper.Enter();
-            Instance.FireNextTimers();
+            Instances[id].FireNextTimers();
             wrapper.Exit();
         }
 
-        private unsafe void SetTimer(uint actualDuration)
+        private unsafe bool SetTimer(uint actualDuration)
         {
             if (_nativeTimer == IntPtr.Zero)
             {
                 IntPtr nativeCallback = AddrofIntrinsics.AddrOf<Interop.mincore.TimerCallback>(TimerCallback);
 
-                _nativeTimer = Interop.mincore.CreateThreadpoolTimer(nativeCallback, IntPtr.Zero, IntPtr.Zero);
+                _nativeTimer = Interop.mincore.CreateThreadpoolTimer(nativeCallback, (IntPtr)m_id, IntPtr.Zero);
                 if (_nativeTimer == IntPtr.Zero)
                     throw new OutOfMemoryException();
             }
@@ -37,6 +38,8 @@ namespace System.Threading
             // Negative time indicates the amount of time to wait relative to the current time, in 100 nanosecond units
             long dueTime = -10000 * (long)actualDuration;
             Interop.mincore.SetThreadpoolTimer(_nativeTimer, &dueTime, 0, 0);
+
+            return true;
         }
 
         //
@@ -67,7 +70,7 @@ namespace System.Threading
     {
         private void SignalNoCallbacksRunning()
         {
-            object toSignal = _notifyWhenNoCallbacksRunning;
+            object toSignal = m_notifyWhenNoCallbacksRunning;
             Debug.Assert(toSignal is WaitHandle || toSignal is Task<bool>);
 
             if (toSignal is WaitHandle wh)
