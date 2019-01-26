@@ -1,0 +1,5 @@
+<Directives>
+  <Application>
+    <Assembly Name="HelloWasm" Dynamic="Required All" />
+  </Application>
+</Directives>

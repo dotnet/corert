@@ -6,6 +6,8 @@ using System;
 using System.Threading;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
+using System.Reflection;
+
 #if PLATFORM_WINDOWS
 using CpObj;
 #endif
@@ -801,6 +803,18 @@ internal static class Program
         {
             PrintLine("Ok.");
         }
+
+        PrintString("type GetFields length: ");
+        var x = new ClassForMetaTests();
+        FieldInfo[] fields = typeof(ClassForMetaTests).GetFields();
+        if (fields.Length == 2)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine(" Failed.");
+        }
     }
 
     /// <summary>
@@ -1272,6 +1286,16 @@ class AnotherClassWithFourThreadStatics
         classStatic5++;
     }
 }
+
+class ClassForMetaTests
+{
+    // used via reflection
+#pragma warning disable 0169
+    int intField;
+    string stringField;
+#pragma warning restore 0169
+}
+
 
 namespace System.Runtime.InteropServices
 {
