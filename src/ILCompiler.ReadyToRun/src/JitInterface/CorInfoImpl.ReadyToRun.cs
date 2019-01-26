@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -26,6 +27,22 @@ namespace Internal.JitInterface
         {
             Method = method;
             Token = token;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is MethodWithToken methodWithToken &&
+                Equals(methodWithToken);
+        }
+
+        public override int GetHashCode()
+        {
+            return Method.GetHashCode() ^ unchecked(17 * Token.GetHashCode());
+        }
+
+        public bool Equals(MethodWithToken methodWithToken)
+        {
+            return Method == methodWithToken.Method && Token.Equals(methodWithToken.Token);
         }
     }
 
@@ -375,7 +392,12 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT:
                     id = ReadyToRunHelper.NewArray;
                     break;
-
+                case CorInfoHelpFunc.CORINFO_HELP_VIRTUAL_FUNC_PTR:
+                    id = ReadyToRunHelper.VirtualFuncPtr;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR:
+                    id = ReadyToRunHelper.VirtualFuncPtr;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_LMUL:
                     id = ReadyToRunHelper.LMul;
                     break;
@@ -730,6 +752,300 @@ namespace Internal.JitInterface
                 }
             }
             return false;
+        }
+
+        private void getCallInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult)
+        {
+#if DEBUG
+            // In debug, write some bogus data to the struct to ensure we have filled everything
+            // properly.
+            MemoryHelper.FillMemory((byte*)pResult, 0xcc, Marshal.SizeOf<CORINFO_CALL_INFO>());
+#endif
+            MethodDesc method = HandleToObject(pResolvedToken.hMethod);
+
+            // Spec says that a callvirt lookup ignores static methods. Since static methods
+            // can't have the exact same signature as instance methods, a lookup that found
+            // a static method would have never found an instance method.
+            if (method.Signature.IsStatic && (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0)
+            {
+                throw new BadImageFormatException();
+            }
+
+            // This block enforces the rule that methods with [NativeCallable] attribute
+            // can only be called from unmanaged code. The call from managed code is replaced
+            // with a stub that throws an InvalidProgramException
+            if (method.IsNativeCallable && (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0)
+            {
+                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNativeCallable, method);
+            }
+
+            TypeDesc exactType = HandleToObject(pResolvedToken.hClass);
+
+            TypeDesc constrainedType = null;
+            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0 && pConstrainedResolvedToken != null)
+            {
+                constrainedType = HandleToObject(pConstrainedResolvedToken->hClass);
+            }
+
+            bool resolvedConstraint = false;
+            bool forceUseRuntimeLookup = false;
+
+            MethodDesc methodAfterConstraintResolution = method;
+            if (constrainedType == null)
+            {
+                pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM;
+            }
+            else
+            {
+                // We have a "constrained." call.  Try a partial resolve of the constraint call.  Note that this
+                // will not necessarily resolve the call exactly, since we might be compiling
+                // shared generic code - it may just resolve it to a candidate suitable for
+                // JIT compilation, and require a runtime lookup for the actual code pointer
+                // to call.
+
+                MethodDesc directMethod = constrainedType.GetClosestDefType().TryResolveConstraintMethodApprox(exactType, method, out forceUseRuntimeLookup);
+                if (directMethod == null && constrainedType.IsEnum)
+                {
+                    if (method.Name == "GetHashCode")
+                    {
+                        directMethod = constrainedType.UnderlyingType.FindVirtualFunctionTargetMethodOnObjectType(method);
+                        Debug.Assert(directMethod != null);
+
+                        constrainedType = constrainedType.UnderlyingType;
+                        method = directMethod;
+                    }
+                }
+
+                if (directMethod != null)
+                {
+                    // Either
+                    //    1. no constraint resolution at compile time (!directMethod)
+                    // OR 2. no code sharing lookup in call
+                    // OR 3. we have have resolved to an instantiating stub
+
+                    methodAfterConstraintResolution = directMethod;
+
+                    Debug.Assert(!methodAfterConstraintResolution.OwningType.IsInterface);
+                    resolvedConstraint = true;
+                    pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM;
+
+                    exactType = constrainedType;
+                }
+                else if (constrainedType.IsValueType)
+                {
+                    pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_BOX_THIS;
+                }
+                else
+                {
+                    pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_DEREF_THIS;
+                }
+            }
+
+            MethodDesc targetMethod = methodAfterConstraintResolution;
+
+            //
+            // Initialize callee context used for inlining and instantiation arguments
+            //
+
+
+            if (targetMethod.HasInstantiation)
+            {
+                pResult->contextHandle = contextFromMethod(targetMethod);
+                pResult->exactContextNeedsRuntimeLookup = targetMethod.IsSharedByGenericInstantiations;
+            }
+            else
+            {
+                pResult->contextHandle = contextFromType(exactType);
+                pResult->exactContextNeedsRuntimeLookup = exactType.IsCanonicalSubtype(CanonicalFormKind.Any);
+            }
+
+            //
+            // Determine whether to perform direct call
+            //
+
+            bool directCall = false;
+            bool resolvedCallVirt = false;
+
+            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0)
+            {
+                directCall = true;
+            }
+            else
+            if (targetMethod.Signature.IsStatic)
+            {
+                // Static methods are always direct calls
+                directCall = true;
+            }
+            else if (targetMethod.OwningType.IsInterface)
+            {
+                // Force all interface calls to be interpreted as if they are virtual.
+                directCall = false;
+            }
+            else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) == 0 || resolvedConstraint)
+            {
+                directCall = true;
+            }
+            else
+            {
+                if (!targetMethod.IsVirtual || targetMethod.IsFinal || targetMethod.OwningType.IsSealed())
+                {
+                    resolvedCallVirt = true;
+                    directCall = true;
+                }
+            }
+
+            pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
+
+            if (directCall)
+            {
+                bool allowInstParam = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ALLOWINSTPARAM) != 0;
+                MethodDesc canonMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+                if (pResult->exactContextNeedsRuntimeLookup && !allowInstParam && targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstArg())
+                {
+                    CORINFO_RUNTIME_LOOKUP_KIND lookupKind = GetGenericRuntimeLookupKind(canonMethod);
+                    ReadyToRunHelperId helperId = ReadyToRunHelperId.MethodHandle;
+                    object helperArg = new MethodWithToken(canonMethod, new ModuleToken(_tokenContext, pResolvedToken.token));
+                    GenericContext methodContext = new GenericContext(entityFromContext(pResolvedToken.tokenContext));
+                    ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(lookupKind, helperId, helperArg, methodContext, _signatureContext);
+                    pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(helper);
+                    pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
+                    pResult->codePointerOrStubLookup.lookupKind.runtimeLookupFlags = 0;
+                    pResult->codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
+                    pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
+                }
+                else
+                {
+                    bool referencingArrayAddressMethod = false;
+
+                    if (targetMethod.IsIntrinsic)
+                    {
+                        // For multidim array Address method, we pretend the method requires a hidden instantiation argument
+                        // (even though it doesn't need one). We'll actually swap the method out for a differnt one with
+                        // a matching calling convention later. See ArrayMethod for a description.
+                        referencingArrayAddressMethod = targetMethod.IsArrayAddressMethod();
+                    }
+
+                    MethodDesc concreteMethod = targetMethod;
+                    targetMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+                    pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL;
+
+                    // Compensate for always treating delegates as direct calls above
+                    if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0 && (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0 && !resolvedCallVirt)
+                    {
+                        pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
+                    }
+
+                    if (pResult->exactContextNeedsRuntimeLookup)
+                    {
+                        // Nothing to do... The generic handle lookup gets embedded in to the codegen
+                        // during the jitting of the call.
+                        // (Note: The generic lookup in R2R is performed by a call to a helper at runtime, not by
+                        // codegen emitted at crossgen time)
+
+                        Debug.Assert(!forceUseRuntimeLookup);
+                        pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+                            _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, method,
+                                new ModuleToken(_tokenContext, pResolvedToken.token), _signatureContext)
+                            );
+                    }
+                    else
+                    {
+                        ISymbolNode instParam = null;
+
+                        if (targetMethod.RequiresInstMethodDescArg())
+                        {
+                            instParam = _compilation.SymbolNodeFactory.MethodGenericDictionary(concreteMethod,
+                                new ModuleToken(_tokenContext, pResolvedToken.token), _signatureContext);
+                        }
+                        else if (targetMethod.RequiresInstMethodTableArg() || referencingArrayAddressMethod)
+                        {
+                            // Ask for a constructed type symbol because we need the vtable to get to the dictionary
+                            instParam = _compilation.SymbolNodeFactory.ConstructedTypeSymbol(concreteMethod.OwningType, _signatureContext);
+                        }
+
+                        if (instParam != null)
+                        {
+                            pResult->instParamLookup = CreateConstLookupToSymbol(instParam);
+                        }
+
+                        if (pResult->kind == CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN)
+                        {
+                            pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.DynamicHelperCell(
+                                new MethodWithToken(targetMethod, new ModuleToken(_tokenContext, pResolvedToken.token)), _signatureContext));
+                        }
+                        else
+                        {
+                            pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+                            _compilation.NodeFactory.MethodEntrypoint(targetMethod, constrainedType, method,
+                                new ModuleToken(_tokenContext, pResolvedToken.token), _signatureContext)
+                            );
+                        }
+                    }
+                }
+
+                pResult->nullInstanceCheck = resolvedCallVirt;
+            }
+            else if (method.HasInstantiation)
+            {
+                // GVM Call Support
+                pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
+                pResult->nullInstanceCheck = true;
+                pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+                    _compilation.NodeFactory.DynamicHelperCell(
+                        new MethodWithToken(targetMethod, new ModuleToken(_tokenContext, pResolvedToken.token)), _signatureContext));
+            }
+            else
+            // In ReadyToRun, we always use the dispatch stub to call virtual methods
+            {
+                pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB;
+
+                if (pResult->exactContextNeedsRuntimeLookup)
+                {
+                    ComputeLookup(ref pResolvedToken,
+                        GetRuntimeDeterminedObjectForToken(ref pResolvedToken),
+                        ReadyToRunHelperId.VirtualDispatchCell,
+                        ref pResult->codePointerOrStubLookup);
+                    Debug.Assert(pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup);
+                }
+                else
+                {
+                    pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
+                    pResult->codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_PVALUE;
+                    pResult->codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
+                        _compilation.SymbolNodeFactory.InterfaceDispatchCell(targetMethod,
+                            new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token), _signatureContext, isUnboxingStub: false
+                        , _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled).ToString()));
+                }
+            }
+
+            pResult->hMethod = ObjectToHandle(targetMethod);
+
+            pResult->accessAllowed = CorInfoIsAccessAllowedResult.CORINFO_ACCESS_ALLOWED;
+
+            // We're pretty much done at this point.  Let's grab the rest of the information that the jit is going to
+            // need.
+            pResult->classFlags = getClassAttribsInternal(targetMethod.OwningType);
+
+            pResult->methodFlags = getMethodAttribsInternal(targetMethod);
+            Get_CORINFO_SIG_INFO(targetMethod, &pResult->sig);
+
+            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_VERIFICATION) != 0)
+            {
+                if (pResult->hMethod != pResolvedToken.hMethod)
+                {
+                    pResult->verMethodFlags = getMethodAttribsInternal(targetMethod);
+                    Get_CORINFO_SIG_INFO(targetMethod, &pResult->verSig);
+                }
+                else
+                {
+                    pResult->verMethodFlags = pResult->methodFlags;
+                    pResult->verSig = pResult->sig;
+                }
+            }
+
+            pResult->_secureDelegateInvoke = 0;
         }
     }
 }

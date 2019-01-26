@@ -156,12 +156,6 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public IMethodNode StringAllocator(MethodDesc constructor, ModuleToken methodToken, SignatureContext signatureContext)
-        {
-            return MethodEntrypoint(constructor, constrainedType: null, originalMethod: null, 
-                methodToken: methodToken, signatureContext: signatureContext, isUnboxingStub: false);
-        }
-
         protected override ISymbolNode CreateReadyToRunHelperNode(ReadyToRunHelperKey helperCall)
         {
             throw new NotImplementedException();
@@ -286,7 +280,8 @@ namespace ILCompiler.DependencyAnalysis
                 CorCompileImportType.CORCOMPILE_IMPORT_TYPE_UNKNOWN,
                 CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_EAGER,
                 (byte)Target.PointerSize,
-                emitPrecode: false);
+                emitPrecode: false,
+                emitGCRefMap: false);
             ImportSectionsTable.AddEmbeddedObject(EagerImports);
 
             // All ready-to-run images have a module import helper which gets patched by the runtime on image load
@@ -314,7 +309,8 @@ namespace ILCompiler.DependencyAnalysis
                 CorCompileImportType.CORCOMPILE_IMPORT_TYPE_STUB_DISPATCH,
                 CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_PCODE,
                 (byte)Target.PointerSize,
-                emitPrecode: false);
+                emitPrecode: false,
+                emitGCRefMap: true);
             ImportSectionsTable.AddEmbeddedObject(MethodImports);
 
             DispatchImports = new ImportSectionNode(
@@ -322,7 +318,8 @@ namespace ILCompiler.DependencyAnalysis
                 CorCompileImportType.CORCOMPILE_IMPORT_TYPE_STUB_DISPATCH,
                 CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_PCODE,
                 (byte)Target.PointerSize,
-                emitPrecode: false);
+                emitPrecode: false,
+                emitGCRefMap: true);
             ImportSectionsTable.AddEmbeddedObject(DispatchImports);
 
             HelperImports = new ImportSectionNode(
@@ -330,7 +327,8 @@ namespace ILCompiler.DependencyAnalysis
                 CorCompileImportType.CORCOMPILE_IMPORT_TYPE_UNKNOWN,
                 CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_PCODE,
                 (byte)Target.PointerSize,
-                emitPrecode: false);
+                emitPrecode: false,
+                emitGCRefMap: false);
             ImportSectionsTable.AddEmbeddedObject(HelperImports);
 
             PrecodeImports = new ImportSectionNode(
@@ -338,7 +336,8 @@ namespace ILCompiler.DependencyAnalysis
                 CorCompileImportType.CORCOMPILE_IMPORT_TYPE_UNKNOWN,
                 CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_PCODE,
                 (byte)Target.PointerSize,
-                emitPrecode: true);
+                emitPrecode: true,
+                emitGCRefMap: false);
             ImportSectionsTable.AddEmbeddedObject(PrecodeImports);
 
             StringImports = new ImportSectionNode(
@@ -346,7 +345,8 @@ namespace ILCompiler.DependencyAnalysis
                 CorCompileImportType.CORCOMPILE_IMPORT_TYPE_STRING_HANDLE,
                 CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_UNKNOWN,
                 (byte)Target.PointerSize,
-                emitPrecode: true);
+                emitPrecode: true,
+                emitGCRefMap: false);
             ImportSectionsTable.AddEmbeddedObject(StringImports);
 
             graph.AddRoot(ImportSectionsTable, "Import sections table is always generated");
@@ -512,6 +512,30 @@ namespace ILCompiler.DependencyAnalysis
                 _sectionStartNodes.Add(sectionName, sectionStartNode);
             }
             return sectionStartNode;
+        }
+
+        private Dictionary<MethodWithToken, ISymbolNode> _dynamicHelperCellCache = new Dictionary<MethodWithToken, ISymbolNode>();
+
+        public ISymbolNode DynamicHelperCell(MethodWithToken methodWithToken, SignatureContext signatureContext)
+        {
+            ISymbolNode result;
+            if (!_dynamicHelperCellCache.TryGetValue(methodWithToken, out result))
+            {
+                result = new DelayLoadHelperImport(
+                    this,
+                    DispatchImports,
+                    ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_Obj,
+                    MethodSignature(
+                        ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry,
+                        methodWithToken.Method,
+                        constrainedType: null,
+                        methodWithToken.Token,
+                        signatureContext: signatureContext,
+                        isUnboxingStub: false,
+                        isInstantiatingStub: false));
+                _dynamicHelperCellCache.Add(methodWithToken, result);
+            }
+            return result;
         }
     }
 }
