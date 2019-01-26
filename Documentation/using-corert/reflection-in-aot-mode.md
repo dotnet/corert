@@ -2,9 +2,9 @@
 
 When .NET code is compiled ahead of time, a typical problem the ahead of time compiler faces is deciding what code to compile and what data structures to generate.
 
-For static languages such as C or C++, the problem of deciding what to compile ahead of time is quite simple: one starts with compiling `Main()` and establishing what other methods and data structures `Main()` references. One then compiles those references, the references of the references and so on, until there's nothing left to compile. This concept is easy to understand and works great for languages like C or C++. Nice side effect of this approach is that the generated program is small. If the code doesn't call into e.g. the `printf` function, the `printf` function is not generated in the final executable.
+For static languages such as C or C++, the problem of deciding what to include in the final executable is quite simple: one starts with including `main()` and establishing what other methods and data structures `main()` references. One then includes those references, the references of the references and so on, until there's no reference left to include. This concept is easy to understand and works great for languages like C or C++. Nice side effect of this approach is that the generated program is small. If the code doesn't call into e.g. the `printf` function, the `printf` function is not generated in the final executable.
 
-Problems with such approach start to show up on platforms that allow reflection. Reflection is a mechanism .NET provides that allows developers to inspect the structure of the program at runtime and access/invoke types and their members.
+Problems with such approach start to show up on platforms that allow unconstrained reflection. Reflection is a mechanism .NET provides that allows developers to inspect the structure of the program at runtime and access/invoke types and their members. With unconstrained reflection, the definition of "program" includes "everything that one would have access to at the time of compiling the program".
 
 As a motivating example, consider this program:
 
@@ -15,6 +15,8 @@ class Program
     {
         Console.Write("Name of type: ");
         string typeName = Console.ReadLine();
+
+        // Allow to exit the program peacefully
         if (String.IsNullOrEmpty(typeName))
             return;
 
@@ -29,16 +31,15 @@ class Program
         Console.WriteLine("Hello!");
     }
 }
-
 ```
 
-The above program lets the user invoke any parameterless public static method on any type. For the naive compilation algorithm above, this program would work great for input strings `Program` and `Main` because the algorithm included method `Main` in the final executable. The program wouldn't work so great for inputs `Program` and `SayHello`*, because method `SayHello` wasn't called from anywhere. For the naive algorithm, the only way to fix the program for inputs `Program` and `SayHello` is to add a call to `SayHello` in `Main`.
+The above program lets the user invoke any parameterless public static method on any type. For the naive compilation algorithm above, this program would work great for input strings `Program` and `Main` because the algorithm included method `Main` in the final executable. The program wouldn't work so great for inputs `Program` and `SayHello`†, because method `SayHello` wasn't called from anywhere. For the naive algorithm, the only way to fix the program for inputs `Program` and `SayHello` is to add a call to `SayHello` in `Main`.
 
-> * The behavior for `Type.GetMethod` on type `Program` and method `SayHello` would be to return `null` if `SayHello` wasn't compiled. The reason for this is that `Type.GetMethod` is documented to return `null` if there's no method with a given name, and for the purposes of the program, `SayHello` doesn't exist. The compiler could remember there used to be such method and write the information in the executable, but that would raise additional questions about whether the uncompiled method should be included in a `Type.GetMethods` call.
+> † The behavior for `Type.GetMethod` on type `Program` and method `SayHello` would be to return `null` if `SayHello` wasn't compiled. The reason for this is that `Type.GetMethod` is documented to return `null` if there's no method with a given name, and for the purposes of the program, `SayHello` doesn't exist. The compiler could remember there used to be such method and write the information in the executable, but that would raise additional questions about whether the uncompiled method should be included in the list of methods returned from a `Type.GetMethods` call.
 
-While the example program above is not practical in reality, similar patterns exist in e.g. reflection based serialization and deserialization libraries that access members based on their names that could be e.g. downloaded from the internet.
+While the example program above is not practical in reality, similar patterns exist in e.g. reflection based serialization and deserialization libraries that access members based on their names that could be literally downloaded from the internet.
 
-The dynamic nature of reflection doesn't pose a problem for .NET platforms that have a JIT compiler or an interpreter (and don't attemt to remove "unused" parts of the program, such as when using the IL Linker). JIT and interpreter in CoreRT are optional components in early experimental stages and cannot be used to solve the problem at this time. There are also scenarios that can't afford the overhead of a JIT or an interpreter, so a solution that can support reflection in a fully ahead of time environment is still desirable. An environment without a JIT or an interpreter is closer to the environment Go or Rust developers are used to (and environment that is more lightweight, with predictable code generation characteristics).
+The dynamic nature of reflection doesn't pose a problem just for fully AOT .NET Runtimes. It's also a problem when tools such as [IL linker](https://github.com/dotnet/core/blob/master/samples/linker-instructions.md) are used to remove unnecessary code. The desire to remove unused code is stronger in fully AOT mode, since native code comes with a greater multiplicative factor (IL instructions are more compact than native instructions).
 
 ## Solving reflection in full AOT mode ##
 
@@ -46,7 +47,7 @@ The solution to reflection is about establishing what parts of the program can b
 
 ### Assume everything is accessed dynamically ###
 
-The compiler can simply assume that everything can be accessed dynamically. This means that everything will be compiled and available at runtime. This is the safest possible option, but results in big executables and long compilation times. "Everything" includes all of the .NET Framework code, including things like support for FTP or WCF. An app is unlikely to be relying on all of that.
+The compiler can simply assume that everything can be accessed dynamically. This means that everything will be compiled and available at runtime. This is the safest possible option, but results in big executables and long compilation times. "Everything" includes all of the all of .NET Core framework code, including things like support for FTP or WCF. An app is unlikely to be relying on all of that.
 
 ### Assume non-framework code is accessed dynamically ###
 
@@ -62,4 +63,4 @@ The compiler can build insights into how reflection is used by analyzing the use
 
 ### Assume nothing is accessed dynamically ###
 
-In CoreRT, reflection metadata (names of types, list of their methods, fields, signatures, etc.) is _optional_. The CoreRT runtime has its own minimal version of the metadata that represents the minimum required to execute managed code (think: base type and list of interfaces, offsets to GC pointers within an instance of the type, pointer to the finalizer, etc.). The metadata used by the reflection subsystem within the base class libraries is only used by the reflection stack and is not necessary to execute non-reflection code. For a .NET app that doesn't use reflection, the compiler can skip generating the reflection metadata completely. This option is currently not publicly exposed, but it exists. People who would like to totally minimize the size of their applications or obfuscate their code could be interested in this option.
+In CoreRT, reflection metadata (names of types, list of their methods, fields, signatures, etc.) is _optional_. The CoreRT runtime has its own minimal version of the metadata that represents the minimum required to execute managed code (think: base type and list of interfaces, offsets to GC pointers within an instance of the type, pointer to the finalizer, etc.). The metadata used by the reflection subsystem within the base class libraries is only used by the reflection stack and is not necessary to execute non-reflection code. For a .NET app that doesn't use reflection, the compiler can skip generating the reflection metadata completely. This option is currently [not publicly exposed](https://github.com/dotnet/corert/issues/6897), but it exists. People who would like to totally minimize the size of their applications or obfuscate their code could be interested in this option.
