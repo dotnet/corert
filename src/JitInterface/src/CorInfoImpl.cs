@@ -395,20 +395,17 @@ namespace Internal.JitInterface
             methodInfo->EHcount = (uint)methodIL.GetExceptionRegions().Length;
             methodInfo->options = methodIL.IsInitLocals ? CorInfoOptions.CORINFO_OPT_INIT_LOCALS : (CorInfoOptions)0;
 
-            if (method.IsSharedByGenericInstantiations)
+            if (method.AcquiresInstMethodTableFromThis())
             {
-                if (method.AcquiresInstMethodTableFromThis())
-                {
-                    methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_FROM_THIS;
-                }
-                else if (method.HasInstantiation)
-                {
-                    methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_FROM_METHODDESC;
-                }
-                else
-                {
-                    methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_FROM_METHODTABLE;
-                }
+                methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_FROM_THIS;
+            }
+            else if (method.RequiresInstMethodDescArg())
+            {
+                methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_FROM_METHODDESC;
+            }
+            else if (method.RequiresInstMethodTableArg())
+            {
+                methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_FROM_METHODTABLE;
             }
 
             methodInfo->regionKind = CorInfoRegionKind.CORINFO_REGION_NONE;
