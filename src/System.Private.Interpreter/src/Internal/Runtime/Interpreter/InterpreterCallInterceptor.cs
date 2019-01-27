@@ -30,15 +30,13 @@ namespace Internal.Runtime.Interpreter
         {
             get
             {
-                int delta = 1;
-
-                LocalVariableType[] localVariableTypes = new LocalVariableType[_method.Signature.Length + 1];
+                int delta = (_method.Signature.IsStatic ? 1 : 2);
+                LocalVariableType[] localVariableTypes = new LocalVariableType[_method.Signature.Length + delta];
                 localVariableTypes[0] = new LocalVariableType(GetRuntimeTypeHandleForUnknownType(_method.Signature.ReturnType), false, _method.Signature.ReturnType.IsByRef);
 
                 if (!_method.Signature.IsStatic)
                 {
                     localVariableTypes[1] = new LocalVariableType(GetRuntimeTypeHandleForUnknownType(_method.OwningType), false, _method.OwningType.IsByRef);
-                    delta = 2;
                 }
 
                 for (int i = 0; i < _method.Signature.Length; i++)
