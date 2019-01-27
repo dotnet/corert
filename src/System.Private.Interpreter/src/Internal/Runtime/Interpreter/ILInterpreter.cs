@@ -544,11 +544,13 @@ namespace Internal.Runtime.Interpreter
                         InterpretStoreArgument(reader.ReadILUInt16());
                         break;
                     case ILOpcode.ldloc:
-                        throw new NotImplementedException();
+                        InterpretLoadLocal(reader.ReadILUInt16());
+                        break;
                     case ILOpcode.ldloca:
                         throw new NotImplementedException();
                     case ILOpcode.stloc:
-                        throw new NotImplementedException();
+                        InterpretStoreLocal(reader.ReadILUInt16());
+                        break;
                     case ILOpcode.localloc:
                         throw new NotImplementedException();
                     case ILOpcode.endfilter:
