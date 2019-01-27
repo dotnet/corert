@@ -32,17 +32,17 @@ namespace Internal.Runtime.Interpreter
             {
                 int delta = (_method.Signature.IsStatic ? 1 : 2);
                 LocalVariableType[] localVariableTypes = new LocalVariableType[_method.Signature.Length + delta];
-                localVariableTypes[0] = new LocalVariableType(GetRuntimeTypeHandleForUnknownType(_method.Signature.ReturnType), false, _method.Signature.ReturnType.IsByRef);
+                localVariableTypes[0] = new LocalVariableType(_method.Signature.ReturnType.GetRuntimeTypeHandle(), false, _method.Signature.ReturnType.IsByRef);
 
                 if (!_method.Signature.IsStatic)
                 {
-                    localVariableTypes[1] = new LocalVariableType(GetRuntimeTypeHandleForUnknownType(_method.OwningType), false, _method.OwningType.IsByRef);
+                    localVariableTypes[1] = new LocalVariableType(_method.OwningType.GetRuntimeTypeHandle(), false, _method.OwningType.IsByRef);
                 }
 
                 for (int i = 0; i < _method.Signature.Length; i++)
                 {
                     var argument = _method.Signature[i];
-                    localVariableTypes[i + delta] = new LocalVariableType(GetRuntimeTypeHandleForUnknownType(argument), false, argument.IsByRef);
+                    localVariableTypes[i + delta] = new LocalVariableType(argument.GetRuntimeTypeHandle(), false, argument.IsByRef);
                 }
 
                 return localVariableTypes;
@@ -66,7 +66,7 @@ namespace Internal.Runtime.Interpreter
                 for (int i = 0; i < locals.Length; i++)
                 {
                     var variable = locals[i];
-                    localVariableTypes[i] = new LocalVariableType(GetRuntimeTypeHandleForUnknownType(variable.Type), variable.IsPinned, variable.Type.IsByRef);
+                    localVariableTypes[i] = new LocalVariableType(variable.Type.GetRuntimeTypeHandle(), variable.IsPinned, variable.Type.IsByRef);
                 }
 
                 return localVariableTypes;
@@ -77,58 +77,6 @@ namespace Internal.Runtime.Interpreter
         {
             ILInterpreter interpreter = new ILInterpreter(_context, _method, _methodIL);
             interpreter.InterpretMethod(ref callInterceptorArgs);
-        }
-
-        private RuntimeTypeHandle GetRuntimeTypeHandleForUnknownType(TypeDesc type)
-        {
-            RuntimeTypeHandle runtimeTypeHandle = type.RuntimeTypeHandle;
-            if (runtimeTypeHandle.Value != IntPtr.Zero)
-                return runtimeTypeHandle;
-
-            switch (type.Category)
-            {
-                case TypeFlags.Void:
-                case TypeFlags.Boolean:
-                case TypeFlags.Char:
-                case TypeFlags.SByte:
-                case TypeFlags.Byte:
-                case TypeFlags.Int16:
-                case TypeFlags.UInt16:
-                case TypeFlags.Int32:
-                case TypeFlags.UInt32:
-                case TypeFlags.Int64:
-                case TypeFlags.UInt64:
-                case TypeFlags.IntPtr:
-                case TypeFlags.UIntPtr:
-                case TypeFlags.Single:
-                case TypeFlags.Double:
-                    // Primitive well known types should never have RuntimeTypeHandle with a zero value.
-                    // If execution gets here, we have a problem!
-                    Debug.Assert(false);
-                    break;
-                case TypeFlags.ValueType:
-                    runtimeTypeHandle = _context.GetWellKnownType(WellKnownType.ValueType).RuntimeTypeHandle;
-                    break;
-                case TypeFlags.Enum:
-                    runtimeTypeHandle = _context.GetWellKnownType(WellKnownType.Enum).RuntimeTypeHandle;
-                    break;
-                case TypeFlags.Nullable:
-                    runtimeTypeHandle = _context.GetWellKnownType(WellKnownType.Nullable).RuntimeTypeHandle;
-                    break;
-                case TypeFlags.Class:
-                case TypeFlags.Interface:
-                    runtimeTypeHandle = _context.GetWellKnownType(WellKnownType.Object).RuntimeTypeHandle;
-                    break;
-                case TypeFlags.Array:
-                case TypeFlags.SzArray:
-                    runtimeTypeHandle = _context.GetWellKnownType(WellKnownType.Array).RuntimeTypeHandle;
-                    break;
-                default:
-                    // TODO: Support more complex argument and local variable types
-                    throw new NotImplementedException();
-            }
-
-            return runtimeTypeHandle;
         }
     }
 }
