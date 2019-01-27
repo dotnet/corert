@@ -26,6 +26,10 @@ namespace System.Threading
         /// </summary>
         private static volatile int s_nextTimerDuration;
 
+        private TimerQueue(int id)
+        {
+        }
+
         private bool SetTimer(uint actualDuration)
         {
             // Note: AutoResetEvent.WaitOne takes an Int32 value as a timeout.
@@ -112,33 +116,6 @@ namespace System.Threading
             get
             {
                 return Environment.TickCount;
-            }
-        }
-    }
-
-    internal sealed partial class TimerQueueTimer
-    {
-        private void SignalNoCallbacksRunning()
-        {
-            object toSignal = m_notifyWhenNoCallbacksRunning;
-            Debug.Assert(toSignal is WaitHandle || toSignal is Task<bool>);
-
-            if (toSignal is WaitHandle wh)
-            {
-                SafeWaitHandle waitHandle = wh.SafeWaitHandle;
-                waitHandle.DangerousAddRef();
-                try
-                {
-                    WaitSubsystem.SetEvent(waitHandle.DangerousGetHandle());
-                }
-                finally
-                {
-                    waitHandle.DangerousRelease();
-                }
-            }
-            else
-            {
-                ((Task<bool>)toSignal).TrySetResult(true);
             }
         }
     }

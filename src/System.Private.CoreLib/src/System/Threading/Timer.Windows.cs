@@ -14,6 +14,12 @@ namespace System.Threading
     internal partial class TimerQueue
     {
         private IntPtr _nativeTimer;
+        private readonly int _id;
+
+        private TimerQueue(int id)
+        {
+            _id = id;
+        }
 
         [NativeCallable(CallingConvention = CallingConvention.StdCall)]
         private static void TimerCallback(IntPtr instance, IntPtr context, IntPtr timer)
@@ -30,7 +36,7 @@ namespace System.Threading
             {
                 IntPtr nativeCallback = AddrofIntrinsics.AddrOf<Interop.mincore.TimerCallback>(TimerCallback);
 
-                _nativeTimer = Interop.mincore.CreateThreadpoolTimer(nativeCallback, (IntPtr)m_id, IntPtr.Zero);
+                _nativeTimer = Interop.mincore.CreateThreadpoolTimer(nativeCallback, (IntPtr)_id, IntPtr.Zero);
                 if (_nativeTimer == IntPtr.Zero)
                     throw new OutOfMemoryException();
             }
@@ -62,24 +68,6 @@ namespace System.Threading
 
                 // convert to 100ns to milliseconds, and truncate to 32 bits.
                 return (int)(uint)(time100ns / 10000);
-            }
-        }
-    }
-
-    internal sealed partial class TimerQueueTimer
-    {
-        private void SignalNoCallbacksRunning()
-        {
-            object toSignal = m_notifyWhenNoCallbacksRunning;
-            Debug.Assert(toSignal is WaitHandle || toSignal is Task<bool>);
-
-            if (toSignal is WaitHandle wh)
-            {
-                Interop.Kernel32.SetEvent(wh.SafeWaitHandle);
-            }
-            else
-            {
-                ((Task<bool>)toSignal).TrySetResult(true);
             }
         }
     }
