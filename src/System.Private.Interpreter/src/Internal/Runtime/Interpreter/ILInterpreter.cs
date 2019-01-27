@@ -67,6 +67,47 @@ namespace Internal.Runtime.Interpreter
             return stackItem;
         }
 
+        private StackValueKind GetStackValueKind(TypeDesc type)
+        {
+            switch (type.Category)
+            {
+                case TypeFlags.Boolean:
+                case TypeFlags.Char:
+                case TypeFlags.SByte:
+                case TypeFlags.Byte:
+                case TypeFlags.Int16:
+                case TypeFlags.UInt16:
+                case TypeFlags.Int32:
+                case TypeFlags.UInt32:
+                    return StackValueKind.Int32;
+                case TypeFlags.Int64:
+                case TypeFlags.UInt64:
+                    return StackValueKind.Int64;
+                case TypeFlags.Single:
+                case TypeFlags.Double:
+                    return StackValueKind.Float;
+                case TypeFlags.IntPtr:
+                case TypeFlags.UIntPtr:
+                    return StackValueKind.NativeInt;
+                case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
+                    return StackValueKind.ValueType;
+                case TypeFlags.Enum:
+                    return GetStackValueKind(type.UnderlyingType);
+                case TypeFlags.Class:
+                case TypeFlags.Interface:
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                    return StackValueKind.ObjRef;
+                case TypeFlags.ByRef:
+                    return StackValueKind.ByRef;
+                case TypeFlags.Pointer:
+                    return StackValueKind.NativeInt;
+                default:
+                    return StackValueKind.Unknown;
+            }
+        }
+
         public void InterpretMethod(ref CallInterceptorArgs callInterceptorArgs)
         {
             _callInterceptorArgs = callInterceptorArgs;
@@ -573,17 +614,33 @@ namespace Internal.Runtime.Interpreter
 
         private void InterpretLoadLocal(int index)
         {
+            Debug.Assert(index >= 0);
             _stack.Push(_locals[index]);
         }
 
         private void InterpretStoreLocal(int index)
         {
+            Debug.Assert(index >= 0);
             _locals[index] = PopWithValidation();
         }
 
         private void InterpretLoadArgument(int index)
         {
-            TypeDesc argument = _method.Signature[index];
+            Debug.Assert(index >= 0);
+            TypeDesc argument = default(TypeDesc);
+
+            if (!_method.Signature.IsStatic)
+            {
+                if (index == 0)
+                    argument = _method.OwningType;
+                else
+                    argument = _method.Signature[index - 1];
+            }
+            else
+            {
+                argument = _method.Signature[index];
+            }
+
             TypeFlags category = argument.Category;
 
             switch (category)
@@ -600,7 +657,6 @@ namespace Internal.Runtime.Interpreter
                     break;
                 case TypeFlags.Int64:
                 case TypeFlags.UInt64:
-                case TypeFlags.Enum:
                     _stack.Push(StackItem.FromInt64(GetArgument<long>(index)));
                     break;
                 case TypeFlags.IntPtr:
@@ -612,9 +668,26 @@ namespace Internal.Runtime.Interpreter
                     _stack.Push(StackItem.FromDouble(GetArgument<double>(index)));
                     break;
                 case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
                     _stack.Push(StackItem.FromValueType(GetArgument<ValueType>(index)));
                     break;
-                case TypeFlags.Nullable:
+                case TypeFlags.Enum:
+                    {
+                        StackValueKind kind = GetStackValueKind(argument.UnderlyingType);
+                        switch (kind)
+                        {
+                            case StackValueKind.Int32:
+                                _stack.Push(StackItem.FromInt32(GetArgument<int>(index)));
+                                break;
+                            case StackValueKind.Int64:
+                                _stack.Push(StackItem.FromInt64(GetArgument<long>(index)));
+                                break;
+                            default:
+                                ThrowHelper.ThrowInvalidProgramException();
+                                break;
+                        }
+                    }
+                    break;
                 case TypeFlags.Class:
                 case TypeFlags.Interface:
                 case TypeFlags.Array:
@@ -671,12 +744,26 @@ namespace Internal.Runtime.Interpreter
                     SetReturnValue(stackItem.AsDouble());
                     break;
                 case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
                     SetReturnValue(stackItem.AsValueType());
                     break;
                 case TypeFlags.Enum:
-                    SetReturnValue(stackItem.AsInt64Unchecked());
+                    {
+                        StackValueKind kind = GetStackValueKind(returnType.UnderlyingType);
+                        switch (kind)
+                        {
+                            case StackValueKind.Int32:
+                                SetReturnValue(stackItem.AsInt32());
+                                break;
+                            case StackValueKind.Int64:
+                                SetReturnValue(stackItem.AsInt64());
+                                break;
+                            default:
+                                ThrowHelper.ThrowInvalidProgramException();
+                                break;
+                        }
+                    }
                     break;
-                case TypeFlags.Nullable:
                 case TypeFlags.Class:
                 case TypeFlags.Interface:
                 case TypeFlags.Array:
