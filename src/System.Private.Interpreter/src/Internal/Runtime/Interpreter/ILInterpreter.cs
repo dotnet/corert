@@ -690,6 +690,12 @@ namespace Internal.Runtime.Interpreter
                             case StackValueKind.Int64:
                                 _stack.Push(StackItem.FromInt64(GetArgument<long>(index)));
                                 break;
+                            case StackValueKind.NativeInt:
+                                _stack.Push(StackItem.FromNativeInt(GetArgument<IntPtr>(index)));
+                                break;
+                            case StackValueKind.Float:
+                                _stack.Push(StackItem.FromDouble(GetArgument<double>(index)));
+                                break;
                             default:
                                 ThrowHelper.ThrowInvalidProgramException();
                                 break;
@@ -798,6 +804,12 @@ namespace Internal.Runtime.Interpreter
                                 break;
                             case StackValueKind.Int64:
                                 SetReturnValue(stackItem.AsInt64());
+                                break;
+                            case StackValueKind.NativeInt:
+                                SetReturnValue(stackItem.AsNativeInt());
+                                break;
+                            case StackValueKind.Float:
+                                SetReturnValue(stackItem.AsDouble());
                                 break;
                             default:
                                 ThrowHelper.ThrowInvalidProgramException();
