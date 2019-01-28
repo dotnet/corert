@@ -415,12 +415,12 @@ namespace Internal.JitInterface
             return methodIL;
         }
 
-        private void Get_CORINFO_SIG_INFO(MethodDesc method, CORINFO_SIG_INFO* sig, bool isFatFunctionPointerOrInstantiatingStub = false)
+        private void Get_CORINFO_SIG_INFO(MethodDesc method, CORINFO_SIG_INFO* sig, bool suppressHiddenArgument = false)
         {
             Get_CORINFO_SIG_INFO(method.Signature, sig);
 
             // Does the method have a hidden parameter?
-            bool hasHiddenParameter = method.RequiresInstArg() && !isFatFunctionPointerOrInstantiatingStub;
+            bool hasHiddenParameter = !suppressHiddenArgument && method.RequiresInstArg();
 
             if (method.IsIntrinsic)
             {
