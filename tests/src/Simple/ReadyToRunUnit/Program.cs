@@ -908,6 +908,34 @@ internal class Program
         return success;
     }
 
+    class ClassWithGVM
+    {
+        public virtual bool GVM<T>(string expectedTypeName)
+        {
+            string typeName = GetTypeName<T>();
+            Console.WriteLine("GVM<{0}> called ({1} expected)", typeName, expectedTypeName);
+            return typeName == expectedTypeName;
+        }
+    }
+
+    private static void GVMTestCase(Func<string, bool> gvm, string expectedTypeName, ref bool success)
+    {
+        if (!gvm(expectedTypeName))
+        {
+            success = false;
+        }
+    }
+
+    private static bool GVMTest()
+    {
+        ClassWithGVM gvmInstance = new ClassWithGVM();
+        bool success = true;
+        GVMTestCase(gvmInstance.GVM<int>, "System.Int32", ref success);
+        GVMTestCase(gvmInstance.GVM<object>, "System.Object", ref success);
+        GVMTestCase(gvmInstance.GVM<string>, "System.String", ref success);
+        return success;
+    }
+
     public static int Main(string[] args)
     {
         if (args.Length > 0)
@@ -961,6 +989,7 @@ internal class Program
         RunTest("SharedGenericTlsGcStaticTest", SharedGenericTlsGcStaticTest());
         RunTest("SharedGenericTlsNonGcStaticTest", SharedGenericTlsNonGcStaticTest());
         RunTest("VirtualDelegateLoadTest", VirtualDelegateLoadTest());
+        RunTest("GVMTest", GVMTest());
 
         Console.WriteLine($@"{_passedTests.Count} tests pass:");
         foreach (string testName in _passedTests)
