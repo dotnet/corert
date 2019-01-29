@@ -102,7 +102,11 @@ namespace System.Threading
         /// </summary>
         private int _numRequestedCallbacks;
 
-        private LowLevelLock _callbackLock = new LowLevelLock();
+#if CORERT
+        private readonly Lock _callbackLock = new Lock();
+#else
+        private readonly object _callbackLock = new object();
+#endif
 
         /// <summary>
         /// Notes if we need to signal the user's unregister event after all callbacks complete.
@@ -129,51 +133,53 @@ namespace System.Threading
         public bool Unregister(WaitHandle waitObject)
         {
             GC.SuppressFinalize(this);
-            _callbackLock.Acquire();
-            try
+#if CORERT
+            using (LockHolder.Hold(_callbackLock))
+#else
+            lock (_callbackLock)
+#endif
             {
-                if (_unregisterCalled)
+                try
                 {
-                    return false;
-                }
+                    if (_unregisterCalled)
+                    {
+                        return false;
+                    }
 
-                UserUnregisterWaitHandle = waitObject?.SafeWaitHandle;
+                    UserUnregisterWaitHandle = waitObject?.SafeWaitHandle;
 
-                if (_unregistered)
-                {
-                    SignalUserWaitHandle();
-                    return true;
-                }
+                    if (_unregistered)
+                    {
+                        SignalUserWaitHandle();
+                        return true;
+                    }
 
-                if (IsBlocking)
-                {
-                    _callbacksComplete = RentEvent();
+                    if (IsBlocking)
+                    {
+                        _callbacksComplete = RentEvent();
+                    }
+                    else
+                    {
+                        _removed = RentEvent();
+                    }
+                    _unregisterCalled = true;
                 }
-                else
+                catch (Exception) // Rollback state on exception
                 {
-                    _removed = RentEvent();
-                }
-                _unregisterCalled = true;
-            }
-            catch (Exception) // Rollback state on exception
-            {
-                if (_removed != null)
-                {
-                    ReturnEvent(_removed);
-                    _removed = null;
-                }
-                else if (_callbacksComplete != null)
-                {
-                    ReturnEvent(_callbacksComplete);
-                    _callbacksComplete = null;
-                }
+                    if (_removed != null)
+                    {
+                        ReturnEvent(_removed);
+                        _removed = null;
+                    }
+                    else if (_callbacksComplete != null)
+                    {
+                        ReturnEvent(_callbacksComplete);
+                        _callbacksComplete = null;
+                    }
 
-                UserUnregisterWaitHandle = null;
-                throw;
-            }
-            finally
-            {
-                _callbackLock.Release();
+                    UserUnregisterWaitHandle = null;
+                    throw;
+                }
             }
 
             WaitThread.UnregisterWait(this);
@@ -185,7 +191,6 @@ namespace System.Threading
         /// </summary>
         private void SignalUserWaitHandle()
         {
-            _callbackLock.VerifyIsLocked();
             SafeWaitHandle handle = UserUnregisterWaitHandle;
             try
             {

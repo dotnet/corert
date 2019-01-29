@@ -16,7 +16,11 @@ namespace System.Threading
         private WaitThreadNode _waitThreadsHead;
         private WaitThreadNode _waitThreadsTail;
 
-        private LowLevelLock _waitThreadLock = new LowLevelLock();
+#if CORERT
+        private readonly Lock _waitThreadLock = new Lock();
+#else
+        private object _waitThreadLock = new object();
+#endif
 
         /// <summary>
         /// Register a wait handle on a <see cref="WaitThread"/>.
@@ -24,8 +28,11 @@ namespace System.Threading
         /// <param name="handle">A description of the requested registration.</param>
         internal void RegisterWaitHandle(RegisteredWaitHandle handle)
         {
-            _waitThreadLock.Acquire();
-            try
+#if CORERT
+            using (LockHolder.Hold(_waitThreadLock))
+#else
+            lock (_waitThreadLock)
+#endif
             {
                 if (_waitThreadsHead == null) // Lazily create the first wait thread.
                 {
@@ -56,10 +63,6 @@ namespace System.Threading
                 prev.Next.Thread.RegisterWaitHandle(handle);
                 return;
             }
-            finally
-            {
-                _waitThreadLock.Release();
-            }
         }
 
         /// <summary>
@@ -69,18 +72,17 @@ namespace System.Threading
         /// <returns><c>true</c> if the thread was successfully removed; otherwise, <c>false</c></returns>
         private bool TryRemoveWaitThread(WaitThread thread)
         {
-            _waitThreadLock.Acquire();
-            try
+#if CORERT
+            using (LockHolder.Hold(_waitThreadLock))
+#else
+            lock (_waitThreadLock)
+#endif
             {
                 if (thread.AnyUserWaits)
                 {
                     return false;
                 }
                 RemoveWaitThread(thread);
-            }
-            finally
-            {
-                _waitThreadLock.Release();
             }
             return true;
         }
@@ -267,8 +269,11 @@ namespace System.Threading
             /// </summary>
             private void ProcessRemovals()
             {
-                ThreadPoolInstance._waitThreadLock.Acquire();
-                try
+#if CORERT
+                using (LockHolder.Hold(ThreadPoolInstance._waitThreadLock))
+#else
+                lock (ThreadPoolInstance._waitThreadLock)
+#endif
                 {
                     Debug.Assert(_numPendingRemoves >= 0);
                     Debug.Assert(_numPendingRemoves <= _pendingRemoves.Length);
@@ -306,10 +311,6 @@ namespace System.Threading
 
                     Debug.Assert(originalNumUserWaits - originalNumPendingRemoves == _numUserWaits,
                         $"{originalNumUserWaits} - {originalNumPendingRemoves} == {_numUserWaits}");
-                }
-                finally
-                {
-                    ThreadPoolInstance._waitThreadLock.Release();
                 }
             }
             
@@ -350,7 +351,6 @@ namespace System.Threading
             /// <returns>If the handle was successfully registered on this wait thread.</returns>
             public bool RegisterWaitHandle(RegisteredWaitHandle handle)
             {
-                ThreadPoolInstance._waitThreadLock.VerifyIsLocked();
                 if (_numUserWaits == WaitHandle.MaxWaitHandles - 1)
                 {
                     return false;
@@ -389,8 +389,11 @@ namespace System.Threading
             {
                 bool pendingRemoval = false;
                 // TODO: Optimization: Try to unregister wait directly if it isn't being waited on.
-                ThreadPoolInstance._waitThreadLock.Acquire();
-                try
+#if CORERT
+                using (LockHolder.Hold(ThreadPoolInstance._waitThreadLock))
+#else
+                lock (ThreadPoolInstance._waitThreadLock)
+#endif
                 {
                     // If this handle is not already pending removal and hasn't already been removed
                     if (Array.IndexOf(_registeredWaits, handle) != -1 && Array.IndexOf(_pendingRemoves, handle) == -1)
@@ -399,10 +402,6 @@ namespace System.Threading
                         _changeHandlesEvent.Set(); // Tell the wait thread that there are changes pending.
                         pendingRemoval = true;
                     }
-                }
-                finally
-                {
-                    ThreadPoolInstance._waitThreadLock.Release();
                 }
 
                 if (blocking)

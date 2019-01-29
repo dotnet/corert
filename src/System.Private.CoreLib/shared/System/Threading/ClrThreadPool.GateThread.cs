@@ -17,9 +17,7 @@ namespace System.Threading
             
             private static int s_runningState;
 
-            private static AutoResetEvent s_runGateThreadEvent = new AutoResetEvent(true);
-          
-            private static LowLevelLock s_createdLock = new LowLevelLock();
+            private static readonly AutoResetEvent s_runGateThreadEvent = new AutoResetEvent(true);
 
             private static readonly CpuUtilizationReader s_cpu = new CpuUtilizationReader();
             private const int MaxRuns = 2;

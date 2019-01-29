@@ -18,7 +18,7 @@ namespace System.Threading
             /// Semaphore for controlling how many threads are currently working.
             /// </summary>
             private static LowLevelLifoSemaphore s_semaphore = new LowLevelLifoSemaphore(0, MaxPossibleThreadCount);
-            
+
             private static void WorkerThreadStart()
             {
                 ClrThreadPoolEventSource.Log.WorkerThreadStart(ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts).numExistingThreads);

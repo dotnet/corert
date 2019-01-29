@@ -34,7 +34,11 @@ namespace System.Threading
 
         private short _minThreads;
         private short _maxThreads;
-        private readonly LowLevelLock _maxMinThreadLock = new LowLevelLock();
+#if CORERT
+        private readonly Lock _maxMinThreadLock = new Lock();
+#else
+        private readonly object _maxMinThreadLock = new object();
+#endif
 
         [StructLayout(LayoutKind.Explicit, Size = CacheLineSize * 5)]
         private struct CacheLineSeparated
@@ -61,7 +65,11 @@ namespace System.Threading
         private int _completionCount = 0;
         private int _threadAdjustmentIntervalMs;
 
-        private LowLevelLock _hillClimbingThreadAdjustmentLock = new LowLevelLock();
+#if CORERT
+        private readonly Lock _hillClimbingThreadAdjustmentLock = new Lock();
+#else
+        private readonly object _hillClimbingThreadAdjustmentLock = new object();
+#endif
 
         private volatile int _numRequestedWorkers = 0;
 
@@ -90,8 +98,11 @@ namespace System.Threading
 
         public bool SetMinThreads(int minThreads)
         {
-            _maxMinThreadLock.Acquire();
-            try
+#if CORERT
+            using (LockHolder.Hold(_maxMinThreadLock))
+#else
+            lock (_maxMinThreadLock)
+#endif
             {
                 if (minThreads < 0 || minThreads > _maxThreads)
                 {
@@ -129,18 +140,17 @@ namespace System.Threading
                     return true;
                 }
             }
-            finally
-            {
-                _maxMinThreadLock.Release();
-            }
         }
 
         public int GetMinThreads() => _minThreads;
 
         public bool SetMaxThreads(int maxThreads)
         {
-            _maxMinThreadLock.Acquire();
-            try
+#if CORERT
+            using (LockHolder.Hold(_maxMinThreadLock))
+#else
+            lock (_maxMinThreadLock)
+#endif
             {
                 if (maxThreads < _minThreads || maxThreads == 0)
                 {
@@ -173,10 +183,6 @@ namespace System.Threading
                     return true;
                 }
             }
-            finally
-            {
-                _maxMinThreadLock.Release();
-            }
         }
 
         public int GetMaxThreads() => _maxThreads;
@@ -197,17 +203,34 @@ namespace System.Threading
             // TODO: Check perf. Might need to make this thread-local.
             Interlocked.Increment(ref _completionCount);
             Volatile.Write(ref _separated.lastDequeueTime, Environment.TickCount);
-            
-            if (ShouldAdjustMaxWorkersActive() && _hillClimbingThreadAdjustmentLock.TryAcquire())
+
+            if (ShouldAdjustMaxWorkersActive())
             {
-                try
+#if CORERT
+                if (_hillClimbingThreadAdjustmentLock.TryAcquire(0))
                 {
-                    AdjustMaxWorkersActive();
+                    try
+                    {
+                        AdjustMaxWorkersActive();
+                    }
+                    finally
+                    {
+                        _hillClimbingThreadAdjustmentLock.Release();
+                    }
                 }
-                finally
+#else
+                if (Monitor.TryEnter(_hillClimbingThreadAdjustmentLock))
                 {
-                    _hillClimbingThreadAdjustmentLock.Release();
+                    try
+                    {
+                        AdjustMaxWorkersActive();
+                    }
+                    finally
+                    {
+                        Monitor.Exit(_hillClimbingThreadAdjustmentLock);
+                    }
                 }
+#endif
             }
 
             return !WorkerThread.ShouldStopProcessingWorkNow();
@@ -219,7 +242,6 @@ namespace System.Threading
         //
         private void AdjustMaxWorkersActive()
         {
-            _hillClimbingThreadAdjustmentLock.VerifyIsLocked();
             int currentTicks = Environment.TickCount;
             int totalNumCompletions = Volatile.Read(ref _completionCount);
             int numCompletions = totalNumCompletions - _separated.priorCompletionCount;
