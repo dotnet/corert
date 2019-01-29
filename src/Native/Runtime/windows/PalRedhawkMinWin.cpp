@@ -1738,8 +1738,12 @@ size_t GCToOSInterface::GetVirtualMemoryLimit()
 // Get the physical memory that this process can use.
 // Return:
 //  non zero if it has succeeded, 0 if it has failed
-uint64_t GCToOSInterface::GetPhysicalMemoryLimit()
+uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
 {
+    // TODO: implement is_restricted
+    if (is_restricted)
+        * is_restricted = false;
+
     MEMORYSTATUSEX memStatus;
 
     memStatus.dwLength = sizeof(MEMORYSTATUSEX);
