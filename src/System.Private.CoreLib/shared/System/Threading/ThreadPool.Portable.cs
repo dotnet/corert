@@ -189,7 +189,7 @@ namespace System.Threading
             SafeWaitHandle handle = UserUnregisterWaitHandle;
             try
             {
-                if (handle != null)
+                if (handle != null && !handle.IsInvalid)
                 {
                     EventWaitHandle.Set(handle);
                 }
