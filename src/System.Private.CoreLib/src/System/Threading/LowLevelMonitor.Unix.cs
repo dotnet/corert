@@ -15,6 +15,9 @@ namespace System.Threading
     internal sealed partial class LowLevelMonitor : IDisposable
     {
         private IntPtr _nativeMonitor;
+#if DEBUG
+        private RuntimeThread _ownerThread = null;
+#endif
 
         public LowLevelMonitor()
         {
@@ -23,6 +26,18 @@ namespace System.Threading
             {
                 throw new OutOfMemoryException();
             }
+        }
+
+        ~LowLevelMonitor()
+        {
+            Dispose();
+        }
+
+        public void Dispose()
+        {
+            VerifyIsNotLockedByAnyThread();
+            DisposeCore();
+            GC.SuppressFinalize(this);
         }
 
         private void DisposeCore()
@@ -36,37 +51,96 @@ namespace System.Threading
             _nativeMonitor = IntPtr.Zero;
         }
 
-        private void AcquireCore()
+#if DEBUG
+        public bool IsLocked => _ownerThread == RuntimeThread.CurrentThread;
+#endif
+
+        public void VerifyIsLocked()
         {
-            Interop.Sys.LowLevelMutex_Acquire(_nativeMonitor);
+#if DEBUG
+            Debug.Assert(IsLocked);
+#endif
         }
 
-        private void ReleaseCore()
+        public void VerifyIsNotLocked()
         {
+#if DEBUG
+            Debug.Assert(!IsLocked);
+#endif
+        }
+
+        private void VerifyIsNotLockedByAnyThread()
+        {
+#if DEBUG
+            Debug.Assert(_ownerThread == null);
+#endif
+        }
+
+        private void ResetOwnerThread()
+        {
+#if DEBUG
+            VerifyIsLocked();
+            _ownerThread = null;
+#endif
+        }
+
+        private void SetOwnerThreadToCurrent()
+        {
+#if DEBUG
+            VerifyIsNotLockedByAnyThread();
+            _ownerThread = RuntimeThread.CurrentThread;
+#endif
+        }
+
+        public void Acquire()
+        {
+            VerifyIsNotLocked();
+            Interop.Sys.LowLevelMutex_Acquire(_nativeMonitor);
+            SetOwnerThreadToCurrent();
+        }
+
+        public void Release()
+        {
+            ResetOwnerThread();
             Interop.Sys.LowLevelMutex_Release(_nativeMonitor);
         }
 
-        private void WaitCore()
+        public void Wait()
         {
+            ResetOwnerThread();
             Interop.Sys.LowLevelMonitor_Wait(_nativeMonitor);
+            SetOwnerThreadToCurrent();
         }
 
-        private bool WaitCore(int timeoutMilliseconds)
+        public bool Wait(int timeoutMilliseconds)
         {
             Debug.Assert(timeoutMilliseconds >= -1);
 
+            ResetOwnerThread();
+            bool waitResult;
             if (timeoutMilliseconds < 0)
             {
-                WaitCore();
-                return true;
+                Interop.Sys.LowLevelMonitor_Wait(_nativeMonitor);
+                waitResult = true;
             }
-
-            return Interop.Sys.LowLevelMonitor_TimedWait(_nativeMonitor, timeoutMilliseconds);
+            else
+            {
+                waitResult = Interop.Sys.LowLevelMonitor_TimedWait(_nativeMonitor, timeoutMilliseconds);;
+            }
+            SetOwnerThreadToCurrent();
+            return waitResult;
         }
 
-        private void Signal_ReleaseCore()
+        public void Signal_Release()
         {
+            ResetOwnerThread();
             Interop.Sys.LowLevelMonitor_Signal_Release(_nativeMonitor);
         }
+
+        /// The following methods typical in a monitor are omitted since they are currently not necessary for the way in which
+        /// this class is used:
+        ///   - TryAcquire
+        ///   - Signal (use <see cref="Signal_Release"/> instead)
+        ///   - SignalAll
     }
 }
