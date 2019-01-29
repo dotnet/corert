@@ -72,47 +72,6 @@ namespace Internal.Runtime.Interpreter
             return stackItem;
         }
 
-        private StackValueKind GetStackValueKind(TypeDesc type)
-        {
-            switch (type.Category)
-            {
-                case TypeFlags.Boolean:
-                case TypeFlags.Char:
-                case TypeFlags.SByte:
-                case TypeFlags.Byte:
-                case TypeFlags.Int16:
-                case TypeFlags.UInt16:
-                case TypeFlags.Int32:
-                case TypeFlags.UInt32:
-                    return StackValueKind.Int32;
-                case TypeFlags.Int64:
-                case TypeFlags.UInt64:
-                    return StackValueKind.Int64;
-                case TypeFlags.Single:
-                case TypeFlags.Double:
-                    return StackValueKind.Float;
-                case TypeFlags.IntPtr:
-                case TypeFlags.UIntPtr:
-                    return StackValueKind.NativeInt;
-                case TypeFlags.ValueType:
-                case TypeFlags.Nullable:
-                    return StackValueKind.ValueType;
-                case TypeFlags.Enum:
-                    return GetStackValueKind(type.UnderlyingType);
-                case TypeFlags.Class:
-                case TypeFlags.Interface:
-                case TypeFlags.Array:
-                case TypeFlags.SzArray:
-                    return StackValueKind.ObjRef;
-                case TypeFlags.ByRef:
-                    return StackValueKind.ByRef;
-                case TypeFlags.Pointer:
-                    return StackValueKind.NativeInt;
-                default:
-                    return StackValueKind.Unknown;
-            }
-        }
-
         public void InterpretMethod(ref CallInterceptorArgs callInterceptorArgs)
         {
             _callInterceptorArgs = callInterceptorArgs;
@@ -651,6 +610,7 @@ namespace Internal.Runtime.Interpreter
                 argument = _method.Signature[index];
             }
 
+        again:
             switch (argument.Category)
             {
                 case TypeFlags.Boolean:
@@ -688,28 +648,8 @@ namespace Internal.Runtime.Interpreter
                     _stack.Push(StackItem.FromValueType(GetArgument<ValueType>(index)));
                     break;
                 case TypeFlags.Enum:
-                    {
-                        StackValueKind kind = GetStackValueKind(argument.UnderlyingType);
-                        switch (kind)
-                        {
-                            case StackValueKind.Int32:
-                                _stack.Push(StackItem.FromInt32(GetArgument<int>(index)));
-                                break;
-                            case StackValueKind.Int64:
-                                _stack.Push(StackItem.FromInt64(GetArgument<long>(index)));
-                                break;
-                            case StackValueKind.NativeInt:
-                                _stack.Push(StackItem.FromNativeInt(GetArgument<IntPtr>(index)));
-                                break;
-                            case StackValueKind.Float:
-                                _stack.Push(StackItem.FromDouble(GetArgument<double>(index)));
-                                break;
-                            default:
-                                ThrowHelper.ThrowInvalidProgramException();
-                                break;
-                        }
-                    }
-                    break;
+                    argument = argument.UnderlyingType;
+                    goto again;
                 case TypeFlags.Class:
                 case TypeFlags.Interface:
                 case TypeFlags.Array:
@@ -764,6 +704,7 @@ namespace Internal.Runtime.Interpreter
 
             StackItem stackItem = PopWithValidation();
 
+        again:
             switch (returnType.Category)
             {
                 case TypeFlags.Boolean:
@@ -803,28 +744,8 @@ namespace Internal.Runtime.Interpreter
                     SetReturnValue(stackItem.AsValueType());
                     break;
                 case TypeFlags.Enum:
-                    {
-                        StackValueKind kind = GetStackValueKind(returnType.UnderlyingType);
-                        switch (kind)
-                        {
-                            case StackValueKind.Int32:
-                                SetReturnValue(stackItem.AsInt32());
-                                break;
-                            case StackValueKind.Int64:
-                                SetReturnValue(stackItem.AsInt64());
-                                break;
-                            case StackValueKind.NativeInt:
-                                SetReturnValue(stackItem.AsNativeInt());
-                                break;
-                            case StackValueKind.Float:
-                                SetReturnValue(stackItem.AsDouble());
-                                break;
-                            default:
-                                ThrowHelper.ThrowInvalidProgramException();
-                                break;
-                        }
-                    }
-                    break;
+                    returnType = returnType.UnderlyingType;
+                    goto again;
                 case TypeFlags.Class:
                 case TypeFlags.Interface:
                 case TypeFlags.Array:
