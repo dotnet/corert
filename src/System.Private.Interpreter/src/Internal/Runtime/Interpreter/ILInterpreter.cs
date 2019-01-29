@@ -654,11 +654,19 @@ namespace Internal.Runtime.Interpreter
             switch (argument.Category)
             {
                 case TypeFlags.Boolean:
+                    _stack.Push(StackItem.FromInt32(GetArgument<bool>(index) ? 1 : 0));
+                    break;
                 case TypeFlags.Char:
+                    _stack.Push(StackItem.FromInt32(GetArgument<char>(index)));
+                    break;
                 case TypeFlags.SByte:
                 case TypeFlags.Byte:
+                    _stack.Push(StackItem.FromInt32(GetArgument<byte>(index)));
+                    break;
                 case TypeFlags.Int16:
                 case TypeFlags.UInt16:
+                    _stack.Push(StackItem.FromInt32(GetArgument<short>(index)));
+                    break;
                 case TypeFlags.Int32:
                 case TypeFlags.UInt32:
                     _stack.Push(StackItem.FromInt32(GetArgument<int>(index)));
