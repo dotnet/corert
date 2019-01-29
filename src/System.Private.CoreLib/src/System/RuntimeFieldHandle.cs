@@ -43,12 +43,6 @@ namespace System
             return declaringType1.Equals(declaringType2) && fieldName1 == fieldName2;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int _rotl(int value, int shift)
-        {
-            return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
-        }
-
         public override int GetHashCode()
         {
             if (_value == IntPtr.Zero)
@@ -59,7 +53,7 @@ namespace System
             RuntimeAugments.TypeLoaderCallbacks.GetRuntimeFieldHandleComponents(this, out declaringType, out fieldName);
 
             int hashcode = declaringType.GetHashCode();
-            return (hashcode + _rotl(hashcode, 13)) ^ fieldName.GetHashCode();
+            return (hashcode + BitOps.RotateLeft(hashcode, 13)) ^ fieldName.GetHashCode();
         }
 
         public static bool operator ==(RuntimeFieldHandle left, RuntimeFieldHandle right)

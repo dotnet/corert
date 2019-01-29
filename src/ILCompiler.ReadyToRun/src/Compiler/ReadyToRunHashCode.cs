@@ -34,10 +34,10 @@ namespace ILCompiler
             byte[] src = Encoding.UTF8.GetBytes(name);
             for (int i = 0; i < src.Length; i += 2)
             {
-                hash1 = unchecked(hash1 + RotateLeft(hash1, 5)) ^ src[i];
+                hash1 = unchecked(hash1 + BitOps.RotateLeft(hash1, 5)) ^ src[i];
                 if (i + 1 < src.Length)
                 {
-                    hash2 = unchecked(hash2 + RotateLeft(hash2, 5)) ^ src[i + 1];
+                    hash2 = unchecked(hash2 + BitOps.RotateLeft(hash2, 5)) ^ src[i + 1];
                 }
                 else
                 {
@@ -45,8 +45,8 @@ namespace ILCompiler
                 }
             }
 
-            hash1 = unchecked(hash1 + RotateLeft(hash1, 8));
-            hash2 = unchecked(hash2 + RotateLeft(hash2, 8));
+            hash1 = unchecked(hash1 + BitOps.RotateLeft(hash1, 8));
+            hash2 = unchecked(hash2 + BitOps.RotateLeft(hash2, 8));
 
             return unchecked((int)(hash1 ^ hash2));
         }
@@ -130,7 +130,7 @@ namespace ILCompiler
         /// <param name="nestedTypeNameHash">Hash code of the nested type name</param>
         private static int NestedTypeHashCode(int enclosingTypeHashcode, int nestedTypeNameHash)
         {
-            return unchecked(enclosingTypeHashcode + RotateLeft(enclosingTypeHashcode, 11)) ^ nestedTypeNameHash;
+            return unchecked(enclosingTypeHashcode + BitOps.RotateLeft(enclosingTypeHashcode, 11)) ^ nestedTypeNameHash;
         }
 
         /// <summary>
@@ -147,8 +147,8 @@ namespace ILCompiler
             {
                 Debug.Assert(hashCode == NameHashCode("System.Array`1"));
             }
-            hashCode = unchecked(hashCode + RotateLeft(hashCode, 13)) ^ elementTypeHashcode;
-            return unchecked(hashCode + RotateLeft(hashCode, 15));
+            hashCode = unchecked(hashCode + BitOps.RotateLeft(hashCode, 13)) ^ elementTypeHashcode;
+            return unchecked(hashCode + BitOps.RotateLeft(hashCode, 15));
         }
 
         /// <summary>
@@ -157,7 +157,7 @@ namespace ILCompiler
         /// <param name="pointeeTypeHashcode">Hash code of the pointee type</param>
         private static int PointerTypeHashCode(int pointeeTypeHashcode)
         {
-            return unchecked(pointeeTypeHashcode + RotateLeft(pointeeTypeHashcode, 5)) ^ 0x12D0;
+            return unchecked(pointeeTypeHashcode + BitOps.RotateLeft(pointeeTypeHashcode, 5)) ^ 0x12D0;
         }
 
         /// <summary>
@@ -166,7 +166,7 @@ namespace ILCompiler
         /// <param name="parameterTypeHashCode">Hash code representing the parameter type</param>
         private static int ByrefTypeHashCode(int parameterTypeHashcode)
         {
-            return unchecked(parameterTypeHashcode + RotateLeft(parameterTypeHashcode, 7)) ^ 0x4C85;
+            return unchecked(parameterTypeHashcode + BitOps.RotateLeft(parameterTypeHashcode, 7)) ^ 0x4C85;
         }
 
         /// <summary>
@@ -179,9 +179,9 @@ namespace ILCompiler
             for (int i = 0; i < instantiation.Length; i++)
             {
                 int argumentHashCode = TypeHashCode(instantiation[i]);
-                hashcode = unchecked(hashcode + RotateLeft(hashcode, 13)) ^ argumentHashCode;
+                hashcode = unchecked(hashcode + BitOps.RotateLeft(hashcode, 13)) ^ argumentHashCode;
             }
-            return unchecked(hashcode + RotateLeft(hashcode, 15));
+            return unchecked(hashcode + BitOps.RotateLeft(hashcode, 15));
         }
 
         /// <summary>
@@ -204,16 +204,6 @@ namespace ILCompiler
             }
 
             return hashCode;
-        }
-
-        /// <summary>
-        /// Bitwise left 32-bit rotation with wraparound.
-        /// </summary>
-        /// <param name="value">Value to rotate</param>
-        /// <param name="bitCount">Number of bits</param>
-        private static int RotateLeft(int value, int bitCount)
-        {
-            return unchecked((int)(((uint)value << bitCount) | ((uint)value >> (32 - bitCount))));
         }
     }
 }

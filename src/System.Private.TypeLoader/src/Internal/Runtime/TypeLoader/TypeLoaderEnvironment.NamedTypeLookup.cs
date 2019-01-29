@@ -117,15 +117,9 @@ namespace Internal.Runtime.TypeLoader
 
         private class QTypeDefinitionToRuntimeTypeHandleHashtable : LockFreeReaderHashtable<QTypeDefinition, NamedTypeLookupResult>
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static int _rotl(int value, int shift)
-            {
-                return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
-            }
-
             protected unsafe override int GetKeyHashCode(QTypeDefinition key)
             {
-                return key.Token.GetHashCode() ^ _rotl(key.Reader.GetHashCode(), 8);
+                return key.Token.GetHashCode() ^ BitOps.RotateLeft(key.Reader.GetHashCode(), 8);
             }
             protected override bool CompareKeyToValue(QTypeDefinition key, NamedTypeLookupResult value)
             {
@@ -135,7 +129,7 @@ namespace Internal.Runtime.TypeLoader
 
             protected unsafe override int GetValueHashCode(NamedTypeLookupResult value)
             {
-                return value.QualifiedTypeDefinition.Token.GetHashCode() ^ _rotl(value.QualifiedTypeDefinition.Reader.GetHashCode(), 8);
+                return value.QualifiedTypeDefinition.Token.GetHashCode() ^ BitOps.RotateLeft(value.QualifiedTypeDefinition.Reader.GetHashCode(), 8);
             }
 
             protected override bool CompareValueToValue(NamedTypeLookupResult value1, NamedTypeLookupResult value2)

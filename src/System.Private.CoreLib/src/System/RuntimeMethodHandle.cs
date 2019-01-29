@@ -63,12 +63,6 @@ namespace System
             return true;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int _rotl(int value, int shift)
-        {
-            return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
-        }
-
         public override int GetHashCode()
         {
             if (_value == IntPtr.Zero)
@@ -80,13 +74,13 @@ namespace System
             RuntimeAugments.TypeLoaderCallbacks.GetRuntimeMethodHandleComponents(this, out declaringType, out nameAndSignature, out genericArgs);
 
             int hashcode = declaringType.GetHashCode();
-            hashcode = (hashcode + _rotl(hashcode, 13)) ^ nameAndSignature.Name.GetHashCode();
+            hashcode = (hashcode + BitOps.RotateLeft(hashcode, 13)) ^ nameAndSignature.Name.GetHashCode();
             if (genericArgs != null)
             {
                 for (int i = 0; i < genericArgs.Length; i++)
                 {
                     int argumentHashCode = genericArgs[i].GetHashCode();
-                    hashcode = (hashcode + _rotl(hashcode, 13)) ^ argumentHashCode;
+                    hashcode = (hashcode + BitOps.RotateLeft(hashcode, 13)) ^ argumentHashCode;
                 }
             }
 

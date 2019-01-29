@@ -43,13 +43,6 @@ namespace Internal.Text
             return (obj is Utf8String) && Equals((Utf8String)obj);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int _rotl(int value, int shift)
-        {
-            // This is expected to be optimized into a single rotl instruction
-            return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
-        }
-
         public unsafe override int GetHashCode()
         {
             int length = _value.Length;
@@ -60,20 +53,20 @@ namespace Internal.Text
 
                 while (length >= 4)
                 {
-                    hash = (hash + _rotl(hash, 5)) ^ *(int*)a;
+                    hash = (hash + BitOps.RotateLeft(hash, 5)) ^ *(int*)a;
                     a += 4; length -= 4;
                 }
                 if (length >= 2)
                 {
-                    hash = (hash + _rotl(hash, 5)) ^ *(short*)a;
+                    hash = (hash + BitOps.RotateLeft(hash, 5)) ^ *(short*)a;
                     a += 2; length -= 2;
                 }
                 if (length > 0)
                 {
-                    hash = (hash + _rotl(hash, 5)) ^ *a;
+                    hash = (hash + BitOps.RotateLeft(hash, 5)) ^ *a;
                 }
-                hash += _rotl(hash, 7);
-                hash += _rotl(hash, 15);
+                hash += BitOps.RotateLeft(hash, 7);
+                hash += BitOps.RotateLeft(hash, 15);
                 return hash;
             }
         }

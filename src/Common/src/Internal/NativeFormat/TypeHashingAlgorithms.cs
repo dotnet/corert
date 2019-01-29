@@ -16,12 +16,6 @@ namespace Internal.NativeFormat
 {
     static class TypeHashingAlgorithms
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int _rotl(int value, int shift)
-        {
-            return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
-        }
-
         //
         // Returns the hashcode value of the 'src' string
         //
@@ -32,13 +26,13 @@ namespace Internal.NativeFormat
 
             for (int i = 0; i < src.Length; i += 2)
             {
-                hash1 = (hash1 + _rotl(hash1, 5)) ^ src[i];
+                hash1 = (hash1 + BitOps.RotateLeft(hash1, 5)) ^ src[i];
                 if ((i + 1) < src.Length)
-                    hash2 = (hash2 + _rotl(hash2, 5)) ^ src[i + 1];
+                    hash2 = (hash2 + BitOps.RotateLeft(hash2, 5)) ^ src[i + 1];
             }
 
-            hash1 += _rotl(hash1, 8);
-            hash2 += _rotl(hash2, 8);
+            hash1 += BitOps.RotateLeft(hash1, 8);
+            hash2 += BitOps.RotateLeft(hash2, 8);
 
             return hash1 ^ hash2;
         }
@@ -87,8 +81,8 @@ namespace Internal.NativeFormat
                 hashCode = ComputeNameHashCode("System.MDArrayRank" + IntToString(rank) + "`1");
             }
 
-            hashCode = (hashCode + _rotl(hashCode, 13)) ^ elementTypeHashcode;
-            return (hashCode + _rotl(hashCode, 15));
+            hashCode = (hashCode + BitOps.RotateLeft(hashCode, 13)) ^ elementTypeHashcode;
+            return (hashCode + BitOps.RotateLeft(hashCode, 15));
         }
 
         public static int ComputeArrayTypeHashCode<T>(T elementType, int rank)
@@ -99,7 +93,7 @@ namespace Internal.NativeFormat
 
         public static int ComputePointerTypeHashCode(int pointeeTypeHashcode)
         {
-            return (pointeeTypeHashcode + _rotl(pointeeTypeHashcode, 5)) ^ 0x12D0;
+            return (pointeeTypeHashcode + BitOps.RotateLeft(pointeeTypeHashcode, 5)) ^ 0x12D0;
         }
 
         public static int ComputePointerTypeHashCode<T>(T pointeeType)
@@ -110,7 +104,7 @@ namespace Internal.NativeFormat
 
         public static int ComputeByrefTypeHashCode(int parameterTypeHashcode)
         {
-            return (parameterTypeHashcode + _rotl(parameterTypeHashcode, 7)) ^ 0x4C85;
+            return (parameterTypeHashcode + BitOps.RotateLeft(parameterTypeHashcode, 7)) ^ 0x4C85;
         }
 
         public static int ComputeByrefTypeHashCode<T>(T parameterType)
@@ -121,7 +115,7 @@ namespace Internal.NativeFormat
 
         public static int ComputeNestedTypeHashCode(int enclosingTypeHashcode, int nestedTypeNameHash)
         {
-            return (enclosingTypeHashcode + _rotl(enclosingTypeHashcode, 11)) ^ nestedTypeNameHash;
+            return (enclosingTypeHashcode + BitOps.RotateLeft(enclosingTypeHashcode, 11)) ^ nestedTypeNameHash;
         }
 
 
@@ -131,9 +125,9 @@ namespace Internal.NativeFormat
             for (int i = 0; i < genericTypeArguments.Length; i++)
             {
                 int argumentHashCode = genericTypeArguments[i].GetHashCode();
-                hashcode = (hashcode + _rotl(hashcode, 13)) ^ argumentHashCode;
+                hashcode = (hashcode + BitOps.RotateLeft(hashcode, 13)) ^ argumentHashCode;
             }
-            return (hashcode + _rotl(hashcode, 15));
+            return (hashcode + BitOps.RotateLeft(hashcode, 15));
         }
     }
 }
