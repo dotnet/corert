@@ -90,9 +90,7 @@ namespace System.Threading
         /// </summary>
         private SafeWaitHandle UserUnregisterWaitHandle { get; set; }
 
-        private IntPtr UserUnregisterWaitHandleValue { get; set; }
-
-        internal bool IsBlocking => UserUnregisterWaitHandleValue == (IntPtr)(-1);
+        internal bool IsBlocking => UserUnregisterWaitHandle == null || UserUnregisterWaitHandle.IsInvalid;
 
         /// <summary>
         /// The <see cref="ClrThreadPool.WaitThread"/> this <see cref="RegisteredWaitHandle"/> was registered on.
@@ -132,7 +130,6 @@ namespace System.Threading
         {
             GC.SuppressFinalize(this);
             _callbackLock.Acquire();
-            bool needToRollBackRefCountOnException = false;
             try
             {
                 if (_unregisterCalled)
@@ -141,10 +138,6 @@ namespace System.Threading
                 }
 
                 UserUnregisterWaitHandle = waitObject?.SafeWaitHandle;
-                UserUnregisterWaitHandle?.DangerousAddRef();
-                needToRollBackRefCountOnException = true;
-
-                UserUnregisterWaitHandleValue = UserUnregisterWaitHandle?.DangerousGetHandle() ?? IntPtr.Zero;
 
                 if (_unregistered)
                 {
@@ -175,14 +168,7 @@ namespace System.Threading
                     _callbacksComplete = null;
                 }
 
-                UserUnregisterWaitHandleValue = IntPtr.Zero;
-
-                if (needToRollBackRefCountOnException)
-                {
-                    UserUnregisterWaitHandle?.DangerousRelease();
-                }
-
-                UserUnregisterWaitHandle  = null;
+                UserUnregisterWaitHandle = null;
                 throw;
             }
             finally
@@ -201,22 +187,15 @@ namespace System.Threading
         {
             _callbackLock.VerifyIsLocked();
             SafeWaitHandle handle = UserUnregisterWaitHandle;
-            IntPtr handleValue = UserUnregisterWaitHandleValue;
             try
             {
-                if (handleValue != IntPtr.Zero && handleValue != (IntPtr)(-1))
+                if (handle != null)
                 {
-                    Debug.Assert(handleValue == handle.DangerousGetHandle());
-#if PLATFORM_WINDOWS
-                    Interop.Kernel32.SetEvent(handle);
-#else
-                    WaitSubsystem.SetEvent(handleValue);
-#endif
+                    EventWaitHandle.Set(handle);
                 }
             }
             finally
             {
-                handle?.DangerousRelease();
                 _callbacksComplete?.Set();
                 _unregistered = true;
             }
