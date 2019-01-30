@@ -68,6 +68,7 @@ namespace Internal.Runtime.Augments
         public abstract Object GetUserDefaultCulture();
         public abstract void SetGlobalDefaultCulture(Object culture);
         public abstract Object GetCurrentWinRTDispatcher();
+        public abstract string GetFolderPath(Environment.SpecialFolder specialFolder, Environment.SpecialFolderOption specialFolderOption);
         public abstract void PostToWinRTDispatcher(Object dispatcher, Action<object> action, object state);
         public abstract bool IsAppxModel();
         public abstract bool ReportUnhandledError(Exception ex);
