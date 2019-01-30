@@ -521,10 +521,12 @@ namespace ILCompiler.DependencyAnalysis
             ISymbolNode result;
             if (!_dynamicHelperCellCache.TryGetValue(methodWithToken, out result))
             {
-                result = new DelayLoadHelperImport(
+                result = new DelayLoadHelperMethodImport(
                     this,
                     DispatchImports,
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_Obj,
+                    methodWithToken,
+                    useInstantiatingStub: true,
                     MethodSignature(
                         ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry,
                         methodWithToken.Method,
@@ -532,7 +534,8 @@ namespace ILCompiler.DependencyAnalysis
                         methodWithToken.Token,
                         signatureContext: signatureContext,
                         isUnboxingStub: false,
-                        isInstantiatingStub: false));
+                        isInstantiatingStub: true),
+                    signatureContext);
                 _dynamicHelperCellCache.Add(methodWithToken, result);
             }
             return result;
