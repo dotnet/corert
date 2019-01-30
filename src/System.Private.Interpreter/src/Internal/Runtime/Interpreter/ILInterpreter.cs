@@ -370,7 +370,8 @@ namespace Internal.Runtime.Interpreter
                         InterpretNewArray(reader.ReadILToken());
                         break;
                     case ILOpcode.ldlen:
-                        throw new NotImplementedException();
+                        InterpretLoadLength();
+                        break;
                     case ILOpcode.ldelema:
                         throw new NotImplementedException();
                     case ILOpcode.ldelem_i1:
@@ -2153,6 +2154,12 @@ namespace Internal.Runtime.Interpreter
             Array array = RuntimeAugments.NewArray(arrayType.GetRuntimeTypeHandle(), length);
 
             _stack.Push(StackItem.FromObjectRef(array));
+        }
+
+        private void InterpretLoadLength()
+        {
+            Array array = (Array)PopWithValidation().AsObjectRef();
+            _stack.Push(StackItem.FromInt32(array.Length));
         }
     }
 }
