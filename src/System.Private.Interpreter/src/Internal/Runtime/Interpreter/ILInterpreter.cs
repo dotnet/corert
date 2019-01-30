@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Internal.IL;
+using Internal.Runtime.Augments;
 using Internal.Runtime.CallInterceptor;
 using Internal.TypeSystem;
 
@@ -366,7 +367,8 @@ namespace Internal.Runtime.Interpreter
                     case ILOpcode.box:
                         throw new NotImplementedException();
                     case ILOpcode.newarr:
-                        throw new NotImplementedException();
+                        InterpretNewArray(reader.ReadILToken());
+                        break;
                     case ILOpcode.ldlen:
                         throw new NotImplementedException();
                     case ILOpcode.ldelema:
@@ -2125,6 +2127,32 @@ namespace Internal.Runtime.Interpreter
                 if (value == i)
                     reader.Seek(jmpBase + jmpDelta[i]);
             }
+        }
+
+        private void InterpretNewArray(int token)
+        {
+            int length = 0;
+            StackItem stackItem = PopWithValidation();
+
+            switch (stackItem.Kind)
+            {
+                case StackValueKind.Int32:
+                    length = stackItem.AsInt32();
+                    break;
+                case StackValueKind.NativeInt:
+                    length = (int)stackItem.AsNativeInt();
+                    break;
+                default:
+                    ThrowHelper.ThrowInvalidProgramException();
+                    break;
+            }
+
+            Debug.Assert(length >= 0);
+
+            TypeDesc arrayType = ((TypeDesc)_methodIL.GetObject(token)).MakeArrayType();
+            Array array = RuntimeAugments.NewArray(arrayType.GetRuntimeTypeHandle(), length);
+
+            _stack.Push(StackItem.FromObjectRef(array));
         }
     }
 }
