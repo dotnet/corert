@@ -159,15 +159,25 @@ LEAF_END RhNewString, _TEXT
 ;;  EDX == element count
 LEAF_ENTRY RhpNewArray, _TEXT
 
-        ; we want to limit the element count to the non-negative 32-bit int range
-        cmp         rdx, 07fffffffh
-        ja          ArraySizeOverflow
+        ; Read the components size out of the provided EEType
+        movzx       eax, word ptr [rcx + OFFSETOF__EEType__m_usComponentSize]
 
+        ; Impose limits on maximum array length in each dimension to allow efficient 
+        ; implementation of advanced range check elimination in future. We have to allow 
+        ; higher limit for array of bytes (or one byte structs) for backward compatibility.
+        ; Keep in sync with Array.MaxArrayLength in BCL.
+        cmp         rdx, 07fefffffh
+        jbe         ArrayElementCountOK
+        cmp         eax, 1
+        ja          ArraySizeTooBig
+        cmp         rdx, 07fffffc7h
+        ja          ArraySizeTooBig
+
+ArrayElementCountOK:
         ; save element count
         mov         r8, rdx
 
         ; Compute overall allocation size (align(base size + (element size * elements), 8)).
-        movzx       eax, word ptr [rcx + OFFSETOF__EEType__m_usComponentSize]
         mul         rdx
         mov         edx, [rcx + OFFSETOF__EEType__m_uBaseSize]
         add         rax, rdx
@@ -204,13 +214,29 @@ LEAF_ENTRY RhpNewArray, _TEXT
 
         ret
 
-ArraySizeOverflow:
+ArraySizeTooBig:
+        ; rcx == EEType
+        ; rdx == element count
+        
+        ; we want to limit the element count to the non-negative 32-bit int range
+        cmp         rdx, 07fffffffh
+        jbe         ArraySizeOutOfMemory
+
         ; We get here if the size of the final array object can't be represented as an unsigned 
         ; 32-bit value. We're going to tail-call to a managed helper that will throw
         ; an overflow exception that the caller of this allocator understands.
 
         ; rcx holds EEType pointer already
         mov         edx, 1              ; Indicate that we should throw OverflowException
+        jmp         RhExceptionHandling_FailedAllocation
+
+ArraySizeOutOfMemory:
+        ; We get here if the we hit the artificial limit on number of elements in an array.
+        ; We're going to tail-call to a managed helper that will throw
+        ; an OutOfMemory exception that the caller of this allocator understands.
+
+        ; rcx holds EEType pointer already
+        xor         edx, edx            ; Indicate that we should throw OOM.
         jmp         RhExceptionHandling_FailedAllocation
 LEAF_END RhpNewArray, _TEXT
 
