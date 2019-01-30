@@ -167,13 +167,9 @@ LEAF_ENTRY RhpNewArray, _TEXT
         ; higher limit for array of bytes (or one byte structs) for backward compatibility.
         ; Keep in sync with Array.MaxArrayLength in BCL.
         cmp         rdx, 07fefffffh
-        jbe         ArrayElementCountOK
-        cmp         eax, 1
-        ja          ArraySizeTooBig
-        cmp         rdx, 07fffffc7h
-        ja          ArraySizeTooBig
+        ja          ArrayMaybeTooBig
 
-ArrayElementCountOK:
+ArraySizeOK:
         ; save element count
         mov         r8, rdx
 
@@ -213,6 +209,16 @@ ArrayElementCountOK:
         mov         [rax + OFFSETOF__Array__m_Length], edx
 
         ret
+
+ArrayMaybeTooBig:
+        ; rax == component size
+        ; rcx == EEType
+        ; rdx == element count
+
+        cmp         eax, 1
+        ja          ArraySizeTooBig
+        cmp         rdx, 07fffffc7h
+        jbe         ArraySizeOK
 
 ArraySizeTooBig:
         ; rcx == EEType
