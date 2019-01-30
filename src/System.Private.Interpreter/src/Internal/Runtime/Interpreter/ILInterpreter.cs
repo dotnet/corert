@@ -40,6 +40,16 @@ namespace Internal.Runtime.Interpreter
             _callInterceptorArgs.ArgumentsAndReturnValue.SetVar<T>(0, value);
         }
 
+        public T GetArgument<T>(int index)
+        {
+            return _callInterceptorArgs.ArgumentsAndReturnValue.GetVar<T>(index + 1);
+        }
+
+        public void SetArgument<T>(int index, T value)
+        {
+            _callInterceptorArgs.ArgumentsAndReturnValue.SetVar<T>(index + 1, value);
+        }
+
         public StackItem PopWithValidation()
         {
             bool hasStackItem = _stack.TryPop(out StackItem stackItem);
@@ -81,7 +91,8 @@ namespace Internal.Runtime.Interpreter
                     case ILOpcode.ldarg_1:
                     case ILOpcode.ldarg_2:
                     case ILOpcode.ldarg_3:
-                        throw new NotImplementedException();
+                        InterpretLoadArgument(opcode - ILOpcode.ldarg_0);
+                        break;
                     case ILOpcode.ldloc_0:
                     case ILOpcode.ldloc_1:
                     case ILOpcode.ldloc_2:
@@ -95,11 +106,13 @@ namespace Internal.Runtime.Interpreter
                         InterpretStoreLocal(opcode - ILOpcode.stloc_0);
                         break;
                     case ILOpcode.ldarg_s:
-                        throw new NotImplementedException();
+                        InterpretLoadArgument(reader.ReadILByte());
+                        break;
                     case ILOpcode.ldarga_s:
                         throw new NotImplementedException();
                     case ILOpcode.starg_s:
-                        throw new NotImplementedException();
+                        InterpretStoreArgument(reader.ReadILByte());
+                        break;
                     case ILOpcode.ldloc_s:
                         InterpretLoadLocal(reader.ReadILByte());
                         break;
@@ -482,17 +495,21 @@ namespace Internal.Runtime.Interpreter
                     case ILOpcode.ldvirtftn:
                         throw new NotImplementedException();
                     case ILOpcode.ldarg:
-                        throw new NotImplementedException();
+                        InterpretLoadArgument(reader.ReadILUInt16());
+                        break;
                     case ILOpcode.ldarga:
                         throw new NotImplementedException();
                     case ILOpcode.starg:
-                        throw new NotImplementedException();
+                        InterpretStoreArgument(reader.ReadILUInt16());
+                        break;
                     case ILOpcode.ldloc:
-                        throw new NotImplementedException();
+                        InterpretLoadLocal(reader.ReadILUInt16());
+                        break;
                     case ILOpcode.ldloca:
                         throw new NotImplementedException();
                     case ILOpcode.stloc:
-                        throw new NotImplementedException();
+                        InterpretStoreLocal(reader.ReadILUInt16());
+                        break;
                     case ILOpcode.localloc:
                         throw new NotImplementedException();
                     case ILOpcode.endfilter:
@@ -565,12 +582,118 @@ namespace Internal.Runtime.Interpreter
 
         private void InterpretLoadLocal(int index)
         {
+            Debug.Assert(index >= 0);
             _stack.Push(_locals[index]);
         }
 
         private void InterpretStoreLocal(int index)
         {
+            Debug.Assert(index >= 0);
             _locals[index] = PopWithValidation();
+        }
+
+        private void InterpretLoadArgument(int index)
+        {
+            Debug.Assert(index >= 0);
+
+            TypeDesc argument = default(TypeDesc);
+
+            if (!_method.Signature.IsStatic)
+            {
+                if (index == 0)
+                    argument = _method.OwningType;
+                else
+                    argument = _method.Signature[index - 1];
+            }
+            else
+            {
+                argument = _method.Signature[index];
+            }
+
+        again:
+            switch (argument.Category)
+            {
+                case TypeFlags.Boolean:
+                    _stack.Push(StackItem.FromInt32(GetArgument<bool>(index) ? 1 : 0));
+                    break;
+                case TypeFlags.Char:
+                    _stack.Push(StackItem.FromInt32(GetArgument<char>(index)));
+                    break;
+                case TypeFlags.SByte:
+                case TypeFlags.Byte:
+                    _stack.Push(StackItem.FromInt32(GetArgument<byte>(index)));
+                    break;
+                case TypeFlags.Int16:
+                case TypeFlags.UInt16:
+                    _stack.Push(StackItem.FromInt32(GetArgument<short>(index)));
+                    break;
+                case TypeFlags.Int32:
+                case TypeFlags.UInt32:
+                    _stack.Push(StackItem.FromInt32(GetArgument<int>(index)));
+                    break;
+                case TypeFlags.Int64:
+                case TypeFlags.UInt64:
+                    _stack.Push(StackItem.FromInt64(GetArgument<long>(index)));
+                    break;
+                case TypeFlags.IntPtr:
+                case TypeFlags.UIntPtr:
+                    _stack.Push(StackItem.FromNativeInt(GetArgument<IntPtr>(index)));
+                    break;
+                case TypeFlags.Single:
+                case TypeFlags.Double:
+                    _stack.Push(StackItem.FromDouble(GetArgument<double>(index)));
+                    break;
+                case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
+                    _stack.Push(StackItem.FromValueType(GetArgument<ValueType>(index)));
+                    break;
+                case TypeFlags.Enum:
+                    argument = argument.UnderlyingType;
+                    goto again;
+                case TypeFlags.Class:
+                case TypeFlags.Interface:
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                    _stack.Push(StackItem.FromObjectRef(GetArgument<object>(index)));
+                    break;
+                default:
+                    // TODO: Support more complex return types
+                    throw new NotImplementedException();
+            }
+        }
+
+        private void InterpretStoreArgument(int index)
+        {
+            Debug.Assert(index >= 0);
+            
+            StackItem stackItem = PopWithValidation();
+            switch (stackItem.Kind)
+            {
+                case StackValueKind.Int32:
+                    SetArgument(index, stackItem.AsInt32());
+                    break;
+                case StackValueKind.Int64:
+                    SetArgument(index, stackItem.AsInt64());
+                    break;
+                case StackValueKind.NativeInt:
+                    SetArgument(index, stackItem.AsNativeInt());
+                    break;
+                case StackValueKind.Float:
+                    SetArgument(index, stackItem.AsDouble());
+                    break;
+                case StackValueKind.ByRef:
+                    // TODO: Add support for ByRef
+                    throw new NotImplementedException();
+                case StackValueKind.ObjRef:
+                    SetArgument(index, stackItem.AsObjectRef());
+                    break;
+                case StackValueKind.ValueType:
+                    SetArgument(index, stackItem.AsValueType());
+                    break;
+                default:
+                    ThrowHelper.ThrowInvalidProgramException();
+                    break;
+            }
         }
 
         private void InterpretReturn()
@@ -580,9 +703,9 @@ namespace Internal.Runtime.Interpreter
                 return;
 
             StackItem stackItem = PopWithValidation();
-            TypeFlags category = returnType.Category;
 
-            switch (category)
+        again:
+            switch (returnType.Category)
             {
                 case TypeFlags.Boolean:
                     SetReturnValue(stackItem.AsInt32() != 0);
@@ -617,20 +740,18 @@ namespace Internal.Runtime.Interpreter
                     SetReturnValue(stackItem.AsDouble());
                     break;
                 case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
                     SetReturnValue(stackItem.AsValueType());
                     break;
-                case TypeFlags.Interface:
+                case TypeFlags.Enum:
+                    returnType = returnType.UnderlyingType;
+                    goto again;
                 case TypeFlags.Class:
+                case TypeFlags.Interface:
                 case TypeFlags.Array:
                 case TypeFlags.SzArray:
                     SetReturnValue(stackItem.AsObjectRef());
                     break;
-                case TypeFlags.Enum:
-                case TypeFlags.Nullable:
-                case TypeFlags.ByRef:
-                case TypeFlags.Pointer:
-                case TypeFlags.FunctionPointer:
-                case TypeFlags.GenericParameter:
                 default:
                     // TODO: Support more complex return types
                     throw new NotImplementedException();
