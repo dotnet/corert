@@ -752,12 +752,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 if (HasThis)
                 {
-                    ret += IntPtr.Size;
+                    ret += _transitionBlock.PointerSize;
                 }
 
                 if (HasRetBuffArg() && _transitionBlock.IsRetBuffPassedAsFirstArg)
                 {
-                    ret += IntPtr.Size;
+                    ret += _transitionBlock.PointerSize;
                 }
 
                 return ret;
@@ -794,12 +794,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 if (HasThis)
                 {
-                    ret += IntPtr.Size;
+                    ret += _transitionBlock.PointerSize;
                 }
 
                 if (HasRetBuffArg() && _transitionBlock.IsRetBuffPassedAsFirstArg)
                 {
-                    ret += IntPtr.Size;
+                    ret += _transitionBlock.PointerSize;
                 }
 
                 return ret;
@@ -836,7 +836,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         // DESKTOP BEHAVIOR is to do nothing here, as ret buf is never reached by the scan algorithm that walks backwards
                         // but in .NET Native, the x86 argument scan is a forward scan, so we need to skip the ret buf arg (which is always
                         // on the stack)
-                        initialArgOffset = IntPtr.Size;
+                        initialArgOffset = _transitionBlock.PointerSize;
                     }
                 }
 
@@ -866,7 +866,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         {
                             case CallingConventions.StdCall:
                                 _numRegistersUsed = ArchitectureConstants.NUM_ARGUMENT_REGISTERS;
-                                _curOfs = TransitionBlock.GetOffsetOfArgs() + numRegistersUsed * IntPtr.Size + initialArgOffset;
+                                _curOfs = TransitionBlock.GetOffsetOfArgs() + numRegistersUsed * _transitionBlock.PointerSize + initialArgOffset;
                                 break;
 
                             case CallingConventions.ManagedStatic:
@@ -895,7 +895,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         }
                         else
                         {
-                            _x64WindowsCurOfs = _transitionBlock.OffsetOfArgs + numRegistersUsed * IntPtr.Size;
+                            _x64WindowsCurOfs = _transitionBlock.OffsetOfArgs + numRegistersUsed * _transitionBlock.PointerSize;
                         }
                         break;
 
@@ -952,7 +952,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _argSize = argSize;
 
             argType = _argForceByRef ? CorElementType.ELEMENT_TYPE_BYREF : argType;
-            argSize = _argForceByRef ? IntPtr.Size : argSize;
+            argSize = _argForceByRef ? _transitionBlock.PointerSize : argSize;
 
             int argOfs;
 
@@ -969,7 +969,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 #endif
                     if (_transitionBlock.IsArgumentInRegister(ref _x86NumRegistersUsed, argType, _argTypeHandle))
                     {
-                        return _transitionBlock.OffsetOfArgumentRegisters + (_transitionBlock.NumArgumentRegisters - _x86NumRegistersUsed) * IntPtr.Size;
+                        return _transitionBlock.OffsetOfArgumentRegisters + (_transitionBlock.NumArgumentRegisters - _x86NumRegistersUsed) * _transitionBlock.PointerSize;
                     }
 
                     // DESKTOP BEHAVIOR _curOfs -= ArchitectureConstants.StackElemSize(argSize);
@@ -1000,7 +1000,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             case CorElementType.ELEMENT_TYPE_VALUETYPE:
                                 {
                                     // UNIXTODO: FEATURE_UNIX_AMD64_STRUCT_PASSING: Passing of structs, HFAs. For now, use the Windows convention.
-                                    argSize = IntPtr.Size;
+                                    argSize = _transitionBlock.PointerSize;
                                     break;
                                 }
 
@@ -1053,7 +1053,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                         // Each argument takes exactly one slot on AMD64
                         argOfs = _x64WindowsCurOfs - _transitionBlock.OffsetOfArgs;
-                        _x64WindowsCurOfs += IntPtr.Size;
+                        _x64WindowsCurOfs += _transitionBlock.PointerSize;
 
                         if ((cFPRegs == 0) || (argOfs >= _transitionBlock.SizeOfArgumentRegisters))
                         {
@@ -1061,7 +1061,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         }
                         else
                         {
-                            int idxFpReg = argOfs / IntPtr.Size;
+                            int idxFpReg = argOfs / _transitionBlock.PointerSize;
                             return _transitionBlock.OffsetOfFloatArgumentRegisters + idxFpReg * TransitionBlock.SizeOfM128A;
                         }
                     }
@@ -1264,7 +1264,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                         // Composite greater than 16bytes should be passed by reference
                                         if (argSize > _transitionBlock.EnregisteredParamTypeMaxSize)
                                         {
-                                            argSize = IntPtr.Size;
+                                            argSize = _transitionBlock.PointerSize;
                                         }
                                     }
 
@@ -1356,7 +1356,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     // DESKTOP BEHAVIOR                numRegistersUsed++;
                     // On ProjectN ret buff arg is passed on the call stack as the top stack arg
-                    nSizeOfArgStack += IntPtr.Size;
+                    nSizeOfArgStack += _transitionBlock.PointerSize;
                 }
 
                 // DESKTOP BEHAVIOR - This block is disabled for x86 as the param arg is the last argument on desktop x86.
@@ -1370,7 +1370,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 if (IsVarArg)
                 {
-                    nSizeOfArgStack += IntPtr.Size;
+                    nSizeOfArgStack += _transitionBlock.PointerSize;
                     numRegistersUsed = _transitionBlock.NumArgumentRegisters; // Nothing else gets passed in registers for varargs
                 }
 
@@ -1424,7 +1424,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
                     else
                     {
-                        nSizeOfArgStack += IntPtr.Size;
+                        nSizeOfArgStack += _transitionBlock.PointerSize;
                         paramTypeLoc = ParamTypeLocation.Stack;
                     }
                 }
