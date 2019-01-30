@@ -986,5 +986,7 @@
     <!-- Expectations about HW exceptions in unmanaged code being catchable -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\pinvoke\calli_excep\calli_excep.*" />
 
+    <!-- Expectations about finalization order -->
+    <ExcludeList Include="$(XunitTestBinBase)\GC\API\WeakReference\Finalize2\Finalize2.*" />
   </ItemGroup>
 </Project>

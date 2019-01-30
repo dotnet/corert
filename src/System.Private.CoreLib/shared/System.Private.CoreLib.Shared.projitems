@@ -675,6 +675,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\StreamingContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\NonVersionableAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\TargetFrameworkAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\AmbiguousImplementationException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\MemoryFailPoint.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SByte.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\AllowPartiallyTrustedCallersAttribute.cs" />
@@ -809,6 +810,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadStateException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Timeout.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimeoutHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Timer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitHandleCannotBeOpenedException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ThreadStaticAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ThrowHelper.cs" />

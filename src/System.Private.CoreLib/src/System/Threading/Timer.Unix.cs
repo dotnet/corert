@@ -26,11 +26,12 @@ namespace System.Threading
         /// </summary>
         private static volatile int s_nextTimerDuration;
 
-        private void SetTimer(uint actualDuration)
+        private TimerQueue(int id)
         {
-            // This function is called with the TimerQueue lock acquired
-            Debug.Assert(Lock.IsAcquired);
+        }
 
+        private bool SetTimer(uint actualDuration)
+        {
             // Note: AutoResetEvent.WaitOne takes an Int32 value as a timeout.
             // The TimerQueue code ensures that timer duration is not greater than max Int32 value
             Debug.Assert(actualDuration <= (uint)int.MaxValue);
@@ -50,6 +51,8 @@ namespace System.Threading
             {
                 s_timerEvent.Set();
             }
+
+            return true;
         }
 
 
@@ -57,7 +60,7 @@ namespace System.Threading
         /// This method is executed on a dedicated a timer thread. Its purpose is
         /// to handle timer request and notify the TimerQueue when a timer expires.
         /// </summary>
-        private static void TimerThread()
+        private void TimerThread()
         {
             int currentTimerInterval;
 
@@ -92,7 +95,7 @@ namespace System.Threading
                 // Check whether TimerQueue needs to process expired timers.
                 if (timerHasExpired)
                 {
-                    Instance.FireNextTimers();
+                    FireNextTimers();
 
                     // When FireNextTimers() installs a new timer, it also sets the timer event.
                     // Reset the event so the timer thread is not woken up right away unnecessary.
@@ -113,33 +116,6 @@ namespace System.Threading
             get
             {
                 return Environment.TickCount;
-            }
-        }
-    }
-
-    internal sealed partial class TimerQueueTimer
-    {
-        private void SignalNoCallbacksRunning()
-        {
-            object toSignal = _notifyWhenNoCallbacksRunning;
-            Debug.Assert(toSignal is WaitHandle || toSignal is Task<bool>);
-
-            if (toSignal is WaitHandle wh)
-            {
-                SafeWaitHandle waitHandle = wh.SafeWaitHandle;
-                waitHandle.DangerousAddRef();
-                try
-                {
-                    WaitSubsystem.SetEvent(waitHandle.DangerousGetHandle());
-                }
-                finally
-                {
-                    waitHandle.DangerousRelease();
-                }
-            }
-            else
-            {
-                ((Task<bool>)toSignal).TrySetResult(true);
             }
         }
     }

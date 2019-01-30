@@ -394,8 +394,21 @@ namespace Internal.JitInterface
             methodInfo->maxStack = (uint)methodIL.MaxStack;
             methodInfo->EHcount = (uint)methodIL.GetExceptionRegions().Length;
             methodInfo->options = methodIL.IsInitLocals ? CorInfoOptions.CORINFO_OPT_INIT_LOCALS : (CorInfoOptions)0;
-            methodInfo->regionKind = CorInfoRegionKind.CORINFO_REGION_NONE;
 
+            if (method.AcquiresInstMethodTableFromThis())
+            {
+                methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_FROM_THIS;
+            }
+            else if (method.RequiresInstMethodDescArg())
+            {
+                methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_FROM_METHODDESC;
+            }
+            else if (method.RequiresInstMethodTableArg())
+            {
+                methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_FROM_METHODTABLE;
+            }
+
+            methodInfo->regionKind = CorInfoRegionKind.CORINFO_REGION_NONE;
             Get_CORINFO_SIG_INFO(method, &methodInfo->args);
             Get_CORINFO_SIG_INFO(methodIL.GetLocals(), &methodInfo->locals);
 

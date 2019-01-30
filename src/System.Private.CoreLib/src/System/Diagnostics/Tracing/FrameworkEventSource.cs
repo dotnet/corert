@@ -19,6 +19,8 @@ namespace System.Diagnostics.Tracing
             public const EventKeywords ThreadTransfer = (EventKeywords)0x0010;
         }
 
+        public static bool IsInitialized { get => true; }
+
         public bool IsEnabled(EventLevel level, EventKeywords keywords)
         {
             return false;
@@ -29,6 +31,14 @@ namespace System.Diagnostics.Tracing
         }
 
         public void ThreadPoolDequeueWorkObject(object workID)
+        {
+        }
+
+        public void ThreadTransferSendObj(object id, int kind, string info, bool multiDequeues, int intInfo1, int intInfo2)
+        {
+        }
+
+        public void ThreadTransferReceiveObj(object id, int kind, string info)
         {
         }
     }
