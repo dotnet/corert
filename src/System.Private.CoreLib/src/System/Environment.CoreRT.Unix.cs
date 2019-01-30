@@ -2,17 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
 
-namespace Internal.Runtime.Augments
+namespace System
 {
-    /// <summary>For internal use only.  Exposes runtime functionality to the Environments implementation in corefx.</summary>
-    public static partial class EnvironmentAugments
+    internal static partial class Environment
     {
+        internal static int CurrentNativeThreadId => ManagedThreadId.Current;
+        
         private static string GetEnvironmentVariableCore(string variable)
         {
             Debug.Assert(variable != null);
@@ -25,22 +25,26 @@ namespace Internal.Runtime.Augments
             throw new NotImplementedException();
         }
 
-        public static IEnumerable<KeyValuePair<string,string>> EnumerateEnvironmentVariables()
+        public static IDictionary GetEnvironmentVariables()
         {
+            var results = new Hashtable();
+
             IntPtr block = Interop.Sys.GetEnviron();
-            if (block == IntPtr.Zero)
-                yield break;
-
-            // Per man page, environment variables come back as an array of pointers to strings
-            // Parse each pointer of strings individually
-            while (ParseEntry(block, out string key, out string value))
+            if (block != IntPtr.Zero)
             {
-                if (key != null && value != null)
-                    yield return new KeyValuePair<string, string>(key, value);
+                // Per man page, environment variables come back as an array of pointers to strings
+                // Parse each pointer of strings individually
+                while (ParseEntry(block, out string key, out string value))
+                {
+                    if (key != null && value != null)
+                        results.Add(key, value);
 
-                // Increment to next environment variable entry
-                block += IntPtr.Size;
+                    // Increment to next environment variable entry
+                    block += IntPtr.Size;
+                }
             }
+
+            return results;
 
             // Use a local, unsafe function since we cannot use `yield return` inside of an `unsafe` block
             unsafe bool ParseEntry(IntPtr current, out string key, out string value)
@@ -78,9 +82,8 @@ namespace Internal.Runtime.Augments
             }
         }
 
-        private static void ExitRaw()
-        {
-            Interop.Sys.Exit(s_latchedExitCode);
-        }
+        private static void ExitRaw() => Interop.Sys.Exit(s_latchedExitCode);
+
+        internal static long TickCount64 => (long)Interop.Sys.GetTickCount64();
     }
 }

@@ -126,14 +126,6 @@
     <Compile Include="Internal\Runtime\Augments\StackTraceMetadataCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\DynamicDelegateAugments.cs" />
     <Compile Include="Internal\Runtime\Augments\EnumInfo.cs" />
-    <Compile Include="Internal\Runtime\Augments\EnvironmentAugments.cs" />
-    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="Internal\Runtime\Augments\EnvironmentAugments.CoreRT.cs" />
-    <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="Internal\Runtime\Augments\EnvironmentAugments.ProjectN.cs" />
-    <Compile Condition="'$(IsProjectNLibrary)' != 'true' and '$(TargetsWindows)'=='true'" Include="Internal\Runtime\Augments\EnvironmentAugments.CoreRT.Win32.cs" />
-    <Compile Condition="'$(TargetsWindows)'=='true'" Include="Internal\Runtime\Augments\EnvironmentAugments.Windows.cs" />
-    <Compile Condition="'$(TargetsUnix)'=='true'" Include="Internal\Runtime\Augments\EnvironmentAugments.Unix.cs" />
-    <Compile Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)' != 'true'" Include="Internal\Runtime\Augments\EnvironmentAugments.FromRegistry.Win32.cs" />
-    <Compile Condition="'$(TargetsUnix)'=='true' or '$(EnableWinRT)'=='true'" Include="Internal\Runtime\Augments\EnvironmentAugments.FromRegistry.WithoutRegistry.cs" />
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -219,7 +211,8 @@
     <Compile Include="System\Diagnostics\Tracing\FrameworkEventSource.cs" />
     <Compile Include="System\Diagnostics\Tracing\UnsafeNativeMethods.cs" />
     <Compile Include="System\Enum.cs" />
-    <Compile Include="System\Environment.cs" />
+    <Compile Include="System\Environment.CoreRT.cs" />
+    <Compile Include="System\Environment.CoreRT.NonProjectN.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
     <Compile Include="System\GC.cs" />
     <Compile Include="System\Helpers.cs" />
     <Compile Include="System\Math.CoreRT.cs" />
@@ -327,8 +320,8 @@
     <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\TimeZoneInfo.WinRT.cs" />
     <Compile Include="System\AppContext.Windows.CoreRT.cs" />
     <Compile Include="System\DateTime.Windows.CoreRT.cs" />
-    <Compile Include="System\DateTime.Win32.cs" Condition="'$(EnableWinRT)'!='true'"/>
-    <Compile Include="System\DateTime.WinRT.cs" Condition="'$(EnableWinRT)'=='true'"/>
+    <Compile Include="System\DateTime.Win32.cs" Condition="'$(EnableWinRT)'!='true'" />
+    <Compile Include="System\DateTime.WinRT.cs" Condition="'$(EnableWinRT)'=='true'" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Windows.cs" />
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.FileTimeToSystemTime.cs">
       <Link>Interop\Windows\kernel32\Interop.FileTimeToSystemTime.cs</Link>
@@ -397,8 +390,9 @@
     <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.CommandLine.cs">
       <Link>Interop\Windows\mincore\Interop.CommandLine.cs</Link>
     </Compile>
-    <Compile Include="System\Environment.Windows.cs" />
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\Environment.Win32.cs" />
+    <Compile Include="System\Environment.CoreRT.Windows.cs" />
+    <Compile Include="System\Environment.CoreRT.Win32.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
+    <Compile Include="System\Environment.CoreRT.ProjectN.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetTickCount64.cs">
       <Link>Interop\Windows\mincore\Interop.GetTickCount64.cs</Link>
     </Compile>
@@ -468,7 +462,7 @@
     <Compile Include="Microsoft\Win32\SafeHandles\SafeWaitHandle.Unix.cs" />
     <Compile Include="System\AppContext.Unix.CoreRT.cs" />
     <Compile Include="System\DateTime.Unix.CoreRT.cs" />
-    <Compile Include="System\Environment.Unix.cs" />
+    <Compile Include="System\Environment.CoreRT.Unix.cs" />
     <Compile Include="System\HighPerformanceCounter.Unix.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
     <Compile Include="System\Threading\EventWaitHandle.Unix.cs" />
@@ -658,6 +652,6 @@
       <LogicalName>Resources.$(AssemblyName).rd.xml</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
-  <Import Project="..\shared\System.Private.CoreLib.Shared.projitems" Label="Shared" />
+  <Import Project="..\..\..\..\coreclr\src\System.Private.CoreLib\shared\System.Private.CoreLib.Shared.projitems" Label="Shared" />
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
