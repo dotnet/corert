@@ -119,7 +119,7 @@ NewOutOfMemory
         LEAF_ENTRY RhNewString
 
         ; Make sure computing the overall allocation size won't overflow
-        MOV32       r2, ((0xFFFFFFFF - STRING_BASE_SIZE - 3) / STRING_COMPONENT_SIZE)
+        MOV32       r2, MAX_STRING_LENGTH
         cmp         r1, r2
         bhs         StringSizeOverflow
 

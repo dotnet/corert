@@ -267,6 +267,35 @@ COOP_PINVOKE_HELPER(void*, RhpGcAlloc, (EEType *pEEType, UInt32 uFlags, UIntNati
     if (cbSize >= max_object_size)
         return NULL;
 
+    const int MaxArrayLength = 0x7FEFFFFF;
+    const int MaxByteArrayLength = 0x7FFFFFC7;
+
+    // Impose limits on maximum array length in each dimension to allow efficient
+    // implementation of advanced range check elimination in future. We have to allow
+    // higher limit for array of bytes (or one byte structs) for backward compatibility.
+    // Keep in sync with Array.MaxArrayLength in BCL.
+    if (cbSize > MaxByteArrayLength /* note: comparing allocation size with element count */)
+    {
+        // Ensure the above if check covers the minimal interesting size
+        static_assert(MaxByteArrayLength < (uint64_t)MaxArrayLength * 2, "");
+
+        if (pEEType->IsArray())
+        {
+            if (pEEType->get_ComponentSize() != 1)
+            {
+                size_t elementCount = (cbSize - pEEType->get_BaseSize()) / pEEType->get_ComponentSize();
+                if (elementCount > MaxArrayLength)
+                    return NULL;
+            }
+            else
+            {
+                int elementCount = cbSize - pEEType->get_BaseSize();
+                if (elementCount > MaxByteArrayLength)
+                    return NULL;
+            }
+        }
+    }
+
     // Save the EEType for instrumentation purposes.
     RedhawkGCInterface::SetLastAllocEEType(pEEType);
 
