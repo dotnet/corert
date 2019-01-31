@@ -9,12 +9,11 @@ using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
 
 using Internal.Reflection.Core.Execution;
+using Internal.Reflection.Core.NonPortable;
 using Internal.Reflection.Tracing;
 using Internal.Reflection.Augments;
 
 using EnumInfo = Internal.Runtime.Augments.EnumInfo;
-
-using IRuntimeImplementedType = Internal.Reflection.Core.NonPortable.IRuntimeImplementedType;
 
 using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
 
@@ -36,7 +35,7 @@ namespace System.Reflection.Runtime.TypeInfos
     //     shows up as build error.
     //
     [DebuggerDisplay("{_debugName}")]
-    internal abstract partial class RuntimeTypeInfo : TypeInfo, ITraceableTypeMember, ICloneable, IRuntimeImplementedType
+    internal abstract partial class RuntimeTypeInfo : TypeInfo, ITraceableTypeMember, ICloneable, IRuntimeImplemented
     {
         protected RuntimeTypeInfo()
         {
