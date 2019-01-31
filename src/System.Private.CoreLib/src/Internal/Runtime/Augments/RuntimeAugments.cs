@@ -1159,6 +1159,11 @@ namespace Internal.Runtime.Augments
                 return Internal.Runtime.EEType.SupportsRelativePointers;
             }
         }
+
+        public static bool IsPrimitive(RuntimeTypeHandle typeHandle)
+        {
+            return typeHandle.ToEETypePtr().IsPrimitive && !typeHandle.ToEETypePtr().IsEnum;
+        }
     }
 }
 
