@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime;
 
 namespace System
 {
@@ -13,6 +12,6 @@ namespace System
             throw new PlatformNotSupportedException(); // This needs to be implemented for ProjectN.
 
         public static string[] GetCommandLineArgs() =>
-            CommandLine.InternalCreateCommandLine(includeArg0: true);
+            System.Runtime.CommandLine.InternalCreateCommandLine(includeArg0: true);
     }
 }
