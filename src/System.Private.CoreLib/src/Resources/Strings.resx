@@ -687,6 +687,9 @@
   <data name="Argument_MustBeFalse" xml:space="preserve">
     <value>Argument must be initialized to false</value>
   </data>
+  <data name="Argument_MustBeRuntimeAssembly" xml:space="preserve">
+    <value>Assembly must be a runtime Assembly object.</value>
+  </data>
   <data name="Argument_MustBeRuntimeType" xml:space="preserve">
     <value>Type must be a runtime Type object.</value>
   </data>
