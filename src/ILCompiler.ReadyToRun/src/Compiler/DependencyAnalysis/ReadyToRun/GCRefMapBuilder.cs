@@ -115,7 +115,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
             else
             {
-                nStackSlots = (uint)((transitionBlock.SizeOfTransitionBlock + nStackBytes - _transitionBlock.OffsetOfArgumentRegisters) / _factory.Target.PointerSize);
+                nStackSlots = (uint)((transitionBlock.SizeOfTransitionBlock + nStackBytes - _transitionBlock.OffsetOfFirstGCRefMapSlot) / _factory.Target.PointerSize);
             }
 
             for (uint pos = 0; pos < nStackSlots; pos++)
@@ -130,7 +130,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
                 else
                 {
-                    ofs = (int)(_transitionBlock.OffsetOfArgumentRegisters + pos * _factory.Target.PointerSize);
+                    ofs = (int)(_transitionBlock.OffsetOfFirstGCRefMapSlot + pos * _factory.Target.PointerSize);
                 }
 
                 CORCOMPILE_GCREFMAP_TOKENS token = fakeStack[ofs];
