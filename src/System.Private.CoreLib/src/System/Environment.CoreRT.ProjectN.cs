@@ -6,6 +6,7 @@ using System;
 
 namespace System
 {
+    [Internal.Runtime.CompilerServices.RelocatedType("System.Runtime.Extensions")]
     public static partial class Environment
     {
         public static void Exit(int exitCode) =>
