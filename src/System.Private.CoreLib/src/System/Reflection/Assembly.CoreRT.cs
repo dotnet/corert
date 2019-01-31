@@ -35,6 +35,6 @@ namespace System.Reflection
         public static Assembly LoadFrom(string assemblyFile) { throw new PlatformNotSupportedException(); }
         public static Assembly LoadFrom(string assemblyFile, byte[] hashValue, AssemblyHashAlgorithm hashAlgorithm) { throw new PlatformNotSupportedException(); }
 
-        public bool IsRuntimeImplemented() => this is IRuntimeImplementedAssembly; // Not an api but needs to be public because of Reflection.Core/CoreLib divide.
+        public bool IsRuntimeImplemented() => this is IRuntimeImplemented; // Not an api but needs to be public because of Reflection.Core/CoreLib divide.
     }
 }

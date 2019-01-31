@@ -28,7 +28,7 @@ namespace System.Reflection.Runtime.Assemblies
     //
     // The runtime's implementation of an Assembly. 
     //
-    internal abstract partial class RuntimeAssembly : Assembly, IEquatable<RuntimeAssembly>, IRuntimeImplementedAssembly
+    internal abstract partial class RuntimeAssembly : Assembly, IEquatable<RuntimeAssembly>, IRuntimeImplemented
     {
         public bool Equals(RuntimeAssembly other)
         {
