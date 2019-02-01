@@ -10,10 +10,10 @@ internal static partial class Interop
 {
     internal unsafe partial class Sys
     {
-        [DllImport(Interop.Libraries.CoreLibNative, EntryPoint = "CoreLibNative_GetHighPrecisionCount")]
-        internal static extern ulong GetHighPrecisionCount();
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetTimestampResolution")]
+        internal static extern bool GetTimestampResolution(out long resolution);
 
-        [DllImport(Interop.Libraries.CoreLibNative, EntryPoint = "CoreLibNative_GetHighPrecisionCounterFrequency")]
-        internal static extern ulong GetHighPrecisionCounterFrequency();
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetTimestamp")]
+        internal static extern bool GetTimestamp(out long timestamp);
     }
 }
