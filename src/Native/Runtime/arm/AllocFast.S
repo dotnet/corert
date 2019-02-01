@@ -119,7 +119,7 @@ NESTED_END RhpNewObject, _TEXT
 LEAF_ENTRY RhNewString, _TEXT
         PROLOG_PUSH "{r4-r6,lr}"
         // Make sure computing the overall allocation size won't overflow
-        MOV32       r12, ((0xFFFFFFFF - STRING_BASE_SIZE - 3) / STRING_COMPONENT_SIZE)
+        MOV32       r12, MAX_STRING_LENGTH
         cmp         r1, r12
         bhi         LOCAL_LABEL(StringSizeOverflow)
 

@@ -124,7 +124,7 @@ NESTED_END RhpNewObject, _TEXT
 //  ESI == character/element count
 NESTED_ENTRY RhNewString, _TEXT, NoHandler
         // we want to limit the element count to the non-negative 32-bit int range
-        cmp         rsi, 07fffffffh
+        cmp         rsi, MAX_STRING_LENGTH
         ja          LOCAL_LABEL(StringSizeOverflow)
 
         push_nonvol_reg rbx

@@ -312,6 +312,12 @@ namespace System
             }
         }
 
+        // We impose limits on maximum array length in each dimension to allow efficient 
+        // implementation of advanced range check elimination in future.
+        // Keep in sync with vm\gcscan.cpp and HashHelpers.MaxPrimeArrayLength.
+        internal const int MaxArrayLength = 0X7FEFFFFF;
+        internal const int MaxByteArrayLength = 0x7FFFFFC7;
+
         public long LongLength
         {
             get
