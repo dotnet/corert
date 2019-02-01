@@ -961,6 +961,10 @@
             "classes": null,
             "methods": [
                 {
+                    "name": "System.Tests.TimeSpanTests.Total_Days_Hours_Minutes_Seconds_Milliseconds",
+                    "reason": "outdated"
+                },
+                {
                     "name": "System.Tests.TimeSpanTests.Parse_Invalid",
                     "reason": "Temporary disabling till merging the PR https://github.com/dotnet/corefx/pull/34561"
                 },
