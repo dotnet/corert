@@ -79,6 +79,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public abstract int OffsetOfArgumentRegisters { get; }
 
+        /// <summary>
+        /// Only overridden on ARM64 to return offset of the X8 register.
+        /// </summary>
+        public virtual int OffsetOfFirstGCRefMapSlot => OffsetOfArgumentRegisters;
+
         public abstract int OffsetOfFloatArgumentRegisters { get; }
 
         public bool IsFloatArgumentRegisterOffset(int offset) => offset < 0;
@@ -243,7 +248,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         public void ComputeReturnValueTreatment(CorElementType type, TypeHandle thRetType, bool isVarArgMethod, out bool usesRetBuffer, out uint fpReturnSize)
-
         {
             usesRetBuffer = false;
             fpReturnSize = 0;
@@ -440,6 +444,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             public static TransitionBlock Instance = new Arm64TransitionBlock();
 
+            private int OffsetOfX8Register => OffsetOfArgumentRegisters - PointerSize;
+
             public override TargetArchitecture Architecture => TargetArchitecture.ARM64;
             public override int PointerSize => 8;
             // X0 .. X7
@@ -449,6 +455,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Callee-saves, padding, m_x8RetBuffReg, argument registers
             public override int SizeOfTransitionBlock => SizeOfCalleeSavedRegisters + 2 * PointerSize + SizeOfArgumentRegisters;
             public override int OffsetOfArgumentRegisters => SizeOfCalleeSavedRegisters + 2 * PointerSize;
+            public override int OffsetOfFirstGCRefMapSlot => OffsetOfX8Register;
+
             // D0..D7
             public override int OffsetOfFloatArgumentRegisters => 8 * sizeof(double) + PointerSize;
             public override int EnregisteredParamTypeMaxSize => 16;
@@ -463,7 +471,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return (th.GetSize() > EnregisteredParamTypeMaxSize) && !th.IsHFA();
             }
 
-            public override int GetRetBuffArgOffset(bool hasThis) => OffsetOfArgumentRegisters + 8 * PointerSize; // offset of x8 in the argument register file
+            public override int GetRetBuffArgOffset(bool hasThis) => OffsetOfX8Register;
 
             public override bool IsRetBuffPassedAsFirstArg => true;
         }

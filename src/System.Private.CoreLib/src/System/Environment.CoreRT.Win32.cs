@@ -2,15 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+
 namespace System
 {
-#if PROJECTN
-	[Internal.Runtime.CompilerServices.RelocatedType("System.Runtime.Extensions")]
-#endif
-	public enum EnvironmentVariableTarget
-	{
-		Process = 0,
-		User = 1,
-		Machine = 2,
-	}
+    public static partial class Environment
+    {
+        private static void ExitRaw() => Interop.Kernel32.ExitProcess(s_latchedExitCode);
+    }
 }

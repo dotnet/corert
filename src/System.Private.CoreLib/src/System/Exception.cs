@@ -368,8 +368,6 @@ namespace System
 
         private void AppendStackIP(IntPtr IP, bool isFirstRethrowFrame)
         {
-            Debug.Assert(!(this is OutOfMemoryException), "Avoid allocations if out of memory");
-
             if (_idxFirstFreeStackTraceEntry == 0)
             {
                 _corDbgStackTrace = new IntPtr[16];
@@ -432,9 +430,9 @@ namespace System
 
                 // If out of memory, avoid any calls that may allocate.  Otherwise, they may fail
                 // with another OutOfMemoryException, which may lead to infinite recursion.
-                bool outOfMemory = ex is OutOfMemoryException;
+                bool fatalOutOfMemory = ex == PreallocatedOutOfMemoryException.Instance;
 
-                if (!outOfMemory)
+                if (!fatalOutOfMemory)
                     ex.AppendStackIP(IP, isFirstRethrowFrame);
 
                 // CORERT-TODO: RhpEtwExceptionThrown
@@ -442,8 +440,8 @@ namespace System
 #if PROJECTN
                 if (isFirstFrame)
                 {
-                    string typeName = !outOfMemory ? ex.GetType().ToString() : "System.OutOfMemoryException";
-                    string message = !outOfMemory ? ex.Message :
+                    string typeName = !fatalOutOfMemory  ? ex.GetType().ToString() : "System.OutOfMemoryException";
+                    string message = !fatalOutOfMemory  ? ex.Message :
                         "Insufficient memory to continue the execution of the program.";
 
                     unsafe

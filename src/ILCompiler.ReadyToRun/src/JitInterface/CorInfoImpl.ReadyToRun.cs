@@ -865,6 +865,7 @@ namespace Internal.JitInterface
 
             bool directCall = false;
             bool resolvedCallVirt = false;
+            bool useInstantiatingStub = false;
 
             if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0)
             {
@@ -972,8 +973,10 @@ namespace Internal.JitInterface
 
                         if (pResult->kind == CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN)
                         {
+                            MethodDesc exactMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+                            useInstantiatingStub = true;
                             pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.DynamicHelperCell(
-                                new MethodWithToken(targetMethod, new ModuleToken(_tokenContext, pResolvedToken.token)), _signatureContext));
+                                new MethodWithToken(exactMethod, new ModuleToken(_tokenContext, pResolvedToken.token)), _signatureContext));
                         }
                         else
                         {
@@ -990,11 +993,14 @@ namespace Internal.JitInterface
             else if (method.HasInstantiation)
             {
                 // GVM Call Support
+                MethodDesc exactMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
                 pResult->nullInstanceCheck = true;
                 pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                     _compilation.NodeFactory.DynamicHelperCell(
-                        new MethodWithToken(targetMethod, new ModuleToken(_tokenContext, pResolvedToken.token)), _signatureContext));
+                        new MethodWithToken(exactMethod, new ModuleToken(_tokenContext, pResolvedToken.token)), _signatureContext));
+                useInstantiatingStub = true;         
             }
             else
             // In ReadyToRun, we always use the dispatch stub to call virtual methods
@@ -1029,7 +1035,7 @@ namespace Internal.JitInterface
             pResult->classFlags = getClassAttribsInternal(targetMethod.OwningType);
 
             pResult->methodFlags = getMethodAttribsInternal(targetMethod);
-            Get_CORINFO_SIG_INFO(targetMethod, &pResult->sig);
+            Get_CORINFO_SIG_INFO(targetMethod, &pResult->sig, useInstantiatingStub);
 
             if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_VERIFICATION) != 0)
             {

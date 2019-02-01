@@ -206,14 +206,16 @@ namespace ILCompiler.DependencyAnalysis
                 _codegenNodeFactory,
                 _codegenNodeFactory.DispatchImports,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_Obj,
-                methodWithToken.Method,
+                methodWithToken,
+                useInstantiatingStub: false,
                 _codegenNodeFactory.MethodSignature(
                     ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry, methodWithToken.Method,
                     constrainedType: null, 
                     methodWithToken.Token, 
                     signatureContext: signatureContext, 
                     isUnboxingStub: false, 
-                    isInstantiatingStub: false));
+                    isInstantiatingStub: false),
+                signatureContext);
         }
 
         private ISymbolNode CreateDelegateCtorHelper(DelegateCreationInfo info, SignatureContext signatureContext)
@@ -591,9 +593,11 @@ namespace ILCompiler.DependencyAnalysis
                     _codegenNodeFactory.DispatchImports,
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_MethodCall |
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_FLAG_VSD,
-                    method,
+                    new MethodWithToken(method, methodToken),
+                    useInstantiatingStub: false,
                     _codegenNodeFactory.MethodSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry, method,
                         null, methodToken, signatureContext, isUnboxingStub, isInstantiatingStub: false),
+                    signatureContext,
                     callSite);
 
                 _interfaceDispatchCells.Add(cellKey, dispatchCell);
@@ -866,8 +870,10 @@ namespace ILCompiler.DependencyAnalysis
                     _codegenNodeFactory,
                     _codegenNodeFactory.HelperImports,
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
-                    methodArgument.Method,
-                    new GenericLookupSignature(runtimeLookupKind,  fixupKind,  typeArgument: null, methodArgument, fieldArgument: null, methodContext, signatureContext));
+                    methodArgument,
+                    useInstantiatingStub: false,
+                    new GenericLookupSignature(runtimeLookupKind,  fixupKind,  typeArgument: null, methodArgument, fieldArgument: null, methodContext, signatureContext),
+                    signatureContext);
                 _genericLookupHelpers.Add(key, node);
             }
             return node;
