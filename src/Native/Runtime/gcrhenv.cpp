@@ -289,7 +289,7 @@ COOP_PINVOKE_HELPER(void*, RhpGcAlloc, (EEType *pEEType, UInt32 uFlags, UIntNati
             }
             else
             {
-                int elementCount = cbSize - pEEType->get_BaseSize();
+                size_t elementCount = cbSize - pEEType->get_BaseSize();
                 if (elementCount > MaxByteArrayLength)
                     return NULL;
             }
