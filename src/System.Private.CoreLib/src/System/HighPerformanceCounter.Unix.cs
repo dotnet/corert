@@ -19,15 +19,15 @@ namespace System
             }
         }
 
-        public static ulong Frequency { get; private set; }
+        public static ulong Frequency { get; } = GetFrequency();
 
-        static HighPerformanceCounter()
+        private static ulong GetFrequency()
         {
             // Cache the frequency on the managed side to avoid the cost of P/Invoke on every access to Frequency
             long frequency;
             bool success = Interop.Sys.GetTimestampResolution(out frequency);
-            Frequency = (ulong)frequency;
             Debug.Assert(success);
+            return (ulong)frequency;
         }
     }
 }
