@@ -2197,6 +2197,10 @@ namespace Internal.IL
             MethodDesc existantDesc;
             LLVMValueRef nativeFunc;
             LLVMValueRef realNativeFunc = LLVM.GetNamedFunction(Module, realMethodName);
+            if (realMethodName.EndsWith("CallMe"))
+            {
+
+            }
             if (_pinvokeMap.TryGetValue(realMethodName, out existantDesc))
             {
                 if (existantDesc != method)
@@ -2211,6 +2215,7 @@ namespace Internal.IL
             }
             else
             {
+
                 _pinvokeMap.Add(realMethodName, method);
                 nativeFunc = realNativeFunc;
             }
@@ -2304,8 +2309,16 @@ namespace Internal.IL
 
         private void EmitNativeToManagedThunk(WebAssemblyCodegenCompilation compilation, MethodDesc method, string nativeName, LLVMValueRef managedFunction)
         {
+            if (method.Name.EndsWith("CallMe"))
+            {
+
+            }
             if (_pinvokeMap.TryGetValue(nativeName, out MethodDesc existing))
             {
+                if (existing.Name.EndsWith("CallMe") || method.Name.EndsWith("CallMe"))
+                {
+
+                }
                 if (existing != method)
                     throw new InvalidProgramException("export and import function were mismatched");
             }
