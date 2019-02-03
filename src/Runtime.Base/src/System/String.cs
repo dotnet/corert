@@ -72,7 +72,7 @@ namespace System
 
 #pragma warning restore
 
-        internal int Length
+        public int Length
         {
             get
             {
