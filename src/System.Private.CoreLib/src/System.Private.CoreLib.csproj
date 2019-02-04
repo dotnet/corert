@@ -413,7 +413,7 @@
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.DynamicLoad.cs">
       <Link>Interop\Windows\mincore\Interop.DynamicLoad.cs</Link>
     </Compile>
-    <Compile Include="System\HighPerformanceCounter.Windows.cs" />
+    <Compile Include="System\HighPerformanceCounter.Windows.cs" Condition="'$(FeaturePortableThreadPool)' == 'true'" />
     <Compile Include="System\Threading\LowLevelMonitor.Windows.cs" />
     <Compile Include="System\Threading\LowLevelLifoSemaphore.Windows.cs" />
     <Compile Include="System\Threading\ThreadPool.Windows.cs" Condition="'$(FeaturePortableThreadPool)' != 'true'" />
@@ -461,7 +461,7 @@
     <Compile Include="System\AppContext.Unix.CoreRT.cs" />
     <Compile Include="System\DateTime.Unix.CoreRT.cs" />
     <Compile Include="System\Environment.CoreRT.Unix.cs" />
-    <Compile Include="System\HighPerformanceCounter.Unix.cs" />
+    <Compile Include="System\HighPerformanceCounter.Unix.cs" Condition="'$(FeaturePortableThreadPool)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
     <Compile Include="System\Threading\EventWaitHandle.Unix.cs" />
     <Compile Include="System\Threading\LowLevelLifoSemaphore.Unix.cs" />
@@ -477,23 +477,14 @@
     <Compile Include="..\..\Common\src\Interop\Unix\Interop.Libraries.cs">
       <Link>Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.GetSystemTimeAsTicks.cs">
-      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetSystemTimeAsTicks.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Exit.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Exit.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetCpuUtilization.cs">
-      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetCpuUtilization.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetEnv.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetEnv.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetExecutableAbsolutePath.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetExecutableAbsolutePath.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.HighPrecisionCounter.cs">
-      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.HighPrecisionCounter.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs</Link>
