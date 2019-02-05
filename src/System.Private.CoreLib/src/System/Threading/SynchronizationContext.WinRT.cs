@@ -75,7 +75,7 @@ namespace System.Threading
 
             private void InvokeCore()
             {
-                SynchronizationContext prevSyncCtx = RuntimeThread.CurrentThread.SynchronizationContext = syncContext;
+                SynchronizationContext prevSyncCtx = RuntimeThread.CurrentThread.SynchronizationContext;
                 try
                 {
                     m_callback(m_state);
@@ -92,7 +92,7 @@ namespace System.Threading
                 }
                 finally
                 {
-                    RuntimeThread.CurrentThread.SynchronizationContext = syncContext;
+                    RuntimeThread.CurrentThread.SynchronizationContext = prevSyncCtx;
                 }
             }
         }
