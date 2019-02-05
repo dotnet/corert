@@ -17,7 +17,7 @@ namespace System.Threading
         {
             get
             {
-                return CurrentExplicit ?? GetWinRTContext();
+                return RuntimeThread.CurrentThread.SynchronizationContext ?? GetWinRTContext();
             }
         }
 
@@ -75,7 +75,7 @@ namespace System.Threading
 
             private void InvokeCore()
             {
-                SynchronizationContext prevSyncCtx = SynchronizationContext.CurrentExplicit;
+                SynchronizationContext prevSyncCtx = RuntimeThread.CurrentThread.SynchronizationContext;
                 try
                 {
                     m_callback(m_state);
@@ -92,7 +92,7 @@ namespace System.Threading
                 }
                 finally
                 {
-                    SynchronizationContext.SetSynchronizationContext(prevSyncCtx);
+                    RuntimeThread.CurrentThread.SynchronizationContext = prevSyncCtx;
                 }
             }
         }

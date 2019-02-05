@@ -1,81 +1,16 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if ENABLE_WINRT
-#define FEATURE_APPX
-#endif // ENABLE_WINRT
 
-using Internal.Reflection.Augments;
-using Internal.Runtime.Augments;
-using System.Collections;
+using System.IO;
+using System.Globalization;
+using System.Reflection;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Reflection;
-using System.Runtime.Serialization;
-using System.Text;
 
 namespace System.Resources
 {
-    internal static class ExtensionMethods
-    {
-        public static Assembly InternalGetSatelliteAssembly(this Assembly mainAssembly, string name,
-                                                              CultureInfo culture,
-                                                              Version version,
-                                                              bool throwOnFileNotFound)
-        {
-            AssemblyName mainAssemblyAn = mainAssembly.GetName();
-            AssemblyName an = new AssemblyName();
-
-            an.CultureInfo = culture;
-            an.Name = name;
-            an.SetPublicKeyToken(mainAssemblyAn.GetPublicKeyToken());
-            an.Flags = mainAssemblyAn.Flags;
-            an.Version = version ?? mainAssemblyAn.Version;
-
-            Assembly retAssembly = ReflectionAugments.ReflectionCoreCallbacks.Load(an, false);
-
-            if (retAssembly == mainAssembly || (retAssembly == null && throwOnFileNotFound))
-            {
-                throw new FileNotFoundException(SR.Format(SR.IO_FileNotFound_FileName, an.Name));
-            }
-
-            return retAssembly;
-        }
-    }
-
-#if FEATURE_APPX
-    //
-    // This is implemented in System.Runtime.WindowsRuntime as function System.Resources.WindowsRuntimeResourceManager,
-    // allowing us to ask for a WinRT-specific ResourceManager.
-    // It is important to have WindowsRuntimeResourceManagerBase as regular class with virtual methods and default implementations. 
-    // Defining WindowsRuntimeResourceManagerBase as abstract class or interface will cause issues when adding more methods to it 
-    // because it�ll create dependency between mscorlib and System.Runtime.WindowsRuntime which will require always shipping both DLLs together. 
-    // Also using interface or abstract class will not play nice with FriendAccessAllowed.
-    //
-    public class WindowsRuntimeResourceManagerBase
-    {
-        public virtual bool Initialize(string reswFilename, out PRIExceptionInfo exceptionInfo) { exceptionInfo = null; return false; }
-
-        public virtual string GetString(string stringName, string startingCulture, string neutralResourcesCulture) { return null; }
-
-        public virtual CultureInfo GlobalResourceContextBestFitCultureInfo
-        {
-            get { return null; }
-        }
-
-        public virtual bool SetGlobalResourceContextDefaultCulture(CultureInfo ci) { return false; }
-    }
-
-    public class PRIExceptionInfo
-    {
-        public string PackageSimpleName { get; set; }
-        public string ResWFile { get; set; }
-    }
-#endif // FEATURE_APPX
-
     // Resource Manager exposes an assembly's resources to an application for
     // the correct CultureInfo.  An example would be localizing text for a 
     // user-visible message.  Create a set of resource files listing a name 
@@ -125,13 +60,9 @@ namespace System.Resources
     // We encapsulate fallback logic in a fallback iterator class, so that 
     // this logic isn't duplicated in several methods.
     // 
-    // In the future, we can look into either breaking serialization if we
-    // decide this doesn't make sense for ResourceManager (i.e. how common
-    // is the scenario), manually make serialization work by providing 
-    // appropriate OnSerialization, Deserialization methods. We can also 
-    // look into further factoring and better design of IResourceGroveler
-    // interface to accommodate unused parameters that don't make sense
-    // for either file-based or manifest-based lookup paths.
+    // In the future, we can also look into further factoring and better
+    // design of IResourceGroveler interface to accommodate unused parameters
+    // that don't make sense for either file-based or manifest-based lookup paths.
     //
     // Benefits of this refactoring:
     // - Makes it possible to understand what the ResourceManager does, 
@@ -159,7 +90,8 @@ namespace System.Resources
     // belonging to that type may not be initialized. FrameworkEventSource.Log
     // is one such example.
     //
-    public class ResourceManager
+
+    public partial class ResourceManager
     {
         internal class CultureNameResourceSetPair
         {
@@ -168,36 +100,28 @@ namespace System.Resources
         }
 
         protected string BaseNameField;
+        protected Assembly MainAssembly;    // Need the assembly manifest sometimes.
 
-        // don't serialize the cache of ResourceSets
-        [NonSerialized]
         private Dictionary<string, ResourceSet> _resourceSets;
-        private string moduleDir;      // For assembly-ignorant directory location
-        protected Assembly MainAssembly;   // Need the assembly manifest sometimes.
-        private Type _locationInfo;    // For Assembly or type-based directory layout
-        private Type _userResourceSet;  // Which ResourceSet instance to create
+        private string _moduleDir;          // For assembly-ignorant directory location
+        private Type _locationInfo;         // For Assembly or type-based directory layout
+        private Type _userResourceSet;      // Which ResourceSet instance to create
         private CultureInfo _neutralResourcesCulture;  // For perf optimizations.
 
-        [NonSerialized]
         private CultureNameResourceSetPair _lastUsedResourceCache;
 
         private bool _ignoreCase;   // Whether case matters in GetString & GetObject
 
-        private bool UseManifest;  // Use Assembly manifest, or grovel disk.
+        private bool _useManifest;  // Use Assembly manifest, or grovel disk.
 
         // Whether to fall back to the main assembly or a particular 
         // satellite for the neutral resources.
-        [OptionalField]
         private UltimateResourceFallbackLocation _fallbackLoc;
         // Version number of satellite assemblies to look for.  May be null.
-        [OptionalField]
         private Version _satelliteContractVersion;
-        [OptionalField]
         private bool _lookedForSatelliteContractVersion;
 
-        // no need to serialize this; just create a new one on deserialization
-        [NonSerialized]
-        private IResourceGroveler resourceGroveler;
+        private IResourceGroveler _resourceGroveler;
 
         public static readonly int MagicNumber = unchecked((int)0xBEEFCACE);  // If only hex had a K...
 
@@ -227,31 +151,11 @@ namespace System.Resources
         internal const string ResFileExtension = ".resources";
         internal const int ResFileExtensionLength = 10;
 
-        // My private debugging aid.  Set to 5 or 6 for verbose output.  Set to 3
-        // for summary level information.
-        internal static readonly int DEBUG = 0; //Making this const causes C# to consider all of the code that it guards unreachable.
-
-        [ThreadStatic]
-        private static int ts_recursionCount = 0;
-
-#if FEATURE_APPX
-        private static volatile bool s_IsAppXModel;
-#endif
-
-        private void Init()
-        {
-        }
-
         protected ResourceManager()
         {
-            Init();
-
-            SetAppXConfiguration();
-
-            // Now we can use the managed resources even when using PRI's to support the APIs GetObject, GetStream...etc.
             _lastUsedResourceCache = new CultureNameResourceSetPair();
             ResourceManagerMediator mediator = new ResourceManagerMediator(this);
-            resourceGroveler = new ManifestBasedResourceGroveler(mediator);
+            _resourceGroveler = new ManifestBasedResourceGroveler(mediator);
         }
 
         // Constructs a Resource Manager for files beginning with 
@@ -273,28 +177,27 @@ namespace System.Resources
 
             BaseNameField = baseName;
 
-            moduleDir = resourceDir;
+            _moduleDir = resourceDir;
             _userResourceSet = usingResourceSet;
             _resourceSets = new Dictionary<string, ResourceSet>();
             _lastUsedResourceCache = new CultureNameResourceSetPair();
-            UseManifest = false;
+            _useManifest = false;
 
             ResourceManagerMediator mediator = new ResourceManagerMediator(this);
-            resourceGroveler = new FileBasedResourceGroveler(mediator);
+            _resourceGroveler = new FileBasedResourceGroveler(mediator);
         }
 
         public ResourceManager(string baseName, Assembly assembly)
         {
             if (null == baseName)
                 throw new ArgumentNullException(nameof(baseName));
-
             if (null == assembly)
                 throw new ArgumentNullException(nameof(assembly));
+            if (!assembly.IsRuntimeImplemented())
+                throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
 
             MainAssembly = assembly;
             BaseNameField = baseName;
-
-            SetAppXConfiguration();
 
             CommonAssemblyInit();
         }
@@ -305,15 +208,15 @@ namespace System.Resources
                 throw new ArgumentNullException(nameof(baseName));
             if (null == assembly)
                 throw new ArgumentNullException(nameof(assembly));
+            if (!assembly.IsRuntimeImplemented())
+                throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
 
             MainAssembly = assembly;
             BaseNameField = baseName;
 
-            if (usingResourceSet != null && (usingResourceSet != s_minResourceSet) && !(usingResourceSet.GetTypeInfo().IsSubclassOf(s_minResourceSet)))
+            if (usingResourceSet != null && (usingResourceSet != s_minResourceSet) && !(usingResourceSet.IsSubclassOf(s_minResourceSet)))
                 throw new ArgumentException(SR.Arg_ResMgrNotResSet, nameof(usingResourceSet));
             _userResourceSet = usingResourceSet;
-
-            SetAppXConfiguration();
 
             CommonAssemblyInit();
         }
@@ -322,60 +225,26 @@ namespace System.Resources
         {
             if (null == resourceSource)
                 throw new ArgumentNullException(nameof(resourceSource));
+            if (!resourceSource.IsRuntimeImplemented())
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType);
 
             _locationInfo = resourceSource;
-            MainAssembly = _locationInfo.GetTypeInfo().Assembly;
+            MainAssembly = _locationInfo.Assembly;
             BaseNameField = resourceSource.Name;
-
-            SetAppXConfiguration();
 
             CommonAssemblyInit();
         }
-
-        [OnDeserializing]
-        private void OnDeserializing(StreamingContext ctx)
-        {
-            _resourceSets = null;
-            resourceGroveler = null;
-            _lastUsedResourceCache = null;
-        }
-
-        [OnDeserialized]
-        private void OnDeserialized(StreamingContext ctx)
-        {
-            _resourceSets = new Dictionary<string, ResourceSet>();
-            _lastUsedResourceCache = new CultureNameResourceSetPair();
-            // set up resource groveler, depending on whether this ResourceManager
-            // is looking for files or assemblies
-            ResourceManagerMediator mediator = new ResourceManagerMediator(this);
-            if (UseManifest)
-            {
-                resourceGroveler = new ManifestBasedResourceGroveler(mediator);
-            }
-            else
-            {
-                resourceGroveler = new FileBasedResourceGroveler(mediator);
-            }
-
-            // v2 does this lazily
-            if (UseManifest && _neutralResourcesCulture == null)
-            {
-                _neutralResourcesCulture = ManifestBasedResourceGroveler.GetNeutralResourcesLanguage(MainAssembly, ref _fallbackLoc);
-            }
-        }
-
-        [OnSerializing]
-        private void OnSerializing(StreamingContext ctx)
-        {
-        }
-
 
         // Trying to unify code as much as possible, even though having to do a
         // security check in each constructor prevents it.
         private void CommonAssemblyInit()
         {
+#if FEATURE_APPX || ENABLE_WINRT
+            SetUapConfiguration();
+#endif
+
             // Now we can use the managed resources even when using PRI's to support the APIs GetObject, GetStream...etc.
-            UseManifest = true;
+            _useManifest = true;
 
             _resourceSets = new Dictionary<string, ResourceSet>();
             _lastUsedResourceCache = new CultureNameResourceSetPair();
@@ -383,7 +252,7 @@ namespace System.Resources
             _fallbackLoc = UltimateResourceFallbackLocation.MainAssembly;
 
             ResourceManagerMediator mediator = new ResourceManagerMediator(this);
-            resourceGroveler = new ManifestBasedResourceGroveler(mediator);
+            _resourceGroveler = new ManifestBasedResourceGroveler(mediator);
 
             _neutralResourcesCulture = ManifestBasedResourceGroveler.GetNeutralResourcesLanguage(MainAssembly, ref _fallbackLoc);
         }
@@ -391,10 +260,7 @@ namespace System.Resources
         // Gets the base name for the ResourceManager.
         public virtual string BaseName
         {
-            get
-            {
-                return BaseNameField;
-            }
+            get { return BaseNameField; }
         }
 
         // Whether we should ignore the capitalization of resources when calling
@@ -409,22 +275,13 @@ namespace System.Resources
         // to construct ResourceSets.
         public virtual Type ResourceSetType
         {
-            get
-            {
-                return (_userResourceSet == null) ? typeof(RuntimeResourceSet) : _userResourceSet;
-            }
+            get { return (_userResourceSet == null) ? typeof(RuntimeResourceSet) : _userResourceSet; }
         }
 
         protected UltimateResourceFallbackLocation FallbackLocation
         {
-            get
-            {
-                return _fallbackLoc;
-            }
-            set
-            {
-                _fallbackLoc = value;
-            }
+            get { return _fallbackLoc; }
+            set { _fallbackLoc = value; }
         }
 
         // Tells the ResourceManager to call Close on all ResourceSets and 
@@ -447,11 +304,9 @@ namespace System.Resources
 
             lock (localResourceSets)
             {
-                IDictionaryEnumerator setEnum = localResourceSets.GetEnumerator();
-
-                while (setEnum.MoveNext())
+                foreach ((_, ResourceSet resourceSet) in localResourceSets)
                 {
-                    ((ResourceSet)setEnum.Value).Close();
+                    resourceSet.Close();
                 }
             }
         }
@@ -473,31 +328,16 @@ namespace System.Resources
         // such as ".ResX", or a completely different format for naming files.
         protected virtual string GetResourceFileName(CultureInfo culture)
         {
-            StringBuilder sb = new StringBuilder(255);
-            sb.Append(BaseNameField);
-            // If this is the neutral culture, don't append culture name.
-            if (culture.Name != CultureInfo.InvariantCulture.Name)
+            // If this is the neutral culture, don't include the culture name.
+            if (culture.HasInvariantCultureName)
             {
-                string cultureName = culture.Name;
-                // Verify the culture name
-                for (int i = 0; i < cultureName.Length; i++)
-                {
-                    char c = cultureName[i];
-                    // TODO: NLS Arrowhead - This is broken, names can only be RFC4646 names (ie: a-zA-Z0-9).
-                    // TODO: NLS Arrowhead - This allows any unicode letter/digit
-                    if (char.IsLetterOrDigit(c) || c == '-' || c == '_')
-                    {
-                        continue;
-                    }
-
-                    throw new ArgumentException(SR.Format(SR.Argument_InvalidResourceCultureName, cultureName));
-                }
-
-                sb.Append('.');
-                sb.Append(culture.Name);
+                return BaseNameField + ResFileExtension;
             }
-            sb.Append(ResFileExtension);
-            return sb.ToString();
+            else
+            {
+                CultureInfo.VerifyCultureName(culture.Name, throwException: true);
+                return BaseNameField + "." + culture.Name + ResFileExtension;
+            }
         }
 
         // WARNING: This function must be kept in sync with ResourceFallbackManager.GetEnumerator()
@@ -571,13 +411,13 @@ namespace System.Resources
                 }
             }
 
-            if (UseManifest && culture.Name == CultureInfo.InvariantCulture.Name)
+            if (_useManifest && culture.HasInvariantCultureName)
             {
                 string fileName = GetResourceFileName(culture);
                 Stream stream = MainAssembly.GetManifestResourceStream(_locationInfo, fileName);
                 if (createIfNotExists && stream != null)
                 {
-                    rs = ((ManifestBasedResourceGroveler)resourceGroveler).CreateResourceSet(stream, MainAssembly);
+                    rs = ((ManifestBasedResourceGroveler)_resourceGroveler).CreateResourceSet(stream, MainAssembly);
                     AddResourceSet(localResourceSets, culture.Name, ref rs);
                     return rs;
                 }
@@ -592,6 +432,8 @@ namespace System.Resources
         // This will take a minimal number of locks.
         protected virtual ResourceSet InternalGetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents)
         {
+            Debug.Assert(culture != null, "culture != null");
+
             Dictionary<string, ResourceSet> localResourceSets = _resourceSets;
             ResourceSet rs = null;
             CultureInfo foundCulture = null;
@@ -623,7 +465,7 @@ namespace System.Resources
                 // Assembly load event, which could fail then call back into the 
                 // ResourceManager).  It's happened.
 
-                rs = resourceGroveler.GrovelForResourceSet(currentCultureInfo, localResourceSets,
+                rs = _resourceGroveler.GrovelForResourceSet(currentCultureInfo, localResourceSets,
                                                            tryParents, createIfNotExists);
 
                 // found a ResourceSet; we're done
@@ -694,40 +536,20 @@ namespace System.Resources
                 throw new ArgumentNullException(nameof(a), SR.ArgumentNull_Assembly);
             }
 
-            string v = null;
-            IEnumerable<SatelliteContractVersionAttribute> attrs = a.GetCustomAttributes<SatelliteContractVersionAttribute>();
-
-            foreach (SatelliteContractVersionAttribute attr in attrs)
-            {
-                Debug.Assert(v == null, "Cannot have multiple instances of SatelliteContractVersionAttribute on an assembly!");
-                v = attr.Version;
-            }
-
+            string v = a.GetCustomAttribute<SatelliteContractVersionAttribute>()?.Version;
             if (v == null)
             {
+                // Return null. The calling code will use the assembly version instead to avoid potential type
+                // and library loads caused by CA lookup.
                 return null;
             }
 
-            Version ver;
-            try
+            if (!Version.TryParse(v, out Version version))
             {
-                ver = Version.Parse(v);
+                throw new ArgumentException(SR.Format(SR.Arg_InvalidSatelliteContract_Asm_Ver, a.ToString(), v));
             }
-            catch (ArgumentOutOfRangeException e)
-            {
-                // Note we are prone to hitting infinite loops if mscorlib's
-                // SatelliteContractVersionAttribute contains bogus values.
-                // If this assert fires, please fix the build process for the
-                // BCL directory.
-                if (a == typeof(object).GetTypeInfo().Assembly)
-                {
-                    Debug.Fail(System.CoreLib.Name + "'s SatelliteContractVersionAttribute is a malformed version string!");
-                    return null;
-                }
 
-                throw new ArgumentException(SR.Format(SR.Arg_InvalidSatelliteContract_Asm_Ver, a.ToString(), v), e);
-            }
-            return ver;
+            return version;
         }
 
         protected static CultureInfo GetNeutralResourcesLanguage(Assembly a)
@@ -758,197 +580,13 @@ namespace System.Resources
 
             // Now, compare assembly display names (IGNORES VERSION AND PROCESSORARCHITECTURE)
             // also, for  mscorlib ignores everything, since that's what the binder is going to do
-            while (char.IsWhiteSpace(asmTypeName[++comma]))
-                ;
+            while (char.IsWhiteSpace(asmTypeName[++comma])) ;
 
             // case insensitive
             AssemblyName an = new AssemblyName(asmTypeName.Substring(comma));
 
             // to match IsMscorlib() in VM
             return string.Equals(an.Name, "mscorlib", StringComparison.OrdinalIgnoreCase);
-        }
-
-#if FEATURE_APPX
-        // Throws WinRT hresults
-        private string GetStringFromPRI(string stringName, string startingCulture, string neutralResourcesCulture) {
-            Debug.Assert(_bUsingModernResourceManagement);
-            Debug.Assert(_WinRTResourceManager != null);
-            Debug.Assert(_PRIonAppXInitialized);
-        
-            if (stringName.Length == 0)
-                return null;
-            
-            string resourceString = null;
-
-            // Do not handle exceptions. See the comment in SetAppXConfiguration about throwing
-            // exception types that the ResourceManager class is not documented to throw.
-            resourceString = _WinRTResourceManager.GetString(
-                                       stringName,
-                                       string.IsNullOrEmpty(startingCulture) ? null : startingCulture,
-                                       string.IsNullOrEmpty(neutralResourcesCulture) ? null : neutralResourcesCulture);
-            
-            return resourceString;
-        }
-
-        // Since we can't directly reference System.Runtime.WindowsRuntime from System.Private.CoreLib, we have to get the type via reflection.
-        // It would be better if we could just implement WindowsRuntimeResourceManager in System.Private.CoreLib, but we can't, because
-        // we can do very little with WinRT in System.Private.CoreLib.
-        internal static WindowsRuntimeResourceManagerBase GetWinRTResourceManager()
-        {
-            Assembly hiddenScopeAssembly = Assembly.Load(RuntimeAugments.HiddenScopeAssemblyName);
-            Type WinRTResourceManagerType = hiddenScopeAssembly.GetType("System.Resources.WindowsRuntimeResourceManager", true);
-            return (WindowsRuntimeResourceManagerBase)Activator.CreateInstance(WinRTResourceManagerType, true);
-        }
-#endif
-
-        [NonSerialized]
-        private bool _bUsingModernResourceManagement = false; // Written only by SetAppXConfiguration
-
-#if FEATURE_APPX
-        [NonSerialized]
-        private WindowsRuntimeResourceManagerBase _WinRTResourceManager; // Written only by SetAppXConfiguration
-        
-        [NonSerialized]
-        private bool _PRIonAppXInitialized; // Written only by SetAppXConfiguration
-        
-        [NonSerialized]
-        private PRIExceptionInfo _PRIExceptionInfo; // Written only by SetAppXConfiguration
-
-        // If it is framework assembly we'll return true. the reason is in .NetNative we don't merge the resources to the app PRI file.
-        // The framework assemblies are tagged with attribute [assembly: AssemblyMetadata(".NETFrameworkAssembly", "")]
-        private bool ShouldUseSatelliteAssemblyResourceLookupUnderAppX(Assembly resourcesAssembly)
-        {
-            if (typeof(Object).Assembly == resourcesAssembly)
-                return true;
-
-            foreach (var attrib in resourcesAssembly.GetCustomAttributes())
-            {
-                AssemblyMetadataAttribute meta = attrib as AssemblyMetadataAttribute;
-                if (meta != null && meta.Key.Equals(".NETFrameworkAssembly"))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-#endif // FEATURE_APPX
-        // Only call SetAppXConfiguration from ResourceManager constructors, and nowhere else.
-        // Throws MissingManifestResourceException and WinRT HResults
-
-        private void SetAppXConfiguration()
-        {
-            Debug.Assert(_bUsingModernResourceManagement == false); // Only this function writes to this member
-#if FEATURE_APPX
-            Debug.Assert(_WinRTResourceManager == null); // Only this function writes to this member
-            Debug.Assert(_PRIonAppXInitialized == false); // Only this function writes to this member
-            Debug.Assert(_PRIExceptionInfo == null); // Only this function writes to this member
-
-            Assembly resourcesAssembly = MainAssembly;
-
-            if (resourcesAssembly != null)
-            {
-#if ENABLE_WINRT
-                WinRTInteropCallbacks callbacks = WinRTInterop.UnsafeCallbacks;
-                if (callbacks != null && callbacks.IsAppxModel())
-                    s_IsAppXModel = true;
-#endif
-                if (s_IsAppXModel)
-                {
-                    // If we have the type information from the ResourceManager(Type) constructor, we use it. Otherwise, we use BaseNameField.
-                    string reswFilename = _locationInfo == null ? BaseNameField : _locationInfo.FullName;
-
-                    // The only way this can happen is if a class inherited from ResourceManager and
-                    // did not set the BaseNameField before calling the protected ResourceManager() constructor.
-                    // For other constructors, we would already have thrown an ArgumentNullException by now.
-                    // Throwing an ArgumentNullException now is not the right thing to do because technically
-                    // ResourceManager() takes no arguments, and because it is not documented as throwing
-                    // any exceptions. Instead, let's go through the rest of the initialization with this set to
-                    // an empty string. We may in fact fail earlier for another reason, but otherwise we will
-                    // throw a MissingManifestResourceException when GetString is called indicating that a
-                    // resW filename called "" could not be found.
-                    if (reswFilename == null)
-                        reswFilename = string.Empty;
-
-                    // See AssemblyNative::IsFrameworkAssembly for details on which kinds of assemblies are considered Framework assemblies.
-                    // The Modern Resource Manager is not used for such assemblies - they continue to use satellite assemblies (i.e. .resources.dll files).
-                    _bUsingModernResourceManagement = !ShouldUseSatelliteAssemblyResourceLookupUnderAppX(resourcesAssembly);
-
-                    if (_bUsingModernResourceManagement)
-                    {
-                        // Only now are we certain that we need the PRI file.
-
-                        // At this point it is important NOT to set _bUsingModernResourceManagement to false
-                        // if the PRI file does not exist because we are now certain we need to load PRI
-                        // resources. We want to fail by throwing a MissingManifestResourceException
-                        // if WindowsRuntimeResourceManager.Initialize fails to locate the PRI file. We do not
-                        // want to fall back to using satellite assemblies anymore. Note that we would not throw
-                        // the MissingManifestResourceException from this function, but from GetString. See the
-                        // comment below on the reason for this.
-
-                        _WinRTResourceManager = GetWinRTResourceManager();
-
-                        try
-                        {
-                            _PRIonAppXInitialized = _WinRTResourceManager.Initialize(reswFilename, out _PRIExceptionInfo);
-
-                            // Note that _PRIExceptionInfo might be null - this is OK.
-                            // In that case we will just throw the generic
-                            // MissingManifestResource_NoPRIresources exception.
-                            // See the implementation of GetString for more details.
-                        }
-                        // We would like to be able to throw a MissingManifestResourceException here if PRI resources
-                        // could not be loaded for a recognized reason. However, the ResourceManager constructors
-                        // that call SetAppXConfiguration are not documented as throwing MissingManifestResourceException,
-                        // and since they are part of the portable profile, we cannot start throwing a new exception type
-                        // as that would break existing portable libraries. Hence we must save the exception information
-                        // now and throw the exception on the first call to GetString.
-                        catch (FileNotFoundException)
-                        {
-                            // We will throw MissingManifestResource_NoPRIresources from GetString
-                            // when we see that _PRIonAppXInitialized is false.
-                        }
-                        catch (Exception e)
-                        {
-                            // ERROR_MRM_MAP_NOT_FOUND can be thrown by the call to ResourceManager.get_AllResourceMaps
-                            // in WindowsRuntimeResourceManager.Initialize.
-                            // In this case _PRIExceptionInfo is now null and we will just throw the generic
-                            // MissingManifestResource_NoPRIresources exception.
-                            // See the implementation of GetString for more details.
-                            if (e.HResult != HResults.ERROR_MRM_MAP_NOT_FOUND)
-                                throw; // Unexpected exception code. Bubble it up to the caller.
-                        }
-
-                        if (!_PRIonAppXInitialized)
-                        {
-                            // if we couldn't find resources in the PRI, we fallback using the managed resources.
-                            // if try to get resources that no existing, we'll throw anyway.
-                            _bUsingModernResourceManagement = false;
-                        }
-
-                        // Allow all other exception types to bubble up to the caller.
-
-                        // Yes, this causes us to potentially throw exception types that are not documented.
-
-                        // Ultimately the tradeoff is the following:
-                        // -We could ignore unknown exceptions or rethrow them as inner exceptions
-                        // of exceptions that the ResourceManager class is already documented as throwing.
-                        // This would allow existing portable libraries to gracefully recover if they don't care
-                        // too much about the ResourceManager object they are using. However it could
-                        // mask potentially fatal errors that we are not aware of, such as a disk drive failing.
-
-
-                        // The alternative, which we chose, is to throw unknown exceptions. This may tear
-                        // down the process if the portable library and app don't expect this exception type.
-                        // On the other hand, this won't mask potentially fatal errors we don't know about.
-                    }
-                }
-            }
-            // resourcesAssembly == null should not happen but it can. See the comment on Assembly.GetCallingAssembly.
-            // However for the sake of 100% backwards compatibility on Win7 and below, we must leave
-            // _bUsingModernResourceManagement as false.
-#endif // FEATURE_APPX            
         }
 
         // Looks up a resource value for a particular name.  Looks in the 
@@ -969,108 +607,61 @@ namespace System.Resources
             if (null == name)
                 throw new ArgumentNullException(nameof(name));
 
-            // Recursion guard so framework resource lookups can't stack overflow
-            if (ts_recursionCount > 10)
+#if FEATURE_APPX || ENABLE_WINRT
+            if (_useUapResourceManagement)
             {
-                Debug.Fail("Infinite recursion during resource lookup. This may be a bug or missing framework resource.");
-                throw new MissingManifestResourceException("Could not look up the resource due to an internal error.");
+                // Throws WinRT hresults.
+                return GetStringFromPRI(name, culture, _neutralResourcesCulture.Name);
+            }
+#endif
+
+            if (culture == null)
+            {
+                culture = CultureInfo.CurrentUICulture;
             }
 
-            ts_recursionCount++;
+            ResourceSet last = GetFirstResourceSet(culture);
 
-            try
+            if (last != null)
             {
-#if FEATURE_APPX
-                if (s_IsAppXModel)
+                string value = last.GetString(name, _ignoreCase);
+                if (value != null)
+                    return value;
+            }
+
+            // This is the CultureInfo hierarchy traversal code for resource 
+            // lookups, similar but necessarily orthogonal to the ResourceSet 
+            // lookup logic.
+            ResourceFallbackManager mgr = new ResourceFallbackManager(culture, _neutralResourcesCulture, true);
+            foreach (CultureInfo currentCultureInfo in mgr)
+            {
+                ResourceSet rs = InternalGetResourceSet(currentCultureInfo, true, true);
+                if (rs == null)
+                    break;
+
+                if (rs != last)
                 {
-                    // If the caller explictily passed in a culture that was obtained by calling CultureInfo.CurrentUICulture,
-                    // null it out, so that we re-compute it.  If we use modern resource lookup, we may end up getting a "better"
-                    // match, since CultureInfo objects can't represent all the different languages the AppX resource model supports.
-                    // For classic resources, this causes us to ignore the languages list and instead use the older Win32 behavior,
-                    // which is the design choice we've made. (See the call a little later to GetCurrentUICultureNoAppX()).
-                    if (object.ReferenceEquals(culture, CultureInfo.CurrentUICulture))
+                    string value = rs.GetString(name, _ignoreCase);
+                    if (value != null)
                     {
-                        culture = null;
-                    }
-                }
-
-                if (_bUsingModernResourceManagement)
-                {
-                    if (_PRIonAppXInitialized == false)
-                    {
-                        // Always throw if we did not fully succeed in initializing the WinRT Resource Manager.
-
-                        if (_PRIExceptionInfo != null && _PRIExceptionInfo.PackageSimpleName != null && _PRIExceptionInfo.ResWFile != null)
-                            throw new MissingManifestResourceException(SR.Format(SR.MissingManifestResource_ResWFileNotLoaded, _PRIExceptionInfo.ResWFile, _PRIExceptionInfo.PackageSimpleName));
-
-                        throw new MissingManifestResourceException(SR.MissingManifestResource_NoPRIresources);
-                    }
-
-                    // Throws WinRT hresults.
-                    return GetStringFromPRI(name,
-                                            culture == null ? null : culture.Name,
-                                            _neutralResourcesCulture.Name);
-                }
-                else
-#endif // FEATURE_APPX
-                {
-                    if (null == culture)
-                    {
-                        // When running inside AppX we want to ignore the languages list when trying to come up with our CurrentUICulture.
-                        // This line behaves the same way as CultureInfo.CurrentUICulture would have in .NET 4
-                        culture = CultureInfo.CurrentUICulture;
-                    }
-
-                    ResourceSet last = GetFirstResourceSet(culture);
-
-                    if (last != null)
-                    {
-                        string value = last.GetString(name, _ignoreCase);
-                        if (value != null)
-                            return value;
-                    }
-
-
-                    // This is the CultureInfo hierarchy traversal code for resource 
-                    // lookups, similar but necessarily orthogonal to the ResourceSet 
-                    // lookup logic.
-                    ResourceFallbackManager mgr = new ResourceFallbackManager(culture, _neutralResourcesCulture, true);
-                    foreach (CultureInfo currentCultureInfo in mgr)
-                    {
-                        ResourceSet rs = InternalGetResourceSet(currentCultureInfo, true, true);
-                        if (rs == null)
-                            break;
-
-                        if (rs != last)
+                        // update last used ResourceSet
+                        if (_lastUsedResourceCache != null)
                         {
-                            string value = rs.GetString(name, _ignoreCase);
-                            if (value != null)
+                            lock (_lastUsedResourceCache)
                             {
-                                // update last used ResourceSet
-                                if (_lastUsedResourceCache != null)
-                                {
-                                    lock (_lastUsedResourceCache)
-                                    {
-                                        _lastUsedResourceCache.lastCultureName = currentCultureInfo.Name;
-                                        _lastUsedResourceCache.lastResourceSet = rs;
-                                    }
-                                }
-                                return value;
+                                _lastUsedResourceCache.lastCultureName = currentCultureInfo.Name;
+                                _lastUsedResourceCache.lastResourceSet = rs;
                             }
-
-                            last = rs;
                         }
+                        return value;
                     }
+
+                    last = rs;
                 }
+            }
 
-                return null;
-            }
-            finally
-            {
-                ts_recursionCount--;
-            }
+            return null;
         }
-
 
         // Looks up a resource value for a particular name.  Looks in the 
         // current thread's CultureInfo, and if not found, all parent CultureInfos.
@@ -1094,23 +685,8 @@ namespace System.Resources
             if (null == name)
                 throw new ArgumentNullException(nameof(name));
 
-#if FEATURE_APPX
-            if(s_IsAppXModel)
-            {
-                 // If the caller explictily passed in a culture that was obtained by calling CultureInfo.CurrentUICulture,
-                 // null it out, so that we re-compute it based on the Win32 value and not the AppX language list value.
-                 // (See the call a little later to GetCurrentUICultureNoAppX()).
-                 if (object.ReferenceEquals(culture, CultureInfo.CurrentUICulture))
-                 {
-                     culture = null;
-                 }              
-            }
-#endif
-
             if (null == culture)
             {
-                // When running inside AppX we want to ignore the languages list when trying to come up with our CurrentUICulture.
-                // This line behaves the same way as CultureInfo.CurrentUICulture would have in .NET 4
                 culture = CultureInfo.CurrentUICulture;
             }
 
@@ -1121,8 +697,7 @@ namespace System.Resources
 
                 if (value != null)
                 {
-                    UnmanagedMemoryStream stream = value as UnmanagedMemoryStream;
-                    if (stream != null && wrapUnmanagedMemStream)
+                    if (value is UnmanagedMemoryStream stream && wrapUnmanagedMemStream)
                         return new UnmanagedMemoryStreamWrapper(stream);
                     else
                         return value;
@@ -1155,8 +730,7 @@ namespace System.Resources
                             }
                         }
 
-                        UnmanagedMemoryStream stream = value as UnmanagedMemoryStream;
-                        if (stream != null && wrapUnmanagedMemStream)
+                        if (value is UnmanagedMemoryStream stream && wrapUnmanagedMemStream)
                             return new UnmanagedMemoryStreamWrapper(stream);
                         else
                             return value;
@@ -1199,7 +773,7 @@ namespace System.Resources
             // NEEDED ONLY BY FILE-BASED
             internal string ModuleDir
             {
-                get { return _rm.moduleDir; }
+                get { return _rm._moduleDir; }
             }
 
             // NEEDED BOTH BY FILE-BASED  AND ASSEMBLY-BASED
