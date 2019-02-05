@@ -29,11 +29,11 @@ namespace System.Threading
             return WaitForMultipleObjectsIgnoringSyncContext(&handle, 1, false, millisecondsTimeout, interruptible);
         }
 
-        internal static unsafe int WaitForMultipleObjectsIgnoringSyncContext(IntPtr[] handles, int numHandles, bool waitAll, int millisecondsTimeout)
+        internal static unsafe int WaitMultipleIgnoringSyncContext(IntPtr[] handles, bool waitAll, int millisecondsTimeout)
         {
             fixed (IntPtr* pHandles = handles)
             {
-                return WaitForMultipleObjectsIgnoringSyncContext(pHandles, numHandles, waitAll, millisecondsTimeout, true);
+                return WaitForMultipleObjectsIgnoringSyncContext(pHandles, handles.Length, waitAll, millisecondsTimeout, true);
             }
         }
 
@@ -146,7 +146,13 @@ namespace System.Threading
                     return context.Wait(handles, waitAll, millisecondsTimeout);
                 }
 
-                return WaitForMultipleObjectsIgnoringSyncContext(handles, count, waitAll, millisecondsTimeout);
+                unsafe
+                {
+                    fixed (IntPtr* pHandles = handles)
+                    {
+                        return WaitForMultipleObjectsIgnoringSyncContext(pHandles, count, waitAll, millisecondsTimeout, true);
+                    }
+                }
             }
             finally
             {
