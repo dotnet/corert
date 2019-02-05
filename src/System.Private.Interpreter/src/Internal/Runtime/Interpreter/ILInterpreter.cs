@@ -397,25 +397,20 @@ namespace Internal.Runtime.Interpreter
                     case ILOpcode.ldelem_ref:
                         throw new NotImplementedException();
                     case ILOpcode.stelem_i:
-                        throw new NotImplementedException();
                     case ILOpcode.stelem_i1:
-                        throw new NotImplementedException();
                     case ILOpcode.stelem_i2:
-                        throw new NotImplementedException();
                     case ILOpcode.stelem_i4:
-                        throw new NotImplementedException();
                     case ILOpcode.stelem_i8:
-                        throw new NotImplementedException();
                     case ILOpcode.stelem_r4:
-                        throw new NotImplementedException();
                     case ILOpcode.stelem_r8:
-                        throw new NotImplementedException();
                     case ILOpcode.stelem_ref:
-                        throw new NotImplementedException();
+                        InterpretStoreElement(opcode);
+                        break;
                     case ILOpcode.ldelem:
                         throw new NotImplementedException();
                     case ILOpcode.stelem:
-                        throw new NotImplementedException();
+                        InterpretStoreElement(reader.ReadILToken());
+                        break;
                     case ILOpcode.unbox_any:
                         throw new NotImplementedException();
                     case ILOpcode.conv_ovf_i1:
@@ -2160,6 +2155,110 @@ namespace Internal.Runtime.Interpreter
         {
             Array array = (Array)PopWithValidation().AsObjectRef();
             _stack.Push(StackItem.FromInt32(array.Length));
+        }
+
+        private void InterpretStoreElement(ILOpcode opcode)
+        {
+            StackItem stackItem = PopWithValidation();
+
+            int index = PopWithValidation().AsInt32();
+            Debug.Assert(index >= 0);
+
+            Array array = (Array)PopWithValidation().AsObjectRef();
+
+            switch (opcode)
+            {
+                case ILOpcode.stelem_i:
+                    array.SetValue(stackItem.AsNativeInt(), index);
+                    break;
+                case ILOpcode.stelem_i1:
+                    array.SetValue((sbyte)stackItem.AsInt32(), index);
+                    break;
+                case ILOpcode.stelem_i2:
+                    array.SetValue((short)stackItem.AsInt32(), index);
+                    break;
+                case ILOpcode.stelem_i4:
+                    array.SetValue(stackItem.AsInt32(), index);
+                    break;
+                case ILOpcode.stelem_i8:
+                    array.SetValue(stackItem.AsInt64(), index);
+                    break;
+                case ILOpcode.stelem_r4:
+                    array.SetValue((float)stackItem.AsDouble(), index);
+                    break;
+                case ILOpcode.stelem_r8:
+                    array.SetValue(stackItem.AsDouble(), index);
+                    break;
+                case ILOpcode.stelem_ref:
+                    // TODO: Add support for ByRef
+                    throw new NotImplementedException();
+                default:
+                    Debug.Assert(false);
+                    break;
+            }
+
+        }
+
+        private void InterpretStoreElement(int token)
+        {
+            TypeDesc elementType = (TypeDesc)_methodIL.GetObject(token);
+
+            StackItem stackItem = PopWithValidation();
+            int index = PopWithValidation().AsInt32();
+            Debug.Assert(index >= 0);
+
+            Array array = (Array)PopWithValidation().AsObjectRef();
+
+        again:
+            switch (elementType.Category)
+            {
+                case TypeFlags.Boolean:
+                    array.SetValue(stackItem.AsInt32() != 0, index);
+                    break;
+                case TypeFlags.Char:
+                    array.SetValue((char)stackItem.AsInt32(), index);
+                    break;
+                case TypeFlags.SByte:
+                case TypeFlags.Byte:
+                    array.SetValue((sbyte)stackItem.AsInt32(), index);
+                    break;
+                case TypeFlags.Int16:
+                case TypeFlags.UInt16:
+                    array.SetValue((short)stackItem.AsInt32(), index);
+                    break;
+                case TypeFlags.Int32:
+                case TypeFlags.UInt32:
+                    array.SetValue(stackItem.AsInt32(), index);
+                    break;
+                case TypeFlags.Int64:
+                case TypeFlags.UInt64:
+                    array.SetValue(stackItem.AsInt64(), index);
+                    break;
+                case TypeFlags.IntPtr:
+                case TypeFlags.UIntPtr:
+                    array.SetValue(stackItem.AsNativeInt(), index);
+                    break;
+                case TypeFlags.Single:
+                case TypeFlags.Double:
+                    array.SetValue(stackItem.AsDouble(), index);
+                    break;
+                case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
+                    array.SetValue(stackItem.AsValueType(), index);
+                    break;
+                case TypeFlags.Enum:
+                    elementType = elementType.UnderlyingType;
+                    goto again;
+                case TypeFlags.Class:
+                case TypeFlags.Interface:
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                    array.SetValue(stackItem.AsObjectRef(), index);
+                    break;
+                default:
+                    // TODO: Support more complex return types
+                    throw new NotImplementedException();
+            }
         }
     }
 }
