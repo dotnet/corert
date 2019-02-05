@@ -241,5 +241,14 @@ namespace ILCompiler
             }
             sb.Append(")");
         }
+
+        public static void WriteTo(FieldDesc field, Utf8StringBuilder sb)
+        {
+            WriteTo(field.FieldType, sb);
+            sb.Append(" ");
+            WriteTo(field.OwningType, sb);
+            sb.Append(".");
+            sb.Append(field.Name);
+        }
     }
 }

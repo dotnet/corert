@@ -59,6 +59,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         READYTORUN_LAYOUT_GCLayout_Empty = 0x10,
     }
 
+    public enum DictionaryEntryKind
+    {
+        EmptySlot = 0,
+        TypeHandleSlot = 1,
+        MethodDescSlot = 2,
+        MethodEntrySlot = 3,
+        ConstrainedMethodEntrySlot = 4,
+        DispatchStubAddrSlot = 5,
+        FieldDescSlot = 6,
+        DeclaringTypeHandleSlot = 7,
+    }
+
     public enum ReadyToRunFixupKind
     {
         READYTORUN_FIXUP_Invalid = 0x00,
