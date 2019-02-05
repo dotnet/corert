@@ -14,12 +14,12 @@ namespace System.Threading
     /// 
     /// Used by the wait subsystem on Unix, so this class cannot have any dependencies on the wait subsystem.
     /// </summary>
-    internal struct FirstLevelSpinWaiter
+    internal struct LowLevelSpinWaiter
     {
         // TODO: Tune these values
-        private const int SpinCount = 8;
-        private const int SpinYieldThreshold = 4;
-        private const int SpinSleep0Threshold = 6;
+        public const int SpinCount = 8;
+        public const int SpinYieldThreshold = 4;
+        public const int SpinSleep0Threshold = 6;
 
         private static int s_processorCount;
 
@@ -69,7 +69,7 @@ namespace System.Threading
             return false;
         }
 
-        private static void Wait(int spinIndex)
+        public static void Wait(int spinIndex)
         {
             Debug.Assert(SpinYieldThreshold < SpinSleep0Threshold);
 
