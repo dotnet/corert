@@ -33,9 +33,9 @@ class Program
 }
 ```
 
-The above program lets the user invoke any parameterless public static method on any type. For the naive compilation algorithm above, this program would work great for input strings `Program` and `Main` because the algorithm included method `Main` in the final executable. The program wouldn't work so great for inputs `Program` and `SayHello`†, because method `SayHello` wasn't called from anywhere. For the naive algorithm, the only way to fix the program for inputs `Program` and `SayHello` is to add a call to `SayHello` in `Main`.
+The above program lets the user invoke any parameterless public static method on any type. For the naive compilation algorithm above, this program would work great for input strings `Program` and `Main` because the algorithm included method `Main` in the final executable. The program wouldn't work so great for inputs `Program` and `SayHello`â€ , because method `SayHello` wasn't called from anywhere. For the naive algorithm, the only way to fix the program for inputs `Program` and `SayHello` is to add a call to `SayHello` in `Main`.
 
-> † The behavior for `Type.GetMethod` on type `Program` and method `SayHello` would be to return `null` if `SayHello` wasn't compiled. The reason for this is that `Type.GetMethod` is documented to return `null` if there's no method with a given name, and for the purposes of the program, `SayHello` doesn't exist. The compiler could remember there used to be such method and write the information in the executable, but that would raise additional questions about whether the uncompiled method should be included in the list of methods returned from a `Type.GetMethods` call.
+> â€  The behavior for `Type.GetMethod` on type `Program` and method `SayHello` would be to return `null` if `SayHello` wasn't compiled. The reason for this is that `Type.GetMethod` is documented to return `null` if there's no method with a given name, and for the purposes of the program, `SayHello` doesn't exist. The compiler could remember there used to be such method and write the information in the executable, but that would raise additional questions about whether the uncompiled method should be included in the list of methods returned from a `Type.GetMethods` call.
 
 While the example program above is not practical in reality, similar patterns exist in e.g. reflection based serialization and deserialization libraries that access members based on their names that could be literally downloaded from the internet.
 
@@ -47,7 +47,7 @@ The solution to reflection is about establishing what parts of the program can b
 
 ### Assume everything is accessed dynamically ###
 
-The compiler can simply assume that everything can be accessed dynamically. This means that everything will be compiled and available at runtime. This is the safest possible option, but results in big executables and long compilation times. "Everything" includes all of the all of .NET Core framework code, including things like support for FTP or WCF. An app is unlikely to be relying on all of that.
+The compiler can simply assume that everything can be accessed dynamically. This means that everything will be compiled and available at runtime. This is the safest possible option, but results in big executables and long compilation times. "Everything" includes all of .NET Core framework code, including things like support for FTP or WCF. An app is unlikely to be relying on all of that.
 
 ### Assume non-framework code is accessed dynamically ###
 
