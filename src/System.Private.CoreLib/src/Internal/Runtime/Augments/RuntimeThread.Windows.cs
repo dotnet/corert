@@ -228,7 +228,7 @@ namespace Internal.Runtime.Augments
                 }
                 else
                 {
-                    result = WaitHandle.WaitForSingleObject(waitHandle.DangerousGetHandle(), millisecondsTimeout, true);
+                    result = WaitHandle.WaitForSingleObject(waitHandle.DangerousGetHandle(), millisecondsTimeout);
                 }
 
                 return result == (int)Interop.Constants.WaitObject0;

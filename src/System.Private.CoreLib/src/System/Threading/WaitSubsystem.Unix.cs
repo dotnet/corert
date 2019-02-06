@@ -171,8 +171,11 @@ namespace System.Threading
             /// by the thread. See <see cref="ThreadWaitInfo.LockedMutexesHead"/>. So, acquire the lock only after all
             /// possibilities for exceptions have been exhausted.
             ThreadWaitInfo waitInfo = RuntimeThread.CurrentThread.WaitInfo;
-            bool acquiredLock = waitableObject.Wait(waitInfo, timeoutMilliseconds: 0, interruptible: false, prioritize: false);
+            s_lock.Acquire();
+            // Use Wait_Locked to avoid the Wait being interrupted
+            bool acquiredLock = waitableObject.Wait_Locked(waitInfo, timeoutMilliseconds: 0);
             Debug.Assert(acquiredLock);
+
             return safeWaitHandle;
         }
 
@@ -263,22 +266,17 @@ namespace System.Threading
             }
         }
 
-        public static bool Wait(IntPtr handle, int timeoutMilliseconds, bool interruptible)
+        public static bool Wait(IntPtr handle, int timeoutMilliseconds)
         {
             Debug.Assert(timeoutMilliseconds >= -1);
-            return Wait(HandleManager.FromHandle(handle), timeoutMilliseconds, interruptible);
+            return Wait(HandleManager.FromHandle(handle), timeoutMilliseconds);
         }
 
-        public static bool Wait(
-            WaitableObject waitableObject,
-            int timeoutMilliseconds,
-            bool interruptible = true,
-            bool prioritize = false)
+        public static bool Wait(WaitableObject waitableObject, int timeoutMilliseconds)
         {
             Debug.Assert(waitableObject != null);
             Debug.Assert(timeoutMilliseconds >= -1);
-
-            return waitableObject.Wait(RuntimeThread.CurrentThread.WaitInfo, timeoutMilliseconds, interruptible, prioritize);
+            return waitableObject.Wait(RuntimeThread.CurrentThread.WaitInfo, timeoutMilliseconds);
         }
 
         public static int Wait(
@@ -341,7 +339,7 @@ namespace System.Threading
                 WaitableObject waitableObject = waitableObjects[0];
                 waitableObjects[0] = null;
                 return
-                    waitableObject.Wait(waitInfo, timeoutMilliseconds, interruptible: true, prioritize : false)
+                    waitableObject.Wait(waitInfo, timeoutMilliseconds)
                         ? 0
                         : WaitHandle.WaitTimeout;
             }
@@ -353,8 +351,6 @@ namespace System.Threading
                     waitForAll,
                     waitInfo,
                     timeoutMilliseconds,
-                    interruptible: true,
-                    prioritize: false,
                     waitHandlesForAbandon: waitHandles);
         }
 
@@ -363,9 +359,7 @@ namespace System.Threading
             WaitableObject waitableObject0,
             WaitableObject waitableObject1,
             bool waitForAll,
-            int timeoutMilliseconds,
-            bool interruptible = true,
-            bool prioritize = false)
+            int timeoutMilliseconds)
         {
             Debug.Assert(currentThread == RuntimeThread.CurrentThread);
             Debug.Assert(waitableObject0 != null);
@@ -385,8 +379,6 @@ namespace System.Threading
                     waitForAll,
                     waitInfo,
                     timeoutMilliseconds,
-                    interruptible,
-                    prioritize,
                     waitHandlesForAbandon: null);
         }
 
@@ -407,9 +399,7 @@ namespace System.Threading
         public static bool SignalAndWait(
             WaitableObject waitableObjectToSignal,
             WaitableObject waitableObjectToWaitOn,
-            int timeoutMilliseconds,
-            bool interruptible = true,
-            bool prioritize = false)
+            int timeoutMilliseconds)
         {
             Debug.Assert(waitableObjectToSignal != null);
             Debug.Assert(waitableObjectToWaitOn != null);
@@ -421,14 +411,14 @@ namespace System.Threading
             try
             {
                 // A pending interrupt does not signal the specified handle
-                if (interruptible && waitInfo.CheckAndResetPendingInterrupt)
+                if (waitInfo.CheckAndResetPendingInterrupt)
                 {
                     throw new ThreadInterruptedException();
                 }
 
                 waitableObjectToSignal.Signal(1);
                 waitCalled = true;
-                return waitableObjectToWaitOn.Wait_Locked(waitInfo, timeoutMilliseconds, interruptible, prioritize);
+                return waitableObjectToWaitOn.Wait_Locked(waitInfo, timeoutMilliseconds);
             }
             finally
             {
@@ -449,9 +439,9 @@ namespace System.Threading
             ThreadWaitInfo.UninterruptibleSleep0();
         }
 
-        public static void Sleep(int timeoutMilliseconds, bool interruptible = true)
+        public static void Sleep(int timeoutMilliseconds)
         {
-            ThreadWaitInfo.Sleep(timeoutMilliseconds, interruptible);
+            ThreadWaitInfo.Sleep(timeoutMilliseconds);
         }
 
         public static void Interrupt(RuntimeThread thread)
