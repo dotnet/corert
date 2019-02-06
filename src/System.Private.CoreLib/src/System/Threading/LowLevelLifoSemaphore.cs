@@ -11,12 +11,9 @@ namespace System.Threading
     /// A LIFO semaphore.
     /// Waits on this semaphore are uninterruptible.
     /// </summary>
-    //[StructLayout(LayoutKind.Sequential)] // enforce layout so that padding reduces false sharing
     internal partial class LowLevelLifoSemaphore : IDisposable
     {
-        //private Internal.PaddingFor32 pad1;
-        private Counts _counts;
-        //private Internal.PaddingFor32 pad2;
+        private CacheLineSeparatedCounts _separated;
 
         private int _maximumSignalCount;
 
@@ -27,7 +24,8 @@ namespace System.Threading
             Debug.Assert(initialSignalCount >= 0);
             Debug.Assert(initialSignalCount <= maximumSignalCount);
 
-            _counts = new Counts { _signalCount = (uint)initialSignalCount };
+            _separated = new CacheLineSeparatedCounts();
+            _separated._counts._signalCount = (uint)initialSignalCount;
             _maximumSignalCount = maximumSignalCount;
 
             Create(maximumSignalCount);
@@ -39,7 +37,7 @@ namespace System.Threading
             // a) register as a spinner if spinCount > 0 and timeoutMs > 0
             // b) register as a waiter if there's already too many spinners or spinCount == 0 and timeoutMs > 0
             // c) bail out if timeoutMs == 0 and return false
-            Counts counts = Counts.VolatileRead(ref _counts);
+            Counts counts = Counts.VolatileRead(ref _separated._counts);
             while (true)
             {
                 Debug.Assert(counts._signalCount <= _maximumSignalCount);
@@ -63,7 +61,7 @@ namespace System.Threading
                     }
                 }
 
-                Counts countsBeforeUpdate = Counts.CompareExchange(ref _counts, newCounts, counts);
+                Counts countsBeforeUpdate = Counts.CompareExchange(ref _separated._counts, newCounts, counts);
                 if (countsBeforeUpdate == counts)
                 {
                     if (counts._signalCount != 0)
@@ -90,14 +88,14 @@ namespace System.Threading
                 LowLevelSpinWaiter.Wait(spinIndex);
                 spinIndex++;
 
-                counts = Counts.VolatileRead(ref _counts);
+                counts = Counts.VolatileRead(ref _separated._counts);
                 while (counts._signalCount > 0)
                 {
                     Counts newCounts = counts;
                     newCounts._signalCount--;
                     newCounts._spinnerCount--;
 
-                    Counts countsBeforeUpdate = Counts.CompareExchange(ref _counts, newCounts, counts);
+                    Counts countsBeforeUpdate = Counts.CompareExchange(ref _separated._counts, newCounts, counts);
                     if (countsBeforeUpdate == counts)
                     {
                         return true;
@@ -108,7 +106,7 @@ namespace System.Threading
             }
 
             // Unregister as spinner and acquire the semaphore or register as a waiter
-            counts = Counts.VolatileRead(ref _counts);
+            counts = Counts.VolatileRead(ref _separated._counts);
             while (true)
             {
                 Counts newCounts = counts;
@@ -123,7 +121,7 @@ namespace System.Threading
                     Debug.Assert(newCounts._waiterCount != 0); // overflow check, this many waiters is currently not supported
                 }
 
-                Counts countsBeforeUpdate = Counts.CompareExchange(ref _counts, newCounts, counts);
+                Counts countsBeforeUpdate = Counts.CompareExchange(ref _separated._counts, newCounts, counts);
                 if (countsBeforeUpdate == counts)
                 {
                     return counts._signalCount != 0 || WaitForSignal(timeoutMs);
@@ -140,7 +138,7 @@ namespace System.Threading
             Debug.Assert(releaseCount <= _maximumSignalCount);
 
             int countOfWaitersToWake;
-            Counts counts = Counts.VolatileRead(ref _counts);
+            Counts counts = Counts.VolatileRead(ref _separated._counts);
             while (true)
             {
                 Counts newCounts = counts;
@@ -176,7 +174,7 @@ namespace System.Threading
                     }
                 }
 
-                Counts countsBeforeUpdate = Counts.CompareExchange(ref _counts, newCounts, counts);
+                Counts countsBeforeUpdate = Counts.CompareExchange(ref _separated._counts, newCounts, counts);
                 if (countsBeforeUpdate == counts)
                 {
                     Debug.Assert(releaseCount <= _maximumSignalCount - counts._signalCount);
@@ -201,13 +199,13 @@ namespace System.Threading
                     // not observe a signal to the object being waited upon.
                     Counts toSubtract = new Counts();
                     toSubtract._waiterCount++;
-                    Counts countsBeforeUpdate = Counts.ExchangeSubtract(ref _counts, toSubtract);
+                    Counts countsBeforeUpdate = Counts.ExchangeSubtract(ref _separated._counts, toSubtract);
                     Debug.Assert(countsBeforeUpdate._waiterCount != 0);
                     return false;
                 }
 
                 // Unregister the waiter if this thread will not be waiting anymore, and try to acquire the semaphore
-                Counts counts = Counts.VolatileRead(ref _counts);
+                Counts counts = Counts.VolatileRead(ref _separated._counts);
                 while (true)
                 {
                     Debug.Assert(counts._waiterCount != 0);
@@ -224,7 +222,7 @@ namespace System.Threading
                         --newCounts._countOfWaitersSignaledToWake;
                     }
 
-                    Counts countsBeforeUpdate = Counts.CompareExchange(ref _counts, newCounts, counts);
+                    Counts countsBeforeUpdate = Counts.CompareExchange(ref _separated._counts, newCounts, counts);
                     if (countsBeforeUpdate == counts)
                     {
                         if (counts._signalCount != 0)
@@ -240,7 +238,7 @@ namespace System.Threading
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        struct Counts
+        private struct Counts
         {
             [FieldOffset(0)]
             public uint _signalCount;
@@ -282,6 +280,14 @@ namespace System.Threading
             {
                 return (int)(_asLong >> 8);
             }
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct CacheLineSeparatedCounts
+        {
+            private Internal.PaddingFor32 _pad1;
+            public Counts _counts;
+            private Internal.PaddingFor32 _pad2;
         }
     }
 }
