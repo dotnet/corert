@@ -59,7 +59,7 @@ namespace Internal.TypeSystem.Interop
                 return false;
 
             // Force link time symbol resolution for "__Internal" module for compatibility with Mono
-            if (importModule == "__Internal")
+            if (IsRunningOnMono() && importModule == "__Internal")
                 return false;
 
             if (method.Context.Target.IsWindows)
@@ -71,6 +71,11 @@ namespace Internal.TypeSystem.Interop
                 // Account for System.Private.CoreLib.Native / System.Globalization.Native / System.Native / etc
                 return !importModule.StartsWith("System.");
             }
+        }
+
+        internal static bool IsRunningOnMono()
+        {
+            return Type.GetType("Mono.Runtime") != null;
         }
 
         internal static TypeDesc GetNativeMethodParameterType(TypeDesc type, MarshalAsDescriptor marshalAs, InteropStateManager interopStateManager, bool isReturn, bool isAnsi)
