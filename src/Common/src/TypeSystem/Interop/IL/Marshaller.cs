@@ -27,6 +27,7 @@ namespace Internal.TypeSystem.Interop
         ByValAnsiCharArray, // Particular case of ByValArray because the conversion between wide Char and Byte need special treatment.
         AnsiString,
         UnicodeString,
+        UTF8String,
         ByValAnsiString,
         ByValUnicodeString,
         AnsiStringBuilder,
@@ -373,6 +374,8 @@ namespace Internal.TypeSystem.Interop
                     return new BooleanMarshaller();
                 case MarshallerKind.AnsiString:
                     return new AnsiStringMarshaller();
+                case MarshallerKind.UTF8String:
+                    return new UTF8StringMarshaller();
                 case MarshallerKind.UnicodeString:
                     return new UnicodeStringMarshaller();
                 case MarshallerKind.SafeHandle:
@@ -1638,7 +1641,61 @@ namespace Internal.TypeSystem.Interop
 
             codeStream.EmitLabel(lNullCheck);
         }
+    }
 
+    class UTF8StringMarshaller : Marshaller
+    {
+        internal override bool CleanupRequired
+        {
+            get
+            {
+                return true;
+            }
+        }
+
+        internal override void EmitElementCleanup(ILCodeStream codeStream, ILEmitter emitter)
+        {
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(
+                                Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
+        }
+
+        protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
+        {
+            ILEmitter emitter = _ilCodeStreams.Emitter;
+
+            //
+            // UTF8 marshalling. Allocate a byte array, copy characters
+            //
+            var stringToAnsi = Context.GetHelperEntryPoint("InteropHelpers", "StringToUTF8String");
+            LoadManagedValue(codeStream);
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(stringToAnsi));
+            StoreNativeValue(codeStream);
+        }
+
+        protected override void TransformNativeToManaged(ILCodeStream codeStream)
+        {
+            ILEmitter emitter = _ilCodeStreams.Emitter;
+            var ansiToString = Context.GetHelperEntryPoint("InteropHelpers", "UTF8StringToString");
+            LoadNativeValue(codeStream);
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(ansiToString));
+            StoreManagedValue(codeStream);
+        }
+
+        protected override void EmitCleanupManaged(ILCodeStream codeStream)
+        {
+            var emitter = _ilCodeStreams.Emitter;
+            var lNullCheck = emitter.NewCodeLabel();
+
+            // Check for null array
+            LoadManagedValue(codeStream);
+            codeStream.Emit(ILOpcode.brfalse, lNullCheck);
+
+            LoadNativeValue(codeStream);
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(
+                                Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
+
+            codeStream.EmitLabel(lNullCheck);
+        }
     }
 
     class SafeHandleMarshaller : Marshaller
