@@ -414,6 +414,9 @@ namespace ILCompiler
                     if (!systemModuleIsInputModule)
                         compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
                     compilationGroup = new SingleFileCompilationModuleGroup();
+
+                    if (_rootAllApplicationAssemblies)
+                        compilationRoots.Add(new ApplicationAssemblyRootProvider(typeSystemContext));
                 }
 
                 if (_nativeLib)
@@ -429,11 +432,6 @@ namespace ILCompiler
                 foreach (var rdXmlFilePath in _rdXmlFilePaths)
                 {
                     compilationRoots.Add(new RdXmlRootProvider(typeSystemContext, rdXmlFilePath));
-                }
-
-                if (_rootAllApplicationAssemblies)
-                {
-                    compilationRoots.Add(new ApplicationAssemblyRootProvider(typeSystemContext));
                 }
             }
 
