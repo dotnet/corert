@@ -16,10 +16,11 @@ namespace System.Threading
         private CacheLineSeparatedCounts _separated;
 
         private int _maximumSignalCount;
+        private int _spinCount;
 
         private static int s_processorCount = Environment.ProcessorCount;
 
-        public LowLevelLifoSemaphore(int initialSignalCount, int maximumSignalCount)
+        public LowLevelLifoSemaphore(int initialSignalCount, int maximumSignalCount, int spinCount)
         {
             Debug.Assert(initialSignalCount >= 0);
             Debug.Assert(initialSignalCount <= maximumSignalCount);
@@ -28,6 +29,7 @@ namespace System.Threading
             _separated = new CacheLineSeparatedCounts();
             _separated._counts._signalCount = (uint)initialSignalCount;
             _maximumSignalCount = maximumSignalCount;
+            _spinCount = spinCount;
 
             Create(maximumSignalCount);
         }
@@ -50,7 +52,7 @@ namespace System.Threading
                 }
                 else if (timeoutMs != 0)
                 {
-                    if (LowLevelSpinWaiter.SpinCount > 0 && newCounts._spinnerCount < byte.MaxValue)
+                    if (_spinCount > 0 && newCounts._spinnerCount < byte.MaxValue)
                     {
                         newCounts._spinnerCount++;
                     }
@@ -84,7 +86,7 @@ namespace System.Threading
             }
 
             int spinIndex = s_processorCount > 1 ? 0 : LowLevelSpinWaiter.SpinYieldThreshold;
-            while (spinIndex < LowLevelSpinWaiter.SpinCount)
+            while (spinIndex < _spinCount)
             {
                 LowLevelSpinWaiter.Wait(spinIndex);
                 spinIndex++;

@@ -17,9 +17,9 @@ namespace System.Threading
     internal struct LowLevelSpinWaiter
     {
         // TODO: Tune these values
-        public const int SpinCount = 8;
+        private const int SpinCount = 8;
         public const int SpinYieldThreshold = 4;
-        public const int SpinSleep0Threshold = 6;
+        private const int SpinSleep0Threshold = 6;
 
         private static int s_processorCount;
 
