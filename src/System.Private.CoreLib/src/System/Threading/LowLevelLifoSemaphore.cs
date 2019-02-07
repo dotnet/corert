@@ -199,8 +199,8 @@ namespace System.Threading
                     // not observe a signal to the object being waited upon.
                     Counts toSubtract = new Counts();
                     toSubtract._waiterCount++;
-                    Counts countsBeforeUpdate = Counts.ExchangeSubtract(ref _separated._counts, toSubtract);
-                    Debug.Assert(countsBeforeUpdate._waiterCount != 0);
+                    Counts newCounts = Counts.Subtract(ref _separated._counts, toSubtract);
+                    Debug.Assert(newCounts._waiterCount >= 0);
                     return false;
                 }
 
@@ -262,7 +262,7 @@ namespace System.Threading
                 return new Counts { _asLong = Interlocked.CompareExchange(ref location._asLong, newCounts._asLong, oldCounts._asLong) };
             }
 
-            public static Counts ExchangeSubtract(ref Counts location, Counts subtractCounts)
+            public static Counts Subtract(ref Counts location, Counts subtractCounts)
             {
                 return new Counts { _asLong = Interlocked.Add(ref location._asLong, -subtractCounts._asLong) };
             }
