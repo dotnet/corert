@@ -37,31 +37,5 @@ namespace System.Resources
 
             return retAssembly;
         }
-
-        internal static bool GetNeutralResourcesLanguageAttribute(Assembly assemblyHandle, ref string cultureName, out short fallbackLocation)
-        {
-            fallbackLocation = 0;
-
-            foreach (CustomAttributeData attribute in assemblyHandle.CustomAttributes)
-            {
-                if (attribute.AttributeType.Equals(typeof(NeutralResourcesLanguageAttribute)))
-                {
-                    foreach (CustomAttributeTypedArgument cata in attribute.ConstructorArguments)
-                    {
-                        if (cata.ArgumentType.Equals(typeof(string)))
-                        {
-                            cultureName = (string)cata.Value;
-                        }
-                        else if (cata.ArgumentType.Equals(typeof(int)))
-                        {
-                            fallbackLocation = (short)cata.Value;
-                        }
-                    }
-                    return true;
-                }
-            }
-
-            return false;
-        }
     }
 }
