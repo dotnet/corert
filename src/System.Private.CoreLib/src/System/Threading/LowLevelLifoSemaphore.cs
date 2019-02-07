@@ -11,7 +11,7 @@ namespace System.Threading
     /// A LIFO semaphore.
     /// Waits on this semaphore are uninterruptible.
     /// </summary>
-    internal partial class LowLevelLifoSemaphore : IDisposable
+    internal sealed partial class LowLevelLifoSemaphore : IDisposable
     {
         private CacheLineSeparatedCounts _separated;
 
@@ -23,6 +23,7 @@ namespace System.Threading
         {
             Debug.Assert(initialSignalCount >= 0);
             Debug.Assert(initialSignalCount <= maximumSignalCount);
+            Debug.Assert(maximumSignalCount > 0);
 
             _separated = new CacheLineSeparatedCounts();
             _separated._counts._signalCount = (uint)initialSignalCount;
