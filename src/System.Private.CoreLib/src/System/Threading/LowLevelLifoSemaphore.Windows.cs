@@ -42,7 +42,7 @@ namespace System.Threading
             }
         }
 
-        public bool WaitForWake(int timeoutMs)
+        public bool WaitCore(int timeoutMs)
         {
             Debug.Assert(timeoutMs >= -1);
 
@@ -51,7 +51,7 @@ namespace System.Threading
             return success;
         }
 
-        public void Wake(int count)
+        public void ReleaseCore(int count)
         {
             Debug.Assert(count > 0);
 

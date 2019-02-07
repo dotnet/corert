@@ -27,7 +27,7 @@ namespace System.Threading
         {
         }
 
-        private bool WaitForWake(int timeoutMs)
+        private bool WaitCore(int timeoutMs)
         {
             WaiterListEntry waitEntry = t_waitEntry ?? (t_waitEntry = new WaiterListEntry());
             waitEntry._monitor.Acquire();
@@ -45,7 +45,7 @@ namespace System.Threading
             }
         }
 
-        private void Wake(int count)
+        private void ReleaseCore(int count)
         {
             while (count-- > 0)
             {

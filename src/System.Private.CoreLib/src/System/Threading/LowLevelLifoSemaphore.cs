@@ -179,7 +179,7 @@ namespace System.Threading
                 {
                     Debug.Assert(releaseCount <= _maximumSignalCount - counts._signalCount);
                     if (countOfWaitersToWake > 0)
-                        Wake(countOfWaitersToWake);
+                        ReleaseCore(countOfWaitersToWake);
                     return;
                 }
 
@@ -193,7 +193,7 @@ namespace System.Threading
 
             while (true)
             {
-                if (!WaitForWake(timeoutMs))
+                if (!WaitCore(timeoutMs))
                 {
                     // Unregister the waiter. The wait subsystem used above guarantees that a thread that wakes due to a timeout does
                     // not observe a signal to the object being waited upon.
