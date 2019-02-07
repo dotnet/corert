@@ -349,6 +349,7 @@ namespace System.Reflection.Runtime.MethodInfos.EcmaFormat
                 for (int i = 0 ; i < numParameters; i++)
                 {
                     signatureHandles[i + 1] = new QSignatureTypeHandle(_reader, signatureBlob);
+                    EcmaMetadataHelpers.SkipType(ref signatureBlob);
                 }
 
                 return signatureHandles;
