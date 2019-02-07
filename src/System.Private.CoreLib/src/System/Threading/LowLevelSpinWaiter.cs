@@ -18,7 +18,7 @@ namespace System.Threading
     {
         // TODO: Tune these values
         private const int SpinCount = 8;
-        public const int SpinYieldThreshold = 4;
+        private const int SpinYieldThreshold = 4;
         private const int SpinSleep0Threshold = 6;
 
         private static int s_processorCount;
@@ -69,7 +69,7 @@ namespace System.Threading
             return false;
         }
 
-        public static void Wait(int spinIndex)
+        private static void Wait(int spinIndex)
         {
             Debug.Assert(SpinYieldThreshold < SpinSleep0Threshold);
 

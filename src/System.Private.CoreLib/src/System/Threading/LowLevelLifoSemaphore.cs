@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Internal.Runtime.Augments;
 
 namespace System.Threading
 {
@@ -17,6 +18,8 @@ namespace System.Threading
 
         private int _maximumSignalCount;
         private int _spinCount;
+
+        private const int SpinSleep0Threshold = 10;
 
         private static int s_processorCount = Environment.ProcessorCount;
 
@@ -85,11 +88,39 @@ namespace System.Threading
                 counts = countsBeforeUpdate;
             }
 
-            int spinIndex = s_processorCount > 1 ? 0 : LowLevelSpinWaiter.SpinYieldThreshold;
+            int spinIndex = s_processorCount > 1 ? 0 : SpinSleep0Threshold;
             while (spinIndex < _spinCount)
             {
-                LowLevelSpinWaiter.Wait(spinIndex);
-                spinIndex++;
+                // TODO: Unify this with LowLevelSpinWaiter
+                if (s_processorCount > 1)
+                {
+                    if (spinIndex < SpinSleep0Threshold || (spinIndex - SpinSleep0Threshold) % 2 != 0)
+                    {
+                        // Matches algorithm in SpinWait.SpinOnce
+                        int n = RuntimeThread.OptimalMaxSpinWaitsPerSpinIteration;
+                        if (spinIndex <= 30 && (1 << spinIndex) < n)
+                        {
+                            n = 1 << spinIndex;
+                        }
+                        RuntimeThread.SpinWait(n);
+                    }
+                    else
+                    {
+                        RuntimeThread.Yield();
+                    }
+
+                    spinIndex++;
+                }
+                else
+                {
+                    // On uniprocessor system we only Yield because there cannot be other
+                    // threads executing in parallel and satisfying the condition. We also
+                    // compensate for the unnecessary spins by incrementing spinIndex by 2
+                    // and doing the same number of Yields as in the multi-processor code
+                    // above.
+                    RuntimeThread.Yield();
+                    spinIndex += 2;
+                }
 
                 counts = Counts.VolatileRead(ref _separated._counts);
                 while (counts._signalCount > 0)
