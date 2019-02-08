@@ -2347,7 +2347,7 @@
   <data name="InvalidOperationException_NoGCRegionNotInProgress" xml:space="preserve">
     <value>NoGCRegion mode must be set.</value>
   </data>
-  <data name="InvalidOperationException_SetLatencyModeNoGC" xml:space="preserve">
+  <data name="InvalidOperation_SetLatencyModeNoGC" xml:space="preserve">
     <value>The NoGCRegion mode is in progress. End it and then set a different mode.</value>
   </data>
   <data name="InvalidOperation_NotWithConcurrentGC" xml:space="preserve">
