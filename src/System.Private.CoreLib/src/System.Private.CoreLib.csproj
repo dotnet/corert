@@ -456,7 +456,6 @@
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.Unix.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeWaitHandle.Unix.cs" />
     <Compile Include="System\AppContext.Unix.CoreRT.cs" />
-    <Compile Include="System\DateTime.Unix.CoreRT.cs" />
     <Compile Include="System\Environment.CoreRT.Unix.cs" />
     <Compile Include="System\HighPerformanceCounter.Unix.cs" Condition="'$(FeaturePortableThreadPool)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
