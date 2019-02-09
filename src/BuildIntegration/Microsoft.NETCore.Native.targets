@@ -210,7 +210,7 @@ See the LICENSE file in the project root for more information.
       <IlcArg Include="--directpinvoke:^\*$" />
       <IlcArg Include="--directpinvoke:^\[MRT\]$" />
       <IlcArg Include="--directpinvoke:^__Internal$" Condition="'$(IlcDirectPInvokeInternal)' != 'false'" />
-      <IlcArg Include="--directpinvoke:^System.*" Condition="'$(TargetOS)' != 'Windows_NT'" />
+      <IlcArg Include="--directpinvoke:^System\..*" Condition="'$(TargetOS)' != 'Windows_NT'" />
       <IlcArg Include="--directpinvoke:^api-ms-win-.*" Condition="'$(TargetOS)' == 'Windows_NT'" />
     </ItemGroup>
 
