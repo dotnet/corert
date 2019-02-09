@@ -114,8 +114,6 @@ See the LICENSE file in the project root for more information.
     <AutoInitializedAssemblies Include="System.Private.Interop.Experimental" />
   </ItemGroup>
 
-  <!-- Make an itemgroup here that looks similar to AutoInitializedAssemblies above that mirrors the original rules in MarshalHelpers.UseLazyResolution -->
-
   <ItemGroup>
     <PrivateSdkAssemblies Include="$(IlcPath)\sdk\*.dll" />
   </ItemGroup>
@@ -209,8 +207,11 @@ See the LICENSE file in the project root for more information.
       <IlcArg Condition="$(IlcGenerateCompleteTypeMetadata) == 'true'" Include="--completetypemetadata" />
       <IlcArg Condition="$(IlcGenerateStackTraceData) == 'true'" Include="--stacktracedata" />
       <IlcArg Condition="$(RootAllApplicationAssemblies) == 'true'" Include="--rootallapplicationassemblies" />
-
-      <!-- Add the new ItemGroup as an ilcarg here (same as AutoInitializeAssemblies above) -->
+      <IlcArg Include="--directpinvoke:^*$" />
+      <IlcArg Include="--directpinvoke:^[MRT]$" />
+      <IlcArg Include="--directpinvoke:^__Internal$" Condition="'$(IlcDirectPInvokeInternal)' != 'false'" />
+      <IlcArg Include="--directpinvoke:^System.*" Condition="'$(TargetOS)' != 'Windows_NT'" />
+      <IlcArg Include="--directpinvoke:^api-ms-win.*" Condition="'$(TargetOS)' == 'Windows_NT'" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />

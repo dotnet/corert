@@ -21,7 +21,7 @@ namespace ILCompiler
         {
             _typeSystemContext = context;
             _typeGetTypeMethodThunks = new TypeGetTypeMethodThunkCache(context.GetWellKnownType(WellKnownType.Object));
-            _pInvokeILProvider = new PInvokeILProvider(new PInvokeILEmitterConfiguration(forceLazyResolution: true), null);
+            _pInvokeILProvider = null;
             _ilProvider = new CoreRTILProvider();
             _nodeFactory = new NodeFactory(context);
             _devirtualizationManager = new DevirtualizationManager();
