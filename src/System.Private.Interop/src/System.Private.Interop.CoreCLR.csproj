@@ -64,11 +64,11 @@
 
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="InteropExtensions\PInvokeMarshal.Windows.cs" />
-    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs">
-      <Link>Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.MultiByteToWideChar.cs">
+      <Link>Interop\Windows\Kernel32\Interop.MultiByteToWideChar.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SetLastError.cs">
-      <Link>Interop\Windows\mincore\Interop.SetLastError.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.SetLastError.cs">
+      <Link>Interop\Windows\Mincore\Interop.SetLastError.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\Interop.Libraries.cs">
       <Link>Interop\Windows\Interop.Libraries.cs</Link>

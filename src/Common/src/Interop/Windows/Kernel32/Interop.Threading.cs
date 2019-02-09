@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class mincore
+    internal static partial class Kernel32
     {
         [DllImport(Libraries.Kernel32)]
         internal extern static uint WaitForMultipleObjectsEx(uint nCount, IntPtr lpHandles, bool bWaitAll, uint dwMilliseconds, bool bAlertable);
@@ -35,9 +35,6 @@ internal static partial class Interop
 
         [DllImport(Libraries.Kernel32)]
         internal extern static uint ResumeThread(SafeWaitHandle hThread);
-
-        [DllImport(Libraries.Kernel32)]
-        internal extern static IntPtr GetCurrentProcess();
 
         [DllImport(Libraries.Kernel32)]
         internal extern static IntPtr GetCurrentThread();
