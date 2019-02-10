@@ -111,7 +111,7 @@ namespace System.Runtime.InteropServices
 
         internal static bool IsPinnable(object o)
         {
-            return o.EETypePtr.MightBeBlittable();
+            return (o == null) || o.EETypePtr.MightBeBlittable();
         }
     }
 }

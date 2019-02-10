@@ -702,7 +702,7 @@
   <data name="Argument_NoRegionInvariantCulture" xml:space="preserve">
     <value>There is no region associated with the Invariant Culture (Culture ID: 0x7F).</value>
   </data>
-  <data name="Argument_NotIsomorphic" xml:space="preserve">
+  <data name="ArgumentException_NotIsomorphic" xml:space="preserve">
     <value>Object contains non-primitive or non-blittable data.</value>
   </data>
   <data name="Argument_PathEmpty" xml:space="preserve">
@@ -1163,6 +1163,9 @@
   </data>
   <data name="InvalidOperation_HandleIsNotInitialized" xml:space="preserve">
     <value>Handle is not initialized.</value>
+  </data>
+  <data name="InvalidOperation_HandleIsNotPinned" xml:space="preserve">
+    <value>Handle is not pinned.</value>
   </data>
   <data name="InvalidOperation_HashInsertFailed" xml:space="preserve">
     <value>Hashtable insert failed. Load factor too high. The most common cause is multiple threads writing to the Hashtable simultaneously.</value>
