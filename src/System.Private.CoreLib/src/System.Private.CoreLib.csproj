@@ -239,8 +239,7 @@
     <Compile Include="System\Runtime\GCSettings.CoreRT.cs" />
     <Compile Include="System\Runtime\TypeLoaderExports.cs" />
     <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />
-    <Compile Include="System\Runtime\InteropServices\GCHandle.cs" />
-    <Compile Include="System\Runtime\InteropServices\GCHandleType.cs" />
+    <Compile Include="System\Runtime\InteropServices\GCHandle.CoreRT.cs" />
     <Compile Include="System\Runtime\InteropServices\InteropExtensions.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeFunctionPointerWrapper.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.cs" />
