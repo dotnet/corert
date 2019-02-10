@@ -78,7 +78,6 @@ See the LICENSE file in the project root for more information.
     </ItemGroup>
 
     <ItemGroup>
-      <LinkerArg Include="@(NativeLibrary)" />
       <LinkerArg Include="-g" />
       <LinkerArg Include="-Wl,-rpath,'$ORIGIN'" />
       <LinkerArg Include="-Wl,--as-needed" Condition="'$(TargetOS)' != 'OSX'" />
@@ -93,7 +92,6 @@ See the LICENSE file in the project root for more information.
       <LinkerArg Include="-licucore" Condition="'$(TargetOS)' == 'OSX'" />
       <LinkerArg Include="-dynamiclib" Condition="'$(TargetOS)' == 'OSX' and '$(NativeLib)' == 'Shared'" />
       <LinkerArg Include="-shared" Condition="'$(TargetOS)' != 'OSX' and '$(NativeLib)' == 'Shared'" />
-      <LinkerArg Include="@(NativeFramework->'-framework %(Identity)')" Condition="'$(TargetOS)' == 'OSX'" />
     </ItemGroup>
 
     <Exec Command="command -v $(CppLinker)" IgnoreExitCode="true">

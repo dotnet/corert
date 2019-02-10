@@ -66,11 +66,13 @@ See the LICENSE file in the project root for more information.
 
     <ItemGroup>
       <LinkerArg Condition="$(NativeLib) == 'Shared'" Include="/DLL" />
-      <LinkerArg Include="@(NativeLibrary->'&quot;%(Identity)&quot;')" />
-      <LinkerArg Include="/NOLOGO /DEBUG /MANIFEST:NO" />
+      <LinkerArg Include="/NOLOGO" />
+      <LinkerArg Include="/DEBUG" />
+      <LinkerArg Include="/MANIFEST:NO" />
       <!-- The runtime is not compatible with jump stubs inserted by incremental linking. -->
       <LinkerArg Include="/INCREMENTAL:NO" />
-      <LinkerArg Condition="'$(OutputType)' == 'WinExe'" Include="/SUBSYSTEM:WINDOWS /ENTRY:wmainCRTStartup" />
+      <LinkerArg Condition="'$(OutputType)' == 'WinExe'" Include="/SUBSYSTEM:WINDOWS" />
+      <LinkerArg Condition="'$(OutputType)' == 'WinExe'" Include="/ENTRY:wmainCRTStartup" />
     </ItemGroup>
 
     <ItemGroup>

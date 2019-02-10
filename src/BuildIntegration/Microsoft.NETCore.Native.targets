@@ -295,6 +295,8 @@ See the LICENSE file in the project root for more information.
       <CustomLinkerArg Include="/LIBPATH:&quot;%(AdditionalNativeLibraryDirectories.Identity)&quot;" Condition="'$(OS)' == 'Windows_NT' and '@(AdditionalNativeLibraryDirectories->Count())' &gt; 0" />
       <CustomLinkerArg Include="-exported_symbols_list &quot;$(ExportsFile)&quot;" Condition="'$(OS)' != 'Windows_NT' and $(ExportsFile) != ''" />
       <CustomLinkerArg Include="@(LinkerArg)" />
+      <CustomLinkerArg Include="@(NativeLibrary->'&quot;%(Identity)&quot;')" />
+      <CustomLinkerArg Include="@(NativeFramework->'-framework %(Identity)')" Condition="'$(TargetOS)' == 'OSX'" />
     </ItemGroup>
 
     <ItemGroup>
@@ -312,7 +314,7 @@ See the LICENSE file in the project root for more information.
     <Exec Command="$(CppLinker)  @&quot;$(NativeIntermediateOutputPath)link.rsp&quot;" Condition="'$(OS)' == 'Windows_NT' and '$(NativeLib)' != 'Static' and '$(NativeCodeGen)' != 'wasm'" />
     <WriteLinesToFile File="$(NativeIntermediateOutputPath)lib.rsp" Lines="@(CustomLibArg)" Overwrite="true" Condition="'$(OS)' == 'Windows_NT' and '$(NativeLib)' == 'Static'" />
     <Exec Command="$(CppLibCreator)  @&quot;$(NativeIntermediateOutputPath)lib.rsp&quot;" Condition="'$(OS)' == 'Windows_NT' and '$(NativeLib)' == 'Static' and '$(NativeCodeGen)' != 'wasm'" />
-    
+
     <PropertyGroup>
       <EmccArgs>&quot;$(NativeObject)&quot; -o &quot;$(NativeBinary)&quot; -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 --emrun </EmccArgs>
       <EmccArgs Condition="'$(Platform)'=='wasm'">$(EmccArgs) &quot;$(IlcPath)/sdk/libPortableRuntime.bc&quot; &quot;$(IlcPath)/sdk/libbootstrappercpp.bc&quot; &quot;$(IlcPath)/sdk/libSystem.Private.CoreLib.Native.bc&quot; </EmccArgs>
