@@ -10,6 +10,11 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
+        internal const int WAIT_OBJECT_0 = 0x00000000;
+        internal const int WAIT_ABANDONED = 0x00000080;
+        internal const int WAIT_TIMEOUT = 0x00000102;
+        internal const int WAIT_FAILED = unchecked((int)0xFFFFFFFF);
+
         [DllImport(Libraries.Kernel32)]
         internal extern static uint WaitForMultipleObjectsEx(uint nCount, IntPtr lpHandles, bool bWaitAll, uint dwMilliseconds, bool bAlertable);
 
@@ -21,6 +26,9 @@ internal static partial class Interop
 
         [DllImport(Libraries.Kernel32)]
         internal extern static void Sleep(uint milliseconds);
+
+        internal const uint CREATE_SUSPENDED = 0x00000004;
+        internal const uint STACK_SIZE_PARAM_IS_A_RESERVATION = 0x00010000;
 
         [DllImport(Libraries.Kernel32)]
         internal extern static unsafe SafeWaitHandle CreateThread(
@@ -38,6 +46,8 @@ internal static partial class Interop
 
         [DllImport(Libraries.Kernel32)]
         internal extern static IntPtr GetCurrentThread();
+
+        internal const int DUPLICATE_SAME_ACCESS = 2;
 
         [DllImport(Libraries.Kernel32, SetLastError = true)]
         internal extern static bool DuplicateHandle(
