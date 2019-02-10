@@ -96,7 +96,7 @@ namespace Internal.Runtime.Augments
             SafeWaitHandle threadHandle;
 
             if (Interop.Kernel32.DuplicateHandle(currentProcHandle, currentThreadHandle, currentProcHandle,
-                out threadHandle, 0, false, (uint)Interop.Constants.DuplicateSameAccess))
+                out threadHandle, 0, false, Interop.Kernel32.DUPLICATE_SAME_ACCESS))
             {
                 return threadHandle;
             }
@@ -231,7 +231,7 @@ namespace Internal.Runtime.Augments
                     result = WaitHandle.WaitForSingleObject(waitHandle.DangerousGetHandle(), millisecondsTimeout, true);
                 }
 
-                return result == (int)Interop.Constants.WaitObject0;
+                return result == (int)Interop.Kernel32.WAIT_OBJECT_0;
             }
             finally
             {
@@ -263,7 +263,7 @@ namespace Internal.Runtime.Augments
             uint threadId;
             _osHandle = Interop.Kernel32.CreateThread(IntPtr.Zero, (IntPtr)stackSize,
                 AddrofIntrinsics.AddrOf<Interop.Kernel32.ThreadProc>(ThreadEntryPoint), (IntPtr)thisThreadHandle,
-                (uint)(Interop.Constants.CreateSuspended | Interop.Constants.StackSizeParamIsAReservation),
+                Interop.Kernel32.CREATE_SUSPENDED | Interop.Kernel32.STACK_SIZE_PARAM_IS_A_RESERVATION,
                 out threadId);
 
             if (_osHandle.IsInvalid)

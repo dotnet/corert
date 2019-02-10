@@ -12,9 +12,13 @@ namespace System.Diagnostics
         [DebuggerHidden] // this helps VS appear to stop on the source line calling Debugger.Break() instead of inside it
         public static void Break()
         {
+#if PLATFORM_WINDOWS
             // IsAttached is always true when IsDebuggerPresent is true, so no need to check for it
             if (Interop.mincore.IsDebuggerPresent())
                 Debug.DebugBreak();
+#else
+            // UNIXTODO: Implement Debugger.Break
+#endif
         }
 
         public static bool IsAttached
@@ -38,7 +42,7 @@ namespace System.Diagnostics
 #pragma warning disable 649  // Suppress compiler warning about _isDebuggerAttached never being assigned to.
         // _isDebuggerAttached: Do not remove: This field is known to the debugger and modified directly by the debugger. 
         private static bool _isDebuggerAttached;
-#pragma warning restore 649 
+#pragma warning restore 649
 
         /// <summary>
         /// Constants representing the importance level of messages to be logged.

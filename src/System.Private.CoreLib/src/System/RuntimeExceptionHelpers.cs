@@ -238,6 +238,7 @@ namespace System
                 GenerateExceptionInformationForDump(exception, IntPtr.Zero);
             }
 
+#if PLATFORM_WINDOWS
             uint errorCode = 0x80004005; // E_FAIL
             // To help enable testing to bucket the failures we choose one of the following as errorCode:
             // * hashcode of EETypePtr if it is an unhandled managed exception
@@ -256,6 +257,9 @@ namespace System
             }
 
             Interop.mincore.RaiseFailFastException(errorCode, pExAddress, pExContext);
+#else
+            Interop.Sys.Abort();
+#endif
         }
 
         // Use a nested class to avoid running the class constructor of the outer class when

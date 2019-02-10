@@ -140,7 +140,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Condition="'$(EnableWinRT)'=='true'" Include="Internal\Runtime\Augments\WinRTInterop.cs" />
-    <Compile Include="Interop\Interop.manual.cs" />
     <Compile Include="Interop\Interop.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
     <Compile Include="System\Runtime\CompilerServices\CastableObject.cs" />
     <Compile Include="System\Runtime\CompilerServices\FeatureRemovedException.cs" />
@@ -369,6 +368,12 @@
     <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.MemReAlloc.cs">
       <Link>Interop\Windows\Mincore\Interop.MemReAlloc.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.IsDebuggerPresent.cs">
+      <Link>Interop\Windows\Mincore\Interop.IsDebuggerPresent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.RaiseFailFastException.cs">
+      <Link>Interop\Windows\Mincore\Interop.RaiseFailFastException.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\Ole32\Interop.CoTaskMemAllocFree.cs">
       <Link>Interop\Windows\Ole32\Interop.CoTaskMemAllocFree.cs</Link>
     </Compile>
@@ -472,6 +477,9 @@
     <Compile Include="System\Threading\WaitSubsystem.WaitableObject.Unix.cs" />
     <Compile Include="..\..\Common\src\Interop\Unix\Interop.Libraries.cs">
       <Link>Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Abort.cs">
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Abort.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Exit.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Exit.cs</Link>

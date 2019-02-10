@@ -7,9 +7,9 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal unsafe partial class Sys
+    internal static partial class mincore
     {
-        [DllImport(Interop.Libraries.CoreLibNative, EntryPoint = "CoreLibNative_GetExecutableAbsolutePath", SetLastError = true)]
-        internal static extern unsafe int GetExecutableAbsolutePath([Out] char[] buffer, int bufferSize);
+        [DllImport("api-ms-win-core-debug-l1-1-0.dll")]
+        internal extern static bool IsDebuggerPresent();
     }
 }
