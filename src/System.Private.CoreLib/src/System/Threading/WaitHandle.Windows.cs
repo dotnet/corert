@@ -64,7 +64,7 @@ namespace System.Threading
             }
             else
             {
-                result = (int)Interop.mincore.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll, (uint)millisecondsTimeout, false);
+                result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll, (uint)millisecondsTimeout, false);
             }
 
             currentThread.ClearWaitSleepJoinState();
@@ -224,7 +224,7 @@ namespace System.Threading
         {
             Debug.Assert(millisecondsTimeout >= -1);
 
-            int ret = (int)Interop.mincore.SignalObjectAndWait(handleToSignal, handleToWaitOn, (uint)millisecondsTimeout, false);
+            int ret = (int)Interop.Kernel32.SignalObjectAndWait(handleToSignal, handleToWaitOn, (uint)millisecondsTimeout, false);
 
             if (ret == WaitAbandoned)
             {
