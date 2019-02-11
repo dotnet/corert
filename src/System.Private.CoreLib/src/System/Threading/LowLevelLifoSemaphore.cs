@@ -123,6 +123,7 @@ namespace System.Threading
                     spinIndex += 2;
                 }
 
+                // Try to acquire the semaphore and unregister as a spinner
                 counts = _separated._counts;
                 while (counts._signalCount > 0)
                 {
