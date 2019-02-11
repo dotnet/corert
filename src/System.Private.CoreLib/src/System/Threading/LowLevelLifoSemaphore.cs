@@ -95,21 +95,7 @@ namespace System.Threading
                 // TODO: Unify this with LowLevelSpinWaiter
                 if (s_processorCount > 1)
                 {
-                    if (spinIndex < SpinSleep0Threshold || (spinIndex - SpinSleep0Threshold) % 2 != 0)
-                    {
-                        // Matches algorithm in SpinWait.SpinOnce
-                        int n = RuntimeThread.OptimalMaxSpinWaitsPerSpinIteration;
-                        if (spinIndex <= 30 && (1 << spinIndex) < n)
-                        {
-                            n = 1 << spinIndex;
-                        }
-                        RuntimeThread.SpinWait(n);
-                    }
-                    else
-                    {
-                        RuntimeThread.Yield();
-                    }
-
+                    LowLevelSpinWaiter.Wait(spinIndex, SpinSleep0Threshold);
                     spinIndex++;
                 }
                 else

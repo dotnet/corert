@@ -18,8 +18,8 @@ namespace System.Threading
     {
         // TODO: Tune these values
         private const int SpinCount = 8;
-        private const int SpinYieldThreshold = 4;
-        private const int SpinSleep0Threshold = 6;
+        private const int SpinYieldThreshold = 6;
+        private const int SpinSleep0Threshold = 4;
 
         private static int s_processorCount;
 
@@ -51,8 +51,15 @@ namespace System.Threading
                     // prior to that threshold would not help other threads make progress
                     for (int spinIndex = processorCount > 1 ? 0 : SpinYieldThreshold; spinIndex < SpinCount; ++spinIndex)
                     {
-                        // The caller should check the condition in a fast path before calling this method, so wait first
-                        Wait(spinIndex);
+                        if (processorCount > 1)
+                        {
+                            // The caller should check the condition in a fast path before calling this method, so wait first
+                            Wait(spinIndex, SpinSleep0Threshold);
+                        }
+                        else
+                        {
+                            RuntimeThread.Yield();
+                        }
 
                         if (condition())
                         {
@@ -69,24 +76,43 @@ namespace System.Threading
             return false;
         }
 
-        private static void Wait(int spinIndex)
+        public static void Wait(int spinIndex, int sleep0Threshold)
         {
-            Debug.Assert(SpinYieldThreshold < SpinSleep0Threshold);
+            Debug.Assert(spinIndex >= 0);
+            Debug.Assert(sleep0Threshold >= 0);
 
-            if (spinIndex < SpinYieldThreshold)
+            // Wait
+            //
+            // (spinIndex - Sleep0Threshold) % 2 != 0: The purpose of this check is to interleave Thread.Yield/Sleep(0) with
+            // Thread.SpinWait. Otherwise, the following issues occur:
+            //   - When there are no threads to switch to, Yield and Sleep(0) become no-op and it turns the spin loop into a
+            //     busy-spin that may quickly reach the max spin count and cause the thread to enter a wait state. Completing the
+            //     spin loop too early can cause excessive context switcing from the wait.
+            //   - If there are multiple threads doing Yield and Sleep(0) (typically from the same spin loop due to contention),
+            //     they may switch between one another, delaying work that can make progress.
+            if (spinIndex < sleep0Threshold || (spinIndex - sleep0Threshold) % 2 != 0)
             {
-                RuntimeThread.SpinWait(1 << spinIndex);
-                return;
-            }
-
-            if (spinIndex < SpinSleep0Threshold && RuntimeThread.Yield())
-            {
+                // Cap the maximum spin count to a value such that many thousands of CPU cycles would not be wasted doing
+                // the equivalent of YieldProcessor(), as that that point SwitchToThread/Sleep(0) are more likely to be able to
+                // allow other useful work to run. Long YieldProcessor() loops can help to reduce contention, but Sleep(1) is
+                // usually better for that.
+                //
+                // RuntimeThread.OptimalMaxSpinWaitsPerSpinIteration:
+                //   - See Thread::InitializeYieldProcessorNormalized(), which describes and calculates this value.
+                //
+                int n = RuntimeThread.OptimalMaxSpinWaitsPerSpinIteration;
+                if (spinIndex <= 30 && (1 << spinIndex) < n)
+                {
+                    n = 1 << spinIndex;
+                }
+                RuntimeThread.SpinWait(n);
                 return;
             }
 
             /// <see cref="RuntimeThread.Sleep(int)"/> is interruptible. The current operation may not allow thread interrupt
             /// (for instance, <see cref="LowLevelLock.Acquire"/> as part of <see cref="EventWaitHandle.Set"/>). Use the
-            /// uninterruptible version of Sleep(0).
+            /// uninterruptible version of Sleep(0). Not doing <see cref="RuntimeThread.Yield"/>, it does not seem to have any
+            /// benefit over Sleep(0).
             RuntimeThread.UninterruptibleSleep0();
 
             // Don't want to Sleep(1) in this spin wait:
