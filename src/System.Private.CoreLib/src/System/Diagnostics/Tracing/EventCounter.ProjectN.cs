@@ -4,7 +4,7 @@
 
 namespace System.Diagnostics.Tracing
 {
-    [Internal.Runtime.CompilerServices.RelocatedType("System.Diagnostics.Tracing")]
+    [global::Internal.Runtime.CompilerServices.RelocatedType("System.Diagnostics.Tracing")]
     partial class EventCounter
     {
     }
