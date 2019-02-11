@@ -12,29 +12,32 @@ namespace System.Threading
 {
     public abstract partial class WaitHandle
     {
-        internal static unsafe int WaitForSingleObject(IntPtr handle, int millisecondsTimeout)
+        internal static unsafe int WaitForSingleObject(IntPtr handle, int millisecondsTimeout, bool interruptible)
         {
-            SynchronizationContext context = RuntimeThread.CurrentThread.SynchronizationContext;
-            bool useSyncContextWait = (context != null) && context.IsWaitNotificationRequired();
-
-            if (useSyncContextWait)
+            if (interruptible)
             {
-                var handles = new IntPtr[1] { handle };
-                return context.Wait(handles, false, millisecondsTimeout);
+                SynchronizationContext context = RuntimeThread.CurrentThread.SynchronizationContext;
+                bool useSyncContextWait = (context != null) && context.IsWaitNotificationRequired();
+
+                if (useSyncContextWait)
+                {
+                    var handles = new IntPtr[1] { handle };
+                    return context.Wait(handles, false, millisecondsTimeout);
+                }
             }
 
-            return WaitForMultipleObjectsIgnoringSyncContext(&handle, 1, false, millisecondsTimeout);
+            return WaitForMultipleObjectsIgnoringSyncContext(&handle, 1, false, millisecondsTimeout, interruptible);
         }
 
         internal static unsafe int WaitMultipleIgnoringSyncContext(IntPtr[] handles, bool waitAll, int millisecondsTimeout)
         {
             fixed (IntPtr* pHandles = handles)
             {
-                return WaitForMultipleObjectsIgnoringSyncContext(pHandles, handles.Length, waitAll, millisecondsTimeout);
+                return WaitForMultipleObjectsIgnoringSyncContext(pHandles, handles.Length, waitAll, millisecondsTimeout, true);
             }
         }
 
-        private static unsafe int WaitForMultipleObjectsIgnoringSyncContext(IntPtr* pHandles, int numHandles, bool waitAll, int millisecondsTimeout)
+        private static unsafe int WaitForMultipleObjectsIgnoringSyncContext(IntPtr* pHandles, int numHandles, bool waitAll, int millisecondsTimeout, bool interruptible)
         {
             Debug.Assert(millisecondsTimeout >= -1);
 
@@ -94,11 +97,11 @@ namespace System.Threading
             return result;
         }
 
-        private static bool WaitOneCore(IntPtr handle, int millisecondsTimeout)
+        private static bool WaitOneCore(IntPtr handle, int millisecondsTimeout, bool interruptible)
         {
             Debug.Assert(millisecondsTimeout >= -1);
 
-            int ret = WaitForSingleObject(handle, millisecondsTimeout);
+            int ret = WaitForSingleObject(handle, millisecondsTimeout, interruptible);
 
             if (ret == WaitAbandoned)
             {
@@ -147,7 +150,7 @@ namespace System.Threading
                 {
                     fixed (IntPtr* pHandles = handles)
                     {
-                        return WaitForMultipleObjectsIgnoringSyncContext(pHandles, count, waitAll, millisecondsTimeout);
+                        return WaitForMultipleObjectsIgnoringSyncContext(pHandles, count, waitAll, millisecondsTimeout, true);
                     }
                 }
             }

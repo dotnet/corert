@@ -136,7 +136,7 @@ namespace System.Threading
             /// <summary>
             /// The caller is expected to populate <see cref="WaitedObjects"/> and pass in the number of objects filled
             /// </summary>
-            public void RegisterWait(int waitedCount, bool isWaitForAll)
+            public void RegisterWait(int waitedCount, bool prioritize, bool isWaitForAll)
             {
                 s_lock.VerifyIsLocked();
                 Debug.Assert(_thread == RuntimeThread.CurrentThread);
@@ -180,9 +180,19 @@ namespace System.Threading
 
                 _isWaitForAll = isWaitForAll;
                 _waitedCount = waitedCount;
-                for (int i = 0; i < waitedCount; ++i)
+                if (prioritize)
                 {
-                    waitedListNodes[i].RegisterWait(waitedObjects[i]);
+                    for (int i = 0; i < waitedCount; ++i)
+                    {
+                        waitedListNodes[i].RegisterPrioritizedWait(waitedObjects[i]);
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < waitedCount; ++i)
+                    {
+                        waitedListNodes[i].RegisterWait(waitedObjects[i]);
+                    }
                 }
             }
 
@@ -208,6 +218,7 @@ namespace System.Threading
                 switch (_waitSignalState)
                 {
                     case WaitSignalState.Waiting:
+                    case WaitSignalState.Waiting_Interruptible:
                         return WaitHandle.WaitTimeout;
 
                     case WaitSignalState.NotWaiting_SignaledToSatisfyWait:
@@ -246,7 +257,7 @@ namespace System.Threading
                 }
             }
 
-            public int Wait(int timeoutMilliseconds, WaitHandle[] waitHandlesForAbandon, bool isSleep)
+            public int Wait(int timeoutMilliseconds, bool interruptible, WaitHandle[] waitHandlesForAbandon, bool isSleep)
             {
                 if (isSleep)
                 {
@@ -277,11 +288,11 @@ namespace System.Threading
                 Debug.Assert(_waitSignalState == WaitSignalState.NotWaiting);
 
                 // A signaled state may be set only when the thread is in one of the following states
-                _waitSignalState = WaitSignalState.Waiting;
+                _waitSignalState = interruptible ? WaitSignalState.Waiting_Interruptible : WaitSignalState.Waiting;
 
                 try
                 {
-                    if (isSleep && CheckAndResetPendingInterrupt)
+                    if (isSleep && interruptible && CheckAndResetPendingInterrupt)
                     {
                         throw new ThreadInterruptedException();
                     }
@@ -359,14 +370,14 @@ namespace System.Threading
                 RuntimeThread.Yield();
             }
 
-            public static void Sleep(int timeoutMilliseconds)
+            public static void Sleep(int timeoutMilliseconds, bool interruptible)
             {
                 s_lock.VerifyIsNotLocked();
                 Debug.Assert(timeoutMilliseconds >= -1);
 
                 if (timeoutMilliseconds == 0)
                 {
-                    if (RuntimeThread.CurrentThread.WaitInfo.CheckAndResetPendingInterrupt_NotLocked)
+                    if (interruptible && RuntimeThread.CurrentThread.WaitInfo.CheckAndResetPendingInterrupt_NotLocked)
                     {
                         throw new ThreadInterruptedException();
                     }
@@ -379,7 +390,7 @@ namespace System.Threading
                     RuntimeThread
                         .CurrentThread
                         .WaitInfo
-                        .Wait(timeoutMilliseconds, waitHandlesForAbandon: null, isSleep: true);
+                        .Wait(timeoutMilliseconds, interruptible, waitHandlesForAbandon: null, isSleep: true);
                 Debug.Assert(waitResult == WaitHandle.WaitTimeout);
             }
 
@@ -459,7 +470,7 @@ namespace System.Threading
 
                 _waitMonitor.Acquire();
 
-                if (_waitSignalState != WaitSignalState.Waiting)
+                if (_waitSignalState != WaitSignalState.Waiting_Interruptible)
                 {
                     RecordPendingInterrupt();
                     _waitMonitor.Release();
@@ -639,6 +650,29 @@ namespace System.Threading
                     waitableObject.WaitersTail = this;
                 }
 
+                public void RegisterPrioritizedWait(WaitableObject waitableObject)
+                {
+                    s_lock.VerifyIsLocked();
+                    Debug.Assert(_waitInfo.Thread == RuntimeThread.CurrentThread);
+
+                    Debug.Assert(waitableObject != null);
+
+                    Debug.Assert(_previous == null);
+                    Debug.Assert(_next == null);
+
+                    WaitedListNode head = waitableObject.WaitersHead;
+                    if (head != null)
+                    {
+                        _next = head;
+                        head._previous = this;
+                    }
+                    else
+                    {
+                        waitableObject.WaitersTail = this;
+                    }
+                    waitableObject.WaitersHead = this;
+                }
+
                 public void UnregisterWait(WaitableObject waitableObject)
                 {
                     s_lock.VerifyIsLocked();
@@ -674,6 +708,7 @@ namespace System.Threading
             private enum WaitSignalState : byte
             {
                 Waiting,
+                Waiting_Interruptible,
                 NotWaiting,
                 NotWaiting_SignaledToSatisfyWait,
                 NotWaiting_SignaledToSatisfyWaitWithAbandonedMutex,
