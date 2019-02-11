@@ -2178,7 +2178,8 @@ namespace Internal.Runtime.Interpreter
                     break;
             }
 
-            Debug.Assert(index >= 0);
+            if (index < 0 || index >= array.Length)
+                throw new IndexOutOfRangeException();
 
             ref byte start = ref RuntimeAugments.GetRawDataForArray(array);
             ref byte position = ref Unsafe.Add(ref start, (IntPtr)((nuint)index * RuntimeAugments.GetElementSizeForArray(array)));
@@ -2236,7 +2237,8 @@ namespace Internal.Runtime.Interpreter
                     break;
             }
 
-            Debug.Assert(index >= 0);
+            if (index < 0 || index >= array.Length)
+                throw new IndexOutOfRangeException();
 
             TypeDesc elementType = (TypeDesc)_methodIL.GetObject(token);
             ref byte start = ref RuntimeAugments.GetRawDataForArray(array);
@@ -2315,7 +2317,8 @@ namespace Internal.Runtime.Interpreter
                     break;
             }
 
-            Debug.Assert(index >= 0);
+            if (index < 0 || index >= array.Length)
+                throw new IndexOutOfRangeException();
 
             ref byte start = ref RuntimeAugments.GetRawDataForArray(array);
             ref byte position = ref Unsafe.Add(ref start, (IntPtr)((nuint)index * RuntimeAugments.GetElementSizeForArray(array)));
@@ -2380,7 +2383,8 @@ namespace Internal.Runtime.Interpreter
                     break;
             }
 
-            Debug.Assert(index >= 0);
+            if (index < 0 || index >= array.Length)
+                throw new IndexOutOfRangeException();
 
             TypeDesc elementType = (TypeDesc)_methodIL.GetObject(token);
             ref byte start = ref RuntimeAugments.GetRawDataForArray(array);
