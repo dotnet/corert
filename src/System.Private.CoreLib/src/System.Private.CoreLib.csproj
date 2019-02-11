@@ -220,7 +220,7 @@
     <Compile Include="System\Reflection\MissingMetadataException.cs" />
     <Compile Include="System\Resources\ManifestBasedResourceGroveler.CoreRT.cs" />
     <Compile Include="System\RuntimeArgumentHandle.cs" />
-    <Compile Include="System\Runtime\CompilerServices\ConditionalWeakTable.cs" />
+    <Compile Include="System\Runtime\CompilerServices\DependentHandle.cs" />
     <Compile Include="System\Runtime\CompilerServices\DependencyReductionConditionallyDependentAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\DependencyReductionRootAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\DependencyReductionTypeRemoved.cs" />
