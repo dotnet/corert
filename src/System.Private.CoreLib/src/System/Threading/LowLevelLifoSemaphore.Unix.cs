@@ -12,15 +12,11 @@ namespace System.Threading
     /// </summary>
     internal sealed partial class LowLevelLifoSemaphore : IDisposable
     {
-        private WaiterListEntry _waiterStackHead;
-        private LowLevelLock _waiterStackLock;
-        [ThreadStatic]
-        private static WaiterListEntry t_waitEntry;
+        private WaitSubsystem.WaitableObject _semaphore;
 
         private void Create(int maximumSignalCount)
         {
-            _waiterStackHead = null;
-            _waiterStackLock = new LowLevelLock();
+            _semaphore = WaitSubsystem.WaitableObject.NewSemaphore(0, maximumSignalCount);
         }
 
         public void Dispose()
@@ -29,47 +25,12 @@ namespace System.Threading
 
         private bool WaitCore(int timeoutMs)
         {
-            WaiterListEntry waitEntry = t_waitEntry ?? (t_waitEntry = new WaiterListEntry());
-            waitEntry._monitor.Acquire();
-            try
-            {
-                _waiterStackLock.Acquire();
-                waitEntry._next = _waiterStackHead;
-                _waiterStackHead = waitEntry;
-                _waiterStackLock.Release();
-                return waitEntry._monitor.Wait(timeoutMs);
-            }
-            finally
-            {
-                waitEntry._monitor.Release();
-            }
+            return WaitSubsystem.Wait(_semaphore, timeoutMs, false, true);
         }
 
         private void ReleaseCore(int count)
         {
-            while (count-- > 0)
-            {
-                _waiterStackLock.Acquire();
-                WaiterListEntry waitEntry = _waiterStackHead;
-                _waiterStackHead = waitEntry?._next;
-                _waiterStackLock.Release();
-                if (waitEntry != null)
-                {
-                    waitEntry._monitor.Acquire();
-                    waitEntry._monitor.Signal_Release();
-                }
-            }
-        }
-
-        class WaiterListEntry
-        {
-            public LowLevelMonitor _monitor;
-            public WaiterListEntry _next;
-
-            public WaiterListEntry()
-            {
-                this._monitor = new LowLevelMonitor();
-            }
+            WaitSubsystem.ReleaseSemaphore(_semaphore, count);
         }
     }
 }
