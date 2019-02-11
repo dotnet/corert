@@ -225,7 +225,7 @@ namespace System.Threading
 
         private bool WaitForSignal(int timeoutMs)
         {
-            Debug.Assert(timeoutMs > 0);
+            Debug.Assert(timeoutMs >= -1);
 
             while (true)
             {
@@ -236,7 +236,7 @@ namespace System.Threading
                     Counts toSubtract = new Counts();
                     toSubtract._waiterCount++;
                     Counts newCounts = _separated._counts.Subtract(toSubtract);
-                    Debug.Assert(newCounts._waiterCount >= 0);
+                    Debug.Assert(newCounts._waiterCount != ushort.MaxValue); // Check for underflow
                     return false;
                 }
 
