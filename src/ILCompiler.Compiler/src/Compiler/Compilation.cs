@@ -214,7 +214,7 @@ namespace ILCompiler
             return _devirtualizationManager.ResolveVirtualMethod(declMethod, implType);
         }
 
-        public bool NeedsRuntimeLookup(ReadyToRunHelperId lookupKind, object targetOfLookup)
+        public virtual bool NeedsRuntimeLookup(ReadyToRunHelperId lookupKind, object targetOfLookup)
         {
             switch (lookupKind)
             {

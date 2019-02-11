@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection.PortableExecutable;
@@ -153,5 +154,31 @@ namespace ILCompiler
         }
 
         public override ObjectNode GetFieldRvaData(FieldDesc field) => SymbolNodeFactory.GetRvaFieldNode(field);
+
+        public override bool NeedsRuntimeLookup(ReadyToRunHelperId lookupKind, object targetOfLookup)
+        {
+            switch (lookupKind)
+            {
+                case ReadyToRunHelperId.TypeHandle:
+                case ReadyToRunHelperId.NecessaryTypeHandle:
+                case ReadyToRunHelperId.DefaultConstructor:
+                case ReadyToRunHelperId.TypeHandleForCasting:
+                    return ((TypeDesc)targetOfLookup).IsRuntimeDeterminedSubtype;
+
+                case ReadyToRunHelperId.MethodDictionary:
+                case ReadyToRunHelperId.MethodHandle:
+                    return ((MethodWithToken)targetOfLookup).Method.IsRuntimeDeterminedExactMethod;
+
+                case ReadyToRunHelperId.MethodEntry:
+                case ReadyToRunHelperId.VirtualDispatchCell:
+                    return ((MethodDesc)targetOfLookup).IsRuntimeDeterminedExactMethod;
+
+                case ReadyToRunHelperId.FieldHandle:
+                    return ((FieldDesc)targetOfLookup).OwningType.IsRuntimeDeterminedSubtype;
+
+                default:
+                    throw new NotImplementedException();
+            }
+        }
     }
 }

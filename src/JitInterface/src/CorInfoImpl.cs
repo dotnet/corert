@@ -2543,8 +2543,14 @@ namespace Internal.JitInterface
                     Debug.Assert(pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Method);
                     helperId = ReadyToRunHelperId.MethodDictionary;
                 }
-                
+
+#if READYTORUN
+                MethodDesc exactMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+                target = new MethodWithToken(exactMethod, new ModuleToken(_tokenContext, pResolvedToken.token));
+#else
                 target = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+#endif
+
             }
             else if (!fEmbedParent && pResolvedToken.hField != null)
             {

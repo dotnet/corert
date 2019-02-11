@@ -94,6 +94,10 @@ namespace ILCompiler.DependencyAnalysis
                     helperNode = CreateFieldHandleHelper((FieldDesc)target, signatureContext);
                     break;
 
+                case ReadyToRunHelperId.MethodHandle:
+                    helperNode = CreateMethodHandleHelper((MethodWithToken)target, signatureContext);
+                    break;
+
                 case ReadyToRunHelperId.VirtualCall:
                     helperNode = CreateVirtualCallHelper((MethodWithToken)target, signatureContext);
                     break;
@@ -198,6 +202,23 @@ namespace ILCompiler.DependencyAnalysis
             return new PrecodeHelperImport(
                 _codegenNodeFactory,
                 new FieldFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_FieldHandle, field, signatureContext));
+        }
+
+        private ISymbolNode CreateMethodHandleHelper(MethodWithToken methodWithToken, SignatureContext signatureContext)
+        {
+            return new PrecodeHelperMethodImport(
+                _codegenNodeFactory,
+                methodWithToken,
+                _codegenNodeFactory.MethodSignature(
+                        ReadyToRunFixupKind.READYTORUN_FIXUP_MethodHandle,
+                        methodWithToken.Method,
+                        constrainedType: null,
+                        methodWithToken.Token,
+                        signatureContext: signatureContext,
+                        isUnboxingStub: false,
+                        isInstantiatingStub: true),
+                signatureContext,
+                useInstantiatingStub: true);
         }
 
         private ISymbolNode CreateVirtualCallHelper(MethodWithToken methodWithToken, SignatureContext signatureContext)
@@ -618,7 +639,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 genericDictionary = new PrecodeHelperMethodImport(
                     _codegenNodeFactory,
-                    method,
+                    new MethodWithToken(method, methodToken),
                     _codegenNodeFactory.MethodSignature(
                         ReadyToRunFixupKind.READYTORUN_FIXUP_MethodDictionary,
                         method,
@@ -626,7 +647,9 @@ namespace ILCompiler.DependencyAnalysis
                         methodToken: methodToken,
                         signatureContext: signatureContext,
                         isUnboxingStub: false,
-                        isInstantiatingStub: true));
+                        isInstantiatingStub: true),
+                    signatureContext,
+                    useInstantiatingStub: true);
                 _genericDictionaryCache.Add(method, genericDictionary);
             }
             return genericDictionary;
