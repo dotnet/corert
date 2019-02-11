@@ -28,6 +28,7 @@ namespace System.Threading
             Debug.Assert(initialSignalCount >= 0);
             Debug.Assert(initialSignalCount <= maximumSignalCount);
             Debug.Assert(maximumSignalCount > 0);
+            Debug.Assert(spinCount >= 0);
 
             _separated = new CacheLineSeparatedCounts();
             _separated._counts._signalCount = (uint)initialSignalCount;
@@ -43,7 +44,7 @@ namespace System.Threading
             // a) register as a spinner if spinCount > 0 and timeoutMs > 0
             // b) register as a waiter if there's already too many spinners or spinCount == 0 and timeoutMs > 0
             // c) bail out if timeoutMs == 0 and return false
-            Counts counts = Counts.VolatileRead(ref _separated._counts);
+            Counts counts = _separated._counts;
             while (true)
             {
                 Debug.Assert(counts._signalCount <= _maximumSignalCount);
@@ -67,7 +68,7 @@ namespace System.Threading
                     }
                 }
 
-                Counts countsBeforeUpdate = Counts.CompareExchange(ref _separated._counts, newCounts, counts);
+                Counts countsBeforeUpdate = _separated._counts.CompareExchange(newCounts, counts);
                 if (countsBeforeUpdate == counts)
                 {
                     if (counts._signalCount != 0)
@@ -122,14 +123,14 @@ namespace System.Threading
                     spinIndex += 2;
                 }
 
-                counts = Counts.VolatileRead(ref _separated._counts);
+                counts = _separated._counts;
                 while (counts._signalCount > 0)
                 {
                     Counts newCounts = counts;
                     newCounts._signalCount--;
                     newCounts._spinnerCount--;
 
-                    Counts countsBeforeUpdate = Counts.CompareExchange(ref _separated._counts, newCounts, counts);
+                    Counts countsBeforeUpdate = _separated._counts.CompareExchange(newCounts, counts);
                     if (countsBeforeUpdate == counts)
                     {
                         return true;
@@ -140,7 +141,7 @@ namespace System.Threading
             }
 
             // Unregister as spinner and acquire the semaphore or register as a waiter
-            counts = Counts.VolatileRead(ref _separated._counts);
+            counts = _separated._counts;
             while (true)
             {
                 Counts newCounts = counts;
@@ -155,7 +156,7 @@ namespace System.Threading
                     Debug.Assert(newCounts._waiterCount != 0); // overflow check, this many waiters is currently not supported
                 }
 
-                Counts countsBeforeUpdate = Counts.CompareExchange(ref _separated._counts, newCounts, counts);
+                Counts countsBeforeUpdate = _separated._counts.CompareExchange(newCounts, counts);
                 if (countsBeforeUpdate == counts)
                 {
                     return counts._signalCount != 0 || WaitForSignal(timeoutMs);
@@ -172,7 +173,7 @@ namespace System.Threading
             Debug.Assert(releaseCount <= _maximumSignalCount);
 
             int countOfWaitersToWake;
-            Counts counts = Counts.VolatileRead(ref _separated._counts);
+            Counts counts = _separated._counts;
             while (true)
             {
                 Counts newCounts = counts;
@@ -208,7 +209,7 @@ namespace System.Threading
                     }
                 }
 
-                Counts countsBeforeUpdate = Counts.CompareExchange(ref _separated._counts, newCounts, counts);
+                Counts countsBeforeUpdate = _separated._counts.CompareExchange(newCounts, counts);
                 if (countsBeforeUpdate == counts)
                 {
                     Debug.Assert(releaseCount <= _maximumSignalCount - counts._signalCount);
@@ -233,13 +234,13 @@ namespace System.Threading
                     // not observe a signal to the object being waited upon.
                     Counts toSubtract = new Counts();
                     toSubtract._waiterCount++;
-                    Counts newCounts = Counts.Subtract(ref _separated._counts, toSubtract);
+                    Counts newCounts = _separated._counts.Subtract(toSubtract);
                     Debug.Assert(newCounts._waiterCount >= 0);
                     return false;
                 }
 
                 // Unregister the waiter if this thread will not be waiting anymore, and try to acquire the semaphore
-                Counts counts = Counts.VolatileRead(ref _separated._counts);
+                Counts counts = _separated._counts;
                 while (true)
                 {
                     Debug.Assert(counts._waiterCount != 0);
@@ -256,7 +257,7 @@ namespace System.Threading
                         --newCounts._countOfWaitersSignaledToWake;
                     }
 
-                    Counts countsBeforeUpdate = Counts.CompareExchange(ref _separated._counts, newCounts, counts);
+                    Counts countsBeforeUpdate = _separated._counts.CompareExchange(newCounts, counts);
                     if (countsBeforeUpdate == counts)
                     {
                         if (counts._signalCount != 0)
@@ -286,19 +287,14 @@ namespace System.Threading
             [FieldOffset(0)]
             private long _asLong;
 
-            public static Counts VolatileRead(ref Counts counts)
+            public Counts CompareExchange(Counts newCounts, Counts oldCounts)
             {
-                return new Counts { _asLong = Volatile.Read(ref counts._asLong) };
+                return new Counts { _asLong = Interlocked.CompareExchange(ref _asLong, newCounts._asLong, oldCounts._asLong) };
             }
 
-            public static Counts CompareExchange(ref Counts location, Counts newCounts, Counts oldCounts)
+            public Counts Subtract(Counts subtractCounts)
             {
-                return new Counts { _asLong = Interlocked.CompareExchange(ref location._asLong, newCounts._asLong, oldCounts._asLong) };
-            }
-
-            public static Counts Subtract(ref Counts location, Counts subtractCounts)
-            {
-                return new Counts { _asLong = Interlocked.Add(ref location._asLong, -subtractCounts._asLong) };
+                return new Counts { _asLong = Interlocked.Add(ref _asLong, -subtractCounts._asLong) };
             }
 
             public static bool operator ==(Counts lhs, Counts rhs) => lhs._asLong == rhs._asLong;
