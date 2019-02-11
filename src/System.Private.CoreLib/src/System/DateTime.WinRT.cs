@@ -15,7 +15,7 @@ namespace System
             // we have for Win32. If GetProcessInformation succeeds, we have to act as if leap seconds existed.
             // They could still have been disabled by policy, but we have no way to check for that.
             return Interop.Kernel32.GetProcessInformation(
-                Interop.mincore.GetCurrentProcess(),
+                Interop.Kernel32.GetCurrentProcess(),
                 Interop.Kernel32.ProcessLeapSecondInfo,
                 &info,
                 sizeof(Interop.Kernel32.PROCESS_LEAP_SECOND_INFO));
