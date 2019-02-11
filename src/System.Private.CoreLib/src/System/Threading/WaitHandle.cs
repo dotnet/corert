@@ -137,8 +137,6 @@ namespace System.Threading
         public virtual bool WaitOne(int millisecondsTimeout, bool exitContext) => WaitOne(millisecondsTimeout);
         public virtual bool WaitOne(TimeSpan timeout, bool exitContext) => WaitOne(timeout);
 
-        internal bool WaitOne(bool interruptible) => WaitOneCore(Timeout.Infinite, interruptible);
-
         /// <summary>
         /// Obtains all of the corresponding safe wait handles and adds a ref to each. Since the <see cref="SafeWaitHandle"/>
         /// property is publically modifiable, this makes sure that we add and release refs one the same set of safe wait
