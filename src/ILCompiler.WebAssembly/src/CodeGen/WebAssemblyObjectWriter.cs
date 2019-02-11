@@ -19,6 +19,7 @@ using LLVMSharp;
 using ILCompiler.CodeGen;
 using System.Linq;
 using Internal.IL;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -44,6 +45,16 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 else
                 {
+                    if (symbol is ConstructedEETypeNode)
+                    {
+                        if (((ConstructedEETypeNode)symbol).Type is EcmaType)
+                        {
+                            if(((EcmaType)((ConstructedEETypeNode)symbol).Type).Name.EndsWith("ClassForMetaTests"))
+                            {
+
+                            }
+                        }
+                    }
                     return symbol.GetMangledName(nameMangler) + "___REALBASE";
                 }
             }
@@ -76,14 +87,29 @@ namespace ILCompiler.DependencyAnalysis
         private static Dictionary<string, LLVMValueRef> s_symbolValues = new Dictionary<string, LLVMValueRef>();
         private static Dictionary<FieldDesc, LLVMValueRef> s_staticFieldMapping = new Dictionary<FieldDesc, LLVMValueRef>();
 
-        public static LLVMValueRef GetSymbolValuePointer(LLVMModuleRef module, ISymbolNode symbol, NameMangler nameMangler, bool objectWriterUse = false)
+        public static LLVMValueRef GetSymbolValuePointer(LLVMModuleRef module, ISymbolNode symbol, NameMangler nameMangler, NodeFactory nodeFactory, bool objectWriterUse = false)
         {
             if (symbol is WebAssemblyMethodCodeNode)
             {
                 ThrowHelper.ThrowInvalidProgramException();
             }
 
-            string symbolAddressGlobalName = symbol.GetMangledName(nameMangler) + "___SYMBOL";
+            string symbolAddressGlobalName;
+            if (symbol is EETypeNode node && !(symbol is ConstructedEETypeNode))
+            {
+                if(node.Type is EcmaType && ((EcmaType)node.Type).Name.EndsWith("ClassForMetaTests"))
+//                var constructedTypeSymbol = nodeFactory.ConstructedTypeSymbol(node.Type);
+//                if (constructedTypeSymbol.Offset == 0)
+                {
+                    symbolAddressGlobalName = node.GetMangledName(nameMangler) + "___SYMBOL";
+//                    symbolAddressGlobalName = node.GetMangledName(nameMangler) + "___REALBASE";
+                }
+                else
+                {
+                    symbolAddressGlobalName = node.GetMangledName(nameMangler) + "___SYMBOL";
+                }
+            }
+            else symbolAddressGlobalName = symbol.GetMangledName(nameMangler) + "___SYMBOL";
             LLVMValueRef symbolAddress;
             if (s_symbolValues.TryGetValue(symbolAddressGlobalName, out symbolAddress))
             {
@@ -258,7 +284,7 @@ namespace ILCompiler.DependencyAnalysis
             var block = LLVM.AppendBasicBlock(callback, "Block");
             LLVM.PositionBuilderAtEnd(builder, block);
 
-            LLVMValueRef rtrHeaderPtr = GetSymbolValuePointer(Module, _nodeFactory.ReadyToRunHeader, _nodeFactory.NameMangler, false);
+            LLVMValueRef rtrHeaderPtr = GetSymbolValuePointer(Module, _nodeFactory.ReadyToRunHeader, _nodeFactory.NameMangler, _nodeFactory, false);
             LLVMValueRef castRtrHeaderPtr = LLVM.BuildPointerCast(builder, rtrHeaderPtr, intPtrPtr, "castRtrHeaderPtr");
             LLVM.BuildRet(builder, castRtrHeaderPtr);
         }

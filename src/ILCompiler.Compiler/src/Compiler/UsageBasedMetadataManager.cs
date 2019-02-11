@@ -10,7 +10,7 @@ using Internal.TypeSystem;
 using ILCompiler.Metadata;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
-
+using Internal.TypeSystem.Ecma;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 using Debug = System.Diagnostics.Debug;
 
@@ -142,6 +142,10 @@ namespace ILCompiler
 
         protected override void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
         {
+            if (type is EcmaType && ((EcmaType)type).Name.Contains("Char"))
+            {
+
+            }
             TypeMetadataNode.GetMetadataDependencies(ref dependencies, factory, type, "Reflectable type");
 
             // If we don't have precise field usage information, apply policy that all fields that

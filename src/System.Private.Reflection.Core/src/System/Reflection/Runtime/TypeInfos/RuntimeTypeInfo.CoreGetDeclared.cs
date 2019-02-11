@@ -9,9 +9,11 @@ using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.FieldInfos;
 using System.Reflection.Runtime.PropertyInfos;
 using System.Reflection.Runtime.EventInfos;
+using System.Runtime.InteropServices;
 using NameFilter = System.Reflection.Runtime.BindingFlagSupport.NameFilter;
 
 using Internal.Reflection.Core.Execution;
+using Internal.Runtime.TypeLoader;
 
 //
 // The CoreGet() methods on RuntimeTypeInfo provide the raw source material for the Type.Get*() family of apis.
@@ -89,8 +91,30 @@ namespace System.Reflection.Runtime.TypeInfos
             return Empty<EventInfo>.Enumerable;
         }
 
+        [DllImport("*")]
+        private static unsafe extern int printf(byte* str, byte* unused);
+        private static unsafe void PrintString(string s)
+        {
+            int length = s.Length;
+            fixed (char* curChar = s)
+            {
+                for (int i = 0; i < length; i++)
+                {
+                    TypeLoaderEnvironment.TwoByteStr curCharStr = new TypeLoaderEnvironment.TwoByteStr();
+                    curCharStr.first = (byte)(*(curChar + i));
+                    printf((byte*)&curCharStr, null);
+                }
+            }
+        }
+        public static void PrintLine(string s)
+        {
+            PrintString(s);
+            PrintString("\n");
+        }
+
         internal IEnumerable<FieldInfo> CoreGetDeclaredFields(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
         {
+            PrintLine("CoreGetDeclaredFields ");
             RuntimeNamedTypeInfo definingType = AnchoringTypeDefinitionForDeclaredMembers;
             if (definingType != null)
             {

@@ -14,6 +14,7 @@ using Internal.Text;
 using Internal.TypeSystem;
 using Internal.Runtime;
 using Internal.IL;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -147,11 +148,21 @@ namespace ILCompiler.DependencyAnalysis
 
             public TValue GetOrAdd(TKey key)
             {
+                var eKey = key as EcmaType;
+                if (eKey != null && eKey.Name == "ClassForMetaTests")
+                {
+
+                }
                 return _cache.GetOrAdd(key, _creator);
             }
 
             public TValue GetOrAdd(TKey key, Func<TKey, TValue> creator)
             {
+                var eKey = key as EcmaType;
+                if (eKey != null && eKey.Name == "ClassForMetaTests")
+                {
+
+                }
                 return _cache.GetOrAdd(key, creator);
             }
         }

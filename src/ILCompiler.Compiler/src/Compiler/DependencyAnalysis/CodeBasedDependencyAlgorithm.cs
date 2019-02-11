@@ -72,6 +72,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public static void AddDependenciesDueToMethodCodePresence(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
+            if (method.Name == "ForceMetadata")
+            {
+
+            }
             factory.MetadataManager.GetDependenciesDueToReflectability(ref dependencies, factory, method);
 
             if (method.HasInstantiation)

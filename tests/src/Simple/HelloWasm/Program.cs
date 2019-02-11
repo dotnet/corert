@@ -736,6 +736,7 @@ internal static class Program
 
     [System.Runtime.InteropServices.DllImport("*")]
     private static extern void CallMe(int x);
+
     private static void TestMetaData()
     {
 
@@ -756,15 +757,15 @@ internal static class Program
         var typeofChar = typeof(Char);
         if (typeofChar == null)
         {
-            PrintLine("type == null.  Simple class metadata test: Failed");
+            PrintLine("type == null.  Simple struct metadata test: Failed");
         }
         else
         {
             if (typeofChar.FullName != "System.Char")
             {
-                PrintLine("type != System.Char.  Simple class metadata test: Failed");
+                PrintLine("type != System.Char.  Simple struct metadata test: Failed");
             }
-            else PrintLine("Simple class metadata test (typeof(Char)): Ok.");
+            else PrintLine("Simple struct metadata test (typeof(Char)): Ok.");
         }
 
         var gentT = new Gen<int>();
@@ -806,6 +807,8 @@ internal static class Program
 
         PrintString("type GetFields length: ");
         var x = new ClassForMetaTests();
+        var s = x.stringField;  
+        var i = x.intField;  
         FieldInfo[] fields = typeof(ClassForMetaTests).GetFields();
         if (fields.Length == 2)
         {
@@ -814,6 +817,21 @@ internal static class Program
         else
         {
             PrintLine(" Failed.");
+        }
+    }
+
+    public class ClassForMetaTests
+    {
+        // used via reflection
+#pragma warning disable 0169
+        public int intField;
+        public string stringField;
+#pragma warning restore 0169
+
+        public void ForceMetadata()
+        {
+            stringField = "";
+            intField = 1;
         }
     }
 
@@ -1287,14 +1305,7 @@ class AnotherClassWithFourThreadStatics
     }
 }
 
-class ClassForMetaTests
-{
-    // used via reflection
-#pragma warning disable 0169
-    int intField;
-    string stringField;
-#pragma warning restore 0169
-}
+
 
 
 namespace System.Runtime.InteropServices

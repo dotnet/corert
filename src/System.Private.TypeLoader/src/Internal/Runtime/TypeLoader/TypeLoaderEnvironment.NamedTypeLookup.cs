@@ -44,6 +44,7 @@ namespace Internal.Runtime.TypeLoader
         {
             protected unsafe override int GetKeyHashCode(RuntimeTypeHandle key)
             {
+                PrintLine("NamedTypeRuntimeTypeHandleToMetadataHashtable GetKeyHashCode " + key.ToEETypePtr()->HashCode.ToString());
                 return (int)key.ToEETypePtr()->HashCode;
             }
             protected override bool CompareKeyToValue(RuntimeTypeHandle key, NamedTypeLookupResult value)
@@ -69,6 +70,7 @@ namespace Internal.Runtime.TypeLoader
             protected override NamedTypeLookupResult CreateValueFromKey(RuntimeTypeHandle key)
             {
                 int hashCode = GetKeyHashCode(key);
+                PrintLine("NamedTypeRuntimeTypeHandleToMetadataHashtable CreateValueFromKey " + hashCode.ToString());
 
                 // Iterate over all modules, starting with the module that defines the EEType
                 foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules(RuntimeAugments.GetModuleFromTypeHandle(key)))
@@ -89,6 +91,8 @@ namespace Internal.Runtime.TypeLoader
                             RuntimeTypeHandle foundType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
                             if (foundType.Equals(key))
                             {
+                                PrintLine("NamedTypeRuntimeTypeHandleToMetadataHashtable CreateValueFromKey foundType " + hashCode.ToString());
+
                                 Handle entryMetadataHandle = entryParser.GetUnsigned().AsHandle();
                                 if (entryMetadataHandle.HandleType == HandleType.TypeDefinition)
                                 {
@@ -104,6 +108,7 @@ namespace Internal.Runtime.TypeLoader
                         }
                     }
                 }
+                PrintLine("NamedTypeRuntimeTypeHandleToMetadataHashtable CreateValueFromKey returning not found " + hashCode.ToString());
 
                 return new NamedTypeLookupResult()
                 {
@@ -114,6 +119,12 @@ namespace Internal.Runtime.TypeLoader
         }
 
         private QTypeDefinitionToRuntimeTypeHandleHashtable _metadataToRuntimeTypeHandleHashtable = new QTypeDefinitionToRuntimeTypeHandleHashtable();
+
+        public struct TwoByteStr
+        {
+            public byte first;
+            public byte second;
+        }
 
         private class QTypeDefinitionToRuntimeTypeHandleHashtable : LockFreeReaderHashtable<QTypeDefinition, NamedTypeLookupResult>
         {
@@ -147,9 +158,13 @@ namespace Internal.Runtime.TypeLoader
             protected override NamedTypeLookupResult CreateValueFromKey(QTypeDefinition key)
             {
                 RuntimeTypeHandle foundRuntimeTypeHandle = default(RuntimeTypeHandle);
+                PrintLine("TypeLoaderEnvironment CreateValueFromKey before if Key.Token " + key.Token.ToString());
 
                 if (key.IsNativeFormatMetadataBased)
                 {
+
+                    PrintLine("TypeLoaderEnvironment CreateValueFromKey Key.Token " + key.Token.ToString());
+
                     MetadataReader metadataReader = key.NativeFormatReader;
                     TypeDefinitionHandle typeDefHandle = key.NativeFormatHandle;
                     int hashCode = typeDefHandle.ComputeHashCode(metadataReader);
@@ -188,6 +203,29 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
+
+        private static unsafe void PrintString(string s)
+        {
+            int length = s.Length;
+            fixed (char* curChar = s)
+            {
+                for (int i = 0; i < length; i++)
+                {
+                    TwoByteStr curCharStr = new TwoByteStr();
+                    curCharStr.first = (byte)(*(curChar + i));
+                    printf((byte*)&curCharStr, null);
+                }
+            }
+        }
+        [DllImport("*")]
+        private static unsafe extern int printf(byte* str, byte* unused);
+
+        public static void PrintLine(string s)
+        {
+            PrintString(s);
+            PrintString("\n");
+        }
+
         /// <summary>
         /// Return the metadata handle for a TypeDef if the pay-for-policy enabled this type as browsable. This is used to obtain name and other information for types
         /// obtained via typeof() or Object.GetType(). This can include generic types (Foo<>) (not to be confused with generic instances of Foo<>).
@@ -200,8 +238,12 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="typeDefHandle">TypeDef handle for the type</param>
         public unsafe bool TryGetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle, out QTypeDefinition qTypeDefinition)
         {
+            PrintLine("TryGetMetadataForNamedType " + runtimeTypeHandle.Value.ToString());
+
             NamedTypeLookupResult result = _runtimeTypeHandleToMetadataHashtable.GetOrCreateValue(runtimeTypeHandle);
             qTypeDefinition = result.QualifiedTypeDefinition;
+            var found = qTypeDefinition.Reader != null;
+            PrintLine("TryGetMetadataForNamedType  found = " + found.ToString());
             return qTypeDefinition.Reader != null;
         }
 
@@ -253,11 +295,17 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="runtimeTypeHandle">Runtime type handle (EEType) for the given type</param>
         public unsafe bool TryGetNamedTypeForMetadata(QTypeDefinition qTypeDefinition, out RuntimeTypeHandle runtimeTypeHandle)
         {
+            PrintLine("TryGetNamedTypeForMetadata ");
             runtimeTypeHandle = default(RuntimeTypeHandle);
             NamedTypeLookupResult result = _metadataToRuntimeTypeHandleHashtable.GetOrCreateValue(qTypeDefinition);
 
             if (result.VersionNumber <= _namedTypeLookupLiveVersion)
+            {
+            PrintLine("TryGetNamedTypeForMetadata VersionNumber Ok");
                 runtimeTypeHandle = result.RuntimeTypeHandle;
+            }
+            var found = !runtimeTypeHandle.IsNull();
+            PrintLine("TryGetNamedTypeForMetadata VersionNumber found = " + found.ToString());
 
             return !runtimeTypeHandle.IsNull();
         }
