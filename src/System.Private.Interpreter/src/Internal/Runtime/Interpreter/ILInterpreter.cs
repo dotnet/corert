@@ -8,7 +8,14 @@ using System.Diagnostics;
 using Internal.IL;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CallInterceptor;
+using Internal.Runtime.CompilerServices;
 using Internal.TypeSystem;
+
+#if BIT64
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
 
 namespace Internal.Runtime.Interpreter
 {
@@ -2138,6 +2145,8 @@ namespace Internal.Runtime.Interpreter
             Debug.Assert(length >= 0);
 
             TypeDesc arrayType = ((TypeDesc)_methodIL.GetObject(token)).MakeArrayType();
+
+            // TODO: Add support for arbitrary  non-primitive types
             Array array = RuntimeAugments.NewArray(arrayType.GetRuntimeTypeHandle(), length);
 
             _stack.Push(StackItem.FromObjectRef(array));
@@ -2152,10 +2161,10 @@ namespace Internal.Runtime.Interpreter
         private void InterpretStoreElement(ILOpcode opcode)
         {
             StackItem valueItem = PopWithValidation();
+            StackItem indexItem = PopWithValidation();
+            Array array = (Array)PopWithValidation().AsObjectRef();
 
             int index = 0;
-            StackItem indexItem = PopWithValidation();
-
             switch (indexItem.Kind)
             {
                 case StackValueKind.Int32:
@@ -2168,36 +2177,38 @@ namespace Internal.Runtime.Interpreter
                     ThrowHelper.ThrowInvalidProgramException();
                     break;
             }
+
             Debug.Assert(index >= 0);
 
-            Array array = (Array)PopWithValidation().AsObjectRef();
+            ref byte start = ref RuntimeAugments.GetRawDataForArray(array);
+            ref byte position = ref Unsafe.Add(ref start, (IntPtr)((nuint)index * RuntimeAugments.GetElementSizeForArray(array)));
 
             switch (opcode)
             {
                 case ILOpcode.stelem_i:
-                    array.SetValue(valueItem.AsNativeInt(), index);
+                    Unsafe.Write(ref position, valueItem.AsNativeInt());
                     break;
                 case ILOpcode.stelem_i1:
-                    array.SetValue((sbyte)valueItem.AsInt32(), index);
+                    Unsafe.Write(ref position, (sbyte)valueItem.AsInt32());
                     break;
                 case ILOpcode.stelem_i2:
-                    array.SetValue((short)valueItem.AsInt32(), index);
+                    Unsafe.Write(ref position, (short)valueItem.AsInt32());
                     break;
                 case ILOpcode.stelem_i4:
-                    array.SetValue(valueItem.AsInt32(), index);
+                    Unsafe.Write(ref position, valueItem.AsInt32());
                     break;
                 case ILOpcode.stelem_i8:
-                    array.SetValue(valueItem.AsInt64(), index);
+                    Unsafe.Write(ref position, valueItem.AsInt64());
                     break;
                 case ILOpcode.stelem_r4:
-                    array.SetValue((float)valueItem.AsDouble(), index);
+                    Unsafe.Write(ref position, (float)valueItem.AsDouble());
                     break;
                 case ILOpcode.stelem_r8:
-                    array.SetValue(valueItem.AsDouble(), index);
+                    Unsafe.Write(ref position, valueItem.AsDouble());
                     break;
                 case ILOpcode.stelem_ref:
-                    // TODO: Add support for ByRef
-                    throw new NotImplementedException();
+                    Unsafe.Write(ref position, valueItem.AsObjectRef());
+                    break;
                 default:
                     Debug.Assert(false);
                     break;
@@ -2206,12 +2217,11 @@ namespace Internal.Runtime.Interpreter
 
         private void InterpretStoreElement(int token)
         {
-            TypeDesc elementType = (TypeDesc)_methodIL.GetObject(token);
-
             StackItem valueItem = PopWithValidation();
+            StackItem indexItem = PopWithValidation();
+            Array array = (Array)PopWithValidation().AsObjectRef();
 
             int index = 0;
-            StackItem indexItem = PopWithValidation();
 
             switch (indexItem.Kind)
             {
@@ -2225,48 +2235,51 @@ namespace Internal.Runtime.Interpreter
                     ThrowHelper.ThrowInvalidProgramException();
                     break;
             }
+
             Debug.Assert(index >= 0);
 
-            Array array = (Array)PopWithValidation().AsObjectRef();
+            TypeDesc elementType = (TypeDesc)_methodIL.GetObject(token);
+            ref byte start = ref RuntimeAugments.GetRawDataForArray(array);
+            ref byte position = ref Unsafe.Add(ref start, (IntPtr)((nuint)index * RuntimeAugments.GetElementSizeForArray(array)));
 
         again:
             switch (elementType.Category)
             {
                 case TypeFlags.Boolean:
-                    array.SetValue(valueItem.AsInt32() != 0, index);
+                    Unsafe.Write(ref position, valueItem.AsInt32() != 0);
                     break;
                 case TypeFlags.Char:
-                    array.SetValue((char)valueItem.AsInt32(), index);
+                    Unsafe.Write(ref position, (char)valueItem.AsInt32());
                     break;
                 case TypeFlags.SByte:
                 case TypeFlags.Byte:
-                    array.SetValue((sbyte)valueItem.AsInt32(), index);
+                    Unsafe.Write(ref position, (sbyte)valueItem.AsInt32());
                     break;
                 case TypeFlags.Int16:
                 case TypeFlags.UInt16:
-                    array.SetValue((short)valueItem.AsInt32(), index);
+                    Unsafe.Write(ref position, (short)valueItem.AsInt32());
                     break;
                 case TypeFlags.Int32:
                 case TypeFlags.UInt32:
-                    array.SetValue(valueItem.AsInt32(), index);
+                    Unsafe.Write(ref position, valueItem.AsInt32());
                     break;
                 case TypeFlags.Int64:
                 case TypeFlags.UInt64:
-                    array.SetValue(valueItem.AsInt64(), index);
+                    Unsafe.Write(ref position, valueItem.AsInt64());
                     break;
                 case TypeFlags.IntPtr:
                 case TypeFlags.UIntPtr:
-                    array.SetValue(valueItem.AsNativeInt(), index);
+                    Unsafe.Write(ref position, valueItem.AsNativeInt());
                     break;
                 case TypeFlags.Single:
-                    array.SetValue((float)valueItem.AsDouble(), index);
+                    Unsafe.Write(ref position, (float)valueItem.AsDouble());
                     break;
                 case TypeFlags.Double:
-                    array.SetValue(valueItem.AsDouble(), index);
+                    Unsafe.Write(ref position, valueItem.AsDouble());
                     break;
                 case TypeFlags.ValueType:
                 case TypeFlags.Nullable:
-                    array.SetValue(valueItem.AsValueType(), index);
+                    Unsafe.Write(ref position, valueItem.AsValueType());
                     break;
                 case TypeFlags.Enum:
                     elementType = elementType.UnderlyingType;
@@ -2275,7 +2288,7 @@ namespace Internal.Runtime.Interpreter
                 case TypeFlags.Interface:
                 case TypeFlags.Array:
                 case TypeFlags.SzArray:
-                    array.SetValue(valueItem.AsObjectRef(), index);
+                    Unsafe.Write(ref position, valueItem.AsObjectRef());
                     break;
                 default:
                     // TODO: Support more complex return types
@@ -2285,9 +2298,10 @@ namespace Internal.Runtime.Interpreter
 
         private void InterpretLoadElement(ILOpcode opcode)
         {
-            int index = 0;
             StackItem indexItem = PopWithValidation();
+            Array array = (Array)PopWithValidation().AsObjectRef();
 
+            int index = 0;
             switch (indexItem.Kind)
             {
                 case StackValueKind.Int32:
@@ -2300,75 +2314,47 @@ namespace Internal.Runtime.Interpreter
                     ThrowHelper.ThrowInvalidProgramException();
                     break;
             }
+
             Debug.Assert(index >= 0);
 
-            Array array = (Array)PopWithValidation().AsObjectRef();
+            ref byte start = ref RuntimeAugments.GetRawDataForArray(array);
+            ref byte position = ref Unsafe.Add(ref start, (IntPtr)((nuint)index * RuntimeAugments.GetElementSizeForArray(array)));
 
             switch (opcode)
             {
                 case ILOpcode.ldelem_i1:
-                    {
-                        sbyte value = (sbyte)array.GetValue(index);
-                        _stack.Push(StackItem.FromInt32(value));
-                    }
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<sbyte>(ref position)));
                     break;
                 case ILOpcode.ldelem_u1:
-                    {
-                        byte value = (byte)array.GetValue(index);
-                        _stack.Push(StackItem.FromInt32(value));
-                    }
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<byte>(ref position)));
                     break;
                 case ILOpcode.ldelem_i2:
-                    {
-                        short value = (short)array.GetValue(index);
-                        _stack.Push(StackItem.FromInt32(value));
-                    }
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<short>(ref position)));
                     break;
                 case ILOpcode.ldelem_u2:
-                    {
-                        ushort value = (ushort)array.GetValue(index);
-                        _stack.Push(StackItem.FromInt32(value));
-                    }
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<ushort>(ref position)));
                     break;
                 case ILOpcode.ldelem_i4:
-                    {
-                        int value = (int)array.GetValue(index);
-                        _stack.Push(StackItem.FromInt32(value));
-                    }
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<int>(ref position)));
                     break;
                 case ILOpcode.ldelem_u4:
-                    {
-                        uint value = (uint)array.GetValue(index);
-                        _stack.Push(StackItem.FromInt32((int)value));
-                    }
+                    _stack.Push(StackItem.FromInt32((int)Unsafe.Read<uint>(ref position)));
                     break;
                 case ILOpcode.ldelem_i8:
-                    {
-                        long value = (long)array.GetValue(index);
-                        _stack.Push(StackItem.FromInt64(value));
-                    }
+                    _stack.Push(StackItem.FromInt64(Unsafe.Read<long>(ref position)));
                     break;
                 case ILOpcode.ldelem_i:
-                    {
-                        IntPtr value = (IntPtr)array.GetValue(index);
-                        _stack.Push(StackItem.FromNativeInt(value));
-                    }
+                    _stack.Push(StackItem.FromNativeInt(Unsafe.Read<IntPtr>(ref position)));
                     break;
                 case ILOpcode.ldelem_r4:
-                    {
-                        float value = (float)array.GetValue(index);
-                        _stack.Push(StackItem.FromDouble(value));
-                    }
+                    _stack.Push(StackItem.FromDouble(Unsafe.Read<float>(ref position)));
                     break;
                 case ILOpcode.ldelem_r8:
-                    {
-                        double value = (double)array.GetValue(index);
-                        _stack.Push(StackItem.FromDouble(value));
-                    }
+                    _stack.Push(StackItem.FromDouble(Unsafe.Read<double>(ref position)));
                     break;
                 case ILOpcode.ldelem_ref:
-                    // TODO: Add support for ByRef
-                    throw new NotImplementedException();
+                    _stack.Push(StackItem.FromObjectRef(Unsafe.Read<object>(ref position)));
+                    break;
                 default:
                     Debug.Assert(false);
                     break;
@@ -2377,11 +2363,10 @@ namespace Internal.Runtime.Interpreter
 
         private void InterpretLoadElement(int token)
         {
-            TypeDesc elementType = (TypeDesc)_methodIL.GetObject(token);
+            StackItem indexItem = PopWithValidation();
+            Array array = (Array)PopWithValidation().AsObjectRef();
 
             int index = 0;
-            StackItem indexItem = PopWithValidation();
-
             switch (indexItem.Kind)
             {
                 case StackValueKind.Int32:
@@ -2394,78 +2379,51 @@ namespace Internal.Runtime.Interpreter
                     ThrowHelper.ThrowInvalidProgramException();
                     break;
             }
+
             Debug.Assert(index >= 0);
 
-            Array array = (Array)PopWithValidation().AsObjectRef();
+            TypeDesc elementType = (TypeDesc)_methodIL.GetObject(token);
+            ref byte start = ref RuntimeAugments.GetRawDataForArray(array);
+            ref byte position = ref Unsafe.Add(ref start, (IntPtr)((nuint)index * RuntimeAugments.GetElementSizeForArray(array)));
 
         again:
             switch (elementType.Category)
             {
                 case TypeFlags.Boolean:
-                    {
-                        bool value = (bool)array.GetValue(index);
-                        _stack.Push(StackItem.FromInt32(value ? 1 : 0));
-                    }
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<bool>(ref position) ? 1 : 0));
                     break;
                 case TypeFlags.Char:
-                    {
-                        char value = (char)array.GetValue(index);
-                        _stack.Push(StackItem.FromInt32(value));
-                    }
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<char>(ref position)));
                     break;
                 case TypeFlags.SByte:
                 case TypeFlags.Byte:
-                    {
-                        sbyte value = (sbyte)array.GetValue(index);
-                        _stack.Push(StackItem.FromInt32(value));
-                    }
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<sbyte>(ref position)));
                     break;
                 case TypeFlags.Int16:
                 case TypeFlags.UInt16:
-                    {
-                        short value = (short)array.GetValue(index);
-                        _stack.Push(StackItem.FromInt32(value));
-                    }
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<short>(ref position)));
                     break;
                 case TypeFlags.Int32:
                 case TypeFlags.UInt32:
-                    {
-                        int value = (int)array.GetValue(index);
-                        _stack.Push(StackItem.FromInt32(value));
-                    }
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<int>(ref position)));
                     break;
                 case TypeFlags.Int64:
                 case TypeFlags.UInt64:
-                    {
-                        long value = (long)array.GetValue(index);
-                        _stack.Push(StackItem.FromInt64(value));
-                    }
+                    _stack.Push(StackItem.FromInt64(Unsafe.Read<long>(ref position)));
                     break;
                 case TypeFlags.IntPtr:
                 case TypeFlags.UIntPtr:
-                    {
-                        IntPtr value = (IntPtr)array.GetValue(index);
-                        _stack.Push(StackItem.FromNativeInt(value));
-                    }
+                    _stack.Push(StackItem.FromNativeInt(Unsafe.Read<IntPtr>(ref position)));
                     break;
                 case TypeFlags.Single:
-                    {
-                        float value = (float)array.GetValue(index);
-                        _stack.Push(StackItem.FromDouble(value));
-                    }
+                    _stack.Push(StackItem.FromDouble(Unsafe.Read<float>(ref position)));
                     break;
                 case TypeFlags.Double:
-                    {
-                        double value = (double)array.GetValue(index);
-                        _stack.Push(StackItem.FromDouble(value));
-                    }
+                    _stack.Push(StackItem.FromDouble(Unsafe.Read<double>(ref position)));
                     break;
                 case TypeFlags.ValueType:
                 case TypeFlags.Nullable:
-                    {
-                        ValueType value = (ValueType)array.GetValue(index);
-                        _stack.Push(StackItem.FromValueType(value));
-                    }
+                    _stack.Push(StackItem.FromValueType(Unsafe.Read<ValueType>(ref position)));
                     break;
                 case TypeFlags.Enum:
                     elementType = elementType.UnderlyingType;
@@ -2474,7 +2432,7 @@ namespace Internal.Runtime.Interpreter
                 case TypeFlags.Interface:
                 case TypeFlags.Array:
                 case TypeFlags.SzArray:
-                    _stack.Push(StackItem.FromObjectRef(array.GetValue(index)));
+                    _stack.Push(StackItem.FromObjectRef(Unsafe.Read<object>(ref position)));
                     break;
                 default:
                     // TODO: Support more complex return types
