@@ -11,7 +11,7 @@ using System.Threading;
 namespace Internal.Runtime.Augments
 {
     using Interop = global::Interop; /// due to the existence of <see cref="Internal.Interop"/>
-    using OSThreadPriority = Interop.mincore.ThreadPriority;
+    using OSThreadPriority = Interop.Kernel32.ThreadPriority;
 
     public sealed partial class RuntimeThread
     {
@@ -91,12 +91,12 @@ namespace Internal.Runtime.Augments
 
         private static SafeWaitHandle GetOSHandleForCurrentThread()
         {
-            IntPtr currentProcHandle = Interop.mincore.GetCurrentProcess();
-            IntPtr currentThreadHandle = Interop.mincore.GetCurrentThread();
+            IntPtr currentProcHandle = Interop.Kernel32.GetCurrentProcess();
+            IntPtr currentThreadHandle = Interop.Kernel32.GetCurrentThread();
             SafeWaitHandle threadHandle;
 
-            if (Interop.mincore.DuplicateHandle(currentProcHandle, currentThreadHandle, currentProcHandle,
-                out threadHandle, 0, false, (uint)Interop.Constants.DuplicateSameAccess))
+            if (Interop.Kernel32.DuplicateHandle(currentProcHandle, currentThreadHandle, currentProcHandle,
+                out threadHandle, 0, false, Interop.Kernel32.DUPLICATE_SAME_ACCESS))
             {
                 return threadHandle;
             }
@@ -168,13 +168,13 @@ namespace Internal.Runtime.Augments
         private ThreadPriority GetPriorityLive()
         {
             Debug.Assert(!_osHandle.IsInvalid);
-            return MapFromOSPriority(Interop.mincore.GetThreadPriority(_osHandle));
+            return MapFromOSPriority(Interop.Kernel32.GetThreadPriority(_osHandle));
         }
 
         private bool SetPriorityLive(ThreadPriority priority)
         {
             Debug.Assert(!_osHandle.IsInvalid);
-            return Interop.mincore.SetThreadPriority(_osHandle, (int)MapToOSPriority(priority));
+            return Interop.Kernel32.SetThreadPriority(_osHandle, (int)MapToOSPriority(priority));
         }
 
         private ThreadState GetThreadState()
@@ -224,14 +224,14 @@ namespace Internal.Runtime.Augments
 
                 if (millisecondsTimeout == 0)
                 {
-                    result = (int)Interop.mincore.WaitForSingleObject(waitHandle.DangerousGetHandle(), 0);
+                    result = (int)Interop.Kernel32.WaitForSingleObject(waitHandle.DangerousGetHandle(), 0);
                 }
                 else
                 {
                     result = WaitHandle.WaitForSingleObject(waitHandle.DangerousGetHandle(), millisecondsTimeout, true);
                 }
 
-                return result == (int)Interop.Constants.WaitObject0;
+                return result == (int)Interop.Kernel32.WAIT_OBJECT_0;
             }
             finally
             {
@@ -261,9 +261,9 @@ namespace Internal.Runtime.Augments
             }
 
             uint threadId;
-            _osHandle = Interop.mincore.CreateThread(IntPtr.Zero, (IntPtr)stackSize,
-                AddrofIntrinsics.AddrOf<Interop.mincore.ThreadProc>(ThreadEntryPoint), (IntPtr)thisThreadHandle,
-                (uint)(Interop.Constants.CreateSuspended | Interop.Constants.StackSizeParamIsAReservation),
+            _osHandle = Interop.Kernel32.CreateThread(IntPtr.Zero, (IntPtr)stackSize,
+                AddrofIntrinsics.AddrOf<Interop.Kernel32.ThreadProc>(ThreadEntryPoint), (IntPtr)thisThreadHandle,
+                Interop.Kernel32.CREATE_SUSPENDED | Interop.Kernel32.STACK_SIZE_PARAM_IS_A_RESERVATION,
                 out threadId);
 
             if (_osHandle.IsInvalid)
@@ -274,7 +274,7 @@ namespace Internal.Runtime.Augments
             // CoreCLR ignores OS errors while setting the priority, so do we
             SetPriorityLive(_priority);
 
-            Interop.mincore.ResumeThread(_osHandle);
+            Interop.Kernel32.ResumeThread(_osHandle);
             return true;
         }
 
@@ -388,13 +388,13 @@ namespace Internal.Runtime.Augments
 
         internal static void UninterruptibleSleep0()
         {
-            Interop.mincore.Sleep(0);
+            Interop.Kernel32.Sleep(0);
         }
 
         private static void SleepInternal(int millisecondsTimeout)
         {
             Debug.Assert(millisecondsTimeout >= -1);
-            Interop.mincore.Sleep((uint)millisecondsTimeout);
+            Interop.Kernel32.Sleep((uint)millisecondsTimeout);
         }
 
         //

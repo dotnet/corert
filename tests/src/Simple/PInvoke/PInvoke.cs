@@ -47,6 +47,12 @@ namespace PInvokeTests
         [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
         private static extern int VerifyAnsiStringOut(out string str);
 
+        [DllImport("*", EntryPoint = "VerifyAnsiString", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+        private static extern int VerifyUTF8String([MarshalAs(UnmanagedType.LPUTF8Str)] string str);
+
+        [DllImport("*", EntryPoint = "VerifyAnsiStringOut", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+        private static extern int VerifyUTF8StringOut([Out, MarshalAs(UnmanagedType.LPUTF8Str)] out string str);
+
         [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
         private static extern int VerifyAnsiStringRef(ref string str);
 
@@ -386,7 +392,10 @@ namespace PInvokeTests
 
             string ss = null;
             ThrowIfNotEquals(true, IsNULL(ss), "Ansi String null check failed");
-        
+
+            ThrowIfNotEquals(1, VerifyUTF8String("Hello World"), "UTF8 String marshalling failed.");
+            ThrowIfNotEquals(1, VerifyUTF8StringOut(out s), "Out UTF8 String marshalling failed");
+            ThrowIfNotEquals("Hello World", s, "Out UTF8 String marshalling failed");
         }
 
         private static void TestStringBuilder()

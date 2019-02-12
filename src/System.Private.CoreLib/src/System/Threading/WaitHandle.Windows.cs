@@ -64,12 +64,12 @@ namespace System.Threading
             }
             else
             {
-                result = (int)Interop.mincore.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll, (uint)millisecondsTimeout, false);
+                result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll, (uint)millisecondsTimeout, false);
             }
 
             currentThread.ClearWaitSleepJoinState();
 
-            if (result == WaitHandle.WaitFailed)
+            if (result == Interop.Kernel32.WAIT_FAILED)
             {
                 int errorCode = Interop.mincore.GetLastError();
                 if (waitAll && errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
@@ -103,7 +103,7 @@ namespace System.Threading
 
             int ret = WaitForSingleObject(handle, millisecondsTimeout, interruptible);
 
-            if (ret == WaitAbandoned)
+            if (ret == Interop.Kernel32.WAIT_ABANDONED)
             {
                 ThrowAbandonedMutexException();
             }
@@ -180,9 +180,9 @@ namespace System.Threading
 
             int ret = WaitMultiple(currentThread, safeWaitHandles, numWaitHandles, millisecondsTimeout, false /* waitany*/ );
 
-            if ((WaitAbandoned <= ret) && (WaitAbandoned + numWaitHandles > ret))
+            if ((Interop.Kernel32.WAIT_ABANDONED <= ret) && (Interop.Kernel32.WAIT_ABANDONED + numWaitHandles > ret))
             {
-                int mutexIndex = ret - WaitAbandoned;
+                int mutexIndex = ret - Interop.Kernel32.WAIT_ABANDONED;
                 if (0 <= mutexIndex && mutexIndex < waitHandles.Length)
                 {
                     ThrowAbandonedMutexException(mutexIndex, waitHandles[mutexIndex]);
@@ -209,7 +209,7 @@ namespace System.Threading
 
             int ret = WaitMultiple(currentThread, safeWaitHandles, waitHandles.Length, millisecondsTimeout, true /* waitall*/ );
 
-            if ((WaitAbandoned <= ret) && (WaitAbandoned + waitHandles.Length > ret))
+            if ((Interop.Kernel32.WAIT_ABANDONED <= ret) && (Interop.Kernel32.WAIT_ABANDONED + waitHandles.Length > ret))
             {
                 //In the case of WaitAll the OS will only provide the
                 //    information that mutex was abandoned.
@@ -224,14 +224,14 @@ namespace System.Threading
         {
             Debug.Assert(millisecondsTimeout >= -1);
 
-            int ret = (int)Interop.mincore.SignalObjectAndWait(handleToSignal, handleToWaitOn, (uint)millisecondsTimeout, false);
+            int ret = (int)Interop.Kernel32.SignalObjectAndWait(handleToSignal, handleToWaitOn, (uint)millisecondsTimeout, false);
 
-            if (ret == WaitAbandoned)
+            if (ret == Interop.Kernel32.WAIT_ABANDONED)
             {
                 ThrowAbandonedMutexException();
             }
 
-            if (ret == WaitFailed)
+            if (ret == Interop.Kernel32.WAIT_FAILED)
             {
                 ThrowWaitFailedException(Interop.mincore.GetLastError());
             }
