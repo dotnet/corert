@@ -21,12 +21,10 @@ namespace System.Threading
 {
     public abstract partial class WaitHandle : MarshalByRefObject, IDisposable
     {
-        internal const int WaitObject0 = (int)Interop.Constants.WaitObject0;
-        public const int WaitTimeout = (int)Interop.Constants.WaitTimeout;
-        internal const int WaitAbandoned = (int)Interop.Constants.WaitAbandoned0;
-        internal const int WaitFailed = unchecked((int)Interop.Constants.WaitFailed);
+        public const int WaitTimeout = 0x102;
+        protected static readonly IntPtr InvalidHandle = new IntPtr(-1);
+
         internal const int MaxWaitHandles = 64;
-        protected static readonly IntPtr InvalidHandle = Interop.InvalidHandleValue;
 
         internal SafeWaitHandle _waitHandle;
 

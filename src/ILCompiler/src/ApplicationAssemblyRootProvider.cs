@@ -23,14 +23,14 @@ namespace ILCompiler
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
-            foreach (var inputFile in _context.ReferenceFilePaths.Keys)
+            foreach (var inputFile in _context.ReferenceFilePaths)
             {
-                ProcessAssembly(inputFile, rootProvider);
+                ProcessAssembly(inputFile.Value, rootProvider);
             }
 
-            foreach (var inputFile in _context.InputFilePaths.Keys)
+            foreach (var inputFile in _context.InputFilePaths)
             {
-                ProcessAssembly(inputFile, rootProvider);
+                ProcessAssembly(inputFile.Value, rootProvider);
             }
         }
 
@@ -39,7 +39,9 @@ namespace ILCompiler
             EcmaModule assembly;
             try
             {
-                assembly = (EcmaModule)_context.ResolveAssembly(new AssemblyName(inputFile), false);
+                // We use GetModuleFromPath because it's more resilient to slightly wrong inputs
+                // (e.g. name of the file not matching the assembly name)
+                assembly = _context.GetModuleFromPath(inputFile);
             }
             catch (TypeSystemException.BadImageFormatException)
             {
@@ -56,7 +58,15 @@ namespace ILCompiler
 
             foreach (TypeDesc type in assembly.GetAllTypes())
             {
-                RdXmlRootProvider.RootType(rootProvider, type, "Application assembly root");
+                try
+                {
+                    RdXmlRootProvider.RootType(rootProvider, type, "Application assembly root");
+                }
+                catch (TypeSystemException)
+                {
+                    // The type might end up being not loadable (due to e.g. missing references).
+                    // If so, we will quietly ignore it: rooting all application types is best effort.
+                }
             }
         }
     }

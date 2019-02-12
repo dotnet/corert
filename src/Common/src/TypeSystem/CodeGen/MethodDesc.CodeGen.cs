@@ -127,6 +127,18 @@ namespace Internal.TypeSystem
                 return false;
             }
         }
+
+        /// <summary>
+        /// Gets a value specifying whether this method has special semantics.
+        /// The name indicates the semantics.
+        /// </summary>
+        public virtual bool IsSpecialName
+        {
+            get
+            {
+                return false;
+            }
+        }
     }
 
     // Additional members of InstantiatedMethod related to code generation.
@@ -203,6 +215,14 @@ namespace Internal.TypeSystem
                 return _methodDef.IsNativeCallable;
             }
         }
+
+        public override bool IsSpecialName
+        {
+            get
+            {
+                return _methodDef.IsSpecialName;
+            }
+        }
     }
 
     // Additional members of MethodForInstantiatedType related to code generation.
@@ -277,6 +297,14 @@ namespace Internal.TypeSystem
             get
             {
                 return _typicalMethodDef.IsNativeCallable;
+            }
+        }
+
+        public override bool IsSpecialName
+        {
+            get
+            {
+                return _typicalMethodDef.IsSpecialName;
             }
         }
     }
