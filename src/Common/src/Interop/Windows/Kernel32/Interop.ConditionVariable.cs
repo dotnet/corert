@@ -14,7 +14,7 @@ internal partial class Interop
         {
             private IntPtr Ptr;
         }
-        
+
         [DllImport(Libraries.Kernel32)]
         internal static extern void InitializeConditionVariable(out CONDITION_VARIABLE ConditionVariable);
 
