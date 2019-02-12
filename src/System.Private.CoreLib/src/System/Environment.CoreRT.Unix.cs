@@ -15,14 +15,13 @@ namespace System
     {
         internal static int CurrentNativeThreadId => ManagedThreadId.Current;
 
-        private static object _environmentLock = new object();
-        private static IDictionary<string, string> _environment = GetSystemEnvironmentVariables();
+        private static readonly IDictionary<string, string> _environment = GetSystemEnvironmentVariables();
         
         private static string GetEnvironmentVariableCore(string variable)
         {
             Debug.Assert(variable != null);
 
-            lock (_environmentLock)
+            lock (_environment)
             {
                 variable = TrimStringOnFirstZero(variable);
                 _environment.TryGetValue(variable, out string value);
@@ -34,7 +33,7 @@ namespace System
         {
             Debug.Assert(variable != null);
 
-            lock (_environmentLock)
+            lock (_environment)
             {
                 variable = TrimStringOnFirstZero(variable);
                 value = value == null ? null : TrimStringOnFirstZero(value);
@@ -53,7 +52,7 @@ namespace System
         {
             var results = new Hashtable();
 
-            lock (_environmentLock)
+            lock (_environment)
             {
                 foreach (var keyValuePair in _environment)
                 {
