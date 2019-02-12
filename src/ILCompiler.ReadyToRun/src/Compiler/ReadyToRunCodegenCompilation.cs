@@ -159,26 +159,12 @@ namespace ILCompiler
         {
             switch (lookupKind)
             {
-                case ReadyToRunHelperId.TypeHandle:
-                case ReadyToRunHelperId.NecessaryTypeHandle:
-                case ReadyToRunHelperId.DefaultConstructor:
-                case ReadyToRunHelperId.TypeHandleForCasting:
-                    return ((TypeDesc)targetOfLookup).IsRuntimeDeterminedSubtype;
-
                 case ReadyToRunHelperId.MethodDictionary:
                 case ReadyToRunHelperId.MethodHandle:
                     return ((MethodWithToken)targetOfLookup).Method.IsRuntimeDeterminedExactMethod;
-
-                case ReadyToRunHelperId.MethodEntry:
-                case ReadyToRunHelperId.VirtualDispatchCell:
-                    return ((MethodDesc)targetOfLookup).IsRuntimeDeterminedExactMethod;
-
-                case ReadyToRunHelperId.FieldHandle:
-                    return ((FieldDesc)targetOfLookup).OwningType.IsRuntimeDeterminedSubtype;
-
-                default:
-                    throw new NotImplementedException();
             }
+
+            return base.NeedsRuntimeLookup(lookupKind, targetOfLookup);
         }
     }
 }
