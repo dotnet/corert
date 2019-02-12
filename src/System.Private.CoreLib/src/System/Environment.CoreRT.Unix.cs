@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -13,22 +14,69 @@ namespace System
     public static partial class Environment
     {
         internal static int CurrentNativeThreadId => ManagedThreadId.Current;
+
+        private static object _environmentLock = new object();
+        private static IDictionary<string, string> _environment = GetSystemEnvironmentVariables();
         
         private static string GetEnvironmentVariableCore(string variable)
         {
             Debug.Assert(variable != null);
-            return Marshal.PtrToStringAnsi(Interop.Sys.GetEnv(variable));
+
+            lock (_environmentLock)
+            {
+                variable = TrimStringOnFirstZero(variable);
+                _environment.TryGetValue(variable, out string value);
+                return value;
+            }
         }
 
         private static void SetEnvironmentVariableCore(string variable, string value)
         {
             Debug.Assert(variable != null);
-            throw new NotImplementedException();
+
+            lock (_environmentLock)
+            {
+                variable = TrimStringOnFirstZero(variable);
+                value = value == null ? null : TrimStringOnFirstZero(value);
+                if (string.IsNullOrEmpty(value))
+                {
+                    _environment.Remove(variable);
+                }
+                else
+                {
+                    _environment[variable] = value;
+                }
+            }
         }
 
         public static IDictionary GetEnvironmentVariables()
         {
             var results = new Hashtable();
+
+            lock (_environmentLock)
+            {
+                foreach (var keyValuePair in _environment)
+                {
+                    results.Add(keyValuePair.Key, keyValuePair.Value);
+                }
+            }
+
+            return results;
+        }
+
+        private static string TrimStringOnFirstZero(string value)
+        {
+            int index = value.IndexOf('\0');
+            if (index >= 0)
+            {
+                return value.Substring(0, index);
+            }
+            return value;
+        }
+
+        private static IDictionary<string, string> GetSystemEnvironmentVariables()
+        {
+            var results = new Dictionary<string, string>();
 
             IntPtr block = Interop.Sys.GetEnviron();
             if (block != IntPtr.Zero)
