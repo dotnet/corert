@@ -164,9 +164,14 @@ namespace Internal.Runtime.Augments
             return Array.NewMultiDimArray(typeHandleForArrayType.ToEETypePtr(), pLengths, lengths.Length);
         }
 
+        public static void StelemRef(Array array, int index, object obj)
+        {
+            TypeCast.StelemRef(array, index, obj);
+        }
+
         public static ref byte GetSzArrayElementAddress(Array array, int index)
         {
-            ref byte start = ref array.GetRawArrayData();
+            ref byte start = ref array.GetRawSzArrayData();
             return ref Unsafe.Add(ref start, (IntPtr)((nuint)index * array.ElementSize));
         }
 

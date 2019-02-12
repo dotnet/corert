@@ -2202,7 +2202,7 @@ namespace Internal.Runtime.Interpreter
                     Unsafe.Write(ref address, valueItem.AsDouble());
                     break;
                 case ILOpcode.stelem_ref:
-                    Unsafe.Write(ref address, valueItem.AsObjectRef());
+                    RuntimeAugments.StelemRef(array, index, valueItem.AsObjectRef());
                     break;
                 default:
                     Debug.Assert(false);
@@ -2283,7 +2283,7 @@ namespace Internal.Runtime.Interpreter
                 case TypeFlags.Interface:
                 case TypeFlags.Array:
                 case TypeFlags.SzArray:
-                    Unsafe.Write(ref address, valueItem.AsObjectRef());
+                    RuntimeAugments.StelemRef(array, index, valueItem.AsObjectRef());
                     break;
                 default:
                     // TODO: Support more complex return types
