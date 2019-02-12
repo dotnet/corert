@@ -11,11 +11,6 @@ using Internal.Runtime.CallInterceptor;
 using Internal.Runtime.CompilerServices;
 using Internal.TypeSystem;
 
-#if BIT64
-using nuint = System.UInt64;
-#else
-using nuint = System.UInt32;
-#endif
 
 namespace Internal.Runtime.Interpreter
 {
@@ -2181,34 +2176,33 @@ namespace Internal.Runtime.Interpreter
             if (index < 0 || index >= array.Length)
                 throw new IndexOutOfRangeException();
 
-            ref byte start = ref RuntimeAugments.GetRawDataForArray(array);
-            ref byte position = ref Unsafe.Add(ref start, (IntPtr)((nuint)index * RuntimeAugments.GetElementSizeForArray(array)));
+            ref byte address = ref RuntimeAugments.GetSzArrayElementAddress(array, index);
 
             switch (opcode)
             {
                 case ILOpcode.stelem_i:
-                    Unsafe.Write(ref position, valueItem.AsNativeInt());
+                    Unsafe.Write(ref address, valueItem.AsNativeInt());
                     break;
                 case ILOpcode.stelem_i1:
-                    Unsafe.Write(ref position, (sbyte)valueItem.AsInt32());
+                    Unsafe.Write(ref address, (sbyte)valueItem.AsInt32());
                     break;
                 case ILOpcode.stelem_i2:
-                    Unsafe.Write(ref position, (short)valueItem.AsInt32());
+                    Unsafe.Write(ref address, (short)valueItem.AsInt32());
                     break;
                 case ILOpcode.stelem_i4:
-                    Unsafe.Write(ref position, valueItem.AsInt32());
+                    Unsafe.Write(ref address, valueItem.AsInt32());
                     break;
                 case ILOpcode.stelem_i8:
-                    Unsafe.Write(ref position, valueItem.AsInt64());
+                    Unsafe.Write(ref address, valueItem.AsInt64());
                     break;
                 case ILOpcode.stelem_r4:
-                    Unsafe.Write(ref position, (float)valueItem.AsDouble());
+                    Unsafe.Write(ref address, (float)valueItem.AsDouble());
                     break;
                 case ILOpcode.stelem_r8:
-                    Unsafe.Write(ref position, valueItem.AsDouble());
+                    Unsafe.Write(ref address, valueItem.AsDouble());
                     break;
                 case ILOpcode.stelem_ref:
-                    Unsafe.Write(ref position, valueItem.AsObjectRef());
+                    Unsafe.Write(ref address, valueItem.AsObjectRef());
                     break;
                 default:
                     Debug.Assert(false);
@@ -2241,47 +2235,46 @@ namespace Internal.Runtime.Interpreter
                 throw new IndexOutOfRangeException();
 
             TypeDesc elementType = (TypeDesc)_methodIL.GetObject(token);
-            ref byte start = ref RuntimeAugments.GetRawDataForArray(array);
-            ref byte position = ref Unsafe.Add(ref start, (IntPtr)((nuint)index * RuntimeAugments.GetElementSizeForArray(array)));
+            ref byte address = ref RuntimeAugments.GetSzArrayElementAddress(array, index);
 
         again:
             switch (elementType.Category)
             {
                 case TypeFlags.Boolean:
-                    Unsafe.Write(ref position, valueItem.AsInt32() != 0);
+                    Unsafe.Write(ref address, valueItem.AsInt32() != 0);
                     break;
                 case TypeFlags.Char:
-                    Unsafe.Write(ref position, (char)valueItem.AsInt32());
+                    Unsafe.Write(ref address, (char)valueItem.AsInt32());
                     break;
                 case TypeFlags.SByte:
                 case TypeFlags.Byte:
-                    Unsafe.Write(ref position, (sbyte)valueItem.AsInt32());
+                    Unsafe.Write(ref address, (sbyte)valueItem.AsInt32());
                     break;
                 case TypeFlags.Int16:
                 case TypeFlags.UInt16:
-                    Unsafe.Write(ref position, (short)valueItem.AsInt32());
+                    Unsafe.Write(ref address, (short)valueItem.AsInt32());
                     break;
                 case TypeFlags.Int32:
                 case TypeFlags.UInt32:
-                    Unsafe.Write(ref position, valueItem.AsInt32());
+                    Unsafe.Write(ref address, valueItem.AsInt32());
                     break;
                 case TypeFlags.Int64:
                 case TypeFlags.UInt64:
-                    Unsafe.Write(ref position, valueItem.AsInt64());
+                    Unsafe.Write(ref address, valueItem.AsInt64());
                     break;
                 case TypeFlags.IntPtr:
                 case TypeFlags.UIntPtr:
-                    Unsafe.Write(ref position, valueItem.AsNativeInt());
+                    Unsafe.Write(ref address, valueItem.AsNativeInt());
                     break;
                 case TypeFlags.Single:
-                    Unsafe.Write(ref position, (float)valueItem.AsDouble());
+                    Unsafe.Write(ref address, (float)valueItem.AsDouble());
                     break;
                 case TypeFlags.Double:
-                    Unsafe.Write(ref position, valueItem.AsDouble());
+                    Unsafe.Write(ref address, valueItem.AsDouble());
                     break;
                 case TypeFlags.ValueType:
                 case TypeFlags.Nullable:
-                    Unsafe.Write(ref position, valueItem.AsValueType());
+                    Unsafe.Write(ref address, valueItem.AsValueType());
                     break;
                 case TypeFlags.Enum:
                     elementType = elementType.UnderlyingType;
@@ -2290,7 +2283,7 @@ namespace Internal.Runtime.Interpreter
                 case TypeFlags.Interface:
                 case TypeFlags.Array:
                 case TypeFlags.SzArray:
-                    Unsafe.Write(ref position, valueItem.AsObjectRef());
+                    Unsafe.Write(ref address, valueItem.AsObjectRef());
                     break;
                 default:
                     // TODO: Support more complex return types
@@ -2320,43 +2313,42 @@ namespace Internal.Runtime.Interpreter
             if (index < 0 || index >= array.Length)
                 throw new IndexOutOfRangeException();
 
-            ref byte start = ref RuntimeAugments.GetRawDataForArray(array);
-            ref byte position = ref Unsafe.Add(ref start, (IntPtr)((nuint)index * RuntimeAugments.GetElementSizeForArray(array)));
+            ref byte address = ref RuntimeAugments.GetSzArrayElementAddress(array, index);
 
             switch (opcode)
             {
                 case ILOpcode.ldelem_i1:
-                    _stack.Push(StackItem.FromInt32(Unsafe.Read<sbyte>(ref position)));
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<sbyte>(ref address)));
                     break;
                 case ILOpcode.ldelem_u1:
-                    _stack.Push(StackItem.FromInt32(Unsafe.Read<byte>(ref position)));
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<byte>(ref address)));
                     break;
                 case ILOpcode.ldelem_i2:
-                    _stack.Push(StackItem.FromInt32(Unsafe.Read<short>(ref position)));
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<short>(ref address)));
                     break;
                 case ILOpcode.ldelem_u2:
-                    _stack.Push(StackItem.FromInt32(Unsafe.Read<ushort>(ref position)));
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<ushort>(ref address)));
                     break;
                 case ILOpcode.ldelem_i4:
-                    _stack.Push(StackItem.FromInt32(Unsafe.Read<int>(ref position)));
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<int>(ref address)));
                     break;
                 case ILOpcode.ldelem_u4:
-                    _stack.Push(StackItem.FromInt32((int)Unsafe.Read<uint>(ref position)));
+                    _stack.Push(StackItem.FromInt32((int)Unsafe.Read<uint>(ref address)));
                     break;
                 case ILOpcode.ldelem_i8:
-                    _stack.Push(StackItem.FromInt64(Unsafe.Read<long>(ref position)));
+                    _stack.Push(StackItem.FromInt64(Unsafe.Read<long>(ref address)));
                     break;
                 case ILOpcode.ldelem_i:
-                    _stack.Push(StackItem.FromNativeInt(Unsafe.Read<IntPtr>(ref position)));
+                    _stack.Push(StackItem.FromNativeInt(Unsafe.Read<IntPtr>(ref address)));
                     break;
                 case ILOpcode.ldelem_r4:
-                    _stack.Push(StackItem.FromDouble(Unsafe.Read<float>(ref position)));
+                    _stack.Push(StackItem.FromDouble(Unsafe.Read<float>(ref address)));
                     break;
                 case ILOpcode.ldelem_r8:
-                    _stack.Push(StackItem.FromDouble(Unsafe.Read<double>(ref position)));
+                    _stack.Push(StackItem.FromDouble(Unsafe.Read<double>(ref address)));
                     break;
                 case ILOpcode.ldelem_ref:
-                    _stack.Push(StackItem.FromObjectRef(Unsafe.Read<object>(ref position)));
+                    _stack.Push(StackItem.FromObjectRef(Unsafe.Read<object>(ref address)));
                     break;
                 default:
                     Debug.Assert(false);
@@ -2387,47 +2379,46 @@ namespace Internal.Runtime.Interpreter
                 throw new IndexOutOfRangeException();
 
             TypeDesc elementType = (TypeDesc)_methodIL.GetObject(token);
-            ref byte start = ref RuntimeAugments.GetRawDataForArray(array);
-            ref byte position = ref Unsafe.Add(ref start, (IntPtr)((nuint)index * RuntimeAugments.GetElementSizeForArray(array)));
+            ref byte address = ref RuntimeAugments.GetSzArrayElementAddress(array, index);
 
         again:
             switch (elementType.Category)
             {
                 case TypeFlags.Boolean:
-                    _stack.Push(StackItem.FromInt32(Unsafe.Read<bool>(ref position) ? 1 : 0));
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<bool>(ref address) ? 1 : 0));
                     break;
                 case TypeFlags.Char:
-                    _stack.Push(StackItem.FromInt32(Unsafe.Read<char>(ref position)));
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<char>(ref address)));
                     break;
                 case TypeFlags.SByte:
                 case TypeFlags.Byte:
-                    _stack.Push(StackItem.FromInt32(Unsafe.Read<sbyte>(ref position)));
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<sbyte>(ref address)));
                     break;
                 case TypeFlags.Int16:
                 case TypeFlags.UInt16:
-                    _stack.Push(StackItem.FromInt32(Unsafe.Read<short>(ref position)));
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<short>(ref address)));
                     break;
                 case TypeFlags.Int32:
                 case TypeFlags.UInt32:
-                    _stack.Push(StackItem.FromInt32(Unsafe.Read<int>(ref position)));
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<int>(ref address)));
                     break;
                 case TypeFlags.Int64:
                 case TypeFlags.UInt64:
-                    _stack.Push(StackItem.FromInt64(Unsafe.Read<long>(ref position)));
+                    _stack.Push(StackItem.FromInt64(Unsafe.Read<long>(ref address)));
                     break;
                 case TypeFlags.IntPtr:
                 case TypeFlags.UIntPtr:
-                    _stack.Push(StackItem.FromNativeInt(Unsafe.Read<IntPtr>(ref position)));
+                    _stack.Push(StackItem.FromNativeInt(Unsafe.Read<IntPtr>(ref address)));
                     break;
                 case TypeFlags.Single:
-                    _stack.Push(StackItem.FromDouble(Unsafe.Read<float>(ref position)));
+                    _stack.Push(StackItem.FromDouble(Unsafe.Read<float>(ref address)));
                     break;
                 case TypeFlags.Double:
-                    _stack.Push(StackItem.FromDouble(Unsafe.Read<double>(ref position)));
+                    _stack.Push(StackItem.FromDouble(Unsafe.Read<double>(ref address)));
                     break;
                 case TypeFlags.ValueType:
                 case TypeFlags.Nullable:
-                    _stack.Push(StackItem.FromValueType(Unsafe.Read<ValueType>(ref position)));
+                    _stack.Push(StackItem.FromValueType(Unsafe.Read<ValueType>(ref address)));
                     break;
                 case TypeFlags.Enum:
                     elementType = elementType.UnderlyingType;
@@ -2436,7 +2427,7 @@ namespace Internal.Runtime.Interpreter
                 case TypeFlags.Interface:
                 case TypeFlags.Array:
                 case TypeFlags.SzArray:
-                    _stack.Push(StackItem.FromObjectRef(Unsafe.Read<object>(ref position)));
+                    _stack.Push(StackItem.FromObjectRef(Unsafe.Read<object>(ref address)));
                     break;
                 default:
                     // TODO: Support more complex return types

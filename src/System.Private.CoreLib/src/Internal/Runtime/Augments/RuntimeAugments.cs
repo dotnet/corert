@@ -164,15 +164,10 @@ namespace Internal.Runtime.Augments
             return Array.NewMultiDimArray(typeHandleForArrayType.ToEETypePtr(), pLengths, lengths.Length);
         }
 
-        public static ref byte GetRawDataForArray(Array array)
+        public static ref byte GetSzArrayElementAddress(Array array, int index)
         {
-            return ref array.GetRawArrayData();
-        }
-
-        [CLSCompliant(false)]
-        public static nuint GetElementSizeForArray(Array array)
-        {
-            return array.ElementSize;
+            ref byte start = ref array.GetRawArrayData();
+            return ref Unsafe.Add(ref start, (IntPtr)((nuint)index * array.ElementSize));
         }
 
         public static IntPtr GetAllocateObjectHelperForType(RuntimeTypeHandle type)
