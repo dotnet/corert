@@ -2168,7 +2168,7 @@ namespace Internal.Runtime.Interpreter
                 case StackValueKind.NativeInt:
                     {
                         long value = (long)indexItem.AsNativeInt();
-                        if (value >= int.MinValue && value <= int.MaxValue)
+                        if ((int)value != value)
                             throw new IndexOutOfRangeException();
                         index = (int)value;
                     }
@@ -2228,7 +2228,7 @@ namespace Internal.Runtime.Interpreter
                 case StackValueKind.NativeInt:
                     {
                         long value = (long)indexItem.AsNativeInt();
-                        if (value >= int.MinValue && value <= int.MaxValue)
+                        if ((int)value != value)
                             throw new IndexOutOfRangeException();
                         index = (int)value;
                     }
@@ -2309,7 +2309,7 @@ namespace Internal.Runtime.Interpreter
                 case StackValueKind.NativeInt:
                     {
                         long value = (long)indexItem.AsNativeInt();
-                        if (value >= int.MinValue && value <= int.MaxValue)
+                        if ((int)value != value)
                             throw new IndexOutOfRangeException();
                         index = (int)value;
                     }
@@ -2376,7 +2376,7 @@ namespace Internal.Runtime.Interpreter
                 case StackValueKind.NativeInt:
                     {
                         long value = (long)indexItem.AsNativeInt();
-                        if (value >= int.MinValue && value <= int.MaxValue)
+                        if ((int)value != value)
                             throw new IndexOutOfRangeException();
                         index = (int)value;
                     }
