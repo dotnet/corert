@@ -15,16 +15,17 @@ namespace System
     {
         internal static int CurrentNativeThreadId => ManagedThreadId.Current;
 
-        private static readonly IDictionary<string, string> _environment = GetSystemEnvironmentVariables();
-        
+        private static readonly Dictionary<string, string> _environment;
+
         private static string GetEnvironmentVariableCore(string variable)
         {
             Debug.Assert(variable != null);
 
-            lock (_environment)
+            var environment = LazyInitializer.EnsureInitialized(ref _environment, () => GetSystemEnvironmentVariables());
+            lock (environment)
             {
                 variable = TrimStringOnFirstZero(variable);
-                _environment.TryGetValue(variable, out string value);
+                environment.TryGetValue(variable, out string value);
                 return value;
             }
         }
@@ -33,17 +34,18 @@ namespace System
         {
             Debug.Assert(variable != null);
 
-            lock (_environment)
+            var environment = LazyInitializer.EnsureInitialized(ref _environment, () => GetSystemEnvironmentVariables());
+            lock (environment)
             {
                 variable = TrimStringOnFirstZero(variable);
                 value = value == null ? null : TrimStringOnFirstZero(value);
                 if (string.IsNullOrEmpty(value))
                 {
-                    _environment.Remove(variable);
+                    environment.Remove(variable);
                 }
                 else
                 {
-                    _environment[variable] = value;
+                    environment[variable] = value;
                 }
             }
         }
@@ -51,10 +53,11 @@ namespace System
         public static IDictionary GetEnvironmentVariables()
         {
             var results = new Hashtable();
+            var environment = LazyInitializer.EnsureInitialized(ref _environment, () => GetSystemEnvironmentVariables());
 
-            lock (_environment)
+            lock (environment)
             {
-                foreach (var keyValuePair in _environment)
+                foreach (var keyValuePair in environment)
                 {
                     results.Add(keyValuePair.Key, keyValuePair.Value);
                 }
@@ -73,7 +76,7 @@ namespace System
             return value;
         }
 
-        private static IDictionary<string, string> GetSystemEnvironmentVariables()
+        private static Dictionary<string, string> GetSystemEnvironmentVariables()
         {
             var results = new Dictionary<string, string>();
 
