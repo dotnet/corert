@@ -62,5 +62,14 @@ int main(int argc, char* argv[])
     // managed class loaders were initialized successfully
     ensureManagedClassLoaders();
 
+    // CoreRT is not designed to be unloadable, so this won't actually unload the library properly. Verify that attempt
+    // to unload the library does not to crash at least.
+#ifdef _WIN32
+    FreeLibrary(handle);
+#else
+    // TODO: How to pin the library in memory on Unix?
+    // dlclose(handle);
+#endif
+
     return 100;
 }
