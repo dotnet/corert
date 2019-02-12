@@ -15,21 +15,21 @@ namespace System
     {
         internal static int CurrentNativeThreadId => ManagedThreadId.Current;
 
-        private static Dictionary<string, string> _environment;
+        private static Dictionary<string, string> s_environment;
 
         private static string GetEnvironmentVariableCore(string variable)
         {
             Debug.Assert(variable != null);
 
-            if (_environment == null)
+            if (s_environment == null)
             {
                 return Marshal.PtrToStringAnsi(Interop.Sys.GetEnv(variable));
             }
 
-            lock (_environment)
+            lock (s_environment)
             {
                 variable = TrimStringOnFirstZero(variable);
-                _environment.TryGetValue(variable, out string value);
+                s_environment.TryGetValue(variable, out string value);
                 return value;
             }
         }
@@ -38,18 +38,18 @@ namespace System
         {
             Debug.Assert(variable != null);
 
-            EnsureEnvironmentLoaded();
-            lock (_environment)
+            EnsureEnvironmentCached();
+            lock (s_environment)
             {
                 variable = TrimStringOnFirstZero(variable);
                 value = value == null ? null : TrimStringOnFirstZero(value);
                 if (string.IsNullOrEmpty(value))
                 {
-                    _environment.Remove(variable);
+                    s_environment.Remove(variable);
                 }
                 else
                 {
-                    _environment[variable] = value;
+                    s_environment[variable] = value;
                 }
             }
         }
@@ -58,10 +58,10 @@ namespace System
         {
             var results = new Hashtable();
 
-            EnsureEnvironmentLoaded();
-            lock (_environment)
+            EnsureEnvironmentCached();
+            lock (s_environment)
             {
-                foreach (var keyValuePair in _environment)
+                foreach (var keyValuePair in s_environment)
                 {
                     results.Add(keyValuePair.Key, keyValuePair.Value);
                 }
@@ -80,11 +80,11 @@ namespace System
             return value;
         }
 
-        private static void EnsureEnvironmentLoaded()
+        private static void EnsureEnvironmentCached()
         {
-            if (_environment == null)
+            if (s_environment == null)
             {
-                Interlocked.CompareExchange(_environment, GetSystemEnvironmentVariables(), null);
+                Interlocked.CompareExchange(s_environment, GetSystemEnvironmentVariables(), null);
             }
         }
 
