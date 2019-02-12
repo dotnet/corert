@@ -2168,7 +2168,8 @@ namespace Internal.Runtime.Interpreter
                 case StackValueKind.NativeInt:
                     {
                         long value = (long)indexItem.AsNativeInt();
-                        Debug.Assert(value >= int.MinValue && value <= int.MaxValue);
+                        if (value >= int.MinValue && value <= int.MaxValue)
+                            throw new IndexOutOfRangeException();
                         index = (int)value;
                     }
                     break;
@@ -2176,9 +2177,6 @@ namespace Internal.Runtime.Interpreter
                     ThrowHelper.ThrowInvalidProgramException();
                     break;
             }
-
-            if (index < 0 || index >= array.Length)
-                throw new IndexOutOfRangeException();
 
             ref byte address = ref RuntimeAugments.GetSzArrayElementAddress(array, index);
 
@@ -2206,7 +2204,7 @@ namespace Internal.Runtime.Interpreter
                     Unsafe.Write(ref address, valueItem.AsDouble());
                     break;
                 case ILOpcode.stelem_ref:
-                    RuntimeAugments.StelemRef(array, index, valueItem.AsObjectRef());
+                    Unsafe.As<Object[]>(array)[index] = valueItem.AsObjectRef();
                     break;
                 default:
                     Debug.Assert(false);
@@ -2230,7 +2228,8 @@ namespace Internal.Runtime.Interpreter
                 case StackValueKind.NativeInt:
                     {
                         long value = (long)indexItem.AsNativeInt();
-                        Debug.Assert(value >= int.MinValue && value <= int.MaxValue);
+                        if (value >= int.MinValue && value <= int.MaxValue)
+                            throw new IndexOutOfRangeException();
                         index = (int)value;
                     }
                     break;
@@ -2238,9 +2237,6 @@ namespace Internal.Runtime.Interpreter
                     ThrowHelper.ThrowInvalidProgramException();
                     break;
             }
-
-            if (index < 0 || index >= array.Length)
-                throw new IndexOutOfRangeException();
 
             TypeDesc elementType = (TypeDesc)_methodIL.GetObject(token);
             ref byte address = ref RuntimeAugments.GetSzArrayElementAddress(array, index);
@@ -2291,7 +2287,7 @@ namespace Internal.Runtime.Interpreter
                 case TypeFlags.Interface:
                 case TypeFlags.Array:
                 case TypeFlags.SzArray:
-                    RuntimeAugments.StelemRef(array, index, valueItem.AsObjectRef());
+                    Unsafe.As<Object[]>(array)[index] = valueItem.AsObjectRef();
                     break;
                 default:
                     // TODO: Support more complex return types
@@ -2313,7 +2309,8 @@ namespace Internal.Runtime.Interpreter
                 case StackValueKind.NativeInt:
                     {
                         long value = (long)indexItem.AsNativeInt();
-                        Debug.Assert(value >= int.MinValue && value <= int.MaxValue);
+                        if (value >= int.MinValue && value <= int.MaxValue)
+                            throw new IndexOutOfRangeException();
                         index = (int)value;
                     }
                     break;
@@ -2321,9 +2318,6 @@ namespace Internal.Runtime.Interpreter
                     ThrowHelper.ThrowInvalidProgramException();
                     break;
             }
-
-            if (index < 0 || index >= array.Length)
-                throw new IndexOutOfRangeException();
 
             ref byte address = ref RuntimeAugments.GetSzArrayElementAddress(array, index);
 
@@ -2382,7 +2376,8 @@ namespace Internal.Runtime.Interpreter
                 case StackValueKind.NativeInt:
                     {
                         long value = (long)indexItem.AsNativeInt();
-                        Debug.Assert(value >= int.MinValue && value <= int.MaxValue);
+                        if (value >= int.MinValue && value <= int.MaxValue)
+                            throw new IndexOutOfRangeException();
                         index = (int)value;
                     }
                     break;
@@ -2390,9 +2385,6 @@ namespace Internal.Runtime.Interpreter
                     ThrowHelper.ThrowInvalidProgramException();
                     break;
             }
-
-            if (index < 0 || index >= array.Length)
-                throw new IndexOutOfRangeException();
 
             TypeDesc elementType = (TypeDesc)_methodIL.GetObject(token);
             ref byte address = ref RuntimeAugments.GetSzArrayElementAddress(array, index);
