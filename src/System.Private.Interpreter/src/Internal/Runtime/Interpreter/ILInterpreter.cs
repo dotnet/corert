@@ -2166,7 +2166,11 @@ namespace Internal.Runtime.Interpreter
                     index = indexItem.AsInt32();
                     break;
                 case StackValueKind.NativeInt:
-                    index = (int)indexItem.AsNativeInt();
+                    {
+                        long value = (long)indexItem.AsNativeInt();
+                        Debug.Assert(value >= int.MinValue && value <= int.MaxValue);
+                        index = (int)value;
+                    }
                     break;
                 default:
                     ThrowHelper.ThrowInvalidProgramException();
@@ -2224,7 +2228,11 @@ namespace Internal.Runtime.Interpreter
                     index = indexItem.AsInt32();
                     break;
                 case StackValueKind.NativeInt:
-                    index = (int)indexItem.AsNativeInt();
+                    {
+                        long value = (long)indexItem.AsNativeInt();
+                        Debug.Assert(value >= int.MinValue && value <= int.MaxValue);
+                        index = (int)value;
+                    }
                     break;
                 default:
                     ThrowHelper.ThrowInvalidProgramException();
@@ -2303,7 +2311,11 @@ namespace Internal.Runtime.Interpreter
                     index = indexItem.AsInt32();
                     break;
                 case StackValueKind.NativeInt:
-                    index = (int)indexItem.AsNativeInt();
+                    {
+                        long value = (long)indexItem.AsNativeInt();
+                        Debug.Assert(value >= int.MinValue && value <= int.MaxValue);
+                        index = (int)value;
+                    }
                     break;
                 default:
                     ThrowHelper.ThrowInvalidProgramException();
@@ -2368,7 +2380,11 @@ namespace Internal.Runtime.Interpreter
                     index = indexItem.AsInt32();
                     break;
                 case StackValueKind.NativeInt:
-                    index = (int)indexItem.AsNativeInt();
+                    {
+                        long value = (long)indexItem.AsNativeInt();
+                        Debug.Assert(value >= int.MinValue && value <= int.MaxValue);
+                        index = (int)value;
+                    }
                     break;
                 default:
                     ThrowHelper.ThrowInvalidProgramException();
