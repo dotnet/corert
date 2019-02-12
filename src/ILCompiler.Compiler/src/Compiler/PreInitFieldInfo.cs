@@ -380,7 +380,7 @@ namespace ILCompiler
                 return compare;
 
             Debug.Assert(Data.Length == other.Data.Length);
-            for (int i = 0; i < Length; i++)
+            for (int i = 0; i < Data.Length; i++)
             {
                 if (Data[i] != other.Data[i])
                     return Data[i] - other.Data[i];
