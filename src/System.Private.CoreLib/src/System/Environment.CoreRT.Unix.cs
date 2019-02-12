@@ -21,11 +21,15 @@ namespace System
         {
             Debug.Assert(variable != null);
 
-            var environment = LazyInitializer.EnsureInitialized(ref _environment, () => GetSystemEnvironmentVariables());
-            lock (environment)
+            if (_environment == null)
+            {
+                return Marshal.PtrToStringAnsi(Interop.Sys.GetEnv(variable));
+            }
+
+            lock (_environment)
             {
                 variable = TrimStringOnFirstZero(variable);
-                environment.TryGetValue(variable, out string value);
+                _environment.TryGetValue(variable, out string value);
                 return value;
             }
         }
@@ -34,18 +38,18 @@ namespace System
         {
             Debug.Assert(variable != null);
 
-            var environment = LazyInitializer.EnsureInitialized(ref _environment, () => GetSystemEnvironmentVariables());
-            lock (environment)
+            EnsureEnvironmentLoaded();
+            lock (_environment)
             {
                 variable = TrimStringOnFirstZero(variable);
                 value = value == null ? null : TrimStringOnFirstZero(value);
                 if (string.IsNullOrEmpty(value))
                 {
-                    environment.Remove(variable);
+                    _environment.Remove(variable);
                 }
                 else
                 {
-                    environment[variable] = value;
+                    _environment[variable] = value;
                 }
             }
         }
@@ -53,11 +57,11 @@ namespace System
         public static IDictionary GetEnvironmentVariables()
         {
             var results = new Hashtable();
-            var environment = LazyInitializer.EnsureInitialized(ref _environment, () => GetSystemEnvironmentVariables());
 
-            lock (environment)
+            EnsureEnvironmentLoaded();
+            lock (_environment)
             {
-                foreach (var keyValuePair in environment)
+                foreach (var keyValuePair in _environment)
                 {
                     results.Add(keyValuePair.Key, keyValuePair.Value);
                 }
@@ -74,6 +78,14 @@ namespace System
                 return value.Substring(0, index);
             }
             return value;
+        }
+
+        private static void EnsureEnvironmentLoaded()
+        {
+            if (_environment == null)
+            {
+                Interlocked.CompareExchange(_environment, GetSystemEnvironmentVariables(), null);
+            }
         }
 
         private static Dictionary<string, string> GetSystemEnvironmentVariables()
