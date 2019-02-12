@@ -15,6 +15,11 @@
 #endif
 
 
+extern "C" char* CoreLibNative_GetEnv(const char* variable)
+{
+    return getenv(variable);
+}
+
 extern "C" int32_t CoreLibNative_SchedGetCpu()
 {
 #if HAVE_SCHED_GETCPU
