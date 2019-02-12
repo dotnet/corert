@@ -15,7 +15,7 @@ namespace System
     {
         internal static int CurrentNativeThreadId => ManagedThreadId.Current;
 
-        private static readonly Dictionary<string, string> _environment;
+        private static Dictionary<string, string> _environment;
 
         private static string GetEnvironmentVariableCore(string variable)
         {
