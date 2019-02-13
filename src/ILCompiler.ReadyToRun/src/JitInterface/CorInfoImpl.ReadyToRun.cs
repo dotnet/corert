@@ -1077,8 +1077,6 @@ namespace Internal.JitInterface
 
             // TODO: access checks
 
-            //We're pretty much done at this point.  Let's grab the rest of the information that the jit is going to
-            //need.
             // We're pretty much done at this point.  Let's grab the rest of the information that the jit is going to
             // need.
             pResult->classFlags = getClassAttribsInternal(methodToCall.OwningType);
