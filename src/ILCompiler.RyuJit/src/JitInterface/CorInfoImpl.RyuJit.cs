@@ -1391,9 +1391,6 @@ namespace Internal.JitInterface
                     }
                 }
 
-#if READYTORUN
-                helperId = ReadyToRunHelperId.TypeHandle;
-#else
                 if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_NewObj
                         || pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr
                         || pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Box
@@ -1410,7 +1407,6 @@ namespace Internal.JitInterface
                 {
                     helperId = ReadyToRunHelperId.NecessaryTypeHandle;
                 }
-#endif
             }
 
             Debug.Assert(pResult.compileTimeHandle != null);
