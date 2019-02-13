@@ -106,6 +106,9 @@
     <LangVersion>8.0</LangVersion>
     <UseSharedCompilation>true</UseSharedCompilation>
     <BuildingNETCoreAppVertical>true</BuildingNETCoreAppVertical>
+    <IncludeVSTestReferences>false</IncludeVSTestReferences>
+    <CopyConfigurationFiles>false</CopyConfigurationFiles>
+    <RuntimeConfigPath>$(PackagesDir)/xunit.runner.console/$(XUnitPackageVersion)/tools/netcoreapp2.0/xunit.console.runtimeconfig.json</RuntimeConfigPath>
     <DebugType Condition="'$(IsProjectNLibrary)' != 'true'">portable</DebugType>
   </PropertyGroup>
 
