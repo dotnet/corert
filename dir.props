@@ -104,6 +104,8 @@
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <LangVersion>8.0</LangVersion>
+    <UseSharedCompilation>true</UseSharedCompilation>
+    <BuildingNETCoreAppVertical>true</BuildingNETCoreAppVertical>
     <DebugType Condition="'$(IsProjectNLibrary)' != 'true'">portable</DebugType>
   </PropertyGroup>
 
