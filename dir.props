@@ -103,7 +103,7 @@
     <NoExplicitReferenceToStdLib>true</NoExplicitReferenceToStdLib>
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
-    <LangVersion>latest</LangVersion>
+    <LangVersion>8.0</LangVersion>
     <DebugType Condition="'$(IsProjectNLibrary)' != 'true'">portable</DebugType>
   </PropertyGroup>
 
@@ -269,5 +269,5 @@
   </PropertyGroup>
 
   <!-- Use Roslyn Compilers to build -->
-  <Import Project="$(RoslynPropsFile)" Condition="Exists('$(RoslynPropsFile)')" />
+  <Import Project="$(RoslynPropsFile)" />
 </Project>

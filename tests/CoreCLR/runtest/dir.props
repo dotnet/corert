@@ -6,12 +6,6 @@
   <PropertyGroup>
     <OsEnvironment Condition="'$(OsEnvironment)'==''">$(OS)</OsEnvironment>
   </PropertyGroup>
-  
-  <!-- Build Tools Versions -->
-  <PropertyGroup>
-    <RoslynVersion>1.0.0-rc3-20150510-01</RoslynVersion>
-    <RoslynPackageName>Microsoft.Net.ToolsetCompilers</RoslynPackageName>
-  </PropertyGroup>
 
   <!-- Common repo directories -->
   <PropertyGroup>
