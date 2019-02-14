@@ -18,7 +18,6 @@ namespace System.Threading
     {
         // TODO: Tune these values
         private const int SpinCount = 8;
-        private const int SpinYieldThreshold = 6;
         private const int SpinSleep0Threshold = 4;
 
         private static int s_processorCount;
@@ -49,7 +48,7 @@ namespace System.Threading
                 {
                     // For uniprocessor systems, start at the yield threshold since the pause instructions used for waiting
                     // prior to that threshold would not help other threads make progress
-                    for (int spinIndex = processorCount > 1 ? 0 : SpinYieldThreshold; spinIndex < SpinCount; ++spinIndex)
+                    for (int spinIndex = processorCount > 1 ? 0 : SpinSleep0Threshold; spinIndex < SpinCount; ++spinIndex)
                     {
                         if (processorCount > 1)
                         {
