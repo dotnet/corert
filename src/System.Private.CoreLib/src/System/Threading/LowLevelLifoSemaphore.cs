@@ -40,6 +40,8 @@ namespace System.Threading
 
         public bool Wait(int timeoutMs)
         {
+            Debug.Assert(timeoutMs >= -1);
+
             // Try to acquire the semaphore or
             // a) register as a spinner if spinCount > 0 and timeoutMs > 0
             // b) register as a waiter if there's already too many spinners or spinCount == 0 and timeoutMs > 0
@@ -168,7 +170,6 @@ namespace System.Threading
                 // Increase the signal count. The addition doesn't overflow because of the limit on the max signal count in constructor.
                 newCounts._signalCount += (uint)releaseCount;
                 Debug.Assert(newCounts._signalCount > counts._signalCount);
-                Debug.Assert(newCounts._signalCount <= _maximumSignalCount);
 
                 // Determine how many waiters to wake, taking into account how many spinners and waiters there are and how many waiters
                 // have previously been signaled to wake but have not yet woken
@@ -211,7 +212,7 @@ namespace System.Threading
 
         private bool WaitForSignal(int timeoutMs)
         {
-            Debug.Assert(timeoutMs >= -1);
+            Debug.Assert(timeoutMs > 0 || timeoutMs == -1);
 
             while (true)
             {
