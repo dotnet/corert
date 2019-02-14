@@ -9,11 +9,9 @@ using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.FieldInfos;
 using System.Reflection.Runtime.PropertyInfos;
 using System.Reflection.Runtime.EventInfos;
-using System.Runtime.InteropServices;
 using NameFilter = System.Reflection.Runtime.BindingFlagSupport.NameFilter;
 
 using Internal.Reflection.Core.Execution;
-using Internal.Runtime.TypeLoader;
 
 //
 // The CoreGet() methods on RuntimeTypeInfo provide the raw source material for the Type.Get*() family of apis.

@@ -807,8 +807,8 @@ internal static class Program
 
         PrintString("Type GetFields length: ");
         var x = new ClassForMetaTests();
-        var s = x.stringField;  
-        var i = x.intField;
+        var s = x.StringField;  
+        var i = x.IntField;
         var fieldClassType = typeof(ClassForMetaTests);
         FieldInfo[] fields = fieldClassType.GetFields();
         if (fields.Length == 3)
@@ -821,7 +821,7 @@ internal static class Program
         }
 
         PrintString("Type get string field via reflection: ");
-        var stringFieldInfo = fieldClassType.GetField("stringField");
+        var stringFieldInfo = fieldClassType.GetField("StringField");
         if ((string)stringFieldInfo.GetValue(x) == s)
         {
             PrintLine("Ok.");
@@ -831,7 +831,7 @@ internal static class Program
             PrintLine("Failed.");
         }
         PrintString("Type get int field via reflection: ");
-        var intFieldInfo = fieldClassType.GetField("intField");
+        var intFieldInfo = fieldClassType.GetField("IntField");
         if ((int)intFieldInfo.GetValue(x) == i)
         {
             PrintLine("Ok.");
@@ -842,7 +842,7 @@ internal static class Program
         }
 
         PrintString("Type get static int field via reflection: ");
-        var staticIntFieldInfo = fieldClassType.GetField("staticIntField");
+        var staticIntFieldInfo = fieldClassType.GetField("StaticIntField");
         if ((int)staticIntFieldInfo.GetValue(x) == 23)
         {
             PrintLine("Ok.");
@@ -854,7 +854,7 @@ internal static class Program
 
         PrintString("Type set string field via reflection: ");
         stringFieldInfo.SetValue(x, "bcd");
-        if (x.stringField == "bcd")
+        if (x.StringField == "bcd")
         {
             PrintLine("Ok.");
         }
@@ -865,7 +865,7 @@ internal static class Program
 
         PrintString("Type set int field via reflection: ");
         intFieldInfo.SetValue(x, 456);
-        if (x.intField == 456)
+        if (x.IntField == 456)
         {
             PrintLine("Ok.");
         }
@@ -876,7 +876,7 @@ internal static class Program
 
         PrintString("Type set static int field via reflection: ");
         staticIntFieldInfo.SetValue(x, 987);
-        if (ClassForMetaTests.staticIntField == 987)
+        if (ClassForMetaTests.StaticIntField == 987)
         {
             PrintLine("Ok.");
         }
@@ -903,16 +903,16 @@ internal static class Program
     {
         // used via reflection
 #pragma warning disable 0169
-        public int intField;
-        public string stringField;
+        public int IntField;
+        public string StringField;
 #pragma warning restore 0169
-        public static int staticIntField;
+        public static int StaticIntField;
 
         public ClassForMetaTests()
         {
-            stringField = "ab";
-            intField = 12;
-            staticIntField = 23;
+            StringField = "ab";
+            IntField = 12;
+            StaticIntField = 23;
         }
     }
 

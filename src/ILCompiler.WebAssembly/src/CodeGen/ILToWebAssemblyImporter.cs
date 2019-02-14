@@ -1809,7 +1809,7 @@ namespace Internal.IL
             {
                 node = _compilation.NodeFactory.NecessaryTypeSymbol(target);
             }
-            LLVMValueRef eeTypePointer = WebAssemblyObjectWriter.GetSymbolValuePointer(Module, node, _compilation.NameMangler, _compilation.NodeFactory, false);
+            LLVMValueRef eeTypePointer = WebAssemblyObjectWriter.GetSymbolValuePointer(Module, node, _compilation.NameMangler, false);
             _dependencies.Add(node);
 
             return eeTypePointer;
@@ -2197,10 +2197,6 @@ namespace Internal.IL
             MethodDesc existantDesc;
             LLVMValueRef nativeFunc;
             LLVMValueRef realNativeFunc = LLVM.GetNamedFunction(Module, realMethodName);
-            if (realMethodName.EndsWith("RhNewArray"))
-            {
-
-            }
             if (_pinvokeMap.TryGetValue(realMethodName, out existantDesc))
             {
                 if (existantDesc != method)
@@ -2215,8 +2211,6 @@ namespace Internal.IL
             }
             else
             {
-                // adds the .IsPInvoke == false method
-//                if(!method.IsPInvoke) _pinvokeMap.Add(realMethodName, method);
                 _pinvokeMap.Add(realMethodName, method);
                 nativeFunc = realNativeFunc;
             }
@@ -2310,16 +2304,8 @@ namespace Internal.IL
 
         private void EmitNativeToManagedThunk(WebAssemblyCodegenCompilation compilation, MethodDesc method, string nativeName, LLVMValueRef managedFunction)
         {
-            if (method.Name.EndsWith("RhNewArray"))
-            {
-
-            }
             if (_pinvokeMap.TryGetValue(nativeName, out MethodDesc existing))
             {
-                if (existing.Name.EndsWith("RhNewArray") || method.Name.EndsWith("RhNewArray"))
-                {
-
-                }
                 if (existing != method)
                     throw new InvalidProgramException("export and import function were mismatched");
             }
@@ -3414,7 +3400,7 @@ namespace Internal.IL
         // Loads symbol address. Address is represented as a i32*
         private LLVMValueRef LoadAddressOfSymbolNode(ISymbolNode node)
         {
-            LLVMValueRef addressOfAddress = WebAssemblyObjectWriter.GetSymbolValuePointer(Module, node, _compilation.NameMangler, _compilation.NodeFactory, false);
+            LLVMValueRef addressOfAddress = WebAssemblyObjectWriter.GetSymbolValuePointer(Module, node, _compilation.NameMangler, false);
             //return addressOfAddress;
             return LLVM.BuildLoad(_builder, addressOfAddress, "LoadAddressOfSymbolNode");
         }

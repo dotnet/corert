@@ -6,20 +6,15 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.Text;
 using Internal.TypeSystem;
-using Internal.TypeSystem.TypesDebugInfo;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
 using LLVMSharp;
 using ILCompiler.CodeGen;
-using System.Linq;
-using Internal.IL;
-using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -37,7 +32,6 @@ namespace ILCompiler.DependencyAnalysis
 
             if (symbol is ObjectNode)
             {
-                ObjectNode objNode = (ObjectNode)symbol;
                 ISymbolDefinitionNode symbolDefNode = (ISymbolDefinitionNode)symbol;
                 if (symbolDefNode.Offset == 0)
                 {
@@ -45,16 +39,6 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 else
                 {
-                    if (symbol is ConstructedEETypeNode)
-                    {
-                        if (((ConstructedEETypeNode)symbol).Type is EcmaType)
-                        {
-                            if(((EcmaType)((ConstructedEETypeNode)symbol).Type).Name.EndsWith("ClassForMetaTests"))
-                            {
-
-                            }
-                        }
-                    }
                     return symbol.GetMangledName(nameMangler) + "___REALBASE";
                 }
             }
@@ -87,7 +71,7 @@ namespace ILCompiler.DependencyAnalysis
         private static Dictionary<string, LLVMValueRef> s_symbolValues = new Dictionary<string, LLVMValueRef>();
         private static Dictionary<FieldDesc, LLVMValueRef> s_staticFieldMapping = new Dictionary<FieldDesc, LLVMValueRef>();
 
-        public static LLVMValueRef GetSymbolValuePointer(LLVMModuleRef module, ISymbolNode symbol, NameMangler nameMangler, NodeFactory nodeFactory, bool objectWriterUse = false)
+        public static LLVMValueRef GetSymbolValuePointer(LLVMModuleRef module, ISymbolNode symbol, NameMangler nameMangler, bool objectWriterUse = false)
         {
             if (symbol is WebAssemblyMethodCodeNode)
             {
@@ -269,7 +253,7 @@ namespace ILCompiler.DependencyAnalysis
             var block = LLVM.AppendBasicBlock(callback, "Block");
             LLVM.PositionBuilderAtEnd(builder, block);
 
-            LLVMValueRef rtrHeaderPtr = GetSymbolValuePointer(Module, _nodeFactory.ReadyToRunHeader, _nodeFactory.NameMangler, _nodeFactory, false);
+            LLVMValueRef rtrHeaderPtr = GetSymbolValuePointer(Module, _nodeFactory.ReadyToRunHeader, _nodeFactory.NameMangler, false);
             LLVMValueRef castRtrHeaderPtr = LLVM.BuildPointerCast(builder, rtrHeaderPtr, intPtrPtr, "castRtrHeaderPtr");
             LLVM.BuildRet(builder, castRtrHeaderPtr);
         }
@@ -340,13 +324,12 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             readonly bool IsFunction;
-            public readonly string SymbolName;
+            readonly string SymbolName;
             readonly int Offset;
 
             public LLVMValueRef ToLLVMValueRef(LLVMModuleRef module)
             {
-                LLVMValueRef valRef;
-                valRef = IsFunction ? LLVM.GetNamedFunction(module, SymbolName) : LLVM.GetNamedGlobal(module, SymbolName);
+                LLVMValueRef valRef = IsFunction ? LLVM.GetNamedFunction(module, SymbolName) : LLVM.GetNamedGlobal(module, SymbolName);
 
                 if (Offset != 0 && valRef.Pointer != IntPtr.Zero)
                 {
@@ -394,10 +377,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 for (int i = 0; i < countOfPointerSizedElements; i++)
                 {
-                    if (i == 298)
-                    {
-
-                    }
                     int curOffset = (i * pointerSize);
                     SymbolRefData symbolRef;
                     if (ObjectSymbolRefs.TryGetValue(curOffset, out symbolRef))
@@ -851,24 +830,10 @@ namespace ILCompiler.DependencyAnalysis
                             var eeTypeNode = reloc.Target as EETypeNode;
                             if (eeTypeNode != null)
                             {
-                                if (((EETypeNode)reloc.Target).Type is EcmaType)
-                                {
-                                    if (((EcmaType)((EETypeNode)reloc.Target).Type).Name.Contains("QTypeDefinition"))
-                                    {
-
-                                    }
-                                }
                                 if (eeTypeNode.ShouldSkipEmittingObjectNode(factory))
                                 {
                                     symbolToWrite = factory.ConstructedTypeSymbol(eeTypeNode.Type);
                                 }
-//                                string symbolAddressGlobalName = reloc.Target.GetMangledName(factory.NameMangler) + "___SYMBOL";
-//                                LLVMValueRef symbolAddress;
-//                                var maximallyConstructedSymbol = factory.MaximallyConstructableType(((EETypeNode)reloc.Target).Type);
-//                                if (s_symbolValues.TryGetValue(symbolAddressGlobalName, out symbolAddress) && maximallyConstructedSymbol is ISymbolDefinitionNode && ((ISymbolDefinitionNode)maximallyConstructedSymbol).Offset > 0 && !maximallyConstructedSymbol.Equals(reloc.Target))
-//                                {
-//                                    symbolToWrite = maximallyConstructedSymbol;
-//                                }
                             }
 
                             int size = objectWriter.EmitSymbolReference(symbolToWrite, (int)delta, reloc.RelocType);

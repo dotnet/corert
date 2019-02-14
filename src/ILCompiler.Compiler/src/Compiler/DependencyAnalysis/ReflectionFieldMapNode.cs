@@ -58,10 +58,7 @@ namespace ILCompiler.DependencyAnalysis
             foreach (var fieldMapping in factory.MetadataManager.GetFieldMapping(factory))
             {
                 FieldDesc field = fieldMapping.Entity;
-                if (field.Name == "stringField")
-                {
 
-                }
                 if (field.IsLiteral || field.HasRva)
                     continue;
 

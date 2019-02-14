@@ -115,12 +115,6 @@ namespace Internal.Runtime.TypeLoader
 
         private QTypeDefinitionToRuntimeTypeHandleHashtable _metadataToRuntimeTypeHandleHashtable = new QTypeDefinitionToRuntimeTypeHandleHashtable();
 
-        public struct TwoByteStr
-        {
-            public byte first;
-            public byte second;
-        }
-
         private class QTypeDefinitionToRuntimeTypeHandleHashtable : LockFreeReaderHashtable<QTypeDefinition, NamedTypeLookupResult>
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -206,7 +200,6 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="typeDefHandle">TypeDef handle for the type</param>
         public unsafe bool TryGetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle, out QTypeDefinition qTypeDefinition)
         {
-
             NamedTypeLookupResult result = _runtimeTypeHandleToMetadataHashtable.GetOrCreateValue(runtimeTypeHandle);
             qTypeDefinition = result.QualifiedTypeDefinition;
             return qTypeDefinition.Reader != null;
@@ -264,9 +257,8 @@ namespace Internal.Runtime.TypeLoader
             NamedTypeLookupResult result = _metadataToRuntimeTypeHandleHashtable.GetOrCreateValue(qTypeDefinition);
 
             if (result.VersionNumber <= _namedTypeLookupLiveVersion)
-            {
                 runtimeTypeHandle = result.RuntimeTypeHandle;
-            }
+
             return !runtimeTypeHandle.IsNull();
         }
 

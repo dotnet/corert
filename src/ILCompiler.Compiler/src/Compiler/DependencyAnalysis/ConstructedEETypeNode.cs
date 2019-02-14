@@ -8,7 +8,6 @@ using System.Diagnostics;
 using Internal.Runtime;
 using Internal.TypeSystem;
 using Internal.IL;
-using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -147,10 +146,6 @@ namespace ILCompiler.DependencyAnalysis
                 dependencyList.Add(new DependencyListEntry(factory.TypeNonGCStaticsSymbol((MetadataType)_type), "Class constructor"));
             }
 
-            if (_type is EcmaType && ((EcmaType)_type).Name.Contains("ClassForMetaTests"))
-            {
-
-            }
             // Ask the metadata manager if we have any dependencies due to reflectability.
             factory.MetadataManager.GetDependenciesDueToReflectability(ref dependencyList, factory, _type);
 
