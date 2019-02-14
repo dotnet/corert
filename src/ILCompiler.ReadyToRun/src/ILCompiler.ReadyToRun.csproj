@@ -28,7 +28,6 @@
   
   <ItemGroup>
     <Compile Include="CodeGen\ReadyToRunObjectWriter.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRunTypeSystemHelpers.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ArgIterator.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadHelperMethodImport.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ExceptionInfoLookupTableNode.cs" />

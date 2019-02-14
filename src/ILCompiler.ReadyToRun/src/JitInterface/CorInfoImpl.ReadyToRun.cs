@@ -849,8 +849,7 @@ namespace Internal.JitInterface
                     originalMethod = methodOnUnderlyingType;
                 }
 
-                MethodDesc directMethod = ReadyToRunTypeSystemHelpers.TryResolveConstraintMethodApprox(
-                    constrainedType.GetClosestDefType(), (DefType)exactType, originalMethod, out forceUseRuntimeLookup);
+                MethodDesc directMethod = constrainedType.TryResolveConstraintMethodApprox(exactType, originalMethod, out forceUseRuntimeLookup);
                 if (directMethod != null)
                 {
                     // Either
