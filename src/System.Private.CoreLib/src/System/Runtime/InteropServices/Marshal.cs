@@ -104,9 +104,14 @@ namespace System.Runtime.InteropServices
         internal static IntPtr GetIDispatchForObject(object o) => throw new PlatformNotSupportedException();
         internal static int Release(IntPtr pUnk) => throw new PlatformNotSupportedException();
 
+        internal static unsafe uint SysStringByteLen(IntPtr s)
+        {
+            return *(((uint*)s) - 1);
+        }
+
         internal static bool IsPinnable(object o)
         {
-            return o.EETypePtr.MightBeBlittable();
+            return (o == null) || o.EETypePtr.MightBeBlittable();
         }
     }
 }

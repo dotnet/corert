@@ -28,6 +28,8 @@
   
   <ItemGroup>
     <Compile Include="CodeGen\ReadyToRunObjectWriter.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ArgIterator.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadHelperMethodImport.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ExceptionInfoLookupTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternalTypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunCodegenNodeFactory.cs" />
@@ -36,6 +38,8 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CompilerIdentifierNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DebugInfoTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadHelperImport.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\GCRefMapBuilder.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\GCRefMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\GenericLookupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ImportThunk.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelegateCtorSignature.cs" />
@@ -60,6 +64,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\NewObjectFixupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\NibbleWriter.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\PrecodeHelperImport.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\PrecodeHelperMethodImport.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ReadyToRunHelperSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RuntimeFunctionsGCInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RuntimeFunctionsTableNode.cs" />
@@ -74,6 +79,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_ARM\ImportThunk.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_X64\ImportThunk.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_X86\ImportThunk.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TransitionBlock.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypeFixupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypesTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunSymbolNodeFactory.cs" />
@@ -101,19 +107,6 @@
     <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
       <Link>Common\ArrayBuilder.cs</Link>
     </Compile>
-
-    <!-- To clean this up, we should move IMethodCodeNode to a common location -->
-    <Compile Include="..\..\ILCompiler.RyuJit\src\Compiler\DependencyAnalysis\IMethodCodeNode.cs">
-      <Link>DependencyAnalysis\IMethodCodeNode.cs</Link>
-    </Compile>
-
-    <!--
-      JitHelper is CoreRT specific. Refactor so it's not needed in the ReadyToRun project
-    -->
-    <Compile Include="..\..\ILCompiler.Compiler\src\Compiler\JitHelper.cs">
-      <Link>Compiler\JitHelper.cs</Link>
-    </Compile>
-
     <Compile Include="..\..\Common\src\TypeSystem\IL\HelperExtensions.cs">
       <Link>IL\HelperExtensions.cs</Link>
     </Compile>

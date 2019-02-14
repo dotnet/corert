@@ -34,6 +34,11 @@ extern "C" void CoreLibNative_Exit(int32_t exitCode)
     exit(exitCode);
 }
 
+extern "C" void CoreLibNative_Abort()
+{
+    abort();
+}
+
 extern "C" char** CoreLibNative_GetEnviron()
 {
     char** sysEnviron;

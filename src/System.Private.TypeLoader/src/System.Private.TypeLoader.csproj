@@ -42,7 +42,6 @@
   <!-- Setup the right references -->
   <ItemGroup>
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" />
     <ReferencePath Condition="'$(EcmaMetadataSupport)' == 'true'" Include="$(AotPackageReferencePath)\System.Private.Reflection.Metadata.Ecma335.dll" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">

@@ -108,7 +108,7 @@ NESTED_END RhpNewObject, _TEXT
 LEAF_ENTRY RhNewString, _TEXT
 
         ; we want to limit the element count to the non-negative 32-bit int range
-        cmp         rdx, 07fffffffh
+        cmp         rdx, MAX_STRING_LENGTH
         ja          StringSizeOverflow
 
         ; Compute overall allocation size (align(base size + (element size * elements), 8)).

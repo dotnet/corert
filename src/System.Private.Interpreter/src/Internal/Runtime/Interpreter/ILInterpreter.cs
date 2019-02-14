@@ -6,8 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Internal.IL;
+using Internal.Runtime.Augments;
 using Internal.Runtime.CallInterceptor;
+using Internal.Runtime.CompilerServices;
 using Internal.TypeSystem;
+
 
 namespace Internal.Runtime.Interpreter
 {
@@ -38,6 +41,16 @@ namespace Internal.Runtime.Interpreter
         public void SetReturnValue<T>(T value)
         {
             _callInterceptorArgs.ArgumentsAndReturnValue.SetVar<T>(0, value);
+        }
+
+        public T GetArgument<T>(int index)
+        {
+            return _callInterceptorArgs.ArgumentsAndReturnValue.GetVar<T>(index + 1);
+        }
+
+        public void SetArgument<T>(int index, T value)
+        {
+            _callInterceptorArgs.ArgumentsAndReturnValue.SetVar<T>(index + 1, value);
         }
 
         public StackItem PopWithValidation()
@@ -81,7 +94,8 @@ namespace Internal.Runtime.Interpreter
                     case ILOpcode.ldarg_1:
                     case ILOpcode.ldarg_2:
                     case ILOpcode.ldarg_3:
-                        throw new NotImplementedException();
+                        InterpretLoadArgument(opcode - ILOpcode.ldarg_0);
+                        break;
                     case ILOpcode.ldloc_0:
                     case ILOpcode.ldloc_1:
                     case ILOpcode.ldloc_2:
@@ -95,11 +109,13 @@ namespace Internal.Runtime.Interpreter
                         InterpretStoreLocal(opcode - ILOpcode.stloc_0);
                         break;
                     case ILOpcode.ldarg_s:
-                        throw new NotImplementedException();
+                        InterpretLoadArgument(reader.ReadILByte());
+                        break;
                     case ILOpcode.ldarga_s:
                         throw new NotImplementedException();
                     case ILOpcode.starg_s:
-                        throw new NotImplementedException();
+                        InterpretStoreArgument(reader.ReadILByte());
+                        break;
                     case ILOpcode.ldloc_s:
                         InterpretLoadLocal(reader.ReadILByte());
                         break;
@@ -353,53 +369,42 @@ namespace Internal.Runtime.Interpreter
                     case ILOpcode.box:
                         throw new NotImplementedException();
                     case ILOpcode.newarr:
-                        throw new NotImplementedException();
+                        InterpretNewArray(reader.ReadILToken());
+                        break;
                     case ILOpcode.ldlen:
-                        throw new NotImplementedException();
+                        InterpretLoadLength();
+                        break;
                     case ILOpcode.ldelema:
                         throw new NotImplementedException();
                     case ILOpcode.ldelem_i1:
-                        throw new NotImplementedException();
                     case ILOpcode.ldelem_u1:
-                        throw new NotImplementedException();
                     case ILOpcode.ldelem_i2:
-                        throw new NotImplementedException();
                     case ILOpcode.ldelem_u2:
-                        throw new NotImplementedException();
                     case ILOpcode.ldelem_i4:
-                        throw new NotImplementedException();
                     case ILOpcode.ldelem_u4:
-                        throw new NotImplementedException();
                     case ILOpcode.ldelem_i8:
-                        throw new NotImplementedException();
                     case ILOpcode.ldelem_i:
-                        throw new NotImplementedException();
                     case ILOpcode.ldelem_r4:
-                        throw new NotImplementedException();
                     case ILOpcode.ldelem_r8:
-                        throw new NotImplementedException();
                     case ILOpcode.ldelem_ref:
-                        throw new NotImplementedException();
+                        InterpretLoadElement(opcode);
+                        break;
                     case ILOpcode.stelem_i:
-                        throw new NotImplementedException();
                     case ILOpcode.stelem_i1:
-                        throw new NotImplementedException();
                     case ILOpcode.stelem_i2:
-                        throw new NotImplementedException();
                     case ILOpcode.stelem_i4:
-                        throw new NotImplementedException();
                     case ILOpcode.stelem_i8:
-                        throw new NotImplementedException();
                     case ILOpcode.stelem_r4:
-                        throw new NotImplementedException();
                     case ILOpcode.stelem_r8:
-                        throw new NotImplementedException();
                     case ILOpcode.stelem_ref:
-                        throw new NotImplementedException();
+                        InterpretStoreElement(opcode);
+                        break;
                     case ILOpcode.ldelem:
-                        throw new NotImplementedException();
+                        InterpretLoadElement(reader.ReadILToken());
+                        break;
                     case ILOpcode.stelem:
-                        throw new NotImplementedException();
+                        InterpretStoreElement(reader.ReadILToken());
+                        break;
                     case ILOpcode.unbox_any:
                         throw new NotImplementedException();
                     case ILOpcode.conv_ovf_i1:
@@ -482,17 +487,21 @@ namespace Internal.Runtime.Interpreter
                     case ILOpcode.ldvirtftn:
                         throw new NotImplementedException();
                     case ILOpcode.ldarg:
-                        throw new NotImplementedException();
+                        InterpretLoadArgument(reader.ReadILUInt16());
+                        break;
                     case ILOpcode.ldarga:
                         throw new NotImplementedException();
                     case ILOpcode.starg:
-                        throw new NotImplementedException();
+                        InterpretStoreArgument(reader.ReadILUInt16());
+                        break;
                     case ILOpcode.ldloc:
-                        throw new NotImplementedException();
+                        InterpretLoadLocal(reader.ReadILUInt16());
+                        break;
                     case ILOpcode.ldloca:
                         throw new NotImplementedException();
                     case ILOpcode.stloc:
-                        throw new NotImplementedException();
+                        InterpretStoreLocal(reader.ReadILUInt16());
+                        break;
                     case ILOpcode.localloc:
                         throw new NotImplementedException();
                     case ILOpcode.endfilter:
@@ -565,12 +574,118 @@ namespace Internal.Runtime.Interpreter
 
         private void InterpretLoadLocal(int index)
         {
+            Debug.Assert(index >= 0);
             _stack.Push(_locals[index]);
         }
 
         private void InterpretStoreLocal(int index)
         {
+            Debug.Assert(index >= 0);
             _locals[index] = PopWithValidation();
+        }
+
+        private void InterpretLoadArgument(int index)
+        {
+            Debug.Assert(index >= 0);
+
+            TypeDesc argument = default(TypeDesc);
+
+            if (!_method.Signature.IsStatic)
+            {
+                if (index == 0)
+                    argument = _method.OwningType;
+                else
+                    argument = _method.Signature[index - 1];
+            }
+            else
+            {
+                argument = _method.Signature[index];
+            }
+
+        again:
+            switch (argument.Category)
+            {
+                case TypeFlags.Boolean:
+                    _stack.Push(StackItem.FromInt32(GetArgument<bool>(index) ? 1 : 0));
+                    break;
+                case TypeFlags.Char:
+                    _stack.Push(StackItem.FromInt32(GetArgument<char>(index)));
+                    break;
+                case TypeFlags.SByte:
+                case TypeFlags.Byte:
+                    _stack.Push(StackItem.FromInt32(GetArgument<byte>(index)));
+                    break;
+                case TypeFlags.Int16:
+                case TypeFlags.UInt16:
+                    _stack.Push(StackItem.FromInt32(GetArgument<short>(index)));
+                    break;
+                case TypeFlags.Int32:
+                case TypeFlags.UInt32:
+                    _stack.Push(StackItem.FromInt32(GetArgument<int>(index)));
+                    break;
+                case TypeFlags.Int64:
+                case TypeFlags.UInt64:
+                    _stack.Push(StackItem.FromInt64(GetArgument<long>(index)));
+                    break;
+                case TypeFlags.IntPtr:
+                case TypeFlags.UIntPtr:
+                    _stack.Push(StackItem.FromNativeInt(GetArgument<IntPtr>(index)));
+                    break;
+                case TypeFlags.Single:
+                case TypeFlags.Double:
+                    _stack.Push(StackItem.FromDouble(GetArgument<double>(index)));
+                    break;
+                case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
+                    _stack.Push(StackItem.FromValueType(GetArgument<ValueType>(index)));
+                    break;
+                case TypeFlags.Enum:
+                    argument = argument.UnderlyingType;
+                    goto again;
+                case TypeFlags.Class:
+                case TypeFlags.Interface:
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                    _stack.Push(StackItem.FromObjectRef(GetArgument<object>(index)));
+                    break;
+                default:
+                    // TODO: Support more complex return types
+                    throw new NotImplementedException();
+            }
+        }
+
+        private void InterpretStoreArgument(int index)
+        {
+            Debug.Assert(index >= 0);
+            
+            StackItem stackItem = PopWithValidation();
+            switch (stackItem.Kind)
+            {
+                case StackValueKind.Int32:
+                    SetArgument(index, stackItem.AsInt32());
+                    break;
+                case StackValueKind.Int64:
+                    SetArgument(index, stackItem.AsInt64());
+                    break;
+                case StackValueKind.NativeInt:
+                    SetArgument(index, stackItem.AsNativeInt());
+                    break;
+                case StackValueKind.Float:
+                    SetArgument(index, stackItem.AsDouble());
+                    break;
+                case StackValueKind.ByRef:
+                    // TODO: Add support for ByRef
+                    throw new NotImplementedException();
+                case StackValueKind.ObjRef:
+                    SetArgument(index, stackItem.AsObjectRef());
+                    break;
+                case StackValueKind.ValueType:
+                    SetArgument(index, stackItem.AsValueType());
+                    break;
+                default:
+                    ThrowHelper.ThrowInvalidProgramException();
+                    break;
+            }
         }
 
         private void InterpretReturn()
@@ -580,9 +695,9 @@ namespace Internal.Runtime.Interpreter
                 return;
 
             StackItem stackItem = PopWithValidation();
-            TypeFlags category = returnType.Category;
 
-            switch (category)
+        again:
+            switch (returnType.Category)
             {
                 case TypeFlags.Boolean:
                     SetReturnValue(stackItem.AsInt32() != 0);
@@ -617,20 +732,18 @@ namespace Internal.Runtime.Interpreter
                     SetReturnValue(stackItem.AsDouble());
                     break;
                 case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
                     SetReturnValue(stackItem.AsValueType());
                     break;
-                case TypeFlags.Interface:
+                case TypeFlags.Enum:
+                    returnType = returnType.UnderlyingType;
+                    goto again;
                 case TypeFlags.Class:
+                case TypeFlags.Interface:
                 case TypeFlags.Array:
                 case TypeFlags.SzArray:
                     SetReturnValue(stackItem.AsObjectRef());
                     break;
-                case TypeFlags.Enum:
-                case TypeFlags.Nullable:
-                case TypeFlags.ByRef:
-                case TypeFlags.Pointer:
-                case TypeFlags.FunctionPointer:
-                case TypeFlags.GenericParameter:
                 default:
                     // TODO: Support more complex return types
                     throw new NotImplementedException();
@@ -2003,6 +2116,330 @@ namespace Internal.Runtime.Interpreter
             {
                 if (value == i)
                     reader.Seek(jmpBase + jmpDelta[i]);
+            }
+        }
+
+        private void InterpretNewArray(int token)
+        {
+            int length = 0;
+            StackItem stackItem = PopWithValidation();
+
+            switch (stackItem.Kind)
+            {
+                case StackValueKind.Int32:
+                    length = stackItem.AsInt32();
+                    break;
+                case StackValueKind.NativeInt:
+                    length = (int)stackItem.AsNativeInt();
+                    break;
+                default:
+                    ThrowHelper.ThrowInvalidProgramException();
+                    break;
+            }
+
+            Debug.Assert(length >= 0);
+
+            TypeDesc arrayType = ((TypeDesc)_methodIL.GetObject(token)).MakeArrayType();
+
+            // TODO: Add support for arbitrary  non-primitive types
+            Array array = RuntimeAugments.NewArray(arrayType.GetRuntimeTypeHandle(), length);
+
+            _stack.Push(StackItem.FromObjectRef(array));
+        }
+
+        private void InterpretLoadLength()
+        {
+            Array array = (Array)PopWithValidation().AsObjectRef();
+            _stack.Push(StackItem.FromInt32(array.Length));
+        }
+
+        private void InterpretStoreElement(ILOpcode opcode)
+        {
+            StackItem valueItem = PopWithValidation();
+            StackItem indexItem = PopWithValidation();
+            Array array = (Array)PopWithValidation().AsObjectRef();
+
+            int index = 0;
+            switch (indexItem.Kind)
+            {
+                case StackValueKind.Int32:
+                    index = indexItem.AsInt32();
+                    break;
+                case StackValueKind.NativeInt:
+                    {
+                        long value = (long)indexItem.AsNativeInt();
+                        if ((int)value != value)
+                            throw new IndexOutOfRangeException();
+                        index = (int)value;
+                    }
+                    break;
+                default:
+                    ThrowHelper.ThrowInvalidProgramException();
+                    break;
+            }
+
+            ref byte address = ref RuntimeAugments.GetSzArrayElementAddress(array, index);
+
+            switch (opcode)
+            {
+                case ILOpcode.stelem_i:
+                    Unsafe.Write(ref address, valueItem.AsNativeInt());
+                    break;
+                case ILOpcode.stelem_i1:
+                    Unsafe.Write(ref address, (sbyte)valueItem.AsInt32());
+                    break;
+                case ILOpcode.stelem_i2:
+                    Unsafe.Write(ref address, (short)valueItem.AsInt32());
+                    break;
+                case ILOpcode.stelem_i4:
+                    Unsafe.Write(ref address, valueItem.AsInt32());
+                    break;
+                case ILOpcode.stelem_i8:
+                    Unsafe.Write(ref address, valueItem.AsInt64());
+                    break;
+                case ILOpcode.stelem_r4:
+                    Unsafe.Write(ref address, (float)valueItem.AsDouble());
+                    break;
+                case ILOpcode.stelem_r8:
+                    Unsafe.Write(ref address, valueItem.AsDouble());
+                    break;
+                case ILOpcode.stelem_ref:
+                    Unsafe.As<Object[]>(array)[index] = valueItem.AsObjectRef();
+                    break;
+                default:
+                    Debug.Assert(false);
+                    break;
+            }
+        }
+
+        private void InterpretStoreElement(int token)
+        {
+            StackItem valueItem = PopWithValidation();
+            StackItem indexItem = PopWithValidation();
+            Array array = (Array)PopWithValidation().AsObjectRef();
+
+            int index = 0;
+
+            switch (indexItem.Kind)
+            {
+                case StackValueKind.Int32:
+                    index = indexItem.AsInt32();
+                    break;
+                case StackValueKind.NativeInt:
+                    {
+                        long value = (long)indexItem.AsNativeInt();
+                        if ((int)value != value)
+                            throw new IndexOutOfRangeException();
+                        index = (int)value;
+                    }
+                    break;
+                default:
+                    ThrowHelper.ThrowInvalidProgramException();
+                    break;
+            }
+
+            TypeDesc elementType = (TypeDesc)_methodIL.GetObject(token);
+            ref byte address = ref RuntimeAugments.GetSzArrayElementAddress(array, index);
+
+        again:
+            switch (elementType.Category)
+            {
+                case TypeFlags.Boolean:
+                    Unsafe.Write(ref address, valueItem.AsInt32() != 0);
+                    break;
+                case TypeFlags.Char:
+                    Unsafe.Write(ref address, (char)valueItem.AsInt32());
+                    break;
+                case TypeFlags.SByte:
+                case TypeFlags.Byte:
+                    Unsafe.Write(ref address, (sbyte)valueItem.AsInt32());
+                    break;
+                case TypeFlags.Int16:
+                case TypeFlags.UInt16:
+                    Unsafe.Write(ref address, (short)valueItem.AsInt32());
+                    break;
+                case TypeFlags.Int32:
+                case TypeFlags.UInt32:
+                    Unsafe.Write(ref address, valueItem.AsInt32());
+                    break;
+                case TypeFlags.Int64:
+                case TypeFlags.UInt64:
+                    Unsafe.Write(ref address, valueItem.AsInt64());
+                    break;
+                case TypeFlags.IntPtr:
+                case TypeFlags.UIntPtr:
+                    Unsafe.Write(ref address, valueItem.AsNativeInt());
+                    break;
+                case TypeFlags.Single:
+                    Unsafe.Write(ref address, (float)valueItem.AsDouble());
+                    break;
+                case TypeFlags.Double:
+                    Unsafe.Write(ref address, valueItem.AsDouble());
+                    break;
+                case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
+                    Unsafe.Write(ref address, valueItem.AsValueType());
+                    break;
+                case TypeFlags.Enum:
+                    elementType = elementType.UnderlyingType;
+                    goto again;
+                case TypeFlags.Class:
+                case TypeFlags.Interface:
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                    Unsafe.As<Object[]>(array)[index] = valueItem.AsObjectRef();
+                    break;
+                default:
+                    // TODO: Support more complex return types
+                    throw new NotImplementedException();
+            }
+        }
+
+        private void InterpretLoadElement(ILOpcode opcode)
+        {
+            StackItem indexItem = PopWithValidation();
+            Array array = (Array)PopWithValidation().AsObjectRef();
+
+            int index = 0;
+            switch (indexItem.Kind)
+            {
+                case StackValueKind.Int32:
+                    index = indexItem.AsInt32();
+                    break;
+                case StackValueKind.NativeInt:
+                    {
+                        long value = (long)indexItem.AsNativeInt();
+                        if ((int)value != value)
+                            throw new IndexOutOfRangeException();
+                        index = (int)value;
+                    }
+                    break;
+                default:
+                    ThrowHelper.ThrowInvalidProgramException();
+                    break;
+            }
+
+            ref byte address = ref RuntimeAugments.GetSzArrayElementAddress(array, index);
+
+            switch (opcode)
+            {
+                case ILOpcode.ldelem_i1:
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<sbyte>(ref address)));
+                    break;
+                case ILOpcode.ldelem_u1:
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<byte>(ref address)));
+                    break;
+                case ILOpcode.ldelem_i2:
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<short>(ref address)));
+                    break;
+                case ILOpcode.ldelem_u2:
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<ushort>(ref address)));
+                    break;
+                case ILOpcode.ldelem_i4:
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<int>(ref address)));
+                    break;
+                case ILOpcode.ldelem_u4:
+                    _stack.Push(StackItem.FromInt32((int)Unsafe.Read<uint>(ref address)));
+                    break;
+                case ILOpcode.ldelem_i8:
+                    _stack.Push(StackItem.FromInt64(Unsafe.Read<long>(ref address)));
+                    break;
+                case ILOpcode.ldelem_i:
+                    _stack.Push(StackItem.FromNativeInt(Unsafe.Read<IntPtr>(ref address)));
+                    break;
+                case ILOpcode.ldelem_r4:
+                    _stack.Push(StackItem.FromDouble(Unsafe.Read<float>(ref address)));
+                    break;
+                case ILOpcode.ldelem_r8:
+                    _stack.Push(StackItem.FromDouble(Unsafe.Read<double>(ref address)));
+                    break;
+                case ILOpcode.ldelem_ref:
+                    _stack.Push(StackItem.FromObjectRef(Unsafe.Read<object>(ref address)));
+                    break;
+                default:
+                    Debug.Assert(false);
+                    break;
+            }
+        }
+
+        private void InterpretLoadElement(int token)
+        {
+            StackItem indexItem = PopWithValidation();
+            Array array = (Array)PopWithValidation().AsObjectRef();
+
+            int index = 0;
+            switch (indexItem.Kind)
+            {
+                case StackValueKind.Int32:
+                    index = indexItem.AsInt32();
+                    break;
+                case StackValueKind.NativeInt:
+                    {
+                        long value = (long)indexItem.AsNativeInt();
+                        if ((int)value != value)
+                            throw new IndexOutOfRangeException();
+                        index = (int)value;
+                    }
+                    break;
+                default:
+                    ThrowHelper.ThrowInvalidProgramException();
+                    break;
+            }
+
+            TypeDesc elementType = (TypeDesc)_methodIL.GetObject(token);
+            ref byte address = ref RuntimeAugments.GetSzArrayElementAddress(array, index);
+
+        again:
+            switch (elementType.Category)
+            {
+                case TypeFlags.Boolean:
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<bool>(ref address) ? 1 : 0));
+                    break;
+                case TypeFlags.Char:
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<char>(ref address)));
+                    break;
+                case TypeFlags.SByte:
+                case TypeFlags.Byte:
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<sbyte>(ref address)));
+                    break;
+                case TypeFlags.Int16:
+                case TypeFlags.UInt16:
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<short>(ref address)));
+                    break;
+                case TypeFlags.Int32:
+                case TypeFlags.UInt32:
+                    _stack.Push(StackItem.FromInt32(Unsafe.Read<int>(ref address)));
+                    break;
+                case TypeFlags.Int64:
+                case TypeFlags.UInt64:
+                    _stack.Push(StackItem.FromInt64(Unsafe.Read<long>(ref address)));
+                    break;
+                case TypeFlags.IntPtr:
+                case TypeFlags.UIntPtr:
+                    _stack.Push(StackItem.FromNativeInt(Unsafe.Read<IntPtr>(ref address)));
+                    break;
+                case TypeFlags.Single:
+                    _stack.Push(StackItem.FromDouble(Unsafe.Read<float>(ref address)));
+                    break;
+                case TypeFlags.Double:
+                    _stack.Push(StackItem.FromDouble(Unsafe.Read<double>(ref address)));
+                    break;
+                case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
+                    _stack.Push(StackItem.FromValueType(Unsafe.Read<ValueType>(ref address)));
+                    break;
+                case TypeFlags.Enum:
+                    elementType = elementType.UnderlyingType;
+                    goto again;
+                case TypeFlags.Class:
+                case TypeFlags.Interface:
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                    _stack.Push(StackItem.FromObjectRef(Unsafe.Read<object>(ref address)));
+                    break;
+                default:
+                    // TODO: Support more complex return types
+                    throw new NotImplementedException();
             }
         }
     }

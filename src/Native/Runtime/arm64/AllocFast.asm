@@ -113,7 +113,8 @@ NewOutOfMemory
 ;;  x1 == element/character count
     LEAF_ENTRY RhNewString
         ;; Make sure computing the overall allocation size won't overflow
-        mov         x2, #0x7FFFFFFF
+        ;; TODO: this should be actually MAX_STRING_LENGTH
+        mov         x2, 0x7FFFFFFF
         cmp         x1, x2
         bhi         StringSizeOverflow
 

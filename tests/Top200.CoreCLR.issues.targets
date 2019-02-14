@@ -28,7 +28,6 @@
     <IncludeList Include="$(XunitTestBinBase)\GC\API\GCHandleCollector\NegTests\NegTests.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\GC\API\GCSettings\InputValidation\InputValidation.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\GC\API\NoGCRegion\NoGC\NoGC.cmd" />
-    <IncludeList Include="$(XunitTestBinBase)\GC\API\WeakReference\Finalize2\Finalize2.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\GC\API\WeakReference\multipleWRs\multipleWRs.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\GC\API\WeakReference\multipleWRs_1\multipleWRs_1.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\GC\Coverage\LargeObjectAlloc\LargeObjectAlloc.cmd" />

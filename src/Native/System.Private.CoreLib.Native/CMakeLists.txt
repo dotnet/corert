@@ -1,7 +1,6 @@
 project(System.Private.CoreLib.Native)
 
 set(NATIVE_SOURCES
-    pal_datetime.cpp
     pal_dynamicload.cpp
     pal_environment.cpp
     pal_errno.cpp

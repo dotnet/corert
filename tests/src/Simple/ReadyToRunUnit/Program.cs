@@ -431,6 +431,84 @@ internal class Program
         }
     }
 
+    private class GenException<T> : Exception {}
+    
+    private static bool GenericTryCatch<T>()
+    {
+        Exception thrown = new GenException<T>();
+        try
+        {
+            throw thrown;
+        }
+        catch (GenException<T>)
+        {
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Caught {0} (expected {1})", ex.GetType(), thrown.GetType());
+            return false;
+        }
+    }
+
+    private class RefX1<T> {}
+    private class RefX2<T,U> {}
+    private struct ValX1<T> {}
+    private struct ValX2<T,U> {}
+    private struct ValX3<T,U,V>{}
+
+    private static bool GenericTryCatchTest()
+    {
+        bool success = true;
+        success = GenericTryCatch<double>() && success;
+        success = GenericTryCatch<string>() && success;
+        success = GenericTryCatch<object>() && success;
+        success = GenericTryCatch<Guid>() && success;
+
+        success = GenericTryCatch<int[]>() && success;
+        success = GenericTryCatch<double[,]>() && success;
+        success = GenericTryCatch<string[][][]>() && success;
+        success = GenericTryCatch<object[,,,]>() && success;
+        success = GenericTryCatch<Guid[][,,,][]>() && success;
+
+        success = GenericTryCatch<RefX1<int>[]>() && success;
+        success = GenericTryCatch<RefX1<double>[,]>() && success;
+        success = GenericTryCatch<RefX1<string>[][][]>() && success;
+        success = GenericTryCatch<RefX1<object>[,,,]>() && success;
+        success = GenericTryCatch<RefX1<Guid>[][,,,][]>() && success;
+        success = GenericTryCatch<RefX2<int,int>[]>() && success;
+        success = GenericTryCatch<RefX2<double,double>[,]>() && success;
+        success = GenericTryCatch<RefX2<string,string>[][][]>() && success;
+        success = GenericTryCatch<RefX2<object,object>[,,,]>() && success;
+        success = GenericTryCatch<RefX2<Guid,Guid>[][,,,][]>() && success;
+        success = GenericTryCatch<ValX1<int>[]>() && success;
+        success = GenericTryCatch<ValX1<double>[,]>() && success;
+        success = GenericTryCatch<ValX1<string>[][][]>() && success;
+        success = GenericTryCatch<ValX1<object>[,,,]>() && success;
+        success = GenericTryCatch<ValX1<Guid>[][,,,][]>() && success;
+
+        success = GenericTryCatch<ValX2<int,int>[]>() && success;
+        success = GenericTryCatch<ValX2<double,double>[,]>() && success;
+        success = GenericTryCatch<ValX2<string,string>[][][]>() && success;
+        success = GenericTryCatch<ValX2<object,object>[,,,]>() && success;
+        success = GenericTryCatch<ValX2<Guid,Guid>[][,,,][]>() && success;
+
+        success = GenericTryCatch<ValX1<int>>() && success;
+        success = GenericTryCatch<ValX1<RefX1<int>>>() && success;
+        success = GenericTryCatch<ValX2<int,string>>() && success;
+        success = GenericTryCatch<ValX3<int,string,Guid>>() && success;
+
+        success = GenericTryCatch<ValX1<ValX1<int>>>() && success;
+        success = GenericTryCatch<ValX1<ValX1<ValX1<string>>>>() && success;
+        success = GenericTryCatch<ValX1<ValX1<ValX1<ValX1<Guid>>>>>() && success;
+
+        success = GenericTryCatch<ValX1<ValX2<int,string>>>() && success;
+        success = GenericTryCatch<ValX2<ValX2<ValX1<int>,ValX3<int,string, ValX1<ValX2<int,string>>>>,ValX2<ValX1<int>,ValX3<int,string, ValX1<ValX2<int,string>>>>>>() && success;
+        success = GenericTryCatch<ValX3<ValX1<int[][,,,]>,ValX2<object[,,,][][],Guid[][][]>,ValX3<double[,,,,,,,,,,],Guid[][][][,,,,][,,,,][][][],string[][][][][][][][][][][]>>>();
+        
+        return success;
+    }
+
     private static bool FileStreamNullRefTryCatch()
     {
         try
@@ -697,6 +775,80 @@ internal class Program
 
         return true;
     }
+    
+    class MyGen<T>
+    {
+        public static string GcValue;
+        public static int NonGcValue;
+        [ThreadStatic]
+        public static string TlsGcValue;
+        [ThreadStatic]
+        public static int TlsNonGcValue;
+    }
+
+    private static void SetGenericGcStatic<U, V>(string uValue, string vValue)
+    {
+        MyGen<U>.GcValue = uValue;
+        MyGen<V>.GcValue = vValue;
+    }
+
+    private static void SetGenericNonGcStatic<U, V>(int uValue, int vValue)
+    {
+        MyGen<U>.NonGcValue = uValue;
+        MyGen<V>.NonGcValue = vValue;
+    }
+
+    private static void SetGenericTlsGcStatic<U, V>(string uValue, string vValue)
+    {
+        MyGen<U>.TlsGcValue = uValue;
+        MyGen<V>.TlsGcValue = vValue;
+    }
+
+    private static void SetGenericTlsNonGcStatic<U, V>(int uValue, int vValue)
+    {
+        MyGen<U>.TlsNonGcValue = uValue;
+        MyGen<V>.TlsNonGcValue = vValue;
+    }
+
+    private static bool SharedGenericGcStaticTest()
+    {
+        string objectValue = "Hello";
+        string stringValue = "World";
+        SetGenericGcStatic<object, string>(objectValue, stringValue);
+        Console.WriteLine("Object GC value: {0}, expected {1}", MyGen<object>.GcValue, objectValue);
+        Console.WriteLine("String GC value: {0}, expected {1}", MyGen<string>.GcValue, stringValue);
+        return MyGen<object>.GcValue == objectValue && MyGen<string>.GcValue == stringValue;
+    }
+
+    private static bool SharedGenericNonGcStaticTest()
+    {
+        int objectValue = 42;
+        int stringValue = 666;
+        SetGenericNonGcStatic<object, string>(objectValue, stringValue);
+        Console.WriteLine("Object non-GC value: {0}, expected {1}", MyGen<object>.NonGcValue, objectValue);
+        Console.WriteLine("String non-GC value: {0}, expected {1}", MyGen<string>.NonGcValue, stringValue);
+        return MyGen<object>.NonGcValue == objectValue && MyGen<string>.NonGcValue == stringValue;
+    }
+
+    private static bool SharedGenericTlsGcStaticTest()
+    {
+        string objectValue = "Cpaot";
+        string stringValue = "Rules";
+        SetGenericTlsGcStatic<object, string>(objectValue, stringValue);
+        Console.WriteLine("Object TLS GC value: {0}, expected {1}", MyGen<object>.TlsGcValue, objectValue);
+        Console.WriteLine("String TLS GC value: {0}, expected {1}", MyGen<string>.TlsGcValue, stringValue);
+        return MyGen<object>.TlsGcValue == objectValue && MyGen<string>.TlsGcValue == stringValue;
+    }
+
+    private static bool SharedGenericTlsNonGcStaticTest()
+    {
+        int objectValue = 1234;
+        int stringValue = 5678;
+        SetGenericTlsNonGcStatic<object, string>(objectValue, stringValue);
+        Console.WriteLine("Object TLS non-GC value: {0}, expected {1}", MyGen<object>.TlsNonGcValue, objectValue);
+        Console.WriteLine("String TLS non-GC value: {0}, expected {1}", MyGen<string>.TlsNonGcValue, stringValue);
+        return MyGen<object>.TlsNonGcValue == objectValue && MyGen<string>.TlsNonGcValue == stringValue;
+    }
 
     static bool RVAFieldTest()
     {
@@ -715,6 +867,73 @@ internal class Program
             }
         }
         return match;
+    }
+
+    internal class ClassWithVirtual
+    {
+        public bool VirtualCalledFlag = false;
+
+        public virtual void Virtual()
+        {
+            Console.WriteLine("Virtual called");
+            VirtualCalledFlag = true;
+        }
+    }
+
+    public class BaseClass
+    {
+        public virtual int MyGvm<T>()
+        {
+            Console.WriteLine("MyGvm returning 100");
+            return 100;
+        }
+    }
+
+    // Test that ldvirtftn can load a virtual instance delegate method
+    public static bool VirtualDelegateLoadTest()
+    {
+        bool success = true;
+
+        var classWithVirtual = new ClassWithVirtual();
+
+        Action virtualMethod = classWithVirtual.Virtual;
+        virtualMethod();
+
+        success &= classWithVirtual.VirtualCalledFlag;
+
+        
+        var bc = new BaseClass();
+        success &= (bc.MyGvm<int>() == 100);
+
+        return success;
+    }
+
+    class ClassWithGVM
+    {
+        public virtual bool GVM<T>(string expectedTypeName)
+        {
+            string typeName = GetTypeName<T>();
+            Console.WriteLine("GVM<{0}> called ({1} expected)", typeName, expectedTypeName);
+            return typeName == expectedTypeName;
+        }
+    }
+
+    private static void GVMTestCase(Func<string, bool> gvm, string expectedTypeName, ref bool success)
+    {
+        if (!gvm(expectedTypeName))
+        {
+            success = false;
+        }
+    }
+
+    private static bool GVMTest()
+    {
+        ClassWithGVM gvmInstance = new ClassWithGVM();
+        bool success = true;
+        GVMTestCase(gvmInstance.GVM<int>, "System.Int32", ref success);
+        GVMTestCase(gvmInstance.GVM<object>, "System.Object", ref success);
+        GVMTestCase(gvmInstance.GVM<string>, "System.String", ref success);
+        return success;
     }
 
     public static int Main(string[] args)
@@ -756,6 +975,7 @@ internal class Program
         RunTest("EmptyArrayOfString", EmptyArrayOfString());
         RunTest("EnumerateEmptyArrayOfString", EnumerateEmptyArrayOfString());
         RunTest("TryCatch", TryCatch());
+        RunTest("GenericTryCatchTest", GenericTryCatchTest());
         RunTest("FileStreamNullRefTryCatch", FileStreamNullRefTryCatch());
         RunTest("InstanceMethodTest", InstanceMethodTest());
         RunTest("ThisObjGenericLookupTest", ThisObjGenericLookupTest());
@@ -764,6 +984,12 @@ internal class Program
         RunTest("VectorTest", VectorTest());
         RunTest("EnumHashValueTest", EnumHashValueTest());
         RunTest("RVAFieldTest", RVAFieldTest());
+        RunTest("SharedGenericGcStaticTest", SharedGenericGcStaticTest());
+        RunTest("SharedGenericNonGcStaticTest", SharedGenericNonGcStaticTest());
+        RunTest("SharedGenericTlsGcStaticTest", SharedGenericTlsGcStaticTest());
+        RunTest("SharedGenericTlsNonGcStaticTest", SharedGenericTlsNonGcStaticTest());
+        RunTest("VirtualDelegateLoadTest", VirtualDelegateLoadTest());
+        RunTest("GVMTest", GVMTest());
 
         Console.WriteLine($@"{_passedTests.Count} tests pass:");
         foreach (string testName in _passedTests)

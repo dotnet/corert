@@ -20,11 +20,17 @@ See the LICENSE file in the project root for more information.
     <NativeIntermediateOutputPath Condition="'$(NativeIntermediateOutputPath)' == ''">$(IntermediateOutputPath)native\</NativeIntermediateOutputPath>
     <NativeOutputPath Condition="'$(NativeOutputPath)' == ''">$(OutputPath)native\</NativeOutputPath>
     <NativeCompilationDuringPublish Condition="'$(NativeCompilationDuringPublish)' == ''">true</NativeCompilationDuringPublish>
-    <!-- Workaround for lack of current host OS detection - https://github.com/Microsoft/msbuild/issues/539 -->
-    <TargetOS Condition="'$(TargetOS)' == '' and '$(OS)' == 'Unix' and Exists('/Applications')">OSX</TargetOS>
-    <!-- The correct OS detection code. Uncomment once CI machines are upgraded to the latest version of MSBuild -->
-    <!-- <TargetOS Condition="'$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</TargetOS>  -->    
+    <TargetOS Condition="'$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</TargetOS>
     <TargetOS Condition="'$(TargetOS)' == ''">$(OS)</TargetOS>
+  </PropertyGroup>
+
+  <!-- Set up the defaults for the compatibility mode -->
+  <PropertyGroup Condition="'$(NativeCodeGen)' != 'readytorun'">
+    <_BuildingInCompatibleMode Condition="$(RootAllApplicationAssemblies) == '' and $(IlcGenerateCompleteTypeMetadata) == '' and $(IlcGenerateStackTraceData) == ''">true</_BuildingInCompatibleMode>
+
+    <RootAllApplicationAssemblies Condition="$(RootAllApplicationAssemblies) == ''">true</RootAllApplicationAssemblies>
+    <IlcGenerateCompleteTypeMetadata Condition="$(IlcGenerateCompleteTypeMetadata) == ''">true</IlcGenerateCompleteTypeMetadata>
+    <IlcGenerateStackTraceData Condition="$(IlcGenerateStackTraceData) == ''">true</IlcGenerateStackTraceData>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -223,7 +229,8 @@ See the LICENSE file in the project root for more information.
 
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(NativeObject)))" />
 
-    <Message Text="Generating native code" Importance="high" />
+    <Message Text="Generating native code" Condition="$(_BuildingInCompatibleMode) != 'true'" Importance="high" />
+    <Message Text="Generating compatible native code. To optimize for size or speed, visit https://aka.ms/OptimizeCoreRT" Condition="$(_BuildingInCompatibleMode) == 'true'" Importance="high" />
 
     <Exec Command="&quot;$(IlcPath)\tools\ilc&quot; @&quot;$(NativeIntermediateOutputPath)%(IlcCmd.ResponseFileName)&quot;" />
   </Target>

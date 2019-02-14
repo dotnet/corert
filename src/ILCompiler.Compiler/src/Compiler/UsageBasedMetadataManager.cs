@@ -159,6 +159,28 @@ namespace ILCompiler
                     }
                 }
             }
+
+            // If anonymous type heuristic is turned on and this is an anonymous type, make sure we have
+            // method bodies for all properties. It's common to have anonymous types used with reflection
+            // and it's hard to specify them in RD.XML.
+            if ((_generationOptions & UsageBasedMetadataGenerationOptions.AnonymousTypeHeuristic) != 0)
+            {
+                if (type is MetadataType metadataType &&
+                    metadataType.HasInstantiation &&
+                    !metadataType.IsGenericDefinition &&
+                    metadataType.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute") &&
+                    metadataType.Name.Contains("AnonymousType"))
+                {
+                    foreach (MethodDesc method in type.GetMethods())
+                    {
+                        if (!method.Signature.IsStatic && method.IsSpecialName)
+                        {
+                            dependencies = dependencies ?? new DependencyList();
+                            dependencies.Add(factory.CanonicalEntrypoint(method), "Anonymous type accessor");
+                        }
+                    }
+                }
+            }
         }
 
         protected override void GetRuntimeMappingDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
@@ -457,5 +479,14 @@ namespace ILCompiler
         /// Reflection blocking still applies.
         /// </remarks>
         CompleteTypesOnly = 1,
+
+        /// <summary>
+        /// Specifies that heuristic that makes anonymous types work should be applied.
+        /// </summary>
+        /// <remarks>
+        /// Generates method bodies for properties on anonymous types even if they're not
+        /// statically used.
+        /// </remarks>
+        AnonymousTypeHeuristic = 2,
     }
 }

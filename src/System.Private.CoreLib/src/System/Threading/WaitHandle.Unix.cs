@@ -35,5 +35,10 @@ namespace System.Threading
         {
             return WaitSubsystem.SignalAndWait(handleToSignal, handleToWaitOn, millisecondsTimeout);
         }
+
+        internal static unsafe int WaitMultipleIgnoringSyncContext(IntPtr[] handles, bool waitAll, int millisecondsTimeout)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }

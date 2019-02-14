@@ -117,6 +117,9 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AmbiguousImplementationException_NullMessage" xml:space="preserve">
+    <value>Ambiguous implementation found.</value>
+  </data>
   <data name="Arg_AccessException" xml:space="preserve">
     <value>Cannot access member.</value>
   </data>
@@ -308,6 +311,9 @@
   </data>
   <data name="Arg_MustBeDouble" xml:space="preserve">
     <value>Object must be of type Double.</value>
+  </data>
+  <data name="Arg_MustBeDriveLetterOrRootDir" xml:space="preserve">
+    <value>Drive name must be a root directory (i.e. 'C:\') or a drive letter ('C').</value>
   </data>
   <data name="Arg_MustBeEnum" xml:space="preserve">
     <value>Type provided must be an Enum.</value>
@@ -684,6 +690,9 @@
   <data name="Argument_MustBeFalse" xml:space="preserve">
     <value>Argument must be initialized to false</value>
   </data>
+  <data name="Argument_MustBeRuntimeAssembly" xml:space="preserve">
+    <value>Assembly must be a runtime Assembly object.</value>
+  </data>
   <data name="Argument_MustBeRuntimeType" xml:space="preserve">
     <value>Type must be a runtime Type object.</value>
   </data>
@@ -693,8 +702,11 @@
   <data name="Argument_NoRegionInvariantCulture" xml:space="preserve">
     <value>There is no region associated with the Invariant Culture (Culture ID: 0x7F).</value>
   </data>
-  <data name="Argument_NotIsomorphic" xml:space="preserve">
+  <data name="ArgumentException_NotIsomorphic" xml:space="preserve">
     <value>Object contains non-primitive or non-blittable data.</value>
+  </data>
+  <data name="Argument_PathEmpty" xml:space="preserve">
+    <value>Path cannot be the empty string or all whitespace.</value>
   </data>
   <data name="Argument_StructArrayTooLarge" xml:space="preserve">
     <value>Array size exceeds addressing limitations.</value>
@@ -731,6 +743,9 @@
   </data>
   <data name="ArgumentOutOfRange_LengthTooLarge" xml:space="preserve">
     <value>The specified length exceeds the maximum value of {0}.</value>
+  </data>
+  <data name="ArgumentOutOfRange_LessEqualToIntegerMaxVal" xml:space="preserve">
+    <value>Argument must be less than or equal to 2^31 - 1 milliseconds.</value>
   </data>
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>
@@ -1023,7 +1038,7 @@
   <data name="BadImageFormatException_CouldNotLoadFileOrAssembly" xml:space="preserve">
     <value>Could not load file or assembly '{0}'. An attempt was made to load a program with an incorrect format.</value>
   </data>
-  <data name="CollectionCorrupted" xml:space="preserve">
+  <data name="InvalidOperation_CollectionCorrupted" xml:space="preserve">
     <value>A prior operation on this collection was interrupted by an exception. Collection's state is no longer trusted.</value>
   </data>
   <data name="Exception_EndOfInnerExceptionStack" xml:space="preserve">
@@ -1143,8 +1158,14 @@
   <data name="InvalidOperation_EnumOpCantHappen" xml:space="preserve">
     <value>Enumeration has either not started or has already finished.</value>
   </data>
+  <data name="InvalidOperation_GetVersion" xml:space="preserve">
+    <value>OSVersion's call to GetVersionEx failed.</value>
+  </data>
   <data name="InvalidOperation_HandleIsNotInitialized" xml:space="preserve">
     <value>Handle is not initialized.</value>
+  </data>
+  <data name="InvalidOperation_HandleIsNotPinned" xml:space="preserve">
+    <value>Handle is not pinned.</value>
   </data>
   <data name="InvalidOperation_HashInsertFailed" xml:space="preserve">
     <value>Hashtable insert failed. Load factor too high. The most common cause is multiple threads writing to the Hashtable simultaneously.</value>
@@ -1335,6 +1356,9 @@
   <data name="ObjectDisposed_ObjectName_Name" xml:space="preserve">
     <value>Object name: '{0}'.</value>
   </data>
+  <data name="ObjectDisposed_SafeHandleClosed" xml:space="preserve">
+    <value>Safe handle has been closed.</value>
+  </data>
   <data name="Overflow_Byte" xml:space="preserve">
     <value>Value was either too large or too small for an unsigned byte.</value>
   </data>
@@ -1502,6 +1526,9 @@
   </data>
   <data name="PostconditionOnExceptionFailed_Cnd" xml:space="preserve">
     <value>Postcondition failed after throwing an exception: {0}</value>
+  </data>
+  <data name="PersistedFiles_NoHomeDirectory" xml:space="preserve">
+    <value>The home directory of the current user could not be determined.</value>
   </data>
   <data name="InvariantFailed" xml:space="preserve">
     <value>Invariant failed.</value>
@@ -2326,7 +2353,7 @@
   <data name="InvalidOperationException_NoGCRegionNotInProgress" xml:space="preserve">
     <value>NoGCRegion mode must be set.</value>
   </data>
-  <data name="InvalidOperationException_SetLatencyModeNoGC" xml:space="preserve">
+  <data name="InvalidOperation_SetLatencyModeNoGC" xml:space="preserve">
     <value>The NoGCRegion mode is in progress. End it and then set a different mode.</value>
   </data>
   <data name="InvalidOperation_NotWithConcurrentGC" xml:space="preserve">
@@ -2790,6 +2817,9 @@
   </data>
   <data name="NullReference_InvokeNullRefReturned" xml:space="preserve">
     <value>The target method returned a null reference.</value>
+  </data>
+  <data name="InvalidOperation_ComputerName" xml:space="preserve">
+    <value>Computer name could not be obtained.</value>
   </data>
   <data name="InvalidOperation_ConcurrentOperationsNotSupported" xml:space="preserve">
     <value>Operations that change non-concurrent collections must have exclusive access. A concurrent update was performed on this collection and corrupted its state. The collection's state is no longer correct.</value>
