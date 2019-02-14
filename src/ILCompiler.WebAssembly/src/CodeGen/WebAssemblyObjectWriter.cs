@@ -500,7 +500,7 @@ namespace ILCompiler.DependencyAnalysis
         public int EmitSymbolRef(string realSymbolName, int offsetFromSymbolName, bool isFunction, RelocType relocType, int delta = 0)
         {
             int symbolStartOffset = _currentObjectData.Count;
-            
+
             // Workaround for ObjectWriter's lack of support for IMAGE_REL_BASED_RELPTR32
             // https://github.com/dotnet/corert/issues/3278
             if (relocType == RelocType.IMAGE_REL_BASED_RELPTR32)
