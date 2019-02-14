@@ -805,18 +805,97 @@ internal static class Program
             PrintLine("Ok.");
         }
 
-        PrintString("type GetFields length: ");
+        PrintString("Type GetFields length: ");
         var x = new ClassForMetaTests();
         var s = x.stringField;  
-        var i = x.intField;  
-        FieldInfo[] fields = typeof(ClassForMetaTests).GetFields();
-        if (fields.Length == 2)
+        var i = x.intField;
+        var fieldClassType = typeof(ClassForMetaTests);
+        FieldInfo[] fields = fieldClassType.GetFields();
+        if (fields.Length == 3)
         {
             PrintLine("Ok.");
         }
         else
         {
             PrintLine(" Failed.");
+        }
+
+        PrintString("Type get string field via reflection: ");
+        var stringFieldInfo = fieldClassType.GetField("stringField");
+        if ((string)stringFieldInfo.GetValue(x) == s)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
+        PrintString("Type get int field via reflection: ");
+        var intFieldInfo = fieldClassType.GetField("intField");
+        if ((int)intFieldInfo.GetValue(x) == i)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
+
+        PrintString("Type get static int field via reflection: ");
+        var staticIntFieldInfo = fieldClassType.GetField("staticIntField");
+        if ((int)staticIntFieldInfo.GetValue(x) == 23)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
+
+        PrintString("Type set string field via reflection: ");
+        stringFieldInfo.SetValue(x, "bcd");
+        if (x.stringField == "bcd")
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
+
+        PrintString("Type set int field via reflection: ");
+        intFieldInfo.SetValue(x, 456);
+        if (x.intField == 456)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
+
+        PrintString("Type set static int field via reflection: ");
+        staticIntFieldInfo.SetValue(x, 987);
+        if (ClassForMetaTests.staticIntField == 987)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
+        var st = new StructForMetaTests();
+        st.StringField = "xyz";
+        var fieldStructType = typeof(StructForMetaTests);
+        var structStringFieldInfo = fieldStructType.GetField("StringField");
+        PrintString("Struct get string field via reflection: ");
+        if ((string)structStringFieldInfo.GetValue(st) == "xyz")
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
         }
     }
 
@@ -827,13 +906,21 @@ internal static class Program
         public int intField;
         public string stringField;
 #pragma warning restore 0169
+        public static int staticIntField;
 
-        public void ForceMetadata()
+        public ClassForMetaTests()
         {
-            stringField = "";
-            intField = 1;
+            stringField = "ab";
+            intField = 12;
+            staticIntField = 23;
         }
     }
+
+    public struct StructForMetaTests
+    {
+        public string StringField;
+    }
+
 
     /// <summary>
     /// Ensures all of the blocks of a try/finally function are hit when there aren't exceptions

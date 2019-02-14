@@ -91,30 +91,8 @@ namespace System.Reflection.Runtime.TypeInfos
             return Empty<EventInfo>.Enumerable;
         }
 
-        [DllImport("*")]
-        private static unsafe extern int printf(byte* str, byte* unused);
-        private static unsafe void PrintString(string s)
-        {
-            int length = s.Length;
-            fixed (char* curChar = s)
-            {
-                for (int i = 0; i < length; i++)
-                {
-                    TypeLoaderEnvironment.TwoByteStr curCharStr = new TypeLoaderEnvironment.TwoByteStr();
-                    curCharStr.first = (byte)(*(curChar + i));
-                    printf((byte*)&curCharStr, null);
-                }
-            }
-        }
-        public static void PrintLine(string s)
-        {
-            PrintString(s);
-            PrintString("\n");
-        }
-
         internal IEnumerable<FieldInfo> CoreGetDeclaredFields(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
         {
-            PrintLine("CoreGetDeclaredFields ");
             RuntimeNamedTypeInfo definingType = AnchoringTypeDefinitionForDeclaredMembers;
             if (definingType != null)
             {

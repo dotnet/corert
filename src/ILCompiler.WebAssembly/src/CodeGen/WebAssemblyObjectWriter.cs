@@ -94,22 +94,7 @@ namespace ILCompiler.DependencyAnalysis
                 ThrowHelper.ThrowInvalidProgramException();
             }
 
-            string symbolAddressGlobalName;
-            if (symbol is EETypeNode node && !(symbol is ConstructedEETypeNode))
-            {
-                if(node.Type is EcmaType && ((EcmaType)node.Type).Name.EndsWith("ClassForMetaTests"))
-//                var constructedTypeSymbol = nodeFactory.ConstructedTypeSymbol(node.Type);
-//                if (constructedTypeSymbol.Offset == 0)
-                {
-                    symbolAddressGlobalName = node.GetMangledName(nameMangler) + "___SYMBOL";
-//                    symbolAddressGlobalName = node.GetMangledName(nameMangler) + "___REALBASE";
-                }
-                else
-                {
-                    symbolAddressGlobalName = node.GetMangledName(nameMangler) + "___SYMBOL";
-                }
-            }
-            else symbolAddressGlobalName = symbol.GetMangledName(nameMangler) + "___SYMBOL";
+            string symbolAddressGlobalName = symbol.GetMangledName(nameMangler) + "___SYMBOL";
             LLVMValueRef symbolAddress;
             if (s_symbolValues.TryGetValue(symbolAddressGlobalName, out symbolAddress))
             {
@@ -355,12 +340,13 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             readonly bool IsFunction;
-            readonly string SymbolName;
+            public readonly string SymbolName;
             readonly int Offset;
 
             public LLVMValueRef ToLLVMValueRef(LLVMModuleRef module)
             {
-                LLVMValueRef valRef = IsFunction ? LLVM.GetNamedFunction(module, SymbolName) : LLVM.GetNamedGlobal(module, SymbolName);
+                LLVMValueRef valRef;
+                valRef = IsFunction ? LLVM.GetNamedFunction(module, SymbolName) : LLVM.GetNamedGlobal(module, SymbolName);
 
                 if (Offset != 0 && valRef.Pointer != IntPtr.Zero)
                 {
@@ -408,21 +394,17 @@ namespace ILCompiler.DependencyAnalysis
 
                 for (int i = 0; i < countOfPointerSizedElements; i++)
                 {
+                    if (i == 298)
+                    {
+
+                    }
                     int curOffset = (i * pointerSize);
                     SymbolRefData symbolRef;
                     if (ObjectSymbolRefs.TryGetValue(curOffset, out symbolRef))
                     {
                         LLVMValueRef pointedAtValue = symbolRef.ToLLVMValueRef(module);
-                        //TODO: why did this come back null
-                        if (pointedAtValue.Pointer != IntPtr.Zero)
-                        {
-                            var ptrValue = LLVM.ConstBitCast(pointedAtValue, intPtrType);
-                            entries.Add(ptrValue);
-                        }
-                        else
-                        {
-                            entries.Add(LLVM.ConstPointerNull(intPtrType));
-                        }
+                        var ptrValue = LLVM.ConstBitCast(pointedAtValue, intPtrType);
+                        entries.Add(ptrValue);
                     }
                     else
                     {
@@ -450,7 +432,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public void DoneObjectNode()
         {
-            int pointerSize = _nodeFactory.Target.PointerSize;
             EmitAlignment(_nodeFactory.Target.PointerSize);
             Debug.Assert(_nodeFactory.Target.PointerSize == 4);
             int countOfPointerSizedElements = _currentObjectData.Count / _nodeFactory.Target.PointerSize;
@@ -540,7 +521,6 @@ namespace ILCompiler.DependencyAnalysis
         public int EmitSymbolRef(string realSymbolName, int offsetFromSymbolName, bool isFunction, RelocType relocType, int delta = 0)
         {
             int symbolStartOffset = _currentObjectData.Count;
-
             // Workaround for ObjectWriter's lack of support for IMAGE_REL_BASED_RELPTR32
             // https://github.com/dotnet/corert/issues/3278
             if (relocType == RelocType.IMAGE_REL_BASED_RELPTR32)
@@ -848,6 +828,10 @@ namespace ILCompiler.DependencyAnalysis
                     int offsetIndex = 0;
                     while (i < nodeContents.Data.Length)
                     {
+                        if (nextRelocIndex == 111 && depNode is ExternalReferencesTableNode)
+                        {
+
+                        }
                         // Emit symbol definitions if necessary
                         objectWriter.EmitSymbolDefinition(i);
 
@@ -863,7 +847,31 @@ namespace ILCompiler.DependencyAnalysis
                                     delta = Relocation.ReadValue(reloc.RelocType, location);
                                 }
                             }
-                            int size = objectWriter.EmitSymbolReference(reloc.Target, (int)delta, reloc.RelocType);
+                            ISymbolNode symbolToWrite = reloc.Target;
+                            var eeTypeNode = reloc.Target as EETypeNode;
+                            if (eeTypeNode != null)
+                            {
+                                if (((EETypeNode)reloc.Target).Type is EcmaType)
+                                {
+                                    if (((EcmaType)((EETypeNode)reloc.Target).Type).Name.Contains("QTypeDefinition"))
+                                    {
+
+                                    }
+                                }
+                                if (eeTypeNode.ShouldSkipEmittingObjectNode(factory))
+                                {
+                                    symbolToWrite = factory.ConstructedTypeSymbol(eeTypeNode.Type);
+                                }
+//                                string symbolAddressGlobalName = reloc.Target.GetMangledName(factory.NameMangler) + "___SYMBOL";
+//                                LLVMValueRef symbolAddress;
+//                                var maximallyConstructedSymbol = factory.MaximallyConstructableType(((EETypeNode)reloc.Target).Type);
+//                                if (s_symbolValues.TryGetValue(symbolAddressGlobalName, out symbolAddress) && maximallyConstructedSymbol is ISymbolDefinitionNode && ((ISymbolDefinitionNode)maximallyConstructedSymbol).Offset > 0 && !maximallyConstructedSymbol.Equals(reloc.Target))
+//                                {
+//                                    symbolToWrite = maximallyConstructedSymbol;
+//                                }
+                            }
+
+                            int size = objectWriter.EmitSymbolReference(symbolToWrite, (int)delta, reloc.RelocType);
 
                             /*
                              WebAssembly has no thumb 
