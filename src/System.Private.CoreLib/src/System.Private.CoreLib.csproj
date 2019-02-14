@@ -205,7 +205,6 @@
     <Compile Include="System\Diagnostics\StackTrace.CoreRT.cs" />
     <Compile Include="System\Diagnostics\Tracing\EventCounter.ProjectN.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <Compile Include="System\Diagnostics\Tracing\EventSource_CoreRT.cs" />
-    <Compile Include="System\Diagnostics\Tracing\FrameworkEventSource.cs" />
     <Compile Include="System\Diagnostics\Tracing\UnsafeNativeMethods.cs" />
     <Compile Include="System\Enum.cs" />
     <Compile Include="System\Environment.CoreRT.cs" />
