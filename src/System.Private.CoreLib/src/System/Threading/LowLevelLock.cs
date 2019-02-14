@@ -47,7 +47,6 @@ namespace System.Threading
 #endif
 
             _spinWaiter = new LowLevelSpinWaiter();
-            _spinWaiter.Initialize();
             _spinWaitTryAcquireCallback = SpinWaitTryAcquireCallback;
             _monitor = new LowLevelMonitor();
         }

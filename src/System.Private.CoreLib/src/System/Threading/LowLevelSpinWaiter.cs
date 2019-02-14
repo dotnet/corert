@@ -20,24 +20,13 @@ namespace System.Threading
         private const int SpinCount = 8;
         private const int SpinSleep0Threshold = 4;
 
-        private static int s_processorCount;
-
         private int _spinningThreadCount;
-
-        public void Initialize()
-        {
-            if (s_processorCount == 0)
-            {
-                s_processorCount = Environment.ProcessorCount;
-            }
-        }
 
         public bool SpinWaitForCondition(Func<bool> condition)
         {
             Debug.Assert(condition != null);
-            Debug.Assert(s_processorCount > 0);
 
-            int processorCount = s_processorCount;
+            int processorCount = PlatformHelper.ProcessorCount;
             int spinningThreadCount = Interlocked.Increment(ref _spinningThreadCount);
             try
             {
@@ -50,15 +39,8 @@ namespace System.Threading
                     // prior to that threshold would not help other threads make progress
                     for (int spinIndex = processorCount > 1 ? 0 : SpinSleep0Threshold; spinIndex < SpinCount; ++spinIndex)
                     {
-                        if (processorCount > 1)
-                        {
-                            // The caller should check the condition in a fast path before calling this method, so wait first
-                            Wait(spinIndex, SpinSleep0Threshold);
-                        }
-                        else
-                        {
-                            RuntimeThread.Yield();
-                        }
+                        // The caller should check the condition in a fast path before calling this method, so wait first
+                        Wait(spinIndex, SpinSleep0Threshold, processorCount);
 
                         if (condition())
                         {
@@ -75,7 +57,7 @@ namespace System.Threading
             return false;
         }
 
-        public static void Wait(int spinIndex, int sleep0Threshold)
+        public static void Wait(int spinIndex, int sleep0Threshold, int processorCount)
         {
             Debug.Assert(spinIndex >= 0);
             Debug.Assert(sleep0Threshold >= 0);
@@ -89,7 +71,7 @@ namespace System.Threading
             //     spin loop too early can cause excessive context switcing from the wait.
             //   - If there are multiple threads doing Yield and Sleep(0) (typically from the same spin loop due to contention),
             //     they may switch between one another, delaying work that can make progress.
-            if (spinIndex < sleep0Threshold || (spinIndex - sleep0Threshold) % 2 != 0)
+            if (processorCount > 1 && (spinIndex < sleep0Threshold || (spinIndex - sleep0Threshold) % 2 != 0))
             {
                 // Cap the maximum spin count to a value such that many thousands of CPU cycles would not be wasted doing
                 // the equivalent of YieldProcessor(), as that that point SwitchToThread/Sleep(0) are more likely to be able to

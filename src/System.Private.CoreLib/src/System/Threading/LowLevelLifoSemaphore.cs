@@ -21,8 +21,6 @@ namespace System.Threading
 
         private const int SpinSleep0Threshold = 10;
 
-        private static int s_processorCount = Environment.ProcessorCount;
-
         public LowLevelLifoSemaphore(int initialSignalCount, int maximumSignalCount, int spinCount)
         {
             Debug.Assert(initialSignalCount >= 0);
@@ -91,25 +89,12 @@ namespace System.Threading
                 counts = countsBeforeUpdate;
             }
 
-            int spinIndex = s_processorCount > 1 ? 0 : SpinSleep0Threshold;
+            int processorCount = PlatformHelper.ProcessorCount;
+            int spinIndex = processorCount > 1 ? 0 : SpinSleep0Threshold;
             while (spinIndex < _spinCount)
             {
-                // TODO: Unify this with LowLevelSpinWaiter
-                if (s_processorCount > 1)
-                {
-                    LowLevelSpinWaiter.Wait(spinIndex, SpinSleep0Threshold);
-                    spinIndex++;
-                }
-                else
-                {
-                    // On uniprocessor system we only Yield because there cannot be other
-                    // threads executing in parallel and satisfying the condition. We also
-                    // compensate for the unnecessary spins by incrementing spinIndex by 2
-                    // and doing the same number of Yields as in the multi-processor code
-                    // above.
-                    RuntimeThread.Yield();
-                    spinIndex += 2;
-                }
+                LowLevelSpinWaiter.Wait(spinIndex, SpinSleep0Threshold, processorCount);
+                spinIndex++;
 
                 // Try to acquire the semaphore and unregister as a spinner
                 counts = _separated._counts;
