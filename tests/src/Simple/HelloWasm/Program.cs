@@ -1392,9 +1392,6 @@ class AnotherClassWithFourThreadStatics
     }
 }
 
-
-
-
 namespace System.Runtime.InteropServices
 {
     /// <summary>

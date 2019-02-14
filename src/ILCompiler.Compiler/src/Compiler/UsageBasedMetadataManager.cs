@@ -10,6 +10,7 @@ using Internal.TypeSystem;
 using ILCompiler.Metadata;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 using Debug = System.Diagnostics.Debug;
 
