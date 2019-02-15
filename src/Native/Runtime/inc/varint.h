@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+
+#include "pal_endian.h"
+
 class VarInt
 {
 public:
@@ -9,7 +12,7 @@ public:
         UIntNative lengthBits = *pbEncoding & 0x0F;
         size_t  negLength = s_negLengthTab[lengthBits];
         UIntNative shift = s_shiftTab[lengthBits];
-        UInt32 result = *(PTR_UInt32)(pbEncoding - negLength - 4);
+        UInt32 result = GET_UNALIGNED_32(pbEncoding - negLength - 4);
 
         result >>= shift;
         pbEncoding -= negLength;

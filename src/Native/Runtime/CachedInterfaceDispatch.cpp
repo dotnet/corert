@@ -367,7 +367,7 @@ static void DiscardCache(InterfaceDispatchCache * pCache)
     if (pDiscardedCacheBlock != NULL)
         g_pDiscardedCacheFree = pDiscardedCacheBlock->m_pNext;
     else
-        pDiscardedCacheBlock = (DiscardedCacheBlock *)g_pAllocHeap->Alloc(sizeof(DiscardedCacheBlock));
+        pDiscardedCacheBlock = (DiscardedCacheBlock *)g_pAllocHeap->AllocAligned(sizeof(DiscardedCacheBlock), alignof(DiscardedCacheBlock));
 
     if (pDiscardedCacheBlock != NULL) // if we did NOT get the memory, we leak the discarded block
     {
