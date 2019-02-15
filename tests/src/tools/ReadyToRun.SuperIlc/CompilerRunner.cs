@@ -19,7 +19,7 @@ public abstract class CompilerRunner
         _compilerPath = compilerFolder;
         _inputPath = inputFolder;
         _outputPath = outputFolder;
-        _referenceFolders = referenceFolders;
+        _referenceFolders = referenceFolders ?? new List<string>();
     }
 
     protected abstract string CompilerFileName {get;}

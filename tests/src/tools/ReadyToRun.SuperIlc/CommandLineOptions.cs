@@ -3,75 +3,54 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.CommandLine;
+using System.CommandLine.Builder;
+using System.CommandLine.Invocation;
 using System.IO;
 
 namespace ReadyToRun.SuperIlc
 {
-    internal enum ReadyToRunTool
+    internal static class CommandLineOptions
     {
-        Crossgen,
-        Cpaot
-    }
-
-    internal class CommandLineOptions
-    {
-        private string _inputPath;
-        private string _outputPath;
-        private bool _crossgen;
-        private bool _cpaot;
-        private string _toolPath;
-        private IReadOnlyList<string> _references = Array.Empty<string>();
-        private bool _helpRequested;
-        public ReadyToRunTool OptimizingTool => _crossgen ? ReadyToRunTool.Crossgen : ReadyToRunTool.Cpaot;
-        public string InputPath => _inputPath;
-        public string OutputPath => _outputPath;
-        public string ToolPath => _toolPath;
-        public IReadOnlyList<string> ReferenceFolders => _references;
-        public bool Help => _helpRequested;
-
-        public ArgumentSyntax ParseCommandLine(string[] args)
+        public static CommandLineBuilder Build()
         {
-            ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>
-            {
-                syntax.ApplicationName = "ReadyToRun.SuperIlc";
-                syntax.HandleHelp = false;
-                syntax.HandleErrors = false;
-                syntax.HandleResponseFiles = true;
-                
-                syntax.DefineOption("h|help", ref _helpRequested, "");
-                syntax.DefineOption("crossgen", ref _crossgen, "Compile with Crossgen");
-                syntax.DefineOption("cpaot", ref _cpaot, "Compile with CPAOT");
-                syntax.DefineOptionList("r|ref", ref _references, "Folder containing assemblies to reference");
-                syntax.DefineOption("in", ref _inputPath, "Input folder of assemblies to optimize");
-                syntax.DefineOption("out", ref _outputPath, "Output folder for optimized assemblies");
-                syntax.DefineOption("toolpath", ref _toolPath, "Path to optimizing tool");
-            });
+            var parser = new CommandLineBuilder()
+                .AddCommand(CompileFolder());
+            
+            return parser;
 
-            return argSyntax;
-        }
+            Command CompileFolder() =>
+                new Command("compile-directory", "Compile all assemblies in directory", 
+                    new Option[] 
+                    {
+                        ToolPath(),
+                        InputDirectory(),
+                        OutputDirectory(),
+                        UseCrossgen(),
+                        UseCpaot(),
+                        ReferencePath()
+                    },
+                    handler: CommandHandler.Create<DirectoryInfo, DirectoryInfo, DirectoryInfo, bool, bool, DirectoryInfo[]>(CompileDirectoryCommand.CompileDirectory));
 
-        public bool Validate()
-        {
-            if (_crossgen && _cpaot)
-            {
-                Console.WriteLine($"Error: --crossgen and --cpaot both specified");
-            }
+            Option ToolPath() =>
+                new Option(new[] {"--tool-directory", "-t"}, "Directory containing the selected optimizing compiler", new Argument<DirectoryInfo>().ExistingOnly());
 
-            if (!Directory.Exists(InputPath))
-            {
-                Console.WriteLine($"Error: Input folder {InputPath} does not exist");
-                return false;
-            }
+            // Todo: Input / Output directories should be required arguments to the command when they're made available to handlers
+            // https://github.com/dotnet/command-line-api/issues/297
+            Option InputDirectory() =>
+                new Option(new [] {"--input-directory", "-in"}, "Folder containing assemblies to optimize", new Argument<DirectoryInfo>().ExistingOnly());
 
-            if (!Directory.Exists(ToolPath))
-            {
-                Console.WriteLine($"Error: Tool folder {ToolPath} does not exist");
-                return false;
-            }
+            Option OutputDirectory() =>
+                new Option(new [] {"--output-directory", "-out"}, "Folder to emit compiled assemblies", new Argument<DirectoryInfo>());
 
-            return true;
+            Option UseCrossgen() =>
+                new Option("--crossgen", "Compile with CoreCLR Crossgen", new Argument<bool>());
+
+            Option UseCpaot() =>
+                new Option("--cpaot", "Compile with CoreRT CPAOT", new Argument<bool>());
+
+            Option ReferencePath() =>
+                new Option(new[] {"--reference-path", "-r"}, "Folder containing assemblies to reference during compilation", new Argument<DirectoryInfo[]>(){Arity = ArgumentArity.ZeroOrMore}.ExistingOnly());
         }
     }
 }
