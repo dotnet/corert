@@ -106,10 +106,6 @@
     <LangVersion>latest</LangVersion>
     <LangVersion Condition="'$(SkipImportRoslynProps)' != 'true'">8.0</LangVersion>
     <UseSharedCompilation>true</UseSharedCompilation>
-    <BuildingNETCoreAppVertical>true</BuildingNETCoreAppVertical>
-    <IncludeVSTestReferences>false</IncludeVSTestReferences>
-    <CopyConfigurationFiles>false</CopyConfigurationFiles>
-    <RuntimeConfigPath>$(PackagesDir)/xunit.runner.console/$(XUnitPackageVersion)/tools/netcoreapp2.0/xunit.console.runtimeconfig.json</RuntimeConfigPath>
     <DebugType Condition="'$(IsProjectNLibrary)' != 'true'">portable</DebugType>
   </PropertyGroup>
 
@@ -272,6 +268,14 @@
   <PropertyGroup>
     <!-- On Windows fallback to ILAsm from the framework for now -->
     <IlasmToolPath Condition="'$(OSEnvironment)'=='Windows_NT'">%WINDIR%\Microsoft.NET\Framework\v4.0.30319\ilasm.exe</IlasmToolPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <RoslynVersion>3.0.0-beta3-final</RoslynVersion>
+    <RoslynPackageName>Microsoft.Net.Compilers</RoslynPackageName>
+    <RoslynPackageName Condition="'$(RunningOnCore)' == 'true'">Microsoft.NETCore.Compilers</RoslynPackageName>
+    <RoslynPackageDir>$(PackagesDir)/$(RoslynPackageName.ToLower())/$(RoslynVersion)/</RoslynPackageDir>
+    <RoslynPropsFile>$(RoslynPackageDir)build/$(RoslynPackageName).props</RoslynPropsFile>
   </PropertyGroup>
 
   <!-- Use Roslyn Compilers to build -->
