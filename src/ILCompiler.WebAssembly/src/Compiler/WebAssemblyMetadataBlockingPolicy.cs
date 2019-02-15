@@ -21,7 +21,7 @@ namespace ILCompiler
 
         public override bool IsBlocked(FieldDesc field)
         {
-            return true;
+            return false;
         }
     }
 }

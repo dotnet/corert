@@ -6,6 +6,8 @@ using System;
 using System.Threading;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
+using System.Reflection;
+
 #if PLATFORM_WINDOWS
 using CpObj;
 #endif
@@ -734,6 +736,7 @@ internal static class Program
 
     [System.Runtime.InteropServices.DllImport("*")]
     private static extern void CallMe(int x);
+
     private static void TestMetaData()
     {
 
@@ -754,15 +757,15 @@ internal static class Program
         var typeofChar = typeof(Char);
         if (typeofChar == null)
         {
-            PrintLine("type == null.  Simple class metadata test: Failed");
+            PrintLine("type == null.  Simple struct metadata test: Failed");
         }
         else
         {
             if (typeofChar.FullName != "System.Char")
             {
-                PrintLine("type != System.Char.  Simple class metadata test: Failed");
+                PrintLine("type != System.Char.  Simple struct metadata test: Failed");
             }
-            else PrintLine("Simple class metadata test (typeof(Char)): Ok.");
+            else PrintLine("Simple struct metadata test (typeof(Char)): Ok.");
         }
 
         var gentT = new Gen<int>();
@@ -801,7 +804,123 @@ internal static class Program
         {
             PrintLine("Ok.");
         }
+
+        PrintString("Type GetFields length: ");
+        var x = new ClassForMetaTests();
+        var s = x.StringField;  
+        var i = x.IntField;
+        var fieldClassType = typeof(ClassForMetaTests);
+        FieldInfo[] fields = fieldClassType.GetFields();
+        if (fields.Length == 3)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine(" Failed.");
+        }
+
+        PrintString("Type get string field via reflection: ");
+        var stringFieldInfo = fieldClassType.GetField("StringField");
+        if ((string)stringFieldInfo.GetValue(x) == s)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
+        PrintString("Type get int field via reflection: ");
+        var intFieldInfo = fieldClassType.GetField("IntField");
+        if ((int)intFieldInfo.GetValue(x) == i)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
+
+        PrintString("Type get static int field via reflection: ");
+        var staticIntFieldInfo = fieldClassType.GetField("StaticIntField");
+        if ((int)staticIntFieldInfo.GetValue(x) == 23)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
+
+        PrintString("Type set string field via reflection: ");
+        stringFieldInfo.SetValue(x, "bcd");
+        if (x.StringField == "bcd")
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
+
+        PrintString("Type set int field via reflection: ");
+        intFieldInfo.SetValue(x, 456);
+        if (x.IntField == 456)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
+
+        PrintString("Type set static int field via reflection: ");
+        staticIntFieldInfo.SetValue(x, 987);
+        if (ClassForMetaTests.StaticIntField == 987)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
+        var st = new StructForMetaTests();
+        st.StringField = "xyz";
+        var fieldStructType = typeof(StructForMetaTests);
+        var structStringFieldInfo = fieldStructType.GetField("StringField");
+        PrintString("Struct get string field via reflection: ");
+        if ((string)structStringFieldInfo.GetValue(st) == "xyz")
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
     }
+
+    public class ClassForMetaTests
+    {
+        // used via reflection
+#pragma warning disable 0169
+        public int IntField;
+        public string StringField;
+#pragma warning restore 0169
+        public static int StaticIntField;
+
+        public ClassForMetaTests()
+        {
+            StringField = "ab";
+            IntField = 12;
+            StaticIntField = 23;
+        }
+    }
+
+    public struct StructForMetaTests
+    {
+        public string StringField;
+    }
+
 
     /// <summary>
     /// Ensures all of the blocks of a try/finally function are hit when there aren't exceptions

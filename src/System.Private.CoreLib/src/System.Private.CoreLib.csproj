@@ -205,7 +205,6 @@
     <Compile Include="System\Diagnostics\StackTrace.CoreRT.cs" />
     <Compile Include="System\Diagnostics\Tracing\EventCounter.ProjectN.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <Compile Include="System\Diagnostics\Tracing\EventSource_CoreRT.cs" />
-    <Compile Include="System\Diagnostics\Tracing\FrameworkEventSource.cs" />
     <Compile Include="System\Diagnostics\Tracing\UnsafeNativeMethods.cs" />
     <Compile Include="System\Enum.cs" />
     <Compile Include="System\Environment.CoreRT.cs" />
@@ -220,7 +219,7 @@
     <Compile Include="System\Reflection\MissingMetadataException.cs" />
     <Compile Include="System\Resources\ManifestBasedResourceGroveler.CoreRT.cs" />
     <Compile Include="System\RuntimeArgumentHandle.cs" />
-    <Compile Include="System\Runtime\CompilerServices\ConditionalWeakTable.cs" />
+    <Compile Include="System\Runtime\CompilerServices\DependentHandle.cs" />
     <Compile Include="System\Runtime\CompilerServices\DependencyReductionConditionallyDependentAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\DependencyReductionRootAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\DependencyReductionTypeRemoved.cs" />
@@ -244,9 +243,8 @@
     <Compile Include="System\Runtime\InteropServices\NativeFunctionPointerWrapper.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal.cs" />
-    <Compile Include="System\Runtime\InteropServices\SafeHandle.cs" />
+    <Compile Include="System\Runtime\InteropServices\SafeHandle.CoreRT.cs" />
     <Compile Include="System\Runtime\InteropServices\UnsafeGCHandle.cs" />
-    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
     <Compile Include="System\Runtime\Loader\AssemblyLoadContext.cs" />
     <Compile Include="System\String.CoreRT.cs" />
     <Compile Include="System\String.Intern.cs" />

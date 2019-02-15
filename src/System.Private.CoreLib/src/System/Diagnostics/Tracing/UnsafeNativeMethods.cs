@@ -2,20 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.Win32;
+using Microsoft.Win32.SafeHandles;
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.ConstrainedExecution;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using System.Runtime.Versioning;
+using System.Security;
+using System.Text;
+using System.Diagnostics.Tracing;
+
 namespace Microsoft.Win32
 {
-    using Microsoft.Win32;
-    using Microsoft.Win32.SafeHandles;
-    using System;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.ConstrainedExecution;
-    using System.Runtime.InteropServices;
-    using System.Runtime.Serialization;
-    using System.Runtime.Versioning;
-    using System.Security;
-    using System.Text;
-    using System.Diagnostics.Tracing;
-
 #if !ES_BUILD_PN
     [SuppressUnmanagedCodeSecurityAttribute()]
 #endif
@@ -244,14 +244,20 @@ namespace Microsoft.Win32
 #endif // FEATURE_MANAGED_ETW
         }
 
+        private const int FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
+        private const int FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000;
+        private const int FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000;
+    }
+}
+
+internal static partial class Interop
+{
+    internal static partial class Kernel32
+    {
         [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
         public static extern int GetCurrentThreadId();
 
         [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
         internal static extern uint GetCurrentProcessId();
-
-        private const int FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
-        private const int FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000;
-        private const int FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000;
     }
 }

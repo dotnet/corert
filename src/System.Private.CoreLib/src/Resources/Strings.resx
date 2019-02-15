@@ -1038,7 +1038,7 @@
   <data name="BadImageFormatException_CouldNotLoadFileOrAssembly" xml:space="preserve">
     <value>Could not load file or assembly '{0}'. An attempt was made to load a program with an incorrect format.</value>
   </data>
-  <data name="CollectionCorrupted" xml:space="preserve">
+  <data name="InvalidOperation_CollectionCorrupted" xml:space="preserve">
     <value>A prior operation on this collection was interrupted by an exception. Collection's state is no longer trusted.</value>
   </data>
   <data name="Exception_EndOfInnerExceptionStack" xml:space="preserve">
@@ -1355,6 +1355,9 @@
   </data>
   <data name="ObjectDisposed_ObjectName_Name" xml:space="preserve">
     <value>Object name: '{0}'.</value>
+  </data>
+  <data name="ObjectDisposed_SafeHandleClosed" xml:space="preserve">
+    <value>Safe handle has been closed.</value>
   </data>
   <data name="Overflow_Byte" xml:space="preserve">
     <value>Value was either too large or too small for an unsigned byte.</value>
