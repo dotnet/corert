@@ -197,7 +197,6 @@ See the LICENSE file in the project root for more information.
       <IlcArg Condition="$(OutputType) == 'Library' and $(NativeLib) != ''" Include="--nativelib" />
       <IlcArg Condition="$(ExportsFile) != ''" Include="--exportsfile:$(ExportsFile)" />
       <ILcArg Condition="'$(Platform)' == 'wasm'" Include="--wasm" />
-      <ILcArg Condition="'$(Platform)' == 'wasm'" Include=" --nometadatablocking" />
       <ILcArg Condition="'$(ExperimentalDynamicCodeSupport)' == 'true'" Include="--nometadatablocking" />
       <IlcArg Include="@(AutoInitializedAssemblies->'--initassembly:%(Identity)')" />
       <IlcArg Include="@(AppContextSwitchOverrides->'--appcontextswitch:%(Identity)')" />
