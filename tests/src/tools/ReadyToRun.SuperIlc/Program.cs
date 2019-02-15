@@ -11,7 +11,7 @@ namespace ReadyToRun.SuperIlc
 {
     class Program
     {
-        static int Main(string[] args)
+        static async Task<int> Main(string[] args)
         {
             var parser = CommandLineOptions.Build()
                 
@@ -26,7 +26,7 @@ namespace ReadyToRun.SuperIlc
 
                 .Build();
 
-            return parser.InvokeAsync(args).Result;
+            return await parser.InvokeAsync(args);
         }
     }
 }
