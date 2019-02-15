@@ -26,7 +26,7 @@ namespace System.Threading
         {
             Debug.Assert(condition != null);
 
-            int processorCount = PlatformHelper.ProcessorCount;
+            int processorCount = Runtime.RuntimeImports.RhGetProcessCpuCount();
             int spinningThreadCount = Interlocked.Increment(ref _spinningThreadCount);
             try
             {
