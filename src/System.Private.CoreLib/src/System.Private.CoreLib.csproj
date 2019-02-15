@@ -329,9 +329,6 @@
     <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.GetProcessInformation.cs" Condition="'$(EnableWinRT)'=='true'">
       <Link>Interop\Windows\Kernel32\Interop.GetProcessInformation.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.ExpandEnvironmentStrings.cs">
-      <Link>Interop\Windows\Kernel32\Interop.ExpandEnvironmentStrings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.CompletionPort.cs">
       <Link>Interop\Windows\Kernel32\Interop.CompletionPort.cs</Link>
     </Compile>
