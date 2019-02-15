@@ -139,6 +139,31 @@ if [ ! -e $__INIT_TOOLS_DONE_MARKER ]; then
             display_error_message
             exit 1
         fi
+
+        # Restore a custom RoslynToolset since we can't trivially update the BuildTools dependency in CoreRT
+        echo "Configuring RoslynToolset..."
+        __ROSLYNCOMPILER_VERSION=3.0.0-beta3-final
+        __DEFAULT_RESTORE_ARGS="--no-cache --packages \"${__PACKAGES_DIR}\""
+        __INIT_TOOLS_RESTORE_ARGS="${__DEFAULT_RESTORE_ARGS} --source https://dotnet.myget.org/F/dotnet-buildtools/api/v3/index.json --source https://api.nuget.org/v3/index.json ${__INIT_TOOLS_RESTORE_ARGS:-}"
+        __PORTABLETARGETS_PROJECT_CONTENT="
+        <Project>
+          <PropertyGroup>
+            <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
+            <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
+            <TargetFrameworks>netcoreapp1.0;net46</TargetFrameworks>
+            <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+          </PropertyGroup>
+          <Import Project=\"Sdk.props\" Sdk=\"Microsoft.NET.Sdk\" />
+          <ItemGroup>
+            <PackageReference Include=\"MicroBuild.Core\" Version=\"$__MICROBUILD_VERSION\" />
+            <PackageReference Include=\"Microsoft.NETCore.Compilers\" Version=\"$__ROSLYNCOMPILER_VERSION\" />
+          </ItemGroup>
+          <Import Project=\"Sdk.targets\" Sdk=\"Microsoft.NET.Sdk\" />
+        </Project>"
+        __PORTABLETARGETS_PROJECT=${__TOOLRUNTIME_DIR}/generated/project.csproj
+        echo $__PORTABLETARGETS_PROJECT_CONTENT > "${__PORTABLETARGETS_PROJECT}"
+        echo "Running: \"$__DOTNET_CMD\" restore \"${__PORTABLETARGETS_PROJECT}\" $__INIT_TOOLS_RESTORE_ARGS"
+        $__DOTNET_CMD restore "${__PORTABLETARGETS_PROJECT}" $__INIT_TOOLS_RESTORE_ARGS
     fi
 
     echo "Making all .sh files executable under Tools."
