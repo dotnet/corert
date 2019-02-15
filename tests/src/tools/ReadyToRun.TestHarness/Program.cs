@@ -60,7 +60,7 @@ namespace ReadyToRun.TestHarness
                 syntax.HandleErrors = true;
                 syntax.HandleResponseFiles = true;
 
-                syntax.DefineOption("h|help", ref _help, "Help message for R2RDump");
+                syntax.DefineOption("h|help", ref _help, "Help message for TestHarness");
                 syntax.DefineOption("c|corerun", ref _coreRunExePath, "Path to CoreRun");
                 syntax.DefineOption("i|in", ref _testExe, "Path to test exe");
                 syntax.DefineOptionList("r|ref", ref _referenceFilenames, "Paths to referenced assemblies");
