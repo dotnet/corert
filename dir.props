@@ -103,7 +103,8 @@
     <NoExplicitReferenceToStdLib>true</NoExplicitReferenceToStdLib>
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>latest</LangVersion>
+    <LangVersion Condition="'$(SkipImportRoslynProps)' != 'true'">8.0</LangVersion>
     <UseSharedCompilation>true</UseSharedCompilation>
     <BuildingNETCoreAppVertical>true</BuildingNETCoreAppVertical>
     <IncludeVSTestReferences>false</IncludeVSTestReferences>
@@ -274,5 +275,5 @@
   </PropertyGroup>
 
   <!-- Use Roslyn Compilers to build -->
-  <Import Project="$(RoslynPropsFile)" />
+  <Import Project="$(RoslynPropsFile)" Condition="'$(SkipImportRoslynProps)' != 'true'" />
 </Project>

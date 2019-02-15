@@ -7,11 +7,6 @@
 @if not defined _echo @echo off
 setlocal EnableDelayedExpansion
 
-if "%CoreRT_CliDir%" == "" (
-  echo set CoreRT_CliDir to dotnet folder or run from runtest.cmd
-  exit /b 1
-)
-
 if "%CoreRT_CoreCLRRuntimeDir%" == "" (
     echo set CoreRT_CoreCLRRuntimeDir to CoreCLR folder or run from runtest.cmd
     exit /b 1
@@ -43,7 +38,7 @@ if /I [%~n1] == [System.Runtime.WindowsRuntime.UI.Xaml] goto :eof
 
 echo Compiling %1
 set TestFileName=%1
-set MsBuildCommandLine="%CoreRT_CliDir%\dotnet.exe" msbuild
+set MsBuildCommandLine=msbuild 
 set MsBuildCommandLine=%MsBuildCommandLine% /ConsoleLoggerParameters:ForceNoAlign
 set MsBuildCommandLine=%MsBuildCommandLine% "/p:IlcPath=%CoreRT_ToolchainDir%"
 set MsBuildCommandLine=%MsBuildCommandLine% "/p:Configuration=%CoreRT_BuildType%"
