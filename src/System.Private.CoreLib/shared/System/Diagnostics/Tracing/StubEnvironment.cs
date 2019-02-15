@@ -6,6 +6,10 @@ using System;
 using System.Collections.Generic;
 
 #if ES_BUILD_STANDALONE
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Security;
+
 namespace Microsoft.Diagnostics.Tracing.Internal
 #else
 namespace System.Diagnostics.Tracing.Internal
@@ -48,6 +52,15 @@ namespace System.Diagnostics.Tracing.Internal
 
         private static System.Resources.ResourceManager rm = new System.Resources.ResourceManager("Microsoft.Diagnostics.Tracing.Messages", typeof(Environment).Assembly());
     }
+
+#if ES_BUILD_STANDALONE
+    internal static class BitOps
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint RotateLeft(uint value, int offset)
+            => (value << offset) | (value >> (32 - offset));
+    }
+#endif
 }
 
 #if ES_BUILD_AGAINST_DOTNET_V35
@@ -327,9 +340,6 @@ namespace Microsoft.Reflection
 #if ES_BUILD_STANDALONE
 internal static partial class Interop
 {
-    using System.Runtime.InteropServices;
-    using System.Security;
-
     [SuppressUnmanagedCodeSecurityAttribute()]
     internal static partial class Kernel32
     {

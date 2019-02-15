@@ -205,7 +205,6 @@
     <Compile Include="System\Diagnostics\StackTrace.CoreRT.cs" />
     <Compile Include="System\Diagnostics\Tracing\EventCounter.ProjectN.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <Compile Include="System\Diagnostics\Tracing\EventSource_CoreRT.cs" />
-    <Compile Include="System\Diagnostics\Tracing\FrameworkEventSource.cs" />
     <Compile Include="System\Diagnostics\Tracing\UnsafeNativeMethods.cs" />
     <Compile Include="System\Enum.cs" />
     <Compile Include="System\Environment.CoreRT.cs" />
@@ -265,11 +264,12 @@
     <Compile Include="System\Threading\ManagedThreadId.cs" />
     <Compile Include="System\Threading\Lock.cs" />
     <Compile Include="System\Threading\Condition.cs" />
-    <Compile Include="System\Threading\FirstLevelSpinWaiter.cs" />
     <Compile Include="System\Threading\Interlocked.cs" />
     <Compile Include="System\Threading\LockHolder.cs" />
+    <Compile Include="System\Threading\LowLevelLifoSemaphore.cs" />
     <Compile Include="System\Threading\LowLevelLock.cs" />
     <Compile Include="System\Threading\LowLevelMonitor.cs" />
+    <Compile Include="System\Threading\LowLevelSpinWaiter.cs" />
     <Compile Include="System\Threading\Monitor.cs" />
     <Compile Include="System\Threading\ObjectHeader.cs" Condition="'$(UseSyncTable)' == 'true'" />
     <Compile Include="System\Threading\Overlapped.cs" />
@@ -329,9 +329,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.GetProcessInformation.cs" Condition="'$(EnableWinRT)'=='true'">
       <Link>Interop\Windows\Kernel32\Interop.GetProcessInformation.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.ExpandEnvironmentStrings.cs">
-      <Link>Interop\Windows\Kernel32\Interop.ExpandEnvironmentStrings.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.CompletionPort.cs">
       <Link>Interop\Windows\Kernel32\Interop.CompletionPort.cs</Link>

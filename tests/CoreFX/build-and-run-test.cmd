@@ -42,7 +42,7 @@ powershell -Command "(Get-Content %TestFolder%\default.rd.xml).replace('*Applica
 :: Force environment to 64-bit if we're doing an x64 test run
 ::
 if "%CoreRT_BuildArch%" == "x64" (
-    call "%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build\vcvarsall.bat" x64 >nul
+    call "%_VSCOMNTOOLS%\..\..\VC\Auxiliary\Build\vcvarsall.bat" x64 >nul
 )
 
 echo Building %TestFileName%
