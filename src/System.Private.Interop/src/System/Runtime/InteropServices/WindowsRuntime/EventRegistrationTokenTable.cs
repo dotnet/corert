@@ -166,7 +166,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             // }
 
             ulong tokenValue = /* ((ulong)(uint)typeof(T).MetadataToken << 32) | */ handlerHashCode;
-            return new EventRegistrationToken(unchecked((long)tokenValue));
+            return new EventRegistrationToken(tokenValue);
         }
 
         public void RemoveEventHandler(EventRegistrationToken token)
