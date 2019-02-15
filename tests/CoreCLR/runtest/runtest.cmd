@@ -1,5 +1,10 @@
-@if not defined __echo @echo off
+@if not defined _echo @echo off
 setlocal EnableDelayedExpansion
+
+if "%CoreRT_CliDir%" == "" (
+  echo set CoreRT_CliDir to dotnet folder or run from runtest.cmd
+  exit /b 1
+)
 
 :: Set the default arguments
 set __BuildArch=x64
@@ -101,10 +106,6 @@ if not defined VS%__VSProductVersion%COMNTOOLS goto NoVS
 
 set __VSToolsRoot=!VS%__VSProductVersion%COMNTOOLS!
 if %__VSToolsRoot:~-1%==\ set "__VSToolsRoot=%__VSToolsRoot:~0,-1%"
-
-set _msbuildexe="%VSINSTALLDIR%\MSBuild\15.0\Bin\MSBuild.exe"
-
-if not exist !_msbuildexe! (echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md for build instructions. && exit /b 1)
 
 :: Set the environment for the  build- VS cmd prompt
 echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\VsDevCmd.bat"
@@ -280,9 +281,9 @@ set __msbuildLogArgs=^
 set __msbuildArgs=%* %__msbuildCommonArgs% %__msbuildLogArgs%
 
 @REM The next line will overwrite the existing log file, if any.
-echo Invoking: %_msbuildexe% %__msbuildArgs% > "%__BuildLog%"
+echo Invoking: "%CoreRT_CliDir%\dotnet.exe" msbuild %__msbuildArgs% > "%__BuildLog%"
 
-%_msbuildexe% %__msbuildArgs%
+"%CoreRT_CliDir%\dotnet.exe" msbuild %__msbuildArgs%
 if errorlevel 1 (
     echo %__MsgPrefix%Error: msbuild failed. Refer to the log files for details:
     echo     %__BuildLog%
