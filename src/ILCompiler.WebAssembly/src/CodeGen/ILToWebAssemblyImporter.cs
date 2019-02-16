@@ -40,7 +40,6 @@ namespace Internal.IL
         public LLVMModuleRef Module { get; }
         public static LLVMContextRef Context { get; private set; }
         private static Dictionary<TypeDesc, LLVMTypeRef> LlvmStructs { get; } = new Dictionary<TypeDesc, LLVMTypeRef>();
-        private static MetadataFieldLayoutAlgorithm LayoutAlgorithm { get; } = new MetadataFieldLayoutAlgorithm();
         private readonly MethodDesc _method;
         private readonly MethodIL _methodIL;
         private readonly MethodSignature _signature;

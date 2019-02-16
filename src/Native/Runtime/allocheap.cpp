@@ -170,7 +170,7 @@ UInt8 * AllocHeap::Alloc(
 }
 
 //-------------------------------------------------------------------------------------------------
-void * AllocHeap::AllocAligned(
+UInt8 * AllocHeap::AllocAligned(
     UIntNative cbMem,
     UIntNative alignment
     WRITE_ACCESS_HOLDER_ARG)

@@ -42,7 +42,7 @@ class AllocHeap
     // If AllocHeap was created with a MemAccessMgr, pRWAccessHolder must be non-NULL.
     // On return, the holder will permit R/W access to the allocated memory until it
     // is destructed.
-    void * AllocAligned(UIntNative cbMem,
+    UInt8 * AllocAligned(UIntNative cbMem,
                          UIntNative alignment
                          WRITE_ACCESS_HOLDER_ARG_NULL_DEFAULT);
 

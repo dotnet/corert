@@ -48,31 +48,6 @@ inline UInt64 VAL64(UInt64 x)
 {
     return ((UInt64)VAL32(x) << 32) | VAL32(x >> 32);
 }
-
-inline void SwapString(WCHAR *szString)
-{
-    unsigned i;
-    for (i = 0; szString[i] != L'\0'; i++)
-    {
-        szString[i] = VAL16(szString[i]);
-    }
-}
-
-inline void SwapStringLength(WCHAR *szString, ULONG StringLength)
-{
-    unsigned i;
-    for (i = 0; i < StringLength; i++)
-    {
-        szString[i] = VAL16(szString[i]);
-    }
-}
-
-inline void SwapGuid(GUID *pGuid) 
-{ 
-    pGuid->Data1 = VAL32(pGuid->Data1);
-    pGuid->Data2 = VAL16(pGuid->Data2);
-    pGuid->Data3 = VAL16(pGuid->Data3);
-}
 };
 #else // __cplusplus
 /* C Version of VAL functionality.  Swap functions omitted for lack of use in C code */
