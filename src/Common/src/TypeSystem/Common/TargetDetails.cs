@@ -315,7 +315,8 @@ namespace Internal.TypeSystem
             {
                 // There is a hard limit of 4 elements on an HFA type, see
                 // http://blogs.msdn.com/b/vcblog/archive/2013/07/12/introducing-vector-calling-convention.aspx
-                Debug.Assert(Architecture == TargetArchitecture.ARM ||
+                Debug.Assert(Architecture == TargetArchitecture.Wasm32 || 
+                    Architecture == TargetArchitecture.ARM ||
                     Architecture == TargetArchitecture.ARM64 ||
                     Architecture == TargetArchitecture.X64 ||
                     Architecture == TargetArchitecture.X86);

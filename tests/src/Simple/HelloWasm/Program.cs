@@ -326,6 +326,8 @@ internal static class Program
 
         TestThreadStaticsForSingleThread();
 
+        TestForWrappedPrimitiveStruct();
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -1215,6 +1217,28 @@ internal static class Program
             PrintLine("Was: " + secondInstanceOfFirstClassStatic.ToString());
         }
         Thread.Sleep(10);
+    }
+
+
+    struct AFloat
+    {
+        public float f;
+    }
+
+    private static void TestForWrappedPrimitiveStruct()
+    {
+        // exercises the path through DefType.IsHfa to optimize the access for structs around primitives
+        PrintString("Access to wrapped primitive: ");
+        var x = new AFloat();
+        x.f = float.MaxValue;
+        if (x.f == float.MaxValue)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
     }
 
     [DllImport("*")]
