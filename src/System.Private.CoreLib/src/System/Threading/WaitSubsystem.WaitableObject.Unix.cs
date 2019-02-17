@@ -228,7 +228,7 @@ namespace System.Threading
                 }
             }
 
-            public bool Wait(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, bool prioritize)
+            public int Wait(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, bool prioritize)
             {
                 Debug.Assert(waitInfo != null);
                 Debug.Assert(waitInfo.Thread == RuntimeThread.CurrentThread);
@@ -250,7 +250,7 @@ namespace System.Threading
             /// This function does not check for a pending thread interrupt. Callers are expected to do that soon after
             /// acquiring <see cref="s_lock"/>.
             /// </summary>
-            public bool Wait_Locked(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, bool prioritize)
+            public int Wait_Locked(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, bool prioritize)
             {
                 s_lock.VerifyIsLocked();
                 Debug.Assert(waitInfo != null);
@@ -266,11 +266,7 @@ namespace System.Threading
                     {
                         bool isAbandoned = IsAbandonedMutex;
                         AcceptSignal(waitInfo);
-                        if (isAbandoned)
-                        {
-                            throw new AbandonedMutexException();
-                        }
-                        return true;
+                        return isAbandoned ? WaitHandle.WaitAbandoned : WaitHandle.WaitSuccess;
                     }
 
                     if (IsMutex && _ownershipInfo.Thread == waitInfo.Thread)
@@ -280,12 +276,12 @@ namespace System.Threading
                             throw new OverflowException(SR.Overflow_MutexReacquireCount);
                         }
                         _ownershipInfo.IncrementReacquireCount();
-                        return true;
+                        return WaitHandle.WaitSuccess;
                     }
 
                     if (timeoutMilliseconds == 0)
                     {
-                        return false;
+                        return WaitHandle.WaitTimeout;
                     }
 
                     WaitableObject[] waitableObjects = waitInfo.GetWaitedObjectArray(1);
@@ -306,8 +302,7 @@ namespace System.Threading
                     waitInfo.Wait(
                         timeoutMilliseconds,
                         interruptible,
-                        waitHandlesForAbandon: null,
-                        isSleep: false) != WaitHandle.WaitTimeout;
+                        isSleep: false);
             }
 
             public static int Wait(
@@ -317,8 +312,7 @@ namespace System.Threading
                 ThreadWaitInfo waitInfo,
                 int timeoutMilliseconds,
                 bool interruptible,
-                bool prioritize,
-                WaitHandle[] waitHandlesForAbandon)
+                bool prioritize)
             {
                 s_lock.VerifyIsNotLocked();
                 Debug.Assert(waitInfo != null);
@@ -352,16 +346,9 @@ namespace System.Threading
                                 waitableObject.AcceptSignal(waitInfo);
                                 if (isAbandoned)
                                 {
-                                    if (waitHandlesForAbandon == null)
-                                    {
-                                        throw new AbandonedMutexException();
-                                    }
-                                    else
-                                    {
-                                        throw new AbandonedMutexException(i, waitHandlesForAbandon[i]);
-                                    }
+                                    return WaitHandle.WaitAbandoned + i;
                                 }
-                                return i;
+                                return WaitHandle.WaitSuccess + i;
                             }
 
                             if (waitableObject.IsMutex)
@@ -374,7 +361,7 @@ namespace System.Threading
                                         throw new OverflowException(SR.Overflow_MutexReacquireCount);
                                     }
                                     ownershipInfo.IncrementReacquireCount();
-                                    return i;
+                                    return WaitHandle.WaitSuccess + i;
                                 }
                             }
                         }
@@ -436,7 +423,7 @@ namespace System.Threading
                             {
                                 throw new AbandonedMutexException();
                             }
-                            return 0;
+                            return WaitHandle.WaitSuccess;
                         }
                     }
 
@@ -466,7 +453,7 @@ namespace System.Threading
                     }
                 }
 
-                return waitInfo.Wait(timeoutMilliseconds, interruptible, waitHandlesForAbandon, isSleep: false);
+                return waitInfo.Wait(timeoutMilliseconds, interruptible, isSleep: false);
             }
 
             public static bool WouldWaitForAllBeSatisfiedOrAborted(
