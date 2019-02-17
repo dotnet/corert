@@ -125,6 +125,27 @@ internal class ReflectionTest
 
         }
 
+        internal class InvokeTestsGeneric<T>
+        {
+            private string _hi = "Hello ";
+
+#if OPTIMIZED_MODE_WITHOUT_SCANNER
+            [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+#endif
+            public string GetHelloGeneric<U>(U obj)
+            {
+                return _hi + obj + " " + typeof(U);
+            }
+
+#if OPTIMIZED_MODE_WITHOUT_SCANNER
+            [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+#endif
+            public string GetHello(object obj)
+            {
+                return _hi + obj + " " + typeof(T);
+            }
+        }
+
         public static unsafe void Run()
         {
             Console.WriteLine(nameof(TestReflectionInvoke));
@@ -135,13 +156,17 @@ internal class ReflectionTest
                 new InvokeTests().ToString();
                 InvokeTests.GetHello(null);
                 InvokeTests.GetHelloGeneric<int>(0);
-                InvokeTests.GetHelloGeneric<double>(0);
+                InvokeTests.GetHelloGeneric<string>(null);
                 InvokeTests.GetHelloPointer(null);
                 InvokeTests.GetHelloPointerToo(null);
                 InvokeTests.GetPointer(null, null);
                 string unused;
                 InvokeTests.GetHelloByRef(null, out unused);
                 unused.ToString();
+                new InvokeTestsGeneric<object>().GetHello(null);
+                new InvokeTestsGeneric<object>().GetHelloGeneric<object>(null);
+                new InvokeTestsGeneric<int>().GetHello(null);
+                new InvokeTestsGeneric<int>().GetHelloGeneric<double>(0);
             }
 
             {
@@ -155,6 +180,20 @@ internal class ReflectionTest
                 MethodInfo helloGenericMethod = typeof(InvokeTests).GetTypeInfo().GetDeclaredMethod("GetHelloGeneric").MakeGenericMethod(typeof(int));
                 string result = (string)helloGenericMethod.Invoke(null, new object[] { 12345 });
                 if (result != "Hello 12345")
+                    throw new Exception();
+            }
+
+            {
+                MethodInfo helloGenericMethod = typeof(InvokeTests).GetTypeInfo().GetDeclaredMethod("GetHelloGeneric").MakeGenericMethod(typeof(string));
+                string result = (string)helloGenericMethod.Invoke(null, new object[] { "buddy" });
+                if (result != "Hello buddy")
+                    throw new Exception();
+            }
+
+            {
+                MethodInfo helloGenericMethod = typeof(InvokeTests).GetTypeInfo().GetDeclaredMethod("GetHelloGeneric").MakeGenericMethod(typeof(Type));
+                string result = (string)helloGenericMethod.Invoke(null, new object[] { typeof(string) });
+                if (result != "Hello System.String")
                     throw new Exception();
             }
 
@@ -190,6 +229,36 @@ internal class ReflectionTest
                 if (Pointer.Unbox(result) != (void*)2018)
                     throw new Exception();
             }
+
+#if !CODEGEN_CPP
+            {
+                MethodInfo helloMethod = typeof(InvokeTestsGeneric<string>).GetTypeInfo().GetDeclaredMethod("GetHello");
+                string result = (string)helloMethod.Invoke(new InvokeTestsGeneric<string>(), new object[] { "world" });
+                if (result != "Hello world System.String")
+                    throw new Exception();
+            }
+
+            {
+                MethodInfo helloGenericMethod = typeof(InvokeTestsGeneric<string>).GetTypeInfo().GetDeclaredMethod("GetHelloGeneric").MakeGenericMethod(typeof(object));
+                string result = (string)helloGenericMethod.Invoke(new InvokeTestsGeneric<string>(), new object[] { "world" });
+                if (result != "Hello world System.Object")
+                    throw new Exception();
+            }
+
+            {
+                MethodInfo helloMethod = typeof(InvokeTestsGeneric<int>).GetTypeInfo().GetDeclaredMethod("GetHello");
+                string result = (string)helloMethod.Invoke(new InvokeTestsGeneric<int>(), new object[] { "world" });
+                if (result != "Hello world System.Int32")
+                    throw new Exception();
+            }
+
+            {
+                MethodInfo helloGenericMethod = typeof(InvokeTestsGeneric<int>).GetTypeInfo().GetDeclaredMethod("GetHelloGeneric").MakeGenericMethod(typeof(double));
+                string result = (string)helloGenericMethod.Invoke(new InvokeTestsGeneric<int>(), new object[] { 1.0 });
+                if (result != "Hello 1 System.Double")
+                    throw new Exception();
+            }
+#endif
         }
     }
 
@@ -198,6 +267,29 @@ internal class ReflectionTest
         public class FieldInvokeSample
         {
             public String InstanceField;
+        }
+
+        public class GenericFieldInvokeSample<T>
+        {
+            public int IntField;
+            public T TField;
+        }
+
+        private static void TestGenerics<T>(T value)
+        {
+            TypeInfo ti = typeof(GenericFieldInvokeSample<T>).GetTypeInfo();
+
+            var obj = new GenericFieldInvokeSample<T>();
+
+            FieldInfo intField = ti.GetDeclaredField("IntField");
+            obj.IntField = 1234;
+            if ((int)(intField.GetValue(obj)) != 1234)
+                throw new Exception();
+
+            FieldInfo tField = ti.GetDeclaredField("TField");
+            obj.TField = value;
+            if (!tField.GetValue(obj).Equals(value))
+                throw new Exception();
         }
 
         public static void Run()
@@ -225,6 +317,9 @@ internal class ReflectionTest
             value = (String)(instanceField.GetValue(obj));
             if (value != "Bye!")
                 throw new Exception();
+
+            TestGenerics(new object());
+            TestGenerics("Hi");
         }
     }
 
