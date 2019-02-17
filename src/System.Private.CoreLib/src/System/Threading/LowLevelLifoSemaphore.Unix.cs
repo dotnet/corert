@@ -25,7 +25,7 @@ namespace System.Threading
 
         private bool WaitCore(int timeoutMs)
         {
-            return WaitSubsystem.Wait(_semaphore, timeoutMs, false, true);
+            return WaitSubsystem.Wait(_semaphore, timeoutMs, false, true) == WaitHandle.WaitSuccess;
         }
 
         private void ReleaseCore(int count)

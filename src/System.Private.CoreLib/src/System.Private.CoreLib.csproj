@@ -278,7 +278,7 @@
     <Compile Include="System\Threading\Tasks\AsyncCausalityTracer.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
     <Compile Include="System\Threading\ThreadPool.CoreRT.cs" />
     <Compile Include="System\Threading\ThreadPoolCallbackWrapper.cs" />
-    <Compile Include="System\Threading\WaitHandle.cs" />
+    <Compile Include="System\Threading\WaitHandle.CoreRT.cs" />
     <Compile Include="System\Threading\WaitHandleArray.cs" />
     <Compile Include="System\Type.CoreRT.cs" />
     <Compile Include="System\Type.Internal.cs" />
