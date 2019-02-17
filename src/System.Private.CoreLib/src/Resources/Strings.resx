@@ -1449,6 +1449,9 @@
   <data name="Threading_WaitHandleCannotBeOpenedException_InvalidHandle" xml:space="preserve">
     <value>A WaitHandle with system-wide name '{0}' cannot be created. A WaitHandle of a different type might have the same name.</value>
   </data>
+  <data name="Threading_WaitHandleTooManyPosts" xml:space="preserve">
+    <value>The WaitHandle cannot be signaled because it would exceed its maximum count.</value>
+  </data>
   <data name="TimeZoneNotFound_MissingData" xml:space="preserve">
     <value>The time zone ID '{0}' was not found on the local computer.</value>
   </data>

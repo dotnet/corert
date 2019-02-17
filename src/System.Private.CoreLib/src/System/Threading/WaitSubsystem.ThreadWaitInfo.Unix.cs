@@ -209,7 +209,7 @@ namespace System.Threading
                 _waitedCount = 0;
             }
 
-            private int ProcessSignaledWaitState(WaitHandle[] waitHandlesForAbandon)
+            private int ProcessSignaledWaitState()
             {
                 s_lock.VerifyIsNotLocked();
                 _waitMonitor.VerifyIsLocked();
@@ -230,20 +230,11 @@ namespace System.Threading
                         }
 
                     case WaitSignalState.NotWaiting_SignaledToSatisfyWaitWithAbandonedMutex:
-                        Debug.Assert(_waitedObjectIndexThatSatisfiedWait >= 0);
-                        if (waitHandlesForAbandon == null)
                         {
-                            _waitedObjectIndexThatSatisfiedWait = -1;
-                            throw new AbandonedMutexException();
-                        }
-                        else
-                        {
+                            Debug.Assert(_waitedObjectIndexThatSatisfiedWait >= 0);
                             int waitedObjectIndexThatSatisfiedWait = _waitedObjectIndexThatSatisfiedWait;
                             _waitedObjectIndexThatSatisfiedWait = -1;
-                            throw
-                                new AbandonedMutexException(
-                                    waitedObjectIndexThatSatisfiedWait,
-                                    waitHandlesForAbandon[waitedObjectIndexThatSatisfiedWait]);
+                            return WaitHandle.WaitAbandoned + waitedObjectIndexThatSatisfiedWait;
                         }
 
                     case WaitSignalState.NotWaiting_SignaledToAbortWaitDueToMaximumMutexReacquireCount:
@@ -257,12 +248,11 @@ namespace System.Threading
                 }
             }
 
-            public int Wait(int timeoutMilliseconds, bool interruptible, WaitHandle[] waitHandlesForAbandon, bool isSleep)
+            public int Wait(int timeoutMilliseconds, bool interruptible, bool isSleep)
             {
                 if (isSleep)
                 {
                     s_lock.VerifyIsNotLocked();
-                    Debug.Assert(waitHandlesForAbandon == null);
                 }
                 else
                 {
@@ -304,7 +294,7 @@ namespace System.Threading
                             _waitMonitor.Wait();
                         } while (IsWaiting);
 
-                        int waitResult = ProcessSignaledWaitState(waitHandlesForAbandon);
+                        int waitResult = ProcessSignaledWaitState();
                         Debug.Assert(waitResult != WaitHandle.WaitTimeout);
                         return waitResult;
                     }
@@ -318,7 +308,7 @@ namespace System.Threading
                         // It's possible for the wait to have timed out, but before the monitor could reacquire the lock, a
                         // signaler could have acquired it and signaled to satisfy the wait or interrupt the thread. Accept the
                         // signal and ignore the wait timeout.
-                        int waitResult = ProcessSignaledWaitState(waitHandlesForAbandon);
+                        int waitResult = ProcessSignaledWaitState();
                         if (waitResult != WaitHandle.WaitTimeout)
                         {
                             return waitResult;
@@ -390,7 +380,7 @@ namespace System.Threading
                     RuntimeThread
                         .CurrentThread
                         .WaitInfo
-                        .Wait(timeoutMilliseconds, interruptible, waitHandlesForAbandon: null, isSleep: true);
+                        .Wait(timeoutMilliseconds, interruptible, isSleep: true);
                 Debug.Assert(waitResult == WaitHandle.WaitTimeout);
             }
 

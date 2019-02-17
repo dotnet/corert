@@ -5,39 +5,22 @@
 using System.Diagnostics;
 using System.IO;
 using System.Runtime;
+using System.Runtime.InteropServices;
 using Internal.Runtime.Augments;
-using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
     public abstract partial class WaitHandle
     {
-        internal static unsafe int WaitForSingleObject(IntPtr handle, int millisecondsTimeout, bool interruptible)
+        internal static unsafe int WaitMultipleIgnoringSyncContext(Span<IntPtr> handles, bool waitAll, int millisecondsTimeout)
         {
-            if (interruptible)
+            fixed (IntPtr* pHandles = &MemoryMarshal.GetReference(handles))
             {
-                SynchronizationContext context = RuntimeThread.CurrentThread.SynchronizationContext;
-                bool useSyncContextWait = (context != null) && context.IsWaitNotificationRequired();
-
-                if (useSyncContextWait)
-                {
-                    var handles = new IntPtr[1] { handle };
-                    return context.Wait(handles, false, millisecondsTimeout);
-                }
-            }
-
-            return WaitForMultipleObjectsIgnoringSyncContext(&handle, 1, false, millisecondsTimeout, interruptible);
-        }
-
-        internal static unsafe int WaitMultipleIgnoringSyncContext(IntPtr[] handles, bool waitAll, int millisecondsTimeout)
-        {
-            fixed (IntPtr* pHandles = handles)
-            {
-                return WaitForMultipleObjectsIgnoringSyncContext(pHandles, handles.Length, waitAll, millisecondsTimeout, true);
+                return WaitForMultipleObjectsIgnoringSyncContext(pHandles, handles.Length, waitAll, millisecondsTimeout);
             }
         }
 
-        private static unsafe int WaitForMultipleObjectsIgnoringSyncContext(IntPtr* pHandles, int numHandles, bool waitAll, int millisecondsTimeout, bool interruptible)
+        private static unsafe int WaitForMultipleObjectsIgnoringSyncContext(IntPtr* pHandles, int numHandles, bool waitAll, int millisecondsTimeout)
         {
             Debug.Assert(millisecondsTimeout >= -1);
 
@@ -97,178 +80,23 @@ namespace System.Threading
             return result;
         }
 
-        private static bool WaitOneCore(IntPtr handle, int millisecondsTimeout, bool interruptible)
+        internal static unsafe int WaitOneCore(IntPtr handle, int millisecondsTimeout)
         {
-            Debug.Assert(millisecondsTimeout >= -1);
-
-            int ret = WaitForSingleObject(handle, millisecondsTimeout, interruptible);
-
-            if (ret == Interop.Kernel32.WAIT_ABANDONED)
-            {
-                ThrowAbandonedMutexException();
-            }
-
-            return ret != WaitTimeout;
+            return WaitForMultipleObjectsIgnoringSyncContext(&handle, 1, false, millisecondsTimeout);
         }
 
-        /*========================================================================
-        ** Waits for signal from all the objects. 
-        ** timeout indicates how long to wait before the method returns.
-        ** This method will return either when all the object have been pulsed
-        ** or timeout milliseonds have elapsed.
-        ========================================================================*/
-        private static int WaitMultiple(
-            RuntimeThread currentThread,
-            SafeWaitHandle[] safeWaitHandles,
-            int count,
-            int millisecondsTimeout,
-            bool waitAll)
-        {
-            Debug.Assert(currentThread == RuntimeThread.CurrentThread);
-            Debug.Assert(safeWaitHandles != null);
-            Debug.Assert(safeWaitHandles.Length >= count);
-
-            // If we need to call SynchronizationContext.Wait method, always allocate a new IntPtr[]
-            SynchronizationContext context = currentThread.SynchronizationContext;
-            bool useSyncContextWait = (context != null) && context.IsWaitNotificationRequired();
-
-            IntPtr[] rentedHandles = useSyncContextWait ? null : currentThread.RentWaitedHandleArray(count);
-            IntPtr[] handles = rentedHandles ?? new IntPtr[count];
-            try
-            {
-                for (int i = 0; i < count; i++)
-                {
-                    handles[i] = safeWaitHandles[i].DangerousGetHandle();
-                }
-
-                if (useSyncContextWait)
-                {
-                    return context.Wait(handles, waitAll, millisecondsTimeout);
-                }
-
-                unsafe
-                {
-                    fixed (IntPtr* pHandles = handles)
-                    {
-                        return WaitForMultipleObjectsIgnoringSyncContext(pHandles, count, waitAll, millisecondsTimeout, true);
-                    }
-                }
-            }
-            finally
-            {
-                if (rentedHandles != null)
-                {
-                    currentThread.ReturnWaitedHandleArray(rentedHandles);
-                }
-            }
-        }
-
-        private static int WaitAnyCore(
-            RuntimeThread currentThread,
-            SafeWaitHandle[] safeWaitHandles,
-            WaitHandle[] waitHandles,
-            int numWaitHandles,
-            int millisecondsTimeout)
-        {
-            Debug.Assert(currentThread == RuntimeThread.CurrentThread);
-            Debug.Assert(safeWaitHandles != null);
-            Debug.Assert(safeWaitHandles.Length >= numWaitHandles);
-            Debug.Assert(waitHandles != null);
-            Debug.Assert(numWaitHandles > 0);
-            Debug.Assert(numWaitHandles <= MaxWaitHandles);
-            Debug.Assert(millisecondsTimeout >= -1);
-
-            int ret = WaitMultiple(currentThread, safeWaitHandles, numWaitHandles, millisecondsTimeout, false /* waitany*/ );
-
-            if ((Interop.Kernel32.WAIT_ABANDONED <= ret) && (Interop.Kernel32.WAIT_ABANDONED + numWaitHandles > ret))
-            {
-                int mutexIndex = ret - Interop.Kernel32.WAIT_ABANDONED;
-                if (0 <= mutexIndex && mutexIndex < waitHandles.Length)
-                {
-                    ThrowAbandonedMutexException(mutexIndex, waitHandles[mutexIndex]);
-                }
-                else
-                {
-                    ThrowAbandonedMutexException();
-                }
-            }
-
-            return ret;
-        }
-
-        private static bool WaitAllCore(
-            RuntimeThread currentThread,
-            SafeWaitHandle[] safeWaitHandles,
-            WaitHandle[] waitHandles,
-            int millisecondsTimeout)
-        {
-            Debug.Assert(currentThread == RuntimeThread.CurrentThread);
-            Debug.Assert(safeWaitHandles != null);
-            Debug.Assert(safeWaitHandles.Length >= waitHandles.Length);
-            Debug.Assert(millisecondsTimeout >= -1);
-
-            int ret = WaitMultiple(currentThread, safeWaitHandles, waitHandles.Length, millisecondsTimeout, true /* waitall*/ );
-
-            if ((Interop.Kernel32.WAIT_ABANDONED <= ret) && (Interop.Kernel32.WAIT_ABANDONED + waitHandles.Length > ret))
-            {
-                //In the case of WaitAll the OS will only provide the
-                //    information that mutex was abandoned.
-                //    It won't tell us which one.  So we can't set the Index or provide access to the Mutex
-                ThrowAbandonedMutexException();
-            }
-
-            return ret != WaitTimeout;
-        }
-
-        private static bool SignalAndWaitCore(IntPtr handleToSignal, IntPtr handleToWaitOn, int millisecondsTimeout)
+        private static int SignalAndWaitCore(IntPtr handleToSignal, IntPtr handleToWaitOn, int millisecondsTimeout)
         {
             Debug.Assert(millisecondsTimeout >= -1);
 
             int ret = (int)Interop.Kernel32.SignalObjectAndWait(handleToSignal, handleToWaitOn, (uint)millisecondsTimeout, false);
-
-            if (ret == Interop.Kernel32.WAIT_ABANDONED)
-            {
-                ThrowAbandonedMutexException();
-            }
 
             if (ret == Interop.Kernel32.WAIT_FAILED)
             {
                 ThrowWaitFailedException(Interop.mincore.GetLastError());
             }
 
-            return ret != WaitTimeout;
-        }
-
-        private static void ThrowAbandonedMutexException()
-        {
-            throw new AbandonedMutexException();
-        }
-
-        private static void ThrowAbandonedMutexException(int location, WaitHandle handle)
-        {
-            throw new AbandonedMutexException(location, handle);
-        }
-
-        internal static void ThrowSignalOrUnsignalException()
-        {
-            int errorCode = Interop.mincore.GetLastError();
-            switch (errorCode)
-            {
-                case Interop.Errors.ERROR_INVALID_HANDLE:
-                    ThrowInvalidHandleException();
-                    break;
-
-                case Interop.Errors.ERROR_TOO_MANY_POSTS:
-                    throw new SemaphoreFullException();
-
-                case Interop.Errors.ERROR_NOT_OWNER:
-                    throw new ApplicationException(SR.Arg_SynchronizationLockException);
-
-                default:
-                    var ex = new Exception();
-                    ex.HResult = errorCode;
-                    throw ex;
-            }
+            return ret;
         }
 
         private static void ThrowWaitFailedException(int errorCode)
@@ -277,7 +105,7 @@ namespace System.Threading
             {
                 case Interop.Errors.ERROR_INVALID_HANDLE:
                     ThrowInvalidHandleException();
-                    break;
+                    return;
 
                 case Interop.Errors.ERROR_INVALID_PARAMETER:
                     throw new ArgumentException();
@@ -293,7 +121,7 @@ namespace System.Threading
                     // if the semahpore already has the maximum signal count, the Windows SignalObjectAndWait function does not
                     // return an error, but this code is kept for historical reasons and to convey the intent, since ideally,
                     // that should be an error.
-                    throw new InvalidOperationException(SR.Threading_SemaphoreFullException);
+                    throw new InvalidOperationException(SR.Threading_WaitHandleTooManyPosts);
 
                 case Interop.Errors.ERROR_NOT_OWNER:
                     // Only applicable to <see cref="WaitHandle.SignalAndWait(WaitHandle, WaitHandle)"/> when signaling a mutex
@@ -305,9 +133,7 @@ namespace System.Threading
                     throw new OverflowException(SR.Overflow_MutexReacquireCount);
 
                 default:
-                    Exception ex = new Exception();
-                    ex.HResult = errorCode;
-                    throw ex;
+                    throw new Exception { HResult = errorCode };
             }
         }
 

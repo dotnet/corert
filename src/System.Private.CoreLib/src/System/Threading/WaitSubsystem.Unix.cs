@@ -171,7 +171,7 @@ namespace System.Threading
             /// by the thread. See <see cref="ThreadWaitInfo.LockedMutexesHead"/>. So, acquire the lock only after all
             /// possibilities for exceptions have been exhausted.
             ThreadWaitInfo waitInfo = RuntimeThread.CurrentThread.WaitInfo;
-            bool acquiredLock = waitableObject.Wait(waitInfo, timeoutMilliseconds: 0, interruptible: false, prioritize: false);
+            bool acquiredLock = waitableObject.Wait(waitInfo, timeoutMilliseconds: 0, interruptible: false, prioritize: false) == 0;
             Debug.Assert(acquiredLock);
             return safeWaitHandle;
         }
@@ -263,13 +263,13 @@ namespace System.Threading
             }
         }
 
-        public static bool Wait(IntPtr handle, int timeoutMilliseconds, bool interruptible)
+        public static int Wait(IntPtr handle, int timeoutMilliseconds, bool interruptible)
         {
             Debug.Assert(timeoutMilliseconds >= -1);
             return Wait(HandleManager.FromHandle(handle), timeoutMilliseconds, interruptible);
         }
 
-        public static bool Wait(
+        public static int Wait(
             WaitableObject waitableObject,
             int timeoutMilliseconds,
             bool interruptible = true,
@@ -282,30 +282,24 @@ namespace System.Threading
         }
 
         public static int Wait(
-            RuntimeThread currentThread,
-            SafeWaitHandle[] safeWaitHandles,
-            WaitHandle[] waitHandles,
-            int numWaitHandles,
+            Span<IntPtr> waitHandles,
             bool waitForAll,
             int timeoutMilliseconds)
         {
-            Debug.Assert(currentThread == RuntimeThread.CurrentThread);
-            Debug.Assert(safeWaitHandles != null);
-            Debug.Assert(numWaitHandles > 0);
-            Debug.Assert(numWaitHandles <= safeWaitHandles.Length);
-            Debug.Assert(numWaitHandles <= waitHandles.Length);
-            Debug.Assert(numWaitHandles <= WaitHandle.MaxWaitHandles);
+            Debug.Assert(waitHandles != null);
+            Debug.Assert(waitHandles.Length > 0);
+            Debug.Assert(waitHandles.Length <= WaitHandle.MaxWaitHandles);
             Debug.Assert(timeoutMilliseconds >= -1);
 
-            ThreadWaitInfo waitInfo = currentThread.WaitInfo;
-            WaitableObject[] waitableObjects = waitInfo.GetWaitedObjectArray(numWaitHandles);
+            ThreadWaitInfo waitInfo = RuntimeThread.CurrentThread.WaitInfo;
+            WaitableObject[] waitableObjects = waitInfo.GetWaitedObjectArray(waitHandles.Length);
             bool success = false;
             try
             {
-                for (int i = 0; i < numWaitHandles; ++i)
+                for (int i = 0; i < waitHandles.Length; ++i)
                 {
-                    Debug.Assert(safeWaitHandles[i] != null);
-                    WaitableObject waitableObject = HandleManager.FromHandle(safeWaitHandles[i].DangerousGetHandle());
+                    Debug.Assert(waitHandles[i] != null);
+                    WaitableObject waitableObject = HandleManager.FromHandle(waitHandles[i]);
                     if (waitForAll)
                     {
                         /// Check if this is a duplicate, as wait-for-all does not support duplicates. Including the parent
@@ -329,33 +323,30 @@ namespace System.Threading
             {
                 if (!success)
                 {
-                    for (int i = 0; i < numWaitHandles; ++i)
+                    for (int i = 0; i < waitHandles.Length; ++i)
                     {
                         waitableObjects[i] = null;
                     }
                 }
             }
 
-            if (numWaitHandles == 1)
+            if (waitHandles.Length == 1)
             {
                 WaitableObject waitableObject = waitableObjects[0];
                 waitableObjects[0] = null;
                 return
-                    waitableObject.Wait(waitInfo, timeoutMilliseconds, interruptible: true, prioritize : false)
-                        ? 0
-                        : WaitHandle.WaitTimeout;
+                    waitableObject.Wait(waitInfo, timeoutMilliseconds, interruptible: true, prioritize : false);
             }
 
             return
                 WaitableObject.Wait(
                     waitableObjects,
-                    numWaitHandles,
+                    waitHandles.Length,
                     waitForAll,
                     waitInfo,
                     timeoutMilliseconds,
                     interruptible: true,
-                    prioritize: false,
-                    waitHandlesForAbandon: waitHandles);
+                    prioritize: false);
         }
 
         public static int Wait(
@@ -386,11 +377,10 @@ namespace System.Threading
                     waitInfo,
                     timeoutMilliseconds,
                     interruptible,
-                    prioritize,
-                    waitHandlesForAbandon: null);
+                    prioritize);
         }
 
-        public static bool SignalAndWait(
+        public static int SignalAndWait(
             IntPtr handleToSignal,
             IntPtr handleToWaitOn,
             int timeoutMilliseconds)
@@ -404,7 +394,7 @@ namespace System.Threading
                     timeoutMilliseconds);
         }
 
-        public static bool SignalAndWait(
+        public static int SignalAndWait(
             WaitableObject waitableObjectToSignal,
             WaitableObject waitableObjectToWaitOn,
             int timeoutMilliseconds,
