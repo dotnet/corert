@@ -64,7 +64,18 @@ namespace Internal.TypeSystem.Interop
 
             if (method.Context.Target.IsWindows)
             {
-                return !importModule.StartsWith("api-ms-win-");
+                // Force link time symbol resolution for PInvokes used on CoreLib startup path
+
+                if (importModule.StartsWith("api-ms-win-"))
+                    return false;
+
+                if (importModule == "BCrypt.dll")
+                {
+                    if (method.Name == "BCryptGenRandom")
+                        return false;
+                }
+
+                return true;
             }
             else 
             {
