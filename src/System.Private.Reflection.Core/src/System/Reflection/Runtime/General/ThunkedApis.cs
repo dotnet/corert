@@ -63,7 +63,7 @@ namespace System.Reflection.Runtime.Assemblies
             get
             {
                 if (AppContext.TryGetSwitch("Switch.System.Reflection.Assembly.SimulatedLocationInBaseDirectory", out bool isSimulated) && isSimulated)
-                    return Path.Combine(AppContext.BaseDirectory, GetName().Name + ".dll");
+                    return Path.Combine(AppContext.BaseDirectory, ManifestModule.Name);
 
                 return string.Empty;
             }
