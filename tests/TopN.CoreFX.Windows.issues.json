@@ -997,6 +997,10 @@
                     "reason": "https://github.com/dotnet/coreclr/issues/12605"
                 },
                 {
+                    "name": "System.Tests.DecimalTests.Round_InvalidMidpointRounding_ThrowsArgumentException",
+                    "reason": "outdated"
+                },
+                {
                     "name": "System.Reflection.Tests.MethodInfoTests.TestEquality2",
                     "reason": "Xunit.Sdk.EqualException"
                 },

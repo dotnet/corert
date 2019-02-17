@@ -1765,18 +1765,22 @@ namespace Internal.TypeSystem.Interop
                 LoadManagedValue(marshallingCodeStream);
                 marshallingCodeStream.EmitLdLoca(vAddRefed);
                 marshallingCodeStream.Emit(ILOpcode.call, emitter.NewToken(
-                    safeHandleType.GetKnownMethod("DangerousAddRef", null)));
+                    safeHandleType.GetKnownMethod("DangerousAddRef", 
+                        new MethodSignature(0, 0, Context.GetWellKnownType(WellKnownType.Void),
+                            new TypeDesc[] { Context.GetWellKnownType(WellKnownType.Boolean).MakeByRefType() }))));
 
                 LoadManagedValue(marshallingCodeStream);
                 marshallingCodeStream.Emit(ILOpcode.call, emitter.NewToken(
-                    safeHandleType.GetKnownMethod("DangerousGetHandle", null)));
+                    safeHandleType.GetKnownMethod("DangerousGetHandle",
+                        new MethodSignature(0, 0, Context.GetWellKnownType(WellKnownType.IntPtr), TypeDesc.EmptyTypes))));
                 StoreNativeValue(marshallingCodeStream);
 
                 // TODO: This should be inside finally block and only executed if the handle was addrefed
                 // https://github.com/dotnet/corert/issues/6075
                 LoadManagedValue(unmarshallingCodeStream);
                 unmarshallingCodeStream.Emit(ILOpcode.call, emitter.NewToken(
-                    safeHandleType.GetKnownMethod("DangerousRelease", null)));
+                    safeHandleType.GetKnownMethod("DangerousRelease",
+                        new MethodSignature(0, 0, Context.GetWellKnownType(WellKnownType.Void), TypeDesc.EmptyTypes))));
             }
 
             if (Out && IsManagedByRef)
@@ -1808,7 +1812,9 @@ namespace Internal.TypeSystem.Interop
                 unmarshallingCodeStream.EmitLdLoc(vSafeHandle);
                 LoadNativeValue(unmarshallingCodeStream);
                 unmarshallingCodeStream.Emit(ILOpcode.call, emitter.NewToken(
-                    safeHandleType.GetKnownMethod("SetHandle", null)));
+                    safeHandleType.GetKnownMethod("SetHandle",
+                        new MethodSignature(0, 0, Context.GetWellKnownType(WellKnownType.Void),
+                            new TypeDesc[] { Context.GetWellKnownType(WellKnownType.IntPtr) }))));
 
                 unmarshallingCodeStream.EmitLdArg(Index - 1);
                 unmarshallingCodeStream.EmitLdLoc(vSafeHandle);

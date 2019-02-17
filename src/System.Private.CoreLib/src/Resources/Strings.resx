@@ -702,7 +702,7 @@
   <data name="Argument_NoRegionInvariantCulture" xml:space="preserve">
     <value>There is no region associated with the Invariant Culture (Culture ID: 0x7F).</value>
   </data>
-  <data name="Argument_NotIsomorphic" xml:space="preserve">
+  <data name="ArgumentException_NotIsomorphic" xml:space="preserve">
     <value>Object contains non-primitive or non-blittable data.</value>
   </data>
   <data name="Argument_PathEmpty" xml:space="preserve">
@@ -1038,7 +1038,7 @@
   <data name="BadImageFormatException_CouldNotLoadFileOrAssembly" xml:space="preserve">
     <value>Could not load file or assembly '{0}'. An attempt was made to load a program with an incorrect format.</value>
   </data>
-  <data name="CollectionCorrupted" xml:space="preserve">
+  <data name="InvalidOperation_CollectionCorrupted" xml:space="preserve">
     <value>A prior operation on this collection was interrupted by an exception. Collection's state is no longer trusted.</value>
   </data>
   <data name="Exception_EndOfInnerExceptionStack" xml:space="preserve">
@@ -1163,6 +1163,9 @@
   </data>
   <data name="InvalidOperation_HandleIsNotInitialized" xml:space="preserve">
     <value>Handle is not initialized.</value>
+  </data>
+  <data name="InvalidOperation_HandleIsNotPinned" xml:space="preserve">
+    <value>Handle is not pinned.</value>
   </data>
   <data name="InvalidOperation_HashInsertFailed" xml:space="preserve">
     <value>Hashtable insert failed. Load factor too high. The most common cause is multiple threads writing to the Hashtable simultaneously.</value>
@@ -1352,6 +1355,9 @@
   </data>
   <data name="ObjectDisposed_ObjectName_Name" xml:space="preserve">
     <value>Object name: '{0}'.</value>
+  </data>
+  <data name="ObjectDisposed_SafeHandleClosed" xml:space="preserve">
+    <value>Safe handle has been closed.</value>
   </data>
   <data name="Overflow_Byte" xml:space="preserve">
     <value>Value was either too large or too small for an unsigned byte.</value>
@@ -2347,7 +2353,7 @@
   <data name="InvalidOperationException_NoGCRegionNotInProgress" xml:space="preserve">
     <value>NoGCRegion mode must be set.</value>
   </data>
-  <data name="InvalidOperationException_SetLatencyModeNoGC" xml:space="preserve">
+  <data name="InvalidOperation_SetLatencyModeNoGC" xml:space="preserve">
     <value>The NoGCRegion mode is in progress. End it and then set a different mode.</value>
   </data>
   <data name="InvalidOperation_NotWithConcurrentGC" xml:space="preserve">

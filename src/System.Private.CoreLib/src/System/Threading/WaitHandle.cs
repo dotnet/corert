@@ -21,12 +21,10 @@ namespace System.Threading
 {
     public abstract partial class WaitHandle : MarshalByRefObject, IDisposable
     {
-        internal const int WaitObject0 = (int)Interop.Constants.WaitObject0;
-        public const int WaitTimeout = (int)Interop.Constants.WaitTimeout;
-        internal const int WaitAbandoned = (int)Interop.Constants.WaitAbandoned0;
-        internal const int WaitFailed = unchecked((int)Interop.Constants.WaitFailed);
+        public const int WaitTimeout = 0x102;
+        protected static readonly IntPtr InvalidHandle = new IntPtr(-1);
+
         internal const int MaxWaitHandles = 64;
-        protected static readonly IntPtr InvalidHandle = Interop.InvalidHandleValue;
 
         internal SafeWaitHandle _waitHandle;
 
@@ -136,8 +134,6 @@ namespace System.Threading
 
         public virtual bool WaitOne(int millisecondsTimeout, bool exitContext) => WaitOne(millisecondsTimeout);
         public virtual bool WaitOne(TimeSpan timeout, bool exitContext) => WaitOne(timeout);
-
-        internal bool WaitOne(bool interruptible) => WaitOneCore(Timeout.Infinite, interruptible);
 
         /// <summary>
         /// Obtains all of the corresponding safe wait handles and adds a ref to each. Since the <see cref="SafeWaitHandle"/>

@@ -33,6 +33,12 @@ using Internal.Runtime.CompilerServices;
 
 using Volatile = System.Threading.Volatile;
 
+#if BIT64
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
+
 namespace Internal.Runtime.Augments
 {
     [ReflectionBlocked]
@@ -156,6 +162,15 @@ namespace Internal.Runtime.Augments
                 pLengths[i] = lengths[i];
 
             return Array.NewMultiDimArray(typeHandleForArrayType.ToEETypePtr(), pLengths, lengths.Length);
+        }
+
+        public static ref byte GetSzArrayElementAddress(Array array, int index)
+        {
+            if ((uint)index >= (uint)array.Length)
+                throw new IndexOutOfRangeException();
+
+            ref byte start = ref array.GetRawSzArrayData();
+            return ref Unsafe.Add(ref start, (IntPtr)((nuint)index * array.ElementSize));
         }
 
         public static IntPtr GetAllocateObjectHelperForType(RuntimeTypeHandle type)

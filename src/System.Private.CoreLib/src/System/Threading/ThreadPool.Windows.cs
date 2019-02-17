@@ -60,7 +60,7 @@ namespace System.Threading
             RegisteredWaitHandle registeredWaitHandle = (RegisteredWaitHandle)handle.Target;
             Debug.Assert((handle == registeredWaitHandle._gcHandle) && (wait == registeredWaitHandle._tpWait));
 
-            bool timedOut = (waitResult == (uint)Interop.Constants.WaitTimeout);
+            bool timedOut = (waitResult == (uint)Interop.Kernel32.WAIT_TIMEOUT);
             registeredWaitHandle.PerformCallback(timedOut);
             wrapper.Exit();
         }
@@ -136,7 +136,7 @@ namespace System.Threading
 
                     // Should we wait for callbacks synchronously? Note that we treat the zero handle as the asynchronous case.
                     SafeWaitHandle safeWaitHandle = waitObject?.SafeWaitHandle;
-                    bool blocking = ((safeWaitHandle != null) && (safeWaitHandle.DangerousGetHandle() == Interop.InvalidHandleValue));
+                    bool blocking = ((safeWaitHandle != null) && (safeWaitHandle.DangerousGetHandle() == new IntPtr(-1)));
 
                     if (blocking)
                     {

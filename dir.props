@@ -104,6 +104,8 @@
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <LangVersion>latest</LangVersion>
+    <LangVersion Condition="'$(SkipImportRoslynProps)' != 'true'">8.0</LangVersion>
+    <UseSharedCompilation>true</UseSharedCompilation>
     <DebugType Condition="'$(IsProjectNLibrary)' != 'true'">portable</DebugType>
   </PropertyGroup>
 
@@ -268,6 +270,14 @@
     <IlasmToolPath Condition="'$(OSEnvironment)'=='Windows_NT'">%WINDIR%\Microsoft.NET\Framework\v4.0.30319\ilasm.exe</IlasmToolPath>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <RoslynVersion>3.0.0-beta3-final</RoslynVersion>
+    <RoslynPackageName>Microsoft.Net.Compilers</RoslynPackageName>
+    <RoslynPackageName Condition="'$(RunningOnCore)' == 'true'">Microsoft.NETCore.Compilers</RoslynPackageName>
+    <RoslynPackageDir>$(PackagesDir)/$(RoslynPackageName.ToLower())/$(RoslynVersion)/</RoslynPackageDir>
+    <RoslynPropsFile>$(RoslynPackageDir)build/$(RoslynPackageName).props</RoslynPropsFile>
+  </PropertyGroup>
+
   <!-- Use Roslyn Compilers to build -->
-  <Import Project="$(RoslynPropsFile)" Condition="Exists('$(RoslynPropsFile)')" />
+  <Import Project="$(RoslynPropsFile)" Condition="'$(SkipImportRoslynProps)' != 'true'" />
 </Project>

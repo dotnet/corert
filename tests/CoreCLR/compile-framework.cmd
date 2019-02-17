@@ -31,8 +31,10 @@ goto :eof
 :: %1 Path to assembly to compile
 :CompileAssembly
 
-:: Skip native libraries picked up by the wildcard spec - currently there's just one
+:: Explicit exclusions for wrong files picked up by the wildcard spec
 if /I [%~n1] == [Microsoft.DiaSymReader.Native.amd64] goto :eof
+if /I [%~n1] == [System.Runtime.WindowsRuntime] goto :eof
+if /I [%~n1] == [System.Runtime.WindowsRuntime.UI.Xaml] goto :eof
 
 echo Compiling %1
 set TestFileName=%1

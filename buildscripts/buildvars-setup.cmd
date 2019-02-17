@@ -115,15 +115,14 @@ for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__
 
 :: Default to highest Visual Studio version available
 ::
-:: For VS2017, multiple instances can be installed on the same box SxS and VS150COMNTOOLS
+:: For VS2017 and later, multiple instances can be installed on the same box SxS and VS1*0COMNTOOLS
 :: is no longer set as a global environment variable and is instead only set if the user
-:: has launched the VS2017 Developer Command Prompt.
+:: has launched the Visual Studio Developer Command Prompt.
 ::
-:: Following this logic, we will default to the VS2017 toolset if VS150COMNTOOLS tools is
-:: set, as this indicates the user is running from the VS2017 Developer Command Prompt and
-:: is already configured to use that toolset. Otherwise, we will fallback to using the latest 
-:: VS2017 toolset if it is installed. Finally, we will fail the script if no supported VS instance
-:: can be found.
+:: Following this logic, we will default to the Visual Studio toolset assocated with the active
+:: Developer Command Prompt. Otherwise, we will query VSWhere to locate the later version of
+:: Visual Studio available on the machine. Finally, we will fail the script if not supported
+:: instance can be found.
 
 if defined VisualStudioVersion goto :RunVCVars
 
@@ -136,13 +135,15 @@ if not exist "%_VSCOMNTOOLS%" goto :MissingVersion
 call "%_VSCOMNTOOLS%\VsDevCmd.bat"
 
 :RunVCVars
-if "%VisualStudioVersion%"=="15.0" (
+if "%VisualStudioVersion%"=="16.0" (
+    goto :VS2019
+) else if "%VisualStudioVersion%"=="15.0" (
     goto :VS2017
 )
 
 :MissingVersion
-:: Can't find VS 2017
-echo Visual Studio 2017 is a pre-requisite to build this repository.
+:: Can't find VS 2017 or 2019
+echo Visual Studio 2017 or 2019 is a pre-requisite to build this repository.
 echo See: https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md
 exit /b 1
 
@@ -151,6 +152,15 @@ exit /b 1
 set __VSVersion=vs2017
 set __VSProductVersion=150
 if not exist "!VS%__VSProductVersion%COMNTOOLS!\..\..\VC\Auxiliary\Build\vcvarsall.bat" goto :MissingVisualC
+set _msbuildexe="%VSINSTALLDIR%\MSBuild\15.0\Bin\MSBuild.exe"
+goto :CheckMSBuild
+
+:VS2019
+:: Setup vars for VS2019
+set __VSVersion=vs2019
+set __VSProductVersion=160
+if not exist "!VS%__VSProductVersion%COMNTOOLS!\..\..\VC\Auxiliary\Build\vcvarsall.bat" goto :MissingVisualC
+set _msbuildexe="%VSINSTALLDIR%\MSBuild\Current\Bin\MSBuild.exe"
 goto :CheckMSBuild
 
 :MissingVisualC
@@ -159,11 +169,6 @@ echo See: https://github.com/dotnet/corert/blob/master/Documentation/prerequisit
 exit /b 1
 
 :CheckMSBuild
-rem The MSBuild that is installed in the shared location is not compatible
-rem with VS2017 C++ projects. I must use the MSBuild located in
-rem C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\MSBuild\15.0\Bin\MSBuild.exe
-set _msbuildexe="%VSINSTALLDIR%\MSBuild\15.0\Bin\MSBuild.exe"
-
 if not exist !_msbuildexe! (echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md for build instructions. && exit /b 1)
 
 rem Explicitly set Platform causes conflicts in managed project files. Clear it to allow building from VS x64 Native Tools Command Prompt

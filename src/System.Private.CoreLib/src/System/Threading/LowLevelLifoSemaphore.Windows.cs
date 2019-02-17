@@ -15,15 +15,13 @@ namespace System.Threading
     /// See https://msdn.microsoft.com/en-us/library/windows/desktop/aa365198(v=vs.85).aspx under How I/O Completion Ports Work.
     /// From the docs "Threads that block their execution on an I/O completion port are released in last-in-first-out (LIFO) order."
     /// </remarks>
-    internal sealed class LowLevelLifoSemaphore : IDisposable
+    internal sealed partial class LowLevelLifoSemaphore : IDisposable
     {
         private IntPtr _completionPort;
 
-        public LowLevelLifoSemaphore(int initialSignalCount, int maximumSignalCount)
+        private void Create(int maximumSignalCount)
         {
-            Debug.Assert(initialSignalCount >= 0, "Windows LowLevelLifoSemaphore does not support a negative signal count"); // TODO: Track actual signal count to enable this
             Debug.Assert(maximumSignalCount > 0);
-            Debug.Assert(initialSignalCount <= maximumSignalCount);
 
             _completionPort =
                 Interop.Kernel32.CreateIoCompletionPort(new IntPtr(-1), IntPtr.Zero, UIntPtr.Zero, maximumSignalCount);
@@ -34,7 +32,6 @@ namespace System.Threading
                 exception.HResult = error;
                 throw exception;
             }
-            Release(initialSignalCount);
         }
 
         ~LowLevelLifoSemaphore()
@@ -45,7 +42,7 @@ namespace System.Threading
             }
         }
 
-        public bool Wait(int timeoutMs)
+        public bool WaitCore(int timeoutMs)
         {
             Debug.Assert(timeoutMs >= -1);
 
@@ -54,7 +51,7 @@ namespace System.Threading
             return success;
         }
 
-        public int Release(int count)
+        public void ReleaseCore(int count)
         {
             Debug.Assert(count > 0);
 
@@ -68,7 +65,6 @@ namespace System.Threading
                     throw exception;
                 }
             }
-            return 0; // TODO: Track actual signal count to calculate this
         }
 
         public void Dispose()

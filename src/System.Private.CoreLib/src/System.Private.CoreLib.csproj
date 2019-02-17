@@ -140,7 +140,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Condition="'$(EnableWinRT)'=='true'" Include="Internal\Runtime\Augments\WinRTInterop.cs" />
-    <Compile Include="Interop\Interop.manual.cs" />
     <Compile Include="Interop\Interop.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
     <Compile Include="System\Runtime\CompilerServices\CastableObject.cs" />
     <Compile Include="System\Runtime\CompilerServices\FeatureRemovedException.cs" />
@@ -204,8 +203,8 @@
     <Compile Include="System\Diagnostics\StackFrame.CoreRT.cs" />
     <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
     <Compile Include="System\Diagnostics\StackTrace.CoreRT.cs" />
+    <Compile Include="System\Diagnostics\Tracing\EventCounter.ProjectN.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <Compile Include="System\Diagnostics\Tracing\EventSource_CoreRT.cs" />
-    <Compile Include="System\Diagnostics\Tracing\FrameworkEventSource.cs" />
     <Compile Include="System\Diagnostics\Tracing\UnsafeNativeMethods.cs" />
     <Compile Include="System\Enum.cs" />
     <Compile Include="System\Environment.CoreRT.cs" />
@@ -220,7 +219,7 @@
     <Compile Include="System\Reflection\MissingMetadataException.cs" />
     <Compile Include="System\Resources\ManifestBasedResourceGroveler.CoreRT.cs" />
     <Compile Include="System\RuntimeArgumentHandle.cs" />
-    <Compile Include="System\Runtime\CompilerServices\ConditionalWeakTable.cs" />
+    <Compile Include="System\Runtime\CompilerServices\DependentHandle.cs" />
     <Compile Include="System\Runtime\CompilerServices\DependencyReductionConditionallyDependentAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\DependencyReductionRootAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\DependencyReductionTypeRemoved.cs" />
@@ -236,22 +235,19 @@
     <Compile Include="System\Runtime\CompilerServices\NetNativeToolsVersionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\FakeElementAttribute.cs" />
     <Compile Include="System\Runtime\ExceptionIDs.cs" />
-    <Compile Include="System\Runtime\GcSettings.cs" />
+    <Compile Include="System\Runtime\GCSettings.CoreRT.cs" />
     <Compile Include="System\Runtime\TypeLoaderExports.cs" />
     <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />
-    <Compile Include="System\Runtime\InteropServices\GCHandle.cs" />
-    <Compile Include="System\Runtime\InteropServices\GCHandleType.cs" />
+    <Compile Include="System\Runtime\InteropServices\GCHandle.CoreRT.cs" />
     <Compile Include="System\Runtime\InteropServices\InteropExtensions.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeFunctionPointerWrapper.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal.cs" />
-    <Compile Include="System\Runtime\InteropServices\SafeHandle.cs" />
+    <Compile Include="System\Runtime\InteropServices\SafeHandle.CoreRT.cs" />
     <Compile Include="System\Runtime\InteropServices\UnsafeGCHandle.cs" />
-    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
     <Compile Include="System\Runtime\Loader\AssemblyLoadContext.cs" />
     <Compile Include="System\String.CoreRT.cs" />
     <Compile Include="System\String.Intern.cs" />
-    <Compile Include="System\Array.cs" />
     <Compile Include="System\Array.CoreRT.cs" />
     <Compile Include="System\MDArray.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <Compile Include="System\Delegate.cs" />
@@ -268,11 +264,12 @@
     <Compile Include="System\Threading\ManagedThreadId.cs" />
     <Compile Include="System\Threading\Lock.cs" />
     <Compile Include="System\Threading\Condition.cs" />
-    <Compile Include="System\Threading\FirstLevelSpinWaiter.cs" />
     <Compile Include="System\Threading\Interlocked.cs" />
     <Compile Include="System\Threading\LockHolder.cs" />
+    <Compile Include="System\Threading\LowLevelLifoSemaphore.cs" />
     <Compile Include="System\Threading\LowLevelLock.cs" />
     <Compile Include="System\Threading\LowLevelMonitor.cs" />
+    <Compile Include="System\Threading\LowLevelSpinWaiter.cs" />
     <Compile Include="System\Threading\Monitor.cs" />
     <Compile Include="System\Threading\ObjectHeader.cs" Condition="'$(UseSyncTable)' == 'true'" />
     <Compile Include="System\Threading\Overlapped.cs" />
@@ -281,15 +278,14 @@
     <Compile Include="System\Threading\Tasks\AsyncCausalityTracer.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
     <Compile Include="System\Threading\ThreadPool.CoreRT.cs" />
     <Compile Include="System\Threading\ThreadPoolCallbackWrapper.cs" />
-    <Compile Include="System\Threading\Volatile.cs" />
     <Compile Include="System\Threading\WaitHandle.cs" />
     <Compile Include="System\Threading\WaitHandleArray.cs" />
     <Compile Include="System\Type.CoreRT.cs" />
     <Compile Include="System\Type.Internal.cs" />
     <Compile Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'=='true'" Include="System\Type.WinRt.cs" />
     <Compile Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'" Include="System\Type.Win32.cs" />
-    <Compile Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.CLSIDFromProgID.cs">
-      <Link>Interop\Windows\mincore\Interop.CLSIDFromProgID.cs</Link>
+    <Compile Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'" Include="..\..\Common\src\Interop\Windows\Mincore\Interop.CLSIDFromProgID.cs">
+      <Link>Interop\Windows\Mincore\Interop.CLSIDFromProgID.cs</Link>
     </Compile>
     <Compile Condition="'$(TargetsUnix)'=='true'" Include="System\Type.Unix.cs" />
     <Compile Include="System\TypedReference.cs" />
@@ -307,7 +303,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'">
     <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.ExitProcess.cs">
-      <Link>Interop\Windows\mincore\Interop.ExitProcess.cs</Link>
+      <Link>Interop\Windows\Mincore\Interop.ExitProcess.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
@@ -319,97 +315,100 @@
     <Compile Include="System\DateTime.Win32.cs" Condition="'$(EnableWinRT)'!='true'" />
     <Compile Include="System\DateTime.WinRT.cs" Condition="'$(EnableWinRT)'=='true'" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Windows.cs" />
-    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.FileTimeToSystemTime.cs">
-      <Link>Interop\Windows\kernel32\Interop.FileTimeToSystemTime.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.FileTimeToSystemTime.cs">
+      <Link>Interop\Windows\Kernel32\Interop.FileTimeToSystemTime.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.GetSystemTime.cs">
-      <Link>Interop\Windows\kernel32\Interop.GetSystemTime.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.GetSystemTime.cs">
+      <Link>Interop\Windows\Kernel32\Interop.GetSystemTime.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.SystemTimeToFileTime.cs">
-      <Link>Interop\Windows\kernel32\Interop.SystemTimeToFileTime.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.SystemTimeToFileTime.cs">
+      <Link>Interop\Windows\Kernel32\Interop.SystemTimeToFileTime.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.TzSpecificLocalTimeToSystemTime.cs">
-      <Link>Interop\Windows\kernel32\Interop.TzSpecificLocalTimeToSystemTime.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.TzSpecificLocalTimeToSystemTime.cs">
+      <Link>Interop\Windows\Kernel32\Interop.TzSpecificLocalTimeToSystemTime.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.GetProcessInformation.cs" Condition="'$(EnableWinRT)'=='true'">
-      <Link>Interop\Windows\kernel32\Interop.GetProcessInformation.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.GetProcessInformation.cs" Condition="'$(EnableWinRT)'=='true'">
+      <Link>Interop\Windows\Kernel32\Interop.GetProcessInformation.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.ExpandEnvironmentStrings.cs">
-      <Link>Interop\Windows\kernel32\Interop.ExpandEnvironmentStrings.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.CompletionPort.cs">
+      <Link>Interop\Windows\Kernel32\Interop.CompletionPort.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.CompletionPort.cs">
-      <Link>Interop\Windows\kernel32\Interop.CompletionPort.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.CriticalSection.cs">
+      <Link>Interop\Windows\Kernel32\Interop.CriticalSection.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.CriticalSection.cs">
-      <Link>Interop\Windows\kernel32\Interop.CriticalSection.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.ConditionVariable.cs">
+      <Link>Interop\Windows\Kernel32\Interop.ConditionVariable.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.ConditionVariable.cs">
-      <Link>Interop\Windows\kernel32\Interop.ConditionVariable.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.GetSystemTimes.cs">
+      <Link>Interop\Windows\Kernel32\Interop.GetSystemTimes.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.GetSystemTimes.cs">
-      <Link>Interop\Windows\kernel32\Interop.GetSystemTimes.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.GetModuleFileName.cs">
+      <Link>Interop\Windows\Kernel32\Interop.GetModuleFileName.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.GetModuleFileName.cs">
-      <Link>Interop\Windows\kernel32\Interop.GetModuleFileName.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.QueryPerformance.cs">
+      <Link>Interop\Windows\Kernel32\Interop.QueryPerformance.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.QueryPerformance.cs">
-      <Link>Interop\Windows\kernel32\Interop.QueryPerformance.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.GetCurrentThreadId.cs">
+      <Link>Interop\Windows\Mincore\Interop.GetCurrentThreadId.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetCurrentThreadId.cs">
-      <Link>Interop\Windows\mincore\Interop.GetCurrentThreadId.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.SetLastError.cs">
+      <Link>Interop\Windows\Mincore\Interop.SetLastError.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SetLastError.cs">
-      <Link>Interop\Windows\mincore\Interop.SetLastError.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.DateTime.cs">
+      <Link>Interop\Windows\Mincore\Interop.DateTime.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.DateTime.cs">
-      <Link>Interop\Windows\mincore\Interop.DateTime.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.MemAllocFree.cs">
+      <Link>Interop\Windows\Mincore\Interop.MemAllocFree.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MemAllocFree.cs">
-      <Link>Interop\Windows\mincore\Interop.MemAllocFree.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.MemReAlloc.cs">
+      <Link>Interop\Windows\Mincore\Interop.MemReAlloc.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MemReAlloc.cs">
-      <Link>Interop\Windows\mincore\Interop.MemReAlloc.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.IsDebuggerPresent.cs">
+      <Link>Interop\Windows\Mincore\Interop.IsDebuggerPresent.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\ole32\Interop.CoTaskMemAllocFree.cs">
-      <Link>Interop\Windows\ole32\Interop.CoTaskMemAllocFree.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.RaiseFailFastException.cs">
+      <Link>Interop\Windows\Mincore\Interop.RaiseFailFastException.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\ole32\Interop.CoInitializeEx.cs">
-      <Link>Interop\Windows\ole32\Interop.CoInitializeEx.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Ole32\Interop.CoTaskMemAllocFree.cs">
+      <Link>Interop\Windows\Ole32\Interop.CoTaskMemAllocFree.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\ole32\Interop.CoUninitialize.cs">
-      <Link>Interop\Windows\ole32\Interop.CoUninitialize.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Ole32\Interop.CoInitializeEx.cs">
+      <Link>Interop\Windows\Ole32\Interop.CoInitializeEx.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\ole32\Interop.CoGetApartmentType.cs">
-      <Link>Interop\Windows\ole32\Interop.CoGetApartmentType.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Ole32\Interop.CoUninitialize.cs">
+      <Link>Interop\Windows\Ole32\Interop.CoUninitialize.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\Ole32\Interop.CoGetApartmentType.cs">
+      <Link>Interop\Windows\Ole32\Interop.CoGetApartmentType.cs</Link>
     </Compile>
     <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Runtime\CommandLine.Windows.cs" />
-    <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.CommandLine.cs">
-      <Link>Interop\Windows\mincore\Interop.CommandLine.cs</Link>
+    <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="..\..\Common\src\Interop\Windows\Mincore\Interop.CommandLine.cs">
+      <Link>Interop\Windows\Mincore\Interop.CommandLine.cs</Link>
     </Compile>
     <Compile Include="System\Environment.CoreRT.Windows.cs" />
     <Compile Include="System\Environment.CoreRT.Win32.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
     <Compile Include="System\Environment.CoreRT.ProjectN.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetTickCount64.cs">
-      <Link>Interop\Windows\mincore\Interop.GetTickCount64.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.GetTickCount64.cs">
+      <Link>Interop\Windows\Mincore\Interop.GetTickCount64.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetCurrentProcessorNumber.cs">
-      <Link>Interop\Windows\mincore\Interop.GetCurrentProcessorNumber.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.GetCurrentProcessorNumber.cs">
+      <Link>Interop\Windows\Mincore\Interop.GetCurrentProcessorNumber.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Environment.cs">
-      <Link>Interop\Windows\mincore\Interop.Environment.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.Environment.cs">
+      <Link>Interop\Windows\Mincore\Interop.Environment.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Threading.cs">
-      <Link>Interop\Windows\mincore\Interop.Threading.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.Threading.cs">
+      <Link>Interop\Windows\Mincore\Interop.Threading.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.ThreadPool.cs">
-      <Link>Interop\Windows\mincore\Interop.ThreadPool.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.ThreadPool.cs">
+      <Link>Interop\Windows\Mincore\Interop.ThreadPool.cs</Link>
     </Compile>
     <Compile Include="System\Threading\Timer.Windows.cs" />
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Timer.cs">
-      <Link>Interop\Windows\mincore\Interop.Timer.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.Timer.cs">
+      <Link>Interop\Windows\Mincore\Interop.Timer.cs</Link>
     </Compile>
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.DynamicLoad.cs">
-      <Link>Interop\Windows\mincore\Interop.DynamicLoad.cs</Link>
+    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\Mincore\Interop.DynamicLoad.cs">
+      <Link>Interop\Windows\Mincore\Interop.DynamicLoad.cs</Link>
     </Compile>
     <Compile Include="System\HighPerformanceCounter.Windows.cs" Condition="'$(FeaturePortableThreadPool)' == 'true'" />
     <Compile Include="System\Threading\LowLevelMonitor.Windows.cs" />
@@ -421,23 +420,23 @@
     <Compile Include="System\Threading\Win32ThreadPoolNativeOverlapped.ExecutionContextCallbackArgs.cs" />
     <Compile Include="System\Threading\Win32ThreadPoolNativeOverlapped.OverlappedData.cs" />
     <Compile Include="System\Threading\Win32ThreadPoolPreAllocatedOverlapped.cs" />
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.ThreadPoolIO.cs">
-      <Link>Interop\Windows\mincore\Interop.ThreadPoolIO.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.ThreadPoolIO.cs">
+      <Link>Interop\Windows\Mincore\Interop.ThreadPoolIO.cs</Link>
     </Compile>
-    <Compile Condition="'$(EnableWinRT)' == 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.TimeZone.cs">
-      <Link>Interop\Windows\mincore\Interop.TimeZone.cs</Link>
+    <Compile Condition="'$(EnableWinRT)' == 'true'" Include="..\..\Common\src\Interop\Windows\Mincore\Interop.TimeZone.cs">
+      <Link>Interop\Windows\Mincore\Interop.TimeZone.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\Interop.Libraries.cs">
       <Link>Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetLastError.cs">
-      <Link>Interop\Windows\mincore\Interop.GetLastError.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.GetLastError.cs">
+      <Link>Interop\Windows\Mincore\Interop.GetLastError.cs</Link>
     </Compile>
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetSystemDirectory.cs">
-      <Link>Interop\Windows\mincore\Interop.GetSystemDirectory.cs</Link>
+    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\Mincore\Interop.GetSystemDirectory.cs">
+      <Link>Interop\Windows\Mincore\Interop.GetSystemDirectory.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.QueryUnbiasedInterruptTime.cs">
-      <Link>Interop\Windows\mincore\Interop.QueryUnbiasedInterruptTime.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.QueryUnbiasedInterruptTime.cs">
+      <Link>Interop\Windows\Mincore\Interop.QueryUnbiasedInterruptTime.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(FeaturePortableThreadPool)' == 'true'">
@@ -457,7 +456,6 @@
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.Unix.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeWaitHandle.Unix.cs" />
     <Compile Include="System\AppContext.Unix.CoreRT.cs" />
-    <Compile Include="System\DateTime.Unix.CoreRT.cs" />
     <Compile Include="System\Environment.CoreRT.Unix.cs" />
     <Compile Include="System\HighPerformanceCounter.Unix.cs" Condition="'$(FeaturePortableThreadPool)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
@@ -474,6 +472,9 @@
     <Compile Include="System\Threading\WaitSubsystem.WaitableObject.Unix.cs" />
     <Compile Include="..\..\Common\src\Interop\Unix\Interop.Libraries.cs">
       <Link>Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Abort.cs">
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Abort.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Exit.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Exit.cs</Link>

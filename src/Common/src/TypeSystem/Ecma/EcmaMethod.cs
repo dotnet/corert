@@ -338,6 +338,14 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        public override bool IsSpecialName
+        {
+            get
+            {
+                return (Attributes & MethodAttributes.SpecialName) != 0;
+            }
+        }
+
         public override bool IsDefaultConstructor
         {
             get

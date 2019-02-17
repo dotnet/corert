@@ -5,100 +5,103 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Threading;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.CompilerServices
 {
-    #region ConditionalWeakTable
     public sealed class ConditionalWeakTable<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
         where TKey : class
         where TValue : class
     {
-        #region Fields
+        // Lifetimes of keys and values:
+        // Inserting a key and value into the dictonary will not
+        // prevent the key from dying, even if the key is strongly reachable
+        // from the value. Once the key dies, the dictionary automatically removes
+        // the key/value entry.
+        //
+        // Thread safety guarantees:
+        // ConditionalWeakTable is fully thread-safe and requires no
+        // additional locking to be done by callers.
+        //
+        // OOM guarantees:
+        // Will not corrupt unmanaged handle table on OOM. No guarantees
+        // about managed weak table consistency. Native handles reclamation
+        // may be delayed until appdomain shutdown.
+
         private const int InitialCapacity = 8;  // Initial length of the table. Must be a power of two.
-        private readonly Lock _lock;            // This lock protects all mutation of data in the table.  Readers do not take this lock.
+        private readonly object _lock;          // This lock protects all mutation of data in the table.  Readers do not take this lock.
         private volatile Container _container;  // The actual storage for the table; swapped out as the table grows.
         private int _activeEnumeratorRefCount;  // The number of outstanding enumerators on the table
-        #endregion
 
-        #region Constructors
         public ConditionalWeakTable()
         {
+            _lock = new object();
             _container = new Container(this);
-            _lock = new Lock();
         }
-        #endregion
 
-        #region Public Members
-        //--------------------------------------------------------------------------------------------
-        // key:   key of the value to find. Cannot be null.
-        // value: if the key is found, contains the value associated with the key upon method return.
-        //        if the key is not found, contains default(TValue).
-        //
-        // Method returns "true" if key was found, "false" otherwise.
-        //
-        // Note: The key may get garbaged collected during the TryGetValue operation. If so, TryGetValue
-        // may at its discretion, return "false" and set "value" to the default (as if the key was not present.)
-        //--------------------------------------------------------------------------------------------
+        /// <summary>Gets the value of the specified key.</summary>
+        /// <param name="key">key of the value to find. Cannot be null.</param>
+        /// <param name="value">
+        /// If the key is found, contains the value associated with the key upon method return.
+        /// If the key is not found, contains default(TValue).
+        /// </param>
+        /// <returns>Returns "true" if key was found, "false" otherwise.</returns>
+        /// <remarks>
+        /// The key may get garbaged collected during the TryGetValue operation. If so, TryGetValue
+        /// may at its discretion, return "false" and set "value" to the default (as if the key was not present.)
+        /// </remarks>
         public bool TryGetValue(TKey key, out TValue value)
         {
-            if (key == null)
+            if (key is null)
             {
-                throw new ArgumentNullException(nameof(key));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
             return _container.TryGetValueWorker(key, out value);
         }
 
-        //--------------------------------------------------------------------------------------------
-        // key: key to add. May not be null.
-        // value: value to associate with key.
-        //
-        // If the key is already entered into the dictionary, this method throws an exception.
-        //
-        // Note: The key may get garbage collected during the Add() operation. If so, Add()
-        // has the right to consider any prior entries successfully removed and add a new entry without
-        // throwing an exception.
-        //--------------------------------------------------------------------------------------------
+        /// <summary>Adds a key to the table.</summary>
+        /// <param name="key">key to add. May not be null.</param>
+        /// <param name="value">value to associate with key.</param>
+        /// <remarks>
+        /// If the key is already entered into the dictionary, this method throws an exception.
+        /// The key may get garbage collected during the Add() operation. If so, Add()
+        /// has the right to consider any prior entries successfully removed and add a new entry without
+        /// throwing an exception.
+        /// </remarks>
         public void Add(TKey key, TValue value)
         {
-            if (key == null)
+            if (key is null)
             {
-                throw new ArgumentNullException(nameof(key));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
-            using (LockHolder.Hold(_lock))
+            lock (_lock)
             {
-                object otherValue;
-                int entryIndex = _container.FindEntry(key, out otherValue);
+                int entryIndex = _container.FindEntry(key, out _);
                 if (entryIndex != -1)
                 {
-                    throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate, key));
+                    ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_AddingDuplicate);
                 }
 
                 CreateEntry(key, value);
             }
         }
 
-        //--------------------------------------------------------------------------------------------
-        // key: key to add or update. May not be null.
-        // value: value to associate with key.
-        //
-        // If the key is already entered into the dictionary, this method will update the value associated with key.
-        //--------------------------------------------------------------------------------------------
+        /// <summary>Adds the key and value if the key doesn't exist, or updates the existing key's value if it does exist.</summary>
+        /// <param name="key">key to add or update. May not be null.</param>
+        /// <param name="value">value to associate with key.</param>
         public void AddOrUpdate(TKey key, TValue value)
         {
-            if (key == null)
+            if (key is null)
             {
-                throw new ArgumentNullException(nameof(key));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
-            using (LockHolder.Hold(_lock))
+            lock (_lock)
             {
-                object otherValue;
-                int entryIndex = _container.FindEntry(key, out otherValue);
+                int entryIndex = _container.FindEntry(key, out _);
 
                 // if we found a key we should just update, if no we should create a new entry.
                 if (entryIndex != -1)
@@ -112,34 +115,31 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        //--------------------------------------------------------------------------------------------
-        // key: key to remove. May not be null.
-        //
-        // Returns true if the key is found and removed. Returns false if the key was not in the dictionary.
-        //
-        // Note: The key may get garbage collected during the Remove() operation. If so,
-        // Remove() will not fail or throw, however, the return value can be either true or false
-        // depending on who wins the race.
-        //--------------------------------------------------------------------------------------------
+        /// <summary>Removes a key and its value from the table.</summary>
+        /// <param name="key">key to remove. May not be null.</param>
+        /// <returns>true if the key is found and removed. Returns false if the key was not in the dictionary.</returns>
+        /// <remarks>
+        /// The key may get garbage collected during the Remove() operation. If so,
+        /// Remove() will not fail or throw, however, the return value can be either true or false
+        /// depending on who wins the race.
+        /// </remarks>
         public bool Remove(TKey key)
         {
-            if (key == null)
+            if (key is null)
             {
-                throw new ArgumentNullException(nameof(key));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
-            using (LockHolder.Hold(_lock))
+            lock (_lock)
             {
                 return _container.Remove(key);
             }
         }
 
-        //--------------------------------------------------------------------------------------------
-        // Clear all the key/value pairs
-        //--------------------------------------------------------------------------------------------
+        /// <summary>Clear all the key/value pairs</summary>
         public void Clear()
         {
-            using (LockHolder.Hold(_lock))
+            lock (_lock)
             {
                 // To clear, we would prefer to simply drop the existing container
                 // and replace it with an empty one, as that's overall more efficient.
@@ -163,32 +163,31 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        //--------------------------------------------------------------------------------------------
-        // key:                 key of the value to find. Cannot be null.
-        // createValueCallback: callback that creates value for key. Cannot be null.
-        //
-        // Atomically tests if key exists in table. If so, returns corresponding value. If not,
-        // invokes createValueCallback() passing it the key. The returned value is bound to the key in the table
-        // and returned as the result of GetValue().
-        //
-        // If multiple threads try to initialize the same key, the table may invoke createValueCallback
-        // multiple times with the same key. Exactly one of these calls will succeed and the returned
-        // value of that call will be the one added to the table and returned by all the racing GetValue() calls.
-        // 
-        // This rule permits the table to invoke createValueCallback outside the internal table lock
-        // to prevent deadlocks.
-        //--------------------------------------------------------------------------------------------
+        /// <summary>
+        /// Atomically searches for a specified key in the table and returns the corresponding value.
+        /// If the key does not exist in the table, the method invokes a callback method to create a
+        /// value that is bound to the specified key.
+        /// </summary>
+        /// <param name="key">key of the value to find. Cannot be null.</param>
+        /// <param name="createValueCallback">callback that creates value for key. Cannot be null.</param>
+        /// <returns></returns>
+        /// <remarks>
+        /// If multiple threads try to initialize the same key, the table may invoke createValueCallback
+        /// multiple times with the same key. Exactly one of these calls will succeed and the returned
+        /// value of that call will be the one added to the table and returned by all the racing GetValue() calls.
+        /// This rule permits the table to invoke createValueCallback outside the internal table lock
+        /// to prevent deadlocks.
+        /// </remarks>
         public TValue GetValue(TKey key, CreateValueCallback createValueCallback)
         {
             // key is validated by TryGetValue
 
-            if (createValueCallback == null)
+            if (createValueCallback is null)
             {
                 throw new ArgumentNullException(nameof(createValueCallback));
             }
 
-            TValue existingValue;
-            return TryGetValue(key, out existingValue) ?
+            return TryGetValue(key, out TValue existingValue) ?
                 existingValue :
                 GetValueLocked(key, createValueCallback);
         }
@@ -199,11 +198,10 @@ namespace System.Runtime.CompilerServices
             // to generate the new value for the key. 
             TValue newValue = createValueCallback(key);
 
-            using (LockHolder.Hold(_lock))
+            lock (_lock)
             {
                 // Now that we've taken the lock, must recheck in case we lost a race to add the key.
-                TValue existingValue;
-                if (_container.TryGetValueWorker(key, out existingValue))
+                if (_container.TryGetValueWorker(key, out TValue existingValue))
                 {
                     return existingValue;
                 }
@@ -216,32 +214,30 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        //--------------------------------------------------------------------------------------------
-        // key:                 key of the value to find. Cannot be null.
-        //
-        // Helper method to call GetValue without passing a creation delegate.  Uses Activator.CreateInstance
-        // to create new instances as needed.  If TValue does not have a default constructor, this will
-        // throw.
-        //--------------------------------------------------------------------------------------------
-
+        /// <summary>
+        /// Helper method to call GetValue without passing a creation delegate.  Uses Activator.CreateInstance
+        /// to create new instances as needed.  If TValue does not have a default constructor, this will throw.
+        /// </summary>
+        /// <param name="key">key of the value to find. Cannot be null.</param>
         public TValue GetOrCreateValue(TKey key) => GetValue(key, _ => Activator.CreateInstance<TValue>());
 
         public delegate TValue CreateValueCallback(TKey key);
 
-        //--------------------------------------------------------------------------------------------
-        // Gets an enumerator for the table.  The returned enumerator will not extend the lifetime of
-        // any object pairs in the table, other than the one that's Current.  It will not return entries
-        // that have already been collected, nor will it return entries added after the enumerator was
-        // retrieved.  It may not return all entries that were present when the enumerat was retrieved,
-        // however, such as not returning entries that were collected or removed after the enumerator
-        // was retrieved but before they were enumerated.
-        //--------------------------------------------------------------------------------------------
+        /// <summary>Gets an enumerator for the table.</summary>
+        /// <remarks>
+        /// The returned enumerator will not extend the lifetime of
+        /// any object pairs in the table, other than the one that's Current.  It will not return entries
+        /// that have already been collected, nor will it return entries added after the enumerator was
+        /// retrieved.  It may not return all entries that were present when the enumerat was retrieved,
+        /// however, such as not returning entries that were collected or removed after the enumerator
+        /// was retrieved but before they were enumerated.
+        /// </remarks>
         IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()
         {
-            using (LockHolder.Hold(_lock))
+            lock (_lock)
             {
                 Container c = _container;
-                return c == null || c.FirstFreeEntry == 0 ?
+                return c is null || c.FirstFreeEntry == 0 ?
                     ((IEnumerable<KeyValuePair<TKey, TValue>>)Array.Empty<KeyValuePair<TKey, TValue>>()).GetEnumerator() :
                     new Enumerator(this);
             }
@@ -276,7 +272,7 @@ namespace System.Runtime.CompilerServices
             public Enumerator(ConditionalWeakTable<TKey, TValue> table)
             {
                 Debug.Assert(table != null, "Must provide a valid table");
-                Debug.Assert(table._lock.IsAcquired, "Must hold the _lock lock to construct the enumerator");
+                Debug.Assert(Monitor.IsEntered(table._lock), "Must hold the _lock lock to construct the enumerator");
                 Debug.Assert(table._container != null, "Should not be used on a finalized table");
                 Debug.Assert(table._container.FirstFreeEntry > 0, "Should have returned an empty enumerator instead");
 
@@ -290,7 +286,10 @@ namespace System.Runtime.CompilerServices
                 _currentIndex = -1;
             }
 
-            ~Enumerator() { Dispose(); }
+            ~Enumerator()
+            {
+                Dispose();
+            }
 
             public void Dispose()
             {
@@ -303,7 +302,7 @@ namespace System.Runtime.CompilerServices
                     _current = default;
 
                     // Decrement the ref count that was incremented when constructed
-                    using (LockHolder.Hold(table._lock))
+                    lock (table._lock)
                     {
                         table._activeEnumeratorRefCount--;
                         Debug.Assert(table._activeEnumeratorRefCount >= 0, "Should never have a negative ref count after decrementing");
@@ -322,7 +321,7 @@ namespace System.Runtime.CompilerServices
                 {
                     // Once have the table, we need to lock to synchronize with other operations on
                     // the table, like adding.
-                    using (LockHolder.Hold(table._lock))
+                    lock (table._lock)
                     {
                         // From the table, we have to get the current container.  This could have changed
                         // since we grabbed the enumerator, but the index-to-pair mapping should not have
@@ -337,9 +336,7 @@ namespace System.Runtime.CompilerServices
                             while (_currentIndex < _maxIndexInclusive)
                             {
                                 _currentIndex++;
-                                TKey key;
-                                TValue value;
-                                if (c.TryGetEntry(_currentIndex, out key, out value))
+                                if (c.TryGetEntry(_currentIndex, out TKey key, out TValue value))
                                 {
                                     _current = new KeyValuePair<TKey, TValue>(key, value);
                                     return true;
@@ -359,7 +356,7 @@ namespace System.Runtime.CompilerServices
                 {
                     if (_currentIndex < 0)
                     {
-                        throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
+                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
                     }
                     return _current;
                 }
@@ -370,35 +367,24 @@ namespace System.Runtime.CompilerServices
             public void Reset() { }
         }
 
-        #endregion
-
-        #region Private Members
-
-        //----------------------------------------------------------------------------------------
-        // Worker for adding a new key/value pair.
-        // Will resize the container if it is full
-        //
-        // Preconditions:
-        //     Must hold _lock.
-        //     Key already validated as non-null and not already in table.
-        //----------------------------------------------------------------------------------------
+        /// <summary>Worker for adding a new key/value pair. Will resize the container if it is full.</summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
         private void CreateEntry(TKey key, TValue value)
         {
-            Debug.Assert(_lock.IsAcquired);
+            Debug.Assert(Monitor.IsEntered(_lock));
+            Debug.Assert(key != null); // key already validated as non-null and not already in table.
 
             Container c = _container;
             if (!c.HasCapacity)
             {
-                c = _container = c.Resize();
+                _container = c = c.Resize();
             }
             c.CreateEntryNoResize(key, value);
         }
 
         private static bool IsPowerOfTwo(int value) => (value > 0) && ((value & (value - 1)) == 0);
 
-        #endregion
-
-        #region Private Data Members
         //--------------------------------------------------------------------------------------------
         // Entry can be in one of four states:
         //
@@ -413,7 +399,7 @@ namespace System.Runtime.CompilerServices
         //         next links to next Entry in bucket. 
         //                          
         //    - Used with dead key (linked into a bucket list where _buckets[hashCode & (_buckets.Length - 1)] points to first entry)
-        //         depHnd.IsAllocated == true, depHnd.GetPrimary() == null
+        //         depHnd.IsAllocated == true, depHnd.GetPrimary() is null
         //         hashCode == <notcare> 
         //         next links to next Entry in bucket. 
         //
@@ -434,15 +420,15 @@ namespace System.Runtime.CompilerServices
         {
             public DependentHandle depHnd;      // Holds key and value using a weak reference for the key and a strong reference
                                                 // for the value that is traversed only if the key is reachable without going through the value.
-            public int hashCode;    // Cached copy of key's hashcode
-            public int next;        // Index of next entry, -1 if last
+            public int HashCode;    // Cached copy of key's hashcode
+            public int Next;        // Index of next entry, -1 if last
         }
 
-        //
-        // Container holds the actual data for the table.  A given instance of Container always has the same capacity.  When we need
-        // more capacity, we create a new Container, copy the old one into the new one, and discard the old one.  This helps enable lock-free
-        // reads from the table, as readers never need to deal with motion of entries due to rehashing.
-        //
+        /// <summary>
+        /// Container holds the actual data for the table.  A given instance of Container always has the same capacity.  When we need
+        /// more capacity, we create a new Container, copy the old one into the new one, and discard the old one.  This helps enable lock-free
+        /// reads from the table, as readers never need to deal with motion of entries due to rehashing.
+        /// </summary>
         private sealed class Container
         {
             private readonly ConditionalWeakTable<TKey, TValue> _parent;  // the ConditionalWeakTable with which this container is associated
@@ -476,6 +462,11 @@ namespace System.Runtime.CompilerServices
             private Container(ConditionalWeakTable<TKey, TValue> parent, int[] buckets, Entry[] entries, int firstFreeEntry)
             {
                 Debug.Assert(parent != null);
+                Debug.Assert(buckets != null);
+                Debug.Assert(entries != null);
+                Debug.Assert(buckets.Length == entries.Length);
+                Debug.Assert(IsPowerOfTwo(buckets.Length));
+
                 _parent = parent;
                 _buckets = buckets;
                 _entries = entries;
@@ -486,11 +477,7 @@ namespace System.Runtime.CompilerServices
 
             internal int FirstFreeEntry => _firstFreeEntry;
 
-            //----------------------------------------------------------------------------------------
-            // Worker for adding a new key/value pair.
-            // Preconditions:
-            //     Container must NOT be full
-            //----------------------------------------------------------------------------------------
+            /// <summary>Worker for adding a new key/value pair. Container must NOT be full.</summary>
             internal void CreateEntryNoResize(TKey key, TValue value)
             {
                 Debug.Assert(HasCapacity);
@@ -501,10 +488,10 @@ namespace System.Runtime.CompilerServices
                 int hashCode = RuntimeHelpers.GetHashCode(key) & int.MaxValue;
                 int newEntry = _firstFreeEntry++;
 
-                _entries[newEntry].hashCode = hashCode;
+                _entries[newEntry].HashCode = hashCode;
                 _entries[newEntry].depHnd = new DependentHandle(key, value);
                 int bucket = hashCode & (_buckets.Length - 1);
-                _entries[newEntry].next = _buckets[bucket];
+                _entries[newEntry].Next = _buckets[bucket];
 
                 // This write must be volatile, as we may be racing with concurrent readers.  If they see
                 // the new entry, they must also see all of the writes earlier in this method.
@@ -513,35 +500,29 @@ namespace System.Runtime.CompilerServices
                 _invalid = false;
             }
 
-            //----------------------------------------------------------------------------------------
-            // Worker for finding a key/value pair
-            //
-            // Preconditions:
-            //     Must hold _lock.
-            //     Key already validated as non-null
-            //----------------------------------------------------------------------------------------
+            /// <summary>Worker for finding a key/value pair. Must hold _lock.</summary>
             internal bool TryGetValueWorker(TKey key, out TValue value)
             {
-                object secondary;
-                int entryIndex = FindEntry(key, out secondary);
+                Debug.Assert(key != null); // Key already validated as non-null
+
+                int entryIndex = FindEntry(key, out object secondary);
                 value = Unsafe.As<TValue>(secondary);
                 return entryIndex != -1;
             }
 
-            //----------------------------------------------------------------------------------------
-            // Returns -1 if not found (if key expires during FindEntry, this can be treated as "not found.")
-            //
-            // Preconditions:
-            //     Must hold _lock, or be prepared to retry the search while holding _lock.
-            //     Key already validated as non-null.
-            //----------------------------------------------------------------------------------------
+            /// <summary>
+            /// Returns -1 if not found (if key expires during FindEntry, this can be treated as "not found.").
+            /// Must hold _lock, or be prepared to retry the search while holding _lock.
+            /// </summary>
             internal int FindEntry(TKey key, out object value)
             {
+                Debug.Assert(key != null); // Key already validated as non-null.
+
                 int hashCode = RuntimeHelpers.GetHashCode(key) & int.MaxValue;
                 int bucket = hashCode & (_buckets.Length - 1);
-                for (int entriesIndex = Volatile.Read(ref _buckets[bucket]); entriesIndex != -1; entriesIndex = _entries[entriesIndex].next)
+                for (int entriesIndex = Volatile.Read(ref _buckets[bucket]); entriesIndex != -1; entriesIndex = _entries[entriesIndex].Next)
                 {
-                    if (_entries[entriesIndex].hashCode == hashCode && _entries[entriesIndex].depHnd.GetPrimaryAndSecondary(out value) == key)
+                    if (_entries[entriesIndex].HashCode == hashCode && _entries[entriesIndex].depHnd.GetPrimaryAndSecondary(out value) == key)
                     {
                         GC.KeepAlive(this); // ensure we don't get finalized while accessing DependentHandles.
                         return entriesIndex;
@@ -553,15 +534,12 @@ namespace System.Runtime.CompilerServices
                 return -1;
             }
 
-            //----------------------------------------------------------------------------------------
-            // Gets the entry at the specified entry index.
-            //----------------------------------------------------------------------------------------
+            /// <summary>Gets the entry at the specified entry index.</summary>
             internal bool TryGetEntry(int index, out TKey key, out TValue value)
             {
                 if (index < _entries.Length)
                 {
-                    object oKey, oValue;
-                    oKey = _entries[index].depHnd.GetPrimaryAndSecondary(out oValue);
+                    object oKey = _entries[index].depHnd.GetPrimaryAndSecondary(out object oValue);
                     GC.KeepAlive(this); // ensure we don't get finalized while accessing DependentHandles.
 
                     if (oKey != null)
@@ -577,9 +555,7 @@ namespace System.Runtime.CompilerServices
                 return false;
             }
 
-            //----------------------------------------------------------------------------------------
-            // Removes all of the keys in the table.
-            //----------------------------------------------------------------------------------------
+            /// <summary>Removes all of the keys in the table.</summary>
             internal void RemoveAllKeys()
             {
                 for (int i = 0; i < _firstFreeEntry; i++)
@@ -588,15 +564,12 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            //----------------------------------------------------------------------------------------
-            // Removes the specified key from the table, if it exists.
-            //----------------------------------------------------------------------------------------
+            /// <summary>Removes the specified key from the table, if it exists.</summary>
             internal bool Remove(TKey key)
             {
                 VerifyIntegrity();
 
-                object value;
-                int entryIndex = FindEntry(key, out value);
+                int entryIndex = FindEntry(key, out _);
                 if (entryIndex != -1)
                 {
                     RemoveIndex(entryIndex);
@@ -615,7 +588,7 @@ namespace System.Runtime.CompilerServices
                 // We do not free the handle here, as we may be racing with readers who already saw the hash code.
                 // Instead, we simply overwrite the entry's hash code, so subsequent reads will ignore it.
                 // The handle will be free'd in Container's finalizer, after the table is resized or discarded.
-                Volatile.Write(ref entry.hashCode, -1);
+                Volatile.Write(ref entry.HashCode, -1);
 
                 // Also, clear the key to allow GC to collect objects pointed to by the entry
                 entry.depHnd.SetPrimary(null);
@@ -633,15 +606,10 @@ namespace System.Runtime.CompilerServices
                 _invalid = false;
             }
 
-            //----------------------------------------------------------------------------------------
-            // This does two things: resize and scrub expired keys off bucket lists.
-            //
-            // Precondition:
-            //      Must hold _lock.
-            //
-            // Postcondition:
-            //      _firstEntry is less than _entries.Length on exit, that is, the table has at least one free entry.
-            //----------------------------------------------------------------------------------------
+            /// <summary>Resize, and scrub expired keys off bucket lists. Must hold _lock.</summary>
+            /// <remarks>
+            /// _firstEntry is less than _entries.Length on exit, that is, the table has at least one free entry.
+            /// </remarks>
             internal Container Resize()
             {
                 Debug.Assert(!HasCapacity);
@@ -649,7 +617,7 @@ namespace System.Runtime.CompilerServices
                 bool hasExpiredEntries = false;
                 int newSize = _buckets.Length;
 
-                if (_parent == null || _parent._activeEnumeratorRefCount == 0)
+                if (_parent is null || _parent._activeEnumeratorRefCount == 0)
                 {
                     // If any expired or removed keys exist, we won't resize.
                     // If there any active enumerators, though, we don't want
@@ -658,14 +626,14 @@ namespace System.Runtime.CompilerServices
                     {
                         ref Entry entry = ref _entries[entriesIndex];
 
-                        if (entry.hashCode == -1)
+                        if (entry.HashCode == -1)
                         {
                             // the entry was removed
                             hasExpiredEntries = true;
                             break;
                         }
 
-                        if (entry.depHnd.IsAllocated && entry.depHnd.GetPrimary() == null)
+                        if (entry.depHnd.IsAllocated && entry.depHnd.GetPrimary() is null)
                         {
                             // the entry has expired
                             hasExpiredEntries = true;
@@ -710,12 +678,12 @@ namespace System.Runtime.CompilerServices
                     {
                         ref Entry oldEntry = ref _entries[newEntriesIndex];
                         ref Entry newEntry = ref newEntries[newEntriesIndex];
-                        int hashCode = oldEntry.hashCode;
+                        int hashCode = oldEntry.HashCode;
 
-                        newEntry.hashCode = hashCode;
+                        newEntry.HashCode = hashCode;
                         newEntry.depHnd = oldEntry.depHnd;
                         int bucket = hashCode & (newBuckets.Length - 1);
-                        newEntry.next = newBuckets[bucket];
+                        newEntry.Next = newBuckets[bucket];
                         newBuckets[bucket] = newEntriesIndex;
                     }
                 }
@@ -726,7 +694,7 @@ namespace System.Runtime.CompilerServices
                     for (int entriesIndex = 0; entriesIndex < _entries.Length; entriesIndex++)
                     {
                         ref Entry oldEntry = ref _entries[entriesIndex];
-                        int hashCode = oldEntry.hashCode;
+                        int hashCode = oldEntry.HashCode;
                         DependentHandle depHnd = oldEntry.depHnd;
                         if (hashCode != -1 && depHnd.IsAllocated)
                         {
@@ -735,10 +703,10 @@ namespace System.Runtime.CompilerServices
                                 ref Entry newEntry = ref newEntries[newEntriesIndex];
 
                                 // Entry is used and has not expired. Link it into the appropriate bucket list.
-                                newEntry.hashCode = hashCode;
+                                newEntry.HashCode = hashCode;
                                 newEntry.depHnd = depHnd;
                                 int bucket = hashCode & (newBuckets.Length - 1);
-                                newEntry.next = newBuckets[bucket];
+                                newEntry.Next = newBuckets[bucket];
                                 newBuckets[bucket] = newEntriesIndex;
                                 newEntriesIndex++;
                             }
@@ -746,7 +714,7 @@ namespace System.Runtime.CompilerServices
                             {
                                 // Pretend the item was removed, so that this container's finalizer
                                 // will clean up this dependent handle.
-                                Volatile.Write(ref oldEntry.hashCode, -1);
+                                Volatile.Write(ref oldEntry.HashCode, -1);
                             }
                         }
                     }
@@ -772,28 +740,21 @@ namespace System.Runtime.CompilerServices
                 return newContainer;
             }
 
-            //----------------------------------------------------------------------------------------
-            // Precondition:
-            //     Must hold _lock.
-            //----------------------------------------------------------------------------------------
             private void VerifyIntegrity()
             {
                 if (_invalid)
                 {
-                    throw new InvalidOperationException(SR.CollectionCorrupted);
+                    throw new InvalidOperationException(SR.InvalidOperation_CollectionCorrupted);
                 }
             }
 
-            //----------------------------------------------------------------------------------------
-            // Finalizer.
-            //----------------------------------------------------------------------------------------
             ~Container()
             {
                 // We're just freeing per-appdomain unmanaged handles here. If we're already shutting down the AD,
                 // don't bother. (Despite its name, Environment.HasShutdownStart also returns true if the current
                 // AD is finalizing.)  We also skip doing anything if the container is invalid, including if someone
                 // the container object was allocated but its associated table never set.
-                if (Environment.HasShutdownStarted || _invalid || _parent == null)
+                if (Environment.HasShutdownStarted || _invalid || _parent is null)
                 {
                     return;
                 }
@@ -808,7 +769,7 @@ namespace System.Runtime.CompilerServices
                 if (!_finalized)
                 {
                     _finalized = true;
-                    using (LockHolder.Hold(_parent._lock))
+                    lock (_parent._lock)
                     {
                         if (_parent._container == this)
                         {
@@ -833,7 +794,7 @@ namespace System.Runtime.CompilerServices
                         //   to another container that replaced this one), then it should be freed.
                         // - If this container had the entry removed, then even if in general ownership was transferred to
                         //   another container, removed entries are not, therefore this container must free them.
-                        if (_oldKeepAlive == null || entries[entriesIndex].hashCode == -1)
+                        if (_oldKeepAlive is null || entries[entriesIndex].HashCode == -1)
                         {
                             entries[entriesIndex].depHnd.Free();
                         }
@@ -841,89 +802,5 @@ namespace System.Runtime.CompilerServices
                 }
             }
         }
-        #endregion
     }
-    #endregion
-
-    #region DependentHandle
-    //=========================================================================================
-    // This struct collects all operations on native DependentHandles. The DependentHandle
-    // merely wraps an IntPtr so this struct serves mainly as a "managed typedef."
-    //
-    // DependentHandles exist in one of two states:
-    //
-    //    IsAllocated == false
-    //        No actual handle is allocated underneath. Illegal to call GetPrimary
-    //        or GetPrimaryAndSecondary(). Ok to call Free().
-    //
-    //        Initializing a DependentHandle using the nullary ctor creates a DependentHandle
-    //        that's in the !IsAllocated state.
-    //        (! Right now, we get this guarantee for free because (IntPtr)0 == NULL unmanaged handle.
-    //         ! If that assertion ever becomes false, we'll have to add an _isAllocated field
-    //         ! to compensate.)
-    //        
-    //
-    //    IsAllocated == true
-    //        There's a handle allocated underneath. You must call Free() on this eventually
-    //        or you cause a native handle table leak.
-    //
-    // This struct intentionally does no self-synchronization. It's up to the caller to
-    // to use DependentHandles in a thread-safe way.
-    //=========================================================================================
-    internal struct DependentHandle
-    {
-        #region Constructors
-        public DependentHandle(object primary, object secondary)
-        {
-            _handle = RuntimeImports.RhHandleAllocDependent(primary, secondary);
-        }
-        #endregion
-
-        #region Public Members
-        public bool IsAllocated => _handle != IntPtr.Zero;
-
-        // Getting the secondary object is more expensive than getting the first so
-        // we provide a separate primary-only accessor for those times we only want the
-        // primary.
-        public object GetPrimary()
-        {
-            return RuntimeImports.RhHandleGet(_handle);
-        }
-
-        public object GetPrimaryAndSecondary(out object secondary)
-        {
-            return RuntimeImports.RhHandleGetDependent(_handle, out secondary);
-        }
-
-        public void SetPrimary(object primary)
-        {
-            RuntimeImports.RhHandleSet(_handle, primary);
-        }
-
-        public void SetSecondary(object secondary)
-        {
-            RuntimeImports.RhHandleSetDependentSecondary(_handle, secondary);
-        }
-
-        //----------------------------------------------------------------------
-        // Forces dependentHandle back to non-allocated state (if not already there)
-        // and frees the handle if needed.
-        //----------------------------------------------------------------------
-        public void Free()
-        {
-            if (_handle != (IntPtr)0)
-            {
-                IntPtr handle = _handle;
-                _handle = (IntPtr)0;
-                RuntimeImports.RhHandleFree(handle);
-            }
-        }
-        #endregion
-
-        #region Private Data Member
-        private IntPtr _handle;
-        #endregion
-
-    } // struct DependentHandle
-    #endregion
 }

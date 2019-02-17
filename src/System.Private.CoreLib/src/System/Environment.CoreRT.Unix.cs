@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -13,22 +14,83 @@ namespace System
     public static partial class Environment
     {
         internal static int CurrentNativeThreadId => ManagedThreadId.Current;
-        
+
+        private static Dictionary<string, string> s_environment;
+
         private static string GetEnvironmentVariableCore(string variable)
         {
             Debug.Assert(variable != null);
-            return Marshal.PtrToStringAnsi(Interop.Sys.GetEnv(variable));
+
+            if (s_environment == null)
+            {
+                return Marshal.PtrToStringAnsi(Interop.Sys.GetEnv(variable));
+            }
+
+            lock (s_environment)
+            {
+                variable = TrimStringOnFirstZero(variable);
+                s_environment.TryGetValue(variable, out string value);
+                return value;
+            }
         }
 
         private static void SetEnvironmentVariableCore(string variable, string value)
         {
             Debug.Assert(variable != null);
-            throw new NotImplementedException();
+
+            EnsureEnvironmentCached();
+            lock (s_environment)
+            {
+                variable = TrimStringOnFirstZero(variable);
+                value = value == null ? null : TrimStringOnFirstZero(value);
+                if (string.IsNullOrEmpty(value))
+                {
+                    s_environment.Remove(variable);
+                }
+                else
+                {
+                    s_environment[variable] = value;
+                }
+            }
         }
 
         public static IDictionary GetEnvironmentVariables()
         {
             var results = new Hashtable();
+
+            EnsureEnvironmentCached();
+            lock (s_environment)
+            {
+                foreach (var keyValuePair in s_environment)
+                {
+                    results.Add(keyValuePair.Key, keyValuePair.Value);
+                }
+            }
+
+            return results;
+        }
+
+        private static string TrimStringOnFirstZero(string value)
+        {
+            int index = value.IndexOf('\0');
+            if (index >= 0)
+            {
+                return value.Substring(0, index);
+            }
+            return value;
+        }
+
+        private static void EnsureEnvironmentCached()
+        {
+            if (s_environment == null)
+            {
+                Interlocked.CompareExchange(ref s_environment, GetSystemEnvironmentVariables(), null);
+            }
+        }
+
+        private static Dictionary<string, string> GetSystemEnvironmentVariables()
+        {
+            var results = new Dictionary<string, string>();
 
             IntPtr block = Interop.Sys.GetEnviron();
             if (block != IntPtr.Zero)

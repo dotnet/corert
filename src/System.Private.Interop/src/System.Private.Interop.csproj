@@ -118,14 +118,14 @@
     <Compile Include="Interop\Interop.Sync.Windows.cs" />
     <Compile Include="Interop\Interop.WinRT.Basic.cs" />
 
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MemAllocFree.cs">
-      <Link>Interop\Windows\mincore\Interop.MemAllocFree.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.MemAllocFree.cs">
+      <Link>Interop\Windows\Mincore\Interop.MemAllocFree.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MemReAlloc.cs">
-      <Link>Interop\Windows\mincore\Interop.MemReAlloc.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.MemReAlloc.cs">
+      <Link>Interop\Windows\Mincore\Interop.MemReAlloc.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MemAllocWithZeroInitializeNoThrow.cs">
-      <Link>Interop\Windows\mincore\Interop.MemAllocWithZeroInitializeNoThrow.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.MemAllocWithZeroInitializeNoThrow.cs">
+      <Link>Interop\Windows\Mincore\Interop.MemAllocWithZeroInitializeNoThrow.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">

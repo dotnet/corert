@@ -58,7 +58,15 @@ namespace ILCompiler
 
             foreach (TypeDesc type in assembly.GetAllTypes())
             {
-                RdXmlRootProvider.RootType(rootProvider, type, "Application assembly root");
+                try
+                {
+                    RdXmlRootProvider.RootType(rootProvider, type, "Application assembly root");
+                }
+                catch (TypeSystemException)
+                {
+                    // The type might end up being not loadable (due to e.g. missing references).
+                    // If so, we will quietly ignore it: rooting all application types is best effort.
+                }
             }
         }
     }

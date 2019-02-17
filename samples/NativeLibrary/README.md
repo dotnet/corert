@@ -30,7 +30,7 @@ The above command will drop a shared library (Windows `.dll`, OSX `.dylib`, Linu
 
 ## Exporting methods
 
-For a C# method in the native library to be consumable by external programs, it has to be explicitly exported using the `[NativeCallable]` attribute. First define the `NativeCallable` class in your project, see [here](https://github.com/dotnet/corert/blob/master/tests/src/Simple/SharedLibrary/NativeCallable.cs). The local definition of the `NativeCallable` is a temporary workaround that will go away once the attribute is added to the official .NET Core public surface.
+For a C# method in the native library to be consumable by external programs, it has to be explicitly exported using the `[NativeCallable]` attribute. First define the `System.Runtime.InteropServices.NativeCallableAttribute` in your project, see [here](https://github.com/dotnet/corert/blob/master/tests/src/Simple/SharedLibrary/NativeCallable.cs). The local definition of the `NativeCallableAttribute` is a temporary workaround that will go away once the attribute is added to the official .NET Core public surface.
 
 Next, apply the attribute to the method, specifying the `EntryPoint` and `CallingConvention` properties:
 
