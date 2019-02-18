@@ -374,12 +374,9 @@ namespace Internal.IL.Stubs
                 return true;
             }
 
-            if (_pInvokeILEmitterConfiguration != null)
+            if (!_pInvokeILEmitterConfiguration.GenerateDirectCall(_importMetadata.Module, _importMetadata.Name))
             {
-                if (!_pInvokeILEmitterConfiguration.GenerateDirectCall(_importMetadata.Module, _importMetadata.Name))
-                {
-                    return true;
-                }
+                return true;
             }
 
             if (_flags.SetLastError)
