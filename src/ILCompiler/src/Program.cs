@@ -69,8 +69,6 @@ namespace ILCompiler
 
         private IReadOnlyList<string> _runtimeOptions = Array.Empty<string>();
 
-        private IReadOnlyList<string> _directPinvokes = Array.Empty<string>();
-
         private bool _help;
 
         private Program()
@@ -176,7 +174,6 @@ namespace ILCompiler
                 syntax.DefineOptionList("initassembly", ref _initAssemblies, "Assembly(ies) with a library initializer");
                 syntax.DefineOptionList("appcontextswitch", ref _appContextSwitches, "System.AppContext switches to set");
                 syntax.DefineOptionList("runtimeopt", ref _runtimeOptions, "Runtime options to set");
-                syntax.DefineOptionList("directpinvoke", ref _directPinvokes, "Specify p/invoke library that should be hard bound");
 
                 syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
                 syntax.DefineOption("targetos", ref _targetOSStr, "Target OS for cross compilation");
@@ -464,7 +461,7 @@ namespace ILCompiler
             builder.UseCompilationUnitPrefix(compilationUnitPrefix);
 
             if (!_isCppCodegen && !_isWasmCodegen)
-                builder.UsePInvokePolicy(new ConfigurablePInvokePolicy(_directPinvokes));
+                builder.UsePInvokePolicy(new ConfigurablePInvokePolicy(typeSystemContext.Target));
 
             var stackTracePolicy = _emitStackTraceData ?
                 (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();

@@ -2,36 +2,52 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
-
 using Internal.IL;
+using Internal.TypeSystem;
 
 namespace ILCompiler
 {
+    // TODO: make this actually configurable
     class ConfigurablePInvokePolicy : PInvokeILEmitterConfiguration
     {
-        private readonly Regex[] _libraryNameRegices;
+        private readonly TargetDetails _target;
 
-        public ConfigurablePInvokePolicy(IEnumerable<string> pinvokeNames)
+        public ConfigurablePInvokePolicy(TargetDetails target)
         {
-            List<Regex> regices = new List<Regex>();
-            foreach (string pinvokeName in pinvokeNames)
-            {
-                regices.Add(new Regex(pinvokeName));
-            }
-            _libraryNameRegices = regices.ToArray();
+            _target = target;
         }
 
-        public override bool GenerateDirectCall(string libraryName, string methodName)
+        public override bool GenerateDirectCall(string importModule, string methodName)
         {
-            foreach (Regex regex in _libraryNameRegices)
-            {
-                if (regex.IsMatch(libraryName))
-                    return true;
-            }
+            // Determine whether this call should be made through a lazy resolution or a static reference
+            // Eventually, this should be controlled by a custom attribute (or an extension to the metadata format).
+            if (importModule == "[MRT]" || importModule == "*")
+                return true;
 
-            return false;
+            // Force link time symbol resolution for "__Internal" module for compatibility with Mono
+            if (importModule == "__Internal")
+                return true;
+
+            if (_target.IsWindows)
+            {
+                // Force link time symbol resolution for PInvokes used on CoreLib startup path
+
+                if (importModule.StartsWith("api-ms-win-"))
+                    return true;
+
+                if (importModule == "BCrypt.dll")
+                {
+                    if (methodName == "BCryptGenRandom")
+                        return true;
+                }
+
+                return false;
+            }
+            else
+            {
+                // Account for System.Private.CoreLib.Native / System.Globalization.Native / System.Native / etc
+                return importModule.StartsWith("System.");
+            }
         }
     }
 }
