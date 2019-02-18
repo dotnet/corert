@@ -295,8 +295,8 @@ internal static class Program
     internal static void FailTest(string failMessage = null)
     {
         Success = false;
-        if(failMessage != null) PrintString(failMessage + "-");
-        FailTest();
+        PrintLine("Failed.");
+        if (failMessage != null) PrintLine(failMessage + "-");
     }
 
     private static int StaticDelegateTarget()
@@ -388,7 +388,7 @@ internal static class Program
 
     private static void IntToStringTest()
     {
-        StartTest("Int to String Test: Ok if says 42:");
+        StartTest("Int to String Test: Ok if says 42");
         string intString = 42.ToString();
         PrintLine(intString);
         EndTest(intString == "42");
@@ -431,7 +431,7 @@ internal static class Program
         EndTest(ItfCaller(itfStruct) == 4);
 
         ClassWithSealedVTable classWithSealedVTable = new ClassWithSealedVTable();
-        StartTest("Interface dispatch with sealed vtable test: ");
+        StartTest("Interface dispatch with sealed vtable test");
         EndTest(CallItf(classWithSealedVTable) == 37);
     }
 
@@ -630,7 +630,7 @@ internal static class Program
 
         var gentT = new Gen<int>();
         var genParamType = gentT.TestTypeOf();
-        StartTest("type of generic parameter: ");
+        StartTest("type of generic parameter");
         if (genParamType.FullName != "System.Int32")
         {
             FailTest("expected System.Int32 but was " + genParamType.FullName);
@@ -652,7 +652,7 @@ internal static class Program
         }
 
         var genericType = typeof(List<object>);
-        StartTest("type of generic : ");
+        StartTest("type of generic");
         if (genericType.FullName != "System.Collections.Generic.List`1[[System.Object, System.Private.CoreLib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a]]")
         {
             FailTest("expected System.Collections.Generic.List`1[[System.Object, System.Private.CoreLib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a]] but was " + genericType.FullName);
