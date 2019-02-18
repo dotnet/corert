@@ -809,8 +809,8 @@ internal static class Program
         var x = new ClassForMetaTests();
         var s = x.StringField;  
         var i = x.IntField;
-        var fieldClassType = typeof(ClassForMetaTests);
-        FieldInfo[] fields = fieldClassType.GetFields();
+        var classForMetaTestsType = typeof(ClassForMetaTests);
+        FieldInfo[] fields = classForMetaTestsType.GetFields();
         if (fields.Length == 3)
         {
             PrintLine("Ok.");
@@ -821,7 +821,7 @@ internal static class Program
         }
 
         PrintString("Type get string field via reflection: ");
-        var stringFieldInfo = fieldClassType.GetField("StringField");
+        var stringFieldInfo = classForMetaTestsType.GetField("StringField");
         if ((string)stringFieldInfo.GetValue(x) == s)
         {
             PrintLine("Ok.");
@@ -831,7 +831,7 @@ internal static class Program
             PrintLine("Failed.");
         }
         PrintString("Type get int field via reflection: ");
-        var intFieldInfo = fieldClassType.GetField("IntField");
+        var intFieldInfo = classForMetaTestsType.GetField("IntField");
         if ((int)intFieldInfo.GetValue(x) == i)
         {
             PrintLine("Ok.");
@@ -842,7 +842,7 @@ internal static class Program
         }
 
         PrintString("Type get static int field via reflection: ");
-        var staticIntFieldInfo = fieldClassType.GetField("StaticIntField");
+        var staticIntFieldInfo = classForMetaTestsType.GetField("StaticIntField");
         if ((int)staticIntFieldInfo.GetValue(x) == 23)
         {
             PrintLine("Ok.");
@@ -897,6 +897,61 @@ internal static class Program
         {
             PrintLine("Failed.");
         }
+
+        PrintString("Class get+invoke ctor via reflection: ");
+        var ctor = classForMetaTestsType.GetConstructor(new Type[0]);
+        ClassForMetaTests instance = (ClassForMetaTests)ctor.Invoke(null);
+        if (instance.IntField == 12)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
+
+        instance.ReturnTrueIf1(0); // force method output
+        instance.ReturnTrueIf1AndThis(0, null); // force method output
+        ClassForMetaTests.ReturnsParam(null); // force method output
+
+        PrintString("Class get+invoke simple method via reflection: ");
+        var mtd = classForMetaTestsType.GetMethod("ReturnTrueIf1");
+        bool shouldBeTrue = (bool)mtd.Invoke(instance, new object[] {1});
+        bool shouldBeFalse = (bool)mtd.Invoke(instance, new object[] {2});
+        if (shouldBeTrue && !shouldBeFalse)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
+
+        PrintString("Class get+invoke method with ref param via reflection: ");
+        var mtdWith2Params = classForMetaTestsType.GetMethod("ReturnTrueIf1AndThis");
+        shouldBeTrue = (bool)mtdWith2Params.Invoke(instance, new object[] { 1, instance });
+        shouldBeFalse = (bool)mtdWith2Params.Invoke(instance, new object[] { 1, new ClassForMetaTests() });
+        if (shouldBeTrue && !shouldBeFalse)
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
+
+
+        PrintString("Class get+invoke static method with ref param via reflection: ");
+        var staticMtd = classForMetaTestsType.GetMethod("ReturnsParam");
+        var retVal = (ClassForMetaTests)staticMtd.Invoke(null, new object[] { instance });
+        if (Object.ReferenceEquals(retVal, instance))
+        {
+            PrintLine("Ok.");
+        }
+        else
+        {
+            PrintLine("Failed.");
+        }
     }
 
     public class ClassForMetaTests
@@ -913,6 +968,21 @@ internal static class Program
             StringField = "ab";
             IntField = 12;
             StaticIntField = 23;
+        }
+
+        public bool ReturnTrueIf1(int i)
+        {
+            return i == 1;
+        }
+
+        public bool ReturnTrueIf1AndThis(int i, object anInstance)
+        {
+            return i == 1 && object.ReferenceEquals(this, anInstance);
+        }
+
+        public static object ReturnsParam(object p1)
+        {
+            return p1;
         }
     }
 

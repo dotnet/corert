@@ -463,9 +463,7 @@ namespace ILCompiler
             var stackTracePolicy = _emitStackTraceData ?
                 (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
 
-            MetadataBlockingPolicy mdBlockingPolicy = _isWasmCodegen 
-                ? new WebAssemblyMetadataBlockingPolicy()
-                : _noMetadataBlocking 
+            MetadataBlockingPolicy mdBlockingPolicy = _noMetadataBlocking 
                     ? (MetadataBlockingPolicy)new NoMetadataBlockingPolicy() 
                     : new BlockedInternalsBlockingPolicy();
 
