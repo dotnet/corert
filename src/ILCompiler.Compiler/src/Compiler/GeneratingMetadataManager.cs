@@ -128,11 +128,14 @@ namespace ILCompiler
                     typeMappings.Add(new MetadataMapping<MetadataType>(definition, writer.GetRecordHandle(record)));
             }
 
+            HashSet<MethodDesc> canonicalGenericMethods = new HashSet<MethodDesc>();
             foreach (var method in GetCompiledMethods())
             {
-                if (method.IsCanonicalMethod(CanonicalFormKind.Specific))
+                if ((method.HasInstantiation && method.IsCanonicalMethod(CanonicalFormKind.Specific))
+                    || (!method.HasInstantiation && method.GetCanonMethodTarget(CanonicalFormKind.Specific) != method))
                 {
-                    // Canonical methods are not interesting.
+                    // Methods that are not in their canonical form are not interesting with the exception
+                    // of generic methods: their dictionaries convey their identity.
                     continue;
                 }
 
@@ -142,17 +145,38 @@ namespace ILCompiler
                 if ((GetMetadataCategory(method) & MetadataCategory.RuntimeMapping) == 0)
                     continue;
 
+                // If we already added a canonically equivalent generic method, skip this one.
+                if (method.HasInstantiation && !canonicalGenericMethods.Add(method.GetCanonMethodTarget(CanonicalFormKind.Specific)))
+                    continue;
+
                 MetadataRecord record = transformed.GetTransformedMethodDefinition(method.GetTypicalMethodDefinition());
 
                 if (record != null)
                     methodMappings.Add(new MetadataMapping<MethodDesc>(method, writer.GetRecordHandle(record)));
             }
 
+            HashSet<FieldDesc> canonicalFields = new HashSet<FieldDesc>();
             foreach (var field in GetFieldsWithRuntimeMapping())
             {
-                Field record = transformed.GetTransformedFieldDefinition(field.GetTypicalFieldDefinition());
+                FieldDesc fieldToAdd = field;
+                if (!field.IsStatic)
+                {
+                    TypeDesc canonOwningType = field.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                    if (canonOwningType != field.OwningType)
+                    {
+                        FieldDesc canonField = _typeSystemContext.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)canonOwningType);
+
+                        // If we already added a canonically equivalent field, skip this one.
+                        if (!canonicalFields.Add(canonField))
+                            continue;
+
+                        fieldToAdd = canonField;
+                    }
+                }
+
+                Field record = transformed.GetTransformedFieldDefinition(fieldToAdd.GetTypicalFieldDefinition());
                 if (record != null)
-                    fieldMappings.Add(new MetadataMapping<FieldDesc>(field, writer.GetRecordHandle(record)));
+                    fieldMappings.Add(new MetadataMapping<FieldDesc>(fieldToAdd, writer.GetRecordHandle(record)));
             }
 
             // Generate stack trace metadata mapping

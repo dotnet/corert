@@ -17,7 +17,7 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public class ReflectableMethodNode : DependencyNodeCore<NodeFactory>
     {
-        private MethodDesc _method;
+        private readonly MethodDesc _method;
 
         public ReflectableMethodNode(MethodDesc method)
         {
@@ -33,6 +33,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList dependencies = null;
             factory.MetadataManager.GetDependenciesDueToReflectability(ref dependencies, factory, _method);
+
+            MethodDesc canonMethod = _method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            if (canonMethod != _method)
+            {
+                dependencies = dependencies ?? new DependencyList();
+                dependencies.Add(factory.ReflectableMethod(canonMethod), "Canonical version of the reflectable method");
+            }
+
             return dependencies;
         }
         protected override string GetName(NodeFactory factory)

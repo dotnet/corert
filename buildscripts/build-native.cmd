@@ -35,7 +35,7 @@ echo.
 set __VCBuildArch=x86_amd64
 if /i "%__BuildArch%" == "x86" (set __VCBuildArch=x86)
 
-call "!VS%__VSProductVersion%COMNTOOLS!\..\..\VC\Auxiliary\Build\vcvarsall.bat" %__VCBuildArch%
+call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" %__VCBuildArch%
 
 :: Regenerate the build files
 :RegenerateBuildFiles

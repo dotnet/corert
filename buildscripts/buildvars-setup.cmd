@@ -151,7 +151,7 @@ exit /b 1
 :: Setup vars for VS2017
 set __VSVersion=vs2017
 set __VSProductVersion=150
-if not exist "!VS%__VSProductVersion%COMNTOOLS!\..\..\VC\Auxiliary\Build\vcvarsall.bat" goto :MissingVisualC
+if not exist "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" goto :MissingVisualC
 set _msbuildexe="%VSINSTALLDIR%\MSBuild\15.0\Bin\MSBuild.exe"
 goto :CheckMSBuild
 
@@ -159,7 +159,7 @@ goto :CheckMSBuild
 :: Setup vars for VS2019
 set __VSVersion=vs2019
 set __VSProductVersion=160
-if not exist "!VS%__VSProductVersion%COMNTOOLS!\..\..\VC\Auxiliary\Build\vcvarsall.bat" goto :MissingVisualC
+if not exist "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" goto :MissingVisualC
 set _msbuildexe="%VSINSTALLDIR%\MSBuild\Current\Bin\MSBuild.exe"
 goto :CheckMSBuild
 
