@@ -28,7 +28,7 @@
 
 # How to debug the IL->WebAssembly compilation #
 This is Windows only for now.
-1. Set the ILCompiler startup command line to ```@C:\corert\tests\src\Simple\HelloWasm\obj\Debug\wasm\native\HelloWasm.ilc.rsp --nometadatablocking```. That will generate HelloWasm.bc, an LLVM bitcode file.
+1. Set the ILCompiler startup command line to ```@C:\corert\tests\src\Simple\HelloWasm\obj\Debug\wasm\native\HelloWasm.ilc.rsp```. That will generate HelloWasm.bc, an LLVM bitcode file.
 2. To compile that to WebAssembly, run ```emcc HelloWasm.bc  -s ALLOW_MEMORY_GROWTH=1  C:\corert\bin\WebAssembly.wasm.Debug\sdk\libPortableRuntime.bc C:\corert\bin\WebAssembly.wasm.Debug\sdk\libbootstrappercpp.bc -s WASM=1 -o HelloWasm.html``` (if emcc isn't on your path, you'll need to launch an Emscripten command prompt to do this). That will generate a .wasm file with your code as well as html and js files to run it.
 
 # How to run a WebAssembly application #
@@ -37,7 +37,6 @@ This is Windows only for now.
 
 # Useful tips #
 * To manually make ILC compile to WebAssembly, add ```--wasm``` to the command line.
-* If metadata is required for reflection, also add ```--nometadatablocking``` to the command line.
 * To debug C# source, add ```-g4``` to the emcc command line and change ```-s WASM=1``` to ```-s WASM=0```. This will generate a JavaScript source map that browser debuggers and Visual Studio Code can work with. Using Visual Studio Code's Chrome debugger works particularly well.
 * Add ```-g3``` to the emcc command line to generate more debuggable output and a .wast file with the text form of the WebAssembly.
 * Change ```-s WASM=1``` to ```-s WASM=0``` in the emcc command line to generate asm.js. Browser debuggers currently work better with asm.js and it's often a bit more readable than wast.
