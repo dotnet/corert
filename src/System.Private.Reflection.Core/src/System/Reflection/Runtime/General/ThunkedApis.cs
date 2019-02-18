@@ -58,7 +58,16 @@ namespace System.Reflection.Runtime.Assemblies
             return GetManifestResourceStream(sb.ToString());
         }
 
-        public sealed override string Location => string.Empty;
+        public sealed override string Location
+        {
+            get
+            {
+                if (AppContext.TryGetSwitch("Switch.System.Reflection.Assembly.SimulatedLocationInBaseDirectory", out bool isSimulated) && isSimulated)
+                    return Path.Combine(AppContext.BaseDirectory, ManifestModule.Name);
+
+                return string.Empty;
+            }
+        }
 
         public sealed override string CodeBase { get { throw new PlatformNotSupportedException(); } }
         public sealed override Assembly GetSatelliteAssembly(CultureInfo culture) { throw new PlatformNotSupportedException(); }
