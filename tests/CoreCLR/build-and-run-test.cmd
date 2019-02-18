@@ -29,7 +29,7 @@ rd /s /q %TestFolder%\native
 ::
 if /i not "%NativeCodeGen%" == "readytorun" (
     if "%CoreRT_BuildArch%" == "x64" (
-        call "%_VSCOMNTOOLS%\..\..\VC\Auxiliary\Build\vcvarsall.bat" x64
+        call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" x64
     )
 )
 

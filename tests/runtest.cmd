@@ -157,7 +157,7 @@ if exist %_VSWHERE% (
 call "%_VSCOMNTOOLS%\VsDevCmd.bat"
 :RunVCVars
 
-call "!_VSCOMNTOOLS!\..\..\VC\Auxiliary\Build\vcvarsall.bat" %CoreRT_HostArch%
+call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" %CoreRT_HostArch%
 
 :: Eventually we'll always want to compile the framework with r2r before running tests.
 :: During bringup, it's an opt-in separate step.
