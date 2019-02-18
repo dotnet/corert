@@ -1261,6 +1261,10 @@
                     "reason": "System.Reflection.MissingMetadataException"
                 },
                 {
+                    "name": "System.Reflection.Tests.MemberInfoNetCoreAppTests.HasSameMetadataDefinitionAs_GenericClassMembers",
+                    "reason": "System.Reflection.MissingMetadataException"
+                },
+                {
                     "name": "System.Collections.ObjectModel.Tests.ReadOnlyCollectionTests.CopyTo",
                     "reason": "Xunit.Sdk.EqualException"
                 },
@@ -1275,6 +1279,42 @@
                 {
                     "name": "System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnOfPointer",
                     "reason": "$BlockedFromReflection_6_1bc5f05b"
+                },
+                {
+                    "name": "System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnMethodInvoke",
+                    "reason": "$BlockedFromReflection_6_1bc5f05b"
+                },
+                {
+                    "name": "System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnPropertyGetValue",
+                    "reason": "$BlockedFromReflection_6_1bc5f05b"
+                },
+                {
+                    "name": "System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnInvoke",
+                    "reason": "$BlockedFromReflection_6_1bc5f05b"
+                },
+                {
+                    "name": "System.Reflection.Tests.MemberInfoNetCoreAppTests.HasSameMetadataDefinitionAs_Negative_NonRuntimeType",
+                    "reason": "$BlockedFromReflection_6_1bc5f05b"
+                },
+                {
+                    "name": "System.Tests.ArrayTests.Fill_Generic",
+                    "reason": "$BlockedFromReflection_6_1bc5f05b"
+                },
+                {
+                    "name": "System.Reflection.Tests.MemberInfoNetCoreAppTests.HasSameMetadataDefinitionAs_Negative_Null",
+                    "reason": "$BlockedFromReflection_6_1bc5f05b"
+                },
+                {
+                    "name": "System.Tests.ArrayTests.BinarySearch_TypesNotIComparable_ThrowsInvalidOperationException",
+                    "reason": "$BlockedFromReflection_6_1bc5f05b"
+                },
+                {
+                    "name": "System.Tests.ArraySegment_Tests_int.IGenericSharedAPI_SerializeDeserialize",
+                    "reason": "BinaryFormatter"
+                },
+                {
+                    "name": "System.Tests.ArraySegment_Tests_string.IGenericSharedAPI_SerializeDeserialize",
+                    "reason": "BinaryFormatter"
                 },
                 {
                     "name": "System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnNullable",
