@@ -14,8 +14,6 @@ namespace System.Threading
     {
         internal static unsafe int WaitMultipleIgnoringSyncContext(Span<IntPtr> handles, bool waitAll, int millisecondsTimeout)
         {
-            Debug.Assert(numHandles <= handles.Length);
-
             fixed (IntPtr* pHandles = &MemoryMarshal.GetReference(handles))
             {
                 return WaitForMultipleObjectsIgnoringSyncContext(pHandles, handles.Length, waitAll, millisecondsTimeout);
