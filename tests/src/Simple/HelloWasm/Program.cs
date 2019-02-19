@@ -20,6 +20,10 @@ internal static class Program
     internal static bool Success;
     private static unsafe int Main(string[] args)
     {
+        byte byteConstant2 = (byte)0x80;
+        var shiftbyte2 = byteConstant2 << 1;
+        EndTest(shiftbyte2 == 0x0100);
+
         Success = true;
         PrintLine("Starting");
 
@@ -94,13 +98,11 @@ internal static class Program
         int divResult = tempInt / 3;
         EndTest(divResult == 3);
 
-        StartTest("Addition of short and int Test");
-        int shortAndIntResult = (short)1 + 0x10000f;
-        EndTest(shortAndIntResult == 0x10001f);
-
-        StartTest("Addition of int and short Test");
-        int intAndShortResult = 0x10000f + (short)1;
-        EndTest(intAndShortResult == 0x10001f);
+        StartTest("Addition of byte and short test");
+        byte aByte = 2;
+        short aShort = 0x100;
+        short byteAndShortResult = (short)(aByte + aShort);
+        EndTest(byteAndShortResult == 0x102);
 
         StartTest("not test");
         var not = Not(0xFFFFFFFF) == 0x00000000;

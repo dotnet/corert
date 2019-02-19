@@ -2756,6 +2756,15 @@ namespace Internal.IL
             }
             else
             {
+                // these ops return an int32 for these.
+                if (type == GetWellKnownType(WellKnownType.Byte)
+                    || type == GetWellKnownType(WellKnownType.SByte)
+                    || type == GetWellKnownType(WellKnownType.UInt16)
+                    || type == GetWellKnownType(WellKnownType.Int16)
+                )
+                {
+                    type = GetWellKnownType(WellKnownType.Int32);
+                }
                 switch (opcode)
                 {
                     case ILOpcode.add:
@@ -2823,8 +2832,7 @@ namespace Internal.IL
             StackEntry numBitsToShift = _stack.Pop();
             StackEntry valueToShift = _stack.Pop();
 
-            TypeDesc finalType = valueToShift.Kind == StackValueKind.Int64 ? GetWellKnownType(WellKnownType.Int64) : GetWellKnownType(WellKnownType.Int32);
-            LLVMValueRef valueToShiftValue = valueToShift.ValueAsType(finalType, _builder);
+            LLVMValueRef valueToShiftValue = valueToShift.ValueForStackKind(valueToShift.Kind, _builder, false);
 
             // while it seems excessive that the bits to shift should need to be 64 bits, the LLVM docs say that both operands must be the same type and a compilation failure results if this is not the case.
             LLVMValueRef rhs;
