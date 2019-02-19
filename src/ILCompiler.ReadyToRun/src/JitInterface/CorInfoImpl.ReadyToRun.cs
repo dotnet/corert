@@ -1075,6 +1075,7 @@ namespace Internal.JitInterface
             pResult->hMethod = ObjectToHandle(methodToCall);
 
             // TODO: access checks
+            pResult->accessAllowed = CorInfoIsAccessAllowedResult.CORINFO_ACCESS_ALLOWED;
 
             // We're pretty much done at this point.  Let's grab the rest of the information that the jit is going to
             // need.

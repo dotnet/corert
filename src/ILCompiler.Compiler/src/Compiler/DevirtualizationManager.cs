@@ -54,7 +54,7 @@ namespace ILCompiler
         /// Note that if <paramref name="implType"/> is a value type, the result of the resolution
         /// might have to be treated as an unboxing thunk by the caller.
         /// </remarks>
-        public MethodDesc ResolveVirtualMethod(MethodDesc declMethod, TypeDesc implType)
+        public virtual MethodDesc ResolveVirtualMethod(MethodDesc declMethod, TypeDesc implType)
         {
             Debug.Assert(declMethod.IsVirtual);
 
