@@ -29,6 +29,7 @@ namespace ILCompiler
         protected DictionaryLayoutProvider _dictionaryLayoutProvider = new LazyDictionaryLayoutProvider();
         protected DebugInformationProvider _debugInformationProvider = new DebugInformationProvider();
         protected DevirtualizationManager _devirtualizationManager = new DevirtualizationManager();
+        protected PInvokeILEmitterConfiguration _pinvokePolicy = new DirectPInvokePolicy();
 
         public CompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup, NameMangler nameMangler)
         {
@@ -98,6 +99,12 @@ namespace ILCompiler
             return this;
         }
 
+        public CompilationBuilder UsePInvokePolicy(PInvokeILEmitterConfiguration policy)
+        {
+            _pinvokePolicy = policy;
+            return this;
+        }
+
         public abstract CompilationBuilder UseBackendOptions(IEnumerable<string> options);
 
         public abstract CompilationBuilder UseILProvider(ILProvider ilProvider);
@@ -111,7 +118,7 @@ namespace ILCompiler
 
         public ILScannerBuilder GetILScannerBuilder(CompilationModuleGroup compilationGroup = null)
         {
-            return new ILScannerBuilder(_context, compilationGroup ?? _compilationGroup, _nameMangler, GetILProvider());
+            return new ILScannerBuilder(_context, compilationGroup ?? _compilationGroup, _nameMangler, GetILProvider(), _pinvokePolicy);
         }
 
         public abstract ICompilation ToCompilation();

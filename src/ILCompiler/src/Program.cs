@@ -460,6 +460,9 @@ namespace ILCompiler
             string compilationUnitPrefix = _multiFile ? System.IO.Path.GetFileNameWithoutExtension(_outputFilePath) : "";
             builder.UseCompilationUnitPrefix(compilationUnitPrefix);
 
+            if (!_isCppCodegen && !_isWasmCodegen)
+                builder.UsePInvokePolicy(new ConfigurablePInvokePolicy(typeSystemContext.Target));
+
             var stackTracePolicy = _emitStackTraceData ?
                 (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
 

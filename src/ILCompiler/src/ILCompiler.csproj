@@ -30,6 +30,7 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ConfigurablePInvokePolicy.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="RdXmlRootProvider.cs" />
     <Compile Include="EcmaOnlyDebugInformationProvider.cs" />
