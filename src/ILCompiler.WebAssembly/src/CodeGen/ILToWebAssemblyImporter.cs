@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using Internal.TypeSystem;
 using ILCompiler;
 using LLVMSharp;
