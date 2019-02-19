@@ -4,6 +4,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
+using System.Runtime;
 using System.Runtime.InteropServices;
 
 namespace System.Threading
@@ -62,6 +63,7 @@ namespace System.Threading
 
             bool timedOut = (waitResult == (uint)Interop.Kernel32.WAIT_TIMEOUT);
             registeredWaitHandle.PerformCallback(timedOut);
+            ThreadPool.IncrementCompletedWorkItemCount();
             wrapper.Exit();
         }
 
@@ -245,7 +247,12 @@ namespace System.Threading
         private static IntPtr s_work;
 
         // The number of threads executing work items in the Dispatch method
-        private static volatile int numWorkingThreads;
+        private static volatile int s_numWorkingThreads;
+
+        private static long s_completedWorkItemCount;
+
+        // TODO: Check perf. Might need to make this thread-local.
+        internal static void IncrementCompletedWorkItemCount() => Interlocked.Increment(ref s_completedWorkItemCount);
 
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
         {
@@ -276,11 +283,27 @@ namespace System.Threading
         public static void GetAvailableThreads(out int workerThreads, out int completionPortThreads)
         {
             // Make sure we return a non-negative value if thread pool defaults are changed
-            int availableThreads = Math.Max(MaxThreadCount - numWorkingThreads, 0);
+            int availableThreads = Math.Max(MaxThreadCount - s_numWorkingThreads, 0);
 
             workerThreads = availableThreads;
             completionPortThreads = availableThreads;
         }
+
+        /// <summary>
+        /// Gets the number of thread pool threads that currently exist.
+        /// </summary>
+        /// <remarks>
+        /// For a thread pool implementation that may have different types of threads, the count includes all types.
+        /// </remarks>
+        public static int ThreadCount => RuntimeImports.RhGetThreadPoolThreadCount();
+
+        /// <summary>
+        /// Gets the number of work items that have been processed so far.
+        /// </summary>
+        /// <remarks>
+        /// For a thread pool implementation that may have different types of work items, the count includes all types.
+        /// </remarks>
+        public static long CompletedWorkItemCount => Volatile.Read(ref s_completedWorkItemCount);
 
         internal static bool KeepDispatching(int startTickCount)
         {
@@ -296,6 +319,7 @@ namespace System.Threading
 
         internal static bool NotifyWorkItemComplete()
         {
+            IncrementCompletedWorkItemCount();
             return true;
         }
 
@@ -304,9 +328,9 @@ namespace System.Threading
         {
             var wrapper = ThreadPoolCallbackWrapper.Enter();
             Debug.Assert(s_work == work);
-            Interlocked.Increment(ref numWorkingThreads);
+            Interlocked.Increment(ref s_numWorkingThreads);
             ThreadPoolWorkQueue.Dispatch();
-            int numWorkers = Interlocked.Decrement(ref numWorkingThreads);
+            int numWorkers = Interlocked.Decrement(ref s_numWorkingThreads);
             Debug.Assert(numWorkers >= 0);
             // We reset the thread after executing each callback
             wrapper.Exit(resetThread: false);

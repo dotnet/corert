@@ -4,6 +4,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
+using System.Runtime;
 using System.Runtime.InteropServices;
 
 namespace System.Threading
@@ -331,6 +332,13 @@ namespace System.Threading
 
         // TODO: https://github.com/dotnet/corefx/issues/20766
         public void DisableComObjectEagerCleanup() { }
+
+        private static void InitializeExistingThreadPoolThread()
+        {
+            InitializeCom();
+            RuntimeImports.RhSetIsThreadPoolThread();
+        }
+
         public void Interrupt() { throw new PlatformNotSupportedException(); }
 
         internal static void UninterruptibleSleep0()

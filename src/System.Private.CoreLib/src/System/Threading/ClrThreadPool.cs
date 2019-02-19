@@ -58,7 +58,7 @@ namespace System.Threading
 
         private CacheLineSeparated _separated;
         private ulong _currentSampleStartTime;
-        private int _completionCount = 0;
+        private long _completionCount = 0;
         private int _threadAdjustmentIntervalMs;
 
         private LowLevelLock _hillClimbingThreadAdjustmentLock = new LowLevelLock();
@@ -184,13 +184,16 @@ namespace System.Threading
         public int GetAvailableThreads()
         {
             ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref _separated.counts);
-            int count = _maxThreads - counts.numExistingThreads;
+            int count = _maxThreads - counts.numProcessingWork;
             if (count < 0)
             {
                 return 0;
             }
             return count;
         }
+
+        public int ThreadCount => ThreadCounts.VolatileReadCounts(ref _separated.counts).numExistingThreads;
+        public long CompletedWorkItemCount => Volatile.Read(ref _completionCount);
 
         internal bool NotifyWorkItemComplete()
         {
@@ -221,7 +224,7 @@ namespace System.Threading
         {
             _hillClimbingThreadAdjustmentLock.VerifyIsLocked();
             int currentTicks = Environment.TickCount;
-            int totalNumCompletions = Volatile.Read(ref _completionCount);
+            int totalNumCompletions = (int)Volatile.Read(ref _completionCount);
             int numCompletions = totalNumCompletions - _separated.priorCompletionCount;
             ulong startTime = _currentSampleStartTime;
             ulong endTime = HighPerformanceCounter.TickCount;

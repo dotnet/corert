@@ -129,6 +129,10 @@ public:
 #ifdef FEATURE_GC_STRESS
         TSF_IsRandSeedSet       = 0x00000040,       // set to indicate the random number generator for GCStress was inited
 #endif // FEATURE_GC_STRESS
+
+#ifndef PLATFORM_UNIX
+        TSF_IsThreadPoolThread  = 0x00000080,       // Thread is used for processing thread pool work
+#endif
     };
 private:
 
@@ -269,6 +273,13 @@ public:
     Object* GetThreadStaticStorageForModule(UInt32 moduleIndex);
     Boolean SetThreadStaticStorageForModule(Object * pStorage, UInt32 moduleIndex);
 #endif // PROJECTN
+
+#ifndef PLATFORM_UNIX
+    static Int32 s_threadPoolThreadCount;
+
+    void SetIsThreadPoolThread();
+    static Int32 GetThreadPoolThreadCount();
+#endif
 };
 
 #ifndef GCENV_INCLUDED

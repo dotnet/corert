@@ -27,6 +27,7 @@
 #include "rhbinder.h"
 #include "stressLog.h"
 #include "RhConfig.h"
+#include "Volatile.h"
 
 #ifndef DACCESS_COMPILE
 
@@ -371,6 +372,14 @@ bool Thread::IsCurrentThread()
 
 void Thread::Destroy()
 {
+#ifndef PLATFORM_UNIX
+    if (IsStateSet(Thread::TSF_IsThreadPoolThread))
+    {
+        Int32 newValue = PalInterlockedDecrement(&s_threadPoolThreadCount);
+        ASSERT(newValue >= 0);
+    }
+#endif
+
     if (m_hPalThread != INVALID_HANDLE_VALUE)
         PalCloseHandle(m_hPalThread);
 
@@ -1368,6 +1377,40 @@ COOP_PINVOKE_HELPER(UInt64, RhCurrentOSThreadId, ())
 {
     return PalGetCurrentThreadIdForLogging();
 }
+
+#ifndef PLATFORM_UNIX
+
+Int32 Thread::s_threadPoolThreadCount = 0;
+
+void Thread::SetIsThreadPoolThread()
+{
+    ASSERT(!IsStateSet(Thread::TSF_IsThreadPoolThread));
+    SetState(Thread::TSF_IsThreadPoolThread);
+
+    Int32 newValue = PalInterlockedIncrement(&s_threadPoolThreadCount);
+    ASSERT(newValue > 0);
+}
+
+Int32 Thread::GetThreadPoolThreadCount()
+{
+    Int32 value = VolatileLoad(&s_threadPoolThreadCount);
+    ASSERT(value >= 0);
+    return value;
+}
+
+// Tracks the current thread as a thread pool thread. This is only done on Windows, where thread pool threads are managed by the
+// the OS.
+COOP_PINVOKE_HELPER(void, RhSetIsThreadPoolThread, ())
+{
+    ThreadStore::RawGetCurrentThread()->SetIsThreadPoolThread();
+}
+
+COOP_PINVOKE_HELPER(Int32, RhGetThreadPoolThreadCount, ())
+{
+    return Thread::GetThreadPoolThreadCount();
+}
+
+#endif // !PLATFORM_UNIX
 
 // Standard calling convention variant and actual implementation for RhpReversePInvokeAttachOrTrapThread
 EXTERN_C NOINLINE void FASTCALL RhpReversePInvokeAttachOrTrapThread2(ReversePInvokeFrame * pFrame)
