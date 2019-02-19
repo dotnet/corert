@@ -20,10 +20,6 @@ internal static class Program
     internal static bool Success;
     private static unsafe int Main(string[] args)
     {
-        byte byteConstant2 = (byte)0x80;
-        var shiftbyte2 = byteConstant2 << 1;
-        EndTest(shiftbyte2 == 0x0100);
-
         Success = true;
         PrintLine("Starting");
 
@@ -124,10 +120,10 @@ internal static class Program
         var unsignedShift = UnsignedShift(0xFFFFFFFFu, 4) == 0x0FFFFFFFu;
         EndTest(unsignedShift);
 
-        StartTest("shiftLeft byte test");
+        StartTest("shiftLeft byte to short test");
         byte byteConstant = (byte)0x80;
-        var shiftbyte = byteConstant << 1 == 0x0100;
-        EndTest(shiftbyte);
+        ushort shiftedToShort = (ushort)(byteConstant << 1);
+        EndTest((int)shiftedToShort == 0x0100);
 
         StartTest("SwitchOp0 test");
         var switchTest0 = SwitchOp(5, 5, 0);
