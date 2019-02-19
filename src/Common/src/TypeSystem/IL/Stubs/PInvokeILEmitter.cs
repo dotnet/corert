@@ -374,9 +374,13 @@ namespace Internal.IL.Stubs
                 return true;
             }
 
-            if (!_pInvokeILEmitterConfiguration.GenerateDirectCall(_importMetadata.Module, _importMetadata.Name))
+            // The configuration can be null if this is delegate or calli marshalling
+            if (_pInvokeILEmitterConfiguration != null)
             {
-                return true;
+                if (!_pInvokeILEmitterConfiguration.GenerateDirectCall(_importMetadata.Module, _importMetadata.Name))
+                {
+                    return true;
+                }
             }
 
             if (_flags.SetLastError)
