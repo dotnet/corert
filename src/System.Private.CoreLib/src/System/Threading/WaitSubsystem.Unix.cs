@@ -282,23 +282,21 @@ namespace System.Threading
         }
 
         public static int Wait(
-            IntPtr[] waitHandles,
-            int numWaitHandles,
+            Span<IntPtr> waitHandles,
             bool waitForAll,
             int timeoutMilliseconds)
         {
             Debug.Assert(waitHandles != null);
-            Debug.Assert(numWaitHandles > 0);
-            Debug.Assert(numWaitHandles <= waitHandles.Length);
-            Debug.Assert(numWaitHandles <= WaitHandle.MaxWaitHandles);
+            Debug.Assert(waitHandles.Length > 0);
+            Debug.Assert(waitHandles.Length <= WaitHandle.MaxWaitHandles);
             Debug.Assert(timeoutMilliseconds >= -1);
 
             ThreadWaitInfo waitInfo = RuntimeThread.CurrentThread.WaitInfo;
-            WaitableObject[] waitableObjects = waitInfo.GetWaitedObjectArray(numWaitHandles);
+            WaitableObject[] waitableObjects = waitInfo.GetWaitedObjectArray(waitHandles.Length);
             bool success = false;
             try
             {
-                for (int i = 0; i < numWaitHandles; ++i)
+                for (int i = 0; i < waitHandles.Length; ++i)
                 {
                     Debug.Assert(waitHandles[i] != null);
                     WaitableObject waitableObject = HandleManager.FromHandle(waitHandles[i]);
@@ -325,14 +323,14 @@ namespace System.Threading
             {
                 if (!success)
                 {
-                    for (int i = 0; i < numWaitHandles; ++i)
+                    for (int i = 0; i < waitHandles.Length; ++i)
                     {
                         waitableObjects[i] = null;
                     }
                 }
             }
 
-            if (numWaitHandles == 1)
+            if (waitHandles.Length == 1)
             {
                 WaitableObject waitableObject = waitableObjects[0];
                 waitableObjects[0] = null;
@@ -343,7 +341,7 @@ namespace System.Threading
             return
                 WaitableObject.Wait(
                     waitableObjects,
-                    numWaitHandles,
+                    waitHandles.Length,
                     waitForAll,
                     waitInfo,
                     timeoutMilliseconds,

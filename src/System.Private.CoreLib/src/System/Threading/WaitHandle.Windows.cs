@@ -5,19 +5,20 @@
 using System.Diagnostics;
 using System.IO;
 using System.Runtime;
+using System.Runtime.InteropServices;
 using Internal.Runtime.Augments;
 
 namespace System.Threading
 {
     public abstract partial class WaitHandle
     {
-        internal static unsafe int WaitMultipleIgnoringSyncContext(IntPtr[] handles, int numHandles, bool waitAll, int millisecondsTimeout)
+        internal static unsafe int WaitMultipleIgnoringSyncContext(Span<IntPtr> handles, bool waitAll, int millisecondsTimeout)
         {
             Debug.Assert(numHandles <= handles.Length);
 
-            fixed (IntPtr* pHandles = handles)
+            fixed (IntPtr* pHandles = &MemoryMarshal.GetReference(handles))
             {
-                return WaitForMultipleObjectsIgnoringSyncContext(pHandles, numHandles, waitAll, millisecondsTimeout);
+                return WaitForMultipleObjectsIgnoringSyncContext(pHandles, handles.Length, waitAll, millisecondsTimeout);
             }
         }
 
