@@ -44,6 +44,7 @@ namespace ILCompiler
             ILProvider ilProvider,
             DebugInformationProvider debugInformationProvider,
             DevirtualizationManager devirtualizationManager,
+            PInvokeILEmitterConfiguration pInvokeConfiguration,
             Logger logger)
         {
             _dependencyGraph = dependencyGraph;
@@ -66,13 +67,7 @@ namespace ILCompiler
 
             if (!(nodeFactory.InteropStubManager is EmptyInteropStubManager))
             {
-                bool? forceLazyPInvokeResolution = null;
-                // TODO: Workaround lazy PInvoke resolution not working with CppCodeGen yet
-                // https://github.com/dotnet/corert/issues/2454
-                // https://github.com/dotnet/corert/issues/2149
-                if (nodeFactory.IsCppCodegenTemporaryWorkaround) forceLazyPInvokeResolution = false;
-                PInvokeILProvider = new PInvokeILProvider(new PInvokeILEmitterConfiguration(forceLazyPInvokeResolution), nodeFactory.InteropStubManager.InteropStateManager);
-
+                PInvokeILProvider = new PInvokeILProvider(pInvokeConfiguration, nodeFactory.InteropStubManager.InteropStateManager);
                 ilProvider = new CombinedILProvider(ilProvider, PInvokeILProvider);
             }
 

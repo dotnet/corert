@@ -44,46 +44,6 @@ namespace Internal.TypeSystem.Interop
             return !MarshalUtils.IsBlittableType(type);
         }
 
-        /// <summary>
-        /// Returns true if the PInvoke target should be resolved lazily.
-        /// </summary>
-        public static bool UseLazyResolution(MethodDesc method, string importModule, PInvokeILEmitterConfiguration configuration)
-        {
-            bool? forceLazyResolution = configuration.ForceLazyResolution;
-            if (forceLazyResolution.HasValue)
-                return forceLazyResolution.Value;
-
-            // Determine whether this call should be made through a lazy resolution or a static reference
-            // Eventually, this should be controlled by a custom attribute (or an extension to the metadata format).
-            if (importModule == "[MRT]" || importModule == "*")
-                return false;
-
-            // Force link time symbol resolution for "__Internal" module for compatibility with Mono
-            if (importModule == "__Internal")
-                return false;
-
-            if (method.Context.Target.IsWindows)
-            {
-                // Force link time symbol resolution for PInvokes used on CoreLib startup path
-
-                if (importModule.StartsWith("api-ms-win-"))
-                    return false;
-
-                if (importModule == "BCrypt.dll")
-                {
-                    if (method.Name == "BCryptGenRandom")
-                        return false;
-                }
-
-                return true;
-            }
-            else 
-            {
-                // Account for System.Private.CoreLib.Native / System.Globalization.Native / System.Native / etc
-                return !importModule.StartsWith("System.");
-            }
-        }
-
         internal static TypeDesc GetNativeMethodParameterType(TypeDesc type, MarshalAsDescriptor marshalAs, InteropStateManager interopStateManager, bool isReturn, bool isAnsi)
         {
             MarshallerKind elementMarshallerKind;
