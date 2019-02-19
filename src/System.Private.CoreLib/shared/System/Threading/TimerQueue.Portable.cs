@@ -2,103 +2,136 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace System.Threading
 {
-    internal partial class TimerQueue
+    //
+    // Unix-specific implementation of Timer
+    //
+    internal partial class TimerQueue : IThreadPoolWorkItem
     {
+        private static readonly Lock s_lock = new Lock();
+        private static List<AppDomainTimer> s_appDomainTimers;
+
         /// <summary>
         /// This event is used by the timer thread to wait for timer expiration. It is also
         /// used to notify the timer thread that a new timer has been set.
         /// </summary>
-        private AutoResetEvent _timerEvent;
+        private static readonly AutoResetEvent s_timerEvent = new AutoResetEvent(false);
 
-        /// <summary>
-        /// This field stores the value of next timer that the timer thread should install.
-        /// </summary>
-        private volatile int _nextTimerDuration;
+        private readonly int _id;
 
         private TimerQueue(int id)
         {
+            _id = id;
+        }
+
+        private static List<AppDomainTimer> InitializeAppDomainTimerManager_Locked()
+        {
+            Debug.Assert(s_lock.IsAcquired);
+            Debug.Assert(s_appDomainTimers == null);
+
+            var appDomainTimers = new List<AppDomainTimer>(Instances.Length);
+
+            Thread timerThread = new Thread(TimerThread);
+            timerThread.IsBackground = true;
+            timerThread.Start();
+
+            // Do this after creating the thread in case thread creation fails so that it will try again next time
+            s_appDomainTimers = appDomainTimers;
+            return appDomainTimers;
         }
 
         private bool SetTimer(uint actualDuration)
         {
-            // Note: AutoResetEvent.WaitOne takes an Int32 value as a timeout.
-            // The TimerQueue code ensures that timer duration is not greater than max Int32 value
-            Debug.Assert(actualDuration <= (uint)int.MaxValue);
-            _nextTimerDuration = (int)actualDuration;
+            Debug.Assert((int)actualDuration >= 0);
+            var timer = new AppDomainTimer(_id, TickCount + (int)actualDuration);
+            using (LockHolder.Hold(s_lock))
+            {
+                List<AppDomainTimer> timers = s_appDomainTimers;
+                if (timers == null)
+                {
+                    timers = InitializeAppDomainTimerManager_Locked();
+                }
 
-            // If this is the first time the timer is set then we need to create a thread that
-            // will manage and respond to timer requests. Otherwise, simply signal the timer thread
-            // to notify it that the timer duration has changed.
-            if (_timerEvent == null)
-            {
-                _timerEvent = new AutoResetEvent(false);
-                Thread thread = new Thread(TimerThread);
-                thread.IsBackground = true; // Keep this thread from blocking process shutdown
-                thread.Start();
-            }
-            else
-            {
-                _timerEvent.Set();
+                timers.Add(timer);
             }
 
+            s_timerEvent.Set();
             return true;
         }
 
-
         /// <summary>
         /// This method is executed on a dedicated a timer thread. Its purpose is
-        /// to handle timer request and notify the TimerQueue when a timer expires.
+        /// to handle timer requests and notify the TimerQueue when a timer expires.
         /// </summary>
-        private void TimerThread()
+        private static void TimerThread()
         {
-            // Get wait time for the next timer
-            int currentTimerInterval = Interlocked.Exchange(ref _nextTimerDuration, Timeout.Infinite);
+            AutoResetEvent timerEvent = s_timerEvent;
+            Lock lok = s_lock;
+            List<AppDomainTimer> timers;
+            using (LockHolder.Hold(lok))
+            {
+                timers = s_appDomainTimers;
+            }
 
+            int shortestWaitDurationMs = Timeout.Infinite;
             while (true)
             {
-                // Wait for the current timer to expire.
-                // We will be woken up because either 1) the wait times out, which will indicate that
-                // the current timer has expired and/or 2) the TimerQueue installs a new (earlier) timer.
-                int startWait = TickCount;
-                bool timerHasExpired = !_timerEvent.WaitOne(currentTimerInterval);
-                uint elapsedTime = (uint)(TickCount - startWait);
+                timerEvent.WaitOne(shortestWaitDurationMs);
 
-                // The timer event can be set after this thread reads the new timer interval but before it enters
-                // the wait state. This can cause a spurious wake up. In addition, expiration of current timer can
-                // happen almost at the same time as this thread is signaled to install a new timer. To handle
-                // these cases, we need to update the current interval based on the elapsed time.
-                if (currentTimerInterval != Timeout.Infinite)
+                int currentTimeMs = TickCount;
+                shortestWaitDurationMs = int.MaxValue;
+                using (LockHolder.Hold(lok))
                 {
-                    if (elapsedTime >= currentTimerInterval)
+                    for (int i = timers.Count - 1; i >= 0; --i)
                     {
-                        timerHasExpired = true;
+                        int waitDurationMs = timers[i].dueTimeMs - currentTimeMs;
+                        if (waitDurationMs <= 0)
+                        {
+                            ThreadPool.UnsafeQueueUserWorkItemInternal(Instances[timers[i].id], preferLocal: false);
+
+                            int lastIndex = timers.Count - 1;
+                            if (i != lastIndex)
+                            {
+                                timers[i] = timers[lastIndex];
+                            }
+                            timers.RemoveAt(lastIndex);
+                            continue;
+                        }
+
+                        if (waitDurationMs < shortestWaitDurationMs)
+                        {
+                            shortestWaitDurationMs = waitDurationMs;
+                        }
                     }
-                    else
-                    {
-                        currentTimerInterval -= (int)elapsedTime;
-                    }
                 }
 
-                // Check whether TimerQueue needs to process expired timers.
-                if (timerHasExpired)
+                if (shortestWaitDurationMs == int.MaxValue)
                 {
-                    FireNextTimers();
-
-                    // When FireNextTimers() installs a new timer, it also sets the timer event.
-                    // Reset the event so the timer thread is not woken up right away unnecessary.
-                    _timerEvent.Reset();
-                    currentTimerInterval = Timeout.Infinite;
+                    shortestWaitDurationMs = Timeout.Infinite;
                 }
+            }
+        }
 
-                int nextTimerInterval = Interlocked.Exchange(ref _nextTimerDuration, Timeout.Infinite);
-                if (nextTimerInterval != Timeout.Infinite)
-                {
-                    currentTimerInterval = nextTimerInterval;
-                }
+        private static int TickCount => Environment.TickCount;
+        void IThreadPoolWorkItem.Execute() => FireNextTimers();
+
+        private struct AppDomainTimer
+        {
+            public int id;
+            public int dueTimeMs;
+
+            public AppDomainTimer(int id, int dueTimeMs)
+            {
+                Debug.Assert(id >= 0);
+                Debug.Assert(id < Instances.Length);
+                Debug.Assert(id == Instances[id]._id);
+
+                this.id = id;
+                this.dueTimeMs = dueTimeMs;
             }
         }
     }
