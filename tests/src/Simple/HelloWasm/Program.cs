@@ -212,6 +212,17 @@ internal static class Program
         var testMdArrayInstantiation = new int[2, 2];
         EndTest(testMdArrayInstantiation != null && testMdArrayInstantiation.GetLength(0) == 2 && testMdArrayInstantiation.GetLength(1) == 2);
 
+        StartTest("Multi-dimension array get/set test");
+        testMdArrayInstantiation[0, 0] = 1;
+        testMdArrayInstantiation[0, 1] = 2;
+        testMdArrayInstantiation[1, 0] = 3;
+        testMdArrayInstantiation[1, 1] = 4;
+        EndTest(testMdArrayInstantiation[0, 0] == 1 
+                && testMdArrayInstantiation[0, 1] == 2
+                && testMdArrayInstantiation[1, 0] == 3
+                && testMdArrayInstantiation[1, 1] == 4);
+
+
         FloatDoubleTest();
 
         StartTest("long comparison");

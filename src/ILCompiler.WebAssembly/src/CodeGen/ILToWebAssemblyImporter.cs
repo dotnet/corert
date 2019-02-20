@@ -338,8 +338,7 @@ namespace Internal.IL
                 }
             }
 
-            MetadataType metadataType = (MetadataType)_thisType;
-            if (!metadataType.IsBeforeFieldInit
+            if (_thisType is MetadataType metadataType &&  !metadataType.IsBeforeFieldInit
                 && (!_method.IsStaticConstructor && _method.Signature.IsStatic || _method.IsConstructor || (_thisType.IsValueType && !_method.Signature.IsStatic)) 
                 && _compilation.TypeSystemContext.HasLazyStaticConstructor(metadataType))
             {
