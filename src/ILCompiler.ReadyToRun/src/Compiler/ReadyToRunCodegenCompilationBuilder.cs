@@ -120,6 +120,7 @@ namespace ILCompiler
                 _compilationRoots,
                 _ilProvider,
                 _debugInformationProvider,
+                _pinvokePolicy,
                 _logger,
                 _devirtualizationManager,
                 jitConfig,

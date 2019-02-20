@@ -73,6 +73,9 @@
     <Compile Include="..\src\ApplicationAssemblyRootProvider.cs">
       <Link>ApplicationAssemblyRootProvider.cs</Link>
     </Compile>
+    <Compile Include="..\src\ConfigurablePInvokePolicy.cs">
+      <Link>ConfigurablePInvokePolicy.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\CommandLine\CommandLineException.cs">

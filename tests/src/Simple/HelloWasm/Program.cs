@@ -173,8 +173,6 @@ internal static class Program
                 smallArrayTest[3] == 0);
 
         StartTest("Newobj value type test");
-        TestNonIntAlignedStructArray();
-
         IntPtr returnedIntPtr = NewobjValueType();
         EndTest(returnedIntPtr.ToInt32() == 3);
 
@@ -264,8 +262,6 @@ internal static class Program
 
         TestThreadStaticsForSingleThread();
 
-        TestForWrappedPrimitiveStruct();
-
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -299,12 +295,12 @@ internal static class Program
     internal static void FailTest(string failMessage = null)
     {
         Success = false;
-        if(failMessage != null) PrintString(failMessage + "-");
-        FailTest();
+        PrintLine("Failed.");
+        if (failMessage != null) PrintLine(failMessage + "-");
     }
 
     private static int StaticDelegateTarget()
-    {
+    {         
         return 7;
     }
 
@@ -321,7 +317,7 @@ internal static class Program
             }
         }
     }
-
+    
     public static void PrintLine(string s)
     {
         PrintString(s);
@@ -357,21 +353,21 @@ internal static class Program
     {
         return a >> b;
     }
-
+    
     private static int SwitchOp(int a, int b, int mode)
     {
-        switch (mode)
+        switch(mode)
         {
-            case 0:
-                return a + b;
-            case 1:
-                return a * b;
-            case 2:
-                return a / b;
-            case 3:
-                return a - b;
-            default:
-                return 0;
+          case 0:
+            return a + b;
+          case 1:
+            return a * b;
+          case 2:
+            return a / b;
+          case 3:
+            return a - b;
+          default:
+            return 0;
         }
     }
 
@@ -392,7 +388,7 @@ internal static class Program
 
     private static void IntToStringTest()
     {
-        StartTest("Int to String Test: Ok if says 42:");
+        StartTest("Int to String Test: Ok if says 42");
         string intString = 42.ToString();
         PrintLine(intString);
         EndTest(intString == "42");
@@ -403,16 +399,16 @@ internal static class Program
         StartTest("ldind test");
         var ldindTarget = new TwoByteStr { first = byte.MaxValue, second = byte.MinValue };
         var ldindField = &ldindTarget.first;
-        if ((*ldindField) == byte.MaxValue)
+        if((*ldindField) == byte.MaxValue)
         {
             ldindTarget.second = byte.MaxValue;
             *ldindField = byte.MinValue;
             //ensure there isnt any overwrite of nearby fields
-            if (ldindTarget.first == byte.MinValue && ldindTarget.second == byte.MaxValue)
+            if(ldindTarget.first == byte.MinValue && ldindTarget.second == byte.MaxValue)
             {
                 PassTest();
             }
-            else if (ldindTarget.first != byte.MinValue)
+            else if(ldindTarget.first != byte.MinValue)
             {
                 FailTest("didnt update target.");
             }
@@ -435,7 +431,7 @@ internal static class Program
         EndTest(ItfCaller(itfStruct) == 4);
 
         ClassWithSealedVTable classWithSealedVTable = new ClassWithSealedVTable();
-        StartTest("Interface dispatch with sealed vtable test: ");
+        StartTest("Interface dispatch with sealed vtable test");
         EndTest(CallItf(classWithSealedVTable) == 37);
     }
 
@@ -487,7 +483,7 @@ internal static class Program
             PrintString(stringDirectToString);
             PrintLine("\"");
         }
-
+       
         // Generic calls on methods not defined on object
         uint dataFromBase = GenericGetData<MyBase>(new MyBase(11));
         StartTest("Generic call to base class test");
@@ -542,79 +538,6 @@ internal static class Program
         var chars = new[] { 'i', 'p', 's', 'u', 'm' };
         StartTest("Value type element indexing: ");
         EndTest(chars[0] == 'i' && chars[1] == 'p' && chars[2] == 's' && chars[3] == 'u' && chars[4] == 'm');
-    }
-
-    struct OddLengthStruct
-    {
-        public UInt16 a, b, c;
-    }
-
-    private static unsafe void TestNonIntAlignedStructArray()
-    {
-        PrintString("Non-int aligned struct array: ");
-
-        OddLengthStruct firstOdd = new OddLengthStruct { a = 1, b = 2, c = 3 };
-        OddLengthStruct secondOdd = new OddLengthStruct { a = 4, b = 5, c = 6 };
-
-        OddLengthStruct[] someOddStructs = new OddLengthStruct[2];
-        someOddStructs[0] = firstOdd;
-        someOddStructs[1] = secondOdd;
-
-        bool success = true;
-        if (someOddStructs[0].a != 1 || someOddStructs[0].b != 2 || someOddStructs[0].c != 3)
-        {
-            PrintLine("Failed reading from first index");
-            success = false;
-        }
-        if (someOddStructs[1].a != 4 || someOddStructs[1].b != 5 || someOddStructs[1].c != 6)
-        {
-            PrintLine("Failed reading from second index");
-            success = false;
-        }
-
-        fixed (OddLengthStruct* pArrStart = someOddStructs)
-        {
-            UInt16* pArr = (ushort*)pArrStart;
-            for (int i = 0; i < 6; i++)
-            {
-                if (*pArr != i + 1)
-                {
-                    PrintLine("Failed reading as ushort pointer");
-                    success = false;
-                }
-                pArr++;
-            }
-        }
-
-        fixed (OddLengthStruct* pArrStart2 = someOddStructs)
-        {
-            byte* pArr2 = (byte*)pArrStart2;
-            for (int i = 0; i < 12; i++)
-            {
-                if (i % 2 == 0)
-                {
-                    if (*pArr2 != ((i / 2) + 1))
-                    {
-                        PrintLine("Failed reading as byte pointer");
-                        success = false;
-                    }
-                }
-                else
-                {
-                    if (*pArr2 != 0)
-                    {
-                        PrintLine("Failed reading as byte pointer");
-                        success = false;
-                    }
-                }
-                pArr2++;
-            }
-        }
-
-        if (success)
-        {
-            PrintLine("Ok.");
-        }
     }
 
     private static void FloatDoubleTest()
@@ -707,7 +630,7 @@ internal static class Program
 
         var gentT = new Gen<int>();
         var genParamType = gentT.TestTypeOf();
-        StartTest("type of generic parameter: ");
+        StartTest("type of generic parameter");
         if (genParamType.FullName != "System.Int32")
         {
             FailTest("expected System.Int32 but was " + genParamType.FullName);
@@ -729,7 +652,7 @@ internal static class Program
         }
 
         var genericType = typeof(List<object>);
-        StartTest("type of generic : ");
+        StartTest("type of generic");
         if (genericType.FullName != "System.Collections.Generic.List`1[[System.Object, System.Private.CoreLib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a]]")
         {
             FailTest("expected System.Collections.Generic.List`1[[System.Object, System.Private.CoreLib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a]] but was " + genericType.FullName);
@@ -803,42 +726,6 @@ internal static class Program
         var staticMtd = classForMetaTestsType.GetMethod("ReturnsParam");
         var retVal = (ClassForMetaTests)staticMtd.Invoke(null, new object[] { instance });
         EndTest(Object.ReferenceEquals(retVal, instance));
-        bool shouldBeTrue = (bool)mtd.Invoke(instance, new object[] {1});
-        bool shouldBeFalse = (bool)mtd.Invoke(instance, new object[] {2});
-        if (shouldBeTrue && !shouldBeFalse)
-        {
-            PrintLine("Ok.");
-        }
-        else
-        {
-            PrintLine("Failed.");
-        }
-
-        PrintString("Class get+invoke method with ref param via reflection: ");
-        var mtdWith2Params = classForMetaTestsType.GetMethod("ReturnTrueIf1AndThis");
-        shouldBeTrue = (bool)mtdWith2Params.Invoke(instance, new object[] { 1, instance });
-        shouldBeFalse = (bool)mtdWith2Params.Invoke(instance, new object[] { 1, new ClassForMetaTests() });
-        if (shouldBeTrue && !shouldBeFalse)
-        {
-            PrintLine("Ok.");
-        }
-        else
-        {
-            PrintLine("Failed.");
-        }
-
-
-        PrintString("Class get+invoke static method with ref param via reflection: ");
-        var staticMtd = classForMetaTestsType.GetMethod("ReturnsParam");
-        var retVal = (ClassForMetaTests)staticMtd.Invoke(null, new object[] { instance });
-        if (Object.ReferenceEquals(retVal, instance))
-        {
-            PrintLine("Ok.");
-        }
-        else
-        {
-            PrintLine("Failed.");
-        }
     }
 
     public class ClassForMetaTests
@@ -1024,28 +911,6 @@ internal static class Program
             PrintLine("Was: " + secondInstanceOfFirstClassStatic.ToString());
         }
         Thread.Sleep(10);
-    }
-
-
-    struct AFloat
-    {
-        public float f;
-    }
-
-    private static void TestForWrappedPrimitiveStruct()
-    {
-        // exercises the path through DefType.IsHfa to optimize the access for structs around primitives
-        PrintString("Access to wrapped primitive: ");
-        var x = new AFloat();
-        x.f = float.MaxValue;
-        if (x.f == float.MaxValue)
-        {
-            PrintLine("Ok.");
-        }
-        else
-        {
-            PrintLine("Failed.");
-        }
     }
 
     [DllImport("*")]
