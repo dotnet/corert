@@ -196,6 +196,7 @@ namespace System
         // This method has different signature for x64 and other platforms and is done for performance reasons.
         internal unsafe static void Memmove(byte* dest, byte* src, nuint len)
         {
+#if !WASM || !DEBUG
 #if AMD64 || (BIT32 && !ARM)
             const nuint CopyThreshold = 2048;
 #else
@@ -364,6 +365,7 @@ namespace System
             return;
 
         PInvoke:
+#endif // !WASM
             _Memmove(dest, src, len);
         }
 

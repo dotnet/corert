@@ -25,14 +25,27 @@ namespace Internal.NativeFormat
 
         public static ushort ReadUInt16(ref byte* stream)
         {
+#if WASM && DEBUG // WASM debug may output to asm.js which only supports aligned access
+            ushort result = (ushort) (*(stream) + (ushort)(*(stream + 1) << 8)); // Assumes little endian
+#else
             ushort result = *(ushort*)(stream); // Assumes little endian and unaligned access
+#endif
             stream += 2;
             return result;
         }
 
         public static uint ReadUInt32(ref byte* stream)
         {
-            uint result = *(uint*)(stream); // Assumes little endian and unaligned access
+            uint result;
+#if WASM && DEBUG
+            if (((uint)stream & 3) > 0)
+            {
+                 result = *(stream) + (uint)(*(stream + 1) << 8) + (uint)(*(stream + 2) << 16) + (uint)(*(stream + 3) << 24); // Assumes little endian
+                 stream += 4;
+                 return result;
+            }
+#endif
+            result  = *(uint*)(stream); // Assumes little endian and unaligned access
             stream += 4;
             return result;
         }
