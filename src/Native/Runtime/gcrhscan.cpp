@@ -17,7 +17,6 @@
 
 #include "gcrhinterface.h"
 
-#include "slist.h"
 #include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
@@ -25,9 +24,6 @@
 #include "thread.h"
 
 #include "shash.h"
-#include "RWLock.h"
-#include "module.h"
-#include "RuntimeInstance.h"
 #include "threadstore.h"
 #include "threadstore.inl"
 #include "thread.inl"

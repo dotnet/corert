@@ -28,6 +28,12 @@
 #include "gcrhinterface.h"
 #include "gcenv.interlocked.inl"
 
+#include "slist.h"
+#include "RWLock.h"
+#include "module.h"
+#include "RuntimeInstance.h"
+#include "eetype.inl"
+
 #include "stressLog.h"
 #ifdef FEATURE_ETW
 
