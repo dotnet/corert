@@ -262,6 +262,8 @@ internal static class Program
 
         TestThreadStaticsForSingleThread();
 
+        TestDispose();
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -913,6 +915,16 @@ internal static class Program
         Thread.Sleep(10);
     }
 
+    private static void TestDispose()
+    {
+        StartTest("using calls Dispose");
+        var disposable = new DisposableTest();
+        using (disposable)
+        {
+        }
+        EndTest(disposable.Disposed);
+    }
+
     [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
 }
@@ -1231,6 +1243,16 @@ class AnotherClassWithFourThreadStatics
         classStatic3++;
         classStatic4++;
         classStatic5++;
+    }
+}
+
+class DisposableTest : IDisposable
+{
+    public bool Disposed;
+
+    public void Dispose()
+    {
+        Disposed = true;
     }
 }
 
