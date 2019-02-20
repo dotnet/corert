@@ -7,7 +7,6 @@
 	
 	<ProjectReference Include="ILHelpers.ilproj" Condition="'$(OS)' == 'Windows_NT'" />
     <IlcArg Include="-r:$(IntermediateOutputPath)\ILHelpers.dll" Condition="'$(OS)' == 'Windows_NT'" />
-    <ILcArg Include="--nometadatablocking" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
