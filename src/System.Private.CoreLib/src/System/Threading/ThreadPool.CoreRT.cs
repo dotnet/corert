@@ -13,17 +13,7 @@
 
 #pragma warning disable 0420
 
-using Internal.Runtime.Augments;
-using Internal.Runtime.CompilerServices;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
-
-using Thread = Internal.Runtime.Augments.RuntimeThread;
 
 namespace System.Threading
 {

@@ -3,17 +3,15 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
-using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Threading;
 
-namespace Internal.Runtime.Augments
+namespace System.Threading
 {
     using Interop = global::Interop; /// due to the existence of <see cref="Internal.Interop"/>
     using OSThreadPriority = Interop.Kernel32.ThreadPriority;
 
-    public sealed partial class RuntimeThread
+    public sealed partial class Thread
     {
         [ThreadStatic]
         private static int t_reentrantWaitSuppressionCount;
@@ -257,7 +255,7 @@ namespace Internal.Runtime.Augments
             }
         }
 
-        public bool TrySetApartmentState(ApartmentState state)
+        public bool TrySetApartmentStateUnchecked(ApartmentState state)
         {
             if (this != CurrentThread)
             {

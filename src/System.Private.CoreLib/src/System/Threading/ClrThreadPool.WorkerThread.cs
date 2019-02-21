@@ -240,7 +240,7 @@ namespace System.Threading
             {
                 try
                 {
-                    RuntimeThread workerThread = RuntimeThread.Create(WorkerThreadStart);
+                    Thread workerThread = new Thread(WorkerThreadStart);
                     workerThread.IsThreadPoolThread = true;
                     workerThread.IsBackground = true;
                     workerThread.Start();

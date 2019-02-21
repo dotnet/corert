@@ -3,15 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
-using System;
 using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.InteropServices;
-using System.Threading;
 
-namespace Internal.Runtime.Augments
+namespace System.Threading
 {
-    public sealed partial class RuntimeThread
+    public sealed partial class Thread
     {
         // Event signaling that the thread has stopped
         private ManualResetEvent _stopped;
@@ -45,7 +43,7 @@ namespace Internal.Runtime.Augments
         [NativeCallable]
         private static void OnThreadExit()
         {
-            RuntimeThread currentThread = t_currentThread;
+            Thread currentThread = t_currentThread;
             if (currentThread != null)
             {
                 // Inform the wait subsystem that the thread is exiting. For instance, this would abandon any mutexes locked by

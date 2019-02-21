@@ -18,6 +18,7 @@ namespace System.Threading
         private static AsyncLocal<IPrincipal> s_asyncLocalPrincipal;
 
         public Thread(ThreadStart start)
+            : this()
         {
             if (start == null)
             {
@@ -28,6 +29,7 @@ namespace System.Threading
         }
 
         public Thread(ThreadStart start, int maxStackSize)
+            : this()
         {
             if (start == null)
             {
@@ -42,6 +44,7 @@ namespace System.Threading
         }
 
         public Thread(ParameterizedThreadStart start)
+            : this()
         {
             if (start == null)
             {
@@ -52,6 +55,7 @@ namespace System.Threading
         }
 
         public Thread(ParameterizedThreadStart start, int maxStackSize)
+            : this()
         {
             if (start == null)
             {
@@ -174,7 +178,7 @@ namespace System.Threading
         }
 
         // Currently, no special handling is done for critical regions, and no special handling is necessary to ensure thread
-        // affinity. If that changes, the relevant functions would instead need to delegate to RuntimeThread.
+        // affinity. If that changes, the relevant functions would instead need to delegate to Thread.
         public static void BeginCriticalRegion() { }
         public static void EndCriticalRegion() { }
         public static void BeginThreadAffinity() { }

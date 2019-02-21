@@ -16,6 +16,7 @@ using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Threading.Tasks
