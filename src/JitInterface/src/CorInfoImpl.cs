@@ -22,6 +22,7 @@ using Internal.Runtime.CompilerServices;
 
 using Internal.IL;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
@@ -977,6 +978,16 @@ namespace Internal.JitInterface
             pResolvedToken.hMethod = null;
             pResolvedToken.hField = null;
 
+#if READYTORUN
+            TypeDesc owningType = methodIL.OwningMethod.GetTypicalMethodDefinition().OwningType;
+            EcmaModule tokenContextToRecord = null;
+            if (_compilation.NodeFactory.CompilationModuleGroup.ContainsType(owningType) &&
+                owningType is EcmaType owningEcmaType)
+            {
+                tokenContextToRecord = owningEcmaType.EcmaModule;
+            }
+#endif
+
             if (result is MethodDesc)
             {
                 MethodDesc method = result as MethodDesc;
@@ -984,7 +995,10 @@ namespace Internal.JitInterface
                 pResolvedToken.hClass = ObjectToHandle(method.OwningType);
 
 #if READYTORUN
-            _compilation.NodeFactory.Resolver.AddModuleTokenForMethod(method, new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token));
+            if (tokenContextToRecord != null)
+            {
+                _compilation.NodeFactory.Resolver.AddModuleTokenForMethod(method, new ModuleToken(tokenContextToRecord, (mdToken)pResolvedToken.token));
+            }
 #endif
             }
             else
@@ -1001,14 +1015,20 @@ namespace Internal.JitInterface
                 pResolvedToken.hClass = ObjectToHandle(field.OwningType);
 
 #if READYTORUN
-                _compilation.NodeFactory.Resolver.AddModuleTokenForField(field, new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token));
+                if (tokenContextToRecord != null)
+                {
+                    _compilation.NodeFactory.Resolver.AddModuleTokenForField(field, new ModuleToken(tokenContextToRecord, (mdToken)pResolvedToken.token));
+                }
 #endif
             }
             else
             {
                 TypeDesc type = (TypeDesc)result;
 #if READYTORUN
-                _compilation.NodeFactory.Resolver.AddModuleTokenForType(type, new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token));
+                if (tokenContextToRecord != null)
+                {
+                    _compilation.NodeFactory.Resolver.AddModuleTokenForType(type, new ModuleToken(tokenContextToRecord, (mdToken)pResolvedToken.token));
+                }
 #endif
 
                 if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
