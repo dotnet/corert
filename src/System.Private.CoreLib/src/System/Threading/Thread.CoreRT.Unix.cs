@@ -123,6 +123,16 @@ namespace System.Threading
             return IntPtr.Zero;
         }
 
+        public ApartmentState GetApartmentState()
+        {
+            return ApartmentState.Unknown;
+        }
+
+        public bool TrySetApartmentStateUnchecked(ApartmentState state)
+        {
+            return state == GetApartmentState();
+        }
+
         private void InitializeComOnNewThread()
         {
         }
@@ -130,6 +140,8 @@ namespace System.Threading
         internal static void InitializeCom()
         {
         }
+
+        public void DisableComObjectEagerCleanup() { }
 
         public void Interrupt() => WaitSubsystem.Interrupt(this);
         internal static void UninterruptibleSleep0() => WaitSubsystem.UninterruptibleSleep0();
