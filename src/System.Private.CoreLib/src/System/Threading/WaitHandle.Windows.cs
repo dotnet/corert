@@ -32,15 +32,15 @@ namespace System.Threading
             {
                 if (numHandles == 1)
                     waitAll = false;
-                else if (RuntimeThread.GetCurrentApartmentType() == RuntimeThread.ApartmentType.STA)
+                else if (Thread.GetCurrentApartmentType() == Thread.ApartmentType.STA)
                     throw new NotSupportedException(SR.NotSupported_WaitAllSTAThread);
             }
 
-            RuntimeThread currentThread = RuntimeThread.CurrentThread;
+            Thread currentThread = Thread.CurrentThread;
             currentThread.SetWaitSleepJoinState();
 
             int result;
-            if (RuntimeThread.ReentrantWaitsEnabled)
+            if (Thread.ReentrantWaitsEnabled)
             {
                 Debug.Assert(!waitAll);
                 result = RuntimeImports.RhCompatibleReentrantWaitAny(false, millisecondsTimeout, numHandles, pHandles);

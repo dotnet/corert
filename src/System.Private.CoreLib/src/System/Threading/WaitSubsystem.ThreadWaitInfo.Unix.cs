@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using Internal.Runtime.Augments;
 
 namespace System.Threading
 {
@@ -17,7 +16,7 @@ namespace System.Threading
         /// </summary>
         public sealed class ThreadWaitInfo
         {
-            private readonly RuntimeThread _thread;
+            private readonly Thread _thread;
 
             /// <summary>
             /// The monitor the thread would wait upon when the wait needs to be interruptible
@@ -87,7 +86,7 @@ namespace System.Threading
             /// </summary>
             private WaitableObject _lockedMutexesHead;
 
-            public ThreadWaitInfo(RuntimeThread thread)
+            public ThreadWaitInfo(Thread thread)
             {
                 Debug.Assert(thread != null);
 
@@ -99,7 +98,7 @@ namespace System.Threading
                 _waitedListNodes = new WaitHandleArray<WaitedListNode>(i => new WaitedListNode(this, i));
             }
 
-            public RuntimeThread Thread => _thread;
+            public Thread Thread => _thread;
 
             private bool IsWaiting
             {
@@ -116,7 +115,7 @@ namespace System.Threading
             /// </summary>
             public WaitableObject[] GetWaitedObjectArray(int requiredCapacity)
             {
-                Debug.Assert(_thread == RuntimeThread.CurrentThread);
+                Debug.Assert(_thread == Thread.CurrentThread);
                 Debug.Assert(_waitedCount == 0);
 
                 _waitedObjects.VerifyElementsAreDefault();
@@ -126,7 +125,7 @@ namespace System.Threading
 
             private WaitedListNode[] GetWaitedListNodeArray(int requiredCapacity)
             {
-                Debug.Assert(_thread == RuntimeThread.CurrentThread);
+                Debug.Assert(_thread == Thread.CurrentThread);
                 Debug.Assert(_waitedCount == 0);
 
                 _waitedListNodes.EnsureCapacity(requiredCapacity, i => new WaitedListNode(this, i));
@@ -139,7 +138,7 @@ namespace System.Threading
             public void RegisterWait(int waitedCount, bool prioritize, bool isWaitForAll)
             {
                 s_lock.VerifyIsLocked();
-                Debug.Assert(_thread == RuntimeThread.CurrentThread);
+                Debug.Assert(_thread == Thread.CurrentThread);
 
                 Debug.Assert(waitedCount > (isWaitForAll ? 1 : 0));
                 Debug.Assert(waitedCount <= _waitedObjects.Items.Length);
@@ -213,7 +212,7 @@ namespace System.Threading
             {
                 s_lock.VerifyIsNotLocked();
                 _waitMonitor.VerifyIsLocked();
-                Debug.Assert(_thread == RuntimeThread.CurrentThread);
+                Debug.Assert(_thread == Thread.CurrentThread);
 
                 switch (_waitSignalState)
                 {
@@ -258,7 +257,7 @@ namespace System.Threading
                 {
                     s_lock.VerifyIsLocked();
                 }
-                Debug.Assert(_thread == RuntimeThread.CurrentThread);
+                Debug.Assert(_thread == Thread.CurrentThread);
 
                 Debug.Assert(timeoutMilliseconds >= -1);
                 Debug.Assert(timeoutMilliseconds != 0); // caller should have taken care of it
@@ -357,7 +356,7 @@ namespace System.Threading
                 // of the call. The documentation does not state whether the thread yields or does nothing before returning
                 // an error, and in some cases, suggests that doing nothing is acceptable. The behavior could also be
                 // different between distributions. Yield directly here.
-                RuntimeThread.Yield();
+                Thread.Yield();
             }
 
             public static void Sleep(int timeoutMilliseconds, bool interruptible)
@@ -367,7 +366,7 @@ namespace System.Threading
 
                 if (timeoutMilliseconds == 0)
                 {
-                    if (interruptible && RuntimeThread.CurrentThread.WaitInfo.CheckAndResetPendingInterrupt_NotLocked)
+                    if (interruptible && Thread.CurrentThread.WaitInfo.CheckAndResetPendingInterrupt_NotLocked)
                     {
                         throw new ThreadInterruptedException();
                     }
@@ -377,7 +376,7 @@ namespace System.Threading
                 }
 
                 int waitResult =
-                    RuntimeThread
+                    Thread
                         .CurrentThread
                         .WaitInfo
                         .Wait(timeoutMilliseconds, interruptible, isSleep: true);
@@ -387,7 +386,7 @@ namespace System.Threading
             public bool TrySignalToSatisfyWait(WaitedListNode registeredListNode, bool isAbandonedMutex)
             {
                 s_lock.VerifyIsLocked();
-                Debug.Assert(_thread != RuntimeThread.CurrentThread);
+                Debug.Assert(_thread != Thread.CurrentThread);
 
                 Debug.Assert(registeredListNode != null);
                 Debug.Assert(registeredListNode.WaitInfo == this);
@@ -620,7 +619,7 @@ namespace System.Threading
                 public void RegisterWait(WaitableObject waitableObject)
                 {
                     s_lock.VerifyIsLocked();
-                    Debug.Assert(_waitInfo.Thread == RuntimeThread.CurrentThread);
+                    Debug.Assert(_waitInfo.Thread == Thread.CurrentThread);
 
                     Debug.Assert(waitableObject != null);
 
@@ -643,7 +642,7 @@ namespace System.Threading
                 public void RegisterPrioritizedWait(WaitableObject waitableObject)
                 {
                     s_lock.VerifyIsLocked();
-                    Debug.Assert(_waitInfo.Thread == RuntimeThread.CurrentThread);
+                    Debug.Assert(_waitInfo.Thread == Thread.CurrentThread);
 
                     Debug.Assert(waitableObject != null);
 

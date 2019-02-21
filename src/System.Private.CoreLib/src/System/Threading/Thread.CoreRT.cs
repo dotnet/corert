@@ -3,17 +3,15 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
-using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Threading;
 
-namespace Internal.Runtime.Augments
+namespace System.Threading
 {
-    public sealed partial class RuntimeThread
+    public sealed partial class Thread
     {
         // Extra bits used in _threadState
         private const ThreadState ThreadPoolThread = (ThreadState)0x1000;
@@ -22,7 +20,7 @@ namespace Internal.Runtime.Augments
         private const ThreadState PublicThreadStateMask = (ThreadState)0x1FF;
 
         [ThreadStatic]
-        private static RuntimeThread t_currentThread;
+        private static Thread t_currentThread;
 
         private ExecutionContext _executionContext;
         private SynchronizationContext _synchronizationContext;
@@ -33,12 +31,14 @@ namespace Internal.Runtime.Augments
         private string _name;
         private Delegate _threadStart;
         private object _threadStartArg;
+        private CultureInfo _startCulture;
+        private CultureInfo _startUICulture;
         private int _maxStackSize;
 
         // Protects starting the thread and setting its priority
         private Lock _lock;
 
-        private RuntimeThread()
+        private Thread()
         {
             _threadState = (int)ThreadState.Unstarted;
             _priority = ThreadPriority.Normal;
@@ -47,22 +47,20 @@ namespace Internal.Runtime.Augments
             PlatformSpecificInitialize();
         }
 
-        // Constructor for threads created by the Thread class
-        private RuntimeThread(Delegate threadStart, int maxStackSize)
-            : this()
+        private void SetStartHelper(Delegate threadStart, int maxStackSize)
         {
             _threadStart = threadStart;
             _maxStackSize = maxStackSize;
             _managedThreadId = new ManagedThreadId();
         }
 
-        public static RuntimeThread Create(ThreadStart start) => new RuntimeThread(start, 0);
-        public static RuntimeThread Create(ThreadStart start, int maxStackSize) => new RuntimeThread(start, maxStackSize);
+        public void Create(ThreadStart start) => SetStartHelper(start, 0);
+        public void Create(ThreadStart start, int maxStackSize) => SetStartHelper(start, maxStackSize);
 
-        public static RuntimeThread Create(ParameterizedThreadStart start) => new RuntimeThread(start, 0);
-        public static RuntimeThread Create(ParameterizedThreadStart start, int maxStackSize) => new RuntimeThread(start, maxStackSize);
+        public void Create(ParameterizedThreadStart start) => SetStartHelper(start, 0);
+        public void Create(ParameterizedThreadStart start, int maxStackSize) => SetStartHelper(start, maxStackSize);
 
-        public static RuntimeThread CurrentThread
+        public static Thread CurrentThread
         {
             get
             {
@@ -79,11 +77,11 @@ namespace Internal.Runtime.Augments
         }
 
         // Slow path executed once per thread
-        private static RuntimeThread InitializeExistingThread(bool threadPoolThread)
+        private static Thread InitializeExistingThread(bool threadPoolThread)
         {
             Debug.Assert(t_currentThread == null);
 
-            var currentThread = new RuntimeThread();
+            var currentThread = new Thread();
             currentThread._managedThreadId = System.Threading.ManagedThreadId.GetCurrentThreadId();
             Debug.Assert(currentThread._threadState == (int)ThreadState.Unstarted);
 
@@ -109,7 +107,7 @@ namespace Internal.Runtime.Augments
         }
 
         // Use ThreadPoolCallbackWrapper instead of calling this function directly
-        internal static RuntimeThread InitializeThreadPoolThread()
+        internal static Thread InitializeThreadPoolThread()
         {
             return t_currentThread ?? InitializeExistingThread(true);
         }
@@ -119,7 +117,7 @@ namespace Internal.Runtime.Augments
         /// </summary>
         internal void ResetThreadPoolThread()
         {
-            Debug.Assert(this == RuntimeThread.CurrentThread);
+            Debug.Assert(this == Thread.CurrentThread);
 
             if (_name != null)
             {
@@ -345,8 +343,6 @@ namespace Internal.Runtime.Augments
             return millisecondsTimeout;
         }
 
-        public void Join() => Join(Timeout.Infinite);
-
         public bool Join(int millisecondsTimeout)
         {
             VerifyTimeoutMilliseconds(millisecondsTimeout);
@@ -436,7 +432,7 @@ namespace Internal.Runtime.Augments
         private static void StartThread(IntPtr parameter)
         {
             GCHandle threadHandle = (GCHandle)parameter;
-            RuntimeThread thread = (RuntimeThread)threadHandle.Target;
+            Thread thread = (Thread)threadHandle.Target;
             Delegate threadStart = thread._threadStart;
             // Get the value before clearing the ThreadState.Unstarted bit
             object threadStartArg = thread._threadStartArg;
@@ -461,6 +457,18 @@ namespace Internal.Runtime.Augments
             // Report success to the creator thread, which will free threadHandle and _threadStartArg
             thread.ClearThreadStateBit(ThreadState.Unstarted);
 
+            if (thread._startCulture != null)
+            {
+                CultureInfo.CurrentCulture = thread._startCulture;
+                thread._startCulture = null;
+            }
+
+            if (thread._startUICulture != null)
+            {
+                CultureInfo.CurrentUICulture = thread._startUICulture;
+                thread._startUICulture = null;
+            }
+
             try
             {
                 // The Thread cannot be started more than once, so we may clean up the delegate
@@ -479,6 +487,18 @@ namespace Internal.Runtime.Augments
             finally
             {
                 thread.SetThreadStateBit(ThreadState.Stopped);
+            }
+        }
+
+        private void SetCultureOnUnstartedThreadNoCheck(CultureInfo value, bool uiCulture)
+        {
+            if (uiCulture)
+            {
+                _startUICulture = value;
+            }
+            else
+            {
+                _startCulture = value;
             }
         }
 

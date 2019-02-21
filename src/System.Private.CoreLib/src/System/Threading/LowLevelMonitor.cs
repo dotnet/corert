@@ -15,7 +15,7 @@ namespace System.Threading
     internal sealed partial class LowLevelMonitor : IDisposable
     {
 #if DEBUG
-        private RuntimeThread _ownerThread = null;
+        private Thread _ownerThread = null;
 #endif
 
         ~LowLevelMonitor()
@@ -31,7 +31,7 @@ namespace System.Threading
         }
 
 #if DEBUG
-        public bool IsLocked => _ownerThread == RuntimeThread.CurrentThread;
+        public bool IsLocked => _ownerThread == Thread.CurrentThread;
 #endif
 
         public void VerifyIsLocked()
@@ -67,7 +67,7 @@ namespace System.Threading
         {
 #if DEBUG
             VerifyIsNotLockedByAnyThread();
-            _ownerThread = RuntimeThread.CurrentThread;
+            _ownerThread = Thread.CurrentThread;
 #endif
         }
 

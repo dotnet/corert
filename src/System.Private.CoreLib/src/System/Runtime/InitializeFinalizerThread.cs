@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.Runtime.Augments;
+using System.Threading;
 
 namespace System.Runtime
 {
@@ -15,7 +15,7 @@ namespace System.Runtime
         {
             // Make sure that the finalizer thread is CoInitialized before any objects are finalized.  If this
             // fails, it will throw an exception and that will go unhandled, triggering a FailFast.
-            RuntimeThread.InitializeCom();
+            Thread.InitializeCom();
         }
     }
 }
