@@ -17,7 +17,7 @@ namespace System.Threading
         {
             get
             {
-                return RuntimeThread.CurrentThread.SynchronizationContext ?? GetWinRTContext();
+                return Thread.CurrentThread.SynchronizationContext ?? GetWinRTContext();
             }
         }
 
@@ -34,7 +34,7 @@ namespace System.Threading
         private static SynchronizationContext GetWinRTContext()
         {
             // Optimization: WinRT dispatchers are supported for STA and ASTA apartment types only
-            if (RuntimeThread.GetCurrentApartmentType() != RuntimeThread.ApartmentType.STA)
+            if (Thread.GetCurrentApartmentType() != Thread.ApartmentType.STA)
                 return null;
 
             object dispatcher = WinRTInterop.Callbacks.GetCurrentWinRTDispatcher();
@@ -75,7 +75,7 @@ namespace System.Threading
 
             private void InvokeCore()
             {
-                SynchronizationContext prevSyncCtx = RuntimeThread.CurrentThread.SynchronizationContext;
+                SynchronizationContext prevSyncCtx = Thread.CurrentThread.SynchronizationContext;
                 try
                 {
                     m_callback(m_state);
@@ -92,7 +92,7 @@ namespace System.Threading
                 }
                 finally
                 {
-                    RuntimeThread.CurrentThread.SynchronizationContext = prevSyncCtx;
+                    Thread.CurrentThread.SynchronizationContext = prevSyncCtx;
                 }
             }
         }

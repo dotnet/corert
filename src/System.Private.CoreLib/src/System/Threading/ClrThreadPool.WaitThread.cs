@@ -175,7 +175,7 @@ namespace System.Threading
             public WaitThread()
             {
                 _waitHandles[0] = _changeHandlesEvent;
-                RuntimeThread waitThread = RuntimeThread.Create(WaitThreadStart);
+                Thread waitThread = new Thread(WaitThreadStart);
                 waitThread.IsBackground = true;
                 waitThread.Start();
             }

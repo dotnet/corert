@@ -43,7 +43,7 @@ namespace System.Threading
             if (_timerEvent == null)
             {
                 _timerEvent = new AutoResetEvent(false);
-                RuntimeThread thread = RuntimeThread.Create(TimerThread, 0);
+                Thread thread = new Thread(TimerThread);
                 thread.IsBackground = true; // Keep this thread from blocking process shutdown
                 thread.Start();
             }

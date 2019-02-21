@@ -37,7 +37,7 @@ namespace System.Threading
                     s_runGateThreadEvent.WaitOne();
                     do
                     {
-                        RuntimeThread.Sleep(GateThreadDelayMs);
+                        Thread.Sleep(GateThreadDelayMs);
 
                         ThreadPoolInstance._cpuUtilization = s_cpu.CurrentUtilization;
 
@@ -136,7 +136,7 @@ namespace System.Threading
 
             private static void CreateGateThread()
             {
-                RuntimeThread gateThread = RuntimeThread.Create(GateThreadStart);
+                Thread gateThread = new Thread(GateThreadStart);
                 gateThread.IsBackground = true;
                 gateThread.Start();
             }

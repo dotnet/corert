@@ -92,7 +92,7 @@ namespace System.Runtime.InteropServices
                     (gc_counts[gen_collect] == GC.CollectionCount(gen_collect))))
             {
                 GC.Collect(gen_collect);
-                RuntimeThread.Sleep(10 * gen_collect);
+                Thread.Sleep(10 * gen_collect);
             }
 
             //don't bother with gen0.

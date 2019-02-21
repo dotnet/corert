@@ -27,7 +27,7 @@ namespace System.Threading
         private int _state;
 
 #if DEBUG
-        private RuntimeThread _ownerThread;
+        private Thread _ownerThread;
 #endif
 
         /// <summary>
@@ -73,7 +73,7 @@ namespace System.Threading
         {
             get
             {
-                bool isLocked = _ownerThread == RuntimeThread.CurrentThread;
+                bool isLocked = _ownerThread == Thread.CurrentThread;
                 Debug.Assert(!isLocked || (_state & LockedMask) != 0);
                 return isLocked;
             }
@@ -83,7 +83,7 @@ namespace System.Threading
         public void VerifyIsLocked()
         {
 #if DEBUG
-            Debug.Assert(_ownerThread == RuntimeThread.CurrentThread);
+            Debug.Assert(_ownerThread == Thread.CurrentThread);
             Debug.Assert((_state & LockedMask) != 0);
 #endif
         }
@@ -91,7 +91,7 @@ namespace System.Threading
         public void VerifyIsNotLocked()
         {
 #if DEBUG
-            Debug.Assert(_ownerThread != RuntimeThread.CurrentThread);
+            Debug.Assert(_ownerThread != Thread.CurrentThread);
 #endif
         }
 
@@ -114,7 +114,7 @@ namespace System.Threading
         {
 #if DEBUG
             VerifyIsNotLockedByAnyThread();
-            _ownerThread = RuntimeThread.CurrentThread;
+            _ownerThread = Thread.CurrentThread;
 #endif
         }
 

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using Internal.Runtime.Augments;
 
 namespace System.Threading
 {
@@ -231,7 +230,7 @@ namespace System.Threading
             public int Wait(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, bool prioritize)
             {
                 Debug.Assert(waitInfo != null);
-                Debug.Assert(waitInfo.Thread == RuntimeThread.CurrentThread);
+                Debug.Assert(waitInfo.Thread == Thread.CurrentThread);
 
                 Debug.Assert(timeoutMilliseconds >= -1);
 
@@ -254,7 +253,7 @@ namespace System.Threading
             {
                 s_lock.VerifyIsLocked();
                 Debug.Assert(waitInfo != null);
-                Debug.Assert(waitInfo.Thread == RuntimeThread.CurrentThread);
+                Debug.Assert(waitInfo.Thread == Thread.CurrentThread);
 
                 Debug.Assert(timeoutMilliseconds >= -1);
                 Debug.Assert(!interruptible || !waitInfo.CheckAndResetPendingInterrupt);
@@ -316,7 +315,7 @@ namespace System.Threading
             {
                 s_lock.VerifyIsNotLocked();
                 Debug.Assert(waitInfo != null);
-                Debug.Assert(waitInfo.Thread == RuntimeThread.CurrentThread);
+                Debug.Assert(waitInfo.Thread == Thread.CurrentThread);
 
                 Debug.Assert(waitableObjects != null);
                 Debug.Assert(waitableObjects.Length >= count);
@@ -457,7 +456,7 @@ namespace System.Threading
             }
 
             public static bool WouldWaitForAllBeSatisfiedOrAborted(
-                RuntimeThread waitingThread,
+                Thread waitingThread,
                 WaitableObject[] waitedObjects,
                 int waitedCount,
                 int signaledWaitedObjectIndex,
@@ -466,7 +465,7 @@ namespace System.Threading
             {
                 s_lock.VerifyIsLocked();
                 Debug.Assert(waitingThread != null);
-                Debug.Assert(waitingThread != RuntimeThread.CurrentThread);
+                Debug.Assert(waitingThread != Thread.CurrentThread);
                 Debug.Assert(waitedObjects != null);
                 Debug.Assert(waitedObjects.Length >= waitedCount);
                 Debug.Assert(waitedCount > 1);
@@ -521,7 +520,7 @@ namespace System.Threading
             {
                 s_lock.VerifyIsLocked();
                 Debug.Assert(waitInfo != null);
-                Debug.Assert(waitInfo.Thread != RuntimeThread.CurrentThread);
+                Debug.Assert(waitInfo.Thread != Thread.CurrentThread);
                 Debug.Assert(waitedObjects != null);
                 Debug.Assert(waitedObjects.Length >= waitedCount);
                 Debug.Assert(waitedCount > 1);
@@ -712,7 +711,7 @@ namespace System.Threading
                     WaitHandle.ThrowInvalidHandleException();
                 }
 
-                if (IsSignaled || _ownershipInfo.Thread != RuntimeThread.CurrentThread)
+                if (IsSignaled || _ownershipInfo.Thread != Thread.CurrentThread)
                 {
                     throw new ApplicationException(SR.Arg_SynchronizationLockException);
                 }
@@ -769,7 +768,7 @@ namespace System.Threading
 
             private sealed class OwnershipInfo
             {
-                private RuntimeThread _thread;
+                private Thread _thread;
                 private int _reacquireCount;
                 private bool _isAbandoned;
 
@@ -783,7 +782,7 @@ namespace System.Threading
                 /// </summary>
                 private WaitableObject _next;
 
-                public RuntimeThread Thread
+                public Thread Thread
                 {
                     get
                     {
@@ -891,7 +890,7 @@ namespace System.Threading
                 {
                     s_lock.VerifyIsLocked();
 
-                    Debug.Assert(_thread == RuntimeThread.CurrentThread);
+                    Debug.Assert(_thread == Thread.CurrentThread);
                     Debug.Assert(_reacquireCount >= 0);
                     Debug.Assert(!_isAbandoned);
 
