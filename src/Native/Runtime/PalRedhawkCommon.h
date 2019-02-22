@@ -25,7 +25,9 @@ enum PalCapability
     GetCurrentProcessorNumberCapability = 0x00000004,   // GetCurrentProcessorNumber()
 };
 
+#ifndef __GCENV_BASE_INCLUDED__
 #define DECLSPEC_ALIGN(x)   __declspec(align(x))
+#endif // !__GCENV_BASE_INCLUDED__
 
 #ifdef _AMD64_
 #define AMD64_ALIGN_16 DECLSPEC_ALIGN(16)
