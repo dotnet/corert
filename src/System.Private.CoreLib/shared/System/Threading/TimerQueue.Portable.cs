@@ -12,8 +12,7 @@ namespace System.Threading
     //
     internal partial class TimerQueue : IThreadPoolWorkItem
     {
-        private static readonly Lock s_lock = new Lock();
-        private static List<AppDomainTimer> s_appDomainTimers;
+        private static List<ScheduledTimer> s_scheduledTimers;
 
         /// <summary>
         /// This event is used by the timer thread to wait for timer expiration. It is also
@@ -28,38 +27,39 @@ namespace System.Threading
             _id = id;
         }
 
-        private static List<AppDomainTimer> InitializeAppDomainTimerManager_Locked()
+        private static List<ScheduledTimer> InitializeScheduledTimerManager_Locked()
         {
             Debug.Assert(s_lock.IsAcquired);
-            Debug.Assert(s_appDomainTimers == null);
+            Debug.Assert(s_scheduledTimers == null);
 
-            var appDomainTimers = new List<AppDomainTimer>(Instances.Length);
+            var scheduledTimers = new List<ScheduledTimer>(Instances.Length);
 
             Thread timerThread = new Thread(TimerThread);
             timerThread.IsBackground = true;
             timerThread.Start();
 
             // Do this after creating the thread in case thread creation fails so that it will try again next time
-            s_appDomainTimers = appDomainTimers;
-            return appDomainTimers;
+            s_scheduledTimers = scheduledTimers;
+            return scheduledTimers;
         }
 
         private bool SetTimer(uint actualDuration)
         {
             Debug.Assert((int)actualDuration >= 0);
-            var timer = new AppDomainTimer(_id, TickCount + (int)actualDuration);
-            using (LockHolder.Hold(s_lock))
+            var timer = new ScheduledTimer(_id, TickCount + (int)actualDuration);
+            AutoResetEvent timerEvent = s_timerEvent;
+            lock (timerEvent)
             {
-                List<AppDomainTimer> timers = s_appDomainTimers;
+                List<ScheduledTimer> timers = s_scheduledTimers;
                 if (timers == null)
                 {
-                    timers = InitializeAppDomainTimerManager_Locked();
+                    timers = InitializeScheduledTimerManager_Locked();
                 }
 
                 timers.Add(timer);
             }
 
-            s_timerEvent.Set();
+            timerEvent.Set();
             return true;
         }
 
@@ -70,11 +70,10 @@ namespace System.Threading
         private static void TimerThread()
         {
             AutoResetEvent timerEvent = s_timerEvent;
-            Lock lok = s_lock;
-            List<AppDomainTimer> timers;
-            using (LockHolder.Hold(lok))
+            List<ScheduledTimer> timers;
+            lock (timerEvent)
             {
-                timers = s_appDomainTimers;
+                timers = s_scheduledTimers;
             }
 
             int shortestWaitDurationMs = Timeout.Infinite;
@@ -84,7 +83,7 @@ namespace System.Threading
 
                 int currentTimeMs = TickCount;
                 shortestWaitDurationMs = int.MaxValue;
-                using (LockHolder.Hold(lok))
+                lock (timerEvent)
                 {
                     for (int i = timers.Count - 1; i >= 0; --i)
                     {
@@ -119,12 +118,12 @@ namespace System.Threading
         private static int TickCount => Environment.TickCount;
         void IThreadPoolWorkItem.Execute() => FireNextTimers();
 
-        private struct AppDomainTimer
+        private struct ScheduledTimer
         {
             public int id;
             public int dueTimeMs;
 
-            public AppDomainTimer(int id, int dueTimeMs)
+            public ScheduledTimer(int id, int dueTimeMs)
             {
                 Debug.Assert(id >= 0);
                 Debug.Assert(id < Instances.Length);
