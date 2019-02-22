@@ -21,13 +21,6 @@ namespace System.Threading
         /// </summary>
         private static readonly AutoResetEvent s_timerEvent = new AutoResetEvent(false);
 
-        private readonly int _id;
-
-        private TimerQueue(int id)
-        {
-            _id = id;
-        }
-
         private static List<ScheduledTimer> InitializeScheduledTimerManager_Locked()
         {
             Debug.Assert(s_scheduledTimers == null);

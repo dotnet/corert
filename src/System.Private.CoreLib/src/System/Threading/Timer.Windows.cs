@@ -14,12 +14,6 @@ namespace System.Threading
     internal partial class TimerQueue
     {
         private IntPtr _nativeTimer;
-        private readonly int _id;
-
-        private TimerQueue(int id)
-        {
-            _id = id;
-        }
 
         [NativeCallable(CallingConvention = CallingConvention.StdCall)]
         private static void TimerCallback(IntPtr instance, IntPtr context, IntPtr timer)

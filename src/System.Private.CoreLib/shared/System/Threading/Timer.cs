@@ -52,6 +52,17 @@ namespace System.Threading
 
         #endregion
 
+        #region Fields and initialization
+
+        private readonly int _id;
+
+        private TimerQueue(int id)
+        {
+            _id = id;
+        }
+
+        #endregion
+
         #region interface to native timer
 
         private bool _isTimerScheduled;
