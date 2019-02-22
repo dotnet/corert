@@ -29,7 +29,6 @@ namespace System.Threading
 
         private static List<ScheduledTimer> InitializeScheduledTimerManager_Locked()
         {
-            Debug.Assert(s_lock.IsAcquired);
             Debug.Assert(s_scheduledTimers == null);
 
             var scheduledTimers = new List<ScheduledTimer>(Instances.Length);
