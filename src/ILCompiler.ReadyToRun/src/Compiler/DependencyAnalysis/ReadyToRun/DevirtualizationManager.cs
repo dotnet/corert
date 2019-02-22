@@ -25,7 +25,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return _compilationModuleGroup.ContainsMethodBody(method, unboxingStub: false) && base.IsEffectivelySealed(method);
         }
 
-        public override MethodDesc ResolveVirtualMethod(MethodDesc declMethod, TypeDesc implType)
+        protected override MethodDesc ResolveVirtualMethod(MethodDesc declMethod, DefType implType)
         {
             if (_compilationModuleGroup.ContainsMethodBody(declMethod, unboxingStub: false) &&
                 _compilationModuleGroup.ContainsType(implType))
