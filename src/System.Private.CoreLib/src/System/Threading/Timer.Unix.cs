@@ -19,12 +19,12 @@ namespace System.Threading
         /// This event is used by the timer thread to wait for timer expiration. It is also
         /// used to notify the timer thread that a new timer has been set.
         /// </summary>
-        private static AutoResetEvent s_timerEvent;
+        private AutoResetEvent _timerEvent;
 
         /// <summary>
         /// This field stores the value of next timer that the timer thread should install.
         /// </summary>
-        private static volatile int s_nextTimerDuration;
+        private volatile int _nextTimerDuration;
 
         private TimerQueue(int id)
         {
@@ -35,21 +35,21 @@ namespace System.Threading
             // Note: AutoResetEvent.WaitOne takes an Int32 value as a timeout.
             // The TimerQueue code ensures that timer duration is not greater than max Int32 value
             Debug.Assert(actualDuration <= (uint)int.MaxValue);
-            s_nextTimerDuration = (int)actualDuration;
+            _nextTimerDuration = (int)actualDuration;
 
             // If this is the first time the timer is set then we need to create a thread that
             // will manage and respond to timer requests. Otherwise, simply signal the timer thread
             // to notify it that the timer duration has changed.
-            if (s_timerEvent == null)
+            if (_timerEvent == null)
             {
-                s_timerEvent = new AutoResetEvent(false);
+                _timerEvent = new AutoResetEvent(false);
                 RuntimeThread thread = RuntimeThread.Create(TimerThread, 0);
                 thread.IsBackground = true; // Keep this thread from blocking process shutdown
                 thread.Start();
             }
             else
             {
-                s_timerEvent.Set();
+                _timerEvent.Set();
             }
 
             return true;
@@ -65,7 +65,7 @@ namespace System.Threading
             int currentTimerInterval;
 
             // Get wait time for the next timer
-            currentTimerInterval = Interlocked.Exchange(ref s_nextTimerDuration, Timeout.Infinite);
+            currentTimerInterval = Interlocked.Exchange(ref _nextTimerDuration, Timeout.Infinite);
 
             for (;;)
             {
@@ -73,7 +73,7 @@ namespace System.Threading
                 // We will be woken up because either 1) the wait times out, which will indicate that
                 // the current timer has expired and/or 2) the TimerQueue installs a new (earlier) timer.
                 int startWait = TickCount;
-                bool timerHasExpired = !s_timerEvent.WaitOne(currentTimerInterval);
+                bool timerHasExpired = !_timerEvent.WaitOne(currentTimerInterval);
                 uint elapsedTime = (uint)(TickCount - startWait);
 
                 // The timer event can be set after this thread reads the new timer interval but before it enters
@@ -99,11 +99,11 @@ namespace System.Threading
 
                     // When FireNextTimers() installs a new timer, it also sets the timer event.
                     // Reset the event so the timer thread is not woken up right away unnecessary.
-                    s_timerEvent.Reset();
+                    _timerEvent.Reset();
                     currentTimerInterval = Timeout.Infinite;
                 }
 
-                int nextTimerInterval = Interlocked.Exchange(ref s_nextTimerDuration, Timeout.Infinite);
+                int nextTimerInterval = Interlocked.Exchange(ref _nextTimerDuration, Timeout.Infinite);
                 if (nextTimerInterval != Timeout.Infinite)
                 {
                     currentTimerInterval = nextTimerInterval;
