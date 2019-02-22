@@ -38,6 +38,9 @@ internal static class Runner
         //Console.WriteLine("    WaitSubsystemTests.MutexMaximumReacquireCountTest");
         //WaitSubsystemTests.MutexMaximumReacquireCountTest();
 
+        Console.WriteLine("    TimersCreatedConcurrentlyOnDifferentThreadsAllFire");
+        TimerTests.TimersCreatedConcurrentlyOnDifferentThreadsAllFire();
+
         Console.WriteLine("    ThreadPoolTests.RunProcessorCountItemsInParallel");
         ThreadPoolTests.RunProcessorCountItemsInParallel();
 
@@ -837,6 +840,62 @@ internal static class WaitSubsystemTests
     }
 }
 
+internal static class TimerTests
+{
+    [Fact]
+    public static void TimersCreatedConcurrentlyOnDifferentThreadsAllFire()
+    {
+        int processorCount = Environment.ProcessorCount;
+
+        int timerTickCount = 0;
+        TimerCallback timerCallback = data => Interlocked.Increment(ref timerTickCount);
+
+        var threadStarted = new AutoResetEvent(false);
+        var createTimers = new ManualResetEvent(false);
+        var timers = new Timer[processorCount];
+        Action<object> createTimerThreadStart = data =>
+        {
+            int i = (int)data;
+            var sw = new Stopwatch();
+            threadStarted.Set();
+            createTimers.WaitOne();
+
+            // Use the CPU a bit around creating the timer to try to have some of these threads run concurrently
+            sw.Restart();
+            do
+            {
+                Thread.SpinWait(1000);
+            } while (sw.ElapsedMilliseconds < 10);
+
+            timers[i] = new Timer(timerCallback, null, 1, Timeout.Infinite);
+
+            // Use the CPU a bit around creating the timer to try to have some of these threads run concurrently
+            sw.Restart();
+            do
+            {
+                Thread.SpinWait(1000);
+            } while (sw.ElapsedMilliseconds < 10);
+        };
+
+        var waitsForThread = new Action[timers.Length];
+        for (int i = 0; i < timers.Length; ++i)
+        {
+            var t = ThreadTestHelpers.CreateGuardedThread(out waitsForThread[i], createTimerThreadStart);
+            t.IsBackground = true;
+            t.Start(i);
+            threadStarted.CheckedWait();
+        }
+
+        createTimers.Set();
+        ThreadTestHelpers.WaitForCondition(() => timerTickCount == timers.Length);
+
+        foreach (var waitForThread in waitsForThread)
+        {
+            waitForThread();
+        }
+    }
+}
+
 internal static class ThreadPoolTests
 {
     [Fact]
@@ -1353,6 +1412,70 @@ internal static class ThreadTestHelpers
     public const int ExpectedMeasurableTimeoutMilliseconds = 500;
     public const int UnexpectedTimeoutMilliseconds = 1000 * 30;
 
+    // Wait longer for a thread to time out, so that an unexpected timeout in the thread is more likely to expire first and
+    // provide a better stack trace for the failure
+    public const int UnexpectedThreadTimeoutMilliseconds = UnexpectedTimeoutMilliseconds * 2;
+
+    public static Thread CreateGuardedThread(out Action waitForThread, Action<object> start)
+    {
+        Action checkForThreadErrors;
+        return CreateGuardedThread(out checkForThreadErrors, out waitForThread, start);
+    }
+
+    public static Thread CreateGuardedThread(out Action checkForThreadErrors, out Action waitForThread, Action<object> start)
+    {
+        Exception backgroundEx = null;
+        var t =
+            new Thread(parameter =>
+            {
+                try
+                {
+                    start(parameter);
+                }
+                catch (Exception ex)
+                {
+                    backgroundEx = ex;
+                    Interlocked.MemoryBarrier();
+                }
+            });
+        Action localCheckForThreadErrors = checkForThreadErrors = // cannot use ref or out parameters in lambda
+            () =>
+            {
+                Interlocked.MemoryBarrier();
+                if (backgroundEx != null)
+                {
+                    throw new AggregateException(backgroundEx);
+                }
+            };
+        waitForThread =
+            () =>
+            {
+                Assert.True(t.Join(UnexpectedThreadTimeoutMilliseconds));
+                localCheckForThreadErrors();
+            };
+        return t;
+    }
+
+    public static void WaitForCondition(Func<bool> condition)
+    {
+        WaitForConditionWithCustomDelay(condition, () => Thread.Sleep(1));
+    }
+
+    public static void WaitForConditionWithCustomDelay(Func<bool> condition, Action delay)
+    {
+        if (condition())
+        {
+            return;
+        }
+
+        var startTime = Environment.TickCount;
+        do
+        {
+            delay();
+            Assert.True(Environment.TickCount - startTime < UnexpectedTimeoutMilliseconds);
+        } while (!condition());
+    }
+
     public static void CheckedWait(this WaitHandle wh)
     {
         Assert.True(wh.WaitOne(UnexpectedTimeoutMilliseconds));
@@ -1365,12 +1488,23 @@ internal sealed class InvalidWaitHandle : WaitHandle
 
 internal sealed class Stopwatch
 {
-    private DateTime _startTimeTicks;
-    private DateTime _endTimeTicks;
+    private int _startTimeMs;
+    private int _endTimeMs;
+    private bool _isStopped;
 
-    public void Restart() => _startTimeTicks = DateTime.UtcNow;
-    public void Stop() => _endTimeTicks = DateTime.UtcNow;
-    public long ElapsedMilliseconds => (long)(_endTimeTicks - _startTimeTicks).TotalMilliseconds;
+    public void Restart()
+    {
+        _isStopped = false;
+        _startTimeMs = Environment.TickCount;
+    }
+
+    public void Stop()
+    {
+        _endTimeMs = Environment.TickCount;
+        _isStopped = true;
+    }
+
+    public long ElapsedMilliseconds => (_isStopped ? _endTimeMs : Environment.TickCount) - _startTimeMs;
 }
 
 internal static class Assert
