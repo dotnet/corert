@@ -22,6 +22,7 @@
             <Type Name="System.AttributeUsageAttribute[]" Dynamic="Required All" />
             <Type Name="System.Runtime.InteropServices.ComVisibleAttribute" Dynamic="Required All" />
             <Type Name="System.CLSCompliantAttribute" Dynamic="Required All" />
+            <Type Name="System.Runtime.Serialization.SerializationInfo" Dynamic="Required All" />
         </Assembly>
         <Assembly Name="System" />
         <Assembly Name="mscorlib">
