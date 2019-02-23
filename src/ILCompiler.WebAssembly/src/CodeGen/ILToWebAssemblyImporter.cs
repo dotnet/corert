@@ -1630,10 +1630,6 @@ namespace Internal.IL
                 if (!callee.IsNewSlot)
                     throw new NotImplementedException();
 
-                // TODO: is this required, seems like its already handled in the places which call this method
-                if (!_compilation.HasFixedSlotVTable(callee.OwningType))
-                    AddVirtualMethodReference(callee);
-
                 bool isValueTypeCall = false;
                 TypeDesc thisType = thisPointer.Type;
                 TypeFlags category = thisType.Category;
@@ -2063,9 +2059,12 @@ namespace Internal.IL
 
         void AddDependencyForMethodCall(MethodDesc callee, ILOpcode opcode)
         {
-            if (opcode == ILOpcode.callvirt && callee.IsVirtual && !callee.HasInstantiation)
+            if (opcode == ILOpcode.callvirt && callee.IsVirtual)
             {
-                AddVirtualMethodReference(callee);
+                if (!callee.HasInstantiation)
+                {
+                    AddVirtualMethodReference(callee);
+                }
             }
             else if (callee != null)
             {
