@@ -275,6 +275,8 @@ internal static class Program
 
         TestDispose();
 
+        TestVirtualMethodUse();
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -812,6 +814,28 @@ internal static class Program
         return result;
     }
 
+    }
+
+    private static void TestVirtualMethodUse()
+    {
+        StartTest("TestVirtualMethodUse test");
+
+        TestGenItf implInt = new TestGenItf();
+        implInt.Log<object>(new object());
+        EndTest(true);
+    }
+
+    public interface ITestGenItf
+    {
+        bool Log<TState>(TState state);
+    }
+
+    public class TestGenItf : ITestGenItf
+    {
+        public bool Log<TState>(TState state)
+        {
+            return true;
+        }
     private static void TestArgsWithMixedTypesAndExceptionRegions()
     {
         new MixedArgFuncClass().MixedArgFunc(1, null, 2, null);

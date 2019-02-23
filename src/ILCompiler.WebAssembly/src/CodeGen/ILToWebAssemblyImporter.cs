@@ -92,8 +92,10 @@ namespace Internal.IL
 
         private class ExceptionRegion
         {
+            // TODO: what was the intention here, store something else?   If not, then delete this class?
             public ILExceptionRegion ILRegion;
         }
+
         private ExceptionRegion[] _exceptionRegions;
 
         public ILImporter(WebAssemblyCodegenCompilation compilation, MethodDesc method, MethodIL methodIL, string mangledName)
@@ -1956,7 +1958,7 @@ namespace Internal.IL
 
         private ExpressionEntry HandleCall(MethodDesc callee, MethodSignature signature, StackEntry[] argumentValues, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef), TypeDesc forcedReturnType = null)
         {
-            if (opcode == ILOpcode.callvirt && callee.IsVirtual)
+            if (opcode == ILOpcode.callvirt && callee.IsVirtual && !callee.HasInstantiation)
             {
                 AddVirtualMethodReference(callee);
             }
