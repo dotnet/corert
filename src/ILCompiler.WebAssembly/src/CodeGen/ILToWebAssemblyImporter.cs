@@ -92,10 +92,8 @@ namespace Internal.IL
 
         private class ExceptionRegion
         {
-            // TODO: what was the intention here, store something else?   If not, then delete this class?
             public ILExceptionRegion ILRegion;
         }
-
         private ExceptionRegion[] _exceptionRegions;
 
         public ILImporter(WebAssemblyCodegenCompilation compilation, MethodDesc method, MethodIL methodIL, string mangledName)
