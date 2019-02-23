@@ -32,6 +32,8 @@ namespace ILCompiler
         private readonly List<MethodDesc> _methodsWithMetadata = new List<MethodDesc>();
         private readonly List<MetadataType> _typesWithMetadata = new List<MetadataType>();
 
+        private readonly MetadataType _serializationInfoType;
+
         public UsageBasedMetadataManager(
             CompilationModuleGroup group,
             CompilerTypeSystemContext typeSystemContext,
@@ -47,6 +49,8 @@ namespace ILCompiler
             _hasPreciseFieldUsageInformation = false;
             _compilationModuleGroup = group;
             _generationOptions = generationOptions;
+
+            _serializationInfoType = typeSystemContext.SystemModule.GetType("System.Runtime.Serialization", "SerializationInfo", false);
         }
 
         protected override void Graph_NewMarkedNode(DependencyNodeCore<NodeFactory> obj)
@@ -178,6 +182,35 @@ namespace ILCompiler
                             dependencies = dependencies ?? new DependencyList();
                             dependencies.Add(factory.CanonicalEntrypoint(method), "Anonymous type accessor");
                         }
+                    }
+                }
+            }
+
+            // If a type is marked [Serializable], make sure a couple things are also included.
+            if (type.IsSerializable && !type.IsGenericDefinition)
+            {
+                foreach (MethodDesc method in type.GetAllMethods())
+                {
+                    MethodSignature signature = method.Signature;
+
+                    if (method.IsConstructor
+                        && signature.Length == 2
+                        && signature[0] == _serializationInfoType
+                        /* && signature[1] is StreamingContext */)
+                    {
+                        dependencies = dependencies ?? new DependencyList();
+                        dependencies.Add(factory.CanonicalEntrypoint(method), "Binary serialization");
+                    }
+
+                    // Methods with these attributes can be called during serialization
+                    if (signature.Length == 1 && !signature.IsStatic && signature.ReturnType.IsVoid &&
+                        (method.HasCustomAttribute("System.Runtime.Serialization", "OnSerializingAttribute")
+                        || method.HasCustomAttribute("System.Runtime.Serialization", "OnSerializedAttribute")
+                        || method.HasCustomAttribute("System.Runtime.Serialization", "OnDeserializingAttribute")
+                        || method.HasCustomAttribute("System.Runtime.Serialization", "OnDeserializedAttribute")))
+                    {
+                        dependencies = dependencies ?? new DependencyList();
+                        dependencies.Add(factory.CanonicalEntrypoint(method), "Binary serialization");
                     }
                 }
             }

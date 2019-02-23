@@ -59,7 +59,11 @@
     <Compile Include="..\..\Common\src\TypeSystem\CodeGen\TypeDesc.CodeGen.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\CodeGen\FieldDesc.CodeGen.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaField.CodeGen.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaField.Serialization.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaType.Serialization.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\NativeFormat\NativeFormatField.CodeGen.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Serialization\TypeDesc.Serialization.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Serialization\FieldDesc.Serialization.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\ArrayType.RuntimeDetermined.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\ByRefType.RuntimeDetermined.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\DefType.RuntimeDetermined.cs" />
