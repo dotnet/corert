@@ -1632,6 +1632,7 @@ namespace Internal.IL
                 if (!callee.IsNewSlot)
                     throw new NotImplementedException();
 
+                // TODO: is this required, seems like its already handled in the places which call this method
                 if (!_compilation.HasFixedSlotVTable(callee.OwningType))
                     AddVirtualMethodReference(callee);
 
@@ -1958,15 +1959,7 @@ namespace Internal.IL
 
         private ExpressionEntry HandleCall(MethodDesc callee, MethodSignature signature, StackEntry[] argumentValues, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef), TypeDesc forcedReturnType = null)
         {
-            if (opcode == ILOpcode.callvirt && callee.IsVirtual && !callee.HasInstantiation)
-            {
-                AddVirtualMethodReference(callee);
-            }
-            else if (callee != null)
-            {
-                AddMethodReference(callee);
-            }
-            var pointerSize = _compilation.NodeFactory.Target.PointerSize;
+            AddDependencyForMethodCall(callee, opcode);
 
             LLVMValueRef fn;
             if (opcode == ILOpcode.calli)
@@ -2070,11 +2063,9 @@ namespace Internal.IL
             }
         }
 
-        private LLVMValueRef HandleCall(MethodDesc callee, MethodSignature signature, StackEntry[] argumentValues,
-            ILOpcode opcode, TypeDesc constrainedType, LLVMValueRef calliTarget, int offset, LLVMValueRef baseShadowStack, LLVMBuilderRef builder, bool needsReturnSlot,
-            LLVMValueRef castReturnAddress)
+        void AddDependencyForMethodCall(MethodDesc callee, ILOpcode opcode)
         {
-            if (opcode == ILOpcode.callvirt && callee.IsVirtual)
+            if (opcode == ILOpcode.callvirt && callee.IsVirtual && !callee.HasInstantiation)
             {
                 AddVirtualMethodReference(callee);
             }
@@ -2082,6 +2073,13 @@ namespace Internal.IL
             {
                 AddMethodReference(callee);
             }
+        }
+
+        private LLVMValueRef HandleCall(MethodDesc callee, MethodSignature signature, StackEntry[] argumentValues,
+            ILOpcode opcode, TypeDesc constrainedType, LLVMValueRef calliTarget, int offset, LLVMValueRef baseShadowStack, LLVMBuilderRef builder, bool needsReturnSlot,
+            LLVMValueRef castReturnAddress)
+        {
+            AddDependencyForMethodCall(callee, opcode);
 
             LLVMValueRef fn;
             if (opcode == ILOpcode.calli)
