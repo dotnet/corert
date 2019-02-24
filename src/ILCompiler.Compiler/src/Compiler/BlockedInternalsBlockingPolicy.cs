@@ -149,27 +149,17 @@ namespace ILCompiler
         }
         private BlockedTypeHashtable _blockedTypes;
 
-        private MetadataType[] _knownTypes;
+        private MetadataType ArrayOfTType { get; }
+        private MetadataType SerializationInfoType { get; }
+        private MetadataType ISerializableType { get; }
 
-        private MetadataType InitializeKnownTypes(TypeSystemEntity entity, int index)
-        {
-            _knownTypes = new MetadataType[]
-            {
-                entity.Context.SystemModule.GetType("System", "Array`1"),
-                entity.Context.SystemModule.GetType("System.Runtime.Serialization", "SerializationInfo", false),
-                entity.Context.SystemModule.GetType("System.Runtime.Serialization", "ISerializable", false),
-            };
-
-            return _knownTypes[index];
-        }
-
-        private MetadataType GetArrayOfTType(TypeSystemEntity contextEntity) => _knownTypes?[0] ?? InitializeKnownTypes(contextEntity, 0);
-        private MetadataType GetSerializationInfoType(TypeSystemEntity contextEntity) => _knownTypes?[1] ?? InitializeKnownTypes(contextEntity, 1);
-        private MetadataType GetISerializableType(TypeSystemEntity contextEntity) => _knownTypes?[2] ?? InitializeKnownTypes(contextEntity, 2);
-
-        public BlockedInternalsBlockingPolicy()
+        public BlockedInternalsBlockingPolicy(TypeSystemContext context)
         {
             _blockedTypes = new BlockedTypeHashtable(_blockedModules);
+
+            ArrayOfTType = context.SystemModule.GetType("System", "Array`1");
+            SerializationInfoType = context.SystemModule.GetType("System.Runtime.Serialization", "SerializationInfo", false);
+            ISerializableType = context.SystemModule.GetType("System.Runtime.Serialization", "ISerializable", false);
         }
 
         public override bool IsBlocked(MetadataType type)
@@ -217,7 +207,7 @@ namespace ILCompiler
 
                     if (ecmaMethod.IsConstructor
                         && signature.Length == 2
-                        && signature[0] == GetSerializationInfoType(ecmaMethod)
+                        && signature[0] == SerializationInfoType
                         /* && ecmaMethod.Signature[1] is StreamingContext */)
                     {
                         return false;
@@ -242,7 +232,7 @@ namespace ILCompiler
             // We could get rid of this special casing two ways:
             // * Make these method stop being regular EcmaMethods with Array<T> as their owning type, or
             // * Make these methods implement the interfaces explicitly (they would become private and naturally blocked)
-            if (ecmaMethod.OwningType == GetArrayOfTType(ecmaMethod))
+            if (ecmaMethod.OwningType == ArrayOfTType)
                 return true;
 
             return false;
@@ -279,7 +269,8 @@ namespace ILCompiler
                 if (owningType.IsSerializable
                     && !ecmaField.IsStatic
                     && !ecmaField.IsNotSerialized
-                    && Array.IndexOf(owningType.RuntimeInterfaces, GetISerializableType(ecmaField)) < 0)
+                    && ISerializableType != null
+                    && !owningType.CanCastTo(ISerializableType))
                 {
                     return false;
                 }
