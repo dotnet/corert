@@ -19,6 +19,7 @@ namespace ILCompiler
         private readonly CompilationModuleGroup _compilationGroup;
         private readonly NameMangler _nameMangler;
         private readonly ILProvider _ilProvider;
+        private readonly PInvokeILEmitterConfiguration _pinvokePolicy;
 
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.
@@ -27,13 +28,14 @@ namespace ILCompiler
         private IEnumerable<ICompilationRootProvider> _compilationRoots = Array.Empty<ICompilationRootProvider>();
         private MetadataManager _metadataManager;
 
-        internal ILScannerBuilder(CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup, NameMangler mangler, ILProvider ilProvider)
+        internal ILScannerBuilder(CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup, NameMangler mangler, ILProvider ilProvider, PInvokeILEmitterConfiguration pinvokePolicy)
         {
             _context = context;
             _compilationGroup = compilationGroup;
             _nameMangler = mangler;
             _metadataManager = new EmptyMetadataManager(context);
             _ilProvider = ilProvider;
+            _pinvokePolicy = pinvokePolicy;
         }
 
         public ILScannerBuilder UseDependencyTracking(DependencyTrackingLevel trackingLevel)
@@ -60,7 +62,7 @@ namespace ILCompiler
             var nodeFactory = new ILScanNodeFactory(_context, _compilationGroup, _metadataManager, interopStubManager, _nameMangler);
             DependencyAnalyzerBase<NodeFactory> graph = _dependencyTrackingLevel.CreateDependencyGraph(nodeFactory);
 
-            return new ILScanner(graph, nodeFactory, _compilationRoots, _ilProvider, new NullDebugInformationProvider(), _logger);
+            return new ILScanner(graph, nodeFactory, _compilationRoots, _ilProvider, new NullDebugInformationProvider(), _pinvokePolicy, _logger);
         }
     }
 }

@@ -46,11 +46,12 @@ namespace ILCompiler
             IEnumerable<ICompilationRootProvider> roots,
             ILProvider ilProvider,
             DebugInformationProvider debugInformationProvider,
+            PInvokeILEmitterConfiguration pInvokePolicy,
             Logger logger,
             DevirtualizationManager devirtualizationManager,
             JitConfigProvider configProvider,
             string inputFilePath)
-            : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, devirtualizationManager, logger)
+            : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, devirtualizationManager, pInvokePolicy, logger)
         {
             NodeFactory = nodeFactory;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory);

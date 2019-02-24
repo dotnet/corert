@@ -7,8 +7,13 @@ set __BuildType=Debug
 set __BuildOS=Windows_NT
 
 :: Default to highest Visual Studio version available
-set __VSVersion=vs2017
-set __VSProductVersion=150
+if defined VS160COMNTOOLS (
+    set __VSVersion=vs2019
+    set __VSProductVersion=160
+) else (
+    set __VSVersion=vs2017
+    set __VSProductVersion=150
+)
 
 :: Define a prefix for most output progress messages that come from this script. That makes
 :: it easier to see where these are coming from. Note that there is a trailing space here.
@@ -352,6 +357,6 @@ echo CORE_ROOT The path to the runtime
 exit /b 1
 
 :NoVS
-echo Visual Studio 2017 ^(Community is free^) is a prerequisite to build this repository.
+echo Visual Studio 2017 or 2019 ^(Community is free^) is a prerequisite to build this repository.
 echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
 exit /b 1

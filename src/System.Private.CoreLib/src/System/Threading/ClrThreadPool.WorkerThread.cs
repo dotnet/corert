@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
-using Internal.LowLevelLinq;
 using Internal.Runtime.Augments;
 
 namespace System.Threading
@@ -18,8 +17,16 @@ namespace System.Threading
             /// <summary>
             /// Semaphore for controlling how many threads are currently working.
             /// </summary>
-            private static LowLevelLifoSemaphore s_semaphore = new LowLevelLifoSemaphore(0, MaxPossibleThreadCount);
-            
+            private static LowLevelLifoSemaphore s_semaphore = new LowLevelLifoSemaphore(0, MaxPossibleThreadCount, SemaphoreSpinCount);
+
+            /// <summary>
+            /// Maximum number of spins a thread pool worker thread performs before waiting for work
+            /// </summary>
+            private static int SemaphoreSpinCount
+            {
+                get => AppContextConfigHelper.GetInt16Config("ThreadPool_UnfairSemaphoreSpinLimit", 70, false);
+            }
+
             private static void WorkerThreadStart()
             {
                 ClrThreadPoolEventSource.Log.WorkerThreadStart(ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts).numExistingThreads);

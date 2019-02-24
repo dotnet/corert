@@ -36,7 +36,7 @@ namespace System.Threading
         /// </summary>
         private bool _isAnyWaitingThreadSignaled;
 
-        private FirstLevelSpinWaiter _spinWaiter;
+        private LowLevelSpinWaiter _spinWaiter;
         private readonly Func<bool> _spinWaitTryAcquireCallback;
         private readonly LowLevelMonitor _monitor;
 
@@ -46,8 +46,7 @@ namespace System.Threading
             _ownerThread = null;
 #endif
 
-            _spinWaiter = new FirstLevelSpinWaiter();
-            _spinWaiter.Initialize();
+            _spinWaiter = new LowLevelSpinWaiter();
             _spinWaitTryAcquireCallback = SpinWaitTryAcquireCallback;
             _monitor = new LowLevelMonitor();
         }

@@ -11,7 +11,7 @@ set /P BUILDTOOLS_VERSION=< "%~dp0BuildToolsVersion.txt"
 set BUILD_TOOLS_PATH=%PACKAGES_DIR%\Microsoft.DotNet.BuildTools\%BUILDTOOLS_VERSION%\lib
 set INIT_TOOLS_RESTORE_PROJECT=%~dp0init-tools.msbuild
 set BUILD_TOOLS_SEMAPHORE_DIR=%TOOLRUNTIME_DIR%\%BUILDTOOLS_VERSION%
-set BUILD_TOOLS_SEMAPHORE=%BUILD_TOOLS_SEMAPHORE_DIR%\init-tools.completed
+set BUILD_TOOLS_SEMAPHORE=%BUILD_TOOLS_SEMAPHORE_DIR%\init-tools.completed_
 
 :: if force option is specified then clean the tool runtime and build tools package directory to force it to get recreated
 if [%1]==[force] (
@@ -80,6 +80,36 @@ if not [%INIT_TOOLS_ERRORLEVEL%]==[0] (
   echo ERROR: An error occured when trying to initialize the tools. 1>&2
   goto :error
 )
+
+:: Restore a custom RoslynToolset since we can't trivially update the BuildTools dependency in CoreRT
+echo Configurating RoslynToolset...
+set ROSLYNCOMPILERS_VERSION=3.0.0-beta3-final
+set DEFAULT_RESTORE_ARGS=--no-cache --packages "%PACKAGES_DIR%"
+set INIT_TOOLS_RESTORE_ARGS=%DEFAULT_RESTORE_ARGS% --source https://dotnet.myget.org/F/dotnet-buildtools/api/v3/index.json --source https://api.nuget.org/v3/index.json %INIT_TOOLS_RESTORE_ARGS%
+set MSBUILD_PROJECT_CONTENT= ^
+ ^^^<Project Sdk=^"Microsoft.NET.Sdk^"^^^> ^
+  ^^^<PropertyGroup^^^> ^
+    ^^^<TargetFrameworks^^^>netcoreapp1.0;net46^^^</TargetFrameworks^^^> ^
+    ^^^<DisableImplicitFrameworkReferences^^^>true^^^</DisableImplicitFrameworkReferences^^^> ^
+  ^^^</PropertyGroup^^^> ^
+  ^^^<ItemGroup^^^> ^
+    ^^^<PackageReference Include=^"Microsoft.Net.Compilers^" Version=^"%ROSLYNCOMPILERS_VERSION%^" /^^^> ^
+    ^^^<PackageReference Include=^"Microsoft.NETCore.Compilers^" Version=^"%ROSLYNCOMPILERS_VERSION%^" /^^^> ^
+  ^^^</ItemGroup^^^> ^
+ ^^^</Project^^^>
+set PORTABLETARGETS_PROJECT=%TOOLRUNTIME_DIR%\generated\project.csproj
+echo %MSBUILD_PROJECT_CONTENT% > "%PORTABLETARGETS_PROJECT%"
+@echo on
+call "%DOTNET_CMD%" restore "%PORTABLETARGETS_PROJECT%" %INIT_TOOLS_RESTORE_ARGS%
+set RESTORE_PORTABLETARGETS_ERROR_LEVEL=%ERRORLEVEL%
+@echo off
+if not [%RESTORE_PORTABLETARGETS_ERROR_LEVEL%]==[0] (
+  echo ERROR: An error ocurred when running: '"%DOTNET_CMD%" restore "%PORTABLETARGETS_PROJECT%"'. Please check above for more details.
+  exit /b %RESTORE_PORTABLETARGETS_ERROR_LEVEL%
+)
+
+:: Copy Roslyn Compilers Over to ToolRuntime
+Robocopy "%PACKAGES_DIR%\Microsoft.Net.Compilers\%ROSLYNCOMPILERS_VERSION%\." "%TOOLRUNTIME_DIR%\net46\roslyn\." /E
 
 :: Create semaphore file
 echo Done initializing tools.
