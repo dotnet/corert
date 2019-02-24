@@ -2820,15 +2820,16 @@ namespace Internal.IL
 
         private TypeDesc WidenBytesAndShorts(TypeDesc type)
         {
-            if (type == GetWellKnownType(WellKnownType.Byte)
-                || type == GetWellKnownType(WellKnownType.SByte)
-                || type == GetWellKnownType(WellKnownType.UInt16)
-                || type == GetWellKnownType(WellKnownType.Int16)
-            )
+            switch (type.Category)
             {
-                return GetWellKnownType(WellKnownType.Int32);
+                case TypeFlags.Byte:
+                case TypeFlags.SByte:
+                case TypeFlags.Int16:
+                case TypeFlags.UInt16:
+                    return GetWellKnownType(WellKnownType.Int32);
+                default:
+                    return type;
             }
-            return type;
         }
 
         private void ImportShiftOperation(ILOpcode opcode)
