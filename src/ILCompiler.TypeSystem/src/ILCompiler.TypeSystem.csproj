@@ -304,6 +304,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaField.CodeGen.cs">
       <Link>Ecma\EcmaField.CodeGen.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaField.Serialization.cs">
+      <Link>Ecma\EcmaField.Serialization.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaGenericParameter.Sorting.cs">
       <Link>Ecma\EcmaGenericParameter.Sorting.cs</Link>
     </Compile>
@@ -312,6 +315,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaModule.Sorting.cs">
       <Link>Ecma\EcmaModule.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaType.Serialization.cs">
+      <Link>Ecma\EcmaType.Serialization.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaType.Sorting.cs">
       <Link>Ecma\EcmaType.Sorting.cs</Link>
@@ -522,6 +528,12 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\NativeStructType.cs">
       <Link>TypeSystem\Interop\IL\NativeStructType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Serialization\FieldDesc.Serialization.cs">
+      <Link>TypeSystem\CodeGen\FieldDesc.Serialization.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Serialization\TypeDesc.Serialization.cs">
+      <Link>TypeSystem\CodeGen\TypeDesc.Serialization.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Sorting\FieldDesc.Sorting.cs">
       <Link>TypeSystem\Sorting\FieldDesc.Sorting.cs</Link>

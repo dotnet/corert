@@ -468,7 +468,7 @@ namespace ILCompiler
 
             MetadataBlockingPolicy mdBlockingPolicy = _noMetadataBlocking 
                     ? (MetadataBlockingPolicy)new NoMetadataBlockingPolicy() 
-                    : new BlockedInternalsBlockingPolicy();
+                    : new BlockedInternalsBlockingPolicy(typeSystemContext);
 
             ManifestResourceBlockingPolicy resBlockingPolicy = new NoManifestResourceBlockingPolicy();
 
