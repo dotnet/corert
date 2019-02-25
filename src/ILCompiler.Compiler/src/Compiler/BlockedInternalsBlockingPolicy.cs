@@ -157,7 +157,7 @@ namespace ILCompiler
         {
             _blockedTypes = new BlockedTypeHashtable(_blockedModules);
 
-            ArrayOfTType = context.SystemModule.GetType("System", "Array`1");
+            ArrayOfTType = context.SystemModule.GetType("System", "Array`1", false);
             SerializationInfoType = context.SystemModule.GetType("System.Runtime.Serialization", "SerializationInfo", false);
             ISerializableType = context.SystemModule.GetType("System.Runtime.Serialization", "ISerializable", false);
         }
