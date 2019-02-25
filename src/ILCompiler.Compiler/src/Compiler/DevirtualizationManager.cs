@@ -58,10 +58,6 @@ namespace ILCompiler
         {
             Debug.Assert(declMethod.IsVirtual);
 
-            // Quick check: if decl matches impl, we're done.
-            if (declMethod.OwningType == implType)
-                return declMethod;
-
             // We're operating on virtual methods. This means that if implType is an array, we need
             // to get the type that has all the virtual methods provided by the class library.
             return ResolveVirtualMethod(declMethod, implType.GetClosestDefType());
@@ -69,6 +65,10 @@ namespace ILCompiler
 
         protected virtual MethodDesc ResolveVirtualMethod(MethodDesc declMethod, DefType implType)
         {
+            // Quick check: if decl matches impl, we're done.
+            if (declMethod.OwningType == implType)
+                return declMethod;
+
             MethodDesc impl;
 
             if (declMethod.OwningType.IsInterface)

@@ -1370,9 +1370,15 @@ namespace Internal.JitInterface
 
             Debug.Assert(pResult.compileTimeHandle != null);
 
-            if (runtimeLookup 
+            if (runtimeLookup
+                /* TODO: this Crossgen check doesn't pass for ThisObjGenericLookupTest when inlining
+                 * GenericLookup<object>.CheckInstanceTypeArg -> GetTypeName<object> because 
+                 * tokenContext is GenericLookup<object> which is an exact class. Crossgen doesn't hit
+                 * this code path as it properly propagates the object generic type argument to GetTypeName
+                 * and inlines the method too.
                     // Handle invalid IL - see comment in code:CEEInfo::ComputeRuntimeLookupForSharedGenericToken
-                    && ContextIsShared(pResolvedToken.tokenContext))
+                    && ContextIsShared(pResolvedToken.tokenContext)
+                */)
             {
                 DictionaryEntryKind entryKind = DictionaryEntryKind.EmptySlot;
                 switch (pResult.handleType)

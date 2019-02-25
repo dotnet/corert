@@ -55,5 +55,29 @@ namespace Internal.TypeSystem.Interop
 
             return false;
         }
+
+        public static bool IsManagedSequentialType(TypeDesc type)
+        {
+            type = type.UnderlyingType;
+            if (type.IsPrimitive || type.Category == TypeFlags.Pointer)
+            {
+                return true;
+            }
+            if (type.IsValueType)
+            {
+                foreach (FieldDesc field in type.GetFields())
+                {
+                    if (!field.IsStatic && !field.IsLiteral)
+                    {
+                        if (!IsManagedSequentialType(field.FieldType))
+                        {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
     }
 }
