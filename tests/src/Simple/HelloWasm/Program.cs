@@ -276,7 +276,7 @@ internal static class Program
 
         TestDispose();
 
-        TestGenericStruct();
+        TestInitObjDouble();
 
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
@@ -939,12 +939,11 @@ internal static class Program
         EndTest(disposable.Disposed);
     }
 
-    private static void TestGenericStruct()
+    private static void TestInitObjDouble()
     {
-        object t = new ValueTuple<int, int>();
-        object t2 = new ValueTuple<int, string>();
-        var hash = t.GetHashCode();
-        var hash2 = t2.GetHashCode();
+        StartTest("Init struct with double field test");
+        StructWithDouble strt = new StructWithDouble();
+        EndTest(strt.DoubleField == 0d);
     }
 
     [DllImport("*")]
@@ -1135,6 +1134,11 @@ public sealed class MySealedClass
         Program.PrintLine(_data.ToString());
         return _data.ToString();
     }
+}
+
+public struct StructWithDouble
+{
+    public double DoubleField;
 }
 
 public class Gen<T>
