@@ -215,7 +215,7 @@ namespace ILCompiler.DependencyAnalysis
                     constrainedType: null,
                     method.Token,
                     isUnboxingStub: false,
-                    isInstantiatingStub: false,
+                    isInstantiatingStub: method.Method.HasInstantiation,
                     signatureContext));
         }
 
