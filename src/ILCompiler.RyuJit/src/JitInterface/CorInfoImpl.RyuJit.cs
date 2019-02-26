@@ -1413,5 +1413,23 @@ namespace Internal.JitInterface
 
             ComputeLookup(ref pResolvedToken, target, helperId, ref pResult.lookup);
         }
+
+        private CORINFO_METHOD_STRUCT_* embedMethodHandle(CORINFO_METHOD_STRUCT_* handle, ref void* ppIndirection)
+        {
+            MethodDesc method = HandleToObject(handle);
+            ISymbolNode methodHandleSymbol = _compilation.NodeFactory.RuntimeMethodHandle(method);
+            CORINFO_METHOD_STRUCT_* result = (CORINFO_METHOD_STRUCT_*)ObjectToHandle(methodHandleSymbol);
+
+            if (methodHandleSymbol.RepresentsIndirectionCell)
+            {
+                ppIndirection = result;
+                return null;
+            }
+            else
+            {
+                ppIndirection = null;
+                return result;
+            }
+        }
     }
 }

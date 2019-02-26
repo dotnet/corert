@@ -150,7 +150,8 @@ namespace ILCompiler.DependencyAnalysis
             bool isInstantiatingStub,
             SignatureContext signatureContext)
         {
-            if (targetMethod == originalMethod)
+            bool isLocalMethod = CompilationModuleGroup.ContainsMethodBody(targetMethod, false);
+            if (targetMethod == originalMethod || isLocalMethod)
             {
                 constrainedType = null;
             }
@@ -159,7 +160,7 @@ namespace ILCompiler.DependencyAnalysis
             TypeAndMethod key = new TypeAndMethod(constrainedType, targetMethod, methodToken, isUnboxingStub, isInstantiatingStub);
             if (!_importMethods.TryGetValue(key, out methodImport))
             {
-                if (!CompilationModuleGroup.ContainsMethodBody(targetMethod, false))
+                if (!isLocalMethod)
                 {
                     // First time we see a given external method - emit indirection cell and the import entry
                     methodImport = new ExternalMethodImport(
