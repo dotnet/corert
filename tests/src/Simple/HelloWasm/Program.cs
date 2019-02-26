@@ -7,7 +7,6 @@ using System.Threading;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Collections;
 
 #if PLATFORM_WINDOWS
 using CpObj;
