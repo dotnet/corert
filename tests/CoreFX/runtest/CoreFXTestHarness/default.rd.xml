@@ -22,11 +22,17 @@
             <Type Name="System.AttributeUsageAttribute[]" Dynamic="Required All" />
             <Type Name="System.Runtime.InteropServices.ComVisibleAttribute" Dynamic="Required All" />
             <Type Name="System.CLSCompliantAttribute" Dynamic="Required All" />
+            <Type Name="System.Runtime.Serialization.SerializationInfo" Dynamic="Required All" />
         </Assembly>
+        <Assembly Name="System" />
         <Assembly Name="mscorlib">
             <Type Name="System.IO.File" Dynamic="Required All"/>
             <Type Name="System.Threading.ExecutionContext" Dynamic="Required All"/>
             <Type Name="System.Threading.ContextCallback" Dynamic="Required All"/>
+        </Assembly>
+        <Assembly Name="System.Core">
+            <Type Name="System.Collections.Generic.HashSet`1[[System.Int32, mscorlib]]" Dynamic="Required All"/>
+            <Type Name="System.Collections.Generic.HashSet`1[[System.Object, mscorlib]]" Dynamic="Required All"/>
         </Assembly>
         <Assembly Name="xunit.core" Dynamic="Required All" />
         <Assembly Name="xunit.runner.utility.dotnet" Dynamic="Required All" />
