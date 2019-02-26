@@ -5,7 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq.Expressions;
 using System.Numerics;
+using System.Reflection;
 using System.Text;
 
 internal class ClassWithStatic
@@ -146,6 +148,109 @@ internal class Program
     {
         Console.WriteLine(typeof(string).ToString());
         return true;
+    }
+
+    private static MethodInfo GetMethodInfo<T>(Expression<T> expr)
+    {
+        return ((MethodCallExpression)expr.Body).Method;
+    }
+
+    private static bool RuntimeMethodHandle()
+    {
+        {
+            MethodInfo mi = GetMethodInfo<Func<object, int, object>>((object p1, int p2) => RuntimeMethodHandleMethods.StaticMethod(p1, p2));
+            if (mi.Name != "StaticMethod")
+            {
+                Console.WriteLine($"Expected to find runtime method handle for StaticMethod but got {mi.Name}");
+                return false;
+            }
+        }
+        
+        var testClass = new RuntimeMethodHandleMethods();
+        {
+            MethodInfo mi = GetMethodInfo<Func<object, string, object>>((object p1, string p2) => testClass.InstanceMethod(p1, p2));
+            if (mi.Name != "InstanceMethod")
+            {
+                Console.WriteLine($"Expected to find runtime method handle for InstanceMethod but got {mi.Name}");
+                return false;
+            }
+        }
+        
+        
+        {
+            MethodInfo mi = GetMethodInfo<Func<string, object, object>>((string p1, object p2) => testClass.GenericMethod<string>(p1, p2));
+            if (mi.Name != "GenericMethod")
+            {
+                Console.WriteLine($"Expected to find runtime method handle for GenericMethod but got {mi.Name}");
+                return false;
+            }
+        }
+
+        {
+            MethodInfo mi = GetMethodInfo<Func<object, object, object>>((object p1, object p2) => GenericRuntimeMethodHandleMethods<object>.StaticMethod(p1, p2));
+            if (mi.Name != "StaticMethod")
+            {
+                Console.WriteLine($"Expected to find runtime method handle for StaticMethod but got {mi.Name}");
+                return false;
+            }
+        }
+
+        {
+            var genericTestClass = new GenericRuntimeMethodHandleMethods<Program>();
+            MethodInfo mi = GetMethodInfo<Func<Program, string, object>>((Program p1, string p2) => genericTestClass.InstanceMethod(p1, p2));
+            if (mi.Name != "InstanceMethod")
+            {
+                Console.WriteLine($"Expected to find runtime method handle for InstanceMethod but got {mi.Name}");
+                return false;
+            }
+        }
+
+        {
+            var genericTestClass = new GenericRuntimeMethodHandleMethods<string>();
+            MethodInfo mi = GetMethodInfo<Func<string, string, object>>((string p1, string p2) => genericTestClass.GenericMethod<string>(p1, p2));
+            if (mi.Name != "GenericMethod")
+            {
+                Console.WriteLine($"Expected to find runtime method handle for GenericMethod but got {mi.Name}");
+                return false;
+            }
+        }
+        return true;
+    }
+
+    class RuntimeMethodHandleMethods
+    {
+        public static object StaticMethod(object p1, int p2)
+        {
+            return new object();
+        }
+
+        public object InstanceMethod(object p1, string p2)
+        {
+            return p2;
+        }
+
+        public object GenericMethod<T>(T p1, object p2)
+        {
+            return p2;
+        }
+    }
+
+    class GenericRuntimeMethodHandleMethods<T>
+    {
+        public static object StaticMethod(T p1, object p2)
+        {
+            return p2;
+        }
+
+        public object InstanceMethod(T p1, string p2)
+        {
+            return p2;
+        }
+
+        public object GenericMethod<U>(T p1, U p2)
+        {
+            return p2;
+        }
     }
 
     private static bool ReadAllText()
@@ -990,6 +1095,7 @@ internal class Program
         RunTest("SharedGenericTlsNonGcStaticTest", SharedGenericTlsNonGcStaticTest());
         RunTest("VirtualDelegateLoadTest", VirtualDelegateLoadTest());
         RunTest("GVMTest", GVMTest());
+        RunTest("RuntimeMethodHandle", RuntimeMethodHandle());
 
         Console.WriteLine($@"{_passedTests.Count} tests pass:");
         foreach (string testName in _passedTests)
