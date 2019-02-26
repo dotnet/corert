@@ -5,7 +5,6 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Text;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -69,7 +68,6 @@ namespace Internal.JitInterface
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            StringBuilder output = new StringBuilder();
             if (Context is MethodDesc contextAsMethod)
             {
                 sb.Append(nameMangler.GetMangledMethodName(contextAsMethod));
