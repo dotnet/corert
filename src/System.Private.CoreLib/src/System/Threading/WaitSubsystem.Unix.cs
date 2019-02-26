@@ -290,7 +290,7 @@ namespace System.Threading
             Debug.Assert(waitHandles.Length <= WaitHandle.MaxWaitHandles);
             Debug.Assert(timeoutMilliseconds >= -1);
 
-            ThreadWaitInfo waitInfo = RuntimeThread.CurrentThread.WaitInfo;
+            ThreadWaitInfo waitInfo = Thread.CurrentThread.WaitInfo;
             WaitableObject[] waitableObjects = waitInfo.GetWaitedObjectArray(waitHandles.Length);
             bool success = false;
             try
