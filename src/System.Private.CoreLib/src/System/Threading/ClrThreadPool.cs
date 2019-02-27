@@ -58,7 +58,7 @@ namespace System.Threading
 
         private CacheLineSeparated _separated;
         private ulong _currentSampleStartTime;
-        private long _completionCount = 0;
+        private readonly ThreadInt64PersistentCounter _completionCounter = new ThreadInt64PersistentCounter();
         private int _threadAdjustmentIntervalMs;
 
         private LowLevelLock _hillClimbingThreadAdjustmentLock = new LowLevelLock();
@@ -193,12 +193,11 @@ namespace System.Threading
         }
 
         public int ThreadCount => ThreadCounts.VolatileReadCounts(ref _separated.counts).numExistingThreads;
-        public long CompletedWorkItemCount => Volatile.Read(ref _completionCount);
+        public long CompletedWorkItemCount => _completionCounter.Count;
 
         internal bool NotifyWorkItemComplete()
         {
-            // TODO: Check perf. Might need to make this thread-local.
-            Interlocked.Increment(ref _completionCount);
+            _completionCounter.Increment();
             Volatile.Write(ref _separated.lastDequeueTime, Environment.TickCount);
             
             if (ShouldAdjustMaxWorkersActive() && _hillClimbingThreadAdjustmentLock.TryAcquire())
@@ -224,7 +223,7 @@ namespace System.Threading
         {
             _hillClimbingThreadAdjustmentLock.VerifyIsLocked();
             int currentTicks = Environment.TickCount;
-            int totalNumCompletions = (int)Volatile.Read(ref _completionCount);
+            int totalNumCompletions = (int)_completionCounter.Count;
             int numCompletions = totalNumCompletions - _separated.priorCompletionCount;
             ulong startTime = _currentSampleStartTime;
             ulong endTime = HighPerformanceCounter.TickCount;

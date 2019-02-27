@@ -249,13 +249,15 @@ namespace System.Threading
 
         #region Metrics
 
-        private static long s_lockContentionCount;
-        internal static void IncrementLockContentionCount() => Interlocked.Increment(ref s_lockContentionCount);
+        private static readonly ThreadInt64PersistentCounter s_lockContentionCounter = new ThreadInt64PersistentCounter();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void IncrementLockContentionCount() => s_lockContentionCounter.Increment();
 
         /// <summary>
         /// Gets the number of times there was contention upon trying to take a <see cref="Monitor"/>'s lock so far.
         /// </summary>
-        public static long LockContentionCount => Volatile.Read(ref s_lockContentionCount);
+        public static long LockContentionCount => s_lockContentionCounter.Count;
 
         #endregion
     }

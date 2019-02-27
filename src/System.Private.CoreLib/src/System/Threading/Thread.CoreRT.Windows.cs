@@ -336,7 +336,7 @@ namespace System.Threading
         private static void InitializeExistingThreadPoolThread()
         {
             InitializeCom();
-            RuntimeImports.RhSetIsThreadPoolThread();
+            ThreadPool.InitializeForThreadPoolThread();
         }
 
         public void Interrupt() { throw new PlatformNotSupportedException(); }
