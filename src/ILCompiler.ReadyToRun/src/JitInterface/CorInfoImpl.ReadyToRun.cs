@@ -589,6 +589,10 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.EndCatch;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
+                case CorInfoHelpFunc.CORINFO_HELP_INITINSTCLASS:
+                    throw new RequiresRuntimeJitException(ftnNum.ToString());
+
                 default:
                     throw new NotImplementedException(ftnNum.ToString());
             }
@@ -1463,6 +1467,13 @@ namespace Internal.JitInterface
 
                 pResult.lookup.constLookup = CreateConstLookupToSymbol(symbolNode);
             }
+        }
+
+        private CORINFO_METHOD_STRUCT_* embedMethodHandle(CORINFO_METHOD_STRUCT_* handle, ref void* ppIndirection)
+        {
+            // TODO: READYTORUN FUTURE: Handle this case correctly
+            MethodDesc methodDesc = HandleToObject(handle);
+            throw new RequiresRuntimeJitException("embedMethodHandle: " + methodDesc.ToString());
         }
     }
 }

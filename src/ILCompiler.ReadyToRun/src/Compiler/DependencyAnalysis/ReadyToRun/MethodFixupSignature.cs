@@ -80,13 +80,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 sb.Append(" [INST]");
             }
             sb.Append(": ");
-            sb.Append(_methodDesc.Signature.ReturnType.ToString());
-            sb.Append(" ");
-            sb.Append(_methodDesc.ToString());
+            sb.Append(nameMangler.GetMangledMethodName(_methodDesc));
             if (_constrainedType != null)
             {
                 sb.Append(" @ ");
-                sb.Append(_constrainedType.ToString());
+                sb.Append(nameMangler.GetMangledTypeName(_constrainedType));
             }
             if (!_methodToken.IsNull)
             {
