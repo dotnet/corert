@@ -1,0 +1,34 @@
+parameters:
+  buildConfig: ''
+  archType: ''
+  osGroup: ''
+  osIdentifier: ''
+  timeoutInMinutes: ''
+
+### Product build
+jobs:
+- template: xplat-job.yml
+  parameters:
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osIdentifier: ${{ parameters.osIdentifier }}
+
+    # Compute job name from template parameters
+    name: ${{ format('build_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+    displayName: ${{ format('Build {0} {1} {2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+
+    variables:
+    - name: osIdentifier
+      value: ${{ parameters.osIdentifier }}
+
+    steps:
+
+    # Build
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - script: build.cmd $(buildConfig) skiptests
+        displayName: Build product
+
+
