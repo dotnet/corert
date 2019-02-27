@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -65,7 +66,17 @@ namespace Internal.JitInterface
 
         public override int GetHashCode() => Context.GetHashCode();
 
-        public override string ToString() => Context.ToString();
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            if (Context is MethodDesc contextAsMethod)
+            {
+                sb.Append(nameMangler.GetMangledMethodName(contextAsMethod));
+            }
+            else
+            {
+                sb.Append(nameMangler.GetMangledTypeName(ContextType));
+            }
+        }
     }
 
     public class RequiresRuntimeJitException : Exception

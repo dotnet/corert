@@ -134,7 +134,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 RuntimeDeterminedTypeHelper.WriteTo(_fieldArgument, sb);
             }
             sb.Append(" (");
-            sb.Append(_methodContext.ToString());
+            _methodContext.AppendMangledName(nameMangler, sb);
             sb.Append(")");
         }
 
