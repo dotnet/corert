@@ -22,7 +22,7 @@ namespace System.Threading
         [ThreadStatic]
         private static Thread t_currentThread;
 
-        private ExecutionContext _executionContext;
+        internal ExecutionContext _executionContext;
         private SynchronizationContext _synchronizationContext;
 
         private volatile int _threadState;
@@ -144,11 +144,7 @@ namespace System.Threading
             return !GetThreadStateBit(ThreadState.Unstarted);
         }
 
-        internal ExecutionContext ExecutionContext
-        {
-            get { return _executionContext; }
-            set { _executionContext = value; }
-        }
+        public ExecutionContext ExecutionContext => ExecutionContext.Capture();
 
         internal SynchronizationContext SynchronizationContext
         {
