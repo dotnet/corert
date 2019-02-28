@@ -41,7 +41,7 @@ namespace ReadyToRun.SuperIlc
                 new Option(new [] {"--input-directory", "-in"}, "Folder containing assemblies to optimize", new Argument<DirectoryInfo>().ExistingOnly());
 
             Option OutputDirectory() =>
-                new Option(new [] {"--output-directory", "-out"}, "Folder to emit compiled assemblies", new Argument<DirectoryInfo>());
+                new Option(new [] {"--output-directory", "-out"}, "Folder to emit compiled assemblies", new Argument<DirectoryInfo>().LegalFilePathsOnly());
 
             Option UseCrossgen() =>
                 new Option("--crossgen", "Compile with CoreCLR Crossgen", new Argument<bool>());
