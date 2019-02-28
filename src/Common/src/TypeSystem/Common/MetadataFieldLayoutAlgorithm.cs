@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -447,7 +446,7 @@ namespace Internal.TypeSystem
                 }
                 else
                 {                    
-                    Debug.Assert(fieldType.IsPrimitive || fieldType.IsPointer || fieldType.IsFunctionPointer);
+                    Debug.Assert(fieldType.IsPrimitive || fieldType.IsPointer || fieldType.IsFunctionPointer || fieldType.IsEnum);
 
                     var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, packingSize);
                     instanceNonGCPointerFieldsCount[CalculateLog2(fieldSizeAndAlignment.Size.AsInt)]++;
@@ -686,7 +685,7 @@ namespace Internal.TypeSystem
 
         private static bool IsByValueClass(TypeDesc type)
         {
-            return type.IsValueType && !type.IsPrimitive;
+            return type.IsValueType && !type.IsPrimitive && !type.IsEnum;
         }
 
         private static LayoutInt ComputeBytesUsedInParentType(DefType type)
