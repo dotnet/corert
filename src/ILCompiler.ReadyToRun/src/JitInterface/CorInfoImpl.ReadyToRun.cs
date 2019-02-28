@@ -792,6 +792,8 @@ namespace Internal.JitInterface
             out TypeDesc constrainedType,
             out MethodDesc originalMethod,
             out TypeDesc exactType,
+            out MethodDesc callerMethod,
+            out EcmaModule callerModule,
             out bool useInstantiatingStub)
         {
 #if DEBUG
@@ -804,6 +806,16 @@ namespace Internal.JitInterface
 
             originalMethod = HandleToObject(pResolvedToken.hMethod);
             TypeDesc type = HandleToObject(pResolvedToken.hClass);
+
+            callerMethod = HandleToObject(callerHandle);
+            if (!_compilation.NodeFactory.CompilationModuleGroup.ContainsMethodBody(callerMethod, unboxingStub: false))
+            {
+                // We must abort inline attempts calling from outside of the version bubble being compiled
+                // because we have no way to remap the token relative to the external module to the current version bubble.
+                throw new RequiresRuntimeJitException(callerMethod.ToString() + " -> " + originalMethod.ToString());
+            }
+
+            callerModule = ((EcmaMethod)callerMethod.GetTypicalMethodDefinition()).Module;
 
             // Spec says that a callvirt lookup ignores static methods. Since static methods
             // can't have the exact same signature as instance methods, a lookup that found
@@ -948,8 +960,6 @@ namespace Internal.JitInterface
                 // we have to apply more restrictive rules
                 // These rules are related to the "inlining rules" as far as the
                 // boundaries of a version bubble are concerned.
-                MethodDesc callerMethod = HandleToObject(callerHandle);
-
                 if (!_compilation.NodeFactory.CompilationModuleGroup.ContainsMethodBody(callerMethod, unboxingStub: false) ||
                     !_compilation.NodeFactory.CompilationModuleGroup.ContainsMethodBody(targetMethod, unboxingStub: false))
                 {
@@ -1056,7 +1066,6 @@ namespace Internal.JitInterface
                 // We'll special virtual calls to target methods in the corelib assembly when compiling in R2R mode, and generate fragile-NI-like callsites for improved performance. We
                 // can do that because today we'll always service the corelib assembly and the runtime in one bundle. Any caller in the corelib version bubble can benefit from this
                 // performance optimization.
-                MethodDesc callerMethod = HandleToObject(callerHandle);
                 if (!MethodInSystemVersionBubble(callerMethod) || !MethodInSystemVersionBubble(targetMethod))
                 {
                     pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB;
@@ -1114,6 +1123,8 @@ namespace Internal.JitInterface
             TypeDesc constrainedType;
             MethodDesc originalMethod;
             TypeDesc exactType;
+            MethodDesc callerMethod;
+            EcmaModule callerModule;
             bool useInstantiatingStub;
             ceeInfoGetCallInfo(
                 ref pResolvedToken, 
@@ -1126,6 +1137,8 @@ namespace Internal.JitInterface
                 out constrainedType, 
                 out originalMethod, 
                 out exactType,
+                out callerMethod,
+                out callerModule,
                 out useInstantiatingStub);
 
             if (pResult->thisTransform == CORINFO_THIS_TRANSFORM.CORINFO_BOX_THIS)
@@ -1147,7 +1160,7 @@ namespace Internal.JitInterface
 
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.SymbolNodeFactory.InterfaceDispatchCell(targetMethod,
-                            new ModuleToken(_tokenContext, (mdToken)pResolvedToken.token),
+                            new ModuleToken(callerModule, (mdToken)pResolvedToken.token),
                             _signatureContext,
                             isUnboxingStub: false,
                             _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled).ToString()));
@@ -1172,7 +1185,7 @@ namespace Internal.JitInterface
                         // READYTORUN: FUTURE: Direct calls if possible
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.NodeFactory.ImportedMethodNode(methodToCall, constrainedType, originalMethod,
-                            new ModuleToken(_tokenContext, pResolvedToken.token),
+                            new ModuleToken(callerModule, pResolvedToken.token),
                             isUnboxingStub: false,
                             isInstantiatingStub: useInstantiatingStub,
                             _signatureContext));
@@ -1190,7 +1203,7 @@ namespace Internal.JitInterface
                         bool atypicalCallsite = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ATYPICAL_CALLSITE) != 0;
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.NodeFactory.DynamicHelperCell(
-                                new MethodWithToken(targetMethod, new ModuleToken(_tokenContext, pResolvedToken.token)),
+                                new MethodWithToken(targetMethod, new ModuleToken(callerModule, pResolvedToken.token)),
                                 _signatureContext));
 
                         Debug.Assert(!pResult->sig.hasTypeArg());
@@ -1218,7 +1231,7 @@ namespace Internal.JitInterface
                     {
                         pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.ReadyToRunHelper(
                             ReadyToRunHelperId.MethodDictionary,
-                            new MethodWithToken(targetMethod, new ModuleToken(_tokenContext, pResolvedToken.token)),
+                            new MethodWithToken(targetMethod, new ModuleToken(callerModule, pResolvedToken.token)),
                             signatureContext: _signatureContext));
                     }
                     else
