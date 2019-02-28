@@ -60,12 +60,7 @@ namespace ILCompiler
 
             // We're operating on virtual methods. This means that if implType is an array, we need
             // to get the type that has all the virtual methods provided by the class library.
-            return ResolveVirtualMethod(declMethod, GetClosestDefType(implType));
-        }
-
-        protected virtual DefType GetClosestDefType(TypeDesc type)
-        {
-            return type.GetClosestDefType();
+            return ResolveVirtualMethod(declMethod, implType.GetClosestDefType());
         }
 
         protected virtual MethodDesc ResolveVirtualMethod(MethodDesc declMethod, DefType implType)

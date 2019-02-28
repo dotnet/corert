@@ -25,15 +25,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return _compilationModuleGroup.ContainsMethodBody(method, unboxingStub: false) && base.IsEffectivelySealed(method);
         }
 
-        protected override DefType GetClosestDefType(TypeDesc type)
-        {
-            if (type.IsArray)
-            {
-                return type.Context.GetWellKnownType(WellKnownType.Array);
-            }
-            return (DefType)type;
-        }
-
         protected override MethodDesc ResolveVirtualMethod(MethodDesc declMethod, DefType implType)
         {
             if (_compilationModuleGroup.ContainsMethodBody(declMethod, unboxingStub: false) &&
