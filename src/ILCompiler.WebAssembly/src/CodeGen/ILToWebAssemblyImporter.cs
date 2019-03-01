@@ -2059,14 +2059,7 @@ namespace Internal.IL
 
         void AddDependencyForMethodCall(MethodDesc callee, ILOpcode opcode)
         {
-            if (opcode == ILOpcode.callvirt && callee.IsVirtual)
-            {
-                if (!callee.HasInstantiation)
-                {
-                    AddVirtualMethodReference(callee);
-                }
-            }
-            else if (callee != null)
+            if (callee != null && !(opcode == ILOpcode.callvirt && callee.IsVirtual))
             {
                 AddMethodReference(callee);
             }
@@ -2151,10 +2144,6 @@ namespace Internal.IL
             _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(method));
         }
 
-        private void AddVirtualMethodReference(MethodDesc method)
-        {
-            _dependencies.Add(_compilation.NodeFactory.VirtualMethodUse(method));
-        }
         static Dictionary<string, MethodDesc> _pinvokeMap = new Dictionary<string, MethodDesc>();
         private void ImportRawPInvoke(MethodDesc method)
         {
@@ -2424,7 +2413,6 @@ namespace Internal.IL
                 if (method.IsVirtual)
                 {
                     targetLLVMFunction = LLVMFunctionForMethod(method, thisPointer, true, null);
-                    AddVirtualMethodReference(method);
                 }
                 else
                 {

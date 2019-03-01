@@ -18,6 +18,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(targetMethod.IsVirtual);
             Debug.Assert(!targetMethod.IsSharedByGenericInstantiations);
+            Debug.Assert(!targetMethod.HasInstantiation);
             _targetMethod = targetMethod;
         }
 
@@ -44,7 +45,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList result = new DependencyList();
 
-            if (!factory.VTable(_targetMethod.OwningType).HasFixedSlots && !_targetMethod.HasInstantiation)
+            if (!factory.VTable(_targetMethod.OwningType).HasFixedSlots)
             {
                 result.Add(factory.VirtualMethodUse(_targetMethod), "VTable method use");
             }
