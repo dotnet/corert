@@ -275,7 +275,7 @@ internal static class Program
 
         TestDispose();
 
-        TestGenericVirtualMethodCall();
+        TestCallToGenericInterfaceMethod();
 
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
@@ -814,9 +814,9 @@ internal static class Program
         return result;
     }
 
-    private static void TestGenericVirtualMethodCall()
+    private static void TestCallToGenericInterfaceMethod()
     {
-        StartTest("Call generic virtual method test");
+        StartTest("Call generic method on interface test");
 
         TestGenItf implInt = new TestGenItf();
         implInt.Log<object>(new object());
