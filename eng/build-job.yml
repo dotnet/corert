@@ -26,6 +26,13 @@ jobs:
 
     steps:
 
+    # Install native dependencies
+    # TODO: add installation logic for non Windows platorms
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      # Necessary to install python
+      - script: eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
+        displayName: Install native dependencies
+
     # Build
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - script: build.cmd $(buildConfig) skiptests
