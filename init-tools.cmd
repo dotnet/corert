@@ -11,7 +11,7 @@ set /P BUILDTOOLS_VERSION=< "%~dp0BuildToolsVersion.txt"
 set BUILD_TOOLS_PATH=%PACKAGES_DIR%\Microsoft.DotNet.BuildTools\%BUILDTOOLS_VERSION%\lib
 set INIT_TOOLS_RESTORE_PROJECT=%~dp0init-tools.msbuild
 set BUILD_TOOLS_SEMAPHORE_DIR=%TOOLRUNTIME_DIR%\%BUILDTOOLS_VERSION%
-set BUILD_TOOLS_SEMAPHORE=%BUILD_TOOLS_SEMAPHORE_DIR%\init-tools.completed_
+set BUILD_TOOLS_SEMAPHORE=%BUILD_TOOLS_SEMAPHORE_DIR%\init-tools.completed
 
 :: if force option is specified then clean the tool runtime and build tools package directory to force it to get recreated
 if [%1]==[force] (
@@ -19,12 +19,33 @@ if [%1]==[force] (
   if exist "%PACKAGES_DIR%\Microsoft.DotNet.BuildTools" rmdir /S /Q "%PACKAGES_DIR%\Microsoft.DotNet.BuildTools"
 )
 
-:: If semaphore exists do nothing
-if exist "%BUILD_TOOLS_SEMAPHORE%" (
-  echo Tools are already initialized.
+if not exist "%BUILD_TOOLS_SEMAPHORE%" (
+  goto :restorebuildtools
+)
+
+::
+:: The init tools semaphore stores the most-recent git commit hash of this file.
+:: When changes to this file are synced, init-tools will refresh the existing tools.
+::
+git rev-list -1 HEAD init-tools.cmd > %BUILD_TOOLS_SEMAPHORE_DIR%\current
+if ERRORLEVEL 1 (
+  echo ERROR: Could not determine most recent commit hash for init-tools.cmd
+  exit /b 1
+)
+
+set /p INIT_TOOLS_CURRENT_HASH=<"%BUILD_TOOLS_SEMAPHORE_DIR%\current"
+echo Current build tools script hash is %INIT_TOOLS_CURRENT_HASH%
+set /p INIT_TOOLS_LAST_RESTORE_HASH=<"%BUILD_TOOLS_SEMAPHORE%"
+echo Last build tools restore hash is %INIT_TOOLS_LAST_RESTORE_HASH%
+
+:: Skip restore if init-tools.cmd's most recent commit hash matches the hash
+:: in the semaphore file.
+if "%INIT_TOOLS_CURRENT_HASH%"=="%INIT_TOOLS_LAST_RESTORE_HASH%" (
+  echo Tools are up to date
   goto :EOF
 )
 
+:restorebuildtools
 if exist "%TOOLRUNTIME_DIR%" rmdir /S /Q "%TOOLRUNTIME_DIR%"
 
 if exist "%DotNetBuildToolsDir%" (
@@ -38,7 +59,7 @@ if exist "%DotNetBuildToolsDir%" (
 
   echo Done initializing tools.
   if NOT exist "%BUILD_TOOLS_SEMAPHORE_DIR%" mkdir "%BUILD_TOOLS_SEMAPHORE_DIR%"
-  echo Using tools from '%DotNetBuildToolsDir%'. > "%BUILD_TOOLS_SEMAPHORE%"
+  echo %INIT_TOOLS_CURRENT_HASH%> "%BUILD_TOOLS_SEMAPHORE%"
   exit /b 0
 )
 
@@ -114,7 +135,14 @@ Robocopy "%PACKAGES_DIR%\Microsoft.Net.Compilers\%ROSLYNCOMPILERS_VERSION%\." "%
 :: Create semaphore file
 echo Done initializing tools.
 if NOT exist "%BUILD_TOOLS_SEMAPHORE_DIR%" mkdir "%BUILD_TOOLS_SEMAPHORE_DIR%"
-echo Init-Tools.cmd completed for BuildTools Version: %BUILDTOOLS_VERSION% > "%BUILD_TOOLS_SEMAPHORE%"
+
+:: Save init-tools.cmd's commit hash to the semaphore. After pulling / changes branches,
+:: if this file has been altered it will trigger a restore of the build tools
+git rev-list -1 HEAD init-tools.cmd > "%BUILD_TOOLS_SEMAPHORE%"
+if ERRORLEVEL 1 (
+  echo ERROR: Could not determine most recent commit hash for init-tools.cmd
+  exit /b 1
+)
 exit /b 0
 
 :error
