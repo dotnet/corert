@@ -2935,4 +2935,10 @@
   <data name="Argument_PrecisionTooLarge" xml:space="preserve">
     <value>Precision cannot be larger than {0}.</value>
   </data>
+  <data name="Serialization_DangerousDeserialization" xml:space="preserve">
+    <value>An action was attempted during deserialization that could lead to a security vulnerability. The action has been aborted.</value>
+  </data>
+  <data name="Serialization_DangerousDeserialization_Switch" xml:space="preserve">
+    <value>An action was attempted during deserialization that could lead to a security vulnerability. The action has been aborted. To allow the action, set the '{0}' AppContext switch to true.</value>
+  </data>
 </root>
