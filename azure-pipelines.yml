@@ -62,4 +62,5 @@ jobs:
     parameters:
       jobTemplate: build-job.yml
       buildConfig: debug
-      timeoutInMinutes: 180
+      jobParameters:
+        timeoutInMinutes: 180
