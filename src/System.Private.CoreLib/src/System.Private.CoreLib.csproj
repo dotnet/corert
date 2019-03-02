@@ -45,6 +45,10 @@
     <FeaturePortableThreadPool Condition="'$(TargetsUnix)' == 'true'">true</FeaturePortableThreadPool>
   </PropertyGroup>
   <PropertyGroup>
+    <FeaturePortableTimer Condition="'$(FeaturePortableTimer)' == ''">false</FeaturePortableTimer>
+    <FeaturePortableTimer Condition="'$(TargetsUnix)' == 'true'">true</FeaturePortableTimer>
+  </PropertyGroup>
+  <PropertyGroup>
     <FeatureHardwareIntrinsics Condition="'$(IsProjectNLibrary)' != 'true'">true</FeatureHardwareIntrinsics>
   </PropertyGroup>
   <PropertyGroup>
@@ -463,7 +467,6 @@
     <Compile Include="System\Threading\LowLevelMonitor.Unix.cs" />
     <Compile Include="System\Threading\Mutex.Unix.cs" />
     <Compile Include="System\Threading\Semaphore.Unix.cs" />
-    <Compile Include="System\Threading\Timer.Unix.cs" />
     <Compile Include="System\Threading\Thread.CoreRT.Unix.cs" />
     <Compile Include="System\Threading\WaitHandle.Unix.cs" />
     <Compile Include="System\Threading\WaitSubsystem.HandleManager.Unix.cs" />
