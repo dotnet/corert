@@ -19,11 +19,8 @@ namespace System.Threading
         // Bits of _threadState that are returned by the ThreadState property
         private const ThreadState PublicThreadStateMask = (ThreadState)0x1FF;
 
-        [ThreadStatic]
-        private static Thread t_currentThread;
-
         internal ExecutionContext _executionContext;
-        private SynchronizationContext _synchronizationContext;
+        internal SynchronizationContext _synchronizationContext;
 
         private volatile int _threadState;
         private ThreadPriority _priority;
@@ -60,14 +57,6 @@ namespace System.Threading
         public void Create(ParameterizedThreadStart start) => SetStartHelper(start, 0);
         public void Create(ParameterizedThreadStart start, int maxStackSize) => SetStartHelper(start, maxStackSize);
 
-        public static Thread CurrentThread
-        {
-            get
-            {
-                return t_currentThread ?? InitializeExistingThread(false);
-            }
-        }
-
         internal static ulong CurrentOSThreadId
         {
             get
@@ -75,6 +64,10 @@ namespace System.Threading
                 return RuntimeImports.RhCurrentOSThreadId();
             }
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Thread InitializeCurrentThread()
+            => InitializeExistingThread(false);
 
         // Slow path executed once per thread
         private static Thread InitializeExistingThread(bool threadPoolThread)
@@ -142,14 +135,6 @@ namespace System.Threading
         private bool HasStarted()
         {
             return !GetThreadStateBit(ThreadState.Unstarted);
-        }
-
-        public ExecutionContext ExecutionContext => ExecutionContext.Capture();
-
-        internal SynchronizationContext SynchronizationContext
-        {
-            get { return _synchronizationContext; }
-            set { _synchronizationContext = value; }
         }
 
         public bool IsAlive
@@ -226,20 +211,9 @@ namespace System.Threading
 
         public int ManagedThreadId => _managedThreadId.Id;
 
-        public string Name
+        partial void ThreadNameChanged(string value)
         {
-            get
-            {
-                return _name;
-            }
-            set
-            {
-                if (Interlocked.CompareExchange(ref _name, value, null) != null)
-                {
-                    throw new InvalidOperationException(SR.InvalidOperation_WriteOnce);
-                }
-                // TODO: Inform the debugger and the profiler
-            }
+            // TODO: Inform the debugger and the profiler
         }
 
         public ThreadPriority Priority
