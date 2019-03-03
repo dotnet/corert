@@ -177,7 +177,7 @@
     <Compile Include="System\Reflection\MethodBase.CoreRT.cs" />
     <Compile Include="System\Runtime\InteropServices\CriticalHandle.CoreRT.cs" />
     <Compile Include="System\__Canon.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
-    <Compile Include="System\Activator.cs" />
+    <Compile Include="System\Activator.CoreRT.cs" />
     <Compile Include="System\AppContext.CoreRT.cs" />
     <Compile Include="System\AppContextConfigHelper.cs" />
     <Compile Include="System\Buffer.cs" />
