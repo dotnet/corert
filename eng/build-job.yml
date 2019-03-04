@@ -38,10 +38,13 @@ jobs:
         displayName: Build product
       - script: tests\runtest.cmd $(buildConfig)
         displayName: Run simple CoreRT tests
-      - script: tests\runtest.cmd $(buildConfig) /multimodule
-        displayName: Run simple CoreRT tests in the MultiModule mode
-      - script: tests\runtest.cmd $(buildConfig) /coreclr Top200
-        displayName: Run CoreCLR Top200 tests
+      - ${{ if eq(parameters.buildConfig, 'Debug') }}:
+        - script: tests\runtest.cmd $(buildConfig) /multimodule
+          displayName: Run simple CoreRT tests in the MultiModule mode
+        - script: tests\runtest.cmd $(buildConfig) /coreclr ReadyToRun /mode ReadyToRun
+          displayName: Run basic ReadyToRun tests
+        - script: tests\runtest.cmd $(buildConfig) /coreclr Top200
+          displayName: Run CoreCLR Top200 tests
 
     - task: PublishTestResults@2
       inputs:

@@ -64,3 +64,14 @@ jobs:
       buildConfig: debug
       jobParameters:
         timeoutInMinutes: 180
+
+#
+# Release build (Pull request)
+#
+- ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.DefinitionName'], 'corert-ci')) }}:
+  - template: eng/platform-matrix.yml
+    parameters:
+      jobTemplate: build-job.yml
+      buildConfig: release
+      jobParameters:
+        timeoutInMinutes: 180
