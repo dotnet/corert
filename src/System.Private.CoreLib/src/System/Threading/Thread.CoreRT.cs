@@ -137,6 +137,12 @@ namespace System.Threading
             return !GetThreadStateBit(ThreadState.Unstarted);
         }
 
+        internal SynchronizationContext SynchronizationContext
+        {
+            get { return _synchronizationContext; }
+            set { _synchronizationContext = value; }
+        }
+
         public bool IsAlive
         {
             get
