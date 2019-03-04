@@ -94,6 +94,12 @@ internal static class Program
         int divResult = tempInt / 3;
         EndTest(divResult == 3);
 
+        StartTest("Addition of byte and short test");
+        byte aByte = 2;
+        short aShort = 0x100;
+        short byteAndShortResult = (short)(aByte + aShort);
+        EndTest(byteAndShortResult == 0x102);
+
         StartTest("not test");
         var not = Not(0xFFFFFFFF) == 0x00000000;
         EndTest(not);
@@ -113,6 +119,11 @@ internal static class Program
         StartTest("unsignedShift test");
         var unsignedShift = UnsignedShift(0xFFFFFFFFu, 4) == 0x0FFFFFFFu;
         EndTest(unsignedShift);
+
+        StartTest("shiftLeft byte to short test");
+        byte byteConstant = (byte)0x80;
+        ushort shiftedToShort = (ushort)(byteConstant << 1);
+        EndTest((int)shiftedToShort == 0x0100);
 
         StartTest("SwitchOp0 test");
         var switchTest0 = SwitchOp(5, 5, 0);

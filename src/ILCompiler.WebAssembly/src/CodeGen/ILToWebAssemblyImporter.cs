@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-
 using Internal.TypeSystem;
 using ILCompiler;
 using LLVMSharp;
@@ -2755,6 +2754,8 @@ namespace Internal.IL
             }
             else
             {
+                // these ops return an int32 for these.
+                type = WidenBytesAndShorts(type);
                 switch (opcode)
                 {
                     case ILOpcode.add:
@@ -2816,6 +2817,20 @@ namespace Internal.IL
             PushExpression(kind, "binop", result, type);
         }
 
+        private TypeDesc WidenBytesAndShorts(TypeDesc type)
+        {
+            switch (type.Category)
+            {
+                case TypeFlags.Byte:
+                case TypeFlags.SByte:
+                case TypeFlags.Int16:
+                case TypeFlags.UInt16:
+                    return GetWellKnownType(WellKnownType.Int32);
+                default:
+                    return type;
+            }
+        }
+
         private void ImportShiftOperation(ILOpcode opcode)
         {
             LLVMValueRef result;
@@ -2849,7 +2864,7 @@ namespace Internal.IL
                     throw new InvalidOperationException(); // Should be unreachable
             }
 
-            PushExpression(valueToShift.Kind, "shiftop", result, valueToShift.Type);
+            PushExpression(valueToShift.Kind, "shiftop", result, WidenBytesAndShorts(valueToShift.Type));
         }
 
         bool TypeNeedsSignExtension(TypeDesc targetType)
