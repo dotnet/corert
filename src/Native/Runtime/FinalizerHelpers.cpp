@@ -9,8 +9,12 @@
 #include "gcenv.h"
 #include "gcheaputilities.h"
 
+#include "slist.h"
 #include "gcrhinterface.h"
+#include "RWLock.h"
+#include "RuntimeInstance.h"
 #include "shash.h"
+#include "module.h"
 
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
