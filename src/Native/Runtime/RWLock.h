@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#ifndef __RWLock_h__
+#define __RWLock_h__
+
 class ReaderWriterLock
 {
     volatile Int32  m_RWLock;       // lock used for R/W synchronization
@@ -53,3 +56,4 @@ protected:
 
 };
 
+#endif // __RWLock_h__
