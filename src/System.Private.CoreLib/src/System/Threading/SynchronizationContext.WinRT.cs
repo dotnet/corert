@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using Internal.Runtime.Augments;
 
 namespace System.Threading
 {
@@ -16,7 +17,7 @@ namespace System.Threading
         {
             get
             {
-                return Thread.CurrentThread.SynchronizationContext ?? GetWinRTContext();
+                return Thread.CurrentThread._synchronizationContext ?? GetWinRTContext();
             }
         }
 
@@ -74,7 +75,7 @@ namespace System.Threading
 
             private void InvokeCore()
             {
-                SynchronizationContext prevSyncCtx = Thread.CurrentThread.SynchronizationContext;
+                SynchronizationContext prevSyncCtx = Thread.CurrentThread._synchronizationContext;
                 try
                 {
                     m_callback(m_state);
@@ -91,7 +92,7 @@ namespace System.Threading
                 }
                 finally
                 {
-                    Thread.CurrentThread.SynchronizationContext = prevSyncCtx;
+                    Thread.CurrentThread._synchronizationContext = prevSyncCtx;
                 }
             }
         }
