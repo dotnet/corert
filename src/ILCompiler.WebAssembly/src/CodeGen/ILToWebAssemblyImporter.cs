@@ -3428,7 +3428,7 @@ namespace Internal.IL
                 LLVM.BuildStore(_builder, LLVM.ConstInt(llvmType, 0, LLVMMisc.False), valueEntry.ValueAsType(LLVM.PointerType(llvmType, 0), _builder));
             else if (llvmType.TypeKind == LLVMTypeKind.LLVMPointerTypeKind)
                 LLVM.BuildStore(_builder, LLVM.ConstNull(llvmType), valueEntry.ValueAsType(LLVM.PointerType(llvmType, 0), _builder));
-            else if (llvmType.TypeKind == LLVMTypeKind.LLVMFloatTypeKind)
+            else if (llvmType.TypeKind == LLVMTypeKind.LLVMFloatTypeKind || llvmType.TypeKind == LLVMTypeKind.LLVMDoubleTypeKind)
                 LLVM.BuildStore(_builder, LLVM.ConstReal(llvmType, 0.0), valueEntry.ValueAsType(LLVM.PointerType(llvmType, 0), _builder));
             else
                 throw new NotImplementedException();
