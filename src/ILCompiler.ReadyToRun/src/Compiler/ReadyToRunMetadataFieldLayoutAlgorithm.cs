@@ -674,7 +674,7 @@ namespace ILCompiler
 
         protected override ComputedInstanceFieldLayout ComputeInstanceFieldLayout(MetadataType type, int numInstanceFields)
         {
-            if (type.IsValueType && MarshalUtils.IsBlittableType(type))
+            if (type.IsValueType && (MarshalUtils.IsBlittableType(type) || MarshalUtils.IsManagedSequentialType(type)))
             {
                 return ComputeSequentialFieldLayout(type, numInstanceFields);
             }

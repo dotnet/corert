@@ -142,7 +142,7 @@ if [ ! -e $__INIT_TOOLS_DONE_MARKER ]; then
 
         # Restore a custom RoslynToolset since we can't trivially update the BuildTools dependency in CoreRT
         echo "Configuring RoslynToolset..."
-        __ROSLYNCOMPILER_VERSION=3.0.0-beta3-final
+        __ROSLYNCOMPILER_VERSION=3.0.0-beta4-final
         __DEFAULT_RESTORE_ARGS="--no-cache --packages \"${__PACKAGES_DIR}\""
         __INIT_TOOLS_RESTORE_ARGS="${__DEFAULT_RESTORE_ARGS} --source https://dotnet.myget.org/F/dotnet-buildtools/api/v3/index.json --source https://api.nuget.org/v3/index.json ${__INIT_TOOLS_RESTORE_ARGS:-}"
         __PORTABLETARGETS_PROJECT_CONTENT="

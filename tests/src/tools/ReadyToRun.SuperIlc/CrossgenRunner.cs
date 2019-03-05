@@ -29,7 +29,7 @@ class CrossgenRunner : CompilerRunner
         yield return "/platform_assemblies_paths";
         
         StringBuilder sb = new StringBuilder();
-        sb.Append(_outputPath + (_referenceFolders.Count > 0 ? ";" : ""));
+        sb.Append(_inputPath + (_referenceFolders.Count > 0 ? ";" : ""));
         sb.AppendJoin(';', _referenceFolders);
         yield return sb.ToString();
     }

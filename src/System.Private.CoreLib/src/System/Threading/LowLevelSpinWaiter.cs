@@ -78,23 +78,23 @@ namespace System.Threading
                 // allow other useful work to run. Long YieldProcessor() loops can help to reduce contention, but Sleep(1) is
                 // usually better for that.
                 //
-                // RuntimeThread.OptimalMaxSpinWaitsPerSpinIteration:
+                // Thread.OptimalMaxSpinWaitsPerSpinIteration:
                 //   - See Thread::InitializeYieldProcessorNormalized(), which describes and calculates this value.
                 //
-                int n = RuntimeThread.OptimalMaxSpinWaitsPerSpinIteration;
+                int n = Thread.OptimalMaxSpinWaitsPerSpinIteration;
                 if (spinIndex <= 30 && (1 << spinIndex) < n)
                 {
                     n = 1 << spinIndex;
                 }
-                RuntimeThread.SpinWait(n);
+                Thread.SpinWait(n);
                 return;
             }
 
-            /// <see cref="RuntimeThread.Sleep(int)"/> is interruptible. The current operation may not allow thread interrupt
+            /// <see cref="Thread.Sleep(int)"/> is interruptible. The current operation may not allow thread interrupt
             /// (for instance, <see cref="LowLevelLock.Acquire"/> as part of <see cref="EventWaitHandle.Set"/>). Use the
-            /// uninterruptible version of Sleep(0). Not doing <see cref="RuntimeThread.Yield"/>, it does not seem to have any
+            /// uninterruptible version of Sleep(0). Not doing <see cref="Thread.Yield"/>, it does not seem to have any
             /// benefit over Sleep(0).
-            RuntimeThread.UninterruptibleSleep0();
+            Thread.UninterruptibleSleep0();
 
             // Don't want to Sleep(1) in this spin wait:
             //   - Don't want to spin for that long, since a proper wait will follow when the spin wait fails

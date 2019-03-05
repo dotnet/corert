@@ -31,11 +31,16 @@ namespace ILCompiler
         {
             if (type.IsArray)
             {
-                if (type.IsArrayTypeWithoutGenericInterfaces())
-                    return type.Context.GetWellKnownType(WellKnownType.Array);
+                if (!type.IsArrayTypeWithoutGenericInterfaces())
+                {
+                    MetadataType arrayShadowType = type.Context.SystemModule.GetType("System", "Array`1", throwIfNotFound: false);
+                    if (arrayShadowType != null)
+                    {
+                        return arrayShadowType.MakeInstantiatedType(((ArrayType)type).ElementType);
+                    }
+                }
 
-                MetadataType arrayShadowType = type.Context.SystemModule.GetKnownType("System", "Array`1");
-                return arrayShadowType.MakeInstantiatedType(((ArrayType)type).ElementType);
+                return type.Context.GetWellKnownType(WellKnownType.Array);
             }
 
             Debug.Assert(type is DefType);

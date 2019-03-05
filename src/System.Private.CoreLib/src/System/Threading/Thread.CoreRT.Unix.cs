@@ -3,25 +3,24 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
-using System;
 using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.InteropServices;
-using System.Threading;
 
-namespace Internal.Runtime.Augments
+namespace System.Threading
 {
-    public sealed partial class RuntimeThread
+    public sealed partial class Thread
     {
         // Event signaling that the thread has stopped
         private ManualResetEvent _stopped;
 
-        private readonly WaitSubsystem.ThreadWaitInfo _waitInfo;
+        private WaitSubsystem.ThreadWaitInfo _waitInfo;
 
         internal WaitSubsystem.ThreadWaitInfo WaitInfo => _waitInfo;
 
         private void PlatformSpecificInitialize()
         {
+            _waitInfo = new WaitSubsystem.ThreadWaitInfo(this);
             RuntimeImports.RhSetThreadExitCallback(AddrofIntrinsics.AddrOf<Action>(OnThreadExit));
         }
 
@@ -29,26 +28,6 @@ namespace Internal.Runtime.Augments
         private void PlatformSpecificInitializeExistingThread()
         {
             _stopped = new ManualResetEvent(false);
-        }
-
-        /// <summary>
-        /// Callers must ensure to clear and return the array after use
-        /// </summary>
-        internal SafeWaitHandle[] RentWaitedSafeWaitHandleArray(int requiredCapacity)
-        {
-            Debug.Assert(this == CurrentThread);
-            Debug.Assert(!ReentrantWaitsEnabled); // due to this, no need to actually rent and return the array
-
-            _waitedSafeWaitHandles.VerifyElementsAreDefault();
-            _waitedSafeWaitHandles.EnsureCapacity(requiredCapacity);
-            return _waitedSafeWaitHandles.Items;
-        }
-
-        internal void ReturnWaitedSafeWaitHandleArray(SafeWaitHandle[] waitedSafeWaitHandles)
-        {
-            Debug.Assert(this == CurrentThread);
-            Debug.Assert(!ReentrantWaitsEnabled); // due to this, no need to actually rent and return the array
-            Debug.Assert(waitedSafeWaitHandles == _waitedSafeWaitHandles.Items);
         }
 
         private ThreadPriority GetPriorityLive()
@@ -64,7 +43,7 @@ namespace Internal.Runtime.Augments
         [NativeCallable]
         private static void OnThreadExit()
         {
-            RuntimeThread currentThread = t_currentThread;
+            Thread currentThread = t_currentThread;
             if (currentThread != null)
             {
                 // Inform the wait subsystem that the thread is exiting. For instance, this would abandon any mutexes locked by
@@ -144,6 +123,16 @@ namespace Internal.Runtime.Augments
             return IntPtr.Zero;
         }
 
+        public ApartmentState GetApartmentState()
+        {
+            return ApartmentState.Unknown;
+        }
+
+        public bool TrySetApartmentStateUnchecked(ApartmentState state)
+        {
+            return state == GetApartmentState();
+        }
+
         private void InitializeComOnNewThread()
         {
         }
@@ -151,6 +140,8 @@ namespace Internal.Runtime.Augments
         internal static void InitializeCom()
         {
         }
+
+        public void DisableComObjectEagerCleanup() { }
 
         public void Interrupt() => WaitSubsystem.Interrupt(this);
         internal static void UninterruptibleSleep0() => WaitSubsystem.UninterruptibleSleep0();

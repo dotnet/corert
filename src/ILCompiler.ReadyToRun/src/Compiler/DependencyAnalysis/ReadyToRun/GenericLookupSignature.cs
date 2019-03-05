@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 
 using Internal.JitInterface;
 using Internal.Text;
@@ -35,6 +36,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             GenericContext methodContext,
             SignatureContext signatureContext)
         {
+            Debug.Assert(typeArgument != null || methodArgument != null || fieldArgument != null);
             _runtimeLookupKind = runtimeLookupKind;
             _fixupKind = fixupKind;
             _typeArgument = typeArgument;
@@ -75,20 +77,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
 
                 dataBuilder.EmitByte((byte)_fixupKind);
-                if (_typeArgument != null)
-                {
-                    dataBuilder.EmitTypeSignature(_typeArgument, _signatureContext);
-                }
-                else if (_methodArgument != null)
+                if (_methodArgument != null)
                 {
                     dataBuilder.EmitMethodSignature(
                         method: _methodArgument.Method,
-                        constrainedType: null,
+                        constrainedType: _typeArgument,
                         methodToken: _methodArgument.Token,
                         enforceDefEncoding: false,
                         context: _signatureContext,
                         isUnboxingStub: false,
                         isInstantiatingStub: true);
+                }
+                else if (_typeArgument != null)
+                {
+                    dataBuilder.EmitTypeSignature(_typeArgument, _signatureContext);
                 }
                 else if (_fieldArgument != null)
                 {
@@ -111,11 +113,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append(" / ");
             sb.Append(_fixupKind.ToString());
             sb.Append(": ");
-            if (_typeArgument != null)
-            {
-                RuntimeDeterminedTypeHelper.WriteTo(_typeArgument, sb);
-            }
-            else if (_methodArgument != null)
+            if (_methodArgument != null)
             {
                 RuntimeDeterminedTypeHelper.WriteTo(_methodArgument.Method, sb);
                 if (!_methodArgument.Token.IsNull)
@@ -127,12 +125,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     sb.Append("]");
                 }
             }
-            else
+            if (_typeArgument != null)
             {
-                throw new NotImplementedException();
+                RuntimeDeterminedTypeHelper.WriteTo(_typeArgument, sb);
+            }
+            if (_fieldArgument != null)
+            {
+                RuntimeDeterminedTypeHelper.WriteTo(_fieldArgument, sb);
             }
             sb.Append(" (");
-            sb.Append(_methodContext.ToString());
+            _methodContext.AppendMangledName(nameMangler, sb);
             sb.Append(")");
         }
 

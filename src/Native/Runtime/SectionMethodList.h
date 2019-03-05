@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#ifndef __SectionMethodList_h__
+#define __SectionMethodList_h__
+
 class PageEntry
 {
     UInt32  m_uPageEntry;
@@ -76,3 +79,5 @@ public:
     UInt32 GetNumMethodsDEBUG();
 #endif // _DEBUG
 };
+
+#endif // __SectionMethodList_h__

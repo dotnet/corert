@@ -391,7 +391,7 @@ namespace System
         // Block until the next finalization pass is complete.
         public static void WaitForPendingFinalizers()
         {
-            RuntimeImports.RhWaitForPendingFinalizers(RuntimeThread.ReentrantWaitsEnabled);
+            RuntimeImports.RhWaitForPendingFinalizers(Thread.ReentrantWaitsEnabled);
         }
 
         public static void SuppressFinalize(object obj)

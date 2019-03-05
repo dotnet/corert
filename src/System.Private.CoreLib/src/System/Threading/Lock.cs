@@ -165,7 +165,7 @@ namespace System.Threading
                 //
                 if (spins <= s_maxSpinCount)
                 {
-                    RuntimeThread.SpinWait(spins);
+                    Thread.SpinWait(spins);
                     spins *= 2;
                 }
                 else if (oldState != 0)

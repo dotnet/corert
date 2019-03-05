@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.Runtime.Augments;
 using System.Runtime.CompilerServices;
+using Internal.Runtime.Augments;
 
 namespace System.Threading
 {
@@ -17,7 +17,7 @@ namespace System.Threading
         {
             get
             {
-                return RuntimeThread.CurrentThread.SynchronizationContext ?? GetWinRTContext();
+                return Thread.CurrentThread._synchronizationContext ?? GetWinRTContext();
             }
         }
 
@@ -34,7 +34,7 @@ namespace System.Threading
         private static SynchronizationContext GetWinRTContext()
         {
             // Optimization: WinRT dispatchers are supported for STA and ASTA apartment types only
-            if (RuntimeThread.GetCurrentApartmentType() != RuntimeThread.ApartmentType.STA)
+            if (Thread.GetCurrentApartmentType() != Thread.ApartmentType.STA)
                 return null;
 
             object dispatcher = WinRTInterop.Callbacks.GetCurrentWinRTDispatcher();
@@ -75,7 +75,7 @@ namespace System.Threading
 
             private void InvokeCore()
             {
-                SynchronizationContext prevSyncCtx = RuntimeThread.CurrentThread.SynchronizationContext;
+                SynchronizationContext prevSyncCtx = Thread.CurrentThread._synchronizationContext;
                 try
                 {
                     m_callback(m_state);
@@ -88,11 +88,11 @@ namespace System.Threading
                     // that IAsyncInfo, because there's nothing Post can do with it (since Post returns void).
                     // So, we report these as unhandled exceptions.
                     //
-                    RuntimeAugments.ReportUnhandledException(ex);
+                    RuntimeExceptionHelpers.ReportUnhandledException(ex);
                 }
                 finally
                 {
-                    RuntimeThread.CurrentThread.SynchronizationContext = prevSyncCtx;
+                    Thread.CurrentThread._synchronizationContext = prevSyncCtx;
                 }
             }
         }

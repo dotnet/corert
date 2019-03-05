@@ -7,7 +7,7 @@ using Internal.Runtime.Augments;
 namespace System.Threading
 {
     /// <summary>
-    /// Ensures <c>RuntimeThread.CurrentThread</c> is initialized for a callback running on a thread pool thread.
+    /// Ensures <c>Thread.CurrentThread</c> is initialized for a callback running on a thread pool thread.
     /// If WinRT is enabled, also ensures the Windows Runtime is initialized during the execution of the callback.
     /// </summary>
     /// <remarks>
@@ -15,13 +15,13 @@ namespace System.Threading
     /// </remarks>
     internal struct ThreadPoolCallbackWrapper
     {
-        private RuntimeThread _currentThread;
+        private Thread _currentThread;
 
         public static ThreadPoolCallbackWrapper Enter()
         {
             return new ThreadPoolCallbackWrapper
             {
-                _currentThread = RuntimeThread.InitializeThreadPoolThread(),
+                _currentThread = Thread.InitializeThreadPoolThread(),
             };
         }
 

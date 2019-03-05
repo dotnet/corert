@@ -1,0 +1,76 @@
+parameters:
+  buildConfig: ''
+  archType: ''
+  osGroup: ''
+  osIdentifier: ''
+  name: ''
+  displayName: ''
+  condition: ''
+  dependsOn: ''
+  timeoutInMinutes: ''
+
+  # arcade-specific parameters
+  gatherAssetManifests: false
+
+  variables: {} ## any extra variables to add to the defaults defined below
+
+jobs:
+- template: /eng/common/templates/job/job.yml
+  parameters:
+
+    name: ${{ parameters.name }}
+    displayName: ${{ parameters.displayName }}
+
+    condition: ${{ parameters.condition }}
+    dependsOn: ${{ parameters.dependsOn }}
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+
+    # Send telemetry for official builds
+    enableTelemetry: ${{ and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}
+    helixRepo: 'dotnet/coreclr'
+
+    enableMicrobuild: false
+
+    pool:
+      ${{ if and(eq(parameters.osGroup, 'Linux'), eq(variables['System.TeamProject'], 'public')) }}:
+        name: dnceng-linux-external-temp
+      ${{ if and(eq(parameters.osGroup, 'OSX'), eq(variables['System.TeamProject'], 'public')) }}:
+        name: Hosted MacOS
+      ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(variables['System.TeamProject'], 'public')) }}:
+        name: dotnet-external-temp
+
+    workspace:
+      clean: all
+
+    ${{ if ne(parameters.containerName, '') }}:
+      container: ${{ parameters.containerName }}
+
+    ${{ if eq(parameters.osGroup, 'Linux') }}:
+      agentOs: Ubuntu
+    ${{ if eq(parameters.osGroup, 'OSX') }}:
+      agentOs: MacOS
+    ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      agentOs: Windows_NT
+
+    # Setting this results in the arcade job template including a step
+    # that gathers asset manifests and publishes them to pipeline
+    # storage. Only relevant for build jobs.
+    enablePublishBuildAssets: ${{ parameters.gatherAssetManifests }}
+
+    variables:
+    - name: buildConfig
+      value: ${{ parameters.buildConfig }}
+        
+    - name: archType
+      value: ${{ parameters.archType }}
+
+    - name: osGroup
+      value: ${{ parameters.osGroup }}
+
+    - name: osIdentifier
+      value: ${{ parameters.osIdentifier }}
+      
+    - ${{ each variable in parameters.variables }}:
+      - ${{insert}}: ${{ variable }}
+
+    steps: ${{ parameters.steps }}

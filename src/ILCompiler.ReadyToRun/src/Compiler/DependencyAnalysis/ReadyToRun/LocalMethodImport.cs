@@ -4,6 +4,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+
+using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -18,8 +20,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public LocalMethodImport(
             ReadyToRunCodegenNodeFactory factory,
             ReadyToRunFixupKind fixupKind,
+            MethodWithToken method,
             MethodWithGCInfo localMethod,
             bool isUnboxingStub,
+            bool isInstantiatingStub,
             SignatureContext signatureContext)
             : base(
                   factory,
@@ -27,12 +31,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                   ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_MethodCall,
                   factory.MethodSignature(
                       fixupKind,
-                      localMethod.Method,
+                      method.Method,
                       constrainedType: null,
-                      methodToken: default(ModuleToken),
-                      signatureContext,
+                      methodToken: method.Token,
                       isUnboxingStub,
-                      isInstantiatingStub: false))
+                      isInstantiatingStub,
+                      signatureContext))
         {
             _signatureContext = signatureContext;
             _localMethod = localMethod;

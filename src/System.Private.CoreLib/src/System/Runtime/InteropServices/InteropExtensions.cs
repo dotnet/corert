@@ -6,6 +6,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
@@ -436,12 +437,12 @@ namespace System.Runtime.InteropServices
 
         public static void SuppressReentrantWaits()
         {
-            RuntimeThread.SuppressReentrantWaits();
+            Thread.SuppressReentrantWaits();
         }
 
         public static void RestoreReentrantWaits()
         {
-            RuntimeThread.RestoreReentrantWaits();
+            Thread.RestoreReentrantWaits();
         }
 
         public static IntPtr GetCriticalHandle(CriticalHandle criticalHandle)

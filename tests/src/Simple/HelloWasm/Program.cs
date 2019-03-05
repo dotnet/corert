@@ -94,6 +94,12 @@ internal static class Program
         int divResult = tempInt / 3;
         EndTest(divResult == 3);
 
+        StartTest("Addition of byte and short test");
+        byte aByte = 2;
+        short aShort = 0x100;
+        short byteAndShortResult = (short)(aByte + aShort);
+        EndTest(byteAndShortResult == 0x102);
+
         StartTest("not test");
         var not = Not(0xFFFFFFFF) == 0x00000000;
         EndTest(not);
@@ -113,6 +119,11 @@ internal static class Program
         StartTest("unsignedShift test");
         var unsignedShift = UnsignedShift(0xFFFFFFFFu, 4) == 0x0FFFFFFFu;
         EndTest(unsignedShift);
+
+        StartTest("shiftLeft byte to short test");
+        byte byteConstant = (byte)0x80;
+        ushort shiftedToShort = (ushort)(byteConstant << 1);
+        EndTest((int)shiftedToShort == 0x0100);
 
         StartTest("SwitchOp0 test");
         var switchTest0 = SwitchOp(5, 5, 0);
@@ -212,6 +223,17 @@ internal static class Program
         var testMdArrayInstantiation = new int[2, 2];
         EndTest(testMdArrayInstantiation != null && testMdArrayInstantiation.GetLength(0) == 2 && testMdArrayInstantiation.GetLength(1) == 2);
 
+        StartTest("Multi-dimension array get/set test");
+        testMdArrayInstantiation[0, 0] = 1;
+        testMdArrayInstantiation[0, 1] = 2;
+        testMdArrayInstantiation[1, 0] = 3;
+        testMdArrayInstantiation[1, 1] = 4;
+        EndTest(testMdArrayInstantiation[0, 0] == 1 
+                && testMdArrayInstantiation[0, 1] == 2
+                && testMdArrayInstantiation[1, 0] == 3
+                && testMdArrayInstantiation[1, 1] == 4);
+
+
         FloatDoubleTest();
 
         StartTest("long comparison");
@@ -261,6 +283,10 @@ internal static class Program
         TestArgsWithMixedTypesAndExceptionRegions();
 
         TestThreadStaticsForSingleThread();
+
+        TestDispose();
+
+        TestInitObjDouble();
 
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
@@ -913,6 +939,23 @@ internal static class Program
         Thread.Sleep(10);
     }
 
+    private static void TestDispose()
+    {
+        StartTest("using calls Dispose");
+        var disposable = new DisposableTest();
+        using (disposable)
+        {
+        }
+        EndTest(disposable.Disposed);
+    }
+
+    private static void TestInitObjDouble()
+    {
+        StartTest("Init struct with double field test");
+        StructWithDouble strt = new StructWithDouble();
+        EndTest(strt.DoubleField == 0d);
+    }
+
     [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
 }
@@ -1103,6 +1146,11 @@ public sealed class MySealedClass
     }
 }
 
+public struct StructWithDouble
+{
+    public double DoubleField;
+}
+
 public class Gen<T>
 {
     internal Type TestTypeOf()
@@ -1231,6 +1279,16 @@ class AnotherClassWithFourThreadStatics
         classStatic3++;
         classStatic4++;
         classStatic5++;
+    }
+}
+
+class DisposableTest : IDisposable
+{
+    public bool Disposed;
+
+    public void Dispose()
+    {
+        Disposed = true;
     }
 }
 
