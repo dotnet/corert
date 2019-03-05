@@ -2069,8 +2069,6 @@ namespace Internal.IL
             ILOpcode opcode, TypeDesc constrainedType, LLVMValueRef calliTarget, int offset, LLVMValueRef baseShadowStack, LLVMBuilderRef builder, bool needsReturnSlot,
             LLVMValueRef castReturnAddress)
         {
-            AddDependencyForMethodCall(callee, opcode);
-
             LLVMValueRef fn;
             if (opcode == ILOpcode.calli)
             {
