@@ -1676,6 +1676,7 @@ namespace Internal.IL
             }
             else
             {
+                AddMethodReference(callee);
                 return GetOrCreateLLVMFunction(calleeName, callee.Signature);
             }
         }
@@ -1952,8 +1953,6 @@ namespace Internal.IL
 
         private ExpressionEntry HandleCall(MethodDesc callee, MethodSignature signature, StackEntry[] argumentValues, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef), TypeDesc forcedReturnType = null)
         {
-            AddDependencyForMethodCall(callee, opcode);
-
             LLVMValueRef fn;
             if (opcode == ILOpcode.calli)
             {
