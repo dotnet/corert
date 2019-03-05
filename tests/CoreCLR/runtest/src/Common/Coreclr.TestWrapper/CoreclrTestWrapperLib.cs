@@ -42,6 +42,7 @@ namespace CoreclrTestLib
             using (var errorWriter = new StreamWriter(errorStream))
             using (Process process = new Process())
             {
+                outputWriter.WriteLine("Test executable is : '" + executable + "'");
                 if (gcstressVar!=null)
                 {
                     //Note: this is not the best way to set the Env, but since we are using 

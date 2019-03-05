@@ -7,7 +7,9 @@
 :: %1 contains test folder
 :: %2 contains test exe name
 ::
-@echo OFF
+@echo on
+echo
+@echo start build and run tests
 setlocal ENABLEDELAYEDEXPANSION
 
 set TestFolder=%1
@@ -27,6 +29,7 @@ rd /s /q %TestFolder%\native
 :: The CoreCLR test system configures the VS environment as 32-bit by default,
 :: so override if we're doing a 64-bit test run
 ::
+echo %NativeCodeGen%
 if /i not "%NativeCodeGen%" == "readytorun" (
     if "%CoreRT_BuildArch%" == "x64" (
         call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" x64
@@ -121,4 +124,5 @@ if "!TestExitCode!" == "100" (
     echo %TestFolder%%TestFileName%.cmd > %TestFolder%\exclude.txt
 )
 
+echo Finished build and run tests
 exit /b !TestExitCode!
