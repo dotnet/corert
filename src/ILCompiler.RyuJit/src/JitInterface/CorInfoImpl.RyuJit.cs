@@ -1322,5 +1322,114 @@ namespace Internal.JitInterface
 
             pResult->_secureDelegateInvoke = 0;
         }
+
+        private void embedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, ref CORINFO_GENERICHANDLE_RESULT pResult)
+        {
+#if DEBUG
+            // In debug, write some bogus data to the struct to ensure we have filled everything
+            // properly.
+            fixed (CORINFO_GENERICHANDLE_RESULT* tmp = &pResult)
+                MemoryHelper.FillMemory((byte*)tmp, 0xcc, Marshal.SizeOf<CORINFO_GENERICHANDLE_RESULT>());
+#endif
+            ReadyToRunHelperId helperId = ReadyToRunHelperId.Invalid;
+            object target = null;
+
+            if (!fEmbedParent && pResolvedToken.hMethod != null)
+            {
+                MethodDesc md = HandleToObject(pResolvedToken.hMethod);
+                TypeDesc td = HandleToObject(pResolvedToken.hClass);
+
+                pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_METHOD;
+
+                Debug.Assert(md.OwningType == td);
+
+                pResult.compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(md);
+
+                if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken)
+                    helperId = ReadyToRunHelperId.MethodHandle;
+                else
+                {
+                    Debug.Assert(pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Method);
+                    helperId = ReadyToRunHelperId.MethodDictionary;
+                }
+
+                target = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+            }
+            else if (!fEmbedParent && pResolvedToken.hField != null)
+            {
+                FieldDesc fd = HandleToObject(pResolvedToken.hField);
+                TypeDesc td = HandleToObject(pResolvedToken.hClass);
+
+                pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_FIELD;
+                pResult.compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)pResolvedToken.hField;
+
+                Debug.Assert(pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken);
+                helperId = ReadyToRunHelperId.FieldHandle;
+                target = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+            }
+            else
+            {
+                TypeDesc td = HandleToObject(pResolvedToken.hClass);
+
+                pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS;
+                pResult.compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)pResolvedToken.hClass;
+
+                object obj = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+                target = obj as TypeDesc;
+                if (target == null)
+                {
+                    Debug.Assert(fEmbedParent);
+
+                    if (obj is MethodDesc objAsMethod)
+                    {
+                        target = objAsMethod.OwningType;
+                    }
+                    else
+                    {
+                        Debug.Assert(obj is FieldDesc);
+                        target = ((FieldDesc)obj).OwningType;
+                    }
+                }
+
+                if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_NewObj
+                        || pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr
+                        || pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Box
+                        || pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Constrained
+                        || (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken && ConstructedEETypeNode.CreationAllowed(td)))
+                {
+                    helperId = ReadyToRunHelperId.TypeHandle;
+                }
+                else if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Casting)
+                {
+                    helperId = ReadyToRunHelperId.TypeHandleForCasting;
+                }
+                else
+                {
+                    helperId = ReadyToRunHelperId.NecessaryTypeHandle;
+                }
+            }
+
+            Debug.Assert(pResult.compileTimeHandle != null);
+
+            ComputeLookup(ref pResolvedToken, target, helperId, ref pResult.lookup);
+        }
+
+        private CORINFO_METHOD_STRUCT_* embedMethodHandle(CORINFO_METHOD_STRUCT_* handle, ref void* ppIndirection)
+        {
+            MethodDesc method = HandleToObject(handle);
+            ISymbolNode methodHandleSymbol = _compilation.NodeFactory.RuntimeMethodHandle(method);
+            CORINFO_METHOD_STRUCT_* result = (CORINFO_METHOD_STRUCT_*)ObjectToHandle(methodHandleSymbol);
+
+            if (methodHandleSymbol.RepresentsIndirectionCell)
+            {
+                ppIndirection = result;
+                return null;
+            }
+            else
+            {
+                ppIndirection = null;
+                return result;
+            }
+        }
     }
 }

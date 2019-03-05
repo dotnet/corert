@@ -175,7 +175,7 @@ namespace System.Threading
             public WaitThread()
             {
                 _waitHandles[0] = _changeHandlesEvent;
-                RuntimeThread waitThread = RuntimeThread.Create(WaitThreadStart);
+                Thread waitThread = new Thread(WaitThreadStart);
                 waitThread.IsBackground = true;
                 waitThread.Start();
             }
@@ -224,7 +224,7 @@ namespace System.Threading
                         }
                     }
 
-                    int signaledHandleIndex = WaitHandle.WaitAny(_waitHandles, numUserWaits + 1, timeoutDurationMs);
+                    int signaledHandleIndex = WaitHandle.WaitAny(new ReadOnlySpan<WaitHandle>(_waitHandles, 0, numUserWaits + 1), timeoutDurationMs);
 
                     if (signaledHandleIndex == 0) // If we were woken up for a change in our handles, continue.
                     {

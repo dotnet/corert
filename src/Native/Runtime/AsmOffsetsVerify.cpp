@@ -6,6 +6,7 @@
 #include "gcheaputilities.h"
 #include "rhassert.h"
 #include "RedhawkWarnings.h"
+#include "slist.h"
 #include "gcrhinterface.h"
 #include "varint.h"
 #include "regdisplay.h"
@@ -13,8 +14,11 @@
 #include "thread.h"
 #include "TargetPtrs.h"
 #include "rhbinder.h"
+#include "RWLock.h"
+#include "RuntimeInstance.h"
 #include "CachedInterfaceDispatch.h"
 #include "shash.h"
+#include "module.h"
 #include "CallDescr.h"
 
 class AsmOffsets

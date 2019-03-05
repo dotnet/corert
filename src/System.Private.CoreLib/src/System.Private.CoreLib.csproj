@@ -45,6 +45,10 @@
     <FeaturePortableThreadPool Condition="'$(TargetsUnix)' == 'true'">true</FeaturePortableThreadPool>
   </PropertyGroup>
   <PropertyGroup>
+    <FeaturePortableTimer Condition="'$(FeaturePortableTimer)' == ''">false</FeaturePortableTimer>
+    <FeaturePortableTimer Condition="'$(TargetsUnix)' == 'true'">true</FeaturePortableTimer>
+  </PropertyGroup>
+  <PropertyGroup>
     <FeatureHardwareIntrinsics Condition="'$(IsProjectNLibrary)' != 'true'">true</FeatureHardwareIntrinsics>
   </PropertyGroup>
   <PropertyGroup>
@@ -127,7 +131,6 @@
     <Compile Include="Internal\Runtime\Augments\DynamicDelegateAugments.cs" />
     <Compile Include="Internal\Runtime\Augments\EnumInfo.cs" />
     <Compile Include="Internal\Runtime\Augments\EnvironmentAugments.cs" />
-    <Compile Include="Internal\Runtime\Augments\RuntimeThread.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\Reflection\Core\NonPortable\IRuntimeImplemented.cs" />
@@ -178,7 +181,7 @@
     <Compile Include="System\Reflection\MethodBase.CoreRT.cs" />
     <Compile Include="System\Runtime\InteropServices\CriticalHandle.CoreRT.cs" />
     <Compile Include="System\__Canon.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
-    <Compile Include="System\Activator.cs" />
+    <Compile Include="System\Activator.CoreRT.cs" />
     <Compile Include="System\AppContext.CoreRT.cs" />
     <Compile Include="System\AppContextConfigHelper.cs" />
     <Compile Include="System\Buffer.cs" />
@@ -276,9 +279,10 @@
     <Compile Include="System\Threading\SynchronizationContext.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
     <Compile Include="System\Threading\SyncTable.cs" Condition="'$(UseSyncTable)' == 'true'" />
     <Compile Include="System\Threading\Tasks\AsyncCausalityTracer.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
+    <Compile Include="System\Threading\Thread.CoreRT.cs" />
     <Compile Include="System\Threading\ThreadPool.CoreRT.cs" />
     <Compile Include="System\Threading\ThreadPoolCallbackWrapper.cs" />
-    <Compile Include="System\Threading\WaitHandle.cs" />
+    <Compile Include="System\Threading\WaitHandle.CoreRT.cs" />
     <Compile Include="System\Threading\WaitHandleArray.cs" />
     <Compile Include="System\Type.CoreRT.cs" />
     <Compile Include="System\Type.Internal.cs" />
@@ -307,7 +311,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
-    <Compile Include="Internal\Runtime\Augments\RuntimeThread.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeThreadPoolIOHandle.cs" />
     <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\TimeZoneInfo.WinRT.cs" />
     <Compile Include="System\AppContext.Windows.CoreRT.cs" />
@@ -413,6 +416,7 @@
     <Compile Include="System\HighPerformanceCounter.Windows.cs" Condition="'$(FeaturePortableThreadPool)' == 'true'" />
     <Compile Include="System\Threading\LowLevelMonitor.Windows.cs" />
     <Compile Include="System\Threading\LowLevelLifoSemaphore.Windows.cs" />
+    <Compile Include="System\Threading\Thread.CoreRT.Windows.cs" />
     <Compile Include="System\Threading\ThreadPool.Windows.cs" Condition="'$(FeaturePortableThreadPool)' != 'true'" />
     <Compile Include="System\Threading\WaitHandle.Windows.cs" />
     <Compile Include="System\Threading\Win32ThreadPoolBoundHandle.cs" />
@@ -453,7 +457,6 @@
     <Compile Include="System\Threading\ClrThreadPool.CpuUtilizationReader.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
-    <Compile Include="Internal\Runtime\Augments\RuntimeThread.Unix.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeWaitHandle.Unix.cs" />
     <Compile Include="System\AppContext.Unix.CoreRT.cs" />
     <Compile Include="System\Environment.CoreRT.Unix.cs" />
@@ -464,7 +467,7 @@
     <Compile Include="System\Threading\LowLevelMonitor.Unix.cs" />
     <Compile Include="System\Threading\Mutex.Unix.cs" />
     <Compile Include="System\Threading\Semaphore.Unix.cs" />
-    <Compile Include="System\Threading\Timer.Unix.cs" />
+    <Compile Include="System\Threading\Thread.CoreRT.Unix.cs" />
     <Compile Include="System\Threading\WaitHandle.Unix.cs" />
     <Compile Include="System\Threading\WaitSubsystem.HandleManager.Unix.cs" />
     <Compile Include="System\Threading\WaitSubsystem.ThreadWaitInfo.Unix.cs" />

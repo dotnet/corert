@@ -71,8 +71,8 @@ namespace System.Threading
         {
             // The field value is modifiable via the public <see cref="WaitHandle.SafeWaitHandle"/> property, save it locally
             // to ensure that one instance is used in all places in this method
-            SafeWaitHandle waitHandle = _waitHandle;
-            if (waitHandle == null)
+            SafeWaitHandle waitHandle = SafeWaitHandle;
+            if (waitHandle.IsInvalid)
             {
                 ThrowInvalidHandleException();
             }

@@ -22,6 +22,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             TypeDesc constrainedType,
             ModuleToken methodToken,
             bool isUnboxingStub,
+            bool isInstantiatingStub,
             SignatureContext signatureContext)
             : base(
                   factory,
@@ -32,9 +33,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                       methodDesc,
                       constrainedType,
                       methodToken,
-                      signatureContext,
                       isUnboxingStub,
-                      isInstantiatingStub: false))
+                      isInstantiatingStub,
+                      signatureContext))
         {
             _methodDesc = methodDesc;
             _signatureContext = signatureContext;

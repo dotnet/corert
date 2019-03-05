@@ -2,17 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.Runtime.Augments;
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 
 namespace System.Threading
 {
-    //
-    // Unix-specific implementation of Timer
-    //
     internal partial class TimerQueue
     {
         /// <summary>
@@ -43,7 +36,7 @@ namespace System.Threading
             if (_timerEvent == null)
             {
                 _timerEvent = new AutoResetEvent(false);
-                RuntimeThread thread = RuntimeThread.Create(TimerThread, 0);
+                Thread thread = new Thread(TimerThread);
                 thread.IsBackground = true; // Keep this thread from blocking process shutdown
                 thread.Start();
             }
@@ -62,12 +55,10 @@ namespace System.Threading
         /// </summary>
         private void TimerThread()
         {
-            int currentTimerInterval;
-
             // Get wait time for the next timer
-            currentTimerInterval = Interlocked.Exchange(ref _nextTimerDuration, Timeout.Infinite);
+            int currentTimerInterval = Interlocked.Exchange(ref _nextTimerDuration, Timeout.Infinite);
 
-            for (;;)
+            while (true)
             {
                 // Wait for the current timer to expire.
                 // We will be woken up because either 1) the wait times out, which will indicate that
@@ -108,14 +99,6 @@ namespace System.Threading
                 {
                     currentTimerInterval = nextTimerInterval;
                 }
-            }
-        }
-
-        private static int TickCount
-        {
-            get
-            {
-                return Environment.TickCount;
             }
         }
     }

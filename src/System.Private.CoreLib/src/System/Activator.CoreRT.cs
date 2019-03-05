@@ -18,7 +18,7 @@ using Internal.Reflection.Augments;
 
 namespace System
 {
-    public static class Activator
+    public static partial class Activator
     {
         // The following 2 methods and helper class implement the functionality of Activator.CreateInstance<T>()
 
@@ -122,32 +122,13 @@ namespace System
 
         [DebuggerHidden]
         [DebuggerStepThrough]
-        public static object CreateInstance(Type type) => CreateInstance(type, nonPublic: false);
-
-        [DebuggerHidden]
-        [DebuggerStepThrough]
-        public static object CreateInstance(Type type, bool nonPublic) => ReflectionAugments.ReflectionCoreCallbacks.ActivatorCreateInstance(type, nonPublic);
-
-        [DebuggerHidden]
-        [DebuggerStepThrough]
-        public static object CreateInstance(Type type, params object[] args) => CreateInstance(type, ConstructorDefault, null, args, null, null);
-
-        [DebuggerHidden]
-        [DebuggerStepThrough]
-        public static object CreateInstance(Type type, object[] args, object[] activationAttributes) => CreateInstance(type, ConstructorDefault, null, args, null, activationAttributes);
-
-        [DebuggerHidden]
-        [DebuggerStepThrough]
-        public static object CreateInstance(Type type, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture) => CreateInstance(type, bindingAttr, binder, args, culture, null);
+        public static object CreateInstance(Type type, bool nonPublic)
+            => ReflectionAugments.ReflectionCoreCallbacks.ActivatorCreateInstance(type, nonPublic);
 
         [DebuggerHidden]
         [DebuggerStepThrough]
         public static object CreateInstance(Type type, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes)
-        {
-            return ReflectionAugments.ReflectionCoreCallbacks.ActivatorCreateInstance(type, bindingAttr, binder, args, culture, activationAttributes);
-        }
-
-        private const BindingFlags ConstructorDefault = BindingFlags.Instance | BindingFlags.Public | BindingFlags.CreateInstance;
+            => ReflectionAugments.ReflectionCoreCallbacks.ActivatorCreateInstance(type, bindingAttr, binder, args, culture, activationAttributes);
         
         public static ObjectHandle CreateInstance(string assemblyName, string typeName) 
         {
@@ -169,28 +150,6 @@ namespace System
         public static ObjectHandle CreateInstance(string assemblyName, string typeName, object[] activationAttributes) 
         { 
             throw new PlatformNotSupportedException(); // https://github.com/dotnet/corefx/issues/30845
-        }
-
-        public static ObjectHandle CreateInstanceFrom(string assemblyFile, string typeName) 
-        {
-            throw new PlatformNotSupportedException(); 
-        }
-
-        public static ObjectHandle CreateInstanceFrom(string assemblyFile, 
-                                                      string typeName, 
-                                                      bool ignoreCase, 
-                                                      BindingFlags bindingAttr, 
-                                                      Binder binder, 
-                                                      object[] args, 
-                                                      CultureInfo culture, 
-                                                      object[] activationAttributes) 
-        { 
-            throw new PlatformNotSupportedException(); 
-        }
-
-        public static ObjectHandle CreateInstanceFrom(string assemblyFile, string typeName, object[] activationAttributes) 
-        { 
-            throw new PlatformNotSupportedException(); 
         }
     }
 }

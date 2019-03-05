@@ -1,0 +1,58 @@
+parameters:
+  buildConfig: ''
+  archType: ''
+  osGroup: ''
+  osIdentifier: ''
+  timeoutInMinutes: ''
+
+### Product build
+jobs:
+- template: xplat-job.yml
+  parameters:
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osIdentifier: ${{ parameters.osIdentifier }}
+
+    # Compute job name from template parameters
+    name: ${{ format('build_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+    displayName: ${{ format('Build {0} {1} {2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+
+    variables:
+    - name: osIdentifier
+      value: ${{ parameters.osIdentifier }}
+
+    steps:
+
+    # Install native dependencies
+    # TODO: add installation logic for non Windows platorms
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      # Necessary to install python
+      - script: eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
+        displayName: Install native dependencies
+
+      # Build
+      - script: build.cmd $(buildConfig) skiptests
+        displayName: Build product
+      - script: tests\runtest.cmd $(buildConfig)
+        displayName: Run simple CoreRT tests
+      - ${{ if eq(parameters.buildConfig, 'Debug') }}:
+        - script: tests\runtest.cmd $(buildConfig) /multimodule
+          displayName: Run simple CoreRT tests in the MultiModule mode
+        - script: tests\runtest.cmd $(buildConfig) /coreclr ReadyToRun /mode ReadyToRun
+          displayName: Run basic ReadyToRun tests
+        - script: tests\runtest.cmd $(buildConfig) /coreclr Top200
+          displayName: Run CoreCLR Top200 tests
+
+    - task: PublishTestResults@2
+      inputs:
+        testResultsFormat: 'xUnit'
+        testResultsFiles: '**/testResults.xml'
+        searchFolder: '$(Build.SourcesDirectory)'
+        mergeTestResults: true
+        failTaskOnFailedTests: true
+        testRunTitle: ${{ format('{0} {1} {2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+        buildPlatform: ${{ parameters.osGroup }}
+        buildConfiguration: $(buildConfig)

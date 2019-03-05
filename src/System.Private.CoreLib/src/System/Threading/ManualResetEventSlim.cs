@@ -584,24 +584,24 @@ namespace System.Threading
                     {
                         if (i == HOW_MANY_SPIN_BEFORE_YIELD / 2)
                         {
-                            RuntimeThread.Yield();
+                            Thread.Yield();
                         }
                         else
                         {
-                            RuntimeThread.SpinWait(PlatformHelper.ProcessorCount * (4 << i));
+                            Thread.SpinWait(PlatformHelper.ProcessorCount * (4 << i));
                         }
                     }
                     else if (i % HOW_MANY_YIELD_EVERY_SLEEP_1 == 0)
                     {
-                        RuntimeThread.Sleep(1);
+                        Thread.Sleep(1);
                     }
                     else if (i % HOW_MANY_YIELD_EVERY_SLEEP_0 == 0)
                     {
-                        RuntimeThread.Sleep(0);
+                        Thread.Sleep(0);
                     }
                     else
                     {
-                        RuntimeThread.Yield();
+                        Thread.Yield();
                     }
 
                     if (i >= 100 && i % 10 == 0) // check the cancellation token if the user passed a very large spin count

@@ -104,7 +104,7 @@
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <LangVersion>latest</LangVersion>
-    <LangVersion Condition="'$(SkipImportRoslynProps)' != 'true' or '$(IsProjectNLibrary)' == 'true'">8.0</LangVersion>
+    <LangVersion Condition="'$(SkipImportRoslynProps)' != 'true' or '$(IsProjectNLibrary)' == 'true'">preview</LangVersion>
     <UseSharedCompilation>true</UseSharedCompilation>
     <DebugType Condition="'$(IsProjectNLibrary)' != 'true'">portable</DebugType>
   </PropertyGroup>
@@ -271,7 +271,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <RoslynVersion>3.0.0-beta3-final</RoslynVersion>
+    <RoslynVersion>3.0.0-beta4-final</RoslynVersion>
     <RoslynPackageName>Microsoft.Net.Compilers</RoslynPackageName>
     <RoslynPackageName Condition="'$(RunningOnCore)' == 'true'">Microsoft.NETCore.Compilers</RoslynPackageName>
     <RoslynPackageDir>$(PackagesDir)/$(RoslynPackageName.ToLower())/$(RoslynVersion)/</RoslynPackageDir>
