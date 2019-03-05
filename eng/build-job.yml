@@ -27,13 +27,19 @@ jobs:
     steps:
 
     # Install native dependencies
-    # TODO: add installation logic for non Windows platorms
+    # Linux builds use docker images with dependencies preinstalled,
+    # so we only need this step for OSX and Windows.
+    # (TODO: figure out the name of Linux docker images that can be used by CoreRT)
+    - ${{ if eq(parameters.osGroup, 'OSX') }}:
+      - script: sh eng/install-native-dependencies.sh $(osGroup)
+        displayName: Install native dependencies
+
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       # Necessary to install python
       - script: eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
 
-      # Build
+      # Build and tests on Windows
       - script: build.cmd $(buildConfig) skiptests
         displayName: Build product
       - script: tests\runtest.cmd $(buildConfig)
@@ -44,6 +50,16 @@ jobs:
         - script: tests\runtest.cmd $(buildConfig) /coreclr ReadyToRun /mode ReadyToRun
           displayName: Run basic ReadyToRun tests
         - script: tests\runtest.cmd $(buildConfig) /coreclr Top200
+          displayName: Run CoreCLR Top200 tests
+
+    # Build and tests on non-Windows platforms
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - script: ./build.sh $(buildConfig) skiptests
+        displayName: Build product
+      - script: tests/runtest.sh $(buildConfig)
+        displayName: Run simple CoreRT tests
+      - ${{ if eq(parameters.buildConfig, 'Debug') }}:
+        - script: tests/runtest.sh $(buildConfig) -coredumps /coreclr Top200
           displayName: Run CoreCLR Top200 tests
 
     - task: PublishTestResults@2
