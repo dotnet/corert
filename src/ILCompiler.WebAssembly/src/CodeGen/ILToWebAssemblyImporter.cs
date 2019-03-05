@@ -2055,14 +2055,6 @@ namespace Internal.IL
             }
         }
 
-        void AddDependencyForMethodCall(MethodDesc callee, ILOpcode opcode)
-        {
-            if (callee != null && !(opcode == ILOpcode.callvirt && callee.IsVirtual))
-            {
-                AddMethodReference(callee);
-            }
-        }
-
         private LLVMValueRef HandleCall(MethodDesc callee, MethodSignature signature, StackEntry[] argumentValues,
             ILOpcode opcode, TypeDesc constrainedType, LLVMValueRef calliTarget, int offset, LLVMValueRef baseShadowStack, LLVMBuilderRef builder, bool needsReturnSlot,
             LLVMValueRef castReturnAddress)
