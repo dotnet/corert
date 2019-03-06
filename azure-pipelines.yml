@@ -14,7 +14,7 @@ pr:
 resources:
   containers:
   - container: ubuntu_1604_x64_build_image
-    image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-10fcdcf-20190208200917
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-10fcdcf-20190208200917
 
 jobs:
 
