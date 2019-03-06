@@ -33,7 +33,6 @@ jobs:
     # Install native dependencies
     # Linux builds use docker images with dependencies preinstalled,
     # so we only need this step for OSX and Windows.
-    # (TODO: figure out the name of Linux docker images that can be used by CoreRT)
     - ${{ if eq(parameters.osGroup, 'OSX') }}:
       - script: sh eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
