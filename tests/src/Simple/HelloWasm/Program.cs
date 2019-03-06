@@ -286,6 +286,8 @@ internal static class Program
 
         TestDispose();
 
+        TestCallToGenericInterfaceMethod();
+
         TestInitObjDouble();
 
         // This test should remain last to get other results before stopping the debugger
@@ -823,6 +825,28 @@ internal static class Program
         result += 1000;
 
         return result;
+    }
+
+    private static void TestCallToGenericInterfaceMethod()
+    {
+        StartTest("Call generic method on interface test");
+
+        TestGenItf implInt = new TestGenItf();
+        implInt.Log<object>(new object());
+        EndTest(true);
+    }
+
+    public interface ITestGenItf
+    {
+        bool Log<TState>(TState state);
+    }
+
+    public class TestGenItf : ITestGenItf
+    {
+        public bool Log<TState>(TState state)
+        {
+            return true;
+        }
     }
 
     private static void TestArgsWithMixedTypesAndExceptionRegions()
