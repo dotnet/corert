@@ -63,10 +63,10 @@ jobs:
       displayName: Run simple CoreRT tests
     - ${{ if eq(parameters.buildConfig, 'Debug') }}:
       - script: $(testScriptName) $(buildConfig) /multimodule
-        condition: ${{ eq(parameters.osGroup, 'Windows_NT') }}
+        enabled: ${{ eq(parameters.osGroup, 'Windows_NT') }}
         displayName: Run simple CoreRT tests in the MultiModule mode
       - script: $(testScriptName) $(buildConfig) /coreclr ReadyToRun /mode ReadyToRun
-        condition: ${{ eq(parameters.osGroup, 'Windows_NT') }}
+        enabled: ${{ eq(parameters.osGroup, 'Windows_NT') }}
         displayName: Run basic ReadyToRun tests
       - script: $(testScriptName) $(buildConfig) /coreclr Top200
         displayName: Run CoreCLR Top200 tests
