@@ -61,15 +61,18 @@ jobs:
     # Run tests
     - script: $(testScriptName) $(buildConfig)
       displayName: Run simple CoreRT tests
-    - ${{ if eq(parameters.buildConfig, 'Debug') }}:
-      - script: $(testScriptName) $(buildConfig) /multimodule
-        enabled: ${{ eq(parameters.osGroup, 'Windows_NT') }}
-        displayName: Run simple CoreRT tests in the MultiModule mode
-      - script: $(testScriptName) $(buildConfig) /coreclr ReadyToRun /mode ReadyToRun
-        enabled: ${{ eq(parameters.osGroup, 'Windows_NT') }}
-        displayName: Run basic ReadyToRun tests
-      - script: $(testScriptName) $(buildConfig) /coreclr Top200
-        displayName: Run CoreCLR Top200 tests
+
+    - script: $(testScriptName) $(buildConfig) /multimodule
+      displayName: Run simple CoreRT tests in the MultiModule mode
+      enabled: ${{ and(eq(parameters.buildConfig, 'Debug'), eq(parameters.osGroup, 'Windows_NT')) }}
+
+    - script: $(testScriptName) $(buildConfig) /coreclr ReadyToRun /mode ReadyToRun
+      displayName: Run basic ReadyToRun tests
+      enabled: ${{ and(eq(parameters.buildConfig, 'Debug'), eq(parameters.osGroup, 'Windows_NT')) }}
+
+    - script: $(testScriptName) $(buildConfig) /coreclr Top200
+      displayName: Run CoreCLR Top200 tests
+      enabled: ${{ eq(parameters.buildConfig, 'Debug') }}
 
     - task: PublishTestResults@2
       condition: succeededOrFailed()
