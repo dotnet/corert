@@ -28,6 +28,18 @@ jobs:
     - name: osIdentifier
       value: ${{ parameters.osIdentifier }}
 
+    - name: buildScriptName
+      value: 'build.cmd'
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - name: buildScriptName
+        value: './build.sh'
+
+    - name: testScriptName
+      value: 'tests\runtest.cmd'
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - name: testScriptName
+        value: 'tests/runtest.sh'
+
     steps:
 
     # Install native dependencies
@@ -42,28 +54,22 @@ jobs:
       - script: eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
 
-      # Build and tests on Windows
-      - script: build.cmd $(buildConfig) skiptests
-        displayName: Build product
-      - script: tests\runtest.cmd $(buildConfig)
-        displayName: Run simple CoreRT tests
-      - ${{ if eq(parameters.buildConfig, 'Debug') }}:
-        - script: tests\runtest.cmd $(buildConfig) /multimodule
-          displayName: Run simple CoreRT tests in the MultiModule mode
-        - script: tests\runtest.cmd $(buildConfig) /coreclr ReadyToRun /mode ReadyToRun
-          displayName: Run basic ReadyToRun tests
-        - script: tests\runtest.cmd $(buildConfig) /coreclr Top200
-          displayName: Run CoreCLR Top200 tests
+    # Build product
+    - script: $(buildScriptName) $(buildConfig) skiptests
+      displayName: Build product
 
-    # Build and tests on non-Windows platforms
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: ./build.sh $(buildConfig) skiptests
-        displayName: Build product
-      - script: tests/runtest.sh $(buildConfig)
-        displayName: Run simple CoreRT tests
-      - ${{ if eq(parameters.buildConfig, 'Debug') }}:
-        - script: tests/runtest.sh $(buildConfig) -coredumps /coreclr Top200
-          displayName: Run CoreCLR Top200 tests
+    # Run tests
+    - script: $(testScriptName) $(buildConfig)
+      displayName: Run simple CoreRT tests
+    - ${{ if eq(parameters.buildConfig, 'Debug') }}:
+      - script: $(testScriptName) $(buildConfig) /multimodule
+        condition: eq(parameters.osGroup, 'Windows_NT')
+        displayName: Run simple CoreRT tests in the MultiModule mode
+      - script: $(testScriptName) $(buildConfig) /coreclr ReadyToRun /mode ReadyToRun
+        condition: eq(parameters.osGroup, 'Windows_NT')
+        displayName: Run basic ReadyToRun tests
+      - script: $(testScriptName) $(buildConfig) /coreclr Top200
+        displayName: Run CoreCLR Top200 tests
 
     - task: PublishTestResults@2
       condition: succeededOrFailed()
