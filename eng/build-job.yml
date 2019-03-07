@@ -3,6 +3,7 @@ parameters:
   archType: ''
   osGroup: ''
   osIdentifier: ''
+  containerName: ''
   timeoutInMinutes: ''
 
 ### Product build
@@ -18,6 +19,9 @@ jobs:
     name: ${{ format('build_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
     displayName: ${{ format('Build {0} {1} {2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
 
+    # Note that the containers are resources defined in azure-pipelines.yml
+    containerName: ${{ parameters.containerName }}
+
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     variables:
@@ -29,7 +33,6 @@ jobs:
     # Install native dependencies
     # Linux builds use docker images with dependencies preinstalled,
     # so we only need this step for OSX and Windows.
-    # (TODO: figure out the name of Linux docker images that can be used by CoreRT)
     - ${{ if eq(parameters.osGroup, 'OSX') }}:
       - script: sh eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
@@ -63,6 +66,7 @@ jobs:
           displayName: Run CoreCLR Top200 tests
 
     - task: PublishTestResults@2
+      condition: succeededOrFailed()
       inputs:
         testResultsFormat: 'xUnit'
         testResultsFiles: '**/testResults.xml'
