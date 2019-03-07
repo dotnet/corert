@@ -42,13 +42,22 @@ namespace System.Runtime.Loader
         {
             Default.Unloading?.Invoke(Default);
         }
+
+        internal unsafe Assembly InternalLoad(byte[] rawAssembly, byte[] rawSymbolStore)
+        {
+            return ReflectionAugments.ReflectionCoreCallbacks.Load(rawAssembly, rawSymbolStore);
+        }
     }
 
     /// <summary>
     /// AssemblyLoadContext is not supported in .NET Native. This is
     /// just a dummy class to make applications compile.
     /// </summary>
-    internal class DefaultAssemblyLoadContext : AssemblyLoadContext
+    internal sealed class DefaultAssemblyLoadContext : AssemblyLoadContext
+    {
+    }
+
+    internal sealed class IndividualAssemblyLoadContext : AssemblyLoadContext
     {
     }
 }

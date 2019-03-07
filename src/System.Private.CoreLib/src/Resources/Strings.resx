@@ -2941,4 +2941,10 @@
   <data name="Serialization_DangerousDeserialization_Switch" xml:space="preserve">
     <value>An action was attempted during deserialization that could lead to a security vulnerability. The action has been aborted. To allow the action, set the '{0}' AppContext switch to true.</value>
   </data>
+  <data name="NotSupported_AssemblyLoadFromHash" xml:space="preserve">
+    <value>Assembly.LoadFrom with hashValue is not supported.</value>
+  </data>
+  <data name="BadImageFormat_BadILFormat" xml:space="preserve">
+    <value>Bad IL format.</value>
+  </data>
 </root>
