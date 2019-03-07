@@ -9,18 +9,19 @@ namespace System.Threading
 {
     internal sealed class ThreadInt64PersistentCounter
     {
-        internal static readonly object LockObj = new object();
+        // This type is used by Monitor for lock contention counting, so can't use an object for a lock. Also it's preferable
+        // (though currently not required) to disallow/ignore thread interrupt for uses of this lock here. Using Lock directly
+        // is a possibility but maybe less compatible with other runtimes. Lock cases are relatively rare, static instance
+        // should be ok.
+        private static readonly LowLevelLock s_lock = new LowLevelLock();
 
-        [ThreadStatic]
-        private static ThreadLocalNode t_node;
-
-        private ThreadLocalNode _nodesHead;
+        private readonly ThreadLocal<ThreadLocalNode> _threadLocalNode = new ThreadLocal<ThreadLocalNode>(trackAllValues: true);
         private long _overflowCount;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Increment()
         {
-            ThreadLocalNode node = t_node;
+            ThreadLocalNode node = _threadLocalNode.Value;
             if (node != null)
             {
                 node.Increment();
@@ -33,19 +34,15 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void TryCreateNode()
         {
-            Debug.Assert(t_node == null);
+            Debug.Assert(!_threadLocalNode.IsValueCreated);
 
-            ThreadLocalNode node;
             try
             {
-                node = new ThreadLocalNode(this);
+                _threadLocalNode.Value = new ThreadLocalNode(this);
             }
             catch (OutOfMemoryException)
             {
-                return;
             }
-
-            t_node = node;
         }
 
         public long Count
@@ -55,14 +52,19 @@ namespace System.Threading
                 // Make sure up-to-date thread-local node state is visible to this thread
                 Interlocked.MemoryBarrierProcessWide();
 
-                lock (LockObj)
+                s_lock.Acquire();
+                try
                 {
                     long count = _overflowCount;
-                    for (ThreadLocalNode node = _nodesHead; node != null; node = node.Next)
+                    foreach (ThreadLocalNode node in _threadLocalNode.ValuesAsEnumerable)
                     {
                         count += node.Count;
                     }
                     return count;
+                }
+                finally
+                {
+                    s_lock.Release();
                 }
             }
         }
@@ -71,8 +73,6 @@ namespace System.Threading
         {
             private uint _count;
             private readonly ThreadInt64PersistentCounter _counter;
-            private ThreadLocalNode _previous;
-            private ThreadLocalNode _next;
 
             public ThreadLocalNode(ThreadInt64PersistentCounter counter)
             {
@@ -80,48 +80,23 @@ namespace System.Threading
 
                 _count = 1;
                 _counter = counter;
-
-                lock (LockObj)
-                {
-                    ThreadLocalNode head = counter._nodesHead;
-                    if (head != null)
-                    {
-                        _next = head;
-                        head._previous = this;
-                    }
-                    counter._nodesHead = this;
-                }
             }
 
             ~ThreadLocalNode()
             {
                 ThreadInt64PersistentCounter counter = _counter;
-                lock (LockObj)
+                s_lock.Acquire();
+                try
                 {
                     counter._overflowCount += _count;
-
-                    ThreadLocalNode previous = _previous;
-                    ThreadLocalNode next = _next;
-
-                    if (previous != null)
-                    {
-                        previous._next = next;
-                    }
-                    else
-                    {
-                        Debug.Assert(counter._nodesHead == this);
-                        counter._nodesHead = next;
-                    }
-
-                    if (next != null)
-                    {
-                        next._previous = previous;
-                    }
+                }
+                finally
+                {
+                    s_lock.Release();
                 }
             }
 
             public uint Count => _count;
-            public ThreadLocalNode Next => _next;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void Increment()
@@ -144,10 +119,15 @@ namespace System.Threading
                 // The lock, in coordination with other places that read these values, ensures that both changes below become
                 // visible together
                 ThreadInt64PersistentCounter counter = _counter;
-                lock (LockObj)
+                s_lock.Acquire();
+                try
                 {
                     _count = 0;
                     counter._overflowCount += (long)uint.MaxValue + 1;
+                }
+                finally
+                {
+                    s_lock.Release();
                 }
             }
         }
