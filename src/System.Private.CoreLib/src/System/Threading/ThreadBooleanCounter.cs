@@ -40,15 +40,23 @@ namespace System.Threading
                 Interlocked.MemoryBarrierProcessWide();
 
                 int count = 0;
-                foreach (bool isSet in _threadLocalFlag.ValuesAsEnumerable)
+                try
                 {
-                    if (isSet)
+                    foreach (bool isSet in _threadLocalFlag.ValuesAsEnumerable)
                     {
-                        ++count;
-                        Debug.Assert(count > 0);
+                        if (isSet)
+                        {
+                            ++count;
+                            Debug.Assert(count > 0);
+                        }
                     }
+                    return count;
                 }
-                return count;
+                catch (OutOfMemoryException)
+                {
+                    // Some allocation occurs above and it may be a bit awkward to get an OOM from this property getter
+                    return count;
+                }
             }
         }
     }

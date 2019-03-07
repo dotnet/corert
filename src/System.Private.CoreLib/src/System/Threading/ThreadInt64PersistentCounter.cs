@@ -34,7 +34,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void TryCreateNode()
         {
-            Debug.Assert(!_threadLocalNode.IsValueCreated);
+            Debug.Assert(_threadLocalNode.Value == null);
 
             try
             {
@@ -52,19 +52,28 @@ namespace System.Threading
                 // Make sure up-to-date thread-local node state is visible to this thread
                 Interlocked.MemoryBarrierProcessWide();
 
-                s_lock.Acquire();
+                long count = 0;
                 try
                 {
-                    long count = _overflowCount;
-                    foreach (ThreadLocalNode node in _threadLocalNode.ValuesAsEnumerable)
+                    s_lock.Acquire();
+                    try
                     {
-                        count += node.Count;
+                        count = _overflowCount;
+                        foreach (ThreadLocalNode node in _threadLocalNode.ValuesAsEnumerable)
+                        {
+                            count += node.Count;
+                        }
+                        return count;
                     }
-                    return count;
+                    finally
+                    {
+                        s_lock.Release();
+                    }
                 }
-                finally
+                catch (OutOfMemoryException)
                 {
-                    s_lock.Release();
+                    // Some allocation occurs above and it may be a bit awkward to get an OOM from this property getter
+                    return count;
                 }
             }
         }
