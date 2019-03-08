@@ -1523,6 +1523,15 @@ void GCToEEInterface::VerifySyncTableEntry()
 {
 }
 
+void GCToEEInterface::UpdateGCEventStatus(int currentPublicLevel, int currentPublicKeywords, int currentPrivateLevel, int currentPrivateKeywords)
+{
+    UNREFERENCED_PARAMETER(currentPublicLevel);
+    UNREFERENCED_PARAMETER(currentPublicKeywords);
+    UNREFERENCED_PARAMETER(currentPrivateLevel);
+    UNREFERENCED_PARAMETER(currentPrivateKeywords);
+    // TODO: Linux LTTng
+}
+
 MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
 {
     assert(g_pFreeObjectMethodTable != nullptr);
