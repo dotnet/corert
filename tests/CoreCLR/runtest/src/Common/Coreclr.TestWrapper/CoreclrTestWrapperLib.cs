@@ -76,7 +76,7 @@ namespace CoreclrTestLib
                     errorWriter.WriteLine("cmdLine:" + executable + " Timed Out");
                 }
 
-               outputWriter.WriteLine("Test Harness Exitcode is : " + exitCode.ToString());
+               outputWriter.WriteLine("Test_Harness_Exitcode is : " + exitCode.ToString());
                outputWriter.Flush();
 
                errorWriter.Flush();

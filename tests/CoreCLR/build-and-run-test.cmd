@@ -36,6 +36,9 @@ if /i not "%NativeCodeGen%" == "readytorun" (
     )
 )
 
+@echo on
+echo Done with vcvarsall
+
 set ExtraArgs=
 if /i "%NativeCodeGen%" == "readytorun" (
     echo READY TO RUN MODE
