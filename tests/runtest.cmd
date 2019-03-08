@@ -541,7 +541,7 @@ goto :eof
 
     if not exist "%CoreRT_TestExtRepo_CoreCLR%" ((call :Fail "%CoreRT_TestExtRepo_CoreCLR% does not exist") & exit /b 1)
 
-    if "%CoreRT_MultiFileConfiguration%" == "MultiModule" (
+    if /i "%CoreRT_MultiFileConfiguration%" == "MultiModule" (
         set IlcMultiModule=true
         REM Pre-compile shared framework assembly
         echo Compiling framework library
@@ -549,7 +549,7 @@ goto :eof
         "%CoreRT_CliDir%\dotnet.exe" msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:OSGroup=%CoreRT_BuildOS%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%CoreRT_TestRoot%..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /t:CreateLib %CoreRT_TestRoot%\..\src\BuildIntegration\BuildFrameworkNativeObjects.proj
     )
 
-    if "%CoreRT_TestCompileMode%" == "readytorun" (
+    if /i "%CoreRT_TestCompileMode%" == "readytorun" (
         set NativeCodeGen=readytorun
         set IlcMultiModule=
     )
