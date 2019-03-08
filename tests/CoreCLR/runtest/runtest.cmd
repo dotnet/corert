@@ -1,4 +1,6 @@
-@if not defined __echo @echo off
+@echo on
+echo
+@echo start CORECLR\tests\runtest.cmd
 setlocal EnableDelayedExpansion
 
 :: Set the default arguments
@@ -220,6 +222,8 @@ REM ============================================================================
 echo %__MsgPrefix%Test run successful. Refer to the log files for details:
 echo     %__TestRunHtmlLog%
 echo     %__TestRunXmlLog%
+
+@echo finished CORECLR\tests\runtest.cmd
 exit /b 0
 
 REM =========================================================================================

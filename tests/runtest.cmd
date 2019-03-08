@@ -1,4 +1,6 @@
-@if not defined _echo @echo off
+@echo on
+echo
+@echo start tests\runtest.cmd
 setlocal EnableDelayedExpansion
 
 set ThisScript=%0
@@ -569,6 +571,8 @@ goto :eof
     
     set __SavedErrorLevel=%ErrorLevel%
     popd
+
+    @echo finishing tests\runtest.cmd
     exit /b %__SavedErrorLevel%
 
 :TestExtRepoCoreFX
