@@ -125,6 +125,8 @@ goto :SkipBuildTests
 REM The test build handles restoring external dependencies such as CoreCLR runtime and its test host
 REM Trigger the test build so it will build but not run tests before we run them here
 call %CoreRT_TestRoot%..\buildscripts\build-tests.cmd %CoreRT_BuildType% %CoreRT_BuildArch% buildtests
+@echo on
+echo
 
 IF ERRORLEVEL 1 (
     echo Tests will not be run due to build-tests.cmd failing with error code !ErrorLevel!
@@ -134,6 +136,8 @@ IF ERRORLEVEL 1 (
 :SkipBuildTests
 
 call %CoreRT_TestRoot%testenv.cmd
+@echo on
+echo
 
 set CoreRT_RspTemplateDir=%CoreRT_TestRoot%..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%
 
@@ -157,9 +161,13 @@ if exist %_VSWHERE% (
 )
 
 call "%_VSCOMNTOOLS%\VsDevCmd.bat"
+@echo on
+echo
 :RunVCVars
 
 call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" %CoreRT_HostArch%
+@echo on
+echo
 
 :: Eventually we'll always want to compile the framework with r2r before running tests.
 :: During bringup, it's an opt-in separate step.
@@ -185,6 +193,8 @@ set /a __WasmPassedTests=0
 set /a __ReadyToRunTotalTests=0
 set /a __ReadyToRunPassedTests=0
 for /f "delims=" %%a in ('dir /s /aD /b %CoreRT_TestRoot%\src\%CoreRT_TestName%') do (
+    @echo on
+    echo
     set __SourceFolder=%%a
     set __SourceFileName=%%~na
     set __RelativePath=!__SourceFolder:%CoreRT_TestRoot%=!
@@ -394,6 +404,8 @@ goto :eof
             echo Running test !__SourceFileName!
             call !__SourceFile!.cmd !__SourceFolder!\bin\%CoreRT_BuildType%\%CoreRT_BuildArch%\native !__SourceFileName!.!__Extension! !__ExtraTestRunArgs!
             set __SavedErrorLevel=!ErrorLevel!
+            @echo on
+            echo
         )
     )
 
@@ -507,6 +519,8 @@ goto :eof
     set NativeCodeGen=readytorun
 
     call %CoreRT_TestRoot%\CoreCLR\compile-framework.cmd
+    @echo on
+    echo
     exit /b %ErrorLevel%
 
 :TestExtRepoCoreCLR
@@ -562,11 +576,15 @@ goto :eof
             set TestFileName=%%~nxi
         )
         call %CoreRT_TestRoot%\CoreCLR\build-and-run-test.cmd !TestFolderName! !TestFileName!
+        @echo on
+        echo
     ) else (
         set __RunTestCommand=runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% %CoreCLRExcludeText% %CoreRT_CoreCLRTargetsFile% LogsDir %__LogDir%
         if not "%CoreRT_GCStressLevel%" == "" ( set __RunTestCommand=!__RunTestCommand! gcstresslevel !CoreRT_GCStressLevel! )
         echo !__RunTestCommand!
         call !__RunTestCommand!
+        @echo on
+        echo
     )
     
     set __SavedErrorLevel=%ErrorLevel%
@@ -608,6 +626,8 @@ goto :eof
 
     echo runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% LogsDir %XunitLogDir%
     call runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% LogsDir %XunitLogDir% 
+    @echo on
+    echo
 
     set __SavedErrorLevel=%ErrorLevel%
     popd

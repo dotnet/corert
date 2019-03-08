@@ -111,6 +111,8 @@ if not exist !_msbuildexe! (echo Error: Could not find MSBuild.exe.  Please see 
 :: Set the environment for the  build- VS cmd prompt
 echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\VsDevCmd.bat"
 call                                 "%__VSToolsRoot%\VsDevCmd.bat"
+@echo on
+echo
 
 if not defined VSINSTALLDIR (
     echo %__MsgPrefix%Error: runtest.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
@@ -164,6 +166,8 @@ if "%__SkipWrapperGeneration%"=="true" goto SkipWrapperGeneration
 set __BuildLogRootName=Tests_XunitWrapper
 call :msbuild "%__ProjectFilesDir%\runtest.proj" /p:BuildWrappers=true
 if errorlevel 1 exit /b 1
+@echo on
+echo
 
 :SkipWrapperGeneration
 
@@ -195,6 +199,8 @@ if errorlevel 1 (
     echo     Html report: %__TestRunHtmlLog%
     exit /b 1
 )
+@echo on
+echo
 
 if not defined __PerfTests goto :SkipRunPerfTests
 
@@ -210,6 +216,8 @@ if errorlevel 1 (
    echo Test Run failed. Refer to the following:  
    echo     Html report: %__TestRunHtmlLog%  
 )  
+@echo on
+echo
 
 :SkipRunPerfTests
 
