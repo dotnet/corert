@@ -161,9 +161,9 @@ call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" %CoreRT_HostArch%
 
 :: Eventually we'll always want to compile the framework with r2r before running tests.
 :: During bringup, it's an opt-in separate step.
-if "%CoreRT_R2RFramework%"=="true" goto :TestExtRepoCoreCLRFramework
-if "%CoreRT_RunCoreCLRTests%"=="true" goto :TestExtRepoCoreCLR
-if "%CoreRT_RunCoreFXTests%"=="true" goto :TestExtRepoCoreFX
+if /i "%CoreRT_R2RFramework%"=="true" goto :TestExtRepoCoreCLRFramework
+if /i "%CoreRT_RunCoreCLRTests%"=="true" goto :TestExtRepoCoreCLR
+if /i "%CoreRT_RunCoreFXTests%"=="true" goto :TestExtRepoCoreFX
 
 if /i "%__BuildType%"=="Debug" (
     set __LinkLibs=msvcrtd.lib
@@ -331,12 +331,12 @@ goto :eof
     ) else if /i "%__Mode%" == "readytorun" (
         set extraArgs=!extraArgs! /p:NativeCodeGen=readytorun
     ) else (
-        if "%CoreRT_MultiFileConfiguration%" == "MultiModule" (
+        if /i "%CoreRT_MultiFileConfiguration%" == "MultiModule" (
             set extraArgs=!extraArgs! "/p:IlcMultiModule=true"
         )
     )
 
-    if "%CoreRT_DeterminismMode%"=="true" (
+    if /i "%CoreRT_DeterminismMode%"=="true" (
         set /a CoreRT_DeterminismSeed=%RANDOM%*32768+%RANDOM%
         echo Running determinism baseline scenario with seed !CoreRT_DeterminismSeed!
 
@@ -371,18 +371,18 @@ goto :eof
         endlocal
 
         set __SavedErrorLevel=!ErrorLevel!
-        if "%CoreRT_TestRun%"=="false" (goto :SkipTestRun)
+        if /i "%CoreRT_TestRun%"=="false" (goto :SkipTestRun)
         
         set __Extension=exe
 
-        if "%__Mode%"=="wasm" (
+        if /i "%__Mode%"=="wasm" (
             REM Skip running if this is WASM build-only testing running in a different architecture's build
             if /i not "%CoreRT_BuildArch%"=="wasm" (goto :SkipTestRun)
             set __Extension=html
         )
 
         set __ExtraTestRunArgs=
-        if "%__Mode%"=="readytorun" (
+        if /i "%__Mode%"=="readytorun" (
             set __Extension=ni.exe
             set __ExtraTestRunArgs="%CoreRT_CliDir%\dotnet.exe" %CoreRT_ReadyToRunTestHarness% %CoreRT_CoreCLRRuntimeDir%\CoreRun.exe
         )
@@ -525,7 +525,7 @@ goto :eof
 
     if not exist "%CoreRT_TestExtRepo_CoreCLR%" ((call :Fail "%CoreRT_TestExtRepo_CoreCLR% does not exist") & exit /b 1)
 
-    if "%CoreRT_MultiFileConfiguration%" == "MultiModule" (
+    if /i "%CoreRT_MultiFileConfiguration%" == "MultiModule" (
         set IlcMultiModule=true
         REM Pre-compile shared framework assembly
         echo Compiling framework library
@@ -533,7 +533,7 @@ goto :eof
         "%CoreRT_CliDir%\dotnet.exe" msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:OSGroup=%CoreRT_BuildOS%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%CoreRT_TestRoot%..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /t:CreateLib %CoreRT_TestRoot%\..\src\BuildIntegration\BuildFrameworkNativeObjects.proj
     )
 
-    if "%CoreRT_TestCompileMode%" == "readytorun" (
+    if /i "%CoreRT_TestCompileMode%" == "readytorun" (
         set NativeCodeGen=readytorun
         set IlcMultiModule=
     )
