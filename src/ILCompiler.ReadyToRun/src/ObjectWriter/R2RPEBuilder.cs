@@ -328,19 +328,41 @@ namespace ILCompiler.PEWriter
                         // the blob data goes out of sync and WriteContentTo outputs garbage.
                         sectionDataBuilder = PEResourceHelper.Relocate(inputSectionReader, rvaDelta);
                     }
+                    else if (name == ".text")
+                    {
+                        int inputMetadataRva = _peReader.PEHeaders.CorHeader.MetadataDirectory.RelativeVirtualAddress;
+                        int inputMetadataSectionRva = sectionHeader.VirtualAddress;
+
+                        // The metadata is in .text always ... right?
+                        Debug.Assert(inputMetadataRva >= sectionHeader.VirtualAddress && inputMetadataRva < (sectionHeader.VirtualAddress + sectionHeader.VirtualSize));
+
+                        sectionDataBuilder = new BlobBuilder();
+
+                        // Write section contents up to the start of metadata
+                        sectionDataBuilder.WriteBytes(inputSectionReader.CurrentPointer, inputMetadataRva - sectionHeader.VirtualAddress);
+
+                        // Fix-up RVAs in the metadata stream 
+                        MetadataRvaFixupBuilder.Relocate(_peReader, rvaDelta).WriteContentTo(sectionDataBuilder);
+
+                        // Write the rest of the section after the metadata
+                        inputSectionReader.Offset = inputMetadataRva + _peReader.PEHeaders.MetadataSize - sectionHeader.VirtualAddress;
+                        sectionDataBuilder.WriteBytes(inputSectionReader.CurrentPointer, bytesToRead - inputSectionReader.Offset);
+
+                        Debug.Assert(sectionDataBuilder.Count == inputSectionReader.Length);
+                    }
                     else
                     {
                         sectionDataBuilder = new BlobBuilder();
                         sectionDataBuilder.WriteBytes(inputSectionReader.CurrentPointer, inputSectionReader.RemainingBytes);
-                        
-                        int corHeaderRvaDelta = _peReader.PEHeaders.PEHeader.CorHeaderTableDirectory.RelativeVirtualAddress - sectionHeader.VirtualAddress;
-                        if (corHeaderRvaDelta >= 0 && corHeaderRvaDelta < bytesToRead)
-                        {
-                            // Assume COR header resides in this section, deserialize it and store its location
-                            _corHeaderFileOffset = location.PointerToRawData + corHeaderRvaDelta;
-                            inputSectionReader.Offset = corHeaderRvaDelta;
-                            _corHeaderBuilder = new CorHeaderBuilder(ref inputSectionReader);
-                        }
+                    }
+
+                    int corHeaderRvaDelta = _peReader.PEHeaders.PEHeader.CorHeaderTableDirectory.RelativeVirtualAddress - sectionHeader.VirtualAddress;
+                    if (corHeaderRvaDelta >= 0 && corHeaderRvaDelta < bytesToRead)
+                    {
+                        // Assume COR header resides in this section, deserialize it and store its location
+                        _corHeaderFileOffset = location.PointerToRawData + corHeaderRvaDelta;
+                        inputSectionReader.Offset = corHeaderRvaDelta;
+                        _corHeaderBuilder = new CorHeaderBuilder(ref inputSectionReader);
                     }
 
                     int alignedSize = sectionHeader.VirtualSize;
