@@ -472,7 +472,9 @@ namespace ILCompiler
 
             ManifestResourceBlockingPolicy resBlockingPolicy = new NoManifestResourceBlockingPolicy();
 
-            UsageBasedMetadataGenerationOptions metadataGenerationOptions = UsageBasedMetadataGenerationOptions.AnonymousTypeHeuristic;
+            UsageBasedMetadataGenerationOptions metadataGenerationOptions =
+                UsageBasedMetadataGenerationOptions.AnonymousTypeHeuristic
+                | UsageBasedMetadataGenerationOptions.ILScanning;
             if (_completeTypesMetadata)
                 metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.CompleteTypesOnly;
 
@@ -495,6 +497,7 @@ namespace ILCompiler
                     _metadataLogFileName,
                     stackTracePolicy,
                     invokeThunkGenerationPolicy,
+                    new Internal.IL.CoreRTILProvider(),
                     metadataGenerationOptions);
             }
             else

@@ -111,6 +111,21 @@ namespace Internal.IL
             return opcode;
         }
 
+        public void Skip(ILOpcode opcode)
+        {
+            if (opcode != ILOpcode.switch_)
+            {
+                int opcodeSize = (byte)opcode != (int)opcode ? 2 : 1;
+                _currentOffset += opcode.GetSize() - opcodeSize;
+            }
+            else
+            {
+                // "switch" opcode is special
+                uint count = ReadILUInt32();
+                _currentOffset += checked((int)(count * 4));
+            }
+        }
+
         public void Seek(int offset)
         {
             _currentOffset = offset;
