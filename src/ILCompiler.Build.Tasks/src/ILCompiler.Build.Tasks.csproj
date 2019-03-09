@@ -11,6 +11,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ComputeManagedAssemblies.cs" />
+    <Compile Include="DumpNativeResources.cs" />
   </ItemGroup>
   <ItemGroup>
   <PackageReference Include="Microsoft.Build.Framework">

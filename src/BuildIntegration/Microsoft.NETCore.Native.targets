@@ -282,10 +282,26 @@ See the LICENSE file in the project root for more information.
       <Copy SourceFiles="@(NativeObjects)" DestinationFolder="$(NativeOutputPath)" />
   </Target>
 
+  <PropertyGroup>
+    <_Win32ResFile>$(NativeIntermediateOutputPath)$(TargetName).res</_Win32ResFile>
+  </PropertyGroup>
+
+  <UsingTask TaskName="DumpNativeResources" AssemblyFile="$(IlcBuildTasksPath)" />
+  <Target Name="GenerateResFile"
+      Inputs="$(IntermediateOutputPath)$(TargetName)$(TargetExt)"
+      Outputs="$(_Win32ResFile)"
+      Condition="'$(OS)' == 'Windows_NT'">
+
+    <DumpNativeResources
+        MainAssembly="$(IntermediateOutputPath)$(TargetName)$(TargetExt)"
+        ResourceFile="$(_Win32ResFile)" />
+
+  </Target>
+
   <Target Name="LinkNative"
       Inputs="$(NativeObject);@(NativeLibrary)"
       Outputs="$(NativeBinary)"
-      DependsOnTargets="$(LinkNativeDependsOn)">
+      DependsOnTargets="$(LinkNativeDependsOn);GenerateResFile">
 
     <ItemGroup>
       <CustomLinkerArg Include="&quot;$(NativeObject)&quot;" />
@@ -294,6 +310,7 @@ See the LICENSE file in the project root for more information.
       <CustomLinkerArg Include="/DEF:&quot;$(ExportsFile)&quot;" Condition="'$(OS)' == 'Windows_NT' and $(ExportsFile) != ''" />
       <CustomLinkerArg Include="/LIBPATH:&quot;%(AdditionalNativeLibraryDirectories.Identity)&quot;" Condition="'$(OS)' == 'Windows_NT' and '@(AdditionalNativeLibraryDirectories->Count())' &gt; 0" />
       <CustomLinkerArg Include="-exported_symbols_list &quot;$(ExportsFile)&quot;" Condition="'$(OS)' != 'Windows_NT' and $(ExportsFile) != ''" />
+      <CustomLinkerArg Condition="Exists('$(_Win32ResFile)')" Include="$(_Win32ResFile)" />
       <CustomLinkerArg Include="@(LinkerArg)" />
     </ItemGroup>
 
