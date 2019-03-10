@@ -8,6 +8,7 @@
     <DebugType Condition="'$(DebugType)' == ''">portable</DebugType>
     <DefineConstants Condition="$(NativeCodeGen) == 'cpp'">$(DefineConstants);CODEGEN_CPP</DefineConstants>
     <RootAllApplicationAssemblies>false</RootAllApplicationAssemblies>
+    <IlcGenerateCompleteTypeMetadata>false</IlcGenerateCompleteTypeMetadata>
   </PropertyGroup>
 
   <PropertyGroup>
