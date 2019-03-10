@@ -116,6 +116,7 @@ namespace ILCompiler.DependencyAnalysis
                                 if (inst.IsNull)
                                     break;
                                 type = ((MetadataType)type).MakeInstantiatedType(inst);
+                                list.Add(factory.MaximallyConstructableType(type), "Type.GetMethod");
                             }
 
                             MethodDesc reflectedMethod = type.GetMethod(name, null);
