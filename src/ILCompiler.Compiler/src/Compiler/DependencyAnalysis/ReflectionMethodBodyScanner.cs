@@ -30,7 +30,13 @@ namespace ILCompiler.DependencyAnalysis
             //
             // This has obvious problems since we don't have exact knowledge of the parameters passed
             // (something being in front of a call doesn't mean it's a parameter to the call). But since
-            // this is a heuristic, it's okay.
+            // this is a heuristic, it's okay. We want this to be as fast as possible.
+            //
+            // The main purposes of this scanner is to make following patterns work:
+            //
+            // * Enum.GetValues(typeof(Foo)) - this is very common and we need to make sure Foo[] is compiled.
+            // * Type.GetType("Foo, Bar").GetMethod("Blah") - framework uses this to work around layering problems.
+            // * typeof(Foo<>).MakeGenericType(arg).GetMethod("Blah") - used in e.g. LINQ expressions implementation
 
             while (reader.HasNext)
             {
@@ -87,22 +93,11 @@ namespace ILCompiler.DependencyAnalysis
                             list.Add(factory.MaximallyConstructableType(type), reason);
 
                             // Also add module metadata in case this reference was through a type forward
-                            list.Add(factory.ModuleMetadata(referenceModule), reason);
+                            if (factory.MetadataManager.CanGenerateMetadata(referenceModule.GetGlobalModuleType()))
+                                list.Add(factory.ModuleMetadata(referenceModule), reason);
 
-                            // We also opportunistically remember the type so that if flows
-                            // to e.g. Type.GetMethod if needed.
+                            // Opportunistically remember the type so that it flows to Type.GetMethod if needed.
                             tracker.TrackType(type);
-
-                            // If the type is generic, instantiate it too to cover MakeGenericType
-                            if (type.IsGenericDefinition)
-                            {
-                                Instantiation inst = GetInstantiationThatMeetsConstraints(type.Instantiation);
-                                if (!inst.IsNull)
-                                {
-                                    type = ((MetadataType)type).MakeInstantiatedType(inst);
-                                    list.Add(factory.MaximallyConstructableType(type), reason);
-                                }
-                            }
                         }
                     }
                     break;
@@ -112,11 +107,12 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         string name = tracker.GetLastString();
                         TypeDesc type = tracker.GetLastType();
-                        if (name != null && type != null)
+                        if (name != null
+                            && type != null)
                         {
                             if (type.IsGenericDefinition)
                             {
-                                Instantiation inst = GetInstantiationThatMeetsConstraints(type.Instantiation);
+                                Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(type.Instantiation, allowCanon: false);
                                 if (inst.IsNull)
                                     break;
                                 type = ((MetadataType)type).MakeInstantiatedType(inst);
@@ -127,10 +123,11 @@ namespace ILCompiler.DependencyAnalysis
                             {
                                 if (reflectedMethod.HasInstantiation)
                                 {
-                                    if (reflectedMethod.OwningType.HasInstantiation)
+                                    // Don't want to accidentally get Foo<__Canon>.Bar<object>()
+                                    if (reflectedMethod.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
                                         break;
 
-                                    Instantiation inst = GetInstantiationThatMeetsConstraints(reflectedMethod.Instantiation);
+                                    Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(reflectedMethod.Instantiation, allowCanon: false);
                                     if (inst.IsNull)
                                         break;
                                     reflectedMethod = reflectedMethod.MakeInstantiatedMethod(inst);
@@ -142,7 +139,12 @@ namespace ILCompiler.DependencyAnalysis
                                     RootVirtualMethodForReflection(ref list, factory, reflectedMethod, reason);
 
                                 if (!reflectedMethod.IsAbstract)
+                                {
                                     list.Add(factory.CanonicalEntrypoint(reflectedMethod), reason);
+                                    if (reflectedMethod.HasInstantiation
+                                        && reflectedMethod != reflectedMethod.GetCanonMethodTarget(CanonicalFormKind.Specific))
+                                        list.Add(factory.MethodGenericDictionary(reflectedMethod), reason);
+                                }
                             }
                         }
                     }
@@ -246,52 +248,6 @@ namespace ILCompiler.DependencyAnalysis
                 mdType.Name == "Type" &&
                 mdType.Namespace == "System" &&
                 mdType.Module == type.Context.SystemModule;
-        }
-
-        private static Instantiation GetInstantiationThatMeetsConstraints(Instantiation inst)
-        {
-            TypeDesc[] resultArray = new TypeDesc[inst.Length];
-            for (int i = 0; i < inst.Length; i++)
-            {
-                TypeDesc instArg = GetTypeThatMeetsConstraints((GenericParameterDesc)inst[i]);
-                if (instArg == null)
-                    return default(Instantiation);
-                resultArray[i] = instArg;
-            }
-
-            return new Instantiation(resultArray);
-        }
-
-        private static TypeDesc GetTypeThatMeetsConstraints(GenericParameterDesc genericParam)
-        {
-            TypeSystemContext context = genericParam.Context;
-
-            // Universal canon is the best option if it's supported
-            if (context.SupportsUniversalCanon)
-                return context.UniversalCanonType;
-
-            // Try normal canon next
-            if (!context.SupportsCanon)
-                return null;
-
-            // Not nullable type is the only thing where reference canon doesn't make sense.
-            GenericConstraints constraints = genericParam.Constraints;
-            if ((constraints & GenericConstraints.NotNullableValueTypeConstraint) != 0)
-                return null;
-
-            foreach (var c in genericParam.TypeConstraints)
-            {
-                // Could be e.g. "where T : U"
-                // We could try to dig into the U and solve it, but that just opens us up to
-                // recursion and it's just not worth it.
-                if (c.IsSignatureVariable)
-                    return null;
-
-                if (!c.IsGCPointer)
-                    return null;
-            }
-
-            return genericParam.Context.CanonType;
         }
 
         private struct Tracker

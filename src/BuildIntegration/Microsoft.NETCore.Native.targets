@@ -31,6 +31,7 @@ See the LICENSE file in the project root for more information.
     <RootAllApplicationAssemblies Condition="$(RootAllApplicationAssemblies) == ''">true</RootAllApplicationAssemblies>
     <IlcGenerateCompleteTypeMetadata Condition="$(IlcGenerateCompleteTypeMetadata) == ''">true</IlcGenerateCompleteTypeMetadata>
     <IlcGenerateStackTraceData Condition="$(IlcGenerateStackTraceData) == ''">true</IlcGenerateStackTraceData>
+    <IlcScanReflection Condition="$(IlcScanReflection) == ''">true</IlcScanReflection>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -204,6 +205,7 @@ See the LICENSE file in the project root for more information.
       <IlcArg Condition="$(IlcGenerateCompleteTypeMetadata) == 'true'" Include="--completetypemetadata" />
       <IlcArg Condition="$(IlcGenerateStackTraceData) == 'true'" Include="--stacktracedata" />
       <IlcArg Condition="$(RootAllApplicationAssemblies) == 'true'" Include="--rootallapplicationassemblies" />
+      <IlcArg Condition="$(IlcScanReflection) == 'true'" Include="--scanreflection" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />

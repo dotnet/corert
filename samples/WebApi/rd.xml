@@ -1,7 +1,0 @@
-<Directives>
-    <Application>
-        <Assembly Name="System.Linq.Expressions">
-            <Type Name="System.Linq.Expressions.ExpressionCreator`1[[System.Func`2[[System.Object,System.Private.CoreLib],[System.Object,System.Private.CoreLib]],System.Private.CoreLib]]" Dynamic="Required All" />
-        </Assembly>
-    </Application>
-</Directives>

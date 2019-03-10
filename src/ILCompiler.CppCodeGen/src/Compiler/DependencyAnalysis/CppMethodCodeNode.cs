@@ -70,7 +70,10 @@ namespace ILCompiler.DependencyAnalysis
             foreach (Object node in _dependencies)
                 dependencies.Add(node, "CPP code ");
 
-            CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref dependencies, factory, _method);
+            // Raw p/invoke methods are special - these wouldn't show up as method bodies for other codegens
+            // and the rest of the system doesn't expect to see them here.
+            if (!_method.IsRawPInvoke())
+                CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref dependencies, factory, _method);
 
             return dependencies;
         }

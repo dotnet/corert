@@ -52,6 +52,7 @@ namespace ILCompiler
         private string _metadataLogFileName;
         private bool _noMetadataBlocking;
         private bool _completeTypesMetadata;
+        private bool _scanReflection;
 
         private string _singleMethodTypeName;
         private string _singleMethodName;
@@ -167,6 +168,7 @@ namespace ILCompiler
                 syntax.DefineOption("metadatalog", ref _metadataLogFileName, "Generate a metadata log file");
                 syntax.DefineOption("nometadatablocking", ref _noMetadataBlocking, "Ignore metadata blocking for internal implementation details");
                 syntax.DefineOption("completetypemetadata", ref _completeTypesMetadata, "Generate complete metadata for types");
+                syntax.DefineOption("scanreflection", ref _scanReflection, "Scan IL for reflection patterns");
                 syntax.DefineOption("scan", ref _useScanner, "Use IL scanner to generate optimized code (implied by -O)");
                 syntax.DefineOption("noscan", ref _noScanner, "Do not use IL scanner to generate optimized code");
                 syntax.DefineOption("ildump", ref _ilDump, "Dump IL assembly listing for compiler-generated IL");
@@ -472,11 +474,11 @@ namespace ILCompiler
 
             ManifestResourceBlockingPolicy resBlockingPolicy = new NoManifestResourceBlockingPolicy();
 
-            UsageBasedMetadataGenerationOptions metadataGenerationOptions =
-                UsageBasedMetadataGenerationOptions.AnonymousTypeHeuristic
-                | UsageBasedMetadataGenerationOptions.ILScanning;
+            UsageBasedMetadataGenerationOptions metadataGenerationOptions = UsageBasedMetadataGenerationOptions.AnonymousTypeHeuristic;
             if (_completeTypesMetadata)
                 metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.CompleteTypesOnly;
+            if (_scanReflection)
+                metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.ILScanning;
 
             DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy = new DefaultDynamicInvokeThunkGenerationPolicy();
 
