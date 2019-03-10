@@ -67,16 +67,16 @@ namespace ILCompiler.PEWriter
                 Debug.Assert(builder.Count == reader.Offset);
 
                 // Both metadata tables containing Rvas have the Rva in column 0 of the metadata row
-                int methodRva = reader.ReadInt32();
+                int inputRva = reader.ReadInt32();
 
-                if (methodRva == 0)
+                if (inputRva == 0)
                 {
                     // Don't fix up 0 Rvas (abstract methods in the methodDef table)
                     builder.WriteInt32(0);
                 }
                 else
                 {
-                    builder.WriteInt32(methodRva + sectionRvaDelta);
+                    builder.WriteInt32(inputRva + sectionRvaDelta);
                 }
 
                 // Skip the rest of the row
