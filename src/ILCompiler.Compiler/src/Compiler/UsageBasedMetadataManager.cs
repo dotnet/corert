@@ -283,7 +283,16 @@ namespace ILCompiler
                 MethodIL methodIL = _ilProvider.GetMethodIL(method);
 
                 if (methodIL != null)
-                    ReflectionMethodBodyScanner.Scan(ref dependencies, factory, methodIL);
+                {
+                    try
+                    {
+                        ReflectionMethodBodyScanner.Scan(ref dependencies, factory, methodIL);
+                    }
+                    catch (TypeSystemException)
+                    {
+                        // A problem with the IL - we just don't scan it...
+                    }
+                }
             }
         }
 
