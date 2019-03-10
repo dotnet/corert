@@ -1062,6 +1062,7 @@ internal class ReflectionTest
                 mi.Invoke(null, Array.Empty<object>());
             }
 
+#if !MULTIMODULE_BUILD
             Console.WriteLine("Search through a forwarder");
             {
                 Type t = Type.GetType("System.Collections.Generic.List`1, System.Collections", throwOnError: false);
@@ -1075,6 +1076,7 @@ internal class ReflectionTest
                 if (t == null)
                     throw new Exception("SuppressIldasmAttribute");
             }
+#endif
 
             Console.WriteLine("Enum.GetValues");
             {
