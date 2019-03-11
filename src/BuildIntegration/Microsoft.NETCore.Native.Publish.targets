@@ -1,7 +1,7 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-    <IlcBuildTasksPath Condition="'$(IlcBuildTasksPath)' == ''">$(MSBuildThisFileDirectory)..\tools\ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
+    <IlcBuildTasksPath Condition="'$(IlcBuildTasksPath)' == ''">$(MSBuildThisFileDirectory)..\tools\netstandard\ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
     
     <!--
       Prevent dotnet CLI from deploying the CoreCLR shim executable since we produce
