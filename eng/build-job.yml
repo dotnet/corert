@@ -45,7 +45,7 @@ jobs:
     # Install native dependencies
     # Linux builds use docker images with dependencies preinstalled,
     # so we only need this step for OSX and Windows.
-    - ${{ if eq(parameters.osGroup, 'OSX') }}:
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - script: sh eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
 
@@ -70,7 +70,7 @@ jobs:
       displayName: Run basic ReadyToRun tests
       enabled: ${{ and(eq(parameters.buildConfig, 'Debug'), eq(parameters.osGroup, 'Windows_NT')) }}
 
-    - script: $(testScriptName) $(buildConfig) /coreclr Top200
+    - script: $(testScriptName) $(buildConfig) /coreclr top200
       displayName: Run CoreCLR Top200 tests
       enabled: ${{ eq(parameters.buildConfig, 'Debug') }}
 
