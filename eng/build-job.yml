@@ -40,6 +40,12 @@ jobs:
       - name: testScriptName
         value: 'tests/runtest.sh'
 
+    - name: testParameterPrefix
+      value: '/'
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - name: testParameterPrefix
+        value: '-'
+
     steps:
 
     # Install native dependencies
@@ -62,15 +68,15 @@ jobs:
     - script: $(testScriptName) $(buildConfig)
       displayName: Run simple CoreRT tests
 
-    - script: $(testScriptName) $(buildConfig) /multimodule
+    - script: $(testScriptName) $(buildConfig) $(testParameterPrefix)multimodule
       displayName: Run simple CoreRT tests in the MultiModule mode
       enabled: ${{ and(eq(parameters.buildConfig, 'Debug'), eq(parameters.osGroup, 'Windows_NT')) }}
 
-    - script: $(testScriptName) $(buildConfig) /coreclr ReadyToRun /mode ReadyToRun
+    - script: $(testScriptName) $(buildConfig) $(testParameterPrefix)coreclr ReadyToRun $(testParameterPrefix)mode ReadyToRun
       displayName: Run basic ReadyToRun tests
       enabled: ${{ and(eq(parameters.buildConfig, 'Debug'), eq(parameters.osGroup, 'Windows_NT')) }}
 
-    - script: $(testScriptName) $(buildConfig) /coreclr top200
+    - script: $(testScriptName) $(buildConfig) $(testParameterPrefix)coreclr top200
       displayName: Run CoreCLR Top200 tests
       enabled: ${{ eq(parameters.buildConfig, 'Debug') }}
 
