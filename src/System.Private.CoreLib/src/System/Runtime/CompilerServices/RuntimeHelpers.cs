@@ -20,7 +20,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace System.Runtime.CompilerServices
 {
-    public static class RuntimeHelpers
+    public static partial class RuntimeHelpers
     {
         [Intrinsic]
         public static void InitializeArray(Array array, RuntimeFieldHandle fldHandle)
@@ -237,13 +237,6 @@ namespace System.Runtime.CompilerServices
             return obj.EETypePtr.ComponentSize != 0;
         }
 
-        // Constrained Execution Regions APIs are NOP's because we do not support CERs in .NET Core at all.
-        public static void ProbeForSufficientStack() { }
-        public static void PrepareConstrainedRegions() { }
-        public static void PrepareConstrainedRegionsNoOP() { }
-        public static void PrepareMethod(RuntimeMethodHandle method) { }
-        public static void PrepareMethod(RuntimeMethodHandle method, RuntimeTypeHandle[] instantiation) { }
-        public static void PrepareContractedDelegate(Delegate d) { }
         public static void PrepareDelegate(Delegate d)
         {
             if (d == null)
@@ -274,21 +267,8 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        public delegate void TryCode(object userData);
-        public delegate void CleanupCode(object userData, bool exceptionThrown);
-
-        public static object GetUninitializedObject(Type type)
+        private static object GetUninitializedObjectInternal(Type type)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type), SR.ArgumentNull_Type);
-            }
-            
-            if(!type.IsRuntimeImplemented())
-            {
-                throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type.ToString()));
-            }
-
             if (type.HasElementType || type.IsGenericParameter)
             {
                 throw new ArgumentException(SR.Argument_InvalidValue);
