@@ -4,13 +4,14 @@
     <OutputType>Library</OutputType>
     <RootNamespace>ILCompiler</RootNamespace>
     <AssemblyName>ILCompiler.Build.Tasks</AssemblyName>
-    <TargetFramework>netstandard1.3</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <OutputPath>$(BaseOutputPath)$(OSPlatformConfig)/tools/netstandard</OutputPath>
     <!-- Workaround for https://github.com/dotnet/corert/issues/6306 -->
     <SkipSigning>true</SkipSigning>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ComputeManagedAssemblies.cs" />
+    <Compile Include="DesktopCompatibleTask.cs" />
     <Compile Include="DumpNativeResources.cs" />
   </ItemGroup>
   <ItemGroup>
