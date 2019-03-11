@@ -7,6 +7,7 @@ if [ "$1" = "Linux" ]; then
     fi
     apt list --installed
     apt install libcurl4-openssl-dev
+    apt install curl
     apt list --installed
     if [ "$?" != "0"]; then
         exit 1;
