@@ -60,23 +60,34 @@ jobs:
 
 
 #
-# Debug build (Pull request)
+# Debug build and tests
 #
-- ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.DefinitionName'], 'corert-ci')) }}:
-  - template: eng/platform-matrix.yml
-    parameters:
-      jobTemplate: build-job.yml
-      buildConfig: debug
-      jobParameters:
-        timeoutInMinutes: 180
+- template: eng/platform-matrix.yml
+  parameters:
+    jobTemplate: build-job.yml
+    buildConfig: debug
+    jobParameters:
+      timeoutInMinutes: 180
+      testScenarios: 'Simple, ReadyToRun, CoreCLR'
 
 #
-# Release build (Pull request)
+# Release build and tests
 #
-- ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.DefinitionName'], 'corert-ci')) }}:
-  - template: eng/platform-matrix.yml
-    parameters:
-      jobTemplate: build-job.yml
-      buildConfig: release
-      jobParameters:
-        timeoutInMinutes: 180
+- template: eng/platform-matrix.yml
+  parameters:
+    jobTemplate: build-job.yml
+    buildConfig: release
+    jobParameters:
+      timeoutInMinutes: 180
+      testScenarios: 'Simple'
+
+#
+# Debug build and CoreFX tests
+#
+- template: eng/platform-matrix.yml
+  parameters:
+    jobTemplate: build-job.yml
+    buildConfig: debug
+    jobParameters:
+      timeoutInMinutes: 180
+      testScenarios: 'CoreFX'
