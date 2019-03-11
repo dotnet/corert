@@ -72,7 +72,14 @@ namespace System.ComponentModel
                     if (!(s_convertFromInvariantString is Func<Type, string, object> convertFromInvariantString))
                         return false;
 
-                    conversionResult = convertFromInvariantString(typeToConvert, stringValue);
+                    try
+                    {
+                        conversionResult = convertFromInvariantString(typeToConvert, stringValue);
+                    }
+                    catch
+                    {
+                        return false;
+                    }
 
                     return true;
                 }
