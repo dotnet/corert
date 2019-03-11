@@ -349,7 +349,8 @@ while [ "$1" != "" ]; do
         -coreclr)
             CoreRT_RunCoreCLRTests=true;
             shift
-            SelectedTests=$1
+            # Convert the name of the selected test set to lower case
+            SelectedTests="$(echo $1 | awk '{print tolower($0)}')"
 
             if [ -z ${SelectedTests} ]; then
                 SelectedTests=top200
