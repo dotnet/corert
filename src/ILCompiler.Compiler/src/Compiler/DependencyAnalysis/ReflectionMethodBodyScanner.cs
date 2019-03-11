@@ -116,6 +116,7 @@ namespace ILCompiler.DependencyAnalysis
                                 if (inst.IsNull)
                                     break;
                                 type = ((MetadataType)type).MakeInstantiatedType(inst);
+                                list = list ?? new DependencyList();
                                 list.Add(factory.MaximallyConstructableType(type), "Type.GetMethod");
                             }
 

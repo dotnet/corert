@@ -108,6 +108,10 @@ where `<Configuration>` is your project configuration (such as Debug or Release)
 
 Once completed, you can find the native executable in the root folder of your project under `/bin/x64/<Configuration>/netcoreapp2.1/publish/`
 
+## Using reflection
+
+More advanced use cases might hit issues due to reflection. For information about the topic see [MonoGame sample](../MonoGame/README.md) or [Reflection in AOT mode](../../Documentation/using-corert/reflection-in-aot-mode.md).
+
 ## Try it out!
 
 If you are running macOS, make sure you have [libuv](https://github.com/libuv/libuv) installed, as ASP.NET is built on top of libuv. You can use [homebrew](https://brew.sh/) to get it (`brew install libuv`).

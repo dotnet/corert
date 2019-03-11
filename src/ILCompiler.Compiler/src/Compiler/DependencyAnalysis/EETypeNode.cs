@@ -1094,14 +1094,14 @@ namespace ILCompiler.DependencyAnalysis
             if (baseType != null)
             {
                 // Make sure EEType can be created for this.
-                factory.NecessaryTypeSymbol(baseType.Normalize());
+                factory.NecessaryTypeSymbol(baseType.NormalizeInstantiation());
             }
             
             // We need EETypes for interfaces
             foreach (var intf in type.RuntimeInterfaces)
             {
                 // Make sure EEType can be created for this.
-                factory.NecessaryTypeSymbol(intf.Normalize());
+                factory.NecessaryTypeSymbol(intf.NormalizeInstantiation());
             }
 
             // Validate classes, structs, enums, interfaces, and delegates

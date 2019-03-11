@@ -431,7 +431,7 @@ namespace ILCompiler
         /// Normalizes canonical instantiations (converts Foo&lt;object, __Canon&gt; to
         /// Foo&lt;__Canon, __Canon>). Returns identity for non-canonical types.
         /// </summary>
-        public static TypeDesc Normalize(this TypeDesc thisType)
+        public static TypeDesc NormalizeInstantiation(this TypeDesc thisType)
         {
             if (thisType.IsCanonicalSubtype(CanonicalFormKind.Any))
                 return thisType.ConvertToCanonForm(CanonicalFormKind.Specific);

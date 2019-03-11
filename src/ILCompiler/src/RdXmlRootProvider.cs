@@ -175,7 +175,7 @@ namespace ILCompiler
             TypeDesc baseType = type.BaseType;
             while (baseType != null)
             {
-                baseType = baseType.Normalize();
+                baseType = baseType.NormalizeInstantiation();
                 RootType(rootProvider, baseType, reason);
                 baseType = baseType.BaseType;
             }
