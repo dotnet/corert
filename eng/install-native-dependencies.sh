@@ -1,12 +1,13 @@
 #!/usr/bin/env sh
 
 if [ "$1" = "Linux" ]; then
-    sudo apt update
+    apt update
     if [ "$?" != "0" ]; then
        exit 1;
     fi
-    sudo apt list --installed
-    sudo apt install libcurl4-openssl-dev
+    apt list --installed
+    apt install libcurl4-openssl-dev
+    apt list --installed
     if [ "$?" != "0"]; then
         exit 1;
     fi
