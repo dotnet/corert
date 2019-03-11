@@ -35,6 +35,7 @@ internal class ReflectionTest
         TestByRefLikeTypeMethod.Run();
 #endif
 #endif
+        TestILScanner.Run();
 
         TestAttributeInheritance.Run();
         TestStringConstructor.Run();
@@ -993,6 +994,110 @@ internal class ReflectionTest
         }
     }
 
+    class TestILScanner
+    {
+        class MyGenericUnusedClass<T>
+        {
+            public static void TheMethod() { }
+        }
+
+        class LinqTestCase<T>
+        {
+            public static void Create() { }
+        }
+
+        enum Mine { One }
+
+
+        public static void Run()
+        {
+            Console.WriteLine(nameof(TestILScanner));
+
+            Console.WriteLine("Search current assembly");
+            {
+                {
+                    Type t = Type.GetType(nameof(MyUnusedClass), throwOnError: false);
+                    if (t == null)
+                        throw new Exception(nameof(MyUnusedClass));
+
+                    Console.WriteLine("GetMethod on a non-generic type");
+                    MethodInfo mi = t.GetMethod(nameof(MyUnusedClass.UnusedMethod1));
+                    if (mi == null)
+                        throw new Exception(nameof(MyUnusedClass.UnusedMethod1));
+
+                    mi.Invoke(null, Array.Empty<object>());
+                }
+
+                {
+                    Type t = Type.GetType(nameof(MyUnusedClass), throwOnError: false);
+                    if (t == null)
+                        throw new Exception(nameof(MyUnusedClass));
+
+                    Console.WriteLine("Totally unreferenced method on a non-generic type (we should not find it)");
+                    MethodInfo mi = t.GetMethod(String.Format("Totally{0}", "UnreferencedMethod"));
+                    if (mi != null)
+                        throw new Exception("UnreferencedMethod");
+                }
+
+                {
+                    Type t = Type.GetType(nameof(MyUnusedClass), throwOnError: false);
+                    if (t == null)
+                        throw new Exception(nameof(MyUnusedClass));
+
+                    Console.WriteLine("GetMethod on a non-generic type for a generic method");
+                    MethodInfo mi = t.GetMethod(nameof(MyUnusedClass.GenericMethod));
+                    if (mi == null)
+                        throw new Exception(nameof(MyUnusedClass.GenericMethod));
+
+                    mi.MakeGenericMethod(typeof(object)).Invoke(null, Array.Empty<object>());
+                }
+            }
+
+            Console.WriteLine("Generics");
+            {
+                MethodInfo mi = typeof(MyGenericUnusedClass<object>).GetMethod(nameof(MyGenericUnusedClass<object>.TheMethod));
+                if (mi == null)
+                    throw new Exception(nameof(MyGenericUnusedClass<object>.TheMethod));
+
+                mi.Invoke(null, Array.Empty<object>());
+            }
+
+#if !MULTIMODULE_BUILD
+            Console.WriteLine("Search through a forwarder");
+            {
+                Type t = Type.GetType("System.Collections.Generic.List`1, System.Collections", throwOnError: false);
+                if (t == null)
+                    throw new Exception("List");
+            }
+
+            Console.WriteLine("Search in mscorlib");
+            {
+                Type t = Type.GetType("System.Runtime.CompilerServices.SuppressIldasmAttribute", throwOnError: false);
+                if (t == null)
+                    throw new Exception("SuppressIldasmAttribute");
+            }
+#endif
+
+            Console.WriteLine("Enum.GetValues");
+            {
+                if (Enum.GetValues(typeof(Mine)).GetType().GetElementType() != typeof(Mine))
+                    throw new Exception("GetValues");
+            }
+
+            Console.WriteLine("Pattern in LINQ expressions");
+            {
+                Type objType = typeof(object);
+
+                MethodInfo mi = typeof(LinqTestCase<>).MakeGenericType(objType).GetMethod(nameof(LinqTestCase<object>.Create));
+
+                if (mi == null)
+                    throw new Exception("GetValues");
+
+                mi.Invoke(null, Array.Empty<object>());
+            }
+        }
+    }
+
     #region Helpers
 
     private static Type GetTestType(string testName, string typeName)
@@ -1091,3 +1196,9 @@ internal class ReflectionTest
 
 class TestAssemblyAttribute : Attribute { }
 class TestModuleAttribute : Attribute { }
+class MyUnusedClass
+{
+    public static void UnusedMethod1() { }
+    public static void TotallyUnreferencedMethod() { }
+    public static void GenericMethod<T>() { }
+}

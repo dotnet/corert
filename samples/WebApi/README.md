@@ -57,34 +57,7 @@ services.AddMvcCore().AddJsonFormatters();
 
 Replacing `AddMvc()` with `AddMvcCore()` adds only the basic MVC functionality. It's followed by explicit registration of services, which are required by the application - in this case the `JsonFormatter`. For more details see [Fabian Gosebrink's blog post comparing AddMvc and AddMvcCore](https://dzone.com/articles/the-difference-between-addmvc-and-addmvccore).
 
-## Using reflection 
-Runtime directives are XML configuration files, which specify which elements of your program are available for reflection. They are used at compile-time to enable AOT compilation in applications at runtime. 
-
-In this sample a basic rd.xml file has been added for a simple Web API application under the root project folder. Copy its contents to your application directory and modify the element
-```xml
- <Assembly Name="SampleWebApi" Dynamic="Required All" /> 
- ``` 
- to use your app's name.
-
-If your application makes use of reflection, you will need to create a rd.xml file specifying explicitly which assemblies and types should be made available. For example, in  your .NET Core Web API application, reflection is required to determine the correct namespace, from which to load the ``Startup`` type. Both are defined respectively via the `<Assembly>` and `<Type>` attributes. For example, in the case of our specific application:
-
-```xml 
-<Assembly Name="SampleWebApi">
-  <Type Name="SampleWebApi.Startup" Dynamic="Required All" />
-</Assembly>
-```
-
-At runtime, if a method or type is not found or cannot be loaded, an exception will be thrown. The exception message will contain information on the missing type reference, which you can then add to the rd.xml of your program.
-
-Once you've created a rd.xml file, navigate to the root directory of your project and open its `.csproj` file and in the first `<ItemGroup>` element add the following:
-
-```xml
-<RdXmlFile Include="path_to_rdxml_file\rd.xml" />
-```
-
-where path_to_rdxml_file is the location of the file on your disk.
-
-Under the second `<ItemGroup>` remove the line containing a reference to `Microsoft.AspNetCore.All` and substitute it with:
+Navigate to the root directory of your project and open its `.csproj` file. Under the second `<ItemGroup>` remove the line containing a reference to `Microsoft.AspNetCore.All` and substitute it with:
 
 ```xml
 <PackageReference Include="Microsoft.AspNetCore" Version="2.1.0" />
@@ -134,6 +107,10 @@ where `<Configuration>` is your project configuration (such as Debug or Release)
 ```
 
 Once completed, you can find the native executable in the root folder of your project under `/bin/x64/<Configuration>/netcoreapp2.1/publish/`
+
+## Using reflection
+
+More advanced use cases might hit issues due to reflection. For information about the topic see [MonoGame sample](../MonoGame/README.md) or [Reflection in AOT mode](../../Documentation/using-corert/reflection-in-aot-mode.md).
 
 ## Try it out!
 

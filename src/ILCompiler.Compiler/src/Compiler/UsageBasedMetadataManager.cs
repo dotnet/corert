@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 
+using Internal.IL;
 using Internal.TypeSystem;
 
 using ILCompiler.Metadata;
@@ -27,6 +28,8 @@ namespace ILCompiler
         internal readonly UsageBasedMetadataGenerationOptions _generationOptions;
         private readonly bool _hasPreciseFieldUsageInformation;
 
+        private readonly ILProvider _ilProvider;
+
         private readonly List<ModuleDesc> _modulesWithMetadata = new List<ModuleDesc>();
         private readonly List<FieldDesc> _fieldsWithMetadata = new List<FieldDesc>();
         private readonly List<MethodDesc> _methodsWithMetadata = new List<MethodDesc>();
@@ -42,6 +45,7 @@ namespace ILCompiler
             string logFile,
             StackTraceEmissionPolicy stackTracePolicy,
             DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy,
+            ILProvider ilProvider,
             UsageBasedMetadataGenerationOptions generationOptions)
             : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy)
         {
@@ -49,6 +53,7 @@ namespace ILCompiler
             _hasPreciseFieldUsageInformation = false;
             _compilationModuleGroup = group;
             _generationOptions = generationOptions;
+            _ilProvider = ilProvider;
 
             _serializationInfoType = typeSystemContext.SystemModule.GetType("System.Runtime.Serialization", "SerializationInfo", false);
         }
@@ -268,6 +273,26 @@ namespace ILCompiler
             {
                 dependencies = dependencies ?? new DependencyList();
                 dependencies.Add(factory.MethodMetadata(method.GetTypicalMethodDefinition()), "LDTOKEN method");
+            }
+        }
+
+        protected override void GetDependenciesDueToMethodCodePresence(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        {
+            if ((_generationOptions & UsageBasedMetadataGenerationOptions.ILScanning) != 0)
+            {
+                MethodIL methodIL = _ilProvider.GetMethodIL(method);
+
+                if (methodIL != null)
+                {
+                    try
+                    {
+                        ReflectionMethodBodyScanner.Scan(ref dependencies, factory, methodIL);
+                    }
+                    catch (TypeSystemException)
+                    {
+                        // A problem with the IL - we just don't scan it...
+                    }
+                }
             }
         }
 
@@ -521,5 +546,10 @@ namespace ILCompiler
         /// statically used.
         /// </remarks>
         AnonymousTypeHeuristic = 2,
+
+        /// <summary>
+        /// Scan IL for common reflection patterns to find additional compilation roots.
+        /// </summary>
+        ILScanning = 4,
     }
 }
