@@ -982,6 +982,14 @@
                 {
                     "name": "System.Tests.ConvertToSingleTests.FromString",
                     "reason": "https://github.com/dotnet/coreclr/pull/20707"
+                },
+                {
+                    "name": "System.Tests.EnvironmentTests.Version_MatchesFixedVersion",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Tests.AppDomainTests.ApplyPolicy",
+                    "reason": "outdated"
                 }
             ]
         }
