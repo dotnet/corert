@@ -1836,8 +1836,8 @@ namespace Internal.JitInterface
             bool isType2CanonSubtype = type2.IsCanonicalSubtype(CanonicalFormKind.Any);
             if (isType1CanonSubtype != isType2CanonSubtype)
             {
-                // Only one of hnd1 and hnd2 is shared.
-                // hdn2 is more specific if hnd1 is the shared type.
+                // Only one of type1 and type2 is shared.
+                // type2 is more specific if type1 is the shared type.
                 return isType1CanonSubtype;
             }
 
@@ -1845,7 +1845,7 @@ namespace Internal.JitInterface
             // Look for a common parent type.
             TypeDesc merged = TypeExtensions.MergeTypesToCommonParent(type1, type2);
 
-            // If the common parent is hnd1, then hnd2 is more specific.
+            // If the common parent is type1, then type2 is more specific.
             return merged == type1;
         }
 
