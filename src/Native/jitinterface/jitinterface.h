@@ -92,6 +92,7 @@ struct JitInterfaceCallbacks
     int (* compareTypesForCast)(void * thisHandle, CorInfoException** ppException, void* fromClass, void* toClass);
     int (* compareTypesForEquality)(void * thisHandle, CorInfoException** ppException, void* cls1, void* cls2);
     void* (* mergeClasses)(void * thisHandle, CorInfoException** ppException, void* cls1, void* cls2);
+    int (* isMoreSpecificType)(void * thisHandle, CorInfoException** ppException, void* cls1, void* cls2);
     void* (* getParentType)(void * thisHandle, CorInfoException** ppException, void* cls);
     int (* getChildType)(void * thisHandle, CorInfoException** ppException, void* clsHnd, void* clsRet);
     int (* satisfiesClassConstraints)(void * thisHandle, CorInfoException** ppException, void* cls);
@@ -918,6 +919,15 @@ public:
     {
         CorInfoException* pException = nullptr;
         void* _ret = _callbacks->mergeClasses(_thisHandle, &pException, cls1, cls2);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual int isMoreSpecificType(void* cls1, void* cls2)
+    {
+        CorInfoException* pException = nullptr;
+        int _ret = _callbacks->isMoreSpecificType(_thisHandle, &pException, cls1, cls2);
         if (pException != nullptr)
             throw pException;
         return _ret;
