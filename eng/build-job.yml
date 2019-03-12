@@ -3,6 +3,7 @@ parameters:
   archType: ''
   osGroup: ''
   osIdentifier: ''
+  containerName: ''
   timeoutInMinutes: ''
 
 ### Product build
@@ -18,35 +19,63 @@ jobs:
     name: ${{ format('build_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
     displayName: ${{ format('Build {0} {1} {2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
 
+    # Note that the containers are resources defined in azure-pipelines.yml
+    containerName: ${{ parameters.containerName }}
+
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     variables:
     - name: osIdentifier
       value: ${{ parameters.osIdentifier }}
 
+    - name: buildScriptName
+      value: 'build.cmd'
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - name: buildScriptName
+        value: './build.sh'
+
+    - name: testScriptName
+      value: 'tests\runtest.cmd'
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - name: testScriptName
+        value: 'tests/runtest.sh'
+
     steps:
 
     # Install native dependencies
-    # TODO: add installation logic for non Windows platorms
+    # Linux builds use docker images with dependencies preinstalled,
+    # so we only need this step for OSX and Windows.
+    - ${{ if eq(parameters.osGroup, 'OSX') }}:
+      - script: sh eng/install-native-dependencies.sh $(osGroup)
+        displayName: Install native dependencies
+
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       # Necessary to install python
       - script: eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
 
-      # Build
-      - script: build.cmd $(buildConfig) skiptests
-        displayName: Build product
-      - script: tests\runtest.cmd $(buildConfig)
-        displayName: Run simple CoreRT tests
-      - ${{ if eq(parameters.buildConfig, 'Debug') }}:
-        - script: tests\runtest.cmd $(buildConfig) /multimodule
-          displayName: Run simple CoreRT tests in the MultiModule mode
-        - script: tests\runtest.cmd $(buildConfig) /coreclr ReadyToRun /mode ReadyToRun
-          displayName: Run basic ReadyToRun tests
-        - script: tests\runtest.cmd $(buildConfig) /coreclr Top200
-          displayName: Run CoreCLR Top200 tests
+    # Build product
+    - script: $(buildScriptName) $(buildConfig) skiptests
+      displayName: Build product
+
+    # Run tests
+    - script: $(testScriptName) $(buildConfig)
+      displayName: Run simple CoreRT tests
+
+    - script: $(testScriptName) $(buildConfig) /multimodule
+      displayName: Run simple CoreRT tests in the MultiModule mode
+      enabled: ${{ and(eq(parameters.buildConfig, 'Debug'), eq(parameters.osGroup, 'Windows_NT')) }}
+
+    - script: $(testScriptName) $(buildConfig) /coreclr ReadyToRun /mode ReadyToRun
+      displayName: Run basic ReadyToRun tests
+      enabled: ${{ and(eq(parameters.buildConfig, 'Debug'), eq(parameters.osGroup, 'Windows_NT')) }}
+
+    - script: $(testScriptName) $(buildConfig) /coreclr Top200
+      displayName: Run CoreCLR Top200 tests
+      enabled: ${{ eq(parameters.buildConfig, 'Debug') }}
 
     - task: PublishTestResults@2
+      condition: succeededOrFailed()
       inputs:
         testResultsFormat: 'xUnit'
         testResultsFiles: '**/testResults.xml'

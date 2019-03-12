@@ -31,6 +31,7 @@ See the LICENSE file in the project root for more information.
     <RootAllApplicationAssemblies Condition="$(RootAllApplicationAssemblies) == ''">true</RootAllApplicationAssemblies>
     <IlcGenerateCompleteTypeMetadata Condition="$(IlcGenerateCompleteTypeMetadata) == ''">true</IlcGenerateCompleteTypeMetadata>
     <IlcGenerateStackTraceData Condition="$(IlcGenerateStackTraceData) == ''">true</IlcGenerateStackTraceData>
+    <IlcScanReflection Condition="$(IlcScanReflection) == ''">true</IlcScanReflection>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -130,7 +131,7 @@ See the LICENSE file in the project root for more information.
     <PropertyGroup>
       <!-- Define paths used in build targets to point to the runtime-specific ILCompiler implementation -->
       <IlcPath Condition="'$(IlcPath)' == ''">$(RuntimePackagePath)</IlcPath>
-      <IlcBuildTasksPath>$(RuntimePackagePath)\tools\ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
+      <IlcBuildTasksPath>$(RuntimePackagePath)\tools\netstandard\ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
       <!-- Set defaults for unspecified properties -->
     </PropertyGroup>
     
@@ -204,6 +205,7 @@ See the LICENSE file in the project root for more information.
       <IlcArg Condition="$(IlcGenerateCompleteTypeMetadata) == 'true'" Include="--completetypemetadata" />
       <IlcArg Condition="$(IlcGenerateStackTraceData) == 'true'" Include="--stacktracedata" />
       <IlcArg Condition="$(RootAllApplicationAssemblies) == 'true'" Include="--rootallapplicationassemblies" />
+      <IlcArg Condition="$(IlcScanReflection) == 'true'" Include="--scanreflection" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />

@@ -18,6 +18,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(targetMethod.IsVirtual);
             Debug.Assert(!targetMethod.IsSharedByGenericInstantiations);
+            Debug.Assert(!targetMethod.HasInstantiation);
             _targetMethod = targetMethod;
         }
 

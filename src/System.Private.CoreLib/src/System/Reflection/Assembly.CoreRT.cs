@@ -20,7 +20,6 @@ namespace System.Reflection
         public static Assembly GetCallingAssembly() { throw new PlatformNotSupportedException(); }
 
         public static Assembly Load(AssemblyName assemblyRef) => ReflectionAugments.ReflectionCoreCallbacks.Load(assemblyRef, throwOnFileNotFound: true);
-        public static Assembly Load(byte[] rawAssembly, byte[] rawSymbolStore) => ReflectionAugments.ReflectionCoreCallbacks.Load(rawAssembly, rawSymbolStore);
 
         public static Assembly Load(string assemblyString)
         {
@@ -30,10 +29,6 @@ namespace System.Reflection
             AssemblyName name = new AssemblyName(assemblyString);
             return Load(name);
         }
-
-        public static Assembly LoadFile(string path) { throw new PlatformNotSupportedException(); }
-        public static Assembly LoadFrom(string assemblyFile) { throw new PlatformNotSupportedException(); }
-        public static Assembly LoadFrom(string assemblyFile, byte[] hashValue, AssemblyHashAlgorithm hashAlgorithm) { throw new PlatformNotSupportedException(); }
 
         public bool IsRuntimeImplemented() => this is IRuntimeImplemented; // Not an api but needs to be public because of Reflection.Core/CoreLib divide.
     }

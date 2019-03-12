@@ -616,7 +616,7 @@ namespace System.Runtime.InteropServices
         internal delegate int AddrOfIStreamUnlockRegion(IntPtr pComThis, long libOffset, long cb, int dwLockType);
         internal delegate int AddrOfIStreamWrite(IntPtr pComThis, IntPtr pv, int cb, IntPtr pcbWritten);
 
-#if !RHTESTCL && !CORECLR
+#if !RHTESTCL && ENABLE_MIN_WINRT
         // ICommand
         internal delegate int AddrOfICommandremove_CanExecuteChanged(IntPtr pComThis, System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken unsafe_token);
 #endif        

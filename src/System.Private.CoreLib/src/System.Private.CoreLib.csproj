@@ -184,7 +184,7 @@
     <Compile Include="System\Activator.CoreRT.cs" />
     <Compile Include="System\AppContext.CoreRT.cs" />
     <Compile Include="System\AppContextConfigHelper.cs" />
-    <Compile Include="System\Buffer.cs" />
+    <Compile Include="System\Buffer.CoreRT.cs" />
     <Compile Include="System\Collections\Generic\ArraySortHelper.CoreRT.cs" />
     <Compile Include="System\Collections\Generic\Comparer.CoreRT.cs" />
     <Compile Include="System\Collections\Generic\EqualityComparer.CoreRT.cs" />

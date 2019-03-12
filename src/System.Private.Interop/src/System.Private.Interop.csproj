@@ -48,7 +48,6 @@
     <Compile Include="System\Runtime\InteropServices\Variant.cs" />
     <Compile Include="System\Runtime\InteropServices\HandleCollector.cs" />
     <Compile Include="System\Runtime\InteropServices\ComAwareEventInfo.cs" />
-    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
 
     <Compile Include="System\Runtime\InteropServices\ComTypes\advf.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\datadir.cs" />
@@ -88,6 +87,7 @@
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\CLRIKeyValuePairImpl.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\CustomPropertyImpl.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\DefaultInterfaceAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationTokenTable.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\IActivationFactory.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\InterfaceImplementedInVersionAttribute.cs" />

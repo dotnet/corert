@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if AMD64 || (BIT32 && !ARM)
+#if AMD64 || ARM64 || (BIT32 && !ARM)
 #define HAS_CUSTOM_BLOCKS
 #endif
 
@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+
 using Internal.Runtime.CompilerServices;
 
 #if BIT64
@@ -22,80 +23,8 @@ using nuint = System.UInt32;
 
 namespace System
 {
-    public static class Buffer
+    public static partial class Buffer
     {
-        public static unsafe void BlockCopy(Array src, int srcOffset,
-                                            Array dst, int dstOffset,
-                                            int count)
-        {
-            nuint uSrcLen;
-            nuint uDstLen;
-
-            if (src == null)
-                throw new ArgumentNullException(nameof(src));
-            if (dst == null)
-                throw new ArgumentNullException(nameof(dst));
-
-            // Use optimized path for byte arrays since this is the main scenario for Buffer::BlockCopy
-            // We only need an unreliable comparison since the slow path can handle the byte[] case too.
-            if (src.EETypePtr.FastEqualsUnreliable(EETypePtr.EETypePtrOf<byte[]>()))
-            {
-                uSrcLen = (nuint)src.Length;
-            }
-            else
-            {
-                RuntimeImports.RhCorElementTypeInfo srcCorElementTypeInfo = src.ElementEEType.CorElementTypeInfo;
-                uSrcLen = ((nuint)src.Length) << srcCorElementTypeInfo.Log2OfSize;
-                if (!srcCorElementTypeInfo.IsPrimitive)
-                    throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(src));
-            }
-
-            if (src != dst)
-            {
-                // Use optimized path for byte arrays since this is the main scenario for Buffer::BlockCopy
-                // We only need an unreliable comparison since the slow path can handle the byte[] case too.
-                if (dst.EETypePtr.FastEqualsUnreliable(EETypePtr.EETypePtrOf<byte[]>()))
-                {
-                    uDstLen = (nuint)dst.Length;
-                }
-                else
-                {
-                    RuntimeImports.RhCorElementTypeInfo dstCorElementTypeInfo = dst.ElementEEType.CorElementTypeInfo;
-                    if (!dstCorElementTypeInfo.IsPrimitive)
-                        throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(dst));
-                    uDstLen = ((nuint)dst.Length) << dstCorElementTypeInfo.Log2OfSize;
-                }
-            }
-            else
-            {
-                uDstLen = uSrcLen;
-            }
-
-            if (srcOffset < 0)
-                throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_MustBeNonNegInt32, nameof(srcOffset));
-            if (dstOffset < 0)
-                throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_MustBeNonNegInt32, nameof(dstOffset));
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_MustBeNonNegInt32, nameof(count));
-
-            nuint uCount = (nuint)count;
-            nuint uSrcOffset = (nuint)srcOffset;
-            nuint uDstOffset = (nuint)dstOffset;
-
-            if (uSrcLen < uSrcOffset + uCount)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
-            if (uDstLen < uDstOffset + uCount)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
-
-            if (uCount != 0)
-            {
-                fixed (byte* pSrc = &src.GetRawArrayData(), pDst = &dst.GetRawArrayData())
-                {
-                    Buffer.Memmove(pDst + uDstOffset, pSrc + uSrcOffset, uCount);
-                }
-            }
-        }
-
         public static int ByteLength(Array array)
         {
             // Is the array present?
@@ -103,15 +32,10 @@ namespace System
                 throw new ArgumentNullException(nameof(array));
 
             // Is it of primitive types?
-            if (!array.ElementEEType.IsPrimitive)
+            if (!IsPrimitiveTypeArray(array))
                 throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(array));
 
             return _ByteLength(array);
-        }
-
-        private static int _ByteLength(Array array)
-        {
-            return checked(array.Length * array.EETypePtr.ComponentSize);
         }
 
         public static byte GetByte(Array array, int index)
@@ -121,14 +45,14 @@ namespace System
                 throw new ArgumentNullException(nameof(array));
 
             // Is it of primitive types?
-            if (!array.ElementEEType.IsPrimitive)
+            if (!IsPrimitiveTypeArray(array))
                 throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(array));
 
             // Is the index in valid range of the array?
-            if (index < 0 || index >= _ByteLength(array))
+            if ((uint)index >= (uint)_ByteLength(array))
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            return Unsafe.Add(ref array.GetRawArrayData(), index);
+            return Unsafe.Add<byte>(ref array.GetRawArrayData(), index);
         }
 
         public static void SetByte(Array array, int index, byte value)
@@ -138,14 +62,14 @@ namespace System
                 throw new ArgumentNullException(nameof(array));
 
             // Is it of primitive types?
-            if (!array.ElementEEType.IsPrimitive)
+            if (!IsPrimitiveTypeArray(array))
                 throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(array));
 
             // Is the index in valid range of the array?
-            if (index < 0 || index >= _ByteLength(array))
+            if ((uint)index >= (uint)_ByteLength(array))
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            Unsafe.Add(ref array.GetRawArrayData(), index) = value;
+            Unsafe.Add<byte>(ref array.GetRawArrayData(), index) = value;
         }
 
         // This is currently used by System.IO.UnmanagedMemoryStream
@@ -187,17 +111,50 @@ namespace System
             Memmove((byte*)destination, (byte*)source, checked((nuint)sourceBytesToCopy));
         }
 
-        internal static unsafe void Memcpy(byte* dest, byte* src, int len)
+        internal static unsafe void Memcpy(byte[] dest, int destIndex, byte* src, int srcIndex, int len)
         {
-            Debug.Assert(len >= 0, "Negative length in memcpy!");
-            Memmove(dest, src, (nuint)len);
+            Debug.Assert((srcIndex >= 0) && (destIndex >= 0) && (len >= 0), "Index and length must be non-negative!");
+            Debug.Assert(dest.Length - destIndex >= len, "not enough bytes in dest");
+            // If dest has 0 elements, the fixed statement will throw an 
+            // IndexOutOfRangeException.  Special-case 0-byte copies.
+            if (len == 0)
+                return;
+            fixed (byte* pDest = dest)
+            {
+                Memcpy(pDest + destIndex, src + srcIndex, len);
+            }
+        }
+
+        internal static unsafe void Memcpy(byte* pDest, int destIndex, byte[] src, int srcIndex, int len)
+        {
+            Debug.Assert((srcIndex >= 0) && (destIndex >= 0) && (len >= 0), "Index and length must be non-negative!");
+            Debug.Assert(src.Length - srcIndex >= len, "not enough bytes in src");
+            // If dest has 0 elements, the fixed statement will throw an 
+            // IndexOutOfRangeException.  Special-case 0-byte copies.
+            if (len == 0)
+                return;
+            fixed (byte* pSrc = src)
+            {
+                Memcpy(pDest + destIndex, pSrc + srcIndex, len);
+            }
         }
 
         // This method has different signature for x64 and other platforms and is done for performance reasons.
-        internal unsafe static void Memmove(byte* dest, byte* src, nuint len)
+        internal static unsafe void Memmove(byte* dest, byte* src, nuint len)
         {
 #if AMD64 || (BIT32 && !ARM)
             const nuint CopyThreshold = 2048;
+#elif ARM64
+#if PLATFORM_WINDOWS
+            // Determined optimal value for Windows.
+            // https://github.com/dotnet/coreclr/issues/13843
+            const nuint CopyThreshold = ulong.MaxValue;
+#else // PLATFORM_WINDOWS
+            // Managed code is currently faster than glibc unoptimized memmove
+            // TODO-ARM64-UNIX-OPT revisit when glibc optimized memmove is in Linux distros
+            // https://github.com/dotnet/coreclr/issues/13844
+            const nuint CopyThreshold = ulong.MaxValue;
+#endif // PLATFORM_WINDOWS
 #else
             const nuint CopyThreshold = 512;
 #endif // AMD64 || (BIT32 && !ARM)
@@ -401,6 +358,17 @@ namespace System
         {
 #if AMD64 || (BIT32 && !ARM)
             const nuint CopyThreshold = 2048;
+#elif ARM64
+#if PLATFORM_WINDOWS
+            // Determined optimal value for Windows.
+            // https://github.com/dotnet/coreclr/issues/13843
+            const nuint CopyThreshold = ulong.MaxValue;
+#else // PLATFORM_WINDOWS
+            // Managed code is currently faster than glibc unoptimized memmove
+            // TODO-ARM64-UNIX-OPT revisit when glibc optimized memmove is in Linux distros
+            // https://github.com/dotnet/coreclr/issues/13844
+            const nuint CopyThreshold = ulong.MaxValue;
+#endif // PLATFORM_WINDOWS
 #else
             const nuint CopyThreshold = 512;
 #endif // AMD64 || (BIT32 && !ARM)
@@ -594,7 +562,7 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         private static unsafe void _Memmove(byte* dest, byte* src, nuint len)
         {
-            RuntimeImports.memmove(dest, src, len);
+            __Memmove(dest, src, len);
         }
 
         // Non-inlinable wrapper around the QCall that avoids polluting the fast path
@@ -604,14 +572,14 @@ namespace System
         {
             fixed (byte* pDest = &dest)
             fixed (byte* pSrc = &src)
-                RuntimeImports.memmove(pDest, pSrc, len);
+                __Memmove(pDest, pSrc, len);
         }
 
 #if HAS_CUSTOM_BLOCKS
-        [StructLayout(LayoutKind.Explicit, Size = 16)]
+        [StructLayout(LayoutKind.Sequential, Size = 16)]
         private struct Block16 { }
 
-        [StructLayout(LayoutKind.Explicit, Size = 64)]
+        [StructLayout(LayoutKind.Sequential, Size = 64)]
         private struct Block64 { }
 #endif // HAS_CUSTOM_BLOCKS
     }

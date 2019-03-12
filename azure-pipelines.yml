@@ -11,6 +11,11 @@ trigger:
 pr:
 - master
 
+resources:
+  containers:
+  - container: ubuntu_1604_x64_build_image
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-10fcdcf-20190208200917
+
 jobs:
 
 ##   The following is the matrix of test runs that we have. This is
