@@ -2177,6 +2177,10 @@ namespace Internal.JitInterface
             pResult->accessAllowed = CorInfoIsAccessAllowedResult.CORINFO_ACCESS_ALLOWED;
             pResult->offset = fieldOffset;
 
+#if READYTORUN
+            EncodeFieldBaseOffset(field, pResult);
+#endif
+
             // TODO: We need to implement access checks for fields and methods.  See JitInterface.cpp in mrtjit
             //       and STS::AccessCheck::CanAccess.
         }

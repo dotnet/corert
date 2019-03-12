@@ -31,6 +31,11 @@ namespace Internal.CommandLine
                     string fullFileName = Path.GetFullPath(fileName);
 
                     string simpleName = Path.GetFileNameWithoutExtension(fileName);
+                    if (StringComparer.OrdinalIgnoreCase.Equals(Path.GetExtension(simpleName), ".ni"))
+                    {
+                        // Strip the secondary .ni extension used for R2R executables
+                        simpleName = Path.GetFileNameWithoutExtension(simpleName);
+                    }
 
                     if (dictionary.ContainsKey(simpleName))
                     {
