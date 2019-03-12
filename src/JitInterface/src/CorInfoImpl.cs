@@ -1825,6 +1825,30 @@ namespace Internal.JitInterface
             return ObjectToHandle(merged);
         }
 
+        private bool isMoreSpecificType(CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2)
+        {
+            TypeDesc type1 = HandleToObject(cls1);
+            TypeDesc type2 = HandleToObject(cls2);
+
+            // If we have a mixture of shared and unshared types,
+            // consider the unshared type as more specific.
+            bool isType1CanonSubtype = type1.IsCanonicalSubtype(CanonicalFormKind.Any);
+            bool isType2CanonSubtype = type2.IsCanonicalSubtype(CanonicalFormKind.Any);
+            if (isType1CanonSubtype != isType2CanonSubtype)
+            {
+                // Only one of hnd1 and hnd2 is shared.
+                // hdn2 is more specific if hnd1 is the shared type.
+                return isType1CanonSubtype;
+            }
+
+            // Otherwise both types are either shared or not shared.
+            // Look for a common parent type.
+            TypeDesc merged = TypeExtensions.MergeTypesToCommonParent(type1, type2);
+
+            // If the common parent is hnd1, then hnd2 is more specific.
+            return merged == type1;
+        }
+
         private CORINFO_CLASS_STRUCT_* getParentType(CORINFO_CLASS_STRUCT_* cls)
         { throw new NotImplementedException("getParentType"); }
 
