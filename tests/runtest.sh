@@ -116,7 +116,8 @@ download_and_unzip_coreclr_tests_artifacts()
 
         unzip -q ${local_zip} -d ${location}
         __exitcode=$?
-        if [ ${__exitcode} != 0 ]; then
+        # Exit code 1 indicates that a warning was encountered but unzipping completed successfully
+        if [ ${__exitcode} != 0 ] && [ ${__exitcode} != 1 ]; then
             echo "Failed to unzip CoreCLR tests artifacts."
             exit ${__exitcode}
         fi
