@@ -10,14 +10,12 @@ def branch = GithubBranchName
 
 class Constants {
 
-    def static imageVersionMap = ['Windows_NT':'latest-or-auto',
-                           'OSX10.12':'latest-or-auto',
-                           'Ubuntu':'20170118']
+    def static imageVersionMap = ['Windows_NT':'latest-or-auto']
 
-    def static scenarios = ['coreclr', 'corefx']
+    def static scenarios = ['coreclr']
     
     // Innerloop build OS's
-    def static osList = ['Ubuntu', 'OSX10.12', 'Windows_NT', 'Windows_NT_Wasm']
+    def static osList = ['Windows_NT_Wasm']
 
 }
 
