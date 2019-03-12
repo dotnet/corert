@@ -100,9 +100,26 @@ download_and_unzip_coreclr_tests_artifacts()
         mkdir -p ${location}
     
         local_zip=${location}/tests.zip
-        curl --retry 10 --retry-delay 5 -sSL -o ${local_zip} ${url}
+
+        # Use curl if available, otherwise use wget
+        if command -v curl > /dev/null; then
+            curl --retry 10 --retry-delay 5 -sSL -o ${local_zip} ${url}
+        else
+            wget -q -O ${local_zip} ${url} --tries=10
+        fi
+
+        local __exitcode=$?
+        if [ ${__exitcode} != 0 ]; then
+            echo "Failed to download CoreCLR tests artifacts."
+            exit ${__exitcode}
+        fi
 
         unzip -q ${local_zip} -d ${location}
+        __exitcode=$?
+        if [ ${__exitcode} != 0 ]; then
+            echo "Failed to unzip CoreCLR tests artifacts."
+            exit ${__exitcode}
+        fi
 
         echo "CoreCLR tests artifacts restored from ${url}" >> ${semaphore}
     fi
