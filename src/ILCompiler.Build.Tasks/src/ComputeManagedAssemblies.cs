@@ -74,6 +74,15 @@ namespace Build.Tasks
             set;
         }
 
+        /// <summary>
+        /// Ready-to-run images targets CoreCLR; use its framework instead of the CoreRT private one
+        /// </summary>
+        public string CompilationMode
+        {
+            get;
+            set;
+        }
+
         [Output]
         public ITaskItem[] ManagedAssemblies
         {
@@ -92,8 +101,8 @@ namespace Build.Tasks
         {
             var list = new List<ITaskItem>();
             var assembliesToSkipPublish = new List<ITaskItem>();
-
             var coreRTFrameworkAssembliesToUse = new HashSet<string>();
+            bool readyToRunCompilation = CompilationMode?.Equals("readytorun", StringComparison.OrdinalIgnoreCase) ?? false;
 
             foreach (ITaskItem taskItem in SdkAssemblies)
             {
@@ -110,26 +119,29 @@ namespace Build.Tasks
                 // In the case of disk-based assemblies, this holds the file path
                 string itemSpec = taskItem.ItemSpec;
 
-                // Skip the native apphost (whose name ends up colliding with the CoreRT output binary) and supporting libraries
-                if (itemSpec.EndsWith(DotNetAppHostExecutableName, StringComparison.OrdinalIgnoreCase) || itemSpec.Contains(DotNetHostFxrLibraryName) || itemSpec.Contains(DotNetHostPolicyLibraryName))
+                if (!readyToRunCompilation)
                 {
-                    assembliesToSkipPublish.Add(taskItem);
-                    continue;
-                }
+                    // Skip the native apphost (whose name ends up colliding with the CoreRT output binary) and supporting libraries
+                    if (itemSpec.EndsWith(DotNetAppHostExecutableName, StringComparison.OrdinalIgnoreCase) || itemSpec.Contains(DotNetHostFxrLibraryName) || itemSpec.Contains(DotNetHostPolicyLibraryName))
+                    {
+                        assembliesToSkipPublish.Add(taskItem);
+                        continue;
+                    }
 
-                // Prototype aid - remove the native CoreCLR runtime pieces from the publish folder
-                if (itemSpec.Contains("microsoft.netcore.app") && (itemSpec.Contains("\\native\\") || itemSpec.Contains("/native/")))
-                {
-                    assembliesToSkipPublish.Add(taskItem);
-                    continue;
-                }
+                    // Prototype aid - remove the native CoreCLR runtime pieces from the publish folder
+                    if (itemSpec.Contains("microsoft.netcore.app") && (itemSpec.Contains("\\native\\") || itemSpec.Contains("/native/")))
+                    {
+                        assembliesToSkipPublish.Add(taskItem);
+                        continue;
+                    }
 
-                // Remove any assemblies whose implementation we want to come from CoreRT's package.
-                // Currently that's System.Private.* SDK assemblies and a bunch of framework assemblies.
-                if (coreRTFrameworkAssembliesToUse.Contains(Path.GetFileName(itemSpec)))
-                {
-                    assembliesToSkipPublish.Add(taskItem);
-                    continue;
+                    // Remove any assemblies whose implementation we want to come from CoreRT's package.
+                    // Currently that's System.Private.* SDK assemblies and a bunch of framework assemblies.
+                    if (coreRTFrameworkAssembliesToUse.Contains(Path.GetFileName(itemSpec)))
+                    {
+                        assembliesToSkipPublish.Add(taskItem);
+                        continue;
+                    }
                 }
 
                 try
@@ -142,13 +154,22 @@ namespace Build.Tasks
                             MetadataReader moduleMetadataReader = module.GetMetadataReader();
                             if (moduleMetadataReader.IsAssembly)
                             {
-                                string culture = moduleMetadataReader.GetString(moduleMetadataReader.GetAssemblyDefinition().Culture);
-
-                                if (culture == "" || culture.Equals("neutral", StringComparison.OrdinalIgnoreCase))
+                                if (readyToRunCompilation)
                                 {
-                                    // CoreRT doesn't consume resource assemblies yet so skip them
+                                    // Skip publish of the IL assembly since the ready-to-run binary will be published after compilation
                                     assembliesToSkipPublish.Add(taskItem);
                                     list.Add(taskItem);
+                                }
+                                else
+                                {
+                                    string culture = moduleMetadataReader.GetString(moduleMetadataReader.GetAssemblyDefinition().Culture);
+
+                                    if (culture == "" || culture.Equals("neutral", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        // CoreRT doesn't consume resource assemblies yet so skip them
+                                        assembliesToSkipPublish.Add(taskItem);
+                                        list.Add(taskItem);
+                                    }
                                 }
                             }
                         }

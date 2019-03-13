@@ -7,7 +7,7 @@
       Prevent dotnet CLI from deploying the CoreCLR shim executable since we produce
       a native executable.
     -->
-    <DeployAppHost>false</DeployAppHost>
+    <DeployAppHost Condition="'$(NativeCodeGen)' != 'readytorun'">false</DeployAppHost>
   </PropertyGroup>
 
   <Target Name="_ComputeIlcCompileInputs"
@@ -18,6 +18,13 @@
     </ItemGroup>
   </Target>
 
+  <PropertyGroup>
+    <ComputeLinkedFilesToPublishDependsOn Condition="'$(NativeCodeGen)' != 'readytorun'">LinkNative</ComputeLinkedFilesToPublishDependsOn>
+    <ComputeLinkedFilesToPublishDependsOn Condition="'$(NativeCodeGen)' == 'readytorun'">BuildAllReadyToRunAssemblies</ComputeLinkedFilesToPublishDependsOn>
+  </PropertyGroup>
+
+  <Import Project="Microsoft.NETCore.Native.ReadyToRun.targets" Condition="'$(NativeCodeGen)' == 'readytorun'" />
+  
   <!--
     This target hooks into the dotnet CLI publish pipeline. That pipeline has
     a target called ComputeFilesToPublish which produces the ItemGroup
@@ -30,7 +37,7 @@
   -->
   <Target Name="ComputeLinkedFilesToPublish"
           BeforeTargets="ComputeFilesToPublish"
-          DependsOnTargets="_ComputeAssembliesToCompileToNative;LinkNative">
+          DependsOnTargets="_ComputeAssembliesToCompileToNative;$(ComputeLinkedFilesToPublishDependsOn)">
     
     <ItemGroup>
       <ResolvedAssembliesToPublish Remove="@(_AssembliesToSkipPublish)" />
@@ -38,10 +45,14 @@
 
       <_ResolvedCopyLocalPublishAssets Remove="@(_AssembliesToSkipPublish)" />
       <_ResolvedCopyLocalPublishAssets Include="@(_LinkedResolvedAssemblies)" />
+
+      <ResolvedAssembliesToPublish Include="@(ReadyToRunOutputAssembliesToPublish)" />
+      <_ResolvedCopyLocalPublishAssets Include="@(ReadyToRunOutputAssembliesToPublish)" />
     </ItemGroup>
     
     <ItemGroup>
-      <_NativeIntermediateAssembly Include="@(IntermediateAssembly->'$(NativeOutputPath)%(Filename)$(NativeBinaryExt)')" />
+      <_NativeIntermediateAssembly Include="@(IntermediateAssembly->'$(NativeIntermediateOutputPath)%(Filename)%(Extension)')" Condition="'$(NativeCodeGen)' == 'readytorun'" />
+      <_NativeIntermediateAssembly Include="@(IntermediateAssembly->'$(NativeOutputPath)%(Filename)$(NativeBinaryExt)')" Condition="'$(NativeCodeGen)' != 'readytorun'" />
       <IntermediateAssembly Remove="@(IntermediateAssembly)" />
       <IntermediateAssembly Include="@(_NativeIntermediateAssembly)" />
     </ItemGroup>
@@ -70,14 +81,20 @@
 
     <ComputeManagedAssemblies Assemblies="@(ResolvedAssembliesToPublish);@(_ResolvedCopyLocalPublishAssets)"
     DotNetAppHostExecutableName="$(_DotNetAppHostExecutableName)" DotNetHostFxrLibraryName="$(_DotNetHostFxrLibraryName)" DotNetHostPolicyLibraryName="$(_DotNetHostPolicyLibraryName)"
-    SdkAssemblies="@(PrivateSdkAssemblies)" FrameworkAssemblies="@(FrameworkAssemblies)">
+    SdkAssemblies="@(PrivateSdkAssemblies)" FrameworkAssemblies="@(FrameworkAssemblies)" CompilationMode="$(NativeCodeGen)">
       <Output TaskParameter="ManagedAssemblies" ItemName="_ManagedResolvedAssembliesToPublish" />
       <Output TaskParameter="AssembliesToSkipPublish" ItemName="_AssembliesToSkipPublish" />
     </ComputeManagedAssemblies>
     
+    <ItemGroup>
+      <ReadyToRunAssemblies Condition="'$(NativeCodeGen)' == 'readytorun'" Include="@(_ManagedResolvedAssembliesToPublish);@(IntermediateAssembly)" />
+      <ReadyToRunAssembliesToReference Condition="'$(NativeCodeGen)' == 'readytorun'" Include="@(ReadyToRunAssemblies)" />
+      <ReadyToRunOutputAssembliesToPublish Include="@(_ManagedResolvedAssembliesToPublish->'$(NativeIntermediateOutputPath)%(Filename)%(Extension)')" Condition="'$(NativeCodeGen)' == 'readytorun'" />
+    </ItemGroup>
+    
   </Target>
 
-  <Target Name="CopyNativePdb" Condition="'$(DebugType)' != 'None' and '$(TargetOS)' == 'Windows_NT' and $(NativeLib) != 'Static'" AfterTargets="Publish">
+  <Target Name="CopyNativePdb" Condition="'$(DebugType)' != 'None' and '$(TargetOS)' == 'Windows_NT' and '$(NativeLib)' != 'Static' and '$(NativeCodeGen)' != 'readytorun'" AfterTargets="Publish">
     <!-- dotnet CLI produces managed debug symbols - substitute with those we generated during native compilation -->
     <Delete Files="$(PublishDir)\$(TargetName).pdb"/>    
     <Copy SourceFiles="$(NativeOutputPath)$(TargetName).pdb" DestinationFolder="$(PublishDir)" />  

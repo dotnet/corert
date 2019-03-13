@@ -1,0 +1,10 @@
+<Project DefaultTargets="LinkNative" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  
+  <PropertyGroup>
+    <OutputPath>$(MSBuildProjectDirectory)\bin\$(Configuration)\$(Platform)\</OutputPath>
+    <IntermediateOutputPath>$(MSBuildProjectDirectory)\obj\$(Configuration)\$(Platform)\</IntermediateOutputPath>
+  </PropertyGroup>
+
+  <Import Project="$(IlcPath)\build\Microsoft.NETCore.Native.targets" />
+
+</Project>
