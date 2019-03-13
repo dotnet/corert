@@ -56,9 +56,10 @@ jobs:
 
     - name: coreCLRTestSet
       value: 'Top200'
-    - ${{ if ne(variables['Build.Reason'], 'PullRequest') }}:
-      - name: coreCLRTestSet
-        value: 'KnownGood'
+    # Temporary disable running the KnownGood set because it times out in CI
+    # - ${{ if ne(variables['Build.Reason'], 'PullRequest') }}:
+    #   - name: coreCLRTestSet
+    #     value: 'KnownGood'
 
     steps:
 
