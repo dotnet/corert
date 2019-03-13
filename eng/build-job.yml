@@ -30,7 +30,7 @@ jobs:
     # Note that the containers are resources defined in azure-pipelines.yml
     containerName: ${{ parameters.containerName }}
 
-    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    timeoutInMinutes: 360
 
     variables:
     - name: osIdentifier
@@ -55,7 +55,7 @@ jobs:
         value: '-'
 
     - name: coreCLRTestSet
-      value: 'Top200'
+      value: 'KnownGood'
     # Temporary disable running the KnownGood set because it times out in CI
     # - ${{ if ne(variables['Build.Reason'], 'PullRequest') }}:
     #   - name: coreCLRTestSet
@@ -97,7 +97,7 @@ jobs:
     - ${{ if contains(parameters.testScenarios, 'CoreCLR') }}:
       - script: $(testScriptName) $(buildConfig) $(testParameterPrefix)coreclr $(coreCLRTestSet)
         displayName: Run CoreCLR $(coreCLRTestSet) tests
-        enabled: ${{ eq(parameters.buildConfig, 'Debug') }}
+        enabled: ${{ and(eq(parameters.buildConfig, 'Debug'), ne(parameters.osGroup, 'OSX')) }}
 
     - ${{ if contains(parameters.testScenarios, 'CoreFX') }}:
       - script: $(testScriptName) $(buildConfig) $(testParameterPrefix)corefx
