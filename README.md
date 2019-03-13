@@ -10,7 +10,7 @@ If you would like to give CoreRT a try, we publish daily snapshots of CoreRT to 
 This is a work in progress. The current state of platform support:
 - Windows, MacOS and Linux x64 w/ RyuJIT codegen: Simple apps. Check our [ASP.NET Core](samples/WebApi/) and [MonoGame](samples/MonoGame/) samples.
 - Linux ARM w/ RyuJIT codegen: ElmSharp Hello Tizen application ([detailed status](https://github.com/dotnet/corert/issues/4856))
-- CppCodeGen (targets all platforms that support C++): Simple C# programs. The big missing features are [reflection](https://github.com/dotnet/corert/issues/2035), [garbage collection](https://github.com/dotnet/corert/issues/2033) and [exception handling](https://github.com/dotnet/corert/issues/910).
+- CppCodeGen (targets all platforms that support C++): Simple C# programs. The big missing features are [garbage collection](https://github.com/dotnet/corert/issues/2033) and [exception handling](https://github.com/dotnet/corert/issues/910).
 - WebAssembly: Early prototype that compiles and runs very trivial programs only. Many features are [not yet implemented](https://github.com/dotnet/corert/issues?q=is%3Aissue+is%3Aopen+label%3Aarch-wasm).
 
 ## How to Engage, Contribute and Provide Feedback
@@ -43,10 +43,3 @@ This project has adopted the code of conduct defined by the [Contributor Covenan
 There are many .NET related projects on GitHub.
 - The [.NET home repo](https://github.com/Microsoft/dotnet) links to 100s of .NET projects, from Microsoft and the community.
 - The [ASP.NET home repo](https://github.com/aspnet/home) is the best place to start learning about [ASP.NET Core](http://www.asp.net).
-
-## Build Status
-
-|         |Ubuntu 14.04 |Windows |Mac OS X |
-|---------|:------:|:------:|:------:|
-|**Debug**|[![Build status](https://ci.dot.net/job/dotnet_corert/job/master/job/debug_ubuntu/badge/icon)](https://ci.dot.net/job/dotnet_corert/job/master/job/debug_ubuntu/)|[![Build status](https://ci.dot.net/job/dotnet_corert/job/master/job/debug_windows_nt/badge/icon)](https://ci.dot.net/job/dotnet_corert/job/master/job/debug_windows_nt/)|[![Build Status](https://ci.dot.net/job/dotnet_corert/job/master/job/debug_osx10.12/badge/icon)](https://ci.dot.net/job/dotnet_corert/job/master/job/debug_osx10.12/)|
-|**Release**|[![Build status](https://ci.dot.net/job/dotnet_corert/job/master/job/release_ubuntu/badge/icon)](https://ci.dot.net/job/dotnet_corert/job/master/job/release_ubuntu/)|[![Build status](https://ci.dot.net/job/dotnet_corert/job/master/job/release_windows_nt/badge/icon)](https://ci.dot.net/job/dotnet_corert/job/master/job/release_windows_nt/)|[![Build Status](https://ci.dot.net/job/dotnet_corert/job/master/job/release_osx10.12/badge/icon)](https://ci.dot.net/job/dotnet_corert/job/master/job/release_osx10.12/)|

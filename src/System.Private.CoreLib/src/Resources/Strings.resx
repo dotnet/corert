@@ -117,6 +117,18 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AppDomain_Name" xml:space="preserve">
+    <value>Name:</value>
+  </data>
+  <data name="AppDomain_NoContextPolicies" xml:space="preserve">
+    <value>There are no context policies.</value>
+  </data>
+  <data name="AppDomain_Policy_PrincipalTwice" xml:space="preserve">
+    <value>Default principal object cannot be set twice.</value>
+  </data>
+  <data name="AmbiguousImplementationException_NullMessage" xml:space="preserve">
+    <value>Ambiguous implementation found.</value>
+  </data>
   <data name="Arg_AccessException" xml:space="preserve">
     <value>Cannot access member.</value>
   </data>
@@ -159,11 +171,17 @@
   <data name="Arg_CannotMixComparisonInfrastructure" xml:space="preserve">
     <value>The usage of IKeyComparer and IHashCodeProvider/IComparer interfaces cannot be mixed; use one or the other.</value>
   </data>
+  <data name="Arg_CannotUnloadAppDomainException" xml:space="preserve">
+    <value>Attempt to unload the AppDomain failed.</value>
+  </data>
   <data name="Arg_CopyNonBlittableArray" xml:space="preserve">
     <value>Arrays must contain only blittable data in order to be copied to unmanaged memory.</value>
   </data>
   <data name="Arg_CopyOutOfRange" xml:space="preserve">
     <value>Requested range extends past the end of the array.</value>
+  </data>
+  <data name="Arg_COMException" xml:space="preserve">
+    <value>Error HRESULT E_FAIL has been returned from a call to a COM component.</value>
   </data>
   <data name="Arg_CryptographyException" xml:space="preserve">
     <value>Error occurred during a cryptographic operation.</value>
@@ -306,6 +324,9 @@
   <data name="Arg_MustBeDouble" xml:space="preserve">
     <value>Object must be of type Double.</value>
   </data>
+  <data name="Arg_MustBeDriveLetterOrRootDir" xml:space="preserve">
+    <value>Drive name must be a root directory (i.e. 'C:\') or a drive letter ('C').</value>
+  </data>
   <data name="Arg_MustBeEnum" xml:space="preserve">
     <value>Type provided must be an Enum.</value>
   </data>
@@ -342,6 +363,9 @@
   <data name="Arg_MustBeTimeSpan" xml:space="preserve">
     <value>Object must be of type TimeSpan.</value>
   </data>
+  <data name="Arg_MustBeTrue" xml:space="preserve">
+    <value>Argument must be true.</value>
+  </data>
   <data name="Arg_MustBeUInt16" xml:space="preserve">
     <value>Object must be of type UInt16.</value>
   </data>
@@ -356,6 +380,9 @@
   </data>
   <data name="Arg_NeedAtLeast1Rank" xml:space="preserve">
     <value>Must provide at least one rank.</value>
+  </data>
+  <data name="Arg_Need1DArray" xml:space="preserve">
+    <value>Array was not a one-dimensional array.</value>
   </data>
   <data name="Arg_Need2DArray" xml:space="preserve">
     <value>Array was not a two-dimensional array.</value>
@@ -426,6 +453,12 @@
   <data name="Arg_RegKeyNotFound" xml:space="preserve">
     <value>The specified registry key does not exist.</value>
   </data>
+  <data name="Arg_SafeArrayRankMismatchException" xml:space="preserve">
+    <value>Specified array was not of the expected rank.</value>
+  </data>
+  <data name="Arg_SafeArrayTypeMismatchException" xml:space="preserve">
+    <value>Specified array was not of the expected type.</value>
+  </data>
   <data name="Arg_SecurityException" xml:space="preserve">
     <value>Security error.</value>
   </data>
@@ -475,16 +508,22 @@
     <value>Absolute path information is required.</value>
   </data>
   <data name="Argument_AddingDuplicate" xml:space="preserve">
-    <value>An item with the same key has already been added. Key: {0}</value>
+    <value>An item with the same key has already been added.</value>
   </data>
   <data name="Argument_AddingDuplicate__" xml:space="preserve">
     <value>Item has already been added. Key in dictionary: '{0}'  Key being added: '{1}'</value>
+  </data>
+  <data name="Argument_AddingDuplicateWithKey" xml:space="preserve">
+    <value>An item with the same key has already been added. Key: {0}</value>
   </data>
   <data name="Argument_AdjustmentRulesNoNulls" xml:space="preserve">
     <value>The AdjustmentRule array cannot contain null elements.</value>
   </data>
   <data name="Argument_AdjustmentRulesOutOfOrder" xml:space="preserve">
     <value>The elements of the AdjustmentRule array must be in chronological order and must not overlap.</value>
+  </data>
+  <data name="Argument_AttributeNamesMustBeUnique" xml:space="preserve">
+    <value>Attribute names must be unique.</value>
   </data>
   <data name="Argument_BadFormatSpecifier" xml:space="preserve">
     <value>Format specifier was invalid.</value>
@@ -615,6 +654,18 @@
   <data name="Argument_InvalidDigitSubstitution" xml:space="preserve">
     <value>The DigitSubstitution property must be of a valid member of the DigitShapes enumeration. Valid entries include Context, NativeNational or None.</value>
   </data>
+  <data name="Argument_InvalidElementName" xml:space="preserve">
+    <value>Invalid element name '{0}'.</value>
+  </data>
+  <data name="Argument_InvalidElementTag" xml:space="preserve">
+    <value>Invalid element tag '{0}'.</value>
+  </data>
+  <data name="Argument_InvalidElementText" xml:space="preserve">
+    <value>Invalid element text '{0}'.</value>
+  </data>
+  <data name="Argument_InvalidElementValue" xml:space="preserve">
+    <value>Invalid element value '{0}'.</value>
+  </data>
   <data name="Argument_InvalidEnumValue" xml:space="preserve">
     <value>The value '{0}' is not valid for this usage of the type {1}.</value>
   </data>
@@ -669,6 +720,9 @@
   <data name="Argument_MustBeFalse" xml:space="preserve">
     <value>Argument must be initialized to false</value>
   </data>
+  <data name="Argument_MustBeRuntimeAssembly" xml:space="preserve">
+    <value>Assembly must be a runtime Assembly object.</value>
+  </data>
   <data name="Argument_MustBeRuntimeType" xml:space="preserve">
     <value>Type must be a runtime Type object.</value>
   </data>
@@ -678,8 +732,14 @@
   <data name="Argument_NoRegionInvariantCulture" xml:space="preserve">
     <value>There is no region associated with the Invariant Culture (Culture ID: 0x7F).</value>
   </data>
-  <data name="Argument_NotIsomorphic" xml:space="preserve">
+  <data name="ArgumentException_NotIsomorphic" xml:space="preserve">
     <value>Object contains non-primitive or non-blittable data.</value>
+  </data>
+  <data name="Argument_PathEmpty" xml:space="preserve">
+    <value>Path cannot be the empty string or all whitespace.</value>
+  </data>
+  <data name="Argument_StructArrayTooLarge" xml:space="preserve">
+    <value>Array size exceeds addressing limitations.</value>
   </data>
   <data name="Argument_OffsetLocalMismatch" xml:space="preserve">
     <value>The UTC Offset of the local dateTime parameter does not match the offset argument.</value>
@@ -713,6 +773,9 @@
   </data>
   <data name="ArgumentOutOfRange_LengthTooLarge" xml:space="preserve">
     <value>The specified length exceeds the maximum value of {0}.</value>
+  </data>
+  <data name="ArgumentOutOfRange_LessEqualToIntegerMaxVal" xml:space="preserve">
+    <value>Argument must be less than or equal to 2^31 - 1 milliseconds.</value>
   </data>
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>
@@ -786,6 +849,12 @@
   <data name="ArgumentNull_ArrayValue" xml:space="preserve">
     <value>Found a null value within an array.</value>
   </data>
+  <data name="ArgumentNull_Child" xml:space="preserve">
+    <value>Cannot have a null child.</value>
+  </data>
+  <data name="ArgumentNull_Collection" xml:space="preserve">
+    <value>Collection cannot be null.</value>
+  </data>
   <data name="ArgumentNull_Dictionary" xml:space="preserve">
    <value>Dictionary cannot be null.</value>
   </data>
@@ -794,9 +863,6 @@
   </data>
   <data name="ArgumentNull_Key" xml:space="preserve">
     <value>Key cannot be null.</value>
-  </data>
-  <data name="ArgumentNull_Obj" xml:space="preserve">
-    <value>Object cannot be null.</value>
   </data>
   <data name="ArgumentNull_String" xml:space="preserve">
     <value>String reference not set to an instance of a String.</value>
@@ -1008,8 +1074,11 @@
   <data name="BadImageFormatException_CouldNotLoadFileOrAssembly" xml:space="preserve">
     <value>Could not load file or assembly '{0}'. An attempt was made to load a program with an incorrect format.</value>
   </data>
-  <data name="CollectionCorrupted" xml:space="preserve">
+  <data name="InvalidOperation_CollectionCorrupted" xml:space="preserve">
     <value>A prior operation on this collection was interrupted by an exception. Collection's state is no longer trusted.</value>
+  </data>
+  <data name="InvalidOperation_UnderlyingArrayListChanged" xml:space="preserve">
+    <value>This range in the underlying list is invalid. A possible cause is that elements were removed.</value>
   </data>
   <data name="Exception_EndOfInnerExceptionStack" xml:space="preserve">
     <value>--- End of inner exception stack trace ---</value>
@@ -1039,7 +1108,7 @@
     <value>Input string was either empty or contained only whitespace.</value>
   </data>
   <data name="Format_GuidHexPrefix" xml:space="preserve">
-    <value>Expected hex 0x in '{0}'.</value>
+    <value>Expected 0x prefix.</value>
   </data>
   <data name="Format_GuidInvLen" xml:space="preserve">
     <value>Guid should contain 32 digits with 4 dashes (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).</value>
@@ -1128,8 +1197,14 @@
   <data name="InvalidOperation_EnumOpCantHappen" xml:space="preserve">
     <value>Enumeration has either not started or has already finished.</value>
   </data>
+  <data name="InvalidOperation_GetVersion" xml:space="preserve">
+    <value>OSVersion's call to GetVersionEx failed.</value>
+  </data>
   <data name="InvalidOperation_HandleIsNotInitialized" xml:space="preserve">
     <value>Handle is not initialized.</value>
+  </data>
+  <data name="InvalidOperation_HandleIsNotPinned" xml:space="preserve">
+    <value>Handle is not pinned.</value>
   </data>
   <data name="InvalidOperation_HashInsertFailed" xml:space="preserve">
     <value>Hashtable insert failed. Load factor too high. The most common cause is multiple threads writing to the Hashtable simultaneously.</value>
@@ -1299,6 +1374,9 @@
   <data name="NotSupported_ReadOnlyCollection" xml:space="preserve">
     <value>Collection is read-only.</value>
   </data>
+  <data name="NotSupported_RangeCollection" xml:space="preserve">
+    <value>The specified operation is not supported on Ranges.</value>
+  </data>
   <data name="NotSupported_StringComparison" xml:space="preserve">
     <value>The string comparison type passed in is currently not supported.</value>
   </data>
@@ -1319,6 +1397,9 @@
   </data>
   <data name="ObjectDisposed_ObjectName_Name" xml:space="preserve">
     <value>Object name: '{0}'.</value>
+  </data>
+  <data name="ObjectDisposed_SafeHandleClosed" xml:space="preserve">
+    <value>Safe handle has been closed.</value>
   </data>
   <data name="Overflow_Byte" xml:space="preserve">
     <value>Value was either too large or too small for an unsigned byte.</value>
@@ -1410,6 +1491,9 @@
   <data name="Threading_WaitHandleCannotBeOpenedException_InvalidHandle" xml:space="preserve">
     <value>A WaitHandle with system-wide name '{0}' cannot be created. A WaitHandle of a different type might have the same name.</value>
   </data>
+  <data name="Threading_WaitHandleTooManyPosts" xml:space="preserve">
+    <value>The WaitHandle cannot be signaled because it would exceed its maximum count.</value>
+  </data>
   <data name="TimeZoneNotFound_MissingData" xml:space="preserve">
     <value>The time zone ID '{0}' was not found on the local computer.</value>
   </data>
@@ -1487,6 +1571,9 @@
   </data>
   <data name="PostconditionOnExceptionFailed_Cnd" xml:space="preserve">
     <value>Postcondition failed after throwing an exception: {0}</value>
+  </data>
+  <data name="PersistedFiles_NoHomeDirectory" xml:space="preserve">
+    <value>The home directory of the current user could not be determined.</value>
   </data>
   <data name="InvariantFailed" xml:space="preserve">
     <value>Invariant failed.</value>
@@ -1840,6 +1927,12 @@
   <data name="Arg_InvalidFilterCriteriaException" xml:space="preserve">
     <value>Specified filter criteria was invalid.</value>
   </data>
+  <data name="Arg_InvalidComObjectException" xml:space="preserve">
+    <value>Attempt has been made to use a COM object that does not have a backing class factory.</value>
+  </data>
+  <data name="Arg_InvalidOleVariantTypeException" xml:space="preserve">
+    <value>Specified OLE variant was invalid.</value>
+  </data>
   <data name="Arg_ParmArraySize" xml:space="preserve">
     <value>Must specify one or more parameters.</value>
   </data>
@@ -1864,6 +1957,9 @@
   <data name="InvalidOperation_NotSupportedOnWinRTEvent" xml:space="preserve">
     <value>Adding or removing event handlers dynamically is not supported on WinRT events.</value>
   </data>
+  <data name="PlatformNotSupported_ComInterop" xml:space="preserve">
+    <value>COM Interop is not supported on this platform.</value>
+  </data>
   <data name="PlatformNotSupported_ReflectionOnly" xml:space="preserve">
     <value>ReflectionOnly loading is not supported on this platform.</value>
   </data>
@@ -1872,6 +1968,24 @@
   </data>
   <data name="PlatformNotSupported_ReflectionEmit" xml:space="preserve">
     <value>Dynamic code generation is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_AppDomains" xml:space="preserve">
+    <value>Secondary AppDomains are not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_CAS" xml:space="preserve">
+    <value>Code Access Security is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_AppDomain_ResMon" xml:space="preserve">
+    <value>AppDomain resource monitoring is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_Principal" xml:space="preserve">
+    <value>Windows Principal functionality is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_ThreadAbort" xml:space="preserve">
+    <value>Thread abort is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_ThreadSuspend" xml:space="preserve">
+    <value>Thread suspend is not supported on this platform.</value>
   </data>
   <data name="MissingMember_Name" xml:space="preserve">
     <value>Member '{0}' not found.</value>
@@ -2005,6 +2119,9 @@
   <data name="IndexOutOfRange_UMSPosition" xml:space="preserve">
     <value>Unmanaged memory stream position was beyond the capacity of the stream.</value>
   </data>
+  <data name="IndexOutOfRange_ArrayWithOffset" xml:space="preserve">
+    <value>ArrayWithOffset: offset exceeds array size.</value>
+  </data>
   <data name="ObjectDisposed_ViewAccessorClosed" xml:space="preserve">
     <value>Cannot access a closed accessor.</value>
   </data>
@@ -2046,6 +2163,9 @@
   </data>
   <data name="ArgumentNull_Path" xml:space="preserve">
     <value>Path cannot be null.</value>
+  </data>
+  <data name="ArgumentNull_SafeHandle" xml:space="preserve">
+    <value>SafeHandle cannot be null.</value>
   </data>
   <data name="Argument_EmptyPath" xml:space="preserve">
     <value>Empty path name is not legal.</value>
@@ -2299,7 +2419,7 @@
   <data name="InvalidOperationException_NoGCRegionNotInProgress" xml:space="preserve">
     <value>NoGCRegion mode must be set.</value>
   </data>
-  <data name="InvalidOperationException_SetLatencyModeNoGC" xml:space="preserve">
+  <data name="InvalidOperation_SetLatencyModeNoGC" xml:space="preserve">
     <value>The NoGCRegion mode is in progress. End it and then set a different mode.</value>
   </data>
   <data name="InvalidOperation_NotWithConcurrentGC" xml:space="preserve">
@@ -2764,8 +2884,17 @@
   <data name="NullReference_InvokeNullRefReturned" xml:space="preserve">
     <value>The target method returned a null reference.</value>
   </data>
+  <data name="InvalidOperation_ComputerName" xml:space="preserve">
+    <value>Computer name could not be obtained.</value>
+  </data>
   <data name="InvalidOperation_ConcurrentOperationsNotSupported" xml:space="preserve">
     <value>Operations that change non-concurrent collections must have exclusive access. A concurrent update was performed on this collection and corrupted its state. The collection's state is no longer correct.</value>
+  </data>
+  <data name="Thread_ApartmentState_ChangeFailed" xml:space="preserve">
+    <value>Failed to set the specified COM apartment state.</value>
+  </data>
+  <data name="Thread_GetSetCompressedStack_NotSupported" xml:space="preserve">
+    <value>Use CompressedStack.(Capture/Run) instead.</value>
   </data>
   <data name="Thread_Operation_RequiresCurrentThread" xml:space="preserve">
     <value>This operation must be performed on the same thread as that represented by the Thread instance.</value>
@@ -2805,5 +2934,17 @@
   </data>
   <data name="Argument_PrecisionTooLarge" xml:space="preserve">
     <value>Precision cannot be larger than {0}.</value>
+  </data>
+  <data name="Serialization_DangerousDeserialization" xml:space="preserve">
+    <value>An action was attempted during deserialization that could lead to a security vulnerability. The action has been aborted.</value>
+  </data>
+  <data name="Serialization_DangerousDeserialization_Switch" xml:space="preserve">
+    <value>An action was attempted during deserialization that could lead to a security vulnerability. The action has been aborted. To allow the action, set the '{0}' AppContext switch to true.</value>
+  </data>
+  <data name="NotSupported_AssemblyLoadFromHash" xml:space="preserve">
+    <value>Assembly.LoadFrom with hashValue is not supported.</value>
+  </data>
+  <data name="BadImageFormat_BadILFormat" xml:space="preserve">
+    <value>Bad IL format.</value>
   </data>
 </root>

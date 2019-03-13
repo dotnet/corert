@@ -125,3 +125,6 @@ static UIntNative const STRING_COMPONENT_SIZE = StringConstants::ComponentSize;
 
 //-------------------------------------------------------------------------------------------------
 static UIntNative const STRING_BASE_SIZE = StringConstants::BaseSize;
+
+//-------------------------------------------------------------------------------------------------
+static UIntNative const MAX_STRING_LENGTH = 0x3FFFFFDF;

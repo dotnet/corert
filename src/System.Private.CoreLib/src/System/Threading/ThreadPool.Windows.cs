@@ -60,7 +60,7 @@ namespace System.Threading
             RegisteredWaitHandle registeredWaitHandle = (RegisteredWaitHandle)handle.Target;
             Debug.Assert((handle == registeredWaitHandle._gcHandle) && (wait == registeredWaitHandle._tpWait));
 
-            bool timedOut = (waitResult == (uint)Interop.Constants.WaitTimeout);
+            bool timedOut = (waitResult == (uint)Interop.Kernel32.WAIT_TIMEOUT);
             registeredWaitHandle.PerformCallback(timedOut);
             wrapper.Exit();
         }
@@ -136,7 +136,7 @@ namespace System.Threading
 
                     // Should we wait for callbacks synchronously? Note that we treat the zero handle as the asynchronous case.
                     SafeWaitHandle safeWaitHandle = waitObject?.SafeWaitHandle;
-                    bool blocking = ((safeWaitHandle != null) && (safeWaitHandle.DangerousGetHandle() == Interop.InvalidHandleValue));
+                    bool blocking = ((safeWaitHandle != null) && (safeWaitHandle.DangerousGetHandle() == new IntPtr(-1)));
 
                     if (blocking)
                     {
@@ -244,6 +244,9 @@ namespace System.Threading
 
         private static IntPtr s_work;
 
+        // The number of threads executing work items in the Dispatch method
+        private static volatile int numWorkingThreads;
+
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
         {
             // Not supported at present
@@ -273,7 +276,7 @@ namespace System.Threading
         public static void GetAvailableThreads(out int workerThreads, out int completionPortThreads)
         {
             // Make sure we return a non-negative value if thread pool defaults are changed
-            int availableThreads = Math.Max(MaxThreadCount - ThreadPoolGlobals.workQueue.numWorkingThreads, 0);
+            int availableThreads = Math.Max(MaxThreadCount - numWorkingThreads, 0);
 
             workerThreads = availableThreads;
             completionPortThreads = availableThreads;
@@ -301,7 +304,10 @@ namespace System.Threading
         {
             var wrapper = ThreadPoolCallbackWrapper.Enter();
             Debug.Assert(s_work == work);
+            Interlocked.Increment(ref numWorkingThreads);
             ThreadPoolWorkQueue.Dispatch();
+            int numWorkers = Interlocked.Decrement(ref numWorkingThreads);
+            Debug.Assert(numWorkers >= 0);
             // We reset the thread after executing each callback
             wrapper.Exit(resetThread: false);
         }

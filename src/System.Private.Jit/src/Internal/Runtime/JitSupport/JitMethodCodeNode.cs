@@ -14,7 +14,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.Runtime.JitSupport
 {
-    public class JitMethodCodeNode : ObjectNode, IMethodCodeNode
+    public class JitMethodCodeNode : ObjectNode, IMethodNode, ISymbolDefinitionNode
     {
         public JitMethodCodeNode(MethodDesc method)
         {

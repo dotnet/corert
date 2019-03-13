@@ -10,9 +10,9 @@ namespace System
     {
         private string _exceptionString;
 
-        internal Exception() { }
+        public Exception() { }
 
-        internal Exception(String str)
+        public Exception(String str)
         {
             _exceptionString = str;
         }

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
-using Internal.LowLevelLinq;
 using Internal.Runtime.Augments;
 
 namespace System.Threading
@@ -18,12 +17,20 @@ namespace System.Threading
             /// <summary>
             /// Semaphore for controlling how many threads are currently working.
             /// </summary>
-            private static LowLevelLifoSemaphore s_semaphore = new LowLevelLifoSemaphore(0, MaxPossibleThreadCount);
-            
+            private static LowLevelLifoSemaphore s_semaphore = new LowLevelLifoSemaphore(0, MaxPossibleThreadCount, SemaphoreSpinCount);
+
+            /// <summary>
+            /// Maximum number of spins a thread pool worker thread performs before waiting for work
+            /// </summary>
+            private static int SemaphoreSpinCount
+            {
+                get => AppContextConfigHelper.GetInt16Config("ThreadPool_UnfairSemaphoreSpinLimit", 70, false);
+            }
+
             private static void WorkerThreadStart()
             {
                 ClrThreadPoolEventSource.Log.WorkerThreadStart(ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts).numExistingThreads);
-                RuntimeThread currentThread = RuntimeThread.CurrentThread;
+
                 while (true)
                 {
                     while (WaitForRequest())
@@ -189,7 +196,14 @@ namespace System.Threading
                 ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts);
                 while (true)
                 {
-                    if (counts.numExistingThreads <= counts.numThreadsGoal)
+                    /// When there are more threads processing work than the thread count goal, hill climbing must have decided
+                    /// to decrease the number of threads. Stop processing if the counts can be updated. We may have more
+                    /// threads existing than the thread count goal and that is ok, the cold ones will eventually time out if
+                    /// the thread count goal is not increased again. This logic is a bit different from the original CoreCLR
+                    /// code from which this implementation was ported, which turns a processing thread into a retired thread
+                    /// and checks for pending requests like <see cref="RemoveWorkingWorker"/>. In this implementation there are
+                    /// no retired threads, so only the count of threads processing work is considered.
+                    if (counts.numProcessingWork <= counts.numThreadsGoal)
                     {
                         return false;
                     }
@@ -226,7 +240,7 @@ namespace System.Threading
             {
                 try
                 {
-                    RuntimeThread workerThread = RuntimeThread.Create(WorkerThreadStart);
+                    Thread workerThread = new Thread(WorkerThreadStart);
                     workerThread.IsThreadPoolThread = true;
                     workerThread.IsBackground = true;
                     workerThread.Start();

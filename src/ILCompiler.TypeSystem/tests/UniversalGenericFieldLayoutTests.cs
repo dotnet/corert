@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Internal.TypeSystem;
 
@@ -89,102 +90,128 @@ namespace TypeSystemTests
             Assert.Equal(LayoutInt.Indeterminate, LayoutInt.Min(LayoutInt.Indeterminate, LayoutInt.Zero));
             Assert.Equal(LayoutInt.Indeterminate, LayoutInt.Min(LayoutInt.Zero, LayoutInt.Indeterminate));
             Assert.Equal(LayoutInt.Indeterminate, LayoutInt.Min(LayoutInt.Indeterminate, LayoutInt.Indeterminate));
+        }
 
+        public static IEnumerable<object[]> GetTargetDetails()
+        {
+            yield return new object[] { new TargetDetails(TargetArchitecture.ARM, TargetOS.Unknown, TargetAbi.CoreRT) };
+            yield return new object[] { new TargetDetails(TargetArchitecture.ARM64, TargetOS.Unknown, TargetAbi.CoreRT) };
+            yield return new object[] { new TargetDetails(TargetArchitecture.X64, TargetOS.Unknown, TargetAbi.CoreRT) };
+            yield return new object[] { new TargetDetails(TargetArchitecture.X86, TargetOS.Unknown, TargetAbi.CoreRT) };
+            yield return new object[] { new TargetDetails(TargetArchitecture.Wasm32, TargetOS.Unknown, TargetAbi.CoreRT) };
+
+            yield return new object[] { new TargetDetails(TargetArchitecture.ARM, TargetOS.Unknown, TargetAbi.ProjectN) };
+            yield return new object[] { new TargetDetails(TargetArchitecture.ARM64, TargetOS.Unknown, TargetAbi.ProjectN) };
+            yield return new object[] { new TargetDetails(TargetArchitecture.X64, TargetOS.Unknown, TargetAbi.ProjectN) };
+            yield return new object[] { new TargetDetails(TargetArchitecture.X86, TargetOS.Unknown, TargetAbi.ProjectN) };
+        }
+
+        [Theory]
+        [MemberData(nameof(GetTargetDetails))]
+        public void TestLayoutIntAlignUp(TargetDetails target)
+        {
             // AlignUp testing
-            Assert.Equal(new LayoutInt(0), LayoutInt.AlignUp(new LayoutInt(0), new LayoutInt(1)));
-            Assert.Equal(new LayoutInt(0), LayoutInt.AlignUp(new LayoutInt(0), new LayoutInt(2)));
-            Assert.Equal(new LayoutInt(0), LayoutInt.AlignUp(new LayoutInt(0), new LayoutInt(4)));
-            Assert.Equal(new LayoutInt(0), LayoutInt.AlignUp(new LayoutInt(0), new LayoutInt(8)));
+            Assert.Equal(new LayoutInt(0), LayoutInt.AlignUp(new LayoutInt(0), new LayoutInt(1), target));
+            Assert.Equal(new LayoutInt(0), LayoutInt.AlignUp(new LayoutInt(0), new LayoutInt(2), target));
+            Assert.Equal(new LayoutInt(0), LayoutInt.AlignUp(new LayoutInt(0), new LayoutInt(4), target));
+            Assert.Equal(new LayoutInt(0), LayoutInt.AlignUp(new LayoutInt(0), new LayoutInt(8), target));
 
-            Assert.Equal(new LayoutInt(1), LayoutInt.AlignUp(new LayoutInt(1), new LayoutInt(1)));
-            Assert.Equal(new LayoutInt(2), LayoutInt.AlignUp(new LayoutInt(2), new LayoutInt(1)));
-            Assert.Equal(new LayoutInt(3), LayoutInt.AlignUp(new LayoutInt(3), new LayoutInt(1)));
-            Assert.Equal(new LayoutInt(4), LayoutInt.AlignUp(new LayoutInt(4), new LayoutInt(1)));
-            Assert.Equal(new LayoutInt(5), LayoutInt.AlignUp(new LayoutInt(5), new LayoutInt(1)));
-            Assert.Equal(new LayoutInt(6), LayoutInt.AlignUp(new LayoutInt(6), new LayoutInt(1)));
-            Assert.Equal(new LayoutInt(7), LayoutInt.AlignUp(new LayoutInt(7), new LayoutInt(1)));
-            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(8), new LayoutInt(1)));
-            Assert.Equal(new LayoutInt(9), LayoutInt.AlignUp(new LayoutInt(9), new LayoutInt(1)));
-            Assert.Equal(new LayoutInt(10), LayoutInt.AlignUp(new LayoutInt(10), new LayoutInt(1)));
-            Assert.Equal(new LayoutInt(11), LayoutInt.AlignUp(new LayoutInt(11), new LayoutInt(1)));
-            Assert.Equal(new LayoutInt(12), LayoutInt.AlignUp(new LayoutInt(12), new LayoutInt(1)));
-            Assert.Equal(new LayoutInt(13), LayoutInt.AlignUp(new LayoutInt(13), new LayoutInt(1)));
-            Assert.Equal(new LayoutInt(14), LayoutInt.AlignUp(new LayoutInt(14), new LayoutInt(1)));
-            Assert.Equal(new LayoutInt(15), LayoutInt.AlignUp(new LayoutInt(15), new LayoutInt(1)));
-            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(16), new LayoutInt(1)));
+            Assert.Equal(new LayoutInt(1), LayoutInt.AlignUp(new LayoutInt(1), new LayoutInt(1), target));
+            Assert.Equal(new LayoutInt(2), LayoutInt.AlignUp(new LayoutInt(2), new LayoutInt(1), target));
+            Assert.Equal(new LayoutInt(3), LayoutInt.AlignUp(new LayoutInt(3), new LayoutInt(1), target));
+            Assert.Equal(new LayoutInt(4), LayoutInt.AlignUp(new LayoutInt(4), new LayoutInt(1), target));
+            Assert.Equal(new LayoutInt(5), LayoutInt.AlignUp(new LayoutInt(5), new LayoutInt(1), target));
+            Assert.Equal(new LayoutInt(6), LayoutInt.AlignUp(new LayoutInt(6), new LayoutInt(1), target));
+            Assert.Equal(new LayoutInt(7), LayoutInt.AlignUp(new LayoutInt(7), new LayoutInt(1), target));
+            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(8), new LayoutInt(1), target));
+            Assert.Equal(new LayoutInt(9), LayoutInt.AlignUp(new LayoutInt(9), new LayoutInt(1), target));
+            Assert.Equal(new LayoutInt(10), LayoutInt.AlignUp(new LayoutInt(10), new LayoutInt(1), target));
+            Assert.Equal(new LayoutInt(11), LayoutInt.AlignUp(new LayoutInt(11), new LayoutInt(1), target));
+            Assert.Equal(new LayoutInt(12), LayoutInt.AlignUp(new LayoutInt(12), new LayoutInt(1), target));
+            Assert.Equal(new LayoutInt(13), LayoutInt.AlignUp(new LayoutInt(13), new LayoutInt(1), target));
+            Assert.Equal(new LayoutInt(14), LayoutInt.AlignUp(new LayoutInt(14), new LayoutInt(1), target));
+            Assert.Equal(new LayoutInt(15), LayoutInt.AlignUp(new LayoutInt(15), new LayoutInt(1), target));
+            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(16), new LayoutInt(1), target));
 
-            Assert.Equal(new LayoutInt(2), LayoutInt.AlignUp(new LayoutInt(1), new LayoutInt(2)));
-            Assert.Equal(new LayoutInt(2), LayoutInt.AlignUp(new LayoutInt(2), new LayoutInt(2)));
-            Assert.Equal(new LayoutInt(4), LayoutInt.AlignUp(new LayoutInt(3), new LayoutInt(2)));
-            Assert.Equal(new LayoutInt(4), LayoutInt.AlignUp(new LayoutInt(4), new LayoutInt(2)));
-            Assert.Equal(new LayoutInt(6), LayoutInt.AlignUp(new LayoutInt(5), new LayoutInt(2)));
-            Assert.Equal(new LayoutInt(6), LayoutInt.AlignUp(new LayoutInt(6), new LayoutInt(2)));
-            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(7), new LayoutInt(2)));
-            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(8), new LayoutInt(2)));
-            Assert.Equal(new LayoutInt(10), LayoutInt.AlignUp(new LayoutInt(9), new LayoutInt(2)));
-            Assert.Equal(new LayoutInt(10), LayoutInt.AlignUp(new LayoutInt(10), new LayoutInt(2)));
-            Assert.Equal(new LayoutInt(12), LayoutInt.AlignUp(new LayoutInt(11), new LayoutInt(2)));
-            Assert.Equal(new LayoutInt(12), LayoutInt.AlignUp(new LayoutInt(12), new LayoutInt(2)));
-            Assert.Equal(new LayoutInt(14), LayoutInt.AlignUp(new LayoutInt(13), new LayoutInt(2)));
-            Assert.Equal(new LayoutInt(14), LayoutInt.AlignUp(new LayoutInt(14), new LayoutInt(2)));
-            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(15), new LayoutInt(2)));
-            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(16), new LayoutInt(2)));
+            Assert.Equal(new LayoutInt(2), LayoutInt.AlignUp(new LayoutInt(1), new LayoutInt(2), target));
+            Assert.Equal(new LayoutInt(2), LayoutInt.AlignUp(new LayoutInt(2), new LayoutInt(2), target));
+            Assert.Equal(new LayoutInt(4), LayoutInt.AlignUp(new LayoutInt(3), new LayoutInt(2), target));
+            Assert.Equal(new LayoutInt(4), LayoutInt.AlignUp(new LayoutInt(4), new LayoutInt(2), target));
+            Assert.Equal(new LayoutInt(6), LayoutInt.AlignUp(new LayoutInt(5), new LayoutInt(2), target));
+            Assert.Equal(new LayoutInt(6), LayoutInt.AlignUp(new LayoutInt(6), new LayoutInt(2), target));
+            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(7), new LayoutInt(2), target));
+            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(8), new LayoutInt(2), target));
+            Assert.Equal(new LayoutInt(10), LayoutInt.AlignUp(new LayoutInt(9), new LayoutInt(2), target));
+            Assert.Equal(new LayoutInt(10), LayoutInt.AlignUp(new LayoutInt(10), new LayoutInt(2), target));
+            Assert.Equal(new LayoutInt(12), LayoutInt.AlignUp(new LayoutInt(11), new LayoutInt(2), target));
+            Assert.Equal(new LayoutInt(12), LayoutInt.AlignUp(new LayoutInt(12), new LayoutInt(2), target));
+            Assert.Equal(new LayoutInt(14), LayoutInt.AlignUp(new LayoutInt(13), new LayoutInt(2), target));
+            Assert.Equal(new LayoutInt(14), LayoutInt.AlignUp(new LayoutInt(14), new LayoutInt(2), target));
+            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(15), new LayoutInt(2), target));
+            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(16), new LayoutInt(2), target));
 
-            Assert.Equal(new LayoutInt(4), LayoutInt.AlignUp(new LayoutInt(1), new LayoutInt(4)));
-            Assert.Equal(new LayoutInt(4), LayoutInt.AlignUp(new LayoutInt(2), new LayoutInt(4)));
-            Assert.Equal(new LayoutInt(4), LayoutInt.AlignUp(new LayoutInt(3), new LayoutInt(4)));
-            Assert.Equal(new LayoutInt(4), LayoutInt.AlignUp(new LayoutInt(4), new LayoutInt(4)));
-            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(5), new LayoutInt(4)));
-            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(6), new LayoutInt(4)));
-            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(7), new LayoutInt(4)));
-            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(8), new LayoutInt(4)));
-            Assert.Equal(new LayoutInt(12), LayoutInt.AlignUp(new LayoutInt(9), new LayoutInt(4)));
-            Assert.Equal(new LayoutInt(12), LayoutInt.AlignUp(new LayoutInt(10), new LayoutInt(4)));
-            Assert.Equal(new LayoutInt(12), LayoutInt.AlignUp(new LayoutInt(11), new LayoutInt(4)));
-            Assert.Equal(new LayoutInt(12), LayoutInt.AlignUp(new LayoutInt(12), new LayoutInt(4)));
-            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(13), new LayoutInt(4)));
-            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(14), new LayoutInt(4)));
-            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(15), new LayoutInt(4)));
-            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(16), new LayoutInt(4)));
+            Assert.Equal(new LayoutInt(4), LayoutInt.AlignUp(new LayoutInt(1), new LayoutInt(4), target));
+            Assert.Equal(new LayoutInt(4), LayoutInt.AlignUp(new LayoutInt(2), new LayoutInt(4), target));
+            Assert.Equal(new LayoutInt(4), LayoutInt.AlignUp(new LayoutInt(3), new LayoutInt(4), target));
+            Assert.Equal(new LayoutInt(4), LayoutInt.AlignUp(new LayoutInt(4), new LayoutInt(4), target));
+            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(5), new LayoutInt(4), target));
+            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(6), new LayoutInt(4), target));
+            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(7), new LayoutInt(4), target));
+            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(8), new LayoutInt(4), target));
+            Assert.Equal(new LayoutInt(12), LayoutInt.AlignUp(new LayoutInt(9), new LayoutInt(4), target));
+            Assert.Equal(new LayoutInt(12), LayoutInt.AlignUp(new LayoutInt(10), new LayoutInt(4), target));
+            Assert.Equal(new LayoutInt(12), LayoutInt.AlignUp(new LayoutInt(11), new LayoutInt(4), target));
+            Assert.Equal(new LayoutInt(12), LayoutInt.AlignUp(new LayoutInt(12), new LayoutInt(4), target));
+            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(13), new LayoutInt(4), target));
+            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(14), new LayoutInt(4), target));
+            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(15), new LayoutInt(4), target));
+            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(16), new LayoutInt(4), target));
 
-            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(1), new LayoutInt(8)));
-            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(2), new LayoutInt(8)));
-            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(3), new LayoutInt(8)));
-            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(4), new LayoutInt(8)));
-            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(5), new LayoutInt(8)));
-            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(6), new LayoutInt(8)));
-            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(7), new LayoutInt(8)));
-            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(8), new LayoutInt(8)));
-            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(9), new LayoutInt(8)));
-            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(10), new LayoutInt(8)));
-            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(11), new LayoutInt(8)));
-            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(12), new LayoutInt(8)));
-            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(13), new LayoutInt(8)));
-            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(14), new LayoutInt(8)));
-            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(15), new LayoutInt(8)));
-            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(16), new LayoutInt(8)));
+            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(1), new LayoutInt(8), target));
+            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(2), new LayoutInt(8), target));
+            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(3), new LayoutInt(8), target));
+            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(4), new LayoutInt(8), target));
+            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(5), new LayoutInt(8), target));
+            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(6), new LayoutInt(8), target));
+            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(7), new LayoutInt(8), target));
+            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(8), new LayoutInt(8), target));
+            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(9), new LayoutInt(8), target));
+            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(10), new LayoutInt(8), target));
+            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(11), new LayoutInt(8), target));
+            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(12), new LayoutInt(8), target));
+            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(13), new LayoutInt(8), target));
+            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(14), new LayoutInt(8), target));
+            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(15), new LayoutInt(8), target));
+            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(16), new LayoutInt(8), target));
 
-            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(1), LayoutInt.Indeterminate));
-            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(2), LayoutInt.Indeterminate));
-            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(3), LayoutInt.Indeterminate));
-            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(4), LayoutInt.Indeterminate));
-            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(5), LayoutInt.Indeterminate));
-            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(6), LayoutInt.Indeterminate));
-            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(7), LayoutInt.Indeterminate));
-            Assert.Equal(new LayoutInt(8), LayoutInt.AlignUp(new LayoutInt(8), LayoutInt.Indeterminate));
-            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(9), LayoutInt.Indeterminate));
-            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(10), LayoutInt.Indeterminate));
-            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(11), LayoutInt.Indeterminate));
-            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(12), LayoutInt.Indeterminate));
-            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(13), LayoutInt.Indeterminate));
-            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(14), LayoutInt.Indeterminate));
-            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(15), LayoutInt.Indeterminate));
-            Assert.Equal(new LayoutInt(16), LayoutInt.AlignUp(new LayoutInt(16), LayoutInt.Indeterminate));
+            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(1), LayoutInt.Indeterminate, target));
+            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(2), LayoutInt.Indeterminate, target));
+            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(3), LayoutInt.Indeterminate, target));
+            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(4), LayoutInt.Indeterminate, target));
+            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(5), LayoutInt.Indeterminate, target));
+            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(6), LayoutInt.Indeterminate, target));
+            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(7), LayoutInt.Indeterminate, target));
+            if (target.MaximumAlignment > 8)
+                Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(8), LayoutInt.Indeterminate, target));
+            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(9), LayoutInt.Indeterminate, target));
+            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(10), LayoutInt.Indeterminate, target));
+            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(11), LayoutInt.Indeterminate, target));
+            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(12), LayoutInt.Indeterminate, target));
+            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(13), LayoutInt.Indeterminate, target));
+            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(14), LayoutInt.Indeterminate, target));
+            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(15), LayoutInt.Indeterminate, target));
+            if (target.MaximumAlignment > 16)
+                Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(new LayoutInt(16), LayoutInt.Indeterminate, target));
 
-            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(LayoutInt.Indeterminate, new LayoutInt(1)));
-            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(LayoutInt.Indeterminate, new LayoutInt(2)));
-            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(LayoutInt.Indeterminate, new LayoutInt(4)));
-            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(LayoutInt.Indeterminate, new LayoutInt(8)));
+            // If we the value is aligned to the maximum supported alignment, we can consider it aligned no matter
+            // the value of the alignment.
+            Assert.Equal(new LayoutInt(target.MaximumAlignment), LayoutInt.AlignUp(new LayoutInt(target.MaximumAlignment), LayoutInt.Indeterminate, target));
+            Assert.Equal(new LayoutInt(target.MaximumAlignment * 2), LayoutInt.AlignUp(new LayoutInt(target.MaximumAlignment * 2), LayoutInt.Indeterminate, target));
+
+            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(LayoutInt.Indeterminate, new LayoutInt(1), target));
+            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(LayoutInt.Indeterminate, new LayoutInt(2), target));
+            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(LayoutInt.Indeterminate, new LayoutInt(4), target));
+            Assert.Equal(LayoutInt.Indeterminate, LayoutInt.AlignUp(LayoutInt.Indeterminate, new LayoutInt(8), target));
         }
 
 
@@ -289,7 +316,14 @@ namespace TypeSystemTests
             Assert.Equal(LayoutInt.Indeterminate, genOfLongNestedInt.InstanceByteCount);
             Assert.Equal(LayoutInt.Indeterminate, genOfLongNestedInt.InstanceByteCountUnaligned);
             Assert.Equal(0, genOfLongNestedInt.GetFields().First().Offset.AsInt);
-            Assert.Equal(8, genOfLongNestedInt.GetFields().ElementAt(1).Offset.AsInt);
+            if (context.Target.MaximumAlignment <= 8)
+            {
+                Assert.Equal(8, genOfLongNestedInt.GetFields().ElementAt(1).Offset.AsInt);
+            }
+            else
+            {
+                Assert.Equal(LayoutInt.Indeterminate, genOfLongNestedInt.GetFields().ElementAt(1).Offset);
+            }
             Assert.Equal(LayoutInt.Indeterminate, genOfLongNestedInt.GetFields().ElementAt(2).Offset);
         }
 
@@ -322,14 +356,13 @@ namespace TypeSystemTests
         private void CommonClassLayoutTestBits(ModuleDesc testModule, 
                                                TypeSystemContext context,
                                                LayoutInt expectedIndeterminateByteAlignment,
-                                               out MetadataType tDerivedGen, 
                                                out InstantiatedType genOfIU,
                                                out InstantiatedType genOfLU,
                                                out InstantiatedType genOfUU,
                                                out InstantiatedType genOfUI,
                                                out InstantiatedType genOfUL)
         {
-            tDerivedGen = testModule.GetType("GenericTypes", "GenDerivedClass`2");
+            MetadataType tDerivedGen = testModule.GetType("GenericTypes", "GenDerivedClass`2");
             genOfIU = tDerivedGen.MakeInstantiatedType(context.GetWellKnownType(WellKnownType.Int32), context.UniversalCanonType);
             genOfLU = tDerivedGen.MakeInstantiatedType(context.GetWellKnownType(WellKnownType.Int64), context.UniversalCanonType);
             genOfUU = tDerivedGen.MakeInstantiatedType(context.UniversalCanonType, context.UniversalCanonType);
@@ -351,7 +384,6 @@ namespace TypeSystemTests
             // Tests class layout behavior with universal generics
             // Tests handling universal base types as well as non-universal base types
 
-            MetadataType tDerivedGen;
             InstantiatedType genOfIU;
             InstantiatedType genOfLU;
             InstantiatedType genOfUU;
@@ -368,7 +400,6 @@ namespace TypeSystemTests
             CommonClassLayoutTestBits(testModule,
                                       context,
                                       new LayoutInt(8),
-                                      out tDerivedGen,
                                       out genOfIU,
                                       out genOfLU,
                                       out genOfUU,
@@ -378,12 +409,29 @@ namespace TypeSystemTests
             // On x64 first field offset is well known always
             Assert.Equal(8, genOfIU.BaseType.GetFields().First().Offset.AsInt);
             Assert.Equal(8, genOfLU.BaseType.GetFields().First().Offset.AsInt);
-            Assert.Equal(8, genOfUU.BaseType.GetFields().First().Offset.AsInt);
-            Assert.Equal(8, genOfUI.BaseType.GetFields().First().Offset.AsInt);
-            Assert.Equal(8, genOfUL.BaseType.GetFields().First().Offset.AsInt);
+            if (context.Target.MaximumAlignment <= 8)
+            {
+                Assert.Equal(8, genOfUU.BaseType.GetFields().First().Offset.AsInt);
+                Assert.Equal(8, genOfUI.BaseType.GetFields().First().Offset.AsInt);
+                Assert.Equal(8, genOfUL.BaseType.GetFields().First().Offset.AsInt);
+            }
+            else
+            {
+
+                Assert.Equal(LayoutInt.Indeterminate, genOfUU.BaseType.GetFields().First().Offset);
+                Assert.Equal(LayoutInt.Indeterminate, genOfUI.BaseType.GetFields().First().Offset);
+                Assert.Equal(LayoutInt.Indeterminate, genOfUL.BaseType.GetFields().First().Offset);
+            }
 
             Assert.Equal(LayoutInt.Indeterminate, genOfIU.GetFields().First().Offset);
-            Assert.Equal(16, genOfLU.GetFields().First().Offset.AsInt);
+            if (context.Target.MaximumAlignment <= 16)
+            {
+                Assert.Equal(16, genOfLU.GetFields().First().Offset.AsInt);
+            }
+            else
+            {
+                Assert.Equal(LayoutInt.Indeterminate, genOfLU.GetFields().First().Offset);
+            }
             Assert.Equal(LayoutInt.Indeterminate, genOfUU.GetFields().First().Offset);
             Assert.Equal(LayoutInt.Indeterminate, genOfUI.GetFields().First().Offset);
             Assert.Equal(LayoutInt.Indeterminate, genOfUL.GetFields().First().Offset);
@@ -395,7 +443,6 @@ namespace TypeSystemTests
             CommonClassLayoutTestBits(testModule,
                                       context,
                                       new LayoutInt(4),
-                                      out tDerivedGen,
                                       out genOfIU,
                                       out genOfLU,
                                       out genOfUU,
@@ -408,8 +455,22 @@ namespace TypeSystemTests
             Assert.Equal(LayoutInt.Indeterminate, genOfUI.BaseType.GetFields().First().Offset);
             Assert.Equal(LayoutInt.Indeterminate, genOfUL.BaseType.GetFields().First().Offset);
 
-            Assert.Equal(8, genOfIU.GetFields().First().Offset.AsInt);
-            Assert.Equal(16, genOfLU.GetFields().First().Offset.AsInt);
+            if (context.Target.MaximumAlignment <= 8)
+            {
+                Assert.Equal(8, genOfIU.GetFields().First().Offset.AsInt);
+            }
+            else
+            {
+                Assert.Equal(LayoutInt.Indeterminate, genOfIU.GetFields().First().Offset);
+            }
+            if (context.Target.MaximumAlignment <= 16)
+            {
+                Assert.Equal(16, genOfLU.GetFields().First().Offset.AsInt);
+            }
+            else
+            {
+                Assert.Equal(LayoutInt.Indeterminate, genOfLU.GetFields().First().Offset);
+            }
             Assert.Equal(LayoutInt.Indeterminate, genOfUU.GetFields().First().Offset);
             Assert.Equal(LayoutInt.Indeterminate, genOfUI.GetFields().First().Offset);
             Assert.Equal(LayoutInt.Indeterminate, genOfUL.GetFields().First().Offset);
@@ -421,7 +482,6 @@ namespace TypeSystemTests
             CommonClassLayoutTestBits(testModule,
                                       context,
                                       LayoutInt.Indeterminate,
-                                      out tDerivedGen,
                                       out genOfIU,
                                       out genOfLU,
                                       out genOfUU,
@@ -434,8 +494,22 @@ namespace TypeSystemTests
             Assert.Equal(LayoutInt.Indeterminate, genOfUI.BaseType.GetFields().First().Offset);
             Assert.Equal(LayoutInt.Indeterminate, genOfUL.BaseType.GetFields().First().Offset);
 
-            Assert.Equal(8, genOfIU.GetFields().First().Offset.AsInt);
-            Assert.Equal(16, genOfLU.GetFields().First().Offset.AsInt);
+            if (context.Target.MaximumAlignment <= 8)
+            {
+                Assert.Equal(8, genOfIU.GetFields().First().Offset.AsInt);
+            }
+            else
+            {
+                Assert.Equal(LayoutInt.Indeterminate, genOfIU.GetFields().First().Offset);
+            }
+            if (context.Target.MaximumAlignment <= 16)
+            {
+                Assert.Equal(16, genOfLU.GetFields().First().Offset.AsInt);
+            }
+            else
+            {
+                Assert.Equal(LayoutInt.Indeterminate, genOfLU.GetFields().First().Offset);
+            }
             Assert.Equal(LayoutInt.Indeterminate, genOfUU.GetFields().First().Offset);
             Assert.Equal(LayoutInt.Indeterminate, genOfUI.GetFields().First().Offset);
             Assert.Equal(LayoutInt.Indeterminate, genOfUL.GetFields().First().Offset);

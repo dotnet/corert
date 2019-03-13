@@ -170,7 +170,7 @@ FASTCALL_FUNC   RhNewString, 8
         push        edx
 
         ;; Make sure computing the aligned overall allocation size won't overflow
-        cmp         edx, ((0FFFFFFFFh - STRING_BASE_SIZE - 3) / STRING_COMPONENT_SIZE)
+        cmp         edx, MAX_STRING_LENGTH
         ja          StringSizeOverflow
 
         ; Compute overall allocation size (align(base size + (element size * elements), 4)).

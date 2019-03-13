@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
     /// types. It only fills out enough pieces of the EEType structure so that the GC can operate on it. Runtime should
     /// never see these.
     /// </summary>
-    internal class GCStaticEETypeNode : ObjectNode, ISymbolDefinitionNode
+    public class GCStaticEETypeNode : ObjectNode, ISymbolDefinitionNode
     {
         private GCPointerMap _gcMap;
         private TargetDetails _target;

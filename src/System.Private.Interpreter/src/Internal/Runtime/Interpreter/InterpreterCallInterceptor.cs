@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Diagnostics;
+
 using Internal.IL;
 using Internal.Runtime.CallConverter;
 using Internal.Runtime.CallInterceptor;
@@ -27,12 +30,19 @@ namespace Internal.Runtime.Interpreter
         {
             get
             {
-                LocalVariableType[] localVariableTypes = new LocalVariableType[_method.Signature.Length + 1];
-                localVariableTypes[0] = new LocalVariableType(_method.Signature.ReturnType.RuntimeTypeHandle, false, _method.Signature.ReturnType.IsByRef);
+                int delta = (_method.Signature.IsStatic ? 1 : 2);
+                LocalVariableType[] localVariableTypes = new LocalVariableType[_method.Signature.Length + delta];
+                localVariableTypes[0] = new LocalVariableType(_method.Signature.ReturnType.GetRuntimeTypeHandle(), false, _method.Signature.ReturnType.IsByRef);
+
+                if (!_method.Signature.IsStatic)
+                {
+                    localVariableTypes[1] = new LocalVariableType(_method.OwningType.GetRuntimeTypeHandle(), false, _method.OwningType.IsByRef);
+                }
+
                 for (int i = 0; i < _method.Signature.Length; i++)
                 {
                     var argument = _method.Signature[i];
-                    localVariableTypes[i + 1] = new LocalVariableType(argument.RuntimeTypeHandle, false, argument.IsByRef);
+                    localVariableTypes[i + delta] = new LocalVariableType(argument.GetRuntimeTypeHandle(), false, argument.IsByRef);
                 }
 
                 return localVariableTypes;
@@ -56,7 +66,7 @@ namespace Internal.Runtime.Interpreter
                 for (int i = 0; i < locals.Length; i++)
                 {
                     var variable = locals[i];
-                    localVariableTypes[i] = new LocalVariableType(variable.Type.RuntimeTypeHandle, variable.IsPinned, variable.Type.IsByRef);
+                    localVariableTypes[i] = new LocalVariableType(variable.Type.GetRuntimeTypeHandle(), variable.IsPinned, variable.Type.IsByRef);
                 }
 
                 return localVariableTypes;

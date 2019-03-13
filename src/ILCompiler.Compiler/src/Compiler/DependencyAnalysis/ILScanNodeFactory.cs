@@ -70,7 +70,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override ISymbolNode CreateReadyToRunHelperNode(ReadyToRunHelperKey helperCall)
         {
-            return new ReadyToRunHelperNode(this, helperCall.HelperId, helperCall.Target);
+            return new ReadyToRunHelperNode(helperCall.HelperId, helperCall.Target);
         }
     }
 }

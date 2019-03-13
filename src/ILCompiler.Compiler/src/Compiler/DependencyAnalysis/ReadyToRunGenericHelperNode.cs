@@ -43,6 +43,10 @@ namespace ILCompiler.DependencyAnalysis
             {
                 case ReadyToRunHelperId.TypeHandle:
                     return factory.GenericLookup.Type((TypeDesc)target);
+                case ReadyToRunHelperId.TypeHandleForCasting:
+                    // Check that we unwrapped the cases that could be unwrapped to prevent duplicate entries
+                    Debug.Assert(factory.GenericLookup.Type((TypeDesc)target) != factory.GenericLookup.UnwrapNullableType((TypeDesc)target));
+                    return factory.GenericLookup.UnwrapNullableType((TypeDesc)target);
                 case ReadyToRunHelperId.MethodHandle:
                     return factory.GenericLookup.MethodHandle((MethodDesc)target);
                 case ReadyToRunHelperId.FieldHandle:

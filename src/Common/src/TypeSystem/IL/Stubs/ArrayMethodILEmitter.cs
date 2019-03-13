@@ -216,6 +216,7 @@ namespace Internal.IL.Stubs
                 codeStream.EmitLabel(rangeCheckDoneLabel);
 
             codeStream.EmitLdLoc(totalLocalNum);
+            codeStream.Emit(ILOpcode.conv_u);
 
             int elementSize = _elementType.GetElementSize().AsInt;
             if (elementSize != 1)

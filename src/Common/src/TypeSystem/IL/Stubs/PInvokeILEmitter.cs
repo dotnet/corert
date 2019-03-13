@@ -43,7 +43,7 @@ namespace Internal.IL.Stubs
             //
             if (_targetMethod is DelegateMarshallingMethodThunk delegateMethod)
             {
-                _flags = ((EcmaType)delegateMethod.DelegateType).GetDelegatePInvokeFlags();
+                _flags = ((EcmaType)delegateMethod.DelegateType.GetTypeDefinition()).GetDelegatePInvokeFlags();
             }
             else
             {
@@ -245,9 +245,7 @@ namespace Internal.IL.Stubs
                 nativeParameterTypes[i - 1] = _marshallers[i].NativeParameterType;
             }
 
-            if (MarshalHelpers.UseLazyResolution(_targetMethod,
-                _importMetadata.Module,
-                _pInvokeILEmitterConfiguration))
+            if (!_pInvokeILEmitterConfiguration.GenerateDirectCall(_importMetadata.Module, _importMetadata.Name))
             {
                 MetadataType lazyHelperType = context.GetHelperType("InteropHelpers");
                 FieldDesc lazyDispatchCell = _interopStateManager.GetPInvokeLazyFixupField(_targetMethod);
@@ -376,9 +374,10 @@ namespace Internal.IL.Stubs
                 return true;
             }
 
+            // The configuration can be null if this is delegate or calli marshalling
             if (_pInvokeILEmitterConfiguration != null)
             {
-                if (MarshalHelpers.UseLazyResolution(_targetMethod, _importMetadata.Module, _pInvokeILEmitterConfiguration))
+                if (!_pInvokeILEmitterConfiguration.GenerateDirectCall(_importMetadata.Module, _importMetadata.Name))
                 {
                     return true;
                 }

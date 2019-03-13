@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 
+using Internal.IL;
 using Internal.TypeSystem;
 
 using ILCompiler.Metadata;
@@ -27,10 +28,14 @@ namespace ILCompiler
         internal readonly UsageBasedMetadataGenerationOptions _generationOptions;
         private readonly bool _hasPreciseFieldUsageInformation;
 
+        private readonly ILProvider _ilProvider;
+
         private readonly List<ModuleDesc> _modulesWithMetadata = new List<ModuleDesc>();
         private readonly List<FieldDesc> _fieldsWithMetadata = new List<FieldDesc>();
         private readonly List<MethodDesc> _methodsWithMetadata = new List<MethodDesc>();
         private readonly List<MetadataType> _typesWithMetadata = new List<MetadataType>();
+
+        private readonly MetadataType _serializationInfoType;
 
         public UsageBasedMetadataManager(
             CompilationModuleGroup group,
@@ -40,6 +45,7 @@ namespace ILCompiler
             string logFile,
             StackTraceEmissionPolicy stackTracePolicy,
             DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy,
+            ILProvider ilProvider,
             UsageBasedMetadataGenerationOptions generationOptions)
             : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy)
         {
@@ -47,6 +53,9 @@ namespace ILCompiler
             _hasPreciseFieldUsageInformation = false;
             _compilationModuleGroup = group;
             _generationOptions = generationOptions;
+            _ilProvider = ilProvider;
+
+            _serializationInfoType = typeSystemContext.SystemModule.GetType("System.Runtime.Serialization", "SerializationInfo", false);
         }
 
         protected override void Graph_NewMarkedNode(DependencyNodeCore<NodeFactory> obj)
@@ -159,6 +168,57 @@ namespace ILCompiler
                     }
                 }
             }
+
+            // If anonymous type heuristic is turned on and this is an anonymous type, make sure we have
+            // method bodies for all properties. It's common to have anonymous types used with reflection
+            // and it's hard to specify them in RD.XML.
+            if ((_generationOptions & UsageBasedMetadataGenerationOptions.AnonymousTypeHeuristic) != 0)
+            {
+                if (type is MetadataType metadataType &&
+                    metadataType.HasInstantiation &&
+                    !metadataType.IsGenericDefinition &&
+                    metadataType.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute") &&
+                    metadataType.Name.Contains("AnonymousType"))
+                {
+                    foreach (MethodDesc method in type.GetMethods())
+                    {
+                        if (!method.Signature.IsStatic && method.IsSpecialName)
+                        {
+                            dependencies = dependencies ?? new DependencyList();
+                            dependencies.Add(factory.CanonicalEntrypoint(method), "Anonymous type accessor");
+                        }
+                    }
+                }
+            }
+
+            // If a type is marked [Serializable], make sure a couple things are also included.
+            if (type.IsSerializable && !type.IsGenericDefinition)
+            {
+                foreach (MethodDesc method in type.GetAllMethods())
+                {
+                    MethodSignature signature = method.Signature;
+
+                    if (method.IsConstructor
+                        && signature.Length == 2
+                        && signature[0] == _serializationInfoType
+                        /* && signature[1] is StreamingContext */)
+                    {
+                        dependencies = dependencies ?? new DependencyList();
+                        dependencies.Add(factory.CanonicalEntrypoint(method), "Binary serialization");
+                    }
+
+                    // Methods with these attributes can be called during serialization
+                    if (signature.Length == 1 && !signature.IsStatic && signature.ReturnType.IsVoid &&
+                        (method.HasCustomAttribute("System.Runtime.Serialization", "OnSerializingAttribute")
+                        || method.HasCustomAttribute("System.Runtime.Serialization", "OnSerializedAttribute")
+                        || method.HasCustomAttribute("System.Runtime.Serialization", "OnDeserializingAttribute")
+                        || method.HasCustomAttribute("System.Runtime.Serialization", "OnDeserializedAttribute")))
+                    {
+                        dependencies = dependencies ?? new DependencyList();
+                        dependencies.Add(factory.CanonicalEntrypoint(method), "Binary serialization");
+                    }
+                }
+            }
         }
 
         protected override void GetRuntimeMappingDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
@@ -213,6 +273,26 @@ namespace ILCompiler
             {
                 dependencies = dependencies ?? new DependencyList();
                 dependencies.Add(factory.MethodMetadata(method.GetTypicalMethodDefinition()), "LDTOKEN method");
+            }
+        }
+
+        protected override void GetDependenciesDueToMethodCodePresence(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        {
+            if ((_generationOptions & UsageBasedMetadataGenerationOptions.ILScanning) != 0)
+            {
+                MethodIL methodIL = _ilProvider.GetMethodIL(method);
+
+                if (methodIL != null)
+                {
+                    try
+                    {
+                        ReflectionMethodBodyScanner.Scan(ref dependencies, factory, methodIL);
+                    }
+                    catch (TypeSystemException)
+                    {
+                        // A problem with the IL - we just don't scan it...
+                    }
+                }
             }
         }
 
@@ -457,5 +537,19 @@ namespace ILCompiler
         /// Reflection blocking still applies.
         /// </remarks>
         CompleteTypesOnly = 1,
+
+        /// <summary>
+        /// Specifies that heuristic that makes anonymous types work should be applied.
+        /// </summary>
+        /// <remarks>
+        /// Generates method bodies for properties on anonymous types even if they're not
+        /// statically used.
+        /// </remarks>
+        AnonymousTypeHeuristic = 2,
+
+        /// <summary>
+        /// Scan IL for common reflection patterns to find additional compilation roots.
+        /// </summary>
+        ILScanning = 4,
     }
 }

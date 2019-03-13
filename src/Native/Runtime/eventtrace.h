@@ -31,7 +31,7 @@
 #include "eventtracebase.h"
 #include "gcinterface.h"
 
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+#ifdef FEATURE_EVENT_TRACE
 struct ProfilingScanContext : ScanContext
 {
     BOOL fProfilerPinned;
@@ -40,7 +40,7 @@ struct ProfilingScanContext : ScanContext
     
     ProfilingScanContext(BOOL fProfilerPinnedParam);
 };
-#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+#endif // defined(FEATURE_EVENT_TRACE)
 
 namespace ETW
 {

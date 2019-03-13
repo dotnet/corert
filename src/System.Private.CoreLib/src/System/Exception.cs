@@ -18,20 +18,15 @@ namespace System
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class Exception : ISerializable
     {
-        private void Init()
+        public Exception()
         {
             _message = null;
             HResult = HResults.COR_E_EXCEPTION;
         }
 
-        public Exception()
-        {
-            Init();
-        }
-
         public Exception(string message)
+            : this()
         {
-            Init();
             _message = message;
         }
 
@@ -41,8 +36,8 @@ namespace System
         // is thrown
         // 
         public Exception(string message, Exception innerException)
+            : this()
         {
-            Init();
             _message = message;
             _innerException = innerException;
         }
@@ -373,8 +368,6 @@ namespace System
 
         private void AppendStackIP(IntPtr IP, bool isFirstRethrowFrame)
         {
-            Debug.Assert(!(this is OutOfMemoryException), "Avoid allocations if out of memory");
-
             if (_idxFirstFreeStackTraceEntry == 0)
             {
                 _corDbgStackTrace = new IntPtr[16];
@@ -437,9 +430,9 @@ namespace System
 
                 // If out of memory, avoid any calls that may allocate.  Otherwise, they may fail
                 // with another OutOfMemoryException, which may lead to infinite recursion.
-                bool outOfMemory = ex is OutOfMemoryException;
+                bool fatalOutOfMemory = ex == PreallocatedOutOfMemoryException.Instance;
 
-                if (!outOfMemory)
+                if (!fatalOutOfMemory)
                     ex.AppendStackIP(IP, isFirstRethrowFrame);
 
                 // CORERT-TODO: RhpEtwExceptionThrown
@@ -447,8 +440,8 @@ namespace System
 #if PROJECTN
                 if (isFirstFrame)
                 {
-                    string typeName = !outOfMemory ? ex.GetType().ToString() : "System.OutOfMemoryException";
-                    string message = !outOfMemory ? ex.Message :
+                    string typeName = !fatalOutOfMemory  ? ex.GetType().ToString() : "System.OutOfMemoryException";
+                    string message = !fatalOutOfMemory  ? ex.Message :
                         "Insufficient memory to continue the execution of the program.";
 
                     unsafe
@@ -470,7 +463,7 @@ namespace System
         // Support for ExceptionDispatchInfo class - imports and exports the stack trace.
         //==================================================================================================================
 
-        internal EdiCaptureState CaptureEdiState()
+        internal DispatchState CaptureDispatchState()
         {
             IntPtr[] stackTrace = _corDbgStackTrace;
             if (stackTrace != null)
@@ -479,12 +472,12 @@ namespace System
                 Array.Copy(stackTrace, 0, newStackTrace, 0, stackTrace.Length);
                 stackTrace = newStackTrace;
             }
-            return new EdiCaptureState() { StackTrace = stackTrace };
+            return new DispatchState(stackTrace);
         }
 
-        internal void RestoreEdiState(EdiCaptureState ediCaptureState)
+        internal void RestoreDispatchState(DispatchState DispatchState)
         {
-            IntPtr[] stackTrace = ediCaptureState.StackTrace;
+            IntPtr[] stackTrace = DispatchState.StackTrace;
             int idxFirstFreeStackTraceEntry = 0;
             if (stackTrace != null)
             {
@@ -498,16 +491,21 @@ namespace System
 
             // Since EDI can be created at various points during exception dispatch (e.g. at various frames on the stack) for the same exception instance,
             // they can have different data to be restored. Thus, to ensure atomicity of restoration from each EDI, perform the restore under a lock.
-            lock (s_EDILock)
+            lock (s_DispatchStateLock)
             {
                 _corDbgStackTrace = stackTrace;
                 _idxFirstFreeStackTraceEntry = idxFirstFreeStackTraceEntry;
             }
         }
 
-        internal struct EdiCaptureState
+        internal readonly struct DispatchState
         {
-            public IntPtr[] StackTrace;
+            public readonly IntPtr[] StackTrace;
+
+            public DispatchState(IntPtr[] stackTrace)
+            {
+                StackTrace = stackTrace;
+            }
         }
 
         // This is the object against which a lock will be taken
@@ -516,7 +514,7 @@ namespace System
         // for a small duration but that sounds reasonable considering
         // such scenarios are going to be extremely rare, where timing
         // matches precisely.
-        private static object s_EDILock = new object();
+        private static readonly object s_DispatchStateLock = new object();
 
         /// <summary>
         /// This is the binary format for serialized exceptions that get saved into a special buffer that is

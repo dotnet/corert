@@ -47,6 +47,12 @@ namespace PInvokeTests
         [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
         private static extern int VerifyAnsiStringOut(out string str);
 
+        [DllImport("*", EntryPoint = "VerifyAnsiString", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+        private static extern int VerifyUTF8String([MarshalAs(UnmanagedType.LPUTF8Str)] string str);
+
+        [DllImport("*", EntryPoint = "VerifyAnsiStringOut", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+        private static extern int VerifyUTF8StringOut([Out, MarshalAs(UnmanagedType.LPUTF8Str)] out string str);
+
         [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
         private static extern int VerifyAnsiStringRef(ref string str);
 
@@ -127,6 +133,11 @@ namespace PInvokeTests
         delegate bool Delegate_String(string s);
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern bool ReversePInvoke_String(Delegate_String del);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+        delegate bool Delegate_Array([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] int[] array, IntPtr sz);
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern bool ReversePInvoke_Array(Delegate_Array del);
 
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern Delegate_String GetDelegate();
@@ -381,7 +392,10 @@ namespace PInvokeTests
 
             string ss = null;
             ThrowIfNotEquals(true, IsNULL(ss), "Ansi String null check failed");
-        
+
+            ThrowIfNotEquals(1, VerifyUTF8String("Hello World"), "UTF8 String marshalling failed.");
+            ThrowIfNotEquals(1, VerifyUTF8StringOut(out s), "Out UTF8 String marshalling failed");
+            ThrowIfNotEquals("Hello World", s, "Out UTF8 String marshalling failed");
         }
 
         private static void TestStringBuilder()
@@ -508,6 +522,19 @@ namespace PInvokeTests
             {
                 return s == "Hello World";
             }
+
+            public bool CheckArray(int[] a, IntPtr sz)
+            {
+                if (sz != new IntPtr(42))
+                    return false;
+
+                for (int i = 0; i < (int)sz; i++)
+                {
+                    if (a[i] != i)
+                        return false;
+                }
+                return true;
+            }
         }
 
         private static void TestDelegate()
@@ -542,6 +569,9 @@ namespace PInvokeTests
 
             Delegate_String ds = new Delegate_String((new ClosedDelegateCLass()).GetString);
             ThrowIfNotEquals(true, ReversePInvoke_String(ds), "Delegate marshalling failed.");
+
+            Delegate_Array da = new Delegate_Array((new ClosedDelegateCLass()).CheckArray);
+            ThrowIfNotEquals(true, ReversePInvoke_Array(da), "Delegate array marshalling failed.");
 
             IntPtr procAddress = GetFunctionPointer();
             SetLastErrorFuncDelegate funcDelegate =

@@ -70,16 +70,9 @@ namespace System.Runtime.InteropServices
             return PInvokeMarshal.SecureStringToBSTR(s);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static int GetHRForException(Exception e)
         {
-            if (e == null)
-            {
-                return Interop.COM.S_OK;
-            }
-
-            // @TODO: Setup IErrorInfo
-            return e.HResult;
+            return PInvokeMarshal.GetHRForException(e);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
@@ -94,7 +87,9 @@ namespace System.Runtime.InteropServices
                 hasErrorInfo: false);
 #else
             // TODO: Map HR to exeption even without COM interop support?
-            return new COMException(errorCode);
+            return new COMException() {
+                HResult = errorCode
+            };
 #endif
         }
     }

@@ -36,7 +36,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (CompilationModuleGroup.ContainsMethodBody(method, false))
             {
-                return new WebAssemblyMethodCodeNode(method);
+                return new WebAssemblyMethodBodyNode(method);
             }
             else
             {
@@ -51,13 +51,12 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)
         {
-            return new WebAssemblyMethodCodeNode(TypeSystemContext.GetUnboxingThunk(method, TypeSystemContext.GeneratedAssembly));
+            return new WebAssemblyUnboxingThunkNode(TypeSystemContext.GetUnboxingThunk(method, TypeSystemContext.GeneratedAssembly));
         }
 
         protected override ISymbolNode CreateReadyToRunHelperNode(ReadyToRunHelperKey helperCall)
         {
-            // TODO: this is wrong: this returns an assembly stub node
-            return new ReadyToRunHelperNode(this, helperCall.HelperId, helperCall.Target);
+            throw new NotSupportedException();
         }
     }
 }

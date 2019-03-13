@@ -58,6 +58,11 @@ namespace ILCompiler.Metadata
                             Version = assemblyRef.Version,
                         };
 
+                        if ((assemblyRef.Flags & AssemblyFlags.PublicKey) != 0)
+                            refName.SetPublicKey(reader.GetBlobBytes(assemblyRef.PublicKeyOrToken));
+                        else
+                            refName.SetPublicKeyToken(reader.GetBlobBytes(assemblyRef.PublicKeyOrToken));
+
                         result = new TypeForwarder
                         {
                             Name = HandleString(name),

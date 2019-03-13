@@ -37,13 +37,27 @@ namespace System.Runtime.Loader
 
         public void SetProfileOptimizationRoot(string directoryPath) { }
         public void StartProfileOptimization(string profile) { }
+
+        internal static void OnProcessExit()
+        {
+            Default.Unloading?.Invoke(Default);
+        }
+
+        internal unsafe Assembly InternalLoad(byte[] rawAssembly, byte[] rawSymbolStore)
+        {
+            return ReflectionAugments.ReflectionCoreCallbacks.Load(rawAssembly, rawSymbolStore);
+        }
     }
 
     /// <summary>
     /// AssemblyLoadContext is not supported in .NET Native. This is
     /// just a dummy class to make applications compile.
     /// </summary>
-    internal class DefaultAssemblyLoadContext : AssemblyLoadContext
+    internal sealed class DefaultAssemblyLoadContext : AssemblyLoadContext
+    {
+    }
+
+    internal sealed class IndividualAssemblyLoadContext : AssemblyLoadContext
     {
     }
 }

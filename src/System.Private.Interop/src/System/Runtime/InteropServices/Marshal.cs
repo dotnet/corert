@@ -596,7 +596,9 @@ namespace System.Runtime.InteropServices
                 createCOMException: false,
                 hasErrorInfo: false);
 #else
-            return new COMException(errorCode);
+            return new COMException() {
+                HResult = errorCode
+            };
 #endif // ENABLE_WINRT
         }
 

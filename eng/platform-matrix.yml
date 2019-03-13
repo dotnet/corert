@@ -1,0 +1,37 @@
+parameters:
+  jobTemplate: ''
+  buildConfig: ''
+  jobParameters: {}
+
+jobs:
+
+  # Windows x64
+
+- template: ${{ parameters.jobTemplate }}
+  parameters:
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: x64
+    osGroup: Windows_NT
+    osIdentifier: Windows_NT
+    ${{ insert }}: ${{ parameters.jobParameters }}
+
+# MacOS x64
+
+- template: ${{ parameters.jobTemplate }}
+  parameters:
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: x64
+    osGroup: OSX
+    osIdentifier: OSX
+    ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Linux x64
+
+- template: ${{ parameters.jobTemplate }}
+  parameters:
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: x64
+    osGroup: Linux
+    osIdentifier: Linux
+    containerName: ubuntu_1604_x64_build_image
+    ${{ insert }}: ${{ parameters.jobParameters }}

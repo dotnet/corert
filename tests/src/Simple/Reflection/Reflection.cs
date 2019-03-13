@@ -30,8 +30,13 @@ internal class ReflectionTest
 #if !OPTIMIZED_MODE_WITHOUT_SCANNER
         TestContainment.Run();
         TestInterfaceMethod.Run();
+        // Need to implement RhGetCodeTarget for CppCodeGen
+#if !CODEGEN_CPP
         TestByRefLikeTypeMethod.Run();
 #endif
+#endif
+        TestILScanner.Run();
+
         TestAttributeInheritance.Run();
         TestStringConstructor.Run();
         TestAssemblyAndModuleAttributes.Run();
@@ -46,8 +51,9 @@ internal class ReflectionTest
         TestCreateDelegate.Run();
         TestInstanceFields.Run();
         TestReflectionInvoke.Run();
+#if !CODEGEN_CPP
         TestByRefReturnInvoke.Run();
-
+#endif
         return 100;
     }
 
@@ -120,6 +126,27 @@ internal class ReflectionTest
 
         }
 
+        internal class InvokeTestsGeneric<T>
+        {
+            private string _hi = "Hello ";
+
+#if OPTIMIZED_MODE_WITHOUT_SCANNER
+            [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+#endif
+            public string GetHelloGeneric<U>(U obj)
+            {
+                return _hi + obj + " " + typeof(U);
+            }
+
+#if OPTIMIZED_MODE_WITHOUT_SCANNER
+            [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+#endif
+            public string GetHello(object obj)
+            {
+                return _hi + obj + " " + typeof(T);
+            }
+        }
+
         public static unsafe void Run()
         {
             Console.WriteLine(nameof(TestReflectionInvoke));
@@ -130,13 +157,17 @@ internal class ReflectionTest
                 new InvokeTests().ToString();
                 InvokeTests.GetHello(null);
                 InvokeTests.GetHelloGeneric<int>(0);
-                InvokeTests.GetHelloGeneric<double>(0);
+                InvokeTests.GetHelloGeneric<string>(null);
                 InvokeTests.GetHelloPointer(null);
                 InvokeTests.GetHelloPointerToo(null);
                 InvokeTests.GetPointer(null, null);
                 string unused;
                 InvokeTests.GetHelloByRef(null, out unused);
                 unused.ToString();
+                new InvokeTestsGeneric<object>().GetHello(null);
+                new InvokeTestsGeneric<object>().GetHelloGeneric<object>(null);
+                new InvokeTestsGeneric<int>().GetHello(null);
+                new InvokeTestsGeneric<int>().GetHelloGeneric<double>(0);
             }
 
             {
@@ -150,6 +181,20 @@ internal class ReflectionTest
                 MethodInfo helloGenericMethod = typeof(InvokeTests).GetTypeInfo().GetDeclaredMethod("GetHelloGeneric").MakeGenericMethod(typeof(int));
                 string result = (string)helloGenericMethod.Invoke(null, new object[] { 12345 });
                 if (result != "Hello 12345")
+                    throw new Exception();
+            }
+
+            {
+                MethodInfo helloGenericMethod = typeof(InvokeTests).GetTypeInfo().GetDeclaredMethod("GetHelloGeneric").MakeGenericMethod(typeof(string));
+                string result = (string)helloGenericMethod.Invoke(null, new object[] { "buddy" });
+                if (result != "Hello buddy")
+                    throw new Exception();
+            }
+
+            {
+                MethodInfo helloGenericMethod = typeof(InvokeTests).GetTypeInfo().GetDeclaredMethod("GetHelloGeneric").MakeGenericMethod(typeof(Type));
+                string result = (string)helloGenericMethod.Invoke(null, new object[] { typeof(string) });
+                if (result != "Hello System.String")
                     throw new Exception();
             }
 
@@ -185,6 +230,36 @@ internal class ReflectionTest
                 if (Pointer.Unbox(result) != (void*)2018)
                     throw new Exception();
             }
+
+#if !CODEGEN_CPP
+            {
+                MethodInfo helloMethod = typeof(InvokeTestsGeneric<string>).GetTypeInfo().GetDeclaredMethod("GetHello");
+                string result = (string)helloMethod.Invoke(new InvokeTestsGeneric<string>(), new object[] { "world" });
+                if (result != "Hello world System.String")
+                    throw new Exception();
+            }
+
+            {
+                MethodInfo helloGenericMethod = typeof(InvokeTestsGeneric<string>).GetTypeInfo().GetDeclaredMethod("GetHelloGeneric").MakeGenericMethod(typeof(object));
+                string result = (string)helloGenericMethod.Invoke(new InvokeTestsGeneric<string>(), new object[] { "world" });
+                if (result != "Hello world System.Object")
+                    throw new Exception();
+            }
+
+            {
+                MethodInfo helloMethod = typeof(InvokeTestsGeneric<int>).GetTypeInfo().GetDeclaredMethod("GetHello");
+                string result = (string)helloMethod.Invoke(new InvokeTestsGeneric<int>(), new object[] { "world" });
+                if (result != "Hello world System.Int32")
+                    throw new Exception();
+            }
+
+            {
+                MethodInfo helloGenericMethod = typeof(InvokeTestsGeneric<int>).GetTypeInfo().GetDeclaredMethod("GetHelloGeneric").MakeGenericMethod(typeof(double));
+                string result = (string)helloGenericMethod.Invoke(new InvokeTestsGeneric<int>(), new object[] { 1.0 });
+                if (result != "Hello 1 System.Double")
+                    throw new Exception();
+            }
+#endif
         }
     }
 
@@ -193,6 +268,29 @@ internal class ReflectionTest
         public class FieldInvokeSample
         {
             public String InstanceField;
+        }
+
+        public class GenericFieldInvokeSample<T>
+        {
+            public int IntField;
+            public T TField;
+        }
+
+        private static void TestGenerics<T>(T value)
+        {
+            TypeInfo ti = typeof(GenericFieldInvokeSample<T>).GetTypeInfo();
+
+            var obj = new GenericFieldInvokeSample<T>();
+
+            FieldInfo intField = ti.GetDeclaredField("IntField");
+            obj.IntField = 1234;
+            if ((int)(intField.GetValue(obj)) != 1234)
+                throw new Exception();
+
+            FieldInfo tField = ti.GetDeclaredField("TField");
+            obj.TField = value;
+            if (!tField.GetValue(obj).Equals(value))
+                throw new Exception();
         }
 
         public static void Run()
@@ -220,6 +318,9 @@ internal class ReflectionTest
             value = (String)(instanceField.GetValue(obj));
             if (value != "Bye!")
                 throw new Exception();
+
+            TestGenerics(new object());
+            TestGenerics("Hi");
         }
     }
 
@@ -687,9 +788,12 @@ internal class ReflectionTest
             if (!HasTypeHandle(usedNestedType))
                 throw new Exception($"{nameof(NeverUsedContainerType.UsedNestedType)} should have an EEType");
 
+            // Need to implement exceptions for CppCodeGen
+#if !CODEGEN_CPP
             // But the containing type doesn't need an EEType
             if (HasTypeHandle(neverUsedContainerType))
                 throw new Exception($"{nameof(NeverUsedContainerType)} should not have an EEType");
+#endif
         }
     }
 
@@ -890,6 +994,110 @@ internal class ReflectionTest
         }
     }
 
+    class TestILScanner
+    {
+        class MyGenericUnusedClass<T>
+        {
+            public static void TheMethod() { }
+        }
+
+        class LinqTestCase<T>
+        {
+            public static void Create() { }
+        }
+
+        enum Mine { One }
+
+
+        public static void Run()
+        {
+            Console.WriteLine(nameof(TestILScanner));
+
+            Console.WriteLine("Search current assembly");
+            {
+                {
+                    Type t = Type.GetType(nameof(MyUnusedClass), throwOnError: false);
+                    if (t == null)
+                        throw new Exception(nameof(MyUnusedClass));
+
+                    Console.WriteLine("GetMethod on a non-generic type");
+                    MethodInfo mi = t.GetMethod(nameof(MyUnusedClass.UnusedMethod1));
+                    if (mi == null)
+                        throw new Exception(nameof(MyUnusedClass.UnusedMethod1));
+
+                    mi.Invoke(null, Array.Empty<object>());
+                }
+
+                {
+                    Type t = Type.GetType(nameof(MyUnusedClass), throwOnError: false);
+                    if (t == null)
+                        throw new Exception(nameof(MyUnusedClass));
+
+                    Console.WriteLine("Totally unreferenced method on a non-generic type (we should not find it)");
+                    MethodInfo mi = t.GetMethod(String.Format("Totally{0}", "UnreferencedMethod"));
+                    if (mi != null)
+                        throw new Exception("UnreferencedMethod");
+                }
+
+                {
+                    Type t = Type.GetType(nameof(MyUnusedClass), throwOnError: false);
+                    if (t == null)
+                        throw new Exception(nameof(MyUnusedClass));
+
+                    Console.WriteLine("GetMethod on a non-generic type for a generic method");
+                    MethodInfo mi = t.GetMethod(nameof(MyUnusedClass.GenericMethod));
+                    if (mi == null)
+                        throw new Exception(nameof(MyUnusedClass.GenericMethod));
+
+                    mi.MakeGenericMethod(typeof(object)).Invoke(null, Array.Empty<object>());
+                }
+            }
+
+            Console.WriteLine("Generics");
+            {
+                MethodInfo mi = typeof(MyGenericUnusedClass<object>).GetMethod(nameof(MyGenericUnusedClass<object>.TheMethod));
+                if (mi == null)
+                    throw new Exception(nameof(MyGenericUnusedClass<object>.TheMethod));
+
+                mi.Invoke(null, Array.Empty<object>());
+            }
+
+#if !MULTIMODULE_BUILD
+            Console.WriteLine("Search through a forwarder");
+            {
+                Type t = Type.GetType("System.Collections.Generic.List`1, System.Collections", throwOnError: false);
+                if (t == null)
+                    throw new Exception("List");
+            }
+
+            Console.WriteLine("Search in mscorlib");
+            {
+                Type t = Type.GetType("System.Runtime.CompilerServices.SuppressIldasmAttribute", throwOnError: false);
+                if (t == null)
+                    throw new Exception("SuppressIldasmAttribute");
+            }
+#endif
+
+            Console.WriteLine("Enum.GetValues");
+            {
+                if (Enum.GetValues(typeof(Mine)).GetType().GetElementType() != typeof(Mine))
+                    throw new Exception("GetValues");
+            }
+
+            Console.WriteLine("Pattern in LINQ expressions");
+            {
+                Type objType = typeof(object);
+
+                MethodInfo mi = typeof(LinqTestCase<>).MakeGenericType(objType).GetMethod(nameof(LinqTestCase<object>.Create));
+
+                if (mi == null)
+                    throw new Exception("GetValues");
+
+                mi.Invoke(null, Array.Empty<object>());
+            }
+        }
+    }
+
     #region Helpers
 
     private static Type GetTestType(string testName, string typeName)
@@ -988,3 +1196,9 @@ internal class ReflectionTest
 
 class TestAssemblyAttribute : Attribute { }
 class TestModuleAttribute : Attribute { }
+class MyUnusedClass
+{
+    public static void UnusedMethod1() { }
+    public static void TotallyUnreferencedMethod() { }
+    public static void GenericMethod<T>() { }
+}

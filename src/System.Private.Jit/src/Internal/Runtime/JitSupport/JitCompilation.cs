@@ -21,7 +21,7 @@ namespace ILCompiler
         {
             _typeSystemContext = context;
             _typeGetTypeMethodThunks = new TypeGetTypeMethodThunkCache(context.GetWellKnownType(WellKnownType.Object));
-            _pInvokeILProvider = new PInvokeILProvider(new PInvokeILEmitterConfiguration(forceLazyResolution: true), null);
+            _pInvokeILProvider = new PInvokeILProvider(new LazyPInvokePolicy(), null);
             _ilProvider = new CoreRTILProvider();
             _nodeFactory = new NodeFactory(context);
             _devirtualizationManager = new DevirtualizationManager();
@@ -152,6 +152,14 @@ namespace ILCompiler
             // The current plan seem to be to copy paste from ILCompiler.Compilation, but that's not a sustainable plan
             throw new NotImplementedException();
 
+        }
+
+        public sealed class LazyPInvokePolicy : PInvokeILEmitterConfiguration
+        {
+            public override bool GenerateDirectCall(string libraryName, string methodName)
+            {
+                return false;
+            }
         }
     }
 }

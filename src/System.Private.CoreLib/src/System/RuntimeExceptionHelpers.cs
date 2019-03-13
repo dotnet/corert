@@ -35,12 +35,18 @@ namespace System
         // of Rtm that do need to throw out to Bartok- or Binder-generated functions, then we could remove all of this.
         //------------------------------------------------------------------------------------------------------------
 
+        [ThreadStatic]
+        private static bool t_allocatingOutOfMemoryException;
+
         // This is the classlib-provided "get exception" function that will be invoked whenever the runtime
         // needs to throw an exception back to a method in a non-runtime module. The classlib is expected
         // to convert every code in the ExceptionIDs enum to an exception object.
         [RuntimeExport("GetRuntimeException")]
         public static Exception GetRuntimeException(ExceptionIDs id)
         {
+            if (!SafeToPerformRichExceptionSupport)
+                return null;
+
             // This method is called by the runtime's EH dispatch code and is not allowed to leak exceptions
             // back into the dispatcher.
             try
@@ -51,7 +57,23 @@ namespace System
                 switch (id)
                 {
                     case ExceptionIDs.OutOfMemory:
-                        return PreallocatedOutOfMemoryException.Instance;
+                        Exception outOfMemoryException = PreallocatedOutOfMemoryException.Instance;
+
+                        // If possible, try to allocate proper out-of-memory exception with error message and stack trace
+                        if (!t_allocatingOutOfMemoryException)
+                        {
+                            t_allocatingOutOfMemoryException = true;
+                            try
+                            {
+                                outOfMemoryException = new OutOfMemoryException();
+                            }
+                            catch
+                            {
+                            }
+                            t_allocatingOutOfMemoryException = false;
+                        }
+
+                        return outOfMemoryException;
 
                     case ExceptionIDs.Arithmetic:
                         return new ArithmeticException();
@@ -164,17 +186,17 @@ namespace System
         [RuntimeExport("FailFast")]
         public static void RuntimeFailFast(RhFailFastReason reason, Exception exception, IntPtr pExAddress, IntPtr pExContext)
         {
+            if (!SafeToPerformRichExceptionSupport)
+                return;
+
             // This method is called by the runtime's EH dispatch code and is not allowed to leak exceptions
             // back into the dispatcher.
             try
             {
-                if (!SafeToPerformRichExceptionSupport)
-                    return;
-
-                // Avoid complex processing and allocations if we are already in failfast or out of memory.
+                // Avoid complex processing and allocations if we are already in failfast or recursive out of memory.
                 // We do not set InFailFast.Value here, because we want rich diagnostics in the FailFast
                 // call below and reentrancy is not possible for this method (all exceptions are ignored).
-                bool minimalFailFast = InFailFast.Value || (exception is OutOfMemoryException);
+                bool minimalFailFast = InFailFast.Value || (exception == PreallocatedOutOfMemoryException.Instance);
                 string failFastMessage = "";
 
                 if (!minimalFailFast)
@@ -203,7 +225,7 @@ namespace System
         {
             // If this a recursive call to FailFast, avoid all unnecessary and complex activity the second time around to avoid the recursion 
             // that got us here the first time (Some judgement is required as to what activity is "unnecessary and complex".)
-            bool minimalFailFast = InFailFast.Value || (exception is OutOfMemoryException);
+            bool minimalFailFast = InFailFast.Value || (exception == PreallocatedOutOfMemoryException.Instance);
             InFailFast.Value = true;
 
             if (!minimalFailFast)
@@ -216,6 +238,7 @@ namespace System
                 GenerateExceptionInformationForDump(exception, IntPtr.Zero);
             }
 
+#if PLATFORM_WINDOWS
             uint errorCode = 0x80004005; // E_FAIL
             // To help enable testing to bucket the failures we choose one of the following as errorCode:
             // * hashcode of EETypePtr if it is an unhandled managed exception
@@ -234,6 +257,9 @@ namespace System
             }
 
             Interop.mincore.RaiseFailFastException(errorCode, pExAddress, pExContext);
+#else
+            Interop.Sys.Abort();
+#endif
         }
 
         // Use a nested class to avoid running the class constructor of the outer class when

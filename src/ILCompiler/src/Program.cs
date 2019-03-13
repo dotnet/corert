@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.CommandLine;
 using System.Runtime.InteropServices;
-
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -53,10 +52,13 @@ namespace ILCompiler
         private string _metadataLogFileName;
         private bool _noMetadataBlocking;
         private bool _completeTypesMetadata;
+        private bool _scanReflection;
 
         private string _singleMethodTypeName;
         private string _singleMethodName;
         private IReadOnlyList<string> _singleMethodGenericArgs;
+
+        private bool _rootAllApplicationAssemblies;
 
         private IReadOnlyList<string> _codegenOptions = Array.Empty<string>();
 
@@ -161,10 +163,12 @@ namespace ILCompiler
                 syntax.DefineOption("usesharedgenerics", ref _useSharedGenerics, "Enable shared generics");
                 syntax.DefineOptionList("codegenopt", ref _codegenOptions, "Define a codegen option");
                 syntax.DefineOptionList("rdxml", ref _rdXmlFilePaths, "RD.XML file(s) for compilation");
+                syntax.DefineOption("rootallapplicationassemblies", ref _rootAllApplicationAssemblies, "Consider all non-framework assemblies dynamically used");
                 syntax.DefineOption("map", ref _mapFileName, "Generate a map file");
                 syntax.DefineOption("metadatalog", ref _metadataLogFileName, "Generate a metadata log file");
                 syntax.DefineOption("nometadatablocking", ref _noMetadataBlocking, "Ignore metadata blocking for internal implementation details");
                 syntax.DefineOption("completetypemetadata", ref _completeTypesMetadata, "Generate complete metadata for types");
+                syntax.DefineOption("scanreflection", ref _scanReflection, "Scan IL for reflection patterns");
                 syntax.DefineOption("scan", ref _useScanner, "Use IL scanner to generate optimized code (implied by -O)");
                 syntax.DefineOption("noscan", ref _noScanner, "Do not use IL scanner to generate optimized code");
                 syntax.DefineOption("ildump", ref _ilDump, "Dump IL assembly listing for compiler-generated IL");
@@ -412,6 +416,9 @@ namespace ILCompiler
                     if (!systemModuleIsInputModule)
                         compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
                     compilationGroup = new SingleFileCompilationModuleGroup();
+
+                    if (_rootAllApplicationAssemblies)
+                        compilationRoots.Add(new ApplicationAssemblyRootProvider(typeSystemContext));
                 }
 
                 if (_nativeLib)
@@ -455,21 +462,27 @@ namespace ILCompiler
             string compilationUnitPrefix = _multiFile ? System.IO.Path.GetFileNameWithoutExtension(_outputFilePath) : "";
             builder.UseCompilationUnitPrefix(compilationUnitPrefix);
 
+            if (!_isCppCodegen && !_isWasmCodegen)
+                builder.UsePInvokePolicy(new ConfigurablePInvokePolicy(typeSystemContext.Target));
+
             var stackTracePolicy = _emitStackTraceData ?
                 (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
 
-            MetadataBlockingPolicy mdBlockingPolicy = _noMetadataBlocking ?
-                (MetadataBlockingPolicy)new NoMetadataBlockingPolicy() : new BlockedInternalsBlockingPolicy();
+            MetadataBlockingPolicy mdBlockingPolicy = _noMetadataBlocking 
+                    ? (MetadataBlockingPolicy)new NoMetadataBlockingPolicy() 
+                    : new BlockedInternalsBlockingPolicy(typeSystemContext);
 
             ManifestResourceBlockingPolicy resBlockingPolicy = new NoManifestResourceBlockingPolicy();
 
-            UsageBasedMetadataGenerationOptions metadataGenerationOptions = UsageBasedMetadataGenerationOptions.None;
+            UsageBasedMetadataGenerationOptions metadataGenerationOptions = UsageBasedMetadataGenerationOptions.AnonymousTypeHeuristic;
             if (_completeTypesMetadata)
                 metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.CompleteTypesOnly;
+            if (_scanReflection)
+                metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.ILScanning;
 
             DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy = new DefaultDynamicInvokeThunkGenerationPolicy();
 
-            bool supportsReflection = !_isReadyToRunCodeGen && !_isWasmCodegen && _systemModuleName == DefaultSystemModule;
+            bool supportsReflection = !_isReadyToRunCodeGen && _systemModuleName == DefaultSystemModule;
 
             MetadataManager metadataManager;
             if (_isReadyToRunCodeGen)
@@ -486,6 +499,7 @@ namespace ILCompiler
                     _metadataLogFileName,
                     stackTracePolicy,
                     invokeThunkGenerationPolicy,
+                    new Internal.IL.CoreRTILProvider(),
                     metadataGenerationOptions);
             }
             else

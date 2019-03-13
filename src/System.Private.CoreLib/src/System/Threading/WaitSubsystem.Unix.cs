@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using Internal.Runtime.Augments;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
@@ -27,7 +26,7 @@ namespace System.Threading
     ///     
     /// <see cref="ThreadWaitInfo"/>
     ///   - Keeps information about a thread's wait and provides functionlity to put a thread into a wait state and to take it
-    ///     out of a wait state. Each thread has an instance available through <see cref="RuntimeThread.WaitInfo"/>.
+    ///     out of a wait state. Each thread has an instance available through <see cref="Thread.WaitInfo"/>.
     ///     
     /// <see cref="HandleManager"/>
     ///   - Provides functionality to allocate a handle associated with a <see cref="WaitableObject"/>, to retrieve the object
@@ -170,8 +169,8 @@ namespace System.Threading
             /// Acquire the mutex. A thread's <see cref="ThreadWaitInfo"/> has a reference to all <see cref="Mutex"/>es locked
             /// by the thread. See <see cref="ThreadWaitInfo.LockedMutexesHead"/>. So, acquire the lock only after all
             /// possibilities for exceptions have been exhausted.
-            ThreadWaitInfo waitInfo = RuntimeThread.CurrentThread.WaitInfo;
-            bool acquiredLock = waitableObject.Wait(waitInfo, timeoutMilliseconds: 0, interruptible: false, prioritize: false);
+            ThreadWaitInfo waitInfo = Thread.CurrentThread.WaitInfo;
+            bool acquiredLock = waitableObject.Wait(waitInfo, timeoutMilliseconds: 0, interruptible: false, prioritize: false) == 0;
             Debug.Assert(acquiredLock);
             return safeWaitHandle;
         }
@@ -263,13 +262,13 @@ namespace System.Threading
             }
         }
 
-        public static bool Wait(IntPtr handle, int timeoutMilliseconds, bool interruptible)
+        public static int Wait(IntPtr handle, int timeoutMilliseconds, bool interruptible)
         {
             Debug.Assert(timeoutMilliseconds >= -1);
             return Wait(HandleManager.FromHandle(handle), timeoutMilliseconds, interruptible);
         }
 
-        public static bool Wait(
+        public static int Wait(
             WaitableObject waitableObject,
             int timeoutMilliseconds,
             bool interruptible = true,
@@ -278,34 +277,28 @@ namespace System.Threading
             Debug.Assert(waitableObject != null);
             Debug.Assert(timeoutMilliseconds >= -1);
 
-            return waitableObject.Wait(RuntimeThread.CurrentThread.WaitInfo, timeoutMilliseconds, interruptible, prioritize);
+            return waitableObject.Wait(Thread.CurrentThread.WaitInfo, timeoutMilliseconds, interruptible, prioritize);
         }
 
         public static int Wait(
-            RuntimeThread currentThread,
-            SafeWaitHandle[] safeWaitHandles,
-            WaitHandle[] waitHandles,
-            int numWaitHandles,
+            Span<IntPtr> waitHandles,
             bool waitForAll,
             int timeoutMilliseconds)
         {
-            Debug.Assert(currentThread == RuntimeThread.CurrentThread);
-            Debug.Assert(safeWaitHandles != null);
-            Debug.Assert(numWaitHandles > 0);
-            Debug.Assert(numWaitHandles <= safeWaitHandles.Length);
-            Debug.Assert(numWaitHandles <= waitHandles.Length);
-            Debug.Assert(numWaitHandles <= WaitHandle.MaxWaitHandles);
+            Debug.Assert(waitHandles != null);
+            Debug.Assert(waitHandles.Length > 0);
+            Debug.Assert(waitHandles.Length <= WaitHandle.MaxWaitHandles);
             Debug.Assert(timeoutMilliseconds >= -1);
 
-            ThreadWaitInfo waitInfo = currentThread.WaitInfo;
-            WaitableObject[] waitableObjects = waitInfo.GetWaitedObjectArray(numWaitHandles);
+            ThreadWaitInfo waitInfo = Thread.CurrentThread.WaitInfo;
+            WaitableObject[] waitableObjects = waitInfo.GetWaitedObjectArray(waitHandles.Length);
             bool success = false;
             try
             {
-                for (int i = 0; i < numWaitHandles; ++i)
+                for (int i = 0; i < waitHandles.Length; ++i)
                 {
-                    Debug.Assert(safeWaitHandles[i] != null);
-                    WaitableObject waitableObject = HandleManager.FromHandle(safeWaitHandles[i].DangerousGetHandle());
+                    Debug.Assert(waitHandles[i] != null);
+                    WaitableObject waitableObject = HandleManager.FromHandle(waitHandles[i]);
                     if (waitForAll)
                     {
                         /// Check if this is a duplicate, as wait-for-all does not support duplicates. Including the parent
@@ -329,37 +322,34 @@ namespace System.Threading
             {
                 if (!success)
                 {
-                    for (int i = 0; i < numWaitHandles; ++i)
+                    for (int i = 0; i < waitHandles.Length; ++i)
                     {
                         waitableObjects[i] = null;
                     }
                 }
             }
 
-            if (numWaitHandles == 1)
+            if (waitHandles.Length == 1)
             {
                 WaitableObject waitableObject = waitableObjects[0];
                 waitableObjects[0] = null;
                 return
-                    waitableObject.Wait(waitInfo, timeoutMilliseconds, interruptible: true, prioritize : false)
-                        ? 0
-                        : WaitHandle.WaitTimeout;
+                    waitableObject.Wait(waitInfo, timeoutMilliseconds, interruptible: true, prioritize : false);
             }
 
             return
                 WaitableObject.Wait(
                     waitableObjects,
-                    numWaitHandles,
+                    waitHandles.Length,
                     waitForAll,
                     waitInfo,
                     timeoutMilliseconds,
                     interruptible: true,
-                    prioritize: false,
-                    waitHandlesForAbandon: waitHandles);
+                    prioritize: false);
         }
 
         public static int Wait(
-            RuntimeThread currentThread,
+            Thread currentThread,
             WaitableObject waitableObject0,
             WaitableObject waitableObject1,
             bool waitForAll,
@@ -367,7 +357,7 @@ namespace System.Threading
             bool interruptible = true,
             bool prioritize = false)
         {
-            Debug.Assert(currentThread == RuntimeThread.CurrentThread);
+            Debug.Assert(currentThread == Thread.CurrentThread);
             Debug.Assert(waitableObject0 != null);
             Debug.Assert(waitableObject1 != null);
             Debug.Assert(waitableObject1 != waitableObject0);
@@ -386,11 +376,10 @@ namespace System.Threading
                     waitInfo,
                     timeoutMilliseconds,
                     interruptible,
-                    prioritize,
-                    waitHandlesForAbandon: null);
+                    prioritize);
         }
 
-        public static bool SignalAndWait(
+        public static int SignalAndWait(
             IntPtr handleToSignal,
             IntPtr handleToWaitOn,
             int timeoutMilliseconds)
@@ -404,7 +393,7 @@ namespace System.Threading
                     timeoutMilliseconds);
         }
 
-        public static bool SignalAndWait(
+        public static int SignalAndWait(
             WaitableObject waitableObjectToSignal,
             WaitableObject waitableObjectToWaitOn,
             int timeoutMilliseconds,
@@ -415,7 +404,7 @@ namespace System.Threading
             Debug.Assert(waitableObjectToWaitOn != null);
             Debug.Assert(timeoutMilliseconds >= -1);
 
-            ThreadWaitInfo waitInfo = RuntimeThread.CurrentThread.WaitInfo;
+            ThreadWaitInfo waitInfo = Thread.CurrentThread.WaitInfo;
             bool waitCalled = false;
             s_lock.Acquire();
             try
@@ -454,7 +443,7 @@ namespace System.Threading
             ThreadWaitInfo.Sleep(timeoutMilliseconds, interruptible);
         }
 
-        public static void Interrupt(RuntimeThread thread)
+        public static void Interrupt(Thread thread)
         {
             Debug.Assert(thread != null);
 
@@ -469,7 +458,7 @@ namespace System.Threading
             }
         }
 
-        public static void OnThreadExiting(RuntimeThread thread)
+        public static void OnThreadExiting(Thread thread)
         {
             thread.WaitInfo.OnThreadExiting();
         }

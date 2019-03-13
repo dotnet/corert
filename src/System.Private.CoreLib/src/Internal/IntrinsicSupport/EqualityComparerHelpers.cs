@@ -16,8 +16,6 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
-using Internal.IntrinsicSupport;
 using Internal.Runtime.Augments;
 
 namespace Internal.IntrinsicSupport
@@ -127,7 +125,7 @@ namespace Internal.IntrinsicSupport
             return new ObjectEqualityComparer<T>();
         }
 
-        private static EqualityComparer<T> GetKnownEnumEquatableComparer<T>() where T : struct
+        private static EqualityComparer<T> GetKnownEnumEquatableComparer<T>() where T : struct, Enum
         {
             return new EnumEqualityComparer<T>();
         }
@@ -205,153 +203,5 @@ namespace Internal.IntrinsicSupport
         {
             return EqualityComparer<T>.Default.Equals(left, right);
         }
-    }
-}
-
-namespace System.Collections.Generic
-{
-    //-----------------------------------------------------------------------
-    // Implementations of EqualityComparer<T> for the various possible scenarios
-    // Names must match other runtimes for serialization
-    //-----------------------------------------------------------------------
-
-    // The methods in this class look identical to the inherited methods, but the calls
-    // to Equal bind to IEquatable<T>.Equals(T) instead of Object.Equals(Object)
-    [Serializable]
-    public sealed class GenericEqualityComparer<T> : EqualityComparer<T> where T : IEquatable<T>
-    {
-        public sealed override bool Equals(T x, T y)
-        {
-            if (x != null)
-            {
-                if (y != null)
-                    return x.Equals(y);
-                return false;
-            }
-
-            if (y != null)
-                return false;
-
-            return true;
-        }
-
-        public sealed override int GetHashCode(T obj)
-        {
-            if (obj == null)
-                return 0;
-
-            return obj.GetHashCode();
-        }
-
-        // Equals method for the comparer itself.
-        public sealed override bool Equals(object obj) => obj is GenericEqualityComparer<T>;
-        
-        public sealed override int GetHashCode() => typeof(GenericEqualityComparer<T>).GetHashCode();
-    }
-
-    [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public sealed class NullableEqualityComparer<T> : EqualityComparer<Nullable<T>> where T : struct, IEquatable<T>
-    {
-        public sealed override bool Equals(Nullable<T> x, Nullable<T> y)
-        {
-            if (x.HasValue)
-            {
-                if (y.HasValue)
-                    return x.Value.Equals(y.Value);
-                return false;
-            }
-
-            if (y.HasValue)
-                return false;
-
-            return true;
-        }
-
-        public sealed override int GetHashCode(Nullable<T> obj)
-        {
-            return obj.GetHashCode();
-        }
-
-
-        // Equals method for the comparer itself.
-        public sealed override bool Equals(object obj) => obj is NullableEqualityComparer<T>;
-
-        public sealed override int GetHashCode() => typeof(NullableEqualityComparer<T>).GetHashCode();
-    }
-
-    [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public class EnumEqualityComparer<T> : EqualityComparer<T>, ISerializable where T : struct
-    {
-        public sealed override bool Equals(T x, T y)
-        {
-            return EqualityComparerHelpers.EnumOnlyEquals(x, y);
-        }
-
-        public sealed override int GetHashCode(T obj)
-        {
-            return obj.GetHashCode();
-        }
-
-        internal EnumEqualityComparer() { }
-
-        private EnumEqualityComparer(SerializationInfo info, StreamingContext context) { }
-
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            // For back-compat we need to serialize the comparers for enums with underlying types other than int as ObjectEqualityComparer 
-            if (Type.GetTypeCode(Enum.GetUnderlyingType(typeof(T))) != TypeCode.Int32)
-            {
-                info.SetType(typeof(ObjectEqualityComparer<T>));
-            }
-        }
-
-        // Equals method for the comparer itself.
-        public override bool Equals(object obj) => obj is EnumEqualityComparer<T>;
-
-        public override int GetHashCode() => typeof(EnumEqualityComparer<T>).GetHashCode();
-    }
-
-    [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public sealed class ObjectEqualityComparer<T> : EqualityComparer<T>
-    {
-        public sealed override bool Equals(T x, T y)
-        {
-            if (x != null)
-            {
-                if (y != null)
-                    return x.Equals(y);
-                return false;
-            }
-
-            if (y != null)
-                return false;
-
-            return true;
-        }
-
-        public sealed override int GetHashCode(T obj)
-        {
-            if (obj == null)
-                return 0;
-            return obj.GetHashCode();
-        }
-
-        // Equals method for the comparer itself.
-        public sealed override bool Equals(object obj)
-        {
-            if(obj == null)
-            {
-                return false;
-            }
-
-            // This needs to use GetType instead of typeof to avoid infinite recursion in the type loader
-            return obj.GetType().Equals(GetType());
-        }
-
-        // This needs to use GetType instead of typeof to avoid infinite recursion in the type loader
-        public sealed override int GetHashCode() =>  GetType().GetHashCode();
     }
 }

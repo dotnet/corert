@@ -21,9 +21,9 @@ See the LICENSE file in the project root for more information.
     <FullRuntimeName>Runtime</FullRuntimeName>
     <FullRuntimeName Condition="'$(ServerGarbageCollection)' != ''">Runtime.ServerGC</FullRuntimeName>
   </PropertyGroup>
-    
+
   <!-- Part of workaround for lack of secondary build artifact import - https://github.com/Microsoft/msbuild/issues/2807 -->
-  <!-- Ensure that runtime-specific paths have already been set -->  
+  <!-- Ensure that runtime-specific paths have already been set -->
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
     <ItemGroup>
       <CppCompilerAndLinkerArg Include="/I$(IlcPath)\inc" />
@@ -47,9 +47,10 @@ See the LICENSE file in the project root for more information.
       <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)\sdk\PortableRuntime.lib" />
       <NativeLibrary Condition="'$(IlcMultiModule)' == 'true' and $(NativeCodeGen) == ''" Include="$(SharedLibrary)" />
     </ItemGroup>
-  
+
     <ItemGroup>
       <NativeLibrary Include="kernel32.lib" />
+      <NativeLibrary Include="ntdll.lib" />
       <NativeLibrary Include="user32.lib" />
       <NativeLibrary Include="gdi32.lib" />
       <NativeLibrary Include="winspool.lib" />
@@ -62,7 +63,7 @@ See the LICENSE file in the project root for more information.
       <NativeLibrary Include="bcrypt.lib" />
       <NativeLibrary Include="normaliz.lib" />
     </ItemGroup>
-    
+
     <ItemGroup>
       <LinkerArg Condition="$(NativeLib) == 'Shared'" Include="/DLL" />
       <LinkerArg Include="@(NativeLibrary->'&quot;%(Identity)&quot;')" />
@@ -71,11 +72,11 @@ See the LICENSE file in the project root for more information.
       <LinkerArg Include="/INCREMENTAL:NO" />
       <LinkerArg Condition="'$(OutputType)' == 'WinExe'" Include="/SUBSYSTEM:WINDOWS /ENTRY:wmainCRTStartup" />
     </ItemGroup>
-  
+
     <ItemGroup>
       <!-- TODO <LinkerArg Include="/MACHINE:X64" /> -->
     </ItemGroup>
-   
+
     <ItemGroup Condition="'$(Configuration)' != 'Debug'">
       <LinkerArg Include="/OPT:REF" />
       <LinkerArg Include="/OPT:ICF" />

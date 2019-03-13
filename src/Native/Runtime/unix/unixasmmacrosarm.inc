@@ -15,7 +15,7 @@
 #define TSF_SuppressGcStress            0x08
 #define TSF_DoNotTriggerGc              0x10
 
-#define PTFF_SAVE_ALL_PRESERVED 0x00000077  // NOTE: FP is not included in this set!
+#define PTFF_SAVE_ALL_PRESERVED 0x0000007F  // NOTE: R11 is not included in this set!
 #define PTFF_SAVE_SP 0x00000100
 #define DEFAULT_FRAME_SAVE_FLAGS (PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP)
 
@@ -204,7 +204,7 @@ C_FUNC(\Name):
         .data
         .align      4
 C_FUNC(\Name):
-        .word       1b
+        .word       1b + 1            // Add 1 to indicate thumb code
         .global     C_FUNC(\Name)
         .text
 
@@ -231,14 +231,14 @@ C_FUNC(\Name):
 .macro PUSH_COOP_PINVOKE_FRAME trashReg
 
         PROLOG_STACK_ALLOC 4          // Save space for caller's SP
-        PROLOG_PUSH "{r4-r6,r8-r10}"  // Save preserved registers
+        PROLOG_PUSH "{r4-r10}"        // Save preserved registers
         PROLOG_STACK_ALLOC 8          // Save space for flags and Thread*
-        PROLOG_PUSH "{r7}"            // Save caller's FP
+        PROLOG_PUSH "{r11}"           // Save caller's FP
         PROLOG_PUSH "{r11,lr}"        // Save caller's frame-chain pointer and PC
 
-        // Compute SP value at entry to this method and save it in the last slot of the frame (slot #11).
-        add         \trashReg, sp, #(12 * 4)
-        str         \trashReg, [sp, #(11 * 4)]
+        // Compute SP value at entry to this method and save it in the last slot of the frame (slot #12).
+        add         \trashReg, sp, #(13 * 4)
+        str         \trashReg, [sp, #(12 * 4)]
 
         // Record the bitmask of saved registers in the frame (slot #4).
         mov         \trashReg, #DEFAULT_FRAME_SAVE_FLAGS
@@ -250,9 +250,9 @@ C_FUNC(\Name):
 // Pop the frame and restore register state preserved by PUSH_COOP_PINVOKE_FRAME
 .macro POP_COOP_PINVOKE_FRAME
         EPILOG_POP  "{r11,lr}"        // Restore caller's frame-chain pointer and PC (return address)
-        EPILOG_POP  "{r7}"            // Restore caller's FP
+        EPILOG_POP  "{r11}"           // Restore caller's FP
         EPILOG_STACK_FREE 8           // Discard flags and Thread*
-        EPILOG_POP  "{r4-r6,r8-r10}"  // Restore preserved registers
+        EPILOG_POP  "{r4-r10}"        // Restore preserved registers
         EPILOG_STACK_FREE 4           // Discard caller's SP
 .endm
 

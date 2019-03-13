@@ -70,6 +70,8 @@
 //                                              in that there may be more copies of the template instantiated through 
 //                                              the system as different variants are used.
 
+#ifndef __shash_h__
+#define __shash_h__
 
 // disable the "Conditional expression is constant" warning
 #pragma warning(push)
@@ -630,3 +632,4 @@ public:
 // restore "Conditional expression is constant" warning to previous value
 #pragma warning(pop)
 
+#endif // __shash_h__

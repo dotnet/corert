@@ -45,3 +45,24 @@ inline bool IS_ALIGNED(T* val, UIntNative alignment)
     return IS_ALIGNED(reinterpret_cast<UIntNative>(val), alignment);
 }
 
+// Convert from a PCODE to the corresponding PINSTR.  On many architectures this will be the identity function;
+// on ARM, this will mask off the THUMB bit.
+inline TADDR PCODEToPINSTR(PCODE pc)
+{
+#ifdef _TARGET_ARM_
+    return dac_cast<TADDR>(pc & ~THUMB_CODE);
+#else
+    return dac_cast<TADDR>(pc);
+#endif
+}
+
+// Convert from a PINSTR to the corresponding PCODE.  On many architectures this will be the identity function;
+// on ARM, this will raise the THUMB bit.
+inline PCODE PINSTRToPCODE(TADDR addr)
+{
+#ifdef _TARGET_ARM_
+    return dac_cast<PCODE>(addr | THUMB_CODE);
+#else
+    return dac_cast<PCODE>(addr);
+#endif
+}

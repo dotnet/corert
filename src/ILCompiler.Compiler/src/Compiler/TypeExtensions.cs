@@ -31,11 +31,16 @@ namespace ILCompiler
         {
             if (type.IsArray)
             {
-                if (type.IsArrayTypeWithoutGenericInterfaces())
-                    return type.Context.GetWellKnownType(WellKnownType.Array);
+                if (!type.IsArrayTypeWithoutGenericInterfaces())
+                {
+                    MetadataType arrayShadowType = type.Context.SystemModule.GetType("System", "Array`1", throwIfNotFound: false);
+                    if (arrayShadowType != null)
+                    {
+                        return arrayShadowType.MakeInstantiatedType(((ArrayType)type).ElementType);
+                    }
+                }
 
-                MetadataType arrayShadowType = type.Context.SystemModule.GetKnownType("System", "Array`1");
-                return arrayShadowType.MakeInstantiatedType(((ArrayType)type).ElementType);
+                return type.Context.GetWellKnownType(WellKnownType.Array);
             }
 
             Debug.Assert(type is DefType);
@@ -420,6 +425,81 @@ namespace ILCompiler
 
             // No compatible merge found - using Object
             return type.Context.GetWellKnownType(WellKnownType.Object);
+        }
+
+        /// <summary>
+        /// Normalizes canonical instantiations (converts Foo&lt;object, __Canon&gt; to
+        /// Foo&lt;__Canon, __Canon>). Returns identity for non-canonical types.
+        /// </summary>
+        public static TypeDesc NormalizeInstantiation(this TypeDesc thisType)
+        {
+            if (thisType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                return thisType.ConvertToCanonForm(CanonicalFormKind.Specific);
+
+            return thisType;
+        }
+
+        public static Instantiation GetInstantiationThatMeetsConstraints(Instantiation inst, bool allowCanon)
+        {
+            TypeDesc[] resultArray = new TypeDesc[inst.Length];
+            for (int i = 0; i < inst.Length; i++)
+            {
+                TypeDesc instArg = GetTypeThatMeetsConstraints((GenericParameterDesc)inst[i], allowCanon);
+                if (instArg == null)
+                    return default(Instantiation);
+                resultArray[i] = instArg;
+            }
+
+            return new Instantiation(resultArray);
+        }
+
+        private static TypeDesc GetTypeThatMeetsConstraints(GenericParameterDesc genericParam, bool allowCanon)
+        {
+            TypeSystemContext context = genericParam.Context;
+
+            // Universal canon is the best option if it's supported
+            if (allowCanon && context.SupportsUniversalCanon)
+                return context.UniversalCanonType;
+
+            // Not nullable type is the only thing where we can't substitute reference types
+            GenericConstraints constraints = genericParam.Constraints;
+            if ((constraints & GenericConstraints.NotNullableValueTypeConstraint) != 0)
+                return null;
+
+            // If canon is allowed, we can use that
+            if (allowCanon && context.SupportsCanon)
+            {
+                foreach (var c in genericParam.TypeConstraints)
+                {
+                    // Could be e.g. "where T : U"
+                    // We could try to dig into the U and solve it, but that just opens us up to
+                    // recursion and it's just not worth it.
+                    if (c.IsSignatureVariable)
+                        return null;
+
+                    if (!c.IsGCPointer)
+                        return null;
+                }
+
+                return genericParam.Context.CanonType;
+            }
+
+            // If canon is not allowed, we're limited in our choices.
+            TypeDesc constrainedType = null;
+            foreach (var c in genericParam.TypeConstraints)
+            {
+                // Can't do multiple constraints
+                if (constrainedType != null)
+                    return null;
+
+                // Could be e.g. "where T : IFoo<U>" or "where T : U"
+                if (c.ContainsSignatureVariables())
+                    return null;
+
+                constrainedType = c;
+            }
+
+            return constrainedType ?? genericParam.Context.GetWellKnownType(WellKnownType.Object);
         }
     }
 }

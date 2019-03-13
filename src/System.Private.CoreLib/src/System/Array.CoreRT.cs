@@ -29,11 +29,6 @@ namespace System
     // IList<U> and IReadOnlyList<U>, where T : U dynamically.  See the SZArrayHelper class for details.
     public abstract partial class Array : ICollection, IEnumerable, IList, IStructuralComparable, IStructuralEquatable, ICloneable
     {
-        // This ctor exists solely to prevent C# from generating a protected .ctor that violates the surface area. I really want this to be a
-        // "protected-and-internal" rather than "internal" but C# has no keyword for the former.
-        internal Array() { }
-
-
         // CS0649: Field '{blah}' is never assigned to, and will always have its default value
 #pragma warning disable 649
         // This field should be the first field in Array as the runtime/compilers depend on it
@@ -56,6 +51,14 @@ namespace System
                 // NOTE: The compiler has assumptions about the implementation of this method.
                 // Changing the implementation here (or even deleting this) will NOT have the desired impact
                 return _numComponents;
+            }
+        }
+
+        public long LongLength
+        {
+            get
+            {
+                return Length;
             }
         }
 
@@ -872,12 +875,6 @@ namespace System
             Debug.Assert(false);
         }
 
-        // We impose limits on maximum array length in each dimension to allow efficient 
-        // implementation of advanced range check elimination in future.
-        // Keep in sync with vm\gcscan.cpp and HashHelpers.MaxPrimeArrayLength.
-        internal const int MaxArrayLength = 0X7FEFFFFF;
-        internal const int MaxByteArrayLength = MaxArrayLength;
-
         public int GetLength(int dimension)
         {
             int length = GetUpperBound(dimension) + 1;
@@ -951,16 +948,6 @@ namespace System
             }
 
             private IComparer _comparer;
-        }
-
-        public static T[] Empty<T>()
-        {
-            return EmptyArray<T>.Value;
-        }
-
-        private static class EmptyArray<T>
-        {
-            internal static readonly T[] Value = new T[0];
         }
 
         public int GetLowerBound(int dimension)
@@ -1253,8 +1240,44 @@ namespace System
             }
         }
 
-        private sealed partial class ArrayEnumerator : IEnumerator, ICloneable
+        public IEnumerator GetEnumerator()
         {
+            return new ArrayEnumerator(this);
+        }
+
+        private sealed class ArrayEnumerator : IEnumerator, ICloneable
+        {
+            private Array _array;
+            private int _index;
+            private int _endIndex; // cache array length, since it's a little slow.
+
+            internal ArrayEnumerator(Array array)
+            {
+                _array = array;
+                _index = -1;
+                _endIndex = array.Length;
+            }
+
+            public bool MoveNext()
+            {
+                if (_index < _endIndex)
+                {
+                    _index++;
+                    return (_index < _endIndex);
+                }
+                return false;
+            }
+
+            public void Reset()
+            {
+                _index = -1;
+            }
+
+            public object Clone()
+            {
+                return MemberwiseClone();
+            }
+
             public object Current
             {
                 get

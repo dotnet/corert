@@ -13,7 +13,6 @@ using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.EcmaFormat;
 using System.Reflection.Runtime.Assemblies;
 
-using IRuntimeImplementedType = Internal.Reflection.Core.NonPortable.IRuntimeImplementedType;
 using Internal.LowLevelLinq;
 using Internal.Runtime.Augments;
 using Internal.Reflection.Core.Execution;

@@ -72,7 +72,7 @@ namespace ILCompiler
 
                 foreach (TypeDesc type in ((EcmaModule)assembly).GetAllTypes())
                 {
-                    RootType(rootProvider, type);
+                    RootType(rootProvider, type, "RD.XML root");
                 }
             }
 
@@ -102,8 +102,8 @@ namespace ILCompiler
             {
                 if (dynamicDegreeAttribute.Value != "Required All")
                     throw new NotSupportedException();
-                
-                RootType(rootProvider, type);
+
+                RootType(rootProvider, type, "RD.XML root");
             }
 
             foreach (var element in typeElement.Elements())
@@ -150,30 +150,63 @@ namespace ILCompiler
                 method = method.MakeInstantiatedMethod(methodInst);
             }
 
-            RootMethod(rootProvider, method);
+            RootMethod(rootProvider, method, "RD.XML root");
         }
 
-        private void RootType(IRootingServiceProvider rootProvider, TypeDesc type)
+        public static void RootType(IRootingServiceProvider rootProvider, TypeDesc type, string reason)
         {
-            rootProvider.AddCompilationRoot(type, "RD.XML root");
+            rootProvider.AddCompilationRoot(type, reason);
 
+            // Instantiate generic types over something that will be useful at runtime
             if (type.IsGenericDefinition)
-                return;
-            
+            {
+                Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(type.Instantiation, allowCanon: true);
+                if (inst.IsNull)
+                    return;
+
+                type = ((MetadataType)type).MakeInstantiatedType(inst);
+
+                rootProvider.AddCompilationRoot(type, reason);
+            }
+
+            // Also root base types. This is so that we make methods on the base types callable.
+            // This helps in cases like "class Foo : Bar<int> { }" where we discover new
+            // generic instantiations.
+            TypeDesc baseType = type.BaseType;
+            while (baseType != null)
+            {
+                baseType = baseType.NormalizeInstantiation();
+                RootType(rootProvider, baseType, reason);
+                baseType = baseType.BaseType;
+            }
+
             if (type.IsDefType)
             {
                 foreach (var method in type.GetMethods())
                 {
-                    // We don't know what to instantiate generic methods over
                     if (method.HasInstantiation)
-                        continue;
-
-                    RootMethod(rootProvider, method);
+                    {
+                        // Generic methods on generic types could end up as Foo<object>.Bar<__Canon>(),
+                        // so for simplicity, we just don't handle them right now to make this more
+                        // predictable.
+                        if (!method.OwningType.HasInstantiation)
+                        {
+                            Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(method.Instantiation, allowCanon: false);
+                            if (!inst.IsNull)
+                            {
+                                RootMethod(rootProvider, method.MakeInstantiatedMethod(inst), reason);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        RootMethod(rootProvider, method, reason);
+                    }
                 }
             }
         }
 
-        private void RootMethod(IRootingServiceProvider rootProvider, MethodDesc method)
+        private static void RootMethod(IRootingServiceProvider rootProvider, MethodDesc method, string reason)
         {
             try
             {
@@ -181,10 +214,10 @@ namespace ILCompiler
 
                 // Virtual methods should be rooted as if they were called virtually
                 if (method.IsVirtual)
-                    rootProvider.RootVirtualMethodForReflection(method, "RD.XML root");
+                    rootProvider.RootVirtualMethodForReflection(method, reason);
 
                 if (!method.IsAbstract)
-                    rootProvider.AddCompilationRoot(method, "RD.XML root");
+                    rootProvider.AddCompilationRoot(method, reason);
             }
             catch (TypeSystemException)
             {

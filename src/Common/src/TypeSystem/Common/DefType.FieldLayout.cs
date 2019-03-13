@@ -123,7 +123,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return LayoutInt.AlignUp(InstanceByteCountUnaligned, InstanceByteAlignment);
+                return LayoutInt.AlignUp(InstanceByteCountUnaligned, InstanceByteAlignment, Context.Target);
             }
         }
 

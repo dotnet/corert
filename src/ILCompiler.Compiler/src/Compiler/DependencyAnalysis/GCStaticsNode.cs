@@ -89,7 +89,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            if (factory.Target.Abi == TargetAbi.CoreRT)
+            if (factory.Target.Abi == TargetAbi.CoreRT || factory.Target.Abi == TargetAbi.CppCodegen)
             {
                 ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
 

@@ -12,6 +12,7 @@
 
 #include "gcenv.h"
 #include "gcheaputilities.h"
+#include "profheapwalkhelper.h"
 
 #ifdef FEATURE_STANDALONE_GC
 #include "gcenv.ee.h"
@@ -251,15 +252,49 @@ COOP_PINVOKE_HELPER(void*, RhpGcAlloc, (EEType *pEEType, UInt32 uFlags, UIntNati
 
     ASSERT(!pThread->IsDoNotTriggerGcSet());
 
-#if BIT64
-    if (!g_pConfig->GetGCAllowVeryLargeObjects())
+    size_t max_object_size;
+#ifdef BIT64
+    if (g_pConfig->GetGCAllowVeryLargeObjects())
     {
-        // Restrict maximum object size on 64-bit to historic limit. Framework implementation
-        // and tests depend on it currently.
-        if (cbSize >= 0x7FFFFFE0)
-            return NULL;
+        max_object_size = (INT64_MAX - 7 - min_obj_size);
     }
-#endif
+    else
+#endif // BIT64
+    {
+        max_object_size = (INT32_MAX - 7 - min_obj_size);
+    }
+
+    if (cbSize >= max_object_size)
+        return NULL;
+
+    const int MaxArrayLength = 0x7FEFFFFF;
+    const int MaxByteArrayLength = 0x7FFFFFC7;
+
+    // Impose limits on maximum array length in each dimension to allow efficient
+    // implementation of advanced range check elimination in future. We have to allow
+    // higher limit for array of bytes (or one byte structs) for backward compatibility.
+    // Keep in sync with Array.MaxArrayLength in BCL.
+    if (cbSize > MaxByteArrayLength /* note: comparing allocation size with element count */)
+    {
+        // Ensure the above if check covers the minimal interesting size
+        static_assert(MaxByteArrayLength < (uint64_t)MaxArrayLength * 2, "");
+
+        if (pEEType->IsArray())
+        {
+            if (pEEType->get_ComponentSize() != 1)
+            {
+                size_t elementCount = (cbSize - pEEType->get_BaseSize()) / pEEType->get_ComponentSize();
+                if (elementCount > MaxArrayLength)
+                    return NULL;
+            }
+            else
+            {
+                size_t elementCount = cbSize - pEEType->get_BaseSize();
+                if (elementCount > MaxByteArrayLength)
+                    return NULL;
+            }
+        }
+    }
 
     // Save the EEType for instrumentation purposes.
     RedhawkGCInterface::SetLastAllocEEType(pEEType);
@@ -1089,6 +1124,143 @@ Thread* GCToEEInterface::CreateBackgroundThread(GCBackgroundThreadFunction threa
     return threadStubArgs.m_pThread;
 }
 
+#ifdef FEATURE_EVENT_TRACE
+void ProfScanRootsHelper(Object** ppObject, ScanContext* pSC, uint32_t dwFlags)
+{
+    Object* pObj = *ppObject;
+    if (dwFlags& GC_CALL_INTERIOR)
+    {
+        pObj = GCHeapUtilities::GetGCHeap()->GetContainingObject(pObj, true);
+        if (pObj == nullptr)
+            return;
+    }
+    ScanRootsHelper(pObj, ppObject, pSC, dwFlags);
+}
+
+void GcScanRootsForETW(promote_func* fn, int condemned, int max_gen, ScanContext* sc)
+{
+    UNREFERENCED_PARAMETER(condemned);
+    UNREFERENCED_PARAMETER(max_gen);
+
+    FOREACH_THREAD(pThread)
+    {
+        if (pThread->IsGCSpecial())
+            continue;
+
+        if (GCHeapUtilities::GetGCHeap()->IsThreadUsingAllocationContextHeap(pThread->GetAllocContext(), sc->thread_number))
+            continue;
+
+        sc->thread_under_crawl = pThread;
+        sc->dwEtwRootKind = kEtwGCRootKindStack;
+        pThread->GcScanRoots(reinterpret_cast<void*>(fn), sc);
+        sc->dwEtwRootKind = kEtwGCRootKindOther;
+    }
+    END_FOREACH_THREAD
+}
+
+void ScanHandleForETW(Object** pRef, Object* pSec, uint32_t flags, ScanContext* context, BOOL isDependent)
+{
+    ProfilingScanContext* pSC = (ProfilingScanContext*)context;
+
+    // Notify ETW of the handle
+    if (ETW::GCLog::ShouldWalkHeapRootsForEtw())
+    {
+        ETW::GCLog::RootReference(
+            pRef,
+            *pRef,          // object being rooted
+            pSec,           // pSecondaryNodeForDependentHandle
+            isDependent,
+            pSC,
+            0,              // dwGCFlags,
+            flags);     // ETW handle flags
+    }
+}
+
+// This is called only if we've determined that either:
+//     a) The Profiling API wants to do a walk of the heap, and it has pinned the
+//     profiler in place (so it cannot be detached), and it's thus safe to call into the
+//     profiler, OR
+//     b) ETW infrastructure wants to do a walk of the heap either to log roots,
+//     objects, or both.
+// This can also be called to do a single walk for BOTH a) and b) simultaneously.  Since
+// ETW can ask for roots, but not objects
+void GCProfileWalkHeapWorker(BOOL fShouldWalkHeapRootsForEtw, BOOL fShouldWalkHeapObjectsForEtw)
+{
+    ProfilingScanContext SC(FALSE);
+
+    // **** Scan roots:  Only scan roots if profiling API wants them or ETW wants them.
+    if (fShouldWalkHeapRootsForEtw)
+    {
+        GcScanRootsForETW(&ProfScanRootsHelper, max_generation, max_generation, &SC);
+        SC.dwEtwRootKind = kEtwGCRootKindFinalizer;
+        GCHeapUtilities::GetGCHeap()->DiagScanFinalizeQueue(&ProfScanRootsHelper, &SC);
+
+        // Handles are kept independent of wks/svr/concurrent builds
+        SC.dwEtwRootKind = kEtwGCRootKindHandle;
+        GCHeapUtilities::GetGCHeap()->DiagScanHandles(&ScanHandleForETW, max_generation, &SC);
+    }
+
+    // **** Scan dependent handles: only if ETW wants roots
+    if (fShouldWalkHeapRootsForEtw)
+    {
+        // GcScanDependentHandlesForProfiler double-checks
+        // CORProfilerTrackConditionalWeakTableElements() before calling into the profiler
+
+        ProfilingScanContext* pSC = &SC;
+
+        // we'll re-use pHeapId (which was either unused (0) or freed by EndRootReferences2
+        // (-1)), so reset it to NULL
+        _ASSERTE((*((size_t *)(&pSC->pHeapId)) == (size_t)(-1)) ||
+                (*((size_t *)(&pSC->pHeapId)) == (size_t)(0)));
+        pSC->pHeapId = NULL;
+
+        GCHeapUtilities::GetGCHeap()->DiagScanDependentHandles(&ScanHandleForETW, max_generation, &SC);
+    }
+
+    ProfilerWalkHeapContext profilerWalkHeapContext(FALSE, SC.pvEtwContext);
+
+    // **** Walk objects on heap: only if ETW wants them.
+    if (fShouldWalkHeapObjectsForEtw)
+    {
+        GCHeapUtilities::GetGCHeap()->DiagWalkHeap(&HeapWalkHelper, &profilerWalkHeapContext, max_generation, true /* walk the large object heap */);
+    }
+
+    #ifdef FEATURE_EVENT_TRACE
+    // **** Done! Indicate to ETW helpers that the heap walk is done, so any buffers
+    // should be flushed into the ETW stream
+    if (fShouldWalkHeapObjectsForEtw || fShouldWalkHeapRootsForEtw)
+    {
+        ETW::GCLog::EndHeapDump(&profilerWalkHeapContext);
+    }
+#endif // FEATURE_EVENT_TRACE
+}
+#endif // defined(FEATURE_EVENT_TRACE)
+
+void GCProfileWalkHeap()
+{
+
+#ifdef FEATURE_EVENT_TRACE
+    if (ETW::GCLog::ShouldWalkStaticsAndCOMForEtw())
+        ETW::GCLog::WalkStaticsAndCOMForETW();
+
+    BOOL fShouldWalkHeapRootsForEtw = ETW::GCLog::ShouldWalkHeapRootsForEtw();
+    BOOL fShouldWalkHeapObjectsForEtw = ETW::GCLog::ShouldWalkHeapObjectsForEtw();
+#else // !FEATURE_EVENT_TRACE
+    BOOL fShouldWalkHeapRootsForEtw = FALSE;
+    BOOL fShouldWalkHeapObjectsForEtw = FALSE;
+#endif // FEATURE_EVENT_TRACE
+
+#ifdef FEATURE_EVENT_TRACE
+    // we need to walk the heap if one of GC_PROFILING or FEATURE_EVENT_TRACE
+    // is defined, since both of them make use of the walk heap worker.
+    if (fShouldWalkHeapRootsForEtw || fShouldWalkHeapObjectsForEtw)
+    {
+        GCProfileWalkHeapWorker(fShouldWalkHeapRootsForEtw, fShouldWalkHeapObjectsForEtw);
+    }
+#endif // defined(FEATURE_EVENT_TRACE)
+}
+
+
 void GCToEEInterface::DiagGCStart(int gen, bool isInduced)
 {
     UNREFERENCED_PARAMETER(gen);
@@ -1109,7 +1281,11 @@ void GCToEEInterface::DiagGCEnd(size_t index, int gen, int reason, bool fConcurr
     UNREFERENCED_PARAMETER(index);
     UNREFERENCED_PARAMETER(gen);
     UNREFERENCED_PARAMETER(reason);
-    UNREFERENCED_PARAMETER(fConcurrent);
+
+    if (!fConcurrent)
+    {
+        GCProfileWalkHeap();
+    }
 }
 
 // Note on last parameter: when calling this for bgc, only ETW

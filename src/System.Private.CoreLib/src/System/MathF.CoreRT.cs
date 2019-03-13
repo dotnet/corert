@@ -102,7 +102,7 @@ namespace System
         }
 
         [Intrinsic]
-        public static int IlogB(float x)
+        public static int ILogB(float x)
         {
             return RuntimeImports.ilogbf(x);
         }

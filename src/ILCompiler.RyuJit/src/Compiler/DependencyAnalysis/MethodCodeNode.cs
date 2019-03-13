@@ -10,7 +10,7 @@ using Internal.TypeSystem.Interop;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class MethodCodeNode : ObjectNode, IMethodBodyNode, INodeWithCodeInfo, INodeWithDebugInfo, IMethodCodeNode, ISpecialUnboxThunkNode
+    public class MethodCodeNode : ObjectNode, IMethodBodyNode, INodeWithCodeInfo, INodeWithDebugInfo, ISymbolDefinitionNode, ISpecialUnboxThunkNode
     {
         private MethodDesc _method;
         private ObjectData _methodCode;

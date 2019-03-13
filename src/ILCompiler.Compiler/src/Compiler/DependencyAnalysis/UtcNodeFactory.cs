@@ -280,7 +280,7 @@ namespace ILCompiler
 
         protected override ISymbolNode CreateReadyToRunHelperNode(ReadyToRunHelperKey helperCall)
         {
-            return new ReadyToRunHelperNode(this, helperCall.HelperId, helperCall.Target);
+            throw new NotSupportedException();
         }
 
         public GCStaticDescRegionNode GCStaticDescRegion = new GCStaticDescRegionNode(

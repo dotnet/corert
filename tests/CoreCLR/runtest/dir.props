@@ -1,16 +1,13 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <SkipImportRoslynProps>true</SkipImportRoslynProps>
+  </PropertyGroup>
   <Import Project="$(MSBuildThisFileDirectory)\..\..\..\dir.props" />
   <!--
     $(OS) is set to Unix/Windows_NT. This comes from an environment variable on Windows and MSBuild on Unix.
   -->
   <PropertyGroup>
     <OsEnvironment Condition="'$(OsEnvironment)'==''">$(OS)</OsEnvironment>
-  </PropertyGroup>
-  
-  <!-- Build Tools Versions -->
-  <PropertyGroup>
-    <RoslynVersion>1.0.0-rc3-20150510-01</RoslynVersion>
-    <RoslynPackageName>Microsoft.Net.ToolsetCompilers</RoslynPackageName>
   </PropertyGroup>
 
   <!-- Common repo directories -->

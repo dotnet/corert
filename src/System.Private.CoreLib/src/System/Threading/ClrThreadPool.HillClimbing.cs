@@ -23,19 +23,19 @@ namespace System.Threading
             private static HillClimbing CreateHillClimber()
             {
                 // Default values pulled from CoreCLR
-                return new HillClimbing(wavePeriod: AppContextConfigHelper.GetInt32Config("HillClimbing_WavePeriod", 4),
-                    maxWaveMagnitude: AppContextConfigHelper.GetInt32Config("HillClimbing_MaxWaveMagnitude", 20),
-                    waveMagnitudeMultiplier: AppContextConfigHelper.GetInt32Config("HillClimbing_WaveMagnitudeMultiplier", 100) / 100.0,
-                    waveHistorySize: AppContextConfigHelper.GetInt32Config("HillClimbing_WaveHistorySize", 8),
-                    targetThroughputRatio: AppContextConfigHelper.GetInt32Config("HillClimbing_Bias", 15) / 100.0,
-                    targetSignalToNoiseRatio: AppContextConfigHelper.GetInt32Config("HillClimbing_TargetSignalToNoiseRatio", 300) / 100.0,
-                    maxChangePerSecond: AppContextConfigHelper.GetInt32Config("HillClimbing_MaxChangePerSecond", 4),
-                    maxChangePerSample: AppContextConfigHelper.GetInt32Config("HillClimbing_MaxChangePerSample", 20),
-                    sampleIntervalMsLow: AppContextConfigHelper.GetInt32Config("HillClimbing_SampleIntervalLow", DefaultSampleIntervalMsLow, allowNegative: false),
-                    sampleIntervalMsHigh: AppContextConfigHelper.GetInt32Config("HillClimbing_SampleIntervalHigh", DefaultSampleIntervalMsHigh, allowNegative: false),
-                    errorSmoothingFactor: AppContextConfigHelper.GetInt32Config("HillClimbing_ErrorSmoothingFactor", 1) / 100.0,
-                    gainExponent: AppContextConfigHelper.GetInt32Config("HillClimbing_GainExponent", 200) / 100.0,
-                    maxSampleError: AppContextConfigHelper.GetInt32Config("HillClimbing_MaxSampleErrorPercent", 15) / 100.0
+                return new HillClimbing(wavePeriod: AppContextConfigHelper.GetInt32Config("HillClimbing_WavePeriod", 4, false),
+                    maxWaveMagnitude: AppContextConfigHelper.GetInt32Config("HillClimbing_MaxWaveMagnitude", 20, false),
+                    waveMagnitudeMultiplier: AppContextConfigHelper.GetInt32Config("HillClimbing_WaveMagnitudeMultiplier", 100, false) / 100.0,
+                    waveHistorySize: AppContextConfigHelper.GetInt32Config("HillClimbing_WaveHistorySize", 8, false),
+                    targetThroughputRatio: AppContextConfigHelper.GetInt32Config("HillClimbing_Bias", 15, false) / 100.0,
+                    targetSignalToNoiseRatio: AppContextConfigHelper.GetInt32Config("HillClimbing_TargetSignalToNoiseRatio", 300, false) / 100.0,
+                    maxChangePerSecond: AppContextConfigHelper.GetInt32Config("HillClimbing_MaxChangePerSecond", 4, false),
+                    maxChangePerSample: AppContextConfigHelper.GetInt32Config("HillClimbing_MaxChangePerSample", 20, false),
+                    sampleIntervalMsLow: AppContextConfigHelper.GetInt32Config("HillClimbing_SampleIntervalLow", DefaultSampleIntervalMsLow, false),
+                    sampleIntervalMsHigh: AppContextConfigHelper.GetInt32Config("HillClimbing_SampleIntervalHigh", DefaultSampleIntervalMsHigh, false),
+                    errorSmoothingFactor: AppContextConfigHelper.GetInt32Config("HillClimbing_ErrorSmoothingFactor", 1, false) / 100.0,
+                    gainExponent: AppContextConfigHelper.GetInt32Config("HillClimbing_GainExponent", 200, false) / 100.0,
+                    maxSampleError: AppContextConfigHelper.GetInt32Config("HillClimbing_MaxSampleErrorPercent", 15, false) / 100.0
                 );
             }
             private const int LogCapacity = 200;

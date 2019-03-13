@@ -166,6 +166,10 @@ EXTERN_C int __cdecl memcmp(const void *,const void *,size_t);
 #endif
 #endif // GCENV_INCLUDED
 
+#if defined(_TARGET_ARM_)
+#define THUMB_CODE 1
+#endif
+
 //
 // Define an unmanaged function called from managed code that needs to execute in co-operative GC mode. (There
 // should be very few of these, most such functions will be simply p/invoked).

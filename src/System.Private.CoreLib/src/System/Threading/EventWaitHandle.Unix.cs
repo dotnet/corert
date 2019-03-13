@@ -53,12 +53,26 @@ namespace System.Threading
             }
         }
 
+        internal static bool Set(SafeWaitHandle waitHandle)
+        {
+            waitHandle.DangerousAddRef();
+            try
+            {
+                WaitSubsystem.SetEvent(waitHandle.DangerousGetHandle());
+                return true;
+            }
+            finally
+            {
+                waitHandle.DangerousRelease();
+            }
+        }
+
         private SafeWaitHandle ValidateHandle()
         {
             // The field value is modifiable via the public <see cref="WaitHandle.SafeWaitHandle"/> property, save it locally
             // to ensure that one instance is used in all places in this method
-            SafeWaitHandle waitHandle = _waitHandle;
-            if (waitHandle == null)
+            SafeWaitHandle waitHandle = SafeWaitHandle;
+            if (waitHandle.IsInvalid)
             {
                 ThrowInvalidHandleException();
             }

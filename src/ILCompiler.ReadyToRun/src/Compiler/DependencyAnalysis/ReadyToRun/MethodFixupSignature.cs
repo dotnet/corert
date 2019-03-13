@@ -43,6 +43,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _isInstantiatingStub = isInstantiatingStub;
         }
 
+        public MethodDesc Method => _methodDesc;
+
         public override int ClassCode => 150063499;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
@@ -57,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
             dataBuilder.AddSymbol(this);
 
-            dataBuilder.EmitUInt((uint)_fixupKind);
+            dataBuilder.EmitByte((byte)_fixupKind);
             dataBuilder.EmitMethodSignature(_methodDesc, _constrainedType, _methodToken, enforceDefEncoding: false,
                 _signatureContext, _isUnboxingStub, _isInstantiatingStub);
 
@@ -67,11 +69,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append($@"MethodFixupSignature({_fixupKind.ToString()}: {_methodDesc.Signature.ReturnType} {_methodDesc}");
+            sb.Append($@"MethodFixupSignature(");
+            sb.Append(_fixupKind.ToString());
+            if (_isUnboxingStub)
+            {
+                sb.Append(" [UNBOX]");
+            }
+            if (_isInstantiatingStub)
+            {
+                sb.Append(" [INST]");
+            }
+            sb.Append(": ");
+            sb.Append(nameMangler.GetMangledMethodName(_methodDesc));
             if (_constrainedType != null)
             {
                 sb.Append(" @ ");
-                sb.Append(_constrainedType.ToString());
+                sb.Append(nameMangler.GetMangledTypeName(_constrainedType));
             }
             if (!_methodToken.IsNull)
             {

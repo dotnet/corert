@@ -28,6 +28,13 @@
 #include "gcrhinterface.h"
 #include "gcenv.interlocked.inl"
 
+#include "slist.h"
+#include "RWLock.h"
+#include "shash.h"
+#include "module.h"
+#include "RuntimeInstance.h"
+#include "eetype.inl"
+
 #include "stressLog.h"
 #ifdef FEATURE_ETW
 
@@ -186,7 +193,7 @@ public:
     int     GetGCTrimCommit()               const { return 0; }
     int     GetGCLOHCompactionMode()        const { return 0; }
 
-    bool    GetGCAllowVeryLargeObjects ()   const { return false; }
+    bool    GetGCAllowVeryLargeObjects ()   const { return true; }
 
     // We need conservative GC enabled for some edge cases around ICastable support. This doesn't have much
     // impact, it just makes the GC slightly more flexible in dealing with interior references (e.g. we can

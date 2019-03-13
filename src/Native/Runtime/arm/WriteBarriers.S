@@ -302,9 +302,11 @@ LOCAL_LABEL(RhpCheckedXchgRetry):
           strex        r3, r1, [r0]
           cmp          r3, #0
           bne          LOCAL_LABEL(RhpCheckedXchgRetry)
-          mov          r0, r2
 
           DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedXchg, r1
+
+          // The original value is currently in r2. We need to return it in r0.
+          mov          r0, r2
 
           bx           lr
 LEAF_END RhpCheckedXchg, _TEXT

@@ -35,10 +35,12 @@ The following manual steps are useful for troubleshooting ObjWriter build issues
     ```
     mkdir build
     cd build
-    cmake ../ -DCMAKE_BUILD_TYPE=Release -DLLVM_OPTIMIZED_TABLEGEN=1 -DHAVE_POSIX_SPAWN=0 -DLLVM_ENABLE_PIC=1 -DLLVM_BUILD_TESTS=0 -DLLVM_ENABLE_DOXYGEN=0 -DLLVM_INCLUDE_DOCS=0 -DLLVM_INCLUDE_TESTS=0
-    make -j10 objwriter
-    cd ..
+    cmake ../ -DCMAKE_BUILD_TYPE=Release -DLLVM_OPTIMIZED_TABLEGEN=1 -DHAVE_POSIX_SPAWN=0 -DLLVM_ENABLE_PIC=1 -DLLVM_BUILD_TESTS=0 -DLLVM_ENABLE_DOXYGEN=0 -DLLVM_INCLUDE_DOCS=0 -DLLVM_INCLUDE_TESTS=0 -DLLVM_TARGETS_TO_BUILD="ARM;X86;AArch64" -DCMAKE_INSTALL_PREFIX=install -DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=WebAssembly
+    cmake --build . -j 10 --config Release --target install
+    cd install/bin
     ```
+    On Windows add the following arguments `-G "Visual Studio 15 2017 Win64" -Thost=x64` to `cmake` configuration command (not the one with `--build`).
+    Note that `-j 10` on `cmake --build .` requires cmake `3.12+`.
 
 * For ARM(cross/non-cross) please specify Triple for LLVM as Cmake configuration option:
     ```

@@ -26,6 +26,29 @@ namespace Internal.Runtime.CompilerHelpers
             return PInvokeMarshal.AnsiStringToString(buffer);
         }
 
+        internal static unsafe byte* StringToUTF8String(string str)
+        {
+            if (str == null)
+                return null;
+
+            fixed (char* charsPtr = str)
+            {
+                int length = Encoding.UTF8.GetByteCount(str) + 1;
+                byte* bytesPtr = (byte*)PInvokeMarshal.CoTaskMemAlloc((System.UIntPtr)length);
+                int bytes = Encoding.UTF8.GetBytes(charsPtr, str.Length, bytesPtr, length);
+                Debug.Assert(bytes + 1 == length);
+                bytesPtr[length - 1] = 0;
+                return bytesPtr;
+            }
+        }
+
+        public static unsafe string UTF8StringToString(byte* buffer)
+        {
+            if (buffer == null)
+                return null;
+
+            return Encoding.UTF8.GetString(buffer, string.strlen(buffer));
+        }
 
         internal static unsafe void StringToByValAnsiString(string str, byte* pNative, int charCount, bool bestFit, bool throwOnUnmappableChar)
         {
@@ -280,7 +303,7 @@ namespace Internal.Runtime.CompilerHelpers
         private static unsafe string GetModuleName(ModuleFixupCell* pCell)
         {
             byte* pModuleName = (byte*)pCell->ModuleName;
-            return Encoding.UTF8.GetString(pModuleName, strlen(pModuleName));
+            return Encoding.UTF8.GetString(pModuleName, string.strlen(pModuleName));
         }
 
         internal static unsafe void FixupModuleCell(ModuleFixupCell* pCell)
@@ -313,7 +336,7 @@ namespace Internal.Runtime.CompilerHelpers
 #endif
             if (pCell->Target == IntPtr.Zero)
             {
-                string entryPointName = Encoding.UTF8.GetString(methodName, strlen(methodName));
+                string entryPointName = Encoding.UTF8.GetString(methodName, string.strlen(methodName));
                 throw new EntryPointNotFoundException(SR.Format(SR.Arg_EntryPointNotFoundExceptionParameterized, entryPointName, GetModuleName(pCell->Module)));
             }
         }
@@ -332,7 +355,7 @@ namespace Internal.Runtime.CompilerHelpers
                 return exactMatch;
             }
 
-            int nameLength = strlen(methodName);
+            int nameLength = string.strlen(methodName);
 
             // We need to add an extra byte for the suffix, and an extra byte for the null terminator
             byte* probedMethodName = stackalloc byte[nameLength + 2];
@@ -355,13 +378,6 @@ namespace Internal.Runtime.CompilerHelpers
             return exactMatch;
         }
 #endif
-
-        internal static unsafe int strlen(byte* pString)
-        {
-            byte* p = pString;
-            while (*p != 0) p++;
-            return checked((int)(p - pString));
-        }
 
         internal unsafe static void* CoTaskMemAllocAndZeroMemory(global::System.IntPtr size)
         {

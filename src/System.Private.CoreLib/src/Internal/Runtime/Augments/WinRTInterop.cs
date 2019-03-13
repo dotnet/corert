@@ -68,6 +68,7 @@ namespace Internal.Runtime.Augments
         public abstract Object GetUserDefaultCulture();
         public abstract void SetGlobalDefaultCulture(Object culture);
         public abstract Object GetCurrentWinRTDispatcher();
+        public abstract string GetFolderPath(Environment.SpecialFolder specialFolder, Environment.SpecialFolderOption specialFolderOption);
         public abstract void PostToWinRTDispatcher(Object dispatcher, Action<object> action, object state);
         public abstract bool IsAppxModel();
         public abstract bool ReportUnhandledError(Exception ex);
@@ -75,10 +76,10 @@ namespace Internal.Runtime.Augments
         public abstract object GetCOMWeakReferenceTarget(object weakReference);
         public abstract object ReadFileIntoStream(string name);
         public abstract void InitTracingStatusChanged(Action<bool> tracingStatusChanged);
-        public abstract void TraceOperationCompletion(CausalityTraceLevel traceLevel, CausalitySource source, Guid platformId, ulong operationId, AsyncStatus status);
-        public abstract void TraceOperationCreation(CausalityTraceLevel traceLevel, CausalitySource source, Guid platformId, ulong operationId, string operationName, ulong relatedContext);
-        public abstract void TraceOperationRelation(CausalityTraceLevel traceLevel, CausalitySource source, Guid platformId, ulong operationId, CausalityRelation relation);
-        public abstract void TraceSynchronousWorkCompletion(CausalityTraceLevel traceLevel, CausalitySource source, CausalitySynchronousWork work);
-        public abstract void TraceSynchronousWorkStart(CausalityTraceLevel traceLevel, CausalitySource source, Guid platformId, ulong operationId, CausalitySynchronousWork work);
+        public abstract void TraceOperationCompletion(int traceLevel, int source, Guid platformId, ulong operationId, int status);
+        public abstract void TraceOperationCreation(int traceLevel, int source, Guid platformId, ulong operationId, string operationName, ulong relatedContext);
+        public abstract void TraceOperationRelation(int traceLevel, int source, Guid platformId, ulong operationId, int relation);
+        public abstract void TraceSynchronousWorkCompletion(int traceLevel, int source, int work);
+        public abstract void TraceSynchronousWorkStart(int traceLevel, int source, Guid platformId, ulong operationId, int work);
     }
 }

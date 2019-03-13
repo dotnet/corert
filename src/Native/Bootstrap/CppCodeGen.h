@@ -15,6 +15,7 @@
 #pragma warning(disable:4102) // unreferenced label
 #pragma warning(disable:4244) // possible loss of data
 #pragma warning(disable:4717) // recursive on all control paths
+#pragma warning(disable:4307) // integral constant overflow
 #endif
 
 #ifdef _MSC_VER
@@ -59,5 +60,12 @@ struct PInvokeTransitionFrame
     void*       m_pThread;  // unused by stack crawler, this is so GetThread is only called once per method
                             // can be an invalid pointer in universal transition cases (which never need to call GetThread)
     uint32_t    m_Flags;  // PInvokeTransitionFrameFlags
+};
+
+// Should be synchronized with System.Private.CoreLib/src/System/Runtime/CompilerServices/StaticClassConstructionContext.cs
+struct StaticClassConstructionContext
+{
+    void*       m_cctorMethodAddress;
+    uint32_t    m_initialized;
 };
 #endif

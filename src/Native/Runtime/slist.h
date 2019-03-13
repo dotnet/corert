@@ -1,6 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+
+#ifndef __slist_h__
+#define __slist_h__
+
 #include "forward_declarations.h"
 
 MSVC_SAVE_WARNING_STATE()
@@ -118,3 +122,4 @@ private:
 
 MSVC_RESTORE_WARNING_STATE()
 
+#endif // __slist_h__

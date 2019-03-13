@@ -71,7 +71,7 @@ struct JitInterfaceCallbacks
     unsigned (* getClassNumInstanceFields)(void * thisHandle, CorInfoException** ppException, void* cls);
     void* (* getFieldInClass)(void * thisHandle, CorInfoException** ppException, void* clsHnd, int num);
     int (* checkMethodModifier)(void * thisHandle, CorInfoException** ppException, void* hMethod, const char* modifier, int fOptional);
-    int (* getNewHelper)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, void* callerHandle);
+    int (* getNewHelper)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, void* callerHandle, bool* pHasSideEffects);
     int (* getNewArrHelper)(void * thisHandle, CorInfoException** ppException, void* arrayCls);
     int (* getCastingHelper)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, bool fThrowing);
     int (* getSharedCCtorHelper)(void * thisHandle, CorInfoException** ppException, void* clsHnd);
@@ -92,6 +92,7 @@ struct JitInterfaceCallbacks
     int (* compareTypesForCast)(void * thisHandle, CorInfoException** ppException, void* fromClass, void* toClass);
     int (* compareTypesForEquality)(void * thisHandle, CorInfoException** ppException, void* cls1, void* cls2);
     void* (* mergeClasses)(void * thisHandle, CorInfoException** ppException, void* cls1, void* cls2);
+    int (* isMoreSpecificType)(void * thisHandle, CorInfoException** ppException, void* cls1, void* cls2);
     void* (* getParentType)(void * thisHandle, CorInfoException** ppException, void* cls);
     int (* getChildType)(void * thisHandle, CorInfoException** ppException, void* clsHnd, void* clsRet);
     int (* satisfiesClassConstraints)(void * thisHandle, CorInfoException** ppException, void* cls);
@@ -736,10 +737,10 @@ public:
         return _ret;
     }
 
-    virtual int getNewHelper(void* pResolvedToken, void* callerHandle)
+    virtual int getNewHelper(void* pResolvedToken, void* callerHandle, bool* pHasSideEffects)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _callbacks->getNewHelper(_thisHandle, &pException, pResolvedToken, callerHandle);
+        int _ret = _callbacks->getNewHelper(_thisHandle, &pException, pResolvedToken, callerHandle, pHasSideEffects);
         if (pException != nullptr)
             throw pException;
         return _ret;
@@ -918,6 +919,15 @@ public:
     {
         CorInfoException* pException = nullptr;
         void* _ret = _callbacks->mergeClasses(_thisHandle, &pException, cls1, cls2);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual int isMoreSpecificType(void* cls1, void* cls2)
+    {
+        CorInfoException* pException = nullptr;
+        int _ret = _callbacks->isMoreSpecificType(_thisHandle, &pException, cls1, cls2);
         if (pException != nullptr)
             throw pException;
         return _ret;

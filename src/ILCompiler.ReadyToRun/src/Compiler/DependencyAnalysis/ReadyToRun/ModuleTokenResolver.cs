@@ -89,6 +89,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return new ModuleToken(ecmaField.Module, ecmaField.Handle);
             }
 
+            ModuleToken token;
+            if (_fieldToRefTokens.TryGetValue(field, out token))
+            {
+                return token;
+            }
+
             if (throwIfNotFound)
             {
                 throw new NotImplementedException();
@@ -133,6 +139,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return;
             }
 
+            _fieldToRefTokens[field] = token;
             switch (token.TokenType)
             {
                 case CorTokenType.mdtMemberRef:

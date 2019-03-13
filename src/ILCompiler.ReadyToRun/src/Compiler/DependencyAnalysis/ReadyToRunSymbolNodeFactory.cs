@@ -4,10 +4,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection.PortableExecutable;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 
 using Internal.JitInterface;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -38,12 +41,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public ISymbolNode ReadyToRunHelper(ReadyToRunHelperId id, object target, SignatureContext signatureContext)
         {
-            if (id == ReadyToRunHelperId.NecessaryTypeHandle)
-            {
-                // We treat TypeHandle and NecessaryTypeHandle the same - don't emit two copies of the same import
-                id = ReadyToRunHelperId.TypeHandle;
-            }
-
             if (!_r2rHelpers.TryGetValue(id, out Dictionary<object, ISymbolNode> helperNodeMap))
             {
                 helperNodeMap = new Dictionary<object, ISymbolNode>();
@@ -93,6 +90,10 @@ namespace ILCompiler.DependencyAnalysis
                     helperNode = CreateTypeHandleHelper((TypeDesc)target, signatureContext);
                     break;
 
+                case ReadyToRunHelperId.MethodHandle:
+                    helperNode = CreateMethodHandleHelper((MethodWithToken)target, signatureContext);
+                    break;
+
                 case ReadyToRunHelperId.FieldHandle:
                     helperNode = CreateFieldHandleHelper((FieldDesc)target, signatureContext);
                     break;
@@ -105,8 +106,20 @@ namespace ILCompiler.DependencyAnalysis
                     helperNode = CreateDelegateCtorHelper((DelegateCreationInfo)target, signatureContext);
                     break;
 
+                case ReadyToRunHelperId.CctorTrigger:
+                    helperNode = CreateCctorTrigger((TypeDesc)target, signatureContext);
+                    break;
+
+                case ReadyToRunHelperId.TypeDictionary:
+                    helperNode = CreateTypeDictionary((TypeDesc)target, signatureContext);
+                    break;
+
+                case ReadyToRunHelperId.MethodDictionary:
+                    helperNode = CreateMethodDictionary((MethodWithToken)target, signatureContext);
+                    break;
+
                 default:
-                    throw new NotImplementedException();
+                    throw new NotImplementedException(id.ToString());
             }
 
             helperNodeMap.Add(target, helperNode);
@@ -192,6 +205,20 @@ namespace ILCompiler.DependencyAnalysis
                 new TypeFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_TypeHandle, type, signatureContext));
         }
 
+        private ISymbolNode CreateMethodHandleHelper(MethodWithToken method, SignatureContext signatureContext)
+        {
+            return new PrecodeHelperImport(
+                _codegenNodeFactory,
+                _codegenNodeFactory.MethodSignature(
+                    ReadyToRunFixupKind.READYTORUN_FIXUP_MethodHandle,
+                    method.Method,
+                    constrainedType: null,
+                    method.Token,
+                    isUnboxingStub: false,
+                    isInstantiatingStub: method.Method.HasInstantiation,
+                    signatureContext));
+        }
+
         private ISymbolNode CreateFieldHandleHelper(FieldDesc field, SignatureContext signatureContext)
         {
             return new PrecodeHelperImport(
@@ -201,22 +228,75 @@ namespace ILCompiler.DependencyAnalysis
 
         private ISymbolNode CreateVirtualCallHelper(MethodWithToken methodWithToken, SignatureContext signatureContext)
         {
-            return new DelayLoadHelperImport(
+            return new DelayLoadHelperMethodImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.DispatchImports,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_Obj,
+                methodWithToken,
+                useInstantiatingStub: false,
                 _codegenNodeFactory.MethodSignature(
                     ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry, methodWithToken.Method,
                     constrainedType: null, 
                     methodWithToken.Token, 
                     signatureContext: signatureContext, 
                     isUnboxingStub: false, 
-                    isInstantiatingStub: false));
+                    isInstantiatingStub: false),
+                signatureContext);
         }
 
         private ISymbolNode CreateDelegateCtorHelper(DelegateCreationInfo info, SignatureContext signatureContext)
         {
             return info.Constructor;
+        }
+
+        private ISymbolNode CreateCctorTrigger(TypeDesc type, SignatureContext signatureContext)
+        {
+            return new DelayLoadHelperImport(
+                _codegenNodeFactory,
+                _codegenNodeFactory.DispatchImports,
+                ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
+                new TypeFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_CctorTrigger, type, signatureContext));
+        }
+
+        private ISymbolNode CreateTypeDictionary(TypeDesc type, SignatureContext signatureContext)
+        {
+            return new PrecodeHelperImport(
+                _codegenNodeFactory,
+                new TypeFixupSignature(
+                    ReadyToRunFixupKind.READYTORUN_FIXUP_TypeDictionary,
+                    type,
+                    signatureContext));
+        }
+
+        private ISymbolNode CreateMethodDictionary(MethodWithToken method, SignatureContext signatureContext)
+        {
+            return new PrecodeHelperImport(
+                _codegenNodeFactory,
+                _codegenNodeFactory.MethodSignature(
+                    ReadyToRunFixupKind.READYTORUN_FIXUP_MethodDictionary, 
+                    method.Method, 
+                    constrainedType: null, 
+                    methodToken: method.Token, 
+                    isUnboxingStub: false,
+                    isInstantiatingStub: true,
+                    signatureContext));
+        }
+
+        private readonly Dictionary<FieldDesc, ISymbolNode> _fieldAddressCache = new Dictionary<FieldDesc, ISymbolNode>();
+
+        public ISymbolNode FieldAddress(FieldDesc fieldDesc, SignatureContext signatureContext)
+        {
+            ISymbolNode result;
+            if (!_fieldAddressCache.TryGetValue(fieldDesc, out result))
+            {
+                result = new DelayLoadHelperImport(
+                    _codegenNodeFactory,
+                    _codegenNodeFactory.HelperImports,
+                    ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
+                    new FieldFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_FieldAddress, fieldDesc, signatureContext));
+                _fieldAddressCache.Add(fieldDesc, result);
+            }
+            return result;
         }
 
         private readonly Dictionary<ILCompiler.ReadyToRunHelper, ISymbolNode> _helperCache = new Dictionary<ILCompiler.ReadyToRunHelper, ISymbolNode>();
@@ -485,11 +565,16 @@ namespace ILCompiler.DependencyAnalysis
                     r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_FltRound;
                     break;
 
-                case ILCompiler.ReadyToRunHelper.GetRefAny:
-                    // TODO-PERF: currently not implemented in Crossgen
-                    ThrowHelper.ThrowInvalidProgramException();
-                    // ThrowInvalidProgramException should never return
-                    throw new NotImplementedException();
+                case ILCompiler.ReadyToRunHelper.MonitorEnter:
+                case ILCompiler.ReadyToRunHelper.MonitorExit:
+                case ILCompiler.ReadyToRunHelper.MonitorEnterStatic:
+                case ILCompiler.ReadyToRunHelper.MonitorExitStatic:
+                case ILCompiler.ReadyToRunHelper.GetRefAny: // TODO-PERF: currently not implemented in Crossgen
+                    throw new RequiresRuntimeJitException(helper.ToString());
+
+                case ILCompiler.ReadyToRunHelper.TypeHandleToRuntimeTypeHandle:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GetRuntimeTypeHandle;
+                    break;
 
                 // JIT32 x86-specific write barriers
                 case ILCompiler.ReadyToRunHelper.WriteBarrier_EAX:
@@ -532,6 +617,12 @@ namespace ILCompiler.DependencyAnalysis
                     r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_EndCatch;
                     break;
 
+                case ILCompiler.ReadyToRunHelper.PInvokeBegin:
+                case ILCompiler.ReadyToRunHelper.PInvokeEnd:
+                case ILCompiler.ReadyToRunHelper.ReversePInvokeEnter:
+                case ILCompiler.ReadyToRunHelper.ReversePInvokeExit:
+                    throw new RequiresRuntimeJitException(helper.ToString());
+
                 default:
                     throw new NotImplementedException(helper.ToString());
             }
@@ -553,13 +644,16 @@ namespace ILCompiler.DependencyAnalysis
             MethodAndCallSite cellKey = new MethodAndCallSite(method, callSite);
             if (!_interfaceDispatchCells.TryGetValue(cellKey, out ISymbolNode dispatchCell))
             {
-                dispatchCell = new DelayLoadHelperImport(
+                dispatchCell = new DelayLoadHelperMethodImport(
                     _codegenNodeFactory,
                     _codegenNodeFactory.DispatchImports,
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_MethodCall |
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_FLAG_VSD,
+                    new MethodWithToken(method, methodToken),
+                    useInstantiatingStub: false,
                     _codegenNodeFactory.MethodSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry, method,
-                        null, methodToken, signatureContext, isUnboxingStub, isInstantiatingStub: false),
+                        null, methodToken, isUnboxingStub, isInstantiatingStub: false, signatureContext),
+                    signatureContext,
                     callSite);
 
                 _interfaceDispatchCells.Add(cellKey, dispatchCell);
@@ -578,8 +672,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (!_genericDictionaryCache.TryGetValue(method, out ISortableSymbolNode genericDictionary))
             {
-                genericDictionary = new PrecodeHelperImport(
+                genericDictionary = new PrecodeHelperMethodImport(
                     _codegenNodeFactory,
+                    method,
                     _codegenNodeFactory.MethodSignature(
                         ReadyToRunFixupKind.READYTORUN_FIXUP_MethodDictionary,
                         method,
@@ -615,12 +710,13 @@ namespace ILCompiler.DependencyAnalysis
             if (!_delegateCtors.TryGetValue(ctorKey, out ISymbolNode ctorNode))
             {
                 IMethodNode targetMethodNode = _codegenNodeFactory.MethodEntrypoint(
-                    targetMethod, 
+                    targetMethod,
                     constrainedType: null, 
                     originalMethod: null,
                     methodToken: methodToken,
-                    signatureContext: signatureContext, 
-                    isUnboxingStub: false);
+                    isUnboxingStub: false,
+                    isInstantiatingStub: false,
+                    signatureContext: signatureContext);
 
                 ctorNode = new DelayLoadHelperImport(
                     _codegenNodeFactory,
@@ -665,15 +761,23 @@ namespace ILCompiler.DependencyAnalysis
             public readonly ReadyToRunFixupKind FixupKind;
             public readonly TypeDesc TypeArgument;
             public readonly MethodWithToken MethodArgument;
-            public readonly TypeDesc ContextType;
+            public readonly FieldDesc FieldArgument;
+            public readonly GenericContext MethodContext;
 
-            public GenericLookupKey(CORINFO_RUNTIME_LOOKUP_KIND lookupKind, ReadyToRunFixupKind fixupKind, TypeDesc typeArgument, MethodWithToken methodArgument, TypeDesc contextType)
+            public GenericLookupKey(
+                CORINFO_RUNTIME_LOOKUP_KIND lookupKind,
+                ReadyToRunFixupKind fixupKind,
+                TypeDesc typeArgument,
+                MethodWithToken methodArgument,
+                FieldDesc fieldArgument,
+                GenericContext methodContext)
             {
                 LookupKind = lookupKind;
                 FixupKind = fixupKind;
                 TypeArgument = typeArgument;
                 MethodArgument = methodArgument;
-                ContextType = contextType;
+                FieldArgument = fieldArgument;
+                MethodContext = methodContext;
             }
 
             public bool Equals(GenericLookupKey other)
@@ -682,7 +786,8 @@ namespace ILCompiler.DependencyAnalysis
                     FixupKind == other.FixupKind &&
                     RuntimeDeterminedTypeHelper.Equals(TypeArgument, other.TypeArgument) &&
                     RuntimeDeterminedTypeHelper.Equals(MethodArgument?.Method ?? null, other.MethodArgument?.Method ?? null) &&
-                    ContextType == other.ContextType;
+                    RuntimeDeterminedTypeHelper.Equals(FieldArgument, other.FieldArgument) &&
+                    MethodContext.Equals(other.MethodContext);
             }
 
             public override bool Equals(object obj)
@@ -696,7 +801,8 @@ namespace ILCompiler.DependencyAnalysis
                     (int)FixupKind +
                     (TypeArgument != null ? 31 * RuntimeDeterminedTypeHelper.GetHashCode(TypeArgument) : 0) +
                     (MethodArgument != null ? 31 * RuntimeDeterminedTypeHelper.GetHashCode(MethodArgument.Method) : 0) +
-                    97 * (ContextType?.GetHashCode() ?? 0));
+                    (FieldArgument != null ? 31 * RuntimeDeterminedTypeHelper.GetHashCode(FieldArgument) : 0) +
+                    MethodContext.GetHashCode());
             }
         }
 
@@ -706,18 +812,18 @@ namespace ILCompiler.DependencyAnalysis
             CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
             ReadyToRunHelperId helperId,
             object helperArgument,
-            TypeDesc contextType,
+            TypeDesc constrainedType,
+            GenericContext methodContext,
             SignatureContext signatureContext)
         {
             switch (helperId)
             {
-                case ReadyToRunHelperId.NecessaryTypeHandle:
                 case ReadyToRunHelperId.TypeHandle:
                     return GenericLookupTypeHelper(
                         runtimeLookupKind,
                         ReadyToRunFixupKind.READYTORUN_FIXUP_TypeHandle,
-                        (TypeDesc)helperArgument,
-                        contextType,
+                        helperArgument,
+                        methodContext,
                         signatureContext);
 
                 case ReadyToRunHelperId.MethodHandle:
@@ -725,7 +831,8 @@ namespace ILCompiler.DependencyAnalysis
                         runtimeLookupKind,
                         ReadyToRunFixupKind.READYTORUN_FIXUP_MethodHandle,
                         (MethodWithToken)helperArgument,
-                        contextType,
+                        constrainedType,
+                        methodContext,
                         signatureContext);
 
                 case ReadyToRunHelperId.MethodEntry:
@@ -733,7 +840,8 @@ namespace ILCompiler.DependencyAnalysis
                         runtimeLookupKind,
                         ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
                         (MethodWithToken)helperArgument,
-                        contextType,
+                        constrainedType,
+                        methodContext,
                         signatureContext);
 
                 case ReadyToRunHelperId.MethodDictionary:
@@ -741,7 +849,16 @@ namespace ILCompiler.DependencyAnalysis
                         runtimeLookupKind,
                         ReadyToRunFixupKind.READYTORUN_FIXUP_MethodHandle,
                         (MethodWithToken)helperArgument,
-                        contextType,
+                        constrainedType,
+                        methodContext,
+                        signatureContext);
+
+                case ReadyToRunHelperId.TypeDictionary:
+                    return GenericLookupTypeHelper(
+                        runtimeLookupKind,
+                        ReadyToRunFixupKind.READYTORUN_FIXUP_TypeDictionary,
+                        (TypeDesc)helperArgument,
+                        methodContext,
                         signatureContext);
 
                 case ReadyToRunHelperId.VirtualDispatchCell:
@@ -749,22 +866,45 @@ namespace ILCompiler.DependencyAnalysis
                         runtimeLookupKind,
                         ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry,
                         (MethodWithToken)helperArgument,
-                        contextType,
+                        constrainedType,
+                        methodContext,
+                        signatureContext);
+
+                case ReadyToRunHelperId.FieldHandle:
+                    return GenericLookupFieldHelper(
+                        runtimeLookupKind,
+                        ReadyToRunFixupKind.READYTORUN_FIXUP_FieldHandle,
+                        (FieldDesc)helperArgument,
+                        methodContext,
                         signatureContext);
 
                 default:
-                    throw new NotImplementedException();
+                    throw new NotImplementedException(helperId.ToString());
             }
         }
 
         private ISymbolNode GenericLookupTypeHelper(
             CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
             ReadyToRunFixupKind fixupKind,
-            TypeDesc typeArgument,
-            TypeDesc contextType,
+            object helperArgument,
+            GenericContext methodContext,
             SignatureContext signatureContext)
         {
-            GenericLookupKey key = new GenericLookupKey(runtimeLookupKind, fixupKind, typeArgument, methodArgument: null, contextType);
+            TypeDesc typeArgument;
+            if (helperArgument is MethodWithToken methodWithToken)
+            {
+                typeArgument = methodWithToken.Method.OwningType;
+            }
+            else if (helperArgument is FieldDesc fieldDesc)
+            {
+                typeArgument = fieldDesc.OwningType;
+            }
+            else
+            {
+                typeArgument = (TypeDesc)helperArgument;
+            }
+
+            GenericLookupKey key = new GenericLookupKey(runtimeLookupKind, fixupKind, typeArgument, methodArgument: null, fieldArgument: null, methodContext);
             ISymbolNode node;
             if (!_genericLookupHelpers.TryGetValue(key, out node))
             {
@@ -772,7 +912,28 @@ namespace ILCompiler.DependencyAnalysis
                     _codegenNodeFactory,
                     _codegenNodeFactory.HelperImports,
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
-                    new GenericLookupSignature(runtimeLookupKind, fixupKind, typeArgument, methodArgument: null, contextType, signatureContext));
+                    new GenericLookupSignature(runtimeLookupKind, fixupKind, typeArgument, methodArgument: null, fieldArgument: null, methodContext, signatureContext));
+                _genericLookupHelpers.Add(key, node);
+            }
+            return node;
+        }
+
+        private ISymbolNode GenericLookupFieldHelper(
+            CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
+            ReadyToRunFixupKind fixupKind,
+            FieldDesc fieldArgument,
+            GenericContext methodContext,
+            SignatureContext signatureContext)
+        {
+            GenericLookupKey key = new GenericLookupKey(runtimeLookupKind, fixupKind, typeArgument: null, methodArgument: null, fieldArgument: fieldArgument, methodContext);
+            ISymbolNode node;
+            if (!_genericLookupHelpers.TryGetValue(key, out node))
+            {
+                node = new DelayLoadHelperImport(
+                    _codegenNodeFactory,
+                    _codegenNodeFactory.HelperImports,
+                    ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
+                    new GenericLookupSignature(runtimeLookupKind, fixupKind, typeArgument: null, methodArgument: null, fieldArgument: fieldArgument, methodContext, signatureContext));
                 _genericLookupHelpers.Add(key, node);
             }
             return node;
@@ -782,21 +943,72 @@ namespace ILCompiler.DependencyAnalysis
             CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
             ReadyToRunFixupKind fixupKind,
             MethodWithToken methodArgument,
-            TypeDesc contextType,
+            TypeDesc constrainedType,
+            GenericContext methodContext,
             SignatureContext signatureContext)
         {
-            GenericLookupKey key = new GenericLookupKey(runtimeLookupKind, fixupKind, typeArgument: null, methodArgument, contextType);
+            GenericLookupKey key = new GenericLookupKey(runtimeLookupKind, fixupKind, typeArgument: null, methodArgument, fieldArgument: null, methodContext);
             ISymbolNode node;
             if (!_genericLookupHelpers.TryGetValue(key, out node))
             {
-                node = new DelayLoadHelperImport(
+                node = new DelayLoadHelperMethodImport(
                     _codegenNodeFactory,
                     _codegenNodeFactory.HelperImports,
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
-                    new GenericLookupSignature(runtimeLookupKind,  fixupKind,  typeArgument: null, methodArgument, contextType, signatureContext));
+                    methodArgument,
+                    useInstantiatingStub: false,
+                    new GenericLookupSignature(runtimeLookupKind, fixupKind, constrainedType, methodArgument, fieldArgument: null, methodContext, signatureContext),
+                    signatureContext);
                 _genericLookupHelpers.Add(key, node);
             }
             return node;
+        }
+
+        Dictionary<int, ObjectNode> _rvaFieldSymbols = new Dictionary<int, ObjectNode>();
+
+        public ObjectNode GetRvaFieldNode(FieldDesc fieldDesc)
+        {
+            Debug.Assert(fieldDesc.HasRva);
+            EcmaField ecmaField = (EcmaField)fieldDesc.GetTypicalFieldDefinition();
+
+            if (!_codegenNodeFactory.CompilationModuleGroup.ContainsType(ecmaField.OwningType))
+            {
+                // TODO: cross-bubble RVA field
+                throw new NotSupportedException($"{ecmaField} ... {ecmaField.Module.Assembly}");
+            }
+            if (_codegenNodeFactory.TypeSystemContext.InputFilePaths.Count > 1)
+            {
+                // TODO: RVA fields in merged multi-file compilation
+                throw new NotSupportedException($"{ecmaField} ... {string.Join("; ", _codegenNodeFactory.TypeSystemContext.InputFilePaths.Keys)}");
+            }
+
+            int rva = ecmaField.MetadataReader.GetFieldDefinition(ecmaField.Handle).GetRelativeVirtualAddress();
+            ObjectNode rvaFieldNode;
+            if (!_rvaFieldSymbols.TryGetValue(rva, out rvaFieldNode))
+            {
+                PEReader ilReader = ecmaField.Module.PEReader;
+                int sectionIndex;
+                int sectionRelativeOffset = 0;
+                ISymbolNode sectionStartNode = null;
+                for (sectionIndex = ilReader.PEHeaders.SectionHeaders.Length - 1; sectionIndex >= 0; sectionIndex--)
+                {
+                    SectionHeader sectionHeader = ilReader.PEHeaders.SectionHeaders[sectionIndex];
+                    if (rva >= sectionHeader.VirtualAddress && rva < sectionHeader.VirtualAddress + sectionHeader.VirtualSize)
+                    {
+                        sectionRelativeOffset = rva - sectionHeader.VirtualAddress;
+                        sectionStartNode = _codegenNodeFactory.SectionStartNode(sectionHeader.Name);
+                        break;
+                    }
+                }
+                if (sectionIndex < 0)
+                {
+                    // Target section for the RVA field was not found
+                    throw new NotImplementedException(fieldDesc.ToString());
+                }
+                rvaFieldNode = new RVAFieldNode(sectionStartNode, sectionRelativeOffset);
+                _rvaFieldSymbols.Add(rva, rvaFieldNode);
+            }
+            return rvaFieldNode;
         }
     }
 }

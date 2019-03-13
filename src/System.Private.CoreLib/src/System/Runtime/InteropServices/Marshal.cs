@@ -27,6 +27,11 @@ namespace System.Runtime.InteropServices
             return PInvokeMarshal.GetLastWin32Error();
         }
 
+        internal static void SetLastWin32Error(int errorCode)
+        {
+            PInvokeMarshal.SetLastWin32Error(errorCode);
+        }
+
         public static int GetHRForLastWin32Error()
         {
             return PInvokeMarshal.GetHRForLastWin32Error();
@@ -78,6 +83,35 @@ namespace System.Runtime.InteropServices
         {
             if (errorCode < 0)
                 throw RuntimeAugments.Callbacks.GetExceptionForHR(errorCode);
+        }
+
+        internal static IntPtr AllocBSTR(int length)
+        {
+            return PInvokeMarshal.AllocBSTR(length);
+        }
+
+        public static void FreeBSTR(IntPtr ptr)
+        {
+            PInvokeMarshal.FreeBSTR(ptr);
+        }
+
+        public static int GetHRForException(Exception e)
+        {
+            return PInvokeMarshal.GetHRForException(e);
+        }
+
+        // Used by DispatchWrapper
+        internal static IntPtr GetIDispatchForObject(object o) => throw new PlatformNotSupportedException();
+        internal static int Release(IntPtr pUnk) => throw new PlatformNotSupportedException();
+
+        internal static unsafe uint SysStringByteLen(IntPtr s)
+        {
+            return *(((uint*)s) - 1);
+        }
+
+        internal static bool IsPinnable(object o)
+        {
+            return (o == null) || o.EETypePtr.MightBeBlittable();
         }
     }
 }

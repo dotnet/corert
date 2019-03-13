@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 
 using Internal.JitInterface;
 using Internal.Text;
@@ -20,7 +21,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly MethodWithToken _methodArgument;
 
-        private readonly TypeDesc _contextType;
+        private readonly FieldDesc _fieldArgument;
+
+        private readonly GenericContext _methodContext;
 
         private readonly SignatureContext _signatureContext;
 
@@ -29,14 +32,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadyToRunFixupKind fixupKind, 
             TypeDesc typeArgument, 
             MethodWithToken methodArgument,
-            TypeDesc contextType,
+            FieldDesc fieldArgument,
+            GenericContext methodContext,
             SignatureContext signatureContext)
         {
+            Debug.Assert(typeArgument != null || methodArgument != null || fieldArgument != null);
             _runtimeLookupKind = runtimeLookupKind;
             _fixupKind = fixupKind;
             _typeArgument = typeArgument;
             _methodArgument = methodArgument;
-            _contextType = contextType;
+            _fieldArgument = fieldArgument;
+            _methodContext = methodContext;
             _signatureContext = signatureContext;
         }
 
@@ -63,7 +69,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                     case CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ:
                         dataBuilder.EmitByte((byte)ReadyToRunFixupKind.READYTORUN_FIXUP_ThisObjDictionaryLookup);
-                        dataBuilder.EmitTypeSignature(_contextType, _signatureContext);
+                        dataBuilder.EmitTypeSignature(_methodContext.ContextType, _signatureContext);
                         break;
 
                     default:
@@ -71,20 +77,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
 
                 dataBuilder.EmitByte((byte)_fixupKind);
-                if (_typeArgument != null)
-                {
-                    dataBuilder.EmitTypeSignature(_typeArgument, _signatureContext);
-                }
-                else if (_methodArgument != null)
+                if (_methodArgument != null)
                 {
                     dataBuilder.EmitMethodSignature(
                         method: _methodArgument.Method,
-                        constrainedType: null,
+                        constrainedType: _typeArgument,
                         methodToken: _methodArgument.Token,
                         enforceDefEncoding: false,
                         context: _signatureContext,
                         isUnboxingStub: false,
-                        isInstantiatingStub: false);
+                        isInstantiatingStub: true);
+                }
+                else if (_typeArgument != null)
+                {
+                    dataBuilder.EmitTypeSignature(_typeArgument, _signatureContext);
+                }
+                else if (_fieldArgument != null)
+                {
+                    dataBuilder.EmitFieldSignature(_fieldArgument, _signatureContext);
                 }
                 else
                 {
@@ -103,32 +113,29 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append(" / ");
             sb.Append(_fixupKind.ToString());
             sb.Append(": ");
-            if (_typeArgument != null)
-            {
-                RuntimeDeterminedTypeHelper.WriteTo(_typeArgument, sb);
-            }
-            else if (_methodArgument != null)
+            if (_methodArgument != null)
             {
                 RuntimeDeterminedTypeHelper.WriteTo(_methodArgument.Method, sb);
                 if (!_methodArgument.Token.IsNull)
                 {
                     sb.Append(" [");
                     sb.Append(_methodArgument.Token.MetadataReader.GetString(_methodArgument.Token.MetadataReader.GetAssemblyDefinition().Name));
-                    sb.Append(":");
+                    sb.Append(":"); ;
                     sb.Append(((uint)_methodArgument.Token.Token).ToString("X8"));
                     sb.Append("]");
                 }
             }
-            else
+            if (_typeArgument != null)
             {
-                throw new NotImplementedException();
+                RuntimeDeterminedTypeHelper.WriteTo(_typeArgument, sb);
             }
-            if (_contextType != null)
+            if (_fieldArgument != null)
             {
-                sb.Append(" (");
-                sb.Append(_contextType.ToString());
-                sb.Append(")");
+                RuntimeDeterminedTypeHelper.WriteTo(_fieldArgument, sb);
             }
+            sb.Append(" (");
+            _methodContext.AppendMangledName(nameMangler, sb);
+            sb.Append(")");
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)

@@ -18,6 +18,7 @@ using System.Collections.Generic;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
+using Internal.Reflection.Core.NonPortable;
 
 using Internal.Reflection.Tracing;
 using System.Security;
@@ -27,7 +28,7 @@ namespace System.Reflection.Runtime.Assemblies
     //
     // The runtime's implementation of an Assembly. 
     //
-    internal abstract partial class RuntimeAssembly : Assembly, IEquatable<RuntimeAssembly>
+    internal abstract partial class RuntimeAssembly : Assembly, IEquatable<RuntimeAssembly>, IRuntimeImplemented
     {
         public bool Equals(RuntimeAssembly other)
         {

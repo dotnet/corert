@@ -16,6 +16,7 @@
 #include "gcenv.h"
 #include "gcheaputilities.h"
 #include "eventtrace.h"
+#include "profheapwalkhelper.h"
 
 //---------------------------------------------------------------------------------------
 //

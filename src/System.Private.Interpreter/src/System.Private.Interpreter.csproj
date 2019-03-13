@@ -5,6 +5,7 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
@@ -20,13 +21,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\TypeSystem\IL\EcmaMethodIL.cs" />
-    <Compile Include="..\..\Common\src\TypeSystem\IL\ILImporter.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\ILReader.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\StackValueKind.cs" />
     <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelStack.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
     <Compile Include="Internal\Runtime\Interpreter\StackItem.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Internal\Runtime\Interpreter\ILImporter.Interpreter.cs" />
     <Compile Include="Internal\Runtime\Interpreter\ILInterpreter.cs" />
     <Compile Include="Internal\Runtime\Interpreter\InterpreterCallInterceptor.cs" />
     <Compile Include="Internal\Runtime\Interpreter\InterpreterExecutionStrategy.cs" />

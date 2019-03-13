@@ -24,7 +24,6 @@
       <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
     </ProjectReference>
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Private.Reflection.Metadata.Ecma335.dll" />
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj">
       <Aliases>global,System_Private_CoreLib</Aliases>
@@ -85,6 +84,7 @@
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\UnsafeIntrinsics.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\Marshaller.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\MarshalHelpers.cs" />
+    <Compile Include="$(TypeSystemBasePath)\Interop\IL\MarshalUtils.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\NativeStructType.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\PInvokeDelegateWrapper.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\PInvokeDelegateWrapperConstructor.cs" />
@@ -133,6 +133,7 @@
     <Compile Include="$(ILCompilerBasePath)\Compiler\JitHelper.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\GenericDictionaryLookup.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\SimdHelper.cs" />
+    <Compile Include="$(ILCompilerBasePath)\Compiler\HardwareIntrinsicHelpers.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\MethodExtensions.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\ReadyToRun.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\TypeExtensions.cs" />
@@ -140,7 +141,6 @@
     <Compile Include="$(ILCompilerBasePath)\Compiler\NodeMangler.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DevirtualizationManager.cs" />
     <Compile Include="$(ILCompilerBasePath)\IL\Stubs\PInvokeILProvider.cs" />
-    <Compile Include="$(ILCompilerRyuJitBasePath)\Compiler\DependencyAnalysis\IMethodCodeNode.cs" />
     <Compile Include="$(ILCompilerRyuJitBasePath)\JitInterface\CorInfoImpl.RyuJit.cs" />
     <Compile Include="$(DependencyAnalysisFrameworkBasePath)\IDependencyNode.cs" />
     <Compile Include="$(DependencyAnalysisFrameworkBasePath)\DependencyNode.cs" />

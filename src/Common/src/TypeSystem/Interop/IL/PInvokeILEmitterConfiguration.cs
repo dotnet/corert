@@ -2,17 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
 namespace Internal.IL
 {
-    public class PInvokeILEmitterConfiguration
+    public abstract class PInvokeILEmitterConfiguration
     {
-        public bool? ForceLazyResolution { get; private set; }
-
-        public PInvokeILEmitterConfiguration(bool? forceLazyResolution)
-        {
-            ForceLazyResolution = forceLazyResolution;
-        }
+        public abstract bool GenerateDirectCall(string libraryName, string methodName);
     }
 }

@@ -146,8 +146,11 @@ namespace ILCompiler.DependencyAnalysis
             public GenericLookupResult UnwrapNullableType(TypeDesc type)
             {
                 // An actual unwrap nullable lookup is only required if the type is exactly a runtime 
-                // determined type associated with System.__UniversalCanon itself
-                if (type.IsRuntimeDeterminedType && ((RuntimeDeterminedType)type).CanonicalType.IsCanonicalDefinitionType(CanonicalFormKind.Universal))
+                // determined type associated with System.__UniversalCanon itself, or if it's
+                // a runtime determined instance of Nullable.
+                if (type.IsRuntimeDeterminedType && (
+                    ((RuntimeDeterminedType)type).CanonicalType.IsCanonicalDefinitionType(CanonicalFormKind.Universal) ||
+                    ((RuntimeDeterminedType)type).CanonicalType.IsNullable))
                     return _unwrapNullableSymbols.GetOrAdd(type);
                 else
                 {

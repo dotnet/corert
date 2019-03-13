@@ -414,7 +414,6 @@ namespace Internal.Reflection.Execution
                 byte* pBlobAsBytes;
                 uint cbBlob;
                 bool success = module.TryFindBlob((int)ReflectionMapBlob.DynamicInvokeTemplateData, out pBlobAsBytes, out cbBlob);
-                uint* pBlob = (uint*)pBlobAsBytes;
                 Debug.Assert(success && cbBlob > 4);
 
                 byte* pNativeLayoutInfoBlob;
@@ -426,13 +425,20 @@ namespace Internal.Reflection.Execution
                 // All methods referred from this blob are contained in the same type. The first UINT in the blob is a reloc to that EEType
                 if (module.Handle.IsTypeManager)
                 {
-                    // CoreRT uses 32bit relative relocs
-                    declaringTypeHandle = RuntimeAugments.CreateRuntimeTypeHandle((IntPtr)(pBlobAsBytes + *(int*)pBlobAsBytes));
+                    if (RuntimeAugments.SupportsRelativePointers)
+                    {
+                        // CoreRT uses 32bit relative relocs
+                        declaringTypeHandle = RuntimeAugments.CreateRuntimeTypeHandle((IntPtr)(pBlobAsBytes + *(int*)pBlobAsBytes));
+                    }
+                    else
+                    {
+                        declaringTypeHandle = RuntimeAugments.CreateRuntimeTypeHandle(*(IntPtr*)pBlobAsBytes);
+                    }
                 }
                 else
                 {
                     // .NET Native uses RVAs
-                    declaringTypeHandle = TypeLoaderEnvironment.RvaToRuntimeTypeHandle(module.Handle, pBlob[0]);
+                    declaringTypeHandle = TypeLoaderEnvironment.RvaToRuntimeTypeHandle(module.Handle, *(uint*)pBlobAsBytes);
                 }
 
                 // The index points to two entries: the token of the dynamic invoke method and the function pointer to the canonical method
@@ -440,7 +446,17 @@ namespace Internal.Reflection.Execution
                 uint index = cookie >> 1;
 
                 MethodNameAndSignature nameAndSignature;
-                RuntimeSignature nameAndSigSignature = RuntimeSignature.CreateFromNativeLayoutSignature(module.Handle, pBlob[index]);
+                RuntimeSignature nameAndSigSignature;
+
+                if (RuntimeAugments.SupportsRelativePointers)
+                {
+                    nameAndSigSignature = RuntimeSignature.CreateFromNativeLayoutSignature(module.Handle, ((uint*)pBlobAsBytes)[index]);
+                }
+                else
+                {
+                    nameAndSigSignature = RuntimeSignature.CreateFromNativeLayoutSignature(module.Handle, (uint)((IntPtr*)pBlobAsBytes)[index]);
+                }
+
                 success = TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutSignature(nameAndSigSignature, out nameAndSignature);
                 Debug.Assert(success);
 
@@ -449,14 +465,21 @@ namespace Internal.Reflection.Execution
 
                 if (module.Handle.IsTypeManager)
                 {
-                    // CoreRT uses 32bit relative relocs
-                    int* pRelPtr32 = &((int*)pBlob)[index + 1];
-                    dynamicInvokeMethod = (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
+                    if (RuntimeAugments.SupportsRelativePointers)
+                    {
+                        // CoreRT uses 32bit relative relocs
+                        int* pRelPtr32 = &((int*)pBlobAsBytes)[index + 1];
+                        dynamicInvokeMethod = (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
+                    }
+                    else
+                    {
+                        dynamicInvokeMethod = ((IntPtr*)pBlobAsBytes)[index + 1];
+                    }
                 }
                 else
                 {
                     // .NET Native uses RVAs
-                    dynamicInvokeMethod = TypeLoaderEnvironment.RvaToFunctionPointer(module.Handle, pBlob[index + 1]);
+                    dynamicInvokeMethod = TypeLoaderEnvironment.RvaToFunctionPointer(module.Handle, ((uint*)pBlobAsBytes)[index + 1]);
                 }
             }
             else
