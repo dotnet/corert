@@ -53,8 +53,11 @@ namespace ILCompiler.DependencyAnalysis
 
                     case ILOpcode.call:
                     case ILOpcode.callvirt:
-                        MethodDesc method = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
-                        HandleCall(ref list, factory, methodIL, method, ref tracker);
+                        var method = methodIL.GetObject(reader.ReadILToken()) as MethodDesc;
+                        if (method != null)
+                        {
+                            HandleCall(ref list, factory, methodIL, method, ref tracker);
+                        }
                         break;
 
                     default:
