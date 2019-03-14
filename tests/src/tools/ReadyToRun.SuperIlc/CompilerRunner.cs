@@ -82,9 +82,9 @@ public abstract class CompilerRunner
         }
     }
 
-    // <input>\a.dll -> <output>\a.ni.dll
+    // <input>\a.dll -> <output>\a.dll
     protected string GetOutputFileName(string assemblyFileName) =>
-        Path.Combine(_outputPath, $"{Path.GetFileNameWithoutExtension(assemblyFileName)}.ni{Path.GetExtension(assemblyFileName)}"); 
+        Path.Combine(_outputPath, $"{Path.GetFileName(assemblyFileName)}"); 
     protected string GetResponseFileName(string assemblyFileName) =>
         Path.Combine(_outputPath, $"{Path.GetFileNameWithoutExtension(assemblyFileName)}.{Path.GetFileNameWithoutExtension(CompilerFileName)}.rsp");
 }
