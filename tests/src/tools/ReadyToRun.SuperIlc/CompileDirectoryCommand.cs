@@ -67,7 +67,7 @@ namespace ReadyToRun.SuperIlc
             outputDirectory.Create();
 
             bool success = true;
-            List<string> _failedCompilationAssemblies = new List<string>();
+            List<string> failedCompilationAssemblies = new List<string>();
             int successfulCompileCount = 0;
 
             // Copy unmanaged files (runtime, native dependencies, resources, etc)
@@ -83,7 +83,7 @@ namespace ReadyToRun.SuperIlc
                     else
                     {
                         success = false;
-                        _failedCompilationAssemblies.Add(file);
+                        failedCompilationAssemblies.Add(file);
 
                         // On compile failure, pass through the input IL assembly so the output is still usable
                         File.Copy(file, Path.Combine(outputDirectory.FullName, Path.GetFileName(file)));
@@ -96,12 +96,12 @@ namespace ReadyToRun.SuperIlc
                 }
             }
 
-            Console.WriteLine($"Compiled {successfulCompileCount} assemblies.");
+            Console.WriteLine($"Compiled {successfulCompileCount}/{successfulCompileCount + failedCompilationAssemblies.Count} assemblies.");
 
-            if (_failedCompilationAssemblies.Count > 0)
+            if (failedCompilationAssemblies.Count > 0)
             {
-                Console.WriteLine($"Could not compile the following assemblies:");
-                foreach (var assembly in _failedCompilationAssemblies)
+                Console.WriteLine($"Failed to compile {failedCompilationAssemblies.Count} assemblies:");
+                foreach (var assembly in failedCompilationAssemblies)
                 {
                     Console.WriteLine(assembly);
                 }
