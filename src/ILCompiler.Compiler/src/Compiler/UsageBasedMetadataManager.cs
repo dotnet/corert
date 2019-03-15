@@ -375,8 +375,7 @@ namespace ILCompiler
 
             foreach (var method in GetCompiledMethods())
             {
-                if (!method.IsCanonicalMethod(CanonicalFormKind.Specific) &&
-                    !IsReflectionBlocked(method))
+                if (!IsReflectionBlocked(method))
                 {
                     if ((reflectableTypes[method.OwningType] & MetadataCategory.RuntimeMapping) != 0)
                         reflectableMethods[method] |= MetadataCategory.RuntimeMapping;
