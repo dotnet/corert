@@ -89,7 +89,8 @@ namespace ILCompiler.DependencyAnalysis
                         string name = tracker.GetLastString();
                         if (name != null
                             && methodIL.OwningMethod.OwningType is MetadataType mdType
-                            && ResolveType(name, mdType.Module, out TypeDesc type, out ModuleDesc referenceModule))
+                            && ResolveType(name, mdType.Module, out TypeDesc type, out ModuleDesc referenceModule)
+                            && !factory.MetadataManager.IsReflectionBlocked(type))
                         {
                             const string reason = "Type.GetType";
                             list = list ?? new DependencyList();
@@ -111,7 +112,8 @@ namespace ILCompiler.DependencyAnalysis
                         string name = tracker.GetLastString();
                         TypeDesc type = tracker.GetLastType();
                         if (name != null
-                            && type != null)
+                            && type != null
+                            && !factory.MetadataManager.IsReflectionBlocked(type))
                         {
                             if (type.IsGenericDefinition)
                             {
@@ -124,7 +126,8 @@ namespace ILCompiler.DependencyAnalysis
                             }
 
                             MethodDesc reflectedMethod = type.GetMethod(name, null);
-                            if (reflectedMethod != null)
+                            if (reflectedMethod != null
+                                && !factory.MetadataManager.IsReflectionBlocked(reflectedMethod))
                             {
                                 if (reflectedMethod.HasInstantiation)
                                 {
