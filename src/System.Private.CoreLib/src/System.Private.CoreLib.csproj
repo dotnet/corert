@@ -294,7 +294,6 @@
     <Compile Condition="'$(TargetsUnix)'=='true'" Include="System\Type.Unix.cs" />
     <Compile Include="System\TypedReference.cs" />
     <Compile Include="System\TypeUnificationKey.cs" />
-    <Compile Include="System\TypeLoadException.cs" />
     <Compile Include="System\TypeLoadException.CoreRT.cs" />
     <Compile Include="System\ValueType.cs" />
     <Compile Include="System\Runtime\RuntimeExportAttribute.cs" />
