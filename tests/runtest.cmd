@@ -440,8 +440,8 @@ goto :eof
     ::
     :: Execute the app host entrypoint
     ::
-    echo Running test !__SourceFolder!\bin\%CoreRT_BuildType%\%CoreRT_BuildArch%\netcoreapp2.2\%Publish_Rid%\publish\!__SourceFileName!.exe
-    !__SourceFolder!\bin\%CoreRT_BuildType%\%CoreRT_BuildArch%\netcoreapp2.2\%Publish_Rid%\publish\!__SourceFileName!.exe
+    echo Running test !__SourceFolder!\bin\%CoreRT_BuildType%\%CoreRT_BuildArch%\netcoreapp2.1\%Publish_Rid%\publish\!__SourceFileName!.exe
+    !__SourceFolder!\bin\%CoreRT_BuildType%\%CoreRT_BuildArch%\netcoreapp2.1\%Publish_Rid%\publish\!__SourceFileName!.exe
     set __SavedErrorLevel=!ErrorLevel!
 
     goto :RecordTestResult
