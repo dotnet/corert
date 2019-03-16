@@ -790,14 +790,6 @@ namespace System
             return enumType.GetEnumUnderlyingType();
         }
 
-        public static Array GetValues(Type enumType)
-        {
-            if (enumType == null)
-                throw new ArgumentNullException(nameof(enumType));
-
-            return enumType.GetEnumValues();
-        }
-
         internal static ulong[] InternalGetValues(RuntimeType enumType)
         {
             // Get all of the values

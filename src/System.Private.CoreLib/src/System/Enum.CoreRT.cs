@@ -173,6 +173,35 @@ namespace System
             return ReflectionAugments.ReflectionCoreCallbacks.GetEnumInfo(enumType);
         }
 
+        public static Array GetValues(Type enumType)
+        {
+            if (enumType == null)
+                throw new ArgumentNullException(nameof(enumType));
+
+            if (!enumType.IsRuntimeImplemented())
+                return enumType.GetEnumValues();
+
+            if (!enumType.IsEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum);
+
+            Array values = GetEnumInfo(enumType).Values;
+            int count = values.Length;
+#if PROJECTN
+            Array result = Array.CreateInstance(enumType, count);
+#else
+            // Without universal shared generics, chances are slim that we'll have the appropriate
+            // array type available. Offer an escape hatch that avoids a MissingMetadataException
+            // at the cost of a small appcompat risk.
+            Array result;
+            if (AppContext.TryGetSwitch("Switch.System.Enum.RelaxedGetValues", out bool isRelaxed) && isRelaxed)
+                result = Array.CreateInstance(Enum.GetUnderlyingType(enumType), count);
+            else
+                result = Array.CreateInstance(enumType, count);
+#endif
+            Array.CopyImplValueTypeArrayNoInnerGcRefs(values, 0, result, 0, count);
+            return result;
+        }
+
         [Conditional("BIGENDIAN")]
         private static unsafe void AdjustForEndianness(ref byte* pValue, EETypePtr enumEEType)
         {
