@@ -8,7 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 
-namespace SampleWebApi.Controllers
+namespace AspNetCore.Controllers
 {
     public class ValuesController
     {

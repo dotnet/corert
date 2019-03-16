@@ -11,12 +11,12 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-using SampleWebApi.Controllers;
+using AspNetCore.Controllers;
 
-namespace SampleWebApi
+namespace AspNetCore
 {
     //
-    // This functional test is the dotnet CLI WebApi sample with an HttpClient
+    // This functional test is the dotnet CLI WebApi template with an HttpClient
     // that makes a request to the started server and verifies it returns the 
     // expected string to the client.
     //
