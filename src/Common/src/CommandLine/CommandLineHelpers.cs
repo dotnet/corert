@@ -31,6 +31,7 @@ namespace Internal.CommandLine
                     string fullFileName = Path.GetFullPath(fileName);
 
                     string simpleName = Path.GetFileNameWithoutExtension(fileName);
+
                     if (dictionary.ContainsKey(simpleName))
                     {
                         if (strict)
