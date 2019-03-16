@@ -25,7 +25,8 @@ namespace Internal.Runtime.Augments
             FieldInfo[] fields = enumType.GetFields(BindingFlags.Public | BindingFlags.Static);
             int numValues = fields.Length;
             object[] rawValues = new object[numValues];
-            KeyValuePair<string, ulong>[] namesAndValues = new KeyValuePair<string, ulong>[numValues];
+            RawValues = new ulong[numValues];
+            RawNames = new string[numValues];
             for (int i = 0; i < numValues; i++)
             {
                 FieldInfo field = fields[i];
@@ -43,11 +44,11 @@ namespace Internal.Runtime.Augments
                     // the order in which the Enum apis return names and values.
                     rawUnboxedValue = (ulong)(((IConvertible)rawValue).ToInt64(null));
                 }
-                namesAndValues[i] = new KeyValuePair<string, ulong>(field.Name, rawUnboxedValue);
-            }
 
-            Array.Sort(keys: namesAndValues, items: rawValues, comparer: NamesAndValueComparer.Default);
-            NamesAndValues = namesAndValues;
+                //EGOR: should these be sorted?
+                RawValues[i] = rawUnboxedValue;
+                RawNames[i] = field.Name;
+            }
 
             // Create the unboxed version of values for the Values property to return. (We didn't do this earlier because
             // declaring "rawValues" as "Array" would prevent us from using the generic overload of Array.Sort()).
@@ -61,7 +62,8 @@ namespace Internal.Runtime.Augments
 
         internal Type UnderlyingType { get; }
         internal Array Values { get; }
-        internal KeyValuePair<string, ulong>[] NamesAndValues { get; }
+        internal ulong[] RawValues { get; }
+        internal string[] RawNames { get; }
         internal bool HasFlagsAttribute { get; }
 
         private static RuntimeImports.RhCorElementType ComputeCorElementType(Type enumType)
