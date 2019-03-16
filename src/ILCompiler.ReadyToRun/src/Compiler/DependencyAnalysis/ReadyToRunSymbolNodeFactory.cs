@@ -370,6 +370,14 @@ namespace ILCompiler.DependencyAnalysis
                     r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_ThrowDivZero;
                     break;
 
+                case ILCompiler.ReadyToRunHelper.ThrowArgumentOutOfRange:
+                case ILCompiler.ReadyToRunHelper.ThrowArgument:
+                case ILCompiler.ReadyToRunHelper.ThrowPlatformNotSupported:
+                case ILCompiler.ReadyToRunHelper.ThrowNotImplemented:
+                    // TODO: what is the right thing to do here? Locating the exception objects in CoreLib would require emitting typerefs.
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_FailFast;
+                    break;
+
                 // Write barriers
                 case ILCompiler.ReadyToRunHelper.WriteBarrier:
                     r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_WriteBarrier;

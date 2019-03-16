@@ -212,6 +212,11 @@ namespace ILCompiler
                 WriteTo(byRefType.ParameterType, sb);
                 sb.Append("&");
             }
+            else if (type is PointerType pointerType)
+            {
+                WriteTo(pointerType.ParameterType, sb);
+                sb.Append("*");
+            }
             else
             {
                 Debug.Assert(type is DefType);

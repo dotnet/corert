@@ -1067,9 +1067,10 @@ namespace Internal.JitInterface
                 // We'll special virtual calls to target methods in the corelib assembly when compiling in R2R mode, and generate fragile-NI-like callsites for improved performance. We
                 // can do that because today we'll always service the corelib assembly and the runtime in one bundle. Any caller in the corelib version bubble can benefit from this
                 // performance optimization.
-                /* TODO-PERF: uncommenting the conditional statement below enables VTABLE-based calls for Corelib
-                ** (and maybe a larger framework version bubble in the future). Making it work requires
-                ** construction of the method table in managed code matching the CoreCLR algorithm (MethodTableBuilder).
+                /* TODO-PERF, GitHub issue# 7168: uncommenting the conditional statement below enables
+                ** VTABLE-based calls for Corelib (and maybe a larger framework version bubble in the
+                ** future). Making it work requires construction of the method table in managed code
+                ** matching the CoreCLR algorithm (MethodTableBuilder).
                 if (MethodInSystemVersionBubble(callerMethod) && MethodInSystemVersionBubble(targetMethod))
                 {
                     pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_VTABLE;
@@ -1078,7 +1079,7 @@ namespace Internal.JitInterface
             }
             else
             {
-                // Insert explicit null checks for cross-version bubble non-interface calls. 
+                // Insert explicit null checks for cross-version bubble non-interface calls.
                 // It is required to handle null checks properly for non-virtual <-> virtual change between versions
                 pResult->nullInstanceCheck = callVirtCrossingVersionBubble && !targetMethod.OwningType.IsInterface;
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
@@ -1518,7 +1519,7 @@ namespace Internal.JitInterface
                 if (!type.IsValueType)
                 {
                     // Eventually, we may respect the non-versionable attribute for reference types too. For now, we are going
-                    // to play is safe and ignore it.
+                    // to play it safe and ignore it.
                     return false;
                 }
 
@@ -1620,6 +1621,5 @@ namespace Internal.JitInterface
                 pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.FieldBaseOffset(field.OwningType, _signatureContext));
             }
         }
-
     }
 }

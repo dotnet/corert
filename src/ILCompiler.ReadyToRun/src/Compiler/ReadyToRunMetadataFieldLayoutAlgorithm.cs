@@ -683,5 +683,69 @@ namespace ILCompiler
                 return ComputeAutoFieldLayout(type, numInstanceFields);
             }
         }
+
+        /// <summary>
+        /// This method decides whether the type needs aligned base offset in order to have layout resilient to 
+        /// base class layout changes.
+        /// </summary>
+        protected override void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset)
+        {
+            if (type.IsValueType)
+            {
+                return;
+            }
+            DefType baseType = type.BaseType;
+            if (baseType == null || baseType.IsObject)
+            {
+                return;
+            }
+            HashSet<DefType> recursionGuard = new HashSet<DefType>();
+            if (LayoutDependsOnOtherModules(baseType, ((EcmaType)type.GetTypeDefinition()).EcmaModule, recursionGuard))
+            {
+                LayoutInt alignment = new LayoutInt(type.Context.Target.PointerSize);
+                if (type.RequiresAlign8())
+                {
+                    alignment = new LayoutInt(8);
+                }
+                baseOffset = LayoutInt.AlignUp(baseOffset, alignment, type.Context.Target);
+            }
+        }
+
+        private bool LayoutDependsOnOtherModules(DefType type, EcmaModule module, HashSet<DefType> recursionGuard)
+        {
+            if (!recursionGuard.Add(type))
+            {
+                // We've recursively found the same type - no reason to scan it again
+                return false;
+            }
+
+            try
+            {
+                if (type.IsValueType || type.IsObject || type.IsPrimitive || type.IsEnum || type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                {
+                    return false;
+                }
+                if (((EcmaType)type.GetTypeDefinition()).EcmaModule != module)
+                {
+                    return true;
+                }
+                if (type.BaseType != null && LayoutDependsOnOtherModules(type.BaseType, module, recursionGuard))
+                {
+                    return true;
+                }
+                foreach (TypeDesc genericArg in type.Instantiation)
+                {
+                    if (LayoutDependsOnOtherModules(genericArg.GetClosestDefType(), module, recursionGuard))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            finally
+            {
+                recursionGuard.Remove(type);
+            }
+        }
     }
 }
