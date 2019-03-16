@@ -174,6 +174,19 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets the alignment that is optimal for this platform.
+        /// </summary>
+        public int OptimalFunctionAlignment
+        {
+            get
+            {
+                // Matches the choice in the Project N compiler.
+                // We want a number that is optimized for micro-op caches in the processor.
+                return Architecture == TargetArchitecture.ARM ? MinimumFunctionAlignment : 16;
+            }
+        }
+
         public int MinimumCodeAlignment
         {
             get

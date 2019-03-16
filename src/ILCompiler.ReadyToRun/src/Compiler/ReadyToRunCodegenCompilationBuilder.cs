@@ -112,7 +112,10 @@ namespace ILCompiler
                     break;
             }
 
-            var jitConfig = new JitConfigProvider(corJitFlags, _ryujitOptions);
+            int methodAlignment = _methodAlignment == MethodAlignment.Minimal ?
+                _context.Target.MinimumFunctionAlignment : _context.Target.OptimalFunctionAlignment;
+
+            var jitConfig = new JitConfigProvider(corJitFlags, _ryujitOptions, methodAlignment);
 
             return new ReadyToRunCodegenCompilation(
                 graph,

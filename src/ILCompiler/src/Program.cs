@@ -53,6 +53,7 @@ namespace ILCompiler
         private bool _noMetadataBlocking;
         private bool _completeTypesMetadata;
         private bool _scanReflection;
+        private MethodAlignment _methodAlignment = MethodAlignment.Optimal;
 
         private string _singleMethodTypeName;
         private string _singleMethodName;
@@ -176,6 +177,9 @@ namespace ILCompiler
                 syntax.DefineOptionList("initassembly", ref _initAssemblies, "Assembly(ies) with a library initializer");
                 syntax.DefineOptionList("appcontextswitch", ref _appContextSwitches, "System.AppContext switches to set");
                 syntax.DefineOptionList("runtimeopt", ref _runtimeOptions, "Runtime options to set");
+                syntax.DefineOption("methodalign", ref _methodAlignment,
+                    a => a == "min" ? MethodAlignment.Minimal : a == "opt" ? MethodAlignment.Optimal : throw new CommandLineException($"methodalign {a} not recognized"),
+                    "Sets the method alignment. Values 'min' and 'opt' are supported.");
 
                 syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
                 syntax.DefineOption("targetos", ref _targetOSStr, "Target OS for cross compilation");
@@ -553,7 +557,8 @@ namespace ILCompiler
                 .UseDependencyTracking(trackingLevel)
                 .UseCompilationRoots(compilationRoots)
                 .UseOptimizationMode(_optimizationMode)
-                .UseDebugInfoProvider(debugInfoProvider);
+                .UseDebugInfoProvider(debugInfoProvider)
+                .UseMethodAlignment(_methodAlignment);
 
             if (scanResults != null)
             {

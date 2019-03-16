@@ -246,7 +246,7 @@ namespace Internal.JitInterface
 
             var objectData = new ObjectNode.ObjectData(_code,
                                                        relocs,
-                                                       _compilation.NodeFactory.Target.MinimumFunctionAlignment,
+                                                       _jitConfig.MethodAlignment,
                                                        new ISymbolDefinitionNode[] { _methodCodeNode });
             ObjectNode.ObjectData ehInfo = _ehClauses != null ? EncodeEHInfo() : null;
             DebugEHClauseInfo[] debugEHClauseInfos = null;

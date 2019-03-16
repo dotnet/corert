@@ -12,11 +12,16 @@ namespace Internal.JitInterface
 {
     public sealed class JitConfigProvider
     {
-        private CorJitFlag[] _jitFlags;
-        private Dictionary<string, string> _config = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private readonly CorJitFlag[] _jitFlags;
+        private readonly Dictionary<string, string> _config = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private object _keepAlive; // Keeps callback delegates alive
 
         public IntPtr UnmanagedInstance
+        {
+            get;
+        }
+
+        public int MethodAlignment
         {
             get;
         }
@@ -27,7 +32,7 @@ namespace Internal.JitInterface
         /// Creates a new instance of <see cref="JitConfigProvider"/>.
         /// </summary>
         /// <param name="parameters">Name-value pairs separated by an equals sign.</param>
-        public JitConfigProvider(IEnumerable<CorJitFlag> jitFlags, IEnumerable<KeyValuePair<string, string>> parameters)
+        public JitConfigProvider(IEnumerable<CorJitFlag> jitFlags, IEnumerable<KeyValuePair<string, string>> parameters, int methodAlignment)
         {
             foreach (var param in parameters)
             {
@@ -42,6 +47,7 @@ namespace Internal.JitInterface
             _jitFlags = jitFlagBuilder.ToArray();
 
             UnmanagedInstance = CreateUnmanagedInstance();
+            MethodAlignment = methodAlignment;
         }
 
         public bool HasFlag(CorJitFlag flag)

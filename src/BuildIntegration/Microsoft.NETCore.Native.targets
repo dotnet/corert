@@ -206,6 +206,7 @@ See the LICENSE file in the project root for more information.
       <IlcArg Condition="$(IlcGenerateStackTraceData) == 'true'" Include="--stacktracedata" />
       <IlcArg Condition="$(RootAllApplicationAssemblies) == 'true'" Include="--rootallapplicationassemblies" />
       <IlcArg Condition="$(IlcScanReflection) == 'true'" Include="--scanreflection" />
+      <IlcArg Condition="$(IlcMethodAlignment) == 'Minimal'" Include="--methodalign:min" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />

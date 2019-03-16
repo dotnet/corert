@@ -30,6 +30,7 @@ namespace ILCompiler
         protected DebugInformationProvider _debugInformationProvider = new DebugInformationProvider();
         protected DevirtualizationManager _devirtualizationManager = new DevirtualizationManager();
         protected PInvokeILEmitterConfiguration _pinvokePolicy = new DirectPInvokePolicy();
+        protected MethodAlignment _methodAlignment = MethodAlignment.Optimal;
 
         public CompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup, NameMangler nameMangler)
         {
@@ -105,6 +106,12 @@ namespace ILCompiler
             return this;
         }
 
+        public CompilationBuilder UseMethodAlignment(MethodAlignment alignment)
+        {
+            _methodAlignment = alignment;
+            return this;
+        }
+
         public abstract CompilationBuilder UseBackendOptions(IEnumerable<string> options);
 
         public abstract CompilationBuilder UseILProvider(ILProvider ilProvider);
@@ -148,5 +155,21 @@ namespace ILCompiler
         /// Maximize execution speed.
         /// </summary>
         PreferSpeed,
+    }
+
+    /// <summary>
+    /// Represents the requested alignment of methods.
+    /// </summary>
+    public enum MethodAlignment
+    {
+        /// <summary>
+        /// Use minimal supported alignment.
+        /// </summary>
+        Minimal,
+
+        /// <summary>
+        /// Use alignment that is optimal for the target architecture.
+        /// </summary>
+        Optimal,
     }
 }
