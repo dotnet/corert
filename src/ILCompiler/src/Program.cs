@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.CommandLine;
 using System.Runtime.InteropServices;
+
+using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -69,6 +71,8 @@ namespace ILCompiler
         private IReadOnlyList<string> _appContextSwitches = Array.Empty<string>();
 
         private IReadOnlyList<string> _runtimeOptions = Array.Empty<string>();
+
+        private IReadOnlyList<string> _removedFeatures = Array.Empty<string>();
 
         private bool _help;
 
@@ -176,6 +180,7 @@ namespace ILCompiler
                 syntax.DefineOptionList("initassembly", ref _initAssemblies, "Assembly(ies) with a library initializer");
                 syntax.DefineOptionList("appcontextswitch", ref _appContextSwitches, "System.AppContext switches to set");
                 syntax.DefineOptionList("runtimeopt", ref _runtimeOptions, "Runtime options to set");
+                syntax.DefineOptionList("removefeature", ref _removedFeatures, "Framework features to remove");
 
                 syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
                 syntax.DefineOption("targetos", ref _targetOSStr, "Target OS for cross compilation");
@@ -465,6 +470,19 @@ namespace ILCompiler
             if (!_isCppCodegen && !_isWasmCodegen)
                 builder.UsePInvokePolicy(new ConfigurablePInvokePolicy(typeSystemContext.Target));
 
+            RemovedFeature removedFeatures = 0;
+            foreach (string feature in _removedFeatures)
+            {
+                if (feature == "EventSource")
+                    removedFeatures |= RemovedFeature.Etw;
+                else if (feature == "FrameworkStrings")
+                    removedFeatures |= RemovedFeature.FrameworkResources;
+            }
+
+            ILProvider ilProvider = null;
+            if (removedFeatures != 0)
+                ilProvider = new RemovingILProvider(new CoreRTILProvider(), removedFeatures);
+
             var stackTracePolicy = _emitStackTraceData ?
                 (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
 
@@ -472,7 +490,8 @@ namespace ILCompiler
                     ? (MetadataBlockingPolicy)new NoMetadataBlockingPolicy() 
                     : new BlockedInternalsBlockingPolicy(typeSystemContext);
 
-            ManifestResourceBlockingPolicy resBlockingPolicy = new NoManifestResourceBlockingPolicy();
+            ManifestResourceBlockingPolicy resBlockingPolicy = (removedFeatures & RemovedFeature.FrameworkResources) != 0 ?
+                new FrameworkStringResourceBlockingPolicy() : (ManifestResourceBlockingPolicy)new NoManifestResourceBlockingPolicy();
 
             UsageBasedMetadataGenerationOptions metadataGenerationOptions = UsageBasedMetadataGenerationOptions.AnonymousTypeHeuristic;
             if (_completeTypesMetadata)
@@ -499,7 +518,7 @@ namespace ILCompiler
                     _metadataLogFileName,
                     stackTracePolicy,
                     invokeThunkGenerationPolicy,
-                    new Internal.IL.CoreRTILProvider(),
+                    ilProvider ?? new CoreRTILProvider(),
                     metadataGenerationOptions);
             }
             else
@@ -516,6 +535,9 @@ namespace ILCompiler
                 (_optimizationMode != OptimizationMode.None && !_isCppCodegen && !_isWasmCodegen && !_isReadyToRunCodeGen && !_multiFile);
 
             useScanner &= !_noScanner;
+
+            if (ilProvider != null)
+                builder.UseILProvider(ilProvider);
 
             ILScanResults scanResults = null;
             if (useScanner)
