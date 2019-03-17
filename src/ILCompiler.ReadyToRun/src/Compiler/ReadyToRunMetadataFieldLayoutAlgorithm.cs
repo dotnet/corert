@@ -25,9 +25,23 @@ namespace ILCompiler
         /// </summary>
         private ModuleFieldLayoutMap _moduleFieldLayoutMap;
 
+        /// <summary>
+        /// Compilation module group is used to identify which types extend beyond the current version bubble.
+        /// </summary>
+        private CompilationModuleGroup _compilationGroup;
+
         public ReadyToRunMetadataFieldLayoutAlgorithm()
         {
             _moduleFieldLayoutMap = new ModuleFieldLayoutMap();
+        }
+
+        /// <summary>
+        /// Set up compilation group needed for proper calculation of base class alignment in auto layout.
+        /// </summary>
+        /// <param name="compilationGroup"></param>
+        public void SetCompilationGroup(CompilationModuleGroup compilationGroup)
+        {
+            _compilationGroup = compilationGroup;
         }
 
         public override ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType defType, StaticLayoutKind layoutKind)
@@ -700,7 +714,7 @@ namespace ILCompiler
                 return;
             }
             HashSet<DefType> recursionGuard = new HashSet<DefType>();
-            if (LayoutDependsOnOtherModules(baseType, ((EcmaType)type.GetTypeDefinition()).EcmaModule, recursionGuard))
+            if (!_compilationGroup.ContainsTypeLayout(baseType))
             {
                 LayoutInt alignment = new LayoutInt(type.Context.Target.PointerSize);
                 if (type.RequiresAlign8())
@@ -711,41 +725,5 @@ namespace ILCompiler
             }
         }
 
-        private bool LayoutDependsOnOtherModules(DefType type, EcmaModule module, HashSet<DefType> recursionGuard)
-        {
-            if (!recursionGuard.Add(type))
-            {
-                // We've recursively found the same type - no reason to scan it again
-                return false;
-            }
-
-            try
-            {
-                if (type.IsValueType || type.IsObject || type.IsPrimitive || type.IsEnum || type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
-                {
-                    return false;
-                }
-                if (((EcmaType)type.GetTypeDefinition()).EcmaModule != module)
-                {
-                    return true;
-                }
-                if (type.BaseType != null && LayoutDependsOnOtherModules(type.BaseType, module, recursionGuard))
-                {
-                    return true;
-                }
-                foreach (TypeDesc genericArg in type.Instantiation)
-                {
-                    if (LayoutDependsOnOtherModules(genericArg.GetClosestDefType(), module, recursionGuard))
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }
-            finally
-            {
-                recursionGuard.Remove(type);
-            }
-        }
     }
 }

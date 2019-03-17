@@ -437,6 +437,12 @@ namespace ILCompiler
                 }
             }
 
+            // R2R field layout needs compilation group information; this is the earliest point when we can set it
+            if (typeSystemContext is ReadyToRunCompilerContext r2rContext)
+            {
+                r2rContext.SetCompilationGroup(compilationGroup);
+            }
+
             //
             // Compile
             //

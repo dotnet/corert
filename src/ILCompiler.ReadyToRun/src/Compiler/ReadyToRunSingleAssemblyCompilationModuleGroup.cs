@@ -125,5 +125,85 @@ namespace ILCompiler
             return (type.HasInstantiation || type.IsArray) && ShouldProduceFullVTable(type) &&
                    type.ConvertToCanonForm(CanonicalFormKind.Specific).IsCanonicalSubtype(CanonicalFormKind.Any);
         }
+
+        Dictionary<TypeDesc, bool> _containsTypeLayoutCache = new Dictionary<TypeDesc, bool>();
+
+        /// <summary>
+        /// If true, the type is fully contained in the current compilation group.
+        /// </summary>
+        /// <returns></returns>
+        public override bool ContainsTypeLayout(TypeDesc type)
+        {
+            bool containsTypeLayout;
+            if (_containsTypeLayoutCache.TryGetValue(type, out containsTypeLayout))
+            {
+                return containsTypeLayout;
+            }
+            HashSet<TypeDesc> recursionGuard = new HashSet<TypeDesc>();
+            return ContainsTypeLayout(type, recursionGuard);
+        }
+
+        private bool ContainsTypeLayout(TypeDesc type, HashSet<TypeDesc> recursionGuard)
+        {
+            if (!recursionGuard.Add(type))
+            {
+                // We've recursively found the same type - no reason to scan it again
+                return true;
+            }
+
+            try
+            {
+                bool containsTypeLayout = ContainsTypeLayoutUncached(type, recursionGuard);
+                _containsTypeLayoutCache[type] = containsTypeLayout;
+                return containsTypeLayout;
+            }
+            finally
+            {
+                recursionGuard.Remove(type);
+            }
+        }
+
+        private bool ContainsTypeLayoutUncached(TypeDesc type, HashSet<TypeDesc> recursionGuard)
+        {
+            if (type.IsValueType || 
+                type.IsObject || 
+                type.IsPrimitive || 
+                type.IsEnum || 
+                type.IsPointer ||
+                type.IsFunctionPointer ||
+                type.IsByRefLike ||
+                type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+            {
+                return true;
+            }
+            DefType defType = type.GetClosestDefType();
+            if (!ContainsType(defType.GetTypeDefinition()))
+            {
+                return false;
+            }
+            if (defType.BaseType != null && !ContainsTypeLayout(defType.BaseType, recursionGuard))
+            {
+                return false;
+            }
+            foreach (TypeDesc genericArg in defType.Instantiation)
+            {
+                if (!ContainsTypeLayout(genericArg, recursionGuard))
+                {
+                    return false;
+                }
+            }
+            foreach (FieldDesc field in defType.GetFields())
+            {
+                if (!field.IsLiteral && 
+                    !field.IsStatic && 
+                    !field.HasRva && 
+                    !ContainsTypeLayout(field.FieldType, recursionGuard))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
     }
 }

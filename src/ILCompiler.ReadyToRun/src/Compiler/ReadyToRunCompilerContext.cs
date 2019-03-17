@@ -14,7 +14,7 @@ namespace ILCompiler
 {
     public partial class ReadyToRunCompilerContext : CompilerTypeSystemContext
     {
-        private FieldLayoutAlgorithm _r2rFieldLayoutAlgorithm;
+        private ReadyToRunMetadataFieldLayoutAlgorithm _r2rFieldLayoutAlgorithm;
         private SystemObjectFieldLayoutAlgorithm _systemObjectFieldLayoutAlgorithm;
         private VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
         VectorIntrinsicFieldLayoutAlgorithm _vectorIntrinsicFieldLayoutAlgorithm;
@@ -49,6 +49,11 @@ namespace ILCompiler
                 Debug.Assert(_r2rFieldLayoutAlgorithm != null);
                 return _r2rFieldLayoutAlgorithm;
             }
+        }
+
+        public void SetCompilationGroup(CompilationModuleGroup compilationModuleGroup)
+        {
+            _r2rFieldLayoutAlgorithm.SetCompilationGroup(compilationModuleGroup);
         }
 
         /// <summary>
