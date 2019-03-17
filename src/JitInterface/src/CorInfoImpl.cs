@@ -244,9 +244,13 @@ namespace Internal.JitInterface
             var relocs = _relocs.ToArray();
             Array.Sort(relocs, (x, y) => (x.Offset - y.Offset));
 
+            int alignment = _jitConfig.HasFlag(CorJitFlag.CORJIT_FLAG_SIZE_OPT) ?
+                _compilation.NodeFactory.Target.MinimumFunctionAlignment :
+                _compilation.NodeFactory.Target.OptimumFunctionAlignment;
+
             var objectData = new ObjectNode.ObjectData(_code,
                                                        relocs,
-                                                       _compilation.NodeFactory.Target.MinimumFunctionAlignment,
+                                                       alignment,
                                                        new ISymbolDefinitionNode[] { _methodCodeNode });
             ObjectNode.ObjectData ehInfo = _ehClauses != null ? EncodeEHInfo() : null;
             DebugEHClauseInfo[] debugEHClauseInfos = null;
