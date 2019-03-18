@@ -291,7 +291,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private void FindByRefPointerOffsetsInByRefLikeObject(TypeDesc type, ArgDestination argDest, int delta, CORCOMPILE_GCREFMAP_TOKENS[] frame)
         {
-            if (type.IsByRefLike)
+            if (type.IsByReferenceOfT || type.IsByRef)
             {
                 argDest.GcMark(frame, delta, interior: true);
                 return;
