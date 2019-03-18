@@ -479,9 +479,10 @@ namespace ILCompiler
                     removedFeatures |= RemovedFeature.FrameworkResources;
             }
 
-            ILProvider ilProvider = null;
+            ILProvider ilProvider = _isReadyToRunCodeGen ? (ILProvider)new ReadyToRunILProvider() : new CoreRTILProvider();
+
             if (removedFeatures != 0)
-                ilProvider = new RemovingILProvider(new CoreRTILProvider(), removedFeatures);
+                ilProvider = new RemovingILProvider(ilProvider, removedFeatures);
 
             var stackTracePolicy = _emitStackTraceData ?
                 (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
@@ -518,7 +519,7 @@ namespace ILCompiler
                     _metadataLogFileName,
                     stackTracePolicy,
                     invokeThunkGenerationPolicy,
-                    ilProvider ?? new CoreRTILProvider(),
+                    ilProvider,
                     metadataGenerationOptions);
             }
             else
@@ -536,8 +537,7 @@ namespace ILCompiler
 
             useScanner &= !_noScanner;
 
-            if (ilProvider != null)
-                builder.UseILProvider(ilProvider);
+            builder.UseILProvider(ilProvider);
 
             ILScanResults scanResults = null;
             if (useScanner)

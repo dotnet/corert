@@ -57,36 +57,42 @@ namespace ILCompiler
         {
             TypeDesc owningType = method.OwningType;
 
-            if (!method.Signature.IsStatic)
+            if ((_removedFeature & RemovedFeature.Etw) != 0)
             {
-                if ((_removedFeature & RemovedFeature.Etw) != 0 && IsEventSourceType(owningType))
+                if (!method.Signature.IsStatic)
                 {
-                    if (method.IsConstructor)
-                        return RemoveAction.ConvertToStub;
+                    if (IsEventSourceType(owningType))
+                    {
+                        if (method.IsConstructor)
+                            return RemoveAction.ConvertToStub;
 
-                    if (method.Name == "IsEnabled" || method.IsFinalizer || method.Name == "Dispose")
-                        return RemoveAction.ConvertToStub;
+                        if (method.Name == "IsEnabled" || method.IsFinalizer || method.Name == "Dispose")
+                            return RemoveAction.ConvertToStub;
 
-                    return RemoveAction.ConvertToThrow;
-                }
-                else if ((_removedFeature & RemovedFeature.Etw) != 0 && IsEventSourceImplementation(owningType))
-                {
-                    if (method.IsFinalizer)
-                        return RemoveAction.ConvertToStub;
+                        return RemoveAction.ConvertToThrow;
+                    }
+                    else if (IsEventSourceImplementation(owningType))
+                    {
+                        if (method.IsFinalizer)
+                            return RemoveAction.ConvertToStub;
 
-                    if (method.IsConstructor)
-                        return RemoveAction.ConvertToStub;
+                        if (method.IsConstructor)
+                            return RemoveAction.ConvertToStub;
 
-                    if (method.HasCustomAttribute("System.Diagnostics.Tracing", "NonEventAttribute"))
-                        return RemoveAction.Nothing;
+                        if (method.HasCustomAttribute("System.Diagnostics.Tracing", "NonEventAttribute"))
+                            return RemoveAction.Nothing;
 
-                    return RemoveAction.ConvertToThrow;
+                        return RemoveAction.ConvertToThrow;
+                    }
                 }
             }
-            else
+
+            if ((_removedFeature & RemovedFeature.FrameworkResources) != 0)
             {
-                if ((_removedFeature & RemovedFeature.FrameworkResources) != 0 && owningType is MetadataType mdType &&
-                    mdType.Name == "SR" && mdType.Namespace == "System")
+                if (method.Signature.IsStatic &&
+                    owningType is Internal.TypeSystem.Ecma.EcmaType mdType &&
+                    mdType.Name == "SR" && mdType.Namespace == "System" &&
+                    FrameworkStringResourceBlockingPolicy.IsFrameworkAssembly(mdType.EcmaModule))
                 {
                     if (method.Name == "UsingResourceKeys")
                         return RemoveAction.ConvertToTrueStub;
