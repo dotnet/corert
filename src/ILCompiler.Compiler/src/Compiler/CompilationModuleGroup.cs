@@ -87,5 +87,10 @@ namespace ILCompiler
         /// accessed through the target platform's import mechanism (ie, Import Address Table on Windows)
         /// </summary>
         public abstract bool CanHaveReferenceThroughImportTable { get; }
+
+        /// <summary>
+        /// If true, the type is fully contained in the current compilation group.
+        /// </summary>
+        public virtual bool ContainsTypeLayout(TypeDesc type) => ContainsType(type);
     }
 }
