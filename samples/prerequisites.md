@@ -12,7 +12,7 @@ The following pre-requisites need to be installed for building .NET Core project
 * Install clang and developer packages for libraries that .NET Core depends on.
 
 ```sh
-sudo apt-get install libcurl4-openssl-dev zlib1g-dev libkrb5-dev
+sudo apt-get install clang-3.9 libcurl4-openssl-dev zlib1g-dev libkrb5-dev
 ```
 
 # macOS (10.12+)
