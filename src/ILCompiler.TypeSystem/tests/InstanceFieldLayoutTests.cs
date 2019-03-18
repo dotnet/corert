@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+
 using Internal.TypeSystem;
 
 using Xunit;
@@ -743,6 +745,28 @@ namespace TypeSystemTests
                         break;
                 }
             }
+        }
+
+        public static IEnumerable<object[]> AutoTypeLayoutMinPackingData()
+        {
+            yield return new object[] { WellKnownType.Boolean, 2 };
+            yield return new object[] { WellKnownType.Byte, 2 };
+            yield return new object[] { WellKnownType.Char, 4 };
+            yield return new object[] { WellKnownType.Double, 16 };
+            yield return new object[] { WellKnownType.Int16, 4 };
+            yield return new object[] { WellKnownType.Int32, 8 };
+            yield return new object[] { WellKnownType.Int64, 16 };
+            yield return new object[] { WellKnownType.IntPtr, 16 };
+            yield return new object[] { WellKnownType.Single, 8 };
+        }
+
+        [Theory]
+        [MemberData(nameof(AutoTypeLayoutMinPackingData))]
+        public void TestAutoTypeLayoutMinPacking(WellKnownType type, int expectedSize)
+        {
+            MetadataType minPackingType = _testModule.GetType("Auto", "MinPacking`1");
+            InstantiatedType inst = minPackingType.MakeInstantiatedType(_context.GetWellKnownType(type));
+            Assert.Equal(expectedSize, inst.InstanceFieldSize.AsInt);
         }
 
         [Fact]

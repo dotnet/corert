@@ -18,7 +18,10 @@ jobs:
 - template: /eng/common/templates/job/job.yml
   parameters:
 
-    name: ${{ parameters.name }}
+    ${{ if ne(variables['Build.Reason'], 'PullRequest') }}:
+      name: ${{ parameters.name }}
+    ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+      name: ${{ format('{0}_prtest', parameters.name) }}
     displayName: ${{ parameters.displayName }}
 
     condition: ${{ parameters.condition }}

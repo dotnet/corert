@@ -261,6 +261,13 @@ namespace Auto
     {
         char NoOptChar;
     }
+
+    [StructLayout(LayoutKind.Auto, Pack = 1)]
+    struct MinPacking<T>
+    {
+        public byte _byte;
+        public T _value;
+    }
 }
 
 namespace IsByRefLike

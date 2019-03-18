@@ -130,6 +130,8 @@ namespace ILCompiler
             IReadOnlyList<string> referenceFiles = Array.Empty<string>();
 
             bool optimize = false;
+            bool optimizeSpace = false;
+            bool optimizeTime = false;
 
             bool waitForDebugger = false;
             AssemblyName name = typeof(Program).GetTypeInfo().Assembly.GetName();
@@ -145,6 +147,8 @@ namespace ILCompiler
                 syntax.DefineOptionList("r|reference", ref referenceFiles, "Reference file(s) for compilation");
                 syntax.DefineOption("o|out", ref _outputFilePath, "Output file path");
                 syntax.DefineOption("O", ref optimize, "Enable optimizations");
+                syntax.DefineOption("Os", ref optimizeSpace, "Enable optimizations, favor code space");
+                syntax.DefineOption("Ot", ref optimizeTime, "Enable optimizations, favor code speed");
                 syntax.DefineOption("g", ref _enableDebugInfo, "Emit debugging information");
                 syntax.DefineOption("cpp", ref _isCppCodegen, "Compile for C++ code-generation");
                 syntax.DefineOption("wasm", ref _isWasmCodegen, "Compile for WebAssembly code-generation");
@@ -192,7 +196,17 @@ namespace ILCompiler
                 Console.ReadLine();
             }
 
-            _optimizationMode = optimize ? OptimizationMode.Blended : OptimizationMode.None;
+            _optimizationMode = OptimizationMode.None;
+            if (optimizeSpace)
+            {
+                if (optimizeTime)
+                    Console.WriteLine("Warning: overriding -Ot with -Os");
+                _optimizationMode = OptimizationMode.PreferSize;
+            }
+            else if (optimizeTime)
+                _optimizationMode = OptimizationMode.PreferSpeed;
+            else if (optimize)
+                _optimizationMode = OptimizationMode.Blended;
 
             foreach (var input in inputFiles)
                 Helpers.AppendExpandedPaths(_inputFilePaths, input, true);
@@ -607,7 +621,7 @@ namespace ILCompiler
                 // Check that methods and types generated during compilation are a subset of method and types scanned
                 bool scanningFail = false;
                 DiffCompilationResults(ref scanningFail, compilationResults.CompiledMethodBodies, scanResults.CompiledMethodBodies,
-                    "Methods", "compiled", "scanned", method => !(method.GetTypicalMethodDefinition() is EcmaMethod));
+                    "Methods", "compiled", "scanned", method => !(method.GetTypicalMethodDefinition() is EcmaMethod) || method.Name == "ThrowPlatformNotSupportedException");
                 DiffCompilationResults(ref scanningFail, compilationResults.ConstructedEETypes, scanResults.ConstructedEETypes,
                     "EETypes", "compiled", "scanned", type => !(type.GetTypeDefinition() is EcmaType));
 

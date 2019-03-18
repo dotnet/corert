@@ -53,14 +53,6 @@ namespace ILCompiler
                 Debug.Assert((refMethod.Category & MetadataCategory.RuntimeMapping) == 0
                     || (_reflectableTypes[refMethod.Entity.OwningType] & MetadataCategory.RuntimeMapping) != 0);
                 _reflectableMethods.Add(refMethod.Entity, refMethod.Category);
-
-                MethodDesc canonMethod = refMethod.Entity.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                if (refMethod.Entity != canonMethod)
-                {
-                    if (!_reflectableMethods.TryGetValue(canonMethod, out MetadataCategory category))
-                        category = 0;
-                    _reflectableMethods[canonMethod] = category | refMethod.Category;
-                }
             }
 
             foreach (var refField in reflectableFields)
@@ -92,6 +84,9 @@ namespace ILCompiler
                 // GetMetadataCategory relies on that.
                 Debug.Assert((GetMetadataCategory(refMethod.Entity.GetTypicalMethodDefinition()) & MetadataCategory.Description)
                     == (GetMetadataCategory(refMethod.Entity) & MetadataCategory.Description));
+
+                // Canonical form of the method needs to agree with the logical form
+                Debug.Assert(GetMetadataCategory(refMethod.Entity) == GetMetadataCategory(refMethod.Entity.GetCanonMethodTarget(CanonicalFormKind.Specific)));
             }
 
             foreach (var refField in reflectableFields)

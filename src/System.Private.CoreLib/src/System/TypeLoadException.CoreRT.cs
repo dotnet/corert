@@ -10,7 +10,13 @@ namespace System
             : base(message)
         {
             HResult = HResults.COR_E_TYPELOAD;
-            _typeName = typeName;
+            _className = typeName;
+        }
+
+        private void SetMessageField()
+        {
+            if (_message == null)
+                _message = SR.Arg_TypeLoadException;
         }
     }
 }

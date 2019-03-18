@@ -244,9 +244,13 @@ namespace Internal.JitInterface
             var relocs = _relocs.ToArray();
             Array.Sort(relocs, (x, y) => (x.Offset - y.Offset));
 
+            int alignment = _jitConfig.HasFlag(CorJitFlag.CORJIT_FLAG_SIZE_OPT) ?
+                _compilation.NodeFactory.Target.MinimumFunctionAlignment :
+                _compilation.NodeFactory.Target.OptimumFunctionAlignment;
+
             var objectData = new ObjectNode.ObjectData(_code,
                                                        relocs,
-                                                       _compilation.NodeFactory.Target.MinimumFunctionAlignment,
+                                                       alignment,
                                                        new ISymbolDefinitionNode[] { _methodCodeNode });
             ObjectNode.ObjectData ehInfo = _ehClauses != null ? EncodeEHInfo() : null;
             DebugEHClauseInfo[] debugEHClauseInfos = null;
@@ -1823,6 +1827,30 @@ namespace Internal.JitInterface
 #endif
 
             return ObjectToHandle(merged);
+        }
+
+        private bool isMoreSpecificType(CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2)
+        {
+            TypeDesc type1 = HandleToObject(cls1);
+            TypeDesc type2 = HandleToObject(cls2);
+
+            // If we have a mixture of shared and unshared types,
+            // consider the unshared type as more specific.
+            bool isType1CanonSubtype = type1.IsCanonicalSubtype(CanonicalFormKind.Any);
+            bool isType2CanonSubtype = type2.IsCanonicalSubtype(CanonicalFormKind.Any);
+            if (isType1CanonSubtype != isType2CanonSubtype)
+            {
+                // Only one of type1 and type2 is shared.
+                // type2 is more specific if type1 is the shared type.
+                return isType1CanonSubtype;
+            }
+
+            // Otherwise both types are either shared or not shared.
+            // Look for a common parent type.
+            TypeDesc merged = TypeExtensions.MergeTypesToCommonParent(type1, type2);
+
+            // If the common parent is type1, then type2 is more specific.
+            return merged == type1;
         }
 
         private CORINFO_CLASS_STRUCT_* getParentType(CORINFO_CLASS_STRUCT_* cls)
