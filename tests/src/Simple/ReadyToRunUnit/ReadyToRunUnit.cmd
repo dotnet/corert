@@ -2,7 +2,7 @@
 setlocal
 
 REM The arguments to invoke a ready-to-run test with ETW logging of jitted methods look like
-REM dotnet run --project --corerun tests\src\tools\ReadyToRun.TestHarness bin\obj\<Build>\CoreCLRRuntime\CoreRun.exe --in bin\<cfg>\<arch>\native\<test>.ni.exe --whitelist methodWhiteList.txt
+REM dotnet run --project --corerun tests\src\tools\ReadyToRun.TestHarness bin\obj\<Build>\CoreCLRRuntime\CoreRun.exe --in bin\<cfg>\<arch>\native\<test>.exe --whitelist methodWhiteList.txt
 echo %3 %4 --corerun %5 --in "%1\%2" --whitelist %~dp0methodWhiteList.txt --testargs %~dp0TestTextFile.txt
 call %3 %4 --corerun %5 --in "%1\%2" --whitelist %~dp0methodWhiteList.txt --testargs %~dp0TestTextFile.txt
 

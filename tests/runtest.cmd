@@ -228,8 +228,15 @@ for /f "delims=" %%a in ('dir /s /aD /b %CoreRT_TestRoot%\src\%CoreRT_TestName%'
                 if /i not "%CoreRT_TestCompileMode%" == "wasm" (
                     if exist "!__SourceFolder!\readytorun" (
                         set __Mode=readytorun
-                        Call :CompileFile !__SourceFolder! !__SourceFileName! !__SourceFileProj! %__LogDir%\!__RelativePath!
-                        set /a __ReadyToRunTotalTests=!__ReadyToRunTotalTests!+1
+                        if exist "!__SourceFolder!\publish" (
+                            if /i "%CoreRT_BuildType%" == "debug" (
+                                call :PublishProject !__SourceFolder! !__SourceFileName!
+                                set /a __ReadyToRunTotalTests=!__ReadyToRunTotalTests!+1
+                            )
+                        ) else (
+                            call :CompileFile !__SourceFolder! !__SourceFileName! !__SourceFileProj! %__LogDir%\!__RelativePath!
+                            set /a __ReadyToRunTotalTests=!__ReadyToRunTotalTests!+1
+                        )
                     )
                 )
             )
@@ -345,7 +352,7 @@ goto :eof
         "%CoreRT_CliDir%\dotnet.exe" msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:OSGroup=%CoreRT_BuildOS%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" "/p:IlcGenerateMapFile=true" !extraArgs! !__SourceFileProj!
 
         set __SavedErrorLevel=!ErrorLevel!
-        if not "!__SavedErrorLevel!"=="0" (goto :SkipTestRun)
+        if not "!__SavedErrorLevel!"=="0" (goto :RecordTestResult)
 
         REM Back up the map file and delete the obj file so the MSBuild targets won't skip ILC target
         rename !__SourceFolder!\obj\%CoreRT_BuildType%\%CoreRT_BuildArch%\native\!__SourceFileName!.map.xml !__SourceFileName!.baseline.map.xml
@@ -359,7 +366,7 @@ goto :eof
         "%CoreRT_CliDir%\dotnet.exe" msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:OSGroup=%CoreRT_BuildOS%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" "/p:IlcGenerateMapFile=true" !extraArgs! !__SourceFileProj!
         endlocal
         set __SavedErrorLevel=!ErrorLevel!
-        if not "!__SavedErrorLevel!"=="0" (goto :SkipTestRun)
+        if not "!__SavedErrorLevel!"=="0" (goto :RecordTestResult)
 
         fc !__SourceFolder!\obj\%CoreRT_BuildType%\%CoreRT_BuildArch%\native\!__SourceFileName!.baseline.map.xml !__SourceFolder!\obj\%CoreRT_BuildType%\%CoreRT_BuildArch%\native\!__SourceFileName!.map.xml
         set __SavedErrorLevel=!ErrorLevel!
@@ -371,19 +378,18 @@ goto :eof
         endlocal
 
         set __SavedErrorLevel=!ErrorLevel!
-        if /i "%CoreRT_TestRun%"=="false" (goto :SkipTestRun)
+        if /i "%CoreRT_TestRun%"=="false" (goto :RecordTestResult)
         
         set __Extension=exe
 
         if /i "%__Mode%"=="wasm" (
             REM Skip running if this is WASM build-only testing running in a different architecture's build
-            if /i not "%CoreRT_BuildArch%"=="wasm" (goto :SkipTestRun)
+            if /i not "%CoreRT_BuildArch%"=="wasm" (goto :RecordTestResult)
             set __Extension=html
         )
 
         set __ExtraTestRunArgs=
         if /i "%__Mode%"=="readytorun" (
-            set __Extension=ni.exe
             set __ExtraTestRunArgs="%CoreRT_CliDir%\dotnet.exe" %CoreRT_ReadyToRunTestHarness% %CoreRT_CoreCLRRuntimeDir%\CoreRun.exe
         )
 
@@ -395,7 +401,7 @@ goto :eof
         )
     )
 
-:SkipTestRun
+:RecordTestResult
     if "!__SavedErrorLevel!"=="0" (
         set /a __%__Mode%PassedTests=!__%__Mode%PassedTests!+1
         echo ^<test name="!__SourceFile!" type="!__SourceFileName!:%__Mode%" method="Main" result="Pass" /^> >> %__CoreRTTestBinDir%\testResults.tmp
@@ -407,6 +413,41 @@ goto :eof
         echo ^</test^> >> %__CoreRTTestBinDir%\testResults.tmp
     )
     goto :eof
+
+:PublishProject
+    echo.
+    set __SourceFolder=%~1
+    set __SourceFileName=%2
+
+    :: Compute publish RID
+    if /i "%CoreRT_BuildArch%" == "x86" (
+        set Publish_Rid=win-x86
+    ) else if /i "%CoreRT_BuildArch%" == "x64" (
+        set Publish_Rid=win-x64
+    ) else if /i "%CoreRT_BuildArch%" == "arm" (
+        set Publish_Rid=win-x64
+    ) else (
+        echo CoreRT_BuildArch is %CoreRT_BuildArch%. Check that we support that for ready-to-run
+        exit /b 1
+    )
+
+    ::
+    :: Publish test as a self-contained app
+    ::
+    echo Publishing !__SourceFolder! %Publish_Rid%
+    echo "%CoreRT_CliDir%\dotnet.exe" publish "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" !__SourceFolder! -r %Publish_Rid% --self-contained
+    "%CoreRT_CliDir%\dotnet.exe" publish "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" !__SourceFolder! -r %Publish_Rid% --self-contained
+    set __SavedErrorLevel=!ErrorLevel!
+    if not "!__SavedErrorLevel!"=="0" (goto :RecordTestResult)
+    
+    ::
+    :: Execute the app host entrypoint
+    ::
+    echo Running test !__SourceFolder!\bin\%CoreRT_BuildType%\%CoreRT_BuildArch%\netcoreapp2.1\%Publish_Rid%\publish\!__SourceFileName!.exe
+    !__SourceFolder!\bin\%CoreRT_BuildType%\%CoreRT_BuildArch%\netcoreapp2.1\%Publish_Rid%\publish\!__SourceFileName!.exe
+    set __SavedErrorLevel=!ErrorLevel!
+
+    goto :RecordTestResult
 
 :DeleteFile
     if exist %1 del %1

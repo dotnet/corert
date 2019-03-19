@@ -74,7 +74,7 @@ goto :GetNextParameter
 
 :RunTest
 
-set CoreRunCommandLine="%CoreRT_CliDir%\dotnet.exe" %CoreRT_ReadyToRunTestHarness% --corerun %CoreRT_CoreCLRRuntimeDir%\CoreRun.exe --in %TestFolder%native\%TestFileName%.ni.exe --noetl %TestParameters%
+set CoreRunCommandLine="%CoreRT_CliDir%\dotnet.exe" %CoreRT_ReadyToRunTestHarness% --corerun %CoreRT_CoreCLRRuntimeDir%\CoreRun.exe --in %TestFolder%native\%TestFileName%.exe --noetl %TestParameters%
 
 if /i "%NativeCodeGen%" == "readytorun" (
     echo %CoreRunCommandLine%

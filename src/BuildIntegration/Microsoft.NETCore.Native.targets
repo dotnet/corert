@@ -38,8 +38,8 @@ See the LICENSE file in the project root for more information.
     <NativeObjectExt Condition="'$(TargetOS)' == 'Windows_NT'">.obj</NativeObjectExt>
     <NativeObjectExt Condition="'$(TargetOS)' != 'Windows_NT'">.o</NativeObjectExt>
     <NativeObjectExt Condition="'$(NativeCodeGen)' == 'wasm'">.bc</NativeObjectExt>
-    <NativeObjectExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' == 'Exe'">.ni.exe</NativeObjectExt>
-    <NativeObjectExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' != 'Exe'">.ni.dll</NativeObjectExt>
+    <NativeObjectExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' == 'Exe'">.exe</NativeObjectExt>
+    <NativeObjectExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' != 'Exe'">.dll</NativeObjectExt>
 
     <LibFileExt Condition="'$(TargetOS)' == 'Windows_NT'">.lib</LibFileExt>
     <LibFileExt Condition="'$(TargetOS)' != 'Windows_NT'">.a</LibFileExt>
@@ -58,8 +58,8 @@ See the LICENSE file in the project root for more information.
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' == 'Windows_NT' and $(NativeLib) == 'Static'">.lib</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' != 'Windows_NT' and $(NativeLib) == 'Static'">.a</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(NativeCodeGen)' == 'wasm'">.html</NativeBinaryExt>
-    <NativeBinaryExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' == 'Exe'">.ni.exe</NativeBinaryExt>
-    <NativeBinaryExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' != 'Exe'">.ni.dll</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' == 'Exe'">.exe</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' != 'Exe'">.dll</NativeBinaryExt>
 
     <ExportsFileExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' == 'Windows_NT' and '$(NativeLib)' == 'Shared'">.def</ExportsFileExt>
     <ExportsFileExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' != 'Windows_NT' and '$(NativeLib)' == 'Shared'">.exports</ExportsFileExt>
@@ -151,7 +151,7 @@ See the LICENSE file in the project root for more information.
 
   <Target Name="ComputeIlcCompileInputs" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)" BeforeTargets="Publish">
     <ItemGroup>
-      <ManagedBinary Condition="$(BuildingFrameworkLibrary) != 'true' and '$(BuildingReadyToRunAssembly)' != 'true'" Include="$(IntermediateOutputPath)$(TargetName)$(TargetExt)" />
+      <ManagedBinary Condition="$(BuildingFrameworkLibrary) != 'true' and '$(PublishingReadyToRunImage)' != 'true'" Include="$(IntermediateOutputPath)$(TargetName)$(TargetExt)" />
       <IlcCompileInput Include="@(ManagedBinary)" />
       <!-- Skip setting framework defaults for ready-to-run since it uses standard .NETCoreApp framework assemblies -->
       <IlcReference Include="@(DefaultFrameworkAssemblies)" Condition="'$(NativeCodeGen)' != 'readytorun'" />
@@ -225,7 +225,7 @@ See the LICENSE file in the project root for more information.
       <IlcCompileInput2 Include="@(IlcCompileInput)" />
       <IlcCmd Include="@(IlcCompileInput)">
         <ResponseFileName>%(IlcCompileInput.FileName).ilc.rsp</ResponseFileName>
-        <CommandLine>%(IlcCompileInput.Identity);@(IlcCompileInput2 -> '-r:%(Identity);');-o:$(NativeIntermediateOutputPath)%(IlcCompileInput.Filename).ni%(IlcCompileInput.Extension);@(IlcArg)</CommandLine>
+        <CommandLine>%(IlcCompileInput.Identity);@(IlcCompileInput2 -> '-r:%(Identity);');-o:$(NativeIntermediateOutputPath)%(IlcCompileInput.Filename)$(IlcOutputFileExt);@(IlcArg)</CommandLine>
       </IlcCmd>
     </ItemGroup>
 
