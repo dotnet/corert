@@ -75,6 +75,18 @@ public class ProcessRunner : IDisposable
 
         _logWriter = new StreamWriter(_processInfo.LogPath);
 
+        if (_processInfo.ProcessPath.Contains(' '))
+        {
+            _logWriter.Write($"\"{_processInfo.ProcessPath}\"");
+        }
+        else
+        {
+            _logWriter.Write(_processInfo.ProcessPath);
+        }
+        _logWriter.Write(' ');
+        _logWriter.WriteLine(_processInfo.Arguments);
+        _logWriter.WriteLine("<<<<");
+
         ProcessStartInfo psi = new ProcessStartInfo()
         {
             FileName = _processInfo.ProcessPath,
@@ -156,10 +168,13 @@ public class ProcessRunner : IDisposable
         bool success;
         if (_process.WaitForExit(0))
         {
+            _process.WaitForExit();
             _processInfo.ExitCode = _process.ExitCode;
             success = (_processInfo.ExitCode == _processInfo.ExpectedExitCode);
+            _logWriter.WriteLine(">>>>");
             if (success)
             {
+                _logWriter.WriteLine($"Succeeded in {_processInfo.DurationMilliseconds} msecs, exit code {_processInfo.ExitCode}");
                 Console.WriteLine(
                     $"{_processIndex}: succeeded in {_processInfo.DurationMilliseconds} msecs; " +
                     $"exit code {_processInfo.ExitCode}: {_processInfo.ProcessPath} {_processInfo.Arguments}");
@@ -167,6 +182,7 @@ public class ProcessRunner : IDisposable
             }
             else
             {
+                _logWriter.WriteLine($"Failed in {_processInfo.DurationMilliseconds} msecs, exit code {_processInfo.ExitCode}, expected {_processInfo.ExpectedExitCode}");
                 Console.Error.WriteLine(
                     $"{_processIndex}: failed in {_processInfo.DurationMilliseconds} msecs; " +
                     $"exit code {_processInfo.ExitCode}, expected{_processInfo.ExpectedExitCode}: " +
@@ -176,9 +192,12 @@ public class ProcessRunner : IDisposable
         else
         {
             _process.Kill();
+            _process.WaitForExit();
             _processInfo.ExitCode = TimeoutExitCode;
             _processInfo.TimedOut = true;
             success = false;
+            _logWriter.WriteLine(">>>>");
+            _logWriter.WriteLine($"Timed out in {_processInfo.DurationMilliseconds} msecs");
             Console.Error.WriteLine(
                 $"{_processIndex}: timed out in {_processInfo.DurationMilliseconds} msecs: " +
                 $"{_processInfo.ProcessPath} {_processInfo.Arguments}");
@@ -187,6 +206,7 @@ public class ProcessRunner : IDisposable
         _processInfo.Finished = true;
         _processInfo.DurationMilliseconds = (int)_stopwatch.ElapsedMilliseconds;
 
+        _logWriter.Flush();
         _logWriter.Close();
 
         CleanupProcess();

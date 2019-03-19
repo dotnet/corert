@@ -38,7 +38,7 @@ public abstract class CompilerRunner
         processInfo.ProcessPath = Path.Combine(_compilerPath, CompilerFileName);
         processInfo.Arguments = $"@{responseFile}";
         processInfo.UseShellExecute = false;
-        processInfo.LogPath = Path.Combine(_outputPath, Path.GetFileNameWithoutExtension(assemblyFileName) + ".log");
+        processInfo.LogPath = Path.ChangeExtension(outputFileName, ".log");
 
         return processInfo;
     }

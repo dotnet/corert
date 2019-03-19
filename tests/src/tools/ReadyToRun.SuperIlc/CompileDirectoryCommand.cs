@@ -63,7 +63,7 @@ namespace ReadyToRun.SuperIlc
                     || ex is IOException
                 )
                 {
-                    Console.WriteLine($"Error: Could not delete output folder {outputDirectory.FullName}. {ex.Message}");
+                    Console.WriteLine($"Error: Could not delete output folder {runnerOutputPath}. {ex.Message}");
                     return 1;
                 }
             }
@@ -130,7 +130,6 @@ namespace ReadyToRun.SuperIlc
                     return true;
 
                 parentInfo = parentInfo.Parent;
-
             }
 
             return false;
