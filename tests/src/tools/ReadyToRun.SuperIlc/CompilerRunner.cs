@@ -25,49 +25,30 @@ public abstract class CompilerRunner
     protected abstract string CompilerFileName {get;}
     protected abstract IEnumerable<string> BuildCommandLineArguments(string assemblyFileName, string outputFileName);
 
-    public bool CompileAssembly(string assemblyFileName)
+    public ProcessInfo CompilationProcess(string assemblyFileName)
     {
         CreateOutputFolder();
+
         string outputFileName = GetOutputFileName(assemblyFileName);
         string responseFile = GetResponseFileName(assemblyFileName);
         var commandLineArgs = BuildCommandLineArguments(assemblyFileName, outputFileName);
         CreateResponseFile(responseFile, commandLineArgs);
 
-        using (var process = new Process())
-        {
-            process.StartInfo.FileName = Path.Combine(_compilerPath, CompilerFileName);
-            process.StartInfo.Arguments = $"@{responseFile}";
-            process.StartInfo.UseShellExecute = false;
+        ProcessInfo processInfo = new ProcessInfo();
+        processInfo.ProcessPath = Path.Combine(_compilerPath, CompilerFileName);
+        processInfo.Arguments = $"@{responseFile}";
+        processInfo.UseShellExecute = false;
+        processInfo.LogPath = Path.Combine(_outputPath, Path.GetFileNameWithoutExtension(assemblyFileName) + ".log");
 
-            process.Start();
-
-            process.OutputDataReceived += delegate (object sender, DataReceivedEventArgs args)
-            {
-                Console.WriteLine(args.Data);
-            };
-
-            process.ErrorDataReceived += delegate (object sender, DataReceivedEventArgs args)
-            {
-                Console.WriteLine(args.Data);
-            };
-
-            process.WaitForExit();
-
-            if (process.ExitCode != 0)
-            {
-                Console.WriteLine($"Compilation of {Path.GetFileName(assemblyFileName)} failed with exit code {process.ExitCode}");
-                return false;
-            }
-        }
-
-        return true;
+        return processInfo;
     }
 
     protected void CreateOutputFolder()
     {
-        if (!Directory.Exists(_outputPath))
+        string outputPath = GetOutputPath();
+        if (!Directory.Exists(outputPath))
         {
-            Directory.CreateDirectory(_outputPath);
+            Directory.CreateDirectory(outputPath);
         }
     }
 
@@ -82,9 +63,13 @@ public abstract class CompilerRunner
         }
     }
 
+    public string GetOutputPath() =>
+        Path.Combine(_outputPath, Path.GetFileNameWithoutExtension(CompilerFileName));
+
     // <input>\a.dll -> <output>\a.dll
-    protected string GetOutputFileName(string assemblyFileName) =>
-        Path.Combine(_outputPath, $"{Path.GetFileName(assemblyFileName)}"); 
-    protected string GetResponseFileName(string assemblyFileName) =>
-        Path.Combine(_outputPath, $"{Path.GetFileNameWithoutExtension(assemblyFileName)}.{Path.GetFileNameWithoutExtension(CompilerFileName)}.rsp");
+    public string GetOutputFileName(string fileName) =>
+        Path.Combine(GetOutputPath(), $"{Path.GetFileName(fileName)}"); 
+
+    public string GetResponseFileName(string assemblyFileName) =>
+        Path.Combine(GetOutputPath(), Path.GetFileNameWithoutExtension(assemblyFileName) + ".rsp");
 }

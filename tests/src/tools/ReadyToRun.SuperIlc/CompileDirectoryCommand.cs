@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -13,6 +14,9 @@ namespace ReadyToRun.SuperIlc
     {
         public static int CompileDirectory(DirectoryInfo toolDirectory, DirectoryInfo inputDirectory, DirectoryInfo outputDirectory, bool crossgen, bool cpaot, DirectoryInfo[] referencePath)
         {
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
             if (toolDirectory == null)
             {
                 Console.WriteLine("--tool-directory is a required argument.");
@@ -47,11 +51,12 @@ namespace ReadyToRun.SuperIlc
                 runner = new CrossgenRunner(toolDirectory.ToString(), inputDirectory.ToString(), outputDirectory.ToString(), referencePath?.Select(x => x.ToString())?.ToList());
             }
 
-            if (outputDirectory.Exists)
+            string runnerOutputPath = runner.GetOutputPath();
+            if (Directory.Exists(runnerOutputPath))
             {
                 try
                 {
-                    outputDirectory.Delete(recursive: true);
+                    Directory.Delete(runnerOutputPath, recursive: true);
                 }
                 catch (Exception ex) when (
                     ex is UnauthorizedAccessException
@@ -64,39 +69,47 @@ namespace ReadyToRun.SuperIlc
                 }
             }
 
-            outputDirectory.Create();
+            Directory.CreateDirectory(runnerOutputPath);
 
-            bool success = true;
-            List<string> failedCompilationAssemblies = new List<string>();
-            int successfulCompileCount = 0;
+            List<ProcessInfo> compilationsToRun = new List<ProcessInfo>();
 
             // Copy unmanaged files (runtime, native dependencies, resources, etc)
             foreach (string file in Directory.EnumerateFiles(inputDirectory.FullName))
             {
                 if (ComputeManagedAssemblies.IsManaged(file))
                 {
-                    // Compile managed code
-                    if (runner.CompileAssembly(file))
-                    {
-                        ++successfulCompileCount;
-                    }
-                    else
-                    {
-                        success = false;
-                        failedCompilationAssemblies.Add(file);
-
-                        // On compile failure, pass through the input IL assembly so the output is still usable
-                        File.Copy(file, Path.Combine(outputDirectory.FullName, Path.GetFileName(file)));
-                    }
+                    ProcessInfo compilationToRun = runner.CompilationProcess(file);
+                    compilationToRun.Data = file;
+                    compilationsToRun.Add(compilationToRun);
                 }
                 else
                 {
                     // Copy through all other files
-                    File.Copy(file, Path.Combine(outputDirectory.FullName, Path.GetFileName(file)));
+                    File.Copy(file, Path.Combine(runnerOutputPath, Path.GetFileName(file)));
                 }
             }
 
-            Console.WriteLine($"Compiled {successfulCompileCount}/{successfulCompileCount + failedCompilationAssemblies.Count} assemblies.");
+            ParallelRunner.Run(compilationsToRun);
+
+            bool success = true;
+            List<string> failedCompilationAssemblies = new List<string>();
+            int successfulCompileCount = 0;
+
+            foreach (ProcessInfo processInfo in compilationsToRun)
+            {
+                if (processInfo.Succeeded)
+                {
+                    successfulCompileCount++;
+                }
+                else
+                {
+                    string file = (string)processInfo.Data;
+                    File.Copy(file, Path.Combine(runnerOutputPath, Path.GetFileName(file)));
+                    failedCompilationAssemblies.Add(file);
+                }
+            }
+
+            Console.WriteLine($"Compiled {successfulCompileCount}/{successfulCompileCount + failedCompilationAssemblies.Count} assemblies in {stopwatch.ElapsedMilliseconds} msecs.");
 
             if (failedCompilationAssemblies.Count > 0)
             {
