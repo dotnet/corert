@@ -229,11 +229,14 @@ for /f "delims=" %%a in ('dir /s /aD /b %CoreRT_TestRoot%\src\%CoreRT_TestName%'
                     if exist "!__SourceFolder!\readytorun" (
                         set __Mode=readytorun
                         if exist "!__SourceFolder!\publish" (
-                            call :PublishProject !__SourceFolder! !__SourceFileName!
+                            if /i "%CoreRT_BuildType%" == "debug" (
+                                call :PublishProject !__SourceFolder! !__SourceFileName!
+                                set /a __ReadyToRunTotalTests=!__ReadyToRunTotalTests!+1
+                            )
                         ) else (
                             call :CompileFile !__SourceFolder! !__SourceFileName! !__SourceFileProj! %__LogDir%\!__RelativePath!
+                            set /a __ReadyToRunTotalTests=!__ReadyToRunTotalTests!+1
                         )
-                        set /a __ReadyToRunTotalTests=!__ReadyToRunTotalTests!+1
                     )
                 )
             )
