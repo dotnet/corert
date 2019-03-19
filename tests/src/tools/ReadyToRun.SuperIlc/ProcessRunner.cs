@@ -165,6 +165,8 @@ public class ProcessRunner : IDisposable
 
         _cancellationTokenSource.Cancel();
 
+        _processInfo.DurationMilliseconds = (int)_stopwatch.ElapsedMilliseconds;
+
         bool success;
         if (_process.WaitForExit(0))
         {
@@ -204,7 +206,6 @@ public class ProcessRunner : IDisposable
         }
 
         _processInfo.Finished = true;
-        _processInfo.DurationMilliseconds = (int)_stopwatch.ElapsedMilliseconds;
 
         _logWriter.Flush();
         _logWriter.Close();
