@@ -23,7 +23,7 @@ public class ProcessInfo
     public string LogPath;
     public int TimeoutMilliseconds = DefaultTimeout;
     public int ExpectedExitCode;
-    public object Data;
+    public string InputFileName;
 
     public bool Finished;
     public bool Succeeded;

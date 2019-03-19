@@ -31,8 +31,7 @@ namespace ReadyToRun.SuperIlc
 
             if (outputDirectory == null)
             {
-                Console.WriteLine("--output-directory is a required argument.");
-                return 1;
+                outputDirectory = inputDirectory;
             }
 
             if (OutputPathIsParentOfInputPath(inputDirectory, outputDirectory))
@@ -79,7 +78,7 @@ namespace ReadyToRun.SuperIlc
                 if (ComputeManagedAssemblies.IsManaged(file))
                 {
                     ProcessInfo compilationToRun = runner.CompilationProcess(file);
-                    compilationToRun.Data = file;
+                    compilationToRun.InputFileName = file;
                     compilationsToRun.Add(compilationToRun);
                 }
                 else
@@ -103,9 +102,8 @@ namespace ReadyToRun.SuperIlc
                 }
                 else
                 {
-                    string file = (string)processInfo.Data;
-                    File.Copy(file, Path.Combine(runnerOutputPath, Path.GetFileName(file)));
-                    failedCompilationAssemblies.Add(file);
+                    File.Copy(processInfo.InputFileName, Path.Combine(runnerOutputPath, Path.GetFileName(processInfo.InputFileName)));
+                    failedCompilationAssemblies.Add(processInfo.InputFileName);
                 }
             }
 
@@ -125,9 +123,6 @@ namespace ReadyToRun.SuperIlc
 
         static bool OutputPathIsParentOfInputPath(DirectoryInfo inputPath, DirectoryInfo outputPath)
         {
-            if (inputPath == outputPath)
-                return true;
-
             DirectoryInfo parentInfo = inputPath.Parent;
             while (parentInfo != null)
             {
