@@ -299,11 +299,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             foreach (FieldDesc field in type.GetFields())
             {
-                if (!field.IsLiteral && 
-                    !field.IsStatic && 
-                    field.FieldType.IsValueType && 
-                    field.FieldType.IsByRefLike)
+                if (!field.IsStatic && field.FieldType.IsByRefLike)
                 {
+                    Debug.Assert(field.FieldType.IsValueType);
                     FindByRefPointerOffsetsInByRefLikeObject(field.FieldType, argDest, delta + field.Offset.AsInt, frame);
                 }
             }
