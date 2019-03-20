@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.CompilerServices;
@@ -16,28 +15,13 @@ namespace System
 {
     public abstract partial class Enum : ValueType, IComparable, IFormattable, IConvertible
     {
-        private static TypeValuesAndNames GetCachedValuesAndNames(Type enumType, bool getNames)
+        private static EnumInfo GetEnumInfo(Type enumType)
         {
-            TypeValuesAndNames entry = null;// EGOR: Should I add `GenericCache` property to Type? // = enumType.GenericCache as TypeValuesAndNames;
-            if (entry == null || (getNames && entry.Names == null))
-            {
-                var info = GetEnumInfo(enumType);
-                bool isFlags = enumType.IsDefined(typeof(FlagsAttribute), inherit: false);
+            Debug.Assert(enumType != null);
+            Debug.Assert(enumType.IsRuntimeImplemented());
+            Debug.Assert(enumType.IsEnum);
 
-                int nameAndValuesCount = info.NamesAndValues.Length;
-                ulong[] values = new ulong[nameAndValuesCount];
-                string[] names = new string[nameAndValuesCount];
-                for (int i = 0; i < nameAndValuesCount; i++)
-                {
-                    KeyValuePair<string, ulong> kv = info.NamesAndValues[i];
-                    values[i] = kv.Value;
-                    names[i] = kv.Key;
-                }
-
-                entry = new TypeValuesAndNames(isFlags, values, names);
-                // TODO: save to the cache
-            }
-            return entry;
+            return ReflectionAugments.ReflectionCoreCallbacks.GetEnumInfo(enumType);
         }
 
         private static Type ValidateRuntimeType(Type enumType)
@@ -60,7 +44,7 @@ namespace System
             return ToObject(enumType.TypeHandle.ToEETypePtr(), value);
         }
 
-        private int InternalCompareTo(Enum enumObj, object target)
+        public int CompareTo(object target)
         {
             if (target == null)
                 return 1;
@@ -68,53 +52,44 @@ namespace System
             if (target == this)
                 return 0;
 
-            if (enumObj.EETypePtr != target.EETypePtr)
+            if (this.EETypePtr != target.EETypePtr)
             {
-                throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, target.GetType().ToString(), enumObj.GetType().ToString()));
+                throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, target.GetType(), this.GetType()));
             }
 
-            ref byte pThisValue = ref enumObj.GetRawData();
+            ref byte pThisValue = ref this.GetRawData();
             ref byte pTargetValue = ref target.GetRawData();
 
-            switch (enumObj.EETypePtr.CorElementType)
+            switch (this.EETypePtr.CorElementType)
             {
                 case CorElementType.ELEMENT_TYPE_I1:
-                    return (Unsafe.As<byte, sbyte>(ref pThisValue) == Unsafe.As<byte, sbyte>(ref pTargetValue)) ?
-                        0 : (Unsafe.As<byte, sbyte>(ref pThisValue) < Unsafe.As<byte, sbyte>(ref pTargetValue)) ? -1 : 1;
+                    return Unsafe.As<byte, sbyte>(ref pThisValue).CompareTo(Unsafe.As<byte, sbyte>(ref pTargetValue));
 
                 case CorElementType.ELEMENT_TYPE_U1:
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
-                    return (Unsafe.As<byte, byte>(ref pThisValue) == Unsafe.As<byte, byte>(ref pTargetValue)) ?
-                        0 : (Unsafe.As<byte, byte>(ref pThisValue) < Unsafe.As<byte, byte>(ref pTargetValue)) ? -1 : 1;
+                    return Unsafe.As<byte, byte>(ref pThisValue).CompareTo(Unsafe.As<byte, byte>(ref pTargetValue));
 
                 case CorElementType.ELEMENT_TYPE_I2:
-                    return (Unsafe.As<byte, short>(ref pThisValue) == Unsafe.As<byte, short>(ref pTargetValue)) ?
-                        0 : (Unsafe.As<byte, short>(ref pThisValue) < Unsafe.As<byte, short>(ref pTargetValue)) ? -1 : 1;
+                    return Unsafe.As<byte, short>(ref pThisValue).CompareTo(Unsafe.As<byte, short>(ref pTargetValue));
 
                 case CorElementType.ELEMENT_TYPE_U2:
                 case CorElementType.ELEMENT_TYPE_CHAR:
-                    return (Unsafe.As<byte, ushort>(ref pThisValue) == Unsafe.As<byte, ushort>(ref pTargetValue)) ?
-                        0 : (Unsafe.As<byte, ushort>(ref pThisValue) < Unsafe.As<byte, ushort>(ref pTargetValue)) ? -1 : 1;
+                    return Unsafe.As<byte, ushort>(ref pThisValue).CompareTo(Unsafe.As<byte, ushort>(ref pTargetValue));
 
                 case CorElementType.ELEMENT_TYPE_I4:
-                    return (Unsafe.As<byte, int>(ref pThisValue) == Unsafe.As<byte, int>(ref pTargetValue)) ?
-                        0 : (Unsafe.As<byte, int>(ref pThisValue) < Unsafe.As<byte, int>(ref pTargetValue)) ? -1 : 1;
+                    return Unsafe.As<byte, int>(ref pThisValue).CompareTo(Unsafe.As<byte, int>(ref pTargetValue));
 
                 case CorElementType.ELEMENT_TYPE_U4:
-                    return (Unsafe.As<byte, uint>(ref pThisValue) == Unsafe.As<byte, uint>(ref pTargetValue)) ?
-                        0 : (Unsafe.As<byte, uint>(ref pThisValue) < Unsafe.As<byte, uint>(ref pTargetValue)) ? -1 : 1;
+                    return Unsafe.As<byte, uint>(ref pThisValue).CompareTo(Unsafe.As<byte, uint>(ref pTargetValue));
 
                 case CorElementType.ELEMENT_TYPE_I8:
-                    return (Unsafe.As<byte, long>(ref pThisValue) == Unsafe.As<byte, long>(ref pTargetValue)) ?
-                        0 : (Unsafe.As<byte, long>(ref pThisValue) < Unsafe.As<byte, long>(ref pTargetValue)) ? -1 : 1;
+                    return Unsafe.As<byte, long>(ref pThisValue).CompareTo(Unsafe.As<byte, long>(ref pTargetValue));
 
                 case CorElementType.ELEMENT_TYPE_U8:
-                    return (Unsafe.As<byte, ulong>(ref pThisValue) == Unsafe.As<byte, ulong>(ref pTargetValue)) ?
-                        0 : (Unsafe.As<byte, ulong>(ref pThisValue) < Unsafe.As<byte, ulong>(ref pTargetValue)) ? -1 : 1;
+                    return Unsafe.As<byte, ulong>(ref pThisValue).CompareTo(Unsafe.As<byte, ulong>(ref pTargetValue));
 
                 default:
-                    Environment.FailFast("Unexpected enum underlying type");
-                    return 0;
+                    throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
             }
         }
 
@@ -141,7 +116,7 @@ namespace System
                 case 3:
                     return Unsafe.As<byte, ulong>(ref pThisValue) == Unsafe.As<byte, ulong>(ref pOtherValue);
                 default:
-                    Environment.FailFast("Unexpected enum underlying type");
+                    Debug.Fail("Invalid primitive type");
                     return false;
             }
         }
@@ -171,7 +146,7 @@ namespace System
                 case 3:
                     return (Unsafe.As<byte, ulong>(ref pThisValue) & Unsafe.As<byte, ulong>(ref pFlagValue)) == Unsafe.As<byte, ulong>(ref pFlagValue);
                 default:
-                    Environment.FailFast("Unexpected enum underlying type");
+                    Debug.Fail("Invalid primitive type");
                     return false;
             }
         }
@@ -248,28 +223,6 @@ namespace System
             }
         }
 
-        //
-        // Look up a name for rawValue if a matching one exists. Returns null if no matching name exists.
-        //
-        private static string GetNameIfAny(EnumInfo enumInfo, ulong rawValue)
-        {
-            KeyValuePair<string, ulong>[] namesAndValues = enumInfo.NamesAndValues;
-            KeyValuePair<string, ulong> searchKey = new KeyValuePair<string, ulong>(null, rawValue);
-            int index = Array.BinarySearch<KeyValuePair<String, ulong>>(namesAndValues, searchKey, s_nameAndValueComparer);
-            if (index < 0)
-                return null;
-            return namesAndValues[index].Key;
-        }
-
-        internal static EnumInfo GetEnumInfo(Type enumType)
-        {
-            Debug.Assert(enumType != null);
-            Debug.Assert(enumType.IsRuntimeImplemented());
-            Debug.Assert(enumType.IsEnum);
-
-            return ReflectionAugments.ReflectionCoreCallbacks.GetEnumInfo(enumType);
-        }
-
         public static string GetName(Type enumType, object value)
         {
             if (enumType == null)
@@ -288,9 +241,7 @@ namespace System
             if (!enumType.IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum);
 
-            EnumInfo enumInfo = GetEnumInfo(enumType);
-            string nameOrNull = GetNameIfAny(enumInfo, rawValue);
-            return nameOrNull;
+            return GetEnumName(enumType, rawValue);
         }
 
         public static string[] GetNames(Type enumType)
@@ -304,11 +255,10 @@ namespace System
             if (!enumType.IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum);
 
-            KeyValuePair<string, ulong>[] namesAndValues = GetEnumInfo(enumType).NamesAndValues;
-            string[] names = new string[namesAndValues.Length];
-            for (int i = 0; i < namesAndValues.Length; i++)
-                names[i] = namesAndValues[i].Key;
-            return names;
+            string[] ret = GetEnumInfo(enumType).Names;
+
+            // Make a copy since we can't hand out the same array since users can modify them
+            return new ReadOnlySpan<string>(ret).ToArray();
         }
 
         public static Type GetUnderlyingType(Type enumType)
@@ -336,7 +286,7 @@ namespace System
             if (!enumType.IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum);
 
-            Array values = GetEnumInfo(enumType).Values;
+            Array values = GetEnumInfo(enumType).ValuesAsUnderlyingType;
             int count = values.Length;
 #if PROJECTN
             Array result = Array.CreateInstance(enumType, count);
@@ -352,6 +302,70 @@ namespace System
 #endif
             Array.CopyImplValueTypeArrayNoInnerGcRefs(values, 0, result, 0, count);
             return result;
+        }
+
+        public static bool IsDefined(Type enumType, object value)
+        {
+            if (enumType == null)
+                throw new ArgumentNullException(nameof(enumType));
+
+            if (!enumType.IsRuntimeImplemented())
+                return enumType.IsEnumDefined(value);
+
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
+
+            if (!enumType.IsEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum);
+
+            if (value is string valueAsString)
+            {
+                EnumInfo enumInfo = GetEnumInfo(enumType);
+                foreach (string name in enumInfo.Names)
+                {
+                    if (valueAsString == name)
+                        return true;
+                }
+                return false;
+            }
+            else
+            {
+                ulong rawValue;
+                if (!TryGetUnboxedValueOfEnumOrInteger(value, out rawValue))
+                {
+                    if (Type.IsIntegerType(value.GetType()))
+                        throw new ArgumentException(SR.Format(SR.Arg_EnumUnderlyingTypeAndObjectMustBeSameType, value.GetType(), Enum.GetUnderlyingType(enumType)));
+                    else
+                        throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
+                }
+
+                EnumInfo enumInfo = GetEnumInfo(enumType);
+                if (value is Enum)
+                {
+                    if (!ValueTypeMatchesEnumType(enumType, value))
+                        throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, value.GetType(), enumType));
+                }
+                else
+                {
+                    if (!(enumInfo.UnderlyingType.TypeHandle.ToEETypePtr() == value.EETypePtr))
+                        throw new ArgumentException(SR.Format(SR.Arg_EnumUnderlyingTypeAndObjectMustBeSameType, value.GetType(), enumInfo.UnderlyingType));
+                }
+
+                return GetEnumName(enumInfo, rawValue) != null;
+            }
+        }
+
+        //
+        // Checks if value.GetType() matches enumType exactly.
+        //
+        private static bool ValueTypeMatchesEnumType(Type enumType, object value)
+        {
+            EETypePtr enumEEType;
+            if (!enumType.TryGetEEType(out enumEEType))
+                return false;
+            if (!(enumEEType == value.EETypePtr))
+                return false;
+            return true;
         }
 
         [Conditional("BIGENDIAN")]
@@ -387,28 +401,6 @@ namespace System
             }
 #endif //BIGENDIAN || DEBUG
         }
-
-
-
-        //
-        // Sort comparer for NamesAndValues
-        //
-        private class NamesAndValueComparer : IComparer<KeyValuePair<string, ulong>>
-        {
-            public int Compare(KeyValuePair<string, ulong> kv1, KeyValuePair<string, ulong> kv2)
-            {
-                ulong x = kv1.Value;
-                ulong y = kv2.Value;
-                if (x < y)
-                    return -1;
-                else if (x > y)
-                    return 1;
-                else
-                    return 0;
-            }
-        }
-
-        private static NamesAndValueComparer s_nameAndValueComparer = new NamesAndValueComparer();
 
         #region ToObject
 
