@@ -15,6 +15,7 @@ set CoreRT_CoreCLRTargetsFile=
 set CoreRT_TestLogFileName=testResults.xml
 set CoreRT_TestName=*
 set CoreRT_GCStressLevel=
+set CoreRT_SingleThreaded=
 
 :ArgLoop
 if "%1" == "" goto :ArgsDone
@@ -58,6 +59,7 @@ if /i "%1" == "/test" (set CoreRT_TestName=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/runtest" (set CoreRT_TestRun=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/dotnetclipath" (set CoreRT_CliDir=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/multimodule" (set CoreRT_MultiFileConfiguration=MultiModule&shift&goto ArgLoop)
+if /i "%1" == "/singlethread" (set CoreRT_SingleThreaded=true&shift&goto ArgLoop)
 if /i "%1" == "/determinism" (set CoreRT_DeterminismMode=true&shift&goto ArgLoop)
 if /i "%1" == "/nocleanup" (set CoreRT_NoCleanup=true&shift&goto ArgLoop)
 if /i "%1" == "/r2rframework" (set CoreRT_R2RFramework=true&shift&goto ArgLoop)
@@ -78,6 +80,7 @@ echo     /corefx      : Download and run the CoreFX repo tests
 echo     /coreclrsingletest ^<absolute\path\to\test.exe^>
 echo                   : Run a single CoreCLR repo test
 echo     /multimodule  : Compile the framework as a .lib and link tests against it (only supports ryujit)
+echo     /singlethread : Run tests on a single thread (avoid parallel test execution)
 echo     /determinism  : Compile the test twice with randomized dependency node mark stack to validate
 echo                      compiler determinism in multi-threaded compilation.
 echo     /nocleanup    : Do not delete compiled test artifacts after running each test
