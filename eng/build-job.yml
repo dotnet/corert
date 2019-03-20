@@ -100,7 +100,7 @@ jobs:
         enabled: ${{ eq(parameters.buildConfig, 'Debug') }}
 
     - ${{ if contains(parameters.testScenarios, 'CoreFX') }}:
-      - script: $(testScriptName) $(buildConfig) $(testParameterPrefix)corefx
+      - script: $(testScriptName) $(buildConfig) $(testParameterPrefix)corefx $(testParameterPrefix)singlethread
         displayName: Run CoreFX tests
         enabled: ${{ eq(parameters.buildConfig, 'Debug') }}
 
