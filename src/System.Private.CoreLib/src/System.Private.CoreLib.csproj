@@ -300,7 +300,7 @@
     <Compile Include="System\Runtime\RuntimeImportAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.NonPortable.cs" />
-    <Compile Include="System\Runtime\CompilerServices\RuntimeHelpers.cs" />
+    <Compile Include="System\Runtime\CompilerServices\RuntimeHelpers.CoreRT.cs" />
     <Compile Include="System\WeakReference.cs" />
     <Compile Include="System\WeakReferenceOfT.cs" />
   </ItemGroup>

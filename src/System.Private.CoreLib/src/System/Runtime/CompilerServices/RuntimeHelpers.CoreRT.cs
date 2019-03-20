@@ -2,13 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-//
-// RuntimeHelpers
-//    This class defines a set of static methods that provide support for compilers.
-//
-
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core.NonPortable;
 using Internal.Runtime.Augments;
@@ -222,7 +215,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [Intrinsic]
-        public static bool IsReference<T>()
+        internal static bool IsReference<T>()
         {
             var pEEType = EETypePtr.EETypePtrOf<T>();
             return !pEEType.IsValueType;
@@ -235,6 +228,14 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(obj != null);
             return obj.EETypePtr.ComponentSize != 0;
+        }
+
+        public static void PrepareMethod(RuntimeMethodHandle method)
+        {
+        }
+
+        public static void PrepareMethod(RuntimeMethodHandle method, RuntimeTypeHandle[] instantiation)
+        {
         }
 
         public static void PrepareDelegate(Delegate d)
