@@ -1,1 +1,1 @@
-https://ci.dot.net/job/dotnet_coreclr/job/master/job/x64_checked_windows_nt_innerloop_prtest/839/artifact/bin/tests/tests.zip
+https://cloudcijobs.blob.core.windows.net/corertci/CoreCLRTests/2019_03_20/Windows/tests.zip
