@@ -912,7 +912,7 @@ struct UniversalTransitionStackFrame
 private:
     Fp128 m_fpArgRegs[8];                   // ChildSP+000 CallerSP-0D0 (0x80 bytes)    (xmm0-xmm7)
     UIntNative m_returnBlock[2];            // ChildSP+080 CallerSP-050 (0x10 bytes)
-    UIntNative m_intArgRegs[4];             // ChildSP+090 CallerSP-040 (0x30 bytes)    (rdi,rsi,rcx,rdx,r8,r9)
+    UIntNative m_intArgRegs[6];             // ChildSP+090 CallerSP-040 (0x30 bytes)    (rdi,rsi,rcx,rdx,r8,r9)
     UIntNative m_alignmentPad;              // ChildSP+0C0 CallerSP-010 (0x8 bytes)
     UIntNative m_callerRetaddr;             // ChildSP+0C8 CallerSP-008 (0x8 bytes)
     UIntNative m_stackPassedArgs[1];        // ChildSP+0D0 CallerSP+000 (unknown size)
