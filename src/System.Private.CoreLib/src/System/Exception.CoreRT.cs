@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
-using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
@@ -14,88 +13,11 @@ using Internal.Diagnostics;
 
 namespace System
 {
-    [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public class Exception : ISerializable
+    public partial class Exception
     {
-        public Exception()
-        {
-            _message = null;
-            HResult = HResults.COR_E_EXCEPTION;
-        }
-
-        public Exception(string message)
-            : this()
-        {
-            _message = message;
-        }
-
-        // Creates a new Exception.  All derived classes should 
-        // provide this constructor.
-        // Note: the stack trace is not started until the exception 
-        // is thrown
-        // 
-        public Exception(string message, Exception innerException)
-            : this()
-        {
-            _message = message;
-            _innerException = innerException;
-        }
-
-        protected Exception(SerializationInfo info, StreamingContext context)
-        {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
-            _message = info.GetString("Message"); // Do not rename (binary serialization)
-            _data = (IDictionary)(info.GetValueNoThrow("Data", typeof(IDictionary))); // Do not rename (binary serialization)
-            _innerException = (Exception)(info.GetValue("InnerException", typeof(Exception))); // Do not rename (binary serialization)
-            _helpURL = info.GetString("HelpURL"); // Do not rename (binary serialization)
-            _stackTrace = info.GetString("StackTraceString");
-            HResult = info.GetInt32("HResult"); // Do not rename (binary serialization)
-            _source = info.GetString("Source"); // Do not rename (binary serialization)
-        }
-
-        public virtual string Message
-        {
-            get
-            {
-                if (_message == null)
-                {
-                    string className = GetClassName();
-                    return SR.Format(SR.Exception_WasThrown, className);
-                }
-                else
-                {
-                    return _message;
-                }
-            }
-        }
-
-        public new Type GetType() => base.GetType();
-
-        public virtual IDictionary Data
-        {
-            get
-            {
-                if (_data == null)
-                    _data = new ListDictionaryInternal();
-
-                return _data;
-            }
-        }
-
         // TargetSite is not supported on CoreRT. Because it's likely use is diagnostic logging, returning null (a permitted return value)
         // seems more useful than throwing a PlatformNotSupportedException here.
         public MethodBase TargetSite => null;
-
-        protected event EventHandler<SafeSerializationEventArgs> SerializeObjectState
-        {
-            add { throw new PlatformNotSupportedException(SR.PlatformNotSupported_SecureBinarySerialization); }
-            remove { throw new PlatformNotSupportedException(SR.PlatformNotSupported_SecureBinarySerialization); }
-        }
 
         #region Interop Helpers
 
@@ -181,133 +103,15 @@ namespace System
 
         #endregion
 
-        private string GetClassName()
-        {
-            return GetType().ToString();
-        }
+        private IDictionary CreateDataContainer() => new ListDictionaryInternal();
 
-        // Retrieves the lowest exception (inner most) for the given Exception.
-        // This will traverse exceptions using the innerException property.
-        //
-        public virtual Exception GetBaseException()
-        {
-            Exception inner = InnerException;
-            Exception back = this;
+        private string GetStackTrace(bool needFileInfo) => StackTrace;
 
-            while (inner != null)
-            {
-                back = inner;
-                inner = inner.InnerException;
-            }
+        private string SerializationStackTraceString => StackTrace;
+        private string SerializationRemoteStackTraceString => null;
+        private string SerializationWatsonBuckets => null;
 
-            return back;
-        }
-
-        // Returns the inner exception contained in this exception
-        // 
-        public Exception InnerException
-        {
-            get { return _innerException; }
-        }
-
-        public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-            
-            if (_source == null)
-            {
-                _source = Source; // Set the Source information correctly before serialization
-            }
-            
-            if (_message == null)
-            {
-                _message = Message; // Set the Message information correctly before serialization
-            }
-
-            info.AddValue("ClassName",  GetClassName(), typeof(string)); // Do not rename (binary serialization)
-            info.AddValue("Message", _message, typeof(string)); // Do not rename (binary serialization)
-            info.AddValue("Data", _data, typeof(IDictionary)); // Do not rename (binary serialization)
-            info.AddValue("InnerException", _innerException, typeof(Exception)); // Do not rename (binary serialization)
-            info.AddValue("HelpURL", _helpURL, typeof(string)); // Do not rename (binary serialization)
-            info.AddValue("StackTraceString",  StackTrace, typeof(string)); // Do not rename (binary serialization)
-            info.AddValue("RemoteStackTraceString", null, typeof(string)); // Do not rename (binary serialization)
-            info.AddValue("RemoteStackIndex", 0, typeof(int)); // Do not rename (binary serialization)
-            info.AddValue("ExceptionMethod", null, typeof(string)); // Do not rename (binary serialization)
-            info.AddValue("HResult", HResult); // Do not rename (binary serialization)
-            info.AddValue("Source", _source, typeof(string)); // Do not rename (binary serialization)
-            info.AddValue("WatsonBuckets", null, typeof(string)); // Do not rename (binary serialization)
-        }
-
-        private string GetStackTrace(bool needFileInfo)
-        {
-            return this.StackTrace;
-        }
-
-        public virtual string HelpLink
-        {
-            get
-            {
-                return _helpURL;
-            }
-
-            set
-            {
-                _helpURL = value;
-            }
-        }
-
-        public virtual string Source
-        {
-            get
-            {
-                if (_source == null && HasBeenThrown)
-                {
-                    _source = "<unknown>";
-                }
-                return _source;
-            }
-            set
-            {
-                _source = value;
-            }
-        }
-
-        public override string ToString()
-        {
-            return ToString(true, true);
-        }
-
-        private string ToString(bool needFileLineInfo, bool needMessage)
-        {
-            string message = (needMessage ? Message : null);
-            string s;
-
-            if (message == null || message.Length <= 0)
-            {
-                s = GetClassName();
-            }
-            else
-            {
-                s = GetClassName() + ": " + message;
-            }
-
-            if (_innerException != null)
-            {
-                s = s + " ---> " + _innerException.ToString(needFileLineInfo, needMessage) + Environment.NewLine +
-                "   " + SR.Exception_EndOfInnerExceptionStack;
-            }
-
-            string stackTrace = GetStackTrace(needFileLineInfo);
-            if (stackTrace != null)
-            {
-                s += Environment.NewLine + stackTrace;
-            }
-
-            return s;
-        }
+        private string CreateSourceName() => HasBeenThrown ? "<unknown>" : null;
 
         // WARNING: We allow diagnostic tools to directly inspect these three members (_message, _innerException and _HResult)
         // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details. 
@@ -318,17 +122,10 @@ namespace System
         private Exception _innerException;
         private string _helpURL;
         private string _source;         // Mainly used by VB. 
-
         private int _HResult;     // HResult
 
         // To maintain compatibility across runtimes, if this object was deserialized, it will store its stack trace as a string
-        private string _stackTrace;
-
-        public int HResult
-        {
-            get { return _HResult; }
-            set { _HResult = value; }
-        }
+        private string _stackTraceString;
 
         // Returns the stack trace as a string.  If no stack trace is
         // available, null is returned.
@@ -336,8 +133,8 @@ namespace System
         {
             get
             {
-                if (_stackTrace != null)
-                    return _stackTrace;
+                if (_stackTraceString != null)
+                    return _stackTraceString;
 
                 if (!HasBeenThrown)
                     return null;
