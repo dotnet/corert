@@ -187,7 +187,7 @@ UIntNative UnixNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Metho
 
     if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0)
     {
-        // Reverse PInvoke transition should on the main function body only
+        // Reverse PInvoke transition should be on the main function body only
         assert(pNativeMethodInfo->pMainLSDA == pNativeMethodInfo->pLSDA);
 
         if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
@@ -220,8 +220,9 @@ UIntNative UnixNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Metho
         bool result = VirtualUnwind(&localRegisterSet);
         assert(result);
 
-        // All common ABIs have outgoing arguments are under caller SP (minus slot reserved for return address).
-        // There are ABI-specific optimizations that could applied to 
+        // All common ABIs have outgoing arguments under caller SP (minus slot reserved for return address).
+        // There are ABI-specific optimizations that could applied here, but they are not worth the complexity
+        // given that this path is used rarely.
         upperBound = dac_cast<TADDR>(localRegisterSet.GetSP() - sizeof(TADDR));
     }
 
@@ -243,7 +244,7 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 
     if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0)
     {
-        // Reverse PInvoke transition should on the main function body only
+        // Reverse PInvoke transition should be on the main function body only
         assert(pNativeMethodInfo->pMainLSDA == pNativeMethodInfo->pLSDA);
 
         if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
