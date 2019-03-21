@@ -12,16 +12,15 @@ namespace ReadyToRun.SuperIlc
 {
     class CompileDirectoryCommand
     {
-        public static int CompileDirectory(DirectoryInfo toolDirectory, DirectoryInfo inputDirectory, DirectoryInfo outputDirectory, bool crossgen, bool cpaot, DirectoryInfo[] referencePath)
+        public static int CompileDirectory(
+            DirectoryInfo inputDirectory,
+            DirectoryInfo outputDirectory,
+            DirectoryInfo crossgenDirectory,
+            DirectoryInfo cpaotDirectory,
+            DirectoryInfo[] referencePath)
         {
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
-
-            if (toolDirectory == null)
-            {
-                Console.WriteLine("--tool-directory is a required argument.");
-                return 1;
-            }
 
             if (inputDirectory == null)
             {
@@ -34,105 +33,158 @@ namespace ReadyToRun.SuperIlc
                 outputDirectory = inputDirectory;
             }
 
-            if (OutputPathIsParentOfInputPath(inputDirectory, outputDirectory))
+            if (outputDirectory.IsParentOf(inputDirectory))
             {
                 Console.WriteLine("Error: Input and output folders must be distinct, and the output directory (which gets deleted) better not be a parent of the input directory.");
                 return 1;
             }
 
-            CompilerRunner runner;
-            if (cpaot)
+            List<string> referencePaths = referencePath?.Select(x => x.ToString())?.ToList();
+            string coreRunPath = null;
+            foreach (string path in referencePaths)
             {
-                runner = new CpaotRunner(toolDirectory.ToString(), inputDirectory.ToString(), outputDirectory.ToString(), referencePath?.Select(x => x.ToString())?.ToList());
-            }
-            else
-            {
-                runner = new CrossgenRunner(toolDirectory.ToString(), inputDirectory.ToString(), outputDirectory.ToString(), referencePath?.Select(x => x.ToString())?.ToList());
-            }
-
-            string runnerOutputPath = runner.GetOutputPath();
-            if (Directory.Exists(runnerOutputPath))
-            {
-                try
+                string candidatePath = Path.Combine(path, "CoreRun.exe");
+                if (File.Exists(candidatePath))
                 {
-                    Directory.Delete(runnerOutputPath, recursive: true);
-                }
-                catch (Exception ex) when (
-                    ex is UnauthorizedAccessException
-                    || ex is DirectoryNotFoundException
-                    || ex is IOException
-                )
-                {
-                    Console.WriteLine($"Error: Could not delete output folder {runnerOutputPath}. {ex.Message}");
-                    return 1;
+                    coreRunPath = candidatePath;
+                    break;
                 }
             }
 
-            Directory.CreateDirectory(runnerOutputPath);
+            if (coreRunPath == null)
+            {
+                Console.Error.WriteLine("CoreRun.exe not found in reference folders, execution won't run");
+            }
 
-            List<ProcessInfo> compilationsToRun = new List<ProcessInfo>();
+            List<CompilerRunner> runners = new List<CompilerRunner>();
+            if (cpaotDirectory != null)
+            {
+                runners.Add(new CpaotRunner(cpaotDirectory.ToString(), inputDirectory.ToString(), outputDirectory.ToString(), referencePaths));
+            }
+            if (crossgenDirectory != null)
+            {
+                runners.Add(new CrossgenRunner(crossgenDirectory.ToString(), inputDirectory.ToString(), outputDirectory.ToString(), referencePaths));
+            }
+
+            List<string> compilationInputFiles = new List<string>();
+            List<string> passThroughFiles = new List<string>();
+            string mainExecutable = null;
 
             // Copy unmanaged files (runtime, native dependencies, resources, etc)
             foreach (string file in Directory.EnumerateFiles(inputDirectory.FullName))
             {
-                if (ComputeManagedAssemblies.IsManaged(file))
+                bool isManagedAssembly = ComputeManagedAssemblies.IsManaged(file);
+                if (isManagedAssembly)
                 {
-                    ProcessInfo compilationToRun = runner.CompilationProcess(file);
-                    compilationToRun.InputFileName = file;
-                    compilationsToRun.Add(compilationToRun);
+                    compilationInputFiles.Add(file);
                 }
                 else
                 {
-                    // Copy through all other files
+                    passThroughFiles.Add(file);
+                }
+                if (Path.GetExtension(file).Equals(".exe", StringComparison.OrdinalIgnoreCase))
+                {
+                    mainExecutable = file;
+                }
+            }
+
+            foreach (CompilerRunner runner in runners)
+            {
+                string runnerOutputPath = runner.GetOutputPath();
+                runnerOutputPath.RecreateDirectory();
+                foreach (string file in passThroughFiles)
+                {
                     File.Copy(file, Path.Combine(runnerOutputPath, Path.GetFileName(file)));
                 }
             }
 
+            List<ProcessInfo> compilationsToRun = new List<ProcessInfo>();
+
+            Application application = new Application(compilationInputFiles, mainExecutable, runners, coreRunPath);
+            foreach (ProcessInfo[] compilation in application.Compilations)
+            {
+                foreach (CompilerRunner runner in runners)
+                {
+                    compilationsToRun.Add(compilation[(int)runner.Index]);
+                }
+            }
+
+            compilationsToRun.Sort((a, b) => b.CompilationCostHeuristic.CompareTo(a.CompilationCostHeuristic));
+
             ParallelRunner.Run(compilationsToRun);
 
             bool success = true;
-            List<string> failedCompilationAssemblies = new List<string>();
+            List<KeyValuePair<string, string>> failedCompilationsPerBuilder = new List<KeyValuePair<string, string>>();
             int successfulCompileCount = 0;
 
-            foreach (ProcessInfo processInfo in compilationsToRun)
+            foreach (ProcessInfo[] compilation in application.Compilations)
             {
-                if (processInfo.Succeeded)
+                string file = null;
+                string failedBuilders = null;
+                foreach (CompilerRunner runner in runners)
                 {
-                    successfulCompileCount++;
+                    ProcessInfo runnerProcess = compilation[(int)runner.Index];
+                    if (!runnerProcess.Succeeded)
+                    {
+                        File.Copy(runnerProcess.InputFileName, runnerProcess.OutputFileName);
+                        if (file == null)
+                        {
+                            file = runnerProcess.InputFileName;
+                            failedBuilders = runner.CompilerName;
+                        }
+                        else
+                        {
+                            failedBuilders += "; " + runner.CompilerName;
+                        }
+                    }
+                }
+                if (file != null)
+                {
+                    failedCompilationsPerBuilder.Add(new KeyValuePair<string, string>(file, failedBuilders));
+                    success = false;
                 }
                 else
                 {
-                    File.Copy(processInfo.InputFileName, Path.Combine(runnerOutputPath, Path.GetFileName(processInfo.InputFileName)));
-                    failedCompilationAssemblies.Add(processInfo.InputFileName);
+                    successfulCompileCount++;
                 }
             }
 
-            Console.WriteLine($"Compiled {successfulCompileCount}/{successfulCompileCount + failedCompilationAssemblies.Count} assemblies in {stopwatch.ElapsedMilliseconds} msecs.");
+            Console.WriteLine($"Compiled {successfulCompileCount} / {successfulCompileCount + failedCompilationsPerBuilder.Count} assemblies in {stopwatch.ElapsedMilliseconds} msecs.");
 
-            if (failedCompilationAssemblies.Count > 0)
+            if (failedCompilationsPerBuilder.Count > 0)
             {
-                Console.WriteLine($"Failed to compile {failedCompilationAssemblies.Count} assemblies:");
-                foreach (var assembly in failedCompilationAssemblies)
+                Console.WriteLine($"Failed to compile {failedCompilationsPerBuilder.Count} assemblies:");
+                foreach (KeyValuePair<string, string> assemblyBuilders in failedCompilationsPerBuilder)
                 {
-                    Console.WriteLine(assembly);
+                    string assemblySpec = assemblyBuilders.Key;
+                    if (runners.Count > 1)
+                    {
+                        assemblySpec += " (" + assemblyBuilders.Value + ")";
+                    }
+                    Console.WriteLine(assemblySpec);
                 }
+            }
+
+            if (coreRunPath != null)
+            {
+                List<ProcessInfo> executionsToRun = new List<ProcessInfo>();
+                foreach (CompilerRunner runner in runners)
+                {
+                    bool compilationsSucceeded = application.Compilations.All(comp => comp[(int)runner.Index].Succeeded);
+                    if (compilationsSucceeded)
+                    {
+                        ProcessInfo executionProcess = application.Execution[(int)runner.Index];
+                        if (executionProcess != null)
+                        {
+                            executionsToRun.Add(executionProcess);
+                        }
+                    }
+                }
+
+                ParallelRunner.Run(executionsToRun);
             }
 
             return success ? 0 : 1;
-        }
-
-        static bool OutputPathIsParentOfInputPath(DirectoryInfo inputPath, DirectoryInfo outputPath)
-        {
-            DirectoryInfo parentInfo = inputPath.Parent;
-            while (parentInfo != null)
-            {
-                if (parentInfo == outputPath)
-                    return true;
-
-                parentInfo = parentInfo.Parent;
-            }
-
-            return false;
         }
     }    
 }

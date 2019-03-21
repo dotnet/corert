@@ -7,6 +7,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 
+public enum CompilerIndex
+{
+    CPAOT,
+    Crossgen,
+
+    Count
+}
+
 public abstract class CompilerRunner
 {
     protected string _compilerPath;
@@ -21,6 +29,12 @@ public abstract class CompilerRunner
         _outputPath = outputFolder;
         _referenceFolders = referenceFolders ?? new List<string>();
     }
+
+    public IReadOnlyList<string> ReferenceFolders => _referenceFolders;
+
+    public abstract CompilerIndex Index { get;  }
+
+    public string CompilerName => Index.ToString();
 
     protected abstract string CompilerFileName {get;}
     protected abstract IEnumerable<string> BuildCommandLineArguments(string assemblyFileName, string outputFileName);
@@ -38,12 +52,31 @@ public abstract class CompilerRunner
         processInfo.ProcessPath = Path.Combine(_compilerPath, CompilerFileName);
         processInfo.Arguments = $"@{responseFile}";
         processInfo.UseShellExecute = false;
-        processInfo.LogPath = Path.ChangeExtension(outputFileName, ".log");
+        processInfo.LogPath = Path.ChangeExtension(outputFileName, ".ilc.log");
+        processInfo.InputFileName = assemblyFileName;
+        processInfo.OutputFileName = outputFileName;
+        processInfo.CompilationCostHeuristic = new FileInfo(assemblyFileName).Length;
 
         return processInfo;
     }
 
-    protected void CreateOutputFolder()
+    public ProcessInfo ExecutionProcess(string appPath, ICollection<string> modules, ICollection<string> folders, string coreRunPath)
+    {
+        string exeToRun = GetOutputFileName(appPath);
+        ProcessInfo processInfo = new ProcessInfo();
+        processInfo.ProcessPath = coreRunPath;
+        processInfo.Arguments = exeToRun;
+        processInfo.UseShellExecute = false;
+        processInfo.LogPath = Path.ChangeExtension(exeToRun, ".exe.log");
+        processInfo.ExpectedExitCode = 100;
+        processInfo.CollectJittedMethods = true;
+        processInfo.MonitorModules = modules;
+        processInfo.MonitorFolders = folders;
+
+        return processInfo;
+    }
+
+    public void CreateOutputFolder()
     {
         string outputPath = GetOutputPath();
         if (!Directory.Exists(outputPath))
@@ -63,8 +96,7 @@ public abstract class CompilerRunner
         }
     }
 
-    public string GetOutputPath() =>
-        Path.Combine(_outputPath, Path.GetFileNameWithoutExtension(CompilerFileName));
+    public string GetOutputPath() => Path.Combine(_outputPath, CompilerName);
 
     // <input>\a.dll -> <output>\a.dll
     public string GetOutputFileName(string fileName) =>

@@ -12,6 +12,8 @@ using System.Text;
 /// </summary>
 class CrossgenRunner : CompilerRunner
 {
+    public override CompilerIndex Index => CompilerIndex.Crossgen;
+
     protected override string CompilerFileName => "crossgen.exe";
 
     public CrossgenRunner(string compilerFolder, string inputFolder, string outputFolder, IReadOnlyList<string> referenceFolders) : base(compilerFolder, inputFolder, outputFolder, referenceFolders) {}
