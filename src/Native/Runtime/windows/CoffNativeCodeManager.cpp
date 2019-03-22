@@ -475,7 +475,7 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 
     if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0)
     {
-        // Reverse PInvoke transition should on the main function body only
+        // Reverse PInvoke transition should be on the main function body only
         assert(pNativeMethodInfo->mainRuntimeFunction == pNativeMethodInfo->runtimeFunction);
 
         if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
